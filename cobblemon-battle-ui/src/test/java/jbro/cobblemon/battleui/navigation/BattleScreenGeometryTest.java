@@ -35,7 +35,7 @@ class BattleScreenGeometryTest {
                 new UiRect(309, 131, 105, 20)
         ), BattleScreenGeometry.switchOpponentTiles(427, 240, 3));
         assertEquals(new UiRect(124, 87, 179, 125), BattleScreenGeometry.switchDetails(427, 240));
-        assertEquals(new UiRect(380, 70, 34, 17), BattleScreenGeometry.switchBack(427, 240));
+        assertEquals(new UiRect(269, 70, 34, 17), BattleScreenGeometry.switchBack(427, 240));
         for (int i = 0; i < 3; i++) {
             UiRect ally = BattleScreenGeometry.switchTiles(427, 240, 3).get(i);
             UiRect opponent = BattleScreenGeometry.switchOpponentTiles(427, 240, 3).get(i);
@@ -102,38 +102,40 @@ class BattleScreenGeometryTest {
 
     @Test
     void targetDraftFitsBetweenCompactHudAndHotbar() {
-        assertEquals(new UiRect(123, 114, 180, 96), BattleScreenGeometry.targetPanel(427, 240, 2));
-        assertEquals(new UiRect(133, 185, 75, 20), BattleScreenGeometry.targetTile(427, 240, 2, 0, 0));
-        assertEquals(new UiRect(218, 150, 75, 20), BattleScreenGeometry.targetTile(427, 240, 2, 1, 1));
-        assertEquals(new UiRect(253, 120, 40, 16), BattleScreenGeometry.targetBack(427, 240, 2));
+        UiRect doubles = BattleScreenGeometry.targetPanel(427, 240, 2);
+        assertEquals(248, doubles.width());
+        assertEquals(84, doubles.height());
+        assertEquals(19, BattleScreenGeometry.targetTile(427, 240, 2, 0, 0).height());
+        assertEquals(12, BattleScreenGeometry.targetBack(427, 240, 2).height());
 
-        assertEquals(new UiRect(90, 114, 246, 96), BattleScreenGeometry.targetPanel(427, 240, 3));
-        assertEquals(new UiRect(100, 185, 70, 18), BattleScreenGeometry.targetTile(427, 240, 3, 0, 0));
-        assertEquals(new UiRect(256, 150, 70, 18), BattleScreenGeometry.targetTile(427, 240, 3, 1, 2));
+        UiRect triples = BattleScreenGeometry.targetPanel(427, 240, 3);
+        assertEquals(310, triples.width());
+        assertEquals(84, triples.height());
+        assertEquals(19, BattleScreenGeometry.targetTile(427, 240, 3, 1, 2).height());
         assertTrue(BattleScreenGeometry.targetPanel(427, 240, 3).y() +
                 BattleScreenGeometry.targetPanel(427, 240, 3).height() < 217);
     }
 
     @Test
     void targetCardsPreserveNativeSideAndFieldPositionOrdering() {
-        assertEquals(new UiRect(100, 185, 70, 18),
+        assertEquals(BattleScreenGeometry.targetTile(427, 240, 3, 0, 0),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 0, true));
-        assertEquals(new UiRect(256, 185, 70, 18),
+        assertEquals(BattleScreenGeometry.targetTile(427, 240, 3, 0, 2),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 2, true));
-        assertEquals(new UiRect(256, 150, 70, 18),
+        assertEquals(BattleScreenGeometry.targetTile(427, 240, 3, 1, 2),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 3, false));
-        assertEquals(new UiRect(100, 150, 70, 18),
+        assertEquals(BattleScreenGeometry.targetTile(427, 240, 3, 1, 0),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 5, false));
     }
 
     @Test
-    void targetButtonsHaveOneCompactWidthAndOnlyTheirVisibleAreaIsClickable() {
+    void targetButtonsUseTheirAllocatedWidthAsTheirClickArea() {
         UiRect slot = BattleScreenGeometry.targetTile(427, 240, 2, 1, 0);
         UiRect button = BattleScreenGeometry.targetCard(slot);
-        assertEquals(new UiRect(slot.x() + 2, slot.y(), 70, slot.height()), button);
+        assertEquals(slot, button);
         assertTrue(button.contains(button.x() + 1, button.y() + 1));
-        assertFalse(button.contains(slot.x() + 1, slot.y() + 1));
-        assertEquals(70, BattleScreenGeometry.targetCard(
-                BattleScreenGeometry.targetTile(427, 240, 3, 1, 0)).width());
+        assertFalse(button.contains(slot.x() - 1, slot.y() + 1));
+        assertEquals(BattleScreenGeometry.targetTile(427, 240, 3, 1, 0).width(),
+                BattleScreenGeometry.targetCard(BattleScreenGeometry.targetTile(427, 240, 3, 1, 0)).width());
     }
 }

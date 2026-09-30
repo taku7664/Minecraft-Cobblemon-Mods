@@ -88,7 +88,7 @@ public final class BattleScreenGeometry {
                 ally ? fieldPosition : slotsPerSide - 1 - fieldPosition);
     }
 
-    /** Equal compact buttons for both sides; the unused field slot is never a click target. */
+    /** Visible target cards fill their field slots; an unused field slot is never a click target. */
     public static UiRect targetCard(UiRect slot) {
         return fromKit(BattleTargetLayout.card(new jbro.cobblemon.uikit.UiRect(
                 slot.x(), slot.y(), slot.width(), slot.height())));
