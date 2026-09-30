@@ -4,7 +4,15 @@
   "package": "jbro.cobblemon.policy.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ServerGamePacketListenerChatRankMixin"
+    "ExplosionPlazaMixin",
+    "FireBlockPlazaMixin",
+    "FlowingFluidPlazaMixin",
+    "GivePokemonHiddenAbilityMixin",
+    "ItemStackPlazaMixin",
+    "PistonBaseBlockPlazaMixin",
+    "PokeSnackBlockDropMixin",
+    "ServerGamePacketListenerChatRankMixin",
+    "SpawnPokemonHiddenAbilityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,0 +1,31 @@
+{
+  "message.jbro_policy.plaza.usage": "Usage: /plaza enter, /plaza exit",
+  "message.jbro_policy.plaza.already_here": "You are already in the plaza.",
+  "message.jbro_policy.plaza.battle": "You cannot travel to or from the plaza during a Pokemon battle.",
+  "message.jbro_policy.plaza.unavailable": "The plaza dimension could not be loaded.",
+  "message.jbro_policy.plaza.arrived": "Welcome to the plaza. Use /plaza exit to return to where you were.",
+  "message.jbro_policy.plaza.exit_outside": "You can only use this in the plaza.",
+  "message.jbro_policy.plaza.returned": "You returned to where you were.",
+  "message.jbro_policy.plaza.fell": "You fell out of the plaza and were sent back to where you were.",
+  "message.jbro_policy.plaza.fatal": "You took fatal damage and were sent back to where you were.",
+  "message.jbro_policy.plaza.returned_to_spawn": "No return point was saved, so you were sent to your spawn point.",
+  "message.jbro_policy.plaza.return_dimension_missing": "Your original dimension is missing, so you were sent to your spawn point. Your return point was kept.",
+
+  "message.jbro_policy.welcome.greeting": "Welcome to the Cobblemon server!",
+  "message.jbro_policy.welcome.starter": "Press M to choose your starter Pokemon.",
+  "message.jbro_policy.welcome.pokenav": "Use /pokenav to open your Pokenav at any time.",
+
+  "message.jbro_policy.release.empty": "Party slot %s is empty.",
+  "message.jbro_policy.release.last": "You cannot release your last Pokemon.",
+  "message.jbro_policy.release.ask": "Really release %2$s in party slot %1$s? -",
+  "message.jbro_policy.release.yes": "[Yes]",
+  "message.jbro_policy.release.expired": "That release confirmation expired or is not valid.",
+  "message.jbro_policy.release.changed": "Your party changed, so the release was cancelled.",
+  "message.jbro_policy.release.failed": "The Pokemon could not be released.",
+  "message.jbro_policy.release.done": "You released %s.",
+
+  "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
+
+  "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no campfire pot stat candy L/XL"
+}

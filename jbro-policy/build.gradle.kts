@@ -14,11 +14,14 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
+    modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
+    modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     // League ranks are optional: the chat badge stays off when League Challenge is not installed.
     compileOnly(project(path = ":more-cobblemon-contents-league-challenge", configuration = "namedElements")) { isTransitive = false }
     testImplementation(project(path = ":more-cobblemon-contents-league-challenge", configuration = "namedElements")) { isTransitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation("com.google.code.gson:gson:2.11.0")
     testRuntimeOnly("org.junit.platform:junit-platform-console-standalone:1.11.4")
 }
 

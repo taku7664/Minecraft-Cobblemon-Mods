@@ -3,7 +3,7 @@
   "id": "jbro_policy",
   "version": "${version}",
   "name": "jbro Policy",
-  "description": "Server polish for the jbro Cobblemon server, such as League rank badges in chat.",
+  "description": "Server policy and polish for the jbro Cobblemon server: the plaza, wild Pokemon rules, welcome kit, League rank chat badges and more.",
   "authors": ["jbro"],
   "license": "MIT",
   "environment": "*",
@@ -27,6 +27,7 @@
     "cobblemon": ">=1.8.1 <1.9.0"
   },
   "suggests": {
-    "more_cobblemon_contents_league_challenge": ">=0.1.0 <1.0.0"
+    "more_cobblemon_contents_league_challenge": ">=0.1.0 <1.0.0",
+    "cobblenav": ">=2.4.0"
   }
 }
