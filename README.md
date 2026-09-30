@@ -29,6 +29,42 @@ PvP, 리그 챌린지는 각각 따로 설치하는 콘텐츠 모드이며, 설�
 이전에 정상적으로 읽은 전체 목록을 그대로 사용합니다. 모듈 구성은
 [`more-cobblemon-contents/README.md`](more-cobblemon-contents/README.md)에 적어 두었습니다.
 
+#### OP 명령어
+
+모든 `/mcc` 명령어는 OP(권한 레벨 2)만 쓸 수 있습니다. 저장된 데이터를 보거나 고치는 명령어는
+접속하지 않은 플레이어도 지정할 수 있고, 전투나 라운지처럼 접속 중일 때만 의미가 있는 명령어는
+접속한 플레이어만 받습니다.
+
+| 명령어 | 하는 일 |
+|---|---|
+| `/mcc` | `hub_tabs.json`의 `command` 탭으로 Hub를 엽니다 |
+| `/mcc status` | 저장소 상태, 상점과 각 콘텐츠의 카탈로그, 세션·전투·결과 저장 대기 수, 리그 레벨 캡 설정 점검 결과 |
+| `/mcc records reset <플레이어> [콘텐츠] [형식]` | 전적을 삭제합니다. 진행 중인 도전·전투·저장 대기 결과가 있으면 거부합니다 |
+| `/mcc battle list` | 진행 중인 MCC 전투 |
+| `/mcc battle end <플레이어> forfeit` | 기권시킵니다. 패배로 기록되고, PvP에서는 상대가 이깁니다 |
+| `/mcc battle end <플레이어> void` | 결과 없이 끝냅니다 |
+| `/mcc battle pending [list\|retry\|drop] [플레이어]` | 모든 콘텐츠의 결과 저장 대기열을 보고, 다시 저장하거나 버립니다 |
+| `/mcc bp [get\|history\|add\|remove\|set] …` | BP 잔액, 거래 기록, 지급·차감·설정 |
+| `/mcc test ai-입문\|ai-표준\|ai-상급\|ai-보스` | 난천 AI 테스트 전투를 시작합니다 |
+| `/mcc test stop [플레이어]` | AI 테스트 전투를 끝냅니다 |
+| `/mcc tower streak get\|set\|reset …` | 배틀타워 연승 |
+| `/mcc tower session <플레이어>` | 배틀타워 세션의 단계, 등록 팀, 연승, 진행 중인 전투 |
+| `/mcc tower abandon <플레이어> [force]` | 포기시킵니다. 전투 중이면 기권(패배)이고, 전투가 없으면 세션을 닫고 등록 팀을 풉니다. `force`는 전투가 사라져 기권할 수 없어도 정리합니다 |
+| `/mcc factory floor get\|set\|reset …` | 배틀팩토리 층 |
+| `/mcc factory session <플레이어>` / `abandon <플레이어> [force]` | 배틀팩토리 도전을 보거나 포기시킵니다(타워와 같음) |
+| `/mcc pvp rooms` | 비공개 방까지 모든 PvP 방 |
+| `/mcc pvp room close <플레이어>` | 그 플레이어의 방을 닫습니다. 전투는 결과 없이 끝내고, 준비 중인 경기는 취소하고, 라운지 인원은 원래 위치로 보냅니다 |
+| `/mcc pvp room kick <플레이어>` | 방에서 내보냅니다. 진행 중인 경기의 선수는 내보내지 않습니다 |
+| `/mcc pvp challenge cancel <플레이어>` | 대기 중인 도전 신청을 취소합니다 |
+| `/mcc pvp arena list` / `arena release <번호>` | 경기장 칸을 보고, 반납되지 않은 칸을 회수합니다 |
+| `/mcc pvp lounge rescue <플레이어>` | 배틀 라운지에서 원래 위치로, 없으면 월드 스폰으로 보냅니다 |
+| `/mcc league inspect <플레이어>` | 리그 진행 전체: 클리어, 노말·하드 챔피언, 레벨 캡, 진행 중인 도전, 받지 못한 보상 |
+| `/mcc league rewards list\|retry\|drop <플레이어>` | 받지 못한 보상을 보고, 다시 지급하거나, 지급하지 않고 완료로 표시해 다음 도전을 풉니다 |
+| `/mcc league run cancel <플레이어>` | 진행 중인 리그 도전을 취소합니다 |
+| `/mcc league cap sync <플레이어>` | 레벨 캡을 Cobbled Level Control에 다시 맞춥니다 |
+| `/mcc league validate` / `catalog` | 레벨 캡 설정 점검, 리그 카탈로그 상태와 마지막 재로드 실패 이유 |
+| `/mcc league import-badges <플레이어>` | 이미 가진 PokeBadges 배지를 리그 클리어로 가져옵니다(BP·챔피언은 주지 않음) |
+
 ### Better Battle Presentation
 
 코블몬에서 아쉬운 여러 연출을 개선하기 위한 모드입니다.
