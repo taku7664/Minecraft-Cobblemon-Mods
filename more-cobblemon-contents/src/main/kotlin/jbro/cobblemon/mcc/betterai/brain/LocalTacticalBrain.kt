@@ -426,7 +426,7 @@ internal class LocalTacticalBrain(
         val rootRanked = baseRanked
         // Read from the same table as the rules; the AI's threat weights play no part in it.
         val opponentIntents = if (!rulesApply) emptyList()
-            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent) }.orEmpty().let { intents ->
+            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel) }.orEmpty().let { intents ->
                 if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
@@ -486,7 +486,8 @@ internal class LocalTacticalBrain(
             !rulesApply -> emptyMap()
             // The predicted switches themselves, the repeats already folded in when they are read (singles, where
             // the switch model was fitted).
-            tuning.predictedSwitchShare > 0.0 && difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ->
+            tuning.predictedSwitchShare > 0.0 && (difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ||
+                tuning.doublesSwitchModel) ->
                 opponentIntents.associate { intent ->
                     intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH && it.switchInId != null }
                         .groupBy { requireNotNull(it.switchInId) }.mapValues { (_, same) -> same.sumOf { it.probability } * tuning.predictedSwitchShare }
@@ -508,8 +509,19 @@ internal class LocalTacticalBrain(
                 candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
             }.filterValues { it > 0.0 }
         }.orEmpty()
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + setupAdjustments.keys).associateWith {
-            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) + (setupAdjustments[it] ?: 0.0)
+        // A doubles Protect is credited for the hits the opponents are predicted to aim at its user.
+        val protectAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
+                difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
+        }.orEmpty()
+        // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
+        val healRaceAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
+        }.orEmpty()
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
+            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys).associateWith {
+            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
+                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->

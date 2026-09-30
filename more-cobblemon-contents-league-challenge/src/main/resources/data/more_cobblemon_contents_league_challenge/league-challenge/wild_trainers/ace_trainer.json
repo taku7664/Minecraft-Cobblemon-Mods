@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ace_trainer",
+  "bp": 10,
+  "strong": true,
+  "pokemon": [
+    {
+      "species": "dratini",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "dragonair",
+      "min_level": 30,
+      "max_level": 54
+    },
+    {
+      "species": "dragonite",
+      "min_level": 55,
+      "max_level": 100
+    },
+    {
+      "species": "bagon",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "shelgon",
+      "min_level": 30,
+      "max_level": 49
+    },
+    {
+      "species": "salamence",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "gible",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "gabite",
+      "min_level": 24,
+      "max_level": 47
+    },
+    {
+      "species": "garchomp",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "larvitar",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "pupitar",
+      "min_level": 30,
+      "max_level": 54
+    },
+    {
+      "species": "tyranitar",
+      "min_level": 55,
+      "max_level": 100
+    },
+    {
+      "species": "riolu",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lucario",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "growlithe",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "arcanine",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "eevee",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "espeon",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "umbreon",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "absol",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "lapras",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "snorlax",
+      "min_level": 30,
+      "max_level": 100
+    }
+  ]
+}

@@ -52,6 +52,8 @@ internal object TowerProgressCommands {
                 .then(set(backend))
                 .then(reset(backend)),
         )
+        .then(TowerAdminCommands.session())
+        .then(TowerAdminCommands.abandon())
 
     private fun get(backend: TowerProgressCommandBackend) = Commands.literal("get")
         .requires(BattleProgressCommands::isAdmin)

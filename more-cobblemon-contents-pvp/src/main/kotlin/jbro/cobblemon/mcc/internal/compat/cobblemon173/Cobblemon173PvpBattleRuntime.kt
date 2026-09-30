@@ -107,6 +107,8 @@ internal class Cobblemon173PvpBattleRuntime(
                 releasePendingRegistration = { Cobblemon173BattleRuleHooks.finishRegistration(null) },
                 terminateBattle = terminatePartialBattle,
             ) {
+                Cobblemon173PartyRecall.recallSentOut(first)
+                Cobblemon173PartyRecall.recallSentOut(second)
                 BattleRegistry.startBattle(
                     request.format.toCobblemonFormat(),
                     BattleSide(firstActor),

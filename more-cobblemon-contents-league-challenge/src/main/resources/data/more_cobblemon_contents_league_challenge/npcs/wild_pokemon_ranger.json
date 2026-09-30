@@ -1,0 +1,50 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.pokemon_ranger"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 3,
+  "variation": {
+    "skin": [
+      "rct_pokemon_ranger_allison_0337",
+      "rct_pokemon_ranger_allison_0548",
+      "rct_pokemon_ranger_allison_0549",
+      "rct_pokemon_ranger_allison_054a",
+      "rct_pokemon_ranger_ashlee_04bb",
+      "rct_pokemon_ranger_ashlee_054b",
+      "rct_pokemon_ranger_deshawn_04b9",
+      "rct_pokemon_ranger_dwayne_04ba",
+      "rct_pokemon_ranger_felicia_04bc",
+      "rct_pokemon_ranger_jeffrey_0336",
+      "rct_pokemon_ranger_krista_04bd",
+      "rct_pokemon_ranger_kyler_04b8",
+      "rct_pokemon_ranger_kyler_0547",
+      "rct_pokemon_ranger_taylor_0335",
+      "rct_pokemon_ranger_taylor_0544",
+      "rct_pokemon_ranger_taylor_0545",
+      "rct_pokemon_ranger_taylor_0546",
+      "rct_ranger_beth_0255",
+      "rct_ranger_jackson_0254",
+      "rct_ranger_jackson_02d4",
+      "rct_ranger_katelyn_0256",
+      "rct_ranger_katelyn_02d5",
+      "rct_ranger_madeline_020a",
+      "rct_ranger_madeline_02d1",
+      "rct_ranger_nicolas_0209",
+      "rct_ranger_nicolas_02d0"
+    ]
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_pokemon_ranger",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "pichu",
+      "min_level": 1,
+      "max_level": 9
+    },
+    {
+      "species": "pikachu",
+      "min_level": 10,
+      "max_level": 34
+    },
+    {
+      "species": "raichu",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "bulbasaur",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "ivysaur",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "venusaur",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "chikorita",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "bayleef",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "meganium",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "treecko",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "grovyle",
+      "min_level": 16,
+      "max_level": 35
+    },
+    {
+      "species": "sceptile",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "growlithe",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "arcanine",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "teddiursa",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "ursaring",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "tropius",
+      "min_level": 15,
+      "max_level": 100
+    }
+  ]
+}

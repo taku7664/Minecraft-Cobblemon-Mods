@@ -192,6 +192,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 },
                 terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
+                Cobblemon173PartyRecall.recallSentOut(player)
                 BattleRegistry.startBattle(
                     prepared.format.toCobblemonFormat(),
                     BattleSide(playerActor),
@@ -264,6 +265,7 @@ class Cobblemon173ManagedAiBattleEngine(
             MoreCobblemonContents.LOGGER.error("{} lifecycle registration failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return PveLaunchResult.Unavailable
         }
+        jbro.cobblemon.mcc.api.presentation.ManagedBattleOpponents.remember(battle.battleId, prepared.trainerDisplayNameKey)
         return protectManagedBattleStartup(
             releasePendingRegistration = {
                 runManagedCleanupActions(

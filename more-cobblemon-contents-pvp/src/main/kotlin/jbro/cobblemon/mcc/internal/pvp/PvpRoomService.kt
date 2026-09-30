@@ -108,6 +108,10 @@ internal class PvpRoomService(
     @Synchronized
     fun roomFor(playerId: UUID): PvpRoomView? = indexedRoomFor(playerId)?.view()
 
+    /** Every room, private ones included, for operators. */
+    @Synchronized
+    fun all(): List<PvpRoomView> = rooms.values.map(MutableRoom::view)
+
     @Synchronized
     fun publicRooms(): List<PvpRoomView> = rooms.values
         .asSequence()

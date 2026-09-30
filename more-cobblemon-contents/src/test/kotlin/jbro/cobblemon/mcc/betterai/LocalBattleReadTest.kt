@@ -43,6 +43,55 @@ class LocalBattleReadTest {
         }
     }
 
+    /**
+     * Replays named Boss-against-greedy duel games turn by turn, both orientations of each pair, the Boss on one side and
+     * the greedy policy on the other. -Daiengine.greedyReplay="<seed>:<game>,..." (seeds and names from the duel log).
+     */
+    @Test
+    fun `greedy replay`() {
+        val asked = System.getProperty("aiengine.greedyReplay")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty) ?: emptyList()
+        Assumptions.assumeTrue(asked.isNotEmpty())
+        val boss = BattleDifficultyProfiles.BOSS
+        val budget: (BattleTrainerTier) -> jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget = {
+            LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000)
+        }
+        for (entry in asked) {
+            val seed = entry.substringBefore(':').toInt()
+            val name = entry.substringAfter(':')
+            val index = name.substringAfter('-').toInt()
+            val definition = LocalSelfPlayMeasurement.definitions(index, seed, BattleFormat.SINGLE)[index - 1]
+            for (bossSide in listOf(BattleSide.ALLY, BattleSide.OPPONENT)) {
+                val greedySide = if (bossSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
+                val contexts = mutableListOf<BattleDecisionContext>()
+                val decisions = mutableListOf<LocalScenarioDecisionTrace>()
+                val report = LocalTacticalScenarioBattle.run(definition, 20, readTuning(), readTuning(),
+                    if (bossSide == BattleSide.ALLY) boss else BattleDifficultyProfiles.INTRODUCTORY,
+                    if (bossSide == BattleSide.ALLY) BattleDifficultyProfiles.INTRODUCTORY else boss,
+                    lookaheadBudget = budget, policies = mapOf(greedySide to LocalScenarioPolicy.GREEDY),
+                    recordedContexts = contexts, recordedDecisions = decisions)
+                // -Daiengine.greedySlotTurns=3,5: the opposing move slots the Boss read at those turns.
+                val slotTurns = System.getProperty("aiengine.greedySlotTurns")?.split(',')?.mapNotNull { it.trim().toIntOrNull() }.orEmpty()
+                for ((index, context) in contexts.withIndex()) {
+                    if (decisions[index].side != bossSide.name || context.state.turn !in slotTurns) continue
+                    context.state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }.forEach { foe ->
+                        val slots = context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty()
+                        println("SLOTS T${context.state.turn} ${foe.speciesId.substringAfter(':')}: " + slots.joinToString(" | ") {
+                            "${it.moveId?.substringAfter(':') ?: "?"}(${it.knowledge.name.lowercase()}/${it.source.name.lowercase()})"
+                        } + " ; revealed=" + context.publicActionCatalog.forPokemon(foe.battlePokemonId).joinToString(",") { it.moveId.substringAfter(':') })
+                    }
+                }
+                val bossTeam = if (bossSide == BattleSide.ALLY) definition.cycleSetIds else definition.offenseSetIds
+                val greedyTeam = if (bossSide == BattleSide.ALLY) definition.offenseSetIds else definition.cycleSetIds
+                println("REPLAY $seed:$name boss=${if (bossSide == BattleSide.ALLY) "A" else "B"} bossTeam=$bossTeam greedyTeam=$greedyTeam " +
+                    "winner=${report.winner} hp A=%.2f B=%.2f".format(report.cycleRemainingHp, report.offenseRemainingHp))
+                for (turn in report.turns) {
+                    println("T${turn.turn} A:${turn.cycleActual} B:${turn.offenseActual} => ${turn.result}")
+                    println("   ${if (bossSide == BattleSide.ALLY) "A" else "B"}(boss) top: ${if (bossSide == BattleSide.ALLY) turn.cycleTop else turn.offenseTop}")
+                }
+            }
+        }
+    }
+
     @Test
     fun `probe one position`() {
         val game = System.getProperty("aiengine.probeGame")?.toIntOrNull() ?: 0
@@ -308,6 +357,12 @@ class LocalBattleReadTest {
                 fun value(ranked: List<jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank>) =
                     ranked.first { it.outcome.candidate.actionId == heal.actionId }.comparisonValue
                 fun label(id: String) = id.substringAfterLast("move:").substringBefore(":target").take(22)
+                // The search's own reading, with and without the penalty: what the brain ranks by.
+                fun searched(tuning: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(rank(tuning), calculated,
+                    profile, tuning, clockMillis = { 0L }, budget = budget(boss.tier)).ranked.take(3).joinToString(" ") {
+                        "${label(it.outcome.candidate.actionId)}=%.0f".format(it.comparisonValue)
+                    }
+                println("   searched on: ${searched(readTuning())} | off: ${searched(readTuning().copy(recoveryLoopPenalty = 0.0))}")
                 println("LOOP ${definition.name} T${context.state.turn} ${user.speciesId.substringAfter(':')}@%.0f%% streak=$streak heal on=%.1f off=%.1f top on=${label(on.first().outcome.candidate.actionId)} off=${label(off.first().outcome.candidate.actionId)} chose=${label(decisions[index].actionId)}".format(
                     user.hpFraction * 100, value(on), value(off)))
             }

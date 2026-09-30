@@ -69,6 +69,10 @@ import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
+import jbro.cobblemon.mcc.internal.command.MccAdminSource
+import jbro.cobblemon.mcc.internal.command.MccAdminSources
+import jbro.cobblemon.mcc.internal.command.MccCommandContributors
+import jbro.cobblemon.mcc.internal.command.MccPendingResult
 
 internal object PvpPlayNetworking : PvpCommandBackend {
     private val onlinePlayers = HashMap<UUID, ServerPlayer>()
@@ -142,6 +146,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     fun registerServer() {
         sessions
         ManagedTurnInterceptors.register(PvpManagedTurnInterceptor)
+        MccCommandContributors.register { jbro.cobblemon.mcc.internal.pvp.PvpAdminCommands.build() }
+        MccAdminSources.register(adminSource)
         BattleHubEntries.register(
             BattleHubEntry(ManagedBattleContentIds.PVP, accessContentId = null) { player, _ ->
                 open(player).status == PvpCommandStatus.APPLIED
@@ -351,6 +357,111 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 loungeGateway::enforceSpectatorAnchors,
             )
         }
+    }
+
+    /** Every room, private ones included, with its match's battle when one is running. */
+    fun adminRooms(): List<Pair<jbro.cobblemon.mcc.internal.pvp.PvpRoomView, UUID?>> =
+        rooms.all().map { it to sessions.battleIdFor(it.roomId) }
+
+    fun adminRoomFor(playerId: UUID): jbro.cobblemon.mcc.internal.pvp.PvpRoomView? = rooms.roomFor(playerId)
+
+    /**
+     * Closes [roomId] for an operator: its battle ends without a result, a match still being set up is cancelled,
+     * everyone leaves the lounge and every member gets the room list back. Returns false when there is no room.
+     */
+    fun adminCloseRoom(server: MinecraftServer, roomId: UUID): Boolean {
+        val room = rooms.get(roomId) ?: return false
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure -> MoreCobblemonContents.LOGGER.error("PvP admin close failed for room $roomId", failure) },
+            { sessions.battleIdFor(roomId)?.let(Cobblemon173ManagedBattleTermination::end) },
+            { processPendingCompletions(server, force = true) },
+            {
+                val challenge = sessions.challenge(roomId)
+                if (challenge != null && sessions.cancel(roomId, challenge.request.challengerId) is PvpChallengeMutationResult.Applied) {
+                    retryableMatches.remove(roomId)
+                    notifyClosed(challenge.request, "screen.${MoreCobblemonContents.MOD_ID}.pvp.closed.cancelled")
+                }
+            },
+            { lounge.finish(roomId) },
+            {
+                val members = rooms.close(roomId)?.memberIds ?: room.memberIds
+                notifyOnlinePlayers(members, "admin room close") { player ->
+                    player.sendSystemMessage(Component.translatable("command.${MoreCobblemonContents.MOD_ID}.pvp.admin.room.closed_notice"))
+                    sendRoomList(player, null)
+                }
+            },
+        )
+        return true
+    }
+
+    enum class AdminKick { NO_ROOM, COMPETITOR, KICKED, FAILED }
+
+    /**
+     * Takes [playerId] out of their room. A seated player of a match past the lobby is refused: their match has to
+     * be ended or the room closed, or the other player would be left in a half-closed match.
+     */
+    fun adminKick(playerId: UUID): AdminKick {
+        val room = rooms.roomFor(playerId) ?: return AdminKick.NO_ROOM
+        val seated = playerId == room.leftPlayerId || playerId == room.rightPlayerId
+        if (seated && room.phase != jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.LOBBY) return AdminKick.COMPETITOR
+        val online = onlinePlayers[playerId]
+        if (room.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.ACTIVE && playerId in room.spectatorIds && online != null) {
+            return if (exitSpectator(online) == PvpSpectatorExitResult.ACCEPTED) AdminKick.KICKED else AdminKick.FAILED
+        }
+        rooms.leave(room.roomId, playerId)?.let { remaining -> pushRoomToMembers(remaining, null) }
+        online?.let { sendRoomListSafely(it, null, "admin kick") }
+        return AdminKick.KICKED
+    }
+
+    /** Arena slots in use, with whether a lounge session still holds each one. */
+    fun adminArenas(): List<Triple<UUID, jbro.cobblemon.mcc.internal.pvp.PvpArenaLease, Boolean>> =
+        arenas.activeLeases().map { (matchId, lease) -> Triple(matchId, lease, lounge.leaseFor(matchId) != null) }
+
+    /** Frees arena [index] when no lounge session holds it any more; returns false otherwise. */
+    fun adminReleaseArena(index: Int): Boolean {
+        val (matchId, _, held) = adminArenas().firstOrNull { it.second.index == index } ?: return false
+        if (held) return false
+        return arenas.release(matchId) != null
+    }
+
+    enum class AdminRescue { IN_BATTLE, IN_ACTIVE_ROOM, RETURNED, SPAWN, NOT_IN_LOUNGE, FAILED }
+
+    /** Sends [player] back from the battle lounge: to the point they came from, or to spawn when none is kept. */
+    fun adminRescue(player: ServerPlayer): AdminRescue {
+        onlinePlayers[player.uuid] = player
+        if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return AdminRescue.IN_BATTLE
+        if (rooms.roomFor(player.uuid)?.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.ACTIVE) return AdminRescue.IN_ACTIVE_ROOM
+        if (player.uuid in lounge.pendingReturnPlayerIds()) {
+            return if (lounge.restorePending(player.uuid)) AdminRescue.RETURNED else AdminRescue.FAILED
+        }
+        if (player.serverLevel().dimension() != Cobblemon173PvpLoungeGateway.LEVEL_KEY) return AdminRescue.NOT_IN_LOUNGE
+        return if (loungeGateway.restoreToOverworldSpawn(player.uuid)) AdminRescue.SPAWN else AdminRescue.FAILED
+    }
+
+    private val adminSource = object : MccAdminSource {
+        override val label: Component = Component.translatable("command.${MoreCobblemonContents.MOD_ID}.pvp.admin.label")
+
+        override fun status(server: MinecraftServer): List<Component> = listOf(
+            Component.translatable("command.${MoreCobblemonContents.MOD_ID}.pvp.admin.status", rooms.all().size,
+                sessions.activeBattles().size, pendingCompletions.size(), arenas.activeLeases().size, lounge.pendingReturnPlayerIds().size),
+        )
+
+        override fun pending(server: MinecraftServer): List<MccPendingResult> = pendingCompletions.completions().map {
+            MccPendingResult(it.winnerId ?: it.loserId ?: it.matchId, it.battleId,
+                if (it.cancelled) "cancelled" else "winner=${it.winnerId} loser=${it.loserId}")
+        }
+
+        override fun retryPending(server: MinecraftServer, playerId: UUID?): Int =
+            pendingCompletions.retryMatching({ playerId == null || it.winnerId == playerId || it.loserId == playerId }) {
+                settleCompletion(server, it)
+            }
+
+        override fun dropPending(server: MinecraftServer, playerId: UUID?): Int =
+            pendingCompletions.drop { playerId == null || it.winnerId == playerId || it.loserId == playerId }
+
+        override fun busy(server: MinecraftServer, playerId: UUID): Boolean =
+            rooms.roomFor(playerId) != null || sessions.challengeFor(playerId) != null ||
+                pendingCompletions.completions().any { it.winnerId == playerId || it.loserId == playerId }
     }
 
     /**
@@ -1149,6 +1260,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                         finishRoom(pending.matchId)
                     },
                 )
+                if (accepted && !pending.cancelled) {
+                    val winner = server.playerList.getPlayer(checkNotNull(pending.winnerId))
+                    val loser = server.playerList.getPlayer(checkNotNull(pending.loserId))
+                    fun name(id: UUID) = Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
+                    winner?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(it, name(pending.loserId)) }
+                    loser?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(it, name(pending.winnerId)) }
+                }
                 if (!accepted) {
                     MoreCobblemonContents.LOGGER.warn(
                         "Dropping stale PvP completion retry for match {} and battle {}",

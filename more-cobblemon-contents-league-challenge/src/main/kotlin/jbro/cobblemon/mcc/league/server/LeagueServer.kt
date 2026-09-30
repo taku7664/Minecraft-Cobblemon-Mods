@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.api.access.*
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
+import jbro.cobblemon.mcc.api.presentation.BattleResultNotices
 import jbro.cobblemon.mcc.api.rules.BattleGimmickLocks
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -165,6 +166,16 @@ object LeagueServer {
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
                 commit(player.server, catalog.id, player.uuid, completed)
                 player.server.playerList.getPlayer(player.uuid)?.let { online ->
+                    // Only the first callback for this battle changes the progress; retries stay quiet.
+                    if (completed != latest && outcome != ManagedPveBattles.Outcome.CANCELLED) {
+                        val opponent = Component.translatable(challenge.nameKey)
+                        if (outcome == ManagedPveBattles.Outcome.WIN) {
+                            val known = latest.rewards.map { it.token }.toSet()
+                            BattleResultNotices.victory(online, opponent, completed.rewards.filter { it.token !in known }.sumOf { it.bp })
+                        } else {
+                            BattleResultNotices.defeat(online, opponent)
+                        }
+                    }
                     reconcileSafely(online)
                     // Idempotent callbacks do not repeatedly reopen the screen.
                     send(online, openScreen = completed != latest)
@@ -199,7 +210,7 @@ object LeagueServer {
         val storage = LeagueSavedData.get(player.server)
         var state = storage.read(catalog.id, player.uuid)
         // Before the integration steps below, which can fail and must not keep the header's rank stale.
-        syncRank(player, rank(catalog, state))
+        syncRank(player, rank(catalog, state).name)
         LeagueIntegrations.syncCap(player, LeagueEngine(catalog).cap(state))
         // Player data and world SavedData do not share one disk transaction. Repair badges from wins.
         for (id in catalog.gyms.filter { it in state.cleared }) {
@@ -217,9 +228,9 @@ object LeagueServer {
         }
     }
 
-    private fun rank(catalog: LeagueCatalog, state: LeagueProgress): String {
+    internal fun rank(catalog: LeagueCatalog, state: LeagueProgress): LeagueRank {
         val badges = LeagueEngine(catalog).badgeCount(state).coerceIn(0, 8)
-        return LeagueRank.fromProgress(badges, state.champion && badges == 8).name
+        return LeagueRank.fromProgress(badges, state.champion && badges == 8)
     }
 
     /** Tells the client its rank when it changed; reconcile repeats this, so admin edits reach it too. */
@@ -235,12 +246,42 @@ object LeagueServer {
         } catch (failure: LinkageError) { Mod.LOGGER.error("League integration unavailable", failure) }
     }
 
+    /**
+     * Saves an operator's edit of [playerId]'s progress in the current League the way the League's own changes
+     * are saved, then brings an online player's cap, badges, rank and open League tab up to date.
+     */
+    internal fun adminCommit(server: MinecraftServer, catalog: LeagueCatalog, playerId: UUID, state: LeagueProgress) {
+        commit(server, catalog.id, playerId, state)
+        server.playerList.getPlayer(playerId)?.let { online ->
+            reconcileSafely(online)
+            send(online)
+        }
+    }
+
+    /** Runs the League's reconcile for [player] now; returns the failure reason, or null when it went through. */
+    internal fun adminReconcile(player: ServerPlayer): String? = try {
+        reconcile(player)
+        send(player)
+        null
+    } catch (failure: RuntimeException) {
+        failure.message?.substringBefore(':') ?: "request_failed"
+    }
+
+    /** Ends [playerId]'s run as the player's own cancel does, stopping its battle after the run is gone. */
+    internal fun adminCancelRun(server: MinecraftServer, catalog: LeagueCatalog, playerId: UUID): Boolean {
+        val state = LeagueSavedData.get(server).read(catalog.id, playerId)
+        if (state.run == null) return false
+        adminCommit(server, catalog, playerId, LeagueEngine(catalog).cancel(state))
+        ManagedPveBattles.cancel(server, playerId)
+        return true
+    }
+
     private fun commit(server: MinecraftServer, league: String, player: UUID, state: LeagueProgress) {
         LeagueSavedData.get(server).write(league, player, state)
         server.overworld().dataStorage.save()
         val catalog = LeagueCatalogResources.current
         val online = server.playerList.getPlayer(player)
-        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state))
+        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state).name)
     }
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
@@ -249,7 +290,7 @@ object LeagueServer {
         val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
         val engine = LeagueEngine(catalog)
         val badges = engine.badgeCount(state)
-        val rank = rank(catalog, state)
+        val rank = rank(catalog, state).name
         fun route(gyms: List<String>, finals: List<String>) = (gyms + finals.first()).map { id ->
             val index = gyms.indexOf(id)
             val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }

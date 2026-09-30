@@ -1,0 +1,60 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.fisherman"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_fisher_alec_036a",
+      "rct_fisher_alec_0514",
+      "rct_fisher_andrew_02f8",
+      "rct_fisher_brett_0369",
+      "rct_fisher_cameron_0333",
+      "rct_fisher_cody_030d",
+      "rct_fisher_cole_036c",
+      "rct_fisher_cory_0366",
+      "rct_fisher_erick_03bf",
+      "rct_fisher_george_036b",
+      "rct_fisher_joseph_02f9",
+      "rct_fisher_joseph_0511",
+      "rct_fisher_joseph_0512",
+      "rct_fisher_juan_0332",
+      "rct_fisher_kenneth_0341",
+      "rct_fisher_luc_035d",
+      "rct_fisher_miguel_035c",
+      "rct_fisher_miguel_0513",
+      "rct_fisher_travis_0334",
+      "rct_fisher_walter_0419",
+      "rct_fisher_zachary_02fa",
+      "rct_fisherman_andrew_00e9",
+      "rct_fisherman_barny_00e0",
+      "rct_fisherman_chip_00e2",
+      "rct_fisherman_claude_00e6",
+      "rct_fisherman_dale_00df",
+      "rct_fisherman_elliot_00e4",
+      "rct_fisherman_elliot_028d",
+      "rct_fisherman_hank_00e3",
+      "rct_fisherman_ned_00e1",
+      "rct_fisherman_nolan_00e8",
+      "rct_fisherman_ronald_00e5",
+      "rct_fisherman_tommy_0227",
+      "rct_fisherman_tylor_023d",
+      "rct_fisherman_wade_00e7",
+      "rct_fisherman_wade_02ae"
+    ]
+  }
+}

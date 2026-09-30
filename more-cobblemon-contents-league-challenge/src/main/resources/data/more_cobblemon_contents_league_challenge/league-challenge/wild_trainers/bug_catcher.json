@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_bug_catcher",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "caterpie",
+      "min_level": 1,
+      "max_level": 6
+    },
+    {
+      "species": "metapod",
+      "min_level": 7,
+      "max_level": 9
+    },
+    {
+      "species": "butterfree",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "weedle",
+      "min_level": 1,
+      "max_level": 6
+    },
+    {
+      "species": "kakuna",
+      "min_level": 7,
+      "max_level": 9
+    },
+    {
+      "species": "beedrill",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "wurmple",
+      "min_level": 1,
+      "max_level": 6
+    },
+    {
+      "species": "silcoon",
+      "min_level": 7,
+      "max_level": 9
+    },
+    {
+      "species": "beautifly",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "kricketot",
+      "min_level": 1,
+      "max_level": 9
+    },
+    {
+      "species": "kricketune",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "venonat",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "venomoth",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "paras",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "parasect",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "ledyba",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "ledian",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "spinarak",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "ariados",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "nincada",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "ninjask",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "scyther",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "pinsir",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "heracross",
+      "min_level": 15,
+      "max_level": 100
+    }
+  ]
+}

@@ -50,6 +50,10 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     override fun rebuild() {
         clearWidgets()
+        if (!MccHubLayout.fits(width, height)) {
+            buildTooSmall()
+            return
+        }
         val layout = MccHubLayout.calculate(width, height, MccHubTabs.shown().size)
         addRenderableWidget(
             CobblemonUiPanel.create(layout.shell.x, layout.shell.y, layout.shell.width, layout.shell.height,
@@ -76,7 +80,41 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
             shownContent = activeContent
             activeContent?.shown()
         }
-        activeContent?.build(this, layout.content)
+        buildContent(tab, layout.content)
+    }
+
+    /**
+     * Lays the active tab out, and keeps the hub open when that fails: a tab that cannot lay itself out at this size
+     * leaves a notice in its place and the error in the log, instead of crashing the game.
+     */
+    private fun buildContent(tab: MccHubTab?, bounds: UiRect) {
+        val content = activeContent ?: return
+        val before = children().toSet()
+        try {
+            content.build(this, bounds)
+        } catch (failure: RuntimeException) {
+            MoreCobblemonContents.LOGGER.error("Hub tab {} failed to lay out in {}x{}", tab?.id, bounds.width, bounds.height, failure)
+            children().filter { it !in before }.forEach(::removeWidget)
+            MccHubKit.placeholder(this, bounds, hubText("tab_failed"))
+        }
+    }
+
+    /** A window too small for the hub: the shell, a notice and the close button, and no tab content. */
+    private fun buildTooSmall() {
+        shownContent?.hidden()
+        shownContent = null
+        activeContent = null
+        val shell = UiRect(2, 2, (width - 4).coerceAtLeast(1), (height - 4).coerceAtLeast(1))
+        addRenderableWidget(CobblemonUiPanel.create(shell.x, shell.y, shell.width, shell.height, UiPanelSpec(tone = UiPanelTone.SHELL)))
+        val closeHeight = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.SMALL).height
+        val closeWidth = (shell.width - 16).coerceIn(1, 80)
+        val closeY = shell.bottom - closeHeight - 6
+        MccHubKit.placeholder(this, UiRect(shell.x, shell.y, shell.width, (closeY - shell.y).coerceAtLeast(1)), hubText("too_small"))
+        if (closeY > shell.y) {
+            addRenderableWidget(CobblemonUiButton.create(shell.x + (shell.width - closeWidth) / 2, closeY, closeWidth,
+                UiButtonSpec(hubText("close"), variant = UiButtonVariant.SECONDARY, size = UiControlSize.SMALL,
+                    width = UiWidthPolicy.Fixed(closeWidth))) { onClose() })
+        }
     }
 
     /**
@@ -182,13 +220,19 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
             val brand = hubText("brand")
             val brandRoom = (brandLimit - header.x - 14).coerceAtLeast(1)
-            val scale = listOf(layout.brandScale, 1.5f, 1f).first { font.width(brand) * it <= brandRoom }
-            val pose = graphics.pose()
-            pose.pushPose()
-            pose.translate((header.x + 8).toDouble(), (header.y + (header.height - 2 - font.lineHeight * scale) / 2.0), 0.0)
-            pose.scale(scale, scale, 1f)
-            graphics.drawString(font, brand, 0, 0, theme.colors.textPrimary, false)
-            pose.popPose()
+            // The largest scale the brand fits at; on a narrow header it stays at full size and is cut to fit.
+            val scale = listOf(layout.brandScale, 1.5f, 1f).firstOrNull { font.width(brand) * it <= brandRoom }
+            if (scale == null) {
+                graphics.drawString(font, MccHubKit.fitted(brand, brandRoom), header.x + 8,
+                    header.y + (header.height - 2 - font.lineHeight) / 2 + 1, theme.colors.textPrimary, false)
+            } else {
+                val pose = graphics.pose()
+                pose.pushPose()
+                pose.translate((header.x + 8).toDouble(), (header.y + (header.height - 2 - font.lineHeight * scale) / 2.0), 0.0)
+                pose.scale(scale, scale, 1f)
+                graphics.drawString(font, brand, 0, 0, theme.colors.textPrimary, false)
+                pose.popPose()
+            }
 
             val balance = layout.balance
             graphics.fill(balance.x - 5, header.y + 5, balance.x - 4, header.bottom - 6, theme.colors.borderBright)

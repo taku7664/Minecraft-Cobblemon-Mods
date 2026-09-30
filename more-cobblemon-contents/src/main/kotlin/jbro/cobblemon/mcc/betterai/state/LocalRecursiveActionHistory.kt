@@ -37,6 +37,11 @@ internal data class RecursiveActionHistory(
     val restoredOriginalPokemonIds: Set<UUID> = emptySet(),
     /** Branch assumptions, never public observations. Persist independently of execution and PP. */
     val assumedOpponentMoveIds: Map<UUID, Set<String>> = emptyMap(),
+    /**
+     * Per ally, the heals in a row that still ended lower, as the line has played them (LocalRecoveryLoop). Absent,
+     * the real battle's count stands.
+     */
+    val losingHealStreakByPokemon: Map<UUID, Int> = emptyMap(),
 )
 
 internal data class RecursiveMoveUseKey(val pokemonId: UUID, val moveId: String)

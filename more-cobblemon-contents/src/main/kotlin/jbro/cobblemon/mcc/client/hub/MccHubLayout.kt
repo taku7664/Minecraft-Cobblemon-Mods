@@ -42,6 +42,15 @@ data class MccHubLayout(
         private const val MAX_WIDTH = 720
         private const val MAX_HEIGHT = 400
 
+        /**
+         * The smallest screen, in GUI pixels, the hub lays its tabs out on. Minecraft's automatic GUI scale keeps
+         * screens at 320 x 240 or more, so only a window shrunk below that, or a GUI scale forced too high, is smaller.
+         */
+        const val MIN_WIDTH = 320
+        const val MIN_HEIGHT = 200
+
+        fun fits(screenWidth: Int, screenHeight: Int): Boolean = screenWidth >= MIN_WIDTH && screenHeight >= MIN_HEIGHT
+
         private fun tabsFitting(rail: UiRect, tabHeight: Int): Int =
             UiLayout.fittingCount(rail.height - RAIL_INSET * 2, tabHeight, TAB_GAP)
 

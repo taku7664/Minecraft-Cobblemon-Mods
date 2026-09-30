@@ -1,0 +1,41 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.ruin_maniac"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 3,
+  "variation": {
+    "skin": [
+      "rct_ruin_mamoac_benjamin_025b",
+      "rct_ruin_mamoac_brandon_025a",
+      "rct_ruin_mamoac_foster_0246",
+      "rct_ruin_mamoac_larry_0247",
+      "rct_ruin_mamoac_larry_02cb",
+      "rct_ruin_mamoac_lawson_025f",
+      "rct_ruin_mamoac_layton_026c",
+      "rct_ruin_mamoac_stanly_020c",
+      "rct_ruin_maniac_bryan_0342",
+      "rct_ruin_maniac_calvin_03cb",
+      "rct_ruin_maniac_gerald_0434",
+      "rct_ruin_maniac_harry_0433",
+      "rct_ruin_maniac_harry_051f",
+      "rct_ruin_maniac_harry_0520",
+      "rct_ruin_maniac_hunter_0343",
+      "rct_ruin_maniac_karl_0492",
+      "rct_ruin_maniac_larry_03cc"
+    ]
+  }
+}

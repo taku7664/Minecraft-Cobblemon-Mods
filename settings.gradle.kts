@@ -17,6 +17,7 @@ include(
     "cobblemon-ui-kit",
     "cobblemon-custom-species",
     "font-glyph-race-fix",
+    "jbro-policy",
     "more-cobblemon-contents",
     "more-cobblemon-contents-battle-tower",
     "more-cobblemon-contents-pvp",

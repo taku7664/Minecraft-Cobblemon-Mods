@@ -71,6 +71,8 @@ internal object FactoryProgressCommands {
                 .then(set(backend))
                 .then(reset(backend)),
         )
+        .then(FactoryAdminCommands.session())
+        .then(FactoryAdminCommands.abandon())
 
     private fun get(backend: FactoryProgressCommandBackend) = Commands.literal("get")
         .requires(BattleProgressCommands::isAdmin)

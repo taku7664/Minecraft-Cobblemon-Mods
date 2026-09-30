@@ -56,13 +56,21 @@ internal data class OpponentIntent(val pokemonId: UUID, val activeSlot: Int, val
  * Only the deciding trainer's public view goes in: the opponent's revealed moves and seen bench.
  */
 internal object LocalOpponentIntentPredictor {
-    fun predict(context: BattleDecisionContext, scores: MatchupScores, scoredSwitches: Boolean = false): List<OpponentIntent> {
+    fun predict(
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        scoredSwitches: Boolean = false,
+        /** Doubles reads the switch model too, with the singles weights. */
+        scoredInDoubles: Boolean = false,
+    ): List<OpponentIntent> {
         val state = context.state
         val allies = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }
         if (allies.isEmpty()) return emptyList()
         val bench = seenBench(state)
-        // The switch model was fitted on singles; doubles keeps the one softmax.
-        val scored = scoredSwitches && state.format == BattleFormat.SINGLE
+        // The switch model was fitted on singles. In doubles, 894 slot positions with a seen bench (3.9% switches):
+        // the one softmax predicted 32% (Brier 0.29, the base rate alone 0.038), the singles weights 7% (0.034); a
+        // doubles fit on its 35 switches did no better (0.035 cross-validated).
+        val scored = scoredSwitches && (state.format == BattleFormat.SINGLE || scoredInDoubles)
         val features = if (scored) switchFeatures(context, scores) else emptyMap()
         return state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }.map { user ->
             val moves = context.publicActionCatalog.forPokemon(user.battlePokemonId)

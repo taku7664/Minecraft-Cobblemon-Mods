@@ -1,0 +1,45 @@
+package jbro.cobblemon.policy
+
+import jbro.cobblemon.policy.config.PolicyConfig
+import jbro.cobblemon.policy.plaza.Plaza
+import jbro.cobblemon.policy.pokemon.PartyRelease
+import jbro.cobblemon.policy.pokemon.PokemonItemRestore
+import jbro.cobblemon.policy.pokemon.PokenavCommand
+import jbro.cobblemon.policy.welcome.WelcomeKit
+import jbro.cobblemon.policy.wild.WildPokemonPolicy
+import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper
+import net.fabricmc.fabric.api.resource.ResourcePackActivationType
+import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
+import org.slf4j.LoggerFactory
+
+/** Policy and polish for jbro's own server. Each feature lives in its own package; this only wires them up. */
+object JbroPolicy : ModInitializer {
+    const val MOD_ID = "jbro_policy"
+    val LOGGER = LoggerFactory.getLogger(MOD_ID)
+
+    lateinit var config: PolicyConfig
+        private set
+
+    override fun onInitialize() {
+        config = PolicyConfig.load(FabricLoader.getInstance().configDir.resolve("jbro-policy.json")) { message, failure ->
+            LOGGER.warn(message, failure)
+        }
+        Plaza.register()
+        WildPokemonPolicy.register(config)
+        WelcomeKit.register()
+        PartyRelease.register()
+        PokenavCommand.register()
+        PokemonItemRestore.register()
+        // Built-in data packs, so either can be turned off per world with /datapack disable.
+        val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
+        for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {
+            ResourceManagerHelper.registerBuiltinResourcePack(id(pack), mod,
+                Component.translatable("pack.$MOD_ID.$pack"), ResourcePackActivationType.DEFAULT_ENABLED)
+        }
+    }
+
+    fun id(path: String): ResourceLocation = ResourceLocation.fromNamespaceAndPath(MOD_ID, path)
+}

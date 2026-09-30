@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-09-30 20:50] 필수 OP 명령어 — `6acabbc1`, `3b9a04e5`, `1792eaa8`, `3312cb32`, `4c300c6a`, `44f54b32`, `841aa8f7` (단위 테스트·JAR 배포 확인, 실게임 미확인)
+
+- **빡대리님 결정:** `/mcc`는 OP 전용(권한 2, 하위 명령 전부). 추천 목록 중 "재시작 말고는 풀 방법이 없는" 필수 항목부터 구현.
+- **공용 구조:** `MccAdminSources`에 콘텐츠가 상태 줄, 결과 재시도 목록·재시도·버리기, `busy`(기록 밖에 진행 중인 상태가 있는지)를 등록한다. 코어의 관리 PvE(리그 전투), 타워, 팩토리, PvP, 리그가 등록돼 있다. 플레이어 인자는 저장 데이터를 다루는 명령에서 `GameProfileArgument`(오프라인 가능), 런타임만 다루는 명령에서 온라인 플레이어다.
+- **코어:** `status`, `records reset`(어느 콘텐츠든 busy면 거부), `battle list|end <p> forfeit|void|pending list|retry|drop`. forfeit는 Showdown 기권(패배, PvP는 상대 승), void는 `Cobblemon173ManagedBattleTermination.end`(각 콘텐츠의 취소 경로). 재시도 대기열에 `completions/retryMatching/drop`, 전적 저장소에 `delete`를 추가했다.
+- **목록과 달라진 점:** 타워·팩토리 `pending`은 `/mcc battle pending`으로 합쳤다. 타워 "팀 잠금 해제"는 `abandon`(전투가 없으면 세션을 닫고 등록 팀 해제)에 포함되고, 전투가 사라져 기권이 안 되는 경우는 `abandon force`. PvP `match list/end`는 `/mcc battle list/end`로 대신한다. 리그 `cap show`는 `inspect`에 들어갔다. `/league-admin`은 `/mcc league`로 옮기고 지웠다.
+- **리그:** `rewards drop`은 보상을 지급하지 않고 지급 완료로 표시한다(도전 차단 해제). 카탈로그 재로드 실패 사유를 `LeagueCatalogResources.lastFailure`에 남긴다.
+- **PvP:** `room close`는 전투 void → 준비 중 경기 취소 → 라운지 복귀 → 방 삭제 순서. `room kick`은 로비가 아닌 경기의 좌석 플레이어를 거부한다. `arena release`는 라운지 세션이 없는(반납 안 된) 칸만 반납한다. `lounge rescue`는 복귀 지점이 있으면 그리로, 없으면 월드 스폰.
+- **검증:** core(`-Pscope=core`) 537, League 63, Tower 171, Factory 104, PvP 201 통과(명령 트리 테스트 포함). JAR 5개 배포(백업 `dev-server/deployment-backups/20260930-204757-admin-commands`). 실제 서버에서 명령 실행은 아직 해 보지 않았다.
+
 ## [2026-09-30 16:00] 콘텐츠별 홀로그램 터미널과 Hub 탭 설정, 리그 파티 1~6마리 — `92fdb449`, `58a9b377`, `39b960a2`, `20cb705f`, `77bb146f` (단위 테스트·JAR 배포 확인, 실게임 미확인)
 
 - **빡대리님 결정:** `/mcc`는 대시보드·상점·PvP만. 리그·배틀타워·배틀팩토리는 각자 홀로그램 터미널을 갖고, 기본은 대시보드·상점·자기 콘텐츠. 터미널에 나오는 탭은 JSON으로 설정한다. 리그 도전은 파티 1~6마리로 가능하다.

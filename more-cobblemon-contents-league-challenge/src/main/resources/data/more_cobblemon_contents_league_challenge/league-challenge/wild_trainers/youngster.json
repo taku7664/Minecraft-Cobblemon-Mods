@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_youngster",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "rattata",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "raticate",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "sentret",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "furret",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "zigzagoon",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "linoone",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "bidoof",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "bibarel",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "pidgey",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "pidgeotto",
+      "min_level": 18,
+      "max_level": 35
+    },
+    {
+      "species": "pidgeot",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranm",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorino",
+      "min_level": 16,
+      "max_level": 100
+    },
+    {
+      "species": "ekans",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "arbok",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "lillipup",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "herdier",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "stoutland",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

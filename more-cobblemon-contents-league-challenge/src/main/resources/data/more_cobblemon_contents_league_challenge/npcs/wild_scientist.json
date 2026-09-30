@@ -1,0 +1,47 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.scientist"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 4,
+  "variation": {
+    "skin": [
+      "rct_scientist_beau_0154",
+      "rct_scientist_braydon_015a",
+      "rct_scientist_connor_0150",
+      "rct_scientist_darrius_0575",
+      "rct_scientist_ed_0158",
+      "rct_scientist_emilio_048e",
+      "rct_scientist_fredrick_0576",
+      "rct_scientist_gideon_0221",
+      "rct_scientist_ivan_015b",
+      "rct_scientist_jerry_0151",
+      "rct_scientist_jose_0152",
+      "rct_scientist_joshua_0156",
+      "rct_scientist_parkker_0157",
+      "rct_scientist_rodney_0153",
+      "rct_scientist_shaun_0453",
+      "rct_scientist_shaun_054f",
+      "rct_scientist_shaun_0550",
+      "rct_scientist_shaun_0551",
+      "rct_scientist_stefano_0338",
+      "rct_scientist_taylor_0155",
+      "rct_scientist_ted_014f",
+      "rct_scientist_travis_0159",
+      "rct_scientist_travon_0577"
+    ]
+  }
+}

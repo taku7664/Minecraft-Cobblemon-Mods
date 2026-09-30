@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_camper",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "growlithe",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "arcanine",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "poochyena",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "mightyena",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "zubat",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "golbat",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "psyduck",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "golduck",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "teddiursa",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "ursaring",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    }
+  ]
+}

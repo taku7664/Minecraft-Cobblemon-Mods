@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_black_belt",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "machop",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "machoke",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "mankey",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "primeape",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "makuhita",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "hariyama",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "meditite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "medicham",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "tyrogue",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "hitmonlee",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmonchan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmontop",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "riolu",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lucario",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "timburr",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "gurdurr",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "croagunk",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "toxicroak",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "mienfoo",
+      "min_level": 1,
+      "max_level": 49
+    },
+    {
+      "species": "mienshao",
+      "min_level": 50,
+      "max_level": 100
+    }
+  ]
+}

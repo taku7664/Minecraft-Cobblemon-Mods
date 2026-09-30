@@ -55,6 +55,9 @@ internal data class LocalTacticalScenarioTurn(
     /** The top of each side's ranking, with comparison values, for reading a battle back. */
     val cycleTop: String = "",
     val offenseTop: String = "",
+    /** The ally side's chosen action id and its ranking's action ids, best first. */
+    val cycleActualId: String = "",
+    val cycleRankedIds: List<String> = emptyList(),
 )
 
 internal data class LocalTacticalScenarioReport(
@@ -100,6 +103,12 @@ internal data class LocalScenarioStart(
     val revealAll: Boolean = true,
 )
 
+/**
+ * A fixed policy that plays a side in place of its brain, as a yardstick for how much the brain adds: any legal action
+ * at random, or always the attack with the largest expected damage (a switch only when nothing else is legal).
+ */
+internal enum class LocalScenarioPolicy { RANDOM, GREEDY }
+
 /** One decision of a replayed battle played as [actionId] by [side] at [turn], the rest drawn from [rolloutSeed]. */
 internal data class LocalScenarioFork(val turn: Int, val side: BattleSide, val actionId: String, val rolloutSeed: Long)
 
@@ -127,9 +136,11 @@ internal object LocalTacticalScenarioBattle {
         fork: LocalScenarioFork? = null,
         /** A position to start from instead of a fresh lead: HP, stages and status per team member, all revealed. */
         start: LocalScenarioStart? = null,
+        /** Sides played by a fixed policy instead of their brain's choice. */
+        policies: Map<BattleSide, LocalScenarioPolicy> = emptyMap(),
     ): LocalTacticalScenarioReport = Battle(
         definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
-        lookaheadBudget, fork, start,
+        lookaheadBudget, fork, start, policies,
     ).run(maximumTurns)
 
     private class Battle(
@@ -143,7 +154,10 @@ internal object LocalTacticalScenarioBattle {
         private val lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)?,
         private val fork: LocalScenarioFork?,
         private val start: LocalScenarioStart?,
+        private val policies: Map<BattleSide, LocalScenarioPolicy>,
     ) {
+        /** The fixed policies' own draws, apart from the battle's so the rolls stay comparable. */
+        private val policyRandom = Random(definition.seed.toLong() * 31 + 7)
         private val difficulties = mapOf(
             BattleSide.ALLY to cycleDifficulty,
             BattleSide.OPPONENT to offenseDifficulty,
@@ -235,6 +249,10 @@ internal object LocalTacticalScenarioBattle {
                 val cycleActual = choose(BattleSide.ALLY, cycleCandidates)
                 val cycleIdeal = selectors.getValue(BattleSide.ALLY).ideal()
                 val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY))
+                // The ranking as the selector could draw from it: rule exclusions left out.
+                val cycleRankedIds = selectors.getValue(BattleSide.ALLY).let { selector ->
+                    selector.lastRanked.map { it.outcome.candidate.actionId }.filter { it !in selector.lastExclusions }
+                }
                 val offenseActual = choose(BattleSide.OPPONENT, offenseCandidates)
                 val offenseIdeal = selectors.getValue(BattleSide.OPPONENT).ideal()
                 val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT))
@@ -289,6 +307,8 @@ internal object LocalTacticalScenarioBattle {
                     result = resultSummary(before, state, cycleCanonical, offenseCanonical, outcome),
                     cycleTop = cycleTop,
                     offenseTop = offenseTop,
+                    cycleActualId = cycleActual.actionId,
+                    cycleRankedIds = cycleRankedIds,
                 )
                 if (ended()) break
             }
@@ -413,7 +433,25 @@ internal object LocalTacticalScenarioBattle {
                 random = Random(fork.rolloutSeed)
                 return candidates.single { it.actionId == fork.actionId }
             }
+            policies[side]?.let { policy -> return policyChoice(policy, context) }
             return candidates.single { it.actionId == decision.actionId }
+        }
+
+        private fun policyChoice(policy: LocalScenarioPolicy, context: BattleDecisionContext): BattleActionCandidate {
+            val candidates = context.candidates
+            if (policy == LocalScenarioPolicy.RANDOM) return candidates[policyRandom.nextInt(candidates.size)]
+            val calculated = jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator.calculate(context)
+            fun expected(candidate: BattleActionCandidate): Double {
+                val parts = if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
+                return parts.sumOf { part ->
+                    val facts = part.facts ?: return@sumOf 0.0
+                    val range = facts.standardDamageFractionRange ?: return@sumOf 0.0
+                    (range.minimum + range.maximum) / 2.0 * (facts.baseAccuracyProbability ?: 1.0)
+                }
+            }
+            val best = calculated.candidates.maxByOrNull(::expected)
+            val chosenId = if (best != null && expected(best) > 0.0) best.actionId else candidates[policyRandom.nextInt(candidates.size)].actionId
+            return candidates.single { it.actionId == chosenId }
         }
 
         /**

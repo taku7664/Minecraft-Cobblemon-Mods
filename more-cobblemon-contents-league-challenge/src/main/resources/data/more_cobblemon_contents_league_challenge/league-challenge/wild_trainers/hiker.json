@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_hiker",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "geodude",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "graveler",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "golem",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "onix",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "machop",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "machoke",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "rhyhorn",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "rhydon",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "roggenrola",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "boldore",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "diglett",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dugtrio",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "aron",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "lairon",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "aggron",
+      "min_level": 42,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_aroma_lady",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "oddish",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "gloom",
+      "min_level": 21,
+      "max_level": 35
+    },
+    {
+      "species": "bellossom",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "budew",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "roselia",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "bellsprout",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "weepinbell",
+      "min_level": 21,
+      "max_level": 100
+    },
+    {
+      "species": "sunkern",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "sunflora",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "hoppip",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "skiploom",
+      "min_level": 18,
+      "max_level": 26
+    },
+    {
+      "species": "jumpluff",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "cherubi",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "cherrim",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "petilil",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "lilligant",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "flabebe",
+      "min_level": 1,
+      "max_level": 18
+    },
+    {
+      "species": "floette",
+      "min_level": 19,
+      "max_level": 100
+    },
+    {
+      "species": "comfey",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

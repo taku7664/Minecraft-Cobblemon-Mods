@@ -177,5 +177,19 @@
   "screen.more_cobblemon_contents.hub.unavailable.battle_factory": "The Battle Factory screen could not be opened.",
   "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "Best floor %s",
   "screen.more_cobblemon_contents.factory.section.format": "Battle format",
-  "screen.more_cobblemon_contents.factory.section.level": "Level rule"
+  "screen.more_cobblemon_contents.factory.section.level": "Level rule",
+  "command.more_cobblemon_contents.factory.admin.label": "Battle Factory",
+  "command.more_cobblemon_contents.factory.admin.status.catalog_missing": "no rental catalog loaded",
+  "command.more_cobblemon_contents.factory.admin.status.catalog": "rental catalog %s (%s trainers, %s rental sets)",
+  "command.more_cobblemon_contents.factory.admin.status.sessions": "%s runs, %s battles in progress, %s results waiting to be saved",
+  "command.more_cobblemon_contents.factory.admin.header": "%s's Battle Factory run",
+  "command.more_cobblemon_contents.factory.admin.session": "format %s, phase %s",
+  "command.more_cobblemon_contents.factory.admin.wins": "%s wins this run, %s trades available",
+  "command.more_cobblemon_contents.factory.admin.team": "rental team: %s",
+  "command.more_cobblemon_contents.factory.admin.battle": "battle in progress: %s, launching: %s, results waiting: %s",
+  "command.more_cobblemon_contents.factory.admin.no_session": "%s has no Battle Factory run in progress.",
+  "command.more_cobblemon_contents.factory.admin.forfeit_unavailable": "Could not send a forfeit to %s's battle. Try again with force.",
+  "command.more_cobblemon_contents.factory.admin.abandon.closed": "Ended %s's Battle Factory run.",
+  "command.more_cobblemon_contents.factory.admin.abandon.forfeited": "Made %s forfeit their Battle Factory battle; it counts as a loss.",
+  "command.more_cobblemon_contents.factory.admin.abandon.notice": "An operator ended your Battle Factory run."
 }

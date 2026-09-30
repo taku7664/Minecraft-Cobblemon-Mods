@@ -3,7 +3,7 @@ package jbro.cobblemon.customspecies
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import jbro.cobblemon.customspecies.compat.CobblemonSpeciesCatalog
 import jbro.cobblemon.customspecies.config.CustomSpeciesConfigParser
-import jbro.cobblemon.customspecies.service.AtomicOverrideService
+import jbro.cobblemon.customspecies.service.OverrideReloader
 import net.minecraft.server.MinecraftServer
 
 object CustomSpeciesReloadController {
@@ -16,31 +16,40 @@ object CustomSpeciesReloadController {
     var status = Status(false, 0, "Not loaded yet")
         private set
 
-    private var service: AtomicOverrideService? = null
+    private val reloader = OverrideReloader { CobblemonSpeciesCatalog() }
     private val parser = CustomSpeciesConfigParser()
 
     @Synchronized
     fun reload() {
-        try {
-            val candidate = parser.parse(CustomSpeciesConfigFile.readOrCreate())
-            val activeService = service ?: AtomicOverrideService(CobblemonSpeciesCatalog()).also { service = it }
-            val applied = activeService.apply(candidate)
-            server?.playerList?.players?.forEach(PokemonSpecies::sync)
-            status = Status(true, applied, "Applied $applied override(s)")
-            CobblemonCustomSpecies.LOGGER.info(
-                "Applied {} custom species override(s) from {}",
-                applied,
-                CustomSpeciesConfigFile.path
-            )
-        } catch (error: Throwable) {
-            if (error is VirtualMachineError) throw error
-            status = Status(false, status.appliedOverrides, error.message ?: error.javaClass.simpleName)
-            CobblemonCustomSpecies.LOGGER.error(
-                "Rejected custom species config at {}; keeping the previous active state: {}",
-                CustomSpeciesConfigFile.path,
-                error.message,
-                error
-            )
+        when (val outcome = reloader.reload { parser.parse(CustomSpeciesConfigFile.readOrCreate()) }) {
+            is OverrideReloader.Outcome.Applied -> {
+                status = Status(true, outcome.overrides, "Applied ${outcome.overrides} override(s)")
+                CobblemonCustomSpecies.LOGGER.info(
+                    "Applied {} custom species override(s) from {}",
+                    outcome.overrides,
+                    CustomSpeciesConfigFile.path
+                )
+            }
+            is OverrideReloader.Outcome.Rejected -> {
+                val reason = outcome.error.message ?: outcome.error.javaClass.simpleName
+                val kept = when {
+                    outcome.restoreError != null -> "could not restore the last accepted config, no overrides are active"
+                    outcome.restoredOverrides == 0 -> "no overrides are active"
+                    else -> "kept the last accepted config (${outcome.restoredOverrides} override(s))"
+                }
+                status = Status(false, outcome.restoredOverrides, "$reason; $kept")
+                CobblemonCustomSpecies.LOGGER.error(
+                    "Rejected custom species config at {}; {}: {}",
+                    CustomSpeciesConfigFile.path,
+                    kept,
+                    reason,
+                    outcome.error
+                )
+                outcome.restoreError?.let {
+                    CobblemonCustomSpecies.LOGGER.error("Could not restore the last accepted custom species config", it)
+                }
+            }
         }
+        server?.playerList?.players?.forEach(PokemonSpecies::sync)
     }
 }

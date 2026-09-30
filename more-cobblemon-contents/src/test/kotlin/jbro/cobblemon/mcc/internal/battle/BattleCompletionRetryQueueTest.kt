@@ -8,6 +8,24 @@ import org.junit.jupiter.api.Test
 
 class BattleCompletionRetryQueueTest {
     @Test
+    fun `operators can see, retry and drop waiting completions by owner`() {
+        val queue = BattleCompletionRetryQueue<String, Pair<String, String>>(keyOf = { it.first }, currentTimeMillis = { 0L })
+        queue.submit("a" to "alice") { false }
+        queue.submit("b" to "bob") { false }
+        queue.submit("c" to "alice") { false }
+        assertEquals(listOf("a", "b", "c"), queue.completions().map { it.first })
+
+        var tried = 0
+        assertEquals(2, queue.retryMatching({ it.second == "alice" }) { tried++; it.first == "a" })
+        assertEquals(2, tried)
+        assertEquals(listOf("b", "c"), queue.completions().map { it.first })
+
+        assertEquals(1, queue.drop { it.second == "bob" })
+        assertEquals(listOf("c"), queue.completions().map { it.first })
+        assertEquals(0, queue.drop { it.second == "nobody" })
+    }
+
+    @Test
     fun `settled offline completion releases its retained owner`() {
         var cleanups = 0
 

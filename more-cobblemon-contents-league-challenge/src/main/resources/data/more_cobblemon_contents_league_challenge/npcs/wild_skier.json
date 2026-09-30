@@ -1,0 +1,40 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.skier"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_skier_andrea_0352",
+      "rct_skier_andrea_055b",
+      "rct_skier_andrea_055c",
+      "rct_skier_bjorn_0356",
+      "rct_skier_bjorn_0559",
+      "rct_skier_bjorn_055a",
+      "rct_skier_bradley_034f",
+      "rct_skier_edward_0350",
+      "rct_skier_edward_0557",
+      "rct_skier_edward_0558",
+      "rct_skier_kaitlyn_0351",
+      "rct_skier_lexie_0357",
+      "rct_skier_madison_0358",
+      "rct_skier_madison_055d",
+      "rct_skier_madison_055e",
+      "rct_skier_shawn_0355"
+    ]
+  }
+}

@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolver
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
+import jbro.cobblemon.mcc.betterai.evaluation.LocalRecoveryLoop
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
@@ -870,6 +871,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
             if (projections.isEmpty()) return null
             val trackedOwnPokemonIds = trackedOwnPokemonIds(state, ownAction)
+            val ownHealers = if (tuning.recoveryLoopPenalty <= 0.0) emptyList() else LocalRecoveryLoop.healers(ownAction, state)
             val turnStartMaterial = if (tuning.positionalTurnDeltas) LocalBoardMaterial.evaluate(state) else 0.0
             val orderExpectations = projections.groupBy(PublicTurnProjection::order).values.mapNotNull { outcomes ->
                 val totalProbability = outcomes.sumOf(PublicTurnProjection::probability)
@@ -903,7 +905,11 @@ internal object LocalRecursiveLookaheadEvaluator {
                         tuning,
                         ::projectedWorkAvailable,
                     )
-                    val immediateTurnDelta = immediateTurnScore.total + outcome.expectedScoreAdjustment
+                    // A heal on a losing loop costs its streak, carried along the line (LocalRecoveryLoop).
+                    val healLoop = ownHealers.sumOf {
+                        LocalRecoveryLoop.streak(it, history.losingHealStreakByPokemon, context)
+                    } * tuning.recoveryLoopPenalty
+                    val immediateTurnDelta = immediateTurnScore.total + outcome.expectedScoreAdjustment - healLoop
                     val immediateValue = turnStartValue + immediateTurnDelta
                     val stopBranch = !battleEnded(outcome.state) &&
                         LocalTurnBranchPruner.shouldStopBranch(
@@ -934,7 +940,10 @@ internal object LocalRecursiveLookaheadEvaluator {
                             originalPoolPokemonIds = context.publicActionCatalog.originalEntries
                                 .mapTo(hashSetOf()) { it.battlePokemonId },
                             publicActionCatalog = context.publicActionCatalog,
-                        )
+                        ).let { projected ->
+                            if (tuning.recoveryLoopPenalty <= 0.0) projected else projected.copy(losingHealStreakByPokemon =
+                                LocalRecoveryLoop.next(history.losingHealStreakByPokemon, ownHealers, state, outcome.state, context))
+                        }
                         val continuation = searchState(
                             outcome.state,
                             depth - 1,

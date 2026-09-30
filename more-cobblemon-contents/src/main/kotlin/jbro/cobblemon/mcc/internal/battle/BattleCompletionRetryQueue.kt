@@ -62,6 +62,26 @@ class BattleCompletionRetryQueue<K, T>(
     @Synchronized
     fun size(): Int = entries.size
 
+    /** The completions still waiting, oldest first, for operators to inspect. */
+    @Synchronized
+    fun completions(): List<T> = entries.values.map(Entry<T>::completion)
+
+    /** Retries the waiting completions [predicate] picks now; returns how many were tried. */
+    @Synchronized
+    fun retryMatching(predicate: (T) -> Boolean, settle: (T) -> Boolean): Int {
+        val picked = entries.values.map(Entry<T>::completion).filter(predicate)
+        picked.forEach { submit(it, settle) }
+        return picked.size
+    }
+
+    /** Gives up the waiting completions [predicate] picks, unsettled; returns how many were dropped. */
+    @Synchronized
+    fun drop(predicate: (T) -> Boolean): Int {
+        val keys = entries.filterValues { predicate(it.completion) }.keys.toList()
+        keys.forEach(entries::remove)
+        return keys.size
+    }
+
     @Synchronized
     fun clear() = entries.clear()
 

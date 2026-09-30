@@ -25,6 +25,18 @@ class LeagueSavedData private constructor(private val entries: CompoundTag = Com
         setDirty()
     }
 
+    /** Every readable player's progress in [league]; entries that fail to decode are left out and left alone. */
+    fun all(league: String): List<Pair<UUID, LeagueProgress>> {
+        check(preserved == null) { "League storage unavailable" }
+        return entries.allKeys.filter { it.startsWith("$league/") }.mapNotNull { key ->
+            try {
+                UUID.fromString(key.substringAfter("$league/")) to LeagueProgressCodec.decode(LeagueRecordNbt.read(entries, key))
+            } catch (_: RuntimeException) {
+                null
+            }
+        }
+    }
+
     fun cancelInterruptedRuns() {
         for (key in entries.allKeys.toList()) {
             try {
