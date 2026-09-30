@@ -192,6 +192,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 },
                 terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
+                Cobblemon173PartyRecall.recallSentOut(player)
                 BattleRegistry.startBattle(
                     prepared.format.toCobblemonFormat(),
                     BattleSide(playerActor),
