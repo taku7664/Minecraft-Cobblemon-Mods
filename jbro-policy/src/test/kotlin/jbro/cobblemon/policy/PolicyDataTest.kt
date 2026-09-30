@@ -32,6 +32,14 @@ class PolicyDataTest {
     }
 
     @Test
+    fun `player chat reads name colon message`() {
+        val chat = json("/data/jbro_policy/chat_type/chat.json").getAsJsonObject("chat")
+        val key = chat.get("translation_key").asString
+        assertEquals(listOf("sender", "content"), chat.getAsJsonArray("parameters").map { it.asString })
+        for (lang in listOf("ko_kr", "en_us")) assertEquals("%s: %s", json("/assets/jbro_policy/lang/$lang.json").get(key).asString)
+    }
+
+    @Test
     fun `plaza dimension uses the plaza biome`() {
         val settings = json("/data/jbro_policy/dimension/plaza.json").getAsJsonObject("generator").getAsJsonObject("settings")
         assertEquals("jbro_policy:plaza", settings.get("biome").asString)

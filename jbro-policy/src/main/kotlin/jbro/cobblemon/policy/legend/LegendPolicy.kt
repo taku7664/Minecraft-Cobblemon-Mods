@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
 import com.cobblemon.mod.common.api.spawning.position.SpawnablePosition
 import com.cobblemon.mod.common.api.spawning.spawner.PlayerSpawnerFactory
+import com.cobblemon.mod.common.block.entity.PokeSnackBlockEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import java.util.UUID
 import jbro.cobblemon.policy.JbroPolicy
@@ -17,7 +18,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 /**
- * Wild Legends belong to the player whose spawner made them: only that player may battle or catch them. A Legend
+ * Wild Legends belong to the player whose spawner made them, or who placed the Poke Snack that drew them: only that
+ * player may battle or catch them. A Legend
  * appears only for players who have not caught it yet and who carry its entry Pokemon; since Cobblenav lists spawns
  * through the same spawner check, the Pokenav's spawn list follows along. Catching also needs the Legend's League rank.
  */
@@ -30,13 +32,15 @@ object LegendPolicy {
         // Lowest, so a spawn another mod cancels is neither claimed nor announced.
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe(Priority.LOWEST) { event ->
             if (event.isCanceled) return@subscribe
-            val pokemon = event.entity.pokemon
-            val legend = legendOf(pokemon) ?: return@subscribe
             val player = event.spawnablePosition.cause.entity as? ServerPlayer ?: return@subscribe
-            pokemon.persistentData.putUUID(OWNER_KEY, player.uuid)
-            player.server.playerList.broadcastSystemMessage(Component.translatable(
-                "legend.${JbroPolicy.MOD_ID}.appeared.${legend.species}", player.displayName, pokemon.species.translatedName,
-            ).withStyle(ChatFormatting.LIGHT_PURPLE), false)
+            claim(event.entity.pokemon, player)
+        }
+        // A Poke Snack's Legend belongs to whoever placed the snack.
+        CobblemonEvents.POKE_SNACK_SPAWN_POKEMON_POST.subscribe { event ->
+            val placer = event.pokeSnackBlockEntity.placedBy ?: return@subscribe
+            val level = event.pokeSnackBlockEntity.level ?: return@subscribe
+            val player = level.server?.playerList?.getPlayer(placer) ?: return@subscribe
+            claim(event.pokemonEntity.pokemon, player)
         }
         CobblemonEvents.BATTLE_STARTED_PRE.subscribe { event ->
             val battle = event.battle
@@ -83,9 +87,27 @@ object LegendPolicy {
         return legend.entryMet(Cobblemon.storage.getParty(player).mapTo(mutableSetOf()) { it.species.resourceIdentifier.path })
     }
 
-    /** For the Poke Snack mixin; [species] may be null for a spawn detail without one. */
+    /** Makes [player] the owner of a freshly spawned Legend and announces it; anything else, or an owned one, is left alone. */
+    private fun claim(pokemon: Pokemon, player: ServerPlayer) {
+        val legend = legendOf(pokemon) ?: return
+        if (ownerOf(pokemon) != null) return
+        pokemon.persistentData.putUUID(OWNER_KEY, player.uuid)
+        player.server.playerList.broadcastSystemMessage(Component.translatable(
+            "legend.${JbroPolicy.MOD_ID}.appeared.${legend.species}", player.displayName, pokemon.species.translatedName,
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false)
+    }
+
+    /**
+     * For the Poke Snack mixin: whether a snack placed by [placer] may offer [species]. A Legend needs its placer
+     * online, because the entry rule reads their party.
+     */
     @JvmStatic
-    fun isLegend(species: String?): Boolean = species != null && LegendCatalog[species] != null
+    fun snackMayOffer(snack: PokeSnackBlockEntity, species: String?): Boolean {
+        val legend = species?.let { LegendCatalog[it] } ?: return true
+        val placer = snack.placedBy ?: return false
+        val player = snack.level?.server?.playerList?.getPlayer(placer) ?: return false
+        return mayMeet(player, legend)
+    }
 
     private fun legendOf(pokemon: Pokemon): Legend? = LegendCatalog[pokemon.species.resourceIdentifier.path]
 

@@ -11,14 +11,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * A Poke Snack spawns for no player, so a Legend from one would skip its owner, entry and once-per-player rules.
- * Legends only come from player spawners.
+ * A Poke Snack's Legends follow its placer: no Legend they already caught, none whose entry Pokemon is missing from
+ * their party, and none at all while they are offline.
  */
 @Mixin(value = PokeSnackBlockEntity.class, remap = false)
-abstract class PokeSnackNoLegendsMixin {
+abstract class PokeSnackLegendFilterMixin {
     @Inject(method = "affectSpawnable", at = @At("HEAD"), cancellable = true)
-    private void jbroPolicy$noLegends(SpawnDetail detail, SpawnablePosition position, CallbackInfoReturnable<Boolean> cir) {
-        if (detail instanceof PokemonSpawnDetail pokemon && LegendPolicy.isLegend(pokemon.getPokemon().getSpecies())) {
+    private void jbroPolicy$placerLegends(SpawnDetail detail, SpawnablePosition position, CallbackInfoReturnable<Boolean> cir) {
+        if (detail instanceof PokemonSpawnDetail pokemon
+            && !LegendPolicy.snackMayOffer((PokeSnackBlockEntity) (Object) this, pokemon.getPokemon().getSpecies())) {
             cir.setReturnValue(false);
         }
     }
