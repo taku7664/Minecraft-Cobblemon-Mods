@@ -9,6 +9,9 @@
   "shopkeeper": {
     "appearances": [
       {
+        "skin": "rctmod:textures/trainers/single/waitress_kati_03fc.png"
+      },
+      {
         "villager": {
           "profession": "cobblemon:nurse_joy",
           "type": "minecraft:plains"
