@@ -74,6 +74,8 @@
   "message.more_cobblemon_contents.terminal.open_failed": "The Battle Hub could not be opened.",
   "screen.more_cobblemon_contents.hub.brand": "MORE COBBLEMON CONTENTS",
   "screen.more_cobblemon_contents.hub.close": "Close",
+  "screen.more_cobblemon_contents.hub.too_small": "The window is too small for the hub. Enlarge it or lower the GUI scale.",
+  "screen.more_cobblemon_contents.hub.tab_failed": "This tab could not be shown at this size. Resize the window or reopen the hub.",
   "screen.more_cobblemon_contents.hub.tab.dashboard": "Dashboard",
   "screen.more_cobblemon_contents.dashboard.trainer": "TRAINER",
   "screen.more_cobblemon_contents.dashboard.records": "RECORDS",

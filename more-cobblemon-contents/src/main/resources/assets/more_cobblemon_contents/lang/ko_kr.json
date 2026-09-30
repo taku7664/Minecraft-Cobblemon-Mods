@@ -74,6 +74,8 @@
   "message.more_cobblemon_contents.terminal.open_failed": "배틀 허브를 열 수 없습니다.",
   "screen.more_cobblemon_contents.hub.brand": "MORE COBBLEMON CONTENTS",
   "screen.more_cobblemon_contents.hub.close": "닫기",
+  "screen.more_cobblemon_contents.hub.too_small": "창이 너무 작아 허브를 표시할 수 없습니다. 창을 키우거나 GUI 배율을 낮춰 주세요.",
+  "screen.more_cobblemon_contents.hub.tab_failed": "이 탭을 이 크기로 표시하지 못했습니다. 창 크기를 바꾸거나 허브를 다시 열어 주세요.",
   "screen.more_cobblemon_contents.hub.tab.dashboard": "대시보드",
   "screen.more_cobblemon_contents.dashboard.trainer": "트레이너",
   "screen.more_cobblemon_contents.dashboard.records": "전적",
