@@ -13,7 +13,8 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
  * A recovery loop that is losing: the turns in a row, counting back from the last one, on which [failedStreak]'s
- * Pokemon used a self-heal and still ended the turn with less HP than it started with. The heal did not keep up
+ * Pokemon used a self-heal and still ended the turn with no more HP than it started with (a turn that ends even
+ * counts: the heal only kept pace, and Moltres Roosted five turns in a row against Ting-Lu that way). The heal did not keep up
  * with the hits, so using it again only spends another turn behind; each such turn costs the next heal
  * [LocalDecisionTuning.recoveryLoopPenalty] more.
  *
@@ -38,7 +39,7 @@ internal object LocalRecoveryLoop {
         lineStreaks[pokemonId] ?: failedStreak(pokemonId, context)
 
     /**
-     * The line's streaks after a turn: each ally that healed goes up by one when it still ended lower and back to
+     * The line's streaks after a turn: each ally that healed goes up by one when it ended no higher and back to
      * zero when it did not; an ally that did anything else, or left the field, starts over.
      */
     fun next(
@@ -52,7 +53,7 @@ internal object LocalRecoveryLoop {
         return allies.associate { ally ->
             val now = after.pokemon.firstOrNull { it.battlePokemonId == ally.battlePokemonId }
             val stayed = now != null && now.activeSlot != null && !now.fainted
-            val lost = now != null && now.hpFraction < ally.hpFraction
+            val lost = now != null && now.hpFraction <= ally.hpFraction
             ally.battlePokemonId to when {
                 !stayed || ally.battlePokemonId !in healers -> 0
                 lost -> streak(ally.battlePokemonId, lineStreaks, context) + 1
@@ -61,7 +62,15 @@ internal object LocalRecoveryLoop {
         }
     }
 
-    fun failedStreak(pokemonId: UUID, context: BattleDecisionContext): Int {
+    /**
+     * The turns in a row, counting back from the last one, on which [pokemonId] (an opponent) used a self-heal and ended
+     * the turn with at least the HP it started with: our hits are not sticking.
+     */
+    fun healedOffStreak(pokemonId: UUID, context: BattleDecisionContext): Int = streak(pokemonId, context) { net -> net >= 0.0 }
+
+    fun failedStreak(pokemonId: UUID, context: BattleDecisionContext): Int = streak(pokemonId, context) { net -> net <= 0.0 }
+
+    private fun streak(pokemonId: UUID, context: BattleDecisionContext, counts: (Double) -> Boolean): Int {
         val state = context.state
         val events = state.observedEvents
         val heals = context.publicActionCatalog.forPokemon(pokemonId).filter { option ->
@@ -76,7 +85,7 @@ internal object LocalRecoveryLoop {
             val own = events.filter { it.turn == turn && it.actorPokemonId == pokemonId }
             val healed = own.any { it.kind == BattleObservedEventKind.MOVE_USED && it.publicValueId?.let(PublicIds::canonical) in heals }
             val net = own.filter { it.kind == BattleObservedEventKind.HP_CHANGED }.sumOf { it.hpFractionDelta ?: 0.0 }
-            if (!healed || net >= 0.0) break
+            if (!healed || !counts(net)) break
             streak++
             turn--
         }

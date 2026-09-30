@@ -514,10 +514,14 @@ internal class LocalTacticalBrain(
             jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
                 difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
         }.orEmpty()
+        // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
+        val healRaceAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
+        }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
-            setupAdjustments.keys + protectAdjustments.keys).associateWith {
+            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0)
+                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->

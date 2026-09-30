@@ -164,6 +164,13 @@ internal data class LocalDecisionTuning(
      */
     val doublesProtectCredit: Double = 0.5,
     /**
+     * Weight of the hit-against-heal race (LocalHealRace): an attack a known heal undoes loses its damage credit, one
+     * that leaves the healer in reach next turn gains the next knockout, and a heal of our own that the opponent's
+     * hit undoes loses its credit. Singles duels 120 pairs +0.009 +- 0.013, no puzzle changed; the attack side only
+     * acts once the healer is seen to be healing it off.
+     */
+    val healRaceWeight: Double = 1.0,
+    /**
      * Doubles reads opponent switches from the singles switch model (and the root prices attacks against the predicted
      * switch-ins, by [predictedSwitchShare]); off, doubles keeps the one softmax and no switch pricing. Off: better
      * calibrated (Brier 0.034 against 0.29), but doubles duels did not gain (145 pairs, -0.031 +- 0.030).
