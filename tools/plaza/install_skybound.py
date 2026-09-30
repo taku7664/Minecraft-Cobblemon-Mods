@@ -166,11 +166,15 @@ def main():
     parser.add_argument("schematic", type=Path)
     parser.add_argument("world", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--config", type=Path, help="Explicit policy config, especially for dedicated servers")
     parser.add_argument("--install", action="store_true")
+    parser.add_argument("--replace-existing", action="store_true", help="Back up an existing dimension before replacing it")
     args = parser.parse_args()
+    if args.replace_existing and not args.install:
+        parser.error("--replace-existing requires --install")
     if int(nbt.load(args.world / "level.dat")["Data"]["DataVersion"]) != 3955:
         raise ValueError("Target must be Minecraft Java 1.21.1")
-    config = args.world.parent.parent / "config" / "jbro-policy.json"
+    config = args.config or args.world.parent.parent / "config" / "jbro-policy.json"
     if config.exists():
         spawn = json.loads(config.read_text(encoding="utf-8-sig")).get("plaza", {})
         if any(spawn.get(k, v) != v for k, v in {"x": .5, "y": 80., "z": .5}.items()):
@@ -180,7 +184,7 @@ def main():
     assert np.all(blocks[130:134, 61:64, 59:62] == 0), "Spawn needs clear space"
     assert np.all(blocks[129, 61:64, 59:62] != 0), "Spawn needs solid footing"
     target = args.world / "dimensions" / "jbro_policy" / "plaza"
-    if target.exists():
+    if target.exists() and args.install and not args.replace_existing:
         raise FileExistsError(f"Refusing to overwrite existing plaza: {target}")
     region = args.output / "region"
     region.mkdir(parents=True, exist_ok=False)
@@ -209,6 +213,7 @@ def main():
         "regions": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(region.glob("*.mca"))},
         "verification": "Every block in every generated section was decoded and compared with the source; plaza biome and clear spawn checked.",
         "runtime_verified": False,
+        "config": str(config.resolve()),
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     if args.install:
@@ -220,7 +225,23 @@ def main():
             backup.mkdir()
             shutil.copy2(args.world / "level.dat", backup / "level.dat")
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(region, target / "region")
+            stage = target.with_name("plaza-skybound-staging")
+            if stage.exists():
+                raise FileExistsError(f"Staging dimension already exists: {stage}")
+            if target.exists() and not args.replace_existing:
+                raise FileExistsError(f"Plaza appeared during preparation: {target}")
+            shutil.copytree(region, stage / "region")
+            for p in (stage / "region").glob("*.mca"):
+                assert hashlib.sha256(p.read_bytes()).hexdigest() == manifest["regions"][p.name]
+            original = backup / "plaza"
+            if target.exists():
+                target.rename(original)
+            try:
+                stage.rename(target)
+            except Exception:
+                if original.exists() and not target.exists():
+                    original.rename(target)
+                raise
             for p in (target / "region").glob("*.mca"):
                 assert hashlib.sha256(p.read_bytes()).hexdigest() == manifest["regions"][p.name]
             msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)

@@ -1,7 +1,7 @@
 # Skybound Village 광장 설치
 
 2026-09-30에 `cobblemon-dev`의 `새로운 세계`에 설치했습니다. 대상은
-`dimensions/jbro_policy/plaza/region`이며, 서버에는 설치하지 않았습니다.
+`dimensions/jbro_policy/plaza/region`입니다. 아래 별도 기록대로 2026-10-01에 개발 서버에도 설치했습니다.
 
 - 원작: [Skybound Village](https://www.planetminecraft.com/project/skybound-village-floating-medieval-island-free-map/), Itzz_Aspect
 - Minecraft Java 1.21.1, `jbro-policy-0.1.0.jar`
@@ -31,3 +31,20 @@ python -m unittest discover -s tools/plaza -p 'test_*.py'
 `--install`을 추가하면 Windows 월드 잠금을 잡은 상태에서 복사합니다.
 이미 광장 폴더가 있으면 덮어쓰지 않고 실패합니다. 좌표가 기본값과 다른 설정이나
 다른 버전의 스키매틱은 다시 배치 검토가 필요하므로 거부합니다.
+
+## 2026-10-01 개발 서버 설치
+
+대상은 `C:\Users\박주형\Documents\GitHub\Cobblemon-Mods\dev-server`입니다.
+`server.properties`의 `level-name=mbc-dev-world`를 확인했습니다. 정책 설정은 기본 착지점과 같았습니다.
+서버가 중지된 상태에서 월드 잠금을 확보하고 기존 광장 차원을 백업한 뒤 교체했습니다.
+기존 광장은 2,531청크에 석재 벽돌 81개만 있었으며 블록 엔티티는 없었습니다.
+다른 차원, 설정, 플레이어 데이터, 모드 JAR는 변경하지 않았습니다.
+
+원본 스키매틱, 설치 명세, 기존 광장 전체와 `level.dat` 사본은 서버의
+`plaza-assets/skybound-village-20261001/`에 있습니다. 검증 결과와 설치 해시는
+`skybound-dev-server-20261001.json`에 기록했습니다. 원본 비교와 복사 해시 검사는 통과했으며,
+서버 시작과 실제 게임 내 이동·렌더링은 아직 확인하지 않았습니다.
+
+전용 서버에는 `--config <server>/config/jbro-policy.json`으로 설정 파일을 명시하십시오.
+기존 광장의 교체는 `--install --replace-existing`으로 요청해야 합니다. 도구는 새 지역 파일을
+임시 광장 폴더에 복사·검증하고 기존 폴더를 출력 디렉터리의 `backup/plaza`로 옮긴 뒤 교체합니다.

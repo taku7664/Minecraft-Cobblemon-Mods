@@ -1,0 +1,31 @@
+{
+  "source": "https://www.planetminecraft.com/project/skybound-village-floating-medieval-island-free-map/",
+  "creator": "Itzz_Aspect",
+  "schematic_sha256": "5f78509a4aa55a91cc01fbbea00c0cc5224142fe59c0ca512422e5d543498f2e",
+  "world": "C:\\Users\\박주형\\Documents\\GitHub\\Cobblemon-Mods\\dev-server\\mbc-dev-world",
+  "dimension": "jbro_policy:plaza",
+  "translation": [
+    -60,
+    -50,
+    -62
+  ],
+  "spawn": {
+    "x": 0.5,
+    "y": 80.0,
+    "z": 0.5,
+    "yaw": 0.0,
+    "pitch": 0.0
+  },
+  "chunks": 64,
+  "non_air_blocks": 333726,
+  "block_entities": 107,
+  "regions": {
+    "r.-1.-1.mca": "11f4a5f134622599b8165c63ff339e74b73adc55d2707b507343fa647e777bc8",
+    "r.-1.0.mca": "baaac894455ccc36bb257239f9cb4bc6064d3af7112c03c9960c9293b218778b",
+    "r.0.-1.mca": "207561a354b6a93132c1bc0cd4999b3f3f52de06c0a4bdcfa3f594f04a02fc48",
+    "r.0.0.mca": "7f50243545cd3f9b29562f341bd16fcd88c5e2eb8cf562c4a16097624586d82d"
+  },
+  "verification": "Every block in every generated section was decoded and compared with the source; plaza biome and clear spawn checked.",
+  "runtime_verified": false,
+  "config": "C:\\Users\\박주형\\Documents\\GitHub\\Cobblemon-Mods\\dev-server\\config\\jbro-policy.json"
+}
