@@ -72,6 +72,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         retryMillis = COMPLETION_RETRY_MILLIS,
     )
     private val registeredTeamSnapshots = Cobblemon173TowerRegisteredTeamSnapshotStore(onlinePlayers::get)
+    /** BP each settled win paid, held until its result notice goes out. */
+    private val settledRewards = HashMap<java.util.UUID, Long>()
     private val runtime: Cobblemon173TowerPveBattleRuntime by lazy {
         Cobblemon173TowerPveBattleRuntime(
             playerResolver = onlinePlayers::get,
@@ -480,6 +482,16 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 }
             },
             afterSettlement = { completion ->
+                val bp = settledRewards.remove(pending.battleId) ?: 0L
+                if (pending.outcome != null && (completion is TowerPlayBattleCompletionResult.Completed ||
+                        completion is TowerPlayBattleCompletionResult.SessionAbandoned)) {
+                    onlinePlayers[pending.playerId]?.let { player ->
+                        val opponent = jbro.cobblemon.mcc.api.presentation.ManagedBattleOpponents.name(pending.battleId)
+                        val won = pending.outcome == TowerBattleOutcome.WIN && completion is TowerPlayBattleCompletionResult.Completed
+                        if (won) jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(player, opponent, bp)
+                        else jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(player, opponent)
+                    }
+                }
                 if (completion is TowerPlayBattleCompletionResult.Completed) {
                     onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
                     reopenScreen(pending.playerId, completion)
@@ -568,6 +580,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             check(TowerProgressRecordCodec.decode(recorded) == update.after) {
                 "Battle Tower record storage did not accept the completed progress update"
             }
+            if (update.outcome == TowerBattleOutcome.WIN) settledRewards[battleId] = update.rewardBp.toLong()
         }
 
     private val TOWER_CONTENT_ID = BattleContentId(ManagedBattleContentIds.BATTLE_TOWER)

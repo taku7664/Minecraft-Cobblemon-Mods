@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.api.access.*
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
+import jbro.cobblemon.mcc.api.presentation.BattleResultNotices
 import jbro.cobblemon.mcc.api.rules.BattleGimmickLocks
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -165,6 +166,16 @@ object LeagueServer {
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
                 commit(player.server, catalog.id, player.uuid, completed)
                 player.server.playerList.getPlayer(player.uuid)?.let { online ->
+                    // Only the first callback for this battle changes the progress; retries stay quiet.
+                    if (completed != latest && outcome != ManagedPveBattles.Outcome.CANCELLED) {
+                        val opponent = Component.translatable(challenge.nameKey)
+                        if (outcome == ManagedPveBattles.Outcome.WIN) {
+                            val known = latest.rewards.map { it.token }.toSet()
+                            BattleResultNotices.victory(online, opponent, completed.rewards.filter { it.token !in known }.sumOf { it.bp })
+                        } else {
+                            BattleResultNotices.defeat(online, opponent)
+                        }
+                    }
                     reconcileSafely(online)
                     // Idempotent callbacks do not repeatedly reopen the screen.
                     send(online, openScreen = completed != latest)

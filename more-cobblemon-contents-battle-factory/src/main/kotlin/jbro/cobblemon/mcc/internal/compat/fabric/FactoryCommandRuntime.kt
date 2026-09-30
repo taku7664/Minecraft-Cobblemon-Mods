@@ -439,6 +439,15 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                 result.result !is FactoryBattleCompletionResult.StaleBattle &&
                 result.result !is FactoryBattleCompletionResult.NoActiveBattle
             ) {
+                onlinePlayers[completion.playerId]?.let { player ->
+                    val opponent = jbro.cobblemon.mcc.api.presentation.ManagedBattleOpponents.name(completion.battleId)
+                    if (completion is PendingFactoryCompletion.Victory) {
+                        jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(player, opponent,
+                            BattlePointRewardSettlementService.STANDARD_VICTORY_REWARD)
+                    } else {
+                        jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(player, opponent)
+                    }
+                }
                 pushState(completion.playerId)
             } else if (result !is FactorySessionCompletionResult.Completed) {
                 jbro.cobblemon.mcc.MoreCobblemonContents.LOGGER.warn(
