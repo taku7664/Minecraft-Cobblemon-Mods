@@ -308,6 +308,12 @@ class LocalBattleReadTest {
                 fun value(ranked: List<jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank>) =
                     ranked.first { it.outcome.candidate.actionId == heal.actionId }.comparisonValue
                 fun label(id: String) = id.substringAfterLast("move:").substringBefore(":target").take(22)
+                // The search's own reading, with and without the penalty: what the brain ranks by.
+                fun searched(tuning: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(rank(tuning), calculated,
+                    profile, tuning, clockMillis = { 0L }, budget = budget(boss.tier)).ranked.take(3).joinToString(" ") {
+                        "${label(it.outcome.candidate.actionId)}=%.0f".format(it.comparisonValue)
+                    }
+                println("   searched on: ${searched(readTuning())} | off: ${searched(readTuning().copy(recoveryLoopPenalty = 0.0))}")
                 println("LOOP ${definition.name} T${context.state.turn} ${user.speciesId.substringAfter(':')}@%.0f%% streak=$streak heal on=%.1f off=%.1f top on=${label(on.first().outcome.candidate.actionId)} off=${label(off.first().outcome.candidate.actionId)} chose=${label(decisions[index].actionId)}".format(
                     user.hpFraction * 100, value(on), value(off)))
             }
