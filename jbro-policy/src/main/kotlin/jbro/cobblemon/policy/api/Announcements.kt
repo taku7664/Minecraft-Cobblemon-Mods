@@ -16,7 +16,7 @@ object Announcements {
     @JvmStatic
     fun broadcast(server: MinecraftServer, message: Component) {
         val notice = Component.empty()
-            .append(Component.translatable("message.${JbroPolicy.MOD_ID}.announcement").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
+            .append(Component.translatable("message.${JbroPolicy.MOD_ID}.announcement").withStyle(ChatFormatting.BLUE, ChatFormatting.BOLD))
             .append(" ")
             .append(message)
         server.playerList.broadcastSystemMessage(notice, false)
