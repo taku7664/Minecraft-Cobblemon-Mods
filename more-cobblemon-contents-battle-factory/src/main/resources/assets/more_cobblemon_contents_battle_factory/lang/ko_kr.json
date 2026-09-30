@@ -1,4 +1,5 @@
 {
+  "block.more_cobblemon_contents_battle_factory.battle_factory_terminal": "배틀팩토리 터미널",
   "command.more_cobblemon_contents.factory.floor.changed": "%s님의 배틀팩토리 %s/%s 현재 층을 %s로 설정했습니다. 최고 층: %s",
   "command.more_cobblemon_contents.factory.floor.queried": "%s님의 배틀팩토리 %s/%s 현재 층: %s, 최고 층: %s",
   "command.more_cobblemon_contents.factory.floor.reset": "%s님의 배틀팩토리 %s/%s 층 기록을 초기화했습니다(범위: %s). 현재 층: %s, 최고 층: %s",
