@@ -13,6 +13,44 @@
   if (!nav || !main) return;
 
   var root = document.body.getAttribute("data-root") || ".";
+
+  // ---- The player's live data, when the Minecraft server serves the wiki ----------------------------------------
+  // A `/mcc wiki` link carries ?t=<token>. It is kept in this browser and taken out of the address bar, and every
+  // page load asks the server for the latest dashboard with it, so a refresh always shows current values.
+  var TOKEN_KEY = "mccWikiToken";
+  function storage(action) { try { return action(window.localStorage); } catch (ignored) { return null; } }
+  var linkToken = new URLSearchParams(location.search).get("t");
+  if (linkToken) {
+    storage(function (store) { store.setItem(TOKEN_KEY, linkToken); });
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
+  var token = linkToken || storage(function (store) { return store.getItem(TOKEN_KEY); });
+  var served = location.protocol === "http:" || location.protocol === "https:";
+  var mePromise = null;
+
+  window.MccWiki = {
+    /** Resolves to the player's dashboard, or rejects with "offline", "no_token" or "unknown_token". */
+    me: function () {
+      if (mePromise) return mePromise;
+      mePromise = !served ? Promise.reject(new Error("offline"))
+        : !token ? Promise.reject(new Error("no_token"))
+        : fetch(root + "/api/me", { headers: { "X-MCC-Wiki-Token": token }, cache: "no-store" }).then(function (response) {
+          if (response.status === 401) throw new Error("unknown_token");
+          if (!response.ok) throw new Error("server_" + response.status);
+          return response.json();
+        });
+      return mePromise;
+    },
+    forget: function () { storage(function (store) { store.removeItem(TOKEN_KEY); }); },
+  };
+
+  // Fills <span data-me="bp"> and the like on any page; a path like "sections.league.cap" reaches content data.
+  function fillMe(me) {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-me]"), function (node) {
+      var value = node.getAttribute("data-me").split(".").reduce(function (at, key) { return at == null ? at : at[key]; }, me);
+      if (value != null) node.textContent = typeof value === "number" ? value.toLocaleString("ko-KR") : String(value);
+    });
+  }
   var pages = [];
   nav.sections.forEach(function (section) {
     section.pages.forEach(function (page) {
@@ -113,6 +151,8 @@
   main.replaceWith(shell);
   document.body.appendChild(el("footer", { class: "wiki-footer", text: nav.title + " · " + nav.subtitle }));
   if (current && document.title.indexOf(nav.subtitle) < 0) document.title = current.title + " · " + nav.subtitle;
+
+  if (document.querySelector("[data-me]")) window.MccWiki.me().then(fillMe, function () {});
 
   // ---- Search: titles, sections and keywords from nav.js ------------------------------------------------------
 

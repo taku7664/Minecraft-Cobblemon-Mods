@@ -11,6 +11,7 @@ window.WIKI_NAV = {
       pages: [
         { path: "index.html", title: "홈", icon: "🏠", keywords: "처음 메인 소개" },
         { path: "pages/getting-started.html", title: "처음 접속했다면", icon: "🚩", keywords: "접속 설치 리소스팩 규칙" },
+        { path: "pages/me.html", title: "내 정보", icon: "👤", keywords: "내 정보 대시보드 bp 전적 연승" },
       ],
     },
     {

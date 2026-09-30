@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>내 정보 · SERVER WIKI</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root=".." data-no-toc>
+<main>
+  <h1>내 정보</h1>
+  <p id="me-state">불러오는 중…</p>
+
+  <div id="me" hidden>
+    <div class="grid">
+      <div class="stat"><small>트레이너</small><b data-me="player.name">-</b></div>
+      <div class="stat"><small>보유 BP</small><b data-me="bp">-</b></div>
+      <div class="stat"><small>총 전투</small><b id="me-battles">-</b></div>
+      <div class="stat"><small>승률</small><b id="me-rate">-</b></div>
+    </div>
+
+    <h2>전적</h2>
+    <table>
+      <thead><tr><th>콘텐츠</th><th>방식</th><th>승</th><th>패</th><th>연승</th><th>최고 연승</th></tr></thead>
+      <tbody id="me-records"></tbody>
+    </table>
+    <p class="wiki-crumbs">마지막 갱신 <span id="me-updated">-</span> · 새로고침하면 최신 정보를 다시 받아 옵니다.</p>
+  </div>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var CONTENT = {
+      "more_cobblemon_contents:battle_tower": "배틀타워",
+      "more_cobblemon_contents:battle_factory": "배틀팩토리",
+      "more_cobblemon_contents:pvp": "PvP",
+      "more_cobblemon_contents:league_challenge": "리그 챌린지",
+    };
+    var FORMAT = { single: "싱글", double: "더블", wild_trainer: "야생 트레이너",
+      single_level_50: "싱글 Lv.50", single_open_level: "싱글 오픈", double_level_50: "더블 Lv.50", double_open_level: "더블 오픈" };
+    var MESSAGE = {
+      offline: "이 위키는 서버에서 열어야 내 정보가 보입니다. 게임에서 <code>/mcc wiki</code>를 입력하고 채팅의 링크를 누르세요.",
+      no_token: "게임에서 <code>/mcc wiki</code>를 입력하고 채팅의 링크를 한 번 눌러 주세요. 그다음부터는 이 브라우저에서 바로 보입니다.",
+      unknown_token: "링크가 만료되었습니다. 게임에서 <code>/mcc wiki</code>로 새 링크를 받아 주세요.",
+    };
+    var state = document.getElementById("me-state");
+    function cell(text) { var td = document.createElement("td"); td.textContent = text; return td; }
+    MccWiki.me().then(function (me) {
+      state.hidden = true;
+      document.getElementById("me").hidden = false;
+      var wins = 0, losses = 0, body = document.getElementById("me-records");
+      me.records.forEach(function (record) {
+        wins += record.wins; losses += record.losses;
+        var row = document.createElement("tr");
+        [CONTENT[record.content] || record.content, FORMAT[record.format] || record.format, record.wins, record.losses,
+          record.current_streak, record.best_streak].forEach(function (value) { row.appendChild(cell(String(value))); });
+        body.appendChild(row);
+      });
+      if (!me.records.length) { var empty = document.createElement("tr"); var td = cell("아직 전적이 없습니다."); td.colSpan = 6; empty.appendChild(td); body.appendChild(empty); }
+      document.getElementById("me-battles").textContent = (wins + losses).toLocaleString("ko-KR");
+      document.getElementById("me-rate").textContent = wins + losses ? Math.round(wins * 100 / (wins + losses)) + "%" : "-";
+      document.getElementById("me-updated").textContent = new Date(me.updated).toLocaleString("ko-KR");
+    }, function (failure) {
+      if (failure.message === "unknown_token") MccWiki.forget();
+      state.innerHTML = MESSAGE[failure.message] || "서버에서 정보를 받지 못했습니다. 잠시 뒤 새로고침해 주세요.";
+      state.className = "note warn";
+    });
+  })();
+</script>
+</body>
+</html>

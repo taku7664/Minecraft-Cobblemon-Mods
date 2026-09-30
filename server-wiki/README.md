@@ -3,8 +3,8 @@
 클라이언트에 함께 배포해서 브라우저로 여는 서버 전용 위키입니다. MCC 허브와 같은 테마(UI Kit의 `ds_window` 스타일,
 `tower_lobby` 팔레트)로 보입니다.
 
-빌드 없이 여는 정적 HTML입니다. 클라이언트에 묶으면 `file://`로 열리는데, 이때 브라우저가 `fetch`와 ES 모듈을 막기
-때문에 문서마다 HTML 파일을 두고, 공통 틀은 일반 `<script>`가 채웁니다. 인터넷 연결 없이도 열립니다.
+빌드 없이 여는 정적 HTML입니다. 문서마다 HTML 파일을 두고, 공통 틀은 일반 `<script>`가 채웁니다.
+`file://`로 열어도 문서는 보이지만, 플레이어 정보는 MCC 서버가 위키를 띄울 때만 보입니다(아래 "서버에서 띄우기").
 
 ## 구조
 
@@ -36,6 +36,21 @@
 | 배지 | `<span class="badge">`, `badge gold`, `badge red`, `badge green`, `badge gray` |
 | 표, 코드, 키 | `<table>`, `<code>`, `<pre><code>`, `<kbd>` |
 
-## 배포
+## 서버에서 띄우기
 
-이 폴더를 통째로 클라이언트 프로필에 넣고 `index.html`을 열면 됩니다. 게임 안에서 여는 버튼은 아직 없습니다.
+MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시보드를 `/api/me`로 실시간 제공합니다.
+
+1. 이 폴더의 `index.html`, `pages/`, `assets/`를 서버의 `config/more-cobblemon-contents/wiki/`에 복사합니다.
+2. `config/more-cobblemon-contents/wiki.json`에서 `enabled`를 `true`로, `public_url`을 플레이어가 접속할 주소로
+   바꾸고(예: `http://play.example.com:8100`) 그 포트를 엽니다. 설정은 서버를 다시 켜면 반영됩니다.
+3. 플레이어는 게임에서 `/mcc wiki`를 입력하고 채팅의 링크를 누릅니다. 링크에 든 토큰은 브라우저에 저장되고
+   주소창에서는 지워지며, 그다음부터는 새로고침할 때마다 최신 정보를 받아 옵니다. `/mcc wiki reset`은 새 링크를
+   만들고 예전 링크를 막습니다.
+
+문서를 고치면 서버의 `wiki/` 폴더만 바꾸면 되고, 서버를 다시 켤 필요도 없습니다.
+
+## 플레이어 정보 쓰기
+
+`pages/me.html`이 대시보드를 그립니다. 다른 문서에서도 `<span data-me="bp"></span>`처럼 쓰면 값이 채워집니다.
+`player.name`, `bp`, 콘텐츠가 더한 값은 `sections.<키>.<항목>`입니다. 스크립트에서는 `MccWiki.me()`가 데이터를
+돌려줍니다.
