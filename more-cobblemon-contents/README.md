@@ -28,7 +28,8 @@ from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults o
 }
 ```
 
-`command` is `/mcc`; `terminals` is keyed by terminal block ID. A missing entry takes its default, and a broken one
+`command` is `/mcc`, which with everything under it needs permission level 2; `terminals` is keyed by
+terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
 

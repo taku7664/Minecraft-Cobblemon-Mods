@@ -29,6 +29,8 @@ internal object BattleContentCommands {
         openScreen: (ServerPlayer) -> Boolean = { false },
         contributors: List<MccCommandContributor> = MccCommandContributors.all(),
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("mcc")
+        // Players reach the hub through hologram terminals; the command and everything under it is for operators.
+        .requires { source -> source.hasPermission(BattlePointCommands.ADMIN_PERMISSION_LEVEL) }
         .executes { command ->
             val result = service.open(requestContext(command.source))
             if (result is BattleApplicationResult.Success && openScreen(command.source.playerOrException)) {
