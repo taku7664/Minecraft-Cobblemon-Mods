@@ -1,5 +1,6 @@
 {
   "chat.type.jbro_policy.chat": "%s: %s",
+  "message.jbro_policy.announcement": "[Notice]",
 
   "message.jbro_policy.plaza.usage": "Usage: /plaza enter, /plaza exit",
   "message.jbro_policy.plaza.already_here": "You are already in the plaza.",

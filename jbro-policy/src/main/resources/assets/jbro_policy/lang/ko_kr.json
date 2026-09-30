@@ -1,5 +1,6 @@
 {
   "chat.type.jbro_policy.chat": "%s: %s",
+  "message.jbro_policy.announcement": "[공지]",
 
   "message.jbro_policy.plaza.usage": "사용법: /plaza enter (입장), /plaza exit (퇴장)",
   "message.jbro_policy.plaza.already_here": "이미 광장에 있습니다.",
