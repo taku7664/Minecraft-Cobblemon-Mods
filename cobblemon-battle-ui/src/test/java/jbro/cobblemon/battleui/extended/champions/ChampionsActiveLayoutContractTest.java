@@ -14,21 +14,19 @@ final class ChampionsActiveLayoutContractTest {
             "src/main/kotlin/com/cobblemonextendedbattleui/ui/champions/ChampionsBattleInfoOverlay.kt"
         ));
 
-        assertTrue(source.contains("private const val BASE_W = 960"));
+        // Laid out at the GUI's own scale: no whole-window shrink, no fractional text scale.
+        assertFalse(source.contains("BASE_W"));
+        assertFalse(source.contains("matrices.scale("));
+        assertTrue(source.contains("ChampionsInfoLayout.calculate("));
         assertTrue(source.contains("private var activeAllies: List<PokemonEntry>"));
         assertTrue(source.contains("private var activeOpponents: List<PokemonEntry>"));
-        assertTrue(source.contains("drawSidePanel(context, activeAllies, SIDE_X_LEFT, false)"));
-        assertTrue(source.contains("drawEffectsPanel(context, FIELD_X)"));
-        assertTrue(source.contains("drawSidePanel(context, activeOpponents, SIDE_X_RIGHT, true)"));
-        assertTrue(source.contains("drawTeamRail(context, allyTeam, TEAM_X_LEFT, false)"));
-        assertTrue(source.contains("drawTeamRail(context, opponentTeam, TEAM_X_RIGHT, true)"));
-        assertTrue(source.contains("drawPortrait(context, entry, x + 10, y + 12"));
+        assertTrue(source.contains("drawSide(context, layout.ally, activeAllies, allyTeam, opponent = false)"));
+        assertTrue(source.contains("drawField(context, layout.field)"));
+        assertTrue(source.contains("drawSide(context, layout.opponent, activeOpponents, opponentTeam, opponent = true)"));
         assertTrue(source.contains("private const val MAX_ACTIVE_PER_SIDE = 3"));
         assertTrue(source.contains("val shown = entries.take(MAX_ACTIVE_PER_SIDE)"));
-        assertTrue(source.contains("else if (height >= COMPACT_CONDITIONS_MIN_HEIGHT)"));
-
+        assertTrue(source.contains("TranscriptPortraits.draw("));
         assertFalse(source.contains("drawPublicInfo("));
-        assertTrue(source.contains("PokemonModelRenderer.drawPokemonModel"));
         assertFalse(source.matches("(?s).*, 0\\.[0-7][0-9]*f\\).*"));
     }
 }

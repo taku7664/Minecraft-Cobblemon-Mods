@@ -17,6 +17,7 @@ final class ChampionsRankTrackContractTest {
         assertTrue(source.contains("private fun drawRankTrack("));
         assertTrue(source.contains("repeat(6) { index ->"));
         assertTrue(source.contains("drawDetailedRankRows(context, entry.uuid"));
-        assertTrue(source.contains("drawCompactRankGrid(context, entry.uuid"));
+        assertTrue(source.contains("STAT_ORDER.forEachIndexed { index, stat ->"));
+        assertTrue(source.contains("drawCompactRankGrid(context, entry,"));
     }
 }
