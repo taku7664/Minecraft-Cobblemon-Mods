@@ -126,6 +126,15 @@ class LeagueEngineTest {
         assertEquals(10L, completed.rewards.single().bp)
     }
 
+    @Test fun `a party of one to six may challenge and survives a reload`() {
+        val engine = LeagueEngine(catalog())
+        assertThrows(IllegalArgumentException::class.java) { engine.begin(LeagueProgress(), "test:g1", emptyList()) }
+        assertThrows(IllegalArgumentException::class.java) { engine.begin(LeagueProgress(), "test:g1", party() + "extra") }
+        val solo = engine.begin(LeagueProgress(), "test:g1", party().take(1))
+        assertEquals(1, solo.run!!.party.size)
+        assertEquals(solo, LeagueProgressCodec.decode(LeagueProgressCodec.encode(solo)))
+    }
+
     @Test fun `round trip keeps transaction identities and unknown schema fails closed`() {
         val engine = LeagueEngine(catalog())
         var state = engine.begin(LeagueProgress(), "test:g1", party())

@@ -106,7 +106,7 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
 
     fun begin(state: LeagueProgress, challengeId: String, party: List<String>): LeagueProgress {
         require(state.run == null) { "run_active" }
-        require(party.size == 6 && party.all { it.isNotBlank() }) { "party_required" }
+        require(party.size in 1..6 && party.all { it.isNotBlank() }) { "party_required" }
         require(state.rewards.all { it.badgeDone && it.bpDone }) { "rewards_pending" }
         val hard = challengeId in catalog.hardGyms || challengeId in catalog.hardFinals
         if (hard) require(hardUnlocked(state)) { "hard_locked" }
