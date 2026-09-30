@@ -81,7 +81,7 @@
   var header = el("header", { class: "wiki-header" }, [
     el("a", { class: "wiki-brand", href: href(pages[0].path) }, [
       el("strong", { text: nav.title }),
-      el("span", { text: nav.subtitle }),
+      nav.subtitle ? el("span", { text: nav.subtitle }) : null,
     ]),
     el("div", { class: "spacer" }),
     el("div", { class: "wiki-search" }, [input, results]),
@@ -149,8 +149,8 @@
     el("div", { class: "wiki-body" }, [rail, content]),
   ]);
   main.replaceWith(shell);
-  document.body.appendChild(el("footer", { class: "wiki-footer", text: nav.title + " · " + nav.subtitle }));
-  if (current && document.title.indexOf(nav.subtitle) < 0) document.title = current.title + " · " + nav.subtitle;
+  document.body.appendChild(el("footer", { class: "wiki-footer", text: nav.title }));
+  if (current) document.title = current === pages[0] ? nav.title : current.title + " · " + nav.title;
 
   if (document.querySelector("[data-me]")) window.MccWiki.me().then(fillMe, function () {});
 

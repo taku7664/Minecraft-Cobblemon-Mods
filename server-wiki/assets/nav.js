@@ -3,8 +3,7 @@
  * one entry here. Paths are relative to the wiki root; keywords feed the search box along with the title.
  */
 window.WIKI_NAV = {
-  title: "MORE COBBLEMON CONTENTS",
-  subtitle: "SERVER WIKI",
+  title: "빡켓몬 위키",
   sections: [
     {
       title: "시작하기",
