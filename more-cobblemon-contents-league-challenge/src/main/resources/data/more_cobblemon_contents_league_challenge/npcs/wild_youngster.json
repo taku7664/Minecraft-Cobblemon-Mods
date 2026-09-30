@@ -1,0 +1,71 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.youngster"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_youngster_austin_0303",
+      "rct_youngster_ben_0059",
+      "rct_youngster_ben_0065",
+      "rct_youngster_ben_01f2",
+      "rct_youngster_ben_01f3",
+      "rct_youngster_calvin_005a",
+      "rct_youngster_chad_005f",
+      "rct_youngster_chad_01f4",
+      "rct_youngster_chad_01fa",
+      "rct_youngster_chad_01fd",
+      "rct_youngster_cordell_0267",
+      "rct_youngster_dallas_03f4",
+      "rct_youngster_dallas_0568",
+      "rct_youngster_dallas_0569",
+      "rct_youngster_dallas_056a",
+      "rct_youngster_dan_005e",
+      "rct_youngster_darius_0394",
+      "rct_youngster_dave_0064",
+      "rct_youngster_destin_0235",
+      "rct_youngster_destin_02c0",
+      "rct_youngster_dillon_0062",
+      "rct_youngster_donny_03f6",
+      "rct_youngster_eddie_0061",
+      "rct_youngster_joey_005d",
+      "rct_youngster_johnson_0216",
+      "rct_youngster_jonathon_0393",
+      "rct_youngster_josh_005b",
+      "rct_youngster_lancere_0025",
+      "rct_youngster_logan_02e8",
+      "rct_youngster_michael_02ea",
+      "rct_youngster_nash_0266",
+      "rct_youngster_oliver_047b",
+      "rct_youngster_sebastian_03f5",
+      "rct_youngster_timmy_005c",
+      "rct_youngster_timmy_01f7",
+      "rct_youngster_timmy_01f8",
+      "rct_youngster_timmy_01f9",
+      "rct_youngster_tristan_02e7",
+      "rct_youngster_tristan_0565",
+      "rct_youngster_tristan_0566",
+      "rct_youngster_tristan_0567",
+      "rct_youngster_tyler_0060",
+      "rct_youngster_tyler_02eb",
+      "rct_youngster_wayne_045a",
+      "rct_youngster_yasu_0063",
+      "rct_youngster_yasu_0279",
+      "rct_youngster_yasu_027a"
+    ]
+  }
+}

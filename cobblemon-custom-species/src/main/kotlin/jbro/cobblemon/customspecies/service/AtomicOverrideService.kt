@@ -17,6 +17,9 @@ class AtomicOverrideService(private val catalog: SpeciesCatalog) {
                 for (entry in override.moves.add + override.moves.remove) {
                     if (!catalog.validateMove(entry)) throw OverrideApplicationException("Unknown or invalid move entry: $entry")
                 }
+                for (name in override.moves.removeMoves) {
+                    if (!catalog.validateMoveName(name)) throw OverrideApplicationException("Unknown move in remove_moves: $name")
+                }
                 for (entry in override.abilities.add + override.abilities.remove + (override.abilities.replace ?: emptyList())) {
                     if (!catalog.validateAbility(entry)) throw OverrideApplicationException("Unknown or invalid ability entry: $entry")
                 }
@@ -50,7 +53,11 @@ class AtomicOverrideService(private val catalog: SpeciesCatalog) {
         val liveBefore = publishKeys.associateWith { catalog.read(it).deepCopy() }
         try {
             publishKeys.forEach { key ->
-                catalog.write(key, (candidate[key] ?: baseline.getValue(key)).deepCopy())
+                val original = baseline.getValue(key)
+                val state = candidate[key]
+                // A key published by the previous apply is rewritten in full so every earlier change is undone.
+                val fields = if (state == null || key in appliedKeys) TargetField.ALL else state.changedFields(original)
+                if (fields.isNotEmpty()) catalog.write(key, (state ?: original).deepCopy(), fields)
             }
         } catch (error: Exception) {
             liveBefore.forEach { (key, value) -> catalog.write(key, value.deepCopy()) }

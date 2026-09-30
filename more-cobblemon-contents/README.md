@@ -33,6 +33,30 @@ terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
 
+## Operator commands
+
+Everything under `/mcc` needs permission level 2. Player arguments that read or edit saved data take offline
+players too.
+
+| Command | What it does |
+|---|---|
+| `/mcc` | Opens the hub with the tabs `hub_tabs.json` gives the command |
+| `/mcc status` | Storage health, the shop and every content's catalog, sessions, battles and waiting results |
+| `/mcc records reset <player> [content] [format]` | Deletes records; refused while the player has a run, battle or waiting result |
+| `/mcc battle list` | MCC battles in progress |
+| `/mcc battle end <player> forfeit\|void` | Forfeit (a loss; in PvP the other player wins) or end without a result |
+| `/mcc battle pending [list\|retry\|drop] [player]` | Results every content is still retrying to save |
+| `/mcc bp …` | Balances and history, add, remove, set |
+| `/mcc test ai-… \| stop [player]` | Cynthia AI test battle, and ending it |
+| `/mcc tower streak …`, `/mcc tower session <player>`, `/mcc tower abandon <player> [force]` | Streaks, a session, ending it (force drops a session whose battle is gone) |
+| `/mcc factory floor …`, `/mcc factory session <player>`, `/mcc factory abandon <player> [force]` | The same for Battle Factory runs |
+| `/mcc pvp rooms`, `room close\|kick <player>`, `challenge cancel <player>`, `arena list\|release <index>`, `lounge rescue <player>` | Rooms, challenges, arena slots and the lounge |
+| `/mcc league inspect\|rewards list\|rewards retry\|rewards drop\|run cancel <player>` | Progress, undelivered rewards (drop marks them delivered without awarding) and runs |
+| `/mcc league cap sync <player>`, `validate`, `catalog`, `import-badges <player>` | Level cap, setup check, catalog state, badge migration |
+| `/mcc league trainer spawn <kind>`, `despawn [radius]`, `list [radius]`, `cooldown reset <player>` | Wild trainers |
+
+Contents take part in `status`, `battle pending` and the record reset check through `MccAdminSources`.
+
 All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
 (`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).
 

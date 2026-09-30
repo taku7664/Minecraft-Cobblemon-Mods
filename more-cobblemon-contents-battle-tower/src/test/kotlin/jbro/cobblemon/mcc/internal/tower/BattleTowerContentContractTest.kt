@@ -37,6 +37,8 @@ class BattleTowerContentContractTest {
         )
 
         assertNotSame(root.requirement, towerSet.requirement)
+        assertEquals(setOf("player"), root.getChild("session").children.map { it.name }.toSet())
+        assertEquals(setOf("force"), root.getChild("abandon").getChild("player").children.map { it.name }.toSet())
     }
 
     @Test
@@ -45,7 +47,7 @@ class BattleTowerContentContractTest {
 
         assertEquals("test", aiTest.name)
         assertEquals(
-            setOf("ai-입문", "ai-표준", "ai-상급", "ai-보스"),
+            setOf("ai-입문", "ai-표준", "ai-상급", "ai-보스", "stop"),
             aiTest.children.map { it.name }.toSet(),
         )
         assertEquals(AiTestCommands.ADMIN_PERMISSION_LEVEL, 2)

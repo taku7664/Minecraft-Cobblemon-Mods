@@ -101,5 +101,15 @@ internal class PvpCompletionRetryQueue(
     fun size(): Int = entries.size()
 
     @Synchronized
+    fun completions(): List<PendingPvpCompletion> = entries.completions()
+
+    @Synchronized
+    fun retryMatching(predicate: (PendingPvpCompletion) -> Boolean, settle: (PendingPvpCompletion) -> Boolean): Int =
+        entries.retryMatching(predicate, settle)
+
+    @Synchronized
+    fun drop(predicate: (PendingPvpCompletion) -> Boolean): Int = entries.drop(predicate)
+
+    @Synchronized
     fun clear() = entries.clear()
 }

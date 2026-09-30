@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_skier",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "swinub",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "piloswine",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "snorunt",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "glalie",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "snover",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "abomasnow",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "spheal",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "sealeo",
+      "min_level": 32,
+      "max_level": 43
+    },
+    {
+      "species": "walrein",
+      "min_level": 44,
+      "max_level": 100
+    },
+    {
+      "species": "cubchoo",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "beartic",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "bergmite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "avalugg",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "vanillite",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vanillish",
+      "min_level": 35,
+      "max_level": 46
+    },
+    {
+      "species": "vanilluxe",
+      "min_level": 47,
+      "max_level": 100
+    },
+    {
+      "species": "smoochum",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "jynx",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "sneasel",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "delibird",
+      "min_level": 1,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,457 @@
+{
+  "enabled": true,
+  "neededInstalledMods": [],
+  "neededUninstalledMods": [],
+  "spawns": [
+    {
+      "id": "wild_trainer_youngster",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_youngster",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_plains",
+          "#cobblemon:is_grassland",
+          "#cobblemon:is_forest"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_lass",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_lass",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_plains",
+          "#cobblemon:is_floral",
+          "#cobblemon:is_cherry_blossom"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_bug_catcher",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_bug_catcher",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_forest",
+          "#cobblemon:is_jungle"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_hiker",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_hiker",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_mountain",
+          "#cobblemon:is_hills",
+          "#cobblemon:is_badlands",
+          "#cobblemon:is_peak"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_picnicker",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_picnicker",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_plains",
+          "#cobblemon:is_savanna",
+          "#cobblemon:is_forest"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_camper",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_camper",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_forest",
+          "#cobblemon:is_taiga",
+          "#cobblemon:is_plains"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_bird_keeper",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_bird_keeper",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_plains",
+          "#cobblemon:is_mountain",
+          "#cobblemon:is_hills",
+          "#cobblemon:is_savanna"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_swimmer",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_swimmer",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_beach",
+          "#cobblemon:is_coast"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_fisherman",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_fisherman",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_river",
+          "#cobblemon:is_freshwater",
+          "#cobblemon:is_beach",
+          "#cobblemon:is_swamp"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_black_belt",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_black_belt",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_mountain",
+          "#cobblemon:is_hills",
+          "#cobblemon:is_plains"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_psychic",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_psychic",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_overworld"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "night"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_channeler",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_channeler",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_spooky",
+          "#cobblemon:is_swamp",
+          "#cobblemon:is_taiga",
+          "#cobblemon:is_mountain"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "night"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_skier",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_skier",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_snowy",
+          "#cobblemon:is_freezing",
+          "#cobblemon:is_snowy_forest",
+          "#cobblemon:is_snowy_taiga",
+          "#cobblemon:is_glacial"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_ruin_maniac",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_ruin_maniac",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_desert",
+          "#cobblemon:is_badlands",
+          "#cobblemon:is_arid"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_scientist",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_scientist",
+      "bucket": "rare",
+      "weight": 4.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_overworld"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "night"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_sailor",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_sailor",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_beach",
+          "#cobblemon:is_coast",
+          "#cobblemon:is_stony_beach"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_aroma_lady",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_aroma_lady",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_floral",
+          "#cobblemon:is_cherry_blossom",
+          "#cobblemon:is_forest"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8,
+        "timeRange": "day"
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_pokemon_ranger",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_pokemon_ranger",
+      "bucket": "uncommon",
+      "weight": 8.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_jungle",
+          "#cobblemon:is_forest",
+          "#cobblemon:is_taiga",
+          "#cobblemon:is_savanna"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_ace_trainer",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_ace_trainer",
+      "bucket": "rare",
+      "weight": 4.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_overworld"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_trainer_dragon_tamer",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_dragon_tamer",
+      "bucket": "rare",
+      "weight": 4.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "biomes": [
+          "#cobblemon:is_mountain",
+          "#cobblemon:is_peak",
+          "#cobblemon:is_highlands"
+        ],
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    }
+  ]
+}

@@ -2,7 +2,11 @@ package jbro.cobblemon.mcc.internal.tower.network
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.internal.tower.TowerProgressCommands
+import jbro.cobblemon.mcc.internal.command.MccAdminSource
+import jbro.cobblemon.mcc.internal.command.MccAdminSources
 import jbro.cobblemon.mcc.internal.command.MccCommandContributors
+import jbro.cobblemon.mcc.internal.command.MccPendingResult
+import net.minecraft.network.chat.Component
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -102,6 +106,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     fun registerServer() {
         sessions
         MccCommandContributors.register { TowerProgressCommands.build() }
+        MccAdminSources.register(adminSource)
         BattleHubEntries.register(
             BattleHubEntry(ManagedBattleContentIds.BATTLE_TOWER) { player, terminal ->
                 open(player, entryContext = terminal?.let(::terminalEntryContext))
@@ -361,6 +366,61 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             current = stats.currentWinStreak.toLong(),
             best = stats.bestWinStreak.toLong(),
         )
+    }
+
+    /** What an operator sees of [playerId]'s session, or null when they have none. */
+    fun adminDescribe(playerId: java.util.UUID): List<Component>? {
+        val state = sessions.current(playerId) ?: return null
+        val key = "command.${MoreCobblemonContents.MOD_ID}.tower.admin"
+        val team = state.party.joinToString(", ") { it.speciesId.substringAfter(':') }.ifEmpty { "-" }
+        return listOf(
+            Component.translatable("$key.session", state.format.recordId, state.phase.name.lowercase()),
+            Component.translatable("$key.streak", state.currentWinStreak, state.bestWinStreak),
+            Component.translatable("$key.team", team, state.selectedPokemonIds.size, state.format.selectionSize),
+            Component.translatable("$key.battle", sessions.activeBattleId(playerId)?.toString()?.take(8) ?: "-",
+                sessions.isLaunchPending(playerId).toString(), pendingCompletions.completions().count { it.playerId == playerId }),
+        )
+    }
+
+    /**
+     * Ends [playerId]'s session for an operator. Without [force] it is the player's own abandon: a battle in
+     * progress is forfeited and counts as a loss. With [force] a battle is ended without a result and the session
+     * and its registered team are dropped even when no battle can take a forfeit any more.
+     */
+    fun adminAbandon(playerId: java.util.UUID, force: Boolean): TowerSessionAbandonResult {
+        if (!force) return abandon(playerId)
+        if (sessions.current(playerId) == null) return TowerSessionAbandonResult.NoSession
+        sessions.activeBattleId(playerId)?.let(Cobblemon173ManagedBattleTermination::end)
+        sessions.close(playerId)
+        launcher.forget(playerId)
+        return TowerSessionAbandonResult.SessionClosed
+    }
+
+    private val adminSource = object : MccAdminSource {
+        override val label: Component = Component.translatable("command.${MoreCobblemonContents.MOD_ID}.tower.admin.label")
+
+        override fun status(server: MinecraftServer): List<Component> {
+            val key = "command.${MoreCobblemonContents.MOD_ID}.tower.admin.status"
+            val catalog = TowerOpponentCatalogResources.store.snapshot()
+            return listOf(
+                if (catalog == null) Component.translatable("$key.catalog_missing")
+                else Component.translatable("$key.catalog", catalog.catalogId, catalog.allSets().size),
+                Component.translatable("$key.sessions", sessions.count(), sessions.activeBattleIds().size, pendingCompletions.size()),
+            )
+        }
+
+        override fun pending(server: MinecraftServer): List<MccPendingResult> = pendingCompletions.completions().map {
+            MccPendingResult(it.playerId, it.battleId, it.outcome?.name?.lowercase() ?: "cancelled")
+        }
+
+        override fun retryPending(server: MinecraftServer, playerId: java.util.UUID?): Int =
+            pendingCompletions.retryMatching({ playerId == null || it.playerId == playerId }) { settleCompletion(server, it) }
+
+        override fun dropPending(server: MinecraftServer, playerId: java.util.UUID?): Int =
+            pendingCompletions.drop { playerId == null || it.playerId == playerId }
+
+        override fun busy(server: MinecraftServer, playerId: java.util.UUID): Boolean =
+            sessions.current(playerId) != null || pendingCompletions.any { it.playerId == playerId }
     }
 
     override fun open(playerId: java.util.UUID, format: TowerBattleFormat): Boolean {

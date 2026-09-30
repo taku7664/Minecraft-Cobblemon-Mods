@@ -13,6 +13,9 @@ import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.*
 import jbro.cobblemon.mcc.internal.battle.BattleCompletionRetryQueue
+import jbro.cobblemon.mcc.internal.command.MccAdminSource
+import jbro.cobblemon.mcc.internal.command.MccPendingResult
+import net.minecraft.network.chat.Component
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -100,6 +103,34 @@ object ManagedPveBattles {
     fun cancel(server: MinecraftServer, playerId: UUID) {
         check(server.isSameThread)
         servers[server]?.battles?.filterValues { it.playerId == playerId }?.keys?.toList()?.forEach(Cobblemon173ManagedBattleTermination::end)
+    }
+
+    /** The shared operator view: results waiting to be settled, and players with a battle or result here. */
+    internal val adminSource = object : MccAdminSource {
+        override val label: Component = Component.translatable("command.${MoreCobblemonContents.MOD_ID}.admin.source.managed_pve")
+
+        override fun status(server: MinecraftServer): List<Component> {
+            val state = servers[server]
+            return listOf(Component.translatable("command.${MoreCobblemonContents.MOD_ID}.admin.status.managed_pve",
+                state?.battles?.size ?: 0, state?.pending?.size() ?: 0))
+        }
+
+        override fun pending(server: MinecraftServer): List<MccPendingResult> =
+            servers[server]?.pending?.completions().orEmpty().map { pending ->
+                val request = pending.active.request
+                MccPendingResult(pending.active.playerId, null, "${request.contentId} ${request.trainerId} ${pending.outcome.name.lowercase()}")
+            }
+
+        override fun retryPending(server: MinecraftServer, playerId: UUID?): Int =
+            servers[server]?.pending?.retryMatching({ playerId == null || it.active.playerId == playerId }, ::settleOne) ?: 0
+
+        override fun dropPending(server: MinecraftServer, playerId: UUID?): Int =
+            servers[server]?.pending?.drop { playerId == null || it.active.playerId == playerId } ?: 0
+
+        override fun busy(server: MinecraftServer, playerId: UUID): Boolean {
+            val state = servers[server] ?: return false
+            return state.battles.values.any { it.playerId == playerId } || state.pending.any { it.active.playerId == playerId }
+        }
     }
 
     internal fun registerLifecycle() {

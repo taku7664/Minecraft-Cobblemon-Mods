@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_picnicker",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "marill",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "azumarill",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "ponyta",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "bellsprout",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "weepinbell",
+      "min_level": 21,
+      "max_level": 100
+    },
+    {
+      "species": "pikachu",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "raichu",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "meowth",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "persian",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "mareep",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "flaaffy",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "ampharos",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "cherubi",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "cherrim",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "eevee",
+      "min_level": 10,
+      "max_level": 100
+    }
+  ]
+}

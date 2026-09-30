@@ -225,5 +225,21 @@
   "screen.more_cobblemon_contents.hub.tab.battle_tower": "Battle Tower",
   "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "The Battle Tower screen could not be opened.",
   "screen.more_cobblemon_contents.tower.guide.open": "Guide",
-  "screen.more_cobblemon_contents.tower.section.legendary_class": "Legendary"
+  "screen.more_cobblemon_contents.tower.section.legendary_class": "Legendary",
+  "command.more_cobblemon_contents.tower.admin.label": "Battle Tower",
+  "command.more_cobblemon_contents.tower.admin.status.catalog_missing": "no opponent catalog loaded",
+  "command.more_cobblemon_contents.tower.admin.status.catalog": "opponent catalog %s (%s sets)",
+  "command.more_cobblemon_contents.tower.admin.status.sessions": "%s sessions, %s battles in progress, %s results waiting to be saved",
+  "command.more_cobblemon_contents.tower.admin.header": "%s's Battle Tower session",
+  "command.more_cobblemon_contents.tower.admin.session": "format %s, phase %s",
+  "command.more_cobblemon_contents.tower.admin.streak": "streak %s (best %s)",
+  "command.more_cobblemon_contents.tower.admin.team": "registered team: %s (%s/%s entrants chosen)",
+  "command.more_cobblemon_contents.tower.admin.battle": "battle in progress: %s, launching: %s, results waiting: %s",
+  "command.more_cobblemon_contents.tower.admin.no_session": "%s has no Battle Tower session.",
+  "command.more_cobblemon_contents.tower.admin.forfeit_unavailable": "Could not send a forfeit to %s's battle. Try again with force.",
+  "command.more_cobblemon_contents.tower.admin.abandon.closed": "Closed %s's Battle Tower session and released their registered team.",
+  "command.more_cobblemon_contents.tower.admin.abandon.forfeited": "Made %s forfeit their Battle Tower battle; it counts as a loss.",
+  "command.more_cobblemon_contents.tower.admin.abandon.notice": "An operator ended your Battle Tower challenge.",
+  "command.more_cobblemon_contents.test.ai.error.no_test_battle": "%s is not in an AI test battle.",
+  "command.more_cobblemon_contents.test.ai.stopped": "Ended %s's AI test battle."
 }

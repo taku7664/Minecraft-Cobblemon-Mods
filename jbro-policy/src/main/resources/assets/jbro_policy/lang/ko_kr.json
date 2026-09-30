@@ -1,0 +1,31 @@
+{
+  "message.jbro_policy.plaza.usage": "사용법: /plaza enter (입장), /plaza exit (퇴장)",
+  "message.jbro_policy.plaza.already_here": "이미 광장에 있습니다.",
+  "message.jbro_policy.plaza.battle": "포켓몬 전투 중에는 광장을 오갈 수 없습니다.",
+  "message.jbro_policy.plaza.unavailable": "광장 차원을 불러오지 못했습니다.",
+  "message.jbro_policy.plaza.arrived": "광장에 도착했습니다. /plaza exit으로 원래 위치에 돌아갈 수 있습니다.",
+  "message.jbro_policy.plaza.exit_outside": "복귀 명령은 광장에서만 사용할 수 있습니다.",
+  "message.jbro_policy.plaza.returned": "원래 위치로 복귀했습니다.",
+  "message.jbro_policy.plaza.fell": "광장 아래로 떨어져 원래 위치로 돌아왔습니다.",
+  "message.jbro_policy.plaza.fatal": "치명적인 피해를 받아 원래 위치로 돌아왔습니다.",
+  "message.jbro_policy.plaza.returned_to_spawn": "복귀 정보가 없어 스폰 지점으로 이동했습니다.",
+  "message.jbro_policy.plaza.return_dimension_missing": "원래 차원을 찾을 수 없어 스폰 지점으로 이동했습니다. 복귀 정보는 보존되었습니다.",
+
+  "message.jbro_policy.welcome.greeting": "코블몬 서버에 오신 것을 환영합니다!",
+  "message.jbro_policy.welcome.starter": "M키를 눌러 스타팅 포켓몬을 받아주세요.",
+  "message.jbro_policy.welcome.pokenav": "/pokenav 명령으로 언제든 포켓내비를 열 수 있습니다.",
+
+  "message.jbro_policy.release.empty": "파티 %s번 슬롯이 비어 있습니다.",
+  "message.jbro_policy.release.last": "마지막 포켓몬은 놓아줄 수 없습니다.",
+  "message.jbro_policy.release.ask": "정말로 파티 %s번 %s을(를) 놓아주시겠습니까? -",
+  "message.jbro_policy.release.yes": "[예]",
+  "message.jbro_policy.release.expired": "놓아주기 확인이 만료되었거나 유효하지 않습니다.",
+  "message.jbro_policy.release.changed": "파티가 변경되어 놓아주기를 취소했습니다.",
+  "message.jbro_policy.release.failed": "포켓몬을 놓아주지 못했습니다.",
+  "message.jbro_policy.release.done": "%s을(를) 놓아주었습니다.",
+
+  "message.jbro_policy.pokenav.failed": "포켓내비를 열지 못했습니다.",
+
+  "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 능력치 사탕 L/XL 캠프 냄비 레시피 차단"
+}

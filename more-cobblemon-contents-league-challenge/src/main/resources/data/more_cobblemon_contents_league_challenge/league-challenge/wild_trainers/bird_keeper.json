@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_bird_keeper",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "pidgey",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "pidgeotto",
+      "min_level": 18,
+      "max_level": 35
+    },
+    {
+      "species": "pidgeot",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "spearow",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "fearow",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "doduo",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "dodrio",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "starly",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "staravia",
+      "min_level": 14,
+      "max_level": 33
+    },
+    {
+      "species": "staraptor",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "hoothoot",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "noctowl",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "taillow",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "swellow",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "swablu",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "altaria",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "natu",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "xatu",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "pidove",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "tranquill",
+      "min_level": 21,
+      "max_level": 31
+    },
+    {
+      "species": "unfezant",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

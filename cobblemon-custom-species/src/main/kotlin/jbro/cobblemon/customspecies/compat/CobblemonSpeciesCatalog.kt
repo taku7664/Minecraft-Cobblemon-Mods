@@ -15,6 +15,7 @@ import jbro.cobblemon.customspecies.config.FormSelector
 import jbro.cobblemon.customspecies.service.SpeciesCatalog
 import jbro.cobblemon.customspecies.service.SpeciesTargetKey
 import jbro.cobblemon.customspecies.service.SpeciesTargetState
+import jbro.cobblemon.customspecies.service.TargetField
 import net.minecraft.resources.ResourceLocation
 import java.lang.reflect.Field
 
@@ -60,7 +61,7 @@ class CobblemonSpeciesCatalog : SpeciesCatalog {
         )
     }
 
-    override fun write(key: SpeciesTargetKey, state: SpeciesTargetState) {
+    override fun write(key: SpeciesTargetKey, state: SpeciesTargetState, fields: Set<TargetField>) {
         val target = targets.getValue(key)
         val stats = STAT_BY_NAME.entries.associateTo(linkedMapOf<Stat, Int>()) { (name, stat) ->
             stat to requireNotNull(state.baseStats[name]) { "Missing base stat $name for $key" }
@@ -75,20 +76,25 @@ class CobblemonSpeciesCatalog : SpeciesCatalog {
         require(!abilities.isEmpty()) { "Ability pool cannot be empty for $key" }
 
         if (target.form == null) {
-            target.species.baseStats.clear()
-            target.species.baseStats.putAll(stats)
-            replaceLearnset(target.species.moves, moves)
-            replaceAbilityPool(target.species.abilities, abilities)
+            if (TargetField.BASE_STATS in fields) {
+                target.species.baseStats.clear()
+                target.species.baseStats.putAll(stats)
+            }
+            if (TargetField.MOVES in fields) replaceLearnset(target.species.moves, moves)
+            if (TargetField.ABILITIES in fields) replaceAbilityPool(target.species.abilities, abilities)
         } else {
             // Forms may inherit all three values. Assigning independent copies prevents a form edit
-            // (for example Rotom-Wash) from mutating the base form or another regional form.
-            FORM_STATS_FIELD.set(target.form, stats)
-            FORM_MOVES_FIELD.set(target.form, moves)
-            FORM_ABILITIES_FIELD.set(target.form, abilities)
+            // (for example Rotom-Wash) from mutating the base form or another regional form, and
+            // leaving untouched fields alone lets the form keep inheriting base-form overrides.
+            if (TargetField.BASE_STATS in fields) FORM_STATS_FIELD.set(target.form, stats)
+            if (TargetField.MOVES in fields) FORM_MOVES_FIELD.set(target.form, moves)
+            if (TargetField.ABILITIES in fields) FORM_ABILITIES_FIELD.set(target.form, abilities)
         }
     }
 
     override fun validateMove(entry: String): Boolean = runCatching { parseMove(entry) }.isSuccess
+
+    override fun validateMoveName(name: String): Boolean = Moves.getByName(name.lowercase()) != null
 
     override fun canonicalMove(entry: String): String = parseMove(entry).first
 

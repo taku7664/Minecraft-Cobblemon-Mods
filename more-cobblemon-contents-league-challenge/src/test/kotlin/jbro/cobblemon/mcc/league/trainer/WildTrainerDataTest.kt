@@ -1,0 +1,92 @@
+package jbro.cobblemon.mcc.league.trainer
+
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import com.google.gson.JsonParser
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.jar.JarFile
+import kotlin.io.path.name
+import kotlin.io.path.readText
+import kotlin.random.Random
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class WildTrainerDataTest {
+    private val ns = "more_cobblemon_contents_league_challenge"
+    private val resources = Path.of("src/main/resources")
+    private val definitions = WildTrainerCatalogParser.parse(
+        Files.list(resources.resolve("data/$ns/league-challenge/wild_trainers")).use { files ->
+            files.toList().associate { it.name to it.readText() }
+        },
+    )
+
+    @Test
+    fun `every kind has its NPC class and every skin it wears is in the variation`() {
+        val variation = JsonParser.parseString(resources.resolve("assets/$ns/bedrock/npcs/variations/wild_trainer/0_wild_trainer.json").readText())
+            .asJsonObject.getAsJsonArray("variations").flatMap { entry -> entry.asJsonObject.getAsJsonArray("aspects").map { it.asString } }.toSet()
+        assertEquals(20, definitions.size)
+        definitions.keys.forEach { npcClass ->
+            val file = resources.resolve("data/$ns/npcs/${npcClass.substringAfter(':')}.json")
+            assertTrue(Files.exists(file), npcClass)
+            val npc = JsonParser.parseString(file.readText()).asJsonObject
+            assertEquals("$ns:wild_trainer", npc.get("resourceIdentifier").asString, npcClass)
+            val skins = npc.getAsJsonObject("variation").getAsJsonArray("skin").map { it.asString }
+            assertTrue(skins.isNotEmpty(), npcClass)
+            assertTrue(variation.containsAll(skins), npcClass)
+        }
+    }
+
+    @Test
+    fun `no gym leader, Elite Four, Champion, named character or villain skin is worn`() {
+        val blocked = Regex("^rct_(leader|gym_leader|sinnoh_leader|elite_four|champion|rival|title_defense|battleground|boss|commander|" +
+            "rocket_admin|shadow_admin|light_of_ruin|professor|prof|player|pokemon_trainer|team_rocket|team_galactic|shadow_grunt|burglar)_")
+        val worn = Files.list(resources.resolve("data/$ns/npcs")).use { files ->
+            files.toList().flatMap { file ->
+                JsonParser.parseString(file.readText()).asJsonObject.getAsJsonObject("variation").getAsJsonArray("skin").map { it.asString }
+            }
+        }
+        assertTrue(worn.size > 500)
+        assertTrue(worn.none(blocked::containsMatchIn), worn.filter(blocked::containsMatchIn).take(5).toString())
+    }
+
+    @Test
+    fun `every species in the pools is one Cobblemon has`() {
+        val cobblemon = JarFile(Paths.get(PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI()).toFile())
+        val known = cobblemon.use { jar ->
+            jar.entries().asSequence().map { it.name }.filter { it.startsWith("data/cobblemon/species/") && it.endsWith(".json") }
+                .map { it.substringAfterLast('/').removeSuffix(".json") }.toSet()
+        }
+        val unknown = definitions.values.flatMap { definition -> definition.pokemon.map { it.species } }.distinct().filter { it !in known }
+        assertTrue(unknown.isEmpty(), unknown.toString())
+    }
+
+    @Test
+    fun `parties follow the challenger's cap and never pass it`() {
+        val random = Random(7)
+        definitions.values.forEach { definition ->
+            listOf(16, 24, 34, 46, 64, 80, 100).forEach { cap ->
+                repeat(20) {
+                    val party = WildTrainerParty.roll(definition, cap, random)
+                    assertTrue(party.size in WildTrainerParty.sizes(cap, definition.strong), "${definition.npcClass} $cap ${party.size}")
+                    assertTrue(party.all { (_, level) -> level in 1..cap }, "${definition.npcClass} $cap $party")
+                }
+            }
+        }
+        assertEquals(1..2, WildTrainerParty.sizes(16, strong = false))
+        assertEquals(4..6, WildTrainerParty.sizes(100, strong = false))
+        assertEquals(96..100, WildTrainerParty.levels(100, strong = true))
+        assertEquals(1..1, WildTrainerParty.levels(1, strong = false))
+    }
+
+    @Test
+    fun `trainers are named after the person their skin belongs to`() {
+        assertEquals("Elizabeth", WildTrainers.personalName("rct_aroma_lady_elizabeth_02f7"))
+        assertEquals("Kati", WildTrainers.personalName("rct_waitress_kati_03fc"))
+        assertNull(WildTrainers.personalName("rct_"))
+        assertFalse(WildTrainers.personalName("rct_hiker_bob_0123").isNullOrEmpty())
+    }
+}

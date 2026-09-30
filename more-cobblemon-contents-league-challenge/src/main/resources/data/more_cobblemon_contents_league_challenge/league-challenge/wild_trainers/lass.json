@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_lass",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "jigglypuff",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "wigglytuff",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "clefairy",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "clefable",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "skitty",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "delcatty",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "oddish",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "gloom",
+      "min_level": 21,
+      "max_level": 35
+    },
+    {
+      "species": "bellossom",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "marill",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "azumarill",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "buneary",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "lopunny",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranf",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorina",
+      "min_level": 16,
+      "max_level": 100
+    },
+    {
+      "species": "flabebe",
+      "min_level": 1,
+      "max_level": 18
+    },
+    {
+      "species": "floette",
+      "min_level": 19,
+      "max_level": 100
+    }
+  ]
+}

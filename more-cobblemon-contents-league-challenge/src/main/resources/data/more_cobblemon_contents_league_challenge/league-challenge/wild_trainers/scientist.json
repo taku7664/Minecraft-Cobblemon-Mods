@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_scientist",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "magnemite",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "magneton",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "voltorb",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "electrode",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "koffing",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "weezing",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "grimer",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "muk",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "elekid",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "electabuzz",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "magby",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "magmar",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "beldum",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "metang",
+      "min_level": 20,
+      "max_level": 44
+    },
+    {
+      "species": "metagross",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "klink",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "klang",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "porygon",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "ditto",
+      "min_level": 1,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.sailor"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_sailor_damian_03eb",
+      "rct_sailor_duncan_0089",
+      "rct_sailor_dwayne_008d",
+      "rct_sailor_dylan_008b",
+      "rct_sailor_edmond_0086",
+      "rct_sailor_huey_008a",
+      "rct_sailor_leonard_0088",
+      "rct_sailor_luther_036d",
+      "rct_sailor_marc_03e9",
+      "rct_sailor_marc_054c",
+      "rct_sailor_marc_054d",
+      "rct_sailor_paul_0340",
+      "rct_sailor_phillip_008c",
+      "rct_sailor_samson_0452",
+      "rct_sailor_skyler_03ea",
+      "rct_sailor_trevor_0087",
+      "rct_sailor_zachariah_0451",
+      "rct_sailor_zachariah_054e"
+    ]
+  }
+}

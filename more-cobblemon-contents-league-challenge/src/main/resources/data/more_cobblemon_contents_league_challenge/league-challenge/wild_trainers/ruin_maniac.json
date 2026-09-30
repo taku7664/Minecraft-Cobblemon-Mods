@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ruin_maniac",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "diglett",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dugtrio",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "baltoy",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "claydol",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "cubone",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "marowak",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "trapinch",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vibrava",
+      "min_level": 35,
+      "max_level": 44
+    },
+    {
+      "species": "flygon",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "hippopotas",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "hippowdon",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "onix",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "sigilyph",
+      "min_level": 15,
+      "max_level": 100
+    }
+  ]
+}

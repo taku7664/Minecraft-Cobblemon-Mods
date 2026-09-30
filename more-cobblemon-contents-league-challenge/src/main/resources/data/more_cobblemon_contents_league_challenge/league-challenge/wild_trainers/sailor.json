@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_sailor",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "machop",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "machoke",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "tentacool",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "tentacruel",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "pelipper",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "krabby",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "kingler",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "psyduck",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "golduck",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "poliwag",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "poliwhirl",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "wailmer",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "wailord",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "shellder",
+      "min_level": 1,
+      "max_level": 100
+    }
+  ]
+}

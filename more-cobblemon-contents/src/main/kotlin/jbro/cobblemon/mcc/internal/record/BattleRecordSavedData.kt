@@ -71,6 +71,11 @@ internal class BattleRecordSavedData(
         return after
     }
 
+    fun remove(predicate: (BattleRecordKey) -> Boolean): Int {
+        requireAvailable()
+        return store.remove(predicate).also { if (it > 0) setDirty() }
+    }
+
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag =
         preservedTag?.copy() ?: BattleRecordNbtCodec.encode(store.all(), tag)
 
@@ -188,6 +193,16 @@ object BattleRecordService {
         metricId: BattleRecordMetricId,
         candidate: Long,
     ): BattleRecordStats = data(server).submitBestMetric(key, metricId, candidate)
+
+    /**
+     * Deletes [playerId]'s records, only those of [contentId] (and [formatId]) when given; returns how many went.
+     * Contents keep live progress in their sessions, so callers check the player has none open first.
+     */
+    fun delete(server: MinecraftServer, playerId: java.util.UUID, contentId: String? = null, formatId: String? = null): Int =
+        data(server).remove { key ->
+            key.playerId == playerId && (contentId == null || key.category.contentId == contentId) &&
+                (formatId == null || key.category.formatId == formatId)
+        }
 
     private fun data(server: MinecraftServer): BattleRecordSavedData =
         server.overworld().dataStorage.computeIfAbsent(BattleRecordSavedData.factory, BattleRecordSavedData.FILE_ID)

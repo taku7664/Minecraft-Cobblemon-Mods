@@ -82,6 +82,9 @@ internal class FactoryCatalog(
     private val trainers: List<FactoryTrainerProfile> = immutableList(trainers)
     private val sets: List<FactoryRentalTemplate> = immutableList(sets)
 
+    val trainerCount: Int get() = trainers.size
+    val setCount: Int get() = sets.size
+
     fun trainersFor(format: FactoryBattleFormat): List<FactoryTrainerProfile> =
         immutableList(trainers.filter { format in it.formats })
 
