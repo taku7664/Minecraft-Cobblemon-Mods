@@ -4,10 +4,15 @@ import jbro.cobblemon.uikit.UiCrossAlignment
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
-/** The room HUD in the lower right corner, above the hotbar: a header of controls and, expanded, the room at a glance. */
+/**
+ * The room HUD in the lower right corner, above the hotbar: a header of controls and, expanded, the room at a glance.
+ * It is drawn in the hub's look: the header a title bar inside the window's frame, each side a card with a rule.
+ */
 internal data class PvpRoomHudLayout(
     val panel: UiRect,
     val header: UiRect,
+    /** The title bar, inside the window's frame. */
+    val titleBar: UiRect,
     val title: UiRect,
     val openButton: UiRect,
     val toggleButton: UiRect,
@@ -23,7 +28,10 @@ internal data class PvpRoomHudLayout(
         const val HOTBAR_CLEARANCE = 28
         const val MAX_VISIBLE_SPECTATORS = 6
         private const val SCREEN_MARGIN = 6
-        private const val HEADER_HEIGHT = 18
+        private const val HEADER_HEIGHT = 22
+        /** The window's frame around the title bar, and the bar's padding around its controls. */
+        private const val FRAME = 2
+        private const val BAR_PADDING = 2
         private const val CONTROL_GAP = 2
         private const val TOGGLE_WIDTH = 32
         private const val OPEN_WIDTH = 64
@@ -31,7 +39,7 @@ internal data class PvpRoomHudLayout(
         private const val COLLAPSED_WIDTH = 150
         private const val CONTENT_INSET = 5
         private const val PHASE_HEIGHT = 10
-        private const val SIDE_HEIGHT = 22
+        private const val SIDE_HEIGHT = 28
         private const val SPECTATOR_HEADING_HEIGHT = 10
         private const val SPECTATOR_ROW_HEIGHT = 10
 
@@ -51,14 +59,16 @@ internal data class PvpRoomHudLayout(
             }
             val rows = UiLayout.keys("spectator", visibleSpectators)
             val panel = UiLayout.layers(UiLayout.leaf("panel"), UiLayout.column {
-                fixed(HEADER_HEIGHT, UiLayout.layers(UiLayout.leaf("header"), UiLayout.row {
-                    space(4)
-                    weight("title", min = 1)
-                    space(CONTROL_GAP)
-                    fixed(OPEN_WIDTH, "open")
-                    space(CONTROL_GAP)
-                    fixed(TOGGLE_WIDTH, "toggle")
-                }))
+                fixed(HEADER_HEIGHT, UiLayout.layers(UiLayout.leaf("header"), UiLayout.inset(UiLayout.layers(UiLayout.leaf("bar"),
+                    UiLayout.inset(UiLayout.row {
+                        space(4)
+                        weight("title", min = 1)
+                        space(CONTROL_GAP)
+                        fixed(OPEN_WIDTH, "open")
+                        space(CONTROL_GAP)
+                        fixed(TOGGLE_WIDTH, "toggle")
+                    }, top = BAR_PADDING, right = BAR_PADDING, bottom = BAR_PADDING, min = 1)),
+                    left = FRAME, top = FRAME, right = FRAME, bottom = FRAME, min = 1)))
                 if (expanded) {
                     space(CONTROL_GAP)
                     weight(UiLayout.inset(UiLayout.column {
@@ -79,13 +89,13 @@ internal data class PvpRoomHudLayout(
             val header = layout["header"]
             if (!expanded) {
                 return PvpRoomHudLayout(
-                    layout["panel"], header, layout["title"], layout["open"], layout["toggle"], null,
+                    layout["panel"], header, layout["bar"], layout["title"], layout["open"], layout["toggle"], null,
                     UiRect(0, 0, 0, 0), UiRect(0, 0, 0, 0), null,
                     emptyList(), 0, "+",
                 )
             }
             return PvpRoomHudLayout(
-                layout["panel"], header, layout["title"], layout["open"], layout["toggle"], layout["phase"], layout["left"],
+                layout["panel"], header, layout["bar"], layout["title"], layout["open"], layout["toggle"], layout["phase"], layout["left"],
                 layout["right"], layout["heading"], layout.list("spectator"), hiddenSpectators, "-",
             )
         }

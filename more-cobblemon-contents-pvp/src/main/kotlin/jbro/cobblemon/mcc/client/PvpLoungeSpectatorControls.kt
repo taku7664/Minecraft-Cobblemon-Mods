@@ -3,7 +3,9 @@ package jbro.cobblemon.mcc.client
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.WeakHashMap
+import jbro.cobblemon.mcc.client.hub.MccHubThemedButton
 import jbro.cobblemon.mcc.internal.pvp.PvpSpectatorInputPolicy
+import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiCrossAlignment
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
@@ -16,7 +18,7 @@ import net.minecraft.network.chat.Component
 
 internal object PvpLoungeSpectatorControls {
     private var active = false
-    private val exitButtons = WeakHashMap<Screen, MccStyledButton>()
+    private val exitButtons = WeakHashMap<Screen, MccHubThemedButton>()
     private var exitPending = false
 
     fun register() {
@@ -96,10 +98,11 @@ internal object PvpLoungeSpectatorControls {
             previous.active = false
             previous.visible = false
         }
-        val button = MccStyledButton(
+        // In the hub's look, like every other MCC control.
+        val button = MccHubThemedButton(
             PvpLoungeExitButtonLayout.bounds(screen.height),
             Component.translatable("screen.more_cobblemon_contents.pvp.return"),
-            MccButtonTone.SECONDARY,
+            UiButtonVariant.SECONDARY,
         ) { PvpPlayClientNetworking.exitLoungeSpectator() }
         button.active = !exitPending
         Screens.getButtons(screen).add(button)
