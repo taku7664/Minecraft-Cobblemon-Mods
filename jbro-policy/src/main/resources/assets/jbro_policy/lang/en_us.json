@@ -1,4 +1,6 @@
 {
+  "chat.type.jbro_policy.chat": "%s: %s",
+
   "message.jbro_policy.plaza.usage": "Usage: /plaza enter, /plaza exit",
   "message.jbro_policy.plaza.already_here": "You are already in the plaza.",
   "message.jbro_policy.plaza.battle": "You cannot travel to or from the plaza during a Pokemon battle.",
