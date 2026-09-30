@@ -426,7 +426,7 @@ internal class LocalTacticalBrain(
         val rootRanked = baseRanked
         // Read from the same table as the rules; the AI's threat weights play no part in it.
         val opponentIntents = if (!rulesApply) emptyList()
-            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent) }.orEmpty().let { intents ->
+            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel) }.orEmpty().let { intents ->
                 if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
@@ -486,7 +486,8 @@ internal class LocalTacticalBrain(
             !rulesApply -> emptyMap()
             // The predicted switches themselves, the repeats already folded in when they are read (singles, where
             // the switch model was fitted).
-            tuning.predictedSwitchShare > 0.0 && difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ->
+            tuning.predictedSwitchShare > 0.0 && (difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ||
+                tuning.doublesSwitchModel) ->
                 opponentIntents.associate { intent ->
                     intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH && it.switchInId != null }
                         .groupBy { requireNotNull(it.switchInId) }.mapValues { (_, same) -> same.sumOf { it.probability } * tuning.predictedSwitchShare }

@@ -164,6 +164,12 @@ internal data class LocalDecisionTuning(
      */
     val doublesProtectCredit: Double = 0.5,
     /**
+     * Doubles reads opponent switches from the singles switch model (and the root prices attacks against the predicted
+     * switch-ins, by [predictedSwitchShare]); off, doubles keeps the one softmax and no switch pricing. Off: better
+     * calibrated (Brier 0.034 against 0.29), but doubles duels did not gain (145 pairs, -0.031 +- 0.030).
+     */
+    val doublesSwitchModel: Boolean = false,
+    /**
      * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
      * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
      * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.

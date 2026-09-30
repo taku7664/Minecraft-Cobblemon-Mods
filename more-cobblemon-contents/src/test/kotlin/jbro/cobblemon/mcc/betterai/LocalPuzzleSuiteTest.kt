@@ -188,6 +188,7 @@ class LocalPuzzleSuiteTest {
                 "plainSwitch" -> tuning.copy(scoredSwitchIntent = false)
                 "recovery" -> tuning.copy(matchupRecovery = true)
                 "protect" -> tuning.copy(doublesProtectCredit = value ?: 1.0)
+                "doublesSwitch" -> tuning.copy(doublesSwitchModel = true)
                 "noLoop" -> tuning.copy(recoveryLoopPenalty = 0.0)
                 "setupCredit" -> tuning.copy(setupSweepCredit = value ?: 1.0)
                 "predicted" -> tuning.copy(predictedSwitchShare = value ?: 1.0)
