@@ -125,5 +125,8 @@
   "command.more_cobblemon_contents.admin.pending.retry": "Tried to save %s results again (target: %s).",
   "command.more_cobblemon_contents.admin.pending.drop": "Dropped %s results without saving them (target: %s).",
   "command.more_cobblemon_contents.admin.one_player": "Name exactly one player.",
-  "command.more_cobblemon_contents.admin.source_failed": "Reading this content's state failed. See the server log."
+  "command.more_cobblemon_contents.admin.source_failed": "Reading this content's state failed. See the server log.",
+  "message.more_cobblemon_contents.battle_result.victory_bp": "▶ You beat %s! %s",
+  "message.more_cobblemon_contents.battle_result.victory": "▶ You beat %s!",
+  "message.more_cobblemon_contents.battle_result.defeat": "▶ You lost to %s."
 }

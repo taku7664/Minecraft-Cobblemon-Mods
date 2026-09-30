@@ -125,5 +125,8 @@
   "command.more_cobblemon_contents.admin.pending.retry": "결과 %s개를 다시 저장해 보았습니다 (대상: %s).",
   "command.more_cobblemon_contents.admin.pending.drop": "결과 %s개를 저장하지 않고 버렸습니다 (대상: %s).",
   "command.more_cobblemon_contents.admin.one_player": "플레이어를 한 명만 지정하세요.",
-  "command.more_cobblemon_contents.admin.source_failed": "이 콘텐츠의 상태를 읽다가 오류가 났습니다. 서버 로그를 확인하세요."
+  "command.more_cobblemon_contents.admin.source_failed": "이 콘텐츠의 상태를 읽다가 오류가 났습니다. 서버 로그를 확인하세요.",
+  "message.more_cobblemon_contents.battle_result.victory_bp": "▶ %s에게 승리했습니다! %s",
+  "message.more_cobblemon_contents.battle_result.victory": "▶ %s에게 승리했습니다!",
+  "message.more_cobblemon_contents.battle_result.defeat": "▶ %s에게 패배했습니다."
 }
