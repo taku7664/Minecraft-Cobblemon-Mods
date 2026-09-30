@@ -16,10 +16,11 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.KeyMapping;
 
 public final class PlayerPopupEmotesClient implements ClientModInitializer {
+    /** Unbound by default: V, the old default, is also Simple Voice Chat's menu key. Players pick a key themselves. */
     private static final KeyMapping EMOTE_WHEEL_KEY = new KeyMapping(
         "key.player_popup_emotes.wheel",
         InputConstants.Type.KEYSYM,
-        InputConstants.KEY_V,
+        InputConstants.UNKNOWN.getValue(),
         "key.categories.player_popup_emotes"
     );
 
