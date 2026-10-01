@@ -39,6 +39,13 @@
         "cobleserver:battle/legendary/rse_groudon_kyogre_battle"
       ]
     },
+    "cobleserver:battle_gym_leader": {
+      "tracks": [
+        "cobleserver:battle/gym/oras_gym_leader_battle",
+        "cobleserver:battle/gym/unova_gym_leader_battle",
+        "cobleserver:battle/gym/galar_gym_leader_battle"
+      ]
+    },
     "cobleserver:battle_regi_trio": {
       "tracks": [
         "cobleserver:battle/legendary/oras_regirock_regice_registeel_battle",
@@ -89,7 +96,13 @@
       "content": {
         "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:pvp": "cobleserver:battle_pvp"
+        "more_cobblemon_contents:pvp": "cobleserver:battle_pvp",
+        "more_cobblemon_contents:league_challenge/gym": "cobleserver:battle_gym_leader",
+        "more_cobblemon_contents:league_challenge/hard_gym": "cobleserver:battle_gym_leader",
+        "more_cobblemon_contents:league_challenge/elite_four": "cobleserver:track/battle/elite/unova_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/hard_elite_four": "cobleserver:track/battle/elite/unova_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/champion": "cobleserver:track/battle/champion/oras_champion_battle",
+        "more_cobblemon_contents:league_challenge/hard_champion": "cobleserver:track/battle/champion/oras_champion_battle"
       },
       "legendary": "cobleserver:battle_legendary_generic",
       "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",
