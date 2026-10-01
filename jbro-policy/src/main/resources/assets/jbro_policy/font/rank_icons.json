@@ -3,6 +3,7 @@
     { "type": "bitmap", "file": "cobblemon:item/poke_balls/poke_ball.png", "ascent": 7, "height": 8, "chars": ["\ue000"] },
     { "type": "bitmap", "file": "cobblemon:item/poke_balls/great_ball.png", "ascent": 7, "height": 8, "chars": ["\ue001"] },
     { "type": "bitmap", "file": "cobblemon:item/poke_balls/ultra_ball.png", "ascent": 7, "height": 8, "chars": ["\ue002"] },
-    { "type": "bitmap", "file": "cobblemon:item/poke_balls/master_ball.png", "ascent": 7, "height": 8, "chars": ["\ue003"] }
+    { "type": "bitmap", "file": "cobblemon:item/poke_balls/master_ball.png", "ascent": 7, "height": 8, "chars": ["\ue003"] },
+    { "type": "bitmap", "file": "cobblemon:item/poke_balls/cherish_ball.png", "ascent": 7, "height": 8, "chars": ["\ue004"] }
   ]
 }
