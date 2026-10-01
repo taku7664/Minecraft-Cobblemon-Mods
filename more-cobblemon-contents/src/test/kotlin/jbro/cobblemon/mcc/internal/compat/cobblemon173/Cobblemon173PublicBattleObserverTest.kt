@@ -535,6 +535,31 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `a benched ally that has Terastallized keeps its Tera types`() {
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3)
+        val togekiss = publicPokemon(BattleSide.ALLY, activeSlot = 0).copy(speciesId = "cobblemon:togekiss",
+            knownTypeIds = setOf("fairy", "flying"))
+        val partner = publicPokemon(BattleSide.ALLY, activeSlot = 0)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, togekiss))
+        observer.observe(Cobblemon173PublicObservation.TypesChanged(1, togekiss,
+            Cobblemon173PublicTypeChange(PublicTypeChangeKind.TERA, setOf("flying"))))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, partner))
+        fun own(id: UUID, slot: Int?, types: Set<String>) = BattlePokemonStateView(
+            battlePokemonId = id, side = BattleSide.ALLY, activeSlot = slot, speciesId = "cobblemon:togekiss", formId = "normal",
+            level = 50, hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
+            knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = types, knownVolatileEffectIds = emptySet(),
+        )
+
+        val state = Cobblemon173BattleStateAssembler.assemble(UUID.randomUUID(), BattleFormat.SINGLE, 2,
+            listOf(own(togekiss.battlePokemonId, null, setOf("fairy", "flying")), own(partner.battlePokemonId, 0, setOf("electric", "ghost"))),
+            observer.publicSnapshot())
+
+        val benched = state.pokemon.single { it.battlePokemonId == togekiss.battlePokemonId }
+        assertEquals(setOf("flying"), benched.knownTypeIds)
+        assertEquals("flying", benched.knownTeraTypeId)
+    }
+
+    @Test
     fun `assembler merges full ally state with public opponent state`() {
         val ally = ownPokemon()
         val opponent = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)

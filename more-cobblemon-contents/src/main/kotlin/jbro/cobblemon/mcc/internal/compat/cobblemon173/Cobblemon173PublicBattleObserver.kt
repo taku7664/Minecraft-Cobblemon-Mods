@@ -929,15 +929,19 @@ internal object Cobblemon173BattleStateAssembler {
         require(ownPokemon.all { it.side == BattleSide.ALLY })
         val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
         val allies = ownPokemon.map { own ->
+            // Typing a move or ability gave ends when the Pokemon leaves the field, Tera does not: a benched ally
+            // that has Terastallized keeps its Tera types. Read from its species instead, a Togekiss that had gone
+            // Flying still looked Fairy on the bench and kept being switched in to take Dragon moves.
+            val keepsPublicTypes = own.activeSlot != null || own.battlePokemonId in publicSnapshot.teraTypes
             own.copyView(
                 knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
                     publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
                 knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) emptySet()
                     else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),
-                knownTypeIds = if (own.activeSlot == null) own.knownTypeIds else
+                knownTypeIds = if (!keepsPublicTypes) own.knownTypeIds else
                     publicSnapshot.typeOverrides[own.battlePokemonId] ?: own.knownTypeIds,
-                knownBaseStabTypeIds = if (own.activeSlot == null) own.knownBaseStabTypeIds else
+                knownBaseStabTypeIds = if (!keepsPublicTypes) own.knownBaseStabTypeIds else
                     publicSnapshot.baseStabTypeOverrides[own.battlePokemonId] ?: own.knownBaseStabTypeIds,
                 knownTeraTypeId = publicSnapshot.teraTypes[own.battlePokemonId] ?: own.knownTeraTypeId,
                 knownStellarBoostedTypeIds = if (
