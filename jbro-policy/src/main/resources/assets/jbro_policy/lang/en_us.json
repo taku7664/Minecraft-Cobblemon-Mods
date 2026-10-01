@@ -33,6 +33,13 @@
 
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
+  "message.jbro_policy.inquiry.sent": "Your inquiry was sent.",
+  "message.jbro_policy.inquiry.empty": "Write the reason for your inquiry.",
+  "message.jbro_policy.inquiry.too_long": "Keep the reason within %s characters.",
+  "message.jbro_policy.inquiry.cooldown": "You can send another inquiry in %s minute(s).",
+  "message.jbro_policy.inquiry.not_configured": "Inquiries are not set up yet. Please tell an operator directly.",
+  "message.jbro_policy.inquiry.failed": "The inquiry could not be sent. Try again in a moment.",
+
   "message.jbro_policy.legend.other_trainer": "This Legend appeared for another trainer. You cannot battle or catch it.",
   "message.jbro_policy.legend.already_caught": "You already caught this Legend. Each Legend can be caught once.",
   "message.jbro_policy.legend.rank_too_low": "You need the %s League rank to catch this Legend.",
