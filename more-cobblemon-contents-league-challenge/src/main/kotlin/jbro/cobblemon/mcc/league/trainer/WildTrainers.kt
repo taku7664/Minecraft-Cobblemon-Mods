@@ -65,7 +65,11 @@ object WildTrainers {
     private const val NEARBY_LIMIT = 2
     private const val NEARBY_RADIUS = 64.0
     private const val TERMINAL_CHUNK_RADIUS = 2
-    private const val LOUNGE_DIMENSION = "more_cobblemon_contents:battle_lounge"
+    /**
+     * The only worlds wild trainers appear in. An allowlist, so the plaza, MyRooms, the battle lounge and any
+     * dimension added later stay free of them.
+     */
+    val WILD_DIMENSIONS = setOf("minecraft:overworld")
 
     /** The loaded definitions by NPC class ID; empty until the first successful reload. */
     @Volatile
@@ -132,9 +136,9 @@ object WildTrainers {
     fun definitionOf(npc: NPCEntity): WildTrainerDefinition? =
         definitions[npc.npc.id.toString()]
 
-    /** Whether a wild trainer may appear at this spot: not in the lounge, not crowding others, not at a terminal. */
+    /** Whether a wild trainer may appear at this spot: in the wild, not crowding others, not at a terminal. */
     fun spawnAllowed(level: ServerLevel, x: Double, y: Double, z: Double): Boolean {
-        if (level.dimension().location().toString() == LOUNGE_DIMENSION) return false
+        if (!isWild(level.dimension().location().toString())) return false
         val nearby = level.getEntitiesOfClass(NPCEntity::class.java, AABB(x, y, z, x, y, z).inflate(NEARBY_RADIUS)) { definitionOf(it) != null }
         if (nearby.size >= NEARBY_LIMIT) return false
         val center = ChunkPos(net.minecraft.core.BlockPos.containing(x, y, z))
@@ -145,6 +149,9 @@ object WildTrainers {
         }
         return true
     }
+
+    /** Whether [dimension] is a world wild trainers roam, as opposed to a plaza, room or lounge. */
+    fun isWild(dimension: String): Boolean = dimension in WILD_DIMENSIONS
 
     /** Names a wild trainer after its class and the trainer its skin belongs to, such as "Hiker Bob". */
     fun name(npc: NPCEntity) {

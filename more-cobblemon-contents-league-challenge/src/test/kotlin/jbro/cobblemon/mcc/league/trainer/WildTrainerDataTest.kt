@@ -100,4 +100,11 @@ class WildTrainerDataTest {
         assertNull(WildTrainers.personalName("rct_"))
         assertFalse(WildTrainers.personalName("rct_hiker_bob_0123").isNullOrEmpty())
     }
+
+    @Test
+    fun `wild trainers appear only in the overworld, never in the plaza, a MyRoom or the lounge`() {
+        assertTrue(WildTrainers.isWild("minecraft:overworld"))
+        listOf("jbro_policy:plaza", "myroom:rooms", "more_cobblemon_contents:battle_lounge", "minecraft:the_nether", "minecraft:the_end",
+            "some_mod:new_dimension").forEach { assertFalse(WildTrainers.isWild(it), it) }
+    }
 }
