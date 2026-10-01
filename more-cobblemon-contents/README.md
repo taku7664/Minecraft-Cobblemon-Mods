@@ -95,6 +95,8 @@ point at `http://localhost:<port>`. `/mcc wiki` gives a player a link carrying t
 the browser and sends with each `/api/me` request; `/mcc wiki reset` issues a new token and ends the old links, and
 `/mcc wiki link <player>` gives operators anyone's link. Tokens live in the world's `data/mcc_wiki_tokens.json`.
 Contents add their own data to `/api/me` with `WikiPlayerData.register(key) { server, playerId -> json }`.
+They add endpoints of their own with `WikiApi.register("pvp/matches") { request -> json }`, answered on the wiki's HTTP
+threads under `/api/<name>`; `request.viewer` is the player whose token came with the request, if any.
 
 All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
 (`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).

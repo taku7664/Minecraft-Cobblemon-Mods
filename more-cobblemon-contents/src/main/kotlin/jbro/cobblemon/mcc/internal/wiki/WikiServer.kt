@@ -15,6 +15,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.wiki.WikiApi
+import jbro.cobblemon.mcc.api.wiki.WikiApiRequest
 import jbro.cobblemon.mcc.api.wiki.WikiPlayerData
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
@@ -60,6 +62,7 @@ internal object WikiServer {
             val pool = Executors.newFixedThreadPool(THREADS) { runnable -> Thread(runnable, "mcc-wiki-http").apply { isDaemon = true } }
             http = HttpServer.create(InetSocketAddress(config.bind, config.port), 0).apply {
                 createContext("/api/me") { exchange -> respond(exchange) { me(server, exchange) } }
+                createContext("/api/") { exchange -> respond(exchange) { content(server, exchange) } }
                 createContext("/") { exchange -> respond(exchange) { file(root, exchange) } }
                 setExecutor(pool)
                 start()
@@ -106,10 +109,25 @@ internal object WikiServer {
 
     private fun json(status: Int, body: JsonObject) = Reply(status, "application/json; charset=utf-8", Gson().toJson(body).toByteArray())
 
-    /** The asking player's dashboard, read on the server thread. The token comes as a header or `?t=`. */
+    /** The player the request's token names, from the `X-MCC-Wiki-Token` header or `?t=`. */
+    private fun viewer(exchange: HttpExchange): UUID? =
+        (exchange.requestHeaders.getFirst("X-MCC-Wiki-Token") ?: query(exchange)["t"])?.let { tokens?.playerFor(it) }
+
+    /** A content's endpoint from [WikiApi], answered on this HTTP thread. */
+    private fun content(server: MinecraftServer, exchange: HttpExchange): Reply {
+        val name = exchange.requestURI.path.removePrefix("/api/").trimEnd('/')
+        val handler = WikiApi.handler(name) ?: return json(404, JsonObject().apply { addProperty("error", "unknown_endpoint") })
+        return try {
+            val body = handler.handle(WikiApiRequest(server, query(exchange), viewer(exchange)))
+            Reply(200, "application/json; charset=utf-8", Gson().toJson(body).toByteArray())
+        } catch (failure: IllegalArgumentException) {
+            json(400, JsonObject().apply { addProperty("error", failure.message ?: "bad_request") })
+        }
+    }
+
+    /** The asking player's dashboard, read on the server thread. */
     private fun me(server: MinecraftServer, exchange: HttpExchange): Reply {
-        val token = exchange.requestHeaders.getFirst("X-MCC-Wiki-Token") ?: query(exchange)["t"]
-        val playerId = token?.let { tokens?.playerFor(it) } ?: return json(401, JsonObject().apply { addProperty("error", "unknown_token") })
+        val playerId = viewer(exchange) ?: return json(401, JsonObject().apply { addProperty("error", "unknown_token") })
         val body = server.submit(Supplier { dashboard(server, playerId) }).get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         return json(200, body)
     }

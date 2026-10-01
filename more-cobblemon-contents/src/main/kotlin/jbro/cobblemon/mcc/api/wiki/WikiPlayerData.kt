@@ -24,3 +24,28 @@ object WikiPlayerData {
 
     fun all(): Map<String, Section> = sections.toMap()
 }
+
+/** A request to a content's wiki endpoint: its query parameters and, when it carried a valid token, who asked. */
+class WikiApiRequest(val server: MinecraftServer, val query: Map<String, String>, val viewer: UUID?)
+
+/**
+ * Answers one wiki endpoint. Handlers run on the wiki's HTTP threads, not the server thread: read only what is
+ * safe to read there (for example a content's own database), or hand work to `server.submit`. Throw
+ * [IllegalArgumentException] for a bad request.
+ */
+fun interface WikiApiHandler {
+    fun handle(request: WikiApiRequest): JsonElement
+}
+
+/** Endpoints contents add to the server wiki under `/api/<name>`, for example `pvp/matches`. */
+object WikiApi {
+    private val handlers = ConcurrentHashMap<String, WikiApiHandler>()
+
+    fun register(name: String, handler: WikiApiHandler): AutoCloseable {
+        require(name.matches(Regex("[a-z0-9_-]+(/[a-z0-9_-]+)*")) && name != "me") { "Invalid wiki endpoint: $name" }
+        handlers[name] = handler
+        return AutoCloseable { handlers.remove(name, handler) }
+    }
+
+    fun handler(name: String): WikiApiHandler? = handlers[name]
+}
