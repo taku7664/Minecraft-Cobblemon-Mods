@@ -232,14 +232,14 @@
         var wrap = el("div", "table-wrap"); wrap.appendChild(table);
         return wrap;
       }
-      var normal = data.spawns.filter(function (s) { return s.bucket !== "오야붕"; });
-      var alpha = data.spawns.filter(function (s) { return s.bucket === "오야붕"; });
+      var normal = data.spawns.filter(function (s) { return s.bucket !== "알파"; });
+      var alpha = data.spawns.filter(function (s) { return s.bucket === "알파"; });
       if (normal.length) box.appendChild(spawnTable(normal));
-      else box.appendChild(el("p", "", "일반 개체는 야생에서 나오지 않고, 오야붕으로만 나옵니다."));
+      else box.appendChild(el("p", "", "일반 개체는 야생에서 나오지 않고, 알파 포켓몬으로만 나옵니다."));
       if (alpha.length) {
-        var details = el("details"); var summary = el("summary", "", "오야붕 출현 " + alpha.length + "곳");
+        var details = el("details"); var summary = el("summary", "", "알파 포켓몬 출현 " + alpha.length + "곳");
         details.appendChild(summary);
-        details.appendChild(el("p", "wiki-crumbs", "오야붕은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다."));
+        details.appendChild(el("p", "wiki-crumbs", "알파 포켓몬은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다."));
         details.appendChild(spawnTable(alpha));
         box.appendChild(details);
       }

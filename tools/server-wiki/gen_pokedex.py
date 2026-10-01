@@ -22,7 +22,7 @@ OUT = REPO / "server-wiki" / "assets" / "data" / "dex"
 DEFAULT_SERVER = REPO / "dev-server"
 LOOM_ASSETS = pathlib.Path.home() / ".gradle/caches/fabric-loom/assets"
 
-BUCKETS = {"common": "흔함", "uncommon": "보통", "rare": "드묾", "ultra-rare": "매우 드묾", "boss": "오야붕"}
+BUCKETS = {"common": "흔함", "uncommon": "보통", "rare": "드묾", "ultra-rare": "매우 드묾", "boss": "알파"}
 REGIONS = {"alolan": "알로라의 모습", "galarian": "가라르의 모습", "hisuian": "히스이의 모습", "paldean": "팔데아의 모습",
            "valencian": "발렌시아의 모습"}
 POSITIONS = {"grounded": "땅 위", "surface": "물 위", "submerged": "물속", "seafloor": "바다 밑바닥", "lavafloor": "용암 바닥",
