@@ -17,6 +17,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.gui.screens.BackupConfirmScreen
 import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.Screenshot
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 import java.util.concurrent.atomic.AtomicBoolean
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
  * space|esc` presses a key on the battle screen, `mouse:x,y` moves the cursor to GUI coordinates, `fight` and `switch`
  * open those menus as their tiles would, and `info` toggles the information overlay. Then the client stops.
  * `confirm` presses the bound select key, `log` toggles the battle log, `tile:N` presses the Nth command.
+ * `settings` opens the mod's settings screen; only `wait` and `cap` steps may follow it.
  * `BATTLE_UI_CAPTURE_TRAINER=single|double|triple` battles a disposable NPC trainer in that format instead of the
  * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
@@ -64,6 +66,7 @@ object BattleUiCaptureHarness {
         var battleRequested = false
         var ticks = 0
         var waitTicks = 0
+        var settings: Screen? = null
         val captured = AtomicBoolean(true)
         var done = false
         val trainerFormat = when (System.getenv("BATTLE_UI_CAPTURE_TRAINER")?.trim()) {
@@ -170,7 +173,9 @@ object BattleUiCaptureHarness {
                 return@EndTick
             }
             val battleScreen = client.screen as? BattleGUI
-            if (battleScreen == null) {
+            // The settings screen, once a step opens it, takes waits and captures in the battle screen's place.
+            val onSettings = settings != null && client.screen === settings
+            if (battleScreen == null && !onSettings) {
                 if (ticks > 1200) error("The battle screen did not show")
                 return@EndTick
             }
@@ -179,7 +184,7 @@ object BattleUiCaptureHarness {
                 waitTicks -= 1
                 return@EndTick
             }
-            if (steps.firstOrNull() == "ready") {
+            if (steps.firstOrNull() == "ready" && battleScreen != null) {
                 // Narration hides the command menu until it is read; the menu itself arrives a frame after Escape.
                 BattleDialogue.clear()
                 if (battleScreen.getCurrentActionSelection() !is BattleGeneralActionSelection) {
@@ -195,6 +200,7 @@ object BattleUiCaptureHarness {
                 return@EndTick
             }
             val (verb, argument) = step.split(':', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+            fun battle() = checkNotNull(battleScreen) { "$step needs the battle screen" }
             when (verb) {
                 "ready" -> Unit
                 "wait" -> waitTicks = argument.toInt()
@@ -209,7 +215,7 @@ object BattleUiCaptureHarness {
                 }
                 "key" -> {
                     val key = KEYS[argument] ?: error("Unknown capture key $argument")
-                    battleScreen.keyPressed(key, 0, 0)
+                    battle().keyPressed(key, 0, 0)
                 }
                 "mouse" -> {
                     val (x, y) = argument.split(';', '/').map(String::toDouble)
@@ -217,16 +223,16 @@ object BattleUiCaptureHarness {
                     GLFW.glfwSetCursorPos(client.window.window, x * factor, y * factor)
                 }
                 "fight", "switch" -> {
-                    val general = checkNotNull(battleScreen.getCurrentActionSelection() as? BattleGeneralActionSelection) {
+                    val general = checkNotNull(battle().getCurrentActionSelection() as? BattleGeneralActionSelection) {
                         "$verb needs the general command menu"
                     }
                     if (verb == "fight") general.tiles.first().onClick.invoke()
-                    else battleScreen.changeActionSelection(BattleSwitchPokemonSelection(battleScreen, general.request))
+                    else battle().changeActionSelection(BattleSwitchPokemonSelection(battle(), general.request))
                 }
                 "info" -> BattleInfoPanel.toggle()
                 "confirm" -> {
                     val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey).value
-                    battleScreen.keyPressed(key, 0, 0)
+                    battle().keyPressed(key, 0, 0)
                     BattleDialogue.releaseConfirm(key, 0)
                 }
                 "log" -> {
@@ -235,10 +241,14 @@ object BattleUiCaptureHarness {
                     BattleTranscriptOverlay.releaseKey(key, 0)
                 }
                 "tile" -> {
-                    val general = checkNotNull(battleScreen.getCurrentActionSelection() as? BattleGeneralActionSelection) {
+                    val general = checkNotNull(battle().getCurrentActionSelection() as? BattleGeneralActionSelection) {
                         "tile needs the general command menu"
                     }
                     general.tiles[argument.toInt()].onClick.invoke()
+                }
+                "settings" -> {
+                    settings = ClothConfigScreenBuilder.create(client.screen ?: error("settings needs a screen to return to"))
+                    client.setScreen(settings)
                 }
                 else -> error("Unknown capture step $step")
             }

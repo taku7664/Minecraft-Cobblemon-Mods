@@ -3,6 +3,9 @@ package jbro.cobblemon.ui.extended
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
+import jbro.cobblemon.uikit.UiPalettePreset
+import jbro.cobblemon.uikit.UiThemeStyle
 import net.fabricmc.loader.api.FabricLoader
 import java.io.File
 
@@ -132,6 +135,12 @@ object PanelConfig {
     var battleTheme: String = BattleUiThemes.CHAMPIONS.id
         private set
 
+    /** The shared Cobblemon UI look (MCC hub, dialogue, HUD buttons): a style and a palette, by id. */
+    var uiStyle: String = UiThemeStyle.DS_WINDOW.id
+        private set
+    var uiPalette: String = UiPalettePreset.TOWER_LOBBY.id
+        private set
+
     // Default log dimensions
     const val DEFAULT_LOG_WIDTH = 200
     const val DEFAULT_LOG_HEIGHT = 120
@@ -186,7 +195,10 @@ object PanelConfig {
         val showOpponentSpeedRange: Boolean? = null,
         val showBaseCritRate: Boolean = false,
         /** Null when absent from older config files; the Champions theme then. */
-        val battleTheme: String? = null
+        val battleTheme: String? = null,
+        /** Null when absent from older config files; the DS window in the Battle Tower lobby's colours then. */
+        val uiStyle: String? = null,
+        val uiPalette: String? = null
     )
 
     fun load() {
@@ -228,6 +240,7 @@ object PanelConfig {
                 showOpponentSpeedRange = data.showOpponentSpeedRange ?: true
                 showBaseCritRate = data.showBaseCritRate
                 setBattleTheme(data.battleTheme ?: BattleUiThemes.CHAMPIONS.id)
+                setUiTheme(data.uiStyle ?: UiThemeStyle.DS_WINDOW.id, data.uiPalette ?: UiPalettePreset.TOWER_LOBBY.id)
                 CobblemonUi.LOGGER.info("PanelConfig: Loaded config - features: team=$enableTeamIndicators, panel=$enableBattleInfoPanel, log=$enableBattleLog, logDamagePct=$enableBattleLogDamagePercentages, moveTooltips=$enableMoveTooltips")
             }
         } catch (e: Exception) {
@@ -262,7 +275,9 @@ object PanelConfig {
                 showStatRanges = showStatRanges,
                 showOpponentSpeedRange = showOpponentSpeedRange,
                 showBaseCritRate = showBaseCritRate,
-                battleTheme = battleTheme
+                battleTheme = battleTheme,
+                uiStyle = uiStyle,
+                uiPalette = uiPalette
             )
             AtomicTextFileWriter.write(configFile.toPath(), gson.toJson(data))
             CobblemonUi.LOGGER.debug("PanelConfig: Saved config")
@@ -433,6 +448,19 @@ object PanelConfig {
         if (!BattleUiThemes.select(id)) BattleUiThemes.select(BattleUiThemes.CHAMPIONS.id)
         battleTheme = BattleUiThemes.current.id
     }
+
+    /** Applies the shared look at once; an unknown style or palette falls back to the default. */
+    fun setUiTheme(style: String, palette: String) {
+        if (!CobblemonUiSharedTheme.select("$style.$palette")) {
+            CobblemonUiSharedTheme.select("${UiThemeStyle.DS_WINDOW.id}.${UiPalettePreset.TOWER_LOBBY.id}")
+        }
+        uiStyle = CobblemonUiSharedTheme.style.id
+        uiPalette = CobblemonUiSharedTheme.palette.id
+    }
+
+    fun setUiStyle(style: String) = setUiTheme(style, uiPalette)
+
+    fun setUiPalette(palette: String) = setUiTheme(uiStyle, palette)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Server-synced effective values (local config when server does not override)

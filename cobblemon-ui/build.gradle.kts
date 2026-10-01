@@ -26,6 +26,10 @@ dependencies {
 
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
+    // The settings screen in development runs, for the capture harness; players install Cloth themselves.
+    modLocalRuntime("me.shedaniel.cloth:cloth-config-fabric:15.0.140") {
+        exclude(group = "net.fabricmc.fabric-api")
+    }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

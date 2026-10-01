@@ -2,6 +2,8 @@ package jbro.cobblemon.ui.extended
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes
+import jbro.cobblemon.uikit.UiPalettePreset
+import jbro.cobblemon.uikit.UiThemeStyle
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
@@ -14,6 +16,30 @@ object ClothConfigScreenBuilder {
             .setTitle(Component.translatable("cobblemon_ui.config.title"))
             .setSavingRunnable { PanelConfig.save() }
         val entries = builder.entryBuilder()
+        // The theme comes first, so it is the tab the settings open on.
+        val theme = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.theme"))
+        theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.battleTheme"),
+            BattleUiThemes.all.map { it.id }.toTypedArray(), PanelConfig.battleTheme)
+            .setDefaultValue(BattleUiThemes.CHAMPIONS.id)
+            .setNameProvider { Component.translatable("cobblemon_ui.config.battleTheme.$it") }
+            .setTooltip(Component.translatable("cobblemon_ui.config.battleTheme.tooltip"))
+            .setSaveConsumer(PanelConfig::setBattleTheme).build())
+        // The MCC hub, the dialogue box and the HUD buttons share one look; the default is listed first.
+        val styles = listOf(UiThemeStyle.DS_WINDOW, UiThemeStyle.PIXEL_FRAME).map { it.id }
+        theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.uiStyle"),
+            styles.toTypedArray(), PanelConfig.uiStyle)
+            .setDefaultValue(UiThemeStyle.DS_WINDOW.id)
+            .setNameProvider { Component.translatable("cobblemon_ui.config.uiStyle.option", styles.indexOf(it) + 1) }
+            .setTooltip(Component.translatable("cobblemon_ui.config.uiStyle.tooltip"))
+            .setSaveConsumer(PanelConfig::setUiStyle).build())
+        val palettes = UiPalettePreset.entries.map { it.id }
+        theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.uiPalette"),
+            palettes.toTypedArray(), PanelConfig.uiPalette)
+            .setDefaultValue(UiPalettePreset.TOWER_LOBBY.id)
+            .setNameProvider { Component.translatable("cobblemon_ui.config.uiPalette.option", palettes.indexOf(it) + 1) }
+            .setTooltip(Component.translatable("cobblemon_ui.config.uiPalette.tooltip"))
+            .setSaveConsumer(PanelConfig::setUiPalette).build())
+
         val features = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.features"))
 
         features.addEntry(entries.startBooleanToggle(
@@ -32,13 +58,6 @@ object ClothConfigScreenBuilder {
         ).setDefaultValue(true)
             .setTooltip(Component.translatable("cobblemon_ui.config.enableMoveTooltips.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
-
-        features.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.battleTheme"),
-            BattleUiThemes.all.map { it.id }.toTypedArray(), PanelConfig.battleTheme)
-            .setDefaultValue(BattleUiThemes.CHAMPIONS.id)
-            .setNameProvider { Component.translatable("cobblemon_ui.config.battleTheme.$it") }
-            .setTooltip(Component.translatable("cobblemon_ui.config.battleTheme.tooltip"))
-            .setSaveConsumer(PanelConfig::setBattleTheme).build())
 
         val sizing = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.sizing"))
         sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))
