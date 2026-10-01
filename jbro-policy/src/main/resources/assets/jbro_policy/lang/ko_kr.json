@@ -162,5 +162,11 @@
   "legend.jbro_policy.appeared.zarude": "정글이 술렁입니다! 자루도가 %1$s 근처에 나타났습니다!",
   "legend.jbro_policy.appeared.zekrom": "이상의 검은 번개가 내리칩니다! 제크로무가 %1$s 근처에 나타났습니다!",
   "legend.jbro_policy.appeared.zeraora": "번개처럼 빠른 무언가가 스쳐 갑니다! 제라오라가 %1$s 근처에 나타났습니다!",
-  "legend.jbro_policy.appeared.zygarde": "대지의 세포들이 모여듭니다! 지가르데가 %1$s 근처에 나타났습니다!"
+  "legend.jbro_policy.appeared.zygarde": "대지의 세포들이 모여듭니다! 지가르데가 %1$s 근처에 나타났습니다!",
+  "command.jbro_policy.wiki.link": "내 위키 링크: %s",
+  "command.jbro_policy.wiki.reset": "새 위키 링크입니다. 전에 쓰던 링크는 더 이상 열리지 않습니다: %s",
+  "command.jbro_policy.wiki.link_for": "%s의 위키 링크: %s",
+  "command.jbro_policy.wiki.hover": "브라우저에서 위키를 엽니다. 이 링크는 다른 사람에게 알려 주지 마세요.",
+  "command.jbro_policy.wiki.off": "서버 위키가 꺼져 있습니다.",
+  "command.jbro_policy.wiki.one_player": "플레이어를 한 명만 지정해 주세요."
 }

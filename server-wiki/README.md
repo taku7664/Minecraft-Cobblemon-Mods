@@ -43,8 +43,8 @@ MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시�
 1. 이 폴더의 `index.html`, `pages/`, `assets/`를 서버의 `config/more-cobblemon-contents/wiki/`에 복사합니다.
 2. `config/more-cobblemon-contents/wiki.json`에서 `enabled`를 `true`로, `public_url`을 플레이어가 접속할 주소로
    바꾸고(예: `http://play.example.com:8100`) 그 포트를 엽니다. 설정은 서버를 다시 켜면 반영됩니다.
-3. 플레이어는 게임에서 `/mcc wiki`를 입력하고 채팅의 링크를 누릅니다. 링크에 든 토큰은 브라우저에 저장되고
-   주소창에서는 지워지며, 그다음부터는 새로고침할 때마다 최신 정보를 받아 옵니다. `/mcc wiki reset`은 새 링크를
+3. 플레이어는 게임에서 `/wiki`를 입력하고 채팅의 링크를 누릅니다. 링크에 든 토큰은 브라우저에 저장되고
+   주소창에서는 지워지며, 그다음부터는 새로고침할 때마다 최신 정보를 받아 옵니다. `/wiki reset`은 새 링크를
    만들고 예전 링크를 막습니다.
 
 문서를 고치면 서버의 `wiki/` 폴더만 바꾸면 되고, 서버를 다시 켤 필요도 없습니다.

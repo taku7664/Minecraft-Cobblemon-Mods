@@ -87,8 +87,7 @@ MccBattleTags.during(setOf(player.uuid), MccBattleTag(CONTENT_ID, "wild_trainer"
 ## Operator commands
 
 These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and
-`/mcc bp history [count]` for their own BP, and `/mcc wiki` and `/mcc wiki reset` for their wiki link while the
-wiki runs. Player arguments that read or edit saved data take offline
+`/mcc bp history [count]` for their own BP. Player arguments that read or edit saved data take offline
 players too.
 
 | Command | What it does |
@@ -122,9 +121,10 @@ BP, records and content sections, read fresh on every request:
 ```
 
 It is off by default, since it opens a port. `public_url` is the address players' browsers reach; without it links
-point at `http://localhost:<port>`. `/mcc wiki` gives a player a link carrying their token, which the wiki keeps in
-the browser and sends with each `/api/me` request; `/mcc wiki reset` issues a new token and ends the old links, and
-`/mcc wiki link <player>` gives operators anyone's link. Tokens live in the world's `data/mcc_wiki_tokens.json`.
+point at `http://localhost:<port>`. A player's link carries their token, which the wiki keeps in the browser and
+sends with each `/api/me` request. The core has no command for links: the server's own mod hands them out with
+`WikiApi.linkFor(playerId)`, and `WikiApi.resetLinkFor(playerId)` issues a new token that ends the old links (on
+this server, jbro-policy's `/wiki`). Tokens live in the world's `data/mcc_wiki_tokens.json`.
 Contents add their own data to `/api/me` with `WikiPlayerData.register(key) { server, playerId -> json }`.
 They add endpoints of their own with `WikiApi.register("pvp/matches") { request -> json }`, answered on the wiki's HTTP
 threads under `/api/<name>`; `request.viewer` is the player whose token came with the request, if any.

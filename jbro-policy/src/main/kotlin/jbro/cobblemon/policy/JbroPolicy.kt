@@ -45,8 +45,10 @@ object JbroPolicy : ModInitializer {
         LegendPolicy.register()
         LegendCommand.register()
         SpawnForCommand.register()
-        // The server wiki's Legend guide reads each player's progress when More Cobblemon Contents serves the wiki.
+        // More Cobblemon Contents serves the server wiki: /wiki hands out links, and the Legend guide reads each
+        // player's progress.
         if (FabricLoader.getInstance().isModLoaded("more_cobblemon_contents")) {
+            jbro.cobblemon.policy.wiki.WikiCommand.register()
             jbro.cobblemon.policy.legend.LegendWikiSection.register()
             jbro.cobblemon.policy.support.InquiryWikiEndpoint.register()
         }

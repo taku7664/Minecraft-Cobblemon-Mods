@@ -51,4 +51,13 @@ object WikiApi {
 
     /** The address players open the wiki at, or null while the wiki is off. */
     fun publicUrl(): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.takeIf { it.running }?.config?.base
+
+    /**
+     * [playerId]'s own wiki link, carrying the token that shows the wiki their data, or null while the wiki is off.
+     * The core gives players no command for it; the server's own mod hands links out.
+     */
+    fun linkFor(playerId: UUID): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.linkFor(playerId)
+
+    /** A new link for [playerId] that ends every link they had before, or null while the wiki is off. */
+    fun resetLinkFor(playerId: UUID): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.resetLinkFor(playerId)
 }

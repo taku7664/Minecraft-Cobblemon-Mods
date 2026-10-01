@@ -28,7 +28,7 @@ import net.minecraft.world.level.storage.LevelResource
 /**
  * The server wiki over HTTP: the wiki's files from [WikiConfig.directory], and `/api/me`, the asking player's live
  * dashboard (BP, records and content sections), so a refresh always shows the latest. The player is known by the
- * token their `/mcc wiki` link carries. Runs only while the Minecraft server does, and only when enabled.
+ * token their wiki link carries (see [jbro.cobblemon.mcc.api.wiki.WikiApi.linkFor]). Runs only while the Minecraft server does, and only when enabled.
  */
 internal object WikiServer {
     @Volatile

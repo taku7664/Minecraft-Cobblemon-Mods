@@ -162,5 +162,11 @@
   "legend.jbro_policy.appeared.zarude": "%2$s appeared near %1$s!",
   "legend.jbro_policy.appeared.zekrom": "%2$s appeared near %1$s!",
   "legend.jbro_policy.appeared.zeraora": "%2$s appeared near %1$s!",
-  "legend.jbro_policy.appeared.zygarde": "%2$s appeared near %1$s!"
+  "legend.jbro_policy.appeared.zygarde": "%2$s appeared near %1$s!",
+  "command.jbro_policy.wiki.link": "Your wiki link: %s",
+  "command.jbro_policy.wiki.reset": "Your new wiki link; the old one no longer opens: %s",
+  "command.jbro_policy.wiki.link_for": "%s's wiki link: %s",
+  "command.jbro_policy.wiki.hover": "Opens the wiki in your browser. Keep this link to yourself.",
+  "command.jbro_policy.wiki.off": "The server wiki is off.",
+  "command.jbro_policy.wiki.one_player": "Name exactly one player."
 }

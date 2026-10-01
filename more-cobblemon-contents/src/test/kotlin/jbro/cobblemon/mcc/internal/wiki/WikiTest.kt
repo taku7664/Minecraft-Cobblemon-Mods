@@ -2,7 +2,6 @@ package jbro.cobblemon.mcc.internal.wiki
 
 import java.nio.file.Files
 import java.util.UUID
-import jbro.cobblemon.mcc.internal.command.BattleContentCommandsTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -43,16 +42,5 @@ class WikiTest {
         val second = restarted.reset(alex)
         assertNull(restarted.playerFor(first))
         assertEquals(alex, restarted.playerFor(second))
-    }
-
-    @Test
-    fun `wiki commands are hidden while the wiki is off and the link for someone else is for operators`() {
-        val root = WikiCommands.build().build()
-        assertFalse(root.requirement.test(BattleContentCommandsTest.source(0)))
-        assertFalse(root.requirement.test(BattleContentCommandsTest.source(4)))
-        val link = root.getChild("link")
-        assertFalse(link.requirement.test(BattleContentCommandsTest.source(0)))
-        assertTrue(link.requirement.test(BattleContentCommandsTest.source(2)))
-        assertTrue(root.getChild("reset").requirement.test(BattleContentCommandsTest.source(0)))
     }
 }

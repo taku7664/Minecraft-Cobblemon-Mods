@@ -50,7 +50,6 @@ object MoreCobblemonContents : ModInitializer {
         ManagedBattleLifecycleEvents.registerServer()
         jbro.cobblemon.mcc.internal.command.MccAdminCommands.register()
         jbro.cobblemon.mcc.internal.wiki.WikiServer.register()
-        jbro.cobblemon.mcc.internal.wiki.WikiCommands.register()
         jbro.cobblemon.mcc.internal.command.MccAdminSources.register(jbro.cobblemon.mcc.api.battle.ManagedPveBattles.adminSource)
         BattleContentCommands.register(
             CONTENTS,

@@ -15,7 +15,7 @@
   var root = document.body.getAttribute("data-root") || ".";
 
   // ---- The player's live data, when the Minecraft server serves the wiki ----------------------------------------
-  // A `/mcc wiki` link carries ?t=<token>. It is kept in this browser and taken out of the address bar, and every
+  // A `/wiki` link carries ?t=<token>. It is kept in this browser and taken out of the address bar, and every
   // page load asks the server for the latest dashboard with it, so a refresh always shows current values.
   var TOKEN_KEY = "mccWikiToken";
   function storage(action) { try { return action(window.localStorage); } catch (ignored) { return null; } }

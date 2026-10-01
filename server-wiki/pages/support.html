@@ -18,7 +18,7 @@
   <p>버그, 건의, 신고 등 운영자에게 전할 내용을 보냅니다. 보낸 문의는 운영진에게 바로 전달됩니다.</p>
 
   <h2>보내기</h2>
-  <div id="inquiry-login" class="note warn" hidden><strong>위키 링크가 필요합니다</strong>게임 안에서 <code>/mcc wiki</code>를 입력해 받은 링크로 위키를 열어야 문의를 보낼 수 있습니다. 문의를 보낸 사람을 확인하기 위해서입니다.</div>
+  <div id="inquiry-login" class="note warn" hidden><strong>위키 링크가 필요합니다</strong>게임 안에서 <code>/wiki</code>를 입력해 받은 링크로 위키를 열어야 문의를 보낼 수 있습니다. 문의를 보낸 사람을 확인하기 위해서입니다.</div>
   <form id="inquiry" class="inquiry" hidden>
     <textarea id="inquiry-reason" maxlength="100" placeholder="문의 내용을 100자 이내로 적어 주세요." required></textarea>
     <div class="row">
@@ -64,7 +64,7 @@
     too_long: "문의 내용은 100자 이내로 적어 주세요.",
     not_configured: "문의 기능이 아직 준비되지 않았습니다. 운영자에게 직접 알려 주세요.",
     failed: "문의를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    unknown_token: "위키 링크가 만료되었습니다. 게임에서 /mcc wiki로 새 링크를 받아 주세요.",
+    unknown_token: "위키 링크가 만료되었습니다. 게임에서 /wiki로 새 링크를 받아 주세요.",
   };
 
   form.addEventListener("submit", function (event) {
