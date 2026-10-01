@@ -8,7 +8,7 @@ import net.minecraft.sounds.SoundEvent;
 final class LastPokemonLowHpAlertPlayer {
     static final double CADENCE_SECONDS = 0.70;
     private static final float PITCH = 1.0F;
-    private static final float BASE_VOLUME = 1.0F;
+    private static final float BASE_VOLUME = 0.1F;
 
     private final LowHpAlertPulseScheduler scheduler = new LowHpAlertPulseScheduler(CADENCE_SECONDS);
 
