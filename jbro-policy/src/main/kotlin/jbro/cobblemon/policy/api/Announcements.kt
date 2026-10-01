@@ -13,6 +13,13 @@ object Announcements {
     /** Server management level, the same as /kick and /ban. */
     const val PERMISSION_LEVEL = 3
 
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(MinecraftServer, Component) -> Unit>()
+
+    /** Hears every notice after it is broadcast, such as the Discord bot passing it on. */
+    internal fun onBroadcast(listener: (MinecraftServer, Component) -> Unit) {
+        listeners += listener
+    }
+
     @JvmStatic
     fun broadcast(server: MinecraftServer, message: Component) {
         val notice = Component.empty()
@@ -20,6 +27,13 @@ object Announcements {
             .append(" ")
             .append(message)
         server.playerList.broadcastSystemMessage(notice, false)
+        listeners.forEach { listener ->
+            try {
+                listener(server, message)
+            } catch (failure: RuntimeException) {
+                JbroPolicy.LOGGER.warn("Announcement listener failed", failure)
+            }
+        }
     }
 
     internal fun register() {

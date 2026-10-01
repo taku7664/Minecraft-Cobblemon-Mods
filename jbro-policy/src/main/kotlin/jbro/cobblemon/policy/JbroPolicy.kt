@@ -58,7 +58,8 @@ object JbroPolicy : ModInitializer {
             MailSettings.load(configDir.resolve("jbro-policy-mail.json")) { message, failure -> LOGGER.warn(message, failure) },
             discord,
         )
-        DiscordBot.register(discord, configDir.resolve("jbro-policy-discord-status.json"))
+        DiscordBot.register(discord, configDir.resolve("jbro-policy-discord-status.json"),
+            withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {

@@ -19,6 +19,8 @@ import java.time.Duration
  * @property botToken the bot that stays online while the server runs; with [inquiryChannelId] it also posts inquiries.
  * @property inquiryChannelId the channel the bot posts inquiries to.
  * @property statusChannelId the channel where the bot keeps one message saying whether the server is open.
+ * @property newsChannelId the channel the bot posts server news to: Champions, records, Legend and shiny catches,
+ *   notices.
  * @property webhookUrl posts inquiries without a bot, used when the bot has no channel.
  */
 data class DiscordSettings(
@@ -26,6 +28,7 @@ data class DiscordSettings(
     val botToken: String = "",
     val inquiryChannelId: String = "",
     val statusChannelId: String = "",
+    val newsChannelId: String = "",
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -47,6 +50,7 @@ data class DiscordSettings(
         require(webhookUrl.isBlank() || isWebhookUrl(webhookUrl)) { "Not a Discord webhook URL" }
         require(inquiryChannelId.isBlank() || inquiryChannelId.all(Char::isDigit)) { "The inquiry channel ID is the channel's number" }
         require(statusChannelId.isBlank() || statusChannelId.all(Char::isDigit)) { "The status channel ID is the channel's number" }
+        require(newsChannelId.isBlank() || newsChannelId.all(Char::isDigit)) { "The news channel ID is the channel's number" }
         require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
     }
 
@@ -59,7 +63,8 @@ data class DiscordSettings(
         fun parse(json: String): DiscordSettings {
             val root = JsonParser.parseString(json).asJsonObject
             fun text(key: String) = root.get(key)?.asString?.trim().orEmpty()
-            return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"))
+            return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"),
+                text("newsChannelId"))
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */

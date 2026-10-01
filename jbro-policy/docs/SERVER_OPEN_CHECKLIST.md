@@ -16,7 +16,7 @@
 | `config/more-cobblemon-contents/hub_tabs.json` | `command_permission_level` | `0` | 모든 플레이어가 `/mcc`로 허브(대시보드·상점·PvP)를 연다. `/mcc` 아래 관리 명령은 이 값과 관계없이 OP 전용이다. `[안내]`의 상점·PvP 안내가 `/mcc`를 소개한다. |
 | `config/styled-nicknames.json` | `nicknameFormat` | `"${nickname}"` | 기본값 `"#${nickname}"`이면 채팅 이름 앞에 `#`이 붙는다. `#`은 닉네임과 본래 이름을 구분하는 표시라서, 빼면 다른 사람 이름을 흉내 낸 닉네임을 구분하기 어려워진다. |
 | `config/jbro-policy.json` | `tips`, `tipIntervalSeconds` | `dev-server` 파일과 같게 | 30초 `[안내]` 목록이다. 파일이 없으면 코드 기본값으로 만들어지고, 기본값은 `dev-server`와 같게 유지한다. |
-| `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의 채널과 상태 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널의 카드를 열림·닫힘으로 고친다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 이 파일과 메일 설정이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |
+| `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `newsChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의·상태·소식 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널의 카드를 열림·닫힘으로 고친다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 이 파일과 메일 설정이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |
 | `config/jbro-policy-mail.json` | `username`, `password`, `from`, `to` | 발송 계정과 받는 주소 | 메일로도 받을 때만 채운다. 디스코드 설정과 함께 비어 있으면 문의가 꺼진다. 비밀번호가 들어가므로 이 문서나 저장소에 값을 적지 않는다. Gmail은 앱 비밀번호를 쓴다. |
 
 ## 설치할 모드

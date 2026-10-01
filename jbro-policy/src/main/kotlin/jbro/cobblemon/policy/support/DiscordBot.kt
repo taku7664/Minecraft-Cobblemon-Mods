@@ -12,6 +12,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 import jbro.cobblemon.policy.JbroPolicy
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -22,13 +23,14 @@ import net.minecraft.server.MinecraftServer
  * heartbeat acknowledgement or a reconnect request starts over, and a refused token stops for good. No socket here,
  * so tests drive it with plain messages.
  */
-internal class DiscordGatewaySession(private val token: String, private val presence: () -> JsonObject) {
+internal class DiscordGatewaySession(private val token: String) {
     sealed interface Action {
         data class Send(val payload: JsonObject) : Action
         data class Heartbeat(val intervalMillis: Long) : Action
         data object Reconnect : Action
         data class Stop(val reason: String) : Action
-        data class Ready(val name: String) : Action
+        data class Ready(val name: String, val applicationId: String, val guildIds: List<String>) : Action
+        data class Interaction(val data: JsonObject) : Action
     }
 
     private var sequence: Long? = null
@@ -45,12 +47,20 @@ internal class DiscordGatewaySession(private val token: String, private val pres
             HEARTBEAT_ACK -> { acknowledged = true; emptyList() }
             HEARTBEAT -> listOf(Action.Send(heartbeatPayload()))
             RECONNECT, INVALID_SESSION -> listOf(Action.Reconnect)
-            DISPATCH -> if (message.get("t")?.asString == "READY") {
-                val user = message.getAsJsonObject("d").getAsJsonObject("user")
-                listOf(Action.Ready(user.get("username").asString))
-            } else emptyList()
+            DISPATCH -> dispatch(message.get("t")?.takeUnless { it.isJsonNull }?.asString, message.getAsJsonObject("d"))
             else -> emptyList()
         }
+    }
+
+    private fun dispatch(type: String?, data: JsonObject?): List<Action> = when {
+        data == null -> emptyList()
+        type == "READY" -> listOf(Action.Ready(
+            data.getAsJsonObject("user").get("username").asString,
+            data.getAsJsonObject("application").get("id").asString,
+            data.getAsJsonArray("guilds")?.map { it.asJsonObject.get("id").asString }.orEmpty(),
+        ))
+        type == "INTERACTION_CREATE" -> listOf(Action.Interaction(data))
+        else -> emptyList()
     }
 
     /** The next heartbeat, or a reconnect when the last one was never acknowledged (a dead connection). */
@@ -67,8 +77,6 @@ internal class DiscordGatewaySession(private val token: String, private val pres
         else -> Action.Reconnect
     }
 
-    fun presenceUpdate(): JsonObject = JsonObject().apply { addProperty("op", PRESENCE_UPDATE); add("d", presence()) }
-
     private fun heartbeatPayload() = JsonObject().apply {
         addProperty("op", HEARTBEAT)
         add("d", sequence?.let { com.google.gson.JsonPrimitive(it) } ?: JsonNull.INSTANCE)
@@ -78,14 +86,14 @@ internal class DiscordGatewaySession(private val token: String, private val pres
         addProperty("op", IDENTIFY)
         add("d", JsonObject().apply {
             addProperty("token", token)
-            // No events are needed: the bot only shows it is online and posts by REST.
+            // Slash commands arrive without any intent; the bot reads no messages.
             addProperty("intents", 0)
             add("properties", JsonObject().apply {
                 addProperty("os", System.getProperty("os.name").orEmpty().lowercase())
                 addProperty("browser", "jbro-policy")
                 addProperty("device", "jbro-policy")
             })
-            add("presence", presence())
+            add("presence", PRESENCE)
         })
     }
 
@@ -93,58 +101,51 @@ internal class DiscordGatewaySession(private val token: String, private val pres
         const val DISPATCH = 0
         const val HEARTBEAT = 1
         const val IDENTIFY = 2
-        const val PRESENCE_UPDATE = 3
         const val RECONNECT = 7
         const val INVALID_SESSION = 9
         const val HELLO = 10
         const val HEARTBEAT_ACK = 11
 
-        /** Online, with a custom status naming how many players are on. */
-        fun presence(players: Int): JsonObject = JsonObject().apply {
+        /** Online, with no status text. */
+        val PRESENCE: JsonObject get() = JsonObject().apply {
             add("since", JsonNull.INSTANCE)
-            add("activities", JsonArray().apply {
-                add(JsonObject().apply {
-                    addProperty("name", "Custom Status")
-                    addProperty("type", 4)
-                    addProperty("state", statusText(players))
-                })
-            })
+            add("activities", JsonArray())
             addProperty("status", "online")
             addProperty("afk", false)
         }
-
-        fun statusText(players: Int) = if (players > 0) "서버가 열려있어요!!! (${players}명 접속 중)" else "서버가 열려있어요!!!"
     }
 }
 
 /**
- * The server's Discord bot: online from server start to stop, its status showing how many players are on, and the
- * poster of inquiries when it has a channel. It reconnects by itself after a dropped connection, waiting longer each
- * time up to five minutes, and gives up only when Discord refuses the token.
+ * The server's Discord bot, online from server start to stop. It keeps the status channel's card current, posts
+ * news, answers slash commands and posts inquiries when it has a channel for them. It reconnects by itself after a
+ * dropped connection, waiting longer each time up to five minutes, and gives up only when Discord refuses the token.
  */
 internal object DiscordBot {
     const val USER_AGENT = "DiscordBot (https://github.com/taku7664/Minecraft-Cobblemon-Mods, 1.0)"
     private const val GATEWAY = "wss://gateway.discord.gg/?v=10&encoding=json"
-    private const val PRESENCE_DEBOUNCE_SECONDS = 15L
+    private const val STATUS_DEBOUNCE_SECONDS = 15L
     private const val STATUS_REFRESH_MINUTES = 5L
+    private const val COMMAND_TIMEOUT_SECONDS = 10L
 
     private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
     // Everything about the connection happens on this one thread, so sends never overlap.
     private val worker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord").apply { isDaemon = true } }
+    // REST calls (status card, news, commands) run here, so a slow request never holds up the gateway.
+    private val restWorker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord-rest").apply { isDaemon = true } }
 
     private var token = ""
+    private var rest: DiscordRest? = null
+    @Volatile private var server: MinecraftServer? = null
     @Volatile private var running = false
     @Volatile private var players = 0
     private var socket: WebSocket? = null
     private var session: DiscordGatewaySession? = null
     private var heartbeat: ScheduledFuture<*>? = null
-    private var presencePending: ScheduledFuture<*>? = null
     private var retryDelaySeconds = 0L
-
-    // The status message is plain REST, on its own thread so a slow request never holds up the gateway.
-    private val statusWorker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord-status").apply { isDaemon = true } }
     private var status: DiscordStatusMessage? = null
     private var statusRefresh: ScheduledFuture<*>? = null
+    private var statusPending: ScheduledFuture<*>? = null
 
     /** Runs [task] on the worker; a failure is logged, where a scheduled executor would otherwise drop it silently. */
     private fun onWorker(task: () -> Unit) = worker.execute(guarded(task))
@@ -157,15 +158,24 @@ internal object DiscordBot {
         }
     }
 
-    fun register(settings: DiscordSettings, statusFile: java.nio.file.Path) {
+    /**
+     * Starts the bot with the server when [settings] has a token. [withContents] adds the commands and news of More
+     * Cobblemon Contents, and must be true only when it is installed.
+     */
+    fun register(settings: DiscordSettings, statusFile: java.nio.file.Path, withContents: Boolean) {
         if (!settings.botConfigured) return
         token = settings.botToken
+        val client = DiscordRest(token).also { rest = it }
         if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(token, settings.statusChannelId, statusFile)
-        ServerLifecycleEvents.SERVER_STARTED.register { server ->
-            players = server.playerCount
+        if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
+        DiscordCommands.registerBuiltIns()
+        if (withContents) MccDiscordCommands.register()
+        ServerLifecycleEvents.SERVER_STARTED.register { started ->
+            server = started
+            players = started.playerCount
             onWorker { start() }
             showStatus(open = true)
-            statusRefresh = statusWorker.scheduleAtFixedRate({ showStatus(open = true) },
+            statusRefresh = restWorker.scheduleAtFixedRate(guarded { showStatus(open = true) },
                 STATUS_REFRESH_MINUTES, STATUS_REFRESH_MINUTES, TimeUnit.MINUTES)
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
@@ -178,25 +188,32 @@ internal object DiscordBot {
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Discord bot did not finish closing: {}", failure.toString())
             }
+            server = null
         }
         // The player list changes after these events, so count on the next tick.
-        ServerPlayConnectionEvents.JOIN.register { _, _, server -> recount(server) }
-        ServerPlayConnectionEvents.DISCONNECT.register { _, server -> recount(server) }
+        ServerPlayConnectionEvents.JOIN.register { _, _, joined -> recount(joined) }
+        ServerPlayConnectionEvents.DISCONNECT.register { _, left -> recount(left) }
     }
 
     private fun recount(server: MinecraftServer) = server.execute {
         players = server.playerCount
-        onWorker { schedulePresence() }
+        scheduleStatus()
     }
 
     /** Shows the server open or closed in the status channel, when there is one; failures are logged, not thrown. */
-    private fun showStatus(open: Boolean): java.util.concurrent.Future<*> = statusWorker.submit {
+    private fun showStatus(open: Boolean): java.util.concurrent.Future<*> = restWorker.submit {
         val message = status ?: return@submit
         try {
             message.show(open, players)
         } catch (failure: Exception) {
             JbroPolicy.LOGGER.warn("Could not update the Discord status message: {}", failure.toString())
         }
+    }
+
+    /** At most one status edit per debounce window, so a rush of joins does not hit Discord's rate limit. */
+    private fun scheduleStatus() {
+        if (status == null || statusPending?.isDone == false) return
+        statusPending = restWorker.schedule(guarded { showStatus(open = true) }, STATUS_DEBOUNCE_SECONDS, TimeUnit.SECONDS)
     }
 
     private fun start() {
@@ -208,7 +225,6 @@ internal object DiscordBot {
     private fun stop() {
         running = false
         heartbeat?.cancel(false)
-        presencePending?.cancel(false)
         socket?.sendClose(WebSocket.NORMAL_CLOSURE, "server stopping")?.orTimeout(3, TimeUnit.SECONDS)
         socket = null
         session = null
@@ -216,7 +232,7 @@ internal object DiscordBot {
 
     private fun connect() {
         if (!running) return
-        val fresh = DiscordGatewaySession(token) { DiscordGatewaySession.presence(players) }
+        val fresh = DiscordGatewaySession(token)
         session = fresh
         http.newWebSocketBuilder().header("User-Agent", USER_AGENT).buildAsync(URI.create(GATEWAY), Listener(fresh))
             .whenComplete { ws, failure ->
@@ -253,7 +269,9 @@ internal object DiscordBot {
             is DiscordGatewaySession.Action.Ready -> {
                 retryDelaySeconds = 0
                 JbroPolicy.LOGGER.info("Discord bot {} is online", action.name)
+                restWorker.execute(guarded { registerCommands(action.applicationId, action.guildIds) })
             }
+            is DiscordGatewaySession.Action.Interaction -> restWorker.execute(guarded { answer(action.data) })
             DiscordGatewaySession.Action.Reconnect -> { retry(); return }
             is DiscordGatewaySession.Action.Stop -> {
                 JbroPolicy.LOGGER.error("Discord bot stopped: {}. Check botToken in config/jbro-policy-discord.json", action.reason)
@@ -264,6 +282,49 @@ internal object DiscordBot {
         }
     }
 
+    /** Puts the slash commands on every server the bot is in; per server, so they show up at once. */
+    private fun registerCommands(applicationId: String, guildIds: List<String>) {
+        val client = rest ?: return
+        val definitions = DiscordCommands.definitions()
+        for (guild in guildIds) {
+            val response = client.request("PUT", "/applications/$applicationId/guilds/$guild/commands", definitions)
+            if (response.ok) JbroPolicy.LOGGER.info("Discord bot registered {} slash commands", definitions.size())
+            else JbroPolicy.LOGGER.warn("Discord refused the slash commands ({}): {}", response.status, response.body.take(200))
+        }
+    }
+
+    /** Answers one slash command: acknowledges at once, works out the reply on the server thread, then edits it in. */
+    private fun answer(interaction: JsonObject) {
+        val client = rest ?: return
+        if (interaction.get("type")?.asInt != APPLICATION_COMMAND) return
+        val id = interaction.get("id").asString
+        val interactionToken = interaction.get("token").asString
+        val applicationId = interaction.get("application_id").asString
+        val data = interaction.getAsJsonObject("data")
+        val options = data.getAsJsonArray("options")?.associate { option ->
+            option.asJsonObject.get("name").asString to option.asJsonObject.get("value").asString
+        }.orEmpty()
+        client.request("POST", "/interactions/$id/$interactionToken/callback",
+            JsonObject().apply { addProperty("type", DEFERRED_REPLY) }, authorized = false)
+        val command = DiscordCommands.find(data.get("name").asString)
+        val live = server
+        val reply = when {
+            command == null -> DiscordRest.message("모르는 명령이에요.")
+            live == null -> DiscordRest.message("서버가 아직 켜지는 중이에요. 잠시 뒤에 다시 해 주세요.")
+            else -> try {
+                live.submit(Supplier { command.reply(live, options) }).get(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            } catch (failure: Exception) {
+                JbroPolicy.LOGGER.warn("Discord command /{} failed", command.name, failure)
+                DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요.")
+            }
+        }
+        val edited = client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original", reply, authorized = false)
+        if (!edited.ok) JbroPolicy.LOGGER.warn("Discord refused a command reply ({}): {}", edited.status, edited.body.take(200))
+    }
+
+    private const val APPLICATION_COMMAND = 2
+    private const val DEFERRED_REPLY = 5
+
     private fun send(payload: JsonObject) {
         val open = socket ?: return JbroPolicy.LOGGER.warn("Discord bot had no open connection to send on")
         try {
@@ -272,15 +333,6 @@ internal object DiscordBot {
             JbroPolicy.LOGGER.warn("Discord bot could not send: {}", failure.toString())
             retry()
         }
-    }
-
-    /** At most one status change per debounce window, so a rush of joins does not hit Discord's rate limit. */
-    private fun schedulePresence() {
-        if (!running || presencePending?.isDone == false) return
-        presencePending = worker.schedule(guarded {
-            session?.let { send(it.presenceUpdate()) }
-            showStatus(open = true)
-        }, PRESENCE_DEBOUNCE_SECONDS, TimeUnit.SECONDS)
     }
 
     private class Listener(private val owner: DiscordGatewaySession) : WebSocket.Listener {

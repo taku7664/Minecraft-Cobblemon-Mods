@@ -6,13 +6,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class DiscordGatewaySessionTest {
-    private var players = 3
-    private val session = DiscordGatewaySession("TOKEN") { DiscordGatewaySession.presence(players) }
+    private val session = DiscordGatewaySession("TOKEN")
 
     private fun sent(action: Action) = (action as Action.Send).payload
 
     @Test
-    fun `hello starts the heartbeat and logs in, online with the player count`() {
+    fun `hello starts the heartbeat and logs in, online with no status text`() {
         val actions = session.onMessage("""{"op":10,"d":{"heartbeat_interval":41250},"s":null,"t":null}""")
         assertEquals(Action.Heartbeat(41250), actions[0])
         val identify = sent(actions[1])
@@ -22,14 +21,14 @@ class DiscordGatewaySessionTest {
         assertEquals(0, d.get("intents").asInt)
         val presence = d.getAsJsonObject("presence")
         assertEquals("online", presence.get("status").asString)
-        assertEquals("서버가 열려있어요!!! (3명 접속 중)", presence.getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
+        assertEquals(0, presence.getAsJsonArray("activities").size())
     }
 
     @Test
     fun `heartbeats carry the last sequence, and a missed acknowledgement reconnects`() {
         session.onMessage("""{"op":10,"d":{"heartbeat_interval":1000}}""")
-        session.onMessage("""{"op":0,"t":"READY","s":1,"d":{"user":{"username":"빡켓몬봇"}}}""").let {
-            assertEquals(listOf(Action.Ready("빡켓몬봇")), it)
+        session.onMessage("""{"op":0,"t":"READY","s":1,"d":{"user":{"username":"빡켓몬봇"},"application":{"id":"77"},"guilds":[{"id":"5","unavailable":true}]}}""").let {
+            assertEquals(listOf(Action.Ready("빡켓몬봇", "77", listOf("5"))), it)
         }
         val first = sent(session.heartbeat())
         assertEquals(1, first.get("op").asInt)
@@ -58,10 +57,9 @@ class DiscordGatewaySessionTest {
     }
 
     @Test
-    fun `the status follows the player count`() {
-        players = 0
-        val update = session.presenceUpdate()
-        assertEquals(3, update.get("op").asInt)
-        assertEquals("서버가 열려있어요!!!", update.getAsJsonObject("d").getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
+    fun `slash commands arrive as interactions`() {
+        val actions = session.onMessage("""{"op":0,"t":"INTERACTION_CREATE","s":3,"d":{"id":"9","type":2,"data":{"name":"접속자"}}}""")
+        val interaction = actions.single() as Action.Interaction
+        assertEquals("접속자", interaction.data.getAsJsonObject("data").get("name").asString)
     }
 }
