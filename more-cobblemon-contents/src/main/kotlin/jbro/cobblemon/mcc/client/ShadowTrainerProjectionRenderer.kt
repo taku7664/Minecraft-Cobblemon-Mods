@@ -30,7 +30,11 @@ import net.minecraft.world.phys.Vec3
 import org.joml.Matrix3f
 import org.joml.Matrix4f
 
-/** Renders a client-only copy of the challenger; no shadow entity is added to either world. */
+/**
+ * Renders the opponent trainer client-side; no entity is added to either world. Without a skin from the content it is
+ * a hologram copy of the challenger (a shadow battle); with one, such as a League gym leader's, it is that trainer,
+ * drawn solid and lit like any other entity.
+ */
 internal object ShadowTrainerProjectionRenderer {
     private val state = ShadowTrainerProjectionState()
     private var renderedBattleId: UUID? = null
@@ -63,7 +67,10 @@ internal object ShadowTrainerProjectionRenderer {
     private fun renderBeforeExternalFinalization(context: WorldRenderContext) {
         runOptionalClientEffect(
             action = {
-                if (ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
+                val projection = state.current() ?: return@runOptionalClientEffect
+                // A shader pack drops the hologram's own shader, so the hologram waits for the late pass; a solid
+                // trainer renders here with the other entities, which the shader pack shades as usual.
+                if (projection.isHologram && ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
                 val buffers = context.consumers() ?: return@runOptionalClientEffect
                 val frame = TrainerHologramRenderFrame.capture(context) ?: return@runOptionalClientEffect
                 render(frame, buffers)
@@ -77,7 +84,7 @@ internal object ShadowTrainerProjectionRenderer {
             action = {
                 pendingShaderPackFrame = if (
                     ExternalShaderPackState.isInUse() && !ExternalShaderPackState.isRenderingShadowPass() &&
-                    state.current() != null
+                    state.current()?.isHologram == true
                 ) {
                     TrainerHologramRenderFrame.capture(context)
                 } else {
@@ -121,24 +128,29 @@ internal object ShadowTrainerProjectionRenderer {
         val poseStack = frame.newPoseStack()
         val partialTick = frame.partialTick
         val shadow = shadowPlayer(level, projection)
-        if (projection.resourceSkin == null) copyVisibleEquipment(sourcePlayer, shadow)
+        val hologram = projection.isHologram
+        if (hologram) copyVisibleEquipment(sourcePlayer, shadow)
         place(
             shadow,
             projection,
             ShadowTrainerDisplayNameResolver.resolve(projection, CobblemonClient.battle, sourcePlayer.uuid),
+            invisible = hologram,
         )
 
         val camera = frame.cameraPosition
         val relative = frame.relativePosition(Vec3(projection.x, projection.y, projection.z))
-        ShadowHologramShader.setCameraWorldPosition(camera.x, camera.y, camera.z)
-        ShadowHologramFloorRenderer.render(
-            poseStack,
-            buffers,
-            relative.x,
-            relative.y,
-            relative.z,
-        )
+        if (hologram) {
+            ShadowHologramShader.setCameraWorldPosition(camera.x, camera.y, camera.z)
+            ShadowHologramFloorRenderer.render(
+                poseStack,
+                buffers,
+                relative.x,
+                relative.y,
+                relative.z,
+            )
+        }
         renderPass(
+            hologram,
             client,
             shadow,
             poseStack,
@@ -161,7 +173,7 @@ internal object ShadowTrainerProjectionRenderer {
         }
     }
 
-    private fun place(player: ShadowPlayer, projection: ShadowTrainerProjection, displayName: Component?) {
+    private fun place(player: ShadowPlayer, projection: ShadowTrainerProjection, displayName: Component?, invisible: Boolean) {
         player.setPos(projection.x, projection.y, projection.z)
         player.yRot = projection.yaw
         player.yRotO = projection.yaw
@@ -170,7 +182,7 @@ internal object ShadowTrainerProjectionRenderer {
         player.yHeadRot = projection.yaw
         player.yHeadRotO = projection.yaw
         player.setGlowingTag(false)
-        player.isInvisible = true
+        player.isInvisible = invisible
         player.customName = displayName
         player.isCustomNameVisible = displayName != null
     }
@@ -180,6 +192,7 @@ internal object ShadowTrainerProjectionRenderer {
     }
 
     private fun renderPass(
+        hologram: Boolean,
         client: Minecraft,
         shadow: ShadowPlayer,
         poseStack: PoseStack,
@@ -202,12 +215,8 @@ internal object ShadowTrainerProjectionRenderer {
                 yaw,
                 partialTick,
                 poseStack,
-                HologramBufferSource(
-                    delegate = buffers,
-                    gameTicks = gameTicks,
-                    cameraY = cameraY,
-                ),
-                LightTexture.FULL_BRIGHT,
+                if (hologram) HologramBufferSource(delegate = buffers, gameTicks = gameTicks, cameraY = cameraY) else buffers,
+                if (hologram) LightTexture.FULL_BRIGHT else client.entityRenderDispatcher.getPackedLightCoords(shadow, partialTick),
             )
         } finally {
             poseStack.popPose()
@@ -411,3 +420,6 @@ private class HologramVertexConsumer(
         return this
     }
 }
+
+/** Whether this projection is the challenger's hologram copy rather than a trainer the content dressed in a skin. */
+internal val ShadowTrainerProjection.isHologram: Boolean get() = resourceSkin == null

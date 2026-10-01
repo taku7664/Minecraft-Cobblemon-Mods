@@ -134,7 +134,8 @@ class ShadowHologramRenderIsolationTest {
         )
 
         assertTrue(projectionRenderer.contains("WorldRenderEvents.LAST.register(::prepareShaderPackRender)"))
-        assertTrue(projectionRenderer.contains("if (ExternalShaderPackState.isInUse()) return"))
+        // Only the hologram waits for the late pass; a trainer with its own skin renders with the other entities.
+        assertTrue(projectionRenderer.contains("if (projection.isHologram && ExternalShaderPackState.isInUse()) return"))
         assertTrue(projectionRenderer.contains("fun renderAfterExternalShaderPack()"))
         assertTrue(projectionRenderer.contains("client.renderBuffers().bufferSource()"))
         assertTrue(projectionRenderer.contains("buffers.endBatch()"))
