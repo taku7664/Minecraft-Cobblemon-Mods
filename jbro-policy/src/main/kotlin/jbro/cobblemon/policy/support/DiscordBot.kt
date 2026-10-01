@@ -321,7 +321,11 @@ internal object DiscordBot {
             }
         }
         val edited = client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original", reply, authorized = false)
-        if (!edited.ok) JbroPolicy.LOGGER.warn("Discord refused a command reply ({}): {}", edited.status, edited.body.take(200))
+        if (edited.ok) return
+        JbroPolicy.LOGGER.warn("Discord refused a command reply ({}): {}", edited.status, edited.body.take(500))
+        // Without a reply the command stays on "thinking" for good, so say something plain instead.
+        client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original",
+            DiscordRest.message("답을 만들지 못했어요. 운영진에게 알려 주세요."), authorized = false)
     }
 
     private const val APPLICATION_COMMAND = 2

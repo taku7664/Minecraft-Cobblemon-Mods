@@ -19,6 +19,9 @@ import net.minecraft.server.MinecraftServer
 internal object MccDiscordCommands {
     private const val RANKING_SIZE = 10
     private const val COLOR = 0xF2B24B
+    // Discord's limits for an embed's title and field name, and for a field's value.
+    private const val TITLE_LIMIT = 256
+    private const val VALUE_LIMIT = 1024
 
     fun register() {
         DiscordCommands.add(record)
@@ -40,7 +43,7 @@ internal object MccDiscordCommands {
                 ?: return DiscordRest.message("'$asked' 트레이너를 찾지 못했어요. 서버에 한 번이라도 접속한 닉네임인지 확인해 주세요.")
             val cards = MccDashboard.cards(server, profile.id)
             val embed = JsonObject().apply {
-                addProperty("title", "${profile.name}의 전적")
+                addProperty("title", "${profile.name}의 전적".take(TITLE_LIMIT))
                 addProperty("color", COLOR)
                 if (cards.isEmpty()) addProperty("description", "아직 기록이 없어요.")
                 add("fields", JsonArray().apply { cards.take(25).forEach { add(field(it)) } })
@@ -49,13 +52,13 @@ internal object MccDiscordCommands {
         }
 
         private fun field(card: MccDashboardCard) = JsonObject().apply {
-            addProperty("name", KoreanText.render(card.title).ifBlank { card.contentId })
+            addProperty("name", KoreanText.render(card.title).ifBlank { card.contentId }.take(TITLE_LIMIT))
             val lines = card.stats.map { "**${KoreanText.render(it.label)}** ${KoreanText.render(it.value)}" } +
                 card.rows.map { row ->
                     val detail = row.detail?.let { " · " + KoreanText.render(it) }.orEmpty()
                     "${KoreanText.render(row.title)}: ${KoreanText.render(row.value)}$detail"
                 } + listOfNotNull(card.note?.let { "_${KoreanText.render(it)}_" })
-            addProperty("value", lines.joinToString("\n").ifBlank { "-" }.take(1024))
+            addProperty("value", lines.joinToString("\n").ifBlank { "-" }.take(VALUE_LIMIT))
             addProperty("inline", false)
         }
     }
@@ -75,17 +78,17 @@ internal object MccDiscordCommands {
             val contentId = options["종류"].orEmpty()
             val boards = MccRankings.boards(server, contentId)
             val embed = JsonObject().apply {
-                addProperty("title", KoreanText.render(MccDashboardCards.contentName(contentId)) + " 순위")
+                addProperty("title", (KoreanText.render(MccDashboardCards.contentName(contentId)) + " 순위").take(TITLE_LIMIT))
                 addProperty("color", COLOR)
                 if (boards.isEmpty()) addProperty("description", "순위를 불러오지 못했어요.")
                 add("fields", JsonArray().apply {
                     boards.forEach { board ->
                         add(JsonObject().apply {
-                            addProperty("name", KoreanText.render(MccDashboardCards.formatName(board.formatId)) +
-                                " · " + KoreanText.render(board.valueName))
+                            addProperty("name", (KoreanText.render(MccDashboardCards.formatName(board.formatId)) +
+                                " · " + KoreanText.render(board.valueName)).take(TITLE_LIMIT))
                             val top = board.entries.take(RANKING_SIZE)
                             addProperty("value", if (top.isEmpty()) "아직 기록이 없어요." else
-                                top.joinToString("\n") { "${it.place}. ${it.playerName} — ${it.value}" })
+                                top.joinToString("\n") { "${it.place}. ${it.playerName} — ${it.value}" }.take(VALUE_LIMIT))
                             addProperty("inline", true)
                         })
                     }

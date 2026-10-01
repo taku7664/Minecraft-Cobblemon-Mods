@@ -19,7 +19,9 @@ internal object KoreanText {
     private val table: Map<String, String> by lazy(::loadModTranslations)
     private val ARGUMENT = Regex("%(?:(\\d+)\\$)?([sd%])")
 
-    fun render(component: Component): String = buildString { append(component, this) }
+    // Named apart from append: inside buildString, append(component, this) resolves to the standard library's
+    // StringBuilder.append(vararg Any?) and writes the component's debug string instead.
+    fun render(component: Component): String = StringBuilder().also { write(component, it) }.toString()
 
     /** The Korean text of [key], or null when no mod translates it. */
     fun translate(key: String): String? = table[key]
@@ -40,7 +42,7 @@ internal object KoreanText {
         }
     }
 
-    private fun append(component: Component, out: StringBuilder) {
+    private fun write(component: Component, out: StringBuilder) {
         when (val contents = component.contents) {
             is TranslatableContents -> {
                 val pattern = table[contents.key]
@@ -51,7 +53,7 @@ internal object KoreanText {
             }
             else -> contents.visit(FormattedText.ContentConsumer<Unit> { text -> out.append(text); Optional.empty() })
         }
-        component.siblings.forEach { append(it, out) }
+        component.siblings.forEach { write(it, out) }
     }
 
     private fun loadModTranslations(): Map<String, String> {

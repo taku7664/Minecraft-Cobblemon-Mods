@@ -1,5 +1,6 @@
 package jbro.cobblemon.policy.support
 
+import net.minecraft.network.chat.Component
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -19,6 +20,12 @@ class DiscordNewsTest {
         assertEquals("🔥", DiscordNews.emoji("more_cobblemon_contents:win_streak"))
         assertEquals("🏭", DiscordNews.emoji("more_cobblemon_contents:highest_floor"))
         assertEquals("📣", DiscordNews.emoji("other:thing"))
+    }
+
+    @Test
+    fun `plain text and its siblings render as text, not as a component's debug string`() {
+        val text = Component.literal("빡켓몬 ").append(Component.literal("서버")).append(Component.literal("!"))
+        assertEquals("빡켓몬 서버!", KoreanText.render(text))
     }
 
     @Test
