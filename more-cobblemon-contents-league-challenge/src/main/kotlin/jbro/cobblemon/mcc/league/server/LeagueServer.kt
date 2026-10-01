@@ -160,7 +160,8 @@ object LeagueServer {
                 challenge.id, challenge.nameKey, run.party, challenge.team, ManagedPveBattles.Format.valueOf(challenge.format),
                 challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = challenge.skill,
                 appearance = jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(
-                    challenge.skin ?: "minecraft:textures/entity/player/wide/steve.png", challenge.slim))) { outcome ->
+                    challenge.skin ?: "minecraft:textures/entity/player/wide/steve.png", challenge.slim),
+                stage = LeagueEngine(catalog).stage(run))) { outcome ->
                 val storage = LeagueSavedData.get(player.server)
                 val latest = storage.read(catalog.id, player.uuid)
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())

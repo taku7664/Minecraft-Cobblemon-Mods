@@ -21,6 +21,8 @@ import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.entity.npc.NPCBattleActor
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import java.util.UUID
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.BattleResultNotices
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
@@ -236,7 +238,10 @@ object WildTrainers {
         npc.skill = WildTrainerQuality.of(definition.tier, cap).skill
         starting += npc.uuid
         val result = try {
-            BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false, party)
+            val stage = if (definition.tier == WildTrainerTier.ACE) "wild_trainer_ace" else "wild_trainer"
+            MccBattleTags.during(setOf(player.uuid), MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, stage, definition.npcClass)) {
+                BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false, party)
+            }
         } catch (failure: RuntimeException) {
             Mod.LOGGER.error("Wild trainer battle could not start for {}", player.uuid, failure)
             null

@@ -126,6 +126,20 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
             encounters.map { it.copy(team = it.team.toList()) }, party.toList()))
     }
 
+    /**
+     * Where [run]'s current battle stands, as clients see it: `gym`, `elite_four` or `champion`, prefixed `hard_` on
+     * the hard route.
+     */
+    fun stage(run: LeagueRun): String {
+        val id = run.challengeId
+        val role = when {
+            id in catalog.gyms || id in catalog.hardGyms -> "gym"
+            run.index == run.encounters.lastIndex -> "champion"
+            else -> "elite_four"
+        }
+        return if (id in catalog.hardGyms || id in catalog.hardFinals) "hard_$role" else role
+    }
+
     fun next(state: LeagueProgress): LeagueProgress {
         val run = requireNotNull(state.run) { "no_run" }
         require(run.awaitingNext && run.index + 1 < run.encounters.size) { "phase_invalid" }

@@ -57,6 +57,26 @@ class LeagueEngineTest {
         assertEquals(state, LeagueProgressCodec.decode(LeagueProgressCodec.encode(state)))
     }
 
+    @Test fun `each battle tells clients whether it is a gym, the Elite Four or the Champion, and which route`() {
+        val engine = LeagueEngine(hardCatalog())
+        var state = LeagueProgress()
+        assertEquals("gym", engine.stage(engine.begin(state, "test:g1", party()).run!!))
+        for (index in 1..8) state = win(engine, state, "test:g$index")
+        var run = engine.begin(state, "test:f1", party())
+        val stages = mutableListOf(engine.stage(run.run!!))
+        for (index in 1..4) {
+            run = engine.next(delivered(engine.finish(run, run.run!!.battleToken, true, 2000)))
+            stages += engine.stage(run.run!!)
+        }
+        assertEquals(List(4) { "elite_four" } + "champion", stages)
+        state = delivered(engine.finish(run, run.run!!.battleToken, true, 2000))
+        assertEquals("hard_gym", engine.stage(engine.begin(state, "test:hg1", party()).run!!))
+        for (index in 1..8) state = win(engine, state, "test:hg$index")
+        run = engine.begin(state, "test:hf1", party())
+        assertEquals("hard_elite_four", engine.stage(run.run!!))
+        assertEquals("hard_champion", engine.stage(run.run!!.copy(index = 4)))
+    }
+
     @Test fun `a league without a hard route never opens one`() {
         val engine = LeagueEngine(catalog())
         assertFalse(engine.hardUnlocked(LeagueProgress(champion = true, championAt = 1)))
