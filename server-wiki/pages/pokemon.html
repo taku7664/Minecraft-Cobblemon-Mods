@@ -16,6 +16,7 @@
 
     <h2>종족값</h2>
     <div class="stat-bars" id="pk-stats"></div>
+    <p id="pk-ev"></p>
 
     <h2>특성</h2>
     <div id="pk-abilities"></div>
@@ -194,7 +195,11 @@
       rows.push(["성비", data.maleRatio == null || data.maleRatio < 0 ? "성별 없음" : "수컷 " + Math.round(data.maleRatio * 100) + "% · 암컷 " + Math.round((1 - data.maleRatio) * 100) + "%"]);
       if (data.height != null) rows.push(["키 · 몸무게", (data.height / 10) + "m · " + (data.weight / 10) + "kg"]);
       var ev = data.evYield.map(function (v, i) { return v ? STAT_NAMES[i] + " " + v : null; }).filter(Boolean);
-      if (ev.length) rows.push(["쓰러뜨리면 얻는 노력치", ev.join(", ")]);
+      var evLine = $("pk-ev"); evLine.innerHTML = "";
+      evLine.appendChild(el("b", "", "쓰러뜨리면 얻는 노력치 "));
+      evLine.appendChild(document.createTextNode(ev.length ? ev.join(", ") : "없음"));
+      evLine.appendChild(document.createTextNode(" · "));
+      var evLink = el("a", "", "노력치란?"); evLink.href = "evs.html"; evLine.appendChild(evLink);
       if (data.experienceGroup) rows.push(["경험치 그룹", EXP[data.experienceGroup] || data.experienceGroup]);
       var body = $("pk-info");
       rows.forEach(function (r) { var tr = el("tr"); tr.appendChild(el("th", "", r[0])); tr.appendChild(el("td", "", r[1])); body.appendChild(tr); });
