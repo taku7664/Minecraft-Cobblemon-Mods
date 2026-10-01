@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import com.cobblemon.mod.common.battles.BagItemActionResponse
@@ -44,9 +45,13 @@ object Cobblemon173BattleRuleHooks {
 
     @JvmStatic
     fun attachConstructed(battle: PokemonBattle) {
-        if (!registrationWindow.attachIfPending(battle.battleId, battle.actors.map { actor -> actor.uuid }.toSet())) {
+        val actorIds = battle.actors.map { actor -> actor.uuid }.toSet()
+        if (!registrationWindow.attachIfPending(battle.battleId, actorIds)) {
             // Not MCC content: players who have not earned gimmicks yet battle without them.
             GimmickLockedBattles.attach(battle)
+            MccBattleTags.claim(battle.battleId, actorIds, fallback = null)?.let { tag ->
+                ManagedBattleContentNetworking.showBeforeBattleInitialization(battle, tag)
+            }
             return
         }
         val mechanics = requireNotNull(registry.allowedMechanics(battle.battleId)) {
@@ -55,7 +60,7 @@ object Cobblemon173BattleRuleHooks {
         ManagedBattleMechanicVisibilityNetworking.showBeforeBattleInitialization(battle, mechanics)
         ManagedBattleContentNetworking.showBeforeBattleInitialization(
             battle,
-            requireNotNull(registry.contentId(battle.battleId)),
+            requireNotNull(MccBattleTags.claim(battle.battleId, actorIds, requireNotNull(registry.contentId(battle.battleId)))),
         )
     }
 
@@ -78,10 +83,8 @@ object Cobblemon173BattleRuleHooks {
     }
 
     private fun hideClientMechanicPolicy(battle: PokemonBattle) {
-        if (registry.isRegistered(battle.battleId)) {
-            ManagedBattleMechanicVisibilityNetworking.hide(battle)
-            ManagedBattleContentNetworking.hide(battle)
-        }
+        if (registry.isRegistered(battle.battleId)) ManagedBattleMechanicVisibilityNetworking.hide(battle)
+        if (MccBattleTags.release(battle.battleId) != null) ManagedBattleContentNetworking.hide(battle)
     }
 
     fun finishRegistration(successfulBattleId: UUID?): Boolean = registrationWindow.finish(successfulBattleId)
@@ -102,6 +105,7 @@ object Cobblemon173BattleRuleHooks {
     fun clear() {
         registrationWindow.clear()
         registry.clear()
+        MccBattleTags.clear()
     }
 
     fun contentId(battleId: UUID): String? = registry.contentId(battleId)

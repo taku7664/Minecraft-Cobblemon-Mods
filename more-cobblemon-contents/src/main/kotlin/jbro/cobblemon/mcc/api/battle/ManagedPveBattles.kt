@@ -31,6 +31,8 @@ object ManagedPveBattles {
         val lockedParty: List<String>, val opponentProperties: List<String>,
         val format: Format = Format.SINGLE, val mechanic: MajorBattleMechanic? = null, val skill: Int = 3,
         val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
+        /** Where in the content this battle stands, for the clients' [MccBattleTag]; the trainer id is its opponent. */
+        val stage: String? = null,
     )
     private data class Active(val playerId: UUID, val request: Request, val complete: (Outcome) -> Unit)
     private data class Completion(val active: Active, val outcome: Outcome)
@@ -92,7 +94,8 @@ object ManagedPveBattles {
                 }
             }, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
             appearance = request.appearance)
-        return when (val result = runtime.startManaged(prepared)) {
+        val tag = MccBattleTag(request.contentId, request.stage, request.trainerId)
+        return when (val result = MccBattleTags.during(setOf(player.uuid), tag) { runtime.startManaged(prepared) }) {
             is PveLaunchResult.Started -> result.battleId.also {
                 if (!completed.get()) state.battles[it] = active
             }

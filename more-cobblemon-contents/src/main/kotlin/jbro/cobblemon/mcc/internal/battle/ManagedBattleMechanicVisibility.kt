@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.runManagedCleanupForEachSafely
-import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -72,12 +72,8 @@ internal data class HideManagedBattleMechanicsPayload(
 
 internal data class ShowManagedBattleContentPayload(
     val battleId: UUID,
-    val contentId: String,
+    val tag: MccBattleTag,
 ) : CustomPacketPayload {
-    init {
-        require(ManagedBattleContentIds.isValid(contentId)) { "contentId must be a lowercase namespaced ID" }
-    }
-
     override fun type(): CustomPacketPayload.Type<ShowManagedBattleContentPayload> = TYPE
 
     companion object {
@@ -85,9 +81,14 @@ internal data class ShowManagedBattleContentPayload(
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, ShowManagedBattleContentPayload> = StreamCodec.of(
             { buffer, payload ->
                 buffer.writeUUID(payload.battleId)
-                buffer.writeUtf(payload.contentId)
+                buffer.writeUtf(payload.tag.contentId)
+                buffer.writeUtf(payload.tag.stage.orEmpty())
+                buffer.writeUtf(payload.tag.opponentId.orEmpty())
             },
-            { buffer -> ShowManagedBattleContentPayload(buffer.readUUID(), buffer.readUtf()) },
+            { buffer ->
+                ShowManagedBattleContentPayload(buffer.readUUID(), MccBattleTag(buffer.readUtf(),
+                    buffer.readUtf().ifEmpty { null }, buffer.readUtf().ifEmpty { null }))
+            },
         )
     }
 }
@@ -149,8 +150,8 @@ object ManagedBattleContentNetworking {
     }
 
     /** Called from the battle constructor before Cobblemon sends its initial battle packets. */
-    fun showBeforeBattleInitialization(battle: PokemonBattle, contentId: String) {
-        val payload = ShowManagedBattleContentPayload(battle.battleId, contentId)
+    fun showBeforeBattleInitialization(battle: PokemonBattle, tag: MccBattleTag) {
+        val payload = ShowManagedBattleContentPayload(battle.battleId, tag)
         battle.players.forEach { player ->
             if (ServerPlayNetworking.canSend(player, ShowManagedBattleContentPayload.TYPE)) {
                 ServerPlayNetworking.send(player, payload)
@@ -158,9 +159,9 @@ object ManagedBattleContentNetworking {
         }
     }
 
-    fun showTo(player: net.minecraft.server.level.ServerPlayer, battleId: UUID, contentId: String) {
+    fun showTo(player: net.minecraft.server.level.ServerPlayer, battleId: UUID, tag: MccBattleTag) {
         if (ServerPlayNetworking.canSend(player, ShowManagedBattleContentPayload.TYPE)) {
-            ServerPlayNetworking.send(player, ShowManagedBattleContentPayload(battleId, contentId))
+            ServerPlayNetworking.send(player, ShowManagedBattleContentPayload(battleId, tag))
         }
     }
 

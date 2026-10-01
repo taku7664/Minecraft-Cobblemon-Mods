@@ -29,5 +29,6 @@ object MoreCobblemonContentsClient : ClientModInitializer {
         ShadowTrainerProjectionRenderer.register()
         ManagedBattleMechanicVisibilityClient.register()
         ManagedBattleContentClientNetworking.register()
+        MccClientContextTracker.register()
     }
 }

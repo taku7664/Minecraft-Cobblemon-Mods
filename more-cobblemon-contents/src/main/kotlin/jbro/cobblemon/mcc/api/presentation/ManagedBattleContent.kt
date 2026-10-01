@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.api.presentation
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import java.util.concurrent.ConcurrentHashMap
 
 object ManagedBattleContentIds {
@@ -16,34 +17,42 @@ object ManagedBattleContentIds {
     fun isValid(value: String): Boolean = CONTENT_ID.matches(value)
 }
 
+/** The tags the server sent for the battles this client is in or watching. */
 class ManagedBattleContentClientState {
-    private val contents = ConcurrentHashMap<UUID, String>()
+    private val tags = ConcurrentHashMap<UUID, MccBattleTag>()
 
-    fun show(battleId: UUID, contentId: String) {
-        require(ManagedBattleContentIds.isValid(contentId)) {
-            "Managed battle content ID must be a lowercase namespaced ID"
-        }
-        contents[battleId] = contentId
+    fun show(battleId: UUID, tag: MccBattleTag) {
+        tags[battleId] = tag
     }
 
+    fun show(battleId: UUID, contentId: String) = show(battleId, MccBattleTag(contentId))
+
     fun hide(battleId: UUID) {
-        contents.remove(battleId)
+        tags.remove(battleId)
     }
 
     fun clear() {
-        contents.clear()
+        tags.clear()
     }
 
-    fun contentId(battleId: UUID): String? = contents[battleId]
+    fun tag(battleId: UUID): MccBattleTag? = tags[battleId]
+
+    fun contentId(battleId: UUID): String? = tags[battleId]?.contentId
 }
 
+/** Client side: what each battle is. `MccClientContext` combines it with the battle on screen. */
 object ManagedBattleContentClient {
     private val state = ManagedBattleContentClientState()
 
+    /** The content running [battleId]. Better Cobblemon Music looks this up by reflection, so keep its signature. */
     @JvmStatic
     fun contentId(battleId: UUID): String? = state.contentId(battleId)
 
-    internal fun show(battleId: UUID, contentId: String) = state.show(battleId, contentId)
+    /** The full tag of [battleId]: content, stage and opponent. */
+    @JvmStatic
+    fun tag(battleId: UUID): MccBattleTag? = state.tag(battleId)
+
+    internal fun show(battleId: UUID, tag: MccBattleTag) = state.show(battleId, tag)
 
     internal fun hide(battleId: UUID) = state.hide(battleId)
 

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket
@@ -63,9 +64,7 @@ object Cobblemon173RemoteSpectate : SpectateCommandBackend {
                     BattleRegistry.getBattle(battleId) === battle && viewerId in battle.spectators
                 },
                 complete = {
-                    Cobblemon173BattleRuleHooks.contentId(battleId)?.let { contentId ->
-                        ManagedBattleContentNetworking.showTo(viewer, battleId, contentId)
-                    }
+                    MccBattleTags.of(battleId)?.let { tag -> ManagedBattleContentNetworking.showTo(viewer, battleId, tag) }
                 },
                 rollback = {
                     runManagedCleanupActions(

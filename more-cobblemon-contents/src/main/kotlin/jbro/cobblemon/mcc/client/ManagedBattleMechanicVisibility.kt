@@ -73,7 +73,7 @@ object ManagedBattleMechanicVisibilityClient {
 object ManagedBattleContentClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(ShowManagedBattleContentPayload.TYPE) { payload, context ->
-            context.client().execute { ManagedBattleContentClient.show(payload.battleId, payload.contentId) }
+            context.client().execute { ManagedBattleContentClient.show(payload.battleId, payload.tag) }
         }
         ClientPlayNetworking.registerGlobalReceiver(HideManagedBattleContentPayload.TYPE) { payload, context ->
             context.client().execute { ManagedBattleContentClient.hide(payload.battleId) }

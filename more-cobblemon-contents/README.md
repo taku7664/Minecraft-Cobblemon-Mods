@@ -53,6 +53,37 @@ A card has up to four stats, up to sixteen rows (title, value, optional detail) 
 the player cannot open yet gets its access denial as the note. Contents with records but no section get a plain
 card from `MccDashboardCards.records`, and a section that fails falls back to that card too.
 
+## Client context for music and other client mods
+
+A client mod can learn where the player is in MCC without touching its internals. `MccClientContext.current()`
+returns the hub tab while the hub is open (`hubTab`, null otherwise) and the battle on screen (`battle`, with its
+`MccBattleTag`). `MccClientContext.listen { previous, current -> }` is told once per change, checked every client tick:
+hub opened or closed, tab switched, battle started, tagged or ended.
+
+A battle's tag names the content that runs it, its stage and, where there is one, the opponent:
+
+| Content | `contentId` | `stage` | `opponentId` |
+|---|---|---|---|
+| League Challenge | `more_cobblemon_contents:league_challenge` | `gym`, `elite_four`, `champion`, and `hard_gym`, `hard_elite_four`, `hard_champion` on the hard route | challenge id, e.g. `more_cobblemon_contents_league_challenge:cynthia` |
+| Wild trainers | `more_cobblemon_contents:league_challenge` | `wild_trainer`, `wild_trainer_ace` | NPC class |
+| Battle Tower | `more_cobblemon_contents:battle_tower` | `regular`, `tier_boss`, `master_ball_boss` | trainer profile id |
+| Battle Factory | `more_cobblemon_contents:battle_factory` | `regular`, `factory_head` | none |
+| PvP | `more_cobblemon_contents:pvp` | `single`, `double` | none |
+
+Hub tab ids are the content ids above, plus `more_cobblemon_contents:dashboard` and `more_cobblemon_contents:shop`.
+Battles no content tagged (wild Pokémon, plain challenges between players) have a null tag.
+
+On the server, MCC tags the battles it runs. A content tags any other battle it starts by starting it inside
+`MccBattleTags.during`; the tag reaches the clients before Cobblemon's first battle packet:
+
+```kotlin
+MccBattleTags.during(setOf(player.uuid), MccBattleTag(CONTENT_ID, "wild_trainer", trainerId)) {
+    BattleBuilder.pvn(player, npc, leadId, BattleFormat.GEN_9_SINGLES, false, false, party)
+}
+```
+
+`ManagedPveBattles.Request` takes the stage directly (`stage = "gym"`) and uses its trainer id as the opponent.
+
 ## Operator commands
 
 These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and
