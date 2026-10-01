@@ -9,7 +9,7 @@
 <body data-root=".." data-no-toc>
 <main>
   <h1>포켓몬 도감</h1>
-  <p>이 서버에 있는 포켓몬 <b id="dx-total">-</b>종의 종족값, 특성, 진화, 배우는 기술, 야생 출현 장소를 정리했습니다. 서버의 실제 데이터에서 뽑은 고정 정보이고, 서버 데이터가 바뀌면 다시 갱신합니다. 포켓몬을 누르면 자세한 정보가 열립니다.</p>
+  <p>이 서버에 있는 포켓몬 <b id="dx-total">-</b>종의 종족값, 쓰러뜨리면 주는 노력치, 특성, 진화, 배우는 기술, 야생 출현 장소를 정리했습니다. 서버의 실제 데이터에서 뽑은 고정 정보이고, 서버 데이터가 바뀌면 다시 갱신합니다. 포켓몬을 누르면 자세한 정보가 열립니다.</p>
   <div class="note">
     <strong>야생 레벨은 레벨캡을 따릅니다</strong>
     이 서버에서 야생 포켓몬의 레벨은 내 레벨캡에 맞춰 정해지므로, 도감에는 레벨을 적지 않았습니다. → <a href="levels.html">레벨캡과 야생 포켓몬</a>
@@ -28,13 +28,17 @@
       <option value="0">HP순</option><option value="1">공격순</option><option value="2">방어순</option>
       <option value="3">특수공격순</option><option value="4">특수방어순</option><option value="5">스피드순</option>
     </select>
+    <select id="dx-ev" aria-label="주는 노력치">
+      <option value="">모든 노력치</option><option value="0">HP 노력치</option><option value="1">공격 노력치</option><option value="2">방어 노력치</option>
+      <option value="3">특공 노력치</option><option value="4">특방 노력치</option><option value="5">스피드 노력치</option>
+    </select>
     <label><input id="dx-wild" type="checkbox"> 야생에서 나오는 것만</label>
     <span class="count" id="dx-count"></span>
   </div>
   <div class="table-wrap">
     <table class="dex-table">
       <thead><tr><th class="num">No.</th><th>이름</th><th>타입</th><th class="num">합계</th><th class="num">HP</th><th class="num">공격</th>
-        <th class="num">방어</th><th class="num">특공</th><th class="num">특방</th><th class="num">스피드</th></tr></thead>
+        <th class="num">방어</th><th class="num">특공</th><th class="num">특방</th><th class="num">스피드</th><th>노력치</th></tr></thead>
       <tbody id="dx-list"></tbody>
     </table>
   </div>
@@ -48,6 +52,7 @@
     var TYPES = { normal: "노말", fire: "불꽃", water: "물", grass: "풀", electric: "전기", ice: "얼음", fighting: "격투", poison: "독",
       ground: "땅", flying: "비행", psychic: "에스퍼", bug: "벌레", rock: "바위", ghost: "고스트", dragon: "드래곤", dark: "악",
       steel: "강철", fairy: "페어리" };
+    var STAT_NAMES = ["HP", "공격", "방어", "특공", "특방", "스피드"];
     var SPECIAL = ["전설", "환상", "울트라비스트", "패러독스", "제한급"];
     var $ = function (id) { return document.getElementById(id); };
     function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
@@ -59,7 +64,7 @@
     var bst = function (p) { return p.stats.reduce(function (a, b) { return a + b; }, 0); };
     var tbody = $("dx-list");
     function render() {
-      var q = $("dx-q").value.trim().toLowerCase(), type = $("dx-type").value, gen = $("dx-gen").value, label = $("dx-label").value;
+      var q = $("dx-q").value.trim().toLowerCase(), type = $("dx-type").value, gen = $("dx-gen").value, label = $("dx-label").value, ev = $("dx-ev").value;
       var sort = $("dx-sort").value, wild = $("dx-wild").checked;
       var shown = dex.filter(function (p) {
         if (q && p.name.toLowerCase().indexOf(q) < 0 && p.id.indexOf(q) < 0 && String(p.dex) !== q.replace(/^0+/, "")) return false;
@@ -67,11 +72,13 @@
         if (gen && String(p.gen) !== gen) return false;
         if (label === "-" && p.labels.some(function (l) { return SPECIAL.indexOf(l) >= 0; })) return false;
         if (label && label !== "-" && p.labels.indexOf(label) < 0) return false;
+        if (ev && !(p.ev && p.ev[+ev])) return false;
         if (wild && !p.spawns) return false;
         return true;
       }).sort(function (a, b) {
         if (sort === "name") return a.name.localeCompare(b.name, "ko");
         if (sort === "bst") return bst(b) - bst(a) || a.dex - b.dex;
+        if (ev && sort === "dex") return b.ev[+ev] - a.ev[+ev] || a.dex - b.dex;
         if (/^\d$/.test(sort)) return b.stats[+sort] - a.stats[+sort] || a.dex - b.dex;
         return a.dex - b.dex;
       });
@@ -87,13 +94,14 @@
         row.appendChild(types);
         row.appendChild(el("td", "num", String(bst(p))));
         p.stats.forEach(function (s) { row.appendChild(el("td", "num", String(s))); });
+        row.appendChild(el("td", "", (p.ev || []).map(function (v, i) { return v ? STAT_NAMES[i] + " " + v : null; }).filter(Boolean).join(", ")));
         row.addEventListener("click", function (event) { if (event.target.tagName !== "A") location.href = link.href; });
         fragment.appendChild(row);
       });
       tbody.appendChild(fragment);
       $("dx-count").textContent = shown.length + " / " + dex.length + "종";
     }
-    ["dx-q", "dx-type", "dx-gen", "dx-label", "dx-sort", "dx-wild"].forEach(function (id) {
+    ["dx-q", "dx-type", "dx-gen", "dx-label", "dx-ev", "dx-sort", "dx-wild"].forEach(function (id) {
       var c = $(id); c.addEventListener(c.type === "search" ? "input" : "change", render);
     });
     render();

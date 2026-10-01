@@ -239,7 +239,7 @@ def main():
         index.append({
             "id": id_, "dex": data.get("nationalPokedexNumber", 0), "name": tr(f"cobblemon.species.{id_}.name", data.get("name", id_)),
             "types": base["types"], "stats": base["stats"], "gen": int(re.sub(r"\D", "", generation) or 0), "labels": labels,
-            "spawns": len(spawns.get(id_, [])),
+            "spawns": len(spawns.get(id_, [])), "ev": [data.get("evYield", {}).get(s, 0) for s in STATS],
         })
         details[id_] = {
             "desc": tr(f"cobblemon.species.{id_}.desc", ""),
