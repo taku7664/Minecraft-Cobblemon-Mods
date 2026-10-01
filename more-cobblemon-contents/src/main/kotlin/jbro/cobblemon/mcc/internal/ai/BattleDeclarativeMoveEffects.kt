@@ -395,11 +395,18 @@ object BattleDeclarativeMoveEffects {
     /**
      * Effects Showdown applies from a callback that are nonetheless fixed facts of the move. Parting Shot
      * lowers the target's Attack and Special Attack in `onHit`, because whether the user switches out
-     * depends on that drop succeeding; read statically it was only a pivot.
+     * depends on that drop succeeding; read statically it was only a pivot. Rest heals in full and puts its
+     * user to sleep in `onHit`, so read statically it did nothing at all; when it fails (full HP, already
+     * asleep, an ability that keeps sleep off) is the projector's call (PublicSingleTurnProjector).
      */
     private val CALLBACK_EFFECTS: Map<String, List<BattleMoveEffectView>> = mapOf(
         "partingshot" to listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, 1.0,
             statStages = mapOf("atk" to -1, "spa" to -1))),
+        "rest" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER, 1.0,
+                fractionRange = BattleFractionRange(1.0, 1.0)),
+            BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.USER, 1.0, valueId = "slp"),
+        ),
     )
 
     private fun effect(

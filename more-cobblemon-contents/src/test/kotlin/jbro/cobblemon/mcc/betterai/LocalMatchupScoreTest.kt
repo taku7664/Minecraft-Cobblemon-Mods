@@ -428,6 +428,20 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `rest declares the full heal and the sleep its callback applies`() {
+        val parsed = BattleDeclarativeMoveEffects.parse(
+            "const Moves = { rest: { num: 156, category: \"Status\", target: \"self\", " +
+                "onHit(target, source, move) { const result = target.setStatus('slp', source, move); this.heal(target.maxhp); } } };",
+        ).getValue("rest").effects
+        val heal = parsed.single { it.kind == BattleMoveEffectKind.HEAL_FRACTION }
+        assertEquals(BattleMoveEffectTarget.USER, heal.target)
+        assertEquals(1.0, heal.fractionRange?.minimum)
+        val sleep = parsed.single { it.kind == BattleMoveEffectKind.STATUS }
+        assertEquals(BattleMoveEffectTarget.USER, sleep.target)
+        assertEquals("slp", sleep.valueId)
+    }
+
+    @Test
     fun `status moves are scored in doubles too`() {
         val snarl = BattlePublicMoveOptionView("partingshot", BattleMoveCandidateView(typeId = "dark",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,

@@ -152,7 +152,7 @@ class LocalDeclaredMoveEffectsTest {
     }
 
     @Test
-    fun `sleep blocks ordinary moves but permits declared sleep usable moves`() {
+    fun `a sleeper wakes one attempt in three and only a sleep usable move acts while it sleeps`() {
         val sleeping = state(allyStatus = "slp")
         val ordinary = action("ordinary_asleep", effects(), damage = 0.2)
         val usable = action(
@@ -161,15 +161,49 @@ class LocalDeclaredMoveEffectsTest {
             damage = 0.2,
         )
 
-        val blocked = PublicSingleTurnProjector.project(
+        val attempted = PublicSingleTurnProjector.project(
             sleeping, ordinary, BattleActionCandidate("wait", BattleActionKind.WAIT), context(sleeping, ordinary),
+            chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
         )
         val executed = PublicSingleTurnProjector.project(
             sleeping, usable, BattleActionCandidate("wait", BattleActionKind.WAIT), context(sleeping, usable),
         )
 
-        assertTrue(blocked.all { it.state.pokemon.single { pokemon -> pokemon.battlePokemonId == OPPONENT_ID }.hpFraction == 1.0 })
+        val acted = attempted.filter { it.state.pokemon.single { pokemon -> pokemon.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0 }
+        assertEquals(1.0 / 3.0, acted.sumOf { it.probability }, 1e-9)
+        assertTrue(acted.all { it.state.pokemon.single { pokemon -> pokemon.battlePokemonId == ALLY_ID }.statusId == null })
         assertTrue(executed.all { it.state.pokemon.single { pokemon -> pokemon.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0 })
+    }
+
+    @Test
+    fun `rest heals in full and puts its user to sleep in place of another status`() {
+        val hurt = state(allyStatus = "brn", allyHp = 0.4)
+        val rest = action("rest", effects())
+
+        val outcomes = PublicSingleTurnProjector.project(
+            hurt, rest, BattleActionCandidate("wait", BattleActionKind.WAIT), context(hurt, rest),
+        )
+
+        assertTrue(outcomes.isNotEmpty())
+        outcomes.forEach { outcome ->
+            val user = outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }
+            assertEquals(1.0, user.hpFraction, 1e-9)
+            assertEquals("slp", user.statusId)
+        }
+    }
+
+    @Test
+    fun `rest fails at full hp`() {
+        val healthy = state()
+        val rest = action("rest", effects())
+
+        val outcomes = PublicSingleTurnProjector.project(
+            healthy, rest, BattleActionCandidate("wait", BattleActionKind.WAIT), context(healthy, rest),
+        )
+
+        outcomes.forEach { outcome ->
+            assertEquals(null, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.statusId)
+        }
     }
 
     @Test
@@ -377,12 +411,13 @@ class LocalDeclaredMoveEffectsTest {
         opponentTypes: Set<String> = setOf("normal"),
         allyStatus: String? = null,
         withStats: Boolean = true,
+        allyHp: Double = 1.0,
     ) = BattleStateView(
         BATTLE_ID,
         BattleFormat.SINGLE,
         1,
         listOf(
-            pokemon(ALLY_ID, BattleSide.ALLY, allyStages, allyStatus, setOf("normal"), withStats = withStats),
+            pokemon(ALLY_ID, BattleSide.ALLY, allyStages, allyStatus, setOf("normal"), withStats = withStats, hp = allyHp),
             pokemon(
                 OPPONENT_ID,
                 BattleSide.OPPONENT,
@@ -407,8 +442,9 @@ class LocalDeclaredMoveEffectsTest {
         activeSlot: Int? = 0,
         withStats: Boolean = true,
         fainted: Boolean = false,
+        hp: Double = 1.0,
     ) = BattlePokemonStateView(
-        id, side, activeSlot, "showdown:test", null, 50, 1.0, status, stages,
+        id, side, activeSlot, "showdown:test", null, 50, hp, status, stages,
         emptySet(), null, null, fainted, types,
         if (!withStats) null else if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(200, 120, 100, 120, 100, 100)

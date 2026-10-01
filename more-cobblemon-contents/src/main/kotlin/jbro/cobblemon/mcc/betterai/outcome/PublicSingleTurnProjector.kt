@@ -428,13 +428,40 @@ internal object PublicSingleTurnProjector {
             it.side == side && it.activeSlot == action.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
         val publicStatus = canonicalId(actorBeforeTransition.statusId)
-        if (
-            !availabilityChecked && publicStatus in SLEEP_IDS &&
-            action.moveDetails?.effects?.effects.orEmpty().none {
-                it.kind == BattleMoveEffectKind.USABLE_WHILE_ASLEEP
+        if (!availabilityChecked && publicStatus in SLEEP_IDS) {
+            fun attempt(from: BattleStateView, move: BattleActionCandidate) = applyMove(
+                from, side, move, sourceContext, protectedPokemonIds, protectionAttackDrops, tauntedPokemonIds,
+                forcedMoveIdsByPokemon, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
+                availabilityChecked = true, pendingDamagingMovePokemonIds = pendingDamagingMovePokemonIds,
+            )
+            // How many turns are left asleep is not public state, so a sleeper wakes one attempt in three: two turns
+            // asleep on average, Rest's exact two and the middle of a sleep move's one to three. It never woke
+            // before, so a Rest or a Spore took its Pokemon out for good.
+            val asleep = when {
+                action.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.USABLE_WHILE_ASLEEP } ->
+                    listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
+                canonicalId(action.moveId) == SLEEP_TALK -> {
+                    // Sleep Talk uses one of the sleeper's other moves at random; a move with a charging turn it skips.
+                    val called = PublicFutureActionFactory.primitiveActionsForPokemon(
+                        state, side, actorBeforeTransition.battlePokemonId, sourceContext.publicActionCatalog, history,
+                    ).filter { candidate ->
+                        candidate.kind == BattleActionKind.USE_MOVE && canonicalId(candidate.moveId) != SLEEP_TALK &&
+                            candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.CHARGE_TURN }
+                    }.distinctBy { canonicalId(it.moveId) }
+                    if (called.isEmpty()) listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
+                    else called.flatMap { move ->
+                        attempt(state, move).map { it.copy(probability = it.probability / called.size) }
+                    }
+                }
+                else -> attempt(state, action)
             }
-        ) {
-            return listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
+            val woken = state.copyState(
+                pokemon = state.pokemon.map { pokemon ->
+                    if (pokemon.battlePokemonId == actorBeforeTransition.battlePokemonId) pokemon.copyState(statusId = null) else pokemon
+                },
+            )
+            return asleep.map { it.copy(probability = it.probability * (1.0 - SLEEP_WAKE_PROBABILITY)) } +
+                attempt(woken, action).map { it.copy(probability = it.probability * SLEEP_WAKE_PROBABILITY) }
         }
         if (!availabilityChecked && publicStatus in FREEZE_IDS) {
             val unable = WeightedState(
@@ -586,6 +613,16 @@ internal object PublicSingleTurnProjector {
         }
         if (canonicalId(moveId) == ALLY_SWITCH) {
             return allySwitchOutcomes(projectedFormState, side, actor, moveId, history)
+        }
+        if (canonicalId(moveId) == REST) {
+            return listOf(
+                WeightedState(
+                    state = restedState(projectedFormState, actor),
+                    probability = 1.0,
+                    executedSides = setOf(side),
+                    executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                ),
+            )
         }
         val slotCondition = effects.singleOrNull { it.kind == BattleMoveEffectKind.SLOT_CONDITION }
         if (canonicalId(slotCondition?.valueId) == "revivalblessing") {
@@ -1355,6 +1392,20 @@ internal object PublicSingleTurnProjector {
             effects += RecursiveControlEffect(RecursiveControlEffectKind.TRAP, sourceSide, actorId, actorId)
         }
         return effects
+    }
+
+    /**
+     * Rest: full HP and asleep, any other status cured. It fails at full HP, already asleep (only Sleep Talk can
+     * call it then), and on an ability that keeps sleep off.
+     */
+    private fun restedState(state: BattleStateView, actor: BattlePokemonStateView): BattleStateView {
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)?.let(::canonicalId)
+        if (actor.hpFraction >= 1.0 || canonicalId(actor.statusId) in SLEEP_IDS || ability in SLEEPLESS_ABILITIES) return state
+        return state.copyState(
+            pokemon = state.pokemon.map { pokemon ->
+                if (pokemon.battlePokemonId == actor.battlePokemonId) pokemon.copyState(hpFraction = 1.0, statusId = "slp") else pokemon
+            },
+        )
     }
 
     private fun forcedMoveAction(
@@ -2232,6 +2283,10 @@ internal object PublicSingleTurnProjector {
     private val FORCED_SWITCH_IMMUNITIES = setOf("suctioncups", "guarddog")
     private const val FULL_PARALYSIS_PROBABILITY = 0.25
     private const val FREEZE_THAW_PROBABILITY = 0.20
+    private const val SLEEP_WAKE_PROBABILITY = 1.0 / 3.0
+    private const val REST = "rest"
+    private const val SLEEP_TALK = "sleeptalk"
+    private val SLEEPLESS_ABILITIES = setOf("insomnia", "vitalspirit", "comatose", "purifyingsalt")
     private const val FUTURE_MOVE_DELAY_TURNS = 2
     private const val AFTER_YOU = "afteryou"
     private const val QUASH = "quash"

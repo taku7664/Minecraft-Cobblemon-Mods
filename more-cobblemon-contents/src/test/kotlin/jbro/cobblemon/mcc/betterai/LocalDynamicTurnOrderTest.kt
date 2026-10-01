@@ -168,7 +168,7 @@ class LocalDynamicTurnOrderTest {
     }
 
     @Test
-    fun `after you does not promote its target when the user cannot act`() {
+    fun `after you does not promote its target while its user stays asleep`() {
         val state = BattleStateView(
             battleId = UUID.randomUUID(),
             format = BattleFormat.DOUBLE,
@@ -201,7 +201,10 @@ class LocalDynamicTurnOrderTest {
         val outcomes = PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context)
 
         assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
-        outcomes.forEach { outcome ->
+        // A sleeper wakes one attempt in three; the two in three it stays asleep, After You does nothing.
+        val asleep = outcomes.filter { outcome -> outcome.state.pokemon.single { it.battlePokemonId == RAIN_SETTER }.statusId == "slp" }
+        assertEquals(2.0 / 3.0, asleep.sumOf { it.probability * it.orderProbability }, 1e-9)
+        asleep.forEach { outcome ->
             assertEquals(
                 listOf(RAIN_SETTER, FAST_FOE, SLOW_FOE, SWIMMER),
                 outcome.actionOrderPokemonIds,
@@ -357,7 +360,7 @@ class LocalDynamicTurnOrderTest {
     }
 
     @Test
-    fun `helping hand does not boost when its user cannot act`() {
+    fun `helping hand does not boost while its user stays asleep`() {
         val state = BattleStateView(
             battleId = UUID.randomUUID(),
             format = BattleFormat.DOUBLE,
@@ -379,7 +382,10 @@ class LocalDynamicTurnOrderTest {
 
         fun expectedTargetHp(allyJoint: BattleActionCandidate): Double {
             val context = BattleDecisionContext(UUID.randomUUID(), state, listOf(allyJoint), Long.MAX_VALUE)
-            return PublicSingleTurnProjector.project(state, allyJoint, opponent, context).sumOf { outcome ->
+            // Only the turns its user stays asleep: the one in three it wakes, Helping Hand works.
+            return PublicSingleTurnProjector.project(state, allyJoint, opponent, context).filter { outcome ->
+                outcome.state.pokemon.single { it.battlePokemonId == RAIN_SETTER }.statusId == "slp"
+            }.sumOf { outcome ->
                 outcome.probability * outcome.orderProbability *
                     outcome.state.pokemon.single { it.battlePokemonId == FAST_FOE }.hpFraction
             }

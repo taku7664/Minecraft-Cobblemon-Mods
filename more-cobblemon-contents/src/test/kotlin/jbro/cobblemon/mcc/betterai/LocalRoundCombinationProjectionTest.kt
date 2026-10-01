@@ -49,12 +49,13 @@ class LocalRoundCombinationProjectionTest {
     }
 
     @Test
-    fun `a round user that cannot move does not start the chain`() {
-        val outcome = project(
-            state(fastStatus = "slp"),
-            roundJoint(),
-            opponentJoint(),
-        )
+    fun `a round user that stays asleep does not start the chain`() {
+        val initial = state(fastStatus = "slp")
+        val ally = roundJoint()
+        // A sleeper wakes one attempt in three; this is the turn it stays asleep.
+        val outcome = PublicSingleTurnProjector.project(
+            initial, ally, opponentJoint(), BattleDecisionContext(UUID.randomUUID(), initial, listOf(ally), Long.MAX_VALUE),
+        ).single { projection -> projection.state.pokemon.single { it.battlePokemonId == FAST_ROUND }.statusId == "slp" }
         val order = outcome.actionOrderPokemonIds
 
         assertTrue(order.indexOf(ATTACKER) < order.indexOf(SLOW_ROUND), "order=$order")
