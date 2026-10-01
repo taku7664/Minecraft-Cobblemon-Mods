@@ -35,21 +35,42 @@ data class MccDashboardCard(
     }
 }
 
-/** What a dashboard section may read about the player whose hub is opening. Built on the server thread. */
+/**
+ * What a dashboard section may read about the player whose cards are built: the one opening the hub, or anyone
+ * asked about by name (the Discord bot's /전적), who may be offline. Built on the server thread.
+ */
 interface MccDashboardContext {
     val server: MinecraftServer
-    val player: ServerPlayer
+    val playerId: java.util.UUID
+
+    /** The player when online; null for an offline player's cards, so read stored data by [playerId]. */
+    val player: ServerPlayer?
 
     /** The player's records of [contentId], by format. */
     fun records(contentId: String): List<BattleHubRecordView>
 
     companion object {
         fun of(server: MinecraftServer, player: ServerPlayer, records: List<BattleHubRecordView>): MccDashboardContext =
+            of(server, player.uuid, player, records)
+
+        fun of(server: MinecraftServer, playerId: java.util.UUID, player: ServerPlayer?, records: List<BattleHubRecordView>): MccDashboardContext =
             object : MccDashboardContext {
                 override val server = server
+                override val playerId = playerId
                 override val player = player
                 override fun records(contentId: String) = records.filter { it.contentId == contentId }
             }
+    }
+}
+
+/** The dashboard as data, for places other than the hub. */
+object MccDashboard {
+    /** Every card of [playerId], online or not, as the hub would build it. Call on the server thread. */
+    fun cards(server: MinecraftServer, playerId: java.util.UUID): List<MccDashboardCard> {
+        val records = jbro.cobblemon.mcc.internal.record.BattleRecordService.forPlayer(server, playerId)
+            .sortedWith(compareBy({ it.key.category.contentId }, { it.key.category.formatId }))
+            .map(BattleHubRecordView::from)
+        return MccDashboardSections.build(MccDashboardContext.of(server, playerId, server.playerList.getPlayer(playerId), records), records)
     }
 }
 

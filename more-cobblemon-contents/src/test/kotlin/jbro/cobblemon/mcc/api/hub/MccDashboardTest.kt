@@ -29,7 +29,8 @@ class MccDashboardTest {
 
     private fun context(records: List<BattleHubRecordView>) = object : MccDashboardContext {
         override val server: MinecraftServer get() = error("no server in tests")
-        override val player: ServerPlayer get() = error("no player in tests")
+        override val playerId: java.util.UUID = java.util.UUID(0, 1)
+        override val player: ServerPlayer? = null
         override fun records(contentId: String) = records.filter { it.contentId == contentId }
     }
 

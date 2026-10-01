@@ -135,5 +135,10 @@
   "command.more_cobblemon_contents.wiki.link_for": "%s의 위키 링크: %s",
   "command.more_cobblemon_contents.wiki.hover": "브라우저에서 위키를 엽니다. 이 링크는 다른 사람에게 알려 주지 마세요.",
   "command.more_cobblemon_contents.wiki.off": "서버 위키가 꺼져 있습니다.",
-  "screen.more_cobblemon_contents.dashboard.no_records": "아직 기록이 없습니다."
+  "screen.more_cobblemon_contents.dashboard.no_records": "아직 기록이 없습니다.",
+  "news.more_cobblemon_contents.win_streak": "%1$s님이 %2$s %3$s에서 %4$s연승을 달성했습니다!",
+  "news.more_cobblemon_contents.highest_floor": "%1$s님이 %2$s %3$s에서 %4$s층에 올랐습니다!",
+  "screen.more_cobblemon_contents.ranking.best_streak": "최고 연승",
+  "screen.more_cobblemon_contents.ranking.highest_floor": "최고 층",
+  "screen.more_cobblemon_contents.ranking.wins": "승리"
 }

@@ -135,12 +135,31 @@ object BattleRecordService {
     fun recordCompletedBattle(
         server: MinecraftServer,
         completion: BattleRecordCompletion,
-    ): BattleRecordStats = data(server).recordCompletedBattle(completion)
+    ): BattleRecordStats {
+        val data = data(server)
+        val before = data.get(completion.key)
+        return data.recordCompletedBattle(completion).also { after -> announceSafely(server, before, after) }
+    }
 
     fun recordCompletedBattles(
         server: MinecraftServer,
         completions: List<BattleRecordCompletion>,
-    ): List<BattleRecordStats> = data(server).recordCompletedBattles(completions)
+    ): List<BattleRecordStats> {
+        val data = data(server)
+        val before = completions.map { data.get(it.key) }
+        return data.recordCompletedBattles(completions).also { after ->
+            before.zip(after).forEach { (old, new) -> announceSafely(server, old, new) }
+        }
+    }
+
+    /** A news failure never undoes or fails the record that was just saved. */
+    private fun announceSafely(server: MinecraftServer, before: BattleRecordStats, after: BattleRecordStats) {
+        try {
+            BattleRecordNews.announce(server, before, after)
+        } catch (failure: RuntimeException) {
+            jbro.cobblemon.mcc.MoreCobblemonContents.LOGGER.warn("Record news failed for {}", after.key, failure)
+        }
+    }
 
     fun setProgressMetric(
         server: MinecraftServer,

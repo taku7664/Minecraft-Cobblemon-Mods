@@ -23,7 +23,7 @@ object LeagueDashboard {
     fun register() {
         MccDashboardSections.register(CONTENT) { context ->
             val catalog = LeagueCatalogResources.current ?: return@register MccDashboardCards.records(CONTENT, context.records(CONTENT))
-            val state = LeagueSavedData.get(context.server).read(catalog.id, context.player.uuid)
+            val state = LeagueSavedData.get(context.server).read(catalog.id, context.playerId)
             val engine = LeagueEngine(catalog)
             val badges = engine.badgeCount(state)
             val rank = LeagueRank.fromProgress(badges, state.champion && badges == catalog.gyms.size)

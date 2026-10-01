@@ -48,4 +48,7 @@ object WikiApi {
     }
 
     fun handler(name: String): WikiApiHandler? = handlers[name]
+
+    /** The address players open the wiki at, or null while the wiki is off. */
+    fun publicUrl(): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.takeIf { it.running }?.config?.base
 }

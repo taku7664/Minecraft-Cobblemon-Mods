@@ -18,7 +18,7 @@ internal object PvpDashboard {
             val records = context.records(CONTENT)
             val card = MccDashboardCards.records(CONTENT, records)
                 ?: return@register MccDashboardCard(CONTENT, MccDashboardCards.contentName(CONTENT), note = MccDashboardCards.noRecords())
-            val me = context.player.uuid
+            val me = context.playerId
             val recent = runCatching { PvpMatchHistory.store?.matches(me, RECENT) }.getOrNull().orEmpty().map { match ->
                 val won = match.winnerId == me
                 MccDashboardRow(
