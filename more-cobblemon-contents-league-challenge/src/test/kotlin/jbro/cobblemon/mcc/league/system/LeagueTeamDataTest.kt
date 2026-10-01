@@ -65,6 +65,7 @@ class LeagueTeamDataTest {
                 assertTrue(fields.getValue("nature") in natures, "unknown nature in $at")
                 fields["gender"]?.let { assertTrue(it == "male" || it == "female", "bad gender in $at") }
                 fields["held_item"]?.let { assertTrue(it in data.items, "unknown item in $at") }
+                fields["form"]?.let { form -> assertTrue(data.forms[species].orEmpty().any { it.equals(form, ignoreCase = true) }, "unknown form in $at") }
                 val evs = stats.map { fields.getValue("${it}_ev").toInt() }
                 assertTrue(evs.all { it in 0..252 } && evs.sum() <= 510, "bad EVs in $at")
                 stats.forEach { assertTrue(fields.getValue("${it}_iv").toInt() in 0..31, "bad $it IV in $at") }
@@ -126,6 +127,9 @@ class LeagueTeamDataTest {
             assertEquals("MEGA", json("challenges", name)["mechanic"].asString, name)
             assertEquals(5, json("trainers", name)["ai_skill"].asInt, name)
             assertTrue(json("challenges", name)["badge"] == null, "$name must not award a badge again")
+            // Item Clause, as in the games' Battle Facilities: no two members hold the same item.
+            val items = members.map { fields(it).getValue("held_item") }
+            assertEquals(items.distinct(), items, "$name holds an item twice")
             members.forEach { line ->
                 val fields = fields(line)
                 assertTrue(fields.containsKey("held_item"), "$name member without an item: $line")
@@ -138,6 +142,11 @@ class LeagueTeamDataTest {
         assertEquals(95, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
         // Cobblemon's default maximum level; the hard Champion stays within it.
         assertEquals(100, level(team("cynthia_hard").last()))
+        // The hard Champion leads with Origin Forme Giratina, which its Griseous Core keeps in that form.
+        val giratina = team("cynthia_hard").first()
+        assertEquals("giratina", giratina.substringBefore(' '))
+        assertEquals("origin", fields(giratina).getValue("form"))
+        assertEquals("mega_showdown:griseous_core", fields(giratina).getValue("held_item"))
     }
 
     @Test
@@ -167,6 +176,8 @@ class LeagueTeamDataTest {
         val items: Set<String>,
         /** Mega Stone item ID to the species it Mega Evolves. */
         val megaStones: Map<String, String>,
+        /** Species ID to the names of its alternate forms. */
+        val forms: Map<String, Set<String>>,
     )
 
     companion object {
@@ -213,6 +224,10 @@ class LeagueTeamDataTest {
                         items = names.filter { it.startsWith("assets/cobblemon/models/item/") }.map { "cobblemon:" + it.substringAfterLast('/').removeSuffix(".json") }.toSet() +
                             megaNames.filter { it.startsWith("assets/mega_showdown/models/item/") }.map { "mega_showdown:" + it.substringAfterLast('/').removeSuffix(".json") },
                         megaStones = megaStones,
+                        forms = speciesEntries.mapValues { (_, entry) ->
+                            val root = jar.getInputStream(jar.getEntry(entry)).reader().use(JsonParser::parseReader).asJsonObject
+                            root.getAsJsonArray("forms")?.map { it.asJsonObject["name"].asString }?.toSet().orEmpty()
+                        },
                     )
                     registerUsedSpeciesAndAbilities(jar, speciesEntries)
                 }
