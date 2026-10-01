@@ -9,5 +9,6 @@ object PvpContent : ModInitializer {
     override fun onInitialize() {
         PvpPlayNetworking.registerServer()
         PvpLoungeProtection.registerServer()
+        PvpDashboard.register()
     }
 }

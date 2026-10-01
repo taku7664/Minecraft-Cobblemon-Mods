@@ -19,6 +19,7 @@ object BattleTowerContent : ModInitializer {
     override fun onInitialize() {
         TowerOpponentCatalogResources.register()
         TowerPlayNetworking.registerServer()
+        TowerDashboard.register()
         MoreCobblemonContents.CONTENTS.register(BattleTowerContentApplication(TowerPlayNetworking))
         MccCommandContributors.register { AiTestCommands.build(Cobblemon173AiTestBattleRuntime) }
         HoloTerminals.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, "battle_tower_terminal"),

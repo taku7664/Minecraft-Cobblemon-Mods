@@ -241,5 +241,9 @@
   "command.more_cobblemon_contents.tower.admin.abandon.forfeited": "Made %s forfeit their Battle Tower battle; it counts as a loss.",
   "command.more_cobblemon_contents.tower.admin.abandon.notice": "An operator ended your Battle Tower challenge.",
   "command.more_cobblemon_contents.test.ai.error.no_test_battle": "%s is not in an AI test battle.",
-  "command.more_cobblemon_contents.test.ai.stopped": "Ended %s's AI test battle."
+  "command.more_cobblemon_contents.test.ai.stopped": "Ended %s's AI test battle.",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.best_streak": "Best streak",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.wins": "Wins",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.streak": "Streak %s",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "Best %s · %sW %sL"
 }

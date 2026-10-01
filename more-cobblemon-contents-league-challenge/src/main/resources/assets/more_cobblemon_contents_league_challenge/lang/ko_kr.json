@@ -268,5 +268,16 @@
   "command.more_cobblemon_contents_league_challenge.admin.trainer.despawned": "반경 %2$s블록 안의 야생 트레이너 %1$s명을 없앴습니다(전투 중인 트레이너는 제외).",
   "command.more_cobblemon_contents_league_challenge.admin.trainer.list.header": "반경 %2$s블록 안의 야생 트레이너 %1$s명 (진행 중인 전투 %3$s개)",
   "command.more_cobblemon_contents_league_challenge.admin.trainer.list.entry": "%s · %s · (%s, %s, %s) · 전투 중 %s",
-  "command.more_cobblemon_contents_league_challenge.admin.trainer.cooldown_reset": "%s님의 야생 트레이너 재대결 대기 %s건을 없앴습니다."
+  "command.more_cobblemon_contents_league_challenge.admin.trainer.cooldown_reset": "%s님의 야생 트레이너 재대결 대기 %s건을 없앴습니다.",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.badges": "배지",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.cap": "레벨캡",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.rank": "등급",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.next": "다음 도전",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.elite_four": "사천왕 도전",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.champion": "챔피언 달성",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard": "하드 리그",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_locked": "챔피언이 되면 열림",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_progress": "배지 %s/%s",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "하드 챔피언 달성",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "야생 트레이너"
 }

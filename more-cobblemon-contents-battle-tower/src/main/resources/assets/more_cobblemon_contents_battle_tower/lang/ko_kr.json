@@ -241,5 +241,9 @@
   "command.more_cobblemon_contents.tower.admin.abandon.forfeited": "%s님을 배틀타워 전투에서 기권시켰습니다. 패배로 기록됩니다.",
   "command.more_cobblemon_contents.tower.admin.abandon.notice": "관리자가 배틀타워 도전을 종료했습니다.",
   "command.more_cobblemon_contents.test.ai.error.no_test_battle": "%s님은 AI 테스트 전투 중이 아닙니다.",
-  "command.more_cobblemon_contents.test.ai.stopped": "%s님의 AI 테스트 전투를 종료했습니다."
+  "command.more_cobblemon_contents.test.ai.stopped": "%s님의 AI 테스트 전투를 종료했습니다.",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.best_streak": "최고 연승",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.wins": "총 승리",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.streak": "연승 %s",
+  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "최고 연승 %s · %s승 %s패"
 }

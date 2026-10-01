@@ -268,5 +268,16 @@
   "command.more_cobblemon_contents_league_challenge.admin.trainer.despawned": "Removed %s wild trainers within %s blocks (trainers in battle stay).",
   "command.more_cobblemon_contents_league_challenge.admin.trainer.list.header": "%s wild trainers within %s blocks (%s battles in progress)",
   "command.more_cobblemon_contents_league_challenge.admin.trainer.list.entry": "%s · %s · (%s, %s, %s) · in battle %s",
-  "command.more_cobblemon_contents_league_challenge.admin.trainer.cooldown_reset": "Cleared %2$s wild trainer rematch waits for %1$s."
+  "command.more_cobblemon_contents_league_challenge.admin.trainer.cooldown_reset": "Cleared %2$s wild trainer rematch waits for %1$s.",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.badges": "Badges",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.cap": "Level cap",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.rank": "Rank",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.next": "Next",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.elite_four": "Elite Four",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.champion": "Champion",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard": "Hard League",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_locked": "Opens after the Champion",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_progress": "Badges %s/%s",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "Hard Champion",
+  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "Wild trainers"
 }

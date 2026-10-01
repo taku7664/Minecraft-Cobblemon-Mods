@@ -191,5 +191,9 @@
   "command.more_cobblemon_contents.factory.admin.forfeit_unavailable": "%s님의 전투에 기권을 보내지 못했습니다. force를 붙여 다시 시도하세요.",
   "command.more_cobblemon_contents.factory.admin.abandon.closed": "%s님의 배틀팩토리 도전을 종료했습니다.",
   "command.more_cobblemon_contents.factory.admin.abandon.forfeited": "%s님을 배틀팩토리 전투에서 기권시켰습니다. 패배로 기록됩니다.",
-  "command.more_cobblemon_contents.factory.admin.abandon.notice": "관리자가 배틀팩토리 도전을 종료했습니다."
+  "command.more_cobblemon_contents.factory.admin.abandon.notice": "관리자가 배틀팩토리 도전을 종료했습니다.",
+  "screen.more_cobblemon_contents_battle_factory.dashboard.best_floor": "최고 층",
+  "screen.more_cobblemon_contents_battle_factory.dashboard.wins": "총 승리",
+  "screen.more_cobblemon_contents_battle_factory.dashboard.floor": "지금 %s층",
+  "screen.more_cobblemon_contents_battle_factory.dashboard.detail": "최고 %s층 · %s승 %s패"
 }
