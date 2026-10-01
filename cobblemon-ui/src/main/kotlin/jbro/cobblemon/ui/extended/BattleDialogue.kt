@@ -108,7 +108,8 @@ object BattleDialogue {
         val padding = 14
         val lines = font.splitter.splitLines(message.string, width - padding * 2 - 12, Style.EMPTY).map { it.string }
         val lineHeight = font.lineHeight + 3
-        val height = (maxOf(2, lines.size) * lineHeight + 19).coerceAtMost(screenHeight - 8)
+        // Room for three lines at least, as the games' message box has.
+        val height = (maxOf(3, lines.size) * lineHeight + 22).coerceAtMost(screenHeight - 8)
         // At the bottom of the screen like the games' message box; it may cover the hotbar while it speaks.
         val top = (screenHeight - height - 6).coerceAtLeast(4)
 
@@ -122,7 +123,7 @@ object BattleDialogue {
             if (budget <= 0) return@forEachIndexed
             val shown = if (budget >= line.length) line else line.substring(0, budget)
             budget -= line.length
-            UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 10 + index * lineHeight, ink, shadow)
+            UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 12 + index * lineHeight, ink, shadow)
         }
         if (budget < 0) return
         // The line is complete: the key to press, and the arrow that says there is more.
