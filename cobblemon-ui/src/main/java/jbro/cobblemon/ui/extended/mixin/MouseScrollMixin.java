@@ -18,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MouseScrollMixin {
 
     @Shadow
-    private double x;
+    private double xpos;
 
     @Shadow
-    private double y;
+    private double ypos;
 
     @Inject(
         method = "onScroll",
@@ -50,7 +50,7 @@ public abstract class MouseScrollMixin {
             }
             // Try the info panel after move tooltips.
             if (PanelConfig.INSTANCE.getEnableBattleInfoPanelEffective() &&
-                BattleInfoPanel.INSTANCE.onScroll(this.x, this.y, vertical)) {
+                BattleInfoPanel.INSTANCE.onScroll(this.xpos, this.ypos, vertical)) {
                 ci.cancel();
             }
         }
