@@ -13,7 +13,8 @@ import net.minecraft.server.level.ServerPlayer
 /**
  * Scale only player-caused, unowned Cobblemon spawns; CLC's own scaling must be disabled. The level follows the
  * league's [jbro.cobblemon.mcc.league.system.WildLevelRule] under the causing player's cap, leaning weak or strong
- * by where the Pokemon appears.
+ * by where the Pokemon appears. A species that is not met that low steps back down its evolution line
+ * ([WildSpawnSpecies]), and the moves are learned again for the new level.
  */
 object LeagueWildSpawns {
     fun register() {
@@ -30,7 +31,12 @@ object LeagueWildSpawns {
                 val chunk = event.entity.chunkPosition()
                 val rule = catalog.wildLevel
                 val lean = WildSpawnRegions.lean(level.seed, level.dimension().location().toString(), chunk.x, chunk.z, rule.regionChunks)
-                event.entity.pokemon.level = WildSpawnLevel.roll(cap, rule, lean, player.level().random.nextDouble())
+                val pokemon = event.entity.pokemon
+                val spawnLevel = WildSpawnLevel.roll(cap, rule, lean, player.level().random.nextDouble())
+                WildSpawnSpecies.fit(pokemon, spawnLevel)
+                pokemon.level = spawnLevel
+                // Cobblemon picked the moves for the level it rolled; a level the League moved needs its own.
+                pokemon.initializeMoveset()
             } catch (failure: RuntimeException) {
                 Mod.LOGGER.warn("Could not scale League wild spawn for {}: {}", player.uuid, failure.message)
             }
