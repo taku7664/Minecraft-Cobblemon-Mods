@@ -13,10 +13,10 @@ final class LowHpAlertPulseSchedulerTest {
     }
 
     @Test
-    void appliesTheConfiguredAlertVolumeDirectly() {
+    void appliesTenPercentSafetyGainToTheConfiguredAlertVolume() {
         assertTrue(Math.abs(LastPokemonLowHpAlertPlayer.scaledVolume(0.0) - 0.0F) < 0.0001F);
-        assertTrue(Math.abs(LastPokemonLowHpAlertPlayer.scaledVolume(1.0) - 1.0F) < 0.0001F);
-        assertTrue(Math.abs(LastPokemonLowHpAlertPlayer.scaledVolume(2.0) - 2.0F) < 0.0001F);
+        assertTrue(Math.abs(LastPokemonLowHpAlertPlayer.scaledVolume(1.0) - 0.1F) < 0.0001F);
+        assertTrue(Math.abs(LastPokemonLowHpAlertPlayer.scaledVolume(2.0) - 0.2F) < 0.0001F);
     }
 
     @Test
