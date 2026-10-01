@@ -6,6 +6,7 @@ import jbro.cobblemon.ui.extended.battle.messages.TranslationKeys
 import jbro.cobblemon.ui.extended.ui.shared.BattleFocusMotion
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
+import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
@@ -24,6 +25,7 @@ import net.minecraft.network.chat.contents.TranslatableContents
 object BattleDialogue {
     private val queue = BattleDialogueQueue<Component>()
     private const val CHARACTERS_PER_SECOND = 75.0
+    private const val END_BAR = 4
 
     private var revealing: Any? = null
     private var revealNanos = 0L
@@ -100,9 +102,10 @@ object BattleDialogue {
         val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
         val screenWidth = client.window.guiScaledWidth
         val screenHeight = client.window.guiScaledHeight
-        val width = minOf(400, screenWidth - 24).coerceAtLeast(40)
+        // A message box sits in the middle of the scene with room on both sides, not edge to edge.
+        val width = (screenWidth * 0.62f).toInt().coerceIn(minOf(240, screenWidth - 24), 340)
         val left = (screenWidth - width) / 2
-        val padding = 12
+        val padding = 14
         val lines = font.splitter.splitLines(message.string, width - padding * 2 - 12, Style.EMPTY).map { it.string }
         val lineHeight = font.lineHeight + 3
         val height = (maxOf(2, lines.size) * lineHeight + 19).coerceAtMost(screenHeight - 8)
@@ -110,6 +113,10 @@ object BattleDialogue {
         val top = (screenHeight - height - 44).coerceAtLeast(4)
 
         UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
+        // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
+        val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
+        context.fill(left + inset, top + inset, left + inset + END_BAR, top + height - inset, theme.colors.borderBright)
+        context.fill(left + width - inset - END_BAR, top + inset, left + width - inset, top + height - inset, theme.colors.borderBright)
         var budget = revealed(message)
         lines.forEachIndexed { index, line ->
             if (budget <= 0) return@forEachIndexed
@@ -122,7 +129,7 @@ object BattleDialogue {
         val key = theme.style(UiButtonVariant.SECONDARY, UiWidgetState.NORMAL)
         val keyName = CobblemonUiClient.selectActionKey.translatedKeyMessage
         val keyWidth = font.width(keyName) + 10
-        val arrowX = left + width - 18
+        val arrowX = left + width - 20
         val baseY = top + height - 16
         UiSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13, key.surface)
         UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, key.text, key.textShadowColor)
