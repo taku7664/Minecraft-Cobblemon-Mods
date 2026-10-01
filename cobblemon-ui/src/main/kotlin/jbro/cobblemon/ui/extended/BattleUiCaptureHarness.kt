@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
  * `BATTLE_UI_CAPTURE_TRAINER=single|double|triple` battles a disposable NPC trainer in that format instead of the
  * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
+ * `BATTLE_UI_CAPTURE_THEME` picks a battle theme by id for the run, without saving it.
  */
 object BattleUiCaptureHarness {
     private val logger = CobblemonUi.LOGGER
@@ -46,6 +47,9 @@ object BattleUiCaptureHarness {
         val wild = System.getenv("BATTLE_UI_CAPTURE")?.trim()?.takeIf { it.isNotEmpty() } ?: return
         if (!FabricLoader.getInstance().isDevelopmentEnvironment) return
         val locale = System.getenv("BATTLE_UI_CAPTURE_LOCALE")?.trim()?.takeIf { it.isNotEmpty() } ?: "ko_kr"
+        System.getenv("BATTLE_UI_CAPTURE_THEME")?.trim()?.takeIf { it.isNotEmpty() }?.let {
+            if (!jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes.select(it)) logger.warn("Unknown battle theme {}", it)
+        }
         val guiScale = System.getenv("BATTLE_UI_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
         val party = (System.getenv("BATTLE_UI_CAPTURE_PARTY") ?: "pikachu,charizard,gardevoir,lucario")
             .split(',').map(String::trim).filter(String::isNotEmpty)
@@ -89,7 +93,8 @@ object BattleUiCaptureHarness {
                 return@EndTick
             }
             if (!guiScaleApplied) {
-                client.options.guiScale().set(checkNotNull(guiScale))
+                client.options.guiScale().set(checkNotNull(guiScale)
+)
                 client.resizeDisplay()
                 guiScaleApplied = true
                 return@EndTick
@@ -98,7 +103,8 @@ object BattleUiCaptureHarness {
             if (!languageReady.get()) {
                 if (!languageRequested && client.overlay == null && (client.screen != null || client.level != null)) {
                     client.options.languageCode = locale
-                    client.languageManager.setSelected(locale)
+                    client.languageManager.setSelected(locale
+)
                     languageRequested = true
                     client.reloadResourcePacks().whenComplete { _, error ->
                         if (error == null) languageReady.set(true) else languageFailure.set(error)

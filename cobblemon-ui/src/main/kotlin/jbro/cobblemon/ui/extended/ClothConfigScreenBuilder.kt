@@ -1,6 +1,7 @@
 package jbro.cobblemon.ui.extended
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder
+import jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
@@ -31,6 +32,13 @@ object ClothConfigScreenBuilder {
         ).setDefaultValue(true)
             .setTooltip(Component.translatable("cobblemon_ui.config.enableMoveTooltips.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
+
+        features.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.battleTheme"),
+            BattleUiThemes.all.map { it.id }.toTypedArray(), PanelConfig.battleTheme)
+            .setDefaultValue(BattleUiThemes.CHAMPIONS.id)
+            .setNameProvider { Component.translatable("cobblemon_ui.config.battleTheme.$it") }
+            .setTooltip(Component.translatable("cobblemon_ui.config.battleTheme.tooltip"))
+            .setSaveConsumer(PanelConfig::setBattleTheme).build())
 
         val sizing = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.sizing"))
         sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))

@@ -2,6 +2,7 @@ package jbro.cobblemon.ui.extended
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes
 import net.fabricmc.loader.api.FabricLoader
 import java.io.File
 
@@ -127,6 +128,10 @@ object PanelConfig {
     var showBaseCritRate: Boolean = false
         private set
 
+    /** The battle screens' theme, by [jbro.cobblemon.ui.extended.ui.shared.BattleUiPalette.id]. */
+    var battleTheme: String = BattleUiThemes.CHAMPIONS.id
+        private set
+
     // Default log dimensions
     const val DEFAULT_LOG_WIDTH = 200
     const val DEFAULT_LOG_HEIGHT = 120
@@ -179,7 +184,9 @@ object PanelConfig {
         val showStatRanges: Boolean = true,
         /** Null when absent from older config files; treated as true when loading. */
         val showOpponentSpeedRange: Boolean? = null,
-        val showBaseCritRate: Boolean = false
+        val showBaseCritRate: Boolean = false,
+        /** Null when absent from older config files; the Champions theme then. */
+        val battleTheme: String? = null
     )
 
     fun load() {
@@ -220,6 +227,7 @@ object PanelConfig {
                 showStatRanges = data.showStatRanges
                 showOpponentSpeedRange = data.showOpponentSpeedRange ?: true
                 showBaseCritRate = data.showBaseCritRate
+                setBattleTheme(data.battleTheme ?: BattleUiThemes.CHAMPIONS.id)
                 CobblemonUi.LOGGER.info("PanelConfig: Loaded config - features: team=$enableTeamIndicators, panel=$enableBattleInfoPanel, log=$enableBattleLog, logDamagePct=$enableBattleLogDamagePercentages, moveTooltips=$enableMoveTooltips")
             }
         } catch (e: Exception) {
@@ -253,7 +261,8 @@ object PanelConfig {
                 showTeraType = showTeraType,
                 showStatRanges = showStatRanges,
                 showOpponentSpeedRange = showOpponentSpeedRange,
-                showBaseCritRate = showBaseCritRate
+                showBaseCritRate = showBaseCritRate,
+                battleTheme = battleTheme
             )
             AtomicTextFileWriter.write(configFile.toPath(), gson.toJson(data))
             CobblemonUi.LOGGER.debug("PanelConfig: Saved config")
@@ -417,6 +426,12 @@ object PanelConfig {
 
     fun setShowBaseCritRate(show: Boolean) {
         showBaseCritRate = show
+    }
+
+    /** Applies the theme at once; an unknown id falls back to the Champions theme. */
+    fun setBattleTheme(id: String) {
+        if (!BattleUiThemes.select(id)) BattleUiThemes.select(BattleUiThemes.CHAMPIONS.id)
+        battleTheme = BattleUiThemes.current.id
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
