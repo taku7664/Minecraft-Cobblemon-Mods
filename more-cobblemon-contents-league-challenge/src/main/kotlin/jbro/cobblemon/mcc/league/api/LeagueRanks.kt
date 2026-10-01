@@ -14,4 +14,10 @@ object LeagueRanks {
         val catalog = LeagueCatalogResources.current ?: return null
         return LeagueServer.rank(catalog, LeagueSavedData.get(server).read(catalog.id, player))
     }
+
+    /** Whether [player] beat the hard League's Champion; false while no League catalog is loaded. */
+    fun isHardChampion(server: MinecraftServer, player: UUID): Boolean {
+        val catalog = LeagueCatalogResources.current ?: return false
+        return LeagueSavedData.get(server).read(catalog.id, player).hardChampion
+    }
 }
