@@ -1,14 +1,15 @@
 package jbro.cobblemon.bettermusic.integration.mcc;
 
-import jbro.cobblemon.bettermusic.api.BattleMusicContentProviders;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 
+/**
+ * Built-in music for More Cobblemon Contents: content battles by stage (gym, Elite Four, Champion, Tower bosses, ...)
+ * and the battle hub's tabs. MCC is optional; without it, or with an MCC too old for its client API, nothing changes.
+ */
 public final class MoreCobblemonContentsIntegration {
     static final String MCC_MOD_ID = "more_cobblemon_contents";
     static final String PROVIDER_ID = "better_cobblemon_music:more_cobblemon_contents";
-    static final String CLIENT_API_CLASS =
-        "jbro.cobblemon.mcc.api.presentation.ManagedBattleContentClient";
 
     private MoreCobblemonContentsIntegration() {
     }
@@ -19,19 +20,15 @@ public final class MoreCobblemonContentsIntegration {
         }
 
         try {
-            var lookup = ReflectiveContentLookup.load(
-                MoreCobblemonContentsIntegration.class.getClassLoader(),
-                CLIENT_API_CLASS
-            );
-            var status = BattleMusicContentProviders.global().register(PROVIDER_ID, lookup::contentId);
-            if (status == BattleMusicContentProviders.RegistrationStatus.REGISTERED) {
+            var registration = MccMusicProviders.register(PROVIDER_ID);
+            if (registration.battle() && registration.screen()) {
                 logger.info("Enabled built-in More Cobblemon Contents music integration");
             } else {
                 logger.warn("More Cobblemon Contents music integration was already registered");
             }
-        } catch (ReflectiveOperationException | LinkageError failure) {
+        } catch (LinkageError failure) {
             logger.warn(
-                "More Cobblemon Contents is installed, but its music content API is unavailable; using normal battle music",
+                "More Cobblemon Contents is installed, but it is too old for the music integration; using normal music",
                 failure
             );
         }

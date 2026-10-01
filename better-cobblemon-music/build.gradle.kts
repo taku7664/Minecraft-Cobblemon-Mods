@@ -21,6 +21,8 @@ dependencies {
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
+    // Optional: only integration/mcc touches MCC's client API, and only once MCC is loaded.
+    compileOnly(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

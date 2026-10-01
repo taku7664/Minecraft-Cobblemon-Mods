@@ -55,18 +55,23 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
     "content": {
       "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
     }
+  },
+  "screens": {
+    "more_cobblemon_contents:hub": "cobleserver:field_plaza"
   }
 }
 ```
 
-Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬 매핑을 선택할 수 있습니다. 저장할 때 각 파일을 임시 파일에서 원자 교체하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
+Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬·화면 매핑을 선택할 수 있습니다. 연동한 모드가 알려 준 콘텐츠 키와 화면 키도 매핑이 없더라도 목록에 나옵니다. 저장할 때 각 파일을 임시 파일에서 원자 교체하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
 
 기존 `music.json`이 있고 `overrides.json`이 없으면 첫 카탈로그 로드 때 사용자 변경분만 변환합니다. 기존 `music.json`과 `music/`은 롤백을 위해 삭제하거나 덮어쓰지 않습니다.
 
 ## 선곡 순서
 
+- 재생 우선순위: 전투 → 열린 화면 → 필드. 화면 음악은 화면이 열리는 즉시 바뀌고, 매핑이 없는 화면에서는 필드 음악이 이어집니다.
 - 필드: 차원 → 정확한 바이옴 → 지하 → 바이옴 경로 포함 → 기본곡
-- 전투: 포켓몬 규칙 → 콘텐츠 ID → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
+- 전투: 포켓몬 규칙 → 콘텐츠 키(구체적인 키부터) → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
+- 화면: 화면 키(구체적인 키부터)
 
 RCT NPC는 NPC 여부만 사용합니다. 역할·사천왕·챔피언 같은 분류는 조회하지 않습니다.
 
@@ -97,15 +102,32 @@ user-music-extension.zip
 
 확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
 
+## 다른 모드 연동 API
+
+콘텐츠 모드는 `jbro.cobblemon.bettermusic.api`에 공급자를 등록해 자기 전투와 화면에 음악을 붙일 수 있습니다. 키는 소문자 네임스페이스 ID이고, 구체적인 키부터 차례로 찾아 처음 매핑된 키의 곡을 재생합니다.
+
+- `BattleMusicContentProviders.global().register(id, provider)`: `contentKeys(battleId)`가 `battle.content` 키 목록을 돌려줍니다. 예: `example:league/champion`, `example:league`.
+- `ScreenMusicProviders.global().register(id, provider)`: `screenKeys()`가 열린 화면의 `screens` 키 목록을, 닫혀 있으면 빈 목록을 돌려줍니다.
+- `knownContentKeys()`·`knownScreenKeys()`로 알려 준 키는 설정 화면에 미리 표시됩니다.
+
+공급자가 예외를 던지거나 잘못된 키를 돌려주면 한 번만 로그를 남기고 다음 공급자로 넘어갑니다.
+
 ## More Cobblemon Contents 연동
 
-More Cobblemon Contents가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
+More Cobblemon Contents(MCC)가 설치돼 있으면 위 API로 내장 연동을 등록합니다. MCC는 선택 의존성이라, 없거나 연동 API가 없는 옛 버전이면 일반 매핑으로 동작합니다. MCC 클래스는 `integration/mcc`의 `MccMusicProviders`에서만 쓰고, MCC가 로드됐을 때만 이 클래스를 불러옵니다.
 
-- `more_cobblemon_contents:battle_tower`
-- `more_cobblemon_contents:battle_factory`
-- `more_cobblemon_contents:pvp`
+전투 키는 `<콘텐츠>/<단계>/<상대>` → `<콘텐츠>/<단계>` → `<콘텐츠>` 순으로 찾습니다. 상대는 ID의 경로 부분만 씁니다.
 
-연동 모드가 없거나 콘텐츠 ID를 얻지 못하면 일반 전투 매핑으로 돌아갑니다.
+| 콘텐츠 | 단계 |
+|---|---|
+| `more_cobblemon_contents:league_challenge` | `gym`, `elite_four`, `champion`, `hard_gym`, `hard_elite_four`, `hard_champion`, `wild_trainer`, `wild_trainer_ace` |
+| `more_cobblemon_contents:battle_tower` | `regular`, `tier_boss`, `master_ball_boss` |
+| `more_cobblemon_contents:battle_factory` | `regular`, `factory_head` |
+| `more_cobblemon_contents:pvp` | `single`, `double` |
+
+예를 들어 신오 챔피언전은 `more_cobblemon_contents:league_challenge/champion/cynthia`, `.../league_challenge/champion`, `.../league_challenge` 순서로 찾습니다. 야생 트레이너도 리그 챌린지 콘텐츠이므로 `more_cobblemon_contents:league_challenge` 자체에 곡을 걸면 야생 트레이너에게도 적용됩니다. 공식 팩은 리그 단계에만 체육관·사천왕·챔피언 곡을 걸어 두어, 야생 트레이너는 일반 트레이너 곡을 씁니다.
+
+배틀 허브가 열려 있으면 `more_cobblemon_contents:hub/<탭>` → `more_cobblemon_contents:hub` 순으로 화면 키를 찾습니다. 탭은 `dashboard`, `shop`, `league_challenge`, `battle_tower`, `battle_factory`, `pvp`입니다. 공식 팩에는 허브 매핑이 없어 기본적으로 필드 음악이 이어집니다.
 
 ## 빌드
 
