@@ -9,8 +9,8 @@ import com.google.gson.JsonParser
  * The sets come from the games' replays: every move, item and ability a replay showed is the player's own, and
  * what it never showed (the spread, the moves not used, an item that never activated) is the most used choice of
  * that month's ladder usage statistics. A player who sent in only two has the third filled in from the team preview,
- * the teammate the ladder pairs most often with the two shown; [complete] is false for those games. Terastallization
- * is not simulated, though every set had a Tera type in the real game.
+ * the teammate the ladder pairs most often with the two shown; [complete] is false for those games. Each set has a
+ * Tera type: the one the replay showed for the Pokemon that Terastallized, the ladder's most used for the rest.
  */
 internal data class LocalTournamentGame(
     val name: String,

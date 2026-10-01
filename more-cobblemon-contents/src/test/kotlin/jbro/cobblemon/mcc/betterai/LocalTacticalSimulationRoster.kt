@@ -109,6 +109,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                             },
                             stats = calculatedStats(baseStats, ivs, evs, natureId),
                             moves = moves.filterNotNull(),
+                            teraTypeId = set.optionalString("tera_type"),
                         )
                     }
                 }.sortedBy { it.setId }
@@ -356,6 +357,8 @@ internal data class LocalTacticalSimulationEntry(
     val typeIds: Set<String>,
     val stats: LocalTacticalSimulationStats,
     val moves: List<LocalTacticalSimulationMove>,
+    /** The type it Terastallizes into; null for a set that cannot (every Factory preset). */
+    val teraTypeId: String? = null,
 )
 
 internal data class LocalTacticalSimulationMove(

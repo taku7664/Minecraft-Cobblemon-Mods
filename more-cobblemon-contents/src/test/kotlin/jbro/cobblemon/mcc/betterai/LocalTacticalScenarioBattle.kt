@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
@@ -114,6 +115,7 @@ internal data class LocalScenarioFork(val turn: Int, val side: BattleSide, val a
 
 /** Focused 3v3 executor that reuses the production public single-turn projector. */
 internal object LocalTacticalScenarioBattle {
+    private const val TERA_SUFFIX = ":tera"
     fun run(
         definition: LocalTacticalScenarioDefinition,
         maximumTurns: Int = 15,
@@ -138,9 +140,14 @@ internal object LocalTacticalScenarioBattle {
         start: LocalScenarioStart? = null,
         /** Sides played by a fixed policy instead of their brain's choice. */
         policies: Map<BattleSide, LocalScenarioPolicy> = emptyMap(),
+        /**
+         * Whether a side may Terastallize, once a battle, a Pokemon whose set has a Tera type. Off measures the
+         * same teams without it.
+         */
+        terastallization: Boolean = true,
     ): LocalTacticalScenarioReport = Battle(
         definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
-        lookaheadBudget, fork, start, policies,
+        lookaheadBudget, fork, start, policies, terastallization,
     ).run(maximumTurns)
 
     private class Battle(
@@ -155,7 +162,10 @@ internal object LocalTacticalScenarioBattle {
         private val fork: LocalScenarioFork?,
         private val start: LocalScenarioStart?,
         private val policies: Map<BattleSide, LocalScenarioPolicy>,
+        private val terastallization: Boolean,
     ) {
+        /** The sides that have Terastallized: once a battle. */
+        private val terastallized = mutableSetOf<BattleSide>()
         /** The fixed policies' own draws, apart from the battle's so the rolls stay comparable. */
         private val policyRandom = Random(definition.seed.toLong() * 31 + 7)
         private val difficulties = mapOf(
@@ -247,6 +257,7 @@ internal object LocalTacticalScenarioBattle {
                 val cycleCandidates = candidates(BattleSide.ALLY)
                 val offenseCandidates = candidates(BattleSide.OPPONENT)
                 val cycleActual = choose(BattleSide.ALLY, cycleCandidates)
+                if (cycleActual.terastallizes()) terastallized += BattleSide.ALLY
                 val cycleIdeal = selectors.getValue(BattleSide.ALLY).ideal()
                 val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY))
                 // The ranking as the selector could draw from it: rule exclusions left out.
@@ -254,6 +265,7 @@ internal object LocalTacticalScenarioBattle {
                     selector.lastRanked.map { it.outcome.candidate.actionId }.filter { it !in selector.lastExclusions }
                 }
                 val offenseActual = choose(BattleSide.OPPONENT, offenseCandidates)
+                if (offenseActual.terastallizes()) terastallized += BattleSide.OPPONENT
                 val offenseIdeal = selectors.getValue(BattleSide.OPPONENT).ideal()
                 val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT))
                 val cycleCanonical = toCanonical(cycleActual, BattleSide.ALLY)
@@ -402,8 +414,56 @@ internal object LocalTacticalScenarioBattle {
             val actions = PublicFutureActionFactory.actions(view, BattleSide.ALLY, catalog,
                 perspectiveHistory(side).copy(moveUses = emptyMap()))
             require(actions.isNotEmpty()) { "No legal actions for $side on turn ${state.turn}" }
-            return actions
+            if (!terastallization || side in terastallized) return actions
+            // As the live battle offers it: each move again with the mechanic, for the one in front with a Tera type.
+            val teraTypes = view.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
+                .mapNotNull { pokemon -> templates.getValue(pokemon.battlePokemonId).teraTypeId?.let { pokemon.activeSlot to it } }
+                .toMap()
+            if (teraTypes.isEmpty()) return actions
+            return actions + actions.mapNotNull { action ->
+                val type = teraTypes[action.actorSlot] ?: return@mapNotNull null
+                if (action.kind != BattleActionKind.USE_MOVE) return@mapNotNull null
+                BattleActionCandidate(
+                    actionId = action.actionId + TERA_SUFFIX,
+                    kind = action.kind,
+                    actorSlot = action.actorSlot,
+                    moveSlot = action.moveSlot,
+                    moveId = action.moveId,
+                    targets = action.targets,
+                    mechanic = BattleMechanicCandidate(
+                        mechanicId = MajorBattleMechanic.TERA.id,
+                        target = null,
+                        publicCost = null,
+                        transformedActorTypeIds = setOf(type),
+                    ),
+                    moveDetails = action.moveDetails,
+                    tags = action.tags,
+                )
+            }
         }
+
+        private fun BattleActionCandidate.terastallizes(): Boolean =
+            (if (kind == BattleActionKind.COMPOSITE) componentActions else listOf(this))
+                .any { it.mechanic?.mechanicId == MajorBattleMechanic.TERA.id }
+
+        /** The deciding side's own sets, as the live battle hands its trainer their party: the Tera types among them. */
+        private fun exactOwnTeam(viewer: BattleSide): BattleExactOwnTeamView = BattleExactOwnTeamView(
+            state.pokemon.filter { it.side == viewer }.map { pokemon ->
+                val template = templates.getValue(pokemon.battlePokemonId)
+                fun spread(of: LocalTacticalSimulationStatSpread) = mapOf("hp" to of.hp, "atk" to of.attack, "def" to of.defense,
+                    "spa" to of.specialAttack, "spd" to of.specialDefense, "spe" to of.speed)
+                BattleExactPokemonBuildView(
+                    battlePokemonId = pokemon.battlePokemonId,
+                    abilityId = PublicIds.canonical(template.abilityId),
+                    heldItemId = PublicIds.canonical(template.heldItemId),
+                    natureId = PublicIds.canonical(template.natureId),
+                    gender = "N",
+                    evs = spread(template.evs),
+                    ivs = spread(template.ivs),
+                    teraTypeId = template.teraTypeId,
+                )
+            },
+        )
 
         private fun choose(
             side: BattleSide,
@@ -419,7 +479,7 @@ internal object LocalTacticalScenarioBattle {
                 deadlineEpochMillis = Long.MAX_VALUE,
                 memory = memories.getValue(side).view(state.turn),
                 publicActionCatalog = inferredCatalog(side, view, decisionCatalog(side)),
-            )
+            ).copy(exactOwnTeam = exactOwnTeam(side))
             recordedContexts?.add(context)
             val started = if (recordedDecisions != null) System.nanoTime() else 0L
             val decision = brain.decide(session, context).toCompletableFuture().join()
@@ -551,7 +611,12 @@ internal object LocalTacticalScenarioBattle {
                     else -> null
                 },
                 actionConstraints = pokemon.actionConstraints,
-            )
+            ).let { view ->
+                // A Terastallized Pokemon's types are the battle's, not its set's, and public once it has.
+                if (!public || pokemon.knownTeraTypeId == null) view
+                else view.copyState(knownTypeIds = pokemon.knownTypeIds, knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
+                    knownTeraTypeId = pokemon.knownTeraTypeId, knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds)
+            }
         }
 
         private val inferenceMoveDetails by lazy {
@@ -652,6 +717,7 @@ internal object LocalTacticalScenarioBattle {
                 moveId = action.moveId,
                 targets = action.targets.map { BattleTargetSlot(opposite(it.side), it.slot) },
                 switchPokemonId = action.switchPokemonId,
+                mechanic = action.mechanic,
                 moveDetails = action.moveDetails,
                 tags = action.tags,
             )
@@ -834,7 +900,7 @@ internal object LocalTacticalScenarioBattle {
 
         private fun actionLabel(action: BattleActionCandidate): String = when (action.kind) {
             BattleActionKind.COMPOSITE -> action.componentActions.joinToString("+") { actionLabel(it) }
-            BattleActionKind.USE_MOVE -> moveLabel(action.moveId)
+            BattleActionKind.USE_MOVE -> moveLabel(action.moveId) + if (action.mechanic != null) "+테라" else ""
             BattleActionKind.SWITCH -> "교체→${speciesLabel(templates.getValue(requireNotNull(action.switchPokemonId)).speciesId)}"
             BattleActionKind.WAIT -> "대기"
             else -> action.kind.name.lowercase()

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
  *
  * Opt-in: -Psweeps -PsweepOnly=tournament. The system properties aiengine.tournamentSeeds (draws per game and
  * pairing) and aiengine.tournamentShard ("i/n", the games this run takes) size a run. One line per battle:
- * `TOURNAMENT <pairing> <game> <draw> p1=<difficulty> p2=<difficulty> winner=<p1|p2|draw> lead=<p1 HP lead>`.
+ * `TOURNAMENT <pairing> <game> <draw> p1=<difficulty> p2=<difficulty> winner=<p1|p2|draw> lead=<p1 HP lead> tera=<p1/p2 turn>`.
  */
 class LocalTournamentDuelTest {
     @Test
@@ -31,6 +31,7 @@ class LocalTournamentDuelTest {
         val seeds = System.getProperty("aiengine.tournamentSeeds")?.toIntOrNull() ?: SEEDS
         val (shard, shards) = (System.getProperty("aiengine.tournamentShard") ?: "0/1").split('/').map(String::toInt)
         val games = LocalTournamentGames.all().filterIndexed { index, _ -> index % shards == shard }
+        val pairings = if (System.getProperty("aiengine.tournamentPairings") == "reserve") RESERVE_PAIRINGS else PAIRINGS
         for (game in games) {
             for (draw in 0 until seeds) {
                 val definition = LocalTacticalScenarioDefinition(
@@ -39,9 +40,11 @@ class LocalTournamentDuelTest {
                     offenseSetIds = game.p2,
                     seed = (game.name + "#" + draw).hashCode(),
                 )
-                for ((pairing, p1, p2) in PAIRINGS) {
-                    val report = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, TUNING, TUNING,
-                        p1.second, p2.second, lookaheadBudget = UNLIMITED)
+                for ((pairing, p1, p2) in pairings) {
+                    val report = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, p1.tuning, p2.tuning,
+                        p1.difficulty, p2.difficulty, lookaheadBudget = UNLIMITED, terastallization = TERASTALLIZATION)
+                    val tera = listOf(report.turns.indexOfFirst { "+테라" in it.cycleActual }, report.turns.indexOfFirst { "+테라" in it.offenseActual })
+                        .map { if (it < 0) "-" else "T${report.turns[it].turn}" }
                     val lead = report.cycleRemainingHp - report.offenseRemainingHp
                     val winner = when {
                         report.winner == "cycle" -> "p1"
@@ -50,8 +53,8 @@ class LocalTournamentDuelTest {
                         lead <= -DECISIVE_LEAD -> "p2"
                         else -> "draw"
                     }
-                    println("TOURNAMENT $pairing ${game.name} $draw p1=${p1.first} p2=${p2.first} winner=$winner " +
-                        "real=${game.winner} complete=${game.complete} turns=${report.turns.size} lead=${"%+.2f".format(lead)}")
+                    println("TOURNAMENT $pairing ${game.name} $draw p1=${p1.label} p2=${p2.label} winner=$winner " +
+                        "real=${game.winner} complete=${game.complete} turns=${report.turns.size} lead=${"%+.2f".format(lead)} tera=${tera.joinToString("/")}")
                 }
             }
         }
@@ -59,18 +62,29 @@ class LocalTournamentDuelTest {
 
     private companion object {
         const val SEEDS = 4
+        /** -Daiengine.tournamentTera=false plays the same games without Terastallization. */
+        val TERASTALLIZATION = System.getProperty("aiengine.tournamentTera") != "false"
         const val MAXIMUM_TURNS = 30
         const val DECISIVE_LEAD = 0.5
-        val TUNING = LocalDecisionTuning.CURRENT
-        val BOSS = "boss" to BattleDifficultyProfiles.BOSS
-        val INTRODUCTORY = "introductory" to BattleDifficultyProfiles.INTRODUCTORY
+        class Brain(val label: String, val difficulty: BattleDifficultyProfile, val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT)
+        val BOSS = Brain("boss", BattleDifficultyProfiles.BOSS)
+        val INTRODUCTORY = Brain("introductory", BattleDifficultyProfiles.INTRODUCTORY)
+        /** Boss that spends its Tera whenever this turn's gain is the best, with no reserve for the ace. */
+        val BOSS_SPEND = Brain("boss-spend", BattleDifficultyProfiles.BOSS,
+            LocalDecisionTuning.CURRENT.copy(id = "mechanic-spend", mechanicReserve = false))
 
         /** Each pairing with its p1 and p2 brain; Boss against Introductory is played from both sides. */
-        val PAIRINGS: List<Triple<String, Pair<String, BattleDifficultyProfile>, Pair<String, BattleDifficultyProfile>>> = listOf(
+        val PAIRINGS: List<Triple<String, Brain, Brain>> = listOf(
             Triple("boss-vs-introductory", BOSS, INTRODUCTORY),
             Triple("boss-vs-introductory", INTRODUCTORY, BOSS),
             Triple("boss-mirror", BOSS, BOSS),
             Triple("introductory-mirror", INTRODUCTORY, INTRODUCTORY),
+        )
+
+        /** -Daiengine.tournamentPairings=reserve: Boss keeping its Tera for the ace against Boss spending it, both sides. */
+        val RESERVE_PAIRINGS: List<Triple<String, Brain, Brain>> = listOf(
+            Triple("reserve-vs-spend", BOSS, BOSS_SPEND),
+            Triple("reserve-vs-spend", BOSS_SPEND, BOSS),
         )
 
         /** As in [LocalSearchSwitchDuelTest]: no time limit, so the run measures the brain and not the machine. */

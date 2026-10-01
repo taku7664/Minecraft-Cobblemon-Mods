@@ -2,8 +2,8 @@
 """Build the real-tournament test sets (src/test/resources/betterai/tournament) from Showdown replays.
 
 Each game keeps the three Pokemon both players brought, in the order they came in, and who won. Everything a
-replay showed (moves, items, abilities) is the player's own; the rest is the most used choice of that month's ladder
-usage statistics. A side that sent in only two has the third filled in from the team preview, the teammate the ladder
+replay showed (moves, items, abilities, the Tera type of the one that Terastallized) is the player's own; the rest is
+the most used choice of that month's ladder usage statistics. A side that sent in only two has the third filled in from the team preview, the teammate the ladder
 pairs most often with the two shown.
 
     python tools/build_tournament_sets.py --cobblemon-jar <cobblemon-fabric jar> --cache <dir>
@@ -117,7 +117,7 @@ def observe(log: list[str]):
             nick[(side, part[2].split(": ", 1)[1])] = species
             if species not in order[side]:
                 order[side].append(species)
-            seen[side].setdefault(species, {"moves": [], "item": None, "ability": None})
+            seen[side].setdefault(species, {"moves": [], "item": None, "ability": None, "tera": None})
         if kind == "move":
             side, species = who(part[2])
             called = [x for x in tail if x.startswith("[from]")]
@@ -129,6 +129,10 @@ def observe(log: list[str]):
             side, species = who(part[2])
             if species and not seen[side][species]["item"] and not any(x.startswith("[from] move") for x in tail):
                 seen[side][species]["item"] = canonical(part[3])
+        if kind == "-terastallize":
+            side, species = who(part[2])
+            if species:
+                seen[side][species]["tera"] = canonical(part[3])
         if kind == "-ability":
             side, species = who(part[2])
             if species:
@@ -163,7 +167,7 @@ def build(cobblemon_jar: Path, cache: Path) -> dict:
                 pick = max(rest, key=lambda x: sum(chaos[m]["Teammates"].get(x, 0) for m in members))
                 members.append(pick)
                 guessed.add((side, pick))
-                seen[side][pick] = {"moves": [], "item": None, "ability": None}
+                seen[side][pick] = {"moves": [], "item": None, "ability": None, "tera": None}
             # Revealed items go first, so a filled-in item never takes one a teammate was seen holding.
             items = {seen[side][x]["item"] for x in members if seen[side][x]["item"]}
             ids = []
@@ -187,12 +191,14 @@ def build(cobblemon_jar: Path, cache: Path) -> dict:
                 items.add(item)
                 ability = shown["ability"] or most_used(usage["Abilities"])[0]
                 nature, spread = most_used(usage["Spreads"])[0].split(":")
+                tera = shown["tera"] or most_used(usage["Tera Types"])[0]
                 species, form = FORMS.get(species_name, (canonical(species_name), None))
                 set_id = f"{name}-{side}-{canonical(species_name)}"
                 entry = {
                     "set_id": set_id, "species_id": "cobblemon:" + species, "ability_id": "cobblemon:" + ability,
                     "held_item_id": "cobblemon:" + item, "nature_id": "cobblemon:" + nature.lower(),
                     "moves": ["cobblemon:" + m for m in moves], "evs": dict(zip(STATS, map(int, spread.split("/")))),
+                    "tera_type": tera, "revealed_tera": bool(shown["tera"]),
                     "revealed_moves": len(shown["moves"][:4]), "revealed_item": bool(shown["item"]),
                     "revealed_ability": bool(shown["ability"]), "guessed_member": (side, species_name) in guessed,
                 }
@@ -225,7 +231,7 @@ def main() -> None:
     sets = root["rental_sets"]
     print(f"{len(root['games'])} games, {sum(g['complete'] for g in root['games'])} complete, {len(sets)} sets; revealed "
           f"{sum(s['revealed_moves'] for s in sets)}/{4 * len(sets)} moves, {sum(s['revealed_item'] for s in sets)} items, "
-          f"{sum(s['revealed_ability'] for s in sets)} abilities")
+          f"{sum(s['revealed_ability'] for s in sets)} abilities, {sum(s['revealed_tera'] for s in sets)} Tera types")
 
 
 if __name__ == "__main__":

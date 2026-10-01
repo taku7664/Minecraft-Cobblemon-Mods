@@ -9,6 +9,25 @@ import org.junit.jupiter.api.Test
 
 class LocalTacticalScenarioBattleTest {
     @Test
+    fun `a side Terastallizes once at most and only when its sets carry a Tera type`() {
+        val game = LocalTournamentGames.all().first()
+        val definition = LocalTacticalScenarioDefinition(game.name, game.p1, game.p2, 7)
+        val introductory = jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles.INTRODUCTORY
+        fun teras(report: LocalTacticalScenarioReport) =
+            report.turns.count { "+테라" in it.cycleActual } to report.turns.count { "+테라" in it.offenseActual }
+
+        // An Introductory trainer spends it at once: both sides do, each once.
+        val allowed = teras(LocalTacticalScenarioBattle.run(definition, 15, cycleDifficulty = introductory, offenseDifficulty = introductory))
+        assertEquals(1 to 1, allowed)
+        val off = teras(LocalTacticalScenarioBattle.run(definition, 15, cycleDifficulty = introductory, offenseDifficulty = introductory,
+            terastallization = false))
+        assertEquals(0 to 0, off)
+        // Factory presets have no Tera type.
+        val factory = LocalSelfPlayMeasurement.definitions(1, 20261220).single()
+        assertEquals(0 to 0, teras(LocalTacticalScenarioBattle.run(factory, 15, cycleDifficulty = introductory, offenseDifficulty = introductory)))
+    }
+
+    @Test
     fun `three complete cycle versus offense teams produce auditable turn logs`() {
         // 15 turns is too short for one of these archetypes to resolve. A status-pivot cycle team
         // against a bulky sweeper is a deliberately grindy matchup, and once recovery moves report

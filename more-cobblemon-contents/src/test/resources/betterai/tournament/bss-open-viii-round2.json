@@ -22,6 +22,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 4,
    "revealed_item": false,
    "revealed_ability": true,
@@ -47,6 +49,8 @@
     "special_defense": 4,
     "speed": 28
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": false,
@@ -72,6 +76,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -97,6 +103,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -122,6 +130,8 @@
     "special_defense": 0,
     "speed": 132
    },
+   "tera_type": "water",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -147,6 +157,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -172,6 +184,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -194,6 +208,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -219,6 +235,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 4,
    "revealed_item": true,
    "revealed_ability": true,
@@ -245,6 +263,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -270,6 +290,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": false,
@@ -296,6 +318,8 @@
     "special_defense": 0,
     "speed": 0
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": false,
@@ -322,6 +346,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -347,6 +373,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -372,6 +400,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -397,6 +427,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -423,6 +455,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -448,6 +482,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -473,6 +509,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -498,6 +536,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -523,6 +563,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "steel",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -549,6 +591,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -574,6 +618,8 @@
     "special_defense": 252,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -599,6 +645,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -624,6 +672,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -650,6 +700,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -675,6 +727,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -700,6 +754,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -726,6 +782,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -751,6 +809,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -777,6 +837,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -802,6 +864,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -827,6 +891,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -853,6 +919,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -878,6 +946,8 @@
     "special_defense": 0,
     "speed": 12
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -903,6 +973,8 @@
     "special_defense": 0,
     "speed": 132
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": true,
    "revealed_ability": false,
@@ -928,6 +1000,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -953,6 +1027,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -978,6 +1054,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1004,6 +1082,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -1029,6 +1109,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "poison",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": false,
@@ -1055,6 +1137,8 @@
     "special_defense": 0,
     "speed": 12
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1080,6 +1164,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1106,6 +1192,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -1131,6 +1219,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1156,6 +1246,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1181,6 +1273,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1206,6 +1300,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "ghost",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1231,6 +1327,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -1257,6 +1355,8 @@
     "special_defense": 4,
     "speed": 236
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1282,6 +1382,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1307,6 +1409,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1332,6 +1436,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -1357,6 +1463,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1382,6 +1490,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "dark",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1407,6 +1517,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1432,6 +1544,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1457,6 +1571,8 @@
     "special_defense": 252,
     "speed": 12
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1482,6 +1598,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1507,6 +1625,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1532,6 +1652,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1557,6 +1679,8 @@
     "special_defense": 148,
     "speed": 28
    },
+   "tera_type": "ghost",
+   "revealed_tera": true,
    "revealed_moves": 4,
    "revealed_item": true,
    "revealed_ability": false,
@@ -1582,6 +1706,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1608,6 +1734,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 4,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1633,6 +1761,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 4,
    "revealed_item": true,
    "revealed_ability": true,
@@ -1659,6 +1789,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -1684,6 +1816,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -1709,6 +1843,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1735,6 +1871,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1760,6 +1898,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1785,6 +1925,8 @@
     "special_defense": 0,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1810,6 +1952,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1835,6 +1979,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1860,6 +2006,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1885,6 +2033,8 @@
     "special_defense": 0,
     "speed": 12
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1910,6 +2060,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -1935,6 +2087,8 @@
     "special_defense": 0,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1960,6 +2114,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "ground",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -1985,6 +2141,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2011,6 +2169,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2036,6 +2196,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2062,6 +2224,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2088,6 +2252,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2114,6 +2280,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2139,6 +2307,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2164,6 +2334,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": true,
    "revealed_ability": false,
@@ -2190,6 +2362,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2215,6 +2389,8 @@
     "special_defense": 20,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2240,6 +2416,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "steel",
+   "revealed_tera": true,
    "revealed_moves": 4,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2266,6 +2444,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2291,6 +2471,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2317,6 +2499,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2342,6 +2526,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2367,6 +2553,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2392,6 +2580,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2418,6 +2608,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2443,6 +2635,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2468,6 +2662,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2493,6 +2689,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2518,6 +2716,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2543,6 +2743,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2568,6 +2770,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2594,6 +2798,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -2619,6 +2825,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2644,6 +2852,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2669,6 +2879,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2694,6 +2906,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2719,6 +2933,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2745,6 +2961,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2770,6 +2988,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -2795,6 +3015,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2820,6 +3042,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2845,6 +3069,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2871,6 +3097,8 @@
     "special_defense": 12,
     "speed": 28
    },
+   "tera_type": "water",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2896,6 +3124,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2921,6 +3151,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -2947,6 +3179,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -2972,6 +3206,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "stellar",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": false,
@@ -2997,6 +3233,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3023,6 +3261,8 @@
     "special_defense": 0,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3048,6 +3288,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3074,6 +3316,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3100,6 +3344,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3125,6 +3371,8 @@
     "special_defense": 0,
     "speed": 4
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3151,6 +3399,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3176,6 +3426,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3201,6 +3453,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3226,6 +3480,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3252,6 +3508,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3277,6 +3535,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3302,6 +3562,8 @@
     "special_defense": 252,
     "speed": 4
    },
+   "tera_type": "normal",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3328,6 +3590,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3353,6 +3617,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3378,6 +3644,8 @@
     "special_defense": 0,
     "speed": 68
    },
+   "tera_type": "fighting",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3404,6 +3672,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3429,6 +3699,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3455,6 +3727,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3480,6 +3754,8 @@
     "special_defense": 0,
     "speed": 4
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3506,6 +3782,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -3531,6 +3809,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 4,
    "revealed_item": true,
    "revealed_ability": false,
@@ -3556,6 +3836,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3581,6 +3863,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3606,6 +3890,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3631,6 +3917,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3656,6 +3944,8 @@
     "special_defense": 12,
     "speed": 28
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -3681,6 +3971,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3706,6 +3998,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3732,6 +4026,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "stellar",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": true,
@@ -3757,6 +4053,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "water",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3783,6 +4081,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3808,6 +4108,8 @@
     "special_defense": 126,
     "speed": 4
    },
+   "tera_type": "steel",
+   "revealed_tera": false,
    "revealed_moves": 4,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3833,6 +4135,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -3858,6 +4162,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": true,
    "revealed_moves": 2,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3884,6 +4190,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -3909,6 +4217,8 @@
     "special_defense": 252,
     "speed": 0
    },
+   "tera_type": "grass",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": false,
@@ -3934,6 +4244,8 @@
     "special_defense": 0,
     "speed": 4
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -3960,6 +4272,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": false,
@@ -3985,6 +4299,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "steel",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4010,6 +4326,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4036,6 +4354,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4062,6 +4382,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4087,6 +4409,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4112,6 +4436,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 3,
    "revealed_item": true,
    "revealed_ability": true,
@@ -4137,6 +4463,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4163,6 +4491,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4188,6 +4518,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -4213,6 +4545,8 @@
     "special_defense": 132,
     "speed": 172
    },
+   "tera_type": "ground",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": false,
@@ -4238,6 +4572,8 @@
     "special_defense": 0,
     "speed": 20
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4263,6 +4599,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4288,6 +4626,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4313,6 +4653,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "poison",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4338,6 +4680,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4363,6 +4707,8 @@
     "special_defense": 20,
     "speed": 0
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": true,
    "revealed_ability": true,
@@ -4388,6 +4734,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "electric",
+   "revealed_tera": false,
    "revealed_moves": 2,
    "revealed_item": true,
    "revealed_ability": true,
@@ -4413,6 +4761,8 @@
     "special_defense": 132,
     "speed": 12
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 3,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4438,6 +4788,8 @@
     "special_defense": 4,
     "speed": 252
    },
+   "tera_type": "normal",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": true,
    "revealed_ability": false,
@@ -4463,6 +4815,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": false,
    "revealed_moves": 0,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4488,6 +4842,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fire",
+   "revealed_tera": true,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": true,
@@ -4513,6 +4869,8 @@
     "special_defense": 0,
     "speed": 252
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
@@ -4538,6 +4896,8 @@
     "special_defense": 4,
     "speed": 0
    },
+   "tera_type": "fairy",
+   "revealed_tera": false,
    "revealed_moves": 1,
    "revealed_item": false,
    "revealed_ability": false,
