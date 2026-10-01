@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>전설 포켓몬 스폰 가이드 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root="..">
+<main>
+  <h1>전설 포켓몬 스폰 가이드 <span class="badge gold">필독</span></h1>
+  <p>이 서버에서는 전설·환상·패러독스 포켓몬 <b id="lg-total">100</b>종이 야생에 나타납니다. 이 문서는 어디서, 어떤 조건에서, 누가 잡을 수 있는지를 모두 정리했습니다. 아래 도감의 조건은 서버가 실제로 쓰는 스폰 데이터에서 그대로 뽑았습니다.</p>
+
+  <div class="grid">
+    <div class="stat"><small>하이퍼볼 등급부터</small><b id="lg-ultra">-</b></div>
+    <div class="stat"><small>마스터볼 등급부터</small><b id="lg-master">-</b></div>
+    <div class="stat"><small>챔피언 등급부터</small><b id="lg-champion">-</b></div>
+    <div class="stat"><small>엔트리 조건이 있는 전설</small><b id="lg-entry">-</b></div>
+  </div>
+
+  <div class="note tip">
+    <strong>세 줄 요약</strong>
+    내 근처에 나타난 전설은 <b>나만</b> 배틀하고 잡을 수 있습니다. 전설은 <b>종마다 한 마리</b>만 잡을 수 있고, 이미 잡은 종은 내 주변에 다시 나오지 않습니다. 잡으려면 <b>리그 등급</b>이 필요하고, 일부는 특정 포켓몬을 <b>파티에 데리고 있어야</b> 나타납니다.
+  </div>
+
+  <h2 id="rules">전설은 이렇게 나타납니다</h2>
+  <h3>자연 스폰</h3>
+  <ul>
+    <li>전설은 일반 야생 포켓몬처럼 플레이어 주변에 자연스럽게 나타납니다. 다만 가장 드문 칸(ultra-rare)에서 뽑히기 때문에 쉽게 보기는 어렵습니다.</li>
+    <li>희귀도는 세 단계입니다. <b>희귀</b>(일반 전설)가 가장 자주, <b>매우 희귀</b>(환상, 아르세우스)가 그다음, <b>극희귀</b>(제한급·패러독스)가 가장 드물게 나옵니다. 정확한 확률이 아니라, 그 자리에 나올 수 있는 다른 희귀 포켓몬과 비교한 상대적인 비율입니다.</li>
+    <li>바이옴은 목록 중 <b>하나만</b> 맞으면 되고, 나머지 조건(시간, 날씨, 높이 등)은 <b>모두</b> 맞아야 합니다.</li>
+    <li>점선으로 표시한 바이옴(예: <span class="chip group">산 계열</span>)은 그 계열의 바이옴이라면 어디든 된다는 뜻입니다.</li>
+  </ul>
+
+  <h3>내 전설은 나만 잡을 수 있습니다</h3>
+  <ul>
+    <li>전설은 <b>스폰을 일으킨 플레이어의 것</b>입니다. 다른 사람이 배틀을 걸면 배틀이 취소되고, 볼을 던져도 잡히지 않습니다.</li>
+    <li>전설이 나타나면 서버 전체에 등장 대사와 함께 "○○가 (플레이어) 근처에 나타났습니다!"라고 알립니다. <b>좌표는 알리지 않습니다.</b></li>
+    <li>서버를 다시 켜도 주인 정보는 남습니다.</li>
+  </ul>
+
+  <h3>종마다 한 마리</h3>
+  <ul>
+    <li>야생에서 <b>볼로 직접 잡은</b> 전설만 기록됩니다. 교환으로 받거나 포켓몬 아이템(<code>/itemtopoke</code>)으로 되돌린 전설은 기록되지 않습니다.</li>
+    <li>한 번 잡은 종은 놓아주거나 남에게 줘도 기록이 지워지지 않습니다. 그래서 그 종은 <b>다시 내 주변에 나오지 않고</b>, 포켓내비 스폰표에서도 빠집니다.</li>
+    <li><code>/legends &lt;포켓몬&gt;</code>으로 내가 그 전설을 잡았는지, 필요한 등급과 엔트리 조건이 무엇인지 확인할 수 있습니다. 포켓몬 이름은 영어 ID로 씁니다(예: <code>/legends mewtwo</code>). 뒤에 닉네임을 붙이면 다른 사람 것도 볼 수 있습니다.</li>
+  </ul>
+
+  <h3>레벨</h3>
+  <ul>
+    <li>전설의 레벨도 일반 야생 포켓몬처럼 <b>스폰을 일으킨 플레이어의 레벨캡</b>을 따릅니다. 레벨캡보다 3~17 낮게 나오고, 레벨캡을 넘지 않습니다. 예를 들어 레벨캡이 80이면 63~77레벨입니다.</li>
+    <li>지역마다 강하게 나오는 곳과 약하게 나오는 곳이 있습니다. 4×4 청크 단위로 정해집니다.</li>
+    <li>숨겨진 특성이 나올 확률은 30%이고, 개체값은 일반 야생 포켓몬과 같은 규칙으로 정해집니다.</li>
+  </ul>
+
+  <h3>사라지는 조건</h3>
+  <ul>
+    <li>나타난 뒤 30초 동안, 그리고 배틀 중에는 사라지지 않습니다.</li>
+    <li>가장 가까운 플레이어가 32블록 안에 있으면 사라지지 않습니다.</li>
+    <li>3분이 지났거나 모든 플레이어가 96블록보다 멀어지면 사라질 수 있습니다. <b>알림을 보면 서둘러 찾아가세요.</b></li>
+  </ul>
+
+  <h3>포케스낵으로 부르기</h3>
+  <ul>
+    <li>포케스낵으로 나온 전설은 <b>포케스낵을 설치한 사람</b>의 것이고, 알림에도 설치한 사람 이름이 나옵니다.</li>
+    <li>"이미 잡은 종"과 엔트리 조건도 설치한 사람을 기준으로 봅니다. 설치한 사람이 접속해 있지 않으면 전설이 나오지 않습니다.</li>
+    <li>한 번도 쓰지 않은 포케스낵은 부수면 아이템으로 돌아옵니다.</li>
+  </ul>
+
+  <h2 id="ranks">리그 등급과 포획</h2>
+  <p>리그 챌린지에서 딴 배지 수로 등급이 정해지고, 등급에 따라 잡을 수 있는 전설이 늘어납니다. 등급이 모자라도 전설은 <b>나타나고 배틀도 할 수 있지만, 잡을 수만 없습니다.</b> 이때 볼을 던지면 "리그 등급이 ○○ 이상이어야 잡을 수 있는 전설입니다."라는 안내가 나옵니다.</p>
+  <table>
+    <thead><tr><th>등급</th><th>조건</th><th>새로 잡을 수 있는 전설</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge red">몬스터볼</span> · <span class="badge">수퍼볼</span></td><td>배지 0~4개</td><td>없음</td></tr>
+      <tr><td><span class="badge gold">하이퍼볼</span></td><td>배지 5~7개</td><td>일반 전설 <b id="lg-ultra-2">-</b></td></tr>
+      <tr><td><span class="badge" style="background:#b060d0">마스터볼</span></td><td>배지 8개</td><td>환상 <b id="lg-master-2">-</b> (아르세우스 제외)</td></tr>
+      <tr><td><span class="badge gold">챔피언</span></td><td>배지 8개 + 챔피언 격파</td><td>제한급·패러독스·아르세우스 <b id="lg-champion-2">-</b></td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="entry">엔트리 조건</h2>
+  <p>아래 전설은 스폰을 일으킨 플레이어의 <b>지금 파티</b>에 특정 포켓몬이 있어야 나타납니다. "잡은 적이 있는지"가 아니라 "지금 데리고 있는지"만 보므로, 교환으로 빌린 포켓몬도 됩니다. 조건이 맞지 않으면 포켓내비 스폰표에도 보이지 않습니다.</p>
+  <div id="lg-chains"></div>
+
+  <h2 id="my">내 전설 현황</h2>
+  <div id="lg-my" class="note">불러오는 중…</div>
+
+  <h2 id="dex">전설 도감</h2>
+  <div class="filters">
+    <input id="lg-q" type="search" placeholder="이름 또는 영어 ID (예: 뮤츠, mewtwo)" aria-label="전설 검색">
+    <select id="lg-rank" aria-label="필요 등급">
+      <option value="">모든 등급</option><option>하이퍼볼</option><option>마스터볼</option><option>챔피언</option>
+    </select>
+    <select id="lg-tier" aria-label="분류">
+      <option value="">모든 분류</option><option>일반 전설</option><option>환상</option><option>제한급</option><option>패러독스</option>
+    </select>
+    <select id="lg-dim" aria-label="차원">
+      <option value="">모든 차원</option><option>오버월드</option><option>네더</option><option>엔드</option>
+    </select>
+    <select id="lg-sort" aria-label="정렬">
+      <option value="dex">도감 번호순</option><option value="name">이름순</option><option value="rarity">흔한 순</option>
+    </select>
+    <label><input id="lg-special" type="checkbox"> 특수 조건 있음</label>
+    <label><input id="lg-hasentry" type="checkbox"> 엔트리 필요</label>
+    <label id="lg-open-wrap" hidden><input id="lg-open" type="checkbox"> 아직 못 잡은 것만</label>
+    <span class="count" id="lg-count"></span>
+  </div>
+  <div class="legend-list" id="lg-list"></div>
+
+  <h2 id="faq">자주 묻는 질문</h2>
+  <h3>알림이 떴는데 내 이름이 아니에요. 가서 잡아도 되나요?</h3>
+  <p>구경은 할 수 있지만 배틀과 포획은 그 전설이 나타난 플레이어만 할 수 있습니다.</p>
+  <h3>전설을 놓아줬는데 다시 잡을 수 있나요?</h3>
+  <p>아니요. 직접 잡은 기록은 놓아줘도 남기 때문에, 그 종은 다시 내 주변에 나오지 않습니다. 롤백 같은 문제로 기록이 꼬였다면 운영자에게 문의하세요.</p>
+  <h3>등급이 모자란데 전설이 나왔어요.</h3>
+  <p>배틀은 할 수 있지만 잡을 수는 없습니다. 등급을 올린 뒤 다시 나타나길 기다려야 합니다.</p>
+  <h3>엔트리 조건의 포켓몬을 잡았다가 박스에 넣었어요.</h3>
+  <p>엔트리 조건은 지금 파티만 봅니다. 그 포켓몬을 파티에 넣고 다니세요.</p>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/data/legends.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var legends = window.WIKI_LEGENDS || [];
+    var byId = {};
+    legends.forEach(function (legend) { byId[legend.id] = legend; });
+    function count(test) { return legends.filter(test).length; }
+    function set(id, text) { var node = document.getElementById(id); if (node) node.textContent = text; }
+    function el(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = text;
+      return node;
+    }
+
+    set("lg-total", legends.length);
+    ["ultra", "master", "champion"].forEach(function (key, index) {
+      var rank = ["하이퍼볼", "마스터볼", "챔피언"][index];
+      var n = count(function (legend) { return legend.rank === rank; }) + "종";
+      set("lg-" + key, n);
+      set("lg-" + key + "-2", n);
+    });
+    set("lg-entry", count(function (legend) { return legend.entry.length; }) + "종");
+
+    // ---- Entry chains: what has to be in the party for what --------------------------------------------------
+    var chains = document.getElementById("lg-chains");
+    var depth = {};
+    function depthOf(legend) {
+      if (depth[legend.id] != null) return depth[legend.id];
+      depth[legend.id] = 0;
+      var deepest = 0;
+      legend.entry.forEach(function (need) { if (byId[need.id]) deepest = Math.max(deepest, depthOf(byId[need.id]) + 1); });
+      return (depth[legend.id] = legend.entry.length ? Math.max(1, deepest) : 0);
+    }
+    legends.filter(function (legend) { return legend.entry.length; })
+      .sort(function (a, b) { return depthOf(a) - depthOf(b) || a.dex - b.dex; })
+      .forEach(function (legend) {
+        var row = el("div", "chain");
+        row.appendChild(el("span", "", "파티에"));
+        legend.entry.forEach(function (need, index) {
+          if (index) row.appendChild(el("span", "arrow", legend.entryAll ? "+" : "또는"));
+          row.appendChild(el("span", "chip", need.name));
+        });
+        if (legend.entryAll) row.appendChild(el("span", "chip cond", "모두"));
+        row.appendChild(el("span", "arrow", "→"));
+        row.appendChild(el("b", "", legend.name));
+        if (depthOf(legend) >= 2) row.appendChild(el("span", "chip cond", depthOf(legend) + "단계 사슬"));
+        chains.appendChild(row);
+      });
+
+    // ---- My progress, when the server serves the wiki --------------------------------------------------------
+    var mine = null;
+    var my = document.getElementById("lg-my");
+    window.MccWiki.me().then(function (me) {
+      var data = me.sections && me.sections.legends;
+      if (!data) throw new Error("no_section");
+      mine = { caught: new Set(data.caught || []), rank: data.rank, party: new Set(data.party || []), partyKnown: !!data.partyKnown,
+        allowed: new Set(data.allowed || []) };
+      var caught = legends.filter(function (legend) { return mine.caught.has(legend.id); }).length;
+      var catchable = legends.filter(function (legend) { return mine.allowed.has(legend.rank) && !mine.caught.has(legend.id); }).length;
+      my.className = "grid";
+      my.innerHTML = "";
+      [["내 리그 등급", data.rank || "-"], ["직접 잡은 전설", caught + " / " + legends.length], ["지금 등급으로 더 잡을 수 있는 전설", catchable + "종"]]
+        .forEach(function (pair) { var tile = el("div", "stat"); tile.appendChild(el("small", "", pair[0])); tile.appendChild(el("b", "", pair[1])); my.appendChild(tile); });
+      document.getElementById("lg-open-wrap").hidden = false;
+      render();
+    }).catch(function (failure) {
+      my.innerHTML = failure && failure.message === "no_section"
+        ? "이 서버는 아직 전설 현황을 보내지 않습니다."
+        : "게임에서 <code>/mcc wiki</code>로 받은 링크로 열면, 여기에 내가 잡은 전설과 지금 등급으로 잡을 수 있는 전설이 표시되고 도감에도 표시가 붙습니다.";
+    });
+
+    // ---- The dex ---------------------------------------------------------------------------------------------
+    var list = document.getElementById("lg-list");
+    var controls = ["lg-q", "lg-rank", "lg-tier", "lg-dim", "lg-sort", "lg-special", "lg-hasentry", "lg-open"]
+      .map(function (id) { return document.getElementById(id); });
+    controls.forEach(function (control) { control.addEventListener(control.type === "search" ? "input" : "change", render); });
+    var RARITY_ORDER = { "희귀": 0, "매우 희귀": 1, "극희귀": 2 };
+
+    function card(legend) {
+      var node = el("article", "legend");
+      node.id = "legend-" + legend.id;
+      var header = el("header");
+      header.appendChild(el("span", "dex", "No." + String(legend.dex).padStart(4, "0")));
+      header.appendChild(el("h3", "", legend.name));
+      legend.types.forEach(function (type) { header.appendChild(el("span", "type " + type.id, type.name)); });
+      header.appendChild(el("code", "", "/legends " + legend.id));
+      node.appendChild(header);
+
+      var dl = el("dl");
+      function row(label, content) {
+        dl.appendChild(el("dt", "", label));
+        var dd = el("dd");
+        if (typeof content === "string") dd.textContent = content; else content.forEach(function (child) { dd.appendChild(child); });
+        dl.appendChild(dd);
+      }
+      var rankClass = { "하이퍼볼": "badge gold", "마스터볼": "badge", "챔피언": "badge red" }[legend.rank];
+      row("분류", [el("span", "badge gray", legend.tier), document.createTextNode(" "), el("span", "badge green", legend.rarity)]);
+      var rank = el("span", rankClass, legend.rank + " 이상");
+      if (legend.rank === "마스터볼") rank.style.background = "#b060d0";
+      row("포획", [rank]);
+      row("장소", legend.dimensions.join(" · ") + " · " + legend.position);
+      row("바이옴", legend.biomes.map(function (biome) { return el("span", biome.group ? "chip group" : "chip", biome.group ? biome.name + " 계열" : biome.name); }));
+      if (legend.except.length) row("제외", legend.except.map(function (name) { return el("span", "chip no", name); }));
+      if (legend.conditions.length) row("조건", legend.conditions.map(function (condition) { return el("span", "chip cond", condition.text); }));
+      if (legend.entry.length) {
+        var parts = [];
+        legend.entry.forEach(function (need, index) {
+          if (index) parts.push(document.createTextNode(legend.entryAll ? " + " : " 또는 "));
+          var chip = el("a", "chip", need.name);
+          if (byId[need.id]) chip.href = "#legend-" + need.id;
+          parts.push(chip);
+        });
+        parts.push(document.createTextNode(legend.entryAll ? " (모두 파티에)" : " (하나 이상 파티에)"));
+        row("엔트리", parts);
+      }
+      node.appendChild(dl);
+      node.appendChild(el("p", "line", legend.line));
+
+      if (mine) {
+        var status = el("p", "status");
+        if (mine.caught.has(legend.id)) {
+          node.classList.add("caught");
+          status.appendChild(el("span", "badge green", "직접 잡음"));
+          status.appendChild(document.createTextNode(" 이 종은 더 이상 내 주변에 나오지 않습니다."));
+        } else {
+          var allowed = mine.allowed.has(legend.rank);
+          status.appendChild(el("span", allowed ? "badge" : "badge gray", allowed ? "잡을 수 있는 등급" : "등급 부족"));
+          if (legend.entry.length && !mine.partyKnown) {
+            status.appendChild(document.createTextNode(" 엔트리 충족 여부는 게임에 접속해 있을 때 보입니다."));
+          } else if (legend.entry.length) {
+            var met = legend.entryAll ? legend.entry.every(function (need) { return mine.party.has(need.id); })
+              : legend.entry.some(function (need) { return mine.party.has(need.id); });
+            status.appendChild(document.createTextNode(" "));
+            status.appendChild(el("span", met ? "badge green" : "badge gray", met ? "엔트리 충족 (지금 파티)" : "엔트리 미충족"));
+          }
+        }
+        node.appendChild(status);
+      }
+      return node;
+    }
+
+    function render() {
+      var q = controls[0].value.trim().toLowerCase();
+      var rank = controls[1].value, tier = controls[2].value, dim = controls[3].value, sort = controls[4].value;
+      var special = controls[5].checked, hasEntry = controls[6].checked, open = controls[7].checked && mine;
+      var shown = legends.filter(function (legend) {
+        if (q && legend.name.toLowerCase().indexOf(q) < 0 && legend.id.indexOf(q) < 0) return false;
+        if (rank && legend.rank !== rank) return false;
+        if (tier && legend.tier !== tier) return false;
+        if (dim && legend.dimensions.indexOf(dim) < 0) return false;
+        if (special && !legend.conditions.length) return false;
+        if (hasEntry && !legend.entry.length) return false;
+        if (open && mine.caught.has(legend.id)) return false;
+        return true;
+      }).sort(function (a, b) {
+        if (sort === "name") return a.name.localeCompare(b.name, "ko");
+        if (sort === "rarity") return RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity] || a.dex - b.dex;
+        return a.dex - b.dex;
+      });
+      list.innerHTML = "";
+      shown.forEach(function (legend) { list.appendChild(card(legend)); });
+      set("lg-count", shown.length + " / " + legends.length + "종");
+    }
+    render();
+  })();
+</script>
+</body>
+</html>

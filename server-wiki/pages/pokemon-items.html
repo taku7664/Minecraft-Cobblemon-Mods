@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>포켓몬 아이템화와 합성 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root="..">
+<main>
+<h1>포켓몬 아이템화와 합성</h1>
+  <p>포켓몬을 아이템으로 바꿔 보관하거나 주고받을 수 있고, 같은 진화 계보의 포켓몬을 합성해 개체값을 끌어올릴 수 있습니다.</p>
+
+  <h2>포켓몬을 아이템으로</h2>
+  <ul>
+    <li><code>/poketoitem</code>으로 포켓몬을 아이템으로 바꿉니다.</li>
+    <li><code>/itemtopoke</code>로 아이템을 다시 포켓몬으로 되돌립니다.</li>
+    <li>더 간단하게는 포켓몬 아이템을 <b>손에 들고 우클릭</b>해도 되돌릴 수 있습니다. 파티가 가득 찼다면 PC로 갑니다. 한 번에 아이템 1개씩만 씁니다.</li>
+  </ul>
+  <div class="note">
+    <strong>전설은 기록되지 않아요</strong>
+    아이템으로 받거나 되돌린 전설은 "직접 잡은 전설" 기록에 남지 않습니다. <a href="legends.html">전설 스폰 가이드</a>를 참고하세요.
+  </div>
+
+  <h2>포켓몬 합성</h2>
+  <p><code>/pokefusion</code>을 입력하면 "포켓몬 합성" 창이 열립니다. 합성은 <b>포켓몬 아이템</b>으로만 할 수 있으니, 먼저 <code>/poketoitem</code>으로 아이템을 만들어 두세요.</p>
+  <ol>
+    <li>기준이 될 포켓몬 1마리와 재료 포켓몬 1~9마리를 넣습니다. Shift+클릭하면 기준 칸부터 채워집니다.</li>
+    <li>재료는 기준 포켓몬과 <b>같은 진화 계보</b>이고 <b>같은 폼</b>이어야 합니다.</li>
+    <li>결과 포켓몬은 능력치마다 기준과 재료 중 <b>가장 높은 개체값</b>을 물려받습니다. 최종 개체값을 올려 주는 재료는 반짝이로 표시됩니다.</li>
+    <li>미리보기를 확인하고 연두색 "합성 확정" 버튼을 누릅니다.</li>
+  </ol>
+  <ul>
+    <li>재료 포켓몬은 사라지지만, 재료가 들고 있던 도구는 돌려받습니다.</li>
+    <li>결과 아이템의 설명에 개체값이 적혀 있습니다.</li>
+    <li>합성 중에 접속이 끊겨도 넣은 아이템과 결과는 보존됩니다. 인벤토리가 가득 차 있으면 발밑에 떨어집니다.</li>
+  </ul>
+
+  <h2>파티 포켓몬 놓아주기</h2>
+  <ul>
+    <li><code>/release &lt;슬롯&gt;</code>으로 파티의 1~6번 포켓몬을 놓아줄 수 있습니다.</li>
+    <li>채팅에 "정말로 파티 N번 ○○을(를) 놓아주시겠습니까?"가 나오면 <b>2분 안에</b> 초록색 <b>[예]</b>를 눌러야 확정됩니다.</li>
+    <li>마지막 남은 포켓몬은 놓아줄 수 없습니다. 확인하기 전에 파티가 바뀌면 취소됩니다.</li>
+  </ul>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+</body>
+</html>

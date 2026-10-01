@@ -3,30 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MCC 허브 · 빡켓몬 위키</title>
+  <title>MCC 허브와 BP 상점 · 빡켓몬 위키</title>
   <link rel="stylesheet" href="../assets/wiki.css">
 </head>
 <body data-root="..">
 <main>
-<h1>MCC 허브</h1>
-  <p>TODO: 허브 소개. <code>/mcc</code>나 홀로그램 터미널로 엽니다.</p>
+<h1>MCC 허브와 BP 상점</h1>
+  <p>MCC 허브는 배틀 콘텐츠를 한곳에 모은 화면입니다. 내 전적을 보는 대시보드, BP로 아이템을 사는 상점, 그리고 각 배틀 콘텐츠의 탭이 있습니다.</p>
 
-  <h2>여는 방법</h2>
+  <h2>허브 여는 방법</h2>
   <table>
     <thead><tr><th>방법</th><th>보이는 탭</th></tr></thead>
     <tbody>
       <tr><td><code>/mcc</code></td><td>대시보드, 상점, PvP</td></tr>
-      <tr><td>홀로그램 배틀 터미널</td><td>모든 콘텐츠</td></tr>
-      <tr><td>리그 · 배틀타워 · 배틀팩토리 터미널</td><td>대시보드, 상점, 그 콘텐츠</td></tr>
+      <tr><td>리그 터미널</td><td>대시보드, 상점, 리그 챌린지</td></tr>
+      <tr><td>배틀타워 터미널</td><td>대시보드, 상점, 배틀타워</td></tr>
+      <tr><td>배틀팩토리 터미널</td><td>대시보드, 상점, 배틀팩토리</td></tr>
+      <tr><td>홀로 배틀 터미널</td><td>모든 콘텐츠</td></tr>
     </tbody>
   </table>
+  <p>리그, 배틀타워, 배틀팩토리는 <code>/mcc</code>에 나오지 않으니 터미널에서 여세요. 터미널은 <b>8블록 안</b>에서 우클릭해야 열립니다.</p>
 
-  <h2>BP와 상점</h2>
-  <div class="grid">
-    <div class="stat"><small>일반 트레이너 승리</small><b>10 BP</b></div>
-    <div class="stat"><small>에이스 트레이너 승리</small><b>20 BP</b></div>
-  </div>
-  <p>TODO: 상점 품목 안내.</p>
+  <h2>터미널 만들기</h2>
+  <p>세 터미널은 같은 모양으로 만들고, 가운데 재료만 다릅니다.</p>
+  <table>
+    <thead><tr><th>터미널</th><th>윗줄</th><th>가운데 줄</th><th>아랫줄</th></tr></thead>
+    <tbody>
+      <tr><td>리그 터미널</td><td>철 주괴 ×3</td><td>레드스톤 · <b>나침반</b> · 레드스톤</td><td>철 주괴 ×3</td></tr>
+      <tr><td>배틀타워 터미널</td><td>철 주괴 ×3</td><td>레드스톤 · <b>시계</b> · 레드스톤</td><td>철 주괴 ×3</td></tr>
+      <tr><td>배틀팩토리 터미널</td><td>철 주괴 ×3</td><td>레드스톤 · <b>제작기</b> · 레드스톤</td><td>철 주괴 ×3</td></tr>
+    </tbody>
+  </table>
+  <p>홀로 배틀 터미널은 조합법이 없고, 운영진이 설치한 곳에서만 쓸 수 있습니다.</p>
+
+  <h2>대시보드</h2>
+  <p>대시보드에는 내 총 전투 수, 승리 수, 승률과 콘텐츠별 전적(승·패, 연승, 최고 연승)이 나옵니다. 배틀타워의 연승, 배틀팩토리의 최고 층, PvP 승수로 매기는 순위표도 볼 수 있습니다.</p>
+  <p>위키의 <a href="me.html">내 정보</a> 문서에서도 같은 정보를 볼 수 있습니다.</p>
+
+  <h2>BP 얻는 법</h2>
+  <table>
+    <thead><tr><th>콘텐츠</th><th>BP</th></tr></thead>
+    <tbody>
+      <tr><td><a href="league.html">리그 챌린지</a></td><td>관장 10, 사천왕 15, 챔피언 50 (처음 이겼을 때만). 하드 리그는 30·40·150</td></tr>
+      <tr><td><a href="wild-trainers.html">야생 트레이너</a></td><td>일반 10, 에이스 20</td></tr>
+      <tr><td><a href="tower.html">배틀타워</a></td><td>승리마다 1~4, 5연승마다 보너스 +5</td></tr>
+      <tr><td><a href="factory.html">배틀팩토리</a></td><td>승리마다 2</td></tr>
+      <tr><td><a href="pvp.html">PvP</a></td><td>없음</td></tr>
+    </tbody>
+  </table>
+  <p>BP는 <code>/mcc bp</code>로 확인하고, <code>/mcc bp history [개수]</code>로 최근 내역을 봅니다(기본 10개, 최대 100개).</p>
+
+  <h2>BP 상점</h2>
+  <p>허브의 상점 탭에서 삽니다. 한 번에 16종류, 종류마다 64개, 모두 합쳐 64개까지 담을 수 있습니다. 인벤토리에 빈칸이 없으면 살 수 없습니다.</p>
+  <table>
+    <thead><tr><th>가격</th><th>품목</th></tr></thead>
+    <tbody>
+      <tr><td><b>50 BP</b></td><td>성격 민트 21종 (외로움, 고집, 개구쟁이, 용감, 대담, 장난꾸러기, 촐랑, 무사태평, 조심, 의젓, 덜렁, 냉정, 차분, 얌전, 신중, 건방, 겁쟁이, 성급, 명랑, 천진난만, 성실), 특성캡슐</td></tr>
+      <tr><td><b>25 BP</b></td><td>구애머리띠, 구애안경, 구애스카프, 돌격조끼, 생명의구슬</td></tr>
+      <tr><td><b>20 BP</b></td><td>레드카드, 탈출버튼, 탈출팩, 허탕보험, 약점보험</td></tr>
+      <tr><td><b>15 BP</b></td><td>기합의띠, 풍선, 하양허브, 멘탈허브, 파워풀허브, 룸서비스, 빛의점토, 그라운드코트</td></tr>
+      <tr><td><b>10 BP</b></td><td>목스프레이, 주눅구슬, 구근, 충전지</td></tr>
+    </tbody>
+  </table>
 </main>
 <script src="../assets/nav.js"></script>
 <script src="../assets/wiki.js"></script>

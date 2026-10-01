@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>광장과 마이룸 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root="..">
+<main>
+<h1>광장과 마이룸</h1>
+
+  <h2>광장</h2>
+  <p>다른 트레이너와 모이는 공용 공간입니다.</p>
+  <ul>
+    <li><code>/plaza enter</code>로 광장에 들어가고, <code>/plaza exit</code>로 들어오기 전 자리(차원, 좌표, 바라보던 방향까지)로 돌아옵니다. 대기 시간은 없습니다.</li>
+    <li>광장에서 접속을 끊었다가 나중에 들어와도 <code>/plaza exit</code>로 원래 자리에 돌아갈 수 있습니다.</li>
+    <li>포켓몬 배틀 중에는 오갈 수 없습니다.</li>
+    <li>광장 아래로 떨어지거나 치명적인 피해를 받으면 원래 자리로 돌려보내 줍니다.</li>
+    <li>광장에는 비가 오지 않고 몬스터가 나오지 않습니다.</li>
+  </ul>
+  <div class="note">
+    <strong>광장에서 할 수 있는 것과 없는 것</strong>
+    음식 먹기, 볼 던지기, 문·상자·PC·회복장치 사용, 포켓몬·NPC와의 상호작용은 됩니다. 블록 설치·파괴, 양동이 사용, 다른 생명체 공격, 액자·갑옷 거치대 조작은 안 됩니다. 광장 안에서는 피해를 받지 않습니다.
+  </div>
+
+  <h2>마이룸</h2>
+  <p>나만 쓰는 100×100 크기의 방입니다. 처음 <code>/room enter</code>를 입력하면 방이 만들어지고, 준비가 끝나면 들어가집니다.</p>
+  <table>
+    <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>/room</code></td><td>내 방 정보와 도움말</td></tr>
+      <tr><td><code>/room enter</code></td><td>내 방에 들어갑니다</td></tr>
+      <tr><td><code>/room enter &lt;닉네임&gt;</code></td><td>다른 사람의 공개된 방에 놀러 갑니다</td></tr>
+      <tr><td><code>/room exit</code></td><td>들어오기 전 자리로 돌아갑니다</td></tr>
+      <tr><td><code>/room public true|false</code></td><td>방을 공개하거나 비공개로 바꿉니다</td></tr>
+      <tr><td><code>/room trust|untrust &lt;닉네임&gt;</code></td><td>건축을 허락하거나 거둡니다. 허락받은 사람은 비공개 방에도 들어올 수 있습니다</td></tr>
+      <tr><td><code>/room ban|unban &lt;닉네임&gt;</code></td><td>방 출입을 막거나 풉니다</td></tr>
+      <tr><td><code>/room kick &lt;닉네임&gt;</code></td><td>방에 있는 사람을 내보냅니다</td></tr>
+      <tr><td><code>/room setspawn</code> · <code>/room setspawn reset</code></td><td>들어올 때 서는 자리를 정하거나 되돌립니다</td></tr>
+      <tr><td><code>/room visitors</code></td><td>지금 방에 있는 방문자를 봅니다</td></tr>
+      <tr><td><code>/room notify on|off</code></td><td>방문자가 드나들 때 알림을 켜고 끕니다</td></tr>
+      <tr><td><code>/room active on|off|status</code></td><td>내가 없을 때도 방을 돌아가게 합니다(작물, 화로, 호퍼, 목장)</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>새로 만든 방은 <b>공개</b> 상태입니다. 혼자 쓰고 싶다면 <code>/room public false</code>를 입력하세요.</li>
+    <li>방문자는 블록을 부수거나 놓을 수 없고, 맨손으로 상자, 제작대, 모루, 숫돌, 엔더 상자만 쓸 수 있습니다.</li>
+    <li>방 안에서는 플레이어끼리 피해를 주지 않고, 폭발과 불 번짐이 없고, 피스톤이 움직이지 않고, 몬스터가 자연적으로 나오지 않습니다.</li>
+    <li><code>/room active on</code>은 서버 전체에서 동시에 20개 방까지만 켤 수 있습니다.</li>
+  </ul>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+</body>
+</html>

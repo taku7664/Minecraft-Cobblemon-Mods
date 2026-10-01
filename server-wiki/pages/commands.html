@@ -9,20 +9,49 @@
 <body data-root="..">
 <main>
 <h1>명령어</h1>
-  <p>플레이어가 쓸 수 있는 명령어입니다.</p>
+  <p>플레이어가 쓸 수 있는 명령어를 모두 모았습니다. <code>&lt;&gt;</code>는 꼭 넣어야 하는 값, <code>[]</code>는 빼도 되는 값입니다.</p>
 
   <h2>MCC</h2>
   <table>
     <thead><tr><th>명령어</th><th>설명</th></tr></thead>
     <tbody>
-      <tr><td><code>/mcc</code></td><td>MCC 허브를 엽니다.</td></tr>
+      <tr><td><code>/mcc</code></td><td>MCC 허브를 엽니다(대시보드, 상점, PvP). → <a href="hub.html">MCC 허브</a></td></tr>
       <tr><td><code>/mcc bp</code></td><td>내 BP를 봅니다.</td></tr>
-      <tr><td><code>/mcc bp history [개수]</code></td><td>최근 BP 내역을 봅니다.</td></tr>
+      <tr><td><code>/mcc bp history [개수]</code></td><td>최근 BP 내역을 봅니다(기본 10개, 최대 100개).</td></tr>
+      <tr><td><code>/mcc wiki</code></td><td>이 위키를 내 정보와 함께 여는 링크를 받습니다. 링크는 다른 사람에게 알려 주지 마세요.</td></tr>
+      <tr><td><code>/mcc wiki reset</code></td><td>새 위키 링크를 받습니다. 예전 링크는 더 이상 열리지 않습니다.</td></tr>
     </tbody>
   </table>
 
-  <h2>기타</h2>
-  <p>TODO</p>
+  <h2>이동</h2>
+  <table>
+    <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>/plaza enter</code> · <code>/plaza exit</code></td><td>광장에 들어가고 원래 자리로 돌아옵니다. → <a href="places.html">광장과 마이룸</a></td></tr>
+      <tr><td><code>/room enter [닉네임]</code> · <code>/room exit</code></td><td>마이룸에 들어가고 원래 자리로 돌아옵니다. 그 밖의 <code>/room</code> 명령어는 <a href="places.html">광장과 마이룸</a>에 있습니다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>포켓몬</h2>
+  <table>
+    <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>/pokenav</code></td><td>포켓내비를 엽니다.</td></tr>
+      <tr><td><code>/legends &lt;포켓몬&gt; [닉네임]</code></td><td>그 전설을 직접 잡았는지, 필요한 등급과 엔트리 조건을 봅니다. 포켓몬은 영어 ID로 씁니다(예: <code>mewtwo</code>). → <a href="legends.html">전설 스폰 가이드</a></td></tr>
+      <tr><td><code>/release &lt;슬롯&gt;</code></td><td>파티의 포켓몬을 놓아줍니다. 2분 안에 [예]를 눌러야 확정됩니다.</td></tr>
+      <tr><td><code>/poketoitem</code> · <code>/itemtopoke</code></td><td>포켓몬을 아이템으로 바꾸고 되돌립니다. → <a href="pokemon-items.html">아이템화와 합성</a></td></tr>
+      <tr><td><code>/pokefusion</code></td><td>포켓몬 합성 창을 엽니다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>내 게임 설정</h2>
+  <table>
+    <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>/roundingblock enabled true|false</code></td><td>둥근 블록 그리기를 켜고 끕니다. <code>/roundingblock show</code>로 지금 설정을 봅니다.</td></tr>
+      <tr><td><code>/bcm reload</code></td><td>음악 설정과 음악 리소스팩을 다시 읽습니다.</td></tr>
+    </tbody>
+  </table>
 </main>
 <script src="../assets/nav.js"></script>
 <script src="../assets/wiki.js"></script>

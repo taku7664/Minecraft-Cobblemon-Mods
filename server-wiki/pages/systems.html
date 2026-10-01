@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>서버 시스템 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root="..">
+<main>
+<h1>서버 시스템</h1>
+  <p>채팅, 알림, 레시피처럼 서버 전체에 적용되는 시스템을 정리했습니다.</p>
+
+  <h2>채팅과 리그 등급 배지</h2>
+  <p>채팅은 <code>[볼 아이콘 등급] 닉네임: 대화</code> 형식으로 보입니다. 등급은 리그 챌린지 진행에 따라 정해지고, <a href="legends.html#ranks">잡을 수 있는 전설</a>도 등급으로 정해집니다.</p>
+  <table>
+    <thead><tr><th>등급</th><th>조건</th><th>이름 색</th></tr></thead>
+    <tbody>
+      <tr><td>몬스터볼</td><td>배지 0~2개</td><td>빨강</td></tr>
+      <tr><td>수퍼볼</td><td>배지 3~4개</td><td>파랑</td></tr>
+      <tr><td>하이퍼볼</td><td>배지 5~7개</td><td>노랑</td></tr>
+      <tr><td>마스터볼</td><td>배지 8개</td><td>보라</td></tr>
+      <tr><td>챔피언</td><td>배지 8개 + 챔피언 격파</td><td>금색</td></tr>
+    </tbody>
+  </table>
+  <p>등급 배지는 일반 채팅에만 붙습니다. 귓속말, 머리 위 이름표, 탭 목록에는 붙지 않습니다.</p>
+
+  <h2>공지와 안내</h2>
+  <ul>
+    <li><b>[공지]</b>(굵은 파란색)는 운영진이 보내는 서버 공지입니다.</li>
+    <li><b>[안내]</b>(굵은 노란색)는 30초마다 하나씩 나오는 도움말입니다. 같은 안내가 연달아 나오지 않습니다.</li>
+    <li>전설 포켓몬이 나타나면 서버 전체에 연보라색으로 알립니다. → <a href="legends.html">전설 스폰 가이드</a></li>
+    <li>MCC 배틀이 끝나면 "▶ ○○에게 승리했습니다! +N BP"처럼 결과가 채팅에 나옵니다.</li>
+  </ul>
+
+  <h2>레시피 변경</h2>
+  <table>
+    <thead><tr><th>결과</th><th>재료</th></tr></thead>
+    <tbody>
+      <tr><td>화약 1개</td><td>석탄(목탄 포함) + 부싯돌, 모양 없이</td></tr>
+      <tr><td>네더의 별 1개</td><td>모서리 4칸 다이아몬드, 가장자리 4칸 석영 블록, 가운데 네더라이트 주괴</td></tr>
+    </tbody>
+  </table>
+  <div class="note warn">
+    <strong>만들 수 없는 아이템</strong>
+    능력치 사탕 6종(마음의사탕, 기력의사탕, 힘의사탕, 속도의사탕, 지식의사탕, 수비의사탕)의 L과 XL 크기는 캠프 냄비에서 만들 수 없습니다.
+  </div>
+
+  <h2>포케스낵</h2>
+  <ul>
+    <li>한 번도 포켓몬을 부르지 않은 포케스낵은 부수면 아이템으로 돌아옵니다(서바이벌 모드).</li>
+    <li>포케스낵으로 나온 전설은 포케스낵을 설치한 사람의 것입니다. → <a href="legends.html#rules">전설 스폰 가이드</a></li>
+  </ul>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+</body>
+</html>

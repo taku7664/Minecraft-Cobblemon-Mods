@@ -8,20 +8,98 @@
 </head>
 <body data-root="..">
 <main>
-<h1>리그 챌린지 <span class="badge gold">콘텐츠</span></h1>
-  <p>TODO: 리그 소개.</p>
+<h1>리그 챌린지 <span class="badge gold">핵심 콘텐츠</span></h1>
+  <p>신오지방 포켓몬리그에 도전합니다. 관장 8명을 차례로 이기고, 사천왕 4명과 챔피언 난천을 연달아 이기면 챔피언이 됩니다. 관장을 이길 때마다 <a href="levels.html">레벨캡</a>이 오릅니다.</p>
 
-  <h2>도전 순서</h2>
-  <p>TODO: 관장 8명 → 사천왕 → 챔피언.</p>
-
-  <h2>레벨 캡</h2>
+  <h2>도전하기 전에</h2>
+  <ul>
+    <li>리그 터미널을 우클릭해 허브를 열고 리그 챌린지 탭으로 갑니다. → <a href="hub.html">터미널 만들기</a></li>
+    <li>파티에 1~6마리가 있어야 하고, <b>파티 전체가 지금 레벨캡 이하</b>여야 합니다.</li>
+    <li>모든 배틀은 싱글 배틀입니다.</li>
+    <li>관장은 <b>순서대로</b> 도전해야 하고, 사천왕은 배지 8개를 모두 모아야 도전할 수 있습니다.</li>
+  </ul>
   <div class="note">
-    <strong>레벨 캡이란?</strong>
-    TODO: 뱃지 수에 따라 포켓몬이 오를 수 있는 레벨이 정해집니다.
+    <strong>리그 배틀은 내 포켓몬을 다치게 하지 않습니다</strong>
+    리그 배틀은 도전할 때의 파티를 복제해서 싸웁니다. 배틀마다 체력이 가득 찬 상태로 시작하고, 진짜 내 포켓몬에게는 아무 영향이 없습니다. 대신 <b>경험치를 얻지 않고</b>, 가방 아이템을 쓸 수 없습니다.
   </div>
 
-  <h2>하드 모드</h2>
-  <p>TODO: 챔피언을 이긴 뒤 열립니다.</p>
+  <h2>체육관</h2>
+  <table>
+    <thead><tr><th>순서</th><th>관장</th><th>주력 타입</th><th>상대 레벨</th><th>이긴 뒤 레벨캡</th><th>첫 승리 BP</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>강석</td><td>바위</td><td>12~14</td><td>24</td><td>10</td></tr>
+      <tr><td>2</td><td>유채</td><td>풀</td><td>20~22</td><td>28</td><td>10</td></tr>
+      <tr><td>3</td><td>멜리사</td><td>고스트</td><td>24~26</td><td>34</td><td>10</td></tr>
+      <tr><td>4</td><td>자두</td><td>격투</td><td>28~32</td><td>39</td><td>10</td></tr>
+      <tr><td>5</td><td>맥실러</td><td>물</td><td>33~37</td><td>43</td><td>10</td></tr>
+      <tr><td>6</td><td>동관</td><td>강철</td><td>37~41</td><td>46</td><td>10</td></tr>
+      <tr><td>7</td><td>무청</td><td>얼음</td><td>40~44</td><td>52</td><td>10</td></tr>
+      <tr><td>8</td><td>전진</td><td>전기</td><td>46~50</td><td>64</td><td>10</td></tr>
+    </tbody>
+  </table>
+  <p>주력 타입은 각 관장 팀의 포켓몬을 보고 적었습니다. 이기면 그 체육관의 배지를 받습니다.</p>
+
+  <h2>사천왕과 챔피언</h2>
+  <table>
+    <thead><tr><th>순서</th><th>상대</th><th>주력 타입</th><th>상대 레벨</th><th>첫 승리 BP</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>사천왕 충호</td><td>벌레</td><td>49~53</td><td>15</td></tr>
+      <tr><td>2</td><td>사천왕 들국화</td><td>땅</td><td>50~55</td><td>15</td></tr>
+      <tr><td>3</td><td>사천왕 대엽</td><td>불꽃</td><td>52~57</td><td>15</td></tr>
+      <tr><td>4</td><td>사천왕 오엽</td><td>에스퍼</td><td>53~59</td><td>15</td></tr>
+      <tr><td>5</td><td>챔피언 난천</td><td>-</td><td>58~62 (6마리)</td><td>50</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>사천왕과 챔피언은 <b>5연전</b>입니다. 한 판을 이길 때마다 "다음 상대"를 누릅니다. 화면을 닫아도 연전은 이어집니다.</li>
+    <li><b>한 번이라도 지면 연전이 끝나고</b>, 다음에는 충호부터 다시 시작합니다. 접속이 끊기거나 서버가 다시 켜져도 연전이 끝납니다.</li>
+    <li>"포기"는 연전만 끝냅니다. 이미 받은 배지와 기록은 그대로입니다.</li>
+    <li>재도전 횟수 제한이나 대기 시간은 없습니다.</li>
+    <li>BP는 처음 이겼을 때만 받습니다. 일반 리그 첫 승리 BP를 모두 합하면 190 BP입니다.</li>
+  </ul>
+
+  <h2>챔피언이 되면</h2>
+  <ul>
+    <li>레벨캡이 <b>80</b>이 됩니다.</li>
+    <li><a href="tower.html">배틀타워</a>와 <a href="factory.html">배틀팩토리</a>가 열립니다.</li>
+    <li>야생 배틀과 NPC 배틀에서도 메가진화, 다이맥스, 테라스탈, Z기술을 쓸 수 있게 됩니다.</li>
+    <li>채팅 등급이 챔피언이 되고, 제한급·패러독스 전설을 잡을 수 있게 됩니다. → <a href="legends.html#ranks">전설 스폰 가이드</a></li>
+    <li>하드 리그에 도전할 수 있습니다.</li>
+  </ul>
+
+  <h2>리그 등급</h2>
+  <table>
+    <thead><tr><th>등급</th><th>조건</th></tr></thead>
+    <tbody>
+      <tr><td>몬스터볼</td><td>배지 0~2개</td></tr>
+      <tr><td>수퍼볼</td><td>배지 3~4개</td></tr>
+      <tr><td>하이퍼볼</td><td>배지 5~7개</td></tr>
+      <tr><td>마스터볼</td><td>배지 8개</td></tr>
+      <tr><td>챔피언</td><td>배지 8개 + 챔피언 격파</td></tr>
+    </tbody>
+  </table>
+
+  <h2>하드 리그</h2>
+  <p>일반 리그 챔피언이 된 뒤 리그 화면에서 "하드 도전"으로 바꿔 도전합니다. 같은 관장과 사천왕, 챔피언이 <b>6마리 풀 육성 팀</b>(개체값 31)과 <b>메가진화</b>를 들고 나오고, AI도 가장 강합니다. 하드 리그에서는 배지를 주지 않습니다.</p>
+  <table>
+    <thead><tr><th>상대</th><th>상대 레벨</th><th>메가진화</th><th>첫 승리 BP</th></tr></thead>
+    <tbody>
+      <tr><td>강석</td><td>75~78</td><td>마기라스</td><td>30</td></tr>
+      <tr><td>유채</td><td>76~79</td><td>이상해꽃</td><td>30</td></tr>
+      <tr><td>멜리사</td><td>77~80</td><td>팬텀</td><td>30</td></tr>
+      <tr><td>자두</td><td>78~81</td><td>루카리오</td><td>30</td></tr>
+      <tr><td>맥실러</td><td>79~82</td><td>갸라도스</td><td>30</td></tr>
+      <tr><td>동관</td><td>80~83</td><td>보스로라</td><td>30</td></tr>
+      <tr><td>무청</td><td>81~84</td><td>눈여아</td><td>30</td></tr>
+      <tr><td>전진</td><td>82~85</td><td>라이츄</td><td>30</td></tr>
+      <tr><td>사천왕 4명</td><td>88~95</td><td>헤라크로스 · 몰드류 · 헬가 · 엘레이드</td><td>각 40</td></tr>
+      <tr><td>챔피언 난천</td><td>95~100</td><td>한카리아스</td><td>150</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>하드 리그 동안 레벨캡은 80이고, 하드 전진을 이기면 <b>100</b>이 됩니다.</li>
+    <li>하드 리그 첫 승리 BP를 모두 합하면 550 BP입니다.</li>
+  </ul>
 </main>
 <script src="../assets/nav.js"></script>
 <script src="../assets/wiki.js"></script>

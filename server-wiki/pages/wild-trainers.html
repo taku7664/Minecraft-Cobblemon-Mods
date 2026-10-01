@@ -9,21 +9,89 @@
 <body data-root="..">
 <main>
 <h1>야생 트레이너</h1>
-  <p>TODO: 월드에서 만나는 트레이너 소개. 말을 걸면 승부를 신청할 수 있습니다.</p>
+  <p>월드 곳곳에 트레이너가 돌아다닙니다. 말을 걸어 승부를 받으면 <b>내 포켓몬으로</b> 일반 배틀을 하므로 경험치와 진화가 그대로 적용되고, 이기면 BP를 받습니다.</p>
 
-  <h2>등급</h2>
-  <table>
-    <thead><tr><th>등급</th><th>종류</th><th>승리 보상</th></tr></thead>
-    <tbody>
-      <tr><td><span class="badge">일반</span></td><td>104종</td><td>10 BP</td></tr>
-      <tr><td><span class="badge gold">에이스</span></td><td>20종</td><td>20 BP</td></tr>
-    </tbody>
-  </table>
+  <div class="grid">
+    <div class="stat"><small>일반 트레이너</small><b id="tr-normal">-</b></div>
+    <div class="stat"><small>에이스 트레이너</small><b id="tr-ace">-</b></div>
+    <div class="stat"><small>일반 승리 보상</small><b>10 BP</b></div>
+    <div class="stat"><small>에이스 승리 보상</small><b>20 BP</b></div>
+  </div>
+
+  <h2>승부하는 방법</h2>
+  <ol>
+    <li>트레이너를 우클릭하면 대화창이 열립니다.</li>
+    <li>"승부한다!"를 고르면 싱글 배틀이 시작되고, "다음에"를 고르면 그냥 지나갑니다.</li>
+    <li>이기면 "▶ ○○에게 승리했습니다! +10 BP"처럼 채팅에 결과가 나오고, 진 트레이너는 잠시 뒤 떠납니다.</li>
+  </ol>
+  <ul>
+    <li>같은 트레이너와는 승부가 끝난 뒤 <b>5분</b>이 지나야 다시 붙을 수 있습니다. 이겼든 졌든 같습니다.</li>
+    <li>챔피언이 되기 전에는 메가진화 같은 배틀 기믹을 쓸 수 없습니다.</li>
+  </ul>
+
+  <h2>트레이너의 강함</h2>
+  <ul>
+    <li>트레이너의 파티는 승부를 걸 때마다 <b>도전한 플레이어의 레벨캡</b>에 맞춰 새로 짭니다. 어떤 포켓몬도 내 레벨캡을 넘지 않습니다.</li>
+    <li>누구든 1~6마리를 데려옵니다. <b>많이 데려올수록 평균 레벨은 낮아지고</b>, 마지막에 나오는 포켓몬이 가장 높습니다.</li>
+    <li>레벨캡이 오를수록 트레이너도 기술을 잘 고르고, 성격이 맞고, 개체값과 노력치가 높고, 도구를 자주 듭니다. 에이스는 같은 레벨캡에서 일반 트레이너보다 한 단계 더 잘 키운 팀을 씁니다.</li>
+    <li>일격필살기, 회피율을 올리는 기술, 자폭기, 반동으로 쉬는 기술, 버섯포자, 구애 도구, 기합의띠는 어떤 트레이너도 쓰지 않습니다.</li>
+  </ul>
 
   <h2>어디서 만나나요</h2>
-  <p>TODO: 지형별 트레이너.</p>
+  <ul>
+    <li>트레이너는 오버월드의 하늘이 보이는 밝은 땅 위에 나옵니다. 종류마다 나오는 바이옴과 시간대가 다릅니다.</li>
+    <li>에이스는 일반 트레이너보다 드물게 나옵니다.</li>
+    <li>근처(64블록 안)에 트레이너가 이미 2명 있으면 더 나오지 않고, 홀로그램 터미널 주변과 배틀 라운지에는 나오지 않습니다.</li>
+  </ul>
+
+  <h2>트레이너 목록</h2>
+  <div class="filters">
+    <input id="tr-q" type="search" placeholder="이름, 바이옴, 포켓몬으로 찾기" aria-label="트레이너 검색">
+    <select id="tr-tier" aria-label="등급"><option value="">모든 등급</option><option>일반</option><option>에이스</option></select>
+    <select id="tr-time" aria-label="시간"><option value="">모든 시간</option><option>낮</option><option>밤</option><option>언제나</option></select>
+    <span class="count" id="tr-count"></span>
+  </div>
+  <table>
+    <thead><tr><th>트레이너</th><th>보상</th><th>바이옴</th><th>시간</th><th>주로 쓰는 포켓몬(진화 전)</th></tr></thead>
+    <tbody id="tr-list"></tbody>
+  </table>
 </main>
 <script src="../assets/nav.js"></script>
+<script src="../assets/data/trainers.js"></script>
 <script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var trainers = window.WIKI_TRAINERS || [];
+    var list = document.getElementById("tr-list");
+    var q = document.getElementById("tr-q"), tier = document.getElementById("tr-tier"), time = document.getElementById("tr-time");
+    function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
+    document.getElementById("tr-normal").textContent = trainers.filter(function (t) { return t.tier === "일반"; }).length + "종";
+    document.getElementById("tr-ace").textContent = trainers.filter(function (t) { return t.tier === "에이스"; }).length + "종";
+    function render() {
+      var query = q.value.trim().toLowerCase();
+      var shown = trainers.filter(function (t) {
+        if (tier.value && t.tier !== tier.value) return false;
+        if (time.value && t.time !== time.value) return false;
+        if (!query) return true;
+        return (t.name + " " + t.biomes.join(" ") + " " + t.pokemon.join(" ")).toLowerCase().indexOf(query) >= 0;
+      });
+      list.innerHTML = "";
+      shown.forEach(function (t) {
+        var row = el("tr");
+        var name = el("td"); name.appendChild(el("b", "", t.name));
+        if (t.tier === "에이스") { name.appendChild(document.createTextNode(" ")); name.appendChild(el("span", "badge gold", "에이스")); }
+        row.appendChild(name);
+        row.appendChild(el("td", "", t.bp + " BP"));
+        var where = el("td"); t.biomes.forEach(function (b) { where.appendChild(el("span", "chip group", b)); }); row.appendChild(where);
+        row.appendChild(el("td", "", t.time));
+        row.appendChild(el("td", "", t.pokemon.join(", ")));
+        list.appendChild(row);
+      });
+      document.getElementById("tr-count").textContent = shown.length + " / " + trainers.length + "종";
+    }
+    [q, tier, time].forEach(function (c) { c.addEventListener(c.type === "search" ? "input" : "change", render); });
+    render();
+  })();
+</script>
 </body>
 </html>
