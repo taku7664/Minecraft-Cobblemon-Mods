@@ -112,20 +112,24 @@ internal object MccDiscordCommands {
             val asked = options["포켓몬"].orEmpty().trim()
             val base = WikiApi.publicUrl() ?: return DiscordRest.message("지금은 위키가 꺼져 있어요.")
             val species = speciesNamed(asked) ?: return DiscordRest.message("'$asked'(이)라는 포켓몬을 찾지 못했어요.")
-            val koreanName = KoreanText.render(species.translatedName)
+            val koreanName = koreanName(species) ?: species.name
             return DiscordRest.message("$koreanName 도감: ${base.trimEnd('/')}/pages/pokemon.html?id=${species.resourceIdentifier.path}")
         }
     }
 
     /**
-     * A species by its Korean name, English name or ID, ignoring case and spaces. It searches every loaded species:
-     * the `implemented` list can be empty on a dedicated server.
+     * The species' Korean name from Cobblemon's own `ko_kr.json`. Read by key: on a dedicated server a species' name
+     * component already holds the English text, so rendering it never reaches the Korean table.
      */
+    private fun koreanName(species: com.cobblemon.mod.common.pokemon.Species): String? =
+        KoreanText.translate("${species.resourceIdentifier.namespace}.species.${species.resourceIdentifier.path}.name")
+
+    /** A species by its Korean name, English name or ID, ignoring case and spaces, among every loaded species. */
     internal fun speciesNamed(asked: String): com.cobblemon.mod.common.pokemon.Species? {
         val wanted = normalize(asked).takeIf { it.isNotEmpty() } ?: return null
         val all = PokemonSpecies.species
         return all.firstOrNull { species ->
-            normalize(KoreanText.render(species.translatedName)) == wanted ||
+            koreanName(species)?.let(::normalize) == wanted ||
                 normalize(species.name) == wanted || species.resourceIdentifier.path == wanted
         }.also { found ->
             if (found == null) jbro.cobblemon.policy.JbroPolicy.LOGGER.info("No species named '{}' among {}", asked, all.size)

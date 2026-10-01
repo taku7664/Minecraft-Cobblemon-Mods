@@ -172,6 +172,8 @@ internal object DiscordBot {
         if (withContents) MccDiscordCommands.register()
         ServerLifecycleEvents.SERVER_STARTED.register { started ->
             server = started
+            // Reads every mod's Korean text now, off the server thread, rather than on the first command.
+            restWorker.execute(guarded { KoreanText.entries() })
             players = started.playerCount
             onWorker { start() }
             showStatus(open = true)

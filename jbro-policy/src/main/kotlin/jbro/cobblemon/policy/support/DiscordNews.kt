@@ -20,7 +20,10 @@ internal object DiscordNews {
         this.channelId = channelId
         this.executor = executor
         CobblemonEvents.POKEMON_CAPTURED.subscribe { event ->
-            catchNews(event.player.gameProfile.name, KoreanText.render(event.pokemon.species.translatedName),
+            val species = event.pokemon.species
+            val name = KoreanText.translate("${species.resourceIdentifier.namespace}.species.${species.resourceIdentifier.path}.name")
+                ?: species.name
+            catchNews(event.player.gameProfile.name, name,
                 legend = LegendCatalog[event.pokemon.species.resourceIdentifier.path] != null, shiny = event.pokemon.shiny)
                 ?.let(::post)
         }

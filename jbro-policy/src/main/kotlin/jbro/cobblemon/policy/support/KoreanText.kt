@@ -72,7 +72,8 @@ internal object KoreanText {
                         }
                     }
                 } catch (failure: Exception) {
-                    JbroPolicy.LOGGER.warn("Could not read Korean translations of {}", mod.metadata.id, failure)
+                    // A mod's own broken file (Mega Showdown ships one); the client skips it too, so one line is enough.
+                    JbroPolicy.LOGGER.warn("Could not read Korean translations of {}: {}", mod.metadata.id, failure.message)
                 }
             }
         }
