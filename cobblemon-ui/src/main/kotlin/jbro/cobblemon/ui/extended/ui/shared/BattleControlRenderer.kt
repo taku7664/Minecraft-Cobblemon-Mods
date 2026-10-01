@@ -28,6 +28,8 @@ object BattleControlRenderer {
     private const val BACK_HEIGHT = 17
     /** A pill stands this far off the screen edge it would otherwise touch. */
     private const val PILL_GAP = 4
+    /** A move pill's height: one line, inside the taller two-line hitbox. */
+    private const val SLIM_MOVE_HEIGHT = 22
 
     /** One cursor per menu: the owner is the widget that holds the menu's tiles. */
     private data class Group(val owner: Any, val kind: String)
@@ -146,8 +148,9 @@ object BattleControlRenderer {
         val contentOpacity = opacity * if (selectable) 1f else .95f
         val extension = protrusion(emphasis)
         val left = x.toInt() - extension
-        val top = y.toInt()
-        val height = BattleScreenGeometry.MOVE_HEIGHT
+        // A pill holds the move on one line, slimmer than its hitbox and centered in it.
+        val height = if (pill) SLIM_MOVE_HEIGHT else BattleScreenGeometry.MOVE_HEIGHT
+        val top = y.toInt() + (BattleScreenGeometry.MOVE_HEIGHT - height) / 2
         val width = BattleScreenGeometry.MOVE_WIDTH + extension - if (pill) PILL_GAP else 0
         val corners = if (pill) BattleCornerCuts(height / 2, height / 2, height / 2, height / 2)
             else BattleCornerCuts(topLeft = MOVE_RADIUS, bottomLeft = MOVE_RADIUS)
@@ -171,31 +174,42 @@ object BattleControlRenderer {
             BattleSurfaceRenderer.draw(context, left, top, width, height, BattleSurface(lit,
                 BattleSurfaceRenderer.interpolate(lit, 0xFF000000.toInt(), .18f), cornerCuts = corners), contentOpacity)
         }
-        TypeIcon(x = x + 15, y = y + 19, type = type, small = true,
-            opacity = if (selectable) opacity else opacity * .5f).render(context)
-        MoveCategoryIcon(x = x + 29, y = y + 19, category = move.damageCategory,
-            opacity = if (selectable) opacity else opacity * .5f).render(context)
         val font = Minecraft.getInstance().font
+        // Two lines, name over icons and PP; or one line in a pill: icons, name, PP.
+        val iconY = if (pill) top + (height - 9) / 2f else y + 19
+        val iconX = if (pill) x + 12 else x + 15
+        TypeIcon(x = iconX, y = iconY, type = type, small = true,
+            opacity = if (selectable) opacity else opacity * .5f).render(context)
+        MoveCategoryIcon(x = iconX + 14, y = iconY, category = move.damageCategory,
+            opacity = if (selectable) opacity else opacity * .5f).render(context)
         val name = move.displayName.string
         val nameInk = when {
             typed -> 0xFFFFFFFF.toInt()
             selectable -> BattleUiTheme.TEXT
             else -> BattleUiTheme.MUTED
         }
-        val shown = font.plainSubstrByWidth(name, 114)
-        // White on a type color keeps a soft shadow, as the games set it, so bright types stay readable.
-        if (typed) UIUtils.drawText(context, shown, x + 15, y + 5,
-            BattleSurfaceRenderer.withOpacity(0x66000000, opacity), 1f)
-        UIUtils.drawText(context, shown, x + 14, y + 4, BattleSurfaceRenderer.withOpacity(nameInk, opacity), 1f)
         val label = if (pp == 100 && maxPp == 100) "—/—" else "$pp/$maxPp"
+        val ppX = x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.width(label) - if (pill) PILL_GAP + 3 else 0
+        val nameX = if (pill) iconX + 30 else x + 14
+        val nameY = if (pill) iconY else y + 4
+        // On one line a long name ends in an ellipsis; the move tooltip still names it in full.
+        val shown = if (pill) fit(font, name, (ppX - nameX - 4).toInt()) else font.plainSubstrByWidth(name, 114)
+        // White on a type color keeps a soft shadow, as the games set it, so bright types stay readable.
+        if (typed) UIUtils.drawText(context, shown, nameX + 1, nameY + 1,
+            BattleSurfaceRenderer.withOpacity(0x66000000, opacity), 1f)
+        UIUtils.drawText(context, shown, nameX, nameY, BattleSurfaceRenderer.withOpacity(nameInk, opacity), 1f)
         val ppColor = when {
             pp == 0 -> if (typed) 0xFFFFB3B3.toInt() else BattleUiTheme.DANGER
             pp <= maxPp / 2 -> if (typed) 0xFFFFE08A.toInt() else BattleUiTheme.FOCUS
             else -> if (typed) 0xFFF2F2F2.toInt() else BattleUiTheme.MUTED
         }
-        UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.width(label) -
-            if (pill) PILL_GAP else 0, y + 19, BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
+        UIUtils.drawText(context, label, ppX, if (pill) iconY else y + 19,
+            BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
     }
+
+    private fun fit(font: net.minecraft.client.gui.Font, text: String, width: Int): String =
+        if (font.width(text) <= width) text
+        else font.plainSubstrByWidth(text, (width - font.width("…")).coerceAtLeast(0)) + "…"
 
     /** How far a tile slides out at this emphasis, overshooting a little on the way; the hitbox has the full slide. */
     @JvmStatic
