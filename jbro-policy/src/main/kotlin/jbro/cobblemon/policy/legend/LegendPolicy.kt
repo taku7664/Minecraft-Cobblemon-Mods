@@ -88,7 +88,7 @@ object LegendPolicy {
     }
 
     /** Makes [player] the owner of a freshly spawned Legend and announces it; anything else, or an owned one, is left alone. */
-    private fun claim(pokemon: Pokemon, player: ServerPlayer) {
+    internal fun claim(pokemon: Pokemon, player: ServerPlayer) {
         val legend = legendOf(pokemon) ?: return
         if (ownerOf(pokemon) != null) return
         pokemon.persistentData.putUUID(OWNER_KEY, player.uuid)

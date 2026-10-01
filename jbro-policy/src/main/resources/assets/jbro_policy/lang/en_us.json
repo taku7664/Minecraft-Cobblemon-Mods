@@ -33,6 +33,13 @@
 
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
+  "message.jbro_policy.inquiry.sent": "Your inquiry was sent.",
+  "message.jbro_policy.inquiry.empty": "Write the reason for your inquiry.",
+  "message.jbro_policy.inquiry.too_long": "Keep the reason within %s characters.",
+  "message.jbro_policy.inquiry.cooldown": "You can send another inquiry in %s minute(s).",
+  "message.jbro_policy.inquiry.not_configured": "Inquiries are not set up yet. Please tell an operator directly.",
+  "message.jbro_policy.inquiry.failed": "The inquiry could not be sent. Try again in a moment.",
+
   "message.jbro_policy.legend.other_trainer": "This Legend appeared for another trainer. You cannot battle or catch it.",
   "message.jbro_policy.legend.already_caught": "You already caught this Legend. Each Legend can be caught once.",
   "message.jbro_policy.legend.rank_too_low": "You need the %s League rank to catch this Legend.",
@@ -48,6 +55,10 @@
   "message.jbro_policy.legends.one_player": "Name exactly one player.",
   "message.jbro_policy.legends.reset_done": "Cleared the %2$s catch record of %1$s.",
   "message.jbro_policy.legends.reset_none": "%1$s has no %2$s catch record.",
+  "message.jbro_policy.spawn_for.done": "Spawned %1$s in front of %2$s.",
+  "message.jbro_policy.spawn_for.failed": "The Pokemon could not be spawned.",
+  "message.jbro_policy.spawn_for.already_caught": "%s already caught this Legend and cannot catch it.",
+  "message.jbro_policy.spawn_for.rank": "%1$s is below the %2$s League rank and cannot catch it.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
   "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no campfire pot stat candy L/XL",

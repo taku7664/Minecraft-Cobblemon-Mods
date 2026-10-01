@@ -5,10 +5,13 @@ import jbro.cobblemon.policy.api.Tips
 import jbro.cobblemon.policy.config.PolicyConfig
 import jbro.cobblemon.policy.legend.LegendCommand
 import jbro.cobblemon.policy.legend.LegendPolicy
+import jbro.cobblemon.policy.legend.SpawnForCommand
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
 import jbro.cobblemon.policy.pokemon.PokemonItemRestore
 import jbro.cobblemon.policy.pokemon.PokenavCommand
+import jbro.cobblemon.policy.support.Inquiries
+import jbro.cobblemon.policy.support.MailSettings
 import jbro.cobblemon.policy.welcome.WelcomeKit
 import jbro.cobblemon.policy.wild.WildPokemonPolicy
 import net.fabricmc.api.ModInitializer
@@ -39,10 +42,17 @@ object JbroPolicy : ModInitializer {
         PokemonItemRestore.register()
         LegendPolicy.register()
         LegendCommand.register()
+        SpawnForCommand.register()
         // The server wiki's Legend guide reads each player's progress when More Cobblemon Contents serves the wiki.
-        if (FabricLoader.getInstance().isModLoaded("more_cobblemon_contents")) jbro.cobblemon.policy.legend.LegendWikiSection.register()
+        if (FabricLoader.getInstance().isModLoaded("more_cobblemon_contents")) {
+            jbro.cobblemon.policy.legend.LegendWikiSection.register()
+            jbro.cobblemon.policy.support.InquiryWikiEndpoint.register()
+        }
         Announcements.register()
         Tips.register(config.tipIntervalSeconds, config.tips)
+        Inquiries.register(MailSettings.load(FabricLoader.getInstance().configDir.resolve("jbro-policy-mail.json")) { message, failure ->
+            LOGGER.warn(message, failure)
+        })
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {
