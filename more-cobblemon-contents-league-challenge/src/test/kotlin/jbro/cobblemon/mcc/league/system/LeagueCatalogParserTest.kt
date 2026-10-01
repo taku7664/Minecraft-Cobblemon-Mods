@@ -8,7 +8,7 @@ class LeagueCatalogParserTest {
     private val ns = "more_cobblemon_contents_league_challenge"
     private val names = listOf("roark", "gardenia", "fantina", "maylene", "wake", "byron", "candice", "volkner", "aaron", "bertha", "flint", "lucian", "cynthia")
     private fun resources(): MutableMap<String, Map<String, String>> = LeagueCatalogParser.directories.associateWith { directory ->
-        val ids = when (directory) { "leagues" -> listOf("active"); "appearances" -> listOf("default"); else -> names + names.map { "${it}_hard" } }
+        val ids = when (directory) { "leagues" -> listOf("active"); "appearances" -> listOf("default") + names; else -> names + names.map { "${it}_hard" } }
         ids.associate { name -> "$ns:$name" to javaClass.getResourceAsStream("/data/$ns/league-challenge/$directory/$name.json")!!.bufferedReader().use { it.readText() } }
     }.toMutableMap()
 
@@ -20,6 +20,17 @@ class LeagueCatalogParserTest {
         assertEquals(6, catalog.challenges.getValue("$ns:cynthia").team.size)
         assertEquals(names.take(8).map { "$ns:${it}_hard" }, catalog.hardGyms)
         assertEquals(names.drop(8).map { "$ns:${it}_hard" }, catalog.hardFinals)
+    }
+
+    @Test fun `every League trainer wears its own RCT Trainers+ skin in both difficulties`() {
+        val catalog = LeagueCatalogParser.parse(resources(), "$ns:active")
+        val roles = names.associateWith { name -> when (name) { "cynthia" -> "champion"; in names.drop(8) -> "elite_four"; else -> "gym_leader" } }
+        names.forEach { name ->
+            listOf(name, "${name}_hard").forEach { id ->
+                val skin = catalog.challenges.getValue("$ns:$id").skin
+                assertTrue(skin != null && skin.matches(Regex("rctmod:textures/trainers/single/${roles.getValue(name)}_${name}_[0-9a-f]{4}\\.png")), "$id wears $skin")
+            }
+        }
     }
 
     @Test fun `the bundled league spawns wild Pokemon ten below the cap, seven either way, leaning by four chunk areas`() {
@@ -57,7 +68,7 @@ class LeagueCatalogParserTest {
     @Test fun `unsupported schema and remote skin are rejected`() {
         for (appearance in listOf("{\"schema_version\":2}", "{\"schema_version\":1,\"model\":\"default\",\"skin\":\"https://evil.test/skin.png\"}")) {
             val resources = resources()
-            resources["appearances"] = mapOf("$ns:default" to appearance)
+            resources["appearances"] = resources.getValue("appearances").mapValues { appearance }
             assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
         }
     }
