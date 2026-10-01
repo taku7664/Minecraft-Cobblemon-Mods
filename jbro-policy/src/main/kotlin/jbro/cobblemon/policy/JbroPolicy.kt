@@ -10,6 +10,7 @@ import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
 import jbro.cobblemon.policy.pokemon.PokemonItemRestore
 import jbro.cobblemon.policy.pokemon.PokenavCommand
+import jbro.cobblemon.policy.support.DiscordBot
 import jbro.cobblemon.policy.support.DiscordSettings
 import jbro.cobblemon.policy.support.Inquiries
 import jbro.cobblemon.policy.support.MailSettings
@@ -52,10 +53,12 @@ object JbroPolicy : ModInitializer {
         Announcements.register()
         Tips.register(config.tipIntervalSeconds, config.tips)
         val configDir = FabricLoader.getInstance().configDir
+        val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
         Inquiries.register(
             MailSettings.load(configDir.resolve("jbro-policy-mail.json")) { message, failure -> LOGGER.warn(message, failure) },
-            DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) },
+            discord,
         )
+        DiscordBot.register(discord)
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {
