@@ -148,7 +148,7 @@ internal object LocalTacticalScorer {
         tuning: LocalDecisionTuning,
     ): Double {
         if (candidate.moveDetails == null) {
-            return mechanicResourceAdjustment(candidate, context, profile) + strategyMoveAdjustment(candidate, context, strategy)
+            return mechanicResourceAdjustment(candidate, context, profile, tuning) + strategyMoveAdjustment(candidate, context, strategy)
         }
         return -publicAllyCollateral(candidate, context, tuning) -
             (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
@@ -166,7 +166,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
             LocalInferredMoveGuessScorer.score(candidate, context) +
-            mechanicResourceAdjustment(candidate, context, profile) +
+            mechanicResourceAdjustment(candidate, context, profile, tuning) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
     }
@@ -180,7 +180,7 @@ internal object LocalTacticalScorer {
     ): LocalTacticalScore {
         val details = candidate.moveDetails
             ?: return LocalTacticalScore(
-                5.0 + mechanicResourceAdjustment(candidate, context, profile) + strategyMoveAdjustment(candidate, context, strategy),
+                5.0 + mechanicResourceAdjustment(candidate, context, profile, tuning) + strategyMoveAdjustment(candidate, context, strategy),
             )
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
@@ -264,7 +264,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
             LocalInferredMoveGuessScorer.score(candidate, context) +
-            mechanicResourceAdjustment(candidate, context, profile) +
+            mechanicResourceAdjustment(candidate, context, profile, tuning) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
         return LocalTacticalScore(
@@ -455,7 +455,8 @@ internal object LocalTacticalScorer {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         profile: BattleTrainerProfile,
-    ): Double = if (candidate.mechanic == null) 0.0 else -LocalMechanicOptionValue.cost(candidate, context, profile)
+        tuning: LocalDecisionTuning,
+    ): Double = if (candidate.mechanic == null || !tuning.mechanicReserve) 0.0 else -LocalMechanicOptionValue.cost(candidate, context, profile)
 
     private fun strategyMoveAdjustment(
         candidate: BattleActionCandidate,

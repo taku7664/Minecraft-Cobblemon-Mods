@@ -479,7 +479,8 @@ internal class LocalTacticalBrain(
             }
             active.aceScores
         }
-        val gimmickAdjustments = LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
+        val gimmickAdjustments = if (!tuning.mechanicReserve) emptyMap()
+            else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
         // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
         val expectedSwitches = when {

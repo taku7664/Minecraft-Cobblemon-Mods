@@ -157,6 +157,11 @@ internal data class LocalDecisionTuning(
      */
     val recoveryLoopPenalty: Double = 30.0,
     /**
+     * Whether a once-a-battle mechanic is priced as a resource: kept for the ace (LocalGimmickReserve) and charged what
+     * a later use would gain (LocalMechanicOptionValue). Off spends it whenever this turn's gain is the best.
+     */
+    val mechanicReserve: Boolean = true,
+    /**
      * Weight of a doubles Protect's credit for the hits it turns away (LocalProtectCredit): the opponents' predicted
      * knockout chance on the user in knockout material, and the HP they are expected to take. At 0.5: it fixes the
      * doubles Protect puzzle (played out, Protect -2.11 against Close Combat -3.76) and doubles duels at 1.0 were
