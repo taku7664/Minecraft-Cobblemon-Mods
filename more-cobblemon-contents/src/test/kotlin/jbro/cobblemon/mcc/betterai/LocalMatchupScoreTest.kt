@@ -510,6 +510,23 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `a pivot that goes first into a hit nobody behind it survives is ruled out`() {
+        val uTurn = BattleActionCandidate("uturn", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = "uturn",
+            moveDetails = BattleMoveCandidateView(typeId = "bug", damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 70.0,
+                accuracy = 100.0, priority = 0, currentPp = 8, effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    listOf(BattleMoveEffectView(BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectTarget.USER)), false)))
+        fun exclusion(allySpeed: Int, foeSpeed: Int): String? {
+            val context = context(allySpeed = allySpeed, foeSpeed = foeSpeed)
+            return LocalSwitchRules.judge(listOf(attackAction(), uTurn), context, LocalMatchupScoreCalculator.calculate(context))
+                .exclusions["uturn"]
+        }
+        // Faster, the U-turn brings the bench in under the foe's knockout.
+        assertEquals(LocalSwitchRules.PIVOT_SWITCH_IN_DIES, exclusion(allySpeed = 150, foeSpeed = 100))
+        // Slower, the foe has already hit the user and the bench walks in free.
+        assertNull(exclusion(allySpeed = 50, foeSpeed = 100))
+    }
+
+    @Test
     fun `a switch that wins what staying loses is credited by the difference`() {
         // Staying, the weak ally loses a race it moves first in; the bench's one-hit knockout wins it after the hit.
         val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, benchPower = 300.0, foePower = 65.0)

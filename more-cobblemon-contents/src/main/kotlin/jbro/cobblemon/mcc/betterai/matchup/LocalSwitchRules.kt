@@ -29,6 +29,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  *
  * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: credited like a clearly better
  * switch into the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
+ * - `pivot_switch_in_dies` (ruled out): the pivot likely moves first and nobody behind it survives the hit
+ *   coming in, unless the user is a sacrifice's keeper (about to be knocked out and worth more than the cheapest
+ *   one behind it). A direct switch had this check and a pivot did not: a U-turn brought in a teammate at 30% and
+ *   then one at 14%, each knocked out on entry.
  *
  * An sweeper facing Unaware or Destiny Bond retreats ([LocalSetupGate.retreatReasons]): a switch taking it out
  * is credited by its sweep score, as long as the incoming Pokemon survives the entry.
@@ -64,6 +68,7 @@ internal object LocalSwitchRules {
             for (part in parts(candidate)) {
                 if (part.kind == BattleActionKind.USE_MOVE && pivots(part)) {
                     val user = active(state, part.actorSlot) ?: continue
+                    if (pivotBringsInKnockout(part, user, opponents, state, scores)) exclusions[candidate.actionId] = PIVOT_SWITCH_IN_DIES
                     adjustment += pivot(part, user, opponents, state, scores)
                     continue
                 }
@@ -134,6 +139,47 @@ internal object LocalSwitchRules {
         return Verdict(exclusion, adjustment)
     }
 
+    /**
+     * Whether [move] likely goes first and every Pokemon behind [user] is knocked out by the hit it walks into, the
+     * user not being worth that sacrifice.
+     */
+    private fun pivotBringsInKnockout(
+        move: BattleActionCandidate,
+        user: BattlePokemonStateView,
+        opponents: List<BattlePokemonStateView>,
+        state: BattleStateView,
+        scores: MatchupScores,
+    ): Boolean {
+        val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
+        if (bench.isEmpty()) return false
+        if (opponents.maxOf { pivotFirst(move, user, it, state) } < PIVOT_FIRST_PASS) return false
+        val anySurvives = bench.any { incoming ->
+            val survival = opponents.mapNotNull { scores.switchIn(incoming.battlePokemonId, it.battlePokemonId, user.battlePokemonId)?.predictedSurvival }
+            survival.isEmpty() || survival.min() >= SURVIVAL_PASS
+        }
+        if (anySurvives) return false
+        val stays = opponents.mapNotNull { scores.pokemon(user.battlePokemonId, it.battlePokemonId) }
+        val userDoomed = stays.any { it.winProbability < 0.5 && (it.opponentMove?.knockoutChanceWithin(1) ?: 0.0) >= DOOMED }
+        val keepUser = scores.preserves[user.battlePokemonId]?.score ?: 0.0
+        val cheapest = bench.minOf { scores.preserves[it.battlePokemonId]?.score ?: 0.0 }
+        return !(userDoomed && keepUser >= WORTH_KEEPING && cheapest <= WORTHLESS)
+    }
+
+    /** The chance [move] goes before [opponent]'s attack, which is taken to have no priority. */
+    private fun pivotFirst(
+        move: BattleActionCandidate,
+        user: BattlePokemonStateView,
+        opponent: BattlePokemonStateView,
+        state: BattleStateView,
+    ): Double {
+        val priority = LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, move)
+        return when {
+            priority > 0 -> 1.0
+            priority < 0 -> 0.0
+            else -> LocalPublicTurnOrder.speedOrderProbability(state, user, opponent) ?: 0.5
+        }
+    }
+
     /** A pivot's credit: the best switch behind it, entering free with the chance the pivot moves second. */
     private fun pivot(
         move: BattleActionCandidate,
@@ -143,18 +189,12 @@ internal object LocalSwitchRules {
         scores: MatchupScores,
     ): Double {
         val stayValue = opponents.mapNotNull { scores.pokemon(user.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull() ?: return 0.0
-        val priority = LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, move)
         val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
         val best = bench.mapNotNull { incoming ->
             opponents.mapNotNull { opponent ->
                 val free = scores.pokemon(incoming.battlePokemonId, opponent.battlePokemonId)?.score ?: return@mapNotNull null
                 val hit = scores.switchIn(incoming.battlePokemonId, opponent.battlePokemonId, user.battlePokemonId)?.score ?: free
-                // The opponent's attack is taken to have no priority.
-                val first = when {
-                    priority > 0 -> 1.0
-                    priority < 0 -> 0.0
-                    else -> LocalPublicTurnOrder.speedOrderProbability(state, user, opponent) ?: 0.5
-                }
+                val first = pivotFirst(move, user, opponent, state)
                 first * hit + (1.0 - first) * free
             }.averageOrNull()
         }.maxOrNull() ?: return 0.0
@@ -190,6 +230,9 @@ internal object LocalSwitchRules {
     private fun List<Double>.averageOrNull(): Double? = if (isEmpty()) null else average()
 
     const val SWITCH_IN_DIES = "switch_in_dies"
+    const val PIVOT_SWITCH_IN_DIES = "pivot_switch_in_dies"
+    /** A pivot this likely to go first brings its replacement in under the hit. */
+    const val PIVOT_FIRST_PASS = 0.5
     const val SURVIVAL_PASS = 0.5
     const val SWITCH_MARGIN = 0.5
     const val FREE_ENTRY_MARGIN = 0.3
