@@ -25,6 +25,7 @@ import jbro.cobblemon.mcc.internal.pvp.PvpArenaPool
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleCompletionSink
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleLauncher
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleRecordService
+import jbro.cobblemon.mcc.internal.pvp.PvpMatchHistory
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleLaunchResult
 import jbro.cobblemon.mcc.internal.pvp.PvpChallengeMutationError
 import jbro.cobblemon.mcc.internal.pvp.PvpChallengeMutationResult
@@ -1250,6 +1251,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                                     PvpBattleRecordService { completions ->
                                         BattleRecordService.recordCompletedBattles(server, completions)
                                     }.recordResult(winnerId, loserId, format)
+                                        .also { PvpMatchHistory.record(server, pending.battleId, winnerId, loserId, format.recordId) }
                                 },
                             )
                         }

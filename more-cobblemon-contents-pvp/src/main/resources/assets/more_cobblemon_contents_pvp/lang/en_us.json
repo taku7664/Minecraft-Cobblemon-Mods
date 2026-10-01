@@ -134,5 +134,7 @@
   "command.more_cobblemon_contents.pvp.admin.lounge.returned": "Sent %s back to where they entered the lounge from.",
   "command.more_cobblemon_contents.pvp.admin.lounge.spawn": "%s had no return point, so they were sent to the world spawn.",
   "command.more_cobblemon_contents.pvp.admin.lounge.not_in_lounge": "%s is not in the battle lounge.",
-  "command.more_cobblemon_contents.pvp.admin.lounge.failed": "Could not move %s out of the lounge. See the server log."
+  "command.more_cobblemon_contents.pvp.admin.lounge.failed": "Could not move %s out of the lounge. See the server log.",
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_win": "Won · vs %s",
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "Lost · vs %s"
 }

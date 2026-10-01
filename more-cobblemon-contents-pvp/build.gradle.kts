@@ -24,6 +24,9 @@ dependencies {
         isTransitive = false
     }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
+    // PvP match history lives in one SQLite file per world; the driver ships inside the jar.
+    implementation("org.xerial:sqlite-jdbc:3.49.1.0") { isTransitive = false }
+    include("org.xerial:sqlite-jdbc:3.49.1.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

@@ -134,5 +134,7 @@
   "command.more_cobblemon_contents.pvp.admin.lounge.returned": "%s님을 라운지에 들어오기 전 위치로 돌려보냈습니다.",
   "command.more_cobblemon_contents.pvp.admin.lounge.spawn": "%s님은 돌아갈 위치가 없어 월드 스폰으로 보냈습니다.",
   "command.more_cobblemon_contents.pvp.admin.lounge.not_in_lounge": "%s님은 배틀 라운지에 있지 않습니다.",
-  "command.more_cobblemon_contents.pvp.admin.lounge.failed": "%s님을 라운지에서 꺼내지 못했습니다. 서버 로그를 확인하세요."
+  "command.more_cobblemon_contents.pvp.admin.lounge.failed": "%s님을 라운지에서 꺼내지 못했습니다. 서버 로그를 확인하세요.",
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_win": "승 · vs %s",
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "패 · vs %s"
 }
