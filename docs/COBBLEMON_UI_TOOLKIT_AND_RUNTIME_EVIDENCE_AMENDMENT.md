@@ -6,7 +6,7 @@
 | Effective | 2026-09-25 |
 | Updates | 초기 선언형 UI 결정과 UI 리소스 경계 결정(모두 폐기) |
 | Does not obsolete | 타입 있는 화면 행동, 서버 권위 검증, 내장 기본 자산, 시각 전용 외부 팩 경계 |
-| 적용 대상 | `more-cobblemon-contents`와 그 콘텐츠 모드, `cobblemon-battle-ui`와 후속 Cobblemon 클라이언트 애드온 |
+| 적용 대상 | `more-cobblemon-contents`와 그 콘텐츠 모드, `cobblemon-ui`와 후속 Cobblemon 클라이언트 애드온 |
 | 주 독자 | UI 툴킷·화면·리소스팩을 구현하는 개발자 |
 
 ## 1. 수정 이유

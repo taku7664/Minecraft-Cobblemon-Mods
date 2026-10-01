@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_ui",
+  "version": "${version}",
+  "name": "Cobblemon UI",
+  "description": "Client-side Cobblemon interfaces: battle commands, information, logs and dialogue, drawn with Cobblemon UI Kit.",
+  "authors": ["jbro"],
+  "contributors": ["sveniik (original Extended Battle UI)"],
+  "contact": {
+    "sources": "https://github.com/JBRO129/Minecraft-Cobblemon-Mods"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.ui.extended.CobblemonUiClient"
+      }
+    ],
+    "modmenu": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.ui.extended.ModMenuIntegration"
+      }
+    ]
+  },
+  "mixins": [
+    "cobblemon_ui.mixins.json"
+  ],
+  "accessWidener": "cobblemon_ui.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-language-kotlin": ">=1.12.0",
+    "cobblemon": "=1.8.1",
+    "cobblemon_ui_kit": ">=0.2.0 <1.0.0"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "cloth-config": "*"
+  }
+}

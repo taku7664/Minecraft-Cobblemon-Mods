@@ -13,7 +13,7 @@ include(
     "better-cobblemon-battlecam",
     "better-cobblemon-music",
     "better-battle-presentation",
-    "cobblemon-battle-ui",
+    "cobblemon-ui",
     "cobblemon-ui-kit",
     "cobblemon-custom-species",
     "font-glyph-race-fix",
