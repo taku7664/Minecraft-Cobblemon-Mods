@@ -39,6 +39,8 @@ object JbroPolicy : ModInitializer {
         PokemonItemRestore.register()
         LegendPolicy.register()
         LegendCommand.register()
+        // The server wiki's Legend guide reads each player's progress when More Cobblemon Contents serves the wiki.
+        if (FabricLoader.getInstance().isModLoaded("more_cobblemon_contents")) jbro.cobblemon.policy.legend.LegendWikiSection.register()
         Announcements.register()
         Tips.register(config.tipIntervalSeconds, config.tips)
         // Built-in data packs, so either can be turned off per world with /datapack disable.

@@ -28,6 +28,7 @@
   },
   "suggests": {
     "more_cobblemon_contents_league_challenge": ">=0.1.0 <1.0.0",
+    "more_cobblemon_contents": ">=0.1.0 <1.0.0",
     "cobblenav": ">=2.4.0"
   }
 }

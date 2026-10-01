@@ -17,6 +17,9 @@ import net.minecraft.world.level.saveddata.SavedData
 class LegendRecords private constructor(private val caught: MutableMap<UUID, MutableSet<String>>) : SavedData() {
     fun has(player: UUID, species: String): Boolean = caught[player]?.contains(species) == true
 
+    /** Every Legend [player] caught themselves. */
+    fun caughtBy(player: UUID): Set<String> = caught[player].orEmpty().toSet()
+
     fun add(player: UUID, species: String) {
         if (caught.getOrPut(player) { mutableSetOf() }.add(species)) setDirty()
     }

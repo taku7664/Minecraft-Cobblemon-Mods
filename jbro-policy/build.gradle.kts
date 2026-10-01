@@ -19,6 +19,8 @@ dependencies {
     // League ranks are optional: the chat badge stays off when League Challenge is not installed.
     compileOnly(project(path = ":more-cobblemon-contents-league-challenge", configuration = "namedElements")) { isTransitive = false }
     testImplementation(project(path = ":more-cobblemon-contents-league-challenge", configuration = "namedElements")) { isTransitive = false }
+    // The server wiki is optional too: the Legend guide's progress section registers only when MCC is installed.
+    compileOnly(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")
