@@ -102,6 +102,8 @@ user-music-extension.zip
 
 확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
 
+[`extension-template/my-music-pack`](extension-template/my-music-pack)은 바로 쓸 수 있는 빈 확장팩입니다. `assets/mymusic/sounds/music`에 OGG를 넣고 `update-music.bat`을 실행하면 `sounds.json`과 카탈로그가 만들어지며, 곡마다(`mymusic:track/<경로>`), 폴더마다(`mymusic:folder/<폴더>`), 전체(`mymusic:all`) 플레이리스트가 생깁니다. 자세한 사용법은 팩 안의 `사용법.txt`에 있습니다.
+
 ## 다른 모드 연동 API
 
 콘텐츠 모드는 `jbro.cobblemon.bettermusic.api`에 공급자를 등록해 자기 전투와 화면에 음악을 붙일 수 있습니다. 키는 소문자 네임스페이스 ID이고, 구체적인 키부터 차례로 찾아 처음 매핑된 키의 곡을 재생합니다.

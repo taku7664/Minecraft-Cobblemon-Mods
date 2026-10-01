@@ -1,0 +1,5 @@
+Put your .ogg files in this folder, then run update-music.bat.
+이 폴더에 .ogg 파일을 넣고 update-music.bat을 실행하세요.
+
+Folders become playlists: hub/a.ogg and hub/b.ogg make the playlist mymusic:folder/hub.
+폴더는 플레이리스트가 됩니다: hub/a.ogg, hub/b.ogg를 넣으면 mymusic:folder/hub가 생깁니다.
