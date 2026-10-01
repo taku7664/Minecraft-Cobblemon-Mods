@@ -3,7 +3,12 @@ package jbro.cobblemon.ui.extended
 import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.ui.dialogue.BattleDialogueQueue
 import jbro.cobblemon.ui.extended.battle.messages.TranslationKeys
+import jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts
+import jbro.cobblemon.ui.extended.ui.shared.BattleDialogueStyle
 import jbro.cobblemon.ui.extended.ui.shared.BattleFocusMotion
+import jbro.cobblemon.ui.extended.ui.shared.BattleSurface
+import jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiBorder
@@ -26,6 +31,13 @@ object BattleDialogue {
     private val queue = BattleDialogueQueue<Component>()
     private const val CHARACTERS_PER_SECOND = 75.0
     private const val END_BAR = 4
+    private const val BAND_CUT = 10
+    private const val BAND_TOP = 0xE6262626.toInt()
+    private const val BAND_BOTTOM = 0xE6161616.toInt()
+    private const val BAND_RULE = 0x33FFFFFF
+    private const val BAND_CHIP = 0x33FFFFFF
+    private const val BAND_TEXT = 0xFFFFFFFF.toInt()
+    private const val BAND_SHADOW = 0xFF000000.toInt()
 
     private var revealing: Any? = null
     private var revealNanos = 0L
@@ -113,17 +125,27 @@ object BattleDialogue {
         // At the bottom of the screen like the games' message box; it may cover the hotbar while it speaks.
         val top = (screenHeight - height - 6).coerceAtLeast(4)
 
-        UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
-        // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
-        val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
-        context.fill(left + inset, top + inset, left + inset + END_BAR, top + height - inset, theme.colors.borderBright)
-        context.fill(left + width - inset - END_BAR, top + inset, left + width - inset, top + height - inset, theme.colors.borderBright)
+        val band = BattleUiTheme.palette.dialogue == BattleDialogueStyle.DARK_BAND
+        val textInk = if (band) BAND_TEXT else ink
+        val textShadow = if (band) BAND_SHADOW else shadow
+        if (band) {
+            // Sword and Shield narrate on a dark translucent band, its corners cut on one diagonal.
+            BattleSurfaceRenderer.draw(context, left, top, width, height, BattleSurface(BAND_TOP, BAND_BOTTOM,
+                cornerCuts = BattleCornerCuts(topLeft = BAND_CUT, bottomRight = BAND_CUT), rounded = false))
+            context.fill(left + BAND_CUT, top + 3, left + width - 3, top + 4, BAND_RULE)
+        } else {
+            UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
+            // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
+            val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
+            context.fill(left + inset, top + inset, left + inset + END_BAR, top + height - inset, theme.colors.borderBright)
+            context.fill(left + width - inset - END_BAR, top + inset, left + width - inset, top + height - inset, theme.colors.borderBright)
+        }
         var budget = revealed(message)
         lines.forEachIndexed { index, line ->
             if (budget <= 0) return@forEachIndexed
             val shown = if (budget >= line.length) line else line.substring(0, budget)
             budget -= line.length
-            UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 12 + index * lineHeight, ink, shadow)
+            UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 12 + index * lineHeight, textInk, textShadow)
         }
         if (budget < 0) return
         // The line is complete: the key to press, and the arrow that says there is more.
@@ -132,11 +154,19 @@ object BattleDialogue {
         val keyWidth = font.width(keyName) + 10
         val arrowX = left + width - 20
         val baseY = top + height - 16
-        UiSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13, key.surface)
-        UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, key.text, key.textShadowColor)
+        if (band) {
+            val chip = BattleCornerCuts(6, 6, 6, 6)
+            BattleSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13,
+                BattleSurface(BAND_CHIP, BAND_CHIP, cornerCuts = chip))
+            UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, BAND_TEXT, BAND_SHADOW)
+        } else {
+            UiSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13, key.surface)
+            UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, key.text, key.textShadowColor)
+        }
+        val arrow = if (band) BAND_TEXT else theme.colors.accentPrimary
         val bob = (BattleFocusMotion.pulse() * 2f).toInt()
         for (row in 0 until 4) {
-            context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, theme.colors.accentPrimary)
+            context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, arrow)
         }
     }
 }

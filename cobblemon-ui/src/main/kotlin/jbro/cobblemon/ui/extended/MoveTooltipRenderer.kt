@@ -546,9 +546,11 @@ object MoveTooltipRenderer {
         context: GuiGraphics, text: String,
         x: Float, y: Float, color: Int, fontScale: Float
     ) {
+        // The pastel stat colors are made for a dark tooltip; a light theme deepens them to read.
         drawScaledText(
             context = context, text = Component.literal(text),
-            x = x, y = y, scale = fontScale, colour = color, shadow = false
+            x = x, y = y, scale = fontScale,
+            colour = jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.readable(color), shadow = false
         )
     }
 

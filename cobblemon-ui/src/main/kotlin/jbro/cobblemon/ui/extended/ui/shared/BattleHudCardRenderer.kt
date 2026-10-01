@@ -66,7 +66,7 @@ internal object BattleHudCardRenderer {
         card.experience?.let { progress ->
             val expX = contentX + BAR_WIDTH - EXP_WIDTH
             BattleSurfaceRenderer.gauge(context, expX, y + 21, EXP_WIDTH, 3, progress,
-                BattleUiTheme.TRACK, 0xFF62BFEF.toInt(), card.opacity, inset = 0)
+                BattleUiTheme.TRACK, BattleUiTheme.palette.xp, card.opacity, inset = 0)
         }
         context.drawString(font, card.health, contentRight - font.width(card.health), y + 14,
             BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, card.opacity), false)
@@ -80,7 +80,7 @@ internal object BattleHudCardRenderer {
             BattleSurfaceRenderer.capsule(context, badgeX - 2, badgeY, badgeWidth + 4, 9,
                 BattleStatusPalette.background(status), card.opacity)
             context.drawString(font, label, badgeX + 2, badgeY,
-                BattleSurfaceRenderer.withOpacity(0xFF182337.toInt(), card.opacity), false)
+                BattleSurfaceRenderer.withOpacity(BattleUiTheme.palette.statusInk, card.opacity), false)
         }
         if (card.owned) {
             val indicatorX = if (ally) x + 2 else x + WIDTH - 10
@@ -93,23 +93,29 @@ internal object BattleHudCardRenderer {
     }
 
     /**
-     * The card is flush with its screen edge and rounded at its inner end: a large radius at the top, a small one at
-     * the bottom, so it keeps the old slope's direction. A band in the side's color follows the inner end's curve.
+     * The card is flush with its screen edge. In a rounded theme its inner end is rounded, a large radius at the top
+     * and a small one at the bottom, so it keeps the old slope's direction; in a slanted theme that end is cut at 45°,
+     * the bottom reaching further in. A band in the side's color follows the inner end.
      */
     private fun drawSlantedPanel(context: GuiGraphics, x: Int, y: Int, ally: Boolean, card: Card) {
+        val palette = BattleUiTheme.palette
         val focused = card.selected || card.hovered
-        val top = if (focused) 0xF23B536A.toInt() else 0xF2284054.toInt()
+        val top = if (focused) palette.hudFocusTop else palette.hudTop
         val edge = if (focused) BattleUiTheme.FOCUS else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
-        val corners = if (ally) BattleCornerCuts(topRight = TOP_RADIUS, bottomRight = BOTTOM_RADIUS)
-            else BattleCornerCuts(topLeft = TOP_RADIUS, bottomLeft = BOTTOM_RADIUS)
-        val bandReach = TOP_RADIUS + ACCENT_WIDTH
+        val slant = palette.hudShape == BattleHudShape.SLANT
+        val topCut = if (slant) SLANT_CUT else TOP_RADIUS
+        val bottomCut = if (slant) 2 else BOTTOM_RADIUS
+        val corners = if (ally) BattleCornerCuts(topRight = topCut, bottomRight = bottomCut)
+            else BattleCornerCuts(topLeft = topCut, bottomLeft = bottomCut)
+        val bandReach = topCut + ACCENT_WIDTH
         BattleSurfaceRenderer.draw(context, if (ally) x + WIDTH - bandReach else x, y, bandReach, HEIGHT,
-            BattleSurface(edge, edge, cornerCuts = corners), card.opacity * .8f)
+            BattleSurface(edge, edge, cornerCuts = corners, rounded = !slant), card.opacity * .8f)
         BattleSurfaceRenderer.draw(context, if (ally) x else x + ACCENT_WIDTH, y, WIDTH - ACCENT_WIDTH, HEIGHT,
-            BattleSurface(top, 0xF20C192B.toInt(), cornerCuts = corners), card.opacity)
+            BattleSurface(top, palette.hudBottom, cornerCuts = corners, rounded = !slant), card.opacity)
     }
 
     private const val TOP_RADIUS = 11
     private const val BOTTOM_RADIUS = 5
+    private const val SLANT_CUT = 13
     private const val ACCENT_WIDTH = 3
 }

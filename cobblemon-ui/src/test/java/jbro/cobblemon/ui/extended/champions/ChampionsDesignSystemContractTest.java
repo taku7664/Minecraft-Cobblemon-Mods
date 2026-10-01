@@ -35,8 +35,8 @@ final class ChampionsDesignSystemContractTest {
         assertTrue(overlay.contains("BattleUiTheme.panel"));
         assertTrue(overlay.contains("BattleUiTheme.CYAN"));
         assertTrue(overlay.contains("BattleUiTheme.PURPLE"));
-        assertTrue(theme.contains("val shell = BattleSurface("));
-        assertTrue(theme.contains("val panel = BattleSurface("));
+        assertTrue(theme.contains("val shell: BattleSurface get() ="));
+        assertTrue(theme.contains("val panel: BattleSurface get() ="));
 
         assertFalse(build.contains("more-cobblemon-contents"));
         assertFalse(metadata.contains("more_cobblemon_contents"));

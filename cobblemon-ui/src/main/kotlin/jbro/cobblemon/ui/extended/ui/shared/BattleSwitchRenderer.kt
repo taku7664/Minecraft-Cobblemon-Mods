@@ -45,7 +45,6 @@ data class BattleOpponentCard(val species: ResourceLocation, val aspects: Set<St
 
 /** The party preview and the live Cobblemon switch selection share this visual path. */
 object BattleSwitchRenderer {
-    private const val FOCUS_FILL = 0xFFCCEE67.toInt()
     private val SWITCH_CURSOR = Any()
 
     @JvmStatic
@@ -109,18 +108,19 @@ object BattleSwitchRenderer {
         BattleSurfaceRenderer.draw(context, layout.panel.x - 3, layout.panel.y - 3,
             layout.panel.width + 6, layout.detailBody.bottom - layout.panel.y + 6,
             BattleUiTheme.modalBackdrop.copy(cornerCuts = BattleCornerCuts(8, 8, 8, 8)), opacity)
-        drawHeader(context, layout.allyHeader, 0xF81A2941.toInt(), 0xF8111D30.toInt(), opacity)
-        drawHeader(context, layout.detailHeader, 0xF8233A53.toInt(), 0xF814283E.toInt(), opacity)
+        val palette = BattleUiTheme.palette
+        drawHeader(context, layout.allyHeader, palette.headerTop, palette.headerBottom, opacity)
+        drawHeader(context, layout.detailHeader, palette.detailHeaderTop, palette.detailHeaderBottom, opacity)
         BattleSurfaceRenderer.draw(context, layout.detailBody.x, layout.detailBody.y,
             layout.detailBody.width, layout.detailBody.height,
-            BattleUiTheme.panel.copy(top = 0xF421354C.toInt(), bottom = 0xF0111D32.toInt(),
+            BattleUiTheme.panel.copy(top = palette.detailTop, bottom = palette.detailBottom,
                 borderWidth = 0, cornerCuts = BattleCornerCuts(bottomRight = 6, bottomLeft = 6)), opacity)
         drawText(context, Component.translatable("cobblemon_ui.switch.title").string,
             layout.allyHeader.x + 5, layout.allyHeader.y + 4, BattleUiTheme.CYAN, opacity)
         drawText(context, Component.translatable("cobblemon_ui.switch.details").string,
             layout.detailHeader.x + 6, layout.detailHeader.y + 4, BattleUiTheme.TEXT, opacity)
         layout.opponentHeader?.let { header ->
-            drawHeader(context, header, 0xF84D3048.toInt(), 0xF8282036.toInt(), opacity)
+            drawHeader(context, header, palette.opponentHeaderTop, palette.opponentHeaderBottom, opacity)
             drawText(context, Component.translatable("cobblemon_ui.switch.opponent").string,
                 header.x + 5, header.y + 4, BattleUiTheme.TRANSCRIPT_OPPONENT, opacity)
         }
@@ -134,21 +134,21 @@ object BattleSwitchRenderer {
             val isFocused = index == highlighted
             val emphasis = BattleFocusMotion.emphasis(card.uuid to "switch", isFocused)
             val corners = BattleCornerCuts(5, 5, 5, 5)
-            val restTop = if (card.active) 0xFF284D60.toInt() else 0xF9233851.toInt()
-            val restBottom = if (card.active) 0xFF203B50.toInt() else 0xF9182B42.toInt()
-            BattleControlRenderer.drawFocusHalo(context, rect.x, rect.y, rect.width, rect.height, corners,
-                FOCUS_FILL, emphasis, opacity)
+            val restTop = if (card.active) palette.activeCardTop else palette.cardTop
+            val restBottom = if (card.active) palette.activeCardBottom else palette.cardBottom
+            if (palette.focusFill == null) BattleControlRenderer.drawFocusHalo(context, rect.x, rect.y, rect.width,
+                rect.height, corners, palette.select, emphasis, opacity)
             BattleSurfaceRenderer.draw(context, rect.x, rect.y, rect.width, rect.height,
                 BattleUiTheme.panel.copy(
-                    top = BattleSurfaceRenderer.interpolate(restTop, FOCUS_FILL, emphasis),
-                    bottom = BattleSurfaceRenderer.interpolate(restBottom, 0xFFA8CA45.toInt(), emphasis),
+                    top = BattleSurfaceRenderer.interpolate(restTop, palette.select, emphasis),
+                    bottom = BattleSurfaceRenderer.interpolate(restBottom, palette.selectBottom, emphasis),
                     borderWidth = 0, cornerCuts = corners),
                 opacity * if (!selectable && !isFocused) .65f else 1f)
             drawCard(context, rect.x, rect.y, card, emphasis > .5f, opacity)
         }
         tiles.getOrNull(highlighted)?.let { rect ->
             BattleControlRenderer.drawCursor(context, SWITCH_CURSOR, rect.x - 2, rect.y + rect.height / 2f,
-                FOCUS_FILL, opacity)
+                palette.select, opacity)
         }
         val selected = cards.getOrNull(highlighted)
         if (selected != null) drawDetails(context, layout.detailBody, selected, opacity)
@@ -165,12 +165,13 @@ object BattleSwitchRenderer {
     private fun drawOpponents(context: GuiGraphics, layout: BattleSwitchLayout.Result,
                               opponents: List<BattleOpponentCard>, opacity: Float) {
         val font = Minecraft.getInstance().font
+        val palette = BattleUiTheme.palette
         val rows = layout.opponents.take(opponents.size.coerceAtMost(6))
         if (rows.isEmpty()) return
         rows.forEachIndexed { index, rect ->
             val opponent = opponents[index]
             BattleSurfaceRenderer.draw(context, rect.x, rect.y, rect.width, rect.height,
-                BattleUiTheme.panel.copy(top = 0xF54A3048.toInt(), bottom = 0xF52D263E.toInt(),
+                BattleUiTheme.panel.copy(top = palette.opponentRowTop, bottom = palette.opponentRowBottom,
                     borderWidth = 0, cornerCuts = BattleCornerCuts(5, 5, 5, 5)), opacity)
             val speciesName = Component.translatable("cobblemon.species.${opponent.species.path}.name").string
             drawText(context, font.plainSubstrByWidth(speciesName, rect.width - 30), rect.x + 7, rect.y + 5,
@@ -188,7 +189,7 @@ object BattleSwitchRenderer {
             card.fainted -> Component.translatable("cobblemon_ui.switch.fainted").string
             else -> card.statusLabel?.string ?: ""
         }
-        val ink = if (focused) 0xFF081C2B.toInt() else if (card.fainted) BattleUiTheme.DIM else BattleUiTheme.TEXT
+        val ink = if (focused) BattleUiTheme.palette.selectInk else if (card.fainted) BattleUiTheme.DIM else BattleUiTheme.TEXT
         BattleGenderText.draw(context, card.name.string, card.gender, x + 23, y + 2, 55, opacity, ink)
         val health = "${(card.healthRatio * 100).toInt()}%"
         drawText(context, health, x + BattleScreenGeometry.SWITCH_WIDTH - 3 - font.width(health), y + 2, ink, opacity)
@@ -210,8 +211,9 @@ object BattleSwitchRenderer {
         val y = rect.y + 4
         val innerWidth = rect.width - 12
         val level = "Lv.${card.level}"
+        val palette = BattleUiTheme.palette
         BattleSurfaceRenderer.draw(context, x, y, 36, 36,
-            BattleUiTheme.panel.copy(top = 0xFF29435D.toInt(), bottom = 0xFF13283F.toInt(),
+            BattleUiTheme.panel.copy(top = palette.portraitTop, bottom = palette.portraitBottom,
                 borderWidth = 0, cornerCuts = BattleCornerCuts(6, 6, 6, 6)), opacity)
         PokemonModelRenderer.drawPokemonModel(context, x - 4, y, 44, null,
             card.species, card.aspects, card.uuid, card.fainted, card.status, true, { it }, 1f)
@@ -228,13 +230,13 @@ object BattleSwitchRenderer {
             typeX += 20 + font.width(label)
         }
         BattleSurfaceRenderer.draw(context, x, y + 36, innerWidth, 12,
-            BattleSurface(0xFF174058.toInt(), cut = 4), opacity)
+            BattleSurface(palette.movesBand, cut = 4), opacity)
         drawText(context, Component.translatable("cobblemon_ui.switch.moves").string,
             x + 4, y + 38, BattleUiTheme.CYAN, opacity)
         details?.moves?.forEachIndexed { index, move ->
             val rowY = y + 50 + index * 12
             if (index % 2 == 0) BattleSurfaceRenderer.draw(context, x, rowY - 1, innerWidth, 11,
-                BattleSurface(0x7234516A, cut = 3), opacity)
+                BattleSurface(palette.zebra, cut = 3), opacity)
             move.type?.let { TypeIcon(x = (x + 8).toFloat(), y = rowY.toFloat(),
                 type = it, small = true, opacity = opacity).render(context) }
             val ppX = x + innerWidth - 4 - font.width(move.pp)
@@ -243,7 +245,7 @@ object BattleSwitchRenderer {
             drawText(context, move.pp, ppX, rowY, BattleUiTheme.MUTED, opacity)
         }
         BattleSurfaceRenderer.draw(context, x, y + 98, innerWidth, 22,
-            BattleSurface(0x6C0B1727, cut = 5), opacity)
+            BattleSurface(palette.abilityBox, cut = 5), opacity)
         drawText(context, Component.translatable("cobblemon_ui.switch.ability").string,
             x + 3, y + 100, BattleUiTheme.CYAN, opacity)
         drawText(context, font.plainSubstrByWidth(details?.ability ?: "-", innerWidth - 53), x + 50, y + 100,

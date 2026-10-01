@@ -16,30 +16,39 @@ import net.minecraft.network.chat.Component
 import kotlin.math.abs
 
 /**
- * Command, move and back controls. Tiles anchored to the right screen edge are rounded only on their free left end.
- * Focus, from the mouse or the keyboard, eases in through [BattleFocusMotion]: the tile slides out with a small
- * overshoot and brightens, a halo in its accent color breathes behind it, its accent pill grows, and one cursor per
- * menu glides to it and nudges toward it.
+ * Command, move and back controls, in the shapes and colors of the theme in use ([BattleUiThemes]). Every theme
+ * keeps the tiles' places, sizes and hitboxes. Focus, from the mouse or the keyboard, eases in through
+ * [BattleFocusMotion]: the tile slides out with a small overshoot and either brightens behind a breathing halo or,
+ * in a theme with a [BattleUiPalette.focusFill], turns that color; one cursor per menu glides to it.
  */
 object BattleControlRenderer {
     private const val OPTION_RADIUS = 9
     private const val MOVE_RADIUS = 10
     private const val BACK_WIDTH = 29
     private const val BACK_HEIGHT = 17
+    /** A pill stands this far off the screen edge it would otherwise touch. */
+    private const val PILL_GAP = 4
 
     /** One cursor per menu: the owner is the widget that holds the menu's tiles. */
     private data class Group(val owner: Any, val kind: String)
 
+    /** The four battle commands, each with its own color in a theme. */
+    private enum class Command { FIGHT, SWITCH, BAG, RUN }
+
     @JvmStatic
     fun back(context: GuiGraphics, x: Int, y: Int, hovered: Boolean) {
+        val palette = BattleUiTheme.palette
         val emphasis = BattleFocusMotion.emphasis(BACK_KEY, hovered)
         val extension = protrusion(emphasis)
         val corners = BattleCornerCuts(8, 8, 8, 8)
         drawDropShadow(context, x - extension, y, BACK_WIDTH + extension, BACK_HEIGHT, corners, 1f)
-        drawFocusHalo(context, x - extension, y, BACK_WIDTH + extension, BACK_HEIGHT, corners, BattleUiTheme.CYAN, emphasis, 1f)
+        if (palette.focusFill == null) {
+            drawFocusHalo(context, x - extension, y, BACK_WIDTH + extension, BACK_HEIGHT, corners, BattleUiTheme.CYAN, emphasis, 1f)
+        }
         BattleSurfaceRenderer.draw(context, x - extension, y, BACK_WIDTH + extension, BACK_HEIGHT,
-            lit(BattleUiTheme.secondary.copy(cornerCuts = corners, rounded = true), emphasis))
-        val ink = BattleSurfaceRenderer.interpolate(BattleUiTheme.TEXT, BattleUiTheme.CYAN, emphasis)
+            focused(BattleUiTheme.secondary.copy(cornerCuts = corners, rounded = true), emphasis))
+        val ink = BattleSurfaceRenderer.interpolate(palette.commandText,
+            palette.focusFill?.let { palette.focusText } ?: BattleUiTheme.CYAN, emphasis)
         // The arrow leans the way it goes as focus arrives.
         val arrowX = x + 9 - (emphasis * 2f).toInt()
         context.fill(arrowX, y + 8, arrowX + 11, y + 9, ink)
@@ -53,40 +62,65 @@ object BattleControlRenderer {
     fun option(context: GuiGraphics, tile: BattleOptionTile, focused: Boolean) {
         val opacity = CobblemonClient.battleOverlay.opacityRatio.toFloat()
         if (opacity < .1f) return
-        val primary = tile.resource == BattleGUI.fightResource
-        val base = when (tile.resource) {
-            BattleGUI.fightResource -> BattleUiTheme.primary
-            BattleGUI.runResource, BattleGUI.forfeitResource -> BattleUiTheme.danger
-            BattleGUI.bagResource -> BattleUiTheme.capture
-            else -> BattleUiTheme.secondary
+        val command = when (tile.resource) {
+            BattleGUI.fightResource -> Command.FIGHT
+            BattleGUI.runResource, BattleGUI.forfeitResource -> Command.RUN
+            BattleGUI.bagResource -> Command.BAG
+            else -> Command.SWITCH
         }
         val emphasis = BattleFocusMotion.emphasis(tile, focused)
-        drawOption(context, tile.x, tile.y, tile.text, base, primary, emphasis, opacity)
+        drawOption(context, tile.x, tile.y, tile.text, command, emphasis, opacity)
         if (focused) drawCursor(context, Group(tile.battleGUI, "option"), tile.x - protrusion(emphasis),
-            tile.y + BattleOptionTile.OPTION_HEIGHT / 2f, accentOf(base), opacity)
+            tile.y + BattleOptionTile.OPTION_HEIGHT / 2f, accentOf(command), opacity)
     }
 
-    internal fun drawOption(context: GuiGraphics, x: Int, y: Int, text: Component, base: BattleSurface,
-                            primary: Boolean, emphasis: Float, opacity: Float = 1f) {
+    private fun drawOption(context: GuiGraphics, x: Int, y: Int, text: Component, command: Command,
+                           emphasis: Float, opacity: Float) {
+        val palette = BattleUiTheme.palette
+        val pill = palette.controlShape == BattleControlShape.PILL
         val extension = protrusion(emphasis)
         val left = x - extension
-        val width = BattleOptionTile.OPTION_WIDTH + extension
         val height = BattleOptionTile.OPTION_HEIGHT
-        val corners = BattleCornerCuts(topLeft = OPTION_RADIUS, bottomLeft = OPTION_RADIUS)
-        val accent = accentOf(base)
+        val width = BattleOptionTile.OPTION_WIDTH + extension - if (pill) PILL_GAP else 0
+        val corners = if (pill) BattleCornerCuts(height / 2, height / 2, height / 2, height / 2)
+            else BattleCornerCuts(topLeft = OPTION_RADIUS, bottomLeft = OPTION_RADIUS)
+        val accent = accentOf(command)
+        val base = when (command) {
+            Command.FIGHT -> BattleUiTheme.primary
+            Command.RUN -> BattleUiTheme.danger
+            Command.BAG -> BattleUiTheme.capture
+            Command.SWITCH -> BattleUiTheme.secondary
+        }
+        val primary = command == Command.FIGHT && palette.focusFill == null
         drawDropShadow(context, left, y, width, height, corners, opacity)
-        drawFocusHalo(context, left, y, width, height, corners, accent, emphasis, opacity)
+        if (palette.focusFill == null) drawFocusHalo(context, left, y, width, height, corners, accent, emphasis, opacity)
         BattleSurfaceRenderer.draw(context, left, y, width, height,
-            lit(base.copy(borderWidth = 0, cornerCuts = corners, rounded = true), emphasis), opacity)
-        val pillHeight = 12 + (6 * emphasis).toInt()
-        BattleSurfaceRenderer.capsule(context, left + 6, y + (height - pillHeight) / 2, 3, pillHeight,
-            if (primary) BattleSurfaceRenderer.interpolate(BattleUiTheme.PANEL_ALT, 0xFF06343A.toInt(), emphasis)
-            else BattleSurfaceRenderer.interpolate(dim(accent), accent, emphasis), opacity)
+            focused(base.copy(borderWidth = 0, cornerCuts = corners, rounded = true), emphasis), opacity)
+        when (palette.commandAccent) {
+            BattleCommandAccent.BAR -> {
+                val pillHeight = 12 + (6 * emphasis).toInt()
+                BattleSurfaceRenderer.capsule(context, left + 6, y + (height - pillHeight) / 2, 3, pillHeight,
+                    if (primary) BattleSurfaceRenderer.interpolate(BattleUiTheme.PANEL_ALT, 0xFF06343A.toInt(), emphasis)
+                    else BattleSurfaceRenderer.interpolate(dim(accent), accent, emphasis), opacity)
+            }
+            BattleCommandAccent.END_CAP -> {
+                // The command's color as a disc in the pill's far end, ringed in white once the pill turns dark.
+                val disc = height - 8
+                val discX = left + width - 4 - disc
+                if (emphasis > .02f) BattleSurfaceRenderer.capsule(context, discX - 1, y + 3, disc + 2, disc + 2,
+                    0xFFFFFFFF.toInt(), opacity * emphasis)
+                BattleSurfaceRenderer.capsule(context, discX, y + 4, disc, disc, accent, opacity)
+            }
+        }
         val font = Minecraft.getInstance().font
+        val ink = if (primary) palette.primaryText else palette.focusFill?.let {
+            BattleSurfaceRenderer.interpolate(palette.commandText, palette.focusText, emphasis)
+        } ?: palette.commandText
         val scale = minOf(1f, (BattleOptionTile.OPTION_WIDTH - 16f) / font.width(text).coerceAtLeast(1))
-        val textX = x + (BattleOptionTile.OPTION_WIDTH - font.width(text) * scale) / 2f
+        // Sword and Shield set the label at the pill's start; the rounded tiles center it.
+        val textX = if (pill) left + 14f else x + (BattleOptionTile.OPTION_WIDTH - font.width(text) * scale) / 2f
         val textY = y + (height - font.lineHeight * scale) / 2f
-        UIUtils.drawText(context, text.string, textX, textY, BattleSurfaceRenderer.withOpacity(if (primary) 0xFF071018.toInt() else BattleUiTheme.TEXT, opacity), scale)
+        UIUtils.drawText(context, text.string, textX, textY, BattleSurfaceRenderer.withOpacity(ink, opacity), scale)
     }
 
     @JvmStatic
@@ -103,51 +137,65 @@ object BattleControlRenderer {
             tile.y + BattleScreenGeometry.MOVE_HEIGHT / 2f, typeColor, opacity)
     }
 
-    internal fun drawMove(context: GuiGraphics, x: Float, y: Float, move: MoveTemplate,
-                          type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
-                          selectable: Boolean, emphasis: Float, opacity: Float = 1f) {
+    private fun drawMove(context: GuiGraphics, x: Float, y: Float, move: MoveTemplate,
+                         type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
+                         selectable: Boolean, emphasis: Float, opacity: Float) {
+        val palette = BattleUiTheme.palette
+        val pill = palette.controlShape == BattleControlShape.PILL
+        val typed = palette.moveFill == BattleMoveFill.TYPE
         val contentOpacity = opacity * if (selectable) 1f else .95f
         val extension = protrusion(emphasis)
         val left = x.toInt() - extension
         val top = y.toInt()
-        val width = BattleScreenGeometry.MOVE_WIDTH + extension
         val height = BattleScreenGeometry.MOVE_HEIGHT
-        val corners = BattleCornerCuts(topLeft = MOVE_RADIUS, bottomLeft = MOVE_RADIUS)
+        val width = BattleScreenGeometry.MOVE_WIDTH + extension - if (pill) PILL_GAP else 0
+        val corners = if (pill) BattleCornerCuts(height / 2, height / 2, height / 2, height / 2)
+            else BattleCornerCuts(topLeft = MOVE_RADIUS, bottomLeft = MOVE_RADIUS)
         drawDropShadow(context, left, top, width, height, corners, opacity)
-        // The halo takes the move's type color, so the focused move reads as its type at a glance.
-        drawFocusHalo(context, left, top, width, height, corners, typeColor, emphasis, opacity)
-        BattleSurfaceRenderer.draw(context, left, top, width, height,
-            lit(BattleUiTheme.panel.copy(cornerCuts = corners, rounded = true), emphasis), contentOpacity)
-        val pillHeight = 16 + (6 * emphasis).toInt()
-        BattleSurfaceRenderer.capsule(context, left + 6, top + (height - pillHeight) / 2, 3, pillHeight,
-            if (selectable) typeColor else dim(typeColor), opacity)
+        if (!typed) {
+            // The halo takes the move's type color, so the focused move reads as its type at a glance.
+            drawFocusHalo(context, left, top, width, height, corners, typeColor, emphasis, opacity)
+            BattleSurfaceRenderer.draw(context, left, top, width, height,
+                focused(BattleUiTheme.panel.copy(cornerCuts = corners, rounded = true), emphasis), contentOpacity)
+            val pillHeight = 16 + (6 * emphasis).toInt()
+            BattleSurfaceRenderer.capsule(context, left + 6, top + (height - pillHeight) / 2, 3, pillHeight,
+                if (selectable) typeColor else dim(typeColor), opacity)
+        } else {
+            // Sword and Shield: the move on its type's color, deep at rest and brighter when chosen, ringed in white.
+            val rest = BattleSurfaceRenderer.interpolate(typeColor, 0xFF1F1F1F.toInt(), if (selectable) .42f else .66f)
+            val lit = BattleSurfaceRenderer.interpolate(rest, BattleSurfaceRenderer.interpolate(typeColor,
+                0xFF1F1F1F.toInt(), .14f), emphasis)
+            if (emphasis > .02f) BattleSurfaceRenderer.draw(context, left - 1, top - 1, width + 2, height + 2,
+                BattleSurface(0xFFFFFFFF.toInt(), cornerCuts = BattleCornerCuts(height / 2 + 1, height / 2 + 1,
+                    height / 2 + 1, height / 2 + 1)), opacity * emphasis)
+            BattleSurfaceRenderer.draw(context, left, top, width, height, BattleSurface(lit,
+                BattleSurfaceRenderer.interpolate(lit, 0xFF000000.toInt(), .18f), cornerCuts = corners), contentOpacity)
+        }
         TypeIcon(x = x + 15, y = y + 19, type = type, small = true,
             opacity = if (selectable) opacity else opacity * .5f).render(context)
         MoveCategoryIcon(x = x + 29, y = y + 19, category = move.damageCategory,
             opacity = if (selectable) opacity else opacity * .5f).render(context)
         val font = Minecraft.getInstance().font
         val name = move.displayName.string
-        UIUtils.drawText(context, font.plainSubstrByWidth(name, 114), x + 14, y + 4,
-            BattleSurfaceRenderer.withOpacity(if (selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED, opacity), 1f)
-        val label = if (pp == 100 && maxPp == 100) "—/—" else "$pp/$maxPp"
-        val ppColor = when {
-            pp == 0 -> BattleUiTheme.DANGER
-            pp <= maxPp / 2 -> BattleUiTheme.FOCUS
+        val nameInk = when {
+            typed -> 0xFFFFFFFF.toInt()
+            selectable -> BattleUiTheme.TEXT
             else -> BattleUiTheme.MUTED
         }
-        UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.width(label), y + 19,
-            BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
+        val shown = font.plainSubstrByWidth(name, 114)
+        // White on a type color keeps a soft shadow, as the games set it, so bright types stay readable.
+        if (typed) UIUtils.drawText(context, shown, x + 15, y + 5,
+            BattleSurfaceRenderer.withOpacity(0x66000000, opacity), 1f)
+        UIUtils.drawText(context, shown, x + 14, y + 4, BattleSurfaceRenderer.withOpacity(nameInk, opacity), 1f)
+        val label = if (pp == 100 && maxPp == 100) "—/—" else "$pp/$maxPp"
+        val ppColor = when {
+            pp == 0 -> if (typed) 0xFFFFB3B3.toInt() else BattleUiTheme.DANGER
+            pp <= maxPp / 2 -> if (typed) 0xFFFFE08A.toInt() else BattleUiTheme.FOCUS
+            else -> if (typed) 0xFFF2F2F2.toInt() else BattleUiTheme.MUTED
+        }
+        UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.width(label) -
+            if (pill) PILL_GAP else 0, y + 19, BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
     }
-
-    /** Previews draw a settled state: fully focused or at rest. */
-    internal fun drawOption(context: GuiGraphics, x: Int, y: Int, text: Component, base: BattleSurface,
-                            primary: Boolean, focused: Boolean, opacity: Float = 1f) =
-        drawOption(context, x, y, text, base, primary, if (focused) 1f else 0f, opacity)
-
-    internal fun drawMove(context: GuiGraphics, x: Float, y: Float, move: MoveTemplate,
-                          type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
-                          selectable: Boolean, focused: Boolean, opacity: Float = 1f) =
-        drawMove(context, x, y, move, type, typeColor, pp, maxPp, selectable, if (focused) 1f else 0f, opacity)
 
     /** How far a tile slides out at this emphasis, overshooting a little on the way; the hitbox has the full slide. */
     @JvmStatic
@@ -167,8 +215,9 @@ object BattleControlRenderer {
     @JvmStatic
     fun drawDropShadow(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
                        opacity: Float) {
+        val shadow = BattleUiTheme.palette.dropShadow
         BattleSurfaceRenderer.draw(context, x, y + 2, width, height,
-            BattleSurface(SHADOW, SHADOW, cornerCuts = corners, rounded = true), opacity)
+            BattleSurface(shadow, shadow, cornerCuts = corners, rounded = true), opacity)
     }
 
     /**
@@ -177,11 +226,19 @@ object BattleControlRenderer {
      */
     @JvmStatic
     fun drawCursor(context: GuiGraphics, group: Any, tipX: Int, centerY: Float, accent: Int, opacity: Float) {
+        val palette = BattleUiTheme.palette
         val y = BattleFocusMotion.cursor(group, centerY)
         val x = tipX - 3f + BattleFocusMotion.bob() * 1.5f
-        drawArrow(context, x + 1f, y + 1f, BattleSurfaceRenderer.withOpacity(0x8C000000.toInt(), opacity))
-        drawArrow(context, x, y, BattleSurfaceRenderer.withOpacity(
-            BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .55f), opacity))
+        val color = palette.cursor ?: BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .55f)
+        if (palette.cursor != null) {
+            // A dark arrow gets a white outline instead of a shadow, so it holds against the scene.
+            val outline = BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), opacity)
+            drawArrow(context, x + 1f, y, outline)
+            drawArrow(context, x - 1f, y, outline)
+            drawArrow(context, x, y + 1f, outline)
+            drawArrow(context, x, y - 1f, outline)
+        } else drawArrow(context, x + 1f, y + 1f, BattleSurfaceRenderer.withOpacity(0x8C000000.toInt(), opacity))
+        drawArrow(context, x, y, BattleSurfaceRenderer.withOpacity(color, opacity))
     }
 
     /** A right-pointing arrow with its tip at ([x], [y]): 6 wide and 11 tall, its slanted edges anti-aliased. */
@@ -200,16 +257,24 @@ object BattleControlRenderer {
         context.pose().popPose()
     }
 
-    private fun lit(style: BattleSurface, emphasis: Float): BattleSurface =
-        if (emphasis <= 0f) style
+    /** A control at [emphasis]: turned the theme's focus color, or lightened when the theme has none. */
+    private fun focused(style: BattleSurface, emphasis: Float): BattleSurface {
+        if (emphasis <= 0f) return style
+        val fill = BattleUiTheme.palette.focusFill
+        return if (fill != null) style.copy(top = BattleSurfaceRenderer.interpolate(style.top, fill, emphasis),
+            bottom = BattleSurfaceRenderer.interpolate(style.bottom, fill, emphasis))
         else style.copy(top = BattleSurfaceRenderer.interpolate(style.top, lighten(style.top), emphasis),
             bottom = BattleSurfaceRenderer.interpolate(style.bottom, lighten(style.bottom), emphasis))
+    }
 
-    private fun accentOf(base: BattleSurface): Int = when (base) {
-        BattleUiTheme.primary -> BattleUiTheme.CYAN
-        BattleUiTheme.danger -> BattleUiTheme.DANGER
-        BattleUiTheme.capture -> BattleUiTheme.PURPLE
-        else -> BattleUiTheme.CYAN
+    private fun accentOf(command: Command): Int {
+        val palette = BattleUiTheme.palette
+        return when (command) {
+            Command.FIGHT -> palette.fightAccent
+            Command.SWITCH -> palette.switchAccent
+            Command.BAG -> palette.bagAccent
+            Command.RUN -> palette.runAccent
+        }
     }
 
     private fun dim(color: Int): Int = BattleSurfaceRenderer.interpolate(color, 0xFF1A2A3C.toInt(), .45f)
@@ -221,6 +286,5 @@ object BattleControlRenderer {
         return (color and 0xFF000000.toInt()) or (red shl 16) or (green shl 8) or blue
     }
 
-    private const val SHADOW = 0x3A000000
     private val BACK_KEY = Any()
 }

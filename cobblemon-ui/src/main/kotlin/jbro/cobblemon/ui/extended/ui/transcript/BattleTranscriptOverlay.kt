@@ -142,7 +142,7 @@ object BattleTranscriptOverlay {
         context.pose().pushPose()
         context.pose().translate(0f, 0f, 1100f)
         val shellCorners = BattleCornerCuts(10, 10, 10, 10)
-        BattleSurfaceRenderer.draw(context, x, y + 3, width, height, BattleSurface(0x55000000, cornerCuts = shellCorners))
+        BattleSurfaceRenderer.draw(context, x, y + 3, width, height, BattleSurface(BattleUiTheme.palette.windowShadow, cornerCuts = shellCorners))
         BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cornerCuts = shellCorners))
         val title = tr("title")
         val titleWidth = maxOf(96, ceil(mc.font.width(title) * scale).toInt() + 28)
@@ -263,7 +263,7 @@ object BattleTranscriptOverlay {
         draw(context, label, x + 5, y + 1, color, scale)
     }
 
-    private const val CHIP = 0xFF1B2C42.toInt()
+    private val CHIP get() = BattleUiTheme.palette.chip
     private fun drawCentered(context: GuiGraphics, text: String, center: Int, y: Int, color: Int, scale: Float) {
         val width = Minecraft.getInstance().font.width(text) * scale
         draw(context, text, (center - width / 2).roundToInt(), y, color, scale)

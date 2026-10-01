@@ -627,7 +627,7 @@ object PokemonInfoPopup {
             text = Component.literal(text.uppercase()),
             x = x, y = y,
             scale = labelScale,
-            colour = TeamIndicatorUI.applyOpacity(LABEL_COLOR),
+            colour = TeamIndicatorUI.applyOpacity(jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.readable(LABEL_COLOR)),
             shadow = false
         )
     }
@@ -641,7 +641,7 @@ object PokemonInfoPopup {
             text = Component.literal(text),
             x = x, y = y,
             scale = fontScale,
-            colour = TeamIndicatorUI.applyOpacity(color),
+            colour = TeamIndicatorUI.applyOpacity(jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.readable(color)),
             shadow = false
         )
     }

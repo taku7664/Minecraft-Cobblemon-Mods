@@ -397,8 +397,8 @@ object UIUtils {
     const val DIVIDER_H = 5
 
     // Cell colors (Cobblemon dark blue-tinted palette)
-    val CELL_BG = BattleUiTheme.PANEL_ALT
-    val ROW_DIVIDER_COLOR = BattleUiTheme.BORDER
+    val CELL_BG get() = BattleUiTheme.PANEL_ALT
+    val ROW_DIVIDER_COLOR get() = BattleUiTheme.BORDER
 
     /** Shared 9-slice insets for the popup frame texture. */
     val POPUP_FRAME_INSETS = NineSliceRenderer.SliceInsets(POPUP_SLICE)
@@ -410,9 +410,9 @@ object UIUtils {
     fun renderPopupFrame(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int) {
         val corners = jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts(8, 8, 8, 8)
         BattleSurfaceRenderer.draw(context, x, y + 2, width, height,
-            jbro.cobblemon.ui.extended.ui.shared.BattleSurface(0x50000000, cornerCuts = corners))
+            jbro.cobblemon.ui.extended.ui.shared.BattleSurface(BattleUiTheme.palette.windowShadow, cornerCuts = corners))
         BattleSurfaceRenderer.draw(context, x, y, width, height,
-            BattleUiTheme.shell.copy(border = 0x5569D6E8, borderWidth = 1, cornerCuts = corners))
+            BattleUiTheme.shell.copy(border = BattleUiTheme.palette.popupRim, borderWidth = 1, cornerCuts = corners))
     }
 
     /**

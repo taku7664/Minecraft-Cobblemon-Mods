@@ -94,7 +94,8 @@ object BattleTargetRenderer {
             panel.width() + 6, panel.height() + 6, BattleUiTheme.modalBackdrop, opacity)
         BattleSurfaceRenderer.draw(context, panel.x() + 3, panel.y() + 3,
             panel.width() - 6, 16,
-            BattleUiTheme.panel.copy(top = 0xF8233A53.toInt(), bottom = 0xF814283E.toInt(),
+            BattleUiTheme.panel.copy(top = BattleUiTheme.palette.detailHeaderTop,
+                bottom = BattleUiTheme.palette.detailHeaderBottom,
                 cornerCuts = BattleCornerCuts(topLeft = 5, topRight = 5)), opacity)
         drawText(context, Component.translatable("cobblemon_ui.target.title").string,
             panel.x() + 10, panel.y() + 6, BattleUiTheme.TEXT, opacity)
@@ -119,24 +120,25 @@ object BattleTargetRenderer {
         val focused = card.focused && card.selectable
         val emphasis = BattleFocusMotion.emphasis(card.uuid to "target", focused)
         val corners = BattleCornerCuts(5, 5, 5, 5)
-        BattleControlRenderer.drawFocusHalo(context, x, y, rect.width(), rect.height(), corners,
-            0xFFCCEE67.toInt(), emphasis, opacity)
+        val palette = BattleUiTheme.palette
+        if (palette.focusFill == null) BattleControlRenderer.drawFocusHalo(context, x, y, rect.width(), rect.height(),
+            corners, palette.select, emphasis, opacity)
         BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
             BattleUiTheme.panel.copy(
-                top = BattleSurfaceRenderer.interpolate(if (card.ally) 0xF9233851.toInt() else 0xF84D3048.toInt(),
-                    0xFFCCEE67.toInt(), emphasis),
-                bottom = BattleSurfaceRenderer.interpolate(if (card.ally) 0xF9182B42.toInt() else 0xF8282036.toInt(),
-                    0xFFA8CA45.toInt(), emphasis),
+                top = BattleSurfaceRenderer.interpolate(if (card.ally) palette.cardTop else palette.opponentHeaderTop,
+                    palette.select, emphasis),
+                bottom = BattleSurfaceRenderer.interpolate(if (card.ally) palette.cardBottom else palette.opponentHeaderBottom,
+                    palette.selectBottom, emphasis),
                 borderWidth = 0, cornerCuts = corners), cardOpacity)
         if (focused) BattleControlRenderer.drawCursor(context, TARGET_CURSOR, x - 2, y + rect.height() / 2f,
-            0xFFCCEE67.toInt(), opacity)
+            palette.select, opacity)
         val font = Minecraft.getInstance().font
         val textX = x + if (card.selectable) 7 else 13
         val portraitX = x + rect.width() - portraitSize - 3
         val name = font.plainSubstrByWidth(card.name.string, (portraitX - textX - 3).coerceAtLeast(0))
         val textY = y + (rect.height() - font.lineHeight) / 2
         drawText(context, name,
-            textX, textY, if (focused) 0xFF102235.toInt() else if (card.selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED,
+            textX, textY, if (focused) palette.selectInk else if (card.selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED,
             cardOpacity)
         if (!card.selectable) drawText(context, "×", x + 3, textY, BattleUiTheme.DANGER, cardOpacity)
         val portraitY = y + (rect.height() - portraitSize) / 2

@@ -125,7 +125,7 @@ object ChampionsBattleInfoOverlay {
         val window = layout.window
         val corners = BattleCornerCuts(10, 10, 10, 10)
         BattleSurfaceRenderer.draw(context, window.x(), window.y() + 3, window.width(), window.height(),
-            BattleSurface(0x55000000, cornerCuts = corners))
+            BattleSurface(BattleUiTheme.palette.windowShadow, cornerCuts = corners))
         BattleSurfaceRenderer.draw(context, window.x(), window.y(), window.width(), window.height(),
             BattleUiTheme.shell.copy(cornerCuts = corners))
         val font = Minecraft.getInstance().font
@@ -186,7 +186,7 @@ object ChampionsBattleInfoOverlay {
                     it, aspects), chipX, y, chip)
             }
             if (pokemon.isKO) {
-                BattleSurfaceRenderer.draw(context, chipX, y, chip, chip, BattleSurface(0xA0101624.toInt(), cornerCuts = corners))
+                BattleSurfaceRenderer.draw(context, chipX, y, chip, chip, BattleSurface(BattleUiTheme.palette.koVeil, cornerCuts = corners))
             } else pokemon.status?.let { status ->
                 BattleSurfaceRenderer.capsule(context, chipX + chip - 5, y + chip - 5, 5, 5,
                     BattleStatusPalette.background(status.showdownName))
@@ -280,7 +280,7 @@ object ChampionsBattleInfoOverlay {
         val width = font.width(label) + 8
         BattleSurfaceRenderer.capsule(context, x, y, width, 10,
             status?.let { BattleStatusPalette.background(it.showdownName) } ?: STAGE_CHIP)
-        text(context, label, x + 4, y + 1, if (status != null) 0xFF182337.toInt() else TEXT_DIM)
+        text(context, label, x + 4, y + 1, if (status != null) BattleUiTheme.palette.statusInk else TEXT_DIM)
         return x + width
     }
 
@@ -468,14 +468,15 @@ object ChampionsBattleInfoOverlay {
 
     private fun color(r: Int, g: Int, b: Int, a: Int = 255): Int = UIUtils.color(r, g, b, a)
 
-    private val WHITE = BattleUiTheme.TEXT
-    private val TEXT_DIM = BattleUiTheme.MUTED
-    private val TEXT_LABEL = BattleUiTheme.CYAN
-    private val ALLY_GLASS = color(27, 61, 78, 242)
-    private val ENEMY_GLASS = color(57, 36, 79, 242)
-    private val OPPONENT_ROW = color(44, 28, 53, 240)
-    private val STAGE_CHIP = 0xFF22354C.toInt()
-    private val BOOST = BattleUiTheme.GOOD
-    private val DROP = BattleUiTheme.DANGER
-    private val RANK_EMPTY = BattleUiTheme.BORDER
+    // Read from the theme in use on every frame, so a theme change restyles the window at once.
+    private val WHITE get() = BattleUiTheme.TEXT
+    private val TEXT_DIM get() = BattleUiTheme.MUTED
+    private val TEXT_LABEL get() = BattleUiTheme.CYAN
+    private val ALLY_GLASS get() = BattleUiTheme.palette.allyGlass
+    private val ENEMY_GLASS get() = BattleUiTheme.palette.enemyGlass
+    private val OPPONENT_ROW get() = BattleUiTheme.palette.opponentEffectRow
+    private val STAGE_CHIP get() = BattleUiTheme.palette.chip
+    private val BOOST get() = BattleUiTheme.GOOD
+    private val DROP get() = BattleUiTheme.DANGER
+    private val RANK_EMPTY get() = BattleUiTheme.BORDER
 }
