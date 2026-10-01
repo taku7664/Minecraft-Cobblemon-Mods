@@ -28,6 +28,7 @@ object CobblemonUiClient : ClientModInitializer {
         BattleInfoPanel.initialize()
         registerKeybindings()
         registerHudRenderer()
+        jbro.cobblemon.ui.extended.transition.BattleEntryTransition.install()
         verifyBattleUiMixinTargets()
         BattleUiCaptureHarness.installFromEnvironment()
 

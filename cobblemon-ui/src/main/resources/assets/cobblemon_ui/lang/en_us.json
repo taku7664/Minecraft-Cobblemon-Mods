@@ -101,6 +101,8 @@
   "cobblemon_ui.config.battleTheme.tooltip": "How the battle screens look. Every theme shows the same information in the same places.",
   "cobblemon_ui.config.battleTheme.champions": "Theme 1",
   "cobblemon_ui.config.battleTheme.galar": "Theme 2",
+  "cobblemon_ui.config.enableBattleEntryTransition": "Battle Entry Transition",
+  "cobblemon_ui.config.enableBattleEntryTransition.tooltip": "Cover the screen with the battle theme's pattern as a battle starts. Legendary Pokémon flash twice first, in their type's colour.",
   "cobblemon_ui.config.uiStyle": "UI Style",
   "cobblemon_ui.config.uiStyle.tooltip": "The window style the MCC hub, the dialogue box and the HUD buttons share.",
   "cobblemon_ui.config.uiStyle.option": "Style %s",

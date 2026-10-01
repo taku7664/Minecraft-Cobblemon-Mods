@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicReference
  * open those menus as their tiles would, and `info` toggles the information overlay. Then the client stops.
  * `confirm` presses the bound select key, `log` toggles the battle log, `tile:N` presses the Nth command.
  * `settings` opens the mod's settings screen; only `wait` and `cap` steps may follow it.
+ * `entry:<kind>` (`legendary`, `wild`, `trainer`) or `entry:<species>` plays the battle entry transition over the
+ * battle without blocking input, and `reveal` clears it. `theme:<id>` switches the battle theme.
  * `BATTLE_UI_CAPTURE_TRAINER=single|double|triple` battles a disposable NPC trainer in that format instead of the
  * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
@@ -246,6 +248,15 @@ object BattleUiCaptureHarness {
                     }
                     general.tiles[argument.toInt()].onClick.invoke()
                 }
+                "entry" -> {
+                    // A kind id plays that kind; any other name plays the transition for that species.
+                    val kind = jbro.cobblemon.ui.extended.transition.BattleEntryKind.fromId(argument)
+                    if (kind != null) jbro.cobblemon.ui.extended.transition.BattleEntryTransition.play(kind, null, false)
+                    else jbro.cobblemon.ui.extended.transition.BattleEntryTransition.play(
+                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon", argument), false, false)
+                }
+                "reveal" -> jbro.cobblemon.ui.extended.transition.BattleEntryTransition.reveal()
+                "theme" -> check(jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes.select(argument)) { "Unknown battle theme $argument" }
                 "settings" -> {
                     settings = ClothConfigScreenBuilder.create(client.screen ?: error("settings needs a screen to return to"))
                     client.setScreen(settings)

@@ -135,6 +135,10 @@ object PanelConfig {
     var battleTheme: String = BattleUiThemes.CHAMPIONS.id
         private set
 
+    /** The screen transition into a battle. */
+    var enableBattleEntryTransition: Boolean = true
+        private set
+
     /** The shared Cobblemon UI look (MCC hub, dialogue, HUD buttons): a style and a palette, by id. */
     var uiStyle: String = UiThemeStyle.DS_WINDOW.id
         private set
@@ -196,6 +200,8 @@ object PanelConfig {
         val showBaseCritRate: Boolean = false,
         /** Null when absent from older config files; the Champions theme then. */
         val battleTheme: String? = null,
+        /** Null when absent from older config files; treated as true when loading. */
+        val enableBattleEntryTransition: Boolean? = null,
         /** Null when absent from older config files; the DS window in the Battle Tower lobby's colours then. */
         val uiStyle: String? = null,
         val uiPalette: String? = null
@@ -240,6 +246,7 @@ object PanelConfig {
                 showOpponentSpeedRange = data.showOpponentSpeedRange ?: true
                 showBaseCritRate = data.showBaseCritRate
                 setBattleTheme(data.battleTheme ?: BattleUiThemes.CHAMPIONS.id)
+                enableBattleEntryTransition = data.enableBattleEntryTransition ?: true
                 setUiTheme(data.uiStyle ?: UiThemeStyle.DS_WINDOW.id, data.uiPalette ?: UiPalettePreset.TOWER_LOBBY.id)
                 CobblemonUi.LOGGER.info("PanelConfig: Loaded config - features: team=$enableTeamIndicators, panel=$enableBattleInfoPanel, log=$enableBattleLog, logDamagePct=$enableBattleLogDamagePercentages, moveTooltips=$enableMoveTooltips")
             }
@@ -276,6 +283,7 @@ object PanelConfig {
                 showOpponentSpeedRange = showOpponentSpeedRange,
                 showBaseCritRate = showBaseCritRate,
                 battleTheme = battleTheme,
+                enableBattleEntryTransition = enableBattleEntryTransition,
                 uiStyle = uiStyle,
                 uiPalette = uiPalette
             )
@@ -456,6 +464,10 @@ object PanelConfig {
         }
         uiStyle = CobblemonUiSharedTheme.style.id
         uiPalette = CobblemonUiSharedTheme.palette.id
+    }
+
+    fun setEnableBattleEntryTransition(enable: Boolean) {
+        enableBattleEntryTransition = enable
     }
 
     fun setUiStyle(style: String) = setUiTheme(style, uiPalette)

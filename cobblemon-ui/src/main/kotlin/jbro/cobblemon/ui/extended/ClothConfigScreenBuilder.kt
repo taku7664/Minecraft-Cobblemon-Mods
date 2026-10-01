@@ -24,6 +24,8 @@ object ClothConfigScreenBuilder {
             .setNameProvider { Component.translatable("cobblemon_ui.config.battleTheme.$it") }
             .setTooltip(Component.translatable("cobblemon_ui.config.battleTheme.tooltip"))
             .setSaveConsumer(PanelConfig::setBattleTheme).build())
+        theme.addEntry(toggle(entries, "enableBattleEntryTransition", PanelConfig.enableBattleEntryTransition, true,
+            PanelConfig::setEnableBattleEntryTransition))
         // The MCC hub, the dialogue box and the HUD buttons share one look; the default is listed first.
         val styles = listOf(UiThemeStyle.DS_WINDOW, UiThemeStyle.PIXEL_FRAME).map { it.id }
         theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.uiStyle"),
