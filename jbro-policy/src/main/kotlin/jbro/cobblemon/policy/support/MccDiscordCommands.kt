@@ -117,11 +117,18 @@ internal object MccDiscordCommands {
         }
     }
 
-    /** A species by its Korean name, English name or ID, ignoring case and spaces. */
-    internal fun speciesNamed(asked: String) = normalize(asked).takeIf { it.isNotEmpty() }?.let { wanted ->
-        PokemonSpecies.implemented.firstOrNull { species ->
+    /**
+     * A species by its Korean name, English name or ID, ignoring case and spaces. It searches every loaded species:
+     * the `implemented` list can be empty on a dedicated server.
+     */
+    internal fun speciesNamed(asked: String): com.cobblemon.mod.common.pokemon.Species? {
+        val wanted = normalize(asked).takeIf { it.isNotEmpty() } ?: return null
+        val all = PokemonSpecies.species
+        return all.firstOrNull { species ->
             normalize(KoreanText.render(species.translatedName)) == wanted ||
                 normalize(species.name) == wanted || species.resourceIdentifier.path == wanted
+        }.also { found ->
+            if (found == null) jbro.cobblemon.policy.JbroPolicy.LOGGER.info("No species named '{}' among {}", asked, all.size)
         }
     }
 
