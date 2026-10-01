@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import java.util.UUID
 import jbro.cobblemon.mcc.api.access.*
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
+import jbro.cobblemon.mcc.api.news.MccNews
+import jbro.cobblemon.mcc.api.news.MccNewsEvent
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
 import jbro.cobblemon.mcc.api.presentation.BattleResultNotices
@@ -144,6 +146,19 @@ object LeagueServer {
         }
     }
 
+    /** News for a player's first normal or hard Champion title; repeated wins and retried callbacks stay quiet. */
+    private fun announceChampion(server: MinecraftServer, playerId: UUID, catalog: LeagueCatalog, opponentKey: String,
+                                 before: LeagueProgress, after: LeagueProgress) {
+        val kind = when {
+            after.hardChampion && !before.hardChampion -> "hard_champion"
+            after.champion && !before.champion -> "champion"
+            else -> return
+        }
+        val message = Component.translatable("news.${Mod.MOD_ID}.$kind", MccNews.playerName(server, playerId),
+            Component.translatable(opponentKey), Component.translatable(catalog.nameKey))
+        MccNews.publish(server, MccNewsEvent("${Mod.MOD_ID}:$kind", playerId, message))
+    }
+
     private fun requestAllowed(player: ServerPlayer): Boolean {
         val now = player.server.tickCount
         val last = lastRequestTick[player.uuid]
@@ -166,6 +181,7 @@ object LeagueServer {
                 val latest = storage.read(catalog.id, player.uuid)
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
                 commit(player.server, catalog.id, player.uuid, completed)
+                announceChampion(player.server, player.uuid, catalog, challenge.nameKey, latest, completed)
                 player.server.playerList.getPlayer(player.uuid)?.let { online ->
                     // Only the first callback for this battle changes the progress; retries stay quiet.
                     if (completed != latest && outcome != ManagedPveBattles.Outcome.CANCELLED) {

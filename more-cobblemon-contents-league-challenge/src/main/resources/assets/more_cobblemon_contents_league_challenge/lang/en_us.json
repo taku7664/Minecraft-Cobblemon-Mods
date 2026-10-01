@@ -279,5 +279,7 @@
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_locked": "Opens after the Champion",
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_progress": "Badges %s/%s",
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "Hard Champion",
-  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "Wild trainers"
+  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "Wild trainers",
+  "news.more_cobblemon_contents_league_challenge.champion": "%1$s defeated %2$s and became the Champion of the %3$s!",
+  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s defeated %2$s and became the Champion of the hard %3$s!"
 }

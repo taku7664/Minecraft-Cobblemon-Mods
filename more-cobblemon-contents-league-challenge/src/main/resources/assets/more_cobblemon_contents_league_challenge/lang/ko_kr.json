@@ -279,5 +279,7 @@
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_locked": "챔피언이 되면 열림",
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_progress": "배지 %s/%s",
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "하드 챔피언 달성",
-  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "야생 트레이너"
+  "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "야생 트레이너",
+  "news.more_cobblemon_contents_league_challenge.champion": "%1$s님이 %2$s을(를) 꺾고 %3$s의 챔피언이 되었습니다!",
+  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s님이 %2$s을(를) 꺾고 %3$s 하드 리그의 챔피언이 되었습니다!"
 }
