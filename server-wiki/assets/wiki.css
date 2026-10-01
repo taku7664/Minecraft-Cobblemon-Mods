@@ -407,7 +407,7 @@ kbd {
 .table-wrap { overflow-x: auto; margin: 0 0 var(--gap); }
 .table-wrap table { margin: 0; }
 
-.stat-bars { display: grid; grid-template-columns: 70px 40px 1fr 48px; gap: 4px 10px; align-items: center; max-width: 520px; margin: 0 0 var(--gap);
+.stat-bars { display: grid; grid-template-columns: 70px 40px 1fr 48px; gap: 4px 10px; align-items: center; max-width: 420px; margin: 0 0 var(--gap);
   font-size: 14px; }
 .stat-bars .bar { height: 12px; background: var(--panel-alt); border-radius: 6px; overflow: hidden; }
 .stat-bars .bar span { display: block; height: 100%; border-radius: 6px; }
