@@ -417,6 +417,23 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `the best ranked attack is not vetoed by the one reply that would stop it`() {
+        // A Boss Flutter Mane facing Chien-Pao: Moonblast is far ahead with every reply priced, Sucker Punch
+        // alone would stop it. Only the lower-ranked moves are kept out of the draw for that.
+        val ranked = listOf(
+            rank("moonblast", 168.6, moveId = "moonblast", executableDamageActions = 1, executionProbability = 0.06),
+            rank("thunderwave", -87.5, moveId = "thunderwave", executionProbability = 0.65),
+            rank("shadowball", -104.6, moveId = "shadowball", executableDamageActions = 1, executionProbability = 0.06),
+        )
+
+        repeat(200) { seed ->
+            val selection = selector.choose(ranked, seed.toLong(), riskTolerance = 1.0)
+            assertEquals("moonblast", selection.rank.outcome.candidate.actionId)
+            assertEquals("low_execution_probability", selection.exclusionsByActionId["shadowball"])
+        }
+    }
+
+    @Test
     fun `non best switch that loses most of its hp to a known response gets no exploratory weight`() {
         val ranked = listOf(
             rank("reliable_move", 100.0),

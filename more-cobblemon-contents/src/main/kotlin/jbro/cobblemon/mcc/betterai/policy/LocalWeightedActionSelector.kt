@@ -306,7 +306,13 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         // Only an action that uses a move can fail to go through. For a switch the "execution" is the
         // incoming Pokemon surviving the turn, which the switch rules below already price; applying the
         // gate too kept a Trick Room team from sending in Ursaluna as its replacement.
-        rank.executionProbability < MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY && usesMove(rank.outcome.candidate) ->
+        //
+        // The gate keeps an unlikely move out of the exploratory draw; it never takes the best-ranked one
+        // away. The execution probability is the worst over the opponent's replies, and the ranking has
+        // already priced those replies, so vetoing the best on it counted the same risk twice: a Boss Flutter
+        // Mane dropped a 168-point Moonblast for a -88 Thunder Wave because one Sucker Punch would stop it,
+        // and a Calyrex dropped a winning Glacial Lance for a losing switch.
+        !bestRanked && rank.executionProbability < MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY && usesMove(rank.outcome.candidate) ->
             "low_execution_probability"
         rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
         rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
