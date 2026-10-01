@@ -5,10 +5,18 @@
 
 ---
 
+## [2026-10-01 19:14] UI Kit과 Battle UI를 `cobblemon-ui` 하나로, 허브 테마를 UI로 이전 — `2a0a4ea2`, `a8e6e6d4` (단위 테스트·개발 클라이언트 캡처 확인, 실서버 미확인)
+
+- **빡대리님 지시:** Battle UI를 `cobblemon-ui`로 이름을 바꾸고, ui-kit도 그 안으로 합친다. MCC가 가진 테마 코드는 남김없이 UI로 옮기고, MCC는 UI에 의존한다. 대화창은 허브 테마에 맞춘다.
+- **모듈:** `cobblemon-ui`(모드 ID `cobblemon_ui`) 하나에 툴킷(`jbro.cobblemon.uikit`, 패키지 이름은 그대로)과 전투 화면(`jbro.cobblemon.ui`)이 들어 있다. 전체가 Mojang 매핑이다. `cobblemon-ui-kit` 모듈과 `cobblemon_ui_kit` 모드는 없다.
+- **의존:** MCC Core는 `:cobblemon-ui`를 `implementation` + `include`로, 애드온은 `compileOnly`/`runtimeOnly`로 쓴다. 어느 모드도 `depends`에 넣지 않는다(전용 서버가 클라이언트 모드를 요구하지 않게). MCC를 깔면 전투 화면 교체도 함께 들어온다.
+- **테마:** `CobblemonUiSharedTheme`(UI)이 공용 테마(DS_WINDOW + tower_lobby)의 선택·설치·복원을 맡는다. Hub는 열릴 때 `install()`로 설치하고 닫힐 때 되돌린다. `MccHubTheme`과 `MccHubThemedButton`은 없어졌고, 버튼은 `CobblemonUiThemedButton`이다.
+- **검증:** `:cobblemon-ui:unitTest` 249개, Core 556 / PvP 209 / League 82 / 타워 174 / 팩토리 107개 통과. 개발 클라이언트에서 Hub(대시보드)와 전투(야생 싱글, 트레이너 더블)를 캡처했다. 실서버와 실제 모드팩 프로필은 확인하지 않았다.
+
 ## [2026-10-01 02:35] PvP 룸 HUD를 허브 테마로, 배틀 UI 입력음 복구 — `89525ab1`, `dcf692ee` (단위 테스트·클라이언트 JAR 배포 확인, 실게임 화면 미확인)
 
 - **빡대리님 지시:** PvP 방에서 Esc를 누르면 나오는 백그라운드 HUD가 옛 스타일이라 허브의 스타일·테마로 맞춘다. 배틀 UI의 입력음이 사라진 것 같다.
-- **HUD:** `MccHubTheme`(DS_WINDOW + TOWER_LOBBY)로 그린다. 창은 셸(둥근 모서리, 붉은 테두리선)을 배경 50%로, 머리줄은 허브 헤더의 남색 제목줄과 붉은 2px 선, 버튼은 허브의 기본(파랑)·보조(흰색), 진영은 허브 카드처럼 이름표 아래 선(왼쪽 빨강, 오른쪽 회청)을 긋는다. 허브는 열려 있을 때만 테마를 설치하므로, 채팅 위 버튼과 관전 라운지 나가기 버튼은 테마를 직접 읽는 `MccHubThemedButton`을 쓴다. 옛 스타일 `MccGuiStyle`은 쓰는 곳이 없어 테스트와 함께 지웠다. 진영 카드는 28px로 커졌다.
+- **HUD:** 공용 테마(당시 `MccHubTheme`, 지금 `CobblemonUiSharedTheme`: DS_WINDOW + TOWER_LOBBY)로 그린다. 창은 셸(둥근 모서리, 붉은 테두리선)을 배경 50%로, 머리줄은 허브 헤더의 남색 제목줄과 붉은 2px 선, 버튼은 허브의 기본(파랑)·보조(흰색), 진영은 허브 카드처럼 이름표 아래 선(왼쪽 빨강, 오른쪽 회청)을 긋는다. 허브는 열려 있을 때만 테마를 설치하므로, 채팅 위 버튼과 관전 라운지 나가기 버튼은 테마를 직접 읽는 `MccHubThemedButton`을 쓴다. 옛 스타일 `MccGuiStyle`은 쓰는 곳이 없어 테스트와 함께 지웠다. 진영 카드는 28px로 커졌다.
 - **입력음:** 사운드 코드가 지워진 적은 없다. 메시지 박스, 전투 기록, 정보 패널, 키보드 뒤로 가기가 Cobblemon보다 먼저 입력을 가져가서 조용했다. 이 입력들이 실제로 무언가를 할 때 Cobblemon의 `GUI_CLICK`을 낸다(`BattleUiSounds`).
 - **배포:** 클라이언트(`cobblemon-dev`)에 MCC 다섯 JAR과 `cobblemon-battle-ui-0.1.9.jar`을 넣었다. dev-server는 다른 세션이 켜 둔 상태라 넣지 않았다.
 - **빌드 주의:** 새 워크트리에서 배틀 UI를 처음 빌드하면 Loom 매핑 캐시가 어긋나 컴파일 오류 500여 개가 난다. 메인 체크아웃의 `.gradle/loom-cache`를 복사하면 해결된다.
@@ -79,12 +87,12 @@
 
 - **결정:** 빡대리님이 4세대 배틀타워·배틀팩토리 색 여섯 가지와 DPPt 메뉴 창 모양(S1)을 골랐다. 공용 계약은 루트 `docs/COBBLEMON_UI_DS_WINDOW_STYLE_AMENDMENT.md`(87번)에 있다.
 - **ui-kit:** 테마를 스타일(`UiThemeStyle.PIXEL_FRAME`/`DS_WINDOW`)과 팔레트(`UiPalettePreset` 여섯 개)로 나눠 `CobblemonUiThemeComposer`가 조합한다. DS 창 스타일용으로 `UiBorder.WindowFrame`, 커서형 선택 `UiSelectionIndicator.Outline`, 색 글자 그림자 `UiButtonStyle.textShadowColor`, 패널 제목 스타일 `UiPanelTitleStyle`, 목록 줄 스타일 `listRowStyle`, 공용 목록 줄 `CobblemonUiListRows`를 추가했다. 작은 컨트롤은 글자를 줄이지 않는다(0.75배 한글이 깨졌다).
-- **Hub 테마:** `MccHubTheme.style`/`palette`. 기본값은 `DS_WINDOW` + `tower_lobby`다. 바꾸면 Hub와 모든 탭, 확인 대화상자가 함께 바뀐다. 아직 설정 화면이나 서버 설정은 없다.
+- **Hub 테마:** (지금은 `CobblemonUiSharedTheme.style`/`palette`, UI 모드 소유) `MccHubTheme.style`/`palette`. 기본값은 `DS_WINDOW` + `tower_lobby`다. 바꾸면 Hub와 모든 탭, 확인 대화상자가 함께 바뀐다. 아직 설정 화면이나 서버 설정은 없다.
 - **MCC가 직접 그리던 것 정리:** 카드 제목은 `CobblemonUiPanel`, 목록 줄(페이지 목록, 스크롤 목록, 왼쪽 탭)은 `CobblemonUiListRows`가 그린다. 왼쪽 탭은 창 패널 안의 목록 줄이고 `MccHubTab.icon`(`MccHubTabs.itemIcon`)으로 아이템 아이콘을 붙인다. 표면을 직접 그리는 초상 카드(`MccHubPortraitCards`)는 선택 커서도 직접 그린다. 새 위젯이 표면을 직접 그리면 `UiSurfaceRenderer.drawSelection`을 꼭 같이 불러야 한다. 그러지 않으면 DS 스타일에서 선택이 안 보인다.
 - **Hub 머리줄 배지:** `MccHubHeaderBadges.register(order) { MccHubHeaderBadge? }`. League가 계급(몬스터볼·수퍼볼·하이퍼볼·마스터볼·챔피언)을 BP 왼쪽에 보인다. 서버는 계급만 담은 `rank_v1` 패킷을 접속, 200틱마다의 재조정, 진행 저장 때 바뀐 경우에만 보낸다.
 - **레일:** 탭이 레일 높이를 넘으면 20픽셀 탭으로 줄인다(`MccHubLayout.compactTabs`). 긴 이름은 말줄임표로 줄인다.
 - **캡처 하네스:** 실험적 설정 월드의 백업 경고를 스스로 넘긴다(전에는 빡대리님이 창마다 직접 눌렀다). `MCC_HUB_CAPTURE_THEME=ds_window.tower_lobby,ds_window.factory_night`처럼 `스타일.팔레트` 목록을 주면 한 번 실행으로 테마마다 캡처한다.
-- **함정:** ① ui-kit의 `test` 작업은 꺼져 있다. 테스트는 `:cobblemon-ui-kit:unitTest`로 돌린다. ② 테마 조합 캐시에 `computeIfAbsent`를 쓰면, 첫 DS 테마를 만들 때 프리셋 객체 초기화가 같은 캐시를 다시 불러 게임이 `Recursive update`로 멈췄다. 크기표를 `UiPixelMetrics`로 떼고 캐시를 재귀에 안전하게 바꿨다. 새 클래스로더에서 순서를 재현하는 회귀 테스트가 있다.
+- **함정:** ① ui-kit의 `test` 작업은 꺼져 있다. 테스트는 `:cobblemon-ui-kit:unitTest`(지금은 `:cobblemon-ui:unitTest`)로 돌린다. ② 테마 조합 캐시에 `computeIfAbsent`를 쓰면, 첫 DS 테마를 만들 때 프리셋 객체 초기화가 같은 캐시를 다시 불러 게임이 `Recursive update`로 멈췄다. 크기표를 `UiPixelMetrics`로 떼고 캐시를 재귀에 안전하게 바꿨다. 새 클래스로더에서 순서를 재현하는 회귀 테스트가 있다.
 - **확인하지 않은 것:** 모든 모듈을 함께 설치한 클라이언트(개발 캡처의 League·타워·팩토리·PvP 외 탭은 미리보기 탭이라 아이콘과 번역 이름이 없다), 실서버, 1080p 실제 GUI 배율, 팔레트 여섯 개 중 `tower_lobby`·`factory_night` 외 네 개의 DS 스타일 화면.
 
 ## [2026-09-27 22:20] 상점 탭을 계산대 구도로 — `cda4b2a1`~`b7ef66ab` (개발 클라이언트 캡처 확인, 실구매 미확인)
