@@ -3,12 +3,13 @@ package jbro.cobblemon.ui.extended
 import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.ui.dialogue.BattleDialogueQueue
 import jbro.cobblemon.ui.extended.battle.messages.TranslationKeys
-import jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts
 import jbro.cobblemon.ui.extended.ui.shared.BattleFocusMotion
-import jbro.cobblemon.ui.extended.ui.shared.BattleSurface
-import jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
-import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
+import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiWidgetState
+import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Style
@@ -87,9 +88,16 @@ object BattleDialogue {
         renderMessage(context, message)
     }
 
+    /**
+     * The message box in the shared look ([CobblemonUiSharedTheme]), the window the MCC hub's cards use: its frame,
+     * its panel text and that text's shadow, so narration reads like the hub around it.
+     */
     internal fun renderMessage(context: GuiGraphics, message: Component) {
         val client = Minecraft.getInstance()
         val font = client.font
+        val theme = CobblemonUiSharedTheme.snapshot()
+        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
+        val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
         val screenWidth = client.window.guiScaledWidth
         val screenHeight = client.window.guiScaledHeight
         val width = minOf(400, screenWidth - 24).coerceAtLeast(40)
@@ -97,34 +105,30 @@ object BattleDialogue {
         val padding = 12
         val lines = font.splitter.splitLines(message.string, width - padding * 2 - 12, Style.EMPTY).map { it.string }
         val lineHeight = font.lineHeight + 3
-        val height = (maxOf(2, lines.size) * lineHeight + 17).coerceAtMost(screenHeight - 8)
+        val height = (maxOf(2, lines.size) * lineHeight + 19).coerceAtMost(screenHeight - 8)
         // Above the vanilla hotbar and the health and hunger row over it, rather than on them.
         val top = (screenHeight - height - 44).coerceAtLeast(4)
-        val corners = BattleCornerCuts(10, 10, 10, 10)
 
-        BattleSurfaceRenderer.draw(context, left, top + 3, width, height, BattleSurface(0x50000000, cornerCuts = corners))
-        BattleSurfaceRenderer.draw(context, left, top, width, height,
-            BattleUiTheme.shell.copy(border = 0x6669D6E8, borderWidth = 1, cornerCuts = corners, backgroundOpacity = .9f))
-        BattleSurfaceRenderer.capsule(context, left + 5, top + 8, 3, height - 16, BattleUiTheme.CYAN, .8f)
-
+        UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
         var budget = revealed(message)
         lines.forEachIndexed { index, line ->
             if (budget <= 0) return@forEachIndexed
             val shown = if (budget >= line.length) line else line.substring(0, budget)
             budget -= line.length
-            context.drawString(font, shown, left + padding + 2, top + 9 + index * lineHeight, BattleUiTheme.TEXT, false)
+            UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 10 + index * lineHeight, ink, shadow)
         }
         if (budget < 0) return
         // The line is complete: the key to press, and the arrow that says there is more.
-        val keyName = CobblemonUiClient.selectActionKey.translatedKeyMessage.string
+        val key = theme.style(UiButtonVariant.SECONDARY, UiWidgetState.NORMAL)
+        val keyName = CobblemonUiClient.selectActionKey.translatedKeyMessage
         val keyWidth = font.width(keyName) + 10
-        val arrowX = left + width - 16
-        val baseY = top + height - 14
-        BattleSurfaceRenderer.capsule(context, arrowX - 6 - keyWidth, baseY - 1, keyWidth, 11, 0xFF1B2C42.toInt())
-        context.drawString(font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, BattleUiTheme.MUTED, false)
+        val arrowX = left + width - 18
+        val baseY = top + height - 16
+        UiSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13, key.surface)
+        UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, key.text, key.textShadowColor)
         val bob = (BattleFocusMotion.pulse() * 2f).toInt()
         for (row in 0 until 4) {
-            context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, BattleUiTheme.CYAN)
+            context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, theme.colors.accentPrimary)
         }
     }
 }
