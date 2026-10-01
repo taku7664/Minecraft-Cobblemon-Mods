@@ -22,6 +22,8 @@ import java.time.Duration
  * @property newsChannelId the channel the bot posts server news to: Champions, records, Legend and shiny catches,
  *   notices.
  * @property webhookUrl posts inquiries without a bot, used when the bot has no channel.
+ * @property adminChannelId the only channel where the bot takes operator commands; blank turns them off.
+ * @property adminAccess who may run which operator command: a Discord user or role ID to command names, `*` for all.
  */
 data class DiscordSettings(
     val webhookUrl: String = "",
@@ -29,6 +31,8 @@ data class DiscordSettings(
     val inquiryChannelId: String = "",
     val statusChannelId: String = "",
     val newsChannelId: String = "",
+    val adminChannelId: String = "",
+    val adminAccess: Map<String, Set<String>> = emptyMap(),
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -51,6 +55,8 @@ data class DiscordSettings(
         require(inquiryChannelId.isBlank() || inquiryChannelId.all(Char::isDigit)) { "The inquiry channel ID is the channel's number" }
         require(statusChannelId.isBlank() || statusChannelId.all(Char::isDigit)) { "The status channel ID is the channel's number" }
         require(newsChannelId.isBlank() || newsChannelId.all(Char::isDigit)) { "The news channel ID is the channel's number" }
+        require(adminChannelId.isBlank() || adminChannelId.all(Char::isDigit)) { "The admin channel ID is the channel's number" }
+        require(adminAccess.keys.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Admin access is keyed by Discord user or role IDs" }
         require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
     }
 
@@ -63,8 +69,11 @@ data class DiscordSettings(
         fun parse(json: String): DiscordSettings {
             val root = JsonParser.parseString(json).asJsonObject
             fun text(key: String) = root.get(key)?.asString?.trim().orEmpty()
+            val access = root.getAsJsonObject("adminAccess")?.entrySet()?.associate { (id, commands) ->
+                id.trim() to commands.asJsonArray.map { it.asString.trim() }.toSet()
+            }.orEmpty()
             return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"),
-                text("newsChannelId"))
+                text("newsChannelId"), text("adminChannelId"), access)
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */

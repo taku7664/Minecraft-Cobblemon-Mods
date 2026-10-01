@@ -9,7 +9,9 @@ import jbro.cobblemon.mcc.api.hub.MccDashboardCards
 import jbro.cobblemon.mcc.api.hub.MccRankings
 import jbro.cobblemon.mcc.api.news.MccNews
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
 import jbro.cobblemon.mcc.api.wiki.WikiApi
+import java.util.UUID
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -29,6 +31,33 @@ internal object MccDiscordCommands {
         DiscordCommands.add(wiki)
         DiscordCommands.add(pokedex)
         MccNews.listen { _, event -> DiscordNews.post(DiscordNews.emoji(event.kind) + " " + KoreanText.render(event.message)) }
+    }
+
+    /** The operator commands that change More Cobblemon Contents' records; added only with an admin channel. */
+    fun registerAdmin() = DiscordCommands.add(battlePoints)
+
+    private val battlePoints = object : DiscordAdminCommand {
+        override val name = "bp"
+        override val description = "플레이어에게 BP를 지급한다 (접속하지 않아도 됨)"
+        override val options = JsonArray().apply {
+            add(DiscordCommands.stringOption("player", "마인크래프트 아이디 또는 UUID"))
+            add(DiscordCommands.integerOption("amount", "지급할 BP", 1))
+            add(DiscordCommands.stringOption("reason", "지급 사유", required = false))
+        }
+
+        override fun run(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject {
+            val asked = options["player"].orEmpty()
+            val profile = DiscordAdminCommands.profile(server, asked) ?: return DiscordAdminCommands.unknown(asked)
+            val amount = options["amount"]?.toLongOrNull()?.takeIf { it > 0 } ?: return DiscordRest.message("지급할 BP는 1 이상이어야 해요.")
+            val reason = "Discord ${caller.userName}: " + (options["reason"]?.trim()?.ifEmpty { null } ?: "운영진 지급")
+            val result = BattlePointRewards.award(server, profile.id, UUID.randomUUID(), amount, "jbro_policy:discord_admin", reason)
+            return DiscordRest.message(when (result.status) {
+                BattlePointRewards.Status.APPLIED, BattlePointRewards.Status.ALREADY_APPLIED ->
+                    "${profile.name}에게 ${amount} BP를 지급했어요. 지금 잔액은 ${result.balance} BP예요."
+                BattlePointRewards.Status.UNAVAILABLE -> "BP 저장소를 쓸 수 없어서 지급하지 못했어요."
+                else -> "BP를 지급하지 못했어요 (${result.status})."
+            })
+        }
     }
 
     private val record = object : DiscordCommand {

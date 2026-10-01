@@ -1,8 +1,10 @@
 package jbro.cobblemon.policy.legend
 
+import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import com.cobblemon.mod.common.api.spawning.CobblemonSpawnPools
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail
 import com.cobblemon.mod.common.command.argument.PokemonPropertiesArgumentType
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import java.util.concurrent.ThreadLocalRandom
 import jbro.cobblemon.policy.JbroPolicy
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -25,24 +27,33 @@ object SpawnForCommand {
                 .then(Commands.argument("player", EntityArgument.player())
                     .then(Commands.argument("pokemon", PokemonPropertiesArgumentType.properties()).executes { context ->
                         val player = EntityArgument.getPlayer(context, "player")
-                        val properties = PokemonPropertiesArgumentType.getPokemonProperties(context, "pokemon")
-                        val legend = properties.species?.let { LegendCatalog[it] }
-                        if (legend != null && properties.level == null) properties.level = wildLevel(legend)
-                        val entity = properties.createEntity(player.level(), null)
-                        val ahead = player.lookAngle.multiply(1.0, 0.0, 1.0).normalize().scale(2.0)
-                        entity.moveTo(player.x + ahead.x, player.y, player.z + ahead.z, player.yRot + 180f, 0f)
-                        LegendPolicy.claim(entity.pokemon, player)
-                        if (!player.serverLevel().addFreshEntity(entity)) {
+                        val spawned = spawn(player, PokemonPropertiesArgumentType.getPokemonProperties(context, "pokemon"))
+                        if (spawned == null) {
                             context.source.sendFailure(Component.translatable(KEY + "failed"))
                             return@executes 0
                         }
                         context.source.sendSuccess({
-                            Component.translatable(KEY + "done", entity.pokemon.species.translatedName, player.displayName)
+                            Component.translatable(KEY + "done", spawned.entity.pokemon.species.translatedName, player.displayName)
                         }, true)
-                        legend?.let { warnings(player, it).forEach { warning -> context.source.sendSystemMessage(warning) } }
+                        spawned.warnings.forEach { warning -> context.source.sendSystemMessage(warning) }
                         1
                     })))
         }
+    }
+
+    /** A spawned Pokemon, with why its player still could not catch it when it is a Legend. */
+    class Spawned(val entity: PokemonEntity, val warnings: List<Component>)
+
+    /** Spawns [properties] two blocks in front of [player] as theirs; null when the world refused the entity. */
+    fun spawn(player: ServerPlayer, properties: PokemonProperties): Spawned? {
+        val legend = properties.species?.let { LegendCatalog[it] }
+        if (legend != null && properties.level == null) properties.level = wildLevel(legend)
+        val entity = properties.createEntity(player.level(), null)
+        val ahead = player.lookAngle.multiply(1.0, 0.0, 1.0).normalize().scale(2.0)
+        entity.moveTo(player.x + ahead.x, player.y, player.z + ahead.z, player.yRot + 180f, 0f)
+        LegendPolicy.claim(entity.pokemon, player)
+        if (!player.serverLevel().addFreshEntity(entity)) return null
+        return Spawned(entity, legend?.let { warnings(player, it) }.orEmpty())
     }
 
     /** A level from the Legend's own wild spawn, so it matches what players meet in the world. */

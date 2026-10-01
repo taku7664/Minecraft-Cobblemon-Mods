@@ -55,6 +55,7 @@
   "message.jbro_policy.legends.one_player": "플레이어를 한 명만 지정하세요.",
   "message.jbro_policy.legends.reset_done": "%1$s의 %2$s 포획 기록을 지웠습니다.",
   "message.jbro_policy.legends.reset_none": "%1$s에게는 %2$s 포획 기록이 없습니다.",
+  "message.jbro_policy.pending_items": "디스코드에서 운영진이 보낸 아이템 %s개를 받았습니다.",
   "message.jbro_policy.spawn_for.done": "%2$s 앞에 %1$s을(를) 스폰했습니다.",
   "message.jbro_policy.spawn_for.failed": "포켓몬을 스폰하지 못했습니다.",
   "message.jbro_policy.spawn_for.already_caught": "%s은(는) 이미 이 전설을 잡아서 포획할 수 없습니다.",

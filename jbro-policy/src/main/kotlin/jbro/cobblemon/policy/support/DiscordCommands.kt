@@ -23,6 +23,48 @@ internal interface DiscordCommand {
     }
 }
 
+/** Who ran an operator command, as Discord tells it. */
+internal data class DiscordCaller(val userId: String, val userName: String, val roleIds: List<String>, val channelId: String) {
+    override fun toString() = "$userName ($userId)"
+}
+
+/**
+ * An operator command. Discord shows it only to server administrators unless a role is let in under the server's
+ * Integrations settings, and the bot still runs it only in the admin channel for the IDs that `adminAccess` lets in.
+ * Names stay ASCII, so they type the same on every keyboard.
+ */
+internal interface DiscordAdminCommand : DiscordCommand {
+    fun run(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject
+
+    override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject =
+        error("/$name needs its caller")
+
+    override fun definition() = super.definition().apply {
+        // "0": nobody but administrators until the server grants it; guild channels only.
+        addProperty("default_member_permissions", "0")
+        add("contexts", JsonArray().apply { add(0) })
+    }
+}
+
+/** Whether a caller may run an operator command; kept apart from the bot so it can be tested. */
+internal object DiscordAdminAccess {
+    const val ALL = "*"
+
+    sealed interface Verdict {
+        data object Allowed : Verdict
+        data class Refused(val reason: String) : Verdict
+    }
+
+    fun check(settings: DiscordSettings, caller: DiscordCaller, command: String): Verdict = when {
+        settings.adminChannelId.isBlank() -> Verdict.Refused("관리자 채널이 설정되지 않아 관리자 명령이 꺼져 있어요.")
+        caller.channelId != settings.adminChannelId -> Verdict.Refused("관리자 명령은 관리자 채널에서만 쓸 수 있어요.")
+        (listOf(caller.userId) + caller.roleIds).none { id ->
+            settings.adminAccess[id]?.let { ALL in it || command in it } == true
+        } -> Verdict.Refused("/$command 명령을 쓸 권한이 없어요.")
+        else -> Verdict.Allowed
+    }
+}
+
 /**
  * The bot's slash commands. jbro-policy brings /접속자; More Cobblemon Contents, when installed, adds the commands
  * that read its records ([MccDiscordCommands]).
@@ -50,13 +92,22 @@ internal object DiscordCommands {
     })
 
     /** A string option for [definition]s. */
-    fun stringOption(name: String, description: String, choices: List<Pair<String, String>> = emptyList()) = JsonObject().apply {
+    fun stringOption(name: String, description: String, choices: List<Pair<String, String>> = emptyList(), required: Boolean = true) = JsonObject().apply {
         addProperty("type", 3)
         addProperty("name", name)
         addProperty("description", description)
-        addProperty("required", true)
+        addProperty("required", required)
         if (choices.isNotEmpty()) add("choices", JsonArray().apply {
             choices.forEach { (label, value) -> add(JsonObject().apply { addProperty("name", label); addProperty("value", value) }) }
         })
+    }
+
+    /** A whole-number option for [definition]s, at least [min]. */
+    fun integerOption(name: String, description: String, min: Long, required: Boolean = true) = JsonObject().apply {
+        addProperty("type", 4)
+        addProperty("name", name)
+        addProperty("description", description)
+        addProperty("required", required)
+        addProperty("min_value", min)
     }
 }

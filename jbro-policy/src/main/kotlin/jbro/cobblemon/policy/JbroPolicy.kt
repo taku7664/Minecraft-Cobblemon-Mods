@@ -42,6 +42,7 @@ object JbroPolicy : ModInitializer {
         PartyRelease.register()
         PokenavCommand.register()
         PokemonItemRestore.register()
+        jbro.cobblemon.policy.support.PendingItems.register()
         LegendPolicy.register()
         LegendCommand.register()
         SpawnForCommand.register()

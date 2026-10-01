@@ -135,6 +135,7 @@ internal object DiscordBot {
     private val restWorker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord-rest").apply { isDaemon = true } }
 
     private var token = ""
+    private var settings = DiscordSettings()
     private var rest: DiscordRest? = null
     @Volatile private var server: MinecraftServer? = null
     @Volatile private var running = false
@@ -165,11 +166,16 @@ internal object DiscordBot {
     fun register(settings: DiscordSettings, statusFile: java.nio.file.Path, withContents: Boolean) {
         if (!settings.botConfigured) return
         token = settings.botToken
+        this.settings = settings
         val client = DiscordRest(token).also { rest = it }
         if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(token, settings.statusChannelId, statusFile)
         if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
         DiscordCommands.registerBuiltIns()
         if (withContents) MccDiscordCommands.register()
+        if (settings.adminChannelId.isNotBlank()) {
+            DiscordAdminCommands.register()
+            if (withContents) MccDiscordCommands.registerAdmin()
+        }
         ServerLifecycleEvents.SERVER_STARTED.register { started ->
             server = started
             // Reads every mod's Korean text now, off the server thread, rather than on the first command.
@@ -310,11 +316,20 @@ internal object DiscordBot {
             JsonObject().apply { addProperty("type", DEFERRED_REPLY) }, authorized = false)
         val command = DiscordCommands.find(data.get("name").asString)
         val live = server
+        val caller = caller(interaction)
+        val refusal = (command as? DiscordAdminCommand)?.let { DiscordAdminAccess.check(settings, caller, it.name) }
+            as? DiscordAdminAccess.Verdict.Refused
+        if (command is DiscordAdminCommand) {
+            JbroPolicy.LOGGER.info("Discord {} /{} {} by {}", if (refusal == null) "ran" else "refused", command.name, options, caller)
+        }
         val reply = when {
             command == null -> DiscordRest.message("모르는 명령이에요.")
+            refusal != null -> DiscordRest.message(refusal.reason)
             live == null -> DiscordRest.message("서버가 아직 켜지는 중이에요. 잠시 뒤에 다시 해 주세요.")
             else -> try {
-                live.submit(Supplier { command.reply(live, options) }).get(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                live.submit(Supplier {
+                    if (command is DiscordAdminCommand) command.run(live, options, caller) else command.reply(live, options)
+                }).get(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Discord command /{} failed", command.name, failure)
                 DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요.")
@@ -326,6 +341,18 @@ internal object DiscordBot {
         // Without a reply the command stays on "thinking" for good, so say something plain instead.
         client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original",
             DiscordRest.message("답을 만들지 못했어요. 운영진에게 알려 주세요."), authorized = false)
+    }
+
+    /** The member in a server channel; a direct message carries the user alone. */
+    private fun caller(interaction: JsonObject): DiscordCaller {
+        val member = interaction.getAsJsonObject("member")
+        val user = member?.getAsJsonObject("user") ?: interaction.getAsJsonObject("user")
+        return DiscordCaller(
+            user?.get("id")?.asString.orEmpty(),
+            user?.get("username")?.asString.orEmpty(),
+            member?.getAsJsonArray("roles")?.map { it.asString }.orEmpty(),
+            interaction.get("channel_id")?.asString.orEmpty(),
+        )
     }
 
     private const val APPLICATION_COMMAND = 2
