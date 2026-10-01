@@ -2,42 +2,42 @@ package jbro.cobblemon.ui.extended
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder
-import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.Text
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.network.chat.Component
 
 /** Cloth Config-backed settings screen. Loaded only after its mod-presence check succeeds. */
 object ClothConfigScreenBuilder {
     fun create(parent: Screen): Screen {
         val builder = ConfigBuilder.create()
             .setParentScreen(parent)
-            .setTitle(Text.translatable("cobblemon_ui.config.title"))
+            .setTitle(Component.translatable("cobblemon_ui.config.title"))
             .setSavingRunnable { PanelConfig.save() }
         val entries = builder.entryBuilder()
-        val features = builder.getOrCreateCategory(Text.translatable("cobblemon_ui.config.category.features"))
+        val features = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.features"))
 
         features.addEntry(entries.startBooleanToggle(
-            Text.translatable("cobblemon_ui.config.enableTeamIndicators"), PanelConfig.enableTeamIndicators
+            Component.translatable("cobblemon_ui.config.enableTeamIndicators"), PanelConfig.enableTeamIndicators
         ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_ui.config.enableTeamIndicators.tooltip"))
+            .setTooltip(Component.translatable("cobblemon_ui.config.enableTeamIndicators.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableTeamIndicators).build())
         features.addEntry(entries.startBooleanToggle(
-            Text.translatable("cobblemon_ui.config.enableBattleInfoPanel"), PanelConfig.enableBattleInfoPanel
+            Component.translatable("cobblemon_ui.config.enableBattleInfoPanel"), PanelConfig.enableBattleInfoPanel
         ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_ui.config.enableBattleInfoPanel.tooltip"))
+            .setTooltip(Component.translatable("cobblemon_ui.config.enableBattleInfoPanel.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableBattleInfoPanel).build())
 
         features.addEntry(entries.startBooleanToggle(
-            Text.translatable("cobblemon_ui.config.enableMoveTooltips"), PanelConfig.enableMoveTooltips
+            Component.translatable("cobblemon_ui.config.enableMoveTooltips"), PanelConfig.enableMoveTooltips
         ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_ui.config.enableMoveTooltips.tooltip"))
+            .setTooltip(Component.translatable("cobblemon_ui.config.enableMoveTooltips.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
 
-        val sizing = builder.getOrCreateCategory(Text.translatable("cobblemon_ui.config.category.sizing"))
+        val sizing = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.sizing"))
         sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))
         sizing.addEntry(scaleEntry(entries, "tooltipFontScale", PanelConfig.tooltipFontScale, PanelConfig::setTooltipFontScale))
         sizing.addEntry(scaleEntry(entries, "moveTooltipFontScale", PanelConfig.moveTooltipFontScale, PanelConfig::setMoveTooltipFontScale))
 
-        val tooltip = builder.getOrCreateCategory(Text.translatable("cobblemon_ui.config.category.tooltipOptions"))
+        val tooltip = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.tooltipOptions"))
         tooltip.addEntry(toggle(entries, "showTeraType", PanelConfig.showTeraType, false, PanelConfig::setShowTeraType))
         tooltip.addEntry(toggle(entries, "showStatRanges", PanelConfig.showStatRanges, true, PanelConfig::setShowStatRanges))
         tooltip.addEntry(toggle(entries, "showOpponentSpeedRange", PanelConfig.showOpponentSpeedRange, true, PanelConfig::setShowOpponentSpeedRange))
@@ -46,7 +46,7 @@ object ClothConfigScreenBuilder {
     }
 
     private fun scaleEntry(entries: ConfigEntryBuilder, key: String, value: Float, save: (Float) -> Unit) =
-        entries.startFloatField(Text.translatable("cobblemon_ui.config.$key"), value)
+        entries.startFloatField(Component.translatable("cobblemon_ui.config.$key"), value)
             .setDefaultValue(1.0f).setMin(PanelConfig.MIN_FONT_SCALE).setMax(PanelConfig.MAX_FONT_SCALE)
             .setSaveConsumer(save).build()
 
@@ -56,8 +56,8 @@ object ClothConfigScreenBuilder {
         value: Boolean,
         defaultValue: Boolean,
         save: (Boolean) -> Unit
-    ) = entries.startBooleanToggle(Text.translatable("cobblemon_ui.config.$key"), value)
+    ) = entries.startBooleanToggle(Component.translatable("cobblemon_ui.config.$key"), value)
         .setDefaultValue(defaultValue)
-        .setTooltip(Text.translatable("cobblemon_ui.config.$key.tooltip"))
+        .setTooltip(Component.translatable("cobblemon_ui.config.$key.tooltip"))
         .setSaveConsumer(save).build()
 }

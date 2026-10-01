@@ -18,7 +18,7 @@ final class ChampionsOverlayRenderOrderContractTest {
         ));
 
         int updateStart = panel.indexOf("fun update(syncOverlay: Boolean = true) {");
-        int foregroundStart = panel.indexOf("fun renderForeground(context: DrawContext) {");
+        int foregroundStart = panel.indexOf("fun renderForeground(context: GuiGraphics) {");
         assertTrue(updateStart >= 0);
         assertTrue(foregroundStart > updateStart);
         assertFalse(panel.substring(updateStart, foregroundStart)

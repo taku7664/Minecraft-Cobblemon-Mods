@@ -6,7 +6,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionS
 import jbro.cobblemon.ui.extended.navigation.BattleCommandLayout;
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import com.cobblemon.mod.common.battles.ForfeitActionResponse;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -34,11 +34,11 @@ public abstract class BattleGeneralActionSelectionMixin {
 
     @Unique
     private void cobblemonBattleUi$placeCommandsVertically() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         BattleCommandLayout.place(
                 getTiles(),
-                client.getWindow().getScaledWidth(),
-                client.getWindow().getScaledHeight()
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight()
         );
     }
 
@@ -50,7 +50,7 @@ public abstract class BattleGeneralActionSelectionMixin {
             CallbackInfoReturnable<Unit> cir
     ) {
         battleGUI.selectAction(request, new ForfeitActionResponse());
-        selection.playDownSound(MinecraftClient.getInstance().getSoundManager());
+        selection.playDownSound(Minecraft.getInstance().getSoundManager());
         cir.setReturnValue(Unit.INSTANCE);
     }
 }

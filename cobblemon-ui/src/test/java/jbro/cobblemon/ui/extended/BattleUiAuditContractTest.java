@@ -39,7 +39,7 @@ final class BattleUiAuditContractTest {
     @Test
     void teamInteractionBoundsAreClearedBeforeEveryRenderExit() throws Exception {
         String indicators = read("src/main/kotlin/jbro/cobblemon/ui/extended/TeamIndicatorUI.kt");
-        int renderStart = indicators.indexOf("fun render(context: DrawContext)");
+        int renderStart = indicators.indexOf("fun render(context: GuiGraphics)");
         int battleLookup = indicators.indexOf("val battle = CobblemonClient.battle ?: return", renderStart);
         int boundsClear = indicators.indexOf("clearFrameInteractionBounds()", renderStart);
 

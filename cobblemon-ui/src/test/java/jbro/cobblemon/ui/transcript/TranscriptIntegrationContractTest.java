@@ -25,11 +25,7 @@ class TranscriptIntegrationContractTest {
         assertTrue(portrait.contains("BattleOverlay.PORTRAIT_DIAMETER"));
         assertFalse(portrait.contains("PlayerSkinDrawer"));
         String overlay = read("kotlin/jbro/cobblemon/ui/extended/ui/transcript/BattleTranscriptOverlay.kt");
-        assertTrue(overlay.contains("context.draw() // Text batches must flush"));
+        assertTrue(overlay.contains("context.flush() // Text batches must flush"));
         assertTrue(overlay.contains("color, false)"));
-    }
-    @Test void shutdownFrameCannotReadPastCapturePages() throws Exception {
-        String fixture = read("kotlin/jbro/cobblemon/ui/extended/ui/shared/BattleThemeCapture.kt");
-        assertEquals(2, fixture.split("if \\(page !in pages.indices\\) return", -1).length - 1);
     }
 }

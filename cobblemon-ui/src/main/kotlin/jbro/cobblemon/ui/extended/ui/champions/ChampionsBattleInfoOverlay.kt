@@ -15,11 +15,11 @@ import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSpeaker
 import jbro.cobblemon.ui.navigation.UiRect
 import jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import java.util.UUID
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
 
 /**
  * The battle information window: the player's side, the field and the opponent's side in three columns. It is laid
@@ -54,7 +54,7 @@ object ChampionsBattleInfoOverlay {
         val hpPercent: Float,
         val status: Status?,
         val level: Int?,
-        val speciesIdentifier: Identifier?,
+        val speciesIdentifier: ResourceLocation?,
         val aspects: Set<String>
     )
 
@@ -77,27 +77,6 @@ object ChampionsBattleInfoOverlay {
 
     fun onOpened() {
         openedNanos = System.nanoTime()
-    }
-
-    /** Synthetic data, using the production renderer; never changes a live battle. */
-    internal fun renderPreview(context: DrawContext, activeCount: Int = 1) {
-        check(net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment)
-        require(activeCount in 1..MAX_ACTIVE_PER_SIDE)
-        val savedAllies = activeAllies
-        val savedOpponents = activeOpponents
-        try {
-            fun entry(species: String, hp: Float) = PokemonEntry(
-                UUID.nameUUIDFromBytes(species.toByteArray()),
-                Text.translatable("cobblemon.species.$species.name").string,
-                hp, null, 50, Identifier.of("cobblemon", species), emptySet()
-            )
-            activeAllies = listOf(entry("pikachu", .72f), entry("bulbasaur", .8f), entry("eevee", .5f)).take(activeCount)
-            activeOpponents = listOf(entry("charizard", .36f), entry("venusaur", .7f), entry("blastoise", .2f)).take(activeCount)
-            render(context)
-        } finally {
-            activeAllies = savedAllies
-            activeOpponents = savedOpponents
-        }
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -127,36 +106,36 @@ object ChampionsBattleInfoOverlay {
     @Suppress("UNUSED_PARAMETER")
     fun handleKeyPressed(keyCode: Int, scanCode: Int): Boolean = true
 
-    fun render(context: DrawContext) {
-        val mc = MinecraftClient.getInstance()
-        val layout = ChampionsInfoLayout.calculate(mc.window.scaledWidth, mc.window.scaledHeight)
+    fun render(context: GuiGraphics) {
+        val mc = Minecraft.getInstance()
+        val layout = ChampionsInfoLayout.calculate(mc.window.guiScaledWidth, mc.window.guiScaledHeight)
         val opened = ((System.nanoTime() - openedNanos) / 1e9 / OPEN_SECONDS).toFloat().coerceIn(0f, 1f)
         // Whole-pixel rise, so the text never sits between pixels while the window settles.
         val rise = ((1f - opened) * (1f - opened) * 10f).toInt()
-        context.matrices.push()
-        context.matrices.translate(0.0, rise.toDouble(), UIUtils.MODAL_Z_OFFSET)
+        context.pose().pushPose()
+        context.pose().translate(0.0, rise.toDouble(), UIUtils.MODAL_Z_OFFSET)
         drawWindow(context, layout)
         drawSide(context, layout.ally, activeAllies, allyTeam, opponent = false)
         drawField(context, layout.field)
         drawSide(context, layout.opponent, activeOpponents, opponentTeam, opponent = true)
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
-    private fun drawWindow(context: DrawContext, layout: ChampionsInfoLayout.Result) {
+    private fun drawWindow(context: GuiGraphics, layout: ChampionsInfoLayout.Result) {
         val window = layout.window
         val corners = BattleCornerCuts(10, 10, 10, 10)
         BattleSurfaceRenderer.draw(context, window.x(), window.y() + 3, window.width(), window.height(),
             BattleSurface(0x55000000, cornerCuts = corners))
         BattleSurfaceRenderer.draw(context, window.x(), window.y(), window.width(), window.height(),
             BattleUiTheme.shell.copy(cornerCuts = corners))
-        val font = MinecraftClient.getInstance().textRenderer
+        val font = Minecraft.getInstance().font
         BattleSurfaceRenderer.capsule(context, window.x() + 9, window.y() + 6, 3, 9, BattleUiTheme.CYAN)
         text(context, tr("cobblemon_ui.champions.title"), window.x() + 16, window.y() + 7, WHITE)
         val close = tr("cobblemon_ui.champions.close")
-        text(context, close, window.x() + window.width() - 10 - font.getWidth(close), window.y() + 7, TEXT_DIM)
+        text(context, close, window.x() + window.width() - 10 - font.width(close), window.y() + 7, TEXT_DIM)
     }
 
-    private fun drawSide(context: DrawContext, rect: UiRect, entries: List<PokemonEntry>,
+    private fun drawSide(context: GuiGraphics, rect: UiRect, entries: List<PokemonEntry>,
                          team: List<TeamIndicatorUI.TeamPreview>, opponent: Boolean) {
         val accent = if (opponent) BattleUiTheme.PURPLE else BattleUiTheme.CYAN
         BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
@@ -185,7 +164,7 @@ object ChampionsBattleInfoOverlay {
     }
 
     /** The side's party as small portrait chips: those in battle are ringed, fainted ones dimmed. */
-    private fun drawTeam(context: DrawContext, team: List<TeamIndicatorUI.TeamPreview>, active: List<PokemonEntry>,
+    private fun drawTeam(context: GuiGraphics, team: List<TeamIndicatorUI.TeamPreview>, active: List<PokemonEntry>,
                          x: Int, y: Int, width: Int, accent: Int, opponent: Boolean): Int {
         if (team.isEmpty()) return y
         val chip = 16
@@ -203,7 +182,7 @@ object ChampionsBattleInfoOverlay {
             val species = pokemon.speciesIdentifier ?: pokemon.renderablePokemon?.species?.resourceIdentifier
             val aspects = pokemon.renderablePokemon?.aspects ?: pokemon.aspects
             species?.let {
-                TranscriptPortraits.draw(context, TranscriptSpeaker(pokemon.uuid, !opponent, "", Text.empty(),
+                TranscriptPortraits.draw(context, TranscriptSpeaker(pokemon.uuid, !opponent, "", Component.empty(),
                     it, aspects), chipX, y, chip)
             }
             if (pokemon.isKO) {
@@ -216,7 +195,7 @@ object ChampionsBattleInfoOverlay {
         return y + chip
     }
 
-    private fun drawDetailedCard(context: DrawContext, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
+    private fun drawDetailedCard(context: GuiGraphics, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
         BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
             BattleSurface(BattleUiTheme.PANEL_ALT, cornerCuts = BattleCornerCuts(6, 6, 6, 6)))
         val x = rect.x() + 5
@@ -237,10 +216,10 @@ object ChampionsBattleInfoOverlay {
     }
 
     /** Two actives per side: the compact header, then status with extra conditions, then every stat in three columns. */
-    private fun drawMediumCard(context: DrawContext, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
+    private fun drawMediumCard(context: GuiGraphics, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
         BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
             BattleSurface(BattleUiTheme.PANEL_ALT, cornerCuts = BattleCornerCuts(6, 6, 6, 6)))
-        val font = MinecraftClient.getInstance().textRenderer
+        val font = Minecraft.getInstance().font
         val x = rect.x() + 4
         val width = rect.width() - 8
         drawPortrait(context, entry, x, rect.y() + 3, 18, opponent)
@@ -249,7 +228,7 @@ object ChampionsBattleInfoOverlay {
         val badgeRight = drawStatusBadge(context, entry.status, x, rect.y() + 25)
         val extra = BattleStateTracker.getVolatileStatuses(entry.uuid).map { it.type.displayName }
         if (extra.isNotEmpty()) {
-            text(context, font.trimToWidth(extra.joinToString(" · "), x + width - badgeRight - 4),
+            text(context, font.plainSubstrByWidth(extra.joinToString(" · "), x + width - badgeRight - 4),
                 badgeRight + 4, rect.y() + 26, WHITE)
         }
         val stages = BattleStateTracker.getStatChanges(entry.uuid)
@@ -261,11 +240,11 @@ object ChampionsBattleInfoOverlay {
             if (rowY + 8 > rect.y() + rect.height()) return@forEachIndexed
             text(context, stat.abbr, cellX, rowY, if (stage == 0) TEXT_DIM else WHITE)
             val value = stageText(stage)
-            text(context, value, cellX + columnWidth - font.getWidth(value), rowY, stageColor(stage))
+            text(context, value, cellX + columnWidth - font.width(value), rowY, stageColor(stage))
         }
     }
 
-    private fun drawCompactCard(context: DrawContext, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
+    private fun drawCompactCard(context: GuiGraphics, rect: UiRect, entry: PokemonEntry, opponent: Boolean) {
         BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
             BattleSurface(BattleUiTheme.PANEL_ALT, cornerCuts = BattleCornerCuts(6, 6, 6, 6)))
         val x = rect.x() + 4
@@ -276,65 +255,65 @@ object ChampionsBattleInfoOverlay {
         if (rect.height() >= 36) drawCompactRankGrid(context, entry, x, rect.y() + 24, width)
     }
 
-    private fun drawPortrait(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, size: Int, opponent: Boolean) {
+    private fun drawPortrait(context: GuiGraphics, entry: PokemonEntry, x: Int, y: Int, size: Int, opponent: Boolean) {
         BattleSurfaceRenderer.draw(context, x, y, size, size,
             BattleSurface(BattleUiTheme.PANEL, cornerCuts = BattleCornerCuts(5, 5, 5, 5)))
         val species = entry.speciesIdentifier
         if (species == null || !TranscriptPortraits.draw(context,
-                TranscriptSpeaker(entry.uuid, !opponent, "", Text.empty(), species, entry.aspects), x, y, size)) {
+                TranscriptSpeaker(entry.uuid, !opponent, "", Component.empty(), species, entry.aspects), x, y, size)) {
             text(context, "?", x + size / 2 - 2, y + size / 2 - 4, TEXT_DIM)
         }
     }
 
-    private fun drawNameLine(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
-        val font = MinecraftClient.getInstance().textRenderer
+    private fun drawNameLine(context: GuiGraphics, entry: PokemonEntry, x: Int, y: Int, width: Int) {
+        val font = Minecraft.getInstance().font
         val level = entry.level?.let { "Lv.$it" }
-        val levelWidth = level?.let { font.getWidth(it) + 4 } ?: 0
-        text(context, font.trimToWidth(entry.name, (width - levelWidth).coerceAtLeast(0)), x, y, WHITE)
-        level?.let { text(context, it, x + width - font.getWidth(it), y, TEXT_DIM) }
+        val levelWidth = level?.let { font.width(it) + 4 } ?: 0
+        text(context, font.plainSubstrByWidth(entry.name, (width - levelWidth).coerceAtLeast(0)), x, y, WHITE)
+        level?.let { text(context, it, x + width - font.width(it), y, TEXT_DIM) }
     }
 
     /** A capsule in the status's own color, or a quiet one reading "normal"; returns its right edge. */
-    private fun drawStatusBadge(context: DrawContext, status: Status?, x: Int, y: Int): Int {
-        val font = MinecraftClient.getInstance().textRenderer
+    private fun drawStatusBadge(context: GuiGraphics, status: Status?, x: Int, y: Int): Int {
+        val font = Minecraft.getInstance().font
         val label = status?.let { TeamIndicatorUI.getStatusDisplayName(it) } ?: tr("cobblemon_ui.champions.normal")
-        val width = font.getWidth(label) + 8
+        val width = font.width(label) + 8
         BattleSurfaceRenderer.capsule(context, x, y, width, 10,
             status?.let { BattleStatusPalette.background(it.showdownName) } ?: STAGE_CHIP)
         text(context, label, x + 4, y + 1, if (status != null) 0xFF182337.toInt() else TEXT_DIM)
         return x + width
     }
 
-    private fun drawHp(context: DrawContext, ratio: Float, x: Int, y: Int, width: Int) {
-        val font = MinecraftClient.getInstance().textRenderer
+    private fun drawHp(context: GuiGraphics, ratio: Float, x: Int, y: Int, width: Int) {
+        val font = Minecraft.getInstance().font
         val clamped = ratio.coerceIn(0f, 1f)
         val percent = "${kotlin.math.ceil(clamped * 100).toInt()}%"
-        val barWidth = width - font.getWidth("100%") - 4
+        val barWidth = width - font.width("100%") - 4
         val hpColor = when {
             clamped > .5f -> BattleUiTheme.GOOD
             clamped > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
         BattleSurfaceRenderer.gauge(context, x, y + 1, barWidth, 6, clamped, BattleUiTheme.TRACK, hpColor)
-        text(context, percent, x + width - font.getWidth(percent), y, WHITE)
+        text(context, percent, x + width - font.width(percent), y, WHITE)
     }
 
     /**
      * All seven stats: name, a six-step track and the stage, one per row when the card has the room and in two
      * columns without the track otherwise. Unchanged stats stay quiet.
      */
-    private fun drawDetailedRankRows(context: DrawContext, uuid: UUID, x: Int, y: Int, width: Int, bottom: Int) {
+    private fun drawDetailedRankRows(context: GuiGraphics, uuid: UUID, x: Int, y: Int, width: Int, bottom: Int) {
         val stages = BattleStateTracker.getStatChanges(uuid)
-        val font = MinecraftClient.getInstance().textRenderer
+        val font = Minecraft.getInstance().font
         if (bottom - y >= STAT_ORDER.size * LINE) {
-            val labelWidth = STAT_ORDER.maxOf { font.getWidth(it.abbr) } + 6
+            val labelWidth = STAT_ORDER.maxOf { font.width(it.abbr) } + 6
             STAT_ORDER.forEachIndexed { index, stat ->
                 val stage = stages[stat] ?: 0
                 val rowY = y + index * LINE
                 text(context, stat.abbr, x, rowY, if (stage == 0) TEXT_DIM else WHITE)
                 drawRankTrack(context, x + labelWidth, rowY + 1, stage, 5, 2)
                 val value = stageText(stage)
-                text(context, value, x + width - font.getWidth(value), rowY, stageColor(stage))
+                text(context, value, x + width - font.width(value), rowY, stageColor(stage))
             }
             return
         }
@@ -345,20 +324,20 @@ object ChampionsBattleInfoOverlay {
             val rowY = y + (index / 2) * LINE
             text(context, stat.abbr, cellX, rowY, if (stage == 0) TEXT_DIM else WHITE)
             val value = stageText(stage)
-            text(context, value, cellX + columnWidth - font.getWidth(value), rowY, stageColor(stage))
+            text(context, value, cellX + columnWidth - font.width(value), rowY, stageColor(stage))
         }
     }
 
     /** Only the changed stats, as chips beside the status; a card with none shows just its status. */
-    private fun drawCompactRankGrid(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
-        val font = MinecraftClient.getInstance().textRenderer
+    private fun drawCompactRankGrid(context: GuiGraphics, entry: PokemonEntry, x: Int, y: Int, width: Int) {
+        val font = Minecraft.getInstance().font
         var chipX = drawStatusBadge(context, entry.status, x, y) + 3
         val stages = BattleStateTracker.getStatChanges(entry.uuid)
         for (stat in STAT_ORDER) {
             val stage = stages[stat] ?: 0
             if (stage == 0) continue
             val label = stat.abbr + stageText(stage)
-            val chipWidth = font.getWidth(label) + 8
+            val chipWidth = font.width(label) + 8
             if (chipX + chipWidth > x + width) break
             BattleSurfaceRenderer.capsule(context, chipX, y, chipWidth, 10, STAGE_CHIP)
             text(context, label, chipX + 4, y + 1, stageColor(stage))
@@ -366,7 +345,7 @@ object ChampionsBattleInfoOverlay {
         }
     }
 
-    private fun drawRankTrack(context: DrawContext, x: Int, y: Int, stage: Int, cell: Int, gap: Int) {
+    private fun drawRankTrack(context: GuiGraphics, x: Int, y: Int, stage: Int, cell: Int, gap: Int) {
         val activeCells = kotlin.math.abs(stage).coerceAtMost(6)
         repeat(6) { index ->
             BattleSurfaceRenderer.capsule(context, x + index * (cell + gap), y + 1, cell, 5,
@@ -374,11 +353,11 @@ object ChampionsBattleInfoOverlay {
         }
     }
 
-    private fun drawField(context: DrawContext, rect: UiRect) {
+    private fun drawField(context: GuiGraphics, rect: UiRect) {
         BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
             BattleUiTheme.panel.copy(cornerCuts = BattleCornerCuts(7, 7, 7, 7)))
-        val font = MinecraftClient.getInstance().textRenderer
-        text(context, font.trimToWidth(tr("cobblemon_ui.champions.effects"), rect.width() - 14),
+        val font = Minecraft.getInstance().font
+        text(context, font.plainSubstrByWidth(tr("cobblemon_ui.champions.effects"), rect.width() - 14),
             rect.x() + 7, rect.y() + 6, WHITE)
         val top = rect.y() + 19
         if (effects.isEmpty()) {
@@ -398,10 +377,10 @@ object ChampionsBattleInfoOverlay {
             BattleSurfaceRenderer.capsule(context, rect.x() + 6, rowY + 4, 3, rowHeight - 8, edge)
             val textX = rect.x() + 12
             val right = rect.x() + rect.width() - 8
-            text(context, font.trimToWidth(effect.group, right - textX), textX, rowY + 2, TEXT_LABEL)
+            text(context, font.plainSubstrByWidth(effect.group, right - textX), textX, rowY + 2, TEXT_LABEL)
             val turns = effect.turns
-            val turnsWidth = turns?.let { font.getWidth(it) + 8 } ?: 0
-            text(context, font.trimToWidth(effect.name, (right - textX - turnsWidth).coerceAtLeast(0)), textX, rowY + 12, WHITE)
+            val turnsWidth = turns?.let { font.width(it) + 8 } ?: 0
+            text(context, font.plainSubstrByWidth(effect.name, (right - textX - turnsWidth).coerceAtLeast(0)), textX, rowY + 12, WHITE)
             if (turns != null) {
                 BattleSurfaceRenderer.capsule(context, right - turnsWidth + 2, rowY + 11, turnsWidth, 10, STAGE_CHIP)
                 text(context, turns, right - turnsWidth + 6, rowY + 12, WHITE)
@@ -410,7 +389,7 @@ object ChampionsBattleInfoOverlay {
         if (overflow) {
             val rowY = top + shown.size * (rowHeight + 2)
             val more = tr("cobblemon_ui.champions.more_effects", effects.size - shown.size)
-            text(context, font.trimToWidth(more, rect.width() - 14), rect.x() + 7, rowY + 7, TEXT_DIM)
+            text(context, font.plainSubstrByWidth(more, rect.width() - 14), rect.x() + 7, rowY + 7, TEXT_DIM)
         }
     }
 
@@ -466,24 +445,24 @@ object ChampionsBattleInfoOverlay {
             hpPercent = hp.coerceIn(0f, 1f),
             status = pokemon.status,
             level = pokemon.properties.level,
-            speciesIdentifier = pokemon.properties.species?.let { Identifier.of("cobblemon", it) },
+            speciesIdentifier = pokemon.properties.species?.let { ResourceLocation.fromNamespaceAndPath("cobblemon", it) },
             aspects = pokemon.state.currentAspects
         )
     }
 
     private fun turnText(turns: String?): String? = turns?.let { tr("cobblemon_ui.champions.turns", it) }
-    private fun tr(key: String, vararg args: Any): String = Text.translatable(key, *args).string
+    private fun tr(key: String, vararg args: Any): String = Component.translatable(key, *args).string
 
     /** Text at the GUI's own scale, on whole pixels. */
-    private fun text(context: DrawContext, value: String, x: Int, y: Int, color: Int) {
-        context.drawText(MinecraftClient.getInstance().textRenderer, value, x, y, color, false)
+    private fun text(context: GuiGraphics, value: String, x: Int, y: Int, color: Int) {
+        context.drawString(Minecraft.getInstance().font, value, x, y, color, false)
     }
 
     /** Wraps [value] to [width], at most [maxLines] lines; returns the y below the last line. */
-    private fun wrapped(context: DrawContext, value: String, x: Int, y: Int, width: Int, color: Int, maxLines: Int = 3): Int {
-        val font = MinecraftClient.getInstance().textRenderer
-        val lines = font.wrapLines(Text.literal(value), width.coerceAtLeast(1)).take(maxLines)
-        lines.forEachIndexed { index, line -> context.drawText(font, line, x, y + index * LINE, color, false) }
+    private fun wrapped(context: GuiGraphics, value: String, x: Int, y: Int, width: Int, color: Int, maxLines: Int = 3): Int {
+        val font = Minecraft.getInstance().font
+        val lines = font.split(Component.literal(value), width.coerceAtLeast(1)).take(maxLines)
+        lines.forEachIndexed { index, line -> context.drawString(font, line, x, y + index * LINE, color, false) }
         return y + lines.size * LINE
     }
 

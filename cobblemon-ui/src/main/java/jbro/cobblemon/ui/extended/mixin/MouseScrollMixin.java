@@ -4,7 +4,7 @@ import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.ui.extended.PanelConfig;
 import com.cobblemon.mod.common.client.CobblemonClient;
-import net.minecraft.client.Mouse;
+import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Mixin to intercept mouse scroll events for panel scaling.
  */
-@Mixin(Mouse.class)
+@Mixin(MouseHandler.class)
 public abstract class MouseScrollMixin {
 
     @Shadow
@@ -24,7 +24,7 @@ public abstract class MouseScrollMixin {
     private double y;
 
     @Inject(
-        method = "onMouseScroll",
+        method = "onScroll",
         at = @At("HEAD"),
         cancellable = true
     )

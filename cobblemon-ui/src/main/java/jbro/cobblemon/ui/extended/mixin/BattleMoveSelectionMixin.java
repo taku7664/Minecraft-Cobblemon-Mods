@@ -10,8 +10,8 @@ import jbro.cobblemon.ui.extended.PanelConfig;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.ui.navigation.UiRect;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,16 +35,16 @@ public class BattleMoveSelectionMixin {
      * Note: remap = true overrides class-level remap = false for this Minecraft method.
      */
     @Inject(method = "renderWidget", at = @At("HEAD"), remap = true)
-    private void onRenderWidgetHead(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void onRenderWidgetHead(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
             MoveTooltipRenderer.INSTANCE.suspendForModal();
             return;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         List<UiRect> bounds = BattleScreenGeometry.moveTiles(
-                client.getWindow().getScaledWidth(),
-                client.getWindow().getScaledHeight(),
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(),
                 moveTiles.size()
         );
         for (int index = 0; index < moveTiles.size(); index++) {
@@ -65,7 +65,7 @@ public class BattleMoveSelectionMixin {
      * Note: remap = true overrides class-level remap = false for this Minecraft method.
      */
     @Inject(method = "renderWidget", at = @At("RETURN"), remap = true)
-    private void onRenderWidgetReturn(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void onRenderWidgetReturn(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
             MoveTooltipRenderer.INSTANCE.suspendForModal();
             return;

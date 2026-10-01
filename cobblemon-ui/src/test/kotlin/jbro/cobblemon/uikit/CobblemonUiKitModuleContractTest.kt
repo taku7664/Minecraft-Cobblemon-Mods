@@ -13,23 +13,22 @@ import javax.imageio.ImageIO
 
 class CobblemonUiKitModuleContractTest {
     @Test
-    fun `fabric metadata declares a client only library entrypoint`() {
+    fun `fabric metadata declares a client only mod with the kit and the battle screens`() {
         val metadata = resourceJson("fabric.mod.json")
 
-        assertEquals("cobblemon_ui_kit", metadata.get("id").asString)
+        assertEquals("cobblemon_ui", metadata.get("id").asString)
         assertEquals("client", metadata.get("environment").asString)
-        assertTrue(metadata.getAsJsonObject("entrypoints").getAsJsonArray("client").size() == 1)
+        val clients = metadata.getAsJsonObject("entrypoints").getAsJsonArray("client").map { it.asJsonObject.get("value").asString }
+        assertEquals(listOf("jbro.cobblemon.uikit.client.CobblemonUiKitClient", "jbro.cobblemon.ui.extended.CobblemonUiClient"), clients)
         assertFalse(metadata.getAsJsonObject("entrypoints").has("main"))
-        assertEquals(
-            ">=1.8.1 <1.9.0",
-            metadata.getAsJsonObject("depends").get("cobblemon").asString
-        )
+        // The battle screens' mixins are checked against this Cobblemon release only.
+        assertEquals("=1.8.1", metadata.getAsJsonObject("depends").get("cobblemon").asString)
     }
 
     @Test
     fun `english and korean bundles have the same nonblank keys`() {
-        val english = resourceJson("assets/cobblemon_ui_kit/lang/en_us.json")
-        val korean = resourceJson("assets/cobblemon_ui_kit/lang/ko_kr.json")
+        val english = resourceJson("assets/cobblemon_ui/lang/en_us.json")
+        val korean = resourceJson("assets/cobblemon_ui/lang/ko_kr.json")
 
         assertEquals(english.keySet(), korean.keySet())
         assertTrue(english.entrySet().all { it.value.asString.isNotBlank() })
@@ -105,8 +104,8 @@ class CobblemonUiKitModuleContractTest {
     @Test
     fun `pixel theme ships deterministic nearest neighbor sprites`() {
         listOf(
-            "assets/cobblemon_ui_kit/textures/gui/pixel/info.png",
-            "assets/cobblemon_ui_kit/textures/gui/pixel/selector.png"
+            "assets/cobblemon_ui/textures/gui/pixel/info.png",
+            "assets/cobblemon_ui/textures/gui/pixel/selector.png"
         ).forEach { path ->
             val stream = javaClass.classLoader.getResourceAsStream(path)
             assertNotNull(stream, "Missing pixel sprite: $path")
@@ -126,7 +125,7 @@ class CobblemonUiKitModuleContractTest {
     private fun sourceText(relativePath: String): String {
         val candidates = listOf(
             Path.of(relativePath),
-            Path.of("cobblemon-ui-kit").resolve(relativePath)
+            Path.of("cobblemon-ui").resolve(relativePath)
         )
         val path = candidates.firstOrNull(Files::exists)
         assertNotNull(path, "Missing source: $relativePath")

@@ -6,11 +6,11 @@ import jbro.cobblemon.ui.extended.ui.shared.NineSliceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.InputUtil
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -138,11 +138,11 @@ object UIUtils {
      * Returns ScissorBounds for use with drawTextClipped.
      */
     fun enableScissor(x: Int, y: Int, width: Int, height: Int): ScissorBounds {
-        val mc = MinecraftClient.getInstance()
-        val scale = mc.window.scaleFactor
+        val mc = Minecraft.getInstance()
+        val scale = mc.window.guiScale
 
         val scaledX = (x * scale).toInt()
-        val scaledY = ((mc.window.scaledHeight - y - height) * scale).toInt()
+        val scaledY = ((mc.window.guiScaledHeight - y - height) * scale).toInt()
         val scaledWidth = (width * scale).toInt()
         val scaledHeight = (height * scale).toInt()
 
@@ -164,10 +164,10 @@ object UIUtils {
     /**
      * Draws scaled text without shadow on the battle UI's filled surfaces.
      */
-    fun drawText(context: DrawContext, text: String, x: Float, y: Float, color: Int, scale: Float) {
+    fun drawText(context: GuiGraphics, text: String, x: Float, y: Float, color: Int, scale: Float) {
         drawScaledText(
             context = context,
-            text = Text.literal(text),
+            text = Component.literal(text),
             x = x,
             y = y,
             scale = scale,
@@ -180,7 +180,7 @@ object UIUtils {
      * Draws scaled text only if within scissor bounds (Y axis).
      */
     fun drawTextClipped(
-        context: DrawContext,
+        context: GuiGraphics,
         text: String,
         x: Float,
         y: Float,
@@ -201,10 +201,10 @@ object UIUtils {
      * Checks if a key or mouse button is currently pressed.
      * Works with both keyboard keys and mouse buttons.
      */
-    fun isKeyOrButtonPressed(handle: Long, key: InputUtil.Key): Boolean {
-        return when (key.category) {
-            InputUtil.Type.MOUSE -> GLFW.glfwGetMouseButton(handle, key.code) == GLFW.GLFW_PRESS
-            else -> GLFW.glfwGetKey(handle, key.code) == GLFW.GLFW_PRESS
+    fun isKeyOrButtonPressed(handle: Long, key: InputConstants.Key): Boolean {
+        return when (key.type) {
+            InputConstants.Type.MOUSE -> GLFW.glfwGetMouseButton(handle, key.value) == GLFW.GLFW_PRESS
+            else -> GLFW.glfwGetKey(handle, key.value) == GLFW.GLFW_PRESS
         }
     }
 
@@ -380,7 +380,7 @@ object UIUtils {
     // Popup frame and cell rendering
     // ═══════════════════════════════════════════════════════════════════════════
 
-    val POPUP_FRAME_TEXTURE: Identifier = Identifier.of(
+    val POPUP_FRAME_TEXTURE: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
         "cobblemon_ui", "textures/gui/popup_frame.png"
     )
     const val POPUP_TEX_W = 24
@@ -407,7 +407,7 @@ object UIUtils {
      * The rounded navy surface shared with battle narration and TAB: a soft shadow, then the shell with a faint
      * cyan rim.
      */
-    fun renderPopupFrame(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
+    fun renderPopupFrame(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int) {
         val corners = jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts(8, 8, 8, 8)
         BattleSurfaceRenderer.draw(context, x, y + 2, width, height,
             jbro.cobblemon.ui.extended.ui.shared.BattleSurface(0x50000000, cornerCuts = corners))
@@ -420,7 +420,7 @@ object UIUtils {
      * @param colorTransform Optional transform applied to colors (e.g., for opacity)
      */
     fun drawPopupCell(
-        context: DrawContext, x: Int, y: Int, w: Int, h: Int,
+        context: GuiGraphics, x: Int, y: Int, w: Int, h: Int,
         colorTransform: (Int) -> Int = { it }
     ) {
         BattleSurfaceRenderer.draw(context, x, y, w, h,
@@ -432,7 +432,7 @@ object UIUtils {
      * @param colorTransform Optional transform applied to color (e.g., for opacity)
      */
     fun drawPopupRowDivider(
-        context: DrawContext, cellX: Int, cellW: Int, y: Int,
+        context: GuiGraphics, cellX: Int, cellW: Int, y: Int,
         colorTransform: (Int) -> Int = { it }
     ) {
         BattleSurfaceRenderer.capsule(context, cellX + 4, y, cellW - 8, 1, colorTransform(ROW_DIVIDER_COLOR))
@@ -447,7 +447,7 @@ object UIUtils {
      * Draws an L-shaped corner handle for resize indicators.
      */
     fun drawCornerHandle(
-        context: DrawContext,
+        context: GuiGraphics,
         cornerX: Int,
         cornerY: Int,
         length: Int,

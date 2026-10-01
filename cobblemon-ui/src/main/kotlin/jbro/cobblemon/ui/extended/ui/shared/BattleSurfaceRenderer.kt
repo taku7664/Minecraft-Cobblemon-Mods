@@ -1,7 +1,7 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
 import jbro.cobblemon.uikit.UiSmoothCorners
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 import kotlin.math.roundToInt
 
 object BattleSurfaceRenderer {
@@ -11,7 +11,7 @@ object BattleSurfaceRenderer {
      * translucent borders never acquire fill underneath.
      */
     @JvmStatic
-    fun draw(context: DrawContext, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float = 1f) {
+    fun draw(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float = 1f) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val limit = if (style.rounded) minOf(width, height) / 2 else minOf((width - 1) / 2, (height - 1) / 2)
         val cuts = style.cornerCuts ?: BattleCornerCuts(
@@ -73,7 +73,7 @@ object BattleSurfaceRenderer {
      * short side of the pill's spine (4x4 samples).
      */
     @JvmStatic
-    fun capsule(context: DrawContext, x: Int, y: Int, width: Int, height: Int, color: Int, opacity: Float = 1f) {
+    fun capsule(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, color: Int, opacity: Float = 1f) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val argb = withOpacity(color, opacity)
         if (argb ushr 24 == 0) return
@@ -120,7 +120,7 @@ object BattleSurfaceRenderer {
 
     /** A rounded gauge: the track, then [ratio] of its inner width in [fill], both capsules. */
     @JvmStatic
-    fun gauge(context: DrawContext, x: Int, y: Int, width: Int, height: Int, ratio: Float,
+    fun gauge(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, ratio: Float,
               track: Int, fill: Int, opacity: Float = 1f, inset: Int = 1) {
         capsule(context, x, y, width, height, track, opacity)
         val innerWidth = width - inset * 2
@@ -133,7 +133,7 @@ object BattleSurfaceRenderer {
      * surface it surrounds, it reads as light rather than an outline.
      */
     @JvmStatic
-    fun glow(context: DrawContext, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
+    fun glow(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
              color: Int, spread: Int, opacity: Float) {
         if (opacity <= 0f || spread <= 0) return
         for (ring in 1..spread) {
@@ -147,13 +147,13 @@ object BattleSurfaceRenderer {
 
     private fun grow(size: Int, by: Int) = if (size > 0) size + by else 0
 
-    private fun run(context: DrawContext, x: Int, y: Int, start: Int, end: Int, color: Int) {
+    private fun run(context: GuiGraphics, x: Int, y: Int, start: Int, end: Int, color: Int) {
         if (end <= start || color ushr 24 == 0) return
         context.fill(x + start, y, x + end, y + 1, color)
     }
 
     /** One corner pixel: each layer weighted by how much of the pixel it covers, over transparency. */
-    private inline fun cornerPixel(context: DrawContext, x: Int, y: Int, coverage: List<FloatArray>, index: Int,
+    private inline fun cornerPixel(context: GuiGraphics, x: Int, y: Int, coverage: List<FloatArray>, index: Int,
                                    row: Int, color: (Int, Int) -> Int) {
         var alpha = 0f
         var red = 0f

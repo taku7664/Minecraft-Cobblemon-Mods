@@ -1,7 +1,7 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
 import jbro.cobblemon.ui.navigation.VignetteFade
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 
 /** Soft edge-only backdrop shared by switch, transcript, and battle-info modals. */
 object BattleModalVignette {
@@ -9,12 +9,12 @@ object BattleModalVignette {
     private val fade = VignetteFade()
 
     @JvmStatic
-    fun render(context: DrawContext, width: Int, height: Int, active: Boolean) {
+    fun render(context: GuiGraphics, width: Int, height: Int, active: Boolean) {
         draw(context, width, height, fade.advance(active, System.nanoTime()))
     }
 
     /** Also used by the isolated visual previews at full opacity. */
-    fun draw(context: DrawContext, width: Int, height: Int, opacity: Float) {
+    fun draw(context: GuiGraphics, width: Int, height: Int, opacity: Float) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val vertical = (height / 3).coerceAtLeast(1)
         val horizontal = (width / 4).coerceAtLeast(1)

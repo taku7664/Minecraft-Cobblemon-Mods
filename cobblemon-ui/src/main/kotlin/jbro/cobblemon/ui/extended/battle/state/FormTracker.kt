@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.pokemon.FormData
 import jbro.cobblemon.ui.extended.BattleStateTracker.FormState
 import jbro.cobblemon.ui.extended.CobblemonUi
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 object FormTracker {
 
     private val pokemonForms = ConcurrentHashMap<UUID, FormState>()
-    private val pokemonSpeciesIds = ConcurrentHashMap<UUID, Identifier>()
+    private val pokemonSpeciesIds = ConcurrentHashMap<UUID, ResourceLocation>()
 
     fun clear() {
         pokemonForms.clear()
@@ -24,16 +24,16 @@ object FormTracker {
 
     // ── Species ID Registration ──────────────────────────────────────────────
 
-    fun registerSpeciesId(uuid: UUID, speciesId: Identifier) {
+    fun registerSpeciesId(uuid: UUID, speciesId: ResourceLocation) {
         if (!pokemonSpeciesIds.containsKey(uuid)) {
             pokemonSpeciesIds[uuid] = speciesId
             CobblemonUi.LOGGER.debug("FormTracker: Registered species ID $speciesId for $uuid")
         }
     }
 
-    fun getSpeciesId(uuid: UUID): Identifier? = pokemonSpeciesIds[uuid]
+    fun getSpeciesId(uuid: UUID): ResourceLocation? = pokemonSpeciesIds[uuid]
 
-    fun getSpeciesIdByName(pokemonName: String, preferAlly: Boolean? = null): Identifier? {
+    fun getSpeciesIdByName(pokemonName: String, preferAlly: Boolean? = null): ResourceLocation? {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return null
         return pokemonSpeciesIds[uuid]
     }
@@ -133,7 +133,7 @@ object FormTracker {
 
     fun updateTypesForFormChange(
         pokemonName: String,
-        speciesId: Identifier?,
+        speciesId: ResourceLocation?,
         formName: String,
         preferAlly: Boolean? = null
     ): FormData? {

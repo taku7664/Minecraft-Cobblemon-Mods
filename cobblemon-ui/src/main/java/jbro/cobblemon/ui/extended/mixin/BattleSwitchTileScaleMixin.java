@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonS
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.navigation.SmoothButtonScale;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -33,7 +33,7 @@ public abstract class BattleSwitchTileScaleMixin {
     }
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void cobblemonBattleUi$begin(DrawContext context, double mouseX, double mouseY, float delta, CallbackInfo ci) {
+    private void cobblemonBattleUi$begin(GuiGraphics context, double mouseX, double mouseY, float delta, CallbackInfo ci) {
         long now = System.nanoTime();
         double elapsed = Math.min(0.05, (now - cobblemonBattleUi$lastFrame) / 1_000_000_000.0);
         cobblemonBattleUi$lastFrame = now;
@@ -45,14 +45,14 @@ public abstract class BattleSwitchTileScaleMixin {
         float centerX = getX() + BattleSwitchPokemonSelection.SwitchTile.SELECT_WIDTH / 2.0f;
         float centerY = getY() + BattleSwitchPokemonSelection.SwitchTile.SELECT_HEIGHT / 2.0f;
         float scale = (float) cobblemonBattleUi$currentScale;
-        context.getMatrices().push();
-        context.getMatrices().translate(centerX, centerY, 0.0f);
-        context.getMatrices().scale(scale, scale, 1.0f);
-        context.getMatrices().translate(-centerX, -centerY, 0.0f);
+        context.pose().pushPose();
+        context.pose().translate(centerX, centerY, 0.0f);
+        context.pose().scale(scale, scale, 1.0f);
+        context.pose().translate(-centerX, -centerY, 0.0f);
     }
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void cobblemonBattleUi$end(DrawContext context, double mouseX, double mouseY, float delta, CallbackInfo ci) {
-        context.getMatrices().pop();
+    private void cobblemonBattleUi$end(GuiGraphics context, double mouseX, double mouseY, float delta, CallbackInfo ci) {
+        context.pose().popPose();
     }
 }

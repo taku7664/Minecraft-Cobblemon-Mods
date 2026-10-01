@@ -1,7 +1,7 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.util.Identifier
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.resources.ResourceLocation
 
 /**
  * General-purpose 9-slice texture renderer.
@@ -38,8 +38,8 @@ object NineSliceRenderer {
      * @param insets    Slice border sizes
      */
     fun render(
-        context: DrawContext,
-        texture: Identifier,
+        context: GuiGraphics,
+        texture: ResourceLocation,
         x: Int,
         y: Int,
         width: Int,
@@ -59,32 +59,32 @@ object NineSliceRenderer {
         val centerH = height - st - sb
 
         // Top-left corner
-        context.drawTexture(
+        context.blit(
             texture, x, y, sl, st,
             0f, 0f, sl, st, texWidth, texHeight
         )
 
         // Top-right corner
-        context.drawTexture(
+        context.blit(
             texture, x + width - sr, y, sr, st,
             (texWidth - sr).toFloat(), 0f, sr, st, texWidth, texHeight
         )
 
         // Bottom-left corner
-        context.drawTexture(
+        context.blit(
             texture, x, y + height - sb, sl, sb,
             0f, (texHeight - sb).toFloat(), sl, sb, texWidth, texHeight
         )
 
         // Bottom-right corner
-        context.drawTexture(
+        context.blit(
             texture, x + width - sr, y + height - sb, sr, sb,
             (texWidth - sr).toFloat(), (texHeight - sb).toFloat(), sr, sb, texWidth, texHeight
         )
 
         // Top edge (stretched horizontally)
         if (centerW > 0) {
-            context.drawTexture(
+            context.blit(
                 texture, x + sl, y, centerW, st,
                 sl.toFloat(), 0f, centerTexW, st, texWidth, texHeight
             )
@@ -92,7 +92,7 @@ object NineSliceRenderer {
 
         // Bottom edge (stretched horizontally)
         if (centerW > 0) {
-            context.drawTexture(
+            context.blit(
                 texture, x + sl, y + height - sb, centerW, sb,
                 sl.toFloat(), (texHeight - sb).toFloat(), centerTexW, sb, texWidth, texHeight
             )
@@ -100,7 +100,7 @@ object NineSliceRenderer {
 
         // Left edge (stretched vertically)
         if (centerH > 0) {
-            context.drawTexture(
+            context.blit(
                 texture, x, y + st, sl, centerH,
                 0f, st.toFloat(), sl, centerTexH, texWidth, texHeight
             )
@@ -108,7 +108,7 @@ object NineSliceRenderer {
 
         // Right edge (stretched vertically)
         if (centerH > 0) {
-            context.drawTexture(
+            context.blit(
                 texture, x + width - sr, y + st, sr, centerH,
                 (texWidth - sr).toFloat(), st.toFloat(), sr, centerTexH, texWidth, texHeight
             )
@@ -116,7 +116,7 @@ object NineSliceRenderer {
 
         // Center (stretched both ways)
         if (centerW > 0 && centerH > 0) {
-            context.drawTexture(
+            context.blit(
                 texture, x + sl, y + st, centerW, centerH,
                 sl.toFloat(), st.toFloat(), centerTexW, centerTexH, texWidth, texHeight
             )

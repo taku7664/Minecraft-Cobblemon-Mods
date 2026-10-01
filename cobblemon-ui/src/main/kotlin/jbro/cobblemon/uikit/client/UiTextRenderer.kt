@@ -10,6 +10,12 @@ import net.minecraft.util.FormattedCharSequence
  * shadow of DS menu text), otherwise flat or with Minecraft's own shadow when [minecraftShadow] asks for it.
  */
 object UiTextRenderer {
+    /** [text] as it is, or cut with an ellipsis to fit [width]. */
+    fun fitted(font: Font, text: Component, width: Int): Component {
+        if (font.width(text) <= width) return text
+        return Component.literal(font.plainSubstrByWidth(text.string, (width - font.width("…")).coerceAtLeast(0)) + "…")
+    }
+
     fun draw(
         graphics: GuiGraphics,
         font: Font,

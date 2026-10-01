@@ -12,7 +12,7 @@ import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.BattleDialogue;
 import jbro.cobblemon.ui.extended.CobblemonUiClient;
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,7 +37,7 @@ public abstract class ScreenBattleNavigationMixin {
         }
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE
-                    || CobblemonUiClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode)) {
+                    || CobblemonUiClient.INSTANCE.getCancelActionKey().matches(keyCode, scanCode)) {
                 BattleInfoPanel.INSTANCE.toggle();
             } else {
                 BattleInfoPanel.INSTANCE.handleKeyPressed(keyCode, scanCode);
@@ -57,7 +57,7 @@ public abstract class ScreenBattleNavigationMixin {
         BattleGUI battleGUI = (BattleGUI) (Object) this;
         BattleActionSelection selection = battleGUI.getCurrentActionSelection();
         boolean cancel = keyCode == GLFW.GLFW_KEY_ESCAPE
-                || CobblemonUiClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode);
+                || CobblemonUiClient.INSTANCE.getCancelActionKey().matches(keyCode, scanCode);
         if (cancel && selection != null) {
             // Backing out by keyboard clicks as Cobblemon's own back button does.
             if (selection instanceof ForfeitConfirmationSelection) {
@@ -84,7 +84,7 @@ public abstract class ScreenBattleNavigationMixin {
                 return;
             }
             if (selection instanceof BattleGeneralActionSelection
-                    && CobblemonUiClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode)) {
+                    && CobblemonUiClient.INSTANCE.getCancelActionKey().matches(keyCode, scanCode)) {
                 cir.setReturnValue(true);
                 return;
             }

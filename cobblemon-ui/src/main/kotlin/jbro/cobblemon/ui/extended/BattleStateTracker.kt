@@ -2,8 +2,8 @@ package jbro.cobblemon.ui.extended
 
 import com.cobblemon.mod.common.pokemon.FormData
 import jbro.cobblemon.ui.extended.battle.state.*
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 /**
@@ -29,8 +29,8 @@ object BattleStateTracker {
         ACCURACY("cobblemon_ui.stat.accuracy", "cobblemon_ui.stat.accuracy.abbr"),
         EVASION("cobblemon_ui.stat.evasion", "cobblemon_ui.stat.evasion.abbr");
 
-        val displayName: String get() = Text.translatable(translationKey).string
-        val abbr: String get() = Text.translatable(abbrKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
+        val abbr: String get() = Component.translatable(abbrKey).string
     }
 
     data class DynamicTypeState(
@@ -56,7 +56,7 @@ object BattleStateTracker {
         HAIL("cobblemon_ui.weather.hail", "🌨"),
         SNOW("cobblemon_ui.weather.snow", "❄");
 
-        val displayName: String get() = Text.translatable(translationKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
     }
 
     data class WeatherState(
@@ -71,7 +71,7 @@ object BattleStateTracker {
         MISTY("cobblemon_ui.terrain.misty", "🌫"),
         PSYCHIC("cobblemon_ui.terrain.psychic", "🔮");
 
-        val displayName: String get() = Text.translatable(translationKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
     }
 
     data class TerrainState(
@@ -86,7 +86,7 @@ object BattleStateTracker {
         MAGIC_ROOM("cobblemon_ui.field.magic_room", "✨", 5),
         WONDER_ROOM("cobblemon_ui.field.wonder_room", "🔀", 5);
 
-        val displayName: String get() = Text.translatable(translationKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
     }
 
     data class FieldConditionState(
@@ -107,7 +107,7 @@ object BattleStateTracker {
         TOXIC_SPIKES("cobblemon_ui.side.toxic_spikes", "☠", null, 2),
         STICKY_WEB("cobblemon_ui.side.sticky_web", "🕸", null);
 
-        val displayName: String get() = Text.translatable(translationKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
     }
 
     data class SideConditionState(
@@ -147,7 +147,7 @@ object BattleStateTracker {
         DESTINY_BOND("cobblemon_ui.volatile.destiny_bond", "🔗", isNegative = false),
         FLINCH("cobblemon_ui.volatile.flinch", "💥");
 
-        val displayName: String get() = Text.translatable(translationKey).string
+        val displayName: String get() = Component.translatable(translationKey).string
     }
 
     data class VolatileStatusState(
@@ -338,9 +338,9 @@ object BattleStateTracker {
     // Form Changes (delegates to FormTracker)
     // ═══════════════════════════════════════════════════════════════════════════
 
-    fun registerSpeciesId(uuid: UUID, speciesId: Identifier) = FormTracker.registerSpeciesId(uuid, speciesId)
-    fun getSpeciesId(uuid: UUID): Identifier? = FormTracker.getSpeciesId(uuid)
-    fun getSpeciesIdByName(pokemonName: String, preferAlly: Boolean? = null): Identifier? = FormTracker.getSpeciesIdByName(pokemonName, preferAlly)
+    fun registerSpeciesId(uuid: UUID, speciesId: ResourceLocation) = FormTracker.registerSpeciesId(uuid, speciesId)
+    fun getSpeciesId(uuid: UUID): ResourceLocation? = FormTracker.getSpeciesId(uuid)
+    fun getSpeciesIdByName(pokemonName: String, preferAlly: Boolean? = null): ResourceLocation? = FormTracker.getSpeciesIdByName(pokemonName, preferAlly)
 
     fun setCurrentForm(pokemonName: String, formName: String, isMega: Boolean = false, isTemporary: Boolean = false, preferAlly: Boolean? = null) = FormTracker.setCurrentForm(pokemonName, formName, isMega, isTemporary, preferAlly)
     fun clearCurrentForm(pokemonName: String, preferAlly: Boolean? = null) = FormTracker.clearCurrentForm(pokemonName, preferAlly)
@@ -349,7 +349,7 @@ object BattleStateTracker {
 
     fun formNameToAspects(formName: String): List<String> = FormTracker.formNameToAspects(formName)
     fun formNameToAspect(formName: String): String = FormTracker.formNameToAspect(formName)
-    fun updateTypesForFormChange(pokemonName: String, speciesId: Identifier?, formName: String, preferAlly: Boolean? = null): FormData? = FormTracker.updateTypesForFormChange(pokemonName, speciesId, formName, preferAlly)
+    fun updateTypesForFormChange(pokemonName: String, speciesId: ResourceLocation?, formName: String, preferAlly: Boolean? = null): FormData? = FormTracker.updateTypesForFormChange(pokemonName, speciesId, formName, preferAlly)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Abilities & Items (delegates to AbilityItemTracker)

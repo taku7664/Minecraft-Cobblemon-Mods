@@ -78,7 +78,7 @@ object CobblemonUiThemePresets {
             shadowOffset = 1
         )
         val selector = UiSelectionIndicator.Sprite(
-            UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
+            UiIcon("cobblemon_ui", "textures/gui/pixel/selector.png")
         )
         val metrics = UiPixelMetrics.sizes
         val styles = buildMap {
@@ -332,7 +332,7 @@ object CobblemonUiThemePresets {
         val colors = c.colors()
         val shellFrame = UiBorder.PixelFrame(c.border, c.trim, c.frameShade, 0xC8080B0F.toInt(), 2)
         val cardFrame = UiBorder.PixelFrame(c.border, c.frameHighlight, c.frameShade, 0xA8080B0F.toInt(), 1)
-        val selector = UiSelectionIndicator.Sprite(UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png"))
+        val selector = UiSelectionIndicator.Sprite(UiIcon("cobblemon_ui", "textures/gui/pixel/selector.png"))
         val styles = buildMap {
             addPixelVariant(UiButtonVariant.PRIMARY, c.primary, c.primaryHover, c.primaryPressed, c.selected, c.primaryText,
                 cardFrame, selector, c.disabled, c.selectedText)

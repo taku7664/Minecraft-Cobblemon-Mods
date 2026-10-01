@@ -11,7 +11,7 @@ import jbro.cobblemon.ui.extended.BattleLog;
 import jbro.cobblemon.ui.extended.BattleDialogue;
 import jbro.cobblemon.ui.extended.BattleMessageInterceptor;
 import jbro.cobblemon.ui.extended.PanelConfig;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * Mixin to intercept battle messages for state tracking and custom battle log.
@@ -29,7 +29,7 @@ public class BattleMessageHandlerMixin {
      * Only processes tracking that's needed for enabled features.
      */
     @Inject(method = "handle", at = @At("HEAD"), cancellable = true)
-    private void onHandle(BattleMessagePacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void onHandle(BattleMessagePacket packet, Minecraft client, CallbackInfo ci) {
         // Process messages for state tracking only if panel or team indicators are enabled
         boolean needsStateTracking = PanelConfig.INSTANCE.needsBattleStateTracking();
         if (needsStateTracking) {

@@ -92,21 +92,15 @@ object CobblemonUiListRows {
         }
         val room = right - left
         if (row.supporting == null) {
-            UiTextRenderer.draw(graphics, font, fitted(row.title, room), left, bounds.y + (bounds.height - font.lineHeight) / 2 + 1,
+            UiTextRenderer.draw(graphics, font, UiTextRenderer.fitted(font, row.title, room), left, bounds.y + (bounds.height - font.lineHeight) / 2 + 1,
                 style.text, style.textShadowColor)
         } else {
-            UiTextRenderer.draw(graphics, font, fitted(row.title, room), left, bounds.y + 4, style.text, style.textShadowColor)
-            UiTextRenderer.draw(graphics, font, fitted(row.supporting, room), left, bounds.bottom - font.lineHeight - 3,
+            UiTextRenderer.draw(graphics, font, UiTextRenderer.fitted(font, row.title, room), left, bounds.y + 4, style.text, style.textShadowColor)
+            UiTextRenderer.draw(graphics, font, UiTextRenderer.fitted(font, row.supporting, room), left, bounds.bottom - font.lineHeight - 3,
                 style.supportingText, style.textShadowColor)
         }
         UiSurfaceRenderer.drawSelection(graphics, bounds.x, bounds.y, bounds.width, bounds.height, style.surface.shape,
             UiSurfaceRenderer.indicatorFor(style.selectionIndicator,
                 theme.listRowStyle(UiWidgetState.SELECTED).selectionIndicator, row.selected && enabled))
-    }
-
-    private fun fitted(text: Component, width: Int): Component {
-        val font = Minecraft.getInstance().font
-        if (font.width(text) <= width) return text
-        return Component.literal(font.plainSubstrByWidth(text.string, (width - font.width("…")).coerceAtLeast(0)) + "…")
     }
 }

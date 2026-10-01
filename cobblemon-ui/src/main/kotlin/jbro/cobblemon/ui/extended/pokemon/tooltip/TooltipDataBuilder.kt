@@ -11,9 +11,9 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.ui.extended.BattleStateTracker
 import jbro.cobblemon.ui.extended.CobblemonUi
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 /**
@@ -23,7 +23,7 @@ import java.util.UUID
 object TooltipDataBuilder {
 
     fun formatMoveName(moveId: String): String {
-        val translated = Text.translatable("cobblemon.move.$moveId").string
+        val translated = Component.translatable("cobblemon.move.$moveId").string
         if (!translated.startsWith("cobblemon.")) return translated
         return Moves.getByName(moveId)?.displayName?.string ?: moveId
     }
@@ -31,7 +31,7 @@ object TooltipDataBuilder {
     /** Resolve the authoritative Cobblemon translation before using a mechanical fallback. */
     fun formatAbilityName(abilityId: String): String {
         val normalizedId = abilityId.lowercase().replace(" ", "").replace("_", "").replace("-", "")
-        val translated = Text.translatable("cobblemon.ability.$normalizedId").string
+        val translated = Component.translatable("cobblemon.ability.$normalizedId").string
         if (!translated.startsWith("cobblemon.")) return translated
 
         return abilityId
@@ -49,12 +49,12 @@ object TooltipDataBuilder {
 
     fun getStatusDisplayName(status: Status): String {
         return when (status) {
-            Statuses.POISON -> Text.translatable("cobblemon_ui.status.poisoned").string
-            Statuses.POISON_BADLY -> Text.translatable("cobblemon_ui.status.badly_poisoned").string
-            Statuses.BURN -> Text.translatable("cobblemon_ui.status.burned").string
-            Statuses.PARALYSIS -> Text.translatable("cobblemon_ui.status.paralyzed").string
-            Statuses.FROZEN -> Text.translatable("cobblemon_ui.status.frozen").string
-            Statuses.SLEEP -> Text.translatable("cobblemon_ui.status.asleep").string
+            Statuses.POISON -> Component.translatable("cobblemon_ui.status.poisoned").string
+            Statuses.POISON_BADLY -> Component.translatable("cobblemon_ui.status.badly_poisoned").string
+            Statuses.BURN -> Component.translatable("cobblemon_ui.status.burned").string
+            Statuses.PARALYSIS -> Component.translatable("cobblemon_ui.status.paralyzed").string
+            Statuses.FROZEN -> Component.translatable("cobblemon_ui.status.frozen").string
+            Statuses.SLEEP -> Component.translatable("cobblemon_ui.status.asleep").string
             else -> status.name.path.replaceFirstChar { it.uppercase() }
         }
     }
@@ -90,7 +90,7 @@ object TooltipDataBuilder {
         val name = battlePokemon?.getDisplayName()?.string
             ?: getPokemonNameFromUuid(uuid)
             ?: trackedPokemon?.displayName
-            ?: Text.translatable("cobblemon_ui.champions.unknown").string
+            ?: Component.translatable("cobblemon_ui.champions.unknown").string
 
         val hpPercent = trackedPokemon?.hpPercent
             ?: battlePokemon?.let {
@@ -127,11 +127,11 @@ object TooltipDataBuilder {
             item = if (trackedItem != null) {
                 if (trackedItem.status != BattleStateTracker.ItemStatus.HELD) {
                     trackedItem
-                } else if (!heldItem.isEmpty && heldItem.name.string != trackedItem.name) {
+                } else if (!heldItem.isEmpty && heldItem.hoverName.string != trackedItem.name) {
                     trackedItem
                 } else if (!heldItem.isEmpty) {
                     BattleStateTracker.TrackedItem(
-                        heldItem.name.string,
+                        heldItem.hoverName.string,
                         BattleStateTracker.ItemStatus.HELD,
                         BattleStateTracker.currentTurn
                     )
@@ -140,7 +140,7 @@ object TooltipDataBuilder {
                 }
             } else if (!heldItem.isEmpty) {
                 BattleStateTracker.TrackedItem(
-                    heldItem.name.string,
+                    heldItem.hoverName.string,
                     BattleStateTracker.ItemStatus.HELD,
                     BattleStateTracker.currentTurn
                 )
@@ -161,7 +161,7 @@ object TooltipDataBuilder {
                 abilityName = formatAbilityName(copiedAbility)
             } else {
                 val rawAbilityName = battlePokemon.ability.name
-                val translatedAbility = Text.translatable("cobblemon.ability.$rawAbilityName").string
+                val translatedAbility = Component.translatable("cobblemon.ability.$rawAbilityName").string
                 abilityName = if (translatedAbility.startsWith("cobblemon.") || translatedAbility == rawAbilityName) {
                     formatAbilityName(rawAbilityName)
                 } else {
@@ -186,7 +186,7 @@ object TooltipDataBuilder {
             } else {
                 abilityName = null
                 possibleAbilities = trackedPokemon?.formAbilities?.mapNotNull { potentialAbility ->
-                    val translated = Text.translatable(potentialAbility.displayName).string
+                    val translated = Component.translatable(potentialAbility.displayName).string
                     val abilityId = potentialAbility.name
                     if (translated.startsWith("cobblemon.") || translated == abilityId) {
                         formatAbilityName(abilityId)
@@ -280,7 +280,7 @@ object TooltipDataBuilder {
      * Decouples tooltip builder from TeamIndicatorUI's internal TrackedPokemon class.
      */
     data class TrackedPokemonSnapshot(
-        val speciesIdentifier: Identifier?,
+        val speciesIdentifier: ResourceLocation?,
         val displayName: String?,
         val hpPercent: Float,
         val status: Status?,

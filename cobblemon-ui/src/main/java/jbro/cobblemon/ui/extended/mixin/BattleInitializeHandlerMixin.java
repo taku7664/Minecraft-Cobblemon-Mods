@@ -12,7 +12,7 @@ import jbro.cobblemon.ui.extended.CobblemonUi;
 import jbro.cobblemon.ui.extended.DamageTracker;
 import jbro.cobblemon.ui.extended.BattleDialogue;
 import jbro.cobblemon.ui.extended.PanelConfig;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.util.UUID;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import java.util.List;
 public class BattleInitializeHandlerMixin {
 
     @Inject(method = "handle", at = @At("HEAD"))
-    private void onHandlePre(BattleInitializePacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void onHandlePre(BattleInitializePacket packet, Minecraft client, CallbackInfo ci) {
         BattleDialogue.INSTANCE.clear();
         jbro.cobblemon.ui.extended.BattleLog.INSTANCE.clear();
         boolean needsStateTracking = PanelConfig.INSTANCE.needsBattleStateTracking();
@@ -40,7 +40,7 @@ public class BattleInitializeHandlerMixin {
 
         try {
             // Determine if player is spectating
-            UUID playerUUID = client.getSession().getUuidOrNull();
+            UUID playerUUID = client.getUser().getProfileId();
             boolean isPlayerInSide1 = isPlayerInSide(packet.getSide1(), playerUUID);
             boolean isPlayerInSide2 = isPlayerInSide(packet.getSide2(), playerUUID);
             boolean isSpectating = !isPlayerInSide1 && !isPlayerInSide2;

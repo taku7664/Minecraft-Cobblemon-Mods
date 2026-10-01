@@ -18,10 +18,10 @@ import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipBoundsData
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipConstants
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipData
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipDataBuilder
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.InputUtil
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.resources.ResourceLocation
 import org.lwjgl.glfw.GLFW
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -75,10 +75,10 @@ object TeamIndicatorUI {
         // Display name (persists after switch-out)
         var displayName: String? = null,
         // For model rendering
-        var speciesIdentifier: Identifier? = null,
+        var speciesIdentifier: ResourceLocation? = null,
         var aspects: Set<String> = emptySet(),
         // Original form tracking for Transform/Impostor (Ditto)
-        var originalSpeciesIdentifier: Identifier? = null,
+        var originalSpeciesIdentifier: ResourceLocation? = null,
         var originalAspects: Set<String> = emptySet(),
         var isTransformed: Boolean = false,
         var form: FormData? = null,
@@ -88,7 +88,7 @@ object TeamIndicatorUI {
     data class TeamPreview(
         val uuid: UUID,
         val renderablePokemon: RenderablePokemon?,
-        val speciesIdentifier: Identifier?,
+        val speciesIdentifier: ResourceLocation?,
         val aspects: Set<String>,
         val isKO: Boolean,
         val status: Status?
@@ -228,7 +228,7 @@ object TeamIndicatorUI {
 
     internal fun calculateOpponentSpeedRange(
         uuid: UUID,
-        pokemonId: Identifier,
+        pokemonId: ResourceLocation,
         level: Int,
         speedStage: Int,
         status: Status?,
@@ -476,7 +476,7 @@ object TeamIndicatorUI {
         // has not been announced by the battle protocol.
         // actor.pokemon can be empty for opponent actors, but should be populated for our own
         if (targetAbility == null) {
-            val playerUuid = MinecraftClient.getInstance().player?.uuid
+            val playerUuid = Minecraft.getInstance().player?.uuid
             if (playerUuid != null) {
                 // Find the player's actor
                 val playerActor = battle.side1.actors.find { it.uuid == playerUuid }
@@ -526,7 +526,7 @@ object TeamIndicatorUI {
         }
     }
 
-    fun render(context: DrawContext) {
+    fun render(context: GuiGraphics) {
         clearFrameInteractionBounds()
         val battle = CobblemonClient.battle ?: return
 
@@ -539,14 +539,14 @@ object TeamIndicatorUI {
             lastBattleId = battle.battleId
         }
 
-        val mc = MinecraftClient.getInstance()
-        val screenWidth = mc.window.scaledWidth
+        val mc = Minecraft.getInstance()
+        val screenWidth = mc.window.guiScaledWidth
         val player = mc.player ?: return
         val playerUUID = player.uuid
 
         // Get mouse position for hover detection
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
 
         // Determine if player is in the battle and which side they're on
         val playerInSide1 = battle.side1.actors.any { it.uuid == playerUUID }
@@ -690,9 +690,9 @@ object TeamIndicatorUI {
      * Check if mouse is over any team panel.
      */
     private fun isMouseOverTeamPanels(): Boolean {
-        val mc = MinecraftClient.getInstance()
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+        val mc = Minecraft.getInstance()
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
 
         leftTeamPanelBounds?.let { bounds ->
             if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
@@ -722,8 +722,8 @@ object TeamIndicatorUI {
     /**
      * Handle all input: dragging, clicking, font keybinds.
      */
-    private fun handleInput(mc: MinecraftClient, mouseX: Int, mouseY: Int) {
-        val handle = mc.window.handle
+    private fun handleInput(mc: Minecraft, mouseX: Int, mouseY: Int) {
+        val handle = mc.window.window
         val isMouseDown = GLFW.glfwGetMouseButton(handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS
         val isShiftDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||
             GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS
@@ -739,8 +739,8 @@ object TeamIndicatorUI {
                 val deltaX = mouseX - dragStartMouseX
                 val deltaY = mouseY - dragStartMouseY
                 val draggedLayout = dragPanelLayout ?: return
-                val newX = draggedLayout.resolveX(dragStartPanelX + deltaX, dragStartPanelX, mc.window.scaledWidth)
-                val newY = draggedLayout.resolveY(dragStartPanelY + deltaY, dragStartPanelY, mc.window.scaledHeight)
+                val newX = draggedLayout.resolveX(dragStartPanelX + deltaX, dragStartPanelX, mc.window.guiScaledWidth)
+                val newY = draggedLayout.resolveY(dragStartPanelY + deltaY, dragStartPanelY, mc.window.guiScaledHeight)
 
                 if (draggingLeftSide) {
                     PanelConfig.setTeamIndicatorLeftPosition(newX, newY)
@@ -757,12 +757,12 @@ object TeamIndicatorUI {
                         val mirroredX = otherLayout.resolveX(
                             dragStartOtherPanelX - deltaX,
                             dragStartOtherPanelX,
-                            mc.window.scaledWidth
+                            mc.window.guiScaledWidth
                         )
                         val sameY = otherLayout.resolveY(
                             dragStartOtherPanelY + deltaY,
                             dragStartOtherPanelY,
-                            mc.window.scaledHeight
+                            mc.window.guiScaledHeight
                         )
 
                         if (draggingLeftSide) {
@@ -855,7 +855,7 @@ object TeamIndicatorUI {
                     // Also store the OTHER panel's position for Alt+drag mirrored movement
                     val otherBounds = if (hoveredSide) rightTeamPanelBounds else leftTeamPanelBounds
                     dragStartOtherPanelX = otherBounds?.x?.plus(TeamPanelLayout.HORIZONTAL_PADDING)
-                        ?: (mc.window.scaledWidth - mouseX)
+                        ?: (mc.window.guiScaledWidth - mouseX)
                     dragStartOtherPanelY = otherBounds?.y?.plus(TeamPanelLayout.VERTICAL_PADDING) ?: mouseY
                     dragOtherPanelLayout = otherBounds?.let { TeamPanelLayout.fromPanelSize(it.width, it.height) }
 
@@ -932,7 +932,7 @@ object TeamIndicatorUI {
         } else {
             screenWidth - HORIZONTAL_INSET - layout.modelWidth
         }
-        val screenHeight = MinecraftClient.getInstance().window.scaledHeight
+        val screenHeight = Minecraft.getInstance().window.guiScaledHeight
 
         return Pair(
             layout.resolveX(customX, defaultX, screenWidth),
@@ -965,7 +965,7 @@ object TeamIndicatorUI {
         // Get species identifier for model rendering
         // properties.species returns a String like "pikachu", convert to Identifier
         val speciesName = battlePokemon.properties.species
-        val speciesId = speciesName?.let { Identifier.of("cobblemon", it) }
+        val speciesId = speciesName?.let { ResourceLocation.fromNamespaceAndPath("cobblemon", it) }
         val aspects = battlePokemon.state.currentAspects
         val displayName = battlePokemon.displayName.string
         val form = battlePokemon.species.getForm(aspects)
@@ -1041,7 +1041,7 @@ object TeamIndicatorUI {
     }
 
     // Ditto species identifier for transform reversion
-    private val DITTO_SPECIES_ID = Identifier.of("cobblemon", "ditto")
+    private val DITTO_SPECIES_ID = ResourceLocation.fromNamespaceAndPath("cobblemon", "ditto")
 
     // Help icon settings
     private const val HELP_ICON_SIZE = 8
@@ -1050,11 +1050,11 @@ object TeamIndicatorUI {
     private fun calculatePanelDimensions(teamSize: Int): Pair<Int, Int> =
         TeamPanelRenderer.calculatePanelDimensions(teamSize, modelSize, modelSpacing)
 
-    private fun drawTeamPanel(context: DrawContext, x: Int, y: Int, teamSize: Int) =
+    private fun drawTeamPanel(context: GuiGraphics, x: Int, y: Int, teamSize: Int) =
         TeamPanelRenderer.drawTeamPanel(context, x, y, teamSize, modelSize, modelSpacing, ::applyOpacity)
 
     private fun drawHelpIcon(
-        context: DrawContext, panelX: Int, panelY: Int, panelWidth: Int, panelHeight: Int, isLeftSide: Boolean
+        context: GuiGraphics, panelX: Int, panelY: Int, panelWidth: Int, panelHeight: Int, isLeftSide: Boolean
     ): TooltipBoundsData =
         TeamPanelRenderer.drawHelpIcon(context, panelX, panelY, panelWidth, panelHeight, isLeftSide, ::applyOpacity)
 
@@ -1064,7 +1064,7 @@ object TeamIndicatorUI {
      * Also checks persistent KO tracking as a fallback for race conditions.
      */
     private fun renderBattleTeam(
-        context: DrawContext,
+        context: GuiGraphics,
         startX: Int,
         startY: Int,
         team: List<Pokemon>,
@@ -1138,7 +1138,7 @@ object TeamIndicatorUI {
      * to handle race conditions where Pokemon is removed from activePokemon before we render.
      */
     private fun renderTrackedTeam(
-        context: DrawContext,
+        context: GuiGraphics,
         startX: Int,
         startY: Int,
         team: List<TrackedPokemon>,
@@ -1166,7 +1166,7 @@ object TeamIndicatorUI {
             val isKO = pokemon.isKO || isPokemonKO(pokemon.uuid)
 
             // If Pokemon is KO'd and was transformed, revert to original form
-            val displaySpecies: Identifier?
+            val displaySpecies: ResourceLocation?
             val displayAspects: Set<String>
             if (isKO && pokemon.isTransformed && pokemon.originalSpeciesIdentifier != null) {
                 displaySpecies = pokemon.originalSpeciesIdentifier
@@ -1218,9 +1218,9 @@ object TeamIndicatorUI {
 
     // Model rendering delegated to PokemonModelRenderer
     private fun drawPokemonModel(
-        context: DrawContext, x: Int, y: Int,
+        context: GuiGraphics, x: Int, y: Int,
         renderablePokemon: com.cobblemon.mod.common.pokemon.RenderablePokemon?,
-        speciesIdentifier: Identifier?, aspects: Set<String>,
+        speciesIdentifier: ResourceLocation?, aspects: Set<String>,
         uuid: UUID, isKO: Boolean, status: Status?, isLeftSide: Boolean
     ) = PokemonModelRenderer.drawPokemonModel(
         context, x, y, modelSize, renderablePokemon, speciesIdentifier, aspects,
@@ -1235,7 +1235,7 @@ object TeamIndicatorUI {
      * Render tooltip for hovered pokeball, or control hints when hovering help icon.
      * Should be called LAST in render pipeline to appear on top.
      */
-    fun renderHoverTooltip(context: DrawContext) {
+    fun renderHoverTooltip(context: GuiGraphics) {
         val hovered = hoveredPokeball
 
         if (hovered != null) {
@@ -1259,9 +1259,9 @@ object TeamIndicatorUI {
      * Returns pair of (panel bounds, isLeftSide) for hint positioning.
      */
     private fun getHoveredHelpIcon(): Pair<TooltipBoundsData, Boolean>? {
-        val mc = MinecraftClient.getInstance()
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+        val mc = Minecraft.getInstance()
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
 
         leftHelpIconBounds?.let { bounds ->
             if (mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
@@ -1293,7 +1293,7 @@ object TeamIndicatorUI {
         return hasDefaultOrientation && hasDefaultScale && hasDefaultPosition
     }
 
-    private fun renderControlHints(context: DrawContext, panelInfo: Pair<TooltipBoundsData, Boolean>) {
+    private fun renderControlHints(context: GuiGraphics, panelInfo: Pair<TooltipBoundsData, Boolean>) {
         val (bounds, isLeftSide) = panelInfo
         TeamPanelRenderer.renderControlHints(
             context, bounds, isLeftSide,
@@ -1342,10 +1342,10 @@ object TeamIndicatorUI {
         return TooltipDataBuilder.buildTooltipData(uuid, snapshot, battlePokemon, isPlayerPokemon, ::isPokemonKO)
     }
 
-    private fun renderTooltip(context: DrawContext, bounds: PokeballBounds, data: TooltipData) {
-        val mc = MinecraftClient.getInstance()
-        val screenWidth = mc.window.scaledWidth
-        val screenHeight = mc.window.scaledHeight
+    private fun renderTooltip(context: GuiGraphics, bounds: PokeballBounds, data: TooltipData) {
+        val mc = Minecraft.getInstance()
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
 
         val result = PokemonInfoPopup.render(
             context, bounds, data, screenWidth, screenHeight, isMinimised
@@ -1364,7 +1364,7 @@ object TeamIndicatorUI {
      */
     private fun handleFontKeybinds(handle: Long) {
         val increaseKey =
-            InputUtil.fromTranslationKey(CobblemonUiClient.increaseFontKey.boundKeyTranslationKey)
+            InputConstants.getKey(CobblemonUiClient.increaseFontKey.saveString())
         val isIncreaseDown = UIUtils.isKeyOrButtonPressed(handle, increaseKey)
         if (isIncreaseDown && !wasIncreaseFontKeyPressed) {
             PanelConfig.adjustTooltipFontScale(PanelConfig.FONT_SCALE_STEP)
@@ -1373,7 +1373,7 @@ object TeamIndicatorUI {
         wasIncreaseFontKeyPressed = isIncreaseDown
 
         val decreaseKey =
-            InputUtil.fromTranslationKey(CobblemonUiClient.decreaseFontKey.boundKeyTranslationKey)
+            InputConstants.getKey(CobblemonUiClient.decreaseFontKey.saveString())
         val isDecreaseDown = UIUtils.isKeyOrButtonPressed(handle, decreaseKey)
         if (isDecreaseDown && !wasDecreaseFontKeyPressed) {
             PanelConfig.adjustTooltipFontScale(-PanelConfig.FONT_SCALE_STEP)
@@ -1391,8 +1391,8 @@ object TeamIndicatorUI {
     fun handleScroll(deltaY: Double): Boolean {
         if (!shouldHandleFontInput()) return false
 
-        val mc = MinecraftClient.getInstance()
-        val handle = mc.window.handle
+        val mc = Minecraft.getInstance()
+        val handle = mc.window.window
         val isCtrlDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
             GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS
         val isShiftDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||

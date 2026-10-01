@@ -8,8 +8,8 @@ import com.cobblemon.mod.common.entity.PoseType
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import jbro.cobblemon.ui.extended.CobblemonUi
 import jbro.cobblemon.ui.extended.UIUtils
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.util.Identifier
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.resources.ResourceLocation
 import org.joml.Quaternionf
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -88,12 +88,12 @@ object PokemonModelRenderer {
      * Falls back to pokeball rendering if model fails to load.
      */
     fun drawPokemonModel(
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         modelSize: Int,
         renderablePokemon: RenderablePokemon?,
-        speciesIdentifier: Identifier?,
+        speciesIdentifier: ResourceLocation?,
         aspects: Set<String>,
         uuid: UUID,
         isKO: Boolean,
@@ -102,7 +102,7 @@ object PokemonModelRenderer {
         applyOpacity: (Int) -> Int,
         teamIndicatorScale: Float
     ) {
-        val matrixStack = context.matrices
+        val matrixStack = context.pose()
         val state = getOrCreateFloatingState(uuid)
 
         if (renderablePokemon != null) {
@@ -123,7 +123,7 @@ object PokemonModelRenderer {
 
         val scale = modelSize / 3.0f
 
-        matrixStack.push()
+        matrixStack.pushPose()
         try {
             val renderY = y + modelSize * 0.1
             matrixStack.translate(centerX, renderY, 0.0)
@@ -151,24 +151,24 @@ object PokemonModelRenderer {
                     r = tint.r, g = tint.g, b = tint.b, a = tint.a
                 )
             } else {
-                matrixStack.pop()
+                matrixStack.popPose()
                 drawPokeballFallback(context, x, y, modelSize, isKO, status, applyOpacity, teamIndicatorScale)
                 return
             }
         } catch (e: Exception) {
             CobblemonUi.LOGGER.debug("Failed to render Pokemon model; using fallback", e)
-            matrixStack.pop()
+            matrixStack.popPose()
             drawPokeballFallback(context, x, y, modelSize, isKO, status, applyOpacity, teamIndicatorScale)
             return
         }
-        matrixStack.pop()
+        matrixStack.popPose()
     }
 
     /**
      * Draw a pokeball as fallback when model rendering fails.
      */
     private fun drawPokeballFallback(
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         modelSize: Int,
@@ -196,7 +196,7 @@ object PokemonModelRenderer {
     }
 
     private fun drawPokeball(
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         size: Int,

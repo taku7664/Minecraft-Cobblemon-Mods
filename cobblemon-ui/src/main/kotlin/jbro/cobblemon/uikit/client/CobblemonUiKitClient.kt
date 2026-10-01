@@ -16,7 +16,7 @@ object CobblemonUiKitClient : ClientModInitializer {
             dispatcher.register(
                 literal("cobblemon-ui-gallery").executes { context ->
                     context.source.client.setScreen(ComponentGalleryScreen())
-                    context.source.sendFeedback(Component.translatable("command.cobblemon_ui_kit.gallery.opened"))
+                    context.source.sendFeedback(Component.translatable("command.cobblemon_ui.gallery.opened"))
                     1
                 }
             )

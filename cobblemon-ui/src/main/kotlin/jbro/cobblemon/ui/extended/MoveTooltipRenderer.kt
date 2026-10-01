@@ -11,11 +11,11 @@ import com.cobblemon.mod.common.client.render.drawScaledText
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.ui.extended.navigation.MoveTooltipMode
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.font.TextRenderer
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.InputUtil
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.network.chat.Component
 
 import org.lwjgl.glfw.GLFW
 import java.util.UUID
@@ -141,15 +141,15 @@ object MoveTooltipRenderer {
     // Main render
     // ═══════════════════════════════════════════════════════════════
 
-    fun renderTooltip(context: DrawContext) {
+    fun renderTooltip(context: GuiGraphics) {
         if (BattleInfoPanel.isExpanded) return
         val move = hoveredMove ?: return
         if (!PanelConfig.enableMoveTooltipsEffective) return
 
-        val mc = MinecraftClient.getInstance()
-        val screenWidth = mc.window.scaledWidth
-        val screenHeight = mc.window.scaledHeight
-        val tr = mc.textRenderer
+        val mc = Minecraft.getInstance()
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
+        val tr = mc.font
         // Whole text sizes only; the width keeps the designed proportion to the text.
         val fontScale = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
         val lineH = (TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
@@ -171,12 +171,12 @@ object MoveTooltipRenderer {
 
         // Detail grid: remaining stats in 2-column layout, filled left-to-right
         val detailItems = mutableListOf(
-            StatEntry(Text.translatable("cobblemon_ui.move.pp").string, data.ppText, data.ppColor),
-            StatEntry(Text.translatable("cobblemon_ui.move.accuracy").string, data.accuracyText, COLOR_ACCURACY)
+            StatEntry(Component.translatable("cobblemon_ui.move.pp").string, data.ppText, data.ppColor),
+            StatEntry(Component.translatable("cobblemon_ui.move.accuracy").string, data.accuracyText, COLOR_ACCURACY)
         )
-        if (data.critText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_ui.move.crit").string, data.critText, COLOR_CRIT))
-        if (data.effectText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_ui.move.effect").string, data.effectText, COLOR_EFFECT))
-        if (data.priorityText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_ui.move.priority").string, data.priorityText, data.priorityColor))
+        if (data.critText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.crit").string, data.critText, COLOR_CRIT))
+        if (data.effectText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.effect").string, data.effectText, COLOR_EFFECT))
+        if (data.priorityText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.priority").string, data.priorityText, data.priorityColor))
         // Odd count: first item full-width, rest paired. Even: all paired.
         val hasHead = detailItems.size % 2 == 1
         val headCellH = if (hasHead) vPad + lineH else 0
@@ -214,15 +214,15 @@ object MoveTooltipRenderer {
         val py = anchor.y()
 
         // ── Render ──
-        context.matrices.push()
-        context.matrices.translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
+        context.pose().pushPose()
+        context.pose().translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
 
         // Keep the shared navy shell independent of the move's type hue.
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
         UIUtils.renderPopupFrame(context, px, py, tooltipWidth, totalHeight)
-        context.draw()
+        context.flush()
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
 
         val cellX = px + UIUtils.FRAME_INSET
@@ -240,9 +240,9 @@ object MoveTooltipRenderer {
         // Power row (full-width)
         drawCell(context, cellX, curY, contentWidth, powerCellH)
         val powerY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
-        val powerLabel = Text.translatable("cobblemon_ui.move.power").string
+        val powerLabel = Component.translatable("cobblemon_ui.move.power").string
         draw(context, powerLabel, (cellX + UIUtils.CELL_PAD).toFloat(), powerY, TOOLTIP_LABEL, fontScale)
-        val powerLabelW = tr.getWidth(powerLabel) * fontScale
+        val powerLabelW = tr.width(powerLabel) * fontScale
         draw(context, "  ${data.powerText}", (cellX + UIUtils.CELL_PAD) + powerLabelW, powerY, COLOR_POWER, fontScale)
         curY += powerCellH + UIUtils.CELL_GAP
 
@@ -298,7 +298,7 @@ object MoveTooltipRenderer {
             }
         }
 
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -384,7 +384,7 @@ object MoveTooltipRenderer {
             } else {
                 "cobblemon_ui.move.priority.slow"
             }
-            val label = Text.translatable(labelKey).string
+            val label = Component.translatable(labelKey).string
             priorityText = "$sign${template.priority} ($label)"
             priorityColor = if (template.priority > 0) COLOR_PRIORITY_POSITIVE else COLOR_PRIORITY_NEGATIVE
         }
@@ -415,7 +415,7 @@ object MoveTooltipRenderer {
     private fun computeEffectiveness(move: MoveTileBounds): List<EffectivenessEntry> {
         val entries = mutableListOf<EffectivenessEntry>()
         val battle = CobblemonClient.battle ?: return entries
-        val playerUUID = MinecraftClient.getInstance().player?.uuid ?: return entries
+        val playerUUID = Minecraft.getInstance().player?.uuid ?: return entries
         val playerSide = battle.side1.actors.any { it.uuid == playerUUID }
         val opponentSide = if (playerSide) battle.side2 else battle.side1
         val opponents = opponentSide.activeClientBattlePokemon.mapNotNull { it.battlePokemon }
@@ -435,7 +435,7 @@ object MoveTooltipRenderer {
 
             val opponentName = opponent.displayName.string
             val (effectText, effectColor) = getEffectivenessText(multiplier)
-            entries.add(EffectivenessEntry(Text.translatable("cobblemon_ui.effectiveness.vs", opponentName, effectText).string, effectColor))
+            entries.add(EffectivenessEntry(Component.translatable("cobblemon_ui.effectiveness.vs", opponentName, effectText).string, effectColor))
         }
         return entries
     }
@@ -443,14 +443,14 @@ object MoveTooltipRenderer {
     private fun getEffectivenessText(multiplier: Double): Pair<String, Int> {
         val fmt = formatMultiplier(multiplier)
         return when {
-            multiplier == 0.0 -> Text.translatable("cobblemon_ui.effectiveness.immune").string to IMMUNE
-            multiplier <= 0.25 -> Text.translatable("cobblemon_ui.effectiveness.extremely_ineffective", fmt).string to NOT_EFFECTIVE
-            multiplier < 0.5 -> Text.translatable("cobblemon_ui.effectiveness.not_effective", fmt).string to NOT_EFFECTIVE
-            multiplier < 1.0 -> Text.translatable("cobblemon_ui.effectiveness.not_very_effective", fmt).string to NOT_EFFECTIVE
-            multiplier >= 4.0 -> Text.translatable("cobblemon_ui.effectiveness.extremely_effective", fmt).string to SUPER_EFFECTIVE_4X
-            multiplier > 2.0 -> Text.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_4X
-            multiplier > 1.0 -> Text.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_2X
-            else -> Text.translatable("cobblemon_ui.effectiveness.neutral").string to NEUTRAL
+            multiplier == 0.0 -> Component.translatable("cobblemon_ui.effectiveness.immune").string to IMMUNE
+            multiplier <= 0.25 -> Component.translatable("cobblemon_ui.effectiveness.extremely_ineffective", fmt).string to NOT_EFFECTIVE
+            multiplier < 0.5 -> Component.translatable("cobblemon_ui.effectiveness.not_effective", fmt).string to NOT_EFFECTIVE
+            multiplier < 1.0 -> Component.translatable("cobblemon_ui.effectiveness.not_very_effective", fmt).string to NOT_EFFECTIVE
+            multiplier >= 4.0 -> Component.translatable("cobblemon_ui.effectiveness.extremely_effective", fmt).string to SUPER_EFFECTIVE_4X
+            multiplier > 2.0 -> Component.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_4X
+            multiplier > 1.0 -> Component.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_2X
+            else -> Component.translatable("cobblemon_ui.effectiveness.neutral").string to NEUTRAL
         }
     }
 
@@ -463,9 +463,9 @@ object MoveTooltipRenderer {
     // ═══════════════════════════════════════════════════════════════
 
     private fun renderHeaderText(
-        context: DrawContext, data: MoveData,
+        context: GuiGraphics, data: MoveData,
         x: Int, y: Int, w: Int,
-        fontScale: Float, tr: TextRenderer
+        fontScale: Float, tr: Font
     ) {
         val xf = x.toFloat()
         val yf = y.toFloat()
@@ -474,10 +474,10 @@ object MoveTooltipRenderer {
         draw(context, data.moveName, xf, yf, jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.TEXT, fontScale)
 
         // Right: Type · Category
-        val catW = tr.getWidth(data.categoryName) * fontScale
+        val catW = tr.width(data.categoryName) * fontScale
         val dotText = " \u00b7 "
-        val dotW = tr.getWidth(dotText) * fontScale
-        val typeW = tr.getWidth(data.typeName) * fontScale
+        val dotW = tr.width(dotText) * fontScale
+        val typeW = tr.width(data.typeName) * fontScale
         val rightEdge = x + w
         draw(context, data.categoryName, rightEdge - catW, yf, data.categoryColor, fontScale)
         draw(context, dotText, rightEdge - catW - dotW, yf, TOOLTIP_DIM, fontScale)
@@ -497,8 +497,8 @@ object MoveTooltipRenderer {
     }
 
     private fun renderDetailGrid(
-        context: DrawContext, items: List<StatEntry>, geo: GridGeometry,
-        startY: Int, rows: Int, lineH: Int, fontScale: Float, tr: TextRenderer
+        context: GuiGraphics, items: List<StatEntry>, geo: GridGeometry,
+        startY: Int, rows: Int, lineH: Int, fontScale: Float, tr: Font
     ) {
         val lx = geo.leftTextX.toFloat()
         val rx = geo.rightTextX.toFloat()
@@ -532,10 +532,10 @@ object MoveTooltipRenderer {
     // Cell + frame rendering (delegates to UIUtils)
     // ═══════════════════════════════════════════════════════════════
 
-    private fun drawCell(context: DrawContext, x: Int, y: Int, w: Int, h: Int) =
+    private fun drawCell(context: GuiGraphics, x: Int, y: Int, w: Int, h: Int) =
         UIUtils.drawPopupCell(context, x, y, w, h)
 
-    private fun drawRowDivider(context: DrawContext, cellX: Int, cellW: Int, y: Int) =
+    private fun drawRowDivider(context: GuiGraphics, cellX: Int, cellW: Int, y: Int) =
         UIUtils.drawPopupRowDivider(context, cellX, cellW, y)
 
     // ═══════════════════════════════════════════════════════════════
@@ -543,20 +543,20 @@ object MoveTooltipRenderer {
     // ═══════════════════════════════════════════════════════════════
 
     private fun draw(
-        context: DrawContext, text: String,
+        context: GuiGraphics, text: String,
         x: Float, y: Float, color: Int, fontScale: Float
     ) {
         drawScaledText(
-            context = context, text = Text.literal(text),
+            context = context, text = Component.literal(text),
             x = x, y = y, scale = fontScale, colour = color, shadow = false
         )
     }
 
     private fun drawRightAligned(
-        context: DrawContext, text: String, rightEdge: Int, y: Float,
-        color: Int, fontScale: Float, tr: TextRenderer
+        context: GuiGraphics, text: String, rightEdge: Int, y: Float,
+        color: Int, fontScale: Float, tr: Font
     ) {
-        val w = tr.getWidth(text) * fontScale
+        val w = tr.width(text) * fontScale
         draw(context, text, rightEdge - w, y, color, fontScale)
     }
 
@@ -566,7 +566,7 @@ object MoveTooltipRenderer {
 
     private fun wrapText(
         text: String, tooltipWidth: Int, fontScale: Float,
-        tr: TextRenderer
+        tr: Font
     ): List<String> {
         val maxWidth = tooltipWidth - UIUtils.FRAME_INSET * 2 - UIUtils.CELL_PAD * 2 - 2
         val words = text.split(" ")
@@ -575,7 +575,7 @@ object MoveTooltipRenderer {
 
         for (word in words) {
             val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-            if (tr.getWidth(testLine) * fontScale > maxWidth && currentLine.isNotEmpty()) {
+            if (tr.width(testLine) * fontScale > maxWidth && currentLine.isNotEmpty()) {
                 lines.add(currentLine.toString())
                 currentLine = StringBuilder(word)
             } else {
@@ -669,7 +669,7 @@ object MoveTooltipRenderer {
     private fun getHexDynamicPower(template: MoveTemplate): DynamicPowerInfo? {
         val basePower = template.power.toInt()
         val battle = CobblemonClient.battle ?: return null
-        val playerUUID = MinecraftClient.getInstance().player?.uuid ?: return null
+        val playerUUID = Minecraft.getInstance().player?.uuid ?: return null
         val playerSide = battle.side1.actors.any { it.uuid == playerUUID }
         val opponentSide = if (playerSide) battle.side2 else battle.side1
         val boostedTargets = opponentSide.activeClientBattlePokemon
@@ -697,13 +697,13 @@ object MoveTooltipRenderer {
 
     fun handleInput() {
         if (!shouldHandleFontInput()) return
-        val mc = MinecraftClient.getInstance()
-        handleFontKeybinds(mc.window.handle)
+        val mc = Minecraft.getInstance()
+        handleFontKeybinds(mc.window.window)
     }
 
     private fun handleFontKeybinds(handle: Long) {
-        val increaseKey = InputUtil.fromTranslationKey(
-            CobblemonUiClient.increaseFontKey.boundKeyTranslationKey)
+        val increaseKey = InputConstants.getKey(
+            CobblemonUiClient.increaseFontKey.saveString())
         val isIncreaseDown = UIUtils.isKeyOrButtonPressed(handle, increaseKey)
         if (isIncreaseDown && !wasIncreaseFontKeyPressed) {
             PanelConfig.adjustMoveTooltipFontScale(PanelConfig.FONT_SCALE_STEP)
@@ -711,8 +711,8 @@ object MoveTooltipRenderer {
         }
         wasIncreaseFontKeyPressed = isIncreaseDown
 
-        val decreaseKey = InputUtil.fromTranslationKey(
-            CobblemonUiClient.decreaseFontKey.boundKeyTranslationKey)
+        val decreaseKey = InputConstants.getKey(
+            CobblemonUiClient.decreaseFontKey.saveString())
         val isDecreaseDown = UIUtils.isKeyOrButtonPressed(handle, decreaseKey)
         if (isDecreaseDown && !wasDecreaseFontKeyPressed) {
             PanelConfig.adjustMoveTooltipFontScale(-PanelConfig.FONT_SCALE_STEP)
@@ -723,8 +723,8 @@ object MoveTooltipRenderer {
 
     fun handleScroll(deltaY: Double): Boolean {
         if (hoveredMove == null) return false
-        val mc = MinecraftClient.getInstance()
-        val handle = mc.window.handle
+        val mc = Minecraft.getInstance()
+        val handle = mc.window.window
         val isCtrlDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
             GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS
         if (isCtrlDown) {

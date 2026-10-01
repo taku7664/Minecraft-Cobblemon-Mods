@@ -10,9 +10,9 @@ import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import jbro.cobblemon.ui.extended.UIUtils
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import kotlin.math.abs
 
 /**
@@ -31,7 +31,7 @@ object BattleControlRenderer {
     private data class Group(val owner: Any, val kind: String)
 
     @JvmStatic
-    fun back(context: DrawContext, x: Int, y: Int, hovered: Boolean) {
+    fun back(context: GuiGraphics, x: Int, y: Int, hovered: Boolean) {
         val emphasis = BattleFocusMotion.emphasis(BACK_KEY, hovered)
         val extension = protrusion(emphasis)
         val corners = BattleCornerCuts(8, 8, 8, 8)
@@ -50,7 +50,7 @@ object BattleControlRenderer {
     }
 
     @JvmStatic
-    fun option(context: DrawContext, tile: BattleOptionTile, focused: Boolean) {
+    fun option(context: GuiGraphics, tile: BattleOptionTile, focused: Boolean) {
         val opacity = CobblemonClient.battleOverlay.opacityRatio.toFloat()
         if (opacity < .1f) return
         val primary = tile.resource == BattleGUI.fightResource
@@ -66,7 +66,7 @@ object BattleControlRenderer {
             tile.y + BattleOptionTile.OPTION_HEIGHT / 2f, accentOf(base), opacity)
     }
 
-    internal fun drawOption(context: DrawContext, x: Int, y: Int, text: Text, base: BattleSurface,
+    internal fun drawOption(context: GuiGraphics, x: Int, y: Int, text: Component, base: BattleSurface,
                             primary: Boolean, emphasis: Float, opacity: Float = 1f) {
         val extension = protrusion(emphasis)
         val left = x - extension
@@ -82,15 +82,15 @@ object BattleControlRenderer {
         BattleSurfaceRenderer.capsule(context, left + 6, y + (height - pillHeight) / 2, 3, pillHeight,
             if (primary) BattleSurfaceRenderer.interpolate(BattleUiTheme.PANEL_ALT, 0xFF06343A.toInt(), emphasis)
             else BattleSurfaceRenderer.interpolate(dim(accent), accent, emphasis), opacity)
-        val font = MinecraftClient.getInstance().textRenderer
-        val scale = minOf(1f, (BattleOptionTile.OPTION_WIDTH - 16f) / font.getWidth(text).coerceAtLeast(1))
-        val textX = x + (BattleOptionTile.OPTION_WIDTH - font.getWidth(text) * scale) / 2f
-        val textY = y + (height - font.fontHeight * scale) / 2f
+        val font = Minecraft.getInstance().font
+        val scale = minOf(1f, (BattleOptionTile.OPTION_WIDTH - 16f) / font.width(text).coerceAtLeast(1))
+        val textX = x + (BattleOptionTile.OPTION_WIDTH - font.width(text) * scale) / 2f
+        val textY = y + (height - font.lineHeight * scale) / 2f
         UIUtils.drawText(context, text.string, textX, textY, BattleSurfaceRenderer.withOpacity(if (primary) 0xFF071018.toInt() else BattleUiTheme.TEXT, opacity), scale)
     }
 
     @JvmStatic
-    fun move(context: DrawContext, tile: BattleMoveSelection.MoveTile, focused: Boolean) {
+    fun move(context: GuiGraphics, tile: BattleMoveSelection.MoveTile, focused: Boolean) {
         val opacity = tile.moveSelection.opacity
         if (opacity < .1f) return
         val typeColor = 0xFF000000.toInt() or
@@ -103,7 +103,7 @@ object BattleControlRenderer {
             tile.y + BattleScreenGeometry.MOVE_HEIGHT / 2f, typeColor, opacity)
     }
 
-    internal fun drawMove(context: DrawContext, x: Float, y: Float, move: MoveTemplate,
+    internal fun drawMove(context: GuiGraphics, x: Float, y: Float, move: MoveTemplate,
                           type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
                           selectable: Boolean, emphasis: Float, opacity: Float = 1f) {
         val contentOpacity = opacity * if (selectable) 1f else .95f
@@ -125,9 +125,9 @@ object BattleControlRenderer {
             opacity = if (selectable) opacity else opacity * .5f).render(context)
         MoveCategoryIcon(x = x + 29, y = y + 19, category = move.damageCategory,
             opacity = if (selectable) opacity else opacity * .5f).render(context)
-        val font = MinecraftClient.getInstance().textRenderer
+        val font = Minecraft.getInstance().font
         val name = move.displayName.string
-        UIUtils.drawText(context, font.trimToWidth(name, 114), x + 14, y + 4,
+        UIUtils.drawText(context, font.plainSubstrByWidth(name, 114), x + 14, y + 4,
             BattleSurfaceRenderer.withOpacity(if (selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED, opacity), 1f)
         val label = if (pp == 100 && maxPp == 100) "—/—" else "$pp/$maxPp"
         val ppColor = when {
@@ -135,16 +135,16 @@ object BattleControlRenderer {
             pp <= maxPp / 2 -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.MUTED
         }
-        UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.getWidth(label), y + 19,
+        UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.width(label), y + 19,
             BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
     }
 
     /** Previews draw a settled state: fully focused or at rest. */
-    internal fun drawOption(context: DrawContext, x: Int, y: Int, text: Text, base: BattleSurface,
+    internal fun drawOption(context: GuiGraphics, x: Int, y: Int, text: Component, base: BattleSurface,
                             primary: Boolean, focused: Boolean, opacity: Float = 1f) =
         drawOption(context, x, y, text, base, primary, if (focused) 1f else 0f, opacity)
 
-    internal fun drawMove(context: DrawContext, x: Float, y: Float, move: MoveTemplate,
+    internal fun drawMove(context: GuiGraphics, x: Float, y: Float, move: MoveTemplate,
                           type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
                           selectable: Boolean, focused: Boolean, opacity: Float = 1f) =
         drawMove(context, x, y, move, type, typeColor, pp, maxPp, selectable, if (focused) 1f else 0f, opacity)
@@ -156,7 +156,7 @@ object BattleControlRenderer {
 
     /** A breathing halo in [accent] behind a focused surface; nothing at rest. */
     @JvmStatic
-    fun drawFocusHalo(context: DrawContext, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
+    fun drawFocusHalo(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
                       accent: Int, emphasis: Float, opacity: Float) {
         if (emphasis <= .02f) return
         val strength = emphasis * (.5f + .25f * BattleFocusMotion.pulse())
@@ -165,7 +165,7 @@ object BattleControlRenderer {
 
     /** A soft shadow under a control, so it separates from bright sky and terrain behind it. */
     @JvmStatic
-    fun drawDropShadow(context: DrawContext, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
+    fun drawDropShadow(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
                        opacity: Float) {
         BattleSurfaceRenderer.draw(context, x, y + 2, width, height,
             BattleSurface(SHADOW, SHADOW, cornerCuts = corners, rounded = true), opacity)
@@ -176,7 +176,7 @@ object BattleControlRenderer {
      * [group]'s spring and nudges toward the choice it points at.
      */
     @JvmStatic
-    fun drawCursor(context: DrawContext, group: Any, tipX: Int, centerY: Float, accent: Int, opacity: Float) {
+    fun drawCursor(context: GuiGraphics, group: Any, tipX: Int, centerY: Float, accent: Int, opacity: Float) {
         val y = BattleFocusMotion.cursor(group, centerY)
         val x = tipX - 3f + BattleFocusMotion.bob() * 1.5f
         drawArrow(context, x + 1f, y + 1f, BattleSurfaceRenderer.withOpacity(0x8C000000.toInt(), opacity))
@@ -185,9 +185,9 @@ object BattleControlRenderer {
     }
 
     /** A right-pointing arrow with its tip at ([x], [y]): 6 wide and 11 tall, its slanted edges anti-aliased. */
-    private fun drawArrow(context: DrawContext, x: Float, y: Float, color: Int) {
-        context.matrices.push()
-        context.matrices.translate(x, y, 0f)
+    private fun drawArrow(context: GuiGraphics, x: Float, y: Float, color: Int) {
+        context.pose().pushPose()
+        context.pose().translate(x, y, 0f)
         val alpha = color ushr 24
         for (row in -5..5) {
             val reach = 6f * (1f - (abs(row) + .5f) / 5.5f)
@@ -197,7 +197,7 @@ object BattleControlRenderer {
             if (partial > .05f) context.fill(-6 + full, row, -5 + full, row + 1,
                 (color and 0xFFFFFF) or ((alpha * partial).toInt() shl 24))
         }
-        context.matrices.pop()
+        context.pose().popPose()
     }
 
     private fun lit(style: BattleSurface, emphasis: Float): BattleSurface =

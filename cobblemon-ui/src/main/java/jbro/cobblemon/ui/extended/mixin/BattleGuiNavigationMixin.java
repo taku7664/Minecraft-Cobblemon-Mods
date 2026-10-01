@@ -25,8 +25,8 @@ import jbro.cobblemon.ui.navigation.SpatialMenuNavigator;
 import jbro.cobblemon.ui.navigation.UiRect;
 import jbro.cobblemon.ui.extended.ui.shared.BattleTargetRenderer;
 import jbro.cobblemon.ui.extended.ui.shared.BattleModalVignette;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,16 +44,16 @@ import java.util.function.Predicate;
 public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAccess {
     @Inject(method = "render", at = @At("HEAD"), remap = true)
     private void cobblemonBattleUi$renderModalVignette(
-            DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+            GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         boolean active = getCurrentActionSelection() instanceof BattleSwitchPokemonSelection
                 || getCurrentActionSelection() instanceof BattleTargetSelection targetSelection
                     && BattleTargetRenderer.supports(targetSelection)
                 || BattleInfoPanel.INSTANCE.isExpanded()
                 || jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen();
-        MinecraftClient client = MinecraftClient.getInstance();
-        BattleModalVignette.render(context, client.getWindow().getScaledWidth(),
-                client.getWindow().getScaledHeight(), active);
-        context.draw();
+        Minecraft client = Minecraft.getInstance();
+        BattleModalVignette.render(context, client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(), active);
+        context.flush();
     }
 
     @Unique
@@ -109,7 +109,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
 
     @Inject(method = "render", at = @At("HEAD"), remap = true)
     private void cobblemonBattleUi$observeMouseMovement(
-            DrawContext context,
+            GuiGraphics context,
             int mouseX,
             int mouseY,
             float delta,
@@ -138,11 +138,11 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
 
         List<BattleOptionTile> tiles = selection.getTiles();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         BattleCommandLayout.place(
                 tiles,
-                client.getWindow().getScaledWidth(),
-                client.getWindow().getScaledHeight()
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight()
         );
         int hoveredIndex = -1;
         for (int index = 0; index < tiles.size(); index++) {
@@ -161,7 +161,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
 
     @Inject(method = "render", at = @At("RETURN"), remap = true)
     private void cobblemonBattleUi$renderInformationOverlayLast(
-            DrawContext context,
+            GuiGraphics context,
             int mouseX,
             int mouseY,
             float delta,
@@ -188,7 +188,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                     GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S,
                     GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A,
                     GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> true;
-            default -> CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode);
+            default -> CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode);
         };
         if (navigationKey) {
             KeyboardTileFocus.useKeyboard();
@@ -236,7 +236,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             return true;
         }
 
-        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
             return false;
         }
 
@@ -274,14 +274,14 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             ((ForfeitSelectionAccess) (Object) selection).cobblemonBattleUi$setFocusedChoice(choice);
             return true;
         }
-        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
             return false;
         }
         if (cobblemonBattleUi$trySubmit(selection)) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             UiRect bound = cobblemonBattleUi$gridIndex == 0
-                    ? BattleScreenGeometry.forfeitAccept(client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight())
-                    : BattleScreenGeometry.forfeitCancel(client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
+                    ? BattleScreenGeometry.forfeitAccept(client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight())
+                    : BattleScreenGeometry.forfeitCancel(client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight());
             selection.mousePrimaryClicked(bound.x() + bound.width() / 2.0,
                     bound.y() + bound.height() / 2.0);
         }
@@ -404,7 +404,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                 || keyCode == GLFW.GLFW_KEY_RIGHT || keyCode == GLFW.GLFW_KEY_D) {
             return true;
         }
-        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
             return false;
         }
         if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
@@ -445,9 +445,9 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
             default -> 0;
         };
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         List<UiRect> bounds = BattleTargetRenderer.bounds(selection,
-                client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
+                client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight());
         List<Boolean> enabled = tiles.stream().map(BattleTargetSelection.TargetTile::getSelectable).toList();
         if (dx != 0 || dy != 0) {
             cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
@@ -457,7 +457,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             }
             return true;
         }
-        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
             return false;
         }
         cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
@@ -510,7 +510,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             return true;
         }
 
-        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
             return false;
         }
         if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())

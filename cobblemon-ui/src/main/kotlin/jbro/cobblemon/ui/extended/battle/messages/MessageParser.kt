@@ -2,8 +2,8 @@ package jbro.cobblemon.ui.extended.battle.messages
 
 import jbro.cobblemon.ui.extended.BattleStateTracker.BattleStat
 import jbro.cobblemon.ui.extended.CobblemonUi
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import java.util.Locale
 
 /**
@@ -48,10 +48,10 @@ object MessageParser {
 
     fun argToString(arg: Any): String {
         return when (arg) {
-            is Text -> arg.string
+            is Component -> arg.string
             is String -> arg
-            is TranslatableTextContent -> {
-                Text.translatable(arg.key, *arg.args).string
+            is TranslatableContents -> {
+                Component.translatable(arg.key, *arg.args).string
             }
             else -> arg.toString()
         }
@@ -64,9 +64,9 @@ object MessageParser {
      */
     fun extractPokemonName(arg: Any): String {
         when (arg) {
-            is Text -> {
-                val content = arg.content
-                if (content is TranslatableTextContent) {
+            is Component -> {
+                val content = arg.contents
+                if (content is TranslatableContents) {
                     if (content.key == "cobblemon.battle.owned_pokemon" && content.args.size >= 2) {
                         return canonicalOwnedPokemonName(content.args[0], content.args[1])
                     }
@@ -76,11 +76,11 @@ object MessageParser {
                 }
                 return arg.string
             }
-            is TranslatableTextContent -> {
+            is TranslatableContents -> {
                 if (arg.key == "cobblemon.battle.owned_pokemon" && arg.args.size >= 2) {
                     return canonicalOwnedPokemonName(arg.args[0], arg.args[1])
                 }
-                return Text.translatable(arg.key, *arg.args).string
+                return Component.translatable(arg.key, *arg.args).string
             }
             is String -> return arg
             else -> return arg.toString()
@@ -97,15 +97,15 @@ object MessageParser {
      */
     fun argToTranslationKey(arg: Any): String? {
         return when (arg) {
-            is Text -> {
-                val content = arg.content
-                if (content is TranslatableTextContent) {
+            is Component -> {
+                val content = arg.contents
+                if (content is TranslatableContents) {
                     content.key
                 } else {
                     null
                 }
             }
-            is TranslatableTextContent -> arg.key
+            is TranslatableContents -> arg.key
             else -> null
         }
     }
@@ -188,7 +188,7 @@ object MessageParser {
     private fun getStatFromTranslatedName(translatedName: String): BattleStat? {
         val lowerName = translatedName.lowercase()
         for ((key, stat) in TranslationKeys.COBBLEMON_STAT_KEYS) {
-            val translated = Text.translatable(key).string.lowercase()
+            val translated = Component.translatable(key).string.lowercase()
             if (translated == lowerName) {
                 return stat
             }

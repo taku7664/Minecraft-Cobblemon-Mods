@@ -1,6 +1,16 @@
-# Cobblemon UI Kit
+# Cobblemon UI
 
-Client-side shared widget and theme source module for Cobblemon interfaces.
+Cobblemon's client interfaces in one client-only mod (`cobblemon_ui`):
+
+- **UI kit** (`jbro.cobblemon.uikit`): widgets, layout, surfaces and themes. `CobblemonUiSharedTheme` is the look the
+  Cobblemon screens share: the MCC hub, HUD buttons over the world and the battle dialogue.
+- **Battle screens** (`jbro.cobblemon.ui`): Cobblemon's battle commands, information window, log, dialogue and
+  target, switch and forfeit screens, replaced through mixins.
+
+The mod is built with Mojang names. More Cobblemon Contents bundles it (`include`) without declaring it a dependency,
+so dedicated servers never need a client mod. Unit tests: `gradlew :cobblemon-ui:unitTest`.
+
+## UI kit
 
 ## Development gallery
 
@@ -14,7 +24,7 @@ For a quick-play world that opens the gallery and leaves it under manual control
 
 ```powershell
 $env:COBBLEMON_UI_KIT_MANUAL_GALLERY='1'
-.\gradlew.bat :cobblemon-ui-kit:runClient --no-daemon --configure-on-demand
+.\gradlew.bat :cobblemon-ui:runClient --no-daemon --configure-on-demand
 ```
 
 Create or enter any world. The gallery opens after the player joins and remains under manual control.
@@ -55,7 +65,7 @@ A screen that draws a control's surface itself must also call `UiSurfaceRenderer
 $env:COBBLEMON_UI_KIT_CAPTURE_WORLD='1'
 $env:COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES='1'
 $env:COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING='1'
-.\gradlew.bat :cobblemon-ui-kit:runClient --no-daemon --configure-on-demand --args="--quickPlaySingleplayer ui-kit-clean"
+.\gradlew.bat :cobblemon-ui:runClient --no-daemon --configure-on-demand --args="--quickPlaySingleplayer ui-kit-clean"
 ```
 
 `COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING=1` is an explicit development-only opt-in. When a Cobblemon snapshot build presents its startup warning, the harness chooses **Yes** for that run without selecting “don't show again”. Stable Cobblemon builds do not exercise this branch.

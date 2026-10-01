@@ -5,8 +5,8 @@ import jbro.cobblemon.ui.extended.battle.messages.MessageParser
 import jbro.cobblemon.ui.extended.battle.messages.RawProtocolStateUpdater
 import jbro.cobblemon.ui.extended.battle.messages.StateUpdater
 import jbro.cobblemon.ui.extended.battle.messages.TranslationKeys
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 
 /**
  * Parses Cobblemon battle messages (via TranslatableTextContent) and updates BattleStateTracker.
@@ -22,16 +22,16 @@ object BattleMessageInterceptor {
         MessageParser.clearMoveTracking()
     }
 
-    fun processMessages(messages: List<Text>) {
+    fun processMessages(messages: List<Component>) {
         for (message in messages) {
             processComponent(message)
         }
     }
 
-    private fun processComponent(text: Text) {
-        val contents = text.content
+    private fun processComponent(text: Component) {
+        val contents = text.contents
 
-        if (contents !is TranslatableTextContent && RawProtocolStateUpdater.process(text.string) { pnx ->
+        if (contents !is TranslatableContents && RawProtocolStateUpdater.process(text.string) { pnx ->
                 CobblemonClient.battle
                     ?.getPokemonFromPNX(pnx)
                     ?.second
@@ -42,14 +42,14 @@ object BattleMessageInterceptor {
             return
         }
 
-        if (contents is TranslatableTextContent) {
+        if (contents is TranslatableContents) {
             val key = contents.key
             val args = contents.args
 
             if (key.startsWith("cobblemon.battle.")) {
                 CobblemonUi.LOGGER.debug("BattleMessage: key='$key', args=${args.map {
                     when (it) {
-                        is Text -> it.string
+                        is Component -> it.string
                         else -> it.toString()
                     }
                 }}")

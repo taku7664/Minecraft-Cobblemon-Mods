@@ -9,19 +9,19 @@ import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Species
 import com.cobblemon.mod.common.pokemon.status.PersistentStatus
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 import java.util.UUID
 import kotlin.math.ceil
 
 /** Adapts Cobblemon's animated battle tile data to the reviewed edge HUD card. */
 object BattleHudRenderer {
     @JvmStatic
-    fun draw(context: DrawContext, nativeX: Float, nativeY: Float, reversed: Boolean, species: Species,
-             level: Int, displayName: Text, gender: Gender, status: PersistentStatus?,
+    fun draw(context: GuiGraphics, nativeX: Float, nativeY: Float, reversed: Boolean, species: Species,
+             level: Int, displayName: Component, gender: Gender, status: PersistentStatus?,
              state: PosableState, opacity: Float, maxHealth: Int, health: Float,
              selected: Boolean, hovered: Boolean, compact: Boolean,
-             actorName: Text?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
+             actorName: Component?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
         val nativeWidth = if (compact) BattleOverlay.COMPACT_TILE_WIDTH else BattleOverlay.TILE_WIDTH
         val battleType = CobblemonClient.battle?.battleFormat?.battleType
         val indent = if (compact && battleType != null) BattleScreenGeometry.compactHudSlotIndent(

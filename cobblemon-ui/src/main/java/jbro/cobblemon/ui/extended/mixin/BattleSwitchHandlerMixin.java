@@ -14,7 +14,7 @@ import jbro.cobblemon.ui.extended.BattleStateTracker;
 import jbro.cobblemon.ui.extended.CobblemonUi;
 import jbro.cobblemon.ui.extended.DamageTracker;
 import jbro.cobblemon.ui.extended.PanelConfig;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.util.UUID;
 
@@ -27,7 +27,7 @@ import java.util.UUID;
 public class BattleSwitchHandlerMixin {
 
     @Inject(method = "handle", at = @At("HEAD"))
-    private void onHandlePre(BattleSwitchPokemonPacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void onHandlePre(BattleSwitchPokemonPacket packet, Minecraft client, CallbackInfo ci) {
         boolean needsStateTracking = PanelConfig.INSTANCE.needsBattleStateTracking();
         boolean needsDamageTracking = PanelConfig.INSTANCE.needsDamageTracking();
 
@@ -67,12 +67,12 @@ public class BattleSwitchHandlerMixin {
      * Determine if the switching Pokemon is on the ally or opponent side.
      * Uses battle.getPokemonFromPNX() to find the side, then compares with player's side.
      */
-    private Boolean determineIfAlly(BattleSwitchPokemonPacket packet, MinecraftClient client) {
+    private Boolean determineIfAlly(BattleSwitchPokemonPacket packet, Minecraft client) {
         try {
             ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
             if (battle == null) return null;
 
-            UUID playerUUID = client.getSession().getUuidOrNull();
+            UUID playerUUID = client.getUser().getProfileId();
             if (playerUUID == null) return null;
 
             // Check if player is in side1 or side2

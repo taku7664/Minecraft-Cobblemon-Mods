@@ -6,7 +6,7 @@ import jbro.cobblemon.ui.extended.BattleStateTracker.ItemStatus
 import jbro.cobblemon.ui.extended.BattleStateTracker.VolatileStatus
 import jbro.cobblemon.ui.extended.CobblemonUi
 import jbro.cobblemon.ui.extended.TeamIndicatorUI
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * Takes parsed battle message arguments and calls the appropriate
@@ -18,7 +18,7 @@ object StateUpdater {
         if (args.isEmpty()) return
 
         val turnStr = when (val arg0 = args[0]) {
-            is Text -> arg0.string
+            is Component -> arg0.string
             is String -> arg0
             is Number -> arg0.toString()
             else -> arg0.toString()
@@ -185,7 +185,7 @@ object StateUpdater {
         if (args.isEmpty()) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonUi.LOGGER.debug("StateUpdater: Life Orb revealed for $pokemonName")
-        val itemName = Text.translatable(TranslationKeys.LIFE_ORB_ITEM_KEY).string
+        val itemName = Component.translatable(TranslationKeys.LIFE_ORB_ITEM_KEY).string
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.HELD)
     }
 
@@ -233,7 +233,7 @@ object StateUpdater {
     ) {
         if (args.isEmpty()) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
-        val itemName = Text.translatable(itemTranslationKey).string
+        val itemName = Component.translatable(itemTranslationKey).string
         BattleStateTracker.setItem(pokemonName, itemName, status)
     }
 
@@ -242,7 +242,7 @@ object StateUpdater {
         val pokemonName = MessageParser.extractPokemonName(args[0])
         val berryId = key.substringAfterLast(".")
         val itemId = berryId.removeSuffix("berry") + "_berry"
-        val berryName = Text.translatable("item.cobblemon.$itemId").string
+        val berryName = Component.translatable("item.cobblemon.$itemId").string
         BattleStateTracker.setItem(pokemonName, berryName, ItemStatus.CONSUMED)
     }
 

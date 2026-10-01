@@ -113,7 +113,7 @@ class ComponentGalleryScreen(
                 UiButtonSpec(text("secondary"), variant = UiButtonVariant.SECONDARY),
                 UiButtonSpec(
                     text("icon"),
-                    icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    icon = UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                     variant = UiButtonVariant.ICON,
                     size = UiControlSize.SMALL
                 ),
@@ -145,17 +145,17 @@ class ComponentGalleryScreen(
             listOf(
                 UiButtonSpec.iconOnly(
                     text("icon_square"),
-                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                     UiIconButtonShape.SQUARE
                 ),
                 UiButtonSpec.iconOnly(
                     text("icon_circle"),
-                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                     UiIconButtonShape.CIRCLE
                 ),
                 UiButtonSpec.iconOnly(
                     text("icon_diamond"),
-                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                     UiIconButtonShape.DIAMOND
                 ),
                 UiButtonSpec(
@@ -229,7 +229,7 @@ class ComponentGalleryScreen(
             UiListItemSpec(
                 title = text("list_gym"),
                 supportingText = text("list_gym_detail"),
-                icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                icon = UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                 trailingText = text("list_gym_status"),
                 selected = true
             )
@@ -275,7 +275,7 @@ class ComponentGalleryScreen(
             availableWidth,
             UiButtonSpec.iconOnly(
                 text("tooltip_title"),
-                UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                 UiIconButtonShape.CIRCLE,
                 UiControlSize.SMALL
             )
@@ -632,6 +632,6 @@ class ComponentGalleryScreen(
 
     companion object {
         private fun text(suffix: String, vararg args: Any): Component =
-            Component.translatable("screen.cobblemon_ui_kit.gallery.$suffix", *args)
+            Component.translatable("screen.cobblemon_ui.gallery.$suffix", *args)
     }
 }

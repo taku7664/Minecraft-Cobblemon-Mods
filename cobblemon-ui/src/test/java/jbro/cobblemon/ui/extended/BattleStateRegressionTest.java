@@ -18,7 +18,7 @@ import jbro.cobblemon.ui.extended.battle.state.FormTracker;
 import jbro.cobblemon.ui.extended.battle.state.PokemonRegistry;
 import jbro.cobblemon.ui.extended.battle.state.TypeTracker;
 import jbro.cobblemon.ui.extended.battle.state.VolatileStatusTracker;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(target, "Target", false);
         AbilityItemTracker.INSTANCE.setItem("Target", "Leftovers", ItemStatus.HELD, 2, false);
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             "cobblemon.battle.activate.trick", "User", "Target", "UNKNOWN"
         )));
         StateUpdater.INSTANCE.extractTrickItem(new Object[] {"User", "Leftovers"});
@@ -104,7 +104,7 @@ final class BattleStateRegressionTest {
         );
 
         assertEquals(
-            Text.translatable("item.cobblemon.focus_band").getString(),
+            Component.translatable("item.cobblemon.focus_band").getString(),
             AbilityItemTracker.INSTANCE.getItem(uuid).getName()
         );
         assertEquals(ItemStatus.HELD, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
@@ -123,7 +123,7 @@ final class BattleStateRegressionTest {
         );
 
         assertEquals(
-            Text.translatable("item.cobblemon.focus_sash").getString(),
+            Component.translatable("item.cobblemon.focus_sash").getString(),
             AbilityItemTracker.INSTANCE.getItem(uuid).getName()
         );
         assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
@@ -139,7 +139,7 @@ final class BattleStateRegressionTest {
         );
 
         assertEquals(
-            Text.translatable("item.cobblemon.occa_berry").getString(),
+            Component.translatable("item.cobblemon.occa_berry").getString(),
             AbilityItemTracker.INSTANCE.getItem(uuid).getName()
         );
         assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
@@ -176,13 +176,13 @@ final class BattleStateRegressionTest {
 
         for (String moveId : List.of("magmastorm", "snaptrap", "thundercage")) {
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable("cobblemon.battle.activate." + moveId, "Victim", "Source")
+                Component.translatable("cobblemon.battle.activate." + moveId, "Victim", "Source")
             ));
             assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
                 .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.BOUND));
 
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable("cobblemon.battle.end." + moveId, "Victim")
+                Component.translatable("cobblemon.battle.end." + moveId, "Victim")
             ));
             assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
         }
@@ -194,13 +194,13 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Victim", false);
 
         BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-            Text.translatable("cobblemon.battle.start.yawn", "Victim")
+            Component.translatable("cobblemon.battle.start.yawn", "Victim")
         ));
         assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
             .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.DROWSY));
 
         BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-            Text.translatable("cobblemon.status.sleep.apply", "Victim")
+            Component.translatable("cobblemon.status.sleep.apply", "Victim")
         ));
         assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
     }
@@ -212,13 +212,13 @@ final class BattleStateRegressionTest {
 
         for (String sleepKey : List.of("cobblemon.status.sleep.cure", "cobblemon.status.sleep.apply")) {
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable("cobblemon.battle.start.nightmare", "Victim")
+                Component.translatable("cobblemon.battle.start.nightmare", "Victim")
             ));
             assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
                 .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.NIGHTMARE));
 
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable(sleepKey, "Victim")
+                Component.translatable(sleepKey, "Victim")
             ));
             assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
         }
@@ -231,12 +231,12 @@ final class BattleStateRegressionTest {
 
         for (String startKey : List.of(TranslationKeys.DYNAMAX_KEY, TranslationKeys.GIGANTAMAX_KEY)) {
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable(startKey, "Pokemon")
+                Component.translatable(startKey, "Pokemon")
             ));
             assertNotNull(FormTracker.INSTANCE.getCurrentForm(uuid));
 
             BattleMessageInterceptor.INSTANCE.processMessages(List.of(
-                Text.translatable("cobblemon.battle.end.dynamax", "Pokemon")
+                Component.translatable("cobblemon.battle.end.dynamax", "Pokemon")
             ));
             assertEquals(null, FormTracker.INSTANCE.getCurrentForm(uuid));
         }
@@ -251,7 +251,7 @@ final class BattleStateRegressionTest {
 
         assertEquals("item.cobblemon.life_orb", TranslationKeys.LIFE_ORB_ITEM_KEY);
         assertEquals(
-            Text.translatable("item.cobblemon.life_orb").getString(),
+            Component.translatable("item.cobblemon.life_orb").getString(),
             AbilityItemTracker.INSTANCE.getItem(uuid).getName()
         );
         assertEquals(ItemStatus.HELD, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
@@ -284,11 +284,11 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(tracer, "Gardevoir", true);
         PokemonRegistry.INSTANCE.registerPokemon(target, "Floatzel", false);
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             TranslationKeys.ABILITY_TRACE_KEY,
             "Gardevoir",
             "Floatzel",
-            Text.translatable("cobblemon.ability.swiftswim")
+            Component.translatable("cobblemon.ability.swiftswim")
         )));
 
         assertEquals("swiftswim", AbilityItemTracker.INSTANCE.getRevealedAbility(tracer));
@@ -301,10 +301,10 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(donor, "Tropius", false);
         AbilityItemTracker.INSTANCE.setRevealedAbility(donor, "chlorophyll");
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             TranslationKeys.ABILITY_RECEIVER_KEY,
             "Tropius",
-            Text.translatable("cobblemon.ability.swiftswim")
+            Component.translatable("cobblemon.ability.swiftswim")
         )));
 
         assertEquals("chlorophyll", AbilityItemTracker.INSTANCE.getRevealedAbility(donor));
@@ -317,10 +317,10 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(attacker, "Pikachu", false);
         PokemonRegistry.INSTANCE.registerPokemon(target, "Eevee", true);
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             "cobblemon.battle.used_move_on",
             "Pikachu",
-            Text.translatable("cobblemon.move.thunderbolt"),
+            Component.translatable("cobblemon.move.thunderbolt"),
             "Eevee"
         )));
 
@@ -335,10 +335,10 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(target, "Eevee", false);
         BattleStateTracker.INSTANCE.setStatStage("Eevee", BattleStateTracker.BattleStat.ATTACK, 2, false);
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             "cobblemon.battle.used_move_on",
             "Marshadow",
-            Text.translatable("cobblemon.move.spectralthief"),
+            Component.translatable("cobblemon.move.spectralthief"),
             "Eevee"
         )));
 
@@ -390,7 +390,7 @@ final class BattleStateRegressionTest {
         UUID attacker = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(attacker, "Cinderace", false);
 
-        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
             TranslationKeys.COURT_CHANGE_KEY,
             "Cinderace"
         )));
@@ -415,7 +415,7 @@ final class BattleStateRegressionTest {
 
     @Test
     void typeTranslationKeyProducesStableInternalId() {
-        assertEquals("fire", MessageParser.INSTANCE.extractTypeId(Text.translatable("cobblemon.type.fire")));
+        assertEquals("fire", MessageParser.INSTANCE.extractTypeId(Component.translatable("cobblemon.type.fire")));
     }
 
     @Test
@@ -439,7 +439,7 @@ final class BattleStateRegressionTest {
     void abilityTranslationKeyProducesStableInternalId() {
         assertEquals(
             "swiftswim",
-            MessageParser.INSTANCE.extractAbilityId(Text.translatable("cobblemon.ability.swiftswim"))
+            MessageParser.INSTANCE.extractAbilityId(Component.translatable("cobblemon.ability.swiftswim"))
         );
     }
 
@@ -452,10 +452,10 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false, "Bob");
 
         String opponentReference = MessageParser.INSTANCE.extractPokemonName(
-            Text.translatable("cobblemon.battle.owned_pokemon", "Bob", "Eevee")
+            Component.translatable("cobblemon.battle.owned_pokemon", "Bob", "Eevee")
         );
         String allyReference = MessageParser.INSTANCE.extractPokemonName(
-            Text.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
+            Component.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
         );
 
         assertEquals(opponent, PokemonRegistry.INSTANCE.resolvePokemonUuid(opponentReference, null));
@@ -471,7 +471,7 @@ final class BattleStateRegressionTest {
         PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false, "Alice");
 
         String opponentReference = MessageParser.INSTANCE.extractPokemonName(
-            Text.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
+            Component.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
         );
 
         assertEquals(opponent, PokemonRegistry.INSTANCE.resolvePokemonUuid(opponentReference, null));

@@ -3,7 +3,7 @@ package jbro.cobblemon.ui.extended;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ final class BattleLogCategorizationTest {
 
     private static void assertCategory(String key, BattleLog.EntryType expected) {
         BattleLog.INSTANCE.clear();
-        BattleLog.INSTANCE.processMessages(List.of(Text.translatable(key)));
+        BattleLog.INSTANCE.processMessages(List.of(Component.translatable(key)));
         assertEquals(expected, BattleLog.INSTANCE.getEntries(null).getFirst().getType());
     }
 }

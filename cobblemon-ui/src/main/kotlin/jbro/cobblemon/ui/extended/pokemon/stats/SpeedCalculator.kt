@@ -6,7 +6,7 @@ import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.pokemon.FormData
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import jbro.cobblemon.ui.extended.BattleStateTracker
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 /**
@@ -82,7 +82,7 @@ object SpeedCalculator {
     }
 
     fun getMaxPossibleAbilitySpeedMultiplier(
-        pokemonId: Identifier,
+        pokemonId: ResourceLocation,
         weather: BattleStateTracker.Weather?,
         terrain: BattleStateTracker.Terrain?,
         hasStatus: Boolean,
@@ -107,7 +107,7 @@ object SpeedCalculator {
 
     fun calculateOpponentSpeedRange(
         uuid: UUID,
-        pokemonId: Identifier,
+        pokemonId: ResourceLocation,
         level: Int,
         speedStage: Int,
         status: Status?,

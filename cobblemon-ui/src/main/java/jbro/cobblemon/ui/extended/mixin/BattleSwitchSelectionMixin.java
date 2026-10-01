@@ -6,8 +6,8 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonS
 import jbro.cobblemon.ui.extended.ui.shared.BattleSwitchRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.ui.navigation.UiRect;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,14 +26,14 @@ public abstract class BattleSwitchSelectionMixin {
     }
 
     @Inject(method = "renderWidget", at = @At("HEAD"), cancellable = true, remap = true)
-    private void cobblemonBattleUi$drawParty(DrawContext context, int mouseX, int mouseY,
+    private void cobblemonBattleUi$drawParty(GuiGraphics context, int mouseX, int mouseY,
             float delta, CallbackInfo ci) {
         BattleSwitchPokemonSelection selection = (BattleSwitchPokemonSelection) (Object) this;
         cobblemonBattleUi$placeTiles();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (selection.getOpacity() > .05f) {
             BattleSwitchRenderer.drawSelection(context, selection,
-                    client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight(), mouseX, mouseY);
+                    client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), mouseX, mouseY);
         }
         ci.cancel();
     }
@@ -42,9 +42,9 @@ public abstract class BattleSwitchSelectionMixin {
     private void cobblemonBattleUi$partyClick(double mouseX, double mouseY,
             CallbackInfoReturnable<Boolean> cir) {
         BattleSwitchPokemonSelection selection = (BattleSwitchPokemonSelection) (Object) this;
-        MinecraftClient client = MinecraftClient.getInstance();
-        int width = client.getWindow().getScaledWidth();
-        int height = client.getWindow().getScaledHeight();
+        Minecraft client = Minecraft.getInstance();
+        int width = client.getWindow().getGuiScaledWidth();
+        int height = client.getWindow().getGuiScaledHeight();
         UiRect back = BattleScreenGeometry.switchBack(width, height);
         if (!selection.getRequest().getForceSwitch() && back.contains(mouseX, mouseY)) {
             selection.getBattleGUI().changeActionSelection(null);
@@ -62,9 +62,9 @@ public abstract class BattleSwitchSelectionMixin {
     @Unique
     private void cobblemonBattleUi$placeTiles() {
         BattleSwitchPokemonSelection selection = (BattleSwitchPokemonSelection) (Object) this;
-        MinecraftClient client = MinecraftClient.getInstance();
-        List<UiRect> bounds = BattleScreenGeometry.switchTiles(client.getWindow().getScaledWidth(),
-                client.getWindow().getScaledHeight(), selection.getTiles().size());
+        Minecraft client = Minecraft.getInstance();
+        List<UiRect> bounds = BattleScreenGeometry.switchTiles(client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(), selection.getTiles().size());
         for (int index = 0; index < bounds.size(); index++) {
             BattleSwitchTileAccessor tile = (BattleSwitchTileAccessor) (Object) selection.getTiles().get(index);
             tile.cobblemonBattleUi$setX(bounds.get(index).x());

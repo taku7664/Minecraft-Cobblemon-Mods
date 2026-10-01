@@ -5,10 +5,10 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.client.battle.ClientBattleSide
 import jbro.cobblemon.ui.extended.state.ActiveSlotTracker
 import jbro.cobblemon.ui.extended.ui.champions.ChampionsBattleInfoOverlay
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.InputUtil
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 /**
@@ -76,12 +76,12 @@ object BattleInfoPanel {
         }
 
         if (syncOverlay) {
-            handleToggleInput(MinecraftClient.getInstance())
+            handleToggleInput(Minecraft.getInstance())
         } else {
             isExpanded = false
         }
 
-        val mc = MinecraftClient.getInstance()
+        val mc = Minecraft.getInstance()
         val playerUuid = mc.player?.uuid ?: return
         val playerInSide1 = battle.side1.actors.any { it.uuid == playerUuid }
         val playerInSide2 = battle.side2.actors.any { it.uuid == playerUuid }
@@ -112,15 +112,15 @@ object BattleInfoPanel {
     }
 
     /** Drawn from BattleGUI.render RETURN so the modal owns the final GUI layer. */
-    fun renderForeground(context: DrawContext) {
-        val mc = MinecraftClient.getInstance()
-        if (!isExpanded || mc.options.hudHidden || CobblemonClient.battle?.minimised != false) return
+    fun renderForeground(context: GuiGraphics) {
+        val mc = Minecraft.getInstance()
+        if (!isExpanded || mc.options.hideGui || CobblemonClient.battle?.minimised != false) return
         ChampionsBattleInfoOverlay.render(context)
     }
 
-    private fun handleToggleInput(mc: MinecraftClient) {
-        val key = InputUtil.fromTranslationKey(CobblemonUiClient.togglePanelKey.boundKeyTranslationKey)
-        val down = UIUtils.isKeyOrButtonPressed(mc.window.handle, key)
+    private fun handleToggleInput(mc: Minecraft) {
+        val key = InputConstants.getKey(CobblemonUiClient.togglePanelKey.saveString())
+        val down = UIUtils.isKeyOrButtonPressed(mc.window.window, key)
         if (down && !wasToggleKeyPressed) toggle()
         wasToggleKeyPressed = down
     }
@@ -155,7 +155,7 @@ object BattleInfoPanel {
         val speciesName = pokemon.properties.species
         speciesName?.let {
             BattleStateTracker.registerPokemon(uuid, it, isAlly, ownerName)
-            BattleStateTracker.registerSpeciesId(uuid, Identifier.of("cobblemon", it))
+            BattleStateTracker.registerSpeciesId(uuid, ResourceLocation.fromNamespaceAndPath("cobblemon", it))
         }
     }
 

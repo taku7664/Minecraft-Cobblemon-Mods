@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,7 +36,7 @@ public abstract class BattleOptionTileMixin {
 
     @Inject(method = "render", at = @At("HEAD"), remap = true, cancellable = true)
     private void cobblemonBattleUi$renderStyledOption(
-            DrawContext context,
+            GuiGraphics context,
             int mouseX,
             int mouseY,
             float delta,

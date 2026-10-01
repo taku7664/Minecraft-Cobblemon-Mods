@@ -1,6 +1,6 @@
 package jbro.cobblemon.ui.extended
 
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -59,13 +59,13 @@ object DamageTracker {
     }
 
     fun recordDamage(targetName: String, damagePercent: Float) {
-        BattleLog.addHpChangeEntry(Text.translatable(
+        BattleLog.addHpChangeEntry(Component.translatable(
             "cobblemon_ui.log.damage_percent", formatPercent(damagePercent), targetName
         ).string)
     }
 
     fun recordHealing(targetName: String, healPercent: Float) {
-        BattleLog.addHpChangeEntry(Text.translatable(
+        BattleLog.addHpChangeEntry(Component.translatable(
             "cobblemon_ui.log.healing_percent", formatPercent(healPercent), targetName
         ).string, isHealing = true)
     }

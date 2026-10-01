@@ -14,7 +14,6 @@ include(
     "better-cobblemon-music",
     "better-battle-presentation",
     "cobblemon-ui",
-    "cobblemon-ui-kit",
     "cobblemon-custom-species",
     "font-glyph-race-fix",
     "jbro-policy",

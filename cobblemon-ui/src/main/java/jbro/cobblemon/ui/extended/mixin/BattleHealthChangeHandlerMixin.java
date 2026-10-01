@@ -15,7 +15,7 @@ import jbro.cobblemon.ui.extended.CobblemonUi;
 import jbro.cobblemon.ui.extended.TeamIndicatorUI;
 import jbro.cobblemon.ui.extended.BattleStateTracker;
 import jbro.cobblemon.ui.extended.PanelConfig;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.util.UUID;
 
@@ -35,7 +35,7 @@ import java.util.UUID;
 public class BattleHealthChangeHandlerMixin {
 
     @Inject(method = "handle", at = @At("HEAD"))
-    private void onHandlePre(BattleHealthChangePacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void onHandlePre(BattleHealthChangePacket packet, Minecraft client, CallbackInfo ci) {
         // Skip entirely if no features need HP tracking
         boolean needsDamage = PanelConfig.INSTANCE.needsDamageTracking();
         boolean needsKOTracking = PanelConfig.INSTANCE.needsBattleStateTracking() ||

@@ -1,6 +1,6 @@
 package jbro.cobblemon.ui.extended.pokemon.stats
 
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 /**
  * Pure stat calculation utilities shared by speed calculator, tooltip builder,
@@ -65,7 +65,7 @@ object StatCalculator {
         val compact = name.lowercase().filter(Char::isLetterOrDigit)
         for (id in ids) {
             if (compact == id.filter(Char::isLetterOrDigit)) return id
-            val translated = Text.translatable("$translationPrefix$id").string
+            val translated = Component.translatable("$translationPrefix$id").string
             if (!translated.startsWith(translationPrefix) &&
                 compact == translated.lowercase().filter(Char::isLetterOrDigit)) return id
         }

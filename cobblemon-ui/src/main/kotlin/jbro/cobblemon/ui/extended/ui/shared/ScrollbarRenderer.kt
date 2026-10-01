@@ -1,7 +1,7 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.GuiGraphics
 
 /**
  * Reusable scrollbar renderer with thumb tracking and drag support.
@@ -38,7 +38,7 @@ class ScrollbarRenderer(
      * @param isHovered      Whether the thumb is currently hovered/dragged
      */
     fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         height: Int,

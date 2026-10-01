@@ -1,7 +1,7 @@
 package jbro.cobblemon.ui.extended
 
-import net.minecraft.text.Text
-import net.minecraft.text.TranslatableTextContent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
 import java.util.concurrent.CopyOnWriteArrayList
 import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSpeaker
 import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSources
@@ -33,7 +33,7 @@ object BattleLog {
     data class LogEntry(
         val turn: Int,
         val type: EntryType,
-        val message: Text,
+        val message: Component,
         val translationKey: String?,
         val timestamp: Long = System.currentTimeMillis(),
         val speaker: TranscriptSpeaker? = null
@@ -188,7 +188,7 @@ object BattleLog {
      * appear after action messages in the same batch.
      */
     @JvmOverloads
-    fun processMessages(messages: List<Text>, resolveSpeaker: (Text) -> TranscriptSpeaker? = { null }) {
+    fun processMessages(messages: List<Component>, resolveSpeaker: (Component) -> TranscriptSpeaker? = { null }) {
         if (messages.isEmpty()) return
 
         // PASS 1: Find all turn markers and their positions in the message list
@@ -250,7 +250,7 @@ object BattleLog {
         addEntry(LogEntry(
             turn = currentTurn,
             type = if (isHealing) EntryType.HEALING else EntryType.HP,
-            message = Text.literal(text),
+            message = Component.literal(text),
             translationKey = null
         ))
     }
@@ -324,9 +324,9 @@ object BattleLog {
      * Extract the translation key from a Text component.
      * Recursively checks siblings if the main content doesn't have a key.
      */
-    private fun extractTranslationKey(text: Text): String? {
-        val content = text.content
-        if (content is TranslatableTextContent) {
+    private fun extractTranslationKey(text: Component): String? {
+        val content = text.contents
+        if (content is TranslatableContents) {
             return content.key
         }
 
@@ -341,13 +341,13 @@ object BattleLog {
     /**
      * Extract turn number from a turn message.
      */
-    private fun extractTurnNumber(text: Text): Int? {
+    private fun extractTurnNumber(text: Component): Int? {
         val content = TranscriptSources.battleContent(text)
-        if (content is TranslatableTextContent && content.key == TURN_KEY) {
+        if (content is TranslatableContents && content.key == TURN_KEY) {
             val args = content.args
             if (args.isNotEmpty()) {
                 val turnStr = when (val arg = args[0]) {
-                    is Text -> arg.string
+                    is Component -> arg.string
                     is Number -> arg.toString()
                     else -> arg.toString()
                 }

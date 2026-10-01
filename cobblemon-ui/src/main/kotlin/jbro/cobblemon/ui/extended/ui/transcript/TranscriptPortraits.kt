@@ -5,8 +5,8 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.client.gui.battle.BattleOverlay
 import jbro.cobblemon.ui.extended.CobblemonUi
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.vertex.PoseStack
 
 /** Uses Cobblemon's PORTRAIT pose, not a full-body sprite or an external portrait pack. */
 internal object TranscriptPortraits {
@@ -15,15 +15,15 @@ internal object TranscriptPortraits {
 
     fun clear() { faces.clear(); failed.clear() }
 
-    fun draw(context: DrawContext, speaker: TranscriptSpeaker, x: Int, y: Int, size: Int): Boolean {
+    fun draw(context: GuiGraphics, speaker: TranscriptSpeaker, x: Int, y: Int, size: Int): Boolean {
         if (speaker in failed) return false
-        context.draw()
+        context.flush()
         context.enableScissor(x, y, x + size, y + size)
         // Isolate third-party model matrix pushes: an exception inside a custom poser
         // must not leave the caller's entire GUI matrix stack unbalanced.
-        val matrices = MatrixStack()
-        matrices.peek().positionMatrix.set(context.matrices.peek().positionMatrix)
-        matrices.peek().normalMatrix.set(context.matrices.peek().normalMatrix)
+        val matrices = PoseStack()
+        matrices.last().pose().set(context.pose().last().pose())
+        matrices.last().normal().set(context.pose().last().normal())
         try {
             val scale = size / BattleOverlay.PORTRAIT_DIAMETER.toFloat()
             matrices.translate(x + size / 2.0, y - 5.0 * scale, 0.0)
@@ -41,7 +41,7 @@ internal object TranscriptPortraits {
             CobblemonUi.LOGGER.warn("Battle log portrait unavailable: {}", speaker.species, error)
             return false
         } finally {
-            context.draw()
+            context.flush()
             context.disableScissor()
         }
     }

@@ -6,9 +6,9 @@ import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.ui.shared.BattleForfeitRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.ui.navigation.UiRect;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,12 +30,12 @@ public abstract class BattleForfeitSelectionMixin implements ForfeitSelectionAcc
     }
 
     @Inject(method = "renderWidget", at = @At("HEAD"), cancellable = true, remap = true)
-    private void cobblemonBattleUi$drawConfirmation(DrawContext context, int mouseX, int mouseY,
+    private void cobblemonBattleUi$drawConfirmation(GuiGraphics context, int mouseX, int mouseY,
             float delta, CallbackInfo ci) {
         ForfeitConfirmationSelection selection = (ForfeitConfirmationSelection) (Object) this;
-        MinecraftClient client = MinecraftClient.getInstance();
-        int width = client.getWindow().getScaledWidth();
-        int height = client.getWindow().getScaledHeight();
+        Minecraft client = Minecraft.getInstance();
+        int width = client.getWindow().getGuiScaledWidth();
+        int height = client.getWindow().getGuiScaledHeight();
         int focus = -1;
         if (KeyboardTileFocus.allowsMouseHover()) {
             if (BattleScreenGeometry.forfeitAccept(width, height).contains(mouseX, mouseY)) focus = 0;
@@ -44,10 +44,10 @@ public abstract class BattleForfeitSelectionMixin implements ForfeitSelectionAcc
             focus = cobblemonBattleUi$focusedChoice;
         }
         BattleForfeitRenderer.draw(context, width, height,
-                Text.translatable("cobblemon_ui.forfeit.title"),
-                Text.translatable("cobblemon_ui.forfeit.detail"),
-                Text.translatable("cobblemon_ui.forfeit.accept"),
-                Text.translatable("cobblemon_ui.forfeit.back"),
+                Component.translatable("cobblemon_ui.forfeit.title"),
+                Component.translatable("cobblemon_ui.forfeit.detail"),
+                Component.translatable("cobblemon_ui.forfeit.accept"),
+                Component.translatable("cobblemon_ui.forfeit.back"),
                 focus, selection.getOpacity());
         ci.cancel();
     }
@@ -57,9 +57,9 @@ public abstract class BattleForfeitSelectionMixin implements ForfeitSelectionAcc
             CallbackInfoReturnable<Boolean> cir) {
         if (cobblemonBattleUi$remappingClick) return;
         ForfeitConfirmationSelection selection = (ForfeitConfirmationSelection) (Object) this;
-        MinecraftClient client = MinecraftClient.getInstance();
-        int width = client.getWindow().getScaledWidth();
-        int height = client.getWindow().getScaledHeight();
+        Minecraft client = Minecraft.getInstance();
+        int width = client.getWindow().getGuiScaledWidth();
+        int height = client.getWindow().getGuiScaledHeight();
         UiRect accept = BattleScreenGeometry.forfeitAccept(width, height);
         UiRect cancel = BattleScreenGeometry.forfeitCancel(width, height);
         boolean chooseAccept = accept.contains(mouseX, mouseY);

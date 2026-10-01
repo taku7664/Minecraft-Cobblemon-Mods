@@ -6,9 +6,9 @@ import jbro.cobblemon.ui.extended.TeamPanelLayout
 import jbro.cobblemon.ui.extended.UIUtils
 import jbro.cobblemon.ui.extended.ViewportClamp
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipBoundsData
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 
 /**
  * Renders team indicator panel backgrounds, corners, and help icons.
@@ -36,7 +36,7 @@ object TeamPanelRenderer {
      * Draw a background panel behind the team's Pokemon models.
      */
     fun drawTeamPanel(
-        context: DrawContext,
+        context: GuiGraphics,
         x: Int,
         y: Int,
         teamSize: Int,
@@ -77,7 +77,7 @@ object TeamPanelRenderer {
      * Draw a small help icon ("?") in the corner of the panel.
      */
     fun drawHelpIcon(
-        context: DrawContext,
+        context: GuiGraphics,
         panelX: Int,
         panelY: Int,
         panelWidth: Int,
@@ -85,9 +85,9 @@ object TeamPanelRenderer {
         isLeftSide: Boolean,
         applyOpacity: (Int) -> Int
     ): TooltipBoundsData {
-        val mc = MinecraftClient.getInstance()
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+        val mc = Minecraft.getInstance()
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
 
         val iconX = if (isLeftSide) {
             panelX + panelWidth - HELP_ICON_SIZE - HELP_ICON_MARGIN
@@ -104,8 +104,8 @@ object TeamPanelRenderer {
         val bgColor = if (isHovered) color(70, 85, 105, 230) else color(45, 55, 70, 180)
         val textColor = if (isHovered) color(240, 245, 250, 255) else color(140, 155, 175, 220)
 
-        val matrices = context.matrices
-        matrices.push()
+        val matrices = context.pose()
+        matrices.pushPose()
         matrices.translate(0.0, 0.0, 250.0)
 
         // Draw circular background
@@ -118,16 +118,16 @@ object TeamPanelRenderer {
 
         // Draw "?" text
         val helpText = "?"
-        val textRenderer = mc.textRenderer
+        val textRenderer = mc.font
         val textScale = 0.7f
-        val textWidth = textRenderer.getWidth(helpText) * textScale
-        val textHeight = textRenderer.fontHeight * textScale
+        val textWidth = textRenderer.width(helpText) * textScale
+        val textHeight = textRenderer.lineHeight * textScale
         val textXPos = iconX + (HELP_ICON_SIZE / 2.0f) - (textWidth / 2.0f) + 0.5f
         val textYPos = iconY + (HELP_ICON_SIZE / 2.0f) - (textHeight / 2.0f) + 1.0f
 
         drawScaledText(
             context = context,
-            text = Text.literal(helpText),
+            text = Component.literal(helpText),
             x = textXPos,
             y = textYPos,
             colour = applyOpacity(textColor),
@@ -135,7 +135,7 @@ object TeamPanelRenderer {
             shadow = false
         )
 
-        matrices.pop()
+        matrices.popPose()
 
         return bounds
     }
@@ -144,36 +144,36 @@ object TeamPanelRenderer {
      * Render control hints below the panel when hovering the help icon.
      */
     fun renderControlHints(
-        context: DrawContext,
+        context: GuiGraphics,
         panelBounds: TooltipBoundsData,
         isLeftSide: Boolean,
         isCustomized: Boolean,
         repositioningEnabled: Boolean,
         applyOpacity: (Int) -> Int
     ) {
-        val mc = MinecraftClient.getInstance()
-        val textRenderer = mc.textRenderer
-        val screenWidth = mc.window.scaledWidth
-        val screenHeight = mc.window.scaledHeight
+        val mc = Minecraft.getInstance()
+        val textRenderer = mc.font
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
 
         val hints = buildList {
-            add(Pair("Shift+Click", ": ${Text.translatable("cobblemon_ui.controls.flip").string}"))
+            add(Pair("Shift+Click", ": ${Component.translatable("cobblemon_ui.controls.flip").string}"))
             add(Pair("  \u2022  ", ""))
             if (repositioningEnabled) {
-                add(Pair("Drag", ": ${Text.translatable("cobblemon_ui.controls.move").string}"))
+                add(Pair("Drag", ": ${Component.translatable("cobblemon_ui.controls.move").string}"))
                 add(Pair("  \u2022  ", ""))
-                add(Pair("Dbl-Click", ": ${Text.translatable("cobblemon_ui.controls.reset").string}"))
+                add(Pair("Dbl-Click", ": ${Component.translatable("cobblemon_ui.controls.reset").string}"))
                 add(Pair("  \u2022  ", ""))
             }
-            add(Pair("Ctrl+Scroll", ": ${Text.translatable("cobblemon_ui.controls.scale").string}"))
+            add(Pair("Ctrl+Scroll", ": ${Component.translatable("cobblemon_ui.controls.scale").string}"))
             add(Pair("  \u2022  ", ""))
-            add(Pair("Alt", ": ${Text.translatable("cobblemon_ui.controls.both").string}"))
+            add(Pair("Alt", ": ${Component.translatable("cobblemon_ui.controls.both").string}"))
         }
 
         val hintScale = 0.7f
         val hintText = hints.joinToString("") { it.first + it.second }
-        val hintWidth = (textRenderer.getWidth(hintText) * hintScale).toInt() + 8
-        val hintHeight = (textRenderer.fontHeight * hintScale).toInt() + 4
+        val hintWidth = (textRenderer.width(hintText) * hintScale).toInt() + 8
+        val hintHeight = (textRenderer.lineHeight * hintScale).toInt() + 4
 
         var hintX = panelBounds.x + (panelBounds.width / 2) - (hintWidth / 2)
         var hintY = panelBounds.y + panelBounds.height + 2
@@ -189,8 +189,8 @@ object TeamPanelRenderer {
         val textColor = color(100, 110, 120, 255)
         val separatorColor = color(70, 80, 90, 255)
 
-        val matrices = context.matrices
-        matrices.push()
+        val matrices = context.pose()
+        matrices.pushPose()
         matrices.translate(0.0, 0.0, 400.0)
 
         context.fill(hintX, hintY, hintX + hintWidth, hintY + hintHeight, applyOpacity(bgColor))
@@ -206,30 +206,30 @@ object TeamPanelRenderer {
             }
             drawScaledText(
                 context = context,
-                text = Text.literal(key),
+                text = Component.literal(key),
                 x = textX,
                 y = textY,
                 colour = applyOpacity(clr),
                 scale = hintScale,
                 shadow = false
             )
-            textX += textRenderer.getWidth(key) * hintScale
+            textX += textRenderer.width(key) * hintScale
 
             if (action.isNotEmpty()) {
                 drawScaledText(
                     context = context,
-                    text = Text.literal(action),
+                    text = Component.literal(action),
                     x = textX,
                     y = textY,
                     colour = applyOpacity(textColor),
                     scale = hintScale,
                     shadow = false
                 )
-                textX += textRenderer.getWidth(action) * hintScale
+                textX += textRenderer.width(action) * hintScale
             }
         }
 
-        matrices.pop()
+        matrices.popPose()
     }
 
     // ─── Internal Helpers ───────────────────────────────────────────────────

@@ -3,23 +3,23 @@ package jbro.cobblemon.ui.extended
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
+import net.minecraft.client.KeyMapping
+import com.mojang.blaze3d.platform.InputConstants
 import org.lwjgl.glfw.GLFW
 
 object CobblemonUiClient : ClientModInitializer {
 
-    lateinit var togglePanelKey: KeyBinding
+    lateinit var togglePanelKey: KeyMapping
         private set
-    lateinit var toggleLogKey: KeyBinding
+    lateinit var toggleLogKey: KeyMapping
         private set
-    lateinit var increaseFontKey: KeyBinding
+    lateinit var increaseFontKey: KeyMapping
         private set
-    lateinit var decreaseFontKey: KeyBinding
+    lateinit var decreaseFontKey: KeyMapping
         private set
-    lateinit var selectActionKey: KeyBinding
+    lateinit var selectActionKey: KeyMapping
         private set
-    lateinit var cancelActionKey: KeyBinding
+    lateinit var cancelActionKey: KeyMapping
         private set
 
     override fun onInitializeClient() {
@@ -29,7 +29,6 @@ object CobblemonUiClient : ClientModInitializer {
         registerKeybindings()
         registerHudRenderer()
         verifyBattleUiMixinTargets()
-        jbro.cobblemon.ui.extended.ui.shared.BattleThemeCapture.install()
         BattleUiCaptureHarness.installFromEnvironment()
 
         CobblemonUi.LOGGER.info("Cobblemon UI client initialized!")
@@ -55,48 +54,48 @@ object CobblemonUiClient : ClientModInitializer {
     }
 
     private fun registerKeybindings() {
-        toggleLogKey = KeyBindingHelper.registerKeyBinding(KeyBinding(
-            "key.cobblemon_ui.toggle_log", InputUtil.Type.KEYSYM,
+        toggleLogKey = KeyBindingHelper.registerKeyBinding(KeyMapping(
+            "key.cobblemon_ui.toggle_log", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_LEFT_SHIFT, "category.cobblemon_ui"))
         togglePanelKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 "key.cobblemon_ui.toggle_panel",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_TAB,
                 "category.cobblemon_ui"
             )
         )
 
         increaseFontKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 "key.cobblemon_ui.increase_font",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_BRACKET,
                 "category.cobblemon_ui"
             )
         )
 
         decreaseFontKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 "key.cobblemon_ui.decrease_font",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_LEFT_BRACKET,
                 "category.cobblemon_ui"
             )
         )
 
         selectActionKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 "key.cobblemon_ui.select_action",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_Z,
                 "category.cobblemon_ui"
             )
         )
         cancelActionKey = KeyBindingHelper.registerKeyBinding(
-            KeyBinding(
+            KeyMapping(
                 "key.cobblemon_ui.cancel_action",
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_X,
                 "category.cobblemon_ui"
             )

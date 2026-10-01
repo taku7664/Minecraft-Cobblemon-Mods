@@ -7,11 +7,11 @@ import jbro.cobblemon.ui.extended.ui.shared.NineSliceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.ScrollbarRenderer
 import jbro.cobblemon.ui.extended.ui.shared.WidgetInteractionHandler
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.util.InputUtil
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -32,8 +32,8 @@ object BattleLogWidget {
     // Cobblemon textures & 9-slice config
     // ═══════════════════════════════════════════════════════════════════════════
 
-    private val FRAME_TEXTURE: Identifier = cobblemonResource("textures/gui/battle/battle_log.png")
-    private val FRAME_EXPANDED_TEXTURE: Identifier = cobblemonResource("textures/gui/battle/battle_log_expanded.png")
+    private val FRAME_TEXTURE: ResourceLocation = cobblemonResource("textures/gui/battle/battle_log.png")
+    private val FRAME_EXPANDED_TEXTURE: ResourceLocation = cobblemonResource("textures/gui/battle/battle_log_expanded.png")
 
     private const val TEXTURE_WIDTH = 169
     private const val TEXTURE_HEIGHT_COLLAPSED = 55
@@ -138,21 +138,21 @@ object BattleLogWidget {
      */
     fun isMouseOverWidget(): Boolean {
         if (!PanelConfig.enableBattleLogEffective) return false
-        val mc = MinecraftClient.getInstance()
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+        val mc = Minecraft.getInstance()
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
         return mouseX >= widgetX && mouseX <= widgetX + widgetW &&
                mouseY >= widgetY && mouseY <= widgetY + widgetH
     }
 
-    fun render(context: DrawContext) {
+    fun render(context: GuiGraphics) {
         if (!PanelConfig.enableBattleLogEffective) return
         val battle = CobblemonClient.battle ?: return
 
         // Track minimized state - render greyed out instead of hiding
         isMinimised = battle.minimised
 
-        val mc = MinecraftClient.getInstance()
+        val mc = Minecraft.getInstance()
 
         // Update line height based on font scale
         lineHeight = (BASE_LINE_HEIGHT * PanelConfig.logFontScale).toInt().coerceAtLeast(8)
@@ -162,8 +162,8 @@ object BattleLogWidget {
             handleInput(mc)
         }
 
-        val screenWidth = mc.window.scaledWidth
-        val screenHeight = mc.window.scaledHeight
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
 
         val isExpanded = PanelConfig.logExpanded
 
@@ -203,7 +203,7 @@ object BattleLogWidget {
         // Render frame using 9-slice with Cobblemon textures
         renderFrame9Slice(context, x, y, safeWidth, safeHeight, isExpanded)
         // Flush texture batch before any fill operations
-        context.draw()
+        context.flush()
         headerEndY = y + HEADER_HEIGHT
 
         // Always render the same content - "collapsed" is just a smaller preset size
@@ -222,9 +222,9 @@ object BattleLogWidget {
         if (!PanelConfig.enableBattleLogEffective) return false
         if (isMinimised) return false  // Read-only when minimized
 
-        val mc = MinecraftClient.getInstance()
-        val scaledX = (mouseX * mc.window.scaledWidth / mc.window.width).toInt()
-        val scaledY = (mouseY * mc.window.scaledHeight / mc.window.height).toInt()
+        val mc = Minecraft.getInstance()
+        val scaledX = (mouseX * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val scaledY = (mouseY * mc.window.guiScaledHeight / mc.window.height).toInt()
 
         val isOver = scaledX >= widgetX && scaledX <= widgetX + widgetW &&
                      scaledY >= widgetY && scaledY <= widgetY + widgetH
@@ -232,7 +232,7 @@ object BattleLogWidget {
         if (!isOver) return false
 
         // Ctrl+Scroll for font size
-        val handle = mc.window.handle
+        val handle = mc.window.window
         val ctrlDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
                        GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS
 
@@ -271,7 +271,7 @@ object BattleLogWidget {
      * Renders the frame using 9-slice technique with Cobblemon's textures.
      * Delegates to the shared NineSliceRenderer.
      */
-    private fun renderFrame9Slice(context: DrawContext, x: Int, y: Int, width: Int, height: Int, isExpanded: Boolean) {
+    private fun renderFrame9Slice(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, isExpanded: Boolean) {
         val texture = if (isExpanded) FRAME_EXPANDED_TEXTURE else FRAME_TEXTURE
         val texH = if (isExpanded) TEXTURE_HEIGHT_EXPANDED else TEXTURE_HEIGHT_COLLAPSED
 
@@ -287,14 +287,14 @@ object BattleLogWidget {
     // Input handling
     // ═══════════════════════════════════════════════════════════════════════════
 
-    private fun handleInput(mc: MinecraftClient) {
-        val handle = mc.window.handle
-        val mouseX = (mc.mouse.x * mc.window.scaledWidth / mc.window.width).toInt()
-        val mouseY = (mc.mouse.y * mc.window.scaledHeight / mc.window.height).toInt()
+    private fun handleInput(mc: Minecraft) {
+        val handle = mc.window.window
+        val mouseX = (mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.width).toInt()
+        val mouseY = (mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.height).toInt()
         val isMouseDown = GLFW.glfwGetMouseButton(handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS
 
-        val screenWidth = mc.window.scaledWidth
-        val screenHeight = mc.window.scaledHeight
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
 
         // Check if mouse is over this widget for keybind handling
         val isOverWidget = mouseX >= widgetX && mouseX <= widgetX + widgetW &&
@@ -382,7 +382,7 @@ object BattleLogWidget {
     }
 
     private fun handleFontKeybinds(handle: Long) {
-        val increaseKey = InputUtil.fromTranslationKey(CobblemonUiClient.increaseFontKey.boundKeyTranslationKey)
+        val increaseKey = InputConstants.getKey(CobblemonUiClient.increaseFontKey.saveString())
         val isIncreaseDown = UIUtils.isKeyOrButtonPressed(handle, increaseKey)
         if (isIncreaseDown && !wasIncreaseFontKeyPressed) {
             PanelConfig.adjustLogFontScale(PanelConfig.FONT_SCALE_STEP)
@@ -391,7 +391,7 @@ object BattleLogWidget {
         }
         wasIncreaseFontKeyPressed = isIncreaseDown
 
-        val decreaseKey = InputUtil.fromTranslationKey(CobblemonUiClient.decreaseFontKey.boundKeyTranslationKey)
+        val decreaseKey = InputConstants.getKey(CobblemonUiClient.decreaseFontKey.saveString())
         val isDecreaseDown = UIUtils.isKeyOrButtonPressed(handle, decreaseKey)
         if (isDecreaseDown && !wasDecreaseFontKeyPressed) {
             PanelConfig.adjustLogFontScale(-PanelConfig.FONT_SCALE_STEP)
@@ -478,10 +478,10 @@ object BattleLogWidget {
      * Must call endFillBatch() after all fills are done.
      * This flushes DrawContext's pending operations to avoid Tessellator conflicts.
      */
-    private fun beginFillBatch(context: DrawContext) {
+    private fun beginFillBatch(context: GuiGraphics) {
         // Flush any pending texture draws before we start fills
         // This is critical because DrawContext batches operations and shares the Tessellator
-        context.draw()
+        context.flush()
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
     }
@@ -489,13 +489,13 @@ object BattleLogWidget {
     /**
      * Ends a batch of fill operations and restores state for texture rendering.
      */
-    private fun endFillBatch(context: DrawContext) {
+    private fun endFillBatch(context: GuiGraphics) {
         // Flush the fills we just drew
-        context.draw()
+        context.flush()
         // Blend stays enabled (needed for textures with alpha)
     }
 
-    private fun renderResizeHandles(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
+    private fun renderResizeHandles(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int) {
         val handleColor = if (interaction.hoveredZone != UIUtils.ResizeZone.NONE || interaction.isResizing) RESIZE_HANDLE_HOVER else RESIZE_HANDLE_COLOR
         val cornerLength = 12
         val thickness = 2
@@ -529,7 +529,7 @@ object BattleLogWidget {
         endFillBatch(context)
     }
 
-    private fun renderContent(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
+    private fun renderContent(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int) {
         // Content area (leave space at bottom for texture's built-in arrow area)
         val contentY = y + HEADER_HEIGHT
         val contentAreaHeight = height - HEADER_HEIGHT - 14  // Space at bottom for arrow region
@@ -541,7 +541,7 @@ object BattleLogWidget {
         val maxTextContentWidth = maxFullContentWidth - LOG_TEXT_INDENT
 
         // Calculate content height with text wrapping
-        val mc = MinecraftClient.getInstance()
+        val mc = Minecraft.getInstance()
         val previousContentHeight = contentHeight
         contentHeight = calculateContentHeight(mc, maxTextContentWidth)
         visibleHeight = contentAreaHeight
@@ -570,7 +570,7 @@ object BattleLogWidget {
         renderLogEntries(context, mc, fullContentX, textStartX, contentY, fullContentWidth, textContentWidth)
         // drawScaledText batches glyphs. Flush while scissor is still active;
         // disabling it first lets deferred glyphs escape above/below the frame.
-        context.draw()
+        context.flush()
         disableScissor()
 
         // Scrollbar if needed
@@ -579,7 +579,7 @@ object BattleLogWidget {
         }
     }
 
-    private fun calculateContentHeight(mc: MinecraftClient, textWidth: Int): Int {
+    private fun calculateContentHeight(mc: Minecraft, textWidth: Int): Int {
         val entries = BattleLog.getEntries()
         if (entries.isEmpty()) return lineHeight
 
@@ -612,10 +612,10 @@ object BattleLogWidget {
     /**
      * Wraps text into multiple lines that fit within the given width.
      */
-    private fun wrapText(mc: MinecraftClient, text: String, maxWidth: Int, scale: Float): List<String> {
+    private fun wrapText(mc: Minecraft, text: String, maxWidth: Int, scale: Float): List<String> {
         if (text.isEmpty()) return listOf("")
 
-        val textRenderer = mc.textRenderer
+        val textRenderer = mc.font
         val scaledMaxWidth = (maxWidth / scale).toInt()
 
         val lines = mutableListOf<String>()
@@ -624,7 +624,7 @@ object BattleLogWidget {
 
         for (word in words) {
             val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-            val testWidth = textRenderer.getWidth(testLine)
+            val testWidth = textRenderer.width(testLine)
 
             if (testWidth <= scaledMaxWidth) {
                 currentLine = StringBuilder(testLine)
@@ -634,12 +634,12 @@ object BattleLogWidget {
                     lines.add(currentLine.toString())
                 }
                 // Check if single word is too long
-                if (textRenderer.getWidth(word) > scaledMaxWidth) {
+                if (textRenderer.width(word) > scaledMaxWidth) {
                     // Word itself is too long, need to break it
                     var remaining = word
                     while (remaining.isNotEmpty()) {
                         var fit = remaining
-                        while (textRenderer.getWidth(fit) > scaledMaxWidth && fit.length > 1) {
+                        while (textRenderer.width(fit) > scaledMaxWidth && fit.length > 1) {
                             fit = fit.dropLast(1)
                         }
                         lines.add(fit)
@@ -659,13 +659,13 @@ object BattleLogWidget {
         return if (lines.isEmpty()) listOf("") else lines
     }
 
-    private fun renderLogEntries(context: DrawContext, mc: MinecraftClient, separatorX: Int, textX: Int, startY: Int, separatorWidth: Int, textWidth: Int) {
+    private fun renderLogEntries(context: GuiGraphics, mc: Minecraft, separatorX: Int, textX: Int, startY: Int, separatorWidth: Int, textWidth: Int) {
         val entries = BattleLog.getEntries()
 
         if (entries.isEmpty()) {
             val emptyY = startY + 4
             if (emptyY >= scissorMinY && emptyY <= scissorMaxY) {
-                drawText(context, Text.translatable("cobblemon_ui.log.empty").string,
+                drawText(context, Component.translatable("cobblemon_ui.log.empty").string,
                     textX.toFloat(), emptyY.toFloat(), TEXT_DIM, 0.7f * PanelConfig.logFontScale)
             }
             return
@@ -706,14 +706,14 @@ object BattleLogWidget {
         }
     }
 
-    private fun renderTurnSeparator(context: DrawContext, x: Int, y: Int, width: Int, turn: Int) {
+    private fun renderTurnSeparator(context: GuiGraphics, x: Int, y: Int, width: Int, turn: Int) {
         val centerY = y + lineHeight / 2
         val fontScale = 0.6f * PanelConfig.logFontScale
 
         // No background - just subtle lines and text that blend with the texture
-        val turnText = Text.translatable("cobblemon_ui.log.turn", turn).string
-        val mc = MinecraftClient.getInstance()
-        val actualTextWidth = (mc.textRenderer.getWidth(turnText) * fontScale).toInt()
+        val turnText = Component.translatable("cobblemon_ui.log.turn", turn).string
+        val mc = Minecraft.getInstance()
+        val actualTextWidth = (mc.font.width(turnText) * fontScale).toInt()
         val gap = 6  // Gap between line and text
 
         // Calculate centered position for text
@@ -732,7 +732,7 @@ object BattleLogWidget {
         drawText(context, turnText, textX.toFloat(), (y + 1).toFloat(), TURN_TEXT_COLOR, fontScale)
     }
 
-    private fun renderScrollbar(context: DrawContext, x: Int, y: Int, height: Int) {
+    private fun renderScrollbar(context: GuiGraphics, x: Int, y: Int, height: Int) {
         scrollbar.render(context, x, y, height, contentHeight, visibleHeight, scrollOffset)
     }
 
@@ -752,10 +752,10 @@ object BattleLogWidget {
         }
     }
 
-    private fun drawText(context: DrawContext, text: String, x: Float, y: Float, color: Int, scale: Float) {
+    private fun drawText(context: GuiGraphics, text: String, x: Float, y: Float, color: Int, scale: Float) {
         drawScaledText(
             context = context,
-            text = Text.literal(text),
+            text = Component.literal(text),
             x = x,
             y = y,
             scale = scale,
@@ -764,15 +764,15 @@ object BattleLogWidget {
         )
     }
 
-    private fun enableScissor(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
+    private fun enableScissor(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int) {
         scissorMinY = y
         scissorMaxY = y + height
 
-        val mc = MinecraftClient.getInstance()
-        val scale = mc.window.scaleFactor
+        val mc = Minecraft.getInstance()
+        val scale = mc.window.guiScale
 
         val scaledX = (x * scale).toInt()
-        val scaledY = ((mc.window.scaledHeight - y - height) * scale).toInt()
+        val scaledY = ((mc.window.guiScaledHeight - y - height) * scale).toInt()
         val scaledWidth = (width * scale).toInt()
         val scaledHeight = (height * scale).toInt()
 

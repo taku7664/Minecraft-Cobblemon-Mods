@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,7 +20,7 @@ public abstract class BattleMoveTileScaleMixin {
     @Shadow public abstract boolean getSelectable();
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void cobblemonBattleUi$begin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void cobblemonBattleUi$begin(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         boolean emphasized = getSelectable() && (KeyboardTileFocus.allowsMouseHover()
                 ? isHovered(mouseX, mouseY)
                 : KeyboardTileFocus.isFocused(this));

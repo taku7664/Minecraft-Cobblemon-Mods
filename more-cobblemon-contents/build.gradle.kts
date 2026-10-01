@@ -21,9 +21,9 @@ dependencies {
     }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     implementation("com.google.code.gson:gson:2.11.0")
-    implementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
-    runtimeOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
-    include(project(":cobblemon-ui-kit")) { isTransitive = false }
+    implementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    include(project(":cobblemon-ui")) { isTransitive = false }
     // Cobblemon supplies GraalJS at runtime. Better AI compiles only against its public context API
     // so MCC does not package a second JavaScript engine into its own JAR.
     compileOnly("org.graalvm.sdk:graal-sdk:22.3.0")

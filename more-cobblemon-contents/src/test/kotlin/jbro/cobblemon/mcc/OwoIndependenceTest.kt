@@ -14,7 +14,7 @@ import kotlin.io.path.readText
  */
 class OwoIndependenceTest {
     private val modules = listOf(
-        "cobblemon-ui-kit",
+        "cobblemon-ui",
         "more-cobblemon-contents",
         "more-cobblemon-contents-battle-tower",
         "more-cobblemon-contents-pvp",

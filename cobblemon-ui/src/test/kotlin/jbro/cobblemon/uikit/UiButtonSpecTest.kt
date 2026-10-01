@@ -13,7 +13,7 @@ class UiButtonSpecTest {
     @Test
     fun `content width follows text icon gap and semantic padding`() {
         val plain = UiButtonSpec(title = Component.literal("Start"), size = UiControlSize.MEDIUM)
-        val withIcon = plain.copy(icon = UiIcon("cobblemon_ui_kit", "textures/gui/icons/start.png"))
+        val withIcon = plain.copy(icon = UiIcon("cobblemon_ui", "textures/gui/icons/start.png"))
 
         assertEquals(64, plain.resolveWidth(contentWidth = 40, availableWidth = 200, theme = theme))
         assertEquals(78, withIcon.resolveWidth(contentWidth = 40, availableWidth = 200, theme = theme))
@@ -50,7 +50,7 @@ class UiButtonSpecTest {
     fun `icon-only presets stay square and retain an accessible label`() {
         val button = UiButtonSpec.iconOnly(
             label = Component.literal("Information"),
-            icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+            icon = UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
             shape = UiIconButtonShape.CIRCLE,
             size = UiControlSize.MEDIUM
         )
@@ -70,7 +70,7 @@ class UiButtonSpecTest {
         assertThrows(IllegalArgumentException::class.java) {
             UiButtonSpec(
                 Component.literal("Wrong variant"),
-                icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                icon = UiIcon("cobblemon_ui", "textures/gui/pixel/info.png"),
                 iconOnly = true,
                 variant = UiButtonVariant.PRIMARY
             )

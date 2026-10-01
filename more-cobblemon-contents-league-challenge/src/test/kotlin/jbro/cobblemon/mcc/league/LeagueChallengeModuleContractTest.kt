@@ -42,8 +42,8 @@ class LeagueChallengeModuleContractTest {
     @Test
     fun `client toolkit comes from the core without making dedicated servers depend on a client mod`() {
         val dependencies = json(resources.resolve("fabric.mod.json")).getAsJsonObject("depends")
-        assertFalse(dependencies.has("cobblemon_ui_kit"))
-        val bundle = "include(project(\":cobblemon-ui-kit\"))"
+        assertFalse(dependencies.has("cobblemon_ui"))
+        val bundle = "include(project(\":cobblemon-ui\"))"
         assertFalse(Files.readString(Path.of("build.gradle.kts")).contains(bundle))
         assertTrue(Files.readString(Path.of("../more-cobblemon-contents/build.gradle.kts")).contains(bundle))
         val client = Files.readString(Path.of("src/main/kotlin/jbro/cobblemon/mcc/league/client/MoreCobblemonContentsLeagueChallengeClient.kt"))

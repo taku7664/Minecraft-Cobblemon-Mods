@@ -15,7 +15,7 @@ import jbro.cobblemon.ui.extended.BattleStateTracker;
 import jbro.cobblemon.ui.extended.DamageTracker;
 import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.ui.extended.TeamIndicatorUI;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * Mixin to clear tracking when battle ends.
@@ -27,7 +27,7 @@ public class BattleEndHandlerMixin {
      * Inject at the start of handle() to clear our trackers.
      */
     @Inject(method = "handle", at = @At("HEAD"))
-    private void onHandle(BattleEndPacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void onHandle(BattleEndPacket packet, Minecraft client, CallbackInfo ci) {
         BattleStateTracker.INSTANCE.clear();
         TeamIndicatorUI.INSTANCE.clear();
         BattleInfoPanel.INSTANCE.clearBattleState();

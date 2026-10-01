@@ -11,8 +11,8 @@ import com.cobblemon.mod.common.pokemon.status.PersistentStatus;
 import jbro.cobblemon.ui.extended.ui.shared.BattleHudRenderer;
 import jbro.cobblemon.ui.extended.ui.shared.BattleHudContext;
 import kotlin.Triple;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.MutableText;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.MutableComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = BattleOverlay.class, remap = false)
 public abstract class BattleOverlayHudMixin {
     @Inject(method = "drawTile", at = @At("HEAD"))
-    private void cobblemonBattleUi$beginHudTile(DrawContext context, float tickDelta,
+    private void cobblemonBattleUi$beginHudTile(GuiGraphics context, float tickDelta,
             ActiveClientBattlePokemon activePokemon, boolean left, int rank,
             PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
             boolean isCompact, CallbackInfo ci) {
@@ -31,7 +31,7 @@ public abstract class BattleOverlayHudMixin {
     }
 
     @Inject(method = "drawTile", at = @At("RETURN"))
-    private void cobblemonBattleUi$endHudTile(DrawContext context, float tickDelta,
+    private void cobblemonBattleUi$endHudTile(GuiGraphics context, float tickDelta,
             ActiveClientBattlePokemon activePokemon, boolean left, int rank,
             PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
             boolean isCompact, CallbackInfo ci) {
@@ -39,11 +39,11 @@ public abstract class BattleOverlayHudMixin {
     }
 
     @Inject(method = "drawBattleTile", at = @At("HEAD"), cancellable = true)
-    private void cobblemonBattleUi$drawHud(DrawContext context, float x, float y, float partialTicks,
-            boolean reversed, Species species, int level, MutableText displayName, Gender gender,
+    private void cobblemonBattleUi$drawHud(GuiGraphics context, float x, float y, float partialTicks,
+            boolean reversed, Species species, int level, MutableComponent displayName, Gender gender,
             PersistentStatus status, PosableState state, Triple<Float, Float, Float> colour,
             float opacity, ClientBallDisplay ballState, int maxHealth, float health,
-            boolean isSelected, boolean isHovered, boolean isCompact, MutableText actorDisplayName,
+            boolean isSelected, boolean isHovered, boolean isCompact, MutableComponent actorDisplayName,
             boolean isFlatHealth, PokedexEntryProgress dexState, CallbackInfo ci) {
         // The native path alone knows how to animate a Poké Ball during capture.
         if (ballState != null) return;

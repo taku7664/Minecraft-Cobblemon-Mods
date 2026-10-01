@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import jbro.cobblemon.ui.extended.BattleDialogue;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,12 +17,12 @@ final class BattleDialoguePresentationTest {
 
     @Test
     void turnAnnouncementIsNotQueuedButOtherBattleMessagesAre() {
-        BattleDialogue.INSTANCE.enqueue(List.of(Text.translatable("cobblemon.battle.turn", 3)));
+        BattleDialogue.INSTANCE.enqueue(List.of(Component.translatable("cobblemon.battle.turn", 3)));
         assertFalse(BattleDialogue.INSTANCE.hasPending());
 
         BattleDialogue.INSTANCE.enqueue(List.of(
-            Text.translatable("cobblemon.battle.turn", 4),
-            Text.translatable("cobblemon.battle.used_move", "Pokemon", "Tackle")
+            Component.translatable("cobblemon.battle.turn", 4),
+            Component.translatable("cobblemon.battle.used_move", "Pokemon", "Tackle")
         ));
         assertTrue(BattleDialogue.INSTANCE.hasPending());
     }

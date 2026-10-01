@@ -1,8 +1,8 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
 import com.cobblemon.mod.common.CobblemonSounds
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.sound.PositionedSoundInstance
+import net.minecraft.client.Minecraft
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 
 /**
  * Cobblemon's own battle menu click, for the inputs this mod handles itself.
@@ -14,6 +14,6 @@ import net.minecraft.client.sound.PositionedSoundInstance
 object BattleUiSounds {
     @JvmStatic
     fun click() {
-        MinecraftClient.getInstance().soundManager.play(PositionedSoundInstance.master(CobblemonSounds.GUI_CLICK, 1.0f))
+        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(CobblemonSounds.GUI_CLICK, 1.0f))
     }
 }

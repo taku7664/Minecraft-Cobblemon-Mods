@@ -8,9 +8,9 @@ import jbro.cobblemon.ui.extended.pokemon.tooltip.PokeballBounds
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipBoundsData
 import jbro.cobblemon.ui.extended.pokemon.tooltip.TooltipData
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.DrawContext
-import net.minecraft.text.Text
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.network.chat.Component
 
 
 /**
@@ -64,14 +64,14 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     internal fun render(
-        context: DrawContext,
+        context: GuiGraphics,
         bounds: PokeballBounds,
         data: TooltipData,
         screenWidth: Int,
         screenHeight: Int,
         isMinimised: Boolean
     ): TooltipBoundsData {
-        val tr = MinecraftClient.getInstance().textRenderer
+        val tr = Minecraft.getInstance().font
         // Whole text sizes only; the width keeps the designed proportion to the text.
         val fontScale = PixelTextLayout.crisp(TeamIndicatorUI.TOOLTIP_FONT_SCALE * PanelConfig.tooltipFontScale)
         val lineH = (TeamIndicatorUI.TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
@@ -116,15 +116,15 @@ object PokemonInfoPopup {
 
         val opacity = if (isMinimised) UIUtils.MINIMISED_OPACITY else 1f
 
-        context.matrices.push()
-        context.matrices.translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
+        context.pose().pushPose()
+        context.pose().translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
 
         // ── Layer 1: 9-slice frame (gap-colored interior shows between cells) ──
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
         RenderSystem.setShaderColor(1f, 1f, 1f, opacity)
         UIUtils.renderPopupFrame(context, px, py, popupWidth, totalHeight)
-        context.draw()
+        context.flush()
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
 
         // ── Layer 2+3+4: Cells + dividers + text ──
@@ -167,7 +167,7 @@ object PokemonInfoPopup {
                 contentWidth - UIUtils.CELL_PAD * 2, lineH, fontScale, tr)
         }
 
-        context.matrices.pop()
+        context.pose().popPose()
         return TooltipBoundsData(px, py, popupWidth, totalHeight)
     }
 
@@ -219,10 +219,10 @@ object PokemonInfoPopup {
     // Cell rendering (delegates to UIUtils with opacity transform)
     // ═══════════════════════════════════════════════════════════════
 
-    private fun drawCell(context: DrawContext, x: Int, y: Int, w: Int, h: Int) =
+    private fun drawCell(context: GuiGraphics, x: Int, y: Int, w: Int, h: Int) =
         UIUtils.drawPopupCell(context, x, y, w, h, TeamIndicatorUI::applyOpacity)
 
-    private fun drawRowDivider(context: DrawContext, cellX: Int, cellW: Int, y: Int) =
+    private fun drawRowDivider(context: GuiGraphics, cellX: Int, cellW: Int, y: Int) =
         UIUtils.drawPopupRowDivider(context, cellX, cellW, y, TeamIndicatorUI::applyOpacity)
 
     // ═══════════════════════════════════════════════════════════════
@@ -230,9 +230,9 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     private fun renderHeaderText(
-        context: DrawContext, data: TooltipData,
+        context: GuiGraphics, data: TooltipData,
         x: Int, y: Int, w: Int, lineH: Int,
-        fontScale: Float, tr: net.minecraft.client.font.TextRenderer
+        fontScale: Float, tr: net.minecraft.client.gui.Font
     ) {
         var curY = y.toFloat()
 
@@ -246,8 +246,8 @@ object PokemonInfoPopup {
         draw(context, data.pokemonName, x.toFloat(), curY, nameColor, fontScale)
 
         if (data.level != null) {
-            val lvlText = Text.translatable("cobblemon_ui.popup.level", data.level).string
-            val lvlW = tr.getWidth(lvlText) * fontScale
+            val lvlText = Component.translatable("cobblemon_ui.popup.level", data.level).string
+            val lvlW = tr.width(lvlText) * fontScale
             draw(context, lvlText, x + w - lvlW, curY, TeamIndicatorUI.TOOLTIP_LABEL, fontScale)
         }
         curY += lineH
@@ -256,22 +256,22 @@ object PokemonInfoPopup {
 
         // Calculate right-side positions first to know item overflow boundary
         val hpText = if (data.isKO)
-            Text.translatable("cobblemon_ui.popup.ko").string
+            Component.translatable("cobblemon_ui.popup.ko").string
         else
-            Text.translatable("cobblemon_ui.popup.hp", (data.hpPercent * 100).toInt()).string
+            Component.translatable("cobblemon_ui.popup.hp", (data.hpPercent * 100).toInt()).string
         val hpColor = when {
             data.isKO -> UIUtils.color(100, 100, 100)
             data.hpPercent > 0.5f -> TeamIndicatorUI.TOOLTIP_HP_HIGH
             data.hpPercent > 0.25f -> TeamIndicatorUI.TOOLTIP_HP_MED
             else -> TeamIndicatorUI.TOOLTIP_HP_LOW
         }
-        val hpW = tr.getWidth(hpText) * fontScale
+        val hpW = tr.width(hpText) * fontScale
         val hpX = x + w - hpW
-        val smallGap = tr.getWidth("  ") * fontScale
+        val smallGap = tr.width("  ") * fontScale
 
         var rightEdge = hpX
         if (data.statusCondition != null) {
-            val statusW = tr.getWidth(TeamIndicatorUI.getStatusDisplayName(data.statusCondition)) * fontScale
+            val statusW = tr.width(TeamIndicatorUI.getStatusDisplayName(data.statusCondition)) * fontScale
             rightEdge = hpX - smallGap - statusW
         }
         val itemMaxX = rightEdge - smallGap  // leave gap before right side
@@ -279,14 +279,14 @@ object PokemonInfoPopup {
         // Draw types (left)
         var typeX = x.toFloat()
         if (data.isTerastallized && data.activeTeraTypeName != null) {
-            val teraPrefix = Text.translatable("cobblemon_ui.popup.tera_prefix").string
+            val teraPrefix = Component.translatable("cobblemon_ui.popup.tera_prefix").string
             draw(context, teraPrefix, typeX, curY, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
-            typeX += tr.getWidth(teraPrefix) * fontScale
+            typeX += tr.width(teraPrefix) * fontScale
             val teraET = ElementalTypes.get(data.activeTeraTypeName.lowercase())
             val teraDisplayName = teraET?.displayName?.string ?: data.activeTeraTypeName
             val teraColor = teraET?.let { UIUtils.getTypeColor(it) } ?: TeamIndicatorUI.TOOLTIP_TEXT
             draw(context, teraDisplayName, typeX, curY, teraColor, fontScale)
-            typeX += tr.getWidth(teraDisplayName) * fontScale
+            typeX += tr.width(teraDisplayName) * fontScale
         } else {
             val types = mutableListOf<Pair<String, Int>>()
             if (!data.lostPrimaryType) {
@@ -301,15 +301,15 @@ object PokemonInfoPopup {
             }
             if (types.isEmpty()) {
                 draw(context, "???", typeX, curY, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
-                typeX += tr.getWidth("???") * fontScale
+                typeX += tr.width("???") * fontScale
             } else {
                 for ((idx, pair) in types.withIndex()) {
                     if (idx > 0) {
                         draw(context, " / ", typeX, curY, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
-                        typeX += tr.getWidth(" / ") * fontScale
+                        typeX += tr.width(" / ") * fontScale
                     }
                     draw(context, pair.first, typeX, curY, pair.second, fontScale)
-                    typeX += tr.getWidth(pair.first) * fontScale
+                    typeX += tr.width(pair.first) * fontScale
                 }
             }
         }
@@ -319,15 +319,15 @@ object PokemonInfoPopup {
             val sep = " \u00b7 "
             val itemSuffix = when (data.item.status) {
                 BattleStateTracker.ItemStatus.HELD -> ""
-                BattleStateTracker.ItemStatus.KNOCKED_OFF -> " " + Text.translatable("cobblemon_ui.item.knocked_off").string
-                BattleStateTracker.ItemStatus.STOLEN -> " " + Text.translatable("cobblemon_ui.item.stolen").string
-                BattleStateTracker.ItemStatus.SWAPPED -> " " + Text.translatable("cobblemon_ui.item.swapped").string
-                BattleStateTracker.ItemStatus.CONSUMED -> " " + Text.translatable("cobblemon_ui.item.consumed").string
-                BattleStateTracker.ItemStatus.DESTROYED -> " " + Text.translatable("cobblemon_ui.item.destroyed").string
+                BattleStateTracker.ItemStatus.KNOCKED_OFF -> " " + Component.translatable("cobblemon_ui.item.knocked_off").string
+                BattleStateTracker.ItemStatus.STOLEN -> " " + Component.translatable("cobblemon_ui.item.stolen").string
+                BattleStateTracker.ItemStatus.SWAPPED -> " " + Component.translatable("cobblemon_ui.item.swapped").string
+                BattleStateTracker.ItemStatus.CONSUMED -> " " + Component.translatable("cobblemon_ui.item.consumed").string
+                BattleStateTracker.ItemStatus.DESTROYED -> " " + Component.translatable("cobblemon_ui.item.destroyed").string
             }
             val itemText = data.item.name + itemSuffix
-            val sepW = tr.getWidth(sep) * fontScale
-            val itemW = tr.getWidth(itemText) * fontScale
+            val sepW = tr.width(sep) * fontScale
+            val itemW = tr.width(itemText) * fontScale
             if (typeX + sepW + itemW <= itemMaxX) {
                 draw(context, sep, typeX, curY, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
                 typeX += sepW
@@ -342,7 +342,7 @@ object PokemonInfoPopup {
         if (data.statusCondition != null) {
             val statusName = TeamIndicatorUI.getStatusDisplayName(data.statusCondition)
             val statusColor = TeamIndicatorUI.getStatusTextColor(data.statusCondition)
-            val statusW = tr.getWidth(statusName) * fontScale
+            val statusW = tr.width(statusName) * fontScale
             draw(context, statusName, hpX - smallGap - statusW, curY, statusColor, fontScale)
         }
         curY += lineH
@@ -352,7 +352,7 @@ object PokemonInfoPopup {
             val et = ElementalTypes.get(data.teraType.showdownId())
             val teraName = et?.displayName?.string ?: data.teraType.name
             val teraColor = et?.let { UIUtils.getTypeColor(it) } ?: TeamIndicatorUI.TOOLTIP_TEXT
-            draw(context, Text.translatable("cobblemon_ui.popup.tera_label", teraName).string, x.toFloat(), curY, teraColor, fontScale)
+            draw(context, Component.translatable("cobblemon_ui.popup.tera_label", teraName).string, x.toFloat(), curY, teraColor, fontScale)
         }
     }
 
@@ -361,17 +361,17 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     private fun renderLeftCellText(
-        context: DrawContext, data: TooltipData,
+        context: GuiGraphics, data: TooltipData,
         x: Int, y: Int, w: Int,
         cellX: Int, cellW: Int,
-        lineH: Int, fontScale: Float, tr: net.minecraft.client.font.TextRenderer
+        lineH: Int, fontScale: Float, tr: net.minecraft.client.gui.Font
     ) {
         var curY = y.toFloat()
         val xf = x.toFloat()
 
         // Section label: BUFFS/DEBUFFS
         drawLabel(context,
-            Text.translatable("cobblemon_ui.popup.buffs").string,
+            Component.translatable("cobblemon_ui.popup.buffs").string,
             xf, curY, fontScale)
         curY += lineH
 
@@ -389,11 +389,11 @@ object PokemonInfoPopup {
 
             // Stage (right-aligned)
             val stageText = formatStage(stage)
-            val stageW = tr.getWidth(stageText) * fontScale
+            val stageW = tr.width(stageText) * fontScale
             draw(context, stageText, x + w - stageW, curY, getStageColor(stage), fontScale)
 
             // Stat values between name and stage
-            val gap = tr.getWidth("  ") * fontScale
+            val gap = tr.width("  ") * fontScale
             when {
                 // Player Pokemon: show actual → effective for all stats
                 data.isPlayerPokemon && PanelConfig.showStatRangesEffective -> {
@@ -402,23 +402,23 @@ object PokemonInfoPopup {
                         val effective = calculateEffectiveStat(actualValue, stage)
                         if (effective != actualValue) {
                             val effectiveText = "$effective"
-                            val effectiveW = tr.getWidth(effectiveText) * fontScale
+                            val effectiveW = tr.width(effectiveText) * fontScale
                             val effectiveColor = if (effective > actualValue)
                                 TeamIndicatorUI.TOOLTIP_STAT_BOOST else TeamIndicatorUI.TOOLTIP_STAT_DROP
                             draw(context, effectiveText, x + w - stageW - gap - effectiveW, curY,
                                 effectiveColor, fontScale)
 
                             val arrowText = " \u2192 "
-                            val arrowW = tr.getWidth(arrowText) * fontScale
+                            val arrowW = tr.width(arrowText) * fontScale
                             val baseText = "$actualValue"
-                            val baseW = tr.getWidth(baseText) * fontScale
+                            val baseW = tr.width(baseText) * fontScale
                             draw(context, arrowText, x + w - stageW - gap - effectiveW - arrowW, curY,
                                 TeamIndicatorUI.TOOLTIP_DIM, fontScale)
                             draw(context, baseText, x + w - stageW - gap - effectiveW - arrowW - baseW, curY,
                                 TeamIndicatorUI.TOOLTIP_DIM, fontScale)
                         } else {
                             val valText = "$actualValue"
-                            val valW = tr.getWidth(valText) * fontScale
+                            val valW = tr.width(valText) * fontScale
                             draw(context, valText, x + w - stageW - gap - valW, curY,
                                 TeamIndicatorUI.TOOLTIP_DIM, fontScale)
                         }
@@ -434,7 +434,7 @@ object PokemonInfoPopup {
                     )
                     if (range != null) {
                         val rangeText = "${range.minSpeed}-${range.maxSpeed}"
-                        val rangeW = tr.getWidth(rangeText) * fontScale
+                        val rangeW = tr.width(rangeText) * fontScale
                         draw(context, rangeText, x + w - stageW - gap - rangeW, curY,
                             TeamIndicatorUI.TOOLTIP_SPEED, fontScale)
                     }
@@ -450,18 +450,18 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     private fun renderRightCellText(
-        context: DrawContext, data: TooltipData,
+        context: GuiGraphics, data: TooltipData,
         x: Int, y: Int, w: Int,
         cellX: Int, cellW: Int,
         lineH: Int, fontScale: Float,
-        tr: net.minecraft.client.font.TextRenderer
+        tr: net.minecraft.client.gui.Font
     ) {
         var curY = y.toFloat()
         val xf = x.toFloat()
 
         // Section label: ABILITY
         drawLabel(context,
-            Text.translatable("cobblemon_ui.popup.ability").string,
+            Component.translatable("cobblemon_ui.popup.ability").string,
             xf, curY, fontScale)
         curY += lineH
 
@@ -495,7 +495,7 @@ object PokemonInfoPopup {
 
         // Section label: MOVES
         drawLabel(context,
-            Text.translatable("cobblemon_ui.popup.moves").string,
+            Component.translatable("cobblemon_ui.popup.moves").string,
             xf, curY, fontScale)
         curY += lineH
 
@@ -521,7 +521,7 @@ object PokemonInfoPopup {
 
                 val ppText = buildPpText(move, data.isPlayerPokemon)
                 if (ppText != null) {
-                    val ppW = tr.getWidth(ppText) * fontScale
+                    val ppW = tr.width(ppText) * fontScale
                     draw(context, ppText, x + w - ppW, curY,
                         getPpColor(move, data.isPlayerPokemon), fontScale)
                 }
@@ -537,25 +537,25 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     private fun renderVolatilesText(
-        context: DrawContext, data: TooltipData,
+        context: GuiGraphics, data: TooltipData,
         x: Int, y: Int, w: Int, lineH: Int,
-        fontScale: Float, tr: net.minecraft.client.font.TextRenderer
+        fontScale: Float, tr: net.minecraft.client.gui.Font
     ) {
-        val label = Text.translatable("cobblemon_ui.popup.volatiles").string + ": "
+        val label = Component.translatable("cobblemon_ui.popup.volatiles").string + ": "
         var curX = x.toFloat()
         val yf = y.toFloat()
 
         draw(context, label, curX, yf, TeamIndicatorUI.TOOLTIP_LABEL, fontScale)
-        curX += tr.getWidth(label) * fontScale
+        curX += tr.width(label) * fontScale
 
         val maxX = x + w
         data.volatileStatuses.toList().forEachIndexed { i, volatile ->
             if (i > 0) {
                 draw(context, ", ", curX, yf, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
-                curX += tr.getWidth(", ") * fontScale
+                curX += tr.width(", ") * fontScale
             }
             val name = volatile.type.displayName
-            val nameW = tr.getWidth(name) * fontScale
+            val nameW = tr.width(name) * fontScale
             if (curX + nameW > maxX) {
                 draw(context, "...", curX, yf, TeamIndicatorUI.TOOLTIP_DIM, fontScale)
                 return
@@ -618,13 +618,13 @@ object PokemonInfoPopup {
     // ═══════════════════════════════════════════════════════════════
 
     private fun drawLabel(
-        context: DrawContext, text: String,
+        context: GuiGraphics, text: String,
         x: Float, y: Float, fontScale: Float
     ) {
         val labelScale = fontScale * 0.9f
         drawScaledText(
             context = context,
-            text = Text.literal(text.uppercase()),
+            text = Component.literal(text.uppercase()),
             x = x, y = y,
             scale = labelScale,
             colour = TeamIndicatorUI.applyOpacity(LABEL_COLOR),
@@ -633,12 +633,12 @@ object PokemonInfoPopup {
     }
 
     private fun draw(
-        context: DrawContext, text: String,
+        context: GuiGraphics, text: String,
         x: Float, y: Float, color: Int, fontScale: Float
     ) {
         drawScaledText(
             context = context,
-            text = Text.literal(text),
+            text = Component.literal(text),
             x = x, y = y,
             scale = fontScale,
             colour = TeamIndicatorUI.applyOpacity(color),

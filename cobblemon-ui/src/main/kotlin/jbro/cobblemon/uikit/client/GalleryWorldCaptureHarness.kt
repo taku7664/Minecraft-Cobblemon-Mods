@@ -60,7 +60,7 @@ internal class GalleryCaptureLifecycle {
 }
 
 internal object GalleryWorldCaptureHarness {
-    private val logger = LoggerFactory.getLogger("cobblemon_ui_kit")
+    private val logger = LoggerFactory.getLogger("cobblemon_ui")
 
     fun installFromEnvironment() {
         val config = GalleryHarnessConfig.fromEnvironment(System.getenv())

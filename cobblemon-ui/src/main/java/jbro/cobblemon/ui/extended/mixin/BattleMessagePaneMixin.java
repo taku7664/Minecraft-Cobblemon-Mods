@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleMessagePane;
 import jbro.cobblemon.ui.extended.PanelConfig;
 import jbro.cobblemon.ui.extended.BattleDialogue;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * Mixin to hide Cobblemon's BattleMessagePane when our custom battle log is enabled.
@@ -25,11 +25,11 @@ public class BattleMessagePaneMixin {
      * When enableBattleLog is false, Cobblemon's native log will be shown instead.
      */
     @Inject(
-        method = "renderWidget(Lnet/minecraft/client/gui/DrawContext;IIF)V",
+        method = "renderWidget(Lnet/minecraft/client/gui/GuiGraphics;IIF)V",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void onRenderWidget(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void onRenderWidget(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (PanelConfig.INSTANCE.getEnableBattleLogEffective() || BattleDialogue.INSTANCE.hasPending()) {
             ci.cancel();
         }

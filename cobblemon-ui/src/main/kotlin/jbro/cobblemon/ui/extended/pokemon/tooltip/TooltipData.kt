@@ -5,7 +5,7 @@ import com.cobblemon.mod.common.api.types.ElementalType
 import com.cobblemon.mod.common.api.types.tera.TeraType
 import com.cobblemon.mod.common.pokemon.FormData
 import jbro.cobblemon.ui.extended.BattleStateTracker
-import net.minecraft.util.Identifier
+import net.minecraft.resources.ResourceLocation
 import java.util.UUID
 
 /**
@@ -35,7 +35,7 @@ data class MoveInfo(
 data class TooltipData(
     val uuid: UUID,
     val pokemonName: String,
-    val pokemonId: Identifier?,
+    val pokemonId: ResourceLocation?,
     val hpPercent: Float,
     val statusCondition: Status?,
     val isKO: Boolean,

@@ -14,10 +14,10 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionS
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.client.gui.screen.world.BackupPromptScreen
-import net.minecraft.client.gui.widget.PressableWidget
-import net.minecraft.client.util.ScreenshotRecorder
-import net.minecraft.text.Text
+import net.minecraft.client.gui.screens.BackupConfirmScreen
+import net.minecraft.client.gui.components.AbstractButton
+import net.minecraft.client.Screenshot
+import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -76,48 +76,48 @@ object BattleUiCaptureHarness {
         var idleTicks = 0
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (done) return@EndTick
-            if (client.world == null && ++idleTicks % 400 == 0) {
-                logger.info("Battle capture is still waiting outside a world on {}", client.currentScreen?.javaClass?.name)
+            if (client.level == null && ++idleTicks % 400 == 0) {
+                logger.info("Battle capture is still waiting outside a world on {}", client.screen?.javaClass?.name)
             }
             // The capture worlds use experimental settings; press through the warning as a player would.
-            (client.currentScreen as? BackupPromptScreen)?.let { warning ->
-                val skip = Text.translatable("selectWorld.backupJoinSkipButton").string
-                warning.children().filterIsInstance<PressableWidget>().firstOrNull { it.message.string == skip }?.let {
+            (client.screen as? BackupConfirmScreen)?.let { warning ->
+                val skip = Component.translatable("selectWorld.backupJoinSkipButton").string
+                warning.children().filterIsInstance<AbstractButton>().firstOrNull { it.message.string == skip }?.let {
                     it.onPress()
                     logger.info("Battle capture skipped the experimental world warning")
                 }
                 return@EndTick
             }
             if (!guiScaleApplied) {
-                client.options.guiScale.value = checkNotNull(guiScale)
-                client.onResolutionChanged()
+                client.options.guiScale().set(checkNotNull(guiScale))
+                client.resizeDisplay()
                 guiScaleApplied = true
                 return@EndTick
             }
             languageFailure.get()?.let { throw IllegalStateException("Battle capture language reload failed", it) }
             if (!languageReady.get()) {
-                if (!languageRequested && client.overlay == null && (client.currentScreen != null || client.world != null)) {
-                    client.options.language = locale
-                    client.languageManager.language = locale
+                if (!languageRequested && client.overlay == null && (client.screen != null || client.level != null)) {
+                    client.options.languageCode = locale
+                    client.languageManager.setSelected(locale)
                     languageRequested = true
-                    client.reloadResources().whenComplete { _, error ->
+                    client.reloadResourcePacks().whenComplete { _, error ->
                         if (error == null) languageReady.set(true) else languageFailure.set(error)
                     }
                 }
                 return@EndTick
             }
             val player = client.player ?: return@EndTick
-            if (client.world == null || client.overlay != null) return@EndTick
-            val server = checkNotNull(client.server) { "The battle capture needs a singleplayer world" }
-            client.toastManager.clear()
+            if (client.level == null || client.overlay != null) return@EndTick
+            val server = checkNotNull(client.singleplayerServer) { "The battle capture needs a singleplayer world" }
+            client.toasts.clear()
             if (!partyRequested) {
                 val have = CobblemonClient.storage.party.count { it != null }
                 val name = player.gameProfile.name
                 server.execute {
                     party.drop(have).forEach { species ->
-                        server.commandManager.executeWithPrefix(server.commandSource, "givepokemonother $name $species level=50")
+                        server.commands.performPrefixedCommand(server.createCommandSourceStack(), "givepokemonother $name $species level=50")
                     }
-                    server.commandManager.executeWithPrefix(server.commandSource, "healpokemon $name")
+                    server.commands.performPrefixedCommand(server.createCommandSourceStack(), "healpokemon $name")
                 }
                 logger.info("Battle capture party had {} Pokemon; gave {}", have, party.drop(have))
                 partyRequested = true
@@ -131,8 +131,8 @@ object BattleUiCaptureHarness {
                 if (trainerFormat != null) {
                     // A trainer needs a few ticks in the world before Cobblemon accepts a challenge.
                     if (trainerTicks == 0) server.execute {
-                        val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
-                        val world = serverPlayer.serverWorld
+                        val serverPlayer = checkNotNull(server.playerList.getPlayer(uuid))
+                        val world = serverPlayer.serverLevel()
                         val npc = NPCEntity(world)
                         npc.npc = NPCClasses.classes.sortedBy { it.id.toString() }.first()
                         val npcParty = NPCPartyStore(npc)
@@ -141,29 +141,29 @@ object BattleUiCaptureHarness {
                         }
                         npcParty.initialize()
                         npc.party = npcParty
-                        npc.refreshPositionAndAngles(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 3.0, 150f, 0f)
-                        check(world.spawnEntity(npc)) { "Could not spawn the capture trainer" }
+                        npc.moveTo(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 3.0, 150f, 0f)
+                        check(world.addFreshEntity(npc)) { "Could not spawn the capture trainer" }
                         trainer.set(npc)
                     }
                     if (++trainerTicks < 30 || trainer.get() == null) return@EndTick
                     server.execute {
-                        val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
+                        val serverPlayer = checkNotNull(server.playerList.getPlayer(uuid))
                         logger.info("Battle capture started a trainer battle: {}",
                             BattleBuilder.pvn(serverPlayer, checkNotNull(trainer.get()), battleFormat = trainerFormat))
                     }
                 } else server.execute {
-                    val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
-                    val world = serverPlayer.serverWorld
+                    val serverPlayer = checkNotNull(server.playerList.getPlayer(uuid))
+                    val world = serverPlayer.serverLevel()
                     val entity = PokemonProperties.parse(wild).createEntity(world)
-                    entity.refreshPositionAndAngles(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 2.0, 150f, 0f)
-                    world.spawnEntity(entity)
+                    entity.moveTo(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 2.0, 150f, 0f)
+                    world.addFreshEntity(entity)
                     logger.info("Battle capture started a battle with {}: {}", wild, BattleBuilder.pve(serverPlayer, entity))
                 }
                 battleRequested = true
                 ticks = 0
                 return@EndTick
             }
-            val battleScreen = client.currentScreen as? BattleGUI
+            val battleScreen = client.screen as? BattleGUI
             if (battleScreen == null) {
                 if (ticks > 1200) error("The battle screen did not show")
                 return@EndTick
@@ -194,9 +194,9 @@ object BattleUiCaptureHarness {
                 "wait" -> waitTicks = argument.toInt()
                 "cap" -> {
                     captured.set(false)
-                    val file = "battle-$argument-${client.languageManager.language}-" +
-                        "${client.window.scaledWidth}x${client.window.scaledHeight}.png"
-                    ScreenshotRecorder.saveScreenshot(client.runDirectory, file, client.framebuffer) { result ->
+                    val file = "battle-$argument-${client.languageManager.selected}-" +
+                        "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                    Screenshot.grab(client.gameDirectory, file, client.mainRenderTarget) { result ->
                         logger.info("Battle capture {}: {}", file, result.string)
                         captured.set(true)
                     }
@@ -207,8 +207,8 @@ object BattleUiCaptureHarness {
                 }
                 "mouse" -> {
                     val (x, y) = argument.split(';', '/').map(String::toDouble)
-                    val factor = client.window.scaleFactor
-                    GLFW.glfwSetCursorPos(client.window.handle, x * factor, y * factor)
+                    val factor = client.window.guiScale
+                    GLFW.glfwSetCursorPos(client.window.window, x * factor, y * factor)
                 }
                 "fight", "switch" -> {
                     val general = checkNotNull(battleScreen.getCurrentActionSelection() as? BattleGeneralActionSelection) {
@@ -219,12 +219,12 @@ object BattleUiCaptureHarness {
                 }
                 "info" -> BattleInfoPanel.toggle()
                 "confirm" -> {
-                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey).code
+                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey).value
                     battleScreen.keyPressed(key, 0, 0)
                     BattleDialogue.releaseConfirm(key, 0)
                 }
                 "log" -> {
-                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.toggleLogKey).code
+                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.toggleLogKey).value
                     BattleTranscriptOverlay.keyPressed(key, 0)
                     BattleTranscriptOverlay.releaseKey(key, 0)
                 }

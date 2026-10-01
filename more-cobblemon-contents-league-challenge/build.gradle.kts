@@ -17,9 +17,9 @@ dependencies {
     implementation(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
     // The core bundles the UI kit; League only compiles against it and runs it in development.
-    compileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
-    runtimeOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
-    testImplementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    compileOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    testImplementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")

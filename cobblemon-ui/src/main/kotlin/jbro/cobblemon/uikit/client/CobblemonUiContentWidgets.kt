@@ -135,8 +135,7 @@ class CobblemonUiPanel private constructor(
         }
         val room = x + width - TITLE_INSET - left
         if (room <= 0) return
-        val fitted = if (font.width(title) <= room) title
-            else Component.literal(font.plainSubstrByWidth(title.string, (room - font.width("…")).coerceAtLeast(0)) + "…")
+        val fitted = UiTextRenderer.fitted(font, title, room)
         UiTextRenderer.draw(graphics, font, fitted, left, top, color, shadow)
     }
 
