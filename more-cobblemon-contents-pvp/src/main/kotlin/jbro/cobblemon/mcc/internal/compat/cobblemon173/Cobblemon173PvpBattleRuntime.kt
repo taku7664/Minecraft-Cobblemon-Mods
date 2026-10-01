@@ -13,6 +13,8 @@ import jbro.cobblemon.mcc.internal.pvp.PvpBattleMechanic
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleLaunchResult
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleRuntime
 import jbro.cobblemon.mcc.internal.pvp.PvpPreparedBattle
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import net.minecraft.server.MinecraftServer
@@ -109,12 +111,15 @@ internal class Cobblemon173PvpBattleRuntime(
             ) {
                 Cobblemon173PartyRecall.recallSentOut(first)
                 Cobblemon173PartyRecall.recallSentOut(second)
-                BattleRegistry.startBattle(
-                    request.format.toCobblemonFormat(),
-                    BattleSide(firstActor),
-                    BattleSide(secondActor),
-                    true,
-                )
+                // The format (`single` or `double`) is the stage clients see.
+                MccBattleTags.during(setOf(first.uuid, second.uuid), MccBattleTag(ManagedBattleContentIds.PVP, request.format.recordId)) {
+                    BattleRegistry.startBattle(
+                        request.format.toCobblemonFormat(),
+                        BattleSide(firstActor),
+                        BattleSide(secondActor),
+                        true,
+                    )
+                }
             }
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.error("PvP battle creation failed for match {}", request.matchId, failure)
