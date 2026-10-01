@@ -37,7 +37,8 @@ window.WIKI_NAV = {
       title: "생활",
       pages: [
         { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 화약 네더의 별 사탕" },
-        { path: "pages/places.html", title: "광장과 마이룸", icon: "🏛️", keywords: "광장 plaza 마이룸 room 방 공개 초대" },
+        { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동" },
+        { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
         { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 음성 채팅 도감" },
       ],
     },
