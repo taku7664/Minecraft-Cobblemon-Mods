@@ -341,7 +341,10 @@ internal object LocalTacticalScenarioBattle {
             require(setIds.size == definition.teamSize) {
                 "${definition.format} needs ${definition.teamSize} members, got ${setIds.size}"
             }
-            val selected = setIds.map { id -> roster.entries.single { it.setId == id } }
+            val selected = setIds.map { id ->
+                roster.entries.singleOrNull { it.setId == id }
+                    ?: LocalTacticalSimulationRoster.loadTournament().entries.single { it.setId == id }
+            }
             require(selected.map { it.speciesId }.distinct().size == selected.size)
             require(selected.map { it.heldItemId }.distinct().size == selected.size)
             // The counter is the number already registered, not that plus the position in this team:

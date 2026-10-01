@@ -47,19 +47,33 @@ internal class LocalTacticalSimulationRoster private constructor(
 
         fun loadAll(): LocalTacticalSimulationRoster = allCached
 
-        private fun loadUncached(): LocalTacticalSimulationRoster {
+        /**
+         * Real tournament sets ([LocalTournamentGames]), kept apart from the Factory presets so no random Factory
+         * team ever draws one and every earlier seed still draws the teams it did.
+         */
+        fun loadTournament(): LocalTacticalSimulationRoster = tournamentCached
+
+        private val tournamentCached by lazy {
+            parse(LocalTournamentGames.roots(), dropUnknownMoves = false)
+        }
+
+        private fun loadUncached(): LocalTacticalSimulationRoster = parse(rentalSetRoots(), dropUnknownMoves = true)
+
+        /** A set whose move the simulation does not know is dropped, or for a tournament set fails the load. */
+        private fun parse(roots: List<JsonObject>, dropUnknownMoves: Boolean): LocalTacticalSimulationRoster {
             val moveData = loadMoveData()
             cobblemonJar().use { jar ->
                 val speciesEntries = jar.entries().asSequence()
                     .filter { it.name.startsWith("data/cobblemon/species/") && it.name.endsWith(".json") }
                     .associateBy { it.name.substringAfterLast('/').removeSuffix(".json") }
-                val entries = rentalSetRoots().flatMap { root ->
+                val entries = roots.flatMap { root ->
                     root.getAsJsonArray("rental_sets").mapNotNull { element ->
                         val set = element.asJsonObject
                         val moves = set.getAsJsonArray("moves").map { moveElement ->
                             moveData[moveElement.asString.normalizedId()]
                         }
                         if (moves.any { it == null }) {
+                            require(dropUnknownMoves) { "Unknown move in ${set.requiredString("set_id")}: ${set.getAsJsonArray("moves")}" }
                             return@mapNotNull null
                         }
                         val speciesId = set.requiredString("species_id")
@@ -73,6 +87,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                             speciesRoot.getAsJsonArray("forms")?.map { it.asJsonObject }
                                 ?.firstOrNull { it.optionalString("name")?.equals(wanted, ignoreCase = true) == true }
                         }
+                        require(dropUnknownMoves || formId == null || form != null) { "No form $formId of $speciesId" }
                         val baseStats = (form?.getAsJsonObject("baseStats") ?: speciesRoot.getAsJsonObject("baseStats"))
                         val evs = set.requiredSpread("evs")
                         val ivs = set.getAsJsonObject("ivs")?.toSpread() ?: LocalTacticalSimulationStatSpread.uniform(31)

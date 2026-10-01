@@ -1,0 +1,4999 @@
+{
+ "schema_version": 4,
+ "source": "Smogon BSS Open VIII Round 2 ([Gen 9] BSS Reg I), replays and 2026-02 gen9bssregi-1500 usage stats",
+ "rental_sets": [
+  {
+   "set_id": "gen9bssregi-2536255305-p1-eternatus",
+   "species_id": "cobblemon:eternatus",
+   "ability_id": "cobblemon:pressure",
+   "held_item_id": "cobblemon:blacksludge",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:toxicspikes",
+    "cobblemon:recover",
+    "cobblemon:sludgebomb",
+    "cobblemon:dynamaxcannon"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 4,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536255305-p1-lugia",
+   "species_id": "cobblemon:lugia",
+   "ability_id": "cobblemon:multiscale",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:bold",
+   "moves": [
+    "cobblemon:psychicnoise",
+    "cobblemon:recover",
+    "cobblemon:substitute",
+    "cobblemon:whirlwind"
+   ],
+   "evs": {
+    "hp": 236,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 28
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536255305-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536255305-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:shadowball",
+    "cobblemon:thunderwave",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536255305-p2-ironmoth",
+   "species_id": "cobblemon:ironmoth",
+   "ability_id": "cobblemon:quarkdrive",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:acidspray",
+    "cobblemon:fierydance",
+    "cobblemon:sludgewave",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 124,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 132
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536255305-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:swordsdance",
+    "cobblemon:scaleshot",
+    "cobblemon:taunt",
+    "cobblemon:flareblitz"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p1-glimmora",
+   "species_id": "cobblemon:glimmora",
+   "ability_id": "cobblemon:toxicdebris",
+   "held_item_id": "cobblemon:airballoon",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:mudshot",
+    "cobblemon:toxicspikes",
+    "cobblemon:mortalspin",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p1-ditto",
+   "species_id": "cobblemon:ditto",
+   "ability_id": "cobblemon:imposter",
+   "held_item_id": "cobblemon:quickclaw",
+   "nature_id": "cobblemon:naive",
+   "moves": [
+    "cobblemon:transform"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:protect",
+    "cobblemon:substitute",
+    "cobblemon:astralbarrage",
+    "cobblemon:encore"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 4,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:shadowball",
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p2-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:silkscarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:bloodmoon",
+    "cobblemon:earthpower",
+    "cobblemon:hypervoice",
+    "cobblemon:vacuumwave"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2536259704-p2-necrozmaduskmane",
+   "species_id": "cobblemon:necrozma",
+   "ability_id": "cobblemon:prismarmor",
+   "held_item_id": "cobblemon:weaknesspolicy",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:trickroom",
+    "cobblemon:sunsteelstrike",
+    "cobblemon:photongeyser",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 252,
+    "defense": 12,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 0
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Dusk-Mane"
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:terablast",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:dracometeor",
+    "cobblemon:electrodrift",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p2-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537505103-p2-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock",
+    "cobblemon:ruination"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:ejectpack",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:thunderwave",
+    "cobblemon:trickroom",
+    "cobblemon:moonblast",
+    "cobblemon:shadowball"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p1-calyrexice",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:brave",
+   "moves": [
+    "cobblemon:glaciallance",
+    "cobblemon:highhorsepower",
+    "cobblemon:trickroom",
+    "cobblemon:bulletseed"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Ice"
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p2-clodsire",
+   "species_id": "cobblemon:clodsire",
+   "ability_id": "cobblemon:waterabsorb",
+   "held_item_id": "cobblemon:blacksludge",
+   "nature_id": "cobblemon:careful",
+   "moves": [
+    "cobblemon:toxic",
+    "cobblemon:recover",
+    "cobblemon:earthquake",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 252,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537508073-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p1-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:fissure",
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p2-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:closecombat",
+    "cobblemon:taunt",
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2537511694-p2-zaciancrowned",
+   "species_id": "cobblemon:zacian",
+   "ability_id": "cobblemon:intrepidsword",
+   "held_item_id": "cobblemon:rustedsword",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:trailblaze",
+    "cobblemon:behemothblade",
+    "cobblemon:ironhead",
+    "cobblemon:playrough"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Crowned"
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p1-glimmora",
+   "species_id": "cobblemon:glimmora",
+   "ability_id": "cobblemon:toxicdebris",
+   "held_item_id": "cobblemon:redcard",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:powergem",
+    "cobblemon:memento",
+    "cobblemon:mortalspin",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p1-calyrexice",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:brave",
+   "moves": [
+    "cobblemon:trickroom",
+    "cobblemon:iciclespear",
+    "cobblemon:highhorsepower",
+    "cobblemon:glaciallance"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Ice"
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p2-ragingbolt",
+   "species_id": "cobblemon:ragingbolt",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:assaultvest",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:thunderbolt",
+    "cobblemon:thunderclap",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 12
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538165058-p2-ironmoth",
+   "species_id": "cobblemon:ironmoth",
+   "ability_id": "cobblemon:quarkdrive",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:fierydance",
+    "cobblemon:sludgewave",
+    "cobblemon:acidspray",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 124,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 132
+   },
+   "revealed_moves": 0,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p1-glimmora",
+   "species_id": "cobblemon:glimmora",
+   "ability_id": "cobblemon:toxicdebris",
+   "held_item_id": "cobblemon:redcard",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:memento",
+    "cobblemon:mortalspin",
+    "cobblemon:stealthrock",
+    "cobblemon:powergem"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p1-calyrexice",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:brave",
+   "moves": [
+    "cobblemon:trickroom",
+    "cobblemon:iciclespear",
+    "cobblemon:glaciallance",
+    "cobblemon:bulletseed"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Ice"
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p2-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:calmmind",
+    "cobblemon:bloodmoon",
+    "cobblemon:vacuumwave",
+    "cobblemon:hypervoice"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2538167126-p2-ragingbolt",
+   "species_id": "cobblemon:ragingbolt",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:assaultvest",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:thunderclap",
+    "cobblemon:thunderbolt",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 12
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p1-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:choiceband",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:closecombat",
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p1-glimmora",
+   "species_id": "cobblemon:glimmora",
+   "ability_id": "cobblemon:toxicdebris",
+   "held_item_id": "cobblemon:redcard",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:dazzlinggleam",
+    "cobblemon:mortalspin",
+    "cobblemon:stealthrock",
+    "cobblemon:powergem"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:outrage",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:bravebird",
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2538169175-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:sacredsword",
+    "cobblemon:swordsdance",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p1-chiyu",
+   "species_id": "cobblemon:chiyu",
+   "ability_id": "cobblemon:beadsofruin",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:fireblast",
+    "cobblemon:darkpulse",
+    "cobblemon:overheat",
+    "cobblemon:flamethrower"
+   ],
+   "evs": {
+    "hp": 100,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 4,
+    "speed": 236
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:ruination",
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p2-lunala",
+   "species_id": "cobblemon:lunala",
+   "ability_id": "cobblemon:shadowshield",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moongeistbeam",
+    "cobblemon:moonblast",
+    "cobblemon:moonlight",
+    "cobblemon:calmmind"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:electricseed",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:dragonpulse",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539082356-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:crunch",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:dracometeor",
+    "cobblemon:dazzlinggleam",
+    "cobblemon:electrodrift",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p1-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:whirlwind",
+    "cobblemon:recover",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p2-groudon",
+   "species_id": "cobblemon:groudon",
+   "ability_id": "cobblemon:drought",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:careful",
+   "moves": [
+    "cobblemon:rocktomb",
+    "cobblemon:terablast",
+    "cobblemon:heatcrash",
+    "cobblemon:earthquake"
+   ],
+   "evs": {
+    "hp": 124,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 252,
+    "speed": 12
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:bravebird",
+    "cobblemon:earthquake",
+    "cobblemon:recover"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539085882-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:voltswitch",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p1-garganacl",
+   "species_id": "cobblemon:garganacl",
+   "ability_id": "cobblemon:purifyingsalt",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:recover",
+    "cobblemon:curse",
+    "cobblemon:saltcure",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 4,
+    "defense": 76,
+    "special_attack": 0,
+    "special_defense": 148,
+    "speed": 28
+   },
+   "revealed_moves": 4,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p1-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:aquajet",
+    "cobblemon:surgingstrikes",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p2-dragonite",
+   "species_id": "cobblemon:dragonite",
+   "ability_id": "cobblemon:multiscale",
+   "held_item_id": "cobblemon:covertcloak",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:roost",
+    "cobblemon:dragondance",
+    "cobblemon:extremespeed"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 4,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:leechseed",
+    "cobblemon:encore",
+    "cobblemon:substitute",
+    "cobblemon:astralbarrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 4,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539250706-p2-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:fissure",
+    "cobblemon:rest",
+    "cobblemon:wavecrash",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:ejectpack",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:overheat",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p1-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:silkscarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:bloodmoon",
+    "cobblemon:vacuumwave",
+    "cobblemon:hypervoice",
+    "cobblemon:earthpower"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p2-serperior",
+   "species_id": "cobblemon:serperior",
+   "ability_id": "cobblemon:contrary",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:leafstorm",
+    "cobblemon:taunt",
+    "cobblemon:substitute",
+    "cobblemon:leechseed"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p2-primarina",
+   "species_id": "cobblemon:primarina",
+   "ability_id": "cobblemon:torrent",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:bold",
+   "moves": [
+    "cobblemon:sparklingaria",
+    "cobblemon:encore",
+    "cobblemon:moonblast",
+    "cobblemon:flipturn"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 204,
+    "special_attack": 52,
+    "special_defense": 0,
+    "speed": 0
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539253186-p2-ceruledge",
+   "species_id": "cobblemon:ceruledge",
+   "ability_id": "cobblemon:flashfire",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:bulkup",
+    "cobblemon:bitterblade",
+    "cobblemon:shadowsneak",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:sacredsword",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p1-ragingbolt",
+   "species_id": "cobblemon:ragingbolt",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:assaultvest",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:thunderbolt",
+    "cobblemon:dracometeor",
+    "cobblemon:thunderclap",
+    "cobblemon:voltswitch"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 12
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p2-primarina",
+   "species_id": "cobblemon:primarina",
+   "ability_id": "cobblemon:torrent",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:bold",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:flipturn",
+    "cobblemon:encore",
+    "cobblemon:psychicnoise"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 204,
+    "special_attack": 52,
+    "special_defense": 0,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254104-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:dualwingbeat",
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p1-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:choiceband",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:dazzlinggleam",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p1-zaciancrowned",
+   "species_id": "cobblemon:zacian",
+   "ability_id": "cobblemon:intrepidsword",
+   "held_item_id": "cobblemon:rustedsword",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:behemothblade",
+    "cobblemon:playrough",
+    "cobblemon:ironhead",
+    "cobblemon:wildcharge"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Crowned"
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p2-ogerponhearthflame",
+   "species_id": "cobblemon:ogerpon",
+   "ability_id": "cobblemon:moldbreaker",
+   "held_item_id": "cobblemon:hearthflamemask",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:hornleech",
+    "cobblemon:rocktomb",
+    "cobblemon:ivycudgel",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 156,
+    "attack": 92,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Hearthflame"
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p2-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:silkscarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:earthpower",
+    "cobblemon:bloodmoon",
+    "cobblemon:vacuumwave",
+    "cobblemon:hypervoice"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2539254760-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flamecharge",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:sacredsword",
+    "cobblemon:swordsdance",
+    "cobblemon:suckerpunch",
+    "cobblemon:iciclecrash"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p1-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:bloodmoon",
+    "cobblemon:vacuumwave",
+    "cobblemon:hypervoice",
+    "cobblemon:earthpower"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 0,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p2-archaludon",
+   "species_id": "cobblemon:archaludon",
+   "ability_id": "cobblemon:stamina",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:bold",
+   "moves": [
+    "cobblemon:stealthrock",
+    "cobblemon:bodypress",
+    "cobblemon:dracometeor",
+    "cobblemon:foulplay"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 20,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p2-calyrexice",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:brave",
+   "moves": [
+    "cobblemon:encore",
+    "cobblemon:trickroom",
+    "cobblemon:glaciallance",
+    "cobblemon:highhorsepower"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 4,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Ice"
+  },
+  {
+   "set_id": "gen9bssregi-2539255359-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p1-ogerponhearthflame",
+   "species_id": "cobblemon:ogerpon",
+   "ability_id": "cobblemon:moldbreaker",
+   "held_item_id": "cobblemon:hearthflamemask",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:ivycudgel",
+    "cobblemon:hornleech",
+    "cobblemon:swordsdance",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 156,
+    "attack": 92,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Hearthflame"
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:iceshard",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flamecharge",
+    "cobblemon:drainpunch",
+    "cobblemon:bulkup",
+    "cobblemon:flareblitz"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:closecombat",
+    "cobblemon:flareblitz",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:substitute",
+    "cobblemon:drainingkiss",
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539257082-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:lifeorb",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:sacredsword",
+    "cobblemon:suckerpunch",
+    "cobblemon:iciclecrash",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:payback",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:flareblitz",
+    "cobblemon:outrage",
+    "cobblemon:closecombat"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p2-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect",
+    "cobblemon:fissure"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539257784-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:lifeorb",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock",
+    "cobblemon:ruination"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:uturn",
+    "cobblemon:closecombat",
+    "cobblemon:flareblitz",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539259086-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p1-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:avalanche",
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p2-dragonite",
+   "species_id": "cobblemon:dragonite",
+   "ability_id": "cobblemon:multiscale",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:outrage",
+    "cobblemon:extremespeed",
+    "cobblemon:roost",
+    "cobblemon:earthquake"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539260000-p2-kyogre",
+   "species_id": "cobblemon:kyogre",
+   "ability_id": "cobblemon:drizzle",
+   "held_item_id": "cobblemon:choicespecs",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:originpulse",
+    "cobblemon:thunder",
+    "cobblemon:icebeam",
+    "cobblemon:surf"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 140,
+    "special_attack": 76,
+    "special_defense": 12,
+    "speed": 28
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:psychic",
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p1-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:whirlwind",
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p2-terapagos",
+   "species_id": "cobblemon:terapagos",
+   "ability_id": "cobblemon:terashift",
+   "held_item_id": "cobblemon:powerherb",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:rapidspin",
+    "cobblemon:meteorbeam",
+    "cobblemon:terastarstorm",
+    "cobblemon:icebeam"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:encore",
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539272203-p2-skeledirge",
+   "species_id": "cobblemon:skeledirge",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:roomservice",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:torchsong",
+    "cobblemon:earthpower",
+    "cobblemon:slackoff",
+    "cobblemon:shadowball"
+   ],
+   "evs": {
+    "hp": 12,
+    "attack": 0,
+    "defense": 244,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:nastyplot",
+    "cobblemon:grassknot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p1-kyuremblack",
+   "species_id": "cobblemon:kyurem",
+   "ability_id": "cobblemon:teravolt",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:dragondance",
+    "cobblemon:substitute",
+    "cobblemon:iciclespear",
+    "cobblemon:fusionbolt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Black"
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:fissure",
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p2-landorustherian",
+   "species_id": "cobblemon:landorus",
+   "ability_id": "cobblemon:intimidate",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:taunt",
+    "cobblemon:uturn",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 4
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Therian"
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:paraboliccharge",
+    "cobblemon:dracometeor",
+    "cobblemon:voltswitch",
+    "cobblemon:electrodrift"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539274424-p2-dragonite",
+   "species_id": "cobblemon:dragonite",
+   "ability_id": "cobblemon:multiscale",
+   "held_item_id": "cobblemon:covertcloak",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:extremespeed",
+    "cobblemon:roost",
+    "cobblemon:earthquake",
+    "cobblemon:dragondance"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p1-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p1-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:silkscarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:hypervoice",
+    "cobblemon:bloodmoon",
+    "cobblemon:vacuumwave",
+    "cobblemon:earthpower"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect",
+    "cobblemon:fissure"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p2-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:wavecrash",
+    "cobblemon:fissure",
+    "cobblemon:curse",
+    "cobblemon:rest"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p2-ursalunabloodmoon",
+   "species_id": "cobblemon:ursaluna",
+   "ability_id": "cobblemon:mindseye",
+   "held_item_id": "cobblemon:silkscarf",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:bloodmoon",
+    "cobblemon:hypervoice",
+    "cobblemon:vacuumwave",
+    "cobblemon:earthpower"
+   ],
+   "evs": {
+    "hp": 84,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 164,
+    "special_defense": 252,
+    "speed": 4
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Bloodmoon"
+  },
+  {
+   "set_id": "gen9bssregi-2539562430-p2-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock",
+    "cobblemon:ruination"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p1-zamazentacrowned",
+   "species_id": "cobblemon:zamazenta",
+   "ability_id": "cobblemon:dauntlessshield",
+   "held_item_id": "cobblemon:rustedshield",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:agility",
+    "cobblemon:irondefense",
+    "cobblemon:bodypress",
+    "cobblemon:heavyslam"
+   ],
+   "evs": {
+    "hp": 188,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 68
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Crowned"
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flamecharge",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p2-zaciancrowned",
+   "species_id": "cobblemon:zacian",
+   "ability_id": "cobblemon:intrepidsword",
+   "held_item_id": "cobblemon:rustedsword",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:behemothblade",
+    "cobblemon:closecombat",
+    "cobblemon:ironhead",
+    "cobblemon:playrough"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Crowned"
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p2-eternatus",
+   "species_id": "cobblemon:eternatus",
+   "ability_id": "cobblemon:pressure",
+   "held_item_id": "cobblemon:blacksludge",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:flamethrower",
+    "cobblemon:recover",
+    "cobblemon:cosmicpower",
+    "cobblemon:dynamaxcannon"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539564591-p2-landorustherian",
+   "species_id": "cobblemon:landorus",
+   "ability_id": "cobblemon:intimidate",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:uturn",
+    "cobblemon:stealthrock",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 4
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Therian"
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:icespinner",
+    "cobblemon:iceshard",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p1-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:bodypress",
+    "cobblemon:rest",
+    "cobblemon:sleeptalk",
+    "cobblemon:wavecrash"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock",
+    "cobblemon:ruination"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:suckerpunch",
+    "cobblemon:sacredsword",
+    "cobblemon:iciclecrash",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539566719-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:scaleshot",
+    "cobblemon:collisioncourse",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p1-kyogre",
+   "species_id": "cobblemon:kyogre",
+   "ability_id": "cobblemon:drizzle",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:modest",
+   "moves": [
+    "cobblemon:originpulse",
+    "cobblemon:thunder",
+    "cobblemon:icebeam",
+    "cobblemon:surf"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 140,
+    "special_attack": 76,
+    "special_defense": 12,
+    "speed": 28
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p1-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iceshard",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p1-zaciancrowned",
+   "species_id": "cobblemon:zacian",
+   "ability_id": "cobblemon:intrepidsword",
+   "held_item_id": "cobblemon:rustedsword",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:playrough",
+    "cobblemon:wildcharge",
+    "cobblemon:behemothblade",
+    "cobblemon:ironhead"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Crowned"
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:swordsdance",
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p2-urshifurapidstrike",
+   "species_id": "cobblemon:urshifu",
+   "ability_id": "cobblemon:unseenfist",
+   "held_item_id": "cobblemon:choiceband",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:surgingstrikes",
+    "cobblemon:aquajet",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false,
+   "form_id": "Rapid-Strike"
+  },
+  {
+   "set_id": "gen9bssregi-2539769818-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p1-grimmsnarl",
+   "species_id": "cobblemon:grimmsnarl",
+   "ability_id": "cobblemon:prankster",
+   "held_item_id": "cobblemon:lightclay",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:lightscreen",
+    "cobblemon:partingshot",
+    "cobblemon:reflect",
+    "cobblemon:spiritbreak"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 128,
+    "special_attack": 0,
+    "special_defense": 126,
+    "speed": 4
+   },
+   "revealed_moves": 4,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p1-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:electricseed",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:agility",
+    "cobblemon:paraboliccharge",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p1-kyuremblack",
+   "species_id": "cobblemon:kyurem",
+   "ability_id": "cobblemon:teravolt",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:dragondance",
+    "cobblemon:fusionbolt",
+    "cobblemon:iciclespear",
+    "cobblemon:scaleshot"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 252,
+    "defense": 0,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Black"
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:lifeorb",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:voltswitch",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p2-chansey",
+   "species_id": "cobblemon:chansey",
+   "ability_id": "cobblemon:naturalcure",
+   "held_item_id": "cobblemon:eviolite",
+   "nature_id": "cobblemon:calm",
+   "moves": [
+    "cobblemon:seismictoss",
+    "cobblemon:calmmind",
+    "cobblemon:softboiled",
+    "cobblemon:shadowball"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 252,
+    "speed": 0
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "gen9bssregi-2539771877-p2-landorustherian",
+   "species_id": "cobblemon:landorus",
+   "ability_id": "cobblemon:intimidate",
+   "held_item_id": "cobblemon:rockyhelmet",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:uturn",
+    "cobblemon:stealthrock",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 4
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Therian"
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:thunderwave",
+    "cobblemon:hex",
+    "cobblemon:moonblast",
+    "cobblemon:shadowball"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:scaleshot",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p2-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:lightscreen",
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:loadeddice",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flamecharge",
+    "cobblemon:swordsdance",
+    "cobblemon:closecombat",
+    "cobblemon:flareblitz"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908500-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:stealthrock",
+    "cobblemon:earthquake",
+    "cobblemon:spikes",
+    "cobblemon:whirlwind"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 3,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p1-calyrexshadow",
+   "species_id": "cobblemon:calyrex",
+   "ability_id": "cobblemon:asone",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:astralbarrage",
+    "cobblemon:grassknot",
+    "cobblemon:nastyplot",
+    "cobblemon:psychic"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false,
+   "form_id": "Shadow"
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p1-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind",
+    "cobblemon:bravebird"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:ejectpack",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:dracometeor",
+    "cobblemon:electrodrift",
+    "cobblemon:voltswitch",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p2-irontreads",
+   "species_id": "cobblemon:irontreads",
+   "ability_id": "cobblemon:quarkdrive",
+   "held_item_id": "cobblemon:lifeorb",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:icespinner",
+    "cobblemon:earthquake",
+    "cobblemon:ironhead",
+    "cobblemon:knockoff"
+   ],
+   "evs": {
+    "hp": 12,
+    "attack": 188,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 172
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-908504-p2-hooh",
+   "species_id": "cobblemon:hooh",
+   "ability_id": "cobblemon:regenerator",
+   "held_item_id": "cobblemon:heavydutyboots",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:bravebird",
+    "cobblemon:sacredfire",
+    "cobblemon:recover",
+    "cobblemon:whirlwind"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 20
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flamecharge",
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p1-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:earthquake",
+    "cobblemon:whirlwind",
+    "cobblemon:stealthrock",
+    "cobblemon:ruination"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": true
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p2-miraidon",
+   "species_id": "cobblemon:miraidon",
+   "ability_id": "cobblemon:hadronengine",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:voltswitch",
+    "cobblemon:electrodrift",
+    "cobblemon:dracometeor",
+    "cobblemon:dazzlinggleam"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p2-archaludon",
+   "species_id": "cobblemon:archaludon",
+   "ability_id": "cobblemon:stamina",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:bold",
+   "moves": [
+    "cobblemon:darkpulse",
+    "cobblemon:bodypress",
+    "cobblemon:dracometeor",
+    "cobblemon:stealthrock"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 236,
+    "special_attack": 0,
+    "special_defense": 20,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909373-p2-chienpao",
+   "species_id": "cobblemon:chienpao",
+   "ability_id": "cobblemon:swordofruin",
+   "held_item_id": "cobblemon:focussash",
+   "nature_id": "cobblemon:adamant",
+   "moves": [
+    "cobblemon:iciclecrash",
+    "cobblemon:suckerpunch",
+    "cobblemon:swordsdance",
+    "cobblemon:iceshard"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 2,
+   "revealed_item": true,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p1-tinglu",
+   "species_id": "cobblemon:tinglu",
+   "ability_id": "cobblemon:vesselofruin",
+   "held_item_id": "cobblemon:sitrusberry",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:heavyslam",
+    "cobblemon:fissure",
+    "cobblemon:ruination",
+    "cobblemon:earthquake"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 4,
+    "defense": 116,
+    "special_attack": 0,
+    "special_defense": 132,
+    "speed": 12
+   },
+   "revealed_moves": 3,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p1-glimmora",
+   "species_id": "cobblemon:glimmora",
+   "ability_id": "cobblemon:toxicdebris",
+   "held_item_id": "cobblemon:redcard",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:mortalspin",
+    "cobblemon:stealthrock",
+    "cobblemon:powergem",
+    "cobblemon:mudshot"
+   ],
+   "evs": {
+    "hp": 244,
+    "attack": 0,
+    "defense": 4,
+    "special_attack": 4,
+    "special_defense": 4,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": true,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p1-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:flareblitz",
+    "cobblemon:closecombat",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 0,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p2-koraidon",
+   "species_id": "cobblemon:koraidon",
+   "ability_id": "cobblemon:orichalcumpulse",
+   "held_item_id": "cobblemon:choicescarf",
+   "nature_id": "cobblemon:jolly",
+   "moves": [
+    "cobblemon:closecombat",
+    "cobblemon:flareblitz",
+    "cobblemon:uturn",
+    "cobblemon:outrage"
+   ],
+   "evs": {
+    "hp": 0,
+    "attack": 252,
+    "defense": 4,
+    "special_attack": 0,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": true,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p2-fluttermane",
+   "species_id": "cobblemon:fluttermane",
+   "ability_id": "cobblemon:protosynthesis",
+   "held_item_id": "cobblemon:boosterenergy",
+   "nature_id": "cobblemon:timid",
+   "moves": [
+    "cobblemon:moonblast",
+    "cobblemon:thunderwave",
+    "cobblemon:shadowball",
+    "cobblemon:taunt"
+   ],
+   "evs": {
+    "hp": 4,
+    "attack": 0,
+    "defense": 0,
+    "special_attack": 252,
+    "special_defense": 0,
+    "speed": 252
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  },
+  {
+   "set_id": "smogtours-gen9bssregi-909377-p2-dondozo",
+   "species_id": "cobblemon:dondozo",
+   "ability_id": "cobblemon:unaware",
+   "held_item_id": "cobblemon:leftovers",
+   "nature_id": "cobblemon:impish",
+   "moves": [
+    "cobblemon:curse",
+    "cobblemon:wavecrash",
+    "cobblemon:rest",
+    "cobblemon:protect"
+   ],
+   "evs": {
+    "hp": 252,
+    "attack": 0,
+    "defense": 252,
+    "special_attack": 0,
+    "special_defense": 4,
+    "speed": 0
+   },
+   "revealed_moves": 1,
+   "revealed_item": false,
+   "revealed_ability": false,
+   "guessed_member": false
+  }
+ ],
+ "games": [
+  {
+   "name": "gen9bssregi-2536255305",
+   "p1": [
+    "gen9bssregi-2536255305-p1-eternatus",
+    "gen9bssregi-2536255305-p1-lugia",
+    "gen9bssregi-2536255305-p1-dondozo"
+   ],
+   "p2": [
+    "gen9bssregi-2536255305-p2-fluttermane",
+    "gen9bssregi-2536255305-p2-ironmoth",
+    "gen9bssregi-2536255305-p2-koraidon"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2536259704",
+   "p1": [
+    "gen9bssregi-2536259704-p1-glimmora",
+    "gen9bssregi-2536259704-p1-ditto",
+    "gen9bssregi-2536259704-p1-calyrexshadow"
+   ],
+   "p2": [
+    "gen9bssregi-2536259704-p2-fluttermane",
+    "gen9bssregi-2536259704-p2-ursalunabloodmoon",
+    "gen9bssregi-2536259704-p2-necrozmaduskmane"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2537505103",
+   "p1": [
+    "gen9bssregi-2537505103-p1-chienpao",
+    "gen9bssregi-2537505103-p1-miraidon",
+    "gen9bssregi-2537505103-p1-fluttermane"
+   ],
+   "p2": [
+    "gen9bssregi-2537505103-p2-urshifurapidstrike",
+    "gen9bssregi-2537505103-p2-miraidon",
+    "gen9bssregi-2537505103-p2-tinglu"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2537508073",
+   "p1": [
+    "gen9bssregi-2537508073-p1-miraidon",
+    "gen9bssregi-2537508073-p1-fluttermane",
+    "gen9bssregi-2537508073-p1-calyrexice"
+   ],
+   "p2": [
+    "gen9bssregi-2537508073-p2-hooh",
+    "gen9bssregi-2537508073-p2-clodsire",
+    "gen9bssregi-2537508073-p2-koraidon"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2537511694",
+   "p1": [
+    "gen9bssregi-2537511694-p1-urshifurapidstrike",
+    "gen9bssregi-2537511694-p1-dondozo",
+    "gen9bssregi-2537511694-p1-miraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2537511694-p2-urshifurapidstrike",
+    "gen9bssregi-2537511694-p2-fluttermane",
+    "gen9bssregi-2537511694-p2-zaciancrowned"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2538165058",
+   "p1": [
+    "gen9bssregi-2538165058-p1-fluttermane",
+    "gen9bssregi-2538165058-p1-glimmora",
+    "gen9bssregi-2538165058-p1-calyrexice"
+   ],
+   "p2": [
+    "gen9bssregi-2538165058-p2-koraidon",
+    "gen9bssregi-2538165058-p2-ragingbolt",
+    "gen9bssregi-2538165058-p2-ironmoth"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2538167126",
+   "p1": [
+    "gen9bssregi-2538167126-p1-fluttermane",
+    "gen9bssregi-2538167126-p1-glimmora",
+    "gen9bssregi-2538167126-p1-calyrexice"
+   ],
+   "p2": [
+    "gen9bssregi-2538167126-p2-chienpao",
+    "gen9bssregi-2538167126-p2-ursalunabloodmoon",
+    "gen9bssregi-2538167126-p2-ragingbolt"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2538169175",
+   "p1": [
+    "gen9bssregi-2538169175-p1-urshifurapidstrike",
+    "gen9bssregi-2538169175-p1-glimmora",
+    "gen9bssregi-2538169175-p1-miraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2538169175-p2-koraidon",
+    "gen9bssregi-2538169175-p2-hooh",
+    "gen9bssregi-2538169175-p2-chienpao"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539082356",
+   "p1": [
+    "gen9bssregi-2539082356-p1-calyrexshadow",
+    "gen9bssregi-2539082356-p1-chiyu",
+    "gen9bssregi-2539082356-p1-tinglu"
+   ],
+   "p2": [
+    "gen9bssregi-2539082356-p2-lunala",
+    "gen9bssregi-2539082356-p2-miraidon",
+    "gen9bssregi-2539082356-p2-chienpao"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539085882",
+   "p1": [
+    "gen9bssregi-2539085882-p1-chienpao",
+    "gen9bssregi-2539085882-p1-miraidon",
+    "gen9bssregi-2539085882-p1-hooh"
+   ],
+   "p2": [
+    "gen9bssregi-2539085882-p2-groudon",
+    "gen9bssregi-2539085882-p2-hooh",
+    "gen9bssregi-2539085882-p2-fluttermane"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539250706",
+   "p1": [
+    "gen9bssregi-2539250706-p1-miraidon",
+    "gen9bssregi-2539250706-p1-garganacl",
+    "gen9bssregi-2539250706-p1-urshifurapidstrike"
+   ],
+   "p2": [
+    "gen9bssregi-2539250706-p2-dragonite",
+    "gen9bssregi-2539250706-p2-calyrexshadow",
+    "gen9bssregi-2539250706-p2-dondozo"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539253186",
+   "p1": [
+    "gen9bssregi-2539253186-p1-miraidon",
+    "gen9bssregi-2539253186-p1-ursalunabloodmoon",
+    "gen9bssregi-2539253186-p1-fluttermane"
+   ],
+   "p2": [
+    "gen9bssregi-2539253186-p2-serperior",
+    "gen9bssregi-2539253186-p2-primarina",
+    "gen9bssregi-2539253186-p2-ceruledge"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539254104",
+   "p1": [
+    "gen9bssregi-2539254104-p1-koraidon",
+    "gen9bssregi-2539254104-p1-chienpao",
+    "gen9bssregi-2539254104-p1-ragingbolt"
+   ],
+   "p2": [
+    "gen9bssregi-2539254104-p2-chienpao",
+    "gen9bssregi-2539254104-p2-primarina",
+    "gen9bssregi-2539254104-p2-hooh"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539254760",
+   "p1": [
+    "gen9bssregi-2539254760-p1-urshifurapidstrike",
+    "gen9bssregi-2539254760-p1-miraidon",
+    "gen9bssregi-2539254760-p1-zaciancrowned"
+   ],
+   "p2": [
+    "gen9bssregi-2539254760-p2-ogerponhearthflame",
+    "gen9bssregi-2539254760-p2-ursalunabloodmoon",
+    "gen9bssregi-2539254760-p2-koraidon"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539255359",
+   "p1": [
+    "gen9bssregi-2539255359-p1-chienpao",
+    "gen9bssregi-2539255359-p1-ursalunabloodmoon",
+    "gen9bssregi-2539255359-p1-koraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2539255359-p2-archaludon",
+    "gen9bssregi-2539255359-p2-calyrexice",
+    "gen9bssregi-2539255359-p2-miraidon"
+   ],
+   "winner": "p2",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539257082",
+   "p1": [
+    "gen9bssregi-2539257082-p1-ogerponhearthflame",
+    "gen9bssregi-2539257082-p1-chienpao",
+    "gen9bssregi-2539257082-p1-koraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2539257082-p2-koraidon",
+    "gen9bssregi-2539257082-p2-calyrexshadow",
+    "gen9bssregi-2539257082-p2-chienpao"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539257784",
+   "p1": [
+    "gen9bssregi-2539257784-p1-fluttermane",
+    "gen9bssregi-2539257784-p1-tinglu",
+    "gen9bssregi-2539257784-p1-koraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2539257784-p2-koraidon",
+    "gen9bssregi-2539257784-p2-dondozo",
+    "gen9bssregi-2539257784-p2-calyrexshadow"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539259086",
+   "p1": [
+    "gen9bssregi-2539259086-p1-chienpao",
+    "gen9bssregi-2539259086-p1-miraidon",
+    "gen9bssregi-2539259086-p1-tinglu"
+   ],
+   "p2": [
+    "gen9bssregi-2539259086-p2-fluttermane",
+    "gen9bssregi-2539259086-p2-koraidon",
+    "gen9bssregi-2539259086-p2-calyrexshadow"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539260000",
+   "p1": [
+    "gen9bssregi-2539260000-p1-hooh",
+    "gen9bssregi-2539260000-p1-dondozo",
+    "gen9bssregi-2539260000-p1-miraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2539260000-p2-dragonite",
+    "gen9bssregi-2539260000-p2-calyrexshadow",
+    "gen9bssregi-2539260000-p2-kyogre"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539272203",
+   "p1": [
+    "gen9bssregi-2539272203-p1-chienpao",
+    "gen9bssregi-2539272203-p1-calyrexshadow",
+    "gen9bssregi-2539272203-p1-hooh"
+   ],
+   "p2": [
+    "gen9bssregi-2539272203-p2-terapagos",
+    "gen9bssregi-2539272203-p2-calyrexshadow",
+    "gen9bssregi-2539272203-p2-skeledirge"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539274424",
+   "p1": [
+    "gen9bssregi-2539274424-p1-calyrexshadow",
+    "gen9bssregi-2539274424-p1-kyuremblack",
+    "gen9bssregi-2539274424-p1-dondozo"
+   ],
+   "p2": [
+    "gen9bssregi-2539274424-p2-landorustherian",
+    "gen9bssregi-2539274424-p2-miraidon",
+    "gen9bssregi-2539274424-p2-dragonite"
+   ],
+   "winner": "p2",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539562430",
+   "p1": [
+    "gen9bssregi-2539562430-p1-hooh",
+    "gen9bssregi-2539562430-p1-ursalunabloodmoon",
+    "gen9bssregi-2539562430-p1-dondozo"
+   ],
+   "p2": [
+    "gen9bssregi-2539562430-p2-dondozo",
+    "gen9bssregi-2539562430-p2-ursalunabloodmoon",
+    "gen9bssregi-2539562430-p2-tinglu"
+   ],
+   "winner": "p2",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539564591",
+   "p1": [
+    "gen9bssregi-2539564591-p1-fluttermane",
+    "gen9bssregi-2539564591-p1-zamazentacrowned",
+    "gen9bssregi-2539564591-p1-koraidon"
+   ],
+   "p2": [
+    "gen9bssregi-2539564591-p2-zaciancrowned",
+    "gen9bssregi-2539564591-p2-eternatus",
+    "gen9bssregi-2539564591-p2-landorustherian"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539566719",
+   "p1": [
+    "gen9bssregi-2539566719-p1-chienpao",
+    "gen9bssregi-2539566719-p1-dondozo",
+    "gen9bssregi-2539566719-p1-tinglu"
+   ],
+   "p2": [
+    "gen9bssregi-2539566719-p2-fluttermane",
+    "gen9bssregi-2539566719-p2-chienpao",
+    "gen9bssregi-2539566719-p2-koraidon"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "gen9bssregi-2539769818",
+   "p1": [
+    "gen9bssregi-2539769818-p1-kyogre",
+    "gen9bssregi-2539769818-p1-chienpao",
+    "gen9bssregi-2539769818-p1-zaciancrowned"
+   ],
+   "p2": [
+    "gen9bssregi-2539769818-p2-chienpao",
+    "gen9bssregi-2539769818-p2-urshifurapidstrike",
+    "gen9bssregi-2539769818-p2-hooh"
+   ],
+   "winner": "p1",
+   "complete": true
+  },
+  {
+   "name": "gen9bssregi-2539771877",
+   "p1": [
+    "gen9bssregi-2539771877-p1-grimmsnarl",
+    "gen9bssregi-2539771877-p1-miraidon",
+    "gen9bssregi-2539771877-p1-kyuremblack"
+   ],
+   "p2": [
+    "gen9bssregi-2539771877-p2-miraidon",
+    "gen9bssregi-2539771877-p2-chansey",
+    "gen9bssregi-2539771877-p2-landorustherian"
+   ],
+   "winner": "p2",
+   "complete": true
+  },
+  {
+   "name": "smogtours-gen9bssregi-908500",
+   "p1": [
+    "smogtours-gen9bssregi-908500-p1-fluttermane",
+    "smogtours-gen9bssregi-908500-p1-koraidon",
+    "smogtours-gen9bssregi-908500-p1-calyrexshadow"
+   ],
+   "p2": [
+    "smogtours-gen9bssregi-908500-p2-calyrexshadow",
+    "smogtours-gen9bssregi-908500-p2-koraidon",
+    "smogtours-gen9bssregi-908500-p2-fluttermane"
+   ],
+   "winner": "p2",
+   "complete": false
+  },
+  {
+   "name": "smogtours-gen9bssregi-908504",
+   "p1": [
+    "smogtours-gen9bssregi-908504-p1-tinglu",
+    "smogtours-gen9bssregi-908504-p1-calyrexshadow",
+    "smogtours-gen9bssregi-908504-p1-hooh"
+   ],
+   "p2": [
+    "smogtours-gen9bssregi-908504-p2-miraidon",
+    "smogtours-gen9bssregi-908504-p2-irontreads",
+    "smogtours-gen9bssregi-908504-p2-hooh"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "smogtours-gen9bssregi-909373",
+   "p1": [
+    "smogtours-gen9bssregi-909373-p1-koraidon",
+    "smogtours-gen9bssregi-909373-p1-fluttermane",
+    "smogtours-gen9bssregi-909373-p1-tinglu"
+   ],
+   "p2": [
+    "smogtours-gen9bssregi-909373-p2-miraidon",
+    "smogtours-gen9bssregi-909373-p2-archaludon",
+    "smogtours-gen9bssregi-909373-p2-chienpao"
+   ],
+   "winner": "p1",
+   "complete": false
+  },
+  {
+   "name": "smogtours-gen9bssregi-909377",
+   "p1": [
+    "smogtours-gen9bssregi-909377-p1-tinglu",
+    "smogtours-gen9bssregi-909377-p1-glimmora",
+    "smogtours-gen9bssregi-909377-p1-koraidon"
+   ],
+   "p2": [
+    "smogtours-gen9bssregi-909377-p2-koraidon",
+    "smogtours-gen9bssregi-909377-p2-fluttermane",
+    "smogtours-gen9bssregi-909377-p2-dondozo"
+   ],
+   "winner": "p2",
+   "complete": true
+  }
+ ]
+}
