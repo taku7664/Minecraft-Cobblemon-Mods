@@ -5,6 +5,7 @@ import jbro.cobblemon.policy.api.Tips
 import jbro.cobblemon.policy.config.PolicyConfig
 import jbro.cobblemon.policy.legend.LegendCommand
 import jbro.cobblemon.policy.legend.LegendPolicy
+import jbro.cobblemon.policy.legend.SpawnForCommand
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
 import jbro.cobblemon.policy.pokemon.PokemonItemRestore
@@ -39,6 +40,7 @@ object JbroPolicy : ModInitializer {
         PokemonItemRestore.register()
         LegendPolicy.register()
         LegendCommand.register()
+        SpawnForCommand.register()
         // The server wiki's Legend guide reads each player's progress when More Cobblemon Contents serves the wiki.
         if (FabricLoader.getInstance().isModLoaded("more_cobblemon_contents")) jbro.cobblemon.policy.legend.LegendWikiSection.register()
         Announcements.register()

@@ -48,6 +48,10 @@
   "message.jbro_policy.legends.one_player": "Name exactly one player.",
   "message.jbro_policy.legends.reset_done": "Cleared the %2$s catch record of %1$s.",
   "message.jbro_policy.legends.reset_none": "%1$s has no %2$s catch record.",
+  "message.jbro_policy.spawn_for.done": "Spawned %1$s in front of %2$s.",
+  "message.jbro_policy.spawn_for.failed": "The Pokemon could not be spawned.",
+  "message.jbro_policy.spawn_for.already_caught": "%s already caught this Legend and cannot catch it.",
+  "message.jbro_policy.spawn_for.rank": "%1$s is below the %2$s League rank and cannot catch it.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
   "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no campfire pot stat candy L/XL",

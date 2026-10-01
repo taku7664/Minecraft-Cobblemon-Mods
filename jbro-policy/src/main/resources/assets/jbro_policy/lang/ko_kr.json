@@ -48,6 +48,10 @@
   "message.jbro_policy.legends.one_player": "플레이어를 한 명만 지정하세요.",
   "message.jbro_policy.legends.reset_done": "%1$s의 %2$s 포획 기록을 지웠습니다.",
   "message.jbro_policy.legends.reset_none": "%1$s에게는 %2$s 포획 기록이 없습니다.",
+  "message.jbro_policy.spawn_for.done": "%2$s 앞에 %1$s을(를) 스폰했습니다.",
+  "message.jbro_policy.spawn_for.failed": "포켓몬을 스폰하지 못했습니다.",
+  "message.jbro_policy.spawn_for.already_caught": "%s은(는) 이미 이 전설을 잡아서 포획할 수 없습니다.",
+  "message.jbro_policy.spawn_for.rank": "%1$s은(는) 리그 등급이 %2$s보다 낮아서 포획할 수 없습니다.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
   "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 능력치 사탕 L/XL 캠프 냄비 레시피 차단",
