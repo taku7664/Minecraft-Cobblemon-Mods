@@ -4,8 +4,11 @@ import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
 import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleLaunchResult
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleFormat
@@ -36,7 +39,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
 
     override fun start(prepared: FactoryPreparedPveBattle<BattlePokemon>): FactoryBattleLaunchResult {
         var observationAdapter: Cobblemon173ShowdownObservationAdapter? = null
-        val result = engine.start(
+        val result = MccBattleTags.during(setOf(prepared.request.playerId), tag(prepared)) { engine.start(
             Cobblemon173ManagedAiBattle(
                 playerId = prepared.request.playerId,
                 playerTeam = prepared.playerTeam,
@@ -74,12 +77,18 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                 PveOutcome.LOSS -> loss(end.server, end.playerId, prepared.request.runId, end.battleId)
                 null -> cancellation(end.server, end.playerId, prepared.request.runId, end.battleId)
             }
-        }
+        } }
         return when (result) {
             is PveLaunchResult.Started -> FactoryBattleLaunchResult.Started(result.battleId)
             PveLaunchResult.Unavailable -> FactoryBattleLaunchResult.Unavailable
         }
     }
+
+    /** `regular`, or `factory_head` for the Factory Head's battles. */
+    private fun tag(prepared: FactoryPreparedPveBattle<BattlePokemon>) = MccBattleTag(
+        ManagedBattleContentIds.BATTLE_FACTORY,
+        if (prepared.brainSelectionContext.encounterRole == BattleEncounterRole.BOSS) "factory_head" else "regular",
+    )
 
     private fun observations(
         prepared: FactoryPreparedPveBattle<BattlePokemon>,
