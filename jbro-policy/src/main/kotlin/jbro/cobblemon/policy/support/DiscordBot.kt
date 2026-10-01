@@ -140,10 +140,21 @@ internal object DiscordBot {
     private var presencePending: ScheduledFuture<*>? = null
     private var retryDelaySeconds = 0L
 
+    /** Runs [task] on the worker; a failure is logged, where a scheduled executor would otherwise drop it silently. */
+    private fun onWorker(task: () -> Unit) = worker.execute(guarded(task))
+
+    private fun guarded(task: () -> Unit) = Runnable {
+        try {
+            task()
+        } catch (failure: Exception) {
+            JbroPolicy.LOGGER.warn("Discord bot task failed", failure)
+        }
+    }
+
     fun register(settings: DiscordSettings) {
         if (!settings.botConfigured) return
         token = settings.botToken
-        ServerLifecycleEvents.SERVER_STARTED.register { server -> players = server.playerCount; worker.execute { start() } }
+        ServerLifecycleEvents.SERVER_STARTED.register { server -> players = server.playerCount; onWorker { start() } }
         ServerLifecycleEvents.SERVER_STOPPING.register { worker.submit { stop() }.get(5, TimeUnit.SECONDS) }
         // The player list changes after these events, so count on the next tick.
         ServerPlayConnectionEvents.JOIN.register { _, _, server -> recount(server) }
@@ -152,7 +163,7 @@ internal object DiscordBot {
 
     private fun recount(server: MinecraftServer) = server.execute {
         players = server.playerCount
-        worker.execute { schedulePresence() }
+        onWorker { schedulePresence() }
     }
 
     private fun start() {
@@ -176,11 +187,11 @@ internal object DiscordBot {
         session = fresh
         http.newWebSocketBuilder().header("User-Agent", USER_AGENT).buildAsync(URI.create(GATEWAY), Listener(fresh))
             .whenComplete { ws, failure ->
-                worker.execute {
+                onWorker {
                     if (failure != null) {
                         JbroPolicy.LOGGER.warn("Discord bot could not connect: {}", failure.toString())
                         if (session === fresh) retry()
-                    } else if (session === fresh) socket = ws else ws.abort()
+                    } else if (session !== fresh) ws.abort()
                 }
             }
     }
@@ -193,7 +204,7 @@ internal object DiscordBot {
         session = null
         if (!running) return
         retryDelaySeconds = (retryDelaySeconds * 2).coerceIn(5, 300)
-        worker.schedule({ connect() }, retryDelaySeconds, TimeUnit.SECONDS)
+        worker.schedule(guarded { connect() }, retryDelaySeconds, TimeUnit.SECONDS)
     }
 
     private fun act(owner: DiscordGatewaySession, actions: List<DiscordGatewaySession.Action>) {
@@ -203,7 +214,7 @@ internal object DiscordBot {
             is DiscordGatewaySession.Action.Heartbeat -> {
                 heartbeat?.cancel(false)
                 val interval = action.intervalMillis
-                heartbeat = worker.scheduleAtFixedRate({ if (session === owner) act(owner, listOf(owner.heartbeat())) },
+                heartbeat = worker.scheduleAtFixedRate(guarded { if (session === owner) act(owner, listOf(owner.heartbeat())) },
                     (interval * Math.random()).toLong(), interval, TimeUnit.MILLISECONDS)
             }
             is DiscordGatewaySession.Action.Ready -> {
@@ -221,8 +232,9 @@ internal object DiscordBot {
     }
 
     private fun send(payload: JsonObject) {
+        val open = socket ?: return JbroPolicy.LOGGER.warn("Discord bot had no open connection to send on")
         try {
-            socket?.sendText(payload.toString(), true)?.get(10, TimeUnit.SECONDS)
+            open.sendText(payload.toString(), true).get(10, TimeUnit.SECONDS)
         } catch (failure: Exception) {
             JbroPolicy.LOGGER.warn("Discord bot could not send: {}", failure.toString())
             retry()
@@ -232,35 +244,34 @@ internal object DiscordBot {
     /** At most one status change per debounce window, so a rush of joins does not hit Discord's rate limit. */
     private fun schedulePresence() {
         if (!running || presencePending?.isDone == false) return
-        presencePending = worker.schedule({
-            val current = session ?: return@schedule
-            send(current.presenceUpdate())
+        presencePending = worker.schedule(guarded {
+            session?.let { send(it.presenceUpdate()) }
         }, PRESENCE_DEBOUNCE_SECONDS, TimeUnit.SECONDS)
     }
 
     private class Listener(private val owner: DiscordGatewaySession) : WebSocket.Listener {
         private val text = StringBuilder()
 
+        // Queued on the worker before any message, so the socket is kept by the time Hello asks for the login.
+        override fun onOpen(webSocket: WebSocket) {
+            onWorker { if (session === owner) socket = webSocket else webSocket.abort() }
+            webSocket.request(1)
+        }
+
         override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*>? {
             text.append(data)
             if (last) {
                 val message = text.toString()
                 text.setLength(0)
-                worker.execute {
-                    try {
-                        act(owner, owner.onMessage(message))
-                    } catch (failure: RuntimeException) {
-                        JbroPolicy.LOGGER.warn("Discord bot could not read a gateway message", failure)
-                    }
-                }
+                onWorker { act(owner, owner.onMessage(message)) }
             }
             webSocket.request(1)
             return null
         }
 
         override fun onClose(webSocket: WebSocket, statusCode: Int, reason: String): CompletionStage<*>? {
-            worker.execute {
-                if (session !== owner) return@execute
+            onWorker {
+                if (session !== owner) return@onWorker
                 JbroPolicy.LOGGER.info("Discord bot disconnected ({} {})", statusCode, reason)
                 act(owner, listOf(owner.onClose(statusCode)))
             }
@@ -268,8 +279,8 @@ internal object DiscordBot {
         }
 
         override fun onError(webSocket: WebSocket, error: Throwable) {
-            worker.execute {
-                if (session !== owner) return@execute
+            onWorker {
+                if (session !== owner) return@onWorker
                 JbroPolicy.LOGGER.warn("Discord bot connection failed: {}", error.toString())
                 retry()
             }
