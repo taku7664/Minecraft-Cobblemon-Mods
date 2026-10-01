@@ -102,15 +102,15 @@ object BattleDialogue {
         val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
         val screenWidth = client.window.guiScaledWidth
         val screenHeight = client.window.guiScaledHeight
-        // A message box sits in the middle of the scene with room on both sides, not edge to edge.
-        val width = (screenWidth * 0.62f).toInt().coerceIn(minOf(240, screenWidth - 24), 340)
+        // A message box with room on both sides, not edge to edge.
+        val width = (screenWidth * 0.73f).toInt().coerceIn(minOf(280, screenWidth - 24), 420)
         val left = (screenWidth - width) / 2
         val padding = 14
         val lines = font.splitter.splitLines(message.string, width - padding * 2 - 12, Style.EMPTY).map { it.string }
         val lineHeight = font.lineHeight + 3
         val height = (maxOf(2, lines.size) * lineHeight + 19).coerceAtMost(screenHeight - 8)
-        // Above the vanilla hotbar and the health and hunger row over it, rather than on them.
-        val top = (screenHeight - height - 44).coerceAtLeast(4)
+        // At the bottom of the screen like the games' message box; it may cover the hotbar while it speaks.
+        val top = (screenHeight - height - 6).coerceAtLeast(4)
 
         UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
         // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
