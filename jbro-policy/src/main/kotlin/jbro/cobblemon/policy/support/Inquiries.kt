@@ -92,7 +92,7 @@ object Inquiries {
         lastSent[playerId] = now
         val inquiry = Inquiry(nickname, accountName, playerId, text, via, now)
         val channels = buildList {
-            discord.takeIf { it.configured }?.let { add("Discord" to { DiscordWebhook.send(it.webhookUrl, inquiry) }) }
+            discord.inquiryRoute?.let { route -> add("Discord" to { DiscordWebhook.send(route, inquiry) }) }
             mail.takeIf { it.configured }?.let { add("mail" to { SmtpMailer.send(it, inquiry.subject, body(inquiry)) }) }
         }
         return CompletableFuture.supplyAsync({

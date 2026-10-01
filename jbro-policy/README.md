@@ -97,13 +97,26 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 ### 디스코드
 
-디스코드 채널 설정 → 연동 → 웹후크에서 새 웹후크를 만들고 "웹후크 URL 복사"한 값을 넣습니다. 문의는 "빡켓몬 문의"라는 이름의 카드로 올라오고, 사유에 `@everyone` 같은 호출이 있어도 아무도 호출하지 않습니다.
+`config/jbro-policy-discord.json`에는 봇과 웹훅을 적습니다. 둘 중 하나만 써도 됩니다.
 
 ```json
 {
-  "webhookUrl": "https://discord.com/api/webhooks/..."
+  "webhookUrl": "",
+  "botToken": "봇 토큰",
+  "inquiryChannelId": "문의를 받을 채널 ID"
 }
 ```
+
+- **봇(`botToken`):** 서버가 켜져 있는 동안 디스코드에 온라인으로 떠 있고, 상태 메시지에 "빡켓몬 서버 · N명 접속 중"을 보여 줍니다. 접속자 수는 바뀐 뒤 15초 안에 반영됩니다. 연결이 끊기면 5초부터 최대 5분까지 간격을 늘려 가며 다시 접속하고, 디스코드가 토큰을 거부하면 멈춥니다. 서버를 끄면 함께 나갑니다.
+- **문의 채널(`inquiryChannelId`):** 봇이 문의를 이 채널에 올립니다. 봇이 있고 채널이 정해져 있으면 웹훅 대신 봇이 올립니다.
+- **웹훅(`webhookUrl`):** 봇 없이 문의만 올릴 때 씁니다. 채널 편집 → 연동 → 웹후크에서 만들고 "웹후크 URL 복사"한 값입니다.
+
+문의는 카드로 올라오고, 사유에 `@everyone` 같은 호출이 있어도 아무도 호출하지 않습니다.
+
+봇 만들기:
+1. [Discord Developer Portal](https://discord.com/developers/applications)에서 New Application을 만들고, Bot 메뉴에서 Reset Token으로 토큰을 복사해 `botToken`에 넣습니다. 특별한 권한(Privileged Gateway Intents)은 켜지 않아도 됩니다.
+2. OAuth2 → URL Generator에서 scope는 `bot`, 권한은 View Channels, Send Messages, Embed Links를 골라 나온 주소로 봇을 서버에 초대합니다.
+3. 디스코드 설정 → 고급에서 개발자 모드를 켜고, 문의 채널을 우클릭해 "채널 ID 복사"한 값을 `inquiryChannelId`에 넣습니다.
 
 ### 메일
 

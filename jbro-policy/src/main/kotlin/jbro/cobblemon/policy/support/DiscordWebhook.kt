@@ -13,14 +13,34 @@ import java.nio.file.Path
 import java.time.Duration
 
 /**
- * Where inquiries are posted on Discord, kept in `config/jbro-policy-discord.json` apart from the main config because
- * anyone holding the webhook URL can post to that channel. Off until [webhookUrl] is set.
+ * The server's Discord, kept in `config/jbro-policy-discord.json` apart from the main config because the bot token and
+ * the webhook URL each let their holder post to the channel.
+ *
+ * @property botToken the bot that stays online while the server runs; with [inquiryChannelId] it also posts inquiries.
+ * @property inquiryChannelId the channel the bot posts inquiries to.
+ * @property webhookUrl posts inquiries without a bot, used when the bot has no channel.
  */
-data class DiscordSettings(val webhookUrl: String = "") {
-    val configured: Boolean get() = webhookUrl.isNotBlank()
+data class DiscordSettings(val webhookUrl: String = "", val botToken: String = "", val inquiryChannelId: String = "") {
+    val botConfigured: Boolean get() = botToken.isNotBlank()
+
+    /** Where inquiries go on Discord: the bot's channel when it has one, else the webhook. */
+    val inquiryRoute: InquiryRoute? get() = when {
+        botConfigured && inquiryChannelId.isNotBlank() -> InquiryRoute.Bot(botToken, inquiryChannelId)
+        webhookUrl.isNotBlank() -> InquiryRoute.Webhook(webhookUrl)
+        else -> null
+    }
+
+    val configured: Boolean get() = inquiryRoute != null
+
+    sealed interface InquiryRoute {
+        data class Bot(val token: String, val channelId: String) : InquiryRoute
+        data class Webhook(val url: String) : InquiryRoute
+    }
 
     init {
         require(webhookUrl.isBlank() || isWebhookUrl(webhookUrl)) { "Not a Discord webhook URL" }
+        require(inquiryChannelId.isBlank() || inquiryChannelId.all(Char::isDigit)) { "The inquiry channel ID is the channel's number" }
+        require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
     }
 
     companion object {
@@ -29,10 +49,13 @@ data class DiscordSettings(val webhookUrl: String = "") {
 
         fun isWebhookUrl(value: String): Boolean = WEBHOOK.matches(value)
 
-        fun parse(json: String): DiscordSettings =
-            DiscordSettings(JsonParser.parseString(json).asJsonObject.get("webhookUrl")?.asString?.trim().orEmpty())
+        fun parse(json: String): DiscordSettings {
+            val root = JsonParser.parseString(json).asJsonObject
+            fun text(key: String) = root.get(key)?.asString?.trim().orEmpty()
+            return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"))
+        }
 
-        /** Writes an empty template when the file is missing; a broken file turns Discord posting off without being touched. */
+        /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */
         fun load(file: Path, warn: (String, Throwable?) -> Unit): DiscordSettings {
             if (!Files.exists(file)) {
                 try {
@@ -42,30 +65,40 @@ data class DiscordSettings(val webhookUrl: String = "") {
                 return DiscordSettings()
             }
             return try { parse(Files.readString(file)) } catch (failure: RuntimeException) {
-                warn("Invalid Discord config at $file; Discord inquiries stay off until it is fixed", failure)
+                warn("Invalid Discord config at $file; Discord stays off until it is fixed", failure)
                 DiscordSettings()
             }
         }
     }
 }
 
-/** Posts one inquiry to a Discord webhook as an embed. Nothing in it can mention anyone. */
+/** Posts one inquiry to Discord as an embed, by webhook or by the bot. Nothing in it can mention anyone. */
 internal object DiscordWebhook {
     private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
     private const val COLOR = 0xF2B24B
 
-    fun send(url: String, inquiry: Inquiry) {
-        val request = HttpRequest.newBuilder(URI.create(url))
-            .timeout(Duration.ofSeconds(15))
+    /** Discord's REST API; tests point it at a local server. */
+    internal var apiBase = "https://discord.com/api/v10"
+
+    fun send(route: DiscordSettings.InquiryRoute, inquiry: Inquiry) = when (route) {
+        is DiscordSettings.InquiryRoute.Webhook -> send(route.url, inquiry)
+        is DiscordSettings.InquiryRoute.Bot -> post(HttpRequest.newBuilder(URI.create("$apiBase/channels/${route.channelId}/messages"))
+            .header("Authorization", "Bot ${route.token}"), payload(inquiry, webhook = false))
+    }
+
+    fun send(url: String, inquiry: Inquiry) = post(HttpRequest.newBuilder(URI.create(url)), payload(inquiry, webhook = true))
+
+    private fun post(request: HttpRequest.Builder, body: JsonObject) {
+        val response = client.send(request.timeout(Duration.ofSeconds(15))
             .header("Content-Type", "application/json; charset=utf-8")
-            .POST(HttpRequest.BodyPublishers.ofString(payload(inquiry).toString()))
-            .build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            .header("User-Agent", DiscordBot.USER_AGENT)
+            .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(), HttpResponse.BodyHandlers.ofString())
         check(response.statusCode() in 200..299) { "Discord answered ${response.statusCode()}: ${response.body().take(200)}" }
     }
 
-    internal fun payload(inquiry: Inquiry) = JsonObject().apply {
-        addProperty("username", "빡켓몬 문의")
+    internal fun payload(inquiry: Inquiry, webhook: Boolean = true) = JsonObject().apply {
+        // A webhook takes its post's name here; the bot posts under its own.
+        if (webhook) addProperty("username", "빡켓몬 문의")
         add("allowed_mentions", JsonObject().apply { add("parse", JsonArray()) })
         add("embeds", JsonArray().apply {
             add(JsonObject().apply {

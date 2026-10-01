@@ -26,6 +26,16 @@ class DiscordWebhookTest {
     }
 
     @Test
+    fun `with a channel the bot posts inquiries, without one the webhook does`() {
+        val url = "https://discord.com/api/webhooks/1/x"
+        assertEquals(DiscordSettings.InquiryRoute.Bot("T", "42"), DiscordSettings(url, "T", "42").inquiryRoute)
+        assertEquals(DiscordSettings.InquiryRoute.Webhook(url), DiscordSettings(url, "T", "").inquiryRoute)
+        assertTrue(DiscordSettings(botToken = "T").botConfigured)
+        assertFalse(DiscordSettings(botToken = "T").configured)
+        assertThrows<IllegalArgumentException> { DiscordSettings(inquiryChannelId = "#문의") }
+    }
+
+    @Test
     fun `the embed names the player and mentions nobody`() {
         val payload = DiscordWebhook.payload(inquiry)
         assertEquals(0, payload.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").size())
@@ -38,11 +48,18 @@ class DiscordWebhookTest {
     }
 
     @Test
-    fun `a webhook receives the inquiry, and a refusal is an error`() {
+    fun `a webhook and the bot receive the inquiry, and a refusal is an error`() {
         var received = ""
         var status = 204
+        var authorization = ""
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/api/webhooks/1/token") { exchange ->
+            received = String(exchange.requestBody.readAllBytes(), StandardCharsets.UTF_8)
+            exchange.sendResponseHeaders(status, -1)
+            exchange.close()
+        }
+        server.createContext("/api/v10/channels/42/messages") { exchange ->
+            authorization = exchange.requestHeaders.getFirst("Authorization").orEmpty()
             received = String(exchange.requestBody.readAllBytes(), StandardCharsets.UTF_8)
             exchange.sendResponseHeaders(status, -1)
             exchange.close()
@@ -55,7 +72,13 @@ class DiscordWebhookTest {
             assertEquals("[빡켓몬 문의] 김빡주 (Park_JH)", body.getAsJsonArray("embeds")[0].asJsonObject.get("title").asString)
             status = 429
             assertThrows<IllegalStateException> { DiscordWebhook.send(url, inquiry) }
+            status = 200
+            DiscordWebhook.apiBase = "http://127.0.0.1:${server.address.port}/api/v10"
+            DiscordWebhook.send(DiscordSettings.InquiryRoute.Bot("TOKEN", "42"), inquiry)
+            assertEquals("Bot TOKEN", authorization)
+            assertFalse(JsonParser.parseString(received).asJsonObject.has("username"))
         } finally {
+            DiscordWebhook.apiBase = "https://discord.com/api/v10"
             server.stop(0)
         }
     }
