@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>문의하기 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+  <style>
+    .inquiry textarea { width: 100%; min-height: 6em; box-sizing: border-box; font: inherit; padding: .6em; resize: vertical; }
+    .inquiry .row { display: flex; gap: .8em; align-items: center; margin-top: .6em; }
+    .inquiry button { font: inherit; padding: .4em 1.2em; cursor: pointer; }
+    .inquiry .count { margin-left: auto; opacity: .7; }
+  </style>
+</head>
+<body data-root="..">
+<main>
+<h1>문의하기</h1>
+  <p>버그, 건의, 신고 등 운영자에게 전할 내용을 보냅니다. 보낸 문의는 운영자의 메일로 전달됩니다.</p>
+
+  <h2>보내기</h2>
+  <div id="inquiry-login" class="note warn" hidden><strong>위키 링크가 필요합니다</strong>게임 안에서 <code>/mcc wiki</code>를 입력해 받은 링크로 위키를 열어야 문의를 보낼 수 있습니다. 문의를 보낸 사람을 확인하기 위해서입니다.</div>
+  <form id="inquiry" class="inquiry" hidden>
+    <textarea id="inquiry-reason" maxlength="100" placeholder="문의 내용을 100자 이내로 적어 주세요." required></textarea>
+    <div class="row">
+      <button type="submit" id="inquiry-send">보내기</button>
+      <span id="inquiry-result"></span>
+      <span class="count"><span id="inquiry-count">0</span> / 100</span>
+    </div>
+  </form>
+
+  <h2>보내지는 내용</h2>
+  <p>문의 내용과 함께 <b>닉네임</b>, <b>아이디</b>, <b>UUID</b>가 운영자에게 전달됩니다. 사진은 첨부할 수 없습니다.</p>
+  <ul>
+    <li>문의는 <b>5분에 한 번</b> 보낼 수 있습니다. 위키와 명령어가 같은 대기시간을 씁니다.</li>
+    <li>내용은 100자까지이고, 줄바꿈은 띄어쓰기 하나로 바뀝니다.</li>
+  </ul>
+
+  <h2>게임 안에서 보내기</h2>
+  <p>위키를 열 수 없을 때는 채팅창에 명령어를 입력해도 됩니다.</p>
+  <pre><code>/문의 &lt;내용&gt;</code></pre>
+  <p><code>/inquiry &lt;내용&gt;</code>도 같은 명령입니다.</p>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+(function () {
+  var root = document.body.getAttribute("data-root") || ".";
+  var token = null;
+  try { token = window.localStorage.getItem("mccWikiToken"); } catch (ignored) {}
+  var form = document.getElementById("inquiry");
+  var reason = document.getElementById("inquiry-reason");
+  var count = document.getElementById("inquiry-count");
+  var result = document.getElementById("inquiry-result");
+  var send = document.getElementById("inquiry-send");
+  var served = location.protocol === "http:" || location.protocol === "https:";
+  if (!served || !token) { document.getElementById("inquiry-login").hidden = false; return; }
+  form.hidden = false;
+
+  function show(text, color) { result.textContent = text; result.style.color = color; }
+  reason.addEventListener("input", function () { count.textContent = Array.from(reason.value).length; });
+
+  var messages = {
+    empty: "문의 내용을 입력하세요.",
+    too_long: "문의 내용은 100자 이내로 적어 주세요.",
+    not_configured: "문의 기능이 아직 준비되지 않았습니다. 운영자에게 직접 알려 주세요.",
+    failed: "문의를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    unknown_token: "위키 링크가 만료되었습니다. 게임에서 /mcc wiki로 새 링크를 받아 주세요.",
+  };
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    send.disabled = true;
+    show("보내는 중…", "");
+    fetch(root + "/api/support/send?reason=" + encodeURIComponent(reason.value), {
+      headers: { "X-MCC-Wiki-Token": token }, cache: "no-store",
+    }).then(function (response) { return response.json(); }).then(function (body) {
+      if (body.ok) { show("문의를 보냈습니다. 확인 후 답변드리겠습니다.", "green"); reason.value = ""; count.textContent = "0"; }
+      else if (body.error === "cooldown") show("문의는 " + body.minutes + "분 후에 다시 보낼 수 있습니다.", "crimson");
+      else show(messages[body.error] || "문의를 보내지 못했습니다.", "crimson");
+    }, function () { show("서버에 연결하지 못했습니다.", "crimson"); }).then(function () { send.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
