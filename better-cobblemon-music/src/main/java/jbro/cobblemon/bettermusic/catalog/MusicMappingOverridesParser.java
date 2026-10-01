@@ -23,7 +23,7 @@ public final class MusicMappingOverridesParser {
         } catch (JsonParseException exception) {
             throw CatalogJson.error("$", "invalid JSON: " + exception.getMessage());
         }
-        CatalogJson.only(root, "$", "schemaVersion", "field", "battle");
+        CatalogJson.only(root, "$", "schemaVersion", "field", "battle", "screens");
         int schema = CatalogJson.integer(root, "schemaVersion", "$");
         if (schema != 1) {
             throw CatalogJson.error("$.schemaVersion", "must be 1");
@@ -31,7 +31,8 @@ public final class MusicMappingOverridesParser {
         discardRenderedPackDefaults(root);
         return new MusicMappingOverrides(
             root.has("field") ? field(CatalogJson.object(root, "field", "$")) : MusicMappingOverrides.Field.empty(),
-            root.has("battle") ? battle(CatalogJson.object(root, "battle", "$")) : MusicMappingOverrides.Battle.empty()
+            root.has("battle") ? battle(CatalogJson.object(root, "battle", "$")) : MusicMappingOverrides.Battle.empty(),
+            MusicCatalogParser.idMap(CatalogJson.optionalObject(root, "screens", "$"), "$.screens", MusicCatalogParser.KeyType.RESOURCE)
         );
     }
 
@@ -89,6 +90,7 @@ public final class MusicMappingOverridesParser {
             discardProperty(battle, "ultraBeast");
             discardPokemon(battle);
         }
+        discardMapValues(root, "screens");
     }
 
     private static JsonObject objectIfPresent(JsonObject parent, String key) {

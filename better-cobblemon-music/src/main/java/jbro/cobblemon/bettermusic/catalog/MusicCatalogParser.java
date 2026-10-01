@@ -134,10 +134,11 @@ public final class MusicCatalogParser {
     }
 
     private static CatalogMappings mappings(JsonObject object) {
-        CatalogJson.only(object, "$.mappings", "field", "battle");
+        CatalogJson.only(object, "$.mappings", "field", "battle", "screens");
         return new CatalogMappings(
             fieldMappings(CatalogJson.object(object, "field", "$.mappings")),
-            battleMappings(CatalogJson.object(object, "battle", "$.mappings"), "$.mappings.battle")
+            battleMappings(CatalogJson.object(object, "battle", "$.mappings"), "$.mappings.battle"),
+            idMap(CatalogJson.optionalObject(object, "screens", "$.mappings"), "$.mappings.screens", KeyType.RESOURCE)
         );
     }
 

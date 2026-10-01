@@ -119,6 +119,37 @@ final class BattlePlaylistResolverTest {
         assertEquals(Optional.empty(), ordinaryWild.fallback());
     }
 
+    @Test
+    void contentKeysPlayTheMostSpecificMappedKey() {
+        var resolver = new BattlePlaylistResolver(new BattleMusicConfig(
+            playlist("wild"), playlist("trainer"), playlist("pvp"),
+            java.util.Map.of(
+                "more_cobblemon_contents:league_challenge/champion", playlist("champion"),
+                "more_cobblemon_contents:battle_tower", playlist("tower")
+            ),
+            Optional.empty(), Optional.empty(), List.of()
+        ));
+
+        var champion = resolver.select(trainer(List.of(
+            "more_cobblemon_contents:league_challenge/champion/cynthia",
+            "more_cobblemon_contents:league_challenge/champion",
+            "more_cobblemon_contents:league_challenge"
+        )));
+        assertEquals("battle.content:more_cobblemon_contents:league_challenge/champion", champion.id());
+        assertEquals("battle.trainer", champion.fallback().orElseThrow().id());
+        assertEquals("battle.content:more_cobblemon_contents:battle_tower", resolver.select(trainer(List.of(
+            "more_cobblemon_contents:battle_tower/tier_boss", "more_cobblemon_contents:battle_tower"
+        ))).id());
+        // A wild trainer's stage has no mapping and its content none either: the plain trainer music plays.
+        assertEquals("battle.trainer", resolver.select(trainer(List.of(
+            "more_cobblemon_contents:league_challenge/wild_trainer", "more_cobblemon_contents:league_challenge"
+        ))).id());
+    }
+
+    private static BattleMusicContext trainer(List<String> contentKeys) {
+        return new BattleMusicContext(BattleMusicConfig.BattleType.TRAINER, Set.of(), Set.of(), contentKeys);
+    }
+
     private static BattleMusicContext wildContext(BattleMusicContext.Label label) {
         return new BattleMusicContext(BattleMusicConfig.BattleType.WILD, Set.of(), Set.of(label));
     }

@@ -9,10 +9,16 @@ import java.util.Optional;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 
-public record CatalogMappings(Field field, Battle battle) {
+/** A base pack's mappings; {@code screens} maps screen keys, such as a content hub, to playlists. */
+public record CatalogMappings(Field field, Battle battle, Map<String, String> screens) {
     public CatalogMappings {
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(battle, "battle");
+        screens = ordered(screens, "screens");
+    }
+
+    public CatalogMappings(Field field, Battle battle) {
+        this(field, battle, Map.of());
     }
 
     public record Field(

@@ -236,6 +236,7 @@ public final class MusicCatalogConfigStore {
         if (!battle.isEmpty()) {
             root.add("battle", battle);
         }
+        addMap(root, "screens", overrides.screens());
         return GSON.toJson(root) + System.lineSeparator();
     }
 

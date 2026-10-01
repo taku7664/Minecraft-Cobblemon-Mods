@@ -52,7 +52,8 @@ final class MusicCatalogConfigStoreTest {
                 Optional.empty(), Optional.empty(), Optional.empty(),
                 Map.of("more_cobblemon_contents:battle_tower", "cobleserver:track/battle/trainer"),
                 Optional.empty(), Optional.empty(), java.util.List.of()
-            )
+            ),
+            Map.of("more_cobblemon_contents:hub/shop", "cobleserver:field_plaza")
         );
 
         assertTrue(store.saveOverridesIfMissing(overrides));

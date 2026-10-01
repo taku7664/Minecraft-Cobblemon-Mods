@@ -17,6 +17,8 @@ import jbro.cobblemon.bettermusic.playback.FadingMusicPlayer;
 import jbro.cobblemon.bettermusic.playback.MusicPlaybackCoordinator;
 import jbro.cobblemon.bettermusic.playback.PlaylistNavigator;
 import jbro.cobblemon.bettermusic.playback.PlayablePlaylistResolver;
+import jbro.cobblemon.bettermusic.api.ScreenMusicProviders;
+import jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
@@ -40,6 +42,7 @@ public final class BetterMusicClientRuntime {
     private MusicPlaybackCoordinator coordinator;
     private FieldPlaylistResolver fieldResolver;
     private BattlePlaylistResolver battleResolver;
+    private ScreenPlaylistResolver screenResolver;
     private long clientTicks;
     private double nextScanSeconds;
     private boolean inWorld;
@@ -104,6 +107,7 @@ public final class BetterMusicClientRuntime {
         coordinator = new MusicPlaybackCoordinator(latest.playback());
         fieldResolver = new FieldPlaylistResolver(latest.field());
         battleResolver = new BattlePlaylistResolver(latest.battle());
+        screenResolver = new ScreenPlaylistResolver(latest.screens());
         playlistsById.clear();
         fallbackPlaylistIds.clear();
         playlistNavigator.reset();
@@ -149,7 +153,12 @@ public final class BetterMusicClientRuntime {
                 });
                 return selection.id();
             });
-        var input = new MusicPlaybackCoordinator.Input(fieldCue, battleCue.isPresent(), battleCue);
+        Optional<String> screenCue = screenResolver.select(ScreenMusicProviders.global().resolveKeys())
+            .map(selection -> {
+                playlistsById.put(selection.id(), selection.playlist());
+                return selection.id();
+            });
+        var input = new MusicPlaybackCoordinator.Input(fieldCue, battleCue.isPresent(), battleCue, screenCue);
         Optional<MusicPlaybackCoordinator.Transition> transition = coordinator.update(nowSeconds, input);
         transition.ifPresent(value -> applyTransition(nowSeconds, value));
         if (transition.isEmpty() && !player.ownsMusic() && lastDesiredPlaylistId != null) {

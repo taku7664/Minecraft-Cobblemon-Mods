@@ -26,13 +26,12 @@ public final class BattlePlaylistResolver {
             }
         }
 
-        if (context.contentId().isPresent()) {
-            String contentId = context.contentId().orElseThrow();
-            PlaylistDefinition playlist = config.content().get(contentId);
+        for (String contentKey : context.contentKeys()) {
+            PlaylistDefinition playlist = config.content().get(contentKey);
             if (playlist != null) {
                 return withBaseFallback(
                     context,
-                    new Selection("battle.content:" + contentId, playlist)
+                    new Selection("battle.content:" + contentKey, playlist)
                 );
             }
         }

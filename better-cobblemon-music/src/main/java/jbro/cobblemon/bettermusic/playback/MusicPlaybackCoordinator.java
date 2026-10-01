@@ -21,9 +21,12 @@ public final class MusicPlaybackCoordinator {
         Objects.requireNonNull(input, "input");
         updateStableFieldCue(nowSeconds, input.fieldCue());
 
+        // Battle music wins, then an open screen's music, then the field's; the field keeps settling underneath.
         Optional<Selection> target;
         if (input.battleActive()) {
             target = input.battleCue().map(cue -> new Selection(Mode.BATTLE, cue));
+        } else if (input.screenCue().isPresent()) {
+            target = input.screenCue().map(cue -> new Selection(Mode.SCREEN, cue));
         } else {
             target = Optional.ofNullable(stableFieldCue).map(cue -> new Selection(Mode.FIELD, cue));
         }
@@ -68,15 +71,26 @@ public final class MusicPlaybackCoordinator {
         lastUpdateSeconds = nowSeconds;
     }
 
-    public record Input(Optional<String> fieldCue, boolean battleActive, Optional<String> battleCue) {
+    public record Input(
+        Optional<String> fieldCue,
+        boolean battleActive,
+        Optional<String> battleCue,
+        Optional<String> screenCue
+    ) {
         public Input {
             fieldCue = Objects.requireNonNull(fieldCue, "fieldCue");
             battleCue = Objects.requireNonNull(battleCue, "battleCue");
+            screenCue = Objects.requireNonNull(screenCue, "screenCue");
             fieldCue.ifPresent(cue -> requireCue(cue, "fieldCue"));
             battleCue.ifPresent(cue -> requireCue(cue, "battleCue"));
+            screenCue.ifPresent(cue -> requireCue(cue, "screenCue"));
             if (!battleActive && battleCue.isPresent()) {
                 throw new IllegalArgumentException("battleCue requires battleActive=true");
             }
+        }
+
+        public Input(Optional<String> fieldCue, boolean battleActive, Optional<String> battleCue) {
+            this(fieldCue, battleActive, battleCue, Optional.empty());
         }
 
         public static Input field(String cue) {
@@ -109,6 +123,7 @@ public final class MusicPlaybackCoordinator {
 
     public enum Mode {
         FIELD,
+        SCREEN,
         BATTLE
     }
 

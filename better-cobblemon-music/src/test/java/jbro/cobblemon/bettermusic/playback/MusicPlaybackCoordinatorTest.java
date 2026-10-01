@@ -96,6 +96,28 @@ final class MusicPlaybackCoordinatorTest {
         assertEquals(selection(MusicPlaybackCoordinator.Mode.FIELD, "field.plains"), endBattle.to().orElseThrow());
     }
 
+    @Test
+    void anOpenScreenReplacesFieldMusicAtOnceAndBattleStillWins() {
+        var coordinator = new MusicPlaybackCoordinator(SETTINGS);
+        coordinator.update(0.0, MusicPlaybackCoordinator.Input.field("field.plains"));
+        coordinator.update(4.0, MusicPlaybackCoordinator.Input.field("field.plains")).orElseThrow();
+
+        var hub = new MusicPlaybackCoordinator.Input(
+            Optional.of("field.plains"), false, Optional.empty(), Optional.of("screen:hub")
+        );
+        var open = coordinator.update(4.5, hub).orElseThrow();
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.SCREEN, "screen:hub"), open.to().orElseThrow());
+        assertTrue(coordinator.update(5.0, hub).isEmpty());
+
+        var battle = coordinator.update(5.5, new MusicPlaybackCoordinator.Input(
+            Optional.of("field.plains"), true, Optional.of("battle.trainer"), Optional.of("screen:hub")
+        )).orElseThrow();
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.trainer"), battle.to().orElseThrow());
+
+        var closed = coordinator.update(6.0, MusicPlaybackCoordinator.Input.field("field.plains")).orElseThrow();
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.FIELD, "field.plains"), closed.to().orElseThrow());
+    }
+
     private static MusicPlaybackCoordinator.Selection selection(
         MusicPlaybackCoordinator.Mode mode,
         String cue

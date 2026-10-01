@@ -48,6 +48,35 @@ final class MusicCatalogCompilerTest {
     }
 
     @Test
+    void screenMappingsComeFromThePackAndOverridesAndSkipUnknownPlaylists() {
+        MusicCatalog base = parse(MusicCatalogParserTest.baseCatalogJson().replace(
+            "\"battle\": {", "\"screens\": {\"example:hub\": \"cobleserver:field_plains\"}, \"battle\": {"
+        ));
+        MusicMappingOverrides overrides = MusicMappingOverridesParser.parse(new StringReader("""
+            {
+              "schemaVersion": 1,
+              "screens": {
+                "example:hub/shop": "cobleserver:battle_pvp",
+                "example:hub/missing": "cobleserver:not_a_playlist"
+              }
+            }
+            """));
+
+        CompiledMusicConfiguration compiled = MusicCatalogCompiler.compile(
+            "cobleserver:official",
+            List.of(base),
+            MusicCatalogSettings.defaults("cobleserver:official"),
+            overrides
+        );
+
+        assertEquals(List.of("cobleserver:plains"), compiled.snapshot().screens().get("example:hub").tracks());
+        assertEquals(List.of("cobleserver:pvp"), compiled.snapshot().screens().get("example:hub/shop").tracks());
+        assertFalse(compiled.snapshot().screens().containsKey("example:hub/missing"));
+        assertEquals("cobleserver:not_a_playlist", compiled.inactiveOverrides().get("screens.example:hub/missing"));
+        assertEquals(java.util.Map.of("example:hub", "cobleserver:field_plains"), compiled.baseMappings().screens());
+    }
+
+    @Test
     void extensionCannotOverrideBaseTrackId() {
         MusicCatalog base = parse(MusicCatalogParserTest.baseCatalogJson());
         MusicCatalog extension = parse(extensionJson(

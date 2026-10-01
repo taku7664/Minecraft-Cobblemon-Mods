@@ -75,7 +75,7 @@ public final class Cobblemon173BattleMusicSampler {
             type,
             species,
             labels,
-            BattleMusicContentProviders.global().resolve(battle.getBattleId())
+            BattleMusicContentProviders.global().resolveKeys(battle.getBattleId())
         ));
     }
 

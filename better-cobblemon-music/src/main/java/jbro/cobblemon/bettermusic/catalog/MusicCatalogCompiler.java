@@ -55,8 +55,11 @@ public final class MusicCatalogCompiler {
         BattleMusicConfig battle = compileBattle(
             baseMappings.battle(), overrides.battle(), playlists, inactiveOverrides
         );
+        Map<String, String> screens = applyMapOverrides(
+            "screens", baseMappings.screens(), overrides.screens(), playlists, inactiveOverrides
+        );
         BetterMusicConfigSnapshot snapshot = new BetterMusicConfigSnapshot(
-            settings.playback(), settings.audioEffects(), field, battle
+            settings.playback(), settings.audioEffects(), field, battle, materializeMappings(screens, playlists)
         );
 
         Set<String> activeExtensions = new LinkedHashSet<>();
@@ -244,6 +247,7 @@ public final class MusicCatalogCompiler {
         battle.legendaryPlaylistId().ifPresent(ids::add);
         battle.ultraBeastPlaylistId().ifPresent(ids::add);
         battle.pokemon().forEach(rule -> ids.add(rule.playlistId()));
+        ids.addAll(mappings.screens().values());
         List<String> missing = ids.stream().filter(id -> !playlists.containsKey(id)).distinct().toList();
         if (!missing.isEmpty()) {
             throw new CatalogValidationException("Base catalog mappings reference unavailable playlists: " + missing);

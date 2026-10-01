@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import jbro.cobblemon.bettermusic.BetterCobblemonMusicClient;
+import jbro.cobblemon.bettermusic.api.BattleMusicContentProviders;
+import jbro.cobblemon.bettermusic.api.ScreenMusicProviders;
 import jbro.cobblemon.bettermusic.catalog.CatalogMappings;
 import jbro.cobblemon.bettermusic.catalog.CompiledMusicConfiguration;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogSettings;
@@ -195,8 +197,14 @@ public final class BetterMusicConfigScreen {
         base.battle().ultraBeastPlaylistId().ifPresent(value -> addBattleCore(
             battle, entries, "ultra_beast", initial.battle().ultraBeastPlaylistId(), value, playlists, edited
         ));
-        addBattleContent(battle, entries, base.battle().content(), initial.battle().content(), playlists, edited);
+        addBattleContent(battle, entries, base.battle().content(), initial.battle().content(),
+            BattleMusicContentProviders.global().knownKeys(), playlists, edited);
         addPokemonMappings(battle, entries, base.battle().pokemon(), initial.battle().pokemon(), playlists, edited);
+
+        ConfigCategory screens = builder.getOrCreateCategory(text("category.screen_mappings"));
+        screens.addEntry(entries.startTextDescription(text("screen_mappings.description")).build());
+        addScreens(screens, entries, base.screens(), initial.screens(), ScreenMusicProviders.global().knownKeys(),
+            playlists, edited);
 
         ConfigCategory advanced = builder.getOrCreateCategory(text("category.advanced"));
         advanced.addEntry(entries.startTextDescription(text("advanced.description")).build());
@@ -280,14 +288,35 @@ public final class BetterMusicConfigScreen {
 
     private static void addBattleContent(
         ConfigCategory category, ConfigEntryBuilder entries, Map<String, String> defaults,
-        Map<String, String> overrides, List<String> playlists, AtomicReference<MusicMappingOverrides> edited
+        Map<String, String> overrides, Set<String> known, List<String> playlists,
+        AtomicReference<MusicMappingOverrides> edited
     ) {
         Set<String> keys = new LinkedHashSet<>(defaults.keySet());
         keys.addAll(overrides.keySet());
+        keys.addAll(known);
         keys.stream().sorted().forEach(key -> addPlaylistChoice(
             category, entries, Component.literal(label("content", key)), Optional.ofNullable(overrides.get(key)),
             defaults.getOrDefault(key, text("mapping.none").getString()), playlists,
             value -> edited.updateAndGet(old -> withBattleContent(old, key, value))
+        ));
+    }
+
+    private static void addScreens(
+        ConfigCategory category, ConfigEntryBuilder entries, Map<String, String> defaults,
+        Map<String, String> overrides, Set<String> known, List<String> playlists,
+        AtomicReference<MusicMappingOverrides> edited
+    ) {
+        Set<String> keys = new LinkedHashSet<>(defaults.keySet());
+        keys.addAll(overrides.keySet());
+        keys.addAll(known);
+        keys.stream().sorted().forEach(key -> addPlaylistChoice(
+            category, entries, Component.literal(label("screen", key)), Optional.ofNullable(overrides.get(key)),
+            defaults.getOrDefault(key, text("mapping.none").getString()), playlists,
+            value -> edited.updateAndGet(old -> {
+                Map<String, String> screens = editable(old.screens());
+                putOrRemove(screens, key, value);
+                return old.withScreens(screens);
+            })
         ));
     }
 
@@ -308,10 +337,10 @@ public final class BetterMusicConfigScreen {
 
     private static MusicMappingOverrides withFieldCore(MusicMappingOverrides old, String type, Optional<String> value) {
         var field = old.field();
-        return new MusicMappingOverrides(new MusicMappingOverrides.Field(
+        return old.withField(new MusicMappingOverrides.Field(
             type.equals("default") ? value : field.defaultPlaylistId(), field.dimensions(), field.biomes(),
             field.biomePathContains(), type.equals("underground") ? value : field.undergroundPlaylistId()
-        ), old.battle());
+        ));
     }
 
     private static MusicMappingOverrides withFieldMap(
@@ -325,16 +354,16 @@ public final class BetterMusicConfigScreen {
             default -> throw new IllegalArgumentException("Unknown field mapping: " + type);
         };
         putOrRemove(map, key, value);
-        return new MusicMappingOverrides(new MusicMappingOverrides.Field(
+        return old.withField(new MusicMappingOverrides.Field(
             field.defaultPlaylistId(), type.equals("dimensions") ? map : field.dimensions(),
             type.equals("biomes") ? map : field.biomes(),
             type.equals("biome_path") ? map : field.biomePathContains(), field.undergroundPlaylistId()
-        ), old.battle());
+        ));
     }
 
     private static MusicMappingOverrides withBattleCore(MusicMappingOverrides old, String type, Optional<String> value) {
         var battle = old.battle();
-        return new MusicMappingOverrides(old.field(), new MusicMappingOverrides.Battle(
+        return old.withBattle(new MusicMappingOverrides.Battle(
             type.equals("wild") ? value : battle.wildPlaylistId(),
             type.equals("trainer") ? value : battle.trainerPlaylistId(),
             type.equals("pvp") ? value : battle.pvpPlaylistId(), battle.content(),
@@ -349,7 +378,7 @@ public final class BetterMusicConfigScreen {
         var battle = old.battle();
         Map<String, String> content = editable(battle.content());
         putOrRemove(content, key, value);
-        return new MusicMappingOverrides(old.field(), new MusicMappingOverrides.Battle(
+        return old.withBattle(new MusicMappingOverrides.Battle(
             battle.wildPlaylistId(), battle.trainerPlaylistId(), battle.pvpPlaylistId(), content,
             battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), battle.pokemon()
         ));
@@ -362,7 +391,7 @@ public final class BetterMusicConfigScreen {
         List<CatalogMappings.PokemonMapping> pokemon = new ArrayList<>(battle.pokemon());
         pokemon.removeIf(rule -> rule.species().equals(base.species()) && rule.only().equals(base.only()));
         value.ifPresent(playlist -> pokemon.add(new CatalogMappings.PokemonMapping(base.species(), base.only(), playlist)));
-        return new MusicMappingOverrides(old.field(), new MusicMappingOverrides.Battle(
+        return old.withBattle(new MusicMappingOverrides.Battle(
             battle.wildPlaylistId(), battle.trainerPlaylistId(), battle.pvpPlaylistId(), battle.content(),
             battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), pokemon
         ));

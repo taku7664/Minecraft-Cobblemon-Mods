@@ -7,14 +7,31 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public record MusicMappingOverrides(Field field, Battle battle) {
+public record MusicMappingOverrides(Field field, Battle battle, Map<String, String> screens) {
     public MusicMappingOverrides {
         Objects.requireNonNull(field, "field");
         Objects.requireNonNull(battle, "battle");
+        screens = ordered(screens, "screens");
+    }
+
+    public MusicMappingOverrides(Field field, Battle battle) {
+        this(field, battle, Map.of());
     }
 
     public static MusicMappingOverrides empty() {
-        return new MusicMappingOverrides(Field.empty(), Battle.empty());
+        return new MusicMappingOverrides(Field.empty(), Battle.empty(), Map.of());
+    }
+
+    public MusicMappingOverrides withField(Field value) {
+        return new MusicMappingOverrides(value, battle, screens);
+    }
+
+    public MusicMappingOverrides withBattle(Battle value) {
+        return new MusicMappingOverrides(field, value, screens);
+    }
+
+    public MusicMappingOverrides withScreens(Map<String, String> value) {
+        return new MusicMappingOverrides(field, battle, value);
     }
 
     public record Field(
