@@ -25,7 +25,7 @@ window.WIKI_NAV = {
     {
       title: "배틀 콘텐츠",
       pages: [
-        { path: "pages/hub.html", title: "MCC 허브와 BP 상점", icon: "📘", keywords: "mcc 허브 대시보드 상점 bp 터미널 레시피 민트 특성캡슐 구애" },
+        { path: "pages/hub.html", title: "MCC 허브와 BP 상점", icon: "📘", keywords: "mcc 허브 대시보드 상점 bp 터미널 민트 특성캡슐 구애" },
         { path: "pages/league.html", title: "리그 챌린지", icon: "🏆", keywords: "관장 체육관 사천왕 챔피언 난천 레벨캡 뱃지 하드 등급" },
         { path: "pages/tower.html", title: "배틀타워", icon: "🗼", keywords: "배틀타워 연승 보스 싱글 더블 bp" },
         { path: "pages/factory.html", title: "배틀팩토리", icon: "🏭", keywords: "배틀팩토리 렌탈 교환 층 bp" },
