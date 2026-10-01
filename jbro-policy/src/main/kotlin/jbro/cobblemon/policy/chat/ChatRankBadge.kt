@@ -10,6 +10,7 @@ import net.minecraft.network.chat.ChatType
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
@@ -32,10 +33,15 @@ object ChatRankBadge {
 
     private fun sender(player: ServerPlayer, name: Component): Component {
         val rank = rankOf(player) ?: return name
+        val hard = rank == LeagueRank.CHAMPION && hardChampion(player)
+        val label = if (hard) Component.translatable("rank.${JbroPolicy.MOD_ID}.hard_champion")
+            // Red without the mod's client font, the moving gradient with it.
+            .withStyle(Style.EMPTY.withFont(HardChampionGradient.FONT).withColor(TextColor.fromRgb(HARD_CHAMPION_RED)))
+        else Component.translatable(RANK_KEY_PREFIX + rank.name.lowercase()).withStyle(color(rank))
         return Component.empty()
             .append(Component.literal("[").withStyle(ChatFormatting.GRAY))
-            .append(icon(rank)).append(" ")
-            .append(Component.translatable(RANK_KEY_PREFIX + rank.name.lowercase()).withStyle(color(rank)))
+            .append(icon(if (hard) RankIcon.CHERISH_BALL else RankIcon.of(rank))).append(" ")
+            .append(label)
             .append(Component.literal("] ").withStyle(ChatFormatting.GRAY))
             .append(name)
     }
@@ -49,6 +55,9 @@ object ChatRankBadge {
         }
     }
 
+    private fun hardChampion(player: ServerPlayer): Boolean =
+        try { LeagueRanks.isHardChampion(player.server, player.uuid) } catch (failure: RuntimeException) { false }
+
     /** Each ball's own colour; Champions get gold. */
     private fun color(rank: LeagueRank): ChatFormatting = when (rank) {
         LeagueRank.POKE_BALL -> ChatFormatting.RED
@@ -58,6 +67,8 @@ object ChatRankBadge {
         LeagueRank.CHAMPION -> ChatFormatting.GOLD
     }
 
-    private fun icon(rank: LeagueRank): MutableComponent =
-        Component.literal(RankIcon.of(rank).glyph).withStyle(Style.EMPTY.withFont(FONT).withColor(ChatFormatting.WHITE))
+    private fun icon(icon: RankIcon): MutableComponent =
+        Component.literal(icon.glyph).withStyle(Style.EMPTY.withFont(FONT).withColor(ChatFormatting.WHITE))
+
+    private const val HARD_CHAMPION_RED = 0xFF3030
 }

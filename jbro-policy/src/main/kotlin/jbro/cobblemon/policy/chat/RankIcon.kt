@@ -8,7 +8,10 @@ enum class RankIcon(val glyph: String) {
     GREAT_BALL("\uE001"),
     ULTRA_BALL("\uE002"),
     MASTER_BALL("\uE003"),
-    CHERISH_BALL("\uE004");
+    /** The hard League's Champions. */
+    CHERISH_BALL("\uE004"),
+    /** Champions: the Beast Ball, the "Ultra Ball" of Ultra Beasts. */
+    BEAST_BALL("\uE005");
 
     companion object {
         fun of(rank: LeagueRank): RankIcon = when (rank) {
@@ -16,7 +19,7 @@ enum class RankIcon(val glyph: String) {
             LeagueRank.GREAT_BALL -> GREAT_BALL
             LeagueRank.ULTRA_BALL -> ULTRA_BALL
             LeagueRank.MASTER_BALL -> MASTER_BALL
-            LeagueRank.CHAMPION -> CHERISH_BALL
+            LeagueRank.CHAMPION -> BEAST_BALL
         }
     }
 }

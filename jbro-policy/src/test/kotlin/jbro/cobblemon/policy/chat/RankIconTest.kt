@@ -13,8 +13,8 @@ class RankIconTest {
     }
 
     @Test
-    fun `champion shows the cherish ball`() {
-        assertEquals(RankIcon.CHERISH_BALL, RankIcon.of(LeagueRank.CHAMPION))
+    fun `champion shows the beast ball`() {
+        assertEquals(RankIcon.BEAST_BALL, RankIcon.of(LeagueRank.CHAMPION))
     }
 
     @Test
