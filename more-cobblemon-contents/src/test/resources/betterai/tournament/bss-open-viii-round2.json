@@ -81,7 +81,7 @@
    "set_id": "gen9bssregi-2536255305-p2-fluttermane",
    "species_id": "cobblemon:fluttermane",
    "ability_id": "cobblemon:protosynthesis",
-   "held_item_id": "cobblemon:boosterenergy",
+   "held_item_id": "cobblemon:focussash",
    "nature_id": "cobblemon:timid",
    "moves": [
     "cobblemon:moonblast",
@@ -106,7 +106,7 @@
    "set_id": "gen9bssregi-2536255305-p2-ironmoth",
    "species_id": "cobblemon:ironmoth",
    "ability_id": "cobblemon:quarkdrive",
-   "held_item_id": "cobblemon:rockyhelmet",
+   "held_item_id": "cobblemon:boosterenergy",
    "nature_id": "cobblemon:timid",
    "moves": [
     "cobblemon:acidspray",
@@ -1566,7 +1566,7 @@
    "set_id": "gen9bssregi-2539250706-p1-urshifurapidstrike",
    "species_id": "cobblemon:urshifu",
    "ability_id": "cobblemon:unseenfist",
-   "held_item_id": "cobblemon:rockyhelmet",
+   "held_item_id": "cobblemon:choiceband",
    "nature_id": "cobblemon:adamant",
    "moves": [
     "cobblemon:aquajet",
@@ -1583,7 +1583,7 @@
     "speed": 252
    },
    "revealed_moves": 1,
-   "revealed_item": true,
+   "revealed_item": false,
    "revealed_ability": false,
    "guessed_member": false,
    "form_id": "Rapid-Strike"
@@ -1660,7 +1660,7 @@
     "speed": 0
    },
    "revealed_moves": 2,
-   "revealed_item": false,
+   "revealed_item": true,
    "revealed_ability": false,
    "guessed_member": false
   },
@@ -2199,7 +2199,7 @@
    "set_id": "gen9bssregi-2539255359-p2-archaludon",
    "species_id": "cobblemon:archaludon",
    "ability_id": "cobblemon:stamina",
-   "held_item_id": "cobblemon:sitrusberry",
+   "held_item_id": "cobblemon:assaultvest",
    "nature_id": "cobblemon:bold",
    "moves": [
     "cobblemon:stealthrock",
@@ -2224,7 +2224,7 @@
    "set_id": "gen9bssregi-2539255359-p2-calyrexice",
    "species_id": "cobblemon:calyrex",
    "ability_id": "cobblemon:asone",
-   "held_item_id": "cobblemon:loadeddice",
+   "held_item_id": "cobblemon:sitrusberry",
    "nature_id": "cobblemon:brave",
    "moves": [
     "cobblemon:encore",
@@ -2376,7 +2376,7 @@
    "set_id": "gen9bssregi-2539257082-p2-calyrexshadow",
    "species_id": "cobblemon:calyrex",
    "ability_id": "cobblemon:asone",
-   "held_item_id": "cobblemon:focussash",
+   "held_item_id": "cobblemon:leftovers",
    "nature_id": "cobblemon:timid",
    "moves": [
     "cobblemon:substitute",
@@ -2402,7 +2402,7 @@
    "set_id": "gen9bssregi-2539257082-p2-chienpao",
    "species_id": "cobblemon:chienpao",
    "ability_id": "cobblemon:swordofruin",
-   "held_item_id": "cobblemon:lifeorb",
+   "held_item_id": "cobblemon:focussash",
    "nature_id": "cobblemon:adamant",
    "moves": [
     "cobblemon:sacredsword",
@@ -2754,7 +2754,7 @@
    "set_id": "gen9bssregi-2539260000-p1-dondozo",
    "species_id": "cobblemon:dondozo",
    "ability_id": "cobblemon:unaware",
-   "held_item_id": "cobblemon:leftovers",
+   "held_item_id": "cobblemon:rockyhelmet",
    "nature_id": "cobblemon:impish",
    "moves": [
     "cobblemon:avalanche",
@@ -2771,7 +2771,7 @@
     "speed": 0
    },
    "revealed_moves": 1,
-   "revealed_item": false,
+   "revealed_item": true,
    "revealed_ability": false,
    "guessed_member": false
   },
@@ -2804,7 +2804,7 @@
    "set_id": "gen9bssregi-2539260000-p2-dragonite",
    "species_id": "cobblemon:dragonite",
    "ability_id": "cobblemon:multiscale",
-   "held_item_id": "cobblemon:rockyhelmet",
+   "held_item_id": "cobblemon:covertcloak",
    "nature_id": "cobblemon:adamant",
    "moves": [
     "cobblemon:outrage",
@@ -2821,7 +2821,7 @@
     "speed": 252
    },
    "revealed_moves": 1,
-   "revealed_item": true,
+   "revealed_item": false,
    "revealed_ability": false,
    "guessed_member": false
   },
@@ -3515,13 +3515,13 @@
    "set_id": "gen9bssregi-2539566719-p1-dondozo",
    "species_id": "cobblemon:dondozo",
    "ability_id": "cobblemon:unaware",
-   "held_item_id": "cobblemon:leftovers",
+   "held_item_id": "cobblemon:rockyhelmet",
    "nature_id": "cobblemon:impish",
    "moves": [
     "cobblemon:bodypress",
     "cobblemon:rest",
     "cobblemon:sleeptalk",
-    "cobblemon:wavecrash"
+    "cobblemon:fissure"
    ],
    "evs": {
     "hp": 252,
@@ -3531,8 +3531,8 @@
     "special_defense": 4,
     "speed": 0
    },
-   "revealed_moves": 3,
-   "revealed_item": false,
+   "revealed_moves": 4,
+   "revealed_item": true,
    "revealed_ability": false,
    "guessed_member": false
   },
@@ -3590,7 +3590,7 @@
    "set_id": "gen9bssregi-2539566719-p2-chienpao",
    "species_id": "cobblemon:chienpao",
    "ability_id": "cobblemon:swordofruin",
-   "held_item_id": "cobblemon:rockyhelmet",
+   "held_item_id": "cobblemon:focussash",
    "nature_id": "cobblemon:adamant",
    "moves": [
     "cobblemon:suckerpunch",
@@ -3607,7 +3607,7 @@
     "speed": 252
    },
    "revealed_moves": 2,
-   "revealed_item": true,
+   "revealed_item": false,
    "revealed_ability": true,
    "guessed_member": false
   },
@@ -3632,7 +3632,7 @@
     "speed": 252
    },
    "revealed_moves": 2,
-   "revealed_item": true,
+   "revealed_item": false,
    "revealed_ability": true,
    "guessed_member": false
   },
