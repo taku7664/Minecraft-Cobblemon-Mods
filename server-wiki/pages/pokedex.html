@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>포켓몬 도감 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root=".." data-no-toc>
+<main>
+  <h1>포켓몬 도감</h1>
+  <p>이 서버에 있는 포켓몬 <b id="dx-total">-</b>종의 종족값, 특성, 진화, 배우는 기술, 야생 출현 장소를 정리했습니다. 서버의 실제 데이터에서 뽑은 고정 정보이고, 서버 데이터가 바뀌면 다시 갱신합니다. 포켓몬을 누르면 자세한 정보가 열립니다.</p>
+  <div class="note">
+    <strong>야생 레벨은 레벨캡을 따릅니다</strong>
+    이 서버에서 야생 포켓몬의 레벨은 내 레벨캡에 맞춰 정해지므로, 도감에는 레벨을 적지 않았습니다. → <a href="levels.html">레벨캡과 야생 포켓몬</a>
+  </div>
+
+  <div class="filters">
+    <input id="dx-q" type="search" placeholder="이름, 영어 ID, 도감 번호" aria-label="포켓몬 검색">
+    <select id="dx-type" aria-label="타입"><option value="">모든 타입</option></select>
+    <select id="dx-gen" aria-label="세대"><option value="">모든 세대</option></select>
+    <select id="dx-label" aria-label="분류">
+      <option value="">모든 포켓몬</option><option value="-">전설급 제외</option><option value="전설">전설</option><option value="환상">환상</option>
+      <option value="울트라비스트">울트라비스트</option><option value="패러독스">패러독스</option><option value="스타팅">스타팅</option><option value="아기">아기</option>
+    </select>
+    <select id="dx-sort" aria-label="정렬">
+      <option value="dex">도감 번호순</option><option value="name">이름순</option><option value="bst">종족값 합계순</option>
+      <option value="0">HP순</option><option value="1">공격순</option><option value="2">방어순</option>
+      <option value="3">특수공격순</option><option value="4">특수방어순</option><option value="5">스피드순</option>
+    </select>
+    <label><input id="dx-wild" type="checkbox"> 야생에서 나오는 것만</label>
+    <span class="count" id="dx-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="dex-table">
+      <thead><tr><th class="num">No.</th><th>이름</th><th>타입</th><th class="num">합계</th><th class="num">HP</th><th class="num">공격</th>
+        <th class="num">방어</th><th class="num">특공</th><th class="num">특방</th><th class="num">스피드</th></tr></thead>
+      <tbody id="dx-list"></tbody>
+    </table>
+  </div>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/data/dex/index.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var dex = window.WIKI_DEX || [];
+    var TYPES = { normal: "노말", fire: "불꽃", water: "물", grass: "풀", electric: "전기", ice: "얼음", fighting: "격투", poison: "독",
+      ground: "땅", flying: "비행", psychic: "에스퍼", bug: "벌레", rock: "바위", ghost: "고스트", dragon: "드래곤", dark: "악",
+      steel: "강철", fairy: "페어리" };
+    var SPECIAL = ["전설", "환상", "울트라비스트", "패러독스", "제한급"];
+    var $ = function (id) { return document.getElementById(id); };
+    function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
+    $("dx-total").textContent = dex.length;
+    Object.keys(TYPES).forEach(function (t) { var o = el("option", "", TYPES[t]); o.value = t; $("dx-type").appendChild(o); });
+    Array.from(new Set(dex.map(function (p) { return p.gen; }))).sort(function (a, b) { return a - b; }).forEach(function (g) {
+      var o = el("option", "", g + "세대"); o.value = g; $("dx-gen").appendChild(o);
+    });
+    var bst = function (p) { return p.stats.reduce(function (a, b) { return a + b; }, 0); };
+    var tbody = $("dx-list");
+    function render() {
+      var q = $("dx-q").value.trim().toLowerCase(), type = $("dx-type").value, gen = $("dx-gen").value, label = $("dx-label").value;
+      var sort = $("dx-sort").value, wild = $("dx-wild").checked;
+      var shown = dex.filter(function (p) {
+        if (q && p.name.toLowerCase().indexOf(q) < 0 && p.id.indexOf(q) < 0 && String(p.dex) !== q.replace(/^0+/, "")) return false;
+        if (type && p.types.indexOf(type) < 0) return false;
+        if (gen && String(p.gen) !== gen) return false;
+        if (label === "-" && p.labels.some(function (l) { return SPECIAL.indexOf(l) >= 0; })) return false;
+        if (label && label !== "-" && p.labels.indexOf(label) < 0) return false;
+        if (wild && !p.spawns) return false;
+        return true;
+      }).sort(function (a, b) {
+        if (sort === "name") return a.name.localeCompare(b.name, "ko");
+        if (sort === "bst") return bst(b) - bst(a) || a.dex - b.dex;
+        if (/^\d$/.test(sort)) return b.stats[+sort] - a.stats[+sort] || a.dex - b.dex;
+        return a.dex - b.dex;
+      });
+      tbody.innerHTML = "";
+      var fragment = document.createDocumentFragment();
+      shown.forEach(function (p) {
+        var row = el("tr");
+        row.appendChild(el("td", "num", String(p.dex).padStart(4, "0")));
+        var name = el("td"); var link = el("a", "", p.name); link.href = "pokemon.html?id=" + p.id; name.appendChild(link);
+        p.labels.filter(function (l) { return SPECIAL.indexOf(l) >= 0; }).forEach(function (l) { name.appendChild(document.createTextNode(" ")); name.appendChild(el("span", "badge gold", l)); });
+        row.appendChild(name);
+        var types = el("td"); p.types.forEach(function (t) { types.appendChild(el("span", "type " + t, TYPES[t] || t)); types.appendChild(document.createTextNode(" ")); });
+        row.appendChild(types);
+        row.appendChild(el("td", "num", String(bst(p))));
+        p.stats.forEach(function (s) { row.appendChild(el("td", "num", String(s))); });
+        row.addEventListener("click", function (event) { if (event.target.tagName !== "A") location.href = link.href; });
+        fragment.appendChild(row);
+      });
+      tbody.appendChild(fragment);
+      $("dx-count").textContent = shown.length + " / " + dex.length + "종";
+    }
+    ["dx-q", "dx-type", "dx-gen", "dx-label", "dx-sort", "dx-wild"].forEach(function (id) {
+      var c = $(id); c.addEventListener(c.type === "search" ? "input" : "change", render);
+    });
+    render();
+  })();
+</script>
+</body>
+</html>

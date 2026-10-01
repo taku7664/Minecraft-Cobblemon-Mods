@@ -57,12 +57,13 @@ MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시�
 
 ## 생성되는 데이터
 
-전설 스폰 가이드와 야생 트레이너 목록은 서버가 실제로 쓰는 데이터에서 만듭니다. 손으로 고치지 말고, 원본이 바뀌면
+전설 스폰 가이드, 포켓몬 도감, 야생 트레이너 목록은 서버가 실제로 쓰는 데이터에서 만듭니다. 서버가 따로 갱신해 주지 않는 고정 정보입니다. 손으로 고치지 말고, 원본이 바뀌면
 다시 생성하세요.
 
 | 파일 | 생성 스크립트 | 원본 |
 |---|---|---|
 | `assets/data/legends.js` | `python tools/server-wiki/gen_legends.py` | jbro-policy의 전설 스폰표, 전설 카탈로그, 등장 대사, Cobblemon과 마인크래프트의 한국어 이름 |
+| `assets/data/dex/` | `python tools/server-wiki/gen_pokedex.py` | 서버 모드의 Cobblemon 종 데이터와 스폰표, 서버의 Showdown 기술 데이터, Cobblemon과 마인크래프트의 한국어 이름 |
 | `assets/data/trainers.js` | `python tools/server-wiki/gen_trainers.py` | `tools/wild-trainers/kinds.py`와 리그 모듈의 트레이너 정의 |
 
 전설 가이드의 "내 전설 현황"은 jbro-policy가 `/api/me`에 더하는 `legends` 항목(직접 잡은 종, 리그 등급, 지금 파티)을

@@ -17,6 +17,7 @@ window.WIKI_NAV = {
       title: "성장",
       pages: [
         { path: "pages/levels.html", title: "레벨캡과 야생 포켓몬", icon: "📈", keywords: "레벨캡 레벨 야생 스폰 개체값 iv 숨겨진 특성 메가 다이맥스 테라스탈 잠금" },
+        { path: "pages/pokedex.html", title: "포켓몬 도감", icon: "📕", keywords: "도감 포켓몬 종족값 기술 무브셋 특성 진화 출현 스폰 바이옴" },
         { path: "pages/legends.html", title: "전설 스폰 가이드", icon: "✨", keywords: "전설 환상 패러독스 스폰 포획 등급 엔트리 legends 포케스낵" },
         { path: "pages/pokemon-items.html", title: "포켓몬 아이템화와 합성", icon: "🧪", keywords: "poketoitem itemtopoke pokefusion 합성 개체값 놓아주기 release" },
       ],

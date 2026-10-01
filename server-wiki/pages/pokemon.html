@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>포켓몬 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root=".." data-nav-parent="pages/pokedex.html" data-no-toc>
+<main>
+  <h1 id="pk-title">포켓몬</h1>
+  <p id="pk-state">불러오는 중…</p>
+  <div id="pk" hidden>
+    <p id="pk-desc"></p>
+    <div class="tabs" id="pk-forms"></div>
+
+    <h2>종족값</h2>
+    <div class="stat-bars" id="pk-stats"></div>
+
+    <h2>특성</h2>
+    <div id="pk-abilities"></div>
+
+    <h2>진화</h2>
+    <div class="evo" id="pk-evo"></div>
+
+    <h2>기본 정보</h2>
+    <table><tbody id="pk-info"></tbody></table>
+
+    <h2>배우는 기술</h2>
+    <div class="tabs" id="pk-learn-tabs"></div>
+    <div class="table-wrap">
+      <table class="dex-table"><thead id="pk-learn-head"></thead><tbody id="pk-learn"></tbody></table>
+    </div>
+
+    <h2>야생 출현</h2>
+    <div id="pk-spawns"></div>
+  </div>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/data/dex/index.js"></script>
+<script src="../assets/data/dex/moves.js"></script>
+<script src="../assets/data/dex/abilities.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var TYPES = { normal: "노말", fire: "불꽃", water: "물", grass: "풀", electric: "전기", ice: "얼음", fighting: "격투", poison: "독",
+      ground: "땅", flying: "비행", psychic: "에스퍼", bug: "벌레", rock: "바위", ghost: "고스트", dragon: "드래곤", dark: "악",
+      steel: "강철", fairy: "페어리" };
+    var STAT_NAMES = ["HP", "공격", "방어", "특수공격", "특수방어", "스피드"];
+    var STAT_COLORS = ["#4fa860", "#e0a030", "#e0c040", "#4a8fd0", "#7a6fd0", "#e05080"];
+    var CATEGORY = { Physical: "물리", Special: "특수", Status: "변화" };
+    var LEARN = [["level", "레벨업"], ["tm", "기술머신"], ["egg", "알 기술"], ["tutor", "가르침 기술"], ["evolution", "진화할 때"],
+      ["legacy", "이전 세대 기술"], ["special", "특별한 기술"], ["form_change", "폼 변화"]];
+    var EXP = { erratic: "불규칙", fast: "빠름", medium_fast: "보통", medium_slow: "조금 느림", slow: "느림", fluctuating: "변동" };
+    var $ = function (id) { return document.getElementById(id); };
+    function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
+    var names = window.WIKI_DEX_NAMES || {};
+    var moves = window.WIKI_MOVES || {};
+    var abilities = window.WIKI_ABILITIES || {};
+    var id = new URLSearchParams(location.search).get("id");
+    var row = (window.WIKI_DEX || []).filter(function (p) { return p.id === id; })[0];
+    if (!row) { $("pk-state").textContent = "도감에 없는 포켓몬입니다."; $("pk-state").className = "note warn"; return; }
+
+    var script = document.createElement("script");
+    script.src = "../assets/data/dex/species/" + encodeURIComponent(id) + ".js";
+    script.onload = function () { show(window.WIKI_SPECIES[id]); };
+    script.onerror = function () { $("pk-state").textContent = "포켓몬 정보를 불러오지 못했습니다."; };
+    document.body.appendChild(script);
+
+    function pokemonLink(target) {
+      var a = el("a", "", names[target] || target);
+      a.href = "pokemon.html?id=" + encodeURIComponent(target);
+      return a;
+    }
+
+    function show(data) {
+      document.title = row.name + " · " + window.WIKI_NAV.title;
+      var title = $("pk-title");
+      title.textContent = "";
+      title.appendChild(el("span", "dex", "No." + String(row.dex).padStart(4, "0") + " "));
+      title.appendChild(document.createTextNode(row.name + " "));
+      row.labels.forEach(function (l) { title.appendChild(el("span", "badge gold", l)); title.appendChild(document.createTextNode(" ")); });
+      $("pk-desc").textContent = data.desc || "";
+      $("pk-state").hidden = true;
+      $("pk").hidden = false;
+      var tabs = $("pk-forms");
+      if (data.forms.length > 1) {
+        data.forms.forEach(function (form, index) {
+          var b = el("button", index ? "" : "on", form.name);
+          b.addEventListener("click", function () {
+            Array.prototype.forEach.call(tabs.children, function (c) { c.className = ""; });
+            b.className = "on";
+            showForm(data, form);
+          });
+          tabs.appendChild(b);
+        });
+      }
+      info(data);
+      spawns(data);
+      showForm(data, data.forms[0]);
+    }
+
+    function showForm(data, form) {
+      // Types beside the title follow the shown form.
+      var typesLine = $("pk-desc");
+      var existing = document.getElementById("pk-types");
+      if (existing) existing.remove();
+      var types = el("p"); types.id = "pk-types";
+      form.types.forEach(function (t) { types.appendChild(el("span", "type " + t, TYPES[t] || t)); types.appendChild(document.createTextNode(" ")); });
+      typesLine.parentNode.insertBefore(types, typesLine);
+
+      var stats = $("pk-stats"); stats.innerHTML = "";
+      var total = 0;
+      form.stats.forEach(function (value, i) {
+        total += value;
+        stats.appendChild(el("span", "", STAT_NAMES[i]));
+        stats.appendChild(el("b", "", String(value)));
+        var bar = el("div", "bar"); var fill = el("span"); fill.style.width = Math.min(100, value / 2.55) + "%"; fill.style.background = STAT_COLORS[i];
+        bar.appendChild(fill); stats.appendChild(bar);
+      });
+      stats.appendChild(el("span", "", "합계")); stats.appendChild(el("b", "", String(total))); stats.appendChild(el("span"));
+
+      var ab = $("pk-abilities"); ab.innerHTML = "";
+      form.abilities.forEach(function (a) {
+        var info = abilities[a.id] || { name: a.id, desc: "" };
+        var p = el("p"); p.appendChild(el("b", "", info.name));
+        if (a.hidden) { p.appendChild(document.createTextNode(" ")); p.appendChild(el("span", "badge gray", "숨겨진 특성")); }
+        if (info.desc) p.appendChild(document.createTextNode(": " + info.desc));
+        ab.appendChild(p);
+      });
+
+      var evo = $("pk-evo"); evo.innerHTML = "";
+      if (data.pre) { evo.appendChild(pokemonLink(data.pre)); evo.appendChild(el("span", "arrow", "→")); }
+      evo.appendChild(el("b", "", row.name));
+      if (form.evolutions.length) {
+        evo.appendChild(el("span", "arrow", "→"));
+        form.evolutions.forEach(function (e, i) {
+          if (i) evo.appendChild(el("span", "arrow", "/"));
+          evo.appendChild(pokemonLink(e.to));
+          if (e.how.length) evo.appendChild(el("span", "arrow", "(" + e.how.join(" · ") + ")"));
+        });
+      }
+      if (!data.pre && !form.evolutions.length) evo.appendChild(el("span", "arrow", "진화하지 않습니다."));
+
+      learnTabs(form);
+    }
+
+    function learnTabs(form) {
+      var tabs = $("pk-learn-tabs"); tabs.innerHTML = "";
+      var first = null;
+      LEARN.forEach(function (pair) {
+        var list = form.learn[pair[0]];
+        if (!list || !list.length) return;
+        var b = el("button", "", pair[1] + " "); b.appendChild(el("small", "", String(list.length)));
+        b.addEventListener("click", function () {
+          Array.prototype.forEach.call(tabs.children, function (c) { c.className = ""; });
+          b.className = "on";
+          learnTable(pair[0], list);
+        });
+        tabs.appendChild(b);
+        if (!first) first = b;
+      });
+      if (first) first.click(); else { $("pk-learn-head").innerHTML = ""; $("pk-learn").innerHTML = "<tr><td>배우는 기술이 없습니다.</td></tr>"; }
+    }
+
+    function learnTable(kind, list) {
+      var head = $("pk-learn-head"); head.innerHTML = "";
+      var hr = el("tr");
+      (kind === "level" ? ["Lv."] : []).concat(["기술", "타입", "분류", "위력", "명중", "PP"]).forEach(function (h, i) {
+        hr.appendChild(el("th", h === "기술" || h === "타입" || h === "분류" ? "" : "num", h));
+      });
+      head.appendChild(hr);
+      var body = $("pk-learn"); body.innerHTML = "";
+      list.forEach(function (entry) {
+        var level = kind === "level" ? entry[0] : null, moveId = kind === "level" ? entry[1] : entry;
+        var m = moves[moveId] || { name: moveId };
+        var tr = el("tr");
+        tr.title = m.desc || "";
+        if (level != null) tr.appendChild(el("td", "num", level === 0 ? "진화" : String(level)));
+        tr.appendChild(el("td", "", m.name));
+        var type = el("td"); if (m.type) type.appendChild(el("span", "type " + m.type, TYPES[m.type] || m.type)); tr.appendChild(type);
+        var cat = el("td"); if (m.cat) cat.appendChild(el("span", "cat " + m.cat, CATEGORY[m.cat] || m.cat)); tr.appendChild(cat);
+        tr.appendChild(el("td", "num", m.power ? String(m.power) : "-"));
+        tr.appendChild(el("td", "num", m.acc ? String(m.acc) : "-"));
+        tr.appendChild(el("td", "num", m.pp != null ? String(m.pp) : "-"));
+        body.appendChild(tr);
+      });
+    }
+
+    function info(data) {
+      var rows = [];
+      if (data.catchRate != null) rows.push(["포획률", data.catchRate + " / 255"]);
+      if (data.eggGroups && data.eggGroups.length) rows.push(["알 그룹", data.eggGroups.join(", ")]);
+      rows.push(["성비", data.maleRatio == null || data.maleRatio < 0 ? "성별 없음" : "수컷 " + Math.round(data.maleRatio * 100) + "% · 암컷 " + Math.round((1 - data.maleRatio) * 100) + "%"]);
+      if (data.height != null) rows.push(["키 · 몸무게", (data.height / 10) + "m · " + (data.weight / 10) + "kg"]);
+      var ev = data.evYield.map(function (v, i) { return v ? STAT_NAMES[i] + " " + v : null; }).filter(Boolean);
+      if (ev.length) rows.push(["쓰러뜨리면 얻는 노력치", ev.join(", ")]);
+      if (data.experienceGroup) rows.push(["경험치 그룹", EXP[data.experienceGroup] || data.experienceGroup]);
+      var body = $("pk-info");
+      rows.forEach(function (r) { var tr = el("tr"); tr.appendChild(el("th", "", r[0])); tr.appendChild(el("td", "", r[1])); body.appendChild(tr); });
+    }
+
+    function spawns(data) {
+      var box = $("pk-spawns");
+      if (row.labels.some(function (l) { return l === "전설" || l === "환상" || l === "패러독스" || l === "제한급"; })) {
+        var legend = el("div", "note tip");
+        legend.innerHTML = "<strong>전설 포켓몬</strong>나타나는 조건, 잡을 수 있는 등급, 엔트리 조건은 <a href=\"legends.html\">전설 스폰 가이드</a>에 자세히 있습니다.";
+        box.appendChild(legend);
+      }
+      if (!data.spawns.length) { box.appendChild(el("p", "", "야생에서는 나오지 않습니다. 진화나 다른 방법으로 얻어야 합니다.")); return; }
+      function spawnTable(list) {
+        var table = el("table", "spawn-table"); var head = el("thead"); var hr = el("tr");
+        ["희귀도", "장소", "바이옴", "조건"].forEach(function (h) { hr.appendChild(el("th", "", h)); });
+        head.appendChild(hr); table.appendChild(head);
+        var body = el("tbody");
+        list.forEach(function (s) {
+          var tr = el("tr");
+          tr.appendChild(el("td", "", s.bucket + (s.herd ? " · 무리" : "")));
+          tr.appendChild(el("td", "", s.position));
+          var biomes = el("td");
+          s.biomes.forEach(function (b) { biomes.appendChild(el("span", b.group ? "chip group" : "chip", b.group ? b.name + " 계열" : b.name)); });
+          (s.except || []).forEach(function (b) { biomes.appendChild(el("span", "chip no", b + " 제외")); });
+          tr.appendChild(biomes);
+          var cond = el("td");
+          (s.notes || []).forEach(function (n) { cond.appendChild(el("span", "chip", n)); });
+          s.conditions.forEach(function (c) { cond.appendChild(el("span", "chip cond", c)); });
+          (s.boosts || []).forEach(function (b) { cond.appendChild(el("span", "chip", b)); });
+          tr.appendChild(cond);
+          body.appendChild(tr);
+        });
+        table.appendChild(body);
+        var wrap = el("div", "table-wrap"); wrap.appendChild(table);
+        return wrap;
+      }
+      var normal = data.spawns.filter(function (s) { return s.bucket !== "오야붕"; });
+      var alpha = data.spawns.filter(function (s) { return s.bucket === "오야붕"; });
+      if (normal.length) box.appendChild(spawnTable(normal));
+      else box.appendChild(el("p", "", "일반 개체는 야생에서 나오지 않고, 오야붕으로만 나옵니다."));
+      if (alpha.length) {
+        var details = el("details"); var summary = el("summary", "", "오야붕 출현 " + alpha.length + "곳");
+        details.appendChild(summary);
+        details.appendChild(el("p", "wiki-crumbs", "오야붕은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다."));
+        details.appendChild(spawnTable(alpha));
+        box.appendChild(details);
+      }
+      box.appendChild(el("p", "wiki-crumbs", "희귀도는 흔함 · 보통 · 드묾 · 매우 드묾 순서로 드뭅니다. 점선 바이옴은 그 계열의 바이옴이면 어디든 된다는 뜻입니다. 레벨은 내 레벨캡을 따릅니다."));
+    }
+  })();
+</script>
+</body>
+</html>

@@ -367,6 +367,8 @@ kbd {
   border-bottom: 2px solid var(--trim); }
 .legend header .dex { color: var(--panel-text-dim); font-size: 12px; }
 .legend header h3 { margin: 0; font-size: 18px; }
+.legend header h3 a { color: var(--panel-text); text-decoration: none; }
+.legend header h3 a:hover { color: var(--primary-pressed); text-decoration: underline; }
 .legend header code { margin-left: auto; font-size: 12px; }
 .legend dl { display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; margin: 0; font-size: 14px; }
 .legend dt { color: var(--panel-text-dim); }
@@ -394,3 +396,40 @@ kbd {
   background: var(--frame-highlight); border-left: 4px solid var(--info-band); border-radius: 3px; font-size: 14px; }
 .chain .arrow { color: var(--panel-text-dim); }
 .chain b { color: var(--panel-text); }
+
+/* ---- Pokedex ------------------------------------------------------------------------------------------------ */
+
+.dex-table td, .dex-table th { white-space: nowrap; }
+.dex-table td.num, .dex-table th.num { text-align: right; }
+.dex-table tbody tr { cursor: pointer; }
+.dex-table tbody tr:hover td { background: var(--panel-alt); }
+.dex-table a { color: var(--panel-text); font-weight: bold; text-decoration: none; }
+.table-wrap { overflow-x: auto; margin: 0 0 var(--gap); }
+.table-wrap table { margin: 0; }
+
+.stat-bars { display: grid; grid-template-columns: 70px 40px 1fr; gap: 4px 10px; align-items: center; margin: 0 0 var(--gap);
+  font-size: 14px; }
+.stat-bars .bar { height: 12px; background: var(--panel-alt); border-radius: 6px; overflow: hidden; }
+.stat-bars .bar span { display: block; height: 100%; border-radius: 6px; }
+.stat-bars b { text-align: right; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.tabs button { padding: 4px 12px; font: inherit; font-size: 14px; color: var(--panel-text); background: var(--panel-alt);
+  border: 2px solid transparent; border-radius: 4px; cursor: pointer; }
+.tabs button.on { background: var(--frame-highlight); border-color: var(--cursor); }
+.tabs button small { color: var(--panel-text-dim); }
+
+.evo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 var(--gap); }
+.evo .arrow { color: var(--panel-text-dim); font-size: 13px; }
+.evo a, .evo b { padding: 4px 10px; background: var(--frame-highlight); border: 2px solid var(--frame-shade); border-radius: 4px;
+  color: var(--panel-text); text-decoration: none; }
+.evo b { border-color: var(--cursor); }
+.cat { font-size: 12px; padding: 0 6px; border-radius: 3px; color: #fff; }
+.cat.Physical { background: #c4562c; } .cat.Special { background: #4a6fc4; } .cat.Status { background: #8a8f96; }
+.chip { white-space: nowrap; }
+.spawn-table th, .spawn-table td:nth-child(-n+2) { white-space: nowrap; }
+.spawn-table td:nth-child(3) { min-width: 200px; }
+.spawn-table td:nth-child(4) { min-width: 140px; }
+details { margin: 0 0 var(--gap); padding: 8px 12px; background: var(--panel-alt); border-radius: 4px; }
+details > summary { cursor: pointer; font-weight: bold; }
+details[open] > summary { margin-bottom: 8px; }

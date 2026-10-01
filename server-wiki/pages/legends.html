@@ -204,7 +204,8 @@
       node.id = "legend-" + legend.id;
       var header = el("header");
       header.appendChild(el("span", "dex", "No." + String(legend.dex).padStart(4, "0")));
-      header.appendChild(el("h3", "", legend.name));
+      var title = el("h3"); var dexLink = el("a", "", legend.name); dexLink.href = "pokemon.html?id=" + legend.id;
+      dexLink.title = "도감에서 종족값과 기술 보기"; title.appendChild(dexLink); header.appendChild(title);
       legend.types.forEach(function (type) { header.appendChild(el("span", "type " + type.id, type.name)); });
       header.appendChild(el("code", "", "/legends " + legend.id));
       node.appendChild(header);

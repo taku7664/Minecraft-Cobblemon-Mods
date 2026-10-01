@@ -61,6 +61,10 @@
   var here = decodeURIComponent(location.pathname).replace(/\\/g, "/");
   var current = pages.filter(function (page) { return here === "/" + page.path || here.endsWith("/" + page.path); })[0]
     || (/\/$/.test(here) ? pages[0] : null);
+  // A page that is not in the rail (such as one Pokemon's entry) can name the rail page it belongs under.
+  var parentPath = document.body.getAttribute("data-nav-parent");
+  var child = !current && parentPath ? pages.filter(function (page) { return page.path === parentPath; })[0] : null;
+  if (child) current = child;
 
   function href(path) { return root + "/" + path; }
 
@@ -111,7 +115,8 @@
   if (current && current !== pages[0]) {
     content.appendChild(el("div", { class: "wiki-crumbs" }, [
       el("a", { href: href(pages[0].path), text: pages[0].title }),
-      document.createTextNode(" › " + current.section + " › " + current.title),
+      document.createTextNode(" › " + current.section + " › "),
+      child ? el("a", { href: href(current.path), text: current.title }) : document.createTextNode(current.title),
     ]));
   }
   while (main.firstChild) content.appendChild(main.firstChild);
@@ -128,7 +133,7 @@
     content.insertBefore(toc, title ? title.nextSibling : content.firstChild);
   }
 
-  if (current) {
+  if (current && !child) {
     var index = pages.indexOf(current);
     var pager = el("nav", { class: "wiki-pager", "aria-label": "이전 다음 문서" });
     if (index > 0) {
@@ -150,7 +155,7 @@
   ]);
   main.replaceWith(shell);
   document.body.appendChild(el("footer", { class: "wiki-footer", text: nav.title }));
-  if (current) document.title = current === pages[0] ? nav.title : current.title + " · " + nav.title;
+  if (current && !child) document.title = current === pages[0] ? nav.title : current.title + " · " + nav.title;
 
   if (document.querySelector("[data-me]")) window.MccWiki.me().then(fillMe, function () {});
 
