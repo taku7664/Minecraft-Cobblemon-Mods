@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PvP 전적 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+</head>
+<body data-root=".." data-no-toc>
+<main>
+  <h1>PvP 전적</h1>
+  <p>서버에서 끝난 모든 PvP 대전의 결과입니다. 누가 누구를 이겼는지와 배틀 방식만 기록하고, 엔트리는 남기지 않습니다. 닉네임으로 찾으면 그 트레이너의 전적과 상대별 승패를 볼 수 있습니다.</p>
+
+  <div class="filters">
+    <input id="pm-q" type="search" placeholder="닉네임으로 찾기" aria-label="닉네임으로 찾기">
+    <button id="pm-search" class="pm-button" type="button">찾기</button>
+    <button id="pm-me" class="pm-button" type="button">내 전적</button>
+    <button id="pm-all" class="pm-button" type="button" hidden>전체 보기</button>
+    <span class="count" id="pm-count"></span>
+  </div>
+
+  <div id="pm-state" class="note" hidden></div>
+
+  <div id="pm-player" hidden>
+    <h2 id="pm-player-name"></h2>
+    <div class="grid">
+      <div class="stat"><small>승리</small><b id="pm-wins">-</b></div>
+      <div class="stat"><small>패배</small><b id="pm-losses">-</b></div>
+      <div class="stat"><small>승률</small><b id="pm-rate">-</b></div>
+    </div>
+    <h3>상대별 전적</h3>
+    <div class="table-wrap">
+      <table class="dex-table"><thead><tr><th>상대</th><th class="num">승</th><th class="num">패</th><th class="num">승률</th></tr></thead>
+        <tbody id="pm-opponents"></tbody></table>
+    </div>
+    <h3>대전 기록</h3>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dex-table">
+      <thead><tr><th>시간</th><th>방식</th><th>승자</th><th>패자</th></tr></thead>
+      <tbody id="pm-list"></tbody>
+    </table>
+  </div>
+  <p><button id="pm-more" class="pm-button" type="button" hidden>더 보기</button></p>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+<script>
+  (function () {
+    var FORMAT = { single: "싱글", double: "더블" };
+    var $ = function (id) { return document.getElementById(id); };
+    function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
+    var served = location.protocol === "http:" || location.protocol === "https:";
+    var player = null, next = null, loading = false;
+
+    function state(html) { var s = $("pm-state"); s.innerHTML = html; s.hidden = !html; }
+    if (!served) {
+      state("PvP 전적은 서버에서 연 위키에서만 보입니다. 게임에서 <code>/mcc wiki</code>를 입력하고 채팅의 링크를 누르세요.");
+      ["pm-q", "pm-search", "pm-me"].forEach(function (id) { $(id).disabled = true; });
+      return;
+    }
+
+    function playerLink(person) {
+      var a = el("a", "", person.name);
+      a.href = "#";
+      a.addEventListener("click", function (event) { event.preventDefault(); $("pm-q").value = person.name; load(person.name, true); });
+      return a;
+    }
+
+    function time(ms) {
+      var d = new Date(ms);
+      return d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }) + " " + d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function rate(w, l) { return w + l ? Math.round(w * 100 / (w + l)) + "%" : "-"; }
+
+    function load(who, reset) {
+      if (loading) return;
+      loading = true;
+      if (reset) { player = who; next = null; $("pm-list").innerHTML = ""; }
+      var params = new URLSearchParams();
+      if (player) params.set("player", player);
+      if (next) params.set("before", next);
+      var headers = {};
+      var token = null;
+      try { token = localStorage.getItem("mccWikiToken"); } catch (ignored) {}
+      if (token) headers["X-MCC-Wiki-Token"] = token;
+      fetch("../api/pvp/matches?" + params, { headers: headers, cache: "no-store" }).then(function (response) {
+        return response.json().then(function (body) { return { ok: response.ok, body: body }; });
+      }).then(function (result) {
+        loading = false;
+        var body = result.body;
+        if (!result.ok) {
+          state(body.error === "no_token" ? "내 전적을 보려면 게임에서 <code>/mcc wiki</code>로 받은 링크로 위키를 한 번 열어 주세요."
+            : body.error === "unknown_endpoint" ? "이 서버는 아직 PvP 전적을 기록하지 않습니다." : "전적을 불러오지 못했습니다.");
+          return;
+        }
+        state(body.unknown_player ? "<b>" + body.unknown_player.replace(/[<>&]/g, "") + "</b>의 PvP 기록이 없습니다." : "");
+        $("pm-all").hidden = !player;
+        var box = $("pm-player");
+        if (body.player) {
+          box.hidden = false;
+          $("pm-player-name").textContent = body.player.name + "의 전적";
+          $("pm-wins").textContent = body.player.wins;
+          $("pm-losses").textContent = body.player.losses;
+          $("pm-rate").textContent = rate(body.player.wins, body.player.losses);
+          var ob = $("pm-opponents"); ob.innerHTML = "";
+          body.player.opponents.forEach(function (o) {
+            var tr = el("tr"); var td = el("td"); td.appendChild(playerLink(o)); tr.appendChild(td);
+            tr.appendChild(el("td", "num", String(o.wins))); tr.appendChild(el("td", "num", String(o.losses)));
+            tr.appendChild(el("td", "num", rate(o.wins, o.losses))); ob.appendChild(tr);
+          });
+        } else {
+          box.hidden = true;
+        }
+        var list = $("pm-list");
+        body.matches.forEach(function (m) {
+          var tr = el("tr");
+          tr.appendChild(el("td", "", time(m.at)));
+          tr.appendChild(el("td", "", FORMAT[m.format] || m.format));
+          var w = el("td"); w.appendChild(el("span", "badge green", "승")); w.appendChild(document.createTextNode(" ")); w.appendChild(playerLink(m.winner)); tr.appendChild(w);
+          var l = el("td"); l.appendChild(el("span", "badge gray", "패")); l.appendChild(document.createTextNode(" ")); l.appendChild(playerLink(m.loser)); tr.appendChild(l);
+          list.appendChild(tr);
+        });
+        if (!list.children.length && !body.unknown_player) {
+          var tr = el("tr"); var td = el("td", "", "아직 기록된 대전이 없습니다."); td.colSpan = 4; tr.appendChild(td); list.appendChild(tr);
+        }
+        next = body.next || null;
+        $("pm-more").hidden = !next;
+        $("pm-count").textContent = list.querySelectorAll("tr").length + "판" + (next ? " 이상" : "");
+      }).catch(function () { loading = false; state("서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요."); });
+    }
+
+    $("pm-search").addEventListener("click", function () { load($("pm-q").value.trim() || null, true); });
+    $("pm-q").addEventListener("keydown", function (event) { if (event.key === "Enter") load($("pm-q").value.trim() || null, true); });
+    $("pm-me").addEventListener("click", function () { $("pm-q").value = ""; load("me", true); });
+    $("pm-all").addEventListener("click", function () { $("pm-q").value = ""; load(null, true); });
+    $("pm-more").addEventListener("click", function () { load(player, false); });
+    var initial = new URLSearchParams(location.search).get("player");
+    if (initial) $("pm-q").value = initial;
+    load(initial, true);
+  })();
+</script>
+</body>
+</html>

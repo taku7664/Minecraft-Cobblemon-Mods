@@ -433,3 +433,8 @@ kbd {
 details { margin: 0 0 var(--gap); padding: 8px 12px; background: var(--panel-alt); border-radius: 4px; }
 details > summary { cursor: pointer; font-weight: bold; }
 details[open] > summary { margin-bottom: 8px; }
+.pm-button { padding: 5px 12px; font: inherit; color: var(--text); background: var(--primary); border: 2px solid var(--border);
+  border-radius: 4px; box-shadow: inset 0 -3px 0 var(--primary-pressed); cursor: pointer; }
+.pm-button:hover { background: var(--primary-hover); }
+.pm-button:disabled { background: var(--disabled, #a8b0b6); box-shadow: none; cursor: default; }
+

@@ -30,6 +30,7 @@ window.WIKI_NAV = {
         { path: "pages/tower.html", title: "배틀타워", icon: "🗼", keywords: "배틀타워 연승 보스 싱글 더블 bp" },
         { path: "pages/factory.html", title: "배틀팩토리", icon: "🏭", keywords: "배틀팩토리 렌탈 교환 층 bp" },
         { path: "pages/pvp.html", title: "PvP", icon: "⚔️", keywords: "pvp 대전 방 관전 라운지 타이머" },
+        { path: "pages/pvp-matches.html", title: "PvP 전적", icon: "📜", keywords: "pvp 전적 기록 대전 승패 상대 랭킹" },
         { path: "pages/wild-trainers.html", title: "야생 트레이너", icon: "🧢", keywords: "트레이너 에이스 엘리트 bp 스폰 쿨다운" },
       ],
     },
