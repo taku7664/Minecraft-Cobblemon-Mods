@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicReference
  * `confirm` presses the bound select key, `log` toggles the battle log, `tile:N` presses the Nth command.
  * `settings` opens the mod's settings screen; only `wait` and `cap` steps may follow it.
  * `entry:<kind>` (`legendary`, `wild`, `trainer`) or `entry:<species>` plays the battle entry transition over the
- * battle without blocking input, and `reveal` clears it. `theme:<id>` switches the battle theme.
+ * battle without blocking input, and `reveal` clears it. `BATTLE_UI_CAPTURE_CHALLENGE=1` challenges the wild Pokemon
+ * as the R key does, so steps run from the transition's covered screen on. `theme:<id>` switches the battle theme.
  * `BATTLE_UI_CAPTURE_TRAINER=single|double|triple` battles a disposable NPC trainer in that format instead of the
  * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
@@ -81,6 +82,12 @@ object BattleUiCaptureHarness {
         val trainer = AtomicReference<NPCEntity?>()
         var trainerTicks = 0
         var readyTicks = 0
+        // Challenge the wild Pokemon as the R key does, through Cobblemon's challenge handling, instead of starting
+        // the battle on the server directly; that is the path the battle entry transition holds.
+        val challenge = System.getenv("BATTLE_UI_CAPTURE_CHALLENGE") == "1"
+        val wildId = java.util.concurrent.atomic.AtomicInteger(-1)
+        var challengeSent = false
+        var aimTicks = 0
 
         var idleTicks = 0
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
@@ -166,18 +173,49 @@ object BattleUiCaptureHarness {
                     val serverPlayer = checkNotNull(server.playerList.getPlayer(uuid))
                     val world = serverPlayer.serverLevel()
                     val entity = PokemonProperties.parse(wild).createEntity(world)
-                    entity.moveTo(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 2.0, 150f, 0f)
+                    // A challenge needs a clear line of sight, so take the first side of the player that has one.
+                    val eye = serverPlayer.eyePosition
+                    val spot = (if (challenge) (0 until 8).map { Math.toRadians(it * 45.0 + 34.0) } else emptyList())
+                        .map { net.minecraft.world.phys.Vec3(serverPlayer.x + 3.6 * Math.cos(it), serverPlayer.y,
+                            serverPlayer.z + 3.6 * Math.sin(it)) }
+                        .firstOrNull { world.clip(net.minecraft.world.level.ClipContext(eye, it.add(0.0, 1.0, 0.0),
+                            net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE,
+                            serverPlayer)).type == net.minecraft.world.phys.HitResult.Type.MISS }
+                        ?: net.minecraft.world.phys.Vec3(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 2.0)
+                    entity.moveTo(spot.x, spot.y, spot.z, 150f, 0f)
                     world.addFreshEntity(entity)
-                    logger.info("Battle capture started a battle with {}: {}", wild, BattleBuilder.pve(serverPlayer, entity))
+                    if (challenge) wildId.set(entity.id)
+                    else logger.info("Battle capture started a battle with {}: {}", wild, BattleBuilder.pve(serverPlayer, entity))
                 }
                 battleRequested = true
                 ticks = 0
                 return@EndTick
             }
+            if (challenge && !challengeSent && trainerFormat == null) {
+                val id = wildId.get()
+                val target = if (id >= 0) client.level?.getEntity(id) else null
+                if (target == null) {
+                    if (ticks > 200) error("The capture Pokemon did not reach the client")
+                    return@EndTick
+                }
+                // Cobblemon only accepts a challenge to the Pokemon the player is looking at.
+                player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES,
+                    target.position().add(0.0, target.bbHeight / 2.0, 0.0))
+                if (++aimTicks < 6) return@EndTick
+                val lead = checkNotNull(CobblemonClient.storage.party.firstOrNull { it != null }) { "No lead Pokemon" }.uuid
+                com.cobblemon.mod.common.net.messages.server.BattleChallengePacket(id, lead, BattleFormat.GEN_9_SINGLES)
+                    .sendToServer()
+                logger.info("Battle capture challenged {} as the R key would", wild)
+                challengeSent = true
+                ticks = 0
+                return@EndTick
+            }
             val battleScreen = client.screen as? BattleGUI
+            // The entry transition's input screen, while it holds the world covered, takes steps as well.
+            val onEntry = client.screen is jbro.cobblemon.ui.extended.transition.BattleEntryScreen
             // The settings screen, once a step opens it, takes waits and captures in the battle screen's place.
             val onSettings = settings != null && client.screen === settings
-            if (battleScreen == null && !onSettings) {
+            if (battleScreen == null && !onSettings && !onEntry) {
                 if (ticks > 1200) error("The battle screen did not show")
                 return@EndTick
             }
@@ -186,7 +224,8 @@ object BattleUiCaptureHarness {
                 waitTicks -= 1
                 return@EndTick
             }
-            if (steps.firstOrNull() == "ready" && battleScreen != null) {
+            if (steps.firstOrNull() == "ready") {
+                if (battleScreen == null) return@EndTick
                 // Narration hides the command menu until it is read; the menu itself arrives a frame after Escape.
                 BattleDialogue.clear()
                 if (battleScreen.getCurrentActionSelection() !is BattleGeneralActionSelection) {
