@@ -22,7 +22,7 @@ class DiscordGatewaySessionTest {
         assertEquals(0, d.get("intents").asInt)
         val presence = d.getAsJsonObject("presence")
         assertEquals("online", presence.get("status").asString)
-        assertEquals("빡켓몬 서버 · 3명 접속 중", presence.getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
+        assertEquals("서버가 열려있어요!!! (3명 접속 중)", presence.getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
     }
 
     @Test
@@ -62,6 +62,6 @@ class DiscordGatewaySessionTest {
         players = 0
         val update = session.presenceUpdate()
         assertEquals(3, update.get("op").asInt)
-        assertEquals("빡켓몬 서버 열려 있음", update.getAsJsonObject("d").getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
+        assertEquals("서버가 열려있어요!!!", update.getAsJsonObject("d").getAsJsonArray("activities")[0].asJsonObject.get("state").asString)
     }
 }

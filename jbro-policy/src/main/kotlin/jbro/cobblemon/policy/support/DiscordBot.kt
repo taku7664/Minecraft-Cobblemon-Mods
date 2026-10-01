@@ -113,7 +113,7 @@ internal class DiscordGatewaySession(private val token: String, private val pres
             addProperty("afk", false)
         }
 
-        fun statusText(players: Int) = if (players > 0) "빡켓몬 서버 · ${players}명 접속 중" else "빡켓몬 서버 열려 있음"
+        fun statusText(players: Int) = if (players > 0) "서버가 열려있어요!!! (${players}명 접속 중)" else "서버가 열려있어요!!!"
     }
 }
 
