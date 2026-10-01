@@ -4,10 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants
 import java.util.WeakHashMap
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.client.hub.MccHubKit
-import jbro.cobblemon.mcc.client.hub.MccHubTheme
-import jbro.cobblemon.mcc.client.hub.MccHubThemedButton
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomClientView
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiFill
@@ -15,6 +14,7 @@ import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiSurfaceStyle
 import jbro.cobblemon.uikit.UiThemeSnapshot
+import jbro.cobblemon.uikit.client.CobblemonUiThemedButton
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
@@ -31,7 +31,7 @@ import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
 /**
- * The PvP room at a glance while the room screen is closed, in the hub's look ([MccHubTheme]): the window, its title
+ * The PvP room at a glance while the room screen is closed, in the hub's look ([CobblemonUiSharedTheme]): the window, its title
  * bar with the red trim, the hub's buttons and a card for each side. The world shows through the window at half
  * opacity; the bar, the buttons and the cards are more solid so the text stays readable over it.
  */
@@ -43,7 +43,7 @@ internal object PvpRoomHudOverlay {
     private const val KEY_PREFIX = "key.${MoreCobblemonContents.MOD_ID}.pvp.room_hud"
     private const val CATEGORY = "key.categories.${MoreCobblemonContents.MOD_ID}"
     private var expanded = true
-    private val installedButtons = WeakHashMap<Screen, List<MccHubThemedButton>>()
+    private val installedButtons = WeakHashMap<Screen, List<CobblemonUiThemedButton>>()
     private val openKey = KeyBindingHelper.registerKeyBinding(
         KeyMapping("$KEY_PREFIX.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, CATEGORY),
     )
@@ -83,7 +83,7 @@ internal object PvpRoomHudOverlay {
         layout: PvpRoomHudLayout,
         interactive: Boolean,
     ) {
-        val theme = MccHubTheme.snapshot()
+        val theme = CobblemonUiSharedTheme.snapshot()
         val font = client.font
         val panel = layout.panel
         UiSurfaceRenderer.draw(graphics, panel.x, panel.y, panel.width, panel.height,
@@ -94,8 +94,8 @@ internal object PvpRoomHudOverlay {
             theme.colors.textPrimary, false)
         // Over the chat the buttons are widgets of the chat screen and draw themselves.
         if (!interactive) {
-            MccHubThemedButton.draw(graphics, theme, layout.openButton, openLabel(), UiButtonVariant.PRIMARY, opacity = CONTROL_OPACITY)
-            MccHubThemedButton.draw(graphics, theme, layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY,
+            CobblemonUiThemedButton.draw(graphics, theme, layout.openButton, openLabel(), UiButtonVariant.PRIMARY, opacity = CONTROL_OPACITY)
+            CobblemonUiThemedButton.draw(graphics, theme, layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY,
                 opacity = CONTROL_OPACITY)
         }
         val phaseRow = layout.phaseRow ?: return
@@ -157,10 +157,10 @@ internal object PvpRoomHudOverlay {
         if (screen !is ChatScreen) return
         val room = PvpRoomClientState.lastRoom ?: return
         val layout = PvpRoomHudLayout.calculate(screen.width, screen.height, expanded, room.spectators.size)
-        val open = MccHubThemedButton(layout.openButton, openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
+        val open = CobblemonUiThemedButton(layout.openButton, openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
             openRoom(Minecraft.getInstance())
         }
-        val toggle = MccHubThemedButton(layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY, CONTROL_OPACITY) {
+        val toggle = CobblemonUiThemedButton(layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY, CONTROL_OPACITY) {
             expanded = !expanded
             installChatControls(screen)
         }

@@ -1,11 +1,10 @@
-package jbro.cobblemon.mcc.client.hub
+package jbro.cobblemon.uikit.client
 
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
-import jbro.cobblemon.uikit.client.UiSurfaceRenderer
-import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -13,12 +12,11 @@ import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 
 /**
- * A button in the hub's look on a screen that is not the hub: over the chat, or on the battle screen.
- *
- * The UI kit's own widgets read the installed theme, and the hub installs its theme only while it is open, so here
- * the button draws from [MccHubTheme] itself. [opacity] thins the button's fill over the world, its frame stays.
+ * A button in the shared look ([CobblemonUiSharedTheme]) on a screen that does not install it: over the chat, or on
+ * the battle screen. The UI kit's own widgets read the installed theme, so this one draws from the shared theme
+ * itself. [opacity] thins the button's fill over the world; its frame stays.
  */
-class MccHubThemedButton(
+class CobblemonUiThemedButton(
     bounds: UiRect,
     label: Component,
     private val variant: UiButtonVariant,
@@ -35,7 +33,7 @@ class MccHubThemedButton(
             isHoveredOrFocused -> UiWidgetState.HOVER
             else -> UiWidgetState.NORMAL
         }
-        draw(graphics, MccHubTheme.snapshot(), UiRect(x, y, width, height), message, variant, state, opacity)
+        draw(graphics, CobblemonUiSharedTheme.snapshot(), UiRect(x, y, width, height), message, variant, state, opacity)
     }
 
     companion object {
@@ -53,7 +51,7 @@ class MccHubThemedButton(
             UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height,
                 style.surface.copy(backgroundOpacity = style.surface.backgroundOpacity * opacity))
             val font = Minecraft.getInstance().font
-            val text = MccHubKit.fitted(label, (bounds.width - 6).coerceAtLeast(1))
+            val text = UiTextRenderer.fitted(font, label, (bounds.width - 6).coerceAtLeast(1))
             val offset = if (state == UiWidgetState.PRESSED) style.pressedOffsetY else 0
             UiTextRenderer.draw(graphics, font, text, bounds.x + (bounds.width - font.width(text)) / 2,
                 bounds.y + (bounds.height - font.lineHeight) / 2 + 1 + offset, style.text, style.textShadowColor)

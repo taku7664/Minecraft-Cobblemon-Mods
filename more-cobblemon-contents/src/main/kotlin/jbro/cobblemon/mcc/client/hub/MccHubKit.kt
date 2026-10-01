@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.client.hub
 
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
@@ -453,7 +454,7 @@ object MccHubKit {
         client.setScreen(CobblemonUiDialogScreen(parent,
             UiDialogSpec(title, body, confirmLabel, backLabel, UiOverlayTone.DANGER),
             confirm = confirm,
-            themeOverride = MccHubTheme.snapshot()))
+            themeOverride = CobblemonUiSharedTheme.snapshot()))
     }
 
     /** A titled paragraph of a [document]. */

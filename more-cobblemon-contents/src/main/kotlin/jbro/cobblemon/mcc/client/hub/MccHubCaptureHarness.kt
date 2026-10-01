@@ -7,7 +7,7 @@ import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.mcc.api.hub.MccDashboardCards
 import jbro.cobblemon.mcc.internal.hub.BattleHubDashboardPayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
-import jbro.cobblemon.uikit.CobblemonUiThemes
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.loader.api.FabricLoader
@@ -50,7 +50,7 @@ object MccHubCaptureHarness {
         val guiScale = System.getenv("MCC_HUB_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
         val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
         val themes = ArrayDeque(System.getenv("MCC_HUB_CAPTURE_THEME")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty())
-        themes.firstOrNull()?.let { id -> check(MccHubTheme.select(id)) { "Unknown hub capture theme $id" } }
+        themes.firstOrNull()?.let { id -> check(CobblemonUiSharedTheme.select(id)) { "Unknown hub capture theme $id" } }
         themes.removeFirstOrNull()
         var themeTicks = 0
         val themeCaptured = AtomicBoolean(true)
@@ -66,7 +66,7 @@ object MccHubCaptureHarness {
         val perfFrames = System.getenv("MCC_HUB_CAPTURE_PERF")?.trim()?.toIntOrNull()?.takeIf { it > 0 }
         val perf = perfFrames?.let(::HubPerf)
         var perfTicks = 0
-        fun themeSuffix() = if (namedThemes) "-${MccHubTheme.id}" else ""
+        fun themeSuffix() = if (namedThemes) "-${CobblemonUiSharedTheme.id}" else ""
         var guiScaleApplied = guiScale == null
         val languageReady = AtomicBoolean(false)
         val languageFailure = AtomicReference<Throwable?>()
@@ -213,8 +213,8 @@ object MccHubCaptureHarness {
                     }
                     val theme = themes.removeFirstOrNull()
                     if (theme != null) {
-                        check(MccHubTheme.select(theme)) { "Unknown hub capture theme $theme" }
-                        CobblemonUiThemes.registry.install(MccHubTheme.snapshot())
+                        // Selecting restyles the open hub's installed theme at once.
+                        check(CobblemonUiSharedTheme.select(theme)) { "Unknown hub capture theme $theme" }
                         checkNotNull(client.screen as? MccHubScreen) { "Hub closed before the $theme capture" }.rebuild()
                         themeTicks = 10
                         return@EndTick
