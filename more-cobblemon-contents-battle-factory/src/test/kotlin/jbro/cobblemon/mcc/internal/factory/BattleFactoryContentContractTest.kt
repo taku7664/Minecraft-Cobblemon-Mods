@@ -69,4 +69,10 @@ class BattleFactoryContentContractTest {
             org.junit.jupiter.api.Assertions.assertTrue(root.requirement.test(source(2)), root.name)
         }
     }
+
+    @Test
+    fun `the Battle Factory terminal cannot be crafted`() {
+        // Terminals are placed by operators; a crafting recipe would let anyone set one up.
+        org.junit.jupiter.api.Assertions.assertFalse(java.nio.file.Files.exists(java.nio.file.Path.of("src/main/resources/data/more_cobblemon_contents_battle_factory/recipe/battle_factory_terminal.json")))
+    }
 }

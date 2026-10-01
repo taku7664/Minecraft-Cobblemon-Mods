@@ -88,4 +88,10 @@ class LeagueChallengeModuleContractTest {
         .toList()
 
     private fun json(path: Path): JsonObject = JsonParser.parseString(Files.readString(path)).asJsonObject
+
+    @Test
+    fun `the League terminal cannot be crafted`() {
+        // Terminals are placed by operators; a crafting recipe would let anyone set one up.
+        org.junit.jupiter.api.Assertions.assertFalse(java.nio.file.Files.exists(java.nio.file.Path.of("src/main/resources/data/more_cobblemon_contents_league_challenge/recipe/league_terminal.json")))
+    }
 }
