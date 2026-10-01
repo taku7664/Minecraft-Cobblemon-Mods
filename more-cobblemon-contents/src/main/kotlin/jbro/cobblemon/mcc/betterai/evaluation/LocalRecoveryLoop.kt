@@ -8,30 +8,40 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
 import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
  * A recovery loop that is losing: the turns in a row, counting back from the last one, on which [failedStreak]'s
- * Pokemon used a self-heal and still ended the turn with no more HP than it started with (a turn that ends even
- * counts: the heal only kept pace, and Moltres Roosted five turns in a row against Ting-Lu that way). The heal did not keep up
- * with the hits, so using it again only spends another turn behind; each such turn costs the next heal
- * [LocalDecisionTuning.recoveryLoopPenalty] more.
+ * Pokemon used a self-heal that went nowhere ([losing]): it ended the turn with no more HP than it started with (a
+ * turn that ends even counts: the heal only kept pace, and Moltres Roosted five turns in a row against Ting-Lu that
+ * way), or the hits took back more than half of what the heal could restore (a slow climb, 30% to 45% to 60% on a
+ * 50% heal, never attacking). The heal did not keep up with the hits, so using it again only spends another turn
+ * behind; each such turn costs the next heal [LocalDecisionTuning.recoveryLoopPenalty] more.
  *
  * The root heuristic charges the heal on offer; the search charges every heal of its own lines the same way, the
  * count carried along the line ([next]), so a line of heals that keep losing costs more with each one.
  */
 internal object LocalRecoveryLoop {
-    /** The allies [action] has use a self-heal, as they stand in [state]. */
-    fun healers(action: BattleActionCandidate, state: BattleStateView): List<UUID> {
+    /** The allies [action] has use a self-heal, as they stand in [state], each with the share of its HP the heal restores. */
+    fun healers(action: BattleActionCandidate, state: BattleStateView): Map<UUID, Double> {
         val parts = if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
-        return parts.filter { part ->
-            part.kind == BattleActionKind.USE_MOVE && part.moveDetails?.effects?.effects.orEmpty().any {
-                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
-            }
-        }.mapNotNull { part ->
-            state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted }?.battlePokemonId
-        }
+        return parts.mapNotNull { part ->
+            if (part.kind != BattleActionKind.USE_MOVE) return@mapNotNull null
+            val heal = healShare(part.moveDetails?.effects?.effects.orEmpty()) ?: return@mapNotNull null
+            state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted }
+                ?.let { it.battlePokemonId to heal }
+        }.toMap()
+    }
+
+    /**
+     * Whether a turn's heal went nowhere: the Pokemon started it at [before], gained [net] over it, and the move
+     * restores [heal] of its HP. What it could restore is capped by what it was missing.
+     */
+    fun losing(before: Double, net: Double, heal: Double): Boolean {
+        val possible = minOf(heal, 1.0 - before).coerceAtLeast(0.0)
+        return net <= 0.0 || net < possible * SLOW_CLIMB_SHARE
     }
 
     /** The streak of [pokemonId] on a line: the line's own count once it has one, the battle's before. */
@@ -44,7 +54,7 @@ internal object LocalRecoveryLoop {
      */
     fun next(
         lineStreaks: Map<UUID, Int>,
-        healers: List<UUID>,
+        healers: Map<UUID, Double>,
         before: BattleStateView,
         after: BattleStateView,
         context: BattleDecisionContext,
@@ -53,9 +63,10 @@ internal object LocalRecoveryLoop {
         return allies.associate { ally ->
             val now = after.pokemon.firstOrNull { it.battlePokemonId == ally.battlePokemonId }
             val stayed = now != null && now.activeSlot != null && !now.fainted
-            val lost = now != null && now.hpFraction <= ally.hpFraction
+            val heal = healers[ally.battlePokemonId]
+            val lost = now != null && heal != null && losing(ally.hpFraction, now.hpFraction - ally.hpFraction, heal)
             ally.battlePokemonId to when {
-                !stayed || ally.battlePokemonId !in healers -> 0
+                !stayed || heal == null -> 0
                 lost -> streak(ally.battlePokemonId, lineStreaks, context) + 1
                 else -> 0
             }
@@ -66,29 +77,48 @@ internal object LocalRecoveryLoop {
      * The turns in a row, counting back from the last one, on which [pokemonId] (an opponent) used a self-heal and ended
      * the turn with at least the HP it started with: our hits are not sticking.
      */
-    fun healedOffStreak(pokemonId: UUID, context: BattleDecisionContext): Int = streak(pokemonId, context) { net -> net >= 0.0 }
+    fun healedOffStreak(pokemonId: UUID, context: BattleDecisionContext): Int =
+        streak(pokemonId, context) { net, _, _ -> net >= 0.0 }
 
-    fun failedStreak(pokemonId: UUID, context: BattleDecisionContext): Int = streak(pokemonId, context) { net -> net <= 0.0 }
+    fun failedStreak(pokemonId: UUID, context: BattleDecisionContext): Int =
+        streak(pokemonId, context) { net, before, heal -> losing(before, net, heal) }
 
-    private fun streak(pokemonId: UUID, context: BattleDecisionContext, counts: (Double) -> Boolean): Int {
+    /** [counts] is given the turn's net HP change, the HP it started the turn at and the share the heal restores. */
+    private fun streak(pokemonId: UUID, context: BattleDecisionContext, counts: (Double, Double, Double) -> Boolean): Int {
         val state = context.state
         val events = state.observedEvents
-        val heals = context.publicActionCatalog.forPokemon(pokemonId).filter { option ->
-            option.details.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER }
-        }.map { PublicIds.canonical(it.moveId) }.toSet()
+        val heals = context.publicActionCatalog.forPokemon(pokemonId).mapNotNull { option ->
+            healShare(option.details.effects?.effects.orEmpty())?.let { PublicIds.canonical(option.moveId) to it }
+        }.toMap()
         if (heals.isEmpty()) return 0
         // Only the turns since it last came in: a switch breaks the loop.
         val entered = events.lastOrNull { it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId == pokemonId }?.turn ?: -1
+        // Walked back from the HP it has now: each turn started at its end less what it gained over it.
+        var end = state.pokemon.firstOrNull { it.battlePokemonId == pokemonId }?.hpFraction ?: return 0
         var streak = 0
         var turn = state.turn - 1
         while (turn > entered) {
             val own = events.filter { it.turn == turn && it.actorPokemonId == pokemonId }
-            val healed = own.any { it.kind == BattleObservedEventKind.MOVE_USED && it.publicValueId?.let(PublicIds::canonical) in heals }
+            val heal = own.firstNotNullOfOrNull { event ->
+                if (event.kind != BattleObservedEventKind.MOVE_USED) null else event.publicValueId?.let(PublicIds::canonical)?.let(heals::get)
+            }
             val net = own.filter { it.kind == BattleObservedEventKind.HP_CHANGED }.sumOf { it.hpFractionDelta ?: 0.0 }
-            if (!healed || !counts(net)) break
+            val start = (end - net).coerceIn(0.0, 1.0)
+            if (heal == null || !counts(net, start, heal)) break
             streak++
+            end = start
             turn--
         }
         return streak
     }
+
+    private fun healShare(effects: List<BattleMoveEffectView>): Double? = effects.firstOrNull {
+        it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
+    }?.let { it.fractionRange?.minimum ?: DEFAULT_HEAL_SHARE }
+
+    /** A heal whose turn kept less than this share of what it could restore was a slow climb, not a recovery. */
+    private const val SLOW_CLIMB_SHARE = 0.5
+
+    /** A self-heal that does not say how much: the usual half. */
+    private const val DEFAULT_HEAL_SHARE = 0.5
 }

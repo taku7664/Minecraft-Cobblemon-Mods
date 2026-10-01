@@ -298,6 +298,34 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `a slow climb on heals counts as losing and a real recovery does not`() {
+        val roost = BattlePublicMoveOptionView("roost", BattleMoveCandidateView(typeId = "flying",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER,
+                fractionRange = BattleFractionRange(0.5, 0.5))), false)),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        var sequence = 0L
+        fun turn(turn: Int, net: Double) = listOf(
+            BattleObservedEventView(sequence++, turn, BattleObservedEventKind.MOVE_USED, ALLY, listOf(ALLY), "roost"),
+            BattleObservedEventView(sequence++, turn, BattleObservedEventKind.HP_CHANGED, ALLY, hpFractionDelta = net))
+        fun streak(hpNow: Double, vararg turns: List<BattleObservedEventView>): Int {
+            val context = context(allySpeed = 100, foeSpeed = 100, allyExtra = listOf(roost), events = turns.flatMap { it }, turn = 4)
+            val hurt = context.copy(state = context.state.copyState(pokemon = context.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(hpFraction = hpNow) else it
+            }))
+            return jbro.cobblemon.mcc.betterai.evaluation.LocalRecoveryLoop.failedStreak(ALLY, hurt)
+        }
+        // 30% to 45% to 60% to 65%: a 50% heal that keeps under half of it every turn.
+        assertEquals(3, streak(0.65, turn(1, 0.15), turn(2, 0.15), turn(3, 0.05)))
+        // 45% to 90%: the heal stuck.
+        assertEquals(0, streak(0.9, turn(3, 0.45)))
+        // 90% to 100%: all it could restore, though only a tenth.
+        assertEquals(0, streak(1.0, turn(3, 0.1)))
+    }
+
+    @Test
     fun `a wall that heals off the hit is never worn down by it`() {
         val recover = BattlePublicMoveOptionView("recover", BattleMoveCandidateView(typeId = "normal",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,

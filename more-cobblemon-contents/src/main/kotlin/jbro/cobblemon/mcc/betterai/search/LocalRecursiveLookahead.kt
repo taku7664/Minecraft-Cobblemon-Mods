@@ -871,7 +871,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
             if (projections.isEmpty()) return null
             val trackedOwnPokemonIds = trackedOwnPokemonIds(state, ownAction)
-            val ownHealers = if (tuning.recoveryLoopPenalty <= 0.0) emptyList() else LocalRecoveryLoop.healers(ownAction, state)
+            val ownHealers = if (tuning.recoveryLoopPenalty <= 0.0) emptyMap() else LocalRecoveryLoop.healers(ownAction, state)
             val turnStartMaterial = if (tuning.positionalTurnDeltas) LocalBoardMaterial.evaluate(state) else 0.0
             val orderExpectations = projections.groupBy(PublicTurnProjection::order).values.mapNotNull { outcomes ->
                 val totalProbability = outcomes.sumOf(PublicTurnProjection::probability)
@@ -906,7 +906,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                         ::projectedWorkAvailable,
                     )
                     // A heal on a losing loop costs its streak, carried along the line (LocalRecoveryLoop).
-                    val healLoop = ownHealers.sumOf {
+                    val healLoop = ownHealers.keys.sumOf {
                         LocalRecoveryLoop.streak(it, history.losingHealStreakByPokemon, context)
                     } * tuning.recoveryLoopPenalty
                     val immediateTurnDelta = immediateTurnScore.total + outcome.expectedScoreAdjustment - healLoop
