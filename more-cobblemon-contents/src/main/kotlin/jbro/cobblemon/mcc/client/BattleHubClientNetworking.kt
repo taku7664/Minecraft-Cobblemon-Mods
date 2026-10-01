@@ -5,7 +5,6 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubHeaderStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubAccessPayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubDashboardPayload
-import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import jbro.cobblemon.mcc.client.hub.MccHubScreen
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -20,7 +19,7 @@ internal object BattleHubClientNetworking {
         MccClientSessionReset.onReset("battle hub header") { MccBattleHubClientState.clear() }
         ClientPlayNetworking.registerGlobalReceiver(BattleHubDashboardPayload.TYPE) { payload, context ->
             context.client().execute {
-                MccBattleHubClientState.dashboard = payload.records
+                MccBattleHubClientState.dashboard = payload
                 MccHubScreen.current?.rebuild()
             }
         }
@@ -55,8 +54,8 @@ object MccBattleHubClientState {
         visibleTabs = visibleTabs?.plus(tabId)
     }
 
-    /** The viewer's own records from the last hub open; null until the server sent them. */
-    var dashboard: List<BattleHubRecordView>? = null
+    /** The viewer's dashboard from the last hub open; null until the server sent it. */
+    var dashboard: BattleHubDashboardPayload? = null
     var bpBalance: Long = 0L
         private set
 

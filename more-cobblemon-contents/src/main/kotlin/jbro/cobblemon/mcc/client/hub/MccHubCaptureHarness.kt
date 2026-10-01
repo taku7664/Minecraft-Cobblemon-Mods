@@ -4,6 +4,8 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
+import jbro.cobblemon.mcc.api.hub.MccDashboardCards
+import jbro.cobblemon.mcc.internal.hub.BattleHubDashboardPayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -129,7 +131,9 @@ object MccHubCaptureHarness {
                 // Content mods register their own tabs during client init, which has finished by now.
                 registerPreviewTabs()
                 MccBattleHubClientState.update(if (fixture == "empty") 0 else 1_284)
-                MccBattleHubClientState.dashboard = records
+                MccBattleHubClientState.dashboard = BattleHubDashboardPayload(records.sumOf { it.battles }, records.sumOf { it.wins },
+                    (if (records.isEmpty()) emptyList() else listOf(SAMPLE_LEAGUE_CARD)) +
+                        records.map { it.contentId }.distinct().mapNotNull { id -> MccDashboardCards.records(id, records.filter { it.contentId == id }) })
                 client.setScreen(MccHubScreen())
                 opened = true
                 logger.info("Opened hub capture fixture={} locale={}", fixture, client.languageManager.selected)
@@ -304,6 +308,21 @@ object MccHubCaptureHarness {
                 MccHubTabKind.Screen {}))
         }
     }
+
+    /** What a League section's card looks like, since the capture runs without the League's server side. */
+    private val SAMPLE_LEAGUE_CARD = jbro.cobblemon.mcc.api.hub.MccDashboardCard(
+        ManagedBattleContentIds.LEAGUE_CHALLENGE, MccDashboardCards.contentName(ManagedBattleContentIds.LEAGUE_CHALLENGE),
+        listOf(
+            jbro.cobblemon.mcc.api.hub.MccDashboardStat(Component.literal("배지"), Component.literal("5/8")),
+            jbro.cobblemon.mcc.api.hub.MccDashboardStat(Component.literal("레벨캡"), Component.literal("43")),
+            jbro.cobblemon.mcc.api.hub.MccDashboardStat(Component.literal("등급"), Component.literal("하이퍼볼")),
+        ),
+        listOf(
+            jbro.cobblemon.mcc.api.hub.MccDashboardRow(Component.literal("다음 도전"), Component.literal("동관")),
+            jbro.cobblemon.mcc.api.hub.MccDashboardRow(Component.literal("하드 리그"), Component.literal("챔피언이 되면 열림")),
+            jbro.cobblemon.mcc.api.hub.MccDashboardRow(Component.literal("야생 트레이너"), Component.literal("12승 3패"), Component.literal("연승 4 · 최고 연승 7")),
+        ),
+    )
 
     private val FIXTURES: Map<String, List<BattleHubRecordView>> = mapOf(
         "empty" to emptyList(),

@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.hub.MccDashboardCard
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiModelFraming
@@ -15,18 +16,20 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarratedElementType
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.resources.language.I18n
 import net.minecraft.network.chat.Component
 import java.text.NumberFormat
 
-/** First hub tab: the viewer as a trainer, their BP and their records across every content. */
+/**
+ * First hub tab: the viewer as a trainer, their totals, and a card per content as the server's dashboard
+ * sections built them. Each card's icon and order follow that content's hub tab.
+ */
 class MccDashboardTab : MccHubTabContent {
     private var scrollOffset = 0
     private var records: RecordsList? = null
 
     override fun build(host: MccHubContentHost, bounds: UiRect) {
         val layout = MccDashboardLayout.calculate(bounds)
-        val presentation = MccDashboardPresentation.from(MccBattleHubClientState.dashboard.orEmpty()) { contentId ->
+        val presentation = MccDashboardPresentation.from(MccBattleHubClientState.dashboard) { contentId ->
             MccHubTabs.get(contentId)?.order ?: Int.MAX_VALUE
         }
         MccHubKit.card(host, layout.trainer, dashboardText("trainer"), MccHubKit.CardTone.FEATURE)
@@ -71,7 +74,7 @@ class MccDashboardTab : MccHubTabContent {
         dashboardText("records")) {
         private val scroll = UiScrollState(
             layout.rows.height,
-            presentation.rows.size * MccDashboardLayout.ROW_HEIGHT,
+            presentation.contentHeight,
             MccDashboardLayout.ROW_HEIGHT,
         ).also { it.jumpTo(initialOffset) }
 
@@ -90,18 +93,18 @@ class MccDashboardTab : MccHubTabContent {
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
             drawSummary(graphics, theme)
-            if (presentation.rows.isEmpty()) {
+            if (presentation.cards.isEmpty()) {
                 drawEmpty(graphics, theme)
                 return
             }
             val rows = layout.rows
+            val scrollbar = if (scroll.maxOffset > 0) 4 else 0
             graphics.enableScissor(rows.x, rows.y, rows.right, rows.bottom)
             try {
-                val scrollbar = if (scroll.maxOffset > 0) 4 else 0
-                presentation.rows.forEachIndexed { index, row ->
-                    val top = rows.y + index * MccDashboardLayout.ROW_HEIGHT - scroll.offset
-                    if (top + MccDashboardLayout.ROW_HEIGHT < rows.y || top > rows.bottom) return@forEachIndexed
-                    drawRow(graphics, theme, row, index, UiRect(rows.x, top, rows.width - scrollbar, MccDashboardLayout.ROW_HEIGHT - 2))
+                presentation.cards.forEach { placed ->
+                    val top = rows.y + placed.top - scroll.offset
+                    if (top + placed.height < rows.y || top > rows.bottom) return@forEach
+                    drawCard(graphics, theme, placed.card, UiRect(rows.x, top, rows.width - scrollbar, placed.height), partialTick)
                 }
             } finally {
                 graphics.disableScissor()
@@ -143,24 +146,45 @@ class MccDashboardTab : MccHubTabContent {
             }
         }
 
-        private fun drawRow(graphics: GuiGraphics, theme: UiThemeSnapshot, row: MccDashboardPresentation.Row, index: Int, bounds: UiRect) {
+        /** One content's card: its tab icon and title, its stats in a row, its lines, and its note. */
+        private fun drawCard(graphics: GuiGraphics, theme: UiThemeSnapshot, card: MccDashboardCard, bounds: UiRect, partialTick: Float) {
             val font = Minecraft.getInstance().font
-            graphics.fill(bounds.x, bounds.y, bounds.right, bounds.bottom, if (index % 2 == 0) theme.colors.panel else theme.colors.panelAlt)
-            graphics.fill(bounds.x, bounds.y, bounds.x + 2, bounds.bottom, theme.colors.accentPrimary)
             val text = panelText(theme)
-            val record = dashboardText("row.record", row.wins, row.losses)
-            val recordWidth = font.width(record)
-            val title = Component.empty().append(translatedOr(row.contentNameKey, row.contentId))
-                .append(Component.literal(" · ")).append(translatedOr(row.formatNameKey, row.formatId))
-            drawFitted(graphics, title, bounds.x + 6, bounds.y + 2, bounds.width - recordWidth - 16, text)
-            graphics.drawString(font, record, bounds.right - recordWidth - 5, bounds.y + 2, text, false)
-            val details = Component.empty().append(dashboardText("row.streak", row.currentStreak, row.bestStreak))
-            row.metrics.forEach { (key, value) ->
-                details.append(Component.literal(" · ")).append(
-                    if (I18n.exists(key)) Component.translatable(key, value) else Component.literal("${key.substringAfterLast('.')} $value"),
-                )
+            val dim = theme.colors.textDim
+            graphics.fill(bounds.x, bounds.y, bounds.right, bounds.bottom, theme.colors.panelAlt)
+            graphics.fill(bounds.x, bounds.y, bounds.x + 2, bounds.bottom, theme.colors.accentPrimary)
+            var y = bounds.y
+            val icon = MccHubTabs.get(card.contentId)?.icon
+            var titleX = bounds.x + 6
+            if (icon != null) {
+                CobblemonUiRenderSlot.drawContent(graphics, UiRect(bounds.x + 5, y + 1, 12, 12), icon, partialTick)
+                titleX = bounds.x + 20
             }
-            drawFitted(graphics, details, bounds.x + 6, bounds.y + 11, bounds.width - 12, theme.colors.textDim)
+            drawFitted(graphics, card.title, titleX, y + 3, bounds.right - titleX - 4, text)
+            graphics.fill(bounds.x + 2, y + MccDashboardPresentation.HEADER - 2, bounds.right, y + MccDashboardPresentation.HEADER - 1,
+                theme.colors.border)
+            y += MccDashboardPresentation.HEADER
+            if (card.stats.isNotEmpty()) {
+                val cellWidth = (bounds.width - 6) / card.stats.size
+                card.stats.forEachIndexed { index, stat ->
+                    val left = bounds.x + 6 + index * cellWidth
+                    if (index > 0) graphics.fill(left - 3, y + 2, left - 2, y + MccDashboardPresentation.STATS - 4, theme.colors.border)
+                    drawFitted(graphics, stat.label, left, y + 1, cellWidth - 6, dim)
+                    drawFitted(graphics, stat.value, left, y + 11, cellWidth - 6, text)
+                }
+                y += MccDashboardPresentation.STATS
+            }
+            card.rows.forEach { row ->
+                val valueWidth = font.width(row.value)
+                drawFitted(graphics, row.title, bounds.x + 6, y + 1, bounds.width - valueWidth - 16, text)
+                graphics.drawString(font, row.value, bounds.right - valueWidth - 5, y + 1, text, false)
+                y += MccDashboardPresentation.ROW
+                row.detail?.let { detail ->
+                    drawFitted(graphics, detail, bounds.x + 6, y, bounds.width - 12, dim)
+                    y += MccDashboardPresentation.ROW_DETAIL - MccDashboardPresentation.ROW
+                }
+            }
+            card.note?.let { drawFitted(graphics, it, bounds.x + 6, y + 1, bounds.width - 12, dim) }
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -175,9 +199,6 @@ class MccDashboardTab : MccHubTabContent {
         }
 
         fun number(value: Long): Component = Component.literal(NumberFormat.getIntegerInstance().format(value))
-
-        fun translatedOr(key: String, fallback: String): Component =
-            if (I18n.exists(key)) Component.translatable(key) else Component.literal(fallback)
 
         fun panelText(theme: UiThemeSnapshot): Int = MccHubKit.panelText(theme)
     }

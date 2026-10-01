@@ -36,6 +36,23 @@ terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
 
+## Dashboard cards
+
+The hub dashboard shows one card per content. A content registers a section for its own content ID on the server
+and builds its card for the player whose hub is opening; the core draws every card the same way, taking the icon
+and order from that content's hub tab:
+
+```kotlin
+MccDashboardSections.register(ManagedBattleContentIds.BATTLE_TOWER) { context ->
+    val records = context.records(ManagedBattleContentIds.BATTLE_TOWER)
+    MccDashboardCard(contentId, title, stats = listOf(MccDashboardStat(label, value)), rows = MccDashboardCards.recordRows(records))
+}
+```
+
+A card has up to four stats, up to sixteen rows (title, value, optional detail) and an optional note. A content
+the player cannot open yet gets its access denial as the note. Contents with records but no section get a plain
+card from `MccDashboardCards.records`, and a section that fails falls back to that card too.
+
 ## Operator commands
 
 These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and

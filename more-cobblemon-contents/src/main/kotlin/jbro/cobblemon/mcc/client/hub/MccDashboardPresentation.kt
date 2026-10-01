@@ -1,57 +1,53 @@
 package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
+import jbro.cobblemon.mcc.api.hub.MccDashboardCard
+import jbro.cobblemon.mcc.internal.hub.BattleHubDashboardPayload
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
-/** What the dashboard shows, derived from the viewer's own records without any client lookups. */
+/**
+ * What the dashboard shows: the totals over every record and one card per content, in hub tab order, with the
+ * height each card takes in the records list.
+ */
 data class MccDashboardPresentation(
     val battles: Long,
     val wins: Long,
     val winRatePercent: Int?,
-    val rows: List<Row>,
+    val cards: List<Card>,
 ) {
-    data class Row(
-        val contentNameKey: String,
-        val contentId: String,
-        val formatNameKey: String,
-        val formatId: String,
-        val wins: Long,
-        val losses: Long,
-        val currentStreak: Int,
-        val bestStreak: Int,
-        /** Metric translation key to value, in the order the server sent them. */
-        val metrics: List<Pair<String, Long>>,
-    )
+    data class Card(val card: MccDashboardCard, val top: Int, val height: Int)
+
+    val contentHeight: Int get() = cards.lastOrNull()?.let { it.top + it.height } ?: 0
 
     companion object {
         private val PREFIX = "screen.${MoreCobblemonContents.MOD_ID}"
+        const val HEADER = 15
+        const val STATS = 22
+        const val ROW = 11
+        const val ROW_DETAIL = 20
+        const val NOTE = 11
+        const val PADDING = 3
+        const val GAP = 4
+
+        fun height(card: MccDashboardCard): Int =
+            HEADER + (if (card.stats.isEmpty()) 0 else STATS) +
+                card.rows.sumOf { if (it.detail == null) ROW else ROW_DETAIL } +
+                (if (card.note == null) 0 else NOTE) + PADDING
 
         /** [contentOrder] ranks content IDs, normally by their hub tab order; unknown contents sort last. */
-        fun from(records: List<BattleHubRecordView>, contentOrder: (String) -> Int = { Int.MAX_VALUE }): MccDashboardPresentation {
-            val battles = records.sumOf { it.battles }
-            val wins = records.sumOf { it.wins }
-            val rows = records
-                .sortedWith(compareBy({ contentOrder(it.contentId) }, { it.contentId }, { it.formatId }))
-                .map { record ->
-                    Row(
-                        contentNameKey = contentNameKey(record.contentId),
-                        contentId = record.contentId,
-                        formatNameKey = "$PREFIX.dashboard.format.${record.formatId}",
-                        formatId = record.formatId,
-                        wins = record.wins,
-                        losses = record.losses,
-                        currentStreak = record.currentStreak,
-                        bestStreak = record.bestStreak,
-                        metrics = record.bestMetrics.map { (id, value) -> "$PREFIX.dashboard.metric.$id" to value },
-                    )
-                }
+        fun from(payload: BattleHubDashboardPayload?, contentOrder: (String) -> Int = { Int.MAX_VALUE }): MccDashboardPresentation {
+            val battles = payload?.battles ?: 0L
+            val wins = payload?.wins ?: 0L
+            var top = 0
+            val cards = payload?.cards.orEmpty()
+                .sortedWith(compareBy({ contentOrder(it.contentId) }, { it.contentId }))
+                .map { card -> Card(card, top, height(card)).also { top += it.height + GAP } }
             return MccDashboardPresentation(
                 battles = battles,
                 wins = wins,
                 winRatePercent = if (battles == 0L) null else ((wins * 100 + battles / 2) / battles).toInt(),
-                rows = rows,
+                cards = cards,
             )
         }
 

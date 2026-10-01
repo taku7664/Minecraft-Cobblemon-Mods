@@ -5,6 +5,9 @@ import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import jbro.cobblemon.mcc.api.terminal.HoloTerminal
+import jbro.cobblemon.mcc.api.hub.MccDashboardCard
+import jbro.cobblemon.mcc.api.hub.MccDashboardContext
+import jbro.cobblemon.mcc.api.hub.MccDashboardSections
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.presentation.attemptServerUiOperation
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
@@ -106,7 +109,17 @@ object BattleHubNetworking {
             .sortedWith(compareBy({ it.key.category.contentId }, { it.key.category.formatId }))
             .take(BattleHubDashboardPayload.MAX_RECORDS)
             .map(BattleHubRecordView::from)
-        ServerPlayNetworking.send(player, BattleHubDashboardPayload(records))
+        val context = MccDashboardContext.of(player.server, player, records)
+        val cards = MccDashboardSections.build(context, records).map { card -> withAccessNote(player, card) }
+            .take(BattleHubDashboardPayload.MAX_CARDS)
+        ServerPlayNetworking.send(player, BattleHubDashboardPayload(records.sumOf { it.battles }, records.sumOf { it.wins }, cards))
+    }
+
+    /** A card of a content the player cannot open yet says why, unless its section already wrote a note. */
+    private fun withAccessNote(player: ServerPlayer, card: MccDashboardCard): MccDashboardCard {
+        if (card.note != null) return card
+        val denied = BattleContentAccess.check(player, card.contentId, ContentAccessAction.OPEN) as? ContentAccessDecision.Denied ?: return card
+        return card.copy(note = Component.translatable(denied.reasonKey, *denied.arguments.toTypedArray()))
     }
 
     fun clear() = sessions.clear()

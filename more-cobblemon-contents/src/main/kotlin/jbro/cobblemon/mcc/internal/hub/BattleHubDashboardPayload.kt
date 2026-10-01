@@ -1,7 +1,11 @@
 package jbro.cobblemon.mcc.internal.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.hub.MccDashboardCard
+import jbro.cobblemon.mcc.api.hub.MccDashboardRow
+import jbro.cobblemon.mcc.api.hub.MccDashboardStat
 import jbro.cobblemon.mcc.internal.record.BattleRecordStats
+import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
@@ -39,55 +43,64 @@ data class BattleHubRecordView(
     }
 }
 
-/** The viewer's own records, sent whenever the hub opens. */
-data class BattleHubDashboardPayload(val records: List<BattleHubRecordView>) : CustomPacketPayload {
+/**
+ * The viewer's dashboard, sent whenever the hub opens: totals over every record, and one card per content as
+ * [jbro.cobblemon.mcc.api.hub.MccDashboardSections] built them.
+ */
+data class BattleHubDashboardPayload(val battles: Long, val wins: Long, val cards: List<MccDashboardCard>) : CustomPacketPayload {
     init {
-        require(records.size <= MAX_RECORDS) { "Too many dashboard records" }
+        require(battles >= 0 && wins in 0..battles) { "Invalid dashboard totals" }
+        require(cards.size <= MAX_CARDS) { "Too many dashboard cards" }
     }
 
     override fun type(): CustomPacketPayload.Type<BattleHubDashboardPayload> = TYPE
 
     companion object {
         const val MAX_RECORDS = 64
+        const val MAX_CARDS = 16
         private const val MAX_ID_LENGTH = 128
 
         val TYPE = CustomPacketPayload.Type<BattleHubDashboardPayload>(
             ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_hub_dashboard"),
         )
+        private val TEXT = ComponentSerialization.TRUSTED_STREAM_CODEC
+
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleHubDashboardPayload> = StreamCodec.of(
             { buffer, payload ->
-                buffer.writeVarInt(payload.records.size)
-                payload.records.forEach { record ->
-                    buffer.writeUtf(record.contentId, MAX_ID_LENGTH)
-                    buffer.writeUtf(record.formatId, MAX_ID_LENGTH)
-                    buffer.writeVarLong(record.wins)
-                    buffer.writeVarLong(record.losses)
-                    buffer.writeVarInt(record.currentStreak)
-                    buffer.writeVarInt(record.bestStreak)
-                    buffer.writeVarInt(record.bestMetrics.size)
-                    record.bestMetrics.forEach { (id, value) ->
-                        buffer.writeUtf(id, MAX_ID_LENGTH)
-                        buffer.writeVarLong(value)
+                buffer.writeVarLong(payload.battles)
+                buffer.writeVarLong(payload.wins)
+                buffer.writeVarInt(payload.cards.size)
+                payload.cards.forEach { card ->
+                    buffer.writeUtf(card.contentId, MAX_ID_LENGTH)
+                    TEXT.encode(buffer, card.title)
+                    buffer.writeVarInt(card.stats.size)
+                    card.stats.forEach { TEXT.encode(buffer, it.label); TEXT.encode(buffer, it.value) }
+                    buffer.writeVarInt(card.rows.size)
+                    card.rows.forEach { row ->
+                        TEXT.encode(buffer, row.title)
+                        TEXT.encode(buffer, row.value)
+                        buffer.writeBoolean(row.detail != null)
+                        row.detail?.let { TEXT.encode(buffer, it) }
                     }
+                    buffer.writeBoolean(card.note != null)
+                    card.note?.let { TEXT.encode(buffer, it) }
                 }
             },
             { buffer ->
-                val size = buffer.readVarInt().also { require(it in 0..MAX_RECORDS) { "Invalid dashboard size" } }
-                BattleHubDashboardPayload(
-                    List(size) {
-                        val contentId = buffer.readUtf(MAX_ID_LENGTH)
-                        val formatId = buffer.readUtf(MAX_ID_LENGTH)
-                        val wins = buffer.readVarLong()
-                        val losses = buffer.readVarLong()
-                        val current = buffer.readVarInt()
-                        val best = buffer.readVarInt()
-                        val metricCount = buffer.readVarInt()
-                            .also { require(it in 0..BattleHubRecordView.MAX_METRICS) { "Invalid metric count" } }
-                        val metrics = LinkedHashMap<String, Long>()
-                        repeat(metricCount) { metrics[buffer.readUtf(MAX_ID_LENGTH)] = buffer.readVarLong() }
-                        BattleHubRecordView(contentId, formatId, wins, losses, current, best, metrics)
-                    },
-                )
+                val battles = buffer.readVarLong()
+                val wins = buffer.readVarLong()
+                val size = buffer.readVarInt().also { require(it in 0..MAX_CARDS) { "Invalid dashboard size" } }
+                BattleHubDashboardPayload(battles, wins, List(size) {
+                    val contentId = buffer.readUtf(MAX_ID_LENGTH)
+                    val title = TEXT.decode(buffer)
+                    val stats = List(buffer.readVarInt().also { require(it in 0..MccDashboardCard.MAX_STATS) { "Invalid stats" } }) {
+                        MccDashboardStat(TEXT.decode(buffer), TEXT.decode(buffer))
+                    }
+                    val rows = List(buffer.readVarInt().also { require(it in 0..MccDashboardCard.MAX_ROWS) { "Invalid rows" } }) {
+                        MccDashboardRow(TEXT.decode(buffer), TEXT.decode(buffer), if (buffer.readBoolean()) TEXT.decode(buffer) else null)
+                    }
+                    MccDashboardCard(contentId, title, stats, rows, if (buffer.readBoolean()) TEXT.decode(buffer) else null)
+                })
             },
         )
     }
