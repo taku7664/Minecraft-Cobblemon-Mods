@@ -126,6 +126,7 @@ internal object DiscordBot {
     const val USER_AGENT = "DiscordBot (https://github.com/taku7664/Minecraft-Cobblemon-Mods, 1.0)"
     private const val GATEWAY = "wss://gateway.discord.gg/?v=10&encoding=json"
     private const val PRESENCE_DEBOUNCE_SECONDS = 15L
+    private const val STATUS_REFRESH_MINUTES = 5L
 
     private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
     // Everything about the connection happens on this one thread, so sends never overlap.
@@ -140,6 +141,11 @@ internal object DiscordBot {
     private var presencePending: ScheduledFuture<*>? = null
     private var retryDelaySeconds = 0L
 
+    // The status message is plain REST, on its own thread so a slow request never holds up the gateway.
+    private val statusWorker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord-status").apply { isDaemon = true } }
+    private var status: DiscordStatusMessage? = null
+    private var statusRefresh: ScheduledFuture<*>? = null
+
     /** Runs [task] on the worker; a failure is logged, where a scheduled executor would otherwise drop it silently. */
     private fun onWorker(task: () -> Unit) = worker.execute(guarded(task))
 
@@ -151,11 +157,28 @@ internal object DiscordBot {
         }
     }
 
-    fun register(settings: DiscordSettings) {
+    fun register(settings: DiscordSettings, statusFile: java.nio.file.Path) {
         if (!settings.botConfigured) return
         token = settings.botToken
-        ServerLifecycleEvents.SERVER_STARTED.register { server -> players = server.playerCount; onWorker { start() } }
-        ServerLifecycleEvents.SERVER_STOPPING.register { worker.submit { stop() }.get(5, TimeUnit.SECONDS) }
+        if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(token, settings.statusChannelId, statusFile)
+        ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            players = server.playerCount
+            onWorker { start() }
+            showStatus(open = true)
+            statusRefresh = statusWorker.scheduleAtFixedRate({ showStatus(open = true) },
+                STATUS_REFRESH_MINUTES, STATUS_REFRESH_MINUTES, TimeUnit.MINUTES)
+        }
+        ServerLifecycleEvents.SERVER_STOPPING.register {
+            statusRefresh?.cancel(false)
+            // Waits for "closed" to land, since nothing can say it once the server is gone; a slow Discord only
+            // delays the shutdown, never stops it.
+            try {
+                showStatus(open = false).get(10, TimeUnit.SECONDS)
+                worker.submit { stop() }.get(5, TimeUnit.SECONDS)
+            } catch (failure: Exception) {
+                JbroPolicy.LOGGER.warn("Discord bot did not finish closing: {}", failure.toString())
+            }
+        }
         // The player list changes after these events, so count on the next tick.
         ServerPlayConnectionEvents.JOIN.register { _, _, server -> recount(server) }
         ServerPlayConnectionEvents.DISCONNECT.register { _, server -> recount(server) }
@@ -164,6 +187,16 @@ internal object DiscordBot {
     private fun recount(server: MinecraftServer) = server.execute {
         players = server.playerCount
         onWorker { schedulePresence() }
+    }
+
+    /** Shows the server open or closed in the status channel, when there is one; failures are logged, not thrown. */
+    private fun showStatus(open: Boolean): java.util.concurrent.Future<*> = statusWorker.submit {
+        val message = status ?: return@submit
+        try {
+            message.show(open, players)
+        } catch (failure: Exception) {
+            JbroPolicy.LOGGER.warn("Could not update the Discord status message: {}", failure.toString())
+        }
     }
 
     private fun start() {
@@ -246,6 +279,7 @@ internal object DiscordBot {
         if (!running || presencePending?.isDone == false) return
         presencePending = worker.schedule(guarded {
             session?.let { send(it.presenceUpdate()) }
+            showStatus(open = true)
         }, PRESENCE_DEBOUNCE_SECONDS, TimeUnit.SECONDS)
     }
 
