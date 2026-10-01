@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
 import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
@@ -25,7 +27,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
     override fun start(
         prepared: TowerPreparedPveBattle<BattlePokemon, BattlePokemon>,
     ): TowerBattleLaunchResult = when (
-        val result = engine.start(
+        val result = MccBattleTags.during(setOf(prepared.request.playerId), tag(prepared)) { engine.start(
             Cobblemon173ManagedAiBattle(
                 playerId = prepared.request.playerId,
                 playerTeam = prepared.playerTeam,
@@ -43,11 +45,18 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 diagnosticsLabel = "Battle Tower",
             ),
             onEnded = ::finish,
-        )
+        ) }
     ) {
         is PveLaunchResult.Started -> TowerBattleLaunchResult.Started(result.battleId)
         PveLaunchResult.Unavailable -> TowerBattleLaunchResult.Unavailable
     }
+
+    /** `regular`, `tier_boss` or `master_ball_boss`, against the trainer profile. */
+    private fun tag(prepared: TowerPreparedPveBattle<BattlePokemon, BattlePokemon>) = MccBattleTag(
+        ManagedBattleContentIds.BATTLE_TOWER,
+        prepared.opponentKind.name.lowercase(),
+        prepared.profile.profileId.takeIf(MccBattleTag::isValidPart),
+    )
 
     private fun finish(end: Cobblemon173ManagedAiBattleEnd) {
         when (end.outcome) {
