@@ -1,0 +1,55 @@
+package jbro.cobblemon.ui.extended.mixin;
+
+import com.cobblemon.mod.common.api.pokedex.PokedexEntryProgress;
+import com.cobblemon.mod.common.client.battle.ClientBallDisplay;
+import com.cobblemon.mod.common.client.battle.ActiveClientBattlePokemon;
+import com.cobblemon.mod.common.client.gui.battle.BattleOverlay;
+import com.cobblemon.mod.common.client.render.models.blockbench.PosableState;
+import com.cobblemon.mod.common.pokemon.Gender;
+import com.cobblemon.mod.common.pokemon.Species;
+import com.cobblemon.mod.common.pokemon.status.PersistentStatus;
+import jbro.cobblemon.ui.extended.ui.shared.BattleHudRenderer;
+import jbro.cobblemon.ui.extended.ui.shared.BattleHudContext;
+import kotlin.Triple;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.MutableComponent;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/** Keeps Cobblemon's battle data/position animation while restyling its ordinary HUD. */
+@Mixin(value = BattleOverlay.class, remap = false)
+public abstract class BattleOverlayHudMixin {
+    @Inject(method = "drawTile", at = @At("HEAD"))
+    private void cobblemonBattleUi$beginHudTile(GuiGraphics context, float tickDelta,
+            ActiveClientBattlePokemon activePokemon, boolean left, int rank,
+            PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
+            boolean isCompact, CallbackInfo ci) {
+        BattleHudContext.begin(activePokemon.getBattlePokemon() == null
+                ? null : activePokemon.getBattlePokemon().getUuid());
+    }
+
+    @Inject(method = "drawTile", at = @At("RETURN"))
+    private void cobblemonBattleUi$endHudTile(GuiGraphics context, float tickDelta,
+            ActiveClientBattlePokemon activePokemon, boolean left, int rank,
+            PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
+            boolean isCompact, CallbackInfo ci) {
+        BattleHudContext.end();
+    }
+
+    @Inject(method = "drawBattleTile", at = @At("HEAD"), cancellable = true)
+    private void cobblemonBattleUi$drawHud(GuiGraphics context, float x, float y, float partialTicks,
+            boolean reversed, Species species, int level, MutableComponent displayName, Gender gender,
+            PersistentStatus status, PosableState state, Triple<Float, Float, Float> colour,
+            float opacity, ClientBallDisplay ballState, int maxHealth, float health,
+            boolean isSelected, boolean isHovered, boolean isCompact, MutableComponent actorDisplayName,
+            boolean isFlatHealth, PokedexEntryProgress dexState, CallbackInfo ci) {
+        // The native path alone knows how to animate a Poké Ball during capture.
+        if (ballState != null) return;
+        BattleHudRenderer.draw(context, x, y, reversed, species, level, displayName, gender,
+                status, state, opacity, maxHealth, health, isSelected, isHovered, isCompact,
+                actorDisplayName, isFlatHealth, dexState);
+        ci.cancel();
+    }
+}

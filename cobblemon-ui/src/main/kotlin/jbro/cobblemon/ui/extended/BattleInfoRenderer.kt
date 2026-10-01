@@ -1,0 +1,35 @@
+package jbro.cobblemon.ui.extended
+
+import com.cobblemon.mod.common.client.CobblemonClient
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+
+/**
+ * Renders battle information overlays.
+ */
+object BattleInfoRenderer {
+
+    fun render(context: GuiGraphics) {
+        // Clear stale move tooltip state when BattleMoveSelection stops rendering.
+        // Must run before panels check shouldHandleFontInput() and before the
+        // F1 early return (otherwise staleness is never detected while HUD is hidden).
+        MoveTooltipRenderer.resetIfStale()
+        jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.updateVisibility()
+
+        // Respect F1 to hide HUD
+        if (Minecraft.getInstance().options.hideGui) return
+
+        // Critical: Check for battle changes FIRST when any feature needs state tracking
+        // This ensures state is cleared when a new battle starts, regardless of which features are enabled
+        if (PanelConfig.needsBattleStateTracking()) {
+            CobblemonClient.battle?.let { battle ->
+                BattleStateTracker.checkBattleChanged(battle.battleId)
+            }
+        }
+
+        if (PanelConfig.needsBattleStateTracking()) {
+            BattleInfoPanel.update(syncOverlay = PanelConfig.enableBattleInfoPanelEffective)
+        }
+        // Team previews now belong exclusively to the TAB modal.
+    }
+}

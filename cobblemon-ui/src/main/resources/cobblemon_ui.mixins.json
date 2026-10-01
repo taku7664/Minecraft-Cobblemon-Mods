@@ -1,0 +1,37 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jbro.cobblemon.ui.extended.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "BattleMessageHandlerMixin",
+    "BattleEndHandlerMixin",
+    "BattleMessagePaneMixin",
+    "BattleActionDialogueVisibilityMixin",
+    "BattleHealthChangeHandlerMixin",
+    "BattleSwitchHandlerMixin",
+    "BattleInitializeHandlerMixin",
+    "MouseScrollMixin",
+    "BattleMoveSelectionMixin",
+    "BattleMoveTileAccessor",
+    "ScreenBattleNavigationMixin",
+    "KeyboardBattleNavigationMixin",
+    "BattleGuiNavigationMixin",
+    "BattleGeneralActionSelectionMixin",
+    "BattleForfeitSelectionMixin",
+    "BattleOptionTileAccessor",
+    "BattleOptionTileMixin",
+    "BattleBackButtonMixin",
+    "BattleOverlayHudMixin",
+    "BattleGuiForfeitPromptMixin",
+    "BattleMoveTileScaleMixin",
+    "BattleSwitchTileScaleMixin",
+    "BattleSwitchTileAccessor",
+    "BattleSwitchSelectionMixin",
+    "BattleTargetSelectionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

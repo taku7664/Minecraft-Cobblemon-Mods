@@ -1,0 +1,740 @@
+package jbro.cobblemon.ui.extended
+
+import com.cobblemon.mod.common.api.moves.MoveTemplate
+import com.cobblemon.mod.common.api.moves.categories.DamageCategories
+import com.cobblemon.mod.common.api.types.ElementalType
+import com.cobblemon.mod.common.api.types.ElementalTypes
+import com.cobblemon.mod.common.battles.ai.strongBattleAI.AIUtility
+import com.cobblemon.mod.common.client.CobblemonClient
+import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
+import com.cobblemon.mod.common.client.render.drawScaledText
+import com.cobblemon.mod.common.pokemon.Pokemon
+import com.mojang.blaze3d.systems.RenderSystem
+import jbro.cobblemon.ui.extended.navigation.MoveTooltipMode
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.Font
+import net.minecraft.client.gui.GuiGraphics
+import com.mojang.blaze3d.platform.InputConstants
+import net.minecraft.network.chat.Component
+
+import org.lwjgl.glfw.GLFW
+import java.util.UUID
+
+/**
+ * Renders tooltips for moves in the Fight selection menu.
+ * Uses a navy chamfered frame; move type remains visible in the header.
+ */
+object MoveTooltipRenderer {
+
+    // ═══════════════════════════════════════════════════════════════
+    // Layout constants (shared constants imported from UIUtils)
+    // ═══════════════════════════════════════════════════════════════
+
+    private const val TOOLTIP_BASE_WIDTH = 210
+    private const val LEFT_COL_RATIO = 0.50f
+
+    private const val TOOLTIP_BASE_LINE_HEIGHT = 10
+    private const val TOOLTIP_FONT_SCALE = 0.85f
+
+    // ═══════════════════════════════════════════════════════════════
+    // Text colors
+    // ═══════════════════════════════════════════════════════════════
+
+    private val TOOLTIP_LABEL = UIUtils.color(140, 150, 165)
+    private val TOOLTIP_DIM = UIUtils.color(100, 110, 120)
+
+    private val COLOR_POWER = UIUtils.color(255, 140, 90)
+    private val COLOR_ACCURACY = UIUtils.color(100, 180, 255)
+    private val COLOR_PP = UIUtils.color(255, 210, 80)
+    private val COLOR_PP_LOW = UIUtils.color(255, 100, 80)
+
+    private val COLOR_PHYSICAL = UIUtils.color(255, 150, 100)
+    private val COLOR_SPECIAL = UIUtils.color(160, 140, 255)
+    private val COLOR_STATUS = UIUtils.color(170, 170, 180)
+
+    private val COLOR_PRIORITY_POSITIVE = UIUtils.color(100, 220, 200)
+    private val COLOR_PRIORITY_NEGATIVE = UIUtils.color(220, 100, 120)
+
+    private val COLOR_CRIT = UIUtils.color(255, 200, 50)
+    private val COLOR_EFFECT = UIUtils.color(200, 160, 255)
+
+    private val SUPER_EFFECTIVE_4X = UIUtils.color(50, 220, 50)
+    private val SUPER_EFFECTIVE_2X = UIUtils.color(80, 200, 80)
+    private val NEUTRAL = UIUtils.color(180, 185, 190)
+    private val NOT_EFFECTIVE = UIUtils.color(220, 100, 80)
+    private val IMMUNE = UIUtils.color(120, 120, 120)
+
+    // ═══════════════════════════════════════════════════════════════
+    // State
+    // ═══════════════════════════════════════════════════════════════
+
+    data class MoveTileBounds(
+        val x: Float, val y: Float, val width: Int, val height: Int,
+        val moveTemplate: MoveTemplate, val currentPp: Int, val maxPp: Int
+    )
+
+    private val moveTileBounds = mutableListOf<MoveTileBounds>()
+    private var hoveredMove: MoveTileBounds? = null
+    private var activePokemonUuid: UUID? = null
+    private var wasIncreaseFontKeyPressed = false
+    private var wasDecreaseFontKeyPressed = false
+    private var mixinActiveLastFrame = false
+    private val keyboardTooltipMode = MoveTooltipMode()
+
+    fun observeSelection(selection: Any) = keyboardTooltipMode.observe(selection)
+
+    fun setKeyboardTooltipMode(selection: Any, enabled: Boolean) =
+        keyboardTooltipMode.setEnabled(selection, enabled)
+
+    fun setActivePokemonUuid(uuid: UUID?) {
+        activePokemonUuid = uuid
+    }
+
+    /**
+     * Called each HUD render frame (before Screen render) to detect when the
+     * BattleMoveSelection mixin has stopped calling [clear]. Since HUD renders
+     * before Screen, this uses a 2-frame detection window: if the mixin didn't
+     * call [clear] during the previous frame's Screen render, hoveredMove is stale.
+     */
+    fun resetIfStale() {
+        if (!mixinActiveLastFrame) {
+            hoveredMove = null
+            keyboardTooltipMode.clear()
+        }
+        mixinActiveLastFrame = false
+    }
+
+    fun clear() {
+        moveTileBounds.clear()
+        hoveredMove = null
+        mixinActiveLastFrame = true
+    }
+
+    /** Clears every hover target while the battle-info modal owns input. */
+    fun suspendForModal() {
+        moveTileBounds.clear()
+        hoveredMove = null
+        activePokemonUuid = null
+        mixinActiveLastFrame = false
+    }
+
+    fun registerMoveTile(
+        x: Float, y: Float, width: Int, height: Int,
+        moveTemplate: MoveTemplate, currentPp: Int, maxPp: Int
+    ) {
+        moveTileBounds.add(MoveTileBounds(x, y, width, height, moveTemplate, currentPp, maxPp))
+    }
+
+    fun updateHoverState(mouseX: Int, mouseY: Int) {
+        hoveredMove = moveTileBounds.find { b ->
+            mouseX >= b.x && mouseX <= b.x + b.width &&
+                mouseY >= b.y && mouseY <= b.y + b.height
+        }
+    }
+
+    /** Selects the same registered tile used by keyboard navigation. */
+    fun updateKeyboardFocusState(focusedIndex: Int) {
+        hoveredMove = if (keyboardTooltipMode.isEnabled) moveTileBounds.getOrNull(focusedIndex) else null
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Main render
+    // ═══════════════════════════════════════════════════════════════
+
+    fun renderTooltip(context: GuiGraphics) {
+        if (BattleInfoPanel.isExpanded) return
+        val move = hoveredMove ?: return
+        if (!PanelConfig.enableMoveTooltipsEffective) return
+
+        val mc = Minecraft.getInstance()
+        val screenWidth = mc.window.guiScaledWidth
+        val screenHeight = mc.window.guiScaledHeight
+        val tr = mc.font
+        // Whole text sizes only; the width keeps the designed proportion to the text.
+        val fontScale = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
+        val lineH = (TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
+
+        val tooltipWidth = (TOOLTIP_BASE_WIDTH * fontScale / TOOLTIP_FONT_SCALE).toInt()
+        val contentWidth = tooltipWidth - UIUtils.FRAME_INSET * 2
+
+        // ── Compute data ──
+        val data = computeMoveData(move)
+
+        // ── Calculate layout ──
+        val vPad = UIUtils.CELL_VPAD_TOP + UIUtils.CELL_VPAD_BOTTOM
+
+        // Header: 1 line (name + type · category)
+        val headerCellH = vPad + lineH
+
+        // Power row: full-width
+        val powerCellH = vPad + lineH
+
+        // Detail grid: remaining stats in 2-column layout, filled left-to-right
+        val detailItems = mutableListOf(
+            StatEntry(Component.translatable("cobblemon_ui.move.pp").string, data.ppText, data.ppColor),
+            StatEntry(Component.translatable("cobblemon_ui.move.accuracy").string, data.accuracyText, COLOR_ACCURACY)
+        )
+        if (data.critText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.crit").string, data.critText, COLOR_CRIT))
+        if (data.effectText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.effect").string, data.effectText, COLOR_EFFECT))
+        if (data.priorityText != null) detailItems.add(StatEntry(Component.translatable("cobblemon_ui.move.priority").string, data.priorityText, data.priorityColor))
+        // Odd count: first item full-width, rest paired. Even: all paired.
+        val hasHead = detailItems.size % 2 == 1
+        val headCellH = if (hasHead) vPad + lineH else 0
+        val headTotalH = if (hasHead) headCellH + UIUtils.CELL_GAP else 0
+        val pairedStart = if (hasHead) 1 else 0
+        val pairedCount = detailItems.size - pairedStart
+        val pairedRows = pairedCount / 2
+        val pairedCellH = if (pairedRows > 0) vPad + pairedRows * lineH + (pairedRows - 1) * UIUtils.DIVIDER_H else 0
+
+        // Description cell (conditional)
+        val descLines = if (move.moveTemplate.description.string.isNotEmpty())
+            wrapText(move.moveTemplate.description.string, tooltipWidth, fontScale, tr)
+        else emptyList()
+        val hasDesc = descLines.isNotEmpty()
+        val descCellH = if (hasDesc) vPad + descLines.size * lineH else 0
+        val descTotalH = if (hasDesc) UIUtils.CELL_GAP + descCellH else 0
+
+        // Effectiveness cell (conditional)
+        val effectEntries = computeEffectiveness(move)
+        val hasEffect = effectEntries.isNotEmpty()
+        val effectCellH = if (hasEffect) vPad + effectEntries.size * lineH else 0
+        val effectTotalH = if (hasEffect) UIUtils.CELL_GAP + effectCellH else 0
+
+        val totalHeight = UIUtils.FRAME_INSET + headerCellH + UIUtils.CELL_GAP + powerCellH +
+            UIUtils.CELL_GAP + headTotalH + pairedCellH + descTotalH + effectTotalH + UIUtils.FRAME_INSET
+
+        // The tooltip stays beside the entire move column as focus/hover changes.
+        val columnLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
+        val columnBottom = moveTileBounds.maxOfOrNull { (it.y + it.height).toInt() }
+            ?: (move.y + move.height).toInt()
+        val anchor = MoveTooltipAnchor.position(
+            columnLeft, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
+        )
+        val px = anchor.x()
+        val py = anchor.y()
+
+        // ── Render ──
+        context.pose().pushPose()
+        context.pose().translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
+
+        // Keep the shared navy shell independent of the move's type hue.
+        RenderSystem.enableBlend()
+        RenderSystem.defaultBlendFunc()
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+        UIUtils.renderPopupFrame(context, px, py, tooltipWidth, totalHeight)
+        context.flush()
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+
+        val cellX = px + UIUtils.FRAME_INSET
+        var curY = py + UIUtils.FRAME_INSET
+
+        // Header cell, washed with the move's type color.
+        jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer.draw(context, cellX, curY, contentWidth, headerCellH,
+            jbro.cobblemon.ui.extended.ui.shared.BattleSurface(
+                jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer.interpolate(data.typeColor, UIUtils.CELL_BG, .72f),
+                UIUtils.CELL_BG, cut = 4))
+        renderHeaderText(context, data, cellX + UIUtils.CELL_PAD, curY + UIUtils.CELL_VPAD_TOP,
+            contentWidth - UIUtils.CELL_PAD * 2, fontScale, tr)
+        curY += headerCellH + UIUtils.CELL_GAP
+
+        // Power row (full-width)
+        drawCell(context, cellX, curY, contentWidth, powerCellH)
+        val powerY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
+        val powerLabel = Component.translatable("cobblemon_ui.move.power").string
+        draw(context, powerLabel, (cellX + UIUtils.CELL_PAD).toFloat(), powerY, TOOLTIP_LABEL, fontScale)
+        val powerLabelW = tr.width(powerLabel) * fontScale
+        draw(context, "  ${data.powerText}", (cellX + UIUtils.CELL_PAD) + powerLabelW, powerY, COLOR_POWER, fontScale)
+        curY += powerCellH + UIUtils.CELL_GAP
+
+        // Detail grid: odd → head full-width + paired rows; even → all paired
+        val leftColW = ((contentWidth - UIUtils.COL_GAP) * LEFT_COL_RATIO).toInt()
+        val geo = GridGeometry(
+            leftCellX = cellX, leftCellW = leftColW,
+            rightCellX = cellX + leftColW + UIUtils.COL_GAP,
+            rightCellW = contentWidth - UIUtils.COL_GAP - leftColW
+        )
+
+        // Head item (first item, full-width when odd count)
+        if (hasHead) {
+            val head = detailItems[0]
+            drawCell(context, cellX, curY, contentWidth, headCellH)
+            val headY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
+            draw(context, head.label, (cellX + UIUtils.CELL_PAD).toFloat(), headY, TOOLTIP_LABEL, fontScale)
+            drawRightAligned(context, head.value, cellX + contentWidth - UIUtils.CELL_PAD,
+                headY, head.color, fontScale, tr)
+            curY += headCellH + UIUtils.CELL_GAP
+        }
+
+        // Paired items in 2-column grid
+        if (pairedRows > 0) {
+            val pairedItems = detailItems.subList(pairedStart, detailItems.size)
+            drawCell(context, geo.leftCellX, curY, geo.leftCellW, pairedCellH)
+            drawCell(context, geo.rightCellX, curY, geo.rightCellW, pairedCellH)
+            renderDetailGrid(context, pairedItems, geo,
+                curY + UIUtils.CELL_VPAD_TOP, pairedRows, lineH, fontScale, tr)
+            curY += pairedCellH
+        }
+
+        // Description cell (conditional)
+        if (hasDesc) {
+            curY += UIUtils.CELL_GAP
+            drawCell(context, cellX, curY, contentWidth, descCellH)
+            var descY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
+            for (line in descLines) {
+                draw(context, line, (cellX + UIUtils.CELL_PAD).toFloat(), descY, TOOLTIP_DIM, fontScale)
+                descY += lineH
+            }
+            curY += descCellH
+        }
+
+        // Effectiveness cell (conditional)
+        if (hasEffect) {
+            curY += UIUtils.CELL_GAP
+            drawCell(context, cellX, curY, contentWidth, effectCellH)
+            var effY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
+            for (entry in effectEntries) {
+                draw(context, entry.text, (cellX + UIUtils.CELL_PAD).toFloat(), effY, entry.color, fontScale)
+                effY += lineH
+            }
+        }
+
+        context.pose().popPose()
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Computed move data
+    // ═══════════════════════════════════════════════════════════════
+
+    private data class MoveData(
+        val moveName: String,
+        val typeColor: Int,
+        val typeName: String,
+        val categoryName: String,
+        val categoryColor: Int,
+        val powerText: String,
+        val accuracyText: String,
+        val ppText: String,
+        val ppColor: Int,
+        val critText: String?,
+        val effectText: String?,
+        val priorityText: String?,
+        val priorityColor: Int
+    )
+
+    private fun computeMoveData(move: MoveTileBounds): MoveData {
+        val template = move.moveTemplate
+
+        val effectiveType = getMoveEffectiveType(move)
+        val weatherBallType = getWeatherBallEffectiveType(template)
+        val displayType = weatherBallType ?: effectiveType
+        val typeColor = UIUtils.getTypeColor(displayType)
+
+        val categoryColor = when (template.damageCategory) {
+            DamageCategories.PHYSICAL -> COLOR_PHYSICAL
+            DamageCategories.SPECIAL -> COLOR_SPECIAL
+            else -> COLOR_STATUS
+        }
+
+        // ── Power + modifiers ──
+        var powerText = "--"
+        if (template.power > 0) {
+            val basePower = template.power.toInt()
+            val dynamicPowerInfo = getDynamicPowerInfo(template)
+            powerText = when {
+                dynamicPowerInfo == null -> "$basePower"
+                dynamicPowerInfo.minimum != dynamicPowerInfo.maximum ->
+                    "${dynamicPowerInfo.minimum}\u2013${dynamicPowerInfo.maximum}"
+                dynamicPowerInfo.minimum != basePower ->
+                    "$basePower \u2192 ${dynamicPowerInfo.minimum}"
+                else -> "$basePower"
+            }
+        }
+
+        // ── Accuracy ──
+        val accuracyText = if (template.accuracy > 0) "${template.accuracy.toInt()}%" else "--"
+
+        // ── PP ──
+        val ppRatio = move.currentPp.toFloat() / move.maxPp.coerceAtLeast(1)
+        val ppColor = if (ppRatio <= 0.25f) COLOR_PP_LOW else COLOR_PP
+
+        // ── Crit ──
+        var critText: String? = null
+        if (template.power > 0) {
+            val baseCritRatio = template.critRatio
+            val shouldShowCrit = PanelConfig.showBaseCritRateEffective || baseCritRatio > 1.0
+            if (shouldShowCrit) {
+                critText = critRatioToPercent(baseCritRatio)
+            }
+        }
+
+        // ── Effect ──
+        var effectText: String? = null
+        if (template.effectChances.isNotEmpty() && template.effectChances[0] > 0) {
+            val baseEffect = template.effectChances[0]
+            effectText = "${baseEffect.toInt()}%"
+        }
+
+        // ── Priority ──
+        var priorityText: String? = null
+        var priorityColor = COLOR_PRIORITY_POSITIVE
+        if (template.priority != 0) {
+            val sign = if (template.priority > 0) "+" else ""
+            val labelKey = if (template.priority > 0) {
+                "cobblemon_ui.move.priority.fast"
+            } else {
+                "cobblemon_ui.move.priority.slow"
+            }
+            val label = Component.translatable(labelKey).string
+            priorityText = "$sign${template.priority} ($label)"
+            priorityColor = if (template.priority > 0) COLOR_PRIORITY_POSITIVE else COLOR_PRIORITY_NEGATIVE
+        }
+
+        return MoveData(
+            moveName = template.displayName.string,
+            typeColor = typeColor,
+            typeName = displayType.displayName.string,
+            categoryName = template.damageCategory.displayName.string,
+            categoryColor = categoryColor,
+            powerText = powerText,
+            accuracyText = accuracyText,
+            ppText = "${move.currentPp}/${move.maxPp}",
+            ppColor = ppColor,
+            critText = critText,
+            effectText = effectText,
+            priorityText = priorityText,
+            priorityColor = priorityColor
+        )
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Effectiveness computation
+    // ═══════════════════════════════════════════════════════════════
+
+    private data class EffectivenessEntry(val text: String, val color: Int)
+
+    private fun computeEffectiveness(move: MoveTileBounds): List<EffectivenessEntry> {
+        val entries = mutableListOf<EffectivenessEntry>()
+        val battle = CobblemonClient.battle ?: return entries
+        val playerUUID = Minecraft.getInstance().player?.uuid ?: return entries
+        val playerSide = battle.side1.actors.any { it.uuid == playerUUID }
+        val opponentSide = if (playerSide) battle.side2 else battle.side1
+        val opponents = opponentSide.activeClientBattlePokemon.mapNotNull { it.battlePokemon }
+        if (opponents.isEmpty()) return entries
+
+        val baseType = getMoveEffectiveType(move)
+        val weatherBallType = getWeatherBallEffectiveType(move.moveTemplate)
+        val moveType = weatherBallType ?: baseType
+        val isStatusMove = move.moveTemplate.damageCategory == DamageCategories.STATUS
+
+        for (opponent in opponents) {
+            val types = getOpponentEffectiveTypes(opponent)
+            if (types.isEmpty()) continue
+            var multiplier = 1.0
+            for (defType in types) multiplier *= AIUtility.getDamageMultiplier(moveType, defType)
+            if (isStatusMove && multiplier != 0.0) continue
+
+            val opponentName = opponent.displayName.string
+            val (effectText, effectColor) = getEffectivenessText(multiplier)
+            entries.add(EffectivenessEntry(Component.translatable("cobblemon_ui.effectiveness.vs", opponentName, effectText).string, effectColor))
+        }
+        return entries
+    }
+
+    private fun getEffectivenessText(multiplier: Double): Pair<String, Int> {
+        val fmt = formatMultiplier(multiplier)
+        return when {
+            multiplier == 0.0 -> Component.translatable("cobblemon_ui.effectiveness.immune").string to IMMUNE
+            multiplier <= 0.25 -> Component.translatable("cobblemon_ui.effectiveness.extremely_ineffective", fmt).string to NOT_EFFECTIVE
+            multiplier < 0.5 -> Component.translatable("cobblemon_ui.effectiveness.not_effective", fmt).string to NOT_EFFECTIVE
+            multiplier < 1.0 -> Component.translatable("cobblemon_ui.effectiveness.not_very_effective", fmt).string to NOT_EFFECTIVE
+            multiplier >= 4.0 -> Component.translatable("cobblemon_ui.effectiveness.extremely_effective", fmt).string to SUPER_EFFECTIVE_4X
+            multiplier > 2.0 -> Component.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_4X
+            multiplier > 1.0 -> Component.translatable("cobblemon_ui.effectiveness.super_effective", fmt).string to SUPER_EFFECTIVE_2X
+            else -> Component.translatable("cobblemon_ui.effectiveness.neutral").string to NEUTRAL
+        }
+    }
+
+    private fun formatMultiplier(multiplier: Double): String =
+        if (multiplier == multiplier.toInt().toDouble()) multiplier.toInt().toString()
+        else String.format("%.2g", multiplier)
+
+    // ═══════════════════════════════════════════════════════════════
+    // Section rendering
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun renderHeaderText(
+        context: GuiGraphics, data: MoveData,
+        x: Int, y: Int, w: Int,
+        fontScale: Float, tr: Font
+    ) {
+        val xf = x.toFloat()
+        val yf = y.toFloat()
+
+        // Left: Move name, white on the type-washed header
+        draw(context, data.moveName, xf, yf, jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.TEXT, fontScale)
+
+        // Right: Type · Category
+        val catW = tr.width(data.categoryName) * fontScale
+        val dotText = " \u00b7 "
+        val dotW = tr.width(dotText) * fontScale
+        val typeW = tr.width(data.typeName) * fontScale
+        val rightEdge = x + w
+        draw(context, data.categoryName, rightEdge - catW, yf, data.categoryColor, fontScale)
+        draw(context, dotText, rightEdge - catW - dotW, yf, TOOLTIP_DIM, fontScale)
+        draw(context, data.typeName, rightEdge - catW - dotW - typeW, yf, data.typeColor, fontScale)
+    }
+
+    private data class StatEntry(val label: String, val value: String, val color: Int)
+
+    private data class GridGeometry(
+        val leftCellX: Int, val leftCellW: Int,
+        val rightCellX: Int, val rightCellW: Int
+    ) {
+        val leftTextX get() = leftCellX + UIUtils.CELL_PAD
+        val rightTextX get() = rightCellX + UIUtils.CELL_PAD
+        val leftTextW get() = leftCellW - UIUtils.CELL_PAD * 2
+        val rightTextW get() = rightCellW - UIUtils.CELL_PAD * 2
+    }
+
+    private fun renderDetailGrid(
+        context: GuiGraphics, items: List<StatEntry>, geo: GridGeometry,
+        startY: Int, rows: Int, lineH: Int, fontScale: Float, tr: Font
+    ) {
+        val lx = geo.leftTextX.toFloat()
+        val rx = geo.rightTextX.toFloat()
+        val leftValEdge = geo.leftTextX + geo.leftTextW
+        val rightValEdge = geo.rightTextX + geo.rightTextW
+
+        // Items fill left-to-right, top-to-bottom (2 columns)
+        var curY = startY.toFloat()
+        for (row in 0 until rows) {
+            if (row > 0) {
+                curY += 2f
+                drawRowDivider(context, geo.leftCellX, geo.leftCellW, curY.toInt())
+                drawRowDivider(context, geo.rightCellX, geo.rightCellW, curY.toInt())
+                curY += (UIUtils.DIVIDER_H - 2).toFloat()
+            }
+            val leftIdx = row * 2
+            val rightIdx = row * 2 + 1
+            if (leftIdx < items.size) {
+                draw(context, items[leftIdx].label, lx, curY, TOOLTIP_LABEL, fontScale)
+                drawRightAligned(context, items[leftIdx].value, leftValEdge, curY, items[leftIdx].color, fontScale, tr)
+            }
+            if (rightIdx < items.size) {
+                draw(context, items[rightIdx].label, rx, curY, TOOLTIP_LABEL, fontScale)
+                drawRightAligned(context, items[rightIdx].value, rightValEdge, curY, items[rightIdx].color, fontScale, tr)
+            }
+            curY += lineH
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Cell + frame rendering (delegates to UIUtils)
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun drawCell(context: GuiGraphics, x: Int, y: Int, w: Int, h: Int) =
+        UIUtils.drawPopupCell(context, x, y, w, h)
+
+    private fun drawRowDivider(context: GuiGraphics, cellX: Int, cellW: Int, y: Int) =
+        UIUtils.drawPopupRowDivider(context, cellX, cellW, y)
+
+    // ═══════════════════════════════════════════════════════════════
+    // Text drawing
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun draw(
+        context: GuiGraphics, text: String,
+        x: Float, y: Float, color: Int, fontScale: Float
+    ) {
+        // The pastel stat colors are made for a dark tooltip; a light theme deepens them to read.
+        drawScaledText(
+            context = context, text = Component.literal(text),
+            x = x, y = y, scale = fontScale,
+            colour = jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme.readable(color), shadow = false
+        )
+    }
+
+    private fun drawRightAligned(
+        context: GuiGraphics, text: String, rightEdge: Int, y: Float,
+        color: Int, fontScale: Float, tr: Font
+    ) {
+        val w = tr.width(text) * fontScale
+        draw(context, text, rightEdge - w, y, color, fontScale)
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Text wrapping (pixel-based for fixed-width layout)
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun wrapText(
+        text: String, tooltipWidth: Int, fontScale: Float,
+        tr: Font
+    ): List<String> {
+        val maxWidth = tooltipWidth - UIUtils.FRAME_INSET * 2 - UIUtils.CELL_PAD * 2 - 2
+        val words = text.split(" ")
+        val lines = mutableListOf<String>()
+        var currentLine = StringBuilder()
+
+        for (word in words) {
+            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+            if (tr.width(testLine) * fontScale > maxWidth && currentLine.isNotEmpty()) {
+                lines.add(currentLine.toString())
+                currentLine = StringBuilder(word)
+            } else {
+                currentLine = StringBuilder(testLine)
+            }
+        }
+        if (currentLine.isNotEmpty()) lines.add(currentLine.toString())
+        return lines
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Move data helpers (types, abilities, items, dynamic power)
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun critRatioToPercent(critRatio: Double): String = when {
+        critRatio >= 4.0 -> "100%"
+        critRatio >= 3.0 -> "50%"
+        critRatio >= 2.0 -> "12.5%"
+        else -> "4.17%"
+    }
+
+    private fun getMoveEffectiveType(move: MoveTileBounds): ElementalType {
+        val playerPokemon = getPlayerPartyPokemon()
+        return if (playerPokemon != null) {
+            move.moveTemplate.getEffectiveElementalType(playerPokemon)
+        } else {
+            move.moveTemplate.elementalType
+        }
+    }
+
+    private fun getOpponentEffectiveTypes(
+        opponent: ClientBattlePokemon
+    ): List<ElementalType> {
+        val pokemonUuid = opponent.uuid
+
+        val teraType = BattleStateTracker.getTeraType(pokemonUuid)
+        if (teraType != null) {
+            val elementalType = ElementalTypes.get(teraType.lowercase())
+            if (elementalType != null) return listOf(elementalType)
+        }
+
+        val dynamicTypes = BattleStateTracker.getDynamicTypes(pokemonUuid)
+        if (dynamicTypes != null) {
+            val types = mutableListOf<ElementalType>()
+            dynamicTypes.primaryType?.let { typeName ->
+                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
+            }
+            dynamicTypes.secondaryType?.let { typeName ->
+                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
+            }
+            for (addedType in dynamicTypes.addedTypes) {
+                ElementalTypes.get(addedType.lowercase())?.let { types.add(it) }
+            }
+            return types
+        }
+
+        val species = opponent.species
+        val aspects = opponent.state.currentAspects
+        val form = species.getForm(aspects)
+        return listOfNotNull(form.primaryType, form.secondaryType)
+    }
+
+    private fun getPlayerPartyPokemon(): Pokemon? {
+        val uuid = activePokemonUuid ?: return null
+        return CobblemonClient.storage.party.findByUUID(uuid)
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Dynamic move calculations (Hex, Weather Ball)
+    // ═══════════════════════════════════════════════════════════════
+
+    private data class DynamicPowerInfo(val minimum: Int, val maximum: Int)
+
+    private fun getWeatherBallEffectiveType(template: MoveTemplate): ElementalType? {
+        if (template.name.lowercase() != "weatherball") return null
+        val weather = BattleStateTracker.weather ?: return null
+        return when (weather.type) {
+            BattleStateTracker.Weather.RAIN -> ElementalTypes.get("water")
+            BattleStateTracker.Weather.SUN -> ElementalTypes.get("fire")
+            BattleStateTracker.Weather.SANDSTORM -> ElementalTypes.get("rock")
+            BattleStateTracker.Weather.HAIL, BattleStateTracker.Weather.SNOW -> ElementalTypes.get("ice")
+        }
+    }
+
+    private fun getDynamicPowerInfo(template: MoveTemplate): DynamicPowerInfo? = when (template.name.lowercase()) {
+        "hex" -> getHexDynamicPower(template)
+        "weatherball" -> getWeatherBallDynamicPower(template)
+        else -> null
+    }
+
+    private fun getHexDynamicPower(template: MoveTemplate): DynamicPowerInfo? {
+        val basePower = template.power.toInt()
+        val battle = CobblemonClient.battle ?: return null
+        val playerUUID = Minecraft.getInstance().player?.uuid ?: return null
+        val playerSide = battle.side1.actors.any { it.uuid == playerUUID }
+        val opponentSide = if (playerSide) battle.side2 else battle.side1
+        val boostedTargets = opponentSide.activeClientBattlePokemon
+            .mapNotNull { it.battlePokemon }
+            .map { opponent ->
+                opponent.status != null || BattleStateTracker.getRevealedAbility(opponent.uuid)
+                    ?.replace(" ", "")
+                    ?.equals("comatose", ignoreCase = true) == true
+            }
+        val range = TargetDependentPowerPreview.hex(basePower, boostedTargets) ?: return null
+        return DynamicPowerInfo(range.minimum(), range.maximum())
+    }
+
+    private fun getWeatherBallDynamicPower(template: MoveTemplate): DynamicPowerInfo? {
+        val basePower = template.power.toInt()
+        val weather = BattleStateTracker.weather ?: return null
+        return DynamicPowerInfo(basePower * 2, basePower * 2)
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Input handling
+    // ═══════════════════════════════════════════════════════════════
+
+    fun shouldHandleFontInput(): Boolean = hoveredMove != null
+
+    fun handleInput() {
+        if (!shouldHandleFontInput()) return
+        val mc = Minecraft.getInstance()
+        handleFontKeybinds(mc.window.window)
+    }
+
+    private fun handleFontKeybinds(handle: Long) {
+        val increaseKey = InputConstants.getKey(
+            CobblemonUiClient.increaseFontKey.saveString())
+        val isIncreaseDown = UIUtils.isKeyOrButtonPressed(handle, increaseKey)
+        if (isIncreaseDown && !wasIncreaseFontKeyPressed) {
+            PanelConfig.adjustMoveTooltipFontScale(PanelConfig.FONT_SCALE_STEP)
+            PanelConfig.save()
+        }
+        wasIncreaseFontKeyPressed = isIncreaseDown
+
+        val decreaseKey = InputConstants.getKey(
+            CobblemonUiClient.decreaseFontKey.saveString())
+        val isDecreaseDown = UIUtils.isKeyOrButtonPressed(handle, decreaseKey)
+        if (isDecreaseDown && !wasDecreaseFontKeyPressed) {
+            PanelConfig.adjustMoveTooltipFontScale(-PanelConfig.FONT_SCALE_STEP)
+            PanelConfig.save()
+        }
+        wasDecreaseFontKeyPressed = isDecreaseDown
+    }
+
+    fun handleScroll(deltaY: Double): Boolean {
+        if (hoveredMove == null) return false
+        val mc = Minecraft.getInstance()
+        val handle = mc.window.window
+        val isCtrlDown = GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS ||
+            GLFW.glfwGetKey(handle, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS
+        if (isCtrlDown) {
+            val delta = if (deltaY > 0) PanelConfig.FONT_SCALE_STEP else -PanelConfig.FONT_SCALE_STEP
+            PanelConfig.adjustMoveTooltipFontScale(delta)
+            PanelConfig.save()
+            return true
+        }
+        return false
+    }
+}

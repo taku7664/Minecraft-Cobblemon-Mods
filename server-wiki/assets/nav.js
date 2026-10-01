@@ -9,14 +9,19 @@ window.WIKI_NAV = {
       title: "시작하기",
       pages: [
         { path: "index.html", title: "홈", icon: "🏠", keywords: "처음 메인 소개" },
-        { path: "pages/getting-started.html", title: "처음 접속했다면", icon: "🚩", keywords: "접속 설치 리소스팩 스타팅 키트 처음 성장 순서" },
+        { path: "pages/getting-started.html", title: "처음 접속했다면", icon: "🚩", keywords: "접속 설치 리소스팩 스타팅 키트 처음" },
         { path: "pages/me.html", title: "내 정보", icon: "👤", keywords: "내 정보 대시보드 bp 전적 연승 링크" },
       ],
     },
     {
       title: "성장",
       pages: [
+        { path: "pages/growth.html", title: "성장 가이드", icon: "🧭", keywords: "성장 순서 팁 강해지는 법 육성 키우기 bp 합성" },
         { path: "pages/levels.html", title: "레벨캡과 야생 포켓몬", icon: "📈", keywords: "레벨캡 레벨 야생 스폰 개체값 iv 숨겨진 특성 메가 다이맥스 테라스탈 잠금" },
+        { path: "pages/leveling.html", title: "경험치와 기술", icon: "⬆️", keywords: "경험치 레벨업 학습장치 경험사탕 이상한사탕 기술 기술 바꾸기 pp 포인트업" },
+        { path: "pages/natures.html", title: "성격과 민트", icon: "🌿", keywords: "성격 민트 고집 명랑 조심 겁쟁이 능력치 보정 nature mint" },
+        { path: "pages/evs.html", title: "노력치", icon: "💪", keywords: "노력치 ev 파워 도구 영양제 타우린 깃털 열매 배분 252" },
+        { path: "pages/ivs-abilities.html", title: "개체값과 특성", icon: "🧬", keywords: "개체값 iv 특성 숨겨진 특성 특성캡슐 특성패치 합성 사탕" },
         { path: "pages/pokedex.html", title: "포켓몬 도감", icon: "📕", keywords: "도감 포켓몬 종족값 기술 무브셋 특성 진화 출현 스폰 바이옴" },
         { path: "pages/legends.html", title: "전설 스폰 가이드", icon: "✨", keywords: "전설 환상 패러독스 스폰 포획 등급 엔트리 legends 포케스낵" },
         { path: "pages/pokemon-items.html", title: "포켓몬 아이템화와 합성", icon: "🧪", keywords: "poketoitem itemtopoke pokefusion 합성 개체값 놓아주기 release" },

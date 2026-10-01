@@ -17,9 +17,17 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
+/** One inquiry as the operators receive it, by Discord or by mail. */
+data class Inquiry(val nickname: String, val accountName: String, val playerId: UUID, val reason: String, val via: Inquiries.Via, val at: Long) {
+    val subject: String get() = "[빡켓몬 문의] $nickname ($accountName)"
+    val time: String get() = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        .format(ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), ZoneId.of("Asia/Seoul")))
+}
+
 /**
- * Player inquiries mailed to the server owner, from `/문의 <reason>` (`/inquiry`) or the wiki's inquiry page. Each
- * names the player's nickname, account name and UUID; one player may send one every five minutes.
+ * Player inquiries sent to the operators, from `/문의 <reason>` (`/inquiry`) or the wiki's inquiry page: posted to a
+ * Discord channel, mailed, or both, whichever is configured. Each names the player's nickname, account name and
+ * UUID; one player may send one every five minutes.
  */
 object Inquiries {
     const val MAX_REASON_LENGTH = 100
@@ -41,12 +49,18 @@ object Inquiries {
     }
 
     private val lastSent = ConcurrentHashMap<UUID, Long>()
-    private val mailer = Executors.newSingleThreadExecutor { task -> Thread(task, "jbro-policy-inquiry-mail").apply { isDaemon = true } }
-    private var settings = MailSettings()
+    private val sender = Executors.newSingleThreadExecutor { task -> Thread(task, "jbro-policy-inquiry").apply { isDaemon = true } }
+    private var mail = MailSettings()
+    private var discord = DiscordSettings()
 
-    internal fun register(settings: MailSettings) {
-        this.settings = settings
-        if (!settings.configured) JbroPolicy.LOGGER.info("Inquiries are off until config/jbro-policy-mail.json is filled in")
+    private val configured: Boolean get() = mail.configured || discord.configured
+
+    internal fun register(mail: MailSettings, discord: DiscordSettings) {
+        this.mail = mail
+        this.discord = discord
+        if (!configured) {
+            JbroPolicy.LOGGER.info("Inquiries are off until config/jbro-policy-discord.json or config/jbro-policy-mail.json is filled in")
+        }
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             for (name in listOf("문의", "inquiry")) {
                 dispatcher.register(Commands.literal(name)
@@ -63,30 +77,37 @@ object Inquiries {
     }
 
     /**
-     * Checks [reason] and the cooldown, then mails the inquiry off the calling thread. The cooldown starts when the
-     * mail is handed over and is given back if sending fails, so a mail server outage costs the player no wait.
+     * Checks [reason] and the cooldown, then sends the inquiry to every configured channel off the calling thread. It
+     * counts as sent when one channel takes it. The cooldown starts when the inquiry is handed over and is given back
+     * if every channel fails, so an outage costs the player no wait.
      */
     fun submit(server: MinecraftServer, playerId: UUID, accountName: String, nickname: String, reason: String, via: Via): CompletableFuture<Outcome> {
         val text = clean(reason)
         val now = System.currentTimeMillis()
         val early = when {
-            !settings.configured -> Outcome.NotConfigured
+            !configured -> Outcome.NotConfigured
             else -> check(text, now, lastSent[playerId])
         }
         if (early != null) return CompletableFuture.completedFuture(early)
         lastSent[playerId] = now
-        val current = settings
+        val inquiry = Inquiry(nickname, accountName, playerId, text, via, now)
+        val channels = buildList {
+            discord.inquiryRoute?.let { route -> add("Discord" to { DiscordWebhook.send(route, inquiry) }) }
+            mail.takeIf { it.configured }?.let { add("mail" to { SmtpMailer.send(it, inquiry.subject, body(inquiry)) }) }
+        }
         return CompletableFuture.supplyAsync({
-            try {
-                SmtpMailer.send(current, subject(nickname, accountName), body(nickname, accountName, playerId, text, via, now))
-                JbroPolicy.LOGGER.info("Mailed an inquiry from {} ({}) via {}", accountName, playerId, via)
-                Outcome.Sent
-            } catch (failure: Exception) {
-                JbroPolicy.LOGGER.warn("Could not mail the inquiry from {} ({})", accountName, playerId, failure)
-                lastSent.remove(playerId, now)
-                Outcome.Failed
+            val delivered = channels.count { (name, send) ->
+                try {
+                    send()
+                    JbroPolicy.LOGGER.info("Sent an inquiry from {} ({}) via {} by {}", accountName, playerId, via, name)
+                    true
+                } catch (failure: Exception) {
+                    JbroPolicy.LOGGER.warn("Could not send the inquiry from {} ({}) by {}", accountName, playerId, name, failure)
+                    false
+                }
             }
-        }, mailer)
+            if (delivered > 0) Outcome.Sent else Outcome.Failed.also { lastSent.remove(playerId, now) }
+        }, sender)
     }
 
     /** Newlines and runs of spaces fold into one space, so a reason stays one line. */
@@ -102,19 +123,20 @@ object Inquiries {
 
     internal fun subject(nickname: String, accountName: String) = "[빡켓몬 문의] $nickname ($accountName)"
 
-    internal fun body(nickname: String, accountName: String, playerId: UUID, reason: String, via: Via, at: Long): String {
-        val time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), ZoneId.of("Asia/Seoul")))
-        return """
-            닉네임: $nickname
-            아이디: $accountName
-            UUID: $playerId
-            경로: ${via.label}
-            시각: $time (KST)
+    internal fun body(nickname: String, accountName: String, playerId: UUID, reason: String, via: Via, at: Long): String =
+        body(Inquiry(nickname, accountName, playerId, reason, via, at))
 
-            사유:
-            $reason
-        """.trimIndent()
-    }
+    /** The mail body; Discord shows the same lines as embed fields. */
+    internal fun body(inquiry: Inquiry): String = """
+        닉네임: ${inquiry.nickname}
+        아이디: ${inquiry.accountName}
+        UUID: ${inquiry.playerId}
+        경로: ${inquiry.via.label}
+        시각: ${inquiry.time} (KST)
+
+        사유:
+        ${inquiry.reason}
+    """.trimIndent()
 
     private fun tell(player: ServerPlayer, outcome: Outcome) {
         when (outcome) {

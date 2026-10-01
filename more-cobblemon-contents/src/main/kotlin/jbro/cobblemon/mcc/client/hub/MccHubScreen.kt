@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
@@ -12,7 +13,6 @@ import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
@@ -32,7 +32,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     Screen(hubText("title")), MccHubContentHost {
     var selectedTabId: String = selectedTabId
         private set
-    private var previousTheme: UiThemeSnapshot? = null
+    /** Puts back the theme that was installed before the hub opened. */
+    private var restoreTheme: (() -> Unit)? = null
     private val contents = HashMap<String, MccHubTabContent>()
     private var activeContent: MccHubTabContent? = null
     private var shownContent: MccHubTabContent? = null
@@ -40,8 +41,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     override fun isPauseScreen() = false
 
     override fun init() {
-        if (previousTheme == null) previousTheme = CobblemonUiThemes.registry.snapshot()
-        CobblemonUiThemes.registry.install(MccHubTheme.snapshot())
+        // init runs again on every resize; the theme is installed once per opening.
+        if (restoreTheme == null) restoreTheme = CobblemonUiSharedTheme.install()
         current = this
         rebuild()
     }
@@ -176,11 +177,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         if (current === this) current = null
         shownContent?.hidden()
         shownContent = null
-        val original = previousTheme
-        if (original != null && CobblemonUiThemes.registry.snapshot().id == MccHubTheme.id) {
-            CobblemonUiThemes.registry.install(original)
-        }
-        previousTheme = null
+        restoreTheme?.invoke()
+        restoreTheme = null
     }
 
     private class HeaderBadge(private val rect: UiRect, private val badge: MccHubHeaderBadge, private val labelled: Boolean) :

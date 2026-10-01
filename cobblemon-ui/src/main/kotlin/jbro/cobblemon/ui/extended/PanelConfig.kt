@@ -1,0 +1,491 @@
+package jbro.cobblemon.ui.extended
+
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes
+import net.fabricmc.loader.api.FabricLoader
+import java.io.File
+
+/**
+ * Persistent configuration for the battle info panel.
+ */
+object PanelConfig {
+    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
+    private val configFile: File by lazy {
+        FabricLoader.getInstance().configDir.resolve("cobblemon_ui.json").toFile()
+    }
+
+    /** Settings saved under the mod's earlier id, read once when no file exists under the current one. */
+    private val legacyConfigFile: File by lazy {
+        FabricLoader.getInstance().configDir.resolve("cobblemon_battle_ui.json").toFile()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Feature toggles (disable entire features)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Enable/disable team indicator displays under health bars
+    var enableTeamIndicators: Boolean = true
+        private set
+
+    // Enable/disable the battle info panel (weather, terrain, conditions, stats)
+    var enableBattleInfoPanel: Boolean = true
+        private set
+
+    // Enable/disable the custom battle log (replaces Cobblemon's chat-based log)
+    var enableBattleLog: Boolean = true
+        private set
+
+    // Extra damage/healing percentage lines in the battle log (no effect if enableBattleLog is false)
+    var enableBattleLogDamagePercentages: Boolean = true
+        private set
+
+    // Enable/disable move tooltips on Fight menu (shows power, accuracy, effectiveness)
+    var enableMoveTooltips: Boolean = true
+        private set
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Configuration values
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Battle log widget settings
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Log widget position (null = default bottom-center position)
+    var logX: Int? = null
+        private set
+    var logY: Int? = null
+        private set
+
+    // Log widget dimensions
+    var logWidth: Int? = null
+        private set
+    var logHeight: Int? = null
+        private set
+
+    // Log widget font scale (separate from main panel)
+    var logFontScale: Float = 1.0f
+        private set
+
+    // Log widget expanded state
+    var logExpanded: Boolean = true
+        private set
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Team indicator settings
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Orientation for team indicators (both sides use the same)
+    enum class TeamIndicatorOrientation { HORIZONTAL, VERTICAL }
+
+    var teamIndicatorOrientation: TeamIndicatorOrientation = TeamIndicatorOrientation.HORIZONTAL
+        private set
+
+    // Scale for team indicators (0.5 to 2.0)
+    var teamIndicatorScale: Float = 1.0f
+        private set
+
+    // Custom position for left team indicator (null = default position below health bar)
+    var teamIndicatorLeftX: Int? = null
+        private set
+    var teamIndicatorLeftY: Int? = null
+        private set
+
+    // Custom position for right team indicator (null = default position below health bar)
+    var teamIndicatorRightX: Int? = null
+        private set
+    var teamIndicatorRightY: Int? = null
+        private set
+
+    // Whether team indicators can be repositioned via drag (default: true)
+    var teamIndicatorRepositioningEnabled: Boolean = true
+        private set
+
+    // Tooltip font scale (separate from other panels)
+    var tooltipFontScale: Float = 1.0f
+        private set
+
+    // Move tooltip font scale (for Fight menu tooltips)
+    var moveTooltipFontScale: Float = 1.0f
+        private set
+
+    // Show tera type in Pokemon tooltips (when known)
+    // Disabled by default due to noisiness.
+    var showTeraType: Boolean = false
+        private set
+
+    // Show stat values (Attack, Defense, Sp. Atk, Sp. Def, Speed) in Pokemon tooltips
+    var showStatRanges: Boolean = true
+        private set
+
+    // Show estimated speed range (min–max) for opponent Pokemon in tooltips; label/stage always shown
+    var showOpponentSpeedRange: Boolean = true
+        private set
+
+    // Show base crit rate in move tooltips (even when not boosted)
+    // Disabled by default due to noisiness.
+    var showBaseCritRate: Boolean = false
+        private set
+
+    /** The battle screens' theme, by [jbro.cobblemon.ui.extended.ui.shared.BattleUiPalette.id]. */
+    var battleTheme: String = BattleUiThemes.CHAMPIONS.id
+        private set
+
+    // Default log dimensions
+    const val DEFAULT_LOG_WIDTH = 200
+    const val DEFAULT_LOG_HEIGHT = 120
+    const val MIN_LOG_WIDTH = 120
+    const val MIN_LOG_HEIGHT = 60
+    const val MAX_LOG_WIDTH = 400
+    const val MAX_LOG_HEIGHT = 300
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Constants
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Font scale limits
+    const val MIN_FONT_SCALE = 0.5f
+    const val MAX_FONT_SCALE = 2.0f
+    const val FONT_SCALE_STEP = 0.05f
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Data class for serialization
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    data class ConfigData(
+        // Feature toggles
+        val enableTeamIndicators: Boolean = true,
+        val enableBattleInfoPanel: Boolean = true,
+        val enableBattleLog: Boolean = true,
+        /** Null when absent from older config files; treated as true when loading. */
+        val enableBattleLogDamagePercentages: Boolean? = null,
+        val enableMoveTooltips: Boolean = true,
+        // Battle log widget settings
+        val logX: Int? = null,
+        val logY: Int? = null,
+        val logWidth: Int? = null,
+        val logHeight: Int? = null,
+        val logFontScale: Float = 1.0f,
+        val logExpanded: Boolean = true,
+        // Team indicator settings
+        val teamIndicatorOrientation: String = "HORIZONTAL",
+        val teamIndicatorScale: Float = 1.0f,
+        val teamIndicatorLeftX: Int? = null,
+        val teamIndicatorLeftY: Int? = null,
+        val teamIndicatorRightX: Int? = null,
+        val teamIndicatorRightY: Int? = null,
+        val teamIndicatorRepositioningEnabled: Boolean = true,
+        // Tooltip settings
+        val tooltipFontScale: Float = 1.0f,
+        val moveTooltipFontScale: Float = 1.0f,
+        // Tooltip display options
+        val showTeraType: Boolean = false,
+        val showStatRanges: Boolean = true,
+        /** Null when absent from older config files; treated as true when loading. */
+        val showOpponentSpeedRange: Boolean? = null,
+        val showBaseCritRate: Boolean = false,
+        /** Null when absent from older config files; the Champions theme then. */
+        val battleTheme: String? = null
+    )
+
+    fun load() {
+        try {
+            val source = if (configFile.exists()) configFile else legacyConfigFile
+            if (source.exists()) {
+                val data = gson.fromJson(source.readText(), ConfigData::class.java)
+                // Feature toggles
+                enableTeamIndicators = data.enableTeamIndicators
+                enableBattleInfoPanel = data.enableBattleInfoPanel
+                enableBattleLog = data.enableBattleLog
+                enableBattleLogDamagePercentages = data.enableBattleLogDamagePercentages ?: true
+                enableMoveTooltips = data.enableMoveTooltips
+                // Battle log widget settings
+                logX = data.logX
+                logY = data.logY
+                logWidth = UiConfigSanitizer.optionalDimension(data.logWidth, MIN_LOG_WIDTH, MAX_LOG_WIDTH)
+                logHeight = UiConfigSanitizer.optionalDimension(data.logHeight, MIN_LOG_HEIGHT, MAX_LOG_HEIGHT)
+                logFontScale = sanitizeScale(data.logFontScale)
+                logExpanded = data.logExpanded
+                // Team indicator settings
+                teamIndicatorOrientation = try {
+                    TeamIndicatorOrientation.valueOf(data.teamIndicatorOrientation)
+                } catch (e: IllegalArgumentException) {
+                    TeamIndicatorOrientation.HORIZONTAL
+                }
+                teamIndicatorScale = sanitizeScale(data.teamIndicatorScale)
+                teamIndicatorLeftX = data.teamIndicatorLeftX
+                teamIndicatorLeftY = data.teamIndicatorLeftY
+                teamIndicatorRightX = data.teamIndicatorRightX
+                teamIndicatorRightY = data.teamIndicatorRightY
+                teamIndicatorRepositioningEnabled = data.teamIndicatorRepositioningEnabled
+                // Tooltip settings
+                tooltipFontScale = sanitizeScale(data.tooltipFontScale)
+                moveTooltipFontScale = sanitizeScale(data.moveTooltipFontScale)
+                // Tooltip display options
+                showTeraType = data.showTeraType
+                showStatRanges = data.showStatRanges
+                showOpponentSpeedRange = data.showOpponentSpeedRange ?: true
+                showBaseCritRate = data.showBaseCritRate
+                setBattleTheme(data.battleTheme ?: BattleUiThemes.CHAMPIONS.id)
+                CobblemonUi.LOGGER.info("PanelConfig: Loaded config - features: team=$enableTeamIndicators, panel=$enableBattleInfoPanel, log=$enableBattleLog, logDamagePct=$enableBattleLogDamagePercentages, moveTooltips=$enableMoveTooltips")
+            }
+        } catch (e: Exception) {
+            CobblemonUi.LOGGER.warn("PanelConfig: Failed to load config, using defaults: ${e.message}")
+        }
+    }
+
+    fun save() {
+        try {
+            val data = ConfigData(
+                enableTeamIndicators = enableTeamIndicators,
+                enableBattleInfoPanel = enableBattleInfoPanel,
+                enableBattleLog = enableBattleLog,
+                enableBattleLogDamagePercentages = enableBattleLogDamagePercentages,
+                enableMoveTooltips = enableMoveTooltips,
+                logX = logX,
+                logY = logY,
+                logWidth = logWidth,
+                logHeight = logHeight,
+                logFontScale = logFontScale,
+                logExpanded = logExpanded,
+                teamIndicatorOrientation = teamIndicatorOrientation.name,
+                teamIndicatorScale = teamIndicatorScale,
+                teamIndicatorLeftX = teamIndicatorLeftX,
+                teamIndicatorLeftY = teamIndicatorLeftY,
+                teamIndicatorRightX = teamIndicatorRightX,
+                teamIndicatorRightY = teamIndicatorRightY,
+                teamIndicatorRepositioningEnabled = teamIndicatorRepositioningEnabled,
+                tooltipFontScale = tooltipFontScale,
+                moveTooltipFontScale = moveTooltipFontScale,
+                showTeraType = showTeraType,
+                showStatRanges = showStatRanges,
+                showOpponentSpeedRange = showOpponentSpeedRange,
+                showBaseCritRate = showBaseCritRate,
+                battleTheme = battleTheme
+            )
+            AtomicTextFileWriter.write(configFile.toPath(), gson.toJson(data))
+            CobblemonUi.LOGGER.debug("PanelConfig: Saved config")
+        } catch (e: Exception) {
+            CobblemonUi.LOGGER.warn("PanelConfig: Failed to save config: ${e.message}")
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Log widget management
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fun setLogPosition(x: Int?, y: Int?) {
+        logX = x
+        logY = y
+    }
+
+    fun setLogDimensions(width: Int?, height: Int?) {
+        logWidth = UiConfigSanitizer.optionalDimension(width, MIN_LOG_WIDTH, MAX_LOG_WIDTH)
+        logHeight = UiConfigSanitizer.optionalDimension(height, MIN_LOG_HEIGHT, MAX_LOG_HEIGHT)
+    }
+
+    fun adjustLogFontScale(delta: Float) {
+        logFontScale = sanitizeScale(logFontScale + delta)
+    }
+
+    fun setLogFontScale(value: Float) {
+        logFontScale = sanitizeScale(value)
+    }
+
+    fun adjustTooltipFontScale(delta: Float) {
+        tooltipFontScale = sanitizeScale(tooltipFontScale + delta)
+    }
+
+    fun setTooltipFontScale(value: Float) {
+        tooltipFontScale = sanitizeScale(value)
+    }
+
+    fun adjustMoveTooltipFontScale(delta: Float) {
+        moveTooltipFontScale = sanitizeScale(moveTooltipFontScale + delta)
+    }
+
+    fun setMoveTooltipFontScale(value: Float) {
+        moveTooltipFontScale = sanitizeScale(value)
+    }
+
+    fun setLogExpanded(expanded: Boolean) {
+        logExpanded = expanded
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Team indicator management
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fun setTeamIndicatorOrientation(orientation: TeamIndicatorOrientation) {
+        teamIndicatorOrientation = orientation
+    }
+
+    fun toggleTeamIndicatorOrientation() {
+        teamIndicatorOrientation = when (teamIndicatorOrientation) {
+            TeamIndicatorOrientation.HORIZONTAL -> TeamIndicatorOrientation.VERTICAL
+            TeamIndicatorOrientation.VERTICAL -> TeamIndicatorOrientation.HORIZONTAL
+        }
+    }
+
+    fun adjustTeamIndicatorScale(delta: Float) {
+        teamIndicatorScale = sanitizeScale(teamIndicatorScale + delta)
+    }
+
+    fun setTeamIndicatorScale(value: Float) {
+        teamIndicatorScale = sanitizeScale(value)
+    }
+
+    private fun sanitizeScale(value: Float): Float =
+        UiConfigSanitizer.scale(value, MIN_FONT_SCALE, MAX_FONT_SCALE, 1.0f)
+
+    fun setTeamIndicatorLeftPosition(x: Int?, y: Int?) {
+        teamIndicatorLeftX = x
+        teamIndicatorLeftY = y
+    }
+
+    fun setTeamIndicatorRightPosition(x: Int?, y: Int?) {
+        teamIndicatorRightX = x
+        teamIndicatorRightY = y
+    }
+
+    /**
+     * Reset left team indicator to default position (below health bar).
+     */
+    fun resetTeamIndicatorLeftPosition() {
+        teamIndicatorLeftX = null
+        teamIndicatorLeftY = null
+    }
+
+    /**
+     * Reset right team indicator to default position (below health bar).
+     */
+    fun resetTeamIndicatorRightPosition() {
+        teamIndicatorRightX = null
+        teamIndicatorRightY = null
+    }
+
+    /**
+     * Reset all team indicator customizations (both positions, scale, orientation).
+     */
+    fun resetAllTeamIndicatorSettings() {
+        teamIndicatorOrientation = TeamIndicatorOrientation.HORIZONTAL
+        teamIndicatorScale = 1.0f
+        teamIndicatorLeftX = null
+        teamIndicatorLeftY = null
+        teamIndicatorRightX = null
+        teamIndicatorRightY = null
+    }
+
+    /**
+     * Enable or disable team indicator repositioning via drag.
+     */
+    fun setTeamIndicatorRepositioningEnabled(enabled: Boolean) {
+        teamIndicatorRepositioningEnabled = enabled
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Feature toggle setters (for config screen)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fun setEnableTeamIndicators(enabled: Boolean) {
+        enableTeamIndicators = enabled
+    }
+
+    fun setEnableBattleInfoPanel(enabled: Boolean) {
+        enableBattleInfoPanel = enabled
+    }
+
+    fun setEnableBattleLog(enabled: Boolean) {
+        enableBattleLog = enabled
+    }
+
+    fun setEnableBattleLogDamagePercentages(enabled: Boolean) {
+        enableBattleLogDamagePercentages = enabled
+    }
+
+    fun setEnableMoveTooltips(enabled: Boolean) {
+        enableMoveTooltips = enabled
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tooltip display option setters
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fun setShowTeraType(show: Boolean) {
+        showTeraType = show
+    }
+
+    fun setShowStatRanges(show: Boolean) {
+        showStatRanges = show
+    }
+
+    fun setShowOpponentSpeedRange(show: Boolean) {
+        showOpponentSpeedRange = show
+    }
+
+    fun setShowBaseCritRate(show: Boolean) {
+        showBaseCritRate = show
+    }
+
+    /** Applies the theme at once; an unknown id falls back to the Champions theme. */
+    fun setBattleTheme(id: String) {
+        if (!BattleUiThemes.select(id)) BattleUiThemes.select(BattleUiThemes.CHAMPIONS.id)
+        battleTheme = BattleUiThemes.current.id
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Server-synced effective values (local config when server does not override)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    val enableTeamIndicatorsEffective: Boolean
+        get() = enableTeamIndicators
+
+    val teamIndicatorRepositioningEnabledEffective: Boolean
+        get() = teamIndicatorRepositioningEnabled
+
+    val enableBattleInfoPanelEffective: Boolean
+        get() = enableBattleInfoPanel
+
+    val enableBattleLogEffective: Boolean
+        // The legacy visibility value is retained for file compatibility. Narration and
+        // the Shift transcript share one history; neither is an always-visible log widget.
+        get() = true
+
+    val enableBattleLogDamagePercentagesEffective: Boolean
+        get() = enableBattleLogDamagePercentages
+
+    val enableMoveTooltipsEffective: Boolean
+        get() = enableMoveTooltips
+
+    val showTeraTypeEffective: Boolean
+        get() = showTeraType
+
+    val showStatRangesEffective: Boolean
+        get() = showStatRanges
+
+    val showOpponentSpeedRangeEffective: Boolean
+        get() = showOpponentSpeedRange
+
+    val showBaseCritRateEffective: Boolean
+        get() = showBaseCritRate
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Feature toggle helpers (for mixins to check tracking dependencies)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns true if BattleStateTracker should process messages.
+     * Needed for both battle info panel (weather, terrain, conditions, stats)
+     * and team indicator tooltips (stat changes, volatile statuses).
+     */
+    fun needsBattleStateTracking(): Boolean =
+        enableBattleInfoPanelEffective || enableTeamIndicatorsEffective
+
+    /**
+     * Returns true if DamageTracker should track HP changes.
+     * Only used for optional battle log damage/healing percentage lines; requires custom battle log.
+     */
+    fun needsDamageTracking(): Boolean =
+        enableBattleLogEffective && enableBattleLogDamagePercentagesEffective
+}

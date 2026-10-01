@@ -1,0 +1,411 @@
+package jbro.cobblemon.ui.extended
+
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.contents.TranslatableContents
+import java.util.concurrent.CopyOnWriteArrayList
+import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSpeaker
+import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSources
+
+/**
+ * Battle log storage and categorization system.
+ * Captures all battle messages and categorizes them for filtered display.
+ */
+object BattleLog {
+
+    /**
+     * Categories for battle log entries.
+     * Used for filtering the log display.
+     */
+    enum class EntryType(val icon: String) {
+        TURN(""),           // Turn markers (always shown)
+        MOVE("\u2694"),     // Move usage, effectiveness, crits, misses
+        HP("\u2665"),       // Damage, faints
+        HEALING("\u2764"),  // HP recovery
+        EFFECT("\u2728"),   // Stat changes, status, volatiles
+        FIELD("\u2600"),    // Weather, terrain, screens, hazards
+        OTHER("\u2022")     // Anything else
+    }
+
+    /**
+     * A single entry in the battle log.
+     * Includes cached wrapped lines for performance (computed lazily on first render).
+     */
+    data class LogEntry(
+        val turn: Int,
+        val type: EntryType,
+        val message: Component,
+        val translationKey: String?,
+        val timestamp: Long = System.currentTimeMillis(),
+        val speaker: TranscriptSpeaker? = null
+    ) {
+        // Cached wrapped lines (computed once per width/scale combination)
+        @Volatile var cachedLines: List<String>? = null
+        @Volatile var cachedWidth: Int = 0
+        @Volatile var cachedScale: Float = 0f
+
+        /**
+         * Gets wrapped lines, using cache if parameters match.
+         */
+        fun getWrappedLines(width: Int, scale: Float, wrapFn: (String, Int, Float) -> List<String>): List<String> {
+            val cached = cachedLines
+            if (cached != null && cachedWidth == width && cachedScale == scale) {
+                return cached
+            }
+            val lines = wrapFn(message.string, width, scale)
+            cachedLines = lines
+            cachedWidth = width
+            cachedScale = scale
+            return lines
+        }
+
+        /**
+         * Invalidates the cache (call when font scale changes).
+         */
+        fun invalidateCache() {
+            cachedLines = null
+        }
+    }
+
+    // Thread-safe list for log entries
+    private val entries = CopyOnWriteArrayList<LogEntry>()
+    var revision: Long = 0
+        private set
+
+    // Maximum entries to prevent memory issues
+    private const val MAX_ENTRIES = 500
+
+    // Current turn (updated from BattleStateTracker)
+    private var currentTurn: Int = 0
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Translation key mappings for categorization
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Move-related keys (attacks, effectiveness, accuracy)
+    private val MOVE_KEYS = setOf(
+        "cobblemon.battle.used_move",
+        "cobblemon.battle.used_move_on",
+        "cobblemon.battle.superEffective",
+        "cobblemon.battle.superEffective_spread",
+        "cobblemon.battle.resisted",
+        "cobblemon.battle.resisted_spread",
+        "cobblemon.battle.immune",
+        "cobblemon.battle.missed",
+        "cobblemon.battle.crit",
+        "cobblemon.battle.crit_spread",
+        "cobblemon.battle.fail",
+        "cobblemon.battle.ohko",
+        "cobblemon.battle.hit_count",
+        "cobblemon.battle.hit_count_singular",
+        "cobblemon.battle.cant.recharge",
+        "cobblemon.battle.recharge",
+        "cobblemon.battle.notarget",
+        "cobblemon.battle.blocked"
+    )
+
+    private val MOVE_KEY_PREFIXES = listOf(
+        "cobblemon.battle.prepare.",
+        "cobblemon.battle.cant.",
+        "cobblemon.battle.fail.",
+        "cobblemon.battle.block."
+    )
+
+    private val HEALING_KEYS = setOf("cobblemon.battle.heal")
+    private val HEALING_KEY_PREFIXES = listOf("cobblemon.battle.heal.")
+
+    // HP-related keys (damage, healing, fainting)
+    private val HP_KEYS = setOf(
+        "cobblemon.battle.damage",
+        "cobblemon.battle.fainted",
+        "cobblemon.battle.sethp",
+        "cobblemon.battle.recoil",
+        "cobblemon.battle.drain",
+        "cobblemon.battle.leftovers",
+        "cobblemon.battle.blacksludge",
+        "cobblemon.battle.shellbell",
+        "cobblemon.battle.poisonheal"
+    )
+
+    private val HP_KEY_PREFIXES = listOf(
+        "cobblemon.battle.damage.",
+        "cobblemon.battle.sethp."
+    )
+
+    // Effect-related keys (stats, status, volatiles)
+    private val EFFECT_KEY_PREFIXES = listOf(
+        "cobblemon.battle.boost",
+        "cobblemon.battle.unboost",
+        "cobblemon.battle.setboost",
+        "cobblemon.battle.clearboost",
+        "cobblemon.battle.invertboost",
+        "cobblemon.battle.status",
+        "cobblemon.battle.cure",
+        "cobblemon.battle.start",  // Volatile status start
+        "cobblemon.battle.end",    // Volatile status end
+        "cobblemon.battle.ability",
+        "cobblemon.battle.transform",
+        "cobblemon.battle.formechange",
+        "cobblemon.battle.mega",
+        "cobblemon.battle.zmove",
+        "cobblemon.battle.zpower",
+        "cobblemon.battle.terastallize",
+        "cobblemon.battle.swapboost",
+        "cobblemon.battle.copyboost",
+        "cobblemon.battle.clearallboost",
+        "cobblemon.battle.clearallnegativeboost",
+        "cobblemon.battle.singleturn",
+        "cobblemon.battle.singlemove"
+    )
+
+    // Field-related keys (weather, terrain, side conditions)
+    private val FIELD_KEY_PREFIXES = listOf(
+        "cobblemon.battle.weather",
+        "cobblemon.battle.terrain",
+        "cobblemon.battle.fieldactivate",
+        "cobblemon.battle.fieldstart",
+        "cobblemon.battle.fieldend",
+        "cobblemon.battle.sidestart",
+        "cobblemon.battle.sideend"
+    )
+
+    // Turn marker key
+    private const val TURN_KEY = "cobblemon.battle.turn"
+
+    // Switch-related (categorize as HP since it's about Pokemon state)
+    private val SWITCH_KEYS = setOf("cobblemon.battle.dragged_out")
+    private val SWITCH_KEY_PREFIXES = listOf(
+        "cobblemon.battle.switch.",
+        "cobblemon.battle.withdraw."
+    )
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Public API
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Process a list of battle messages and add them to the log.
+     * Uses two-pass approach to correctly assign turns even when turn messages
+     * appear after action messages in the same batch.
+     */
+    @JvmOverloads
+    fun processMessages(messages: List<Component>, resolveSpeaker: (Component) -> TranscriptSpeaker? = { null }) {
+        if (messages.isEmpty()) return
+
+        // PASS 1: Find all turn markers and their positions in the message list
+        val turnPositions = mutableListOf<Pair<Int, Int>>()  // (messageIndex, turnNumber)
+        for ((index, message) in messages.withIndex()) {
+            val key = extractTranslationKey(message)
+            if (key == TURN_KEY) {
+                extractTurnNumber(message)?.let { turn ->
+                    turnPositions.add(index to turn)
+                }
+            }
+        }
+
+        // Determine starting turn:
+        // - If first message is a turn marker, use that turn
+        // - Otherwise, keep the previous log turn. The tracker has already processed
+        //   this whole packet and may point at a later turn marker in the same batch.
+        var effectiveTurn = if (turnPositions.isNotEmpty() && turnPositions[0].first == 0) {
+            turnPositions[0].second
+        } else {
+            currentTurn
+        }
+
+        // PASS 2: Process messages with correct turn assignments
+        var nextTurnIdx = 0
+        for ((index, message) in messages.withIndex()) {
+            // Advance to the correct turn when we reach or pass a turn marker
+            while (nextTurnIdx < turnPositions.size && turnPositions[nextTurnIdx].first <= index) {
+                effectiveTurn = turnPositions[nextTurnIdx].second
+                nextTurnIdx++
+            }
+
+            val key = extractTranslationKey(message)
+            val type = categorizeMessage(key)
+
+            addEntry(LogEntry(
+                turn = effectiveTurn,
+                type = type,
+                message = message,
+                translationKey = key,
+                speaker = resolveSpeaker(message)
+            ))
+        }
+
+        // Update currentTurn with the final turn from this batch
+        if (turnPositions.isNotEmpty()) {
+            currentTurn = turnPositions.last().second
+        } else if (messages.isNotEmpty()) {
+            // No turn markers in batch, but update to match effective turn
+            currentTurn = effectiveTurn
+        }
+    }
+
+    /**
+     * Add an HP change entry immediately.
+     * Called directly from DamageTracker when HP changes are detected.
+     */
+    fun addHpChangeEntry(text: String, isHealing: Boolean = false) {
+        addEntry(LogEntry(
+            turn = currentTurn,
+            type = if (isHealing) EntryType.HEALING else EntryType.HP,
+            message = Component.literal(text),
+            translationKey = null
+        ))
+    }
+
+    /**
+     * Get all entries, optionally filtered by types.
+     * @param activeFilters Set of EntryType to include. If empty or contains all types, returns everything.
+     */
+    fun getEntries(activeFilters: Set<EntryType>? = null): List<LogEntry> {
+        if (activeFilters == null || activeFilters.isEmpty() || activeFilters.size == EntryType.entries.size) {
+            return entries.toList()
+        }
+        // Always include TURN markers for context
+        return entries.filter { it.type in activeFilters || it.type == EntryType.TURN }
+    }
+
+    /**
+     * Get entries grouped by turn for rendering with separators.
+     */
+    fun getEntriesGroupedByTurn(activeFilters: Set<EntryType>? = null): Map<Int, List<LogEntry>> {
+        return getEntries(activeFilters).groupBy { it.turn }
+    }
+
+    /**
+     * Get the total number of entries.
+     */
+    fun size(): Int = entries.size
+
+    /**
+     * Check if the log is empty.
+     */
+    fun isEmpty(): Boolean = entries.isEmpty()
+
+    /**
+     * Clear all entries (called when battle ends).
+     */
+    fun clear() {
+        entries.clear()
+        revision++
+        currentTurn = 0
+        TranscriptSources.clear()
+        jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.clear()
+        DamageTracker.clear()
+        CobblemonUi.LOGGER.debug("BattleLog: Cleared")
+    }
+
+    /**
+     * Invalidate all cached wrapped lines (call when font scale changes).
+     */
+    fun invalidateWrappedTextCache() {
+        for (entry in entries) {
+            entry.invalidateCache()
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Internal helpers
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private fun addEntry(entry: LogEntry) {
+        entries.add(entry)
+        revision++
+
+        // Trim old entries if we exceed max
+        while (entries.size > MAX_ENTRIES) {
+            entries.removeAt(0)
+        }
+    }
+
+    /**
+     * Extract the translation key from a Text component.
+     * Recursively checks siblings if the main content doesn't have a key.
+     */
+    private fun extractTranslationKey(text: Component): String? {
+        val content = text.contents
+        if (content is TranslatableContents) {
+            return content.key
+        }
+
+        // Check siblings
+        for (sibling in text.siblings) {
+            extractTranslationKey(sibling)?.let { return it }
+        }
+
+        return null
+    }
+
+    /**
+     * Extract turn number from a turn message.
+     */
+    private fun extractTurnNumber(text: Component): Int? {
+        val content = TranscriptSources.battleContent(text)
+        if (content is TranslatableContents && content.key == TURN_KEY) {
+            val args = content.args
+            if (args.isNotEmpty()) {
+                val turnStr = when (val arg = args[0]) {
+                    is Component -> arg.string
+                    is Number -> arg.toString()
+                    else -> arg.toString()
+                }
+                return turnStr.toIntOrNull()
+            }
+        }
+        return null
+    }
+
+    /**
+     * Categorize a message based on its translation key.
+     */
+    private fun categorizeMessage(key: String?): EntryType {
+        if (key == null) return EntryType.OTHER
+
+        return when {
+            // Turn markers
+            key == TURN_KEY -> EntryType.TURN
+
+            // Exact match for moves
+            key in MOVE_KEYS -> EntryType.MOVE
+
+            MOVE_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.MOVE
+
+            // Healing has its own filter and must be checked before generic HP families
+            key in HEALING_KEYS -> EntryType.HEALING
+
+            HEALING_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HEALING
+
+            // Exact match for HP
+            key in HP_KEYS -> EntryType.HP
+
+            HP_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HP
+
+            // Switch is like HP (Pokemon state change)
+            key in SWITCH_KEYS -> EntryType.HP
+
+            SWITCH_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HP
+
+            // Prefix match for effects
+            EFFECT_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.EFFECT
+
+            // Prefix match for field
+            FIELD_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.FIELD
+
+            // Check for more move-related patterns
+            key.contains(".move.") || key.contains(".attack") -> EntryType.MOVE
+
+            // Check for damage patterns
+            key.contains(".damage") || key.contains(".hurt") -> EntryType.HP
+
+            // Check for status patterns
+            key.contains(".status") || key.contains(".poison") ||
+            key.contains(".burn") || key.contains(".paralyze") ||
+            key.contains(".freeze") || key.contains(".sleep") -> EntryType.EFFECT
+
+            // Default
+            else -> EntryType.OTHER
+        }
+    }
+}

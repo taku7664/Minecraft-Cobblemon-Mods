@@ -25,7 +25,7 @@
 67. `../better-cobblemon-music/CONFIG_SCHEMA_V2_2026-08-23.md` — 카탈로그 구조 이전 `music.json` 스키마 2의 과거 결정과 마이그레이션 기준
 68. `ROUNDING_BLOCK_ARCHITECTURE_DECISION.md` — Rounding-Block의 Fabric Renderer API 기반 외곽 엣지 라운딩, Sodium·Iris 그림자 호환 경계, 안전 폴백과 단계별 검증 계약 초안
 73. `COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md` — Cobblemon 전용 공용 위젯·테마 소스 모듈을 정하고, 내장 자산/Visual Pack 경계와 타이틀 fixture·실제 월드 증거 등급을 분리
-74. `COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md` — Battle UI를 명령 선택, 연출 내레이션과 별도 전체 기록으로 나누고 구조화된 아군·상대·시스템 사건과 기존 상시 로그 종료 조건을 정의
+74. `COBBLEMON_UI_PHASED_COMMAND_AND_LOG_DECISION.md` — Battle UI를 명령 선택, 연출 내레이션과 별도 전체 기록으로 나누고 구조화된 아군·상대·시스템 사건과 기존 상시 로그 종료 조건을 정의
 75. `COBBLEMON_UI_SURFACE_STYLE_AMENDMENT.md` — 공용 위젯의 사각형·선택 모서리 챔퍼, 채움 없음·단색·세로 그라데이션, 테두리 없음·굵기와 배경 불투명도 계약을 추가하고 역할별 표면 차이를 확정
 76. `COBBLEMON_UI_MAINLINE_THEME_PRESETS_AMENDMENT.md` — 아르세우스 계열을 제외하고 GBA·DS 도트 본가와 가라르·팔데아 문법을 분리한 여섯 내장 테마 후보, 코드·Visual Pack 경계와 같은 월드 비교 게이트를 확정
 77. `COBBLEMON_UI_MAINLINE_THEME_RUNTIME_EVIDENCE.md` — 실제 개발 월드 한 세션에서 여섯 테마의 렌더·포커스·스크롤·닫기를 순회하고, 비교 캡처·25개 단위 테스트와 아직 검증하지 않은 소비자 경계를 기록

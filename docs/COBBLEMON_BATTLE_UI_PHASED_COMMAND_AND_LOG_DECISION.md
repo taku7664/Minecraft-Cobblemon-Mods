@@ -5,8 +5,8 @@
 | Status | `shared` |
 | Effective | 2026-09-25 |
 | Depends on | `COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md` |
-| Updates | `cobblemon-battle-ui`의 상시 `BattleLogWidget` 표시 방식 |
-| 적용 대상 | `cobblemon-battle-ui` 클라이언트 |
+| Updates | `cobblemon-ui`의 상시 `BattleLogWidget` 표시 방식 |
+| 적용 대상 | `cobblemon-ui` 클라이언트 |
 | 주 독자 | Better Battle UI 구현자와 시각 검수자 |
 
 ## 1. 목표

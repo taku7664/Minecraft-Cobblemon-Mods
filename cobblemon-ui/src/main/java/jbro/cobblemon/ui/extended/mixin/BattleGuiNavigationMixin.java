@@ -1,0 +1,535 @@
+package jbro.cobblemon.ui.extended.mixin;
+
+import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleTargetSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection;
+import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
+import jbro.cobblemon.ui.extended.CobblemonUiClient;
+import jbro.cobblemon.ui.extended.BattleInfoPanel;
+import jbro.cobblemon.ui.extended.BattleDialogue;
+import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
+import jbro.cobblemon.ui.extended.navigation.BattleGuiNavigationAccess;
+import jbro.cobblemon.ui.extended.navigation.BattleCommandLayout;
+import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
+import jbro.cobblemon.ui.extended.navigation.ForfeitSelectionAccess;
+import jbro.cobblemon.ui.navigation.ActionSubmissionGate;
+import jbro.cobblemon.ui.navigation.BattleMenuNavigator;
+import jbro.cobblemon.ui.navigation.FocusOwnership;
+import jbro.cobblemon.ui.navigation.GridMenuNavigator;
+import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
+import jbro.cobblemon.ui.navigation.SpatialMenuNavigator;
+import jbro.cobblemon.ui.navigation.UiRect;
+import jbro.cobblemon.ui.extended.ui.shared.BattleTargetRenderer;
+import jbro.cobblemon.ui.extended.ui.shared.BattleModalVignette;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import org.lwjgl.glfw.GLFW;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
+
+@Mixin(value = BattleGUI.class, remap = false)
+public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAccess {
+    @Inject(method = "render", at = @At("HEAD"), remap = true)
+    private void cobblemonBattleUi$renderModalVignette(
+            GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        boolean active = getCurrentActionSelection() instanceof BattleSwitchPokemonSelection
+                || getCurrentActionSelection() instanceof BattleTargetSelection targetSelection
+                    && BattleTargetRenderer.supports(targetSelection)
+                || BattleInfoPanel.INSTANCE.isExpanded()
+                || jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen();
+        Minecraft client = Minecraft.getInstance();
+        BattleModalVignette.render(context, client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(), active);
+        context.flush();
+    }
+
+    @Unique
+    private final FocusOwnership cobblemonBattleUi$focusOwnership = new FocusOwnership();
+
+    @Unique
+    private final ActionSubmissionGate cobblemonBattleUi$submissionGate = new ActionSubmissionGate();
+
+    @Unique
+    private BattleActionSelection cobblemonBattleUi$gateSelection;
+
+    @Unique
+    private BattleActionSelection cobblemonBattleUi$gridSelection;
+
+    @Unique
+    private int cobblemonBattleUi$gridIndex = -1;
+
+    @Unique
+    private boolean cobblemonBattleUi$mousePositionKnown;
+
+    @Unique
+    private int cobblemonBattleUi$lastMouseX;
+
+    @Unique
+    private int cobblemonBattleUi$lastMouseY;
+
+    @Shadow
+    public abstract BattleActionSelection getCurrentActionSelection();
+
+    @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true, remap = true)
+    private void cobblemonBattleUi$blockCharactersBehindTranscript(char character, int modifiers,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen()) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
+    private void cobblemonBattleUi$blockCommandsBehindInformationOverlay(
+            double mouseX,
+            double mouseY,
+            int button,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.mouseClicked(mouseX, mouseY)) {
+            cir.setReturnValue(true);
+            return;
+        }
+        if (BattleInfoPanel.INSTANCE.isExpanded() || BattleDialogue.INSTANCE.hasPending()) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "render", at = @At("HEAD"), remap = true)
+    private void cobblemonBattleUi$observeMouseMovement(
+            GuiGraphics context,
+            int mouseX,
+            int mouseY,
+            float delta,
+            CallbackInfo ci
+    ) {
+        if (BattleInfoPanel.INSTANCE.isExpanded()) {
+            return;
+        }
+        if (jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen()) {
+            return;
+        }
+
+        boolean mouseMoved = !cobblemonBattleUi$mousePositionKnown
+                || mouseX != cobblemonBattleUi$lastMouseX
+                || mouseY != cobblemonBattleUi$lastMouseY;
+        cobblemonBattleUi$mousePositionKnown = true;
+        cobblemonBattleUi$lastMouseX = mouseX;
+        cobblemonBattleUi$lastMouseY = mouseY;
+        if (mouseMoved) {
+            KeyboardTileFocus.mouseMoved();
+        }
+
+        BattleGeneralActionSelection selection = cobblemonBattleUi$getGeneralSelection();
+        if (selection == null) {
+            return;
+        }
+
+        List<BattleOptionTile> tiles = selection.getTiles();
+        Minecraft client = Minecraft.getInstance();
+        BattleCommandLayout.place(
+                tiles,
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight()
+        );
+        int hoveredIndex = -1;
+        for (int index = 0; index < tiles.size(); index++) {
+            if (tiles.get(index).isHovered(mouseX, mouseY)) {
+                hoveredIndex = index;
+                break;
+            }
+        }
+
+        int previousIndex = cobblemonBattleUi$focusOwnership.selectedIndex();
+        cobblemonBattleUi$focusOwnership.mouseMoved(mouseX, mouseY, hoveredIndex);
+        if (previousIndex != cobblemonBattleUi$focusOwnership.selectedIndex()) {
+            cobblemonBattleUi$applyFocus(tiles, cobblemonBattleUi$focusOwnership.selectedIndex());
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"), remap = true)
+    private void cobblemonBattleUi$renderInformationOverlayLast(
+            GuiGraphics context,
+            int mouseX,
+            int mouseY,
+            float delta,
+            CallbackInfo ci
+    ) {
+        BattleDialogue.INSTANCE.render(context);
+        BattleInfoPanel.INSTANCE.renderForeground(context);
+        jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.render(context);
+    }
+
+    @Override
+    public boolean cobblemonBattleUi$handleNavigationKey(
+            int keyCode,
+            int scanCode,
+            int modifiers
+    ) {
+        BattleActionSelection currentSelection = getCurrentActionSelection();
+        if (currentSelection == null) {
+            return false;
+        }
+
+        boolean navigationKey = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W,
+                    GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S,
+                    GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A,
+                    GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> true;
+            default -> CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode);
+        };
+        if (navigationKey) {
+            KeyboardTileFocus.useKeyboard();
+        }
+
+        if (currentSelection instanceof ForfeitConfirmationSelection confirmation
+                && cobblemonBattleUi$handleForfeitKeys(confirmation, keyCode, scanCode)) {
+            return true;
+        }
+
+        if (currentSelection instanceof BattleSwitchPokemonSelection switchSelection
+                && cobblemonBattleUi$handleSwitchKeys(switchSelection, keyCode, scanCode)) {
+            return true;
+        }
+        if (currentSelection instanceof BattleMoveSelection moveSelection
+                && cobblemonBattleUi$handleMoveKeys(moveSelection, keyCode, scanCode)) {
+            return true;
+        }
+        if (currentSelection instanceof BattleTargetSelection targetSelection
+                && cobblemonBattleUi$handleTargetKeys(targetSelection, keyCode, scanCode)) {
+            return true;
+        }
+
+        BattleGeneralActionSelection selection = cobblemonBattleUi$getGeneralSelection();
+        if (selection == null || selection.getTiles().isEmpty()) {
+            return false;
+        }
+
+        List<BattleOptionTile> tiles = selection.getTiles();
+        int direction = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -1;
+            case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> 0;
+        };
+
+        if (direction != 0) {
+            int focusedIndex = cobblemonBattleUi$focusedIndex(tiles);
+            BattleMenuNavigator navigator = new BattleMenuNavigator(
+                    Collections.nCopies(tiles.size(), true),
+                    focusedIndex
+            );
+            int nextIndex = navigator.move(direction);
+            cobblemonBattleUi$focusOwnership.keyboardSelected(nextIndex);
+            cobblemonBattleUi$applyFocus(tiles, nextIndex);
+            return true;
+        }
+
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
+            return false;
+        }
+
+        int focusedIndex = cobblemonBattleUi$focusedIndex(tiles);
+        if (focusedIndex < 0) {
+            focusedIndex = 0;
+            cobblemonBattleUi$focusOwnership.keyboardSelected(focusedIndex);
+            cobblemonBattleUi$applyFocus(tiles, focusedIndex);
+        }
+
+        if (cobblemonBattleUi$gateSelection != selection) {
+            cobblemonBattleUi$gateSelection = selection;
+            cobblemonBattleUi$submissionGate.unlock();
+        }
+        if (cobblemonBattleUi$submissionGate.tryLock()) {
+            tiles.get(focusedIndex).getOnClick().invoke();
+        }
+        return true;
+    }
+
+    @Unique
+    private boolean cobblemonBattleUi$handleForfeitKeys(ForfeitConfirmationSelection selection,
+            int keyCode, int scanCode) {
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = 1; // Never default keyboard confirmation to forfeiting.
+        }
+        int choice = switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> 0;
+            case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D, GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> -1;
+        };
+        if (choice >= 0) {
+            cobblemonBattleUi$gridIndex = choice;
+            ((ForfeitSelectionAccess) (Object) selection).cobblemonBattleUi$setFocusedChoice(choice);
+            return true;
+        }
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
+            return false;
+        }
+        if (cobblemonBattleUi$trySubmit(selection)) {
+            Minecraft client = Minecraft.getInstance();
+            UiRect bound = cobblemonBattleUi$gridIndex == 0
+                    ? BattleScreenGeometry.forfeitAccept(client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight())
+                    : BattleScreenGeometry.forfeitCancel(client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight());
+            selection.mousePrimaryClicked(bound.x() + bound.width() / 2.0,
+                    bound.y() + bound.height() / 2.0);
+        }
+        return true;
+    }
+
+    @Unique
+    private BattleGeneralActionSelection cobblemonBattleUi$getGeneralSelection() {
+        BattleActionSelection selection = getCurrentActionSelection();
+        return selection instanceof BattleGeneralActionSelection general ? general : null;
+    }
+
+    @Unique
+    private int cobblemonBattleUi$focusedIndex(List<BattleOptionTile> tiles) {
+        for (int index = 0; index < tiles.size(); index++) {
+            if (tiles.get(index).isFocused()) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    @Unique
+    private void cobblemonBattleUi$applyFocus(List<BattleOptionTile> tiles, int focusedIndex) {
+        for (int index = 0; index < tiles.size(); index++) {
+            tiles.get(index).setFocused(index == focusedIndex);
+        }
+    }
+
+    @Unique
+    private boolean cobblemonBattleUi$handleSwitchKeys(
+            BattleSwitchPokemonSelection selection,
+            int keyCode,
+            int scanCode
+    ) {
+        List<BattleSwitchPokemonSelection.SwitchTile> tiles = selection.getTiles();
+        return cobblemonBattleUi$handleVerticalKeys(
+                selection,
+                tiles,
+                tile -> selection.isReviving() ? tile.isFainted()
+                        : !tile.isFainted() && !tile.isCurrentlyInBattle(),
+                keyCode,
+                scanCode,
+                tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)
+        );
+    }
+
+    @Unique
+    private boolean cobblemonBattleUi$handleMoveKeys(
+            BattleMoveSelection selection,
+            int keyCode,
+            int scanCode
+    ) {
+        List<? extends BattleMoveSelection.MoveTile> tiles = selection.getMoveTiles();
+        return cobblemonBattleUi$handleVerticalKeys(
+                selection,
+                tiles,
+                BattleMoveSelection.MoveTile::getSelectable,
+                keyCode,
+                scanCode,
+                // Cobblemon opens target selection here in multi battles; MoveTile.onClick()
+                // submits immediately and would bypass that required second choice.
+                tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)
+        );
+    }
+
+    @Unique
+    private <T> boolean cobblemonBattleUi$handleVerticalKeys(
+            BattleActionSelection selection,
+            List<? extends T> tiles,
+            Predicate<T> enabled,
+            int keyCode,
+            int scanCode,
+            java.util.function.Consumer<T> onSelect
+    ) {
+        if (tiles.isEmpty()) {
+            return false;
+        }
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = -1;
+            KeyboardTileFocus.clear();
+        }
+
+        if (selection instanceof BattleMoveSelection) {
+            boolean tooltipOn = keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_A;
+            boolean tooltipOff = keyCode == GLFW.GLFW_KEY_RIGHT || keyCode == GLFW.GLFW_KEY_D;
+            if (tooltipOn || tooltipOff) {
+                if (tooltipOn) {
+                    if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                            || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+                        List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+                        cobblemonBattleUi$gridIndex = new BattleMenuNavigator(enabledTiles, -1).move(1);
+                    }
+                    if (cobblemonBattleUi$gridIndex >= 0) {
+                        KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+                    }
+                }
+                MoveTooltipRenderer.INSTANCE.setKeyboardTooltipMode(selection, tooltipOn);
+                return true;
+            }
+        }
+
+        int direction = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -1;
+            case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> 0;
+        };
+        if (direction != 0) {
+            List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+            BattleMenuNavigator navigator = new BattleMenuNavigator(enabledTiles, cobblemonBattleUi$gridIndex);
+            cobblemonBattleUi$gridIndex = navigator.move(direction);
+            if (cobblemonBattleUi$gridIndex >= 0) {
+                KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            }
+            return true;
+        }
+
+        if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_A
+                || keyCode == GLFW.GLFW_KEY_RIGHT || keyCode == GLFW.GLFW_KEY_D) {
+            return true;
+        }
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
+            return false;
+        }
+        if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+            List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+            cobblemonBattleUi$gridIndex = new BattleMenuNavigator(enabledTiles, -1).move(1);
+        }
+        if (cobblemonBattleUi$gridIndex >= 0 && cobblemonBattleUi$trySubmit(selection)) {
+            onSelect.accept(tiles.get(cobblemonBattleUi$gridIndex));
+        }
+        return true;
+    }
+
+    @Unique
+    private boolean cobblemonBattleUi$handleTargetKeys(
+            BattleTargetSelection selection,
+            int keyCode,
+            int scanCode
+    ) {
+        List<? extends BattleTargetSelection.TargetTile> tiles = selection.getTargetTiles();
+        if (!BattleTargetRenderer.supports(selection)) {
+            return cobblemonBattleUi$handleGridKeys(selection, tiles,
+                    BattleTargetSelection.TargetTile::getSelectable, keyCode, scanCode,
+                    BattleTargetSelection.TargetTile::onClick);
+        }
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = -1;
+            KeyboardTileFocus.clear();
+        }
+        int dx = switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A -> -1;
+            case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> 1;
+            default -> 0;
+        };
+        int dy = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -1;
+            case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> 0;
+        };
+        Minecraft client = Minecraft.getInstance();
+        List<UiRect> bounds = BattleTargetRenderer.bounds(selection,
+                client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight());
+        List<Boolean> enabled = tiles.stream().map(BattleTargetSelection.TargetTile::getSelectable).toList();
+        if (dx != 0 || dy != 0) {
+            cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
+                    cobblemonBattleUi$gridIndex, dx, dy);
+            if (cobblemonBattleUi$gridIndex >= 0) {
+                KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            }
+            return true;
+        }
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
+            return false;
+        }
+        cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
+                cobblemonBattleUi$gridIndex, 0, 0);
+        if (cobblemonBattleUi$gridIndex >= 0) {
+            KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            if (cobblemonBattleUi$trySubmit(selection)) {
+                tiles.get(cobblemonBattleUi$gridIndex).onClick();
+            }
+        }
+        return true;
+    }
+
+    @Unique
+    private <T> boolean cobblemonBattleUi$handleGridKeys(
+            BattleActionSelection selection,
+            List<? extends T> tiles,
+            Predicate<T> enabled,
+            int keyCode,
+            int scanCode,
+            java.util.function.Consumer<T> onSelect
+    ) {
+        if (tiles.isEmpty()) {
+            return false;
+        }
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = -1;
+            KeyboardTileFocus.clear();
+        }
+
+        int horizontal = switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A -> -1;
+            case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> 1;
+            default -> 0;
+        };
+        int vertical = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -1;
+            case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> 0;
+        };
+
+        if (horizontal != 0 || vertical != 0) {
+            List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+            GridMenuNavigator navigator = new GridMenuNavigator(enabledTiles, 2, cobblemonBattleUi$gridIndex);
+            cobblemonBattleUi$gridIndex = navigator.move(horizontal, vertical);
+            if (cobblemonBattleUi$gridIndex >= 0) {
+                KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            }
+            return true;
+        }
+
+        if (!CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)) {
+            return false;
+        }
+        if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+            List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+            cobblemonBattleUi$gridIndex = new GridMenuNavigator(enabledTiles, 2, -1).move(0, 1);
+        }
+        if (cobblemonBattleUi$gridIndex >= 0 && cobblemonBattleUi$trySubmit(selection)) {
+            onSelect.accept(tiles.get(cobblemonBattleUi$gridIndex));
+        }
+        return true;
+    }
+
+    @Unique
+    private boolean cobblemonBattleUi$trySubmit(BattleActionSelection selection) {
+        if (cobblemonBattleUi$gateSelection != selection) {
+            cobblemonBattleUi$gateSelection = selection;
+            cobblemonBattleUi$submissionGate.unlock();
+        }
+        return cobblemonBattleUi$submissionGate.tryLock();
+    }
+}

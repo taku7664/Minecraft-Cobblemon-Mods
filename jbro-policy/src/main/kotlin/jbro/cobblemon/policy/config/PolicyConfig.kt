@@ -60,6 +60,7 @@ data class PolicyConfig(
             "조작 설정에서 이모트 키를 지정하면, 그 키를 누른 채 방향을 골라 머리 위에 이모트를 띄울 수 있습니다.",
             "렉이 심하면 ESC → 모드 → Rounding-Block 설정에서 '둥근 블록 렌더링 사용'을 끄거나, /roundingblock enabled false를 입력해 보세요.",
             "셰이더를 켠 상태에서 렉이 심하면 ESC → 설정 → 비디오 설정 → 셰이더 팩에서 셰이더를 꺼 보세요.",
+            "버그 제보, 건의, 신고는 /문의 <내용>으로 운영자에게 보낼 수 있습니다. 위키의 문의하기에서도 보낼 수 있습니다.",
         )
         private val gson = GsonBuilder().setPrettyPrinting().create()
 
