@@ -5,8 +5,8 @@
       "entry_id": "lonely_mint",
       "item_id": "cobblemon:lonely_mint",
       "item_count": 1,
-      "price_bp": 50,
-      "sort_order": 10
+      "price_bp": 20,
+      "sort_order": 300
     }
   ]
 }

@@ -5,8 +5,8 @@
       "entry_id": "eject_pack",
       "item_id": "cobblemon:eject_pack",
       "item_count": 1,
-      "price_bp": 20,
-      "sort_order": 300
+      "price_bp": 250,
+      "sort_order": 600
     }
   ]
 }

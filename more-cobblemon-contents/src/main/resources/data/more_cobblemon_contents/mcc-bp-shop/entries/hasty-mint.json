@@ -5,8 +5,8 @@
       "entry_id": "hasty_mint",
       "item_id": "cobblemon:hasty_mint",
       "item_count": 1,
-      "price_bp": 50,
-      "sort_order": 180
+      "price_bp": 20,
+      "sort_order": 470
     }
   ]
 }

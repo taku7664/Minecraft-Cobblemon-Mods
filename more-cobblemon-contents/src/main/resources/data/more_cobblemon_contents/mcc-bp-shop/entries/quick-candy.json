@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "quick_candy",
+      "item_id": "cobblemon:quick_candy",
+      "item_count": 1,
+      "price_bp": 15,
+      "sort_order": 230
+    }
+  ]
+}

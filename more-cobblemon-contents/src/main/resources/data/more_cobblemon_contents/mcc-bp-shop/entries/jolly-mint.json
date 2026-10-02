@@ -5,8 +5,8 @@
       "entry_id": "jolly_mint",
       "item_id": "cobblemon:jolly_mint",
       "item_count": 1,
-      "price_bp": 50,
-      "sort_order": 190
+      "price_bp": 20,
+      "sort_order": 480
     }
   ]
 }

@@ -5,8 +5,8 @@
       "entry_id": "throat_spray",
       "item_id": "cobblemon:throat_spray",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 410
+      "price_bp": 150,
+      "sort_order": 710
     }
   ]
 }

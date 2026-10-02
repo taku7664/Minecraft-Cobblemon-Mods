@@ -5,8 +5,8 @@
       "entry_id": "weakness_policy",
       "item_id": "cobblemon:weakness_policy",
       "item_count": 1,
-      "price_bp": 20,
-      "sort_order": 320
+      "price_bp": 250,
+      "sort_order": 620
     }
   ]
 }

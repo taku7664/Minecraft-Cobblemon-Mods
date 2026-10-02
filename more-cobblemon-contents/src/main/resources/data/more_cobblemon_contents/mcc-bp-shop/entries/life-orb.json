@@ -5,8 +5,8 @@
       "entry_id": "life_orb",
       "item_id": "cobblemon:life_orb",
       "item_count": 1,
-      "price_bp": 25,
-      "sort_order": 270
+      "price_bp": 400,
+      "sort_order": 570
     }
   ]
 }
