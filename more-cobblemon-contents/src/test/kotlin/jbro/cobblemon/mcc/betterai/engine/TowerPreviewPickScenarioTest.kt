@@ -16,19 +16,13 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
  */
 @EnabledIfSystemProperty(named = "betterai.sweeps", matches = "true")
 class TowerPreviewPickScenarioTest : TowerScenarioBase() {
-    private val entry = firepower + listOf(
-        fullyTrained("garchomp", listOf("earthquake", "outrage", "stoneedge", "firefang"), "roughskin", "choicescarf", "Jolly", "atk"),
-        fullyTrained("rotomwash", listOf("hydropump", "voltswitch", "willowisp", "painsplit"), "levitate", "leftovers", "Modest", "spa"),
-        fullyTrained("clefable", listOf("moonblast", "flamethrower", "softboiled", "calmmind"), "magicguard", "sitrusberry", "Modest", "spa"),
-    )
-
     @Test
     fun `Champions' picks against one challenger by AI tier`() {
         val draws = 300
         val report = StringBuilder("# Champion picks by AI tier\n\nChallenger's six: Dragonite, Kingambit, Gholdengo, " +
             "Garchomp, Rotom-Wash, Clefable. $draws draws per cell; how often each member comes beside the ace.\n\n")
         val readings = listOf("random" to null) + listOf(BattleTrainerTier.STANDARD, BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS)
-            .map { it.name.lowercase() to previewScorer(it, entry) }
+            .map { it.name.lowercase() to previewScorer(it, previewEntry) }
         championAces.keys.forEach { name ->
             report.append("## $name\n\n| tier | picks beside the ace |\n|---|---|\n")
             readings.forEach { (label, scorer) ->

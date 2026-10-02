@@ -30,17 +30,11 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 class TowerBetterAiScenarioTest : TowerScenarioBase() {
     private class Cell(val label: String, val opponent: (Random) -> List<jbro.cobblemon.mcc.betterai.engine.RefSet>, val profile: BattleTrainerProfile)
 
-    /** The challenger's six as the opponents see them: the three that battle and three more. */
-    private val entry = firepower + listOf(
-        fullyTrained("garchomp", listOf("earthquake", "outrage", "stoneedge", "firefang"), "roughskin", "choicescarf", "Jolly", "atk"),
-        fullyTrained("rotomwash", listOf("hydropump", "voltswitch", "willowisp", "painsplit"), "levitate", "leftovers", "Modest", "spa"),
-        fullyTrained("clefable", listOf("moonblast", "flamethrower", "softboiled", "calmmind"), "magicguard", "sitrusberry", "Modest", "spa"),
-    )
 
     /** Opponents read the challenger's preview as the Tower's do, unless TOWER_PREVIEW=0 keeps the random pick. */
     private val readsPreview = System.getenv("TOWER_PREVIEW") != "0"
 
-    private fun scorer(tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier) = if (readsPreview) previewScorer(tier, entry) else null
+    private fun scorer(tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier) = if (readsPreview) previewScorer(tier, previewEntry) else null
 
     private fun regular(tier: Int, level: Int, difficulty: BattleDifficultyProfile, skill: Int): Cell {
         val reading = scorer(difficulty.tier)

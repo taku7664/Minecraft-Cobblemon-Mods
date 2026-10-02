@@ -6,8 +6,9 @@ Bosses: every boss encounter holds the Champions and the gimmick and format's To
 mode. Endless brings a Champion at every 5th win, Normal a Tower Ace at the 5th and 15th wins and a Champion at the
 10th and 20th. Each Champion's roster holds several battle-trained sets per member (IVs of 31, full EVs, battle items),
 once per gimmick:
-- Mega runs: members that can Mega Evolve also have Mega Stone sets; the Tower draws one of them to hold its stone.
-- Dynamax runs: everyone has a Dynamax level; Blastoise and Charizard Gigantamax.
+- Mega runs: members that can Mega Evolve also have Mega Stone sets, and Alder's Emboar and Nemona's Baxcalibur
+  join for Mega runs alone; the Tower draws one of them to hold its stone.
+- Dynamax runs: everyone has a Dynamax level; Blastoise, Charizard and Lapras Gigantamax.
 - Tera runs: everyone has a Tera Type.
 Each Champion also has a legend table. With the legendary class allowed they bring as many legendaries as the
 challenger: the main line (a restricted legendary) first, then sub lines (sub-legendary, Mythical, Ultra Beast,

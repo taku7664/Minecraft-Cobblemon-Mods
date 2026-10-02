@@ -6,11 +6,14 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPreviewScore
 
-/** A Tower trainer's reading of the challenger's six, through the Better AI's team preview selection. */
+/**
+ * A Tower trainer's reading of the challenger's six, through the Better AI's team preview selection. Species or
+ * move data Cobblemon cannot give leaves the preview unread or the set unscored, never the launch failed.
+ */
 internal object Cobblemon173TowerPreviewReader {
     fun read(tier: BattleTrainerTier, preview: BattleOpponentTeamPreviewView): TowerPreviewScore? {
-        val scorer = TeamPreviewSelection.scorer(tier, preview) ?: return null
-        return TowerPreviewScore(scorer.temperature) { set -> scorer.score(set.candidate()) }
+        val scorer = compatibilityCallOrNull { TeamPreviewSelection.scorer(tier, preview) } ?: return null
+        return TowerPreviewScore(scorer.temperature) { set -> compatibilityCallOrNull { scorer.score(set.candidate()) } }
     }
 
     private fun TowerPokemonSet.candidate() = TeamPreviewSelection.Candidate(

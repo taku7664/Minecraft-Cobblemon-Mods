@@ -185,6 +185,15 @@ abstract class TowerScenarioBase {
         fullyTrained("gholdengo", listOf("makeitrain", "shadowball", "focusblast", "nastyplot"), "goodasgold", "choicespecs", "Modest", "spa"),
     )
 
+    /** The challenger's six as the opponents see them: the three that battle ([firepower]) and three more. */
+    protected val previewEntry by lazy {
+        firepower + listOf(
+            fullyTrained("garchomp", listOf("earthquake", "outrage", "stoneedge", "firefang"), "roughskin", "choicescarf", "Jolly", "atk"),
+            fullyTrained("rotomwash", listOf("hydropump", "voltswitch", "willowisp", "painsplit"), "levitate", "leftovers", "Modest", "spa"),
+            fullyTrained("clefable", listOf("moonblast", "flamethrower", "softboiled", "calmmind"), "magicguard", "sitrusberry", "Modest", "spa"),
+        )
+    }
+
     /** The same with restricted legendaries, for the Tower's legendary class rule. */
     protected val legendaryFirepower = listOf(
         fullyTrained("calyrexshadow", listOf("astralbarrage", "psyshock", "nastyplot", "protect"), "asonespectrier", "lifeorb", "Timid", "spa"),

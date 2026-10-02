@@ -3,11 +3,11 @@ package jbro.cobblemon.mcc.api.battle
 import jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173ActionCandidateAdapter
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicSpeciesInferenceKnowledge
-import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicTeamPreviewKnowledge
 
 /**
  * How a trainer picks the Pokemon it brings after seeing the opponent's team preview, the way the Better AI picks
@@ -37,16 +37,20 @@ object TeamPreviewSelection {
     }
 
     /** The [tier]'s scorer against [preview], or null when the tier does not read the preview or nothing in it is known. */
-    fun scorer(tier: BattleTrainerTier, preview: BattleOpponentTeamPreviewView): Scorer? =
-        scorer(
-            tier,
-            Cobblemon173PublicTeamPreviewKnowledge.enrich(preview),
-            { speciesId, formId, level ->
-                Cobblemon173PublicSpeciesInferenceKnowledge.publicPreviewFacts(speciesId, formId, level)
-                    ?.let { Facts(it.knownTypeIds, it.combatStats) }
-            },
-            Cobblemon173ActionCandidateAdapter::publicMoveDetails,
-        )
+    fun scorer(tier: BattleTrainerTier, preview: BattleOpponentTeamPreviewView): Scorer? {
+        val facts: (String, String?, Int) -> Facts? = { speciesId, formId, level ->
+            Cobblemon173PublicSpeciesInferenceKnowledge.publicPreviewFacts(speciesId, formId, level)
+                ?.let { Facts(it.knownTypeIds, it.combatStats) }
+        }
+        // The scores read the previewed Pokemon's types and public stat ranges alone, so only those are filled in.
+        val known = BattleOpponentTeamPreviewView(preview.selectionSize, preview.pokemon.map { pokemon ->
+            facts(pokemon.speciesId, pokemon.formId, pokemon.level ?: DEFAULT_LEVEL)?.let {
+                BattleOpponentTeamPreviewPokemonView(pokemon.previewSlotId, pokemon.speciesId, pokemon.formId, pokemon.level,
+                    it.typeIds, it.stats)
+            } ?: pokemon
+        })
+        return scorer(tier, known, facts, Cobblemon173ActionCandidateAdapter::publicMoveDetails)
+    }
 
     internal fun scorer(
         tier: BattleTrainerTier,
@@ -66,4 +70,6 @@ object TeamPreviewSelection {
                 .average()
         }
     }
+
+    private const val DEFAULT_LEVEL = 50
 }
