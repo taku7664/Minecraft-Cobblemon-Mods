@@ -137,9 +137,10 @@ class TowerPveBattleLauncherTest {
         launcher.launch(request(MajorBattleMechanic.MEGA, progress))
 
         val prepared = starts.single()
-        assertEquals(BattleTrainerTier.BOSS, prepared.trainerProfile.difficulty.tier)
+        // Regular battles stop at ADVANCED even in the pro stage; BOSS is for the bosses.
+        assertEquals(BattleTrainerTier.ADVANCED, prepared.trainerProfile.difficulty.tier)
         assertEquals(2, prepared.trainerProfile.difficulty.lookaheadPlies)
-        assertEquals(BattleTrainerTier.BOSS, prepared.brainSelectionContext.difficultyTier)
+        assertEquals(BattleTrainerTier.ADVANCED, prepared.brainSelectionContext.difficultyTier)
         assertEquals(BattleEncounterRole.REGULAR, prepared.brainSelectionContext.encounterRole)
     }
 

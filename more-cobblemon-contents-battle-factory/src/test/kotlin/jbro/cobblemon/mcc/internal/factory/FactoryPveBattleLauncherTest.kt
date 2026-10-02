@@ -57,7 +57,7 @@ class FactoryPveBattleLauncherTest {
     }
 
     @Test
-    fun `ordinary ai skill five opponent is boss difficulty but remains a regular encounter`() {
+    fun `ordinary ai skill five opponent plays at advanced difficulty as a regular encounter`() {
         val starts = ArrayList<FactoryPreparedPveBattle<String>>()
         val launcher = FactoryPveBattleLauncher(
             playerMemberFactory = { set, _ -> set.setId },
@@ -70,7 +70,7 @@ class FactoryPveBattleLauncherTest {
 
         launcher.launch(request(battleNumber = 20, aiSkill = 5))
 
-        assertEquals(BattleTrainerTier.BOSS, starts.single().trainerProfile.difficulty.tier)
+        assertEquals(BattleTrainerTier.ADVANCED, starts.single().trainerProfile.difficulty.tier)
         assertEquals(BattleEncounterRole.REGULAR, starts.single().brainSelectionContext.encounterRole)
     }
 

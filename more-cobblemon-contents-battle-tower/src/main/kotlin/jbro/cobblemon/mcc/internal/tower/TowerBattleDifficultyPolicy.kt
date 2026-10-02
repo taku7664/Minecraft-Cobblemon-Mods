@@ -19,7 +19,9 @@ internal object TowerBattleDifficultyPolicy {
             TowerStreakStage.INTRODUCTORY -> BattleDifficultyProfiles.INTRODUCTORY
             TowerStreakStage.PRACTICAL -> BattleDifficultyProfiles.STANDARD
             TowerStreakStage.ADVANCED -> BattleDifficultyProfiles.ADVANCED
-            TowerStreakStage.PRO -> BattleDifficultyProfiles.BOSS
+            // Regular battles stop at ADVANCED; the BOSS search is for the bosses alone, so a long streak does not
+            // run the heaviest search every battle.
+            TowerStreakStage.PRO -> BattleDifficultyProfiles.ADVANCED
         }
         return BattleTrainerProfile.balanced(aiSkill, difficulty)
     }

@@ -12,9 +12,9 @@
 
 - 본체의 공개 트레이너 프로필은 `INTRODUCTORY`, `STANDARD`, `ADVANCED`, `BOSS` 중 하나의 명시적 난도 프로필을 포함해야 한다(MUST).
 - 기본 계산량은 입문 `가설 3/탐색 0/더블 슬롯 후보 3`, 일반 `6/0/5`, 상급 `10/1/8`, 보스 `16/2/12`여야 한다(MUST).
-- 배틀타워 정규전은 연승 구간으로 난도를 정한다(`TowerBattleDifficultyPolicy`): 입문(1~5전) `INTRODUCTORY`, 실전(6~10전) `STANDARD`, 상급(11~20전) `ADVANCED`, 프로(21전~) `BOSS`. 정규전 카탈로그의 `aiSkill`은 난도에 쓰이지 않는다.
+- 배틀타워 정규전은 연승 구간으로 난도를 정한다(`TowerBattleDifficultyPolicy`): 입문(1~5전) `INTRODUCTORY`, 실전(6~10전) `STANDARD`, 상급(11~20전) `ADVANCED`, 프로(21전~)도 `ADVANCED`. `BOSS`는 보스전에만 쓴다. 정규전 카탈로그의 `aiSkill`은 난도에 쓰이지 않는다.
 - 모든 배틀타워 승급 보스와 MAX 주기 챔피언은 현재 랭크와 카탈로그의 `aiSkill` 값에 관계없이 `BOSS`와 `champion` 성격을 사용해야 한다(MUST).
-- 배틀팩토리 일반전은 카탈로그의 `aiSkill`을 0~1 입문, 2 일반, 3~4 상급, 5 보스로 해석해야 한다(MUST). 싱글 21·49전의 팩토리 헤드는 `BOSS`여야 한다(MUST).
+- 배틀팩토리 일반전은 카탈로그의 `aiSkill`을 0~1 입문, 2 일반, 3~5 상급으로 해석한다(5도 일반전에서는 상급). 싱글 21·49전의 팩토리 헤드만 `BOSS`다.
 - 난도는 합법 행동과 공개 정보의 범위를 바꾸어서는 안 된다(MUST NOT). 본체가 만든 동일한 합법 후보와 공정 정보 경계를 두 Brain이 사용해야 한다(MUST).
 
 ## 2. 현재 Brain 적용 경계

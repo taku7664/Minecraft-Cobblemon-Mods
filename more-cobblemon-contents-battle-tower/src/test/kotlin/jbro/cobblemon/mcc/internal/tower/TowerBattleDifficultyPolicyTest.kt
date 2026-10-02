@@ -11,7 +11,7 @@ class TowerBattleDifficultyPolicyTest {
             TowerStreakStage.INTRODUCTORY to (BattleTrainerTier.INTRODUCTORY to 1),
             TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 1),
             TowerStreakStage.ADVANCED to (BattleTrainerTier.ADVANCED to 2),
-            TowerStreakStage.PRO to (BattleTrainerTier.BOSS to 2),
+            TowerStreakStage.PRO to (BattleTrainerTier.ADVANCED to 2),
         )
         expected.forEach { (stage, expectation) ->
             val difficulty = TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.REGULAR, 1).difficulty
