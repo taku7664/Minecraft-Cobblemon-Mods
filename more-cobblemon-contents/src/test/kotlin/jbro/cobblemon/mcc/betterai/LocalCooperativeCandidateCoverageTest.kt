@@ -105,11 +105,12 @@ class LocalCooperativeCandidateCoverageTest {
             // Counterexample to adopting leader-only validation: a verified rank one does not
             // prevent the actual selector from overwhelmingly drawing unsearched alternatives.
             assertTrue(mixing.completePool)
-            assertEquals(934, mixing.unsearchedDraws)
-            assertTrue(mixing.observedUnsearchedMass > 0.9)
+            assertEquals(913, mixing.unsearchedDraws)
+            assertTrue(mixing.observedUnsearchedMass > 0.85)
         }
         if (redirectId == "splash") {
-            val enabled = tuning.copy(revalidateUnsearchedRootLeaders = true)
+            // With finished candidates discarded, a cut depth leaves the ranking untouched.
+            val enabled = tuning.copy(revalidateUnsearchedRootLeaders = true, keepFinishedCandidates = false)
             val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
             val interrupted = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, enabled,
                 clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1))
@@ -117,7 +118,15 @@ class LocalCooperativeCandidateCoverageTest {
             assertEquals(0, interrupted.depthCompleted)
             assertEquals(ranked, interrupted.ranked, "Discard the entire unfinished depth, not just the leader")
             assertTrue(interrupted.responseCoverageByAction.isEmpty())
+            // Kept (the default), the candidates the cut first depth finished keep their search values: doubles
+            // searches one depth only, so discarding it played the bare heuristic whenever a decision ran long.
+            val kept = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile,
+                enabled.copy(keepFinishedCandidates = true),
+                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1))
+            assertTrue(kept.truncated)
+            assertTrue(kept.responseCoverageByAction.isNotEmpty(), "The finished candidates keep their coverage")
             val interruptedPool = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile,
+                LocalDecisionTuning.CURRENT.copy(keepFinishedCandidates = false),
                 clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1),
                 rootChoicePool = CooperativeSearchComparison::choicePool)
             assertTrue(interruptedPool.truncated)

@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.matchup
 
 import java.util.UUID
 import kotlin.math.exp
+import kotlin.math.ln
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
@@ -219,7 +220,9 @@ internal object LocalOpponentIntentPredictor {
         fun option(kind: IntentKind, value: Double, targetId: UUID? = null) =
             IntentOption(kind, moveId, targetId, null, value, 0.0)
         if (moveId == FAKE_OUT) {
-            return listOf(option(IntentKind.ATTACK, if (firstTurnOut(user, state)) FAKE_OUT_VALUE else FAILS))
+            // Aimed at one of them. With no target it read as a spread move: Protect credit counted it against both.
+            val value = if (firstTurnOut(user, state)) FAKE_OUT_VALUE else FAILS
+            return allies.map { option(IntentKind.ATTACK, value - targetShare(allies.size), it.battlePokemonId) }
         }
         if (effects.any { it.kind == BattleMoveEffectKind.PROTECT_USER }) {
             val best = allies.mapNotNull { scores.moves(it.battlePokemonId, user.battlePokemonId).firstOrNull() }
@@ -240,7 +243,9 @@ internal object LocalOpponentIntentPredictor {
             return if (details.targetPattern in SPREAD) {
                 listOf(option(IntentKind.ATTACK, values.sumOf { it.second }))
             } else {
-                values.map { (ally, value) -> option(IntentKind.ATTACK, value + itemBonus(ally), ally.battlePokemonId) }
+                values.map { (ally, value) ->
+                    option(IntentKind.ATTACK, value + itemBonus(ally) - targetShare(values.size), ally.battlePokemonId)
+                }
             }
         }
         scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
@@ -300,6 +305,13 @@ internal object LocalOpponentIntentPredictor {
     }
 
     /** Whether [pokemon] has not moved since it last came in. */
+    /**
+     * One move aimed at either of two Pokemon is one choice with two targets, not two choices: without this, a
+     * single-target attack took twice the softmax mass of a Protect or a spread move of the same value. Taking
+     * `T ln n` off each target's entry gives the move the mean of its targets' weights, split between them.
+     */
+    private fun targetShare(targets: Int): Double = if (targets <= 1) 0.0 else TEMPERATURE * ln(targets.toDouble())
+
     private fun firstTurnOut(pokemon: BattlePokemonStateView, state: BattleStateView): Boolean {
         val own = state.observedEvents.filter { it.actorPokemonId == pokemon.battlePokemonId }
         val entered = own.lastOrNull { it.kind == BattleObservedEventKind.SWITCHED }?.sequence

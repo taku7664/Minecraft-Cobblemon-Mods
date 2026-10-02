@@ -16,6 +16,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleBrainSession
 import jbro.cobblemon.mcc.internal.ai.BattleCandidateFactsView
 import jbro.cobblemon.mcc.internal.ai.BattleDecision
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
@@ -564,7 +565,9 @@ internal class LocalTacticalBrain(
                     "choice_pool_${selection.shortlistSize}",
                     "choice_seed_${selection.seed.toULong().toString(16)}",
                     "difficulty_${profile.difficulty.tier.name.lowercase()}",
-                     "lookahead_requested_${profile.difficulty.lookaheadPlies}",
+                     // Doubles searches one turn whatever the tier asks for.
+                     "lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+                         else profile.difficulty.lookaheadPlies}",
                      "lookahead_turns_${lookahead.depthCompleted}",
                      "lookahead_nodes_${lookahead.nodesVisited}",
                     "lookahead_pruned_${lookahead.branchesPruned}",

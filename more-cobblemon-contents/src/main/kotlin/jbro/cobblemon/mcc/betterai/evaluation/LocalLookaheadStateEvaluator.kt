@@ -7,6 +7,8 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import java.util.UUID
 import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
 
 /**
@@ -159,6 +161,9 @@ internal object LocalLookaheadStateEvaluator {
         capDamageToRemainingHp: Boolean = false,
         // Threat estimation may count the opponent's expected move slots; the leaf keeps known moves.
         includeMoveHypotheses: Boolean = false,
+        // Only moves that land on this Pokemon. In doubles the side's best attack may be aimed at the partner,
+        // and reading it as this Pokemon's exposure called a safe Pokemon doomed.
+        targetPokemonId: UUID? = null,
     ): Double = calculationCache.slotActions(state, side, source.publicActionCatalog, includeMoveHypotheses) {
         PublicFutureActionFactory.slotActions(state, side, source.publicActionCatalog, includeMoveHypotheses = includeMoveHypotheses)
     }
@@ -187,6 +192,22 @@ internal object LocalLookaheadStateEvaluator {
                     damageRange = calculated.facts?.standardDamageFractionRange,
                     knockoutRange = calculated.facts?.standardDamageRollKoProbabilityRange,
                 )
+            }
+            if (targetPokemonId != null) {
+                val calculated = calculatedContext.candidates.single()
+                val targets = LocalPublicMoveTargets.resolve(calculated, calculatedContext, side)
+                val index = targets.indexOfFirst { it.battlePokemonId == targetPokemonId }
+                if (index < 0) return@map 0.0
+                if (index > 0) {
+                    // A spread move's other target: its own entry, already reduced and checked for immunity.
+                    val extra = calculated.facts?.spreadTargets?.firstOrNull {
+                        it.side == targets[index].side && it.slot == targets[index].activeSlot
+                    } ?: return@map 0.0
+                    val accuracy = LocalPublicAccuracy.probability(calculated, calculatedContext, side)
+                    val damage = extra.standardDamageFractionRange?.let { (it.minimum + it.maximum) / 2.0 * accuracy } ?: 0.0
+                    val knockout = extra.standardDamageRollKoProbabilityRange?.let { (it.minimum + it.maximum) / 2.0 * accuracy } ?: 0.0
+                    return@map damage + knockout * tuning.leafKnockoutPressure
+                }
             }
             if (leaf.nullified) return@map 0.0
             val accuracy = leaf.accuracy

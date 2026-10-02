@@ -82,7 +82,7 @@ internal object LocalPublicPositionFacts {
         } else {
             context.state
         }
-        return revealedMoveDamageExposure(state, context) ?: typeFallback
+        return revealedMoveDamageExposure(state, context, defender) ?: typeFallback
     }
 
     fun isPublicKnockoutThreat(
@@ -91,7 +91,7 @@ internal object LocalPublicPositionFacts {
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Boolean {
         val state = if (defender.activeSlot != null) context.state else return false
-        val revealedDamage = revealedMoveDamageExposure(state, context)
+        val revealedDamage = revealedMoveDamageExposure(state, context, defender)
         return if (revealedDamage != null) {
             revealedDamage >= defender.hpFraction
         } else {
@@ -105,7 +105,7 @@ internal object LocalPublicPositionFacts {
         context: BattleDecisionContext,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Boolean {
-        val revealedDamage = revealedMoveDamageExposure(context.state, context)
+        val revealedDamage = revealedMoveDamageExposure(context.state, context, defender)
         return if (revealedDamage != null) {
             revealedDamage >= defender.hpFraction
         } else {
@@ -129,8 +129,11 @@ internal object LocalPublicPositionFacts {
     private fun revealedMoveDamageExposure(
         state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
         context: BattleDecisionContext,
-    ): Double? = LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.OPPONENT, context)
-        .takeIf { it > 0.0 }
+        defender: BattlePokemonStateView,
+    ): Double? = LocalLookaheadStateEvaluator.attackPressure(
+        state, BattleSide.OPPONENT, context,
+        targetPokemonId = defender.battlePokemonId.takeIf { defender.side == BattleSide.ALLY },
+    ).takeIf { it > 0.0 }
 
     /**
      * Turns this Pokemon survives at the given per-turn exposure.

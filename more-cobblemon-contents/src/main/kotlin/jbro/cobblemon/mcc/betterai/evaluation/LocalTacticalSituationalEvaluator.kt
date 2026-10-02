@@ -149,13 +149,18 @@ internal object LocalTacticalSituationalEvaluator {
     fun spreadAdjustment(
         candidate: BattleActionCandidate,
         accuracy: Double,
+        context: BattleDecisionContext,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double {
         val extras = candidate.facts?.spreadTargets.orEmpty().drop(1)
         if (extras.isEmpty()) return 0.0
         return extras.sumOf { extra ->
+            // The projection is of the full hit; a target can lose no more than the HP it has left.
+            val remaining = context.state.pokemon.firstOrNull {
+                it.side == extra.side && it.activeSlot == extra.slot && !it.fainted
+            }?.hpFraction ?: 1.0
             val damage = extra.standardDamageFractionRange
-                ?.let { (it.minimum + it.maximum) * 50.0 * accuracy }
+                ?.let { (it.minimum.coerceAtMost(remaining) + it.maximum.coerceAtMost(remaining)) * 50.0 * accuracy }
                 ?: 0.0
             val knockoutProbability = when (extra.standardKnockoutAssessment) {
                 BattleKnockoutAssessment.GUARANTEED -> 1.0

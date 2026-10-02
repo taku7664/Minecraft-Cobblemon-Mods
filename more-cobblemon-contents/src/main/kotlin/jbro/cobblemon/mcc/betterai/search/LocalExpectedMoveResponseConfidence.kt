@@ -7,9 +7,14 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 internal object LocalExpectedMoveResponseConfidence {
     fun adjust(
         values: List<LocalOpponentResponseValue>,
-        noResponseBaseline: Double,
+        /**
+         * The reply with every slot unknown. A doubles opponent with one fully revealed Pokemon has no such
+         * reply, so it may be null; each expected reply then falls back on its own matching baseline alone.
+         */
+        noResponseBaseline: Double?,
         confidence: Double,
         bestTieTolerance: Double,
+        unknownReserve: Double = 0.0,
     ): List<LocalOpponentResponseValue> {
         require(confidence in 0.0..1.0)
         require(bestTieTolerance >= 0.0)
@@ -21,14 +26,15 @@ internal object LocalExpectedMoveResponseConfidence {
             .minOfOrNull { it.value.value }
             ?: return values
         val reserve = values.singleOrNull { it.action.isPureUnknownResponse() }
-            ?.let { (noResponseBaseline - it.value.value).coerceAtLeast(0.0) }
-            ?: 0.0
+            ?.let { pure -> noResponseBaseline?.let { (it - pure.value.value).coerceAtLeast(0.0) } }
+            ?: unknownReserve
         return values.map { response ->
             if (!response.action.containsTag(EXPECTED_TAG) || response.value.value <= best + bestTieTolerance) {
                 response
             } else {
                 val baseline = matchingNoResponseBaseline(response.action, values, reserve)
                     ?: noResponseBaseline
+                    ?: return@map response
                 response.copy(value = response.value.copy(
                     value = baseline + confidence * (response.value.value - baseline),
                 ))

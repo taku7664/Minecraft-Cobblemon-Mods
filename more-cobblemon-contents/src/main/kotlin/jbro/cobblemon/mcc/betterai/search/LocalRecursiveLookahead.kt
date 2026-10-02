@@ -396,9 +396,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                 }
                 accepted.map { deeper[it.outcome.candidate.actionId] ?: it }.toMutableList()
             } else {
+                // The first depth goes in the heuristic's order, so the leaders finish first, and a candidate the
+                // budget cut off keeps its heuristic value rather than a search of only some of its replies.
                 ranked.map { rank ->
                     val id = rank.outcome.candidate.actionId
-                    if (id in excludedActionIds || searchable != null && id !in searchable) rank else evaluateRank(rank)
+                    if (id in excludedActionIds || searchable != null && id !in searchable || search.truncated) rank
+                    else evaluateRank(rank).let { if (search.truncated) rank else { finishedIds += id; it } }
                 }.toMutableList()
             }
             var leaderValidated = narrowed || !tuning.revalidateUnsearchedRootLeaders && rootChoicePool == null
@@ -449,7 +452,9 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (search.truncated) {
                 truncated = true
                 terminationReason = search.terminationReason ?: LocalLookaheadTerminationReason.TIME_BUDGET
-                if (tuning.keepFinishedCandidates && depth > 1 && finishedIds.isNotEmpty()) {
+                // Doubles searches one depth only, so discarding a cut first depth threw away every candidate
+                // it had finished and played the bare heuristic whenever a decision ran long.
+                if (tuning.keepFinishedCandidates && finishedIds.isNotEmpty()) {
                     accepted = LocalBattleActionPolicy.sort(evaluated)
                     acceptedCoverage = acceptedCoverage + evaluatedCoverage.filterKeys { it in finishedIds }
                     partialDepthCandidates = finishedIds.size
@@ -1086,12 +1091,13 @@ internal object LocalRecursiveLookaheadEvaluator {
             val baseline = LocalExpectedMoveResponseConfidence.noResponseBaseline(
                 values,
                 UNKNOWN_RESPONSE_RESERVE,
-            ) ?: return values
+            )
             return LocalExpectedMoveResponseConfidence.adjust(
                 values,
                 noResponseBaseline = baseline,
                 confidence = tuning.expectedMoveResponseConfidence,
                 bestTieTolerance = tuning.expectedMoveBestTieTolerance,
+                unknownReserve = UNKNOWN_RESPONSE_RESERVE,
             )
         }
 

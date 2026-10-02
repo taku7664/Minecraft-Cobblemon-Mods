@@ -9,6 +9,8 @@ internal object LocalSwitchStateProjector {
         state: BattleStateView,
         side: BattleSide,
         action: BattleActionCandidate,
+        /** Off when other Pokemon switch in on the same turn: abilities wait until every one is in. */
+        entryAbility: Boolean = true,
     ): BattleStateView {
         val incomingId = action.switchPokemonId ?: return state
         val incoming = state.pokemon.firstOrNull {
@@ -50,7 +52,7 @@ internal object LocalSwitchStateProjector {
             },
         )
         val afterHazards = LocalSwitchEntryEffectProjector.project(switched, incomingId)
-        return LocalEntryAbilityProjector.project(afterHazards, incomingId)
+        return if (entryAbility) LocalEntryAbilityProjector.project(afterHazards, incomingId) else afterHazards
     }
 
     fun projectedSwitchOutHp(state: BattleStateView, pokemon: BattlePokemonStateView): Double =

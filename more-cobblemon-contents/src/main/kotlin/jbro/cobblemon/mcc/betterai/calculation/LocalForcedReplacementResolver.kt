@@ -34,7 +34,10 @@ internal object LocalForcedReplacementResolver {
         val knownBench = state.pokemon.filter {
             it.side == side && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
         }
-        val states = orderedSelections(knownBench, missingSlots.size).map { replacements ->
+        // Two empty slots and one Pokemon seen on the bench still fill the slot it can; asking for both left no
+        // replacement at all, and the branch was scored with both slots empty.
+        val fillable = minOf(missingSlots.size, knownBench.size)
+        val states = if (fillable == 0) emptyList() else orderedSelections(knownBench, fillable).map { replacements ->
             missingSlots.zip(replacements).fold(state) { projected, (slot, bench) ->
                 val raw = BattleActionCandidate(
                     actionId = "lookahead:${side.name.lowercase()}:forced:slot:$slot:${bench.battlePokemonId}",

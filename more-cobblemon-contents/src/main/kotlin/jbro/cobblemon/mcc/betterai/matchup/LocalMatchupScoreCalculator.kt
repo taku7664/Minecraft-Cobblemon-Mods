@@ -24,7 +24,6 @@ import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
-import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
@@ -288,20 +287,19 @@ internal object LocalMatchupScoreCalculator {
                 var calculated = calculate(action)
                 var candidate = calculated.candidates.single()
                 val targets = LocalPublicMoveTargets.resolve(candidate, calculated, side)
-                var spread = 1.0
                 if (targets.firstOrNull()?.battlePokemonId != targetId) {
                     // A spread move's rolls are for its primary target. At another it hits, it is the same move
-                    // declared at that one, with the spread reduction.
+                    // declared at that one, tagged so the calculator applies the spread reduction before it caps
+                    // the rolls at the target's HP (reduced after the cap, no roll could ever knock it out).
                     if (targets.size < 2 || targets.none { it.battlePokemonId == targetId }) return@mapNotNull null
-                    action = aimedAt(original, target)
+                    action = LocalPublicMoveTargets.spreadHitOn(original, target, "${original.actionId}:at:${target.side}:${target.activeSlot}")
                     calculated = calculate(action)
                     candidate = calculated.candidates.single()
-                    spread = SPREAD_DAMAGE_MULTIPLIER
                 }
                 val rolls = if (LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified) {
                     List(ROLLS) { 0.0 }
                 } else {
-                    PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side)?.map { it * spread }
+                    PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side)
                 } ?: return@mapNotNull null
                 val accuracy = LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
                 ScoredMove(moveScore(userId, PublicIds.canonical(candidate.moveId ?: action.actionId), targetId,
@@ -311,20 +309,6 @@ internal object LocalMatchupScoreCalculator {
             .sortedWith(BEST_FIRST)
     }
 
-    private fun aimedAt(action: BattleActionCandidate, target: BattlePokemonStateView) = BattleActionCandidate(
-        actionId = "${action.actionId}:at:${target.side}:${target.activeSlot}",
-        kind = action.kind,
-        actorSlot = action.actorSlot,
-        moveSlot = action.moveSlot,
-        moveId = action.moveId,
-        targets = listOf(BattleTargetSlot(target.side, requireNotNull(target.activeSlot))),
-        mechanic = action.mechanic,
-        moveDetails = action.moveDetails,
-        tags = action.tags,
-    )
-
-    /** Showdown's spread damage reduction in doubles. */
-    private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
 
     private val BEST_FIRST = compareBy<ScoredMove> { it.score.expectedHitsToKnockout }
         .thenByDescending { it.score.accuracy }

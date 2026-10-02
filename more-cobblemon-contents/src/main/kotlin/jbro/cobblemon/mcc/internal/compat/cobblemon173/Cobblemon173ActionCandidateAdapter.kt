@@ -23,6 +23,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 
 /** Contains every direct Cobblemon 1.7.3 action-request dependency used by the public Brain boundary. */
@@ -214,6 +215,14 @@ internal object Cobblemon173ActionCandidateAdapter {
                 slot = it.getSide().activePokemon.indexOf(it),
             )
         }
+        val details = moveDetails(move, transformed, targetType)
+        // Cobblemon lists the partner among a normal or any-target move's targets. An attack aimed at it
+        // was scored as pressure on a foe, so a Close Combat into the partner could rank first; the native
+        // engine offers foes only for these moves, and this path now matches it.
+        if (targetView?.side == BattleSide.ALLY && targetType in FOE_AIMED_TARGETS &&
+            details?.damageCategory != BattleMoveDamageCategory.STATUS &&
+            PublicIds.canonical(transformed?.move ?: move.id) !in ALLY_AIMED_DAMAGING_MOVES
+        ) return
         val variantId = gimmick?.id ?: "base"
         add(
             Cobblemon173ActionChoice(
@@ -223,7 +232,7 @@ internal object Cobblemon173ActionCandidateAdapter {
                     actorSlot = actorSlot,
                     moveSlot = moveSlot,
                     moveId = move.id,
-                    moveDetails = moveDetails(move, transformed, targetType),
+                    moveDetails = details,
                     targets = listOfNotNull(targetView),
                     mechanic = gimmick?.let {
                         BattleMechanicCandidate(
@@ -436,6 +445,11 @@ internal object Cobblemon173ActionCandidateAdapter {
 
     private val BattleFormat.activeSlotsPerSide: Int
         get() = if (this == BattleFormat.SINGLE) 1 else 2
+
+    private val FOE_AIMED_TARGETS = setOf(MoveTarget.normal, MoveTarget.any)
+
+    /** Damaging moves that have a reason to land on the partner: Pollen Puff heals it. */
+    private val ALLY_AIMED_DAMAGING_MOVES = setOf("pollenpuff")
 }
 
 data class Cobblemon173MechanicPolicy(

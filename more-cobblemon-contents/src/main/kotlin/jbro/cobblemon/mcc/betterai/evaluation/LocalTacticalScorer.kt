@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleCandidateFactsView
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
@@ -22,6 +23,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.mcc.betterai.mechanics.LocalRiskAttitude
@@ -64,7 +66,8 @@ internal object LocalTacticalScorer {
             val components = candidate.componentActions.map { scoreBreakdown(it, context, strategy, profile, tuning) }
             LocalTacticalScore(
                 total = components.sumOf(LocalTacticalScore::total) +
-                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
+                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) +
+                    partnerActionCollateralRefund(candidate, context, tuning) -
                     duplicateCertainKnockoutCredit(candidate, context, tuning),
                 statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
             )
@@ -136,7 +139,8 @@ internal object LocalTacticalScorer {
         BattleActionKind.USE_MOVE -> moveAdjustments(candidate, context, strategy, profile, tuning)
         BattleActionKind.COMPOSITE ->
             candidate.componentActions.sumOf { candidateAdjustments(it, context, strategy, profile, tuning) } +
-                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)
+                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) +
+                partnerActionCollateralRefund(candidate, context, tuning)
         else -> 0.0
     }
 
@@ -230,14 +234,14 @@ internal object LocalTacticalScorer {
         }
         val priorityBonus = when {
             effectivePriority <= 0 -> effectivePriority * 2.0
-            opponentActiveHp(context) <= CRITICAL_HP -> effectivePriority * 25.0
-            allyActiveHp(context) <= CRITICAL_HP -> effectivePriority * 8.0
+            priorityTargetHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 25.0
+            priorityUserHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 8.0
             else -> effectivePriority * 2.0
         } * prioritySuccessProbability
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
         // A spread move's other targets. Zero for every single-target move, so this changes nothing
         // outside doubles.
-        val spreadBonus = LocalTacticalSituationalEvaluator.spreadAdjustment(candidate, accuracy, tuning)
+        val spreadBonus = LocalTacticalSituationalEvaluator.spreadAdjustment(candidate, accuracy, context, tuning)
         // Recoil is charged once, by the outcome evaluator, from the accuracy-weighted and
         // HP-clamped projection. Charging `selfRecoilFractionRange` here as well double-billed every
         // recoil attacker - which is exactly the class of move a physical sweeper wants to click.
@@ -652,16 +656,81 @@ internal object LocalTacticalScorer {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        /** Prices the hit on these instead, such as a partner switching into the slot. */
+        targetsOverride: List<BattlePokemonStateView>? = null,
     ): Double {
         val details = candidate.moveDetails ?: return 0.0
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
+        val targets = targetsOverride ?: allyCollateralTargets(candidate, context)
+        if (targets.isEmpty()) return 0.0
+        val effectivePower = LocalPublicAccuracy.weightedPower(
+            details,
+            LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY),
+        )
+        val sameTypeBonus = publicSameTypeBonus(candidate, context)
+        // A Pokemon switching in has no knockout coming at it yet, so nothing of it is already spoken for.
+        val doomedDiscount = { ally: BattlePokemonStateView ->
+            if (ally.activeSlot == null) 0.0 else doomedAllyDiscount(ally, context, tuning)
+        }
+        val spread = spreadDamageModifier(candidate, context)
+        return targets.sumOf { target ->
+            allyCollateralOn(candidate, context, tuning, target, effectivePower, sameTypeBonus, spread, doomedDiscount)
+        }
+    }
+
+    /**
+     * The collateral a joint action's own partner move takes back. Each slot's collateral is charged with no
+     * view of what the partner does, so Earthquake beside a partner's Protect was billed as if the partner
+     * stood in it, and beside a partner switching out it billed the Pokemon leaving instead of the one coming in.
+     */
+    private fun partnerActionCollateralRefund(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+    ): Double {
+        val parts = candidate.componentActions
+        if (parts.size < 2 || tuning.legacyRawPowerFallback) return 0.0
+        return parts.sumOf { attack ->
+            if (attack.kind != BattleActionKind.USE_MOVE) return@sumOf 0.0
+            allyCollateralTargets(attack, context).sumOf { partner ->
+                val partnerAction = parts.firstOrNull { it !== attack && it.actorSlot == partner.activeSlot }
+                    ?: return@sumOf 0.0
+                when {
+                    // Protect's +4 priority puts it ahead of every attack the partner can choose.
+                    partnerAction.kind == BattleActionKind.USE_MOVE &&
+                        LocalStallingProtectionRules.isStallingProtection(partnerAction) -> {
+                        val shielded = LocalStallingProtectionRules.nextSuccessProbability(
+                            LocalStallingProtectionRules.consecutiveSuccessfulUses(context.state, BattleSide.ALLY, partner.activeSlot),
+                        )
+                        publicAllyCollateral(attack, context, tuning, listOf(partner)) * shielded
+                    }
+                    partnerAction.kind == BattleActionKind.SWITCH -> {
+                        val incoming = context.state.pokemon.firstOrNull {
+                            it.battlePokemonId == partnerAction.switchPokemonId && !it.fainted
+                        } ?: return@sumOf 0.0
+                        publicAllyCollateral(attack, context, tuning, listOf(partner)) -
+                            publicAllyCollateral(attack, context, tuning, listOf(incoming))
+                    }
+                    else -> 0.0
+                }
+            }
+        }
+    }
+
+    private fun allyCollateralTargets(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+    ): List<BattlePokemonStateView> {
+        val details = candidate.moveDetails ?: return emptyList()
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return emptyList()
         val actorSlot = candidate.actorSlot
         val activeAllies = activePokemon(context, BattleSide.ALLY)
-        val targets = when (details.targetPattern) {
+        return when (details.targetPattern) {
             BattleMoveTargetPattern.ALL_ACTIVE -> activeAllies
             BattleMoveTargetPattern.ALL_ADJACENT -> activeAllies.filter { it.activeSlot != actorSlot }
             BattleMoveTargetPattern.ALL_ALLIES -> activeAllies
             BattleMoveTargetPattern.SELECTED,
+            BattleMoveTargetPattern.SELECTED_OPPONENT,
             BattleMoveTargetPattern.SELECTED_ALLY,
             BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF,
             -> {
@@ -671,46 +740,49 @@ internal object LocalTacticalScorer {
             }
             else -> emptyList()
         }
-        val effectivePower = LocalPublicAccuracy.weightedPower(
-            details,
-            LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY),
-        )
-        val sameTypeBonus = publicSameTypeBonus(candidate, context)
-        val doomedDiscount = { ally: BattlePokemonStateView -> doomedAllyDiscount(ally, context, tuning) }
-        val spread = spreadDamageModifier(candidate, context)
-        return targets.sumOf { target ->
-            val multiplier = if (target.knownTypeIds.isEmpty()) {
-                1.0
-            } else {
-                LocalPublicMechanicsKernel.publicDamageMultiplierAgainst(
-                    candidate,
-                    context,
-                    BattleSide.ALLY,
-                    target,
-                )
-            }
-            // Immunities (types, Levitate, Telepathy) are the kernel's call; the damage formula below does
-            // not know every partner-protecting mechanic.
-            if (multiplier == 0.0) return@sumOf 0.0
-            // The partner's stats are exact, so the real damage formula prices the hit, and a hit that can
-            // knock the partner out is charged as a lost Pokemon, not only as lost HP. Earthquake from a
-            // Guts Ursaluna left a full-HP Volcanion partner at 19%, fainted or at 8% in the engine, while
-            // the power-only estimate below charged it about 75 points.
-            val rolls = if (tuning.legacyRawPowerFallback) null else {
-                PublicBattleTacticalCalculator.partnerDamageRollFractions(candidate, context, target, spread)
-            }
-            if (!rolls.isNullOrEmpty()) {
-                val lost = rolls.map { minOf(it, target.hpFraction) }.average()
-                val knockoutChance = rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
-                return@sumOf (lost * tuning.boardToScore + knockoutChance * tuning.knockoutMaterialScore) *
-                    (1.0 - doomedDiscount(target))
-            }
-            spread * if (tuning.legacyRawPowerFallback) {
-                effectivePower * sameTypeBonus * multiplier
-            } else {
-                val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * multiplier
-                hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore * (1.0 - doomedDiscount(target))
-            }
+    }
+
+    private fun allyCollateralOn(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        target: BattlePokemonStateView,
+        effectivePower: Double,
+        sameTypeBonus: Double,
+        spread: Double,
+        doomedDiscount: (BattlePokemonStateView) -> Double,
+    ): Double {
+        val multiplier = if (target.knownTypeIds.isEmpty()) {
+            1.0
+        } else {
+            LocalPublicMechanicsKernel.publicDamageMultiplierAgainst(
+                candidate,
+                context,
+                BattleSide.ALLY,
+                target,
+            )
+        }
+        // Immunities (types, Levitate, Telepathy) are the kernel's call; the damage formula below does
+        // not know every partner-protecting mechanic.
+        if (multiplier == 0.0) return 0.0
+        // The partner's stats are exact, so the real damage formula prices the hit, and a hit that can
+        // knock the partner out is charged as a lost Pokemon, not only as lost HP. Earthquake from a
+        // Guts Ursaluna left a full-HP Volcanion partner at 19%, fainted or at 8% in the engine, while
+        // the power-only estimate below charged it about 75 points.
+        val rolls = if (tuning.legacyRawPowerFallback) null else {
+            PublicBattleTacticalCalculator.partnerDamageRollFractions(candidate, context, target, spread)
+        }
+        if (!rolls.isNullOrEmpty()) {
+            val lost = rolls.map { minOf(it, target.hpFraction) }.average()
+            val knockoutChance = rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
+            return (lost * tuning.boardToScore + knockoutChance * tuning.knockoutMaterialScore) *
+                (1.0 - doomedDiscount(target))
+        }
+        return spread * if (tuning.legacyRawPowerFallback) {
+            effectivePower * sameTypeBonus * multiplier
+        } else {
+            val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * multiplier
+            hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore * (1.0 - doomedDiscount(target))
         }
     }
 
@@ -785,6 +857,22 @@ internal object LocalTacticalScorer {
     }
 
     private fun allyActiveHp(context: BattleDecisionContext): Double = activeHp(context, BattleSide.ALLY)
+
+    /**
+     * The HP of the foe this priority move lands on. In doubles the lower of the two foes is not
+     * the one a single-target move strikes, so it reads the move's own target.
+     */
+    private fun priorityTargetHp(candidate: BattleActionCandidate, context: BattleDecisionContext): Double =
+        LocalPublicMoveTargets.resolve(candidate, context, BattleSide.ALLY)
+            .filter { it.side == BattleSide.OPPONENT }
+            .minOfOrNull { it.hpFraction }
+            ?: if (context.state.format == BattleFormat.DOUBLE) 1.0 else opponentActiveHp(context)
+
+    /** The HP of the Pokemon using this priority move, not of whichever partner is lower. */
+    private fun priorityUserHp(candidate: BattleActionCandidate, context: BattleDecisionContext): Double =
+        candidate.actorSlot?.let { slot ->
+            context.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == slot && !it.fainted }
+        }?.hpFraction ?: allyActiveHp(context)
 
     private fun opponentActiveHp(context: BattleDecisionContext): Double = activeHp(context, BattleSide.OPPONENT)
 

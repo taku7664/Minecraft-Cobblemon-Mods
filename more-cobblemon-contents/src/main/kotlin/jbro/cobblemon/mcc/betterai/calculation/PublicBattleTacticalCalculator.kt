@@ -52,11 +52,10 @@ internal object PublicBattleTacticalCalculator {
         val details = resolvedCandidate.moveDetails ?: return null
         val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
         val targets = LocalPublicMoveTargets.resolve(resolvedCandidate, context, actingSide)
-        // These rolls feed the search, which applies them to one defender. A spread move is therefore
-        // projected against its primary target only: the extra slot is visible to the scorer through
-        // `spreadTargets`, but the recursive projection still moves one HP bar per action.
+        // These rolls feed the search, which applies them to one defender. The search projects a spread
+        // move one target at a time, each hit tagged so the reduction still applies.
         val target = targets.firstOrNull()
-        val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
+        val spreadMultiplier = LocalPublicMoveTargets.spreadMultiplier(resolvedCandidate, context, actingSide)
         val stab = sameTypeAttackBonus(details, actor, resolvedCandidate)
         val typeMultiplier = publicTypeMultiplier(resolvedCandidate.moveId, details, target, context)
         val mechanics = LocalPublicMechanicsKernel.projectMove(resolvedCandidate, context, actingSide)
@@ -225,7 +224,7 @@ internal object PublicBattleTacticalCalculator {
         val targets = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
         val target = targets.firstOrNull()
         val publiclyNullified = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide).publiclyNullified
-        val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
+        val spreadMultiplier = LocalPublicMoveTargets.spreadMultiplier(candidate, context, actingSide)
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
             basis += BattleCalculationBasis.PUBLIC_TYPES
             publicTypeMultiplier(candidate.moveId, details, target, context)
@@ -311,7 +310,7 @@ internal object PublicBattleTacticalCalculator {
             calculationCoverage = BattleCalculationCoverage.PARTIAL,
             unknowns = unknowns,
             basis = basis,
-            spreadTargets = spreadTargetFacts(candidate, details, actor, stab, targets, context.state, spreadMultiplier),
+            spreadTargets = spreadTargetFacts(candidate, targets, typeMultiplier, projection, context, actingSide),
         )
     }
 
@@ -323,27 +322,37 @@ internal object PublicBattleTacticalCalculator {
      */
     private fun spreadTargetFacts(
         candidate: BattleActionCandidate,
-        details: BattleMoveCandidateView,
-        actor: BattlePokemonStateView?,
-        stab: Double?,
         targets: List<BattlePokemonStateView>,
-        state: BattleStateView,
-        spreadMultiplier: Double,
+        primaryTypeMultiplier: Double?,
+        primaryProjection: ShowdownStandardDamageProjectionResult?,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
     ): List<BattleSpreadTargetFactsView> {
         if (targets.size < 2) return emptyList()
-        return targets.mapNotNull { each ->
-            val slot = each.activeSlot ?: return@mapNotNull null
-            val typeMultiplier = each.knownTypeIds.takeIf { it.isNotEmpty() }
-                ?.let { publicTypeMultiplier(candidate.moveId, details, each) }
-            val projection =
-                standardDamageProjection(candidate, details, actor, each, stab, typeMultiplier, state, spreadMultiplier)
+        return targets.mapIndexedNotNull { index, each ->
+            val slot = each.activeSlot ?: return@mapIndexedNotNull null
+            if (index == 0) {
+                return@mapIndexedNotNull BattleSpreadTargetFactsView(
+                    side = each.side,
+                    slot = slot,
+                    typeChartMultiplier = primaryTypeMultiplier,
+                    standardDamageFractionRange = primaryProjection?.damageFractionRange,
+                    standardDamageRollKoProbabilityRange = primaryProjection?.koProbabilityRange,
+                    standardKnockoutAssessment = primaryProjection?.knockoutAssessment,
+                )
+            }
+            // Each extra target is its own hit: its revealed ability, a Focus Sash or Sturdy at full health
+            // and a public immunity apply to it exactly as they would to a primary target.
+            val hit = LocalPublicMoveTargets.spreadHitOn(candidate, each, "${candidate.actionId}:spread:${each.side}:$slot")
+            val facts = facts(hit, context, actingSide)
+            val nullified = LocalPublicMechanicsKernel.projectMove(hit, context, actingSide).publiclyNullified
             BattleSpreadTargetFactsView(
                 side = each.side,
                 slot = slot,
-                typeChartMultiplier = typeMultiplier,
-                standardDamageFractionRange = projection?.damageFractionRange,
-                standardDamageRollKoProbabilityRange = projection?.koProbabilityRange,
-                standardKnockoutAssessment = projection?.knockoutAssessment,
+                typeChartMultiplier = if (nullified) 0.0 else facts.typeChartMultiplier,
+                standardDamageFractionRange = if (nullified) BattleDamageFractionRange(0.0, 0.0) else facts.standardDamageFractionRange,
+                standardDamageRollKoProbabilityRange = if (nullified) BattleFractionRange(0.0, 0.0) else facts.standardDamageRollKoProbabilityRange,
+                standardKnockoutAssessment = if (nullified) BattleKnockoutAssessment.IMPOSSIBLE else facts.standardKnockoutAssessment,
             )
         }
     }

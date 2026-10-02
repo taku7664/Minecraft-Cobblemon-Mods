@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.mcc.betterai.mechanics.LocalSideGuardRules
@@ -31,6 +32,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffectKind
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveDelayedStrike
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector
+import jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector
 import jbro.cobblemon.mcc.betterai.state.LocalBranchMoveInputs
 import jbro.cobblemon.mcc.betterai.state.LocalFieldEffectProjector
 import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
@@ -79,7 +81,11 @@ internal object PublicSingleTurnProjector {
         val turnActions = primitiveTurnActions(initialState, BattleSide.ALLY, allyAction) +
             primitiveTurnActions(initialState, BattleSide.OPPONENT, opponentAction)
         var switchedState = initialState
-        turnActions.filter { it.action.kind == BattleActionKind.SWITCH }.forEach { ordered ->
+        val switches = turnActions.filter { it.action.kind == BattleActionKind.SWITCH }
+        // Pokemon switching in on the same turn are all in before any of their abilities activate. Applied one at
+        // a time, an Intimidate switching in hit the foe that was leaving, whose drop then left with it.
+        val simultaneous = switches.size > 1
+        switches.forEach { ordered ->
             if (!shouldContinue()) return emptyList()
             switchedState = applySwitch(
                 switchedState,
@@ -87,7 +93,17 @@ internal object PublicSingleTurnProjector {
                 ordered.action,
                 sourceContext,
                 calculationCache,
+                entryAbility = !simultaneous,
             )
+        }
+        if (simultaneous) {
+            // Fastest first, so the slower Pokemon's weather or terrain is the one left standing.
+            switches.mapNotNull { it.action.switchPokemonId }
+                .mapNotNull { id -> switchedState.pokemon.firstOrNull { it.battlePokemonId == id && it.activeSlot != null } }
+                .sortedByDescending { it.combatStats?.speed?.let { speed -> (speed.minimum + speed.maximum) / 2.0 } ?: 0.0 }
+                .forEach { incoming ->
+                    switchedState = LocalEntryAbilityProjector.project(switchedState, incoming.battlePokemonId)
+                }
         }
 
         // Mechanics resolve after switches and before any move, and persist beyond this turn.
@@ -347,9 +363,18 @@ internal object PublicSingleTurnProjector {
                 ) 1 else 0
                 option.details.currentPp - spent - spentThisTurn > 0
             })
+            // Spotlight makes its target the centre of attention, not its user.
             val newlyRedirecting = outcome.executedMoveIdsByPokemon
                 .filterValues { canonicalId(it) in REDIRECTING_MOVE_IDS }
                 .keys
+                .mapNotNullTo(linkedSetOf()) { userId ->
+                    if (canonicalId(outcome.executedMoveIdsByPokemon[userId]) != SPOTLIGHT) userId
+                    else ordered.action.targets.singleOrNull()?.let { target ->
+                        outcome.state.pokemon.firstOrNull {
+                            it.side == target.side && it.activeSlot == target.slot && !it.fainted
+                        }?.battlePokemonId
+                    }
+                }
             val newlyTaunted = outcome.controlEffects.filter {
                 it.kind == RecursiveControlEffectKind.TAUNT
             }.mapTo(linkedSetOf()) { it.targetPokemonId }
@@ -395,6 +420,7 @@ internal object PublicSingleTurnProjector {
         action: BattleActionCandidate,
         sourceContext: BattleDecisionContext,
         calculationCache: LocalProjectedActionCalculationCache,
+        entryAbility: Boolean = true,
     ): BattleStateView {
         val actionWithoutFacts = action.withoutFacts()
         val calculatedContext = calculationCache.getOrCalculate(state, side, actionWithoutFacts, catalog = sourceContext.publicActionCatalog) {
@@ -403,7 +429,7 @@ internal object PublicSingleTurnProjector {
                 side,
             )
         }
-        return LocalSwitchStateProjector.project(state, side, calculatedContext.candidates.single())
+        return LocalSwitchStateProjector.project(state, side, calculatedContext.candidates.single(), entryAbility)
     }
 
     private fun applyMove(
@@ -1180,7 +1206,18 @@ internal object PublicSingleTurnProjector {
                 val currentTarget = branch.state.pokemon.firstOrNull {
                     it.battlePokemonId == initialTarget.battlePokemonId && !it.fainted && it.hpFraction > 0.0
                 } ?: return@flatMap listOf(branch)
-                val targetedAction = originalAction.withSingleTarget(currentTarget)
+                // Each hit is recalculated for its own target: the facts the action arrived with describe the
+                // primary one (a Flying primary target nullified Earthquake for everyone). A move that strikes
+                // several keeps Showdown's 0.75 reduction although each hit names one target.
+                val targetedAction = if (targets.size > 1) {
+                    LocalPublicMoveTargets.spreadHitOn(
+                        originalAction,
+                        currentTarget,
+                        "${originalAction.actionId}:projected-target:${currentTarget.side.name.lowercase()}:${currentTarget.activeSlot}",
+                    )
+                } else {
+                    originalAction.withoutFacts().withSingleTarget(currentTarget)
+                }
                 val calculatedContext = calculationCache.getOrCalculate(branch.state, side, targetedAction, catalog = sourceContext.publicActionCatalog) {
                     PublicBattleTacticalCalculator.calculate(actionContext(branch.state, targetedAction, sourceContext), side)
                 }
@@ -1329,8 +1366,10 @@ internal object PublicSingleTurnProjector {
     ): BattleActionCandidate {
         // The embedded engine reselects a fainted opposing target, but never a fainted ally.
         // Doubles has at most one remaining foe here; do not invent probabilities for other formats.
-        if (state.format != BattleFormat.DOUBLE ||
-            action.moveDetails?.targetPattern != BattleMoveTargetPattern.SELECTED_OPPONENT) return action
+        // An any-target move (Hurricane, Dark Pulse) aimed at a foe is reselected the same way (Battle.getTarget).
+        if (state.format != BattleFormat.DOUBLE || action.moveDetails?.targetPattern !in setOf(
+                BattleMoveTargetPattern.SELECTED_OPPONENT, BattleMoveTargetPattern.SELECTED,
+            )) return action
         val selected = action.targets.singleOrNull() ?: return action
         if (selected.side == side) return action
         val oldTarget = state.pokemon.singleOrNull {
@@ -1843,13 +1882,16 @@ internal object PublicSingleTurnProjector {
     private fun rebindPendingActors(
         remaining: List<TurnPrimitiveAction>,
         state: BattleStateView,
-    ): List<TurnPrimitiveAction> = remaining.map { pending ->
-        val slot = pending.actorPokemonId?.let { id ->
-            state.pokemon.singleOrNull { it.battlePokemonId == id }?.activeSlot
+    ): List<TurnPrimitiveAction> = remaining.mapNotNull { pending ->
+        val actor = pending.actorPokemonId?.let { id -> state.pokemon.singleOrNull { it.battlePokemonId == id } }
+        val slot = actor?.activeSlot
+        when {
+            // Dragged out by Dragon Tail, Roar or Circle Throw: its move leaves with it. Kept, the Pokemon pulled
+            // into the slot used the old one's move that same turn.
+            actor != null && slot == null && !actor.fainted -> null
+            slot == null || slot == pending.action.actorSlot -> pending
+            else -> pending.copy(action = pending.action.withActorSlot(slot))
         }
-        if (slot == null || slot == pending.action.actorSlot) pending else pending.copy(
-            action = pending.action.withActorSlot(slot),
-        )
     }
 
     private fun TurnPrimitiveAction.withTurnPowerMultiplier(multiplier: Double): TurnPrimitiveAction {
@@ -2200,6 +2242,7 @@ internal object PublicSingleTurnProjector {
 
     /** Moves whose whole purpose is to become this turn's target. */
     private val REDIRECTING_MOVE_IDS = setOf("followme", "ragepowder", "spotlight")
+    private const val SPOTLIGHT = "spotlight"
 
     /** Only a move that picks one slot can be drawn to a different one. */
     private val REDIRECTABLE_TARGET_PATTERNS = setOf(

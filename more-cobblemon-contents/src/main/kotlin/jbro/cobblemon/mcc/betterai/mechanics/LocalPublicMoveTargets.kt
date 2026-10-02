@@ -25,6 +25,47 @@ internal object LocalPublicMoveTargets {
         return listOfNotNull(activeOpponents.singleOrNull())
     }
 
+    /**
+     * Showdown's 0.75 spread reduction. It applies when the move lands on more than one Pokemon, the
+     * user's partner included, so it is not the size of [resolve], which lists opponents only. A
+     * spread move projected one target at a time carries [SPREAD_HIT_TAG] instead, because its
+     * single explicit target no longer says how many it struck.
+     */
+    fun spreadMultiplier(candidate: BattleActionCandidate, context: BattleDecisionContext,
+        actingSide: BattleSide): Double {
+        if (SPREAD_HIT_TAG in candidate.tags) return SPREAD_DAMAGE_MULTIPLIER
+        if (candidate.targets.isNotEmpty()) return 1.0
+        val pattern = candidate.moveDetails?.targetPattern ?: return 1.0
+        if (pattern !in SPREAD_PATTERNS) return 1.0
+        val actor = candidate.actorSlot?.let { slot ->
+            context.state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == slot }
+        }
+        val struck = context.state.pokemon.count { other ->
+            other.activeSlot != null && !other.fainted && other.hpFraction > 0.0 &&
+                other.battlePokemonId != actor?.battlePokemonId &&
+                (other.side != actingSide || pattern != BattleMoveTargetPattern.ALL_OPPONENTS)
+        }
+        return if (struck > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
+    }
+
+    /** The candidate as it lands on [target] alone, as one hit of a spread move that struck several. */
+    fun spreadHitOn(candidate: BattleActionCandidate, target: BattlePokemonStateView, actionId: String) =
+        BattleActionCandidate(
+            actionId = actionId,
+            kind = candidate.kind,
+            actorSlot = candidate.actorSlot,
+            moveSlot = candidate.moveSlot,
+            moveId = candidate.moveId,
+            targets = listOf(BattleTargetSlot(target.side, requireNotNull(target.activeSlot))),
+            mechanic = candidate.mechanic,
+            moveDetails = candidate.moveDetails,
+            tags = candidate.tags + SPREAD_HIT_TAG,
+        )
+
+    /** Marks one target's share of a spread move that struck more than one Pokemon. */
+    const val SPREAD_HIT_TAG = "spread-hit"
+    private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
+
     private fun redirectedAwayFrom(declared: BattlePokemonStateView, candidate: BattleActionCandidate,
         context: BattleDecisionContext): BattlePokemonStateView? {
         if (context.state.format != BattleFormat.DOUBLE) return null

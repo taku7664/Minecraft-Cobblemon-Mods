@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStab
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.mcc.betterai.state.RecursiveMoveUseKey
@@ -183,6 +184,9 @@ internal object PublicFutureActionFactory {
         priorityResponses.forEach { priority -> reserve { it.actionId == priority.actionId } }
         reserve { it.kind == BattleActionKind.USE_MOVE }
         reserve { it.kind == BattleActionKind.SWITCH }
+        // Every attack's target variant outranks Protect (45 + 15), so at five actions a slot an opponent fills
+        // with attacks was never modelled protecting, and focusing a target that Protects was invisible.
+        if (state.format == BattleFormat.DOUBLE) reserve(LocalStallingProtectionRules::isStallingProtection)
         ranked.forEach { action ->
             if (selected.size < limit) selected.putIfAbsent(action.actionId, action)
         }

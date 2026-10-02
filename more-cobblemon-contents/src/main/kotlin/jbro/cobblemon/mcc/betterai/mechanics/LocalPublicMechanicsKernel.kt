@@ -198,7 +198,9 @@ internal object LocalPublicMechanicsKernel {
             actorAbility = actorAbility,
             moveId = canonicalOrNull(candidate.moveId),
             context = context,
-            targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY,
+            // The screens on the struck Pokemon's side, which is the user's own side when a spread move hits its
+            // partner (Showdown's Reflect reduces any hit on its side, a partner's included).
+            targetSide = target.side,
         )
         return LocalPublicMoveProjection(
             knownDamageMultiplier = abilityMultiplier * weatherMultiplier * terrainMultiplier * screenMultiplier,
