@@ -135,5 +135,7 @@
   "news.more_cobblemon_contents.highest_floor": "%1$s님이 %2$s %3$s에서 %4$s층에 올랐습니다!",
   "screen.more_cobblemon_contents.ranking.best_streak": "최고 연승",
   "screen.more_cobblemon_contents.ranking.highest_floor": "최고 층",
-  "screen.more_cobblemon_contents.ranking.wins": "승리"
+  "screen.more_cobblemon_contents.ranking.wins": "승리",
+  "screen.more_cobblemon_contents.dashboard.format.single_normal": "싱글 · 일반",
+  "screen.more_cobblemon_contents.dashboard.format.double_normal": "더블 · 일반"
 }

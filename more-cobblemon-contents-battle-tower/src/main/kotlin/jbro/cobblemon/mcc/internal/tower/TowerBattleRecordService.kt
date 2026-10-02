@@ -20,7 +20,7 @@ internal class TowerBattleRecordService(private val sink: TowerBattleRecordSink)
                     playerId = playerId,
                     category = BattleRecordCategory(
                         contentId = TowerRecordContract.CONTENT_ID,
-                        formatId = after.format.recordId,
+                        formatId = after.track.recordId,
                     ),
                 ),
                 outcome = when (update.outcome) {

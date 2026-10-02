@@ -4,6 +4,10 @@
     {
       "encounter_id": "mega_double_tier_boss_12_advanced",
       "trainer_ids": [
+        "trainer_105",
+        "trainer_106",
+        "trainer_107",
+        "trainer_108",
         "champion_blue",
         "champion_lance",
         "champion_cynthia",

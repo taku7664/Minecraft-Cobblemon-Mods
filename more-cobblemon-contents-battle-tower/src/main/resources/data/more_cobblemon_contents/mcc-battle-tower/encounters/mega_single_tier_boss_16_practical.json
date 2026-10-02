@@ -4,6 +4,10 @@
     {
       "encounter_id": "mega_single_tier_boss_16_practical",
       "trainer_ids": [
+        "trainer_109",
+        "trainer_110",
+        "trainer_111",
+        "trainer_112",
         "champion_blue",
         "champion_lance",
         "champion_cynthia",

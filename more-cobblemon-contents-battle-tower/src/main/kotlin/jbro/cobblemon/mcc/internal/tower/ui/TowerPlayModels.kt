@@ -4,6 +4,7 @@ import java.util.Collections
 import java.util.UUID
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerProgression
 import jbro.cobblemon.mcc.internal.tower.TowerStreakStage
@@ -78,6 +79,9 @@ internal class TowerPlayViewState(
     val mechanicLocked: Boolean = false,
     val legendaryClassAllowed: Boolean = false,
     val legendaryClassLocked: Boolean = false,
+    val mode: TowerMode = TowerMode.ENDLESS,
+    /** Endless can be chosen: the challenger has cleared Normal. */
+    val endlessUnlocked: Boolean = mode == TowerMode.ENDLESS,
 ) {
     val party: List<TowerPlayPartySlot> = party.immutableList()
     val selectedPokemonOrder: List<UUID> = selectedPokemonIds.immutableList()
@@ -89,7 +93,7 @@ internal class TowerPlayViewState(
         get() = currentWinStreak % TOWER_BOSS_INTERVAL
     val bpPerWin: Int
         get() = TowerProgression.rewardForNextVictory(
-            TowerProgress(format, currentWinStreak, bestWinStreak),
+            TowerProgress(format, currentWinStreak, bestWinStreak, mode),
         )
 
     init {
@@ -112,6 +116,7 @@ internal class TowerPlayViewState(
         require(bpBalance >= 0) { "BP balance cannot be negative" }
         require(this.errorKeys.none(String::isBlank)) { "Error keys cannot be blank" }
         require(!mechanicLocked || selectedMechanic != null) { "A locked mechanic selection cannot be absent" }
+        require(mode != TowerMode.ENDLESS || endlessUnlocked) { "Endless cannot be chosen before it is unlocked" }
     }
 
     fun copy(
@@ -129,6 +134,8 @@ internal class TowerPlayViewState(
         mechanicLocked: Boolean = this.mechanicLocked,
         legendaryClassAllowed: Boolean = this.legendaryClassAllowed,
         legendaryClassLocked: Boolean = this.legendaryClassLocked,
+        mode: TowerMode = this.mode,
+        endlessUnlocked: Boolean = this.endlessUnlocked,
     ): TowerPlayViewState = TowerPlayViewState(
         entryContextId,
         revision,
@@ -144,6 +151,8 @@ internal class TowerPlayViewState(
         mechanicLocked,
         legendaryClassAllowed,
         legendaryClassLocked,
+        mode,
+        endlessUnlocked,
     )
 
     override fun equals(other: Any?): Boolean =
@@ -161,7 +170,9 @@ internal class TowerPlayViewState(
             selectedMechanic == other.selectedMechanic &&
             mechanicLocked == other.mechanicLocked &&
             legendaryClassAllowed == other.legendaryClassAllowed &&
-            legendaryClassLocked == other.legendaryClassLocked
+            legendaryClassLocked == other.legendaryClassLocked &&
+            mode == other.mode &&
+            endlessUnlocked == other.endlessUnlocked
 
     override fun hashCode(): Int {
         var result = entryContextId.hashCode()
@@ -178,6 +189,8 @@ internal class TowerPlayViewState(
         result = 31 * result + mechanicLocked.hashCode()
         result = 31 * result + legendaryClassAllowed.hashCode()
         result = 31 * result + legendaryClassLocked.hashCode()
+        result = 31 * result + mode.hashCode()
+        result = 31 * result + endlessUnlocked.hashCode()
         return result
     }
 
@@ -188,7 +201,7 @@ internal class TowerPlayViewState(
             "bpPerWin=$bpPerWin, " +
             "bpBalance=$bpBalance, errorKeys=$errorKeys, selectedMechanic=$selectedMechanic, " +
             "mechanicLocked=$mechanicLocked, legendaryClassAllowed=$legendaryClassAllowed, " +
-            "legendaryClassLocked=$legendaryClassLocked)"
+            "legendaryClassLocked=$legendaryClassLocked, mode=$mode, endlessUnlocked=$endlessUnlocked)"
 }
 
 internal sealed interface TowerPlayIntent {
@@ -208,6 +221,13 @@ internal sealed interface TowerPlayIntent {
         override val entryContextId: UUID,
         override val expectedRevision: Long,
         val format: TowerBattleFormat,
+    ) : TowerPlayIntent
+
+    data class ChangeMode(
+        override val requestId: UUID,
+        override val entryContextId: UUID,
+        override val expectedRevision: Long,
+        val mode: TowerMode,
     ) : TowerPlayIntent
 
     data class ChangeMechanic(

@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.tower.ui
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.tower.clearedNormalWith
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchRequest
@@ -143,7 +144,7 @@ class TowerPlayBattleLaunchTest {
             TowerPlayOpenRequest(
                 party = party(),
                 initialFormat = TowerBattleFormat.DOUBLE,
-                progressByFormat = TowerBattleFormat.entries.associateWith(TowerProgress::initial),
+                progressByTrack = clearedNormalWith(TowerBattleFormat.entries.associateWith { TowerProgress.initial(it) }),
                 bpBalance = 0,
             ),
         )
@@ -688,9 +689,9 @@ class TowerPlayBattleLaunchTest {
     private fun request(currentWinStreak: Int = 0) = TowerPlayOpenRequest(
         party = party(),
         initialFormat = TowerBattleFormat.SINGLE,
-        progressByFormat = TowerBattleFormat.entries.associateWith { format ->
+        progressByTrack = clearedNormalWith(TowerBattleFormat.entries.associateWith { format ->
             TowerProgress(format, currentWinStreak, currentWinStreak)
-        },
+        }),
         bpBalance = 0,
     )
 

@@ -4,6 +4,10 @@
     {
       "encounter_id": "dynamax_double_tier_boss_04_practical",
       "trainer_ids": [
+        "trainer_097",
+        "trainer_098",
+        "trainer_099",
+        "trainer_100",
         "champion_blue",
         "champion_lance",
         "champion_cynthia",

@@ -12,14 +12,14 @@ internal object TowerProgressRecordCodec {
         require(stats.key.category.contentId == TowerRecordContract.CONTENT_ID) {
             "Not a Battle Tower record: ${stats.key.category.contentId}"
         }
-        val format = TowerBattleFormat.entries.singleOrNull {
-            it.recordId == stats.key.category.formatId
-        } ?: throw IllegalArgumentException("Unsupported Battle Tower format: ${stats.key.category.formatId}")
+        val track = TowerTrack.forRecordId(stats.key.category.formatId)
+            ?: throw IllegalArgumentException("Unsupported Battle Tower format: ${stats.key.category.formatId}")
 
         return TowerProgress(
-            format = format,
+            format = track.format,
             currentWinStreak = stats.currentWinStreak,
             bestWinStreak = stats.bestWinStreak,
+            mode = track.mode,
         )
     }
 }

@@ -6,6 +6,8 @@ import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
 import jbro.cobblemon.mcc.internal.record.BattleRecordKey
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerRecordContract
@@ -20,6 +22,7 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
     fun create(
         player: ServerPlayer,
         initialFormat: TowerBattleFormat = TowerBattleFormat.SINGLE,
+        initialMode: TowerMode? = null,
     ): TowerPlayOpenRequest {
         val server = player.server
         val playerId = player.uuid
@@ -28,19 +31,19 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
                 require(requestedPlayerId == playerId) { "Player changed while reading the Battle Tower party" }
                 readParty(player)
             },
-            progressSource = { requestedPlayerId, format ->
+            progressSource = { requestedPlayerId, track ->
                 require(requestedPlayerId == playerId) { "Player changed while reading Battle Tower progress" }
-                readProgress(server, playerId, format)
+                readProgress(server, playerId, track)
             },
             bpSource = { requestedPlayerId ->
                 require(requestedPlayerId == playerId) { "Player changed while reading BP" }
                 BattlePointService.balance(server, playerId)
             },
-        ).create(playerId, initialFormat)
+        ).create(playerId, initialFormat, initialMode)
     }
 
-    fun readProgress(player: ServerPlayer): Map<TowerBattleFormat, TowerProgress> =
-        TowerBattleFormat.entries.associateWith { format -> readProgress(player.server, player.uuid, format) }
+    fun readProgress(player: ServerPlayer): Map<TowerTrack, TowerProgress> =
+        TowerTrack.entries.associateWith { track -> readProgress(player.server, player.uuid, track) }
 
     fun readParty(player: ServerPlayer): List<TowerPlayPartySlot> =
         Cobblemon.storage.getParty(player).toGappyList().mapIndexedNotNull { slot, pokemon ->
@@ -62,13 +65,13 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
     private fun readProgress(
         server: MinecraftServer,
         playerId: UUID,
-        format: TowerBattleFormat,
+        track: TowerTrack,
     ) = TowerProgressRecordCodec.decode(
         BattleRecordService.get(
             server,
             BattleRecordKey(
                 playerId,
-                BattleRecordCategory(TowerRecordContract.CONTENT_ID, format.recordId),
+                BattleRecordCategory(TowerRecordContract.CONTENT_ID, track.recordId),
             ),
         ),
     )

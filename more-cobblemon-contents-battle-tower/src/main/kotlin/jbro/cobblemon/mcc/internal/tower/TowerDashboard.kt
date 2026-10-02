@@ -7,14 +7,16 @@ import jbro.cobblemon.mcc.api.hub.MccDashboardSections
 import jbro.cobblemon.mcc.api.hub.MccDashboardStat
 import net.minecraft.network.chat.Component
 
-/** The Battle Tower's dashboard card: the best streak overall, and each format's current and best streak. */
+/** The Battle Tower's dashboard card: the best streak overall, and each format and mode's current and best streak. */
 internal object TowerDashboard {
     private const val KEY = "screen.more_cobblemon_contents_battle_tower.dashboard"
     private const val CONTENT = TowerRecordContract.CONTENT_ID
 
     fun register() {
         MccDashboardSections.register(CONTENT) { context ->
-            val records = context.records(CONTENT).sortedBy { it.formatId }
+            val records = context.records(CONTENT).sortedBy { record ->
+                TowerTrack.entries.indexOfFirst { it.recordId == record.formatId }.takeIf { it >= 0 } ?: Int.MAX_VALUE
+            }
             MccDashboardCard(
                 contentId = CONTENT,
                 title = MccDashboardCards.contentName(CONTENT),
@@ -24,7 +26,7 @@ internal object TowerDashboard {
                 ),
                 rows = records.map { record ->
                     MccDashboardRow(
-                        MccDashboardCards.formatName(record.formatId),
+                        Component.translatableWithFallback("$KEY.track.${record.formatId}", record.formatId),
                         Component.translatable("$KEY.streak", record.currentStreak),
                         Component.translatable("$KEY.detail", record.bestStreak, record.wins, record.losses),
                     )

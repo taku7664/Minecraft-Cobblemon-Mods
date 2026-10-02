@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.internal.tower.ui
 import java.util.UUID
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
 
 internal class TowerPlayScreenController(
     initialState: TowerPlayViewState,
@@ -29,6 +30,10 @@ internal class TowerPlayScreenController(
 
     fun changeFormat(format: TowerBattleFormat): Boolean = submit { requestId ->
         TowerPlayIntent.ChangeFormat(requestId, state.entryContextId, state.revision, format)
+    }
+
+    fun changeMode(mode: TowerMode): Boolean = submit { requestId ->
+        TowerPlayIntent.ChangeMode(requestId, state.entryContextId, state.revision, mode)
     }
 
     fun changeMechanic(mechanic: MajorBattleMechanic): Boolean = submit { requestId ->

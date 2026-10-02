@@ -11,6 +11,8 @@ import jbro.cobblemon.mcc.client.hub.MccHubTabContent
 import jbro.cobblemon.mcc.client.hub.MccHubTabs
 import jbro.cobblemon.mcc.client.hub.MccPokemonPortraits
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
+import jbro.cobblemon.mcc.internal.tower.TOWER_NORMAL_CLEAR_WINS
 import jbro.cobblemon.mcc.internal.tower.network.TowerPlayIntentPayload
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayInteractionPolicy
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayMutationResult
@@ -82,7 +84,12 @@ internal class TowerHubTab : MccHubTabContent {
         val state = controller.state
         val layout = TowerHubLayout.calculate(bounds)
         MccHubKit.strip(host, layout.strip,
-            tower("progress", tower("stage.${state.streakStage.serializedId}"), state.currentWinStreak, state.bestWinStreak, state.bpPerWin),
+            when (state.mode) {
+                TowerMode.NORMAL -> tower("progress.normal", tower("stage.${state.streakStage.serializedId}"), state.currentWinStreak,
+                    TOWER_NORMAL_CLEAR_WINS, state.bestWinStreak, state.bpPerWin)
+                TowerMode.ENDLESS -> tower("progress", tower("stage.${state.streakStage.serializedId}"), state.currentWinStreak,
+                    state.bestWinStreak, state.bpPerWin)
+            },
             tower("phase.${state.phase.name.lowercase()}"), progress = state.winsIntoSet to 5)
         if (showingGuide) {
             buildGuide(host, layout)
@@ -150,6 +157,15 @@ internal class TowerHubTab : MccHubTabContent {
         val selecting = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
         // The settings keep at least one summary line below them; a tall card lets them take title lines.
         val y = MccHubKit.choices(host, MccHubKit.settingsArea(body), listOf(
+            // A locked Endless still shows, marked, so a challenger learns what clearing Normal opens.
+            MccHubKit.ChoiceRow(tower("section.mode"),
+                TowerMode.entries.map { mode ->
+                    val locked = mode == TowerMode.ENDLESS && !state.endlessUnlocked
+                    MccHubKit.Choice(mode.id, tower(if (locked) "mode.${mode.id}.locked" else "mode.${mode.id}"))
+                },
+                state.mode.id, selecting, tower("mode.tooltip.${state.mode.id}")) { id ->
+                if (controller.changeMode(TowerMode.entries.first { it.id == id })) host.rebuild()
+            },
             MccHubKit.ChoiceRow(tower("section.format"),
                 TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
                 state.format.recordId, selecting, tower("format.tooltip", state.format.selectionSize)) { id ->

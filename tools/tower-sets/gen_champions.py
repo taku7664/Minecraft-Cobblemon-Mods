@@ -2,8 +2,9 @@
 
 Champions: Blue, Lance and Cynthia (skins from RCT Trainers+), and Steven, Wallace, Alder, Iris, Diantha, Geeta,
 Nemona and N (skins from the More Radical Textures pack of the More Radical Trainers add-on, "mrt").
-Bosses: every 5th win is a Champion drawn at random. The Tower Aces, bosses once, fight among the
-regular opponents of the advanced and pro stages (from the 11th win). Each Champion's roster holds several battle-trained sets per member (IVs of 31, full EVs, battle items),
+Bosses: every boss encounter holds the Champions and the gimmick and format's Tower Aces; the Tower picks by
+mode. Endless brings a Champion at every 5th win, Normal a Tower Ace at the 5th and 15th wins and a Champion at the
+10th and 20th. Each Champion's roster holds several battle-trained sets per member (IVs of 31, full EVs, battle items),
 once per gimmick:
 - Mega runs: members that can Mega Evolve also have Mega Stone sets; the Tower draws one of them to hold its stone.
 - Dynamax runs: everyone has a Dynamax level; Blastoise and Charizard Gigantamax.
@@ -32,7 +33,7 @@ STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"
 SHORT = {"hp": "hp", "atk": "attack", "def": "defense", "spa": "special_attack", "spd": "special_defense", "spe": "speed"}
 SPECIAL = "spa spe hp"
 PHYSICAL = "atk spe hp"
-# The Tower Aces of each gimmick and format: strong regular opponents from the advanced stage on.
+# The Tower Aces of each gimmick and format: the Normal bosses between the Champions.
 ACES = {
     ("dynamax", "double"): range(97, 101), ("dynamax", "single"): range(101, 105),
     ("mega", "double"): range(105, 109), ("mega", "single"): range(109, 113),
@@ -390,17 +391,15 @@ def main():
         mechanic, fmt = encounter["mechanic_id"], encounter["format"]
         stage = encounter["stage_ids"][0]
         tier = {"introductory": 2, "practical": 2, "advanced": 3, "pro": 4}[stage]
-        encounter["trainer_ids"] = champions
+        encounter["trainer_ids"] = ace_ids(mechanic, fmt) + champions
         encounter["pool_id"] = f"{mechanic}_tier_{tier}"
         write(path, document)
-    # The Tower Aces join the advanced and pro regulars and leave every other regular encounter.
+    # The Tower Aces are bosses only: take them out of the regular encounters.
     for path in sorted((TOWER / "encounters").glob("*_regular_*.json")):
         document = json.loads(path.read_text(encoding="utf-8"))
         encounter = document["encounters"][0]
-        aces = ace_ids(encounter["mechanic_id"], encounter["format"])
+        aces = set(ace_ids(encounter["mechanic_id"], encounter["format"]))
         kept = [t for t in encounter["trainer_ids"] if t not in aces]
-        if encounter["stage_ids"][0] in ("advanced", "pro"):
-            kept += aces
         if kept != encounter["trainer_ids"]:
             encounter["trainer_ids"] = kept
             write(path, document)

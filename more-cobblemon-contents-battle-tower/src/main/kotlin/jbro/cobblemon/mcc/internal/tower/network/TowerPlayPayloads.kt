@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
 import jbro.cobblemon.mcc.internal.tower.TOWER_REGISTERED_TEAM_SIZE
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayIntent
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayMutationResult
@@ -92,6 +93,8 @@ private fun RegistryFriendlyByteBuf.writeState(state: TowerPlayViewState) {
     writeUUID(state.entryContextId)
     writeVarLong(state.revision)
     writeBoundedString(state.format.recordId)
+    writeBoundedString(state.mode.id)
+    writeBoolean(state.endlessUnlocked)
     writeBoundedString(state.phase.name.lowercase())
     writeBoolean(state.selectedMechanic != null)
     state.selectedMechanic?.let { writeBoundedString(it.id) }
@@ -115,6 +118,8 @@ private fun RegistryFriendlyByteBuf.readState(): TowerPlayViewState {
     val formatId = readBoundedString()
     val format = TowerBattleFormat.entries.singleOrNull { it.recordId == formatId }
         ?: throw IllegalArgumentException("Unsupported tower format: $formatId")
+    val mode = readMode()
+    val endlessUnlocked = readBoolean()
     val phaseId = readBoundedString()
     val phase = TowerPlayPhase.entries.singleOrNull { it.name.equals(phaseId, ignoreCase = true) }
         ?: throw IllegalArgumentException("Unsupported tower play phase: $phaseId")
@@ -152,7 +157,15 @@ private fun RegistryFriendlyByteBuf.readState(): TowerPlayViewState {
         mechanicLocked = mechanicLocked,
         legendaryClassAllowed = legendaryClassAllowed,
         legendaryClassLocked = legendaryClassLocked,
+        mode = mode,
+        endlessUnlocked = endlessUnlocked,
     )
+}
+
+private fun RegistryFriendlyByteBuf.readMode(): TowerMode {
+    val modeId = readBoundedString()
+    return TowerMode.entries.singleOrNull { it.id == modeId }
+        ?: throw IllegalArgumentException("Unsupported tower mode: $modeId")
 }
 
 private fun RegistryFriendlyByteBuf.writePartySlot(slot: TowerPlayPartySlot) {
@@ -183,6 +196,7 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
     val actionId = when (intent) {
         is TowerPlayIntent.ToggleSelection -> "toggle_selection"
         is TowerPlayIntent.ChangeFormat -> "change_format"
+        is TowerPlayIntent.ChangeMode -> "change_mode"
         is TowerPlayIntent.ChangeMechanic -> "change_mechanic"
         is TowerPlayIntent.ChangeLegendaryClassAllowed -> "change_legendary_class_allowed"
         is TowerPlayIntent.LockTeam -> "lock_team"
@@ -197,6 +211,7 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
     when (intent) {
         is TowerPlayIntent.ToggleSelection -> writeUUID(intent.pokemonId)
         is TowerPlayIntent.ChangeFormat -> writeBoundedString(intent.format.recordId)
+        is TowerPlayIntent.ChangeMode -> writeBoundedString(intent.mode.id)
         is TowerPlayIntent.ChangeMechanic -> writeBoundedString(intent.mechanic.id)
         is TowerPlayIntent.ChangeLegendaryClassAllowed -> writeBoolean(intent.allowed)
         else -> Unit
@@ -216,6 +231,7 @@ private fun RegistryFriendlyByteBuf.readIntent(): TowerPlayIntent {
                 ?: throw IllegalArgumentException("Unsupported tower format: $formatId")
             TowerPlayIntent.ChangeFormat(requestId, contextId, revision, format)
         }
+        "change_mode" -> TowerPlayIntent.ChangeMode(requestId, contextId, revision, readMode())
         "change_mechanic" -> {
             val mechanicId = readBoundedString()
             val mechanic = MajorBattleMechanic.entries.singleOrNull { it.id == mechanicId }

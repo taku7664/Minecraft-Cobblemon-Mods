@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled
 import java.util.UUID
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayIntent
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayMutationResult
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPartySlot
@@ -28,6 +29,15 @@ class TowerPlayPayloadsTest {
     }
 
     @Test
+    fun `state payload carries the mode and whether Endless is open`() {
+        val normal = TowerPlayStatePayload(null, state().copy(mode = TowerMode.NORMAL, endlessUnlocked = false))
+        val unlocked = TowerPlayStatePayload(null, state().copy(mode = TowerMode.NORMAL, endlessUnlocked = true))
+
+        assertEquals(normal, roundTrip(TowerPlayStatePayload.CODEC, normal))
+        assertEquals(unlocked, roundTrip(TowerPlayStatePayload.CODEC, unlocked))
+    }
+
+    @Test
     fun `state payload preserves pokemon selection order`() {
         val selectedInClickOrder = listOf(UUID(0, 3), UUID(0, 1), UUID(0, 2))
         val payload = TowerPlayStatePayload(null, state(selectedPokemonIds = selectedInClickOrder))
@@ -42,6 +52,7 @@ class TowerPlayPayloadsTest {
         val intents = listOf(
             TowerPlayIntent.ToggleSelection(requestId, contextId, 7, UUID(0, 1)),
             TowerPlayIntent.ChangeFormat(requestId, contextId, 7, TowerBattleFormat.DOUBLE),
+            TowerPlayIntent.ChangeMode(requestId, contextId, 7, TowerMode.NORMAL),
             TowerPlayIntent.ChangeMechanic(requestId, contextId, 7, MajorBattleMechanic.DYNAMAX),
             TowerPlayIntent.LockTeam(requestId, contextId, 7),
             TowerPlayIntent.Start(requestId, contextId, 7),

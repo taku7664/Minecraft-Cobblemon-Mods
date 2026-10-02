@@ -15,23 +15,23 @@ import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.server.level.ServerPlayer
 
 internal interface TowerProgressCommandBackend {
-    fun getStreak(player: ServerPlayer, format: TowerBattleFormat): BattleProgressSetResult
+    fun getStreak(player: ServerPlayer, format: TowerTrack): BattleProgressSetResult
 
-    fun setStreak(player: ServerPlayer, format: TowerBattleFormat, value: Int): BattleProgressSetResult
+    fun setStreak(player: ServerPlayer, format: TowerTrack, value: Int): BattleProgressSetResult
 
-    fun resetStreak(player: ServerPlayer, format: TowerBattleFormat, scope: BattleProgressResetScope): BattleProgressSetResult
+    fun resetStreak(player: ServerPlayer, format: TowerTrack, scope: BattleProgressResetScope): BattleProgressSetResult
 }
 
 private object LiveTowerProgressCommandBackend : TowerProgressCommandBackend {
-    override fun getStreak(player: ServerPlayer, format: TowerBattleFormat): BattleProgressSetResult =
+    override fun getStreak(player: ServerPlayer, format: TowerTrack): BattleProgressSetResult =
         TowerPlayNetworking.adminGetStreak(player, format)
 
-    override fun setStreak(player: ServerPlayer, format: TowerBattleFormat, value: Int): BattleProgressSetResult =
+    override fun setStreak(player: ServerPlayer, format: TowerTrack, value: Int): BattleProgressSetResult =
         TowerPlayNetworking.adminSetStreak(player, format, value)
 
     override fun resetStreak(
         player: ServerPlayer,
-        format: TowerBattleFormat,
+        format: TowerTrack,
         scope: BattleProgressResetScope,
     ): BattleProgressSetResult = TowerPlayNetworking.adminSetStreak(
         player,
@@ -107,9 +107,9 @@ internal object TowerProgressCommands {
         )
 
     private fun formatArgument() = Commands.argument("format", StringArgumentType.word())
-        .suggests { _, builder -> SharedSuggestionProvider.suggest(TowerBattleFormat.entries.map { it.recordId }, builder) }
+        .suggests { _, builder -> SharedSuggestionProvider.suggest(TowerTrack.entries.map { it.recordId }, builder) }
 
-    private fun format(source: CommandSourceStack, value: String): TowerBattleFormat? =
-        TowerBattleFormat.entries.singleOrNull { it.recordId == value }
+    private fun format(source: CommandSourceStack, value: String): TowerTrack? =
+        TowerTrack.entries.singleOrNull { it.recordId == value }
             ?: BattleProgressCommands.invalidValue(source, "format", value).let { null }
 }

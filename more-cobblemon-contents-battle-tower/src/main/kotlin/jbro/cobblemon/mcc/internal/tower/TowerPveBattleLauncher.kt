@@ -69,9 +69,10 @@ internal class TowerPveBattleLauncher<P, O>(
             return TowerBattleLaunchResult.Unavailable
         }
         val opponentKind = TowerProgression.nextOpponent(request.progress)
-        // Every boss, so every 5th win, is a Champion, taken in turn so none comes back before the others.
-        val boss = opponentKind != TowerOpponentKind.REGULAR
-        val champions = if (boss) {
+        // A boss is a Champion (every boss in Endless, the 10th and 20th wins in Normal) or a Tower Ace; Champions
+        // are taken in turn so none comes back before the others.
+        val champion = opponentKind != TowerOpponentKind.REGULAR && TowerProgression.nextBossIsChampion(request.progress)
+        val champions = if (champion) {
             catalog.profilesFor(request.progress.nextStage, request.progress.format, opponentKind, request.mechanic)
                 .filter { it.fixedRoster }.map { it.profileId }.toSet()
         } else {
@@ -82,10 +83,10 @@ internal class TowerPveBattleLauncher<P, O>(
             request.progress.format,
             opponentKind,
             request.mechanic,
-            if (boss) championRotation.excluded(request.playerId, champions) else recentProfiles.recent(request.playerId),
+            if (champion) championRotation.excluded(request.playerId, champions) else recentProfiles.recent(request.playerId),
             recentSpecies.recent(request.playerId),
             request.legendaryClassAllowed,
-            championBoss = boss,
+            championBoss = champion,
             challengerLegendaries = TowerLegendaryClassPolicy.count(request.selection.members.filter { it.legendaryClass }.map { it.speciesId }),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
@@ -96,7 +97,7 @@ internal class TowerPveBattleLauncher<P, O>(
             )
             return TowerBattleLaunchResult.Unavailable
         }
-        val level = TowerProgression.opponentLevel(Math.addExact(request.progress.currentWinStreak, 1))
+        val level = TowerProgression.opponentLevel(request.progress.mode, Math.addExact(request.progress.currentWinStreak, 1))
         val team = opponent.team.map { set -> set.withBattleLevel(level) }
         val opponentTeam = opponentMaterializer.materialize(team)
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {
@@ -119,7 +120,7 @@ internal class TowerPveBattleLauncher<P, O>(
         )
         if (result is TowerBattleLaunchResult.Started) {
             recentProfiles.record(request.playerId, opponent.profile.profileId)
-            if (boss) championRotation.record(request.playerId, opponent.profile.profileId, champions)
+            if (champion) championRotation.record(request.playerId, opponent.profile.profileId, champions)
             opponent.team.forEach { pokemon -> recentSpecies.record(request.playerId, pokemon.speciesId) }
         }
         return result

@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.internal.tower.ui
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.tower.clearedNormalWith
+import jbro.cobblemon.mcc.internal.tower.TowerMode
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
@@ -29,10 +32,10 @@ class TowerPlaySessionServiceTest {
             TowerPlayOpenRequest(
                 party = validParty(),
                 initialFormat = TowerBattleFormat.DOUBLE,
-                progressByFormat = mapOf(
+                progressByTrack = clearedNormalWith(mapOf(
                     TowerBattleFormat.SINGLE to TowerProgress.initial(TowerBattleFormat.SINGLE),
                     TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, 7, 9),
-                ),
+                )),
                 bpBalance = 37,
             ),
         )
@@ -57,10 +60,10 @@ class TowerPlaySessionServiceTest {
             TowerPlayOpenRequest(
                 party = validParty(),
                 initialFormat = TowerBattleFormat.SINGLE,
-                progressByFormat = mapOf(
+                progressByTrack = clearedNormalWith(mapOf(
                     TowerBattleFormat.SINGLE to TowerProgress(TowerBattleFormat.SINGLE, 4, 4),
                     TowerBattleFormat.DOUBLE to TowerProgress.initial(TowerBattleFormat.DOUBLE),
-                ),
+                )),
                 bpBalance = 0,
             ),
         )
@@ -81,7 +84,7 @@ class TowerPlaySessionServiceTest {
         assertTrue(updated)
         assertEquals(14, service.current(playerId)?.currentWinStreak)
         assertEquals(20, service.current(playerId)?.bestWinStreak)
-        assertEquals(14, service.progress(playerId)?.getValue(TowerBattleFormat.SINGLE)?.currentWinStreak)
+        assertEquals(14, service.progress(playerId)?.getValue(TowerTrack(TowerBattleFormat.SINGLE, TowerMode.ENDLESS))?.currentWinStreak)
     }
 
     @Test
@@ -205,7 +208,7 @@ class TowerPlaySessionServiceTest {
             TowerPlayOpenRequest(
                 party = validParty().reversed(),
                 initialFormat = TowerBattleFormat.DOUBLE,
-                progressByFormat = progressByFormat(),
+                progressByTrack = progressByTrack(),
                 bpBalance = 999,
             ),
         )
@@ -445,7 +448,7 @@ class TowerPlaySessionServiceTest {
             TowerPlayOpenRequest(
                 invalidParty,
                 TowerBattleFormat.SINGLE,
-                progressByFormat(),
+                progressByTrack(),
                 0,
             ),
         )
@@ -646,14 +649,14 @@ class TowerPlaySessionServiceTest {
     private fun openRequest(party: List<TowerPlayPartySlot> = validParty()) = TowerPlayOpenRequest(
         party = party,
         initialFormat = TowerBattleFormat.SINGLE,
-        progressByFormat = progressByFormat(),
+        progressByTrack = progressByTrack(),
         bpBalance = 0,
     )
 
-    private fun progressByFormat(): Map<TowerBattleFormat, TowerProgress> = mapOf(
+    private fun progressByTrack(): Map<TowerTrack, TowerProgress> = clearedNormalWith(mapOf(
         TowerBattleFormat.SINGLE to TowerProgress.initial(TowerBattleFormat.SINGLE),
         TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, 7, 9),
-    )
+    ))
 
     private fun validParty(): List<TowerPlayPartySlot> = (1..6).map { index ->
         TowerPlayPartySlot(

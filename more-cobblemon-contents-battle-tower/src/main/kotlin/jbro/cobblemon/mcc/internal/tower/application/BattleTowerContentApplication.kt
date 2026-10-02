@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.internal.application.BattleFormatId
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerProgression
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPhase
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayViewState
 import jbro.cobblemon.mcc.internal.tower.ui.TowerSessionAbandonResult
@@ -19,7 +20,7 @@ import jbro.cobblemon.mcc.internal.tower.ui.TowerSessionAbandonResult
 internal interface BattleTowerApplicationBackend {
     fun current(playerId: UUID): TowerPlayViewState?
 
-    fun progress(playerId: UUID): Map<TowerBattleFormat, TowerProgress>
+    fun progress(playerId: UUID): Map<TowerTrack, TowerProgress>
 
     fun open(playerId: UUID, format: TowerBattleFormat): Boolean
 
@@ -91,10 +92,11 @@ internal class BattleTowerContentApplication(
     )
 
     private fun progressValues(playerId: UUID): Map<String, Long> = buildMap {
-        val progressByFormat = backend.progress(playerId)
-        TowerBattleFormat.entries.forEach { format ->
-            val progress = progressByFormat[format] ?: return@forEach
-            val prefix = format.name.lowercase()
+        val progressByTrack = backend.progress(playerId)
+        TowerTrack.entries.forEach { track ->
+            val progress = progressByTrack[track] ?: return@forEach
+            // Endless keeps the plain format prefix it had before Normal existed.
+            val prefix = track.recordId
             put("${prefix}_current_win_streak", progress.currentWinStreak.toLong())
             put("${prefix}_best_win_streak", progress.bestWinStreak.toLong())
             put("${prefix}_bp_per_win", TowerProgression.rewardForNextVictory(progress).toLong())

@@ -12,6 +12,7 @@ internal data class TowerProgress(
     val format: TowerBattleFormat,
     val currentWinStreak: Int = 0,
     val bestWinStreak: Int = currentWinStreak,
+    val mode: TowerMode = TowerMode.ENDLESS,
 ) {
     init {
         require(currentWinStreak >= 0) { "Current win streak cannot be negative" }
@@ -19,8 +20,11 @@ internal data class TowerProgress(
     }
 
     companion object {
-        fun initial(format: TowerBattleFormat) = TowerProgress(format = format)
+        fun initial(format: TowerBattleFormat, mode: TowerMode = TowerMode.ENDLESS) = TowerProgress(format = format, mode = mode)
     }
+
+    val track: TowerTrack
+        get() = TowerTrack(format, mode)
 
     val nextStage: TowerStreakStage
         get() = TowerStreakStage.forNextBattle(currentWinStreak)
@@ -37,6 +41,11 @@ internal data class TowerProgressUpdate(
 ) {
     val rewardBp: Int
         get() = if (outcome == TowerBattleOutcome.WIN) TowerProgression.rewardForNextVictory(before) else 0
+
+    /** This win cleared Normal: the run ends, and the next one starts from the first battle. */
+    val cleared: Boolean
+        get() = outcome == TowerBattleOutcome.WIN && after.mode == TowerMode.NORMAL &&
+            after.currentWinStreak >= TOWER_NORMAL_CLEAR_WINS
 }
 
 internal object TowerProgression {
@@ -55,11 +64,24 @@ internal object TowerProgression {
     }
 
     /**
-     * The opponents' level for the [win]th win: the Tower's level 50 for the first 5 wins, then one more every 5 wins
-     * (51 from the 6th, 52 from the 11th, 59 at the 49th), up to Cobblemon's level 100. The challenger stays at 50.
+     * The opponents' level for the [win]th win. Normal stays at the Tower's level 50; Endless starts there and adds
+     * one every 5 wins (51 from the 6th, 52 from the 11th, 59 at the 49th), up to Cobblemon's level 100. The
+     * challenger stays at 50.
      */
-    fun opponentLevel(win: Int): Int =
-        (TOWER_BATTLE_LEVEL_CAP + (win - 1).coerceAtLeast(0) / TOWER_BOSS_INTERVAL).coerceAtMost(MAX_OPPONENT_LEVEL)
+    fun opponentLevel(mode: TowerMode, win: Int): Int = when (mode) {
+        TowerMode.NORMAL -> TOWER_BATTLE_LEVEL_CAP
+        TowerMode.ENDLESS ->
+            (TOWER_BATTLE_LEVEL_CAP + (win - 1).coerceAtLeast(0) / TOWER_BOSS_INTERVAL).coerceAtMost(MAX_OPPONENT_LEVEL)
+    }
+
+    /**
+     * Whether the next battle's boss is a Champion: every boss in Endless; in Normal every 10th win (the 10th and the
+     * 20th), with Tower Aces at the 5th and the 15th.
+     */
+    fun nextBossIsChampion(progress: TowerProgress): Boolean = when (progress.mode) {
+        TowerMode.ENDLESS -> true
+        TowerMode.NORMAL -> Math.addExact(progress.currentWinStreak, 1) % NORMAL_CHAMPION_INTERVAL == 0
+    }
 
     fun record(progress: TowerProgress, outcome: TowerBattleOutcome): TowerProgressUpdate {
         val after = when (outcome) {
@@ -75,5 +97,6 @@ internal object TowerProgression {
 
 internal const val TOWER_BOSS_INTERVAL = 5
 private const val MAX_OPPONENT_LEVEL = 100
+private const val NORMAL_CHAMPION_INTERVAL = 10
 internal const val TOWER_BOSS_BP_BONUS = 5
 private const val BOSS_INTERVAL = TOWER_BOSS_INTERVAL

@@ -42,6 +42,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.tower.TowerBattleRecordService
 import jbro.cobblemon.mcc.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.mcc.internal.tower.TowerRecordContract
 import jbro.cobblemon.mcc.internal.tower.TowerPveBattleLauncher
@@ -74,6 +75,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     private val registeredTeamSnapshots = Cobblemon173TowerRegisteredTeamSnapshotStore(onlinePlayers::get)
     /** BP each settled win paid, held until its result notice goes out. */
     private val settledRewards = HashMap<java.util.UUID, Long>()
+    /** Battles whose win cleared Normal, so the challenger hears of it once the result has settled. */
+    private val clearedBattles = HashSet<java.util.UUID>()
     private val runtime: Cobblemon173TowerPveBattleRuntime by lazy {
         Cobblemon173TowerPveBattleRuntime(
             playerResolver = onlinePlayers::get,
@@ -310,13 +313,13 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
 
     fun adminSetStreak(
         player: ServerPlayer,
-        format: TowerBattleFormat,
+        track: TowerTrack,
         value: Int,
         resetBest: Boolean = false,
     ): BattleProgressSetResult {
         onlinePlayers[player.uuid] = player
         val current = sessions.current(player.uuid)
-        if (sessions.activeBattleId(player.uuid) != null && current?.format == format) {
+        if (sessions.activeBattleId(player.uuid) != null && current?.format == track.format && current.mode == track.mode) {
             return BattleProgressSetResult.ActiveBattle
         }
         if (!BattleRecordService.isAvailable(player.server)) {
@@ -324,7 +327,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         }
         val key = BattleRecordKey(
             player.uuid,
-            BattleRecordCategory(TowerRecordContract.CONTENT_ID, format.recordId),
+            BattleRecordCategory(TowerRecordContract.CONTENT_ID, track.recordId),
         )
         val before = BattleRecordService.get(player.server, key)
         val stats = if (resetBest) {
@@ -350,7 +353,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         )
     }
 
-    fun adminGetStreak(player: ServerPlayer, format: TowerBattleFormat): BattleProgressSetResult {
+    fun adminGetStreak(player: ServerPlayer, track: TowerTrack): BattleProgressSetResult {
         onlinePlayers[player.uuid] = player
         if (!BattleRecordService.isAvailable(player.server)) {
             return BattleProgressSetResult.StorageUnavailable
@@ -359,7 +362,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             player.server,
             BattleRecordKey(
                 player.uuid,
-                BattleRecordCategory(TowerRecordContract.CONTENT_ID, format.recordId),
+                BattleRecordCategory(TowerRecordContract.CONTENT_ID, track.recordId),
             ),
         )
         return BattleProgressSetResult.Applied(
@@ -376,7 +379,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         val key = "command.${MoreCobblemonContents.MOD_ID}.tower.admin"
         val team = state.party.joinToString(", ") { it.speciesId.substringAfter(':') }.ifEmpty { "-" }
         return listOf(
-            Component.translatable("$key.session", state.format.recordId, state.phase.name.lowercase()),
+            Component.translatable("$key.session", TowerTrack(state.format, state.mode).recordId, state.phase.name.lowercase()),
             Component.translatable("$key.streak", state.currentWinStreak, state.bestWinStreak),
             Component.translatable("$key.team", team, state.selectedPokemonIds.size, state.format.selectionSize),
             Component.translatable("$key.battle", sessions.activeBattleId(playerId)?.toString()?.take(8) ?: "-",
@@ -492,6 +495,11 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                         else jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(player, opponent)
                     }
                 }
+                if (clearedBattles.remove(pending.battleId)) {
+                    onlinePlayers[pending.playerId]?.sendSystemMessage(
+                        Component.translatable("screen.more_cobblemon_contents.tower.notice.normal_cleared"),
+                    )
+                }
                 if (completion is TowerPlayBattleCompletionResult.Completed) {
                     onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
                     reopenScreen(pending.playerId, completion)
@@ -579,6 +587,11 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             }.record(recordedPlayerId, update)
             check(TowerProgressRecordCodec.decode(recorded) == update.after) {
                 "Battle Tower record storage did not accept the completed progress update"
+            }
+            if (update.cleared) {
+                // The run ends at the clear; the best streak keeps the 20 that opens Endless.
+                BattleRecordService.resetWinStreak(server, recorded.key, resetBest = false)
+                clearedBattles += battleId
             }
             if (update.outcome == TowerBattleOutcome.WIN) settledRewards[battleId] = update.rewardBp.toLong()
         }

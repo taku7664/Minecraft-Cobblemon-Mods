@@ -9,6 +9,8 @@ import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchRequest
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLauncher
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerMode
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerProgressUpdate
@@ -30,19 +32,24 @@ import jbro.cobblemon.mcc.internal.battle.settleBeforeTerminatingBattle
 internal class TowerPlayOpenRequest(
     party: Collection<TowerPlayPartySlot>,
     val initialFormat: TowerBattleFormat,
-    progressByFormat: Map<TowerBattleFormat, TowerProgress>,
+    progressByTrack: Map<TowerTrack, TowerProgress>,
     val bpBalance: Long,
+    /** The mode to open in; null opens Endless once it is unlocked and Normal before. */
+    initialMode: TowerMode? = null,
 ) {
     val party: List<TowerPlayPartySlot> = Collections.unmodifiableList(ArrayList(party))
-    val progressByFormat: Map<TowerBattleFormat, TowerProgress> =
-        Collections.unmodifiableMap(orderedProgressCopy(progressByFormat))
+    val progressByTrack: Map<TowerTrack, TowerProgress> =
+        Collections.unmodifiableMap(orderedProgressCopy(progressByTrack))
+    val endlessUnlocked: Boolean = TowerTrack.endlessUnlocked(this.progressByTrack)
+    val initialMode: TowerMode =
+        if (endlessUnlocked) initialMode ?: TowerMode.ENDLESS else TowerMode.NORMAL
 
     init {
-        require(this.progressByFormat.keys == TowerBattleFormat.entries.toSet()) {
-            "Tower play state requires progress for every battle format"
+        require(this.progressByTrack.keys == TowerTrack.entries.toSet()) {
+            "Tower play state requires progress for every battle format and mode"
         }
-        require(this.progressByFormat.all { (format, progress) -> progress.format == format }) {
-            "Tower progress must match its battle format key"
+        require(this.progressByTrack.all { (track, progress) -> progress.track == track }) {
+            "Tower progress must match its battle format and mode key"
         }
         require(bpBalance >= 0) { "BP balance cannot be negative" }
     }
@@ -62,6 +69,7 @@ internal object TowerPlayMessageKeys {
     const val BATTLE_UNAVAILABLE = "$PREFIX.battle_unavailable"
     const val MECHANIC_REQUIRED = "$PREFIX.mechanic_required"
     const val NOTHING_TO_ABANDON = "$PREFIX.nothing_to_abandon"
+    const val ENDLESS_LOCKED = "$PREFIX.endless_locked"
 
     const val PARTY_SIZE = "$PREFIX.party_size"
     const val DUPLICATE_POKEMON = "$PREFIX.duplicate_pokemon"
@@ -113,12 +121,12 @@ internal class TowerPlaySessionService(
         sessions[playerId]?.let { existing ->
             if (existing.state.phase != TowerPlayPhase.SELECTING) return existing.state
             val keepRegisteredTeam = existing.hasRegisteredSnapshot
-            val progressByFormat = if (keepRegisteredTeam) {
-                existing.progressByFormat
+            val progressByTrack = if (keepRegisteredTeam) {
+                existing.progressByTrack
             } else {
-                request.progressByFormat
+                request.progressByTrack
             }
-            val progress = progressByFormat.getValue(existing.state.format)
+            val progress = progressByTrack.getValue(TowerTrack(existing.state.format, existing.state.mode))
             val refreshed = viewState(
                 entryContextId = entryContext.entryContextId,
                 revision = 0,
@@ -132,9 +140,10 @@ internal class TowerPlaySessionService(
                 mechanicLocked = existing.state.mechanicLocked,
                 legendaryClassAllowed = existing.state.legendaryClassAllowed,
                 legendaryClassLocked = existing.state.legendaryClassLocked,
+                endlessUnlocked = TowerTrack.endlessUnlocked(progressByTrack),
             )
             sessions[playerId] = Session(
-                progressByFormat = progressByFormat,
+                progressByTrack = progressByTrack,
                 entryContext = entryContext,
                 state = refreshed,
                 lockedSelection = existing.lockedSelection,
@@ -143,7 +152,7 @@ internal class TowerPlaySessionService(
             return refreshed
         }
         registeredTeamSnapshots.discard(playerId)
-        val progress = request.progressByFormat.getValue(request.initialFormat)
+        val progress = request.progressByTrack.getValue(TowerTrack(request.initialFormat, request.initialMode))
         val state = viewState(
             entryContextId = entryContext.entryContextId,
             revision = 0,
@@ -154,8 +163,9 @@ internal class TowerPlaySessionService(
             bpBalance = request.bpBalance,
             errorKeys = registrationErrors(request.party),
             selectedMechanic = DEFAULT_TOWER_MECHANIC,
+            endlessUnlocked = request.endlessUnlocked,
         )
-        sessions[playerId] = Session(request.progressByFormat, entryContext, state)
+        sessions[playerId] = Session(request.progressByTrack, entryContext, state)
         return state
     }
 
@@ -166,8 +176,8 @@ internal class TowerPlaySessionService(
     fun entryContext(playerId: UUID): TowerPlayEntryContext? = sessions[playerId]?.entryContext
 
     @Synchronized
-    fun progress(playerId: UUID): Map<TowerBattleFormat, TowerProgress>? =
-        sessions[playerId]?.progressByFormat?.toMap()
+    fun progress(playerId: UUID): Map<TowerTrack, TowerProgress>? =
+        sessions[playerId]?.progressByTrack?.toMap()
 
     @Synchronized
     fun activeBattleId(playerId: UUID): UUID? = sessions[playerId]?.activeBattleId
@@ -175,15 +185,15 @@ internal class TowerPlaySessionService(
     @Synchronized
     fun adminSetProgress(playerId: UUID, progress: TowerProgress): Boolean {
         val session = sessions[playerId] ?: return true
-        if (session.activeBattleId != null && session.state.format == progress.format) return false
-        session.progressByFormat[progress.format] = progress
-        if (session.state.format == progress.format) {
-            session.state = session.state.copy(
-                revision = session.state.revision + 1,
-                currentWinStreak = progress.currentWinStreak,
-                bestWinStreak = progress.bestWinStreak,
-            )
-        }
+        val current = session.state.format == progress.format && session.state.mode == progress.mode
+        if (session.activeBattleId != null && current) return false
+        session.progressByTrack[progress.track] = progress
+        session.state = session.state.copy(
+            revision = session.state.revision + 1,
+            currentWinStreak = if (current) progress.currentWinStreak else session.state.currentWinStreak,
+            bestWinStreak = if (current) progress.bestWinStreak else session.state.bestWinStreak,
+            endlessUnlocked = TowerTrack.endlessUnlocked(session.progressByTrack) || session.state.mode == TowerMode.ENDLESS,
+        )
         return true
     }
 
@@ -246,16 +256,34 @@ internal class TowerPlaySessionService(
         if (activeBattleId != battleId) return TowerPlayBattleCompletionResult.StaleBattle(activeBattleId)
 
         val state = session.state
-        val progress = session.progressByFormat.getValue(state.format)
+        val track = TowerTrack(state.format, state.mode)
+        val progress = session.progressByTrack.getValue(track)
         val recordedOutcome = if (session.abandonRequested) TowerBattleOutcome.LOSS else outcome
         val update = TowerProgression.record(progress, recordedOutcome)
         completionSink.record(playerId, update)
 
-        session.progressByFormat[state.format] = update.after
+        // A Normal clear ends the run: the next one starts from the first battle, and Endless is open.
+        val after = if (update.cleared) update.after.copy(currentWinStreak = 0) else update.after
+        session.progressByTrack[track] = after
         session.activeBattleId = null
         if (session.abandonRequested) {
             removeSessionAndDiscardSnapshot(playerId)
             return TowerPlayBattleCompletionResult.SessionAbandoned
+        }
+        if (update.cleared) {
+            session.lockedSelection = null
+            val cleared = state.copy(
+                revision = state.revision + 1,
+                phase = TowerPlayPhase.SELECTING,
+                selectedPokemonIds = emptySet(),
+                currentWinStreak = after.currentWinStreak,
+                bestWinStreak = after.bestWinStreak,
+                mechanicLocked = false,
+                legendaryClassLocked = false,
+                endlessUnlocked = true,
+            )
+            session.state = cleared
+            return TowerPlayBattleCompletionResult.Completed(cleared)
         }
         val updated = state.copy(
             revision = state.revision + 1,
@@ -370,6 +398,7 @@ internal class TowerPlaySessionService(
         val result = when (intent) {
             is TowerPlayIntent.ToggleSelection -> toggle(session, intent)
             is TowerPlayIntent.ChangeFormat -> changeFormat(session, intent)
+            is TowerPlayIntent.ChangeMode -> changeMode(session, intent)
             is TowerPlayIntent.ChangeMechanic -> changeMechanic(session, intent)
             is TowerPlayIntent.ChangeLegendaryClassAllowed -> changeLegendaryClassAllowed(session, intent)
             is TowerPlayIntent.LockTeam -> lockTeam(playerId, session, intent, currentParty)
@@ -410,7 +439,31 @@ internal class TowerPlaySessionService(
         if (state.phase != TowerPlayPhase.SELECTING) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
         }
-        val progress = session.progressByFormat.getValue(intent.format)
+        return switchTrack(session, intent, TowerTrack(intent.format, state.mode))
+    }
+
+    private fun changeMode(
+        session: Session,
+        intent: TowerPlayIntent.ChangeMode,
+    ): TowerPlayMutationResult {
+        val state = session.state
+        if (state.phase != TowerPlayPhase.SELECTING) {
+            return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
+        }
+        if (intent.mode == TowerMode.ENDLESS && !state.endlessUnlocked) {
+            return rejected(intent, state.revision, TowerPlayMessageKeys.ENDLESS_LOCKED)
+        }
+        return switchTrack(session, intent, TowerTrack(state.format, intent.mode))
+    }
+
+    /** Moves a selecting session to [track]'s run: its own streak, and a fresh pick of the team. */
+    private fun switchTrack(
+        session: Session,
+        intent: TowerPlayIntent,
+        track: TowerTrack,
+    ): TowerPlayMutationResult {
+        val state = session.state
+        val progress = session.progressByTrack.getValue(track)
         session.lockedSelection = null
         return accept(
             session,
@@ -428,6 +481,7 @@ internal class TowerPlaySessionService(
                 mechanicLocked = state.mechanicLocked,
                 legendaryClassAllowed = state.legendaryClassAllowed,
                 legendaryClassLocked = state.legendaryClassLocked,
+                endlessUnlocked = state.endlessUnlocked,
             ),
         )
     }
@@ -532,7 +586,7 @@ internal class TowerPlaySessionService(
         val selection = checkNotNull(session.lockedSelection) {
             "A locked Battle Tower session must retain its validated selection"
         }
-        val progress = session.progressByFormat.getValue(state.format)
+        val progress = session.progressByTrack.getValue(TowerTrack(state.format, state.mode))
         val mechanic = checkNotNull(state.selectedMechanic) {
             "A locked Battle Tower team must retain its selected mechanic"
         }
@@ -654,7 +708,7 @@ internal class TowerPlaySessionService(
     }
 
     private class Session(
-        progressByFormat: Map<TowerBattleFormat, TowerProgress>,
+        progressByTrack: Map<TowerTrack, TowerProgress>,
         val entryContext: TowerPlayEntryContext,
         var state: TowerPlayViewState,
         var lockedSelection: TowerSelectedTeam? = null,
@@ -663,7 +717,7 @@ internal class TowerPlaySessionService(
         var abandonRequested: Boolean = false,
         val responses: LinkedHashMap<UUID, CachedResponse> = LinkedHashMap(),
     ) {
-        val progressByFormat: MutableMap<TowerBattleFormat, TowerProgress> = progressByFormat.toMutableMap()
+        val progressByTrack: MutableMap<TowerTrack, TowerProgress> = progressByTrack.toMutableMap()
     }
 
     private data class CachedResponse(
@@ -685,10 +739,13 @@ private fun viewState(
     mechanicLocked: Boolean = false,
     legendaryClassAllowed: Boolean = false,
     legendaryClassLocked: Boolean = false,
+    endlessUnlocked: Boolean = false,
 ): TowerPlayViewState = TowerPlayViewState(
     entryContextId = entryContextId,
     revision = revision,
     format = progress.format,
+    mode = progress.mode,
+    endlessUnlocked = endlessUnlocked || progress.mode == TowerMode.ENDLESS,
     phase = phase,
     party = party,
     selectedPokemonIds = selected,
@@ -767,9 +824,9 @@ private fun TowerTeamSelectionIssue.messageKey(): String = when (this) {
     is TowerTeamSelectionIssue.TooManyLegendaryClass -> TowerPlayMessageKeys.TOO_MANY_LEGENDARY_CLASS
 }
 
-private fun orderedProgressCopy(source: Map<TowerBattleFormat, TowerProgress>): LinkedHashMap<TowerBattleFormat, TowerProgress> =
-    LinkedHashMap<TowerBattleFormat, TowerProgress>().apply {
-        TowerBattleFormat.entries.forEach { format -> source[format]?.let { put(format, it) } }
+private fun orderedProgressCopy(source: Map<TowerTrack, TowerProgress>): LinkedHashMap<TowerTrack, TowerProgress> =
+    LinkedHashMap<TowerTrack, TowerProgress>().apply {
+        TowerTrack.entries.forEach { track -> source[track]?.let { put(track, it) } }
     }
 
 private const val MAX_CACHED_RESPONSES = 64

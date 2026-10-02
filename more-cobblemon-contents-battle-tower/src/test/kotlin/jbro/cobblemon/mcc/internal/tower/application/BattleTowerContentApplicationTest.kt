@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.tower.application
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.tower.clearedNormalWith
+import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.application.BattleApplicationRequestContext
 import jbro.cobblemon.mcc.internal.application.BattleContentPhase
 import jbro.cobblemon.mcc.internal.application.BattleEntryPoint
@@ -41,6 +43,13 @@ class BattleTowerContentApplicationTest {
         assertEquals(BattleFormatId("double"), status.formatId)
         assertEquals(
             mapOf(
+                // Normal reports under its own record IDs; Endless keeps the plain format prefix.
+                "single_normal_current_win_streak" to 0L,
+                "single_normal_best_win_streak" to 20L,
+                "single_normal_bp_per_win" to 1L,
+                "double_normal_current_win_streak" to 0L,
+                "double_normal_best_win_streak" to 20L,
+                "double_normal_bp_per_win" to 1L,
                 "single_current_win_streak" to 0L,
                 "single_best_win_streak" to 0L,
                 "single_bp_per_win" to 1L,
@@ -53,7 +62,7 @@ class BattleTowerContentApplicationTest {
     }
 
     @Test
-    fun `status without a session still reports persisted progress for both formats`() {
+    fun `status without a session still reports persisted progress for both formats in both modes`() {
         val application = BattleTowerContentApplication(FakeBackend())
 
         val status = application.status(context)
@@ -61,7 +70,8 @@ class BattleTowerContentApplicationTest {
         assertEquals(BattleContentPhase.AVAILABLE, status.phase)
         assertEquals(null, status.formatId)
         assertEquals(
-            setOf("single_current_win_streak", "double_current_win_streak"),
+            setOf("single_normal_current_win_streak", "double_normal_current_win_streak", "single_current_win_streak",
+                "double_current_win_streak"),
             status.progress.keys.filter { it.endsWith("current_win_streak") }.toSet(),
         )
     }
@@ -107,8 +117,8 @@ class BattleTowerContentApplicationTest {
 
         override fun current(playerId: UUID): TowerPlayViewState? = state
 
-        override fun progress(playerId: UUID): Map<TowerBattleFormat, TowerProgress> =
-            TowerBattleFormat.entries.associateWith(TowerProgress::initial)
+        override fun progress(playerId: UUID): Map<TowerTrack, TowerProgress> =
+            clearedNormalWith(TowerBattleFormat.entries.associateWith { TowerProgress.initial(it) })
 
         override fun open(playerId: UUID, format: TowerBattleFormat): Boolean {
             opens += format

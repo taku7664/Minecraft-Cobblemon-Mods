@@ -135,5 +135,7 @@
   "news.more_cobblemon_contents.highest_floor": "%1$s reached floor %4$s in %2$s %3$s!",
   "screen.more_cobblemon_contents.ranking.best_streak": "Best streak",
   "screen.more_cobblemon_contents.ranking.highest_floor": "Highest floor",
-  "screen.more_cobblemon_contents.ranking.wins": "Wins"
+  "screen.more_cobblemon_contents.ranking.wins": "Wins",
+  "screen.more_cobblemon_contents.dashboard.format.single_normal": "Single · Normal",
+  "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal"
 }

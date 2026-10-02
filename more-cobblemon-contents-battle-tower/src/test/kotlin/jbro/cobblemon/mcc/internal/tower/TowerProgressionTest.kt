@@ -6,16 +6,30 @@ import org.junit.jupiter.api.Test
 
 class TowerProgressionTest {
     @Test
-    fun `opponents start at level 50 and gain one level every 5 wins up to 100`() {
-        assertEquals(50, TowerProgression.opponentLevel(1))
-        assertEquals(50, TowerProgression.opponentLevel(5))
-        assertEquals(51, TowerProgression.opponentLevel(6))
-        assertEquals(51, TowerProgression.opponentLevel(10))
-        assertEquals(52, TowerProgression.opponentLevel(11))
-        assertEquals(59, TowerProgression.opponentLevel(49))
-        assertEquals(99, TowerProgression.opponentLevel(250))
-        assertEquals(100, TowerProgression.opponentLevel(251))
-        assertEquals(100, TowerProgression.opponentLevel(5000))
+    fun `Endless opponents start at level 50 and gain one level every 5 wins up to 100`() {
+        fun level(win: Int) = TowerProgression.opponentLevel(TowerMode.ENDLESS, win)
+        assertEquals(50, level(1))
+        assertEquals(50, level(5))
+        assertEquals(51, level(6))
+        assertEquals(51, level(10))
+        assertEquals(52, level(11))
+        assertEquals(59, level(49))
+        assertEquals(99, level(250))
+        assertEquals(100, level(251))
+        assertEquals(100, level(5000))
+    }
+
+    @Test
+    fun `Normal stays at level 50, brings Champions at the 10th and 20th wins and clears at the 20th`() {
+        assertEquals(50, TowerProgression.opponentLevel(TowerMode.NORMAL, 20))
+        fun normal(wins: Int) = TowerProgress(TowerBattleFormat.SINGLE, wins, wins, TowerMode.NORMAL)
+        assertEquals(listOf(false, true, false, true), listOf(4, 9, 14, 19).map { TowerProgression.nextBossIsChampion(normal(it)) })
+        assertTrue(TowerProgression.nextBossIsChampion(TowerProgress(TowerBattleFormat.SINGLE, 4, 4)))
+        val clear = TowerProgression.record(normal(19), TowerBattleOutcome.WIN)
+        assertTrue(clear.cleared)
+        assertEquals(20, clear.after.currentWinStreak)
+        assertEquals(false, TowerProgression.record(normal(18), TowerBattleOutcome.WIN).cleared)
+        assertEquals(false, TowerProgression.record(TowerProgress(TowerBattleFormat.SINGLE, 19, 19), TowerBattleOutcome.WIN).cleared)
     }
 
     @Test

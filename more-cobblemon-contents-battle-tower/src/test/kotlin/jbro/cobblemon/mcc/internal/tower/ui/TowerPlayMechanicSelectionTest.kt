@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.tower.ui
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.tower.clearedNormalWith
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchRequest
@@ -92,7 +93,7 @@ class TowerPlayMechanicSelectionTest {
     private fun request() = TowerPlayOpenRequest(
         party(),
         TowerBattleFormat.SINGLE,
-        TowerBattleFormat.entries.associateWith(TowerProgress::initial),
+        clearedNormalWith(TowerBattleFormat.entries.associateWith { TowerProgress.initial(it) }),
         0,
     )
 
