@@ -4,7 +4,7 @@ window.WIKI_TRAINERS = [
   "id": "youngster",
   "name": "반바지 꼬마",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -30,7 +30,7 @@ window.WIKI_TRAINERS = [
   "id": "lass",
   "name": "짧은 치마",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -56,7 +56,7 @@ window.WIKI_TRAINERS = [
   "id": "bug_catcher",
   "name": "곤충채집 소년",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "정글"
@@ -81,7 +81,7 @@ window.WIKI_TRAINERS = [
   "id": "bug_maniac",
   "name": "곤충마니아",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "정글",
@@ -108,7 +108,7 @@ window.WIKI_TRAINERS = [
   "id": "picnicker",
   "name": "피크닉걸",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -134,7 +134,7 @@ window.WIKI_TRAINERS = [
   "id": "camper",
   "name": "캠핑보이",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "타이가",
@@ -159,7 +159,7 @@ window.WIKI_TRAINERS = [
   "id": "school_kid",
   "name": "학원 아이",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -183,7 +183,7 @@ window.WIKI_TRAINERS = [
   "id": "poke_kid",
   "name": "포켓몬 꼬마",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -207,7 +207,7 @@ window.WIKI_TRAINERS = [
   "id": "pokefan",
   "name": "포켓몬 애호가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -234,7 +234,7 @@ window.WIKI_TRAINERS = [
   "id": "trainer",
   "name": "트레이너",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -258,7 +258,7 @@ window.WIKI_TRAINERS = [
   "id": "twins",
   "name": "쌍둥이",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -285,7 +285,7 @@ window.WIKI_TRAINERS = [
   "id": "young_couple",
   "name": "젊은 커플",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -311,7 +311,7 @@ window.WIKI_TRAINERS = [
   "id": "breeder",
   "name": "포켓몬 브리더",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -341,7 +341,7 @@ window.WIKI_TRAINERS = [
   "id": "cyclist",
   "name": "사이클리스트",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -365,7 +365,7 @@ window.WIKI_TRAINERS = [
   "id": "jogger",
   "name": "조깅맨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -390,7 +390,7 @@ window.WIKI_TRAINERS = [
   "id": "triathlete",
   "name": "트라이애슬론 선수",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -416,7 +416,7 @@ window.WIKI_TRAINERS = [
   "id": "hiker",
   "name": "등산가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -443,7 +443,7 @@ window.WIKI_TRAINERS = [
   "id": "backpacker",
   "name": "배낭여행자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -466,7 +466,7 @@ window.WIKI_TRAINERS = [
   "id": "mountain_guide",
   "name": "산악 안내인",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산봉우리",
    "고지대",
@@ -490,7 +490,7 @@ window.WIKI_TRAINERS = [
   "id": "miner",
   "name": "광부",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -514,7 +514,7 @@ window.WIKI_TRAINERS = [
   "id": "worker",
   "name": "작업원",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -540,7 +540,7 @@ window.WIKI_TRAINERS = [
   "id": "engineer",
   "name": "엔지니어",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -564,7 +564,7 @@ window.WIKI_TRAINERS = [
   "id": "blacksmith",
   "name": "대장장이",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "화산",
    "온천 지형",
@@ -589,7 +589,7 @@ window.WIKI_TRAINERS = [
   "id": "climber",
   "name": "설산 등반가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "눈 지형",
    "혹한 지형",
@@ -617,7 +617,7 @@ window.WIKI_TRAINERS = [
   "id": "gatekeeper",
   "name": "문지기",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -641,7 +641,7 @@ window.WIKI_TRAINERS = [
   "id": "black_belt",
   "name": "태권왕",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -668,7 +668,7 @@ window.WIKI_TRAINERS = [
   "id": "battle_girl",
   "name": "배틀걸",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -693,7 +693,7 @@ window.WIKI_TRAINERS = [
   "id": "crush_girl",
   "name": "격투 소녀",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -719,7 +719,7 @@ window.WIKI_TRAINERS = [
   "id": "cue_ball",
   "name": "스킨헤드",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "악지",
    "산",
@@ -743,7 +743,7 @@ window.WIKI_TRAINERS = [
   "id": "monk",
   "name": "수도승",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -767,7 +767,7 @@ window.WIKI_TRAINERS = [
   "id": "bird_keeper",
   "name": "새조련사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -795,7 +795,7 @@ window.WIKI_TRAINERS = [
   "id": "sky_watcher",
   "name": "하늘 관측가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산봉우리",
    "고지대",
@@ -822,7 +822,7 @@ window.WIKI_TRAINERS = [
   "id": "swimmer",
   "name": "수영선수",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안"
@@ -846,7 +846,7 @@ window.WIKI_TRAINERS = [
   "id": "swimmer_girl",
   "name": "수영 아가씨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안"
@@ -869,7 +869,7 @@ window.WIKI_TRAINERS = [
   "id": "tuber",
   "name": "튜브 꼬마",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -894,7 +894,7 @@ window.WIKI_TRAINERS = [
   "id": "surfer",
   "name": "서퍼",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안"
@@ -917,7 +917,7 @@ window.WIKI_TRAINERS = [
   "id": "diver",
   "name": "다이버",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -941,7 +941,7 @@ window.WIKI_TRAINERS = [
   "id": "fisherman",
   "name": "낚시꾼",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "강",
    "민물",
@@ -967,7 +967,7 @@ window.WIKI_TRAINERS = [
   "id": "angler",
   "name": "낚시광",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "강",
    "민물",
@@ -991,7 +991,7 @@ window.WIKI_TRAINERS = [
   "id": "sailor",
   "name": "뱃사람",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -1015,7 +1015,7 @@ window.WIKI_TRAINERS = [
   "id": "captain",
   "name": "선장",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -1039,7 +1039,7 @@ window.WIKI_TRAINERS = [
   "id": "lighthouse_keeper",
   "name": "등대지기",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -1062,7 +1062,7 @@ window.WIKI_TRAINERS = [
   "id": "parasol_lady",
   "name": "파라솔 아가씨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안"
@@ -1085,7 +1085,7 @@ window.WIKI_TRAINERS = [
   "id": "aroma_lady",
   "name": "아로마 아가씨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "꽃 지형",
    "벚나무 지형",
@@ -1110,7 +1110,7 @@ window.WIKI_TRAINERS = [
   "id": "florist",
   "name": "꽃집 아가씨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "꽃 지형",
    "벚나무 지형"
@@ -1134,7 +1134,7 @@ window.WIKI_TRAINERS = [
   "id": "gardener",
   "name": "정원사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1161,7 +1161,7 @@ window.WIKI_TRAINERS = [
   "id": "farmer",
   "name": "농부",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원"
@@ -1184,7 +1184,7 @@ window.WIKI_TRAINERS = [
   "id": "beekeeper",
   "name": "양봉가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "꽃 지형",
    "벚나무 지형",
@@ -1207,7 +1207,7 @@ window.WIKI_TRAINERS = [
   "id": "lumberjack",
   "name": "나무꾼",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "타이가"
@@ -1228,7 +1228,7 @@ window.WIKI_TRAINERS = [
   "id": "mushroom_picker",
   "name": "버섯 채집가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "버섯 지형",
    "숲",
@@ -1249,7 +1249,7 @@ window.WIKI_TRAINERS = [
   "id": "kindler",
   "name": "불꽃소년",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "화산",
    "온천 지형",
@@ -1276,7 +1276,7 @@ window.WIKI_TRAINERS = [
   "id": "fire_breather",
   "name": "불꽃 곡예사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "화산",
    "온천 지형",
@@ -1300,7 +1300,7 @@ window.WIKI_TRAINERS = [
   "id": "rocker",
   "name": "로커",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1323,7 +1323,7 @@ window.WIKI_TRAINERS = [
   "id": "guitarist",
   "name": "기타리스트",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1350,7 +1350,7 @@ window.WIKI_TRAINERS = [
   "id": "musician",
   "name": "음악가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1373,7 +1373,7 @@ window.WIKI_TRAINERS = [
   "id": "super_nerd",
   "name": "괴짜",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1397,7 +1397,7 @@ window.WIKI_TRAINERS = [
   "id": "scientist",
   "name": "과학자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -1420,7 +1420,7 @@ window.WIKI_TRAINERS = [
   "id": "astronomer",
   "name": "천문학자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -1441,7 +1441,7 @@ window.WIKI_TRAINERS = [
   "id": "weather_researcher",
   "name": "기상 연구원",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1469,7 +1469,7 @@ window.WIKI_TRAINERS = [
   "id": "psychic",
   "name": "초능력자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -1493,7 +1493,7 @@ window.WIKI_TRAINERS = [
   "id": "channeler",
   "name": "영매",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "으스스한 지형",
    "늪",
@@ -1519,7 +1519,7 @@ window.WIKI_TRAINERS = [
   "id": "hex_maniac",
   "name": "오컬트마니아",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "으스스한 지형",
    "늪"
@@ -1544,7 +1544,7 @@ window.WIKI_TRAINERS = [
   "id": "shrine_maiden",
   "name": "무녀",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "꽃 지형",
    "벚나무 지형",
@@ -1567,7 +1567,7 @@ window.WIKI_TRAINERS = [
   "id": "fortune_teller",
   "name": "점술가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -1588,7 +1588,7 @@ window.WIKI_TRAINERS = [
   "id": "biker",
   "name": "폭주족",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "악지",
    "평원",
@@ -1612,7 +1612,7 @@ window.WIKI_TRAINERS = [
   "id": "roughneck",
   "name": "불량배",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "악지",
    "산",
@@ -1634,7 +1634,7 @@ window.WIKI_TRAINERS = [
   "id": "gambler",
   "name": "겜블러",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1656,7 +1656,7 @@ window.WIKI_TRAINERS = [
   "id": "ninja_boy",
   "name": "닌자 소년",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "정글",
@@ -1680,7 +1680,7 @@ window.WIKI_TRAINERS = [
   "id": "swamp_explorer",
   "name": "늪지 탐험가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "늪"
   ],
@@ -1701,7 +1701,7 @@ window.WIKI_TRAINERS = [
   "id": "gentleman",
   "name": "신사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1724,7 +1724,7 @@ window.WIKI_TRAINERS = [
   "id": "madame",
   "name": "마담",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1749,7 +1749,7 @@ window.WIKI_TRAINERS = [
   "id": "socialite",
   "name": "사교계 명사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "꽃 지형",
    "벚나무 지형"
@@ -1772,7 +1772,7 @@ window.WIKI_TRAINERS = [
   "id": "lady",
   "name": "아가씨",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1796,7 +1796,7 @@ window.WIKI_TRAINERS = [
   "id": "beauty",
   "name": "미인",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "해변",
    "해안",
@@ -1823,7 +1823,7 @@ window.WIKI_TRAINERS = [
   "id": "rich_boy",
   "name": "도련님",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1846,7 +1846,7 @@ window.WIKI_TRAINERS = [
   "id": "waitress",
   "name": "웨이트리스",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1871,7 +1871,7 @@ window.WIKI_TRAINERS = [
   "id": "baker",
   "name": "제빵사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원"
@@ -1892,7 +1892,7 @@ window.WIKI_TRAINERS = [
   "id": "police_officer",
   "name": "경찰관",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1916,7 +1916,7 @@ window.WIKI_TRAINERS = [
   "id": "artist",
   "name": "예술가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1940,7 +1940,7 @@ window.WIKI_TRAINERS = [
   "id": "painter",
   "name": "화가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1963,7 +1963,7 @@ window.WIKI_TRAINERS = [
   "id": "dancer",
   "name": "댄서",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -1986,7 +1986,7 @@ window.WIKI_TRAINERS = [
   "id": "juggler",
   "name": "저글러",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -2010,7 +2010,7 @@ window.WIKI_TRAINERS = [
   "id": "clown",
   "name": "피에로",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -2032,7 +2032,7 @@ window.WIKI_TRAINERS = [
   "id": "collector",
   "name": "콜렉터",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "오버월드 전체"
   ],
@@ -2054,7 +2054,7 @@ window.WIKI_TRAINERS = [
   "id": "pokemaniac",
   "name": "괴수마니아",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "산",
    "언덕",
@@ -2078,7 +2078,7 @@ window.WIKI_TRAINERS = [
   "id": "rancher",
   "name": "목장주",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -2101,7 +2101,7 @@ window.WIKI_TRAINERS = [
   "id": "cowgirl",
   "name": "카우걸",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사바나",
    "악지",
@@ -2125,7 +2125,7 @@ window.WIKI_TRAINERS = [
   "id": "tamer",
   "name": "조련사",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사바나",
    "악지"
@@ -2148,7 +2148,7 @@ window.WIKI_TRAINERS = [
   "id": "safari_guide",
   "name": "사파리 가이드",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사바나"
   ],
@@ -2170,7 +2170,7 @@ window.WIKI_TRAINERS = [
   "id": "pokemon_ranger",
   "name": "포켓몬 레인저",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "정글",
    "숲",
@@ -2195,7 +2195,7 @@ window.WIKI_TRAINERS = [
   "id": "ranger",
   "name": "숲지기",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "타이가",
    "눈 지형",
@@ -2223,7 +2223,7 @@ window.WIKI_TRAINERS = [
   "id": "jungle_explorer",
   "name": "정글 탐험가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "정글",
    "열대 섬",
@@ -2248,7 +2248,7 @@ window.WIKI_TRAINERS = [
   "id": "desert_wanderer",
   "name": "사막 방랑자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사막",
    "건조 지형"
@@ -2271,7 +2271,7 @@ window.WIKI_TRAINERS = [
   "id": "ruin_maniac",
   "name": "유적마니아",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사막",
    "건조 지형",
@@ -2295,7 +2295,7 @@ window.WIKI_TRAINERS = [
   "id": "archaeologist",
   "name": "고고학자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "사막",
    "건조 지형",
@@ -2320,7 +2320,7 @@ window.WIKI_TRAINERS = [
   "id": "skier",
   "name": "스키어",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "눈 지형",
    "혹한 지형",
@@ -2348,7 +2348,7 @@ window.WIKI_TRAINERS = [
   "id": "boarder",
   "name": "보더",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "눈 지형",
    "혹한 지형",
@@ -2376,7 +2376,7 @@ window.WIKI_TRAINERS = [
   "id": "shepherd",
   "name": "양치기",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "평원",
    "초원",
@@ -2399,7 +2399,7 @@ window.WIKI_TRAINERS = [
   "id": "naturalist",
   "name": "자연 관찰가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "숲",
    "꽃 지형",
@@ -2423,7 +2423,7 @@ window.WIKI_TRAINERS = [
   "id": "island_kid",
   "name": "섬마을 아이",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "열대 섬",
    "섬",
@@ -2448,7 +2448,7 @@ window.WIKI_TRAINERS = [
   "id": "moor_walker",
   "name": "황야 산책자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "관목 지대",
    "고원",
@@ -2472,7 +2472,7 @@ window.WIKI_TRAINERS = [
   "id": "bamboo_hermit",
   "name": "대숲 은둔자",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "대나무 지형"
   ],
@@ -2492,7 +2492,7 @@ window.WIKI_TRAINERS = [
   "id": "mage",
   "name": "마법 연구가",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "마법 지형",
    "꽃 지형",
@@ -2515,7 +2515,7 @@ window.WIKI_TRAINERS = [
   "id": "hot_spring_keeper",
   "name": "온천지기",
   "tier": "일반",
-  "bp": 10,
+  "bp": 3,
   "biomes": [
    "화산",
    "온천 지형",
@@ -2538,7 +2538,7 @@ window.WIKI_TRAINERS = [
   "id": "ace_trainer",
   "name": "엘리트 트레이너",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "오버월드 전체"
   ],
@@ -2562,7 +2562,7 @@ window.WIKI_TRAINERS = [
   "id": "veteran",
   "name": "베테랑",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "오버월드 전체"
   ],
@@ -2586,7 +2586,7 @@ window.WIKI_TRAINERS = [
   "id": "dragon_tamer",
   "name": "드래곤 조련사",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "산봉우리",
    "고지대",
@@ -2613,7 +2613,7 @@ window.WIKI_TRAINERS = [
   "id": "normal_ace",
   "name": "노말 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "평원",
    "초원"
@@ -2637,7 +2637,7 @@ window.WIKI_TRAINERS = [
   "id": "fire_ace",
   "name": "불꽃 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "화산",
    "온천 지형",
@@ -2664,7 +2664,7 @@ window.WIKI_TRAINERS = [
   "id": "water_ace",
   "name": "물 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "해변",
    "해안",
@@ -2691,7 +2691,7 @@ window.WIKI_TRAINERS = [
   "id": "grass_ace",
   "name": "풀 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "숲",
    "정글",
@@ -2718,7 +2718,7 @@ window.WIKI_TRAINERS = [
   "id": "electric_ace",
   "name": "전기 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "평원",
    "초원",
@@ -2744,7 +2744,7 @@ window.WIKI_TRAINERS = [
   "id": "ice_ace",
   "name": "얼음 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "눈 지형",
    "혹한 지형",
@@ -2772,7 +2772,7 @@ window.WIKI_TRAINERS = [
   "id": "fighting_ace",
   "name": "격투 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "산",
    "언덕"
@@ -2797,7 +2797,7 @@ window.WIKI_TRAINERS = [
   "id": "poison_ace",
   "name": "독 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "늪",
    "정글"
@@ -2822,7 +2822,7 @@ window.WIKI_TRAINERS = [
   "id": "ground_ace",
   "name": "땅 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "사막",
    "건조 지형",
@@ -2847,7 +2847,7 @@ window.WIKI_TRAINERS = [
   "id": "flying_ace",
   "name": "비행 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "산봉우리",
    "고지대",
@@ -2875,7 +2875,7 @@ window.WIKI_TRAINERS = [
   "id": "psychic_ace",
   "name": "에스퍼 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "오버월드 전체"
   ],
@@ -2898,7 +2898,7 @@ window.WIKI_TRAINERS = [
   "id": "bug_ace",
   "name": "벌레 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "숲",
    "정글"
@@ -2922,7 +2922,7 @@ window.WIKI_TRAINERS = [
   "id": "rock_ace",
   "name": "바위 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "산",
    "언덕",
@@ -2947,7 +2947,7 @@ window.WIKI_TRAINERS = [
   "id": "ghost_ace",
   "name": "고스트 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "으스스한 지형",
    "늪"
@@ -2970,7 +2970,7 @@ window.WIKI_TRAINERS = [
   "id": "dark_ace",
   "name": "악 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "오버월드 전체"
   ],
@@ -2992,7 +2992,7 @@ window.WIKI_TRAINERS = [
   "id": "steel_ace",
   "name": "강철 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "산",
    "언덕",
@@ -3017,7 +3017,7 @@ window.WIKI_TRAINERS = [
   "id": "fairy_ace",
   "name": "페어리 엘리트",
   "tier": "에이스",
-  "bp": 20,
+  "bp": 6,
   "biomes": [
    "꽃 지형",
    "벚나무 지형",
