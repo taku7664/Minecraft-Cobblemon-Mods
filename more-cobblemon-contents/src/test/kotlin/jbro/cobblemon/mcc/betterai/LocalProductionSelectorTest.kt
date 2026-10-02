@@ -21,12 +21,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Measures the path a real battle actually takes.
+ * Compares the previous weighted policy with the shipping highest-ranked policy.
  *
  * Every other tier measurement in this module injects [LocalHighestRankedActionSelector], which takes
  * the top-ranked action and stops. That is deliberate - it asks whether the *ranking* moves, with no
- * sampling noise in the answer - but it is not what ships. The Brain's default selector is
- * `LocalWeightedActionSelector`, which draws from a shortlist weighted by risk budget, trainer
+ * sampling noise in the answer. The weighted selector is now injected explicitly for this comparison;
+ * it draws from a shortlist weighted by risk budget, trainer
  * personality and a persona-stable style, and which gates switches on their safety.
  *
  * So the machinery that makes one trainer differ from another has never appeared in a single number
@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test
  */
 class LocalProductionSelectorTest {
     @Test
-    fun `the shipping selector is measured beside the deterministic one`() {
+    fun `the previous weighted selector is measured beside the shipping deterministic one`() {
         val contexts = recordPositions()
         val tiers = listOf(
             "introductory" to BattleDifficultyProfiles.INTRODUCTORY,
@@ -52,7 +52,7 @@ class LocalProductionSelectorTest {
         val deterministic = tiers.associate { (name, profile) ->
             name to contexts.map { decide(it, profile, weighted = false) }
         }
-        val shipping = tiers.associate { (name, profile) ->
+        val previousWeighted = tiers.associate { (name, profile) ->
             name to contexts.map { decide(it, profile, weighted = true) }
         }
 
@@ -60,22 +60,22 @@ class LocalProductionSelectorTest {
             appendLine("=".repeat(100))
             appendLine("SELECTOR COMPARISON  positions=${contexts.size}")
             appendLine("=".repeat(100))
-            appendLine("deterministic = top-ranked action, what every earlier tier number measured")
-            appendLine("shipping      = LocalWeightedActionSelector, what a player actually faces")
+            appendLine("deterministic = the shipping top-ranked action policy")
+            appendLine("previous weighted = the former LocalWeightedActionSelector policy")
             appendLine()
             tiers.forEach { (name, _) ->
                 val differing = contexts.indices.count {
-                    deterministic.getValue(name)[it] != shipping.getValue(name)[it]
+                    deterministic.getValue(name)[it] != previousWeighted.getValue(name)[it]
                 }
                 appendLine(
-                    "  %-14s shipping differs from deterministic = %5.1f%% (%d/%d)".format(
+                    "  %-14s previous weighted differs from deterministic = %5.1f%% (%d/%d)".format(
                         name, differing * 100.0 / contexts.size, differing, contexts.size,
                     ),
                 )
             }
             appendLine()
             appendLine("-- tier divergence under each selector --")
-            listOf("deterministic" to deterministic, "shipping" to shipping).forEach { (label, results) ->
+            listOf("deterministic" to deterministic, "previous weighted" to previousWeighted).forEach { (label, results) ->
                 val intro = results.getValue("introductory")
                 val boss = results.getValue("boss")
                 val extremes = contexts.indices.count { intro[it] != boss[it] }
@@ -249,9 +249,7 @@ class LocalProductionSelectorTest {
         risk: Double = 0.5,
         persona: String? = "mcc:measurement",
     ): String {
-        // The default constructor is the shipping configuration; the deterministic selector has to be
-        // injected, which is exactly how it slipped into every earlier measurement unnoticed.
-        val brain = if (weighted) LocalTacticalBrain() else LocalTacticalBrain(LocalHighestRankedActionSelector)
+        val brain = if (weighted) LocalTacticalBrain(LocalWeightedActionSelector()) else LocalTacticalBrain()
         val session = brain.openSession(
             BattleBrainOpenContext(
                 battleId = context.state.battleId,

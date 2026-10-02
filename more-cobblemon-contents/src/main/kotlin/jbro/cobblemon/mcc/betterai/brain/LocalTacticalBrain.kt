@@ -40,6 +40,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.policy.LocalRootDecisionPolicy
 import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.mcc.betterai.policy.LocalHighestRankedActionSelector
 import jbro.cobblemon.mcc.betterai.policy.forPlanOwner
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudgetPolicy
@@ -117,7 +118,7 @@ private fun nativeFailureMessage(
     }
 
 internal class LocalTacticalBrain(
-    private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
+    private val actionSelector: LocalActionSelector = LocalHighestRankedActionSelector,
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
     private val nativeInitialDecision: NativeInitialDecisionSource =
@@ -353,13 +354,11 @@ internal class LocalTacticalBrain(
                         confidence = confidence,
                         advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
                         tags = buildSet {
+                            addAll(selectionPolicyTags())
                             addAll(setOf(
                                 "local_tactical_v4",
                                 "tuning_${tuning.id}",
-                                "mixed_top40",
-                                "contextual_human_mix",
                                 "persistent_intent",
-                                "evidence_gated_mixup",
                                 "position_risk_budget",
                                 "choice_pool_${selection.shortlistSize}",
                                 "choice_seed_${selection.seed.toULong().toString(16)}",
@@ -438,7 +437,9 @@ internal class LocalTacticalBrain(
             strategy = strategy,
             rootChoicePool = if (!tuning.revalidateRootChoicePool) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
-                LocalWeightedActionSelector().shortlist(refined, mixingContext(refined))
+                val pool = if (actionSelector === LocalHighestRankedActionSelector) refined.take(1)
+                    else LocalWeightedActionSelector().shortlist(refined, mixingContext(refined))
+                pool
                     .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
             },
             budget = budget,
@@ -450,7 +451,8 @@ internal class LocalTacticalBrain(
             excludedActionIds = ruleExclusions(rootRanked).keys,
             // Read from the same table as the rules; the AI's threat weights play no part in it.
             opponentIntents = opponentIntents,
-            decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
+            decisionSignature = if (actionSelector !is LocalWeightedActionSelector &&
+                actionSelector !== LocalHighestRankedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(
                     battleId = battleId,
@@ -554,13 +556,11 @@ internal class LocalTacticalBrain(
                 confidence = confidence,
                 advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
                 tags = buildSet {
+                    addAll(selectionPolicyTags())
                     addAll(setOf(
                     "local_tactical_v4",
                     "tuning_${tuning.id}",
-                    "mixed_top40",
-                    "contextual_human_mix",
                     "persistent_intent",
-                    "evidence_gated_mixup",
                     "position_risk_budget",
                     "choice_pool_${selection.shortlistSize}",
                     "choice_seed_${selection.seed.toULong().toString(16)}",
@@ -610,6 +610,12 @@ internal class LocalTacticalBrain(
             },
         )
         return choice.leads
+    }
+
+    private fun selectionPolicyTags(): Set<String> = when {
+        actionSelector === LocalHighestRankedActionSelector -> setOf("highest_ranked")
+        actionSelector is LocalWeightedActionSelector -> setOf("mixed_top40", "contextual_human_mix", "evidence_gated_mixup")
+        else -> emptySet()
     }
 
     private fun decisionDiagnostics(

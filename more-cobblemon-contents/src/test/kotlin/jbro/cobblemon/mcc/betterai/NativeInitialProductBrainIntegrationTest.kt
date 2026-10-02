@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
@@ -30,6 +31,38 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeInitialProductBrainIntegrationTest {
+    @Test
+    fun `shipping selector takes the first native rank even when alternatives have equal scores`() {
+        val context = contestedContext()
+        val preferred = context.candidates.last()
+        val alternate = context.candidates.first()
+        val nativeRanks = NativeProductRankAdapter.rank(listOf(
+            NativeRootActionValue(preferred, 0.40),
+            NativeRootActionValue(alternate, 0.40),
+        ))
+        val expected = nativeRanks.first().outcome.candidate.actionId
+        repeat(32) { index ->
+            val request = context.copy(state = context.state.copyState(turn = index))
+            val brain = LocalTacticalBrain(
+                nativeInitialDecision = { _, _, _, _, _ ->
+                    NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = nativeRanks,
+                        depthCompleted = 2,
+                        nodesVisited = 37,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = nativeSessionState(request),
+                    )
+                },
+            )
+            val decision = brain.decide(open(brain, request), request).toCompletableFuture().get()
+            assertEquals(expected, decision.actionId)
+            assertTrue("highest_ranked" in decision.tags)
+            assertTrue("choice_pool_1" in decision.tags)
+            assertFalse("mixed_top40" in decision.tags)
+        }
+    }
+
     @Test
     fun `AI test persona keeps a bounded native clock while the legacy clock is lifted`() {
         val context = contestedContext()

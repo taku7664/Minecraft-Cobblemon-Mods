@@ -10,15 +10,15 @@ import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
-import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.mcc.betterai.policy.LocalHighestRankedActionSelector
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 
 /**
  * Replays a decision saved by an AI test battle (`logs/betterai-decisions/<battle>/turn-NNN-*.json`).
  *
- * Legacy-only replay is exact for turns that did not continue a native session: the pipeline is
- * deterministic, and the request deadline keeps the remaining time it had at capture. Pass
+ * Replays captured inputs through the current selection policy; older weighted decisions can differ.
+ * The request deadline keeps the remaining time it had at capture. Pass
  * `legacyOnly = false` to let the opening native path run against the bundled test engine, which is
  * not the server's patched rule set.
  */
@@ -35,11 +35,11 @@ internal object AiDecisionSnapshotReplay {
         snapshot: AiTestDecisionSnapshot,
         legacyOnly: Boolean = true,
         nowEpochMillis: Long = System.currentTimeMillis(),
+        actionSelector: LocalActionSelector = LocalHighestRankedActionSelector,
     ): Result {
-        val weighted = LocalWeightedActionSelector()
         var captured: Pair<List<LocalBattleActionRank>, LocalActionSelection>? = null
         val selector = LocalActionSelector { ranked, seed, mixing ->
-            weighted.choose(ranked, seed, mixing).also { captured = ranked to it }
+            actionSelector.choose(ranked, seed, mixing).also { captured = ranked to it }
         }
         val brain = if (legacyOnly) {
             LocalTacticalBrain(

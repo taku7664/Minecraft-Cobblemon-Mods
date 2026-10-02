@@ -38,6 +38,9 @@ class AiDecisionSnapshotReplayTest {
             assertEquals(json, AiTestDecisionSnapshot.toJson(restored), "Round trip must not lose fields")
             val original = AiDecisionSnapshotReplay.replay(snapshot, nowEpochMillis = 1_000L)
             val replayed = AiDecisionSnapshotReplay.replay(restored, nowEpochMillis = 1_000L)
+            assertEquals(original.ranked.first().outcome.candidate.actionId, original.decision.actionId)
+            assertEquals(1.0, original.selection.probability)
+            assertEquals(1, original.selection.shortlistSize)
             assertEquals(original.decision.actionId, replayed.decision.actionId)
             assertEquals(
                 original.ranked.map { it.outcome.candidate.actionId to it.comparisonValue },

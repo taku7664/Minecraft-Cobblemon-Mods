@@ -633,12 +633,24 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     }
 }
 
+/** Final ranking is authoritative; ties retain its existing order without a random draw. */
 internal object LocalHighestRankedActionSelector : LocalActionSelector {
     override fun choose(
         ranked: List<LocalBattleActionRank>,
         seed: Long,
         context: LocalActionMixingContext,
-    ): LocalActionSelection = LocalActionSelection(ranked.first(), seed, 1, 1.0)
+    ): LocalActionSelection {
+        require(ranked.isNotEmpty()) { "Highest-ranked action selection requires at least one ranked action" }
+        val best = ranked.first()
+        return LocalActionSelection(
+            rank = best,
+            seed = seed,
+            shortlistSize = 1,
+            probability = 1.0,
+            probabilitiesByActionId = mapOf(best.outcome.candidate.actionId to 1.0),
+            exclusionsByActionId = ranked.drop(1).associate { it.outcome.candidate.actionId to "lower_rank" },
+        )
+    }
 }
 
 internal object LocalActionChoiceSeed {
