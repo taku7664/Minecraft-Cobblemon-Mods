@@ -89,7 +89,10 @@ internal fun interface TowerPlayBattleCompletionSink {
 
 private val NoopTowerPlayBattleCompletionSink = TowerPlayBattleCompletionSink { _, _ -> }
 
-/** Ends the stored run of [track] for a challenger who gives it up between battles: the streak goes to 0. */
+/**
+ * Ends the stored run of [track] without a battle: the streak goes to 0. A challenger gives a run up between battles,
+ * and a session that closes takes its runs with it, since their registered team goes with the session.
+ */
 internal fun interface TowerPlayRunRetirementSink {
     fun retire(playerId: UUID, track: TowerTrack)
 }
@@ -731,6 +734,16 @@ internal class TowerPlaySessionService(
     ): Session? {
         var removed: Session? = null
         var failure = primaryFailure
+        // A streak left standing would go on with whatever six the challenger registers next.
+        sessions[playerId]?.progressByTrack?.filterValues { it.currentWinStreak > 0 }?.keys?.forEach { track ->
+            try {
+                runRetirementSink.retire(playerId, track)
+            } catch (retirementFailure: Throwable) {
+                if (failure == null) failure = retirementFailure else if (failure !== retirementFailure) {
+                    failure.addSuppressed(retirementFailure)
+                }
+            }
+        }
         try {
             removed = removeSession(playerId)
         } catch (cleanupFailure: Throwable) {

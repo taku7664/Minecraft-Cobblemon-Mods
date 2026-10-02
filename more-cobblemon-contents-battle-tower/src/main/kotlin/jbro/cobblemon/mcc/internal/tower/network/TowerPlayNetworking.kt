@@ -71,6 +71,8 @@ import kotlin.random.Random
 internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     private const val COMPLETION_RETRY_MILLIS = 5_000L
     private val onlinePlayers = HashMap<java.util.UUID, ServerPlayer>()
+    /** The running server, for the records of a session that closes after its player left. */
+    private var runningServer: MinecraftServer? = null
     private val pendingCompletions = BattleCompletionRetryQueue<java.util.UUID, PendingTowerCompletion>(
         keyOf = PendingTowerCompletion::battleId,
         retryMillis = COMPLETION_RETRY_MILLIS,
@@ -110,7 +112,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             battleLauncher = launcher,
             registeredTeamSnapshots = registeredTeamSnapshots,
             runRetirementSink = TowerPlayRunRetirementSink { playerId, track ->
-                val server = checkNotNull(onlinePlayers[playerId]?.server) { "Battle Tower retirement needs the player online" }
+                val server = checkNotNull(runningServer) { "Battle Tower retirement needs a running server" }
                 BattleRecordService.resetWinStreak(
                     server,
                     BattleRecordKey(playerId, BattleRecordCategory(TowerRecordContract.CONTENT_ID, track.recordId)),
@@ -122,6 +124,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
 
     fun registerServer() {
         sessions
+        ServerLifecycleEvents.SERVER_STARTED.register { server -> runningServer = server }
+        ServerLifecycleEvents.SERVER_STOPPED.register { runningServer = null }
         MccCommandContributors.register { TowerProgressCommands.build() }
         MccAdminSources.register(adminSource)
         BattleHubEntries.register(

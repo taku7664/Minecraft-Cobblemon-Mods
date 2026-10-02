@@ -114,6 +114,41 @@ class TowerPlayRunEndTest {
         assertEquals(listOf(track), retirements)
     }
 
+    @Test
+    fun `leaving between battles ends every streak the session held`() {
+        val service = service()
+        start(service, service.open(playerId, request(currentWinStreak = 7)))
+        val won = (service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+            as TowerPlayBattleCompletionResult.Completed).state
+        assertTrue(retirements.isEmpty())
+
+        assertTrue(service.disconnect(playerId))
+
+        // Singles and Doubles both stood at a streak; neither can go on with another six.
+        assertEquals(setOf(track, TowerTrack(TowerBattleFormat.DOUBLE, TowerMode.ENDLESS)), retirements.toSet())
+        assertEquals(TowerPlayPhase.TEAM_LOCKED, won.phase)
+        assertEquals(null, service.current(playerId))
+    }
+
+    @Test
+    fun `closing a session between battles ends its streak, and a loss leaves nothing to end`() {
+        val service = service()
+        service.open(playerId, request(currentWinStreak = 0))
+        val active = start(service, service.current(playerId)!!)
+        service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+
+        assertEquals(TowerSessionAbandonResult.SessionClosed, service.abandonSession(playerId) { true })
+        assertEquals(listOf(track), retirements)
+
+        retirements.clear()
+        service.open(playerId, request(currentWinStreak = 0))
+        start(service, service.current(playerId)!!)
+        assertTrue(active.mechanicLocked)
+        assertTrue(service.disconnect(playerId))
+        // The battle under way ended as a loss, which already ended the streak.
+        assertTrue(retirements.isEmpty())
+    }
+
     private fun service() = TowerPlaySessionService(
         battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
         registeredTeamSnapshots = object : TowerRegisteredTeamSnapshots {
