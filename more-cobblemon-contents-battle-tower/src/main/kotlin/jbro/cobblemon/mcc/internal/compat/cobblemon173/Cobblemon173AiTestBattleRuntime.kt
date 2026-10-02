@@ -22,10 +22,19 @@ import jbro.cobblemon.mcc.internal.command.AiTestDifficulty
 import jbro.cobblemon.mcc.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerStatSpread
+import com.cobblemon.mod.common.api.pokemon.PokemonProperties
+import com.google.gson.JsonParser
+import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 
-/** Starts an isolated, reward-free six-on-six Cynthia test battle without Tower progression or selection rules. */
+/**
+ * Starts an isolated, reward-free six-on-six Cynthia test battle without Tower progression or selection rules. With
+ * the League Challenge installed it is the hard Champion as the League bundles her (levels 95 to 100, Mega Evolution,
+ * her League skin) against the player's party at its own levels; without it, the level 50 Tera fixture below.
+ */
 internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
     override fun start(player: ServerPlayer, difficulty: AiTestDifficulty): AiTestBattleStartResult {
         if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) {
@@ -37,6 +46,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
         if (party.size != CYNTHIA_TEAM_SIZE) return AiTestBattleStartResult.WrongPartySize(party.size)
 
         return try {
+            val hard = HardCynthiaAiTestTeam.load(player.server)
             val registrations = party.map(Pokemon::toTowerPokemonRegistration)
             val playerPreview = BattleOpponentTeamPreviewView(
                 selectionSize = CYNTHIA_TEAM_SIZE,
@@ -45,7 +55,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                         previewSlotId = slot,
                         speciesId = pokemon.speciesId,
                         formId = pokemon.formId,
-                        level = TOWER_BATTLE_LEVEL_CAP,
+                        level = if (hard != null) party[slot].level else TOWER_BATTLE_LEVEL_CAP,
                     )
                 },
             )
@@ -55,17 +65,16 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
             val launch = engine.start(
                 Cobblemon173ManagedAiBattle(
                     playerId = player.uuid,
-                    playerTeam = party.map { pokemon -> battleCopy(player, pokemon) },
-                    opponentTeam = CynthiaAiTestFixture.team.map(
-                        Cobblemon173OpponentPokemonPropertiesFactory::toBattlePokemon,
-                    ),
-                    trainerDisplayNameKey = CynthiaAiTestFixture.DISPLAY_NAME_KEY,
+                    playerTeam = party.map { pokemon -> battleCopy(player, pokemon, capLevel = hard == null) },
+                    opponentTeam = hard?.members?.map(HardCynthiaAiTestTeam::toBattlePokemon)
+                        ?: CynthiaAiTestFixture.team.map(Cobblemon173OpponentPokemonPropertiesFactory::toBattlePokemon),
+                    trainerDisplayNameKey = if (hard != null) HardCynthiaAiTestTeam.DISPLAY_NAME_KEY else CynthiaAiTestFixture.DISPLAY_NAME_KEY,
                     trainerPersonaId = "${BattleBrainContentIds.AI_TEST_PERSONA_PREFIX}${difficulty.name.lowercase()}",
                     trainerAiSkill = difficulty.skillLevel,
                     trainerProfile = difficulty.trainerProfile(),
                     learningScopeId = UUID.randomUUID(),
                     opponentTeamPreview = playerPreview,
-                    mechanic = MajorBattleMechanic.TERA,
+                    mechanic = if (hard != null) MajorBattleMechanic.MEGA else MajorBattleMechanic.TERA,
                     format = BattleFormat.SINGLE,
                     brainSelectionContext = BattleBrainSelectionContext(
                         contentId = BattleBrainContentIds.AI_TEST,
@@ -75,6 +84,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                     contentId = ManagedBattleContentIds.AI_TEST,
                     diagnosticsLabel = "Cynthia Better AI test",
                     unboundedBrainDecision = true,
+                    appearance = hard?.appearance,
                 ),
                 onEnded = {},
             )
@@ -97,10 +107,10 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
             BrainCapability.SINGLE in provider.capabilities
     }
 
-    private fun battleCopy(player: ServerPlayer, pokemon: Pokemon): BattlePokemon {
+    private fun battleCopy(player: ServerPlayer, pokemon: Pokemon, capLevel: Boolean): BattlePokemon {
         val snapshot = pokemon.clone(false, player.registryAccess()).also { clone ->
             check(clone !== pokemon) { "Cobblemon returned the live party Pokemon for an AI test snapshot" }
-            clone.level = TOWER_BATTLE_LEVEL_CAP
+            if (capLevel) clone.level = TOWER_BATTLE_LEVEL_CAP
             clone.heal()
         }
         return BattlePokemon.safeCopyOf(snapshot).also { copy ->
@@ -113,6 +123,41 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
     private const val CYNTHIA_TEAM_SIZE = 6
     private const val BETTER_AI_PROVIDER_ID =
         "more_cobblemon_contents:local_tactical"
+}
+
+/** Hard Cynthia read from the League Challenge's data pack, so the test meets the team the League bundles today. */
+internal object HardCynthiaAiTestTeam {
+    private const val LEAGUE = "more_cobblemon_contents_league_challenge"
+    private val TEAM = ResourceLocation.fromNamespaceAndPath(LEAGUE, "league-challenge/teams/cynthia_hard.json")
+    private val APPEARANCE = ResourceLocation.fromNamespaceAndPath(LEAGUE, "league-challenge/appearances/cynthia.json")
+    const val DISPLAY_NAME_KEY = "trainer.$LEAGUE.cynthia"
+
+    class Team(val members: List<String>, val appearance: TrainerResourceSkin?)
+
+    /** The team, or null without the League Challenge or when its files cannot be read. */
+    fun load(server: MinecraftServer): Team? = try {
+        val resources = server.resourceManager
+        resources.getResource(TEAM).orElse(null)?.openAsReader()?.use { reader ->
+            val members = JsonParser.parseReader(reader).asJsonObject.getAsJsonArray("pokemon").map { it.asString }
+            val appearance = resources.getResource(APPEARANCE).orElse(null)?.openAsReader()?.use { skinReader ->
+                val skin = JsonParser.parseReader(skinReader).asJsonObject
+                skin["skin"]?.asString?.let { TrainerResourceSkin(it, skin["model"]?.asString == "slim") }
+            }
+            Team(members, appearance).takeIf { members.size == 6 }
+        }
+    } catch (failure: RuntimeException) {
+        MoreCobblemonContents.LOGGER.warn("Hard Cynthia could not be read for the AI test; using the Tower fixture", failure)
+        null
+    }
+
+    fun toBattlePokemon(member: String): BattlePokemon {
+        val properties = PokemonProperties.parse(member)
+        return BattlePokemon.safeCopyOf(Cobblemon173CatalogPokemonCreator.create(properties, properties.form)).also { battlePokemon ->
+            Cobblemon173OpponentPokemonSafety.apply(battlePokemon.originalPokemon)
+            Cobblemon173OpponentPokemonSafety.apply(battlePokemon.effectedPokemon)
+            battlePokemon.effectedPokemon.heal()
+        }
+    }
 }
 
 internal object CynthiaAiTestFixture {
