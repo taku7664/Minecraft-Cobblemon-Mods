@@ -77,7 +77,7 @@ internal class BattleTowerContentApplication(
         contentId = CONTENT_ID,
         formatId = format.toApplicationId(),
         phase = when (phase) {
-            TowerPlayPhase.SELECTING, TowerPlayPhase.TEAM_LOCKED -> BattleContentPhase.PREPARING
+            TowerPlayPhase.SELECTING, TowerPlayPhase.TEAM_LOCKED, TowerPlayPhase.CHANGING_TEAM -> BattleContentPhase.PREPARING
             TowerPlayPhase.ACTIVE -> BattleContentPhase.ACTIVE
         },
         progress = progressValues(playerId),

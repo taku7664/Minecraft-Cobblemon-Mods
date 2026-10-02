@@ -52,37 +52,34 @@ internal class TowerPlayScreenController(
         TowerPlayIntent.Start(requestId, state.entryContextId, state.revision)
     }
 
-    fun resume(): Boolean = submit { requestId ->
-        TowerPlayIntent.Resume(requestId, state.entryContextId, state.revision)
-    }
-
     fun retire(): Boolean = submit { requestId ->
         TowerPlayIntent.Retire(requestId, state.entryContextId, state.revision)
     }
 
-    fun abandon(): Boolean = submit { requestId ->
-        TowerPlayIntent.Abandon(requestId, state.entryContextId, state.revision)
+    fun changeTeam(): Boolean = submit { requestId ->
+        TowerPlayIntent.ChangeTeam(requestId, state.entryContextId, state.revision)
+    }
+
+    fun forfeit(): Boolean = submit { requestId ->
+        TowerPlayIntent.Forfeit(requestId, state.entryContextId, state.revision)
     }
 
     fun apply(result: TowerPlayMutationResult) {
         val pending = pendingIntent ?: return
         if (result.requestId != pending.requestId) return
-
+        // The answer to the request in flight always frees the screen; only a newer state replaces the shown one.
+        pendingIntent = null
         when (result) {
             is TowerPlayMutationResult.Accepted -> {
-                if (result.state.entryContextId != state.entryContextId) return
-                if (result.state.revision <= state.revision) return
+                if (result.state.entryContextId != state.entryContextId || result.state.revision <= state.revision) return
                 state = result.state
                 feedbackKey = null
                 fieldFeedbackKeys = emptyList()
-                pendingIntent = null
             }
 
             is TowerPlayMutationResult.Rejected -> {
-                if (result.currentRevision < state.revision) return
                 feedbackKey = result.messageKey
                 fieldFeedbackKeys = result.fieldErrors.values.distinct()
-                pendingIntent = null
             }
         }
     }
@@ -104,13 +101,23 @@ internal class TowerPlayScreenController(
 }
 
 internal object TowerPlayInteractionPolicy {
+    /** The entries are picked: on a fresh team, or again from the registered six between battles. */
+    fun picking(state: TowerPlayViewState): Boolean =
+        state.phase == TowerPlayPhase.SELECTING || state.phase == TowerPlayPhase.CHANGING_TEAM
+
+    /** The six, the mode, the format and the session rules change only while no team is registered. */
+    fun rulesOpen(state: TowerPlayViewState): Boolean = state.phase == TowerPlayPhase.SELECTING
+
     fun canRequestLock(state: TowerPlayViewState, isPending: Boolean): Boolean =
-        state.phase == TowerPlayPhase.SELECTING &&
+        picking(state) &&
             !isPending &&
             state.selectedMechanic != null &&
             state.selectedPokemonOrder.size == state.format.selectionSize
 
-    /** A run has begun once a battle started on it: it has wins, or its rules locked at its first battle. */
-    fun runInProgress(state: TowerPlayViewState): Boolean =
-        state.currentWinStreak > 0 || state.mechanicLocked || state.legendaryClassLocked
+    /**
+     * A run can be given up between battles once it is under way, or while a streak stands from before this session
+     * (an operator's, or one a crash left behind).
+     */
+    fun canRetire(state: TowerPlayViewState): Boolean =
+        state.phase != TowerPlayPhase.ACTIVE && (state.runStarted || state.currentWinStreak > 0)
 }

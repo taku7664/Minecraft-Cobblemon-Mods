@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.client.hub.MccHubTabs
 import jbro.cobblemon.mcc.client.hub.MccPokemonPortraits
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerMode
+import jbro.cobblemon.mcc.internal.tower.TOWER_BOSS_INTERVAL
 import jbro.cobblemon.mcc.internal.tower.TOWER_NORMAL_CLEAR_WINS
 import jbro.cobblemon.mcc.internal.tower.network.TowerPlayIntentPayload
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayInteractionPolicy
@@ -90,7 +91,7 @@ internal class TowerHubTab : MccHubTabContent {
                 TowerMode.ENDLESS -> tower("progress", tower("stage.${state.streakStage.serializedId}"), state.currentWinStreak,
                     state.bestWinStreak, state.bpPerWin)
             },
-            tower("phase.${state.phase.name.lowercase()}"), progress = state.winsIntoSet to 5)
+            tower("phase.${state.phase.name.lowercase()}"), progress = state.winsIntoSet to TOWER_BOSS_INTERVAL)
         if (showingGuide) {
             buildGuide(host, layout)
             return
@@ -144,7 +145,7 @@ internal class TowerHubTab : MccHubTabContent {
             }
             button.blocked = blocked
             // A blocked Pokemon can still be taken off the team, never put on it.
-            button.active = state.phase == TowerPlayPhase.SELECTING && !controller.isPending && (!blocked || order != null)
+            button.active = TowerPlayInteractionPolicy.picking(state) && !controller.isPending && (!blocked || order != null)
             val tooltip = tower("party_entry.tooltip", speciesName, pokemon.level, pokemon.battleLevel, heldItem)
             button.setTooltip(Tooltip.create(if (blocked) tooltip.copy().append("\n").append(tower("party_entry.blocked.tooltip")) else tooltip))
             host.add(button)
@@ -154,7 +155,8 @@ internal class TowerHubTab : MccHubTabContent {
     private fun addSetup(host: MccHubContentHost, layout: TowerHubLayout, controller: TowerPlayScreenController) {
         val state = controller.state
         val body = MccHubKit.card(host, layout.setup, tower("section.status"))
-        val selecting = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
+        // The mode, the format and the rules are the run's: they change only while no team is registered.
+        val rulesOpen = TowerPlayInteractionPolicy.rulesOpen(state) && !controller.isPending
         // The settings keep at least one summary line below them; a tall card lets them take title lines.
         val y = MccHubKit.choices(host, MccHubKit.settingsArea(body), listOf(
             // A locked Endless still shows, marked, so a challenger learns what clearing Normal opens.
@@ -163,24 +165,24 @@ internal class TowerHubTab : MccHubTabContent {
                     val locked = mode == TowerMode.ENDLESS && !state.endlessUnlocked
                     MccHubKit.Choice(mode.id, tower(if (locked) "mode.${mode.id}.locked" else "mode.${mode.id}"))
                 },
-                state.mode.id, selecting, tower("mode.tooltip.${state.mode.id}")) { id ->
+                state.mode.id, rulesOpen, tower("mode.tooltip.${state.mode.id}")) { id ->
                 if (controller.changeMode(TowerMode.entries.first { it.id == id })) host.rebuild()
             },
             MccHubKit.ChoiceRow(tower("section.format"),
                 TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
-                state.format.recordId, selecting, tower("format.tooltip", state.format.selectionSize)) { id ->
+                state.format.recordId, rulesOpen, tower("format.tooltip", state.format.selectionSize)) { id ->
                 if (controller.changeFormat(TowerBattleFormat.entries.first { it.recordId == id })) host.rebuild()
             },
             MccHubKit.ChoiceRow(tower("section.mechanic"),
                 MajorBattleMechanic.entries.map { MccHubKit.Choice(it.id, tower("mechanic.${it.id}")) },
-                state.selectedMechanic?.id, selecting && !state.mechanicLocked,
+                state.selectedMechanic?.id, rulesOpen,
                 state.selectedMechanic?.let { tower("mechanic.tooltip", tower("mechanic.${it.id}")) }) { id ->
                 if (controller.changeMechanic(MajorBattleMechanic.entries.first { it.id == id })) host.rebuild()
             },
             MccHubKit.ChoiceRow(tower("section.legendary_class"),
                 TowerLegendaryClassOption.entries.map { MccHubKit.Choice(it.name.lowercase(), Component.translatable(it.translationKey)) },
                 TowerLegendaryClassOption.entries.first { it.allowed == state.legendaryClassAllowed }.name.lowercase(),
-                selecting && !state.legendaryClassLocked, tower("legendary_class.tooltip")) { id ->
+                rulesOpen, tower("legendary_class.tooltip")) { id ->
                 val option = TowerLegendaryClassOption.entries.first { it.name.lowercase() == id }
                 if (controller.changeLegendaryClassAllowed(option.allowed)) host.rebuild()
             },
@@ -229,18 +231,23 @@ internal class TowerHubTab : MccHubTabContent {
         val retire = listOfNotNull(MccHubKit.Action(tower("forfeit"), UiButtonVariant.DANGER, !pending) {
             MccHubKit.confirm(tower("forfeit.confirm.title"), tower("retire.confirm.message"), tower("forfeit"),
                 Component.translatable("gui.back")) { submit(controller::retire) }
-        }.takeIf { TowerPlayInteractionPolicy.runInProgress(state) })
+        }.takeIf { TowerPlayInteractionPolicy.canRetire(state) })
+        val lock = MccHubKit.Action(tower("lock"), UiButtonVariant.PRIMARY,
+            TowerPlayInteractionPolicy.canRequestLock(state, pending), minWidth = 96) { submit(controller::lockTeam) }
         val end = when (state.phase) {
-            TowerPlayPhase.SELECTING -> retire + MccHubKit.Action(tower("lock"), UiButtonVariant.PRIMARY,
-                TowerPlayInteractionPolicy.canRequestLock(state, pending), minWidth = 96) { submit(controller::lockTeam) }
+            TowerPlayPhase.SELECTING, TowerPlayPhase.CHANGING_TEAM -> retire + lock
             TowerPlayPhase.TEAM_LOCKED -> retire + listOf(
-                MccHubKit.Action(tower("change_team"), enabled = !pending) { submit(controller::abandon) },
+                // Before the first battle the registration is let go; once the run is under way the six stay.
+                MccHubKit.Action(tower("change_team"), enabled = !pending,
+                    tooltip = tower(if (state.runStarted) "change_team.tooltip.run" else "change_team.tooltip.release")) {
+                    submit(controller::changeTeam)
+                },
                 MccHubKit.Action(tower("start"), UiButtonVariant.PRIMARY, !pending, minWidth = 96) { submit(controller::start) },
             )
             TowerPlayPhase.ACTIVE -> listOf(
                 MccHubKit.Action(tower("forfeit"), UiButtonVariant.DANGER, !pending) {
                     MccHubKit.confirm(tower("forfeit.confirm.title"), tower("forfeit.confirm.message"), tower("forfeit"),
-                        Component.translatable("gui.back")) { submit(controller::abandon) }
+                        Component.translatable("gui.back")) { submit(controller::forfeit) }
                 },
                 MccHubKit.Action(tower("in_progress"), UiButtonVariant.PRIMARY, enabled = false, minWidth = 96) {},
             )

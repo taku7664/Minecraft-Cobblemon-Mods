@@ -42,9 +42,9 @@ class TowerPlayMechanicSelectionTest {
         ))
 
         assertEquals(MajorBattleMechanic.DYNAMAX, state.selectedMechanic)
-        assertFalse(state.mechanicLocked)
+        assertFalse(state.runStarted)
         assertEquals(MajorBattleMechanic.DYNAMAX, result.selectedMechanic)
-        assertFalse(result.mechanicLocked)
+        assertFalse(result.runStarted)
         assertEquals(TowerPlayPhase.TEAM_LOCKED, service.current(playerId)?.phase)
     }
 
@@ -82,7 +82,7 @@ class TowerPlayMechanicSelectionTest {
 
         assertEquals(MajorBattleMechanic.TERA, launches.single().mechanic)
         assertEquals(MajorBattleMechanic.TERA, active.selectedMechanic)
-        assertTrue(active.mechanicLocked)
+        assertTrue(active.runStarted)
         assertEquals(TowerPlayMessageKeys.PHASE_INVALID, change.messageKey)
     }
 

@@ -111,6 +111,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         TowerPlaySessionService(
             battleLauncher = launcher,
             registeredTeamSnapshots = registeredTeamSnapshots,
+            battleForfeit = Cobblemon173BattleForfeit::request,
             runRetirementSink = TowerPlayRunRetirementSink { playerId, track ->
                 val server = checkNotNull(runningServer) { "Battle Tower retirement needs a running server" }
                 BattleRecordService.resetWinStreak(
@@ -140,8 +141,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             val player = context.player()
             onlinePlayers[player.uuid] = player
             val access = BattleContentAccess.check(player, ManagedBattleContentIds.BATTLE_TOWER, ContentAccessAction.MUTATE)
-            // Leaving a session stays open to a challenger who lost access.
-            if (access is ContentAccessDecision.Denied && payload.intent !is TowerPlayIntent.Abandon &&
+            // Giving up a run stays open to a challenger who lost access.
+            if (access is ContentAccessDecision.Denied && payload.intent !is TowerPlayIntent.Forfeit &&
                 payload.intent !is TowerPlayIntent.Retire
             ) {
                 ServerPlayNetworking.send(player, TowerPlayRejectedPayload(TowerPlayMutationResult.Rejected(
@@ -150,8 +151,10 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 return@registerGlobalReceiver
             }
             val result = try {
-                // A lock checks the party it registers; a retirement shows the party the next run registers.
-                val currentParty = if (payload.intent is TowerPlayIntent.LockTeam || payload.intent is TowerPlayIntent.Retire) {
+                // A lock checks the party it registers; letting a registration go shows the party the next one takes.
+                val currentParty = if (payload.intent is TowerPlayIntent.LockTeam || payload.intent is TowerPlayIntent.Retire ||
+                    payload.intent is TowerPlayIntent.ChangeTeam
+                ) {
                     Cobblemon173TowerPlayOpenRequestFactory.readParty(player)
                 } else {
                     null

@@ -72,10 +72,12 @@ class TowerPlayScreenControllerTest {
         controller.toggleSelection(pokemonId)
 
         controller.apply(TowerPlayMutationResult.Accepted(otherRequest, state(revision = 10)))
+        assertTrue(controller.isPending)
+        // The answer to the request in flight frees the screen even when its state is older than the shown one.
         controller.apply(TowerPlayMutationResult.Accepted(requestId, state(revision = 3)))
 
         assertEquals(4, controller.state.revision)
-        assertTrue(controller.isPending)
+        assertFalse(controller.isPending)
     }
 
     @Test

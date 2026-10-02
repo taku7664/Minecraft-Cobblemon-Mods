@@ -6,11 +6,15 @@ import jbro.cobblemon.mcc.internal.tower.TowerMode
 import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
+import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult
+import jbro.cobblemon.mcc.internal.tower.TowerBattleLauncher
+import jbro.cobblemon.mcc.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerRegisteredTeam
 import jbro.cobblemon.mcc.internal.tower.TowerRegisteredTeamSnapshotResult
 import jbro.cobblemon.mcc.internal.tower.TowerRegisteredTeamSnapshots
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -238,147 +242,155 @@ class TowerPlaySessionServiceTest {
     }
 
     @Test
-    fun `reopening selection after team confirmation keeps the registered party until the challenge ends`() {
+    fun `changing team before the first battle lets the registration go and opens the six and the rules`() {
         var snapshots = 0
-        val snapshotStore = object : TowerRegisteredTeamSnapshots {
-            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam): TowerRegisteredTeamSnapshotResult {
-                snapshots++
-                return TowerRegisteredTeamSnapshotResult.Stored
-            }
-
-            override fun discard(playerId: UUID) = Unit
-        }
         val service = TowerPlaySessionService(
-            registeredTeamSnapshots = snapshotStore,
+            registeredTeamSnapshots = countingSnapshots({ snapshots++ }, {}),
             entryContextIdFactory = { entryContextId },
         )
-        val registeredParty = validParty()
-        var state = service.open(playerId, openRequest(registeredParty))
-        state = selectMechanic(service, state)
-        registeredParty.take(3).forEachIndexed { index, pokemon ->
-            state = accepted(service.mutate(
-                playerId,
-                TowerPlayIntent.ToggleSelection(
-                    UUID(11, index.toLong()),
-                    entryContextId,
-                    state.revision,
-                    pokemon.pokemonId,
-                ),
-            ))
-        }
-        state = accepted(service.mutate(
+        val locked = lockEntries(service, service.open(playerId, openRequest()))
+        val changedAdventureParty = replacementParty()
+
+        val released = accepted(service.mutate(
             playerId,
-            TowerPlayIntent.LockTeam(UUID(11, 4), entryContextId, state.revision),
-            registeredParty,
+            TowerPlayIntent.ChangeTeam(UUID(11, 1), entryContextId, locked.revision),
+            changedAdventureParty,
         ))
-        state = accepted(service.mutate(
+        // No battle was fought: Retire has nothing to end, the new party shows and the rules open again.
+        val format = accepted(service.mutate(
             playerId,
-            TowerPlayIntent.Abandon(UUID(11, 5), entryContextId, state.revision),
+            TowerPlayIntent.ChangeFormat(UUID(11, 2), entryContextId, released.revision, TowerBattleFormat.DOUBLE),
         ))
-        val changedAdventureParty = registeredParty.mapIndexed { index, pokemon ->
-            pokemon.copy(
-                pokemonId = UUID(99, index.toLong() + 1),
-                speciesId = "cobblemon:replacement_${index + 1}",
-            )
-        }
-        val refreshedContext = UUID.fromString("99999999-8888-7777-6666-555555555555")
+        val reopened = service.open(playerId, openRequest(changedAdventureParty))
+        val relocked = lockEntries(service, reopened)
 
-        val reopened = service.open(
-            playerId,
-            openRequest(changedAdventureParty),
-            TowerPlayEntryContext.Command(refreshedContext),
-        )
-        val emptyPartyContext = UUID.fromString("77777777-6666-5555-4444-333333333333")
-        var reopenedWithEmptyParty = service.open(
-            playerId,
-            openRequest(emptyList()),
-            TowerPlayEntryContext.Command(emptyPartyContext),
-        )
-        registeredParty.takeLast(3).forEachIndexed { index, pokemon ->
-            reopenedWithEmptyParty = accepted(service.mutate(
-                playerId,
-                TowerPlayIntent.ToggleSelection(
-                    UUID(12, index.toLong()),
-                    emptyPartyContext,
-                    reopenedWithEmptyParty.revision,
-                    pokemon.pokemonId,
-                ),
-            ))
-        }
-        val relocked = service.mutate(
-            playerId,
-            TowerPlayIntent.LockTeam(UUID(12, 4), emptyPartyContext, reopenedWithEmptyParty.revision),
-            emptyList(),
-        )
-
-        assertTrue(service.close(playerId))
-        val afterChallenge = service.open(
-            playerId,
-            openRequest(changedAdventureParty),
-            TowerPlayEntryContext.Command(UUID.fromString("22222222-3333-4444-5555-666666666666")),
-        )
-
-        assertEquals(TowerPlayPhase.SELECTING, reopened.phase)
-        assertEquals(registeredParty, reopened.party)
-        assertEquals(refreshedContext, reopened.entryContextId)
-        assertEquals(registeredParty, reopenedWithEmptyParty.party)
-        assertTrue(relocked is TowerPlayMutationResult.Accepted)
-        assertEquals(changedAdventureParty, afterChallenge.party)
-        assertEquals(1, snapshots)
+        assertEquals(TowerPlayPhase.SELECTING, released.phase)
+        assertEquals(changedAdventureParty, released.party)
+        assertTrue(released.selectedPokemonIds.isEmpty())
+        assertFalse(released.runStarted)
+        assertFalse(TowerPlayInteractionPolicy.canRetire(released))
+        assertEquals(TowerBattleFormat.DOUBLE, format.format)
+        assertEquals(changedAdventureParty, reopened.party)
+        // The next lock registers the new six, replacing the released snapshot.
+        assertEquals(TowerPlayPhase.TEAM_LOCKED, relocked.phase)
+        assertEquals(2, snapshots)
     }
 
     @Test
-    fun `changing selected team reuses the registered snapshot after the adventure party changes`() {
+    fun `changing team during a run picks again from the registered six with the run's rules kept`() {
         var snapshots = 0
         var discards = 0
-        val snapshotStore = object : TowerRegisteredTeamSnapshots {
-            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam): TowerRegisteredTeamSnapshotResult {
-                snapshots++
-                return TowerRegisteredTeamSnapshotResult.Stored
-            }
-
-            override fun discard(playerId: UUID) {
-                discards++
-            }
-        }
+        val battleId = UUID(12, 99)
         val service = TowerPlaySessionService(
-            registeredTeamSnapshots = snapshotStore,
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = countingSnapshots({ snapshots++ }, { discards++ }),
             entryContextIdFactory = { entryContextId },
         )
-        var state = service.open(playerId, openRequest())
-        state = selectMechanic(service, state)
-        validParty().take(3).forEachIndexed { index, pokemon ->
+        val registeredParty = validParty()
+        val locked = lockEntries(service, service.open(playerId, openRequest(registeredParty)))
+        val active = accepted(service.mutate(playerId, TowerPlayIntent.Start(UUID(12, 1), entryContextId, locked.revision)))
+        val won = (service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+            as TowerPlayBattleCompletionResult.Completed).state
+        val discardsBeforeChange = discards
+
+        var state = accepted(service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeTeam(UUID(12, 2), entryContextId, won.revision),
+            replacementParty(),
+        ))
+        val changing = state
+        val format = rejected(service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeFormat(UUID(12, 3), entryContextId, state.revision, TowerBattleFormat.DOUBLE),
+        ))
+        val mode = rejected(service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeMode(UUID(12, 4), entryContextId, state.revision, TowerMode.NORMAL),
+        ))
+        val mechanic = rejected(service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeMechanic(UUID(12, 5), entryContextId, state.revision, MajorBattleMechanic.TERA),
+        ))
+        // Reopening the screen between battles keeps the run and its screen context.
+        assertSame(state, service.open(playerId, openRequest(replacementParty())))
+        registeredParty.take(3).forEachIndexed { index, pokemon ->
             state = accepted(service.mutate(
                 playerId,
-                TowerPlayIntent.ToggleSelection(UUID(10, index.toLong()), entryContextId, state.revision, pokemon.pokemonId),
+                TowerPlayIntent.ToggleSelection(UUID(12, 10L + index), entryContextId, state.revision, pokemon.pokemonId),
             ))
         }
-        state = accepted(service.mutate(
-            playerId,
-            TowerPlayIntent.LockTeam(UUID(10, 4), entryContextId, state.revision),
-            validParty(),
-        ))
-        state = accepted(service.mutate(
-            playerId,
-            TowerPlayIntent.Abandon(UUID(10, 5), entryContextId, state.revision),
-        ))
-        validParty().takeLast(3).forEachIndexed { index, pokemon ->
+        registeredParty.takeLast(3).forEachIndexed { index, pokemon ->
             state = accepted(service.mutate(
                 playerId,
-                TowerPlayIntent.ToggleSelection(UUID(10, index.toLong() + 6), entryContextId, state.revision, pokemon.pokemonId),
+                TowerPlayIntent.ToggleSelection(UUID(12, 20L + index), entryContextId, state.revision, pokemon.pokemonId),
             ))
         }
-        val changedAdventureParty = validParty().map { it.copy(level = it.level + 1) }
-
-        val relocked = service.mutate(
+        // The registered six stay, so a changed adventure party does not stop the lock.
+        val relocked = accepted(service.mutate(
             playerId,
-            TowerPlayIntent.LockTeam(UUID(10, 10), entryContextId, state.revision),
-            changedAdventureParty,
-        )
+            TowerPlayIntent.LockTeam(UUID(12, 30), entryContextId, state.revision),
+            replacementParty(),
+        ))
 
-        assertTrue(relocked is TowerPlayMutationResult.Accepted)
+        assertTrue(active.runStarted)
+        assertEquals(TowerPlayPhase.CHANGING_TEAM, changing.phase)
+        assertEquals(registeredParty, changing.party)
+        assertEquals(won.selectedPokemonOrder, changing.selectedPokemonOrder)
+        assertTrue(TowerPlayInteractionPolicy.canRetire(changing))
+        assertEquals(TowerPlayMessageKeys.PHASE_INVALID, format.messageKey)
+        assertEquals(TowerPlayMessageKeys.PHASE_INVALID, mode.messageKey)
+        assertEquals(TowerPlayMessageKeys.PHASE_INVALID, mechanic.messageKey)
+        assertEquals(TowerPlayPhase.TEAM_LOCKED, relocked.phase)
+        assertEquals(registeredParty.takeLast(3).map { it.pokemonId }, relocked.selectedPokemonOrder)
         assertEquals(1, snapshots)
-        assertEquals(1, discards)
+        assertEquals(discardsBeforeChange, discards)
+    }
+
+    @Test
+    fun `forfeiting from the screen ends the battle as a loss and the run with it`() {
+        val battleId = UUID(13, 99)
+        val forfeits = ArrayList<UUID>()
+        val service = TowerPlaySessionService(
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleForfeit = { _, battle -> forfeits += battle; true },
+            entryContextIdFactory = { entryContextId },
+        )
+        val locked = lockEntries(service, service.open(playerId, openRequest()))
+        val active = accepted(service.mutate(playerId, TowerPlayIntent.Start(UUID(13, 1), entryContextId, locked.revision)))
+
+        val requested = accepted(service.mutate(playerId, TowerPlayIntent.Forfeit(UUID(13, 2), entryContextId, active.revision)))
+        val again = accepted(service.mutate(playerId, TowerPlayIntent.Forfeit(UUID(13, 3), entryContextId, requested.revision)))
+        // However the battle reports its end, a forfeited one is a loss.
+        val ended = (service.cancelBattle(playerId, battleId) as TowerPlayBattleCompletionResult.Completed).state
+
+        assertEquals(listOf(battleId), forfeits)
+        assertEquals(TowerPlayPhase.ACTIVE, again.phase)
+        assertEquals(TowerPlayPhase.SELECTING, ended.phase)
+        assertFalse(ended.runStarted)
+        assertEquals(0, ended.currentWinStreak)
+        assertEquals(entryContextId, service.current(playerId)?.entryContextId)
+    }
+
+    @Test
+    fun `a forfeit the battle cannot take is rejected and leaves the battle running`() {
+        val battleId = UUID(14, 99)
+        val service = TowerPlaySessionService(
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleForfeit = { _, _ -> false },
+            entryContextIdFactory = { entryContextId },
+        )
+        val locked = lockEntries(service, service.open(playerId, openRequest()))
+        val active = accepted(service.mutate(playerId, TowerPlayIntent.Start(UUID(14, 1), entryContextId, locked.revision)))
+
+        val result = rejected(service.mutate(playerId, TowerPlayIntent.Forfeit(UUID(14, 2), entryContextId, active.revision)))
+        // The battle was never given up, so a cancelled one keeps the run.
+        val cancelled = (service.cancelBattle(playerId, battleId) as TowerPlayBattleCompletionResult.Completed).state
+
+        assertEquals(TowerPlayMessageKeys.BATTLE_UNAVAILABLE, result.messageKey)
+        assertEquals(TowerPlayPhase.TEAM_LOCKED, cancelled.phase)
+        assertTrue(cancelled.runStarted)
     }
 
     @Test
@@ -645,6 +657,30 @@ class TowerPlaySessionServiceTest {
             TowerPlayIntent.ChangeMechanic(UUID.randomUUID(), entryContextId, state.revision, MajorBattleMechanic.MEGA),
         ),
     )
+
+    private fun lockEntries(service: TowerPlaySessionService, opened: TowerPlayViewState): TowerPlayViewState {
+        var state = selectMechanic(service, opened)
+        state.party.sortedBy(TowerPlayPartySlot::slot).take(state.format.selectionSize).forEach { slot ->
+            state = accepted(service.mutate(
+                playerId,
+                TowerPlayIntent.ToggleSelection(UUID.randomUUID(), entryContextId, state.revision, slot.pokemonId),
+            ))
+        }
+        return accepted(service.mutate(playerId, TowerPlayIntent.LockTeam(UUID.randomUUID(), entryContextId, state.revision), state.party))
+    }
+
+    private fun countingSnapshots(onSnapshot: () -> Unit, onDiscard: () -> Unit) = object : TowerRegisteredTeamSnapshots {
+        override fun snapshot(playerId: UUID, team: TowerRegisteredTeam): TowerRegisteredTeamSnapshotResult {
+            onSnapshot()
+            return TowerRegisteredTeamSnapshotResult.Stored
+        }
+
+        override fun discard(playerId: UUID) = onDiscard()
+    }
+
+    private fun replacementParty(): List<TowerPlayPartySlot> = validParty().mapIndexed { index, pokemon ->
+        pokemon.copy(pokemonId = UUID(99, index.toLong() + 1), speciesId = "cobblemon:replacement_${index + 1}")
+    }
 
     private fun openRequest(party: List<TowerPlayPartySlot> = validParty()) = TowerPlayOpenRequest(
         party = party,

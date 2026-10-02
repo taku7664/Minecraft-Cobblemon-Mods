@@ -32,8 +32,7 @@ class TowerPlayRunEndTest {
     fun `a loss opens the rules and lets the next run register a new team`() {
         val service = service()
         val active = start(service, service.open(playerId, request(currentWinStreak = 7)))
-        assertTrue(active.mechanicLocked)
-        assertTrue(active.legendaryClassLocked)
+        assertTrue(active.runStarted)
 
         val lost = (service.completeBattle(playerId, battleId, TowerBattleOutcome.LOSS)
             as TowerPlayBattleCompletionResult.Completed).state
@@ -41,8 +40,7 @@ class TowerPlayRunEndTest {
         assertEquals(TowerPlayPhase.SELECTING, lost.phase)
         assertEquals(0, lost.currentWinStreak)
         assertEquals(7, lost.bestWinStreak)
-        assertFalse(lost.mechanicLocked)
-        assertFalse(lost.legendaryClassLocked)
+        assertFalse(lost.runStarted)
         assertTrue(lost.selectedPokemonOrder.isEmpty())
         // The rules change again, and the next lock registers the party the challenger has now.
         var state = accepted(service.mutate(playerId,
@@ -66,7 +64,7 @@ class TowerPlayRunEndTest {
 
         assertEquals(TowerPlayPhase.TEAM_LOCKED, won.phase)
         assertEquals(8, won.currentWinStreak)
-        assertTrue(won.mechanicLocked)
+        assertTrue(won.runStarted)
         // The registered team stays: a refresh does not swap it for the adventure party.
         assertEquals(won, service.refreshParty(playerId, party(offset = 10)))
     }
@@ -85,8 +83,7 @@ class TowerPlayRunEndTest {
         assertEquals(TowerPlayPhase.SELECTING, retired.phase)
         assertEquals(0, retired.currentWinStreak)
         assertEquals(8, retired.bestWinStreak)
-        assertFalse(retired.mechanicLocked)
-        assertFalse(retired.legendaryClassLocked)
+        assertFalse(retired.runStarted)
         assertEquals(changed, retired.party)
         assertEquals(0, service.progress(playerId)?.getValue(track)?.currentWinStreak)
         assertEquals(8, service.progress(playerId)?.getValue(track)?.bestWinStreak)
@@ -105,12 +102,12 @@ class TowerPlayRunEndTest {
 
         val won = (service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
             as TowerPlayBattleCompletionResult.Completed).state
-        val changingTeam = accepted(service.mutate(playerId, TowerPlayIntent.Abandon(next(), contextId, won.revision)))
-        assertEquals(TowerPlayPhase.SELECTING, changingTeam.phase)
-        assertTrue(TowerPlayInteractionPolicy.runInProgress(changingTeam))
+        val changingTeam = accepted(service.mutate(playerId, TowerPlayIntent.ChangeTeam(next(), contextId, won.revision)))
+        assertEquals(TowerPlayPhase.CHANGING_TEAM, changingTeam.phase)
+        assertTrue(TowerPlayInteractionPolicy.canRetire(changingTeam))
         val retired = accepted(service.mutate(playerId, TowerPlayIntent.Retire(next(), contextId, changingTeam.revision)))
         assertEquals(0, retired.currentWinStreak)
-        assertFalse(TowerPlayInteractionPolicy.runInProgress(retired))
+        assertFalse(TowerPlayInteractionPolicy.canRetire(retired))
         assertEquals(listOf(track), retirements)
     }
 
@@ -143,7 +140,7 @@ class TowerPlayRunEndTest {
         retirements.clear()
         service.open(playerId, request(currentWinStreak = 0))
         start(service, service.current(playerId)!!)
-        assertTrue(active.mechanicLocked)
+        assertTrue(active.runStarted)
         assertTrue(service.disconnect(playerId))
         // The battle under way ended as a loss, which already ended the streak.
         assertTrue(retirements.isEmpty())

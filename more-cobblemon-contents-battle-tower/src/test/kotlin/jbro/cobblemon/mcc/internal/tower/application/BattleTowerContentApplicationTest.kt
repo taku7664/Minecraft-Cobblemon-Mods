@@ -148,5 +148,7 @@ class BattleTowerContentApplicationTest {
         bestWinStreak = 0,
         bpBalance = 0,
         errorKeys = emptyList(),
+        selectedMechanic = jbro.cobblemon.mcc.api.rules.MajorBattleMechanic.DYNAMAX,
+        runStarted = phase == TowerPlayPhase.ACTIVE || phase == TowerPlayPhase.CHANGING_TEAM,
     )
 }

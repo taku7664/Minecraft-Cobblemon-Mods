@@ -69,7 +69,7 @@ class TowerPlayModeTest {
         assertEquals(0, cleared.currentWinStreak)
         assertEquals(20, cleared.bestWinStreak)
         assertTrue(cleared.endlessUnlocked)
-        assertFalse(cleared.mechanicLocked)
+        assertFalse(cleared.runStarted)
         assertEquals(0, service.progress(playerId)?.getValue(TowerTrack(TowerBattleFormat.SINGLE, TowerMode.NORMAL))?.currentWinStreak)
         val endless = accepted(service.mutate(playerId, TowerPlayIntent.ChangeMode(next(), contextId, cleared.revision, TowerMode.ENDLESS)))
         assertEquals(TowerMode.ENDLESS, endless.mode)

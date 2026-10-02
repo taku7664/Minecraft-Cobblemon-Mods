@@ -56,8 +56,8 @@ class TowerPlayPayloadsTest {
             TowerPlayIntent.ChangeMechanic(requestId, contextId, 7, MajorBattleMechanic.DYNAMAX),
             TowerPlayIntent.LockTeam(requestId, contextId, 7),
             TowerPlayIntent.Start(requestId, contextId, 7),
-            TowerPlayIntent.Resume(requestId, contextId, 7),
-            TowerPlayIntent.Abandon(requestId, contextId, 7),
+            TowerPlayIntent.ChangeTeam(requestId, contextId, 7),
+            TowerPlayIntent.Forfeit(requestId, contextId, 7),
             TowerPlayIntent.Retire(requestId, contextId, 7),
         )
 
@@ -87,7 +87,7 @@ class TowerPlayPayloadsTest {
         entryContextId = contextId,
         revision = revision,
         format = TowerBattleFormat.SINGLE,
-        phase = TowerPlayPhase.SELECTING,
+        phase = TowerPlayPhase.CHANGING_TEAM,
         party = (1..6).map { index ->
             TowerPlayPartySlot(
                 index - 1,
@@ -105,9 +105,8 @@ class TowerPlayPayloadsTest {
         bpBalance = 123,
         errorKeys = listOf("screen.more_cobblemon_contents.tower.warning.example"),
         selectedMechanic = MajorBattleMechanic.DYNAMAX,
-        mechanicLocked = true,
         legendaryClassAllowed = true,
-        legendaryClassLocked = true,
+        runStarted = true,
     )
 
     private fun <T : Any> roundTrip(

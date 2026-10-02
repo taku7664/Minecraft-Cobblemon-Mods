@@ -72,25 +72,25 @@ class TowerPlayBattleLaunchTest {
 
         assertTrue(launches.single().legendaryClassAllowed)
         assertTrue(active.legendaryClassAllowed)
-        assertTrue(active.legendaryClassLocked)
+        assertTrue(active.runStarted)
 
         val completed = (service.completeBattle(
             playerId,
             battleId,
             TowerBattleOutcome.WIN,
         ) as TowerPlayBattleCompletionResult.Completed).state
-        val selecting = (service.mutate(
+        val changing = (service.mutate(
             playerId,
-            TowerPlayIntent.Abandon(UUID(9, 13), contextId, completed.revision),
+            TowerPlayIntent.ChangeTeam(UUID(9, 13), contextId, completed.revision),
         ) as TowerPlayMutationResult.Accepted).state
         val rejected = service.mutate(
             playerId,
-            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 14), contextId, selecting.revision, false),
+            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 14), contextId, changing.revision, false),
         ) as TowerPlayMutationResult.Rejected
 
-        assertEquals(TowerPlayPhase.SELECTING, selecting.phase)
-        assertTrue(selecting.legendaryClassAllowed)
-        assertTrue(selecting.legendaryClassLocked)
+        assertEquals(TowerPlayPhase.CHANGING_TEAM, changing.phase)
+        assertTrue(changing.legendaryClassAllowed)
+        assertTrue(changing.runStarted)
         assertEquals(TowerPlayMessageKeys.PHASE_INVALID, rejected.messageKey)
     }
 
@@ -275,7 +275,7 @@ class TowerPlayBattleLaunchTest {
 
         val result = service.mutate(
             playerId,
-            TowerPlayIntent.Abandon(UUID(0, 24), contextId, active.revision),
+            TowerPlayIntent.ChangeTeam(UUID(0, 24), contextId, active.revision),
         )
 
         result as TowerPlayMutationResult.Rejected
@@ -467,7 +467,7 @@ class TowerPlayBattleLaunchTest {
         assertEquals(TowerPlayPhase.TEAM_LOCKED, completed.state.phase)
         assertEquals(active.revision + 1, completed.state.revision)
         assertEquals(1, completed.state.currentWinStreak)
-        assertTrue(completed.state.mechanicLocked)
+        assertTrue(completed.state.runStarted)
         assertEquals(null, service.activeBattleId(playerId))
         assertEquals(TowerPlayBattleCompletionResult.NoActiveBattle, duplicate)
         assertEquals(1, recorded.size)
