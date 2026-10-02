@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class DiscordInquiryThreadTest {
     private val inquiry = Inquiry("김빡주", "Park_JH", UUID.fromString("f3d28cb0-7225-3cb1-baeb-2dadd2be89ae"),
@@ -20,6 +21,14 @@ class DiscordInquiryThreadTest {
         assertEquals("77", settings.verifiedRoleId)
         assertTrue(settings.syncNickname)
         assertFalse(DiscordSettings.parse("""{"syncNickname": false}""").syncNickname)
+    }
+
+    @Test
+    fun `rank roles are read by League rank and nothing else`() {
+        val settings = DiscordSettings.parse("""{"rankRoleIds": {"GREAT_BALL": "11", "CHAMPION": "15"}}""")
+        assertEquals(mapOf("GREAT_BALL" to "11", "CHAMPION" to "15"), settings.rankRoleIds)
+        assertThrows<IllegalArgumentException> { DiscordSettings.parse("""{"rankRoleIds": {"HYPER": "1"}}""") }
+        assertThrows<IllegalArgumentException> { DiscordSettings.parse("""{"rankRoleIds": {"CHAMPION": "@챔피언"}}""") }
     }
 
     @Test

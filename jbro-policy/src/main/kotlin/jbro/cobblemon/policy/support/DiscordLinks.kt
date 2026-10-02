@@ -41,6 +41,9 @@ internal object DiscordLinks {
     /** The Discord account [player] linked, if any. Safe from any thread. */
     fun discordOf(player: UUID): String? = byPlayer[player]
 
+    /** Every link, Minecraft UUID to Discord user ID. */
+    fun all(): Map<UUID, String> = HashMap(byPlayer)
+
     /** Turns linking on: the in-game command and Discord's `/verify`. */
     fun registerDiscord(settings: DiscordSettings) {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
@@ -90,13 +93,15 @@ internal object DiscordLinks {
                 ?: return DiscordRest.message("코드가 맞지 않거나 시간이 지났어요. 마크에서 /디코인증을 다시 입력해 주세요.")
             if (caller.guildId.isBlank()) return DiscordRest.message("디스코드 서버 채널에서 입력해 주세요.")
             codes.remove(code)
-            Store.get(server).link(pending.player, caller.userId)
+            val previous = Store.get(server).link(pending.player, caller.userId)
             byPlayer.entries.removeIf { it.value == caller.userId }
             byPlayer[pending.player] = caller.userId
             JbroPolicy.LOGGER.info("Linked Discord {} to {} ({})", caller, pending.accountName, pending.player)
             server.playerList.getPlayer(pending.player)?.sendSystemMessage(
                 Component.translatable(KEY + "done", caller.userName).withStyle(ChatFormatting.GREEN))
             DiscordBot.later { rest -> grant(rest, settings, caller, pending.nickname) }
+            if (previous != null && previous != caller.userId) DiscordRankRoles.clear(previous)
+            DiscordRankRoles.refresh(server, pending.player)
             return DiscordRest.message("인증됐어요! 마인크래프트 계정 **${pending.accountName}**과 연결했어요.")
         }
     }
@@ -113,10 +118,12 @@ internal object DiscordLinks {
 
     /** The links, kept with the world: Minecraft UUID to Discord user ID. */
     private class Store(val links: MutableMap<UUID, String>) : SavedData() {
-        fun link(player: UUID, discord: String) {
-            links.entries.removeIf { it.value == discord }
-            links[player] = discord
+        /** Links [player] to [discord]; answers the Discord account [player] had before. */
+        fun link(player: UUID, discord: String): String? {
+            links.entries.removeIf { it.value == discord && it.key != player }
+            val previous = links.put(player, discord)
             setDirty()
+            return previous
         }
 
         override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag = tag.apply {

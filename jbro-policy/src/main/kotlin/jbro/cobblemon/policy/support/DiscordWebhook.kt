@@ -27,6 +27,7 @@ import jbro.cobblemon.policy.JbroPolicy
  * @property adminAccess who may run which operator command: a Discord user or role ID to command names, `*` for all.
  * @property verifiedRoleId the role `/verify` gives a member who linked their Minecraft account; blank turns linking off.
  * @property syncNickname whether `/verify` also sets the member's server nickname to their Minecraft nickname.
+ * @property rankRoleIds the Discord role for each League rank (`POKE_BALL` to `CHAMPION`), kept in step with the game.
  */
 data class DiscordSettings(
     val webhookUrl: String = "",
@@ -38,6 +39,7 @@ data class DiscordSettings(
     val adminAccess: Map<String, Set<String>> = emptyMap(),
     val verifiedRoleId: String = "",
     val syncNickname: Boolean = true,
+    val rankRoleIds: Map<String, String> = emptyMap(),
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -62,12 +64,15 @@ data class DiscordSettings(
         require(newsChannelId.isBlank() || newsChannelId.all(Char::isDigit)) { "The news channel ID is the channel's number" }
         require(adminChannelId.isBlank() || adminChannelId.all(Char::isDigit)) { "The admin channel ID is the channel's number" }
         require(verifiedRoleId.isBlank() || verifiedRoleId.all(Char::isDigit)) { "The verified role ID is the role's number" }
+        require(rankRoleIds.keys.all { it in RANKS }) { "Rank roles are keyed by League rank: $RANKS" }
+        require(rankRoleIds.values.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Rank roles are Discord role IDs" }
         require(adminAccess.keys.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Admin access is keyed by Discord user or role IDs" }
         require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
     }
 
     companion object {
         private val gson = GsonBuilder().setPrettyPrinting().create()
+        val RANKS = listOf("POKE_BALL", "GREAT_BALL", "ULTRA_BALL", "MASTER_BALL", "CHAMPION")
         private val WEBHOOK = Regex("https://(?:(?:canary|ptb)\\.)?discord(?:app)?\\.com/api/webhooks/\\d+/[A-Za-z0-9_-]+")
 
         fun isWebhookUrl(value: String): Boolean = WEBHOOK.matches(value)
@@ -80,7 +85,8 @@ data class DiscordSettings(
             }.orEmpty()
             return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"),
                 text("newsChannelId"), text("adminChannelId"), access, text("verifiedRoleId"),
-                root.get("syncNickname")?.asBoolean ?: true)
+                root.get("syncNickname")?.asBoolean ?: true,
+                root.getAsJsonObject("rankRoleIds")?.entrySet()?.associate { (rank, role) -> rank.trim() to role.asString.trim() }.orEmpty())
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */

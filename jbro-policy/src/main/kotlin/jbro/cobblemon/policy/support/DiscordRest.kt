@@ -22,7 +22,13 @@ internal class DiscordRest(private val token: String) {
         if (authorized) builder.header("Authorization", "Bot $token")
         if (body != null) builder.header("Content-Type", "application/json; charset=utf-8")
         builder.method(method, body?.let { HttpRequest.BodyPublishers.ofString(it.toString()) } ?: HttpRequest.BodyPublishers.noBody())
-        val response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+        var response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+        if (response.statusCode() == 429) {
+            // Rate limited: wait as told, up to five seconds, and try once more.
+            val wait = Regex("\"retry_after\"\\s*:\\s*([0-9.]+)").find(response.body())?.groupValues?.get(1)?.toDoubleOrNull() ?: 1.0
+            Thread.sleep((wait.coerceAtMost(5.0) * 1000).toLong() + 100)
+            response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString())
+        }
         return Response(response.statusCode(), response.body())
     }
 

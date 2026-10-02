@@ -140,6 +140,9 @@ internal object DiscordBot {
     @Volatile private var server: MinecraftServer? = null
     @Volatile private var running = false
     @Volatile private var players = 0
+    /** The Discord servers the bot is in, as of its last login. */
+    @Volatile var guilds: List<String> = emptyList()
+        private set
     private var socket: WebSocket? = null
     private var session: DiscordGatewaySession? = null
     private var heartbeat: ScheduledFuture<*>? = null
@@ -172,7 +175,10 @@ internal object DiscordBot {
         if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
         DiscordCommands.registerBuiltIns()
         if (withContents) MccDiscordCommands.register()
-        if (settings.verifiedRoleId.isNotBlank()) DiscordLinks.registerDiscord(settings)
+        if (settings.verifiedRoleId.isNotBlank()) {
+            DiscordLinks.registerDiscord(settings)
+            DiscordRankRoles.register(settings)
+        }
         if (settings.adminChannelId.isNotBlank()) {
             DiscordAdminCommands.register()
             if (withContents) MccDiscordCommands.registerAdmin()
@@ -278,7 +284,10 @@ internal object DiscordBot {
             is DiscordGatewaySession.Action.Ready -> {
                 retryDelaySeconds = 0
                 JbroPolicy.LOGGER.info("Discord bot {} is online", action.name)
+                guilds = action.guildIds
                 restWorker.execute(guarded { registerCommands(action.applicationId, action.guildIds) })
+                // Whatever ranks changed while the bot was away.
+                server?.let { live -> live.execute { DiscordRankRoles.refreshAll(live) } }
             }
             is DiscordGatewaySession.Action.Interaction -> restWorker.execute(guarded { answer(action.data) })
             DiscordGatewaySession.Action.Reconnect -> { retry(); return }
