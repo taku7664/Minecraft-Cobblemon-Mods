@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
@@ -18,6 +19,27 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * carries. Dynamax is not projected: its HP, Max Moves and duration live in the native path only.
  */
 internal object LocalMechanicActivationProjector {
+    /**
+     * Candidate-local Mega state for root calculations, using the same activation as turn search.
+     * Joint choices activate every Mega before either partner's move is evaluated. Already evolved
+     * forms are unchanged, so passing this view through several calculation layers cannot restart
+     * an entry ability. Other mechanics keep their existing root interpretation.
+     */
+    fun forMegaCandidate(
+        context: BattleDecisionContext,
+        side: BattleSide,
+        action: BattleActionCandidate,
+    ): BattleDecisionContext {
+        if (action.mechanic == null && action.kind != BattleActionKind.COMPOSITE) return context
+        val primitives = if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
+        val state = primitives.fold(context.state) { current, primitive ->
+            if (primitive.mechanic?.let { mechanicKind(it.mechanicId) } == MEGA) {
+                activate(current, side, primitive)
+            } else current
+        }
+        return if (state === context.state) context else context.copy(state = state)
+    }
+
     fun beforeMoves(
         state: BattleStateView,
         side: BattleSide,
