@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.policy
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
@@ -228,13 +229,16 @@ internal object LocalBattleActionOutcomeEvaluator {
         strategy: BattleStrategyBrief?,
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-    ): LocalBattleActionOutcome = when (candidate.kind) {
-        BattleActionKind.USE_MOVE -> move(candidate, context, strategy, profile, tuning)
-        BattleActionKind.SWITCH -> switch(candidate, context, strategy, profile, tuning)
-        BattleActionKind.COMPOSITE -> composite(candidate, context, strategy, profile, tuning)
-        BattleActionKind.WAIT,
-        BattleActionKind.FORFEIT,
-        -> empty(candidate, LocalTacticalScorer.score(candidate, context, strategy, profile, tuning))
+    ): LocalBattleActionOutcome {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, BattleSide.ALLY, candidate)
+        return when (candidate.kind) {
+            BattleActionKind.USE_MOVE -> move(candidate, moveContext, strategy, profile, tuning)
+            BattleActionKind.SWITCH -> switch(candidate, moveContext, strategy, profile, tuning)
+            BattleActionKind.COMPOSITE -> composite(candidate, moveContext, strategy, profile, tuning)
+            BattleActionKind.WAIT,
+            BattleActionKind.FORFEIT,
+            -> empty(candidate, LocalTacticalScorer.score(candidate, moveContext, strategy, profile, tuning))
+        }
     }
 
     private fun move(

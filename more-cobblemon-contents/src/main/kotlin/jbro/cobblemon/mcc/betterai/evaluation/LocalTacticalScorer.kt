@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
 import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
@@ -61,21 +62,24 @@ internal object LocalTacticalScorer {
         strategy: BattleStrategyBrief? = null,
         profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-    ): LocalTacticalScore = when (candidate.kind) {
-        BattleActionKind.USE_MOVE -> scoreMove(candidate, context, strategy, profile, tuning)
-        BattleActionKind.SWITCH -> LocalTacticalScore(scoreSwitch(candidate, context, strategy, profile, tuning))
-        BattleActionKind.COMPOSITE -> {
-            val components = candidate.componentActions.map { scoreBreakdown(it, context, strategy, profile, tuning) }
-            LocalTacticalScore(
-                total = components.sumOf(LocalTacticalScore::total) +
-                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) +
-                    partnerActionCollateralRefund(candidate, context, tuning) -
-                    duplicateCertainKnockoutCredit(candidate, context, tuning),
-                statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
-            )
+    ): LocalTacticalScore {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, BattleSide.ALLY, candidate)
+        return when (candidate.kind) {
+            BattleActionKind.USE_MOVE -> scoreMove(candidate, moveContext, strategy, profile, tuning)
+            BattleActionKind.SWITCH -> LocalTacticalScore(scoreSwitch(candidate, moveContext, strategy, profile, tuning))
+            BattleActionKind.COMPOSITE -> {
+                val components = candidate.componentActions.map { scoreBreakdown(it, moveContext, strategy, profile, tuning) }
+                LocalTacticalScore(
+                    total = components.sumOf(LocalTacticalScore::total) +
+                        LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, moveContext) +
+                        partnerActionCollateralRefund(candidate, moveContext, tuning) -
+                        duplicateCertainKnockoutCredit(candidate, moveContext, tuning),
+                    statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
+                )
+            }
+            BattleActionKind.WAIT -> LocalTacticalScore(-100.0)
+            BattleActionKind.FORFEIT -> LocalTacticalScore(-10_000.0)
         }
-        BattleActionKind.WAIT -> LocalTacticalScore(-100.0)
-        BattleActionKind.FORFEIT -> LocalTacticalScore(-10_000.0)
     }
 
     /**
@@ -93,10 +97,11 @@ internal object LocalTacticalScorer {
         if (candidate.kind != BattleActionKind.USE_MOVE) return 0.0
         val details = candidate.moveDetails ?: return 0.0
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
-        val accuracy = context?.let { LocalPublicAccuracy.probability(candidate, it, BattleSide.ALLY) }
+        val moveContext = context?.let { LocalMechanicActivationProjector.forMegaCandidate(it, BattleSide.ALLY, candidate) }
+        val accuracy = moveContext?.let { LocalPublicAccuracy.probability(candidate, it, BattleSide.ALLY) }
             ?: candidate.facts?.baseAccuracyProbability
             ?: details.accuracy / 100.0
-        return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
+        return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, moveContext)
     }
 
     /** Duplicate full material credit is value, not a permanent candidate penalty. */
@@ -137,13 +142,16 @@ internal object LocalTacticalScorer {
         strategy: BattleStrategyBrief? = null,
         profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-    ): Double = when (candidate.kind) {
-        BattleActionKind.USE_MOVE -> moveAdjustments(candidate, context, strategy, profile, tuning)
-        BattleActionKind.COMPOSITE ->
-            candidate.componentActions.sumOf { candidateAdjustments(it, context, strategy, profile, tuning) } +
-                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) +
-                partnerActionCollateralRefund(candidate, context, tuning)
-        else -> 0.0
+    ): Double {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, BattleSide.ALLY, candidate)
+        return when (candidate.kind) {
+            BattleActionKind.USE_MOVE -> moveAdjustments(candidate, moveContext, strategy, profile, tuning)
+            BattleActionKind.COMPOSITE ->
+                candidate.componentActions.sumOf { candidateAdjustments(it, moveContext, strategy, profile, tuning) } +
+                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, moveContext) +
+                    partnerActionCollateralRefund(candidate, moveContext, tuning)
+            else -> 0.0
+        }
     }
 
     private fun moveAdjustments(

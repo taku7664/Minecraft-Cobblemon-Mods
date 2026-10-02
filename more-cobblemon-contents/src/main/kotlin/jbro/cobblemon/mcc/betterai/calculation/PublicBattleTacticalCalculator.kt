@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicFormResolution
+import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
@@ -50,6 +51,15 @@ internal object PublicBattleTacticalCalculator {
         context: BattleDecisionContext,
         actingSide: BattleSide,
     ): List<Double>? {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
+        return conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide)
+    }
+
+    private fun conservativeDamageRollFractionsAfterActivation(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): List<Double>? {
         val resolvedCandidate = resolveDynamicMove(candidate, context, actingSide)
         val details = resolvedCandidate.moveDetails ?: return null
         val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
@@ -59,7 +69,7 @@ internal object PublicBattleTacticalCalculator {
         val target = targets.firstOrNull()
         val spreadMultiplier = LocalPublicMoveTargets.spreadMultiplier(resolvedCandidate, context, actingSide)
         val stab = sameTypeAttackBonus(details, actor, resolvedCandidate)
-        val typeMultiplier = publicTypeMultiplier(resolvedCandidate.moveId, details, target, context)
+        val typeMultiplier = publicTypeMultiplier(resolvedCandidate, target, context, actingSide)
         val mechanics = LocalPublicMechanicsKernel.projectMove(resolvedCandidate, context, actingSide)
         declaredDamageRollFractions(resolvedCandidate, actor, target, mechanics, context.state)?.let { return it }
         val projection =
@@ -102,6 +112,16 @@ internal object PublicBattleTacticalCalculator {
         partner: BattlePokemonStateView,
         spreadMultiplier: Double,
     ): List<Double>? {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, BattleSide.ALLY, candidate)
+        return partnerDamageRollFractionsAfterActivation(candidate, moveContext, partner, spreadMultiplier)
+    }
+
+    private fun partnerDamageRollFractionsAfterActivation(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        partner: BattlePokemonStateView,
+        spreadMultiplier: Double,
+    ): List<Double>? {
         val resolvedCandidate = resolveDynamicMove(candidate, context, BattleSide.ALLY)
         val details = resolvedCandidate.moveDetails ?: return null
         val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, BattleSide.ALLY, slot) } ?: return null
@@ -111,7 +131,7 @@ internal object PublicBattleTacticalCalculator {
             actor,
             partner,
             sameTypeAttackBonus(details, actor, resolvedCandidate),
-            publicTypeMultiplier(resolvedCandidate.moveId, details, partner, context),
+            publicTypeMultiplier(resolvedCandidate, partner, context, BattleSide.ALLY),
             context.state,
             spreadMultiplier,
         ) ?: return null
@@ -183,13 +203,14 @@ internal object PublicBattleTacticalCalculator {
         context: BattleDecisionContext,
         actingSide: BattleSide,
     ): BattleActionCandidate {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
         if (candidate.kind == BattleActionKind.COMPOSITE) {
-            val components = candidate.componentActions.map { calculateCandidate(it, context, actingSide) }
+            val components = candidate.componentActions.map { calculateCandidate(it, moveContext, actingSide) }
             return candidate.copyWith(componentActions = components)
         }
         if (candidate.facts != null) return candidate
-        val resolvedCandidate = resolveDynamicMove(candidate, context, actingSide)
-        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, context, actingSide))
+        val resolvedCandidate = resolveDynamicMove(candidate, moveContext, actingSide)
+        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, moveContext, actingSide))
     }
 
     private fun facts(
@@ -243,7 +264,7 @@ internal object PublicBattleTacticalCalculator {
         val spreadMultiplier = LocalPublicMoveTargets.spreadMultiplier(candidate, context, actingSide)
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
             basis += BattleCalculationBasis.PUBLIC_TYPES
-            publicTypeMultiplier(candidate.moveId, details, target, context)
+            publicTypeMultiplier(candidate, target, context, actingSide)
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             unknowns += BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS
@@ -538,12 +559,15 @@ internal object PublicBattleTacticalCalculator {
     ): Double? = LocalPublicStab.multiplier(candidate, actor, details.typeId)
 
     private fun publicTypeMultiplier(
-        moveId: String?,
-        details: BattleMoveCandidateView,
+        candidate: BattleActionCandidate,
         target: BattlePokemonStateView?,
-        context: BattleDecisionContext? = null,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
     ): Double? {
+        val details = candidate.moveDetails ?: return null
         val types = target?.knownTypeIds?.takeIf { it.isNotEmpty() } ?: return null
+        val actor = candidate.actorSlot?.let { active(context, actingSide, it) }
+        val ignoresAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, context.state)
         val ignoresImmunity = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY
         }
@@ -552,14 +576,11 @@ internal object PublicBattleTacticalCalculator {
         return StandardTypeEffectiveness.multiplierAgainst(
             attackingTypeId = details.typeId,
             defendingTypeIds = types,
-            defenderAbilityId = if (context == null) {
-                target.knownAbilityId
-            } else {
-                LocalPublicAbilityState.effectiveKnownAbility(context.state, target)
-                    ?: blockingPossibleAbility(details.typeId, target, context)
-            },
+            defenderAbilityId = LocalPublicAbilityState.effectiveKnownAbility(context.state, target)
+                ?: blockingPossibleAbility(details.typeId, target, context),
             ignoreTypeImmunity = ignoresImmunity,
-            moveId = moveId,
+            applyAbilities = !ignoresAbility,
+            moveId = candidate.moveId,
         )
     }
 

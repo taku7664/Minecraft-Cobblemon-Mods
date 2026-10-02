@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalPublicPositionFacts
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDamageHpTransfer
+import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
@@ -40,13 +41,15 @@ internal object PublicActionOutcomeProjector {
          * caller that does not care keeps its previous behaviour exactly.
          */
         riskAttitude: Double = LocalRiskAttitude.NEUTRAL,
-    ): PublicActionOutcomeProjection =
-        when (candidate.kind) {
-            BattleActionKind.USE_MOVE -> move(candidate, context, actingSide, riskAttitude)
-            BattleActionKind.SWITCH -> switch(candidate, context)
-            BattleActionKind.COMPOSITE -> composite(candidate, context, actingSide, riskAttitude)
+    ): PublicActionOutcomeProjection {
+        val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
+        return when (candidate.kind) {
+            BattleActionKind.USE_MOVE -> move(candidate, moveContext, actingSide, riskAttitude)
+            BattleActionKind.SWITCH -> switch(candidate, moveContext)
+            BattleActionKind.COMPOSITE -> composite(candidate, moveContext, actingSide, riskAttitude)
             BattleActionKind.WAIT, BattleActionKind.FORFEIT -> empty(candidate)
         }
+    }
 
     private fun move(
         candidate: BattleActionCandidate,
