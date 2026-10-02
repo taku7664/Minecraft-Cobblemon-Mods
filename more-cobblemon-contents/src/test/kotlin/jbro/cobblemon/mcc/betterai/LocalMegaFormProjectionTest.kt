@@ -80,6 +80,21 @@ class LocalMegaFormProjectionTest {
     }
 
     @Test
+    fun `a Z stone names the Mega-Z form and a plain stone the plain Mega beside it`() {
+        // Garchomp, Lucario and Absol have a Mega and a Mega-Z since Mega Showdown added the Z-A Megas.
+        val forms = listOf(megaForm("Mega", 100, setOf("dragon", "ground")), megaForm("Mega-Z", 200, setOf("dragon")))
+        val megaZ = requireNotNull(damage(mechanicId = "mega", forms = forms, heldItemId = "mega_showdown:garchompite_z")) {
+            "The Z stone names the Mega-Z form."
+        }
+        val mega = requireNotNull(damage(mechanicId = "mega", forms = forms, heldItemId = "mega_showdown:garchompite")) {
+            "The plain stone names the plain Mega."
+        }
+        assertTrue(megaZ.maximum > mega.maximum, "And each is priced from its own form, not one for both.")
+        assertNull(damage(mechanicId = "mega", forms = forms, heldItemId = "cobblemon:leftovers"),
+            "A held item that is no stone names neither.")
+    }
+
+    @Test
     fun `a mechanic with no resolvable form still projects nothing`() {
         assertNull(
             damage(mechanicId = "mega", forms = emptyList()),

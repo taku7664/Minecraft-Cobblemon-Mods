@@ -120,6 +120,8 @@ internal object LocalDamageAbilityModifiers {
             "quarkdrive" -> paradox(target, LocalPublicItemState.activeItemId(state, target), terrain == "electricterrain", physical, special, offence = false)
             else -> 1.0
         }
+        // Glaive Rush leaves its user taking double damage until it moves again.
+        if (target.knownVolatileEffectIds.any { canonical(it) == "glaiverush" }) multiplier *= 2.0
         // Delta Stream takes away a Flying type's weaknesses.
         if (weather == "deltastream" && "flying" in types &&
             canonical(details.typeId) in setOf("electric", "ice", "rock")) multiplier *= 0.5

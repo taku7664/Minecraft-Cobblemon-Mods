@@ -173,6 +173,83 @@ class LocalGapFixesTest {
         assertEquals(0.4, facts?.standardDamageFractionRange?.maximum ?: 0.0, 1e-6)
     }
 
+    @Test
+    fun `G-112 G-124 Throat Chop bars sound moves and Disable the last move`() {
+        val user = mon(BattleSide.OPPONENT, 0, "normal")
+        val chopped = BattlePokemonStateView(
+            battlePokemonId = user.battlePokemonId, side = user.side, activeSlot = 0, speciesId = user.speciesId, formId = null,
+            level = 50, hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
+            knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = setOf("normal"),
+            combatStats = user.combatStats, knownVolatileEffectIds = setOf("throatchop", "disable"),
+            knownBaseStabTypeIds = setOf("normal"),
+        )
+        val state = state(listOf(mon(BattleSide.ALLY, 0, "normal"), chopped))
+        val sound = attack("hypervoice", "normal", special = true).moveDetails!!.let { details ->
+            details.copy(effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, emptyList(), false,
+                mechanicFlags = setOf("sound")))
+        }
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(user.battlePokemonId, listOf(
+            BattlePublicMoveOptionView("cobblemon:hypervoice", sound, BattlePublicMoveKnowledge.PUBLICLY_REVEALED),
+            BattlePublicMoveOptionView("cobblemon:tackle", attack("tackle", "normal").moveDetails!!, BattlePublicMoveKnowledge.PUBLICLY_REVEALED),
+            BattlePublicMoveOptionView("cobblemon:ember", attack("ember", "fire").moveDetails!!, BattlePublicMoveKnowledge.PUBLICLY_REVEALED),
+        ), moveSetComplete = true)))
+        val moves = PublicFutureActionFactory.primitiveActionsForPokemon(state, BattleSide.OPPONENT, user.battlePokemonId, catalog,
+            RecursiveActionHistory(lastMoveByPokemon = mapOf(user.battlePokemonId to "cobblemon:tackle")))
+            .filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.toSet()
+        assertEquals(setOf("cobblemon:ember"), moves)
+    }
+
+    @Test
+    fun `G-219 Flower Veil spares a Grass partner from status`() {
+        val grass = mon(BattleSide.OPPONENT, 0, "grass")
+        val pokemon = listOf(mon(BattleSide.ALLY, 0, "normal"), mon(BattleSide.ALLY, 1, "normal"), grass,
+            mon(BattleSide.OPPONENT, 1, "fairy", ability = "flowerveil"))
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(), format = BattleFormat.DOUBLE, turn = 3, pokemon = pokemon, field = field(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { side -> pokemon.count { it.side == side } },
+            observedEvents = emptyList(), inferences = emptyList(),
+        )
+        val attacker = state.pokemon.first { it.side == BattleSide.ALLY }
+        assertTrue(LocalPublicStatusImmunity.blocked(state, grass, "par", attacker))
+    }
+
+    @Test
+    fun `G-126 a Glaive Rush user takes double damage`() {
+        val target = BattlePokemonStateView(
+            battlePokemonId = UUID.randomUUID(), side = BattleSide.OPPONENT, activeSlot = 0, speciesId = "showdown:probe",
+            formId = null, level = 50, hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
+            knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = setOf("normal"),
+            combatStats = mon(BattleSide.OPPONENT, 0, "normal").combatStats, knownVolatileEffectIds = setOf("glaiverush"),
+            knownBaseStabTypeIds = setOf("normal"),
+        )
+        val state = state(listOf(mon(BattleSide.ALLY, 0, "normal"), target))
+        assertEquals(2.0, LocalPublicMechanicsKernel.projectMove(attack("tackle", "normal"), context(state, null)).knownDamageMultiplier, 1e-9)
+    }
+
+    @Test
+    fun `G-120 Clear Smog resets the target's stages`() {
+        val attacker = mon(BattleSide.ALLY, 0, "poison")
+        val boosted = BattlePokemonStateView(
+            battlePokemonId = UUID.randomUUID(), side = BattleSide.OPPONENT, activeSlot = 0, speciesId = "showdown:probe",
+            formId = null, level = 50, hpFraction = 0.8, statusId = null, statStages = mapOf("attack" to 4), knownMoveIds = emptySet(),
+            knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = setOf("normal"),
+            combatStats = attacker.combatStats, knownVolatileEffectIds = emptySet(), knownBaseStabTypeIds = setOf("normal"),
+        )
+        val state = state(listOf(attacker, boosted))
+        val after = LocalAfterHitReactions.apply(state, state, attacker.battlePokemonId, boosted.battlePokemonId,
+            attack("clearsmog", "poison", special = true, power = 50.0), 0.2)
+        assertTrue(after.pokemon.single { it.battlePokemonId == boosted.battlePokemonId }.statStages.isEmpty())
+    }
+
+    @Test
+    fun `G-128 Beat Up counts the healthy party`() {
+        val user = mon(BattleSide.ALLY, 0, "dark", species = "cobblemon:umbreon")
+        val state = state(listOf(user, mon(BattleSide.ALLY, null, "normal", species = "cobblemon:snorlax"), mon(BattleSide.OPPONENT, 0, "psychic")))
+        val target = state.pokemon.single { it.side == BattleSide.OPPONENT }
+        val powers = LocalPublicMoveDamageInputs.resolve(attack("beatup", "dark", power = 0.0), user, target, state)?.powers
+        assertTrue(powers != null && powers.single() > 10, "two healthy party members: $powers")
+    }
+
     private fun field(
         weather: String? = null,
         terrain: String? = null,

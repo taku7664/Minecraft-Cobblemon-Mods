@@ -23,6 +23,8 @@ internal object LocalEndTurnStateProjector {
         wishSlots: Set<Pair<BattleSide, Int>> = emptySet(),
         /** Drowsy from last turn's Yawn: asleep now, unless something already stops it. */
         yawnPokemonIds: Set<java.util.UUID> = emptySet(),
+        /** Cured at the end of this turn (Shed Skin's roll came up). */
+        curedPokemonIds: Set<java.util.UUID> = emptySet(),
     ): BattleStateView {
         // Weather expires before its residual callback. Unknown durations retain the existing estimate.
         val nextField = decrementField(state.field)
@@ -68,6 +70,7 @@ internal object LocalEndTurnStateProjector {
             var status = canonical(pokemon.statusId)
             // Hydration cures in rain before the status deals its damage.
             if (ability == "hydration" && rain && !umbrella && status != null) status = null
+            if (pokemon.battlePokemonId in curedPokemonIds) status = null
             val poisonHeal = ability == "poisonheal" && status in POISON_IDS
             var hp = pokemon.hpFraction
             fun apply(change: Double) {
@@ -220,7 +223,9 @@ internal object LocalEndTurnStateProjector {
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
         // Endure lasts the turn it was used.
-        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds.filterNot { canonical(it) == "endure" }.toSet(),
+        // Endure and Glaive Rush's check last the turn; Throat Chop's two turns are read as one search turn.
+        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds
+            .filterNot { canonical(it) in TURN_VOLATILES }.toSet(),
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
@@ -238,6 +243,7 @@ internal object LocalEndTurnStateProjector {
     private val SAND_IMMUNE_ABILITIES = setOf("magicguard", "overcoat", "sandveil", "sandrush", "sandforce")
     private val WEATHER_SUPPRESSION_ABILITIES = setOf("airlock", "cloudnine")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
+    private val TURN_VOLATILES = setOf("endure", "attractresolved")
     private val SUN_IDS = setOf("sunnyday", "sun", "desolateland", "harshsunlight")
     private val RAIN_IDS = setOf("raindance", "rain", "primordialsea", "heavyrain")
     private val SNOW_IDS = setOf("snow", "snowscape", "hail")

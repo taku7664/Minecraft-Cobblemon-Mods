@@ -33,6 +33,7 @@ internal object LocalPublicStatusImmunity {
         val fromOther = source != null && source.battlePokemonId != target.battlePokemonId
         if (fieldBlocks(state, target, status, sourceAbility, source, fromOther && byMove)) return true
         if (ability in ALL_STATUS_IMMUNITIES) return true
+        if (fromOther && flowerVeiled(state, target)) return true
         if (ability == LEAF_GUARD && LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER &&
             LocalPublicItemState.activeItemId(state, target) != UTILITY_UMBRELLA) return true
         return when (status) {
@@ -47,6 +48,13 @@ internal object LocalPublicStatusImmunity {
             else -> false
         }
     }
+
+    /** A Grass type beside (or holding) Flower Veil. */
+    fun flowerVeiled(state: BattleStateView, target: BattlePokemonStateView): Boolean =
+        target.knownTypeIds.any { canonical(it) == "grass" } && state.pokemon.any {
+            it.side == target.side && it.activeSlot != null && !it.fainted &&
+                LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowerveil"
+        }
 
     /** Safeguard, Misty Terrain (any status) and Electric Terrain (sleep) for a grounded target, and a Substitute. */
     private fun fieldBlocks(

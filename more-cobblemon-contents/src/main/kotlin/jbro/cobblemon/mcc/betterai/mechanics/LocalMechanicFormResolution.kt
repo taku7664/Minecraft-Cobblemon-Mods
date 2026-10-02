@@ -18,9 +18,11 @@ import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
  * it could not be reached.
  *
  * Resolution stays deliberately timid. A species with one Mega form resolves to it. A species with
- * two - Charizard, Mewtwo - resolves only when the held stone names which one, because the stone is
- * public the moment the mechanic is offered. Anything else returns nothing and the candidate keeps
- * the behaviour it has today, which is to project no damage at all rather than a wrong one.
+ * two resolves only when the held stone names which one, because the stone is public the moment the
+ * mechanic is offered: `charizardite_x` and `_y` name the X and Y forms, `garchompite_z` the Mega-Z
+ * form that Mega Showdown's Z-A Megas add, and a stone with no letter (`garchompite` beside it) the
+ * plain Mega. Anything else returns nothing and the candidate keeps the behaviour it has today,
+ * which is to project no damage at all rather than a wrong one.
  */
 internal object LocalMechanicFormResolution {
     fun transformedForm(
@@ -35,8 +37,14 @@ internal object LocalMechanicFormResolution {
             .sortedBy { canonical(it.formId) }
         megaForms.singleOrNull()?.let { return it }
         if (megaForms.isEmpty()) return null
-        val variant = stoneVariant(actor.knownHeldItemId) ?: return null
-        return megaForms.singleOrNull { canonical(it.formId).endsWith(variant) }
+        val stone = canonical(actor.knownHeldItemId ?: return null)
+        val variant = stoneVariant(stone)
+        return when {
+            variant != null -> megaForms.singleOrNull { canonical(it.formId).endsWith(variant) }
+            // A stone without a letter is the plain Mega beside its lettered siblings.
+            stone.endsWith(STONE_STEM) -> megaForms.singleOrNull { canonical(it.formId) == MEGA }
+            else -> null
+        }
     }
 
     fun transformedStats(
@@ -71,13 +79,12 @@ internal object LocalMechanicFormResolution {
         transformedForm(candidate, actor) != null
 
     /**
-     * Which of a species' two Mega forms the held stone names.
+     * Which lettered Mega form the canonical stone [item] names.
      *
-     * The stones are `charizardite_x` and `charizardite_y`, so the trailing letter is the whole
-     * answer. A stone without one - the ordinary case, one Mega per species - never reaches here.
+     * The stones are `charizardite_x`, `charizardite_y` and `garchompite_z`, so the trailing letter
+     * is the whole answer; a stone without one has none.
      */
-    private fun stoneVariant(heldItemId: String?): String? {
-        val item = canonical(heldItemId ?: return null)
+    private fun stoneVariant(item: String): String? {
         val letter = item.lastOrNull()?.takeIf { it in VARIANT_LETTERS } ?: return null
         if (!item.dropLast(1).endsWith(STONE_STEM)) return null
         return letter.toString()
@@ -90,5 +97,5 @@ internal object LocalMechanicFormResolution {
 
     /** `charizardite_x` canonicalises to `charizarditex`, so the letter follows the stem. */
     private const val STONE_STEM = "ite"
-    private val VARIANT_LETTERS = setOf('x', 'y')
+    private val VARIANT_LETTERS = setOf('x', 'y', 'z')
 }

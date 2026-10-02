@@ -17,9 +17,33 @@ internal object LocalContactAfterHitMechanics {
         action: BattleActionCandidate,
         directDamageFraction: Double,
     ): List<LocalContactAfterHitBranch> {
-        if (directDamageFraction <= 0.0 || "contact" !in action.moveDetails?.effects?.mechanicFlags.orEmpty()) {
-            return listOf(LocalContactAfterHitBranch(state, 1.0))
+        if (directDamageFraction <= 0.0) return listOf(LocalContactAfterHitBranch(state, 1.0))
+        // Cursed Body disables the move that hit it 30% of the time, contact or not.
+        val cursed = state.pokemon.firstOrNull { it.battlePokemonId == targetId }?.let {
+            LocalPublicAbilityState.effectiveKnownAbility(state, it) == "cursedbody"
+        } == true
+        if ("contact" !in action.moveDetails?.effects?.mechanicFlags.orEmpty()) {
+            return if (cursed) disabled(state, actorId) else listOf(LocalContactAfterHitBranch(state, 1.0))
         }
+        if (cursed) return disabled(state, actorId).flatMap { branch ->
+            projectContact(branch.state, actorId, targetId, action).map { it.copy(probability = it.probability * branch.probability) }
+        }
+        return projectContact(state, actorId, targetId, action)
+    }
+
+    private fun disabled(state: BattleStateView, actorId: UUID): List<LocalContactAfterHitBranch> {
+        val marked = updateActor(state, actorId) { current ->
+            current.copyState(knownVolatileEffectIds = current.knownVolatileEffectIds + "disable")
+        }
+        return listOf(LocalContactAfterHitBranch(state, 0.7), LocalContactAfterHitBranch(marked, 0.3))
+    }
+
+    private fun projectContact(
+        state: BattleStateView,
+        actorId: UUID,
+        targetId: UUID?,
+        action: BattleActionCandidate,
+    ): List<LocalContactAfterHitBranch> {
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
@@ -60,12 +84,15 @@ internal object LocalContactAfterHitMechanics {
             "flamebody" -> listOf("cobblemon:burn" to 0.30)
             "static" -> listOf("par" to 0.30)
             "poisonpoint" -> listOf("psn" to 0.30)
+            "cutecharm" -> listOf(CUTE_CHARM to 0.30)
             "effectspore" -> if (actor.knownTypeIds.any { canonical(it) == "grass" } ||
                 LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "overcoat") emptyList()
                 else listOf("slp" to 0.10, "par" to 0.10, "psn" to 0.10)
             else -> emptyList()
         }.filter { (status, _) ->
             val current = reacted.pokemon.first { it.battlePokemonId == actorId }
+            if (status == CUTE_CHARM) return@filter current.knownVolatileEffectIds.none { PublicIds.canonical(it) == "attract" } &&
+                LocalPublicAbilityState.effectiveKnownAbility(reacted, current) != "oblivious"
             !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, target, byMove = false)
         }
         // Poison Touch and Toxic Chain poison the target in turn.
@@ -81,7 +108,10 @@ internal object LocalContactAfterHitMechanics {
         if (statuses.isNotEmpty()) {
             val untouched = 1.0 - statuses.sumOf { it.second }
             branches = listOf(LocalContactAfterHitBranch(reacted, untouched)) + statuses.map { (status, chance) ->
-                LocalContactAfterHitBranch(updateActor(reacted, actorId) { copyPokemon(it, statusId = status) }, chance)
+                LocalContactAfterHitBranch(updateActor(reacted, actorId) {
+                    if (status == CUTE_CHARM) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + "attract")
+                    else copyPokemon(it, statusId = status)
+                }, chance)
             }
         }
         if (attackerStatus != null) {
@@ -147,4 +177,6 @@ internal object LocalContactAfterHitMechanics {
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val CONTACT_DAMAGE_ABILITIES = setOf("roughskin", "ironbarbs")
+    /** Cute Charm infatuates rather than inflicting a status; carried in the same list. */
+    private const val CUTE_CHARM = "attract"
 }

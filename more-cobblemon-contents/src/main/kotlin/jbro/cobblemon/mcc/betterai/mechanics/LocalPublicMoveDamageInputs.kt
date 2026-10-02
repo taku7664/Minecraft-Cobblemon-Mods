@@ -94,6 +94,9 @@ internal object LocalPublicMoveDamageInputs {
                 ratioWeightPower(user / defender)
             }
             // The escalating hits average to the middle one; per-hit accuracy is applied by the multi-hit rules.
+            // Beat Up: one hit per healthy party member, each 5 + its base Attack / 10, read here as their sum.
+            "beatup" -> state.pokemon.filter { it.side == actor.side && !it.fainted && it.hpFraction > 0.0 && it.statusId == null }
+                .sumOf { (LocalPublicSpeciesData.species(it)?.baseStats?.get("atk") ?: 0) / 10 + 5 }.takeIf { it > 0 }
             "tripleaxel" -> 40
             "triplekick" -> 20
             // Showdown halves Solar Beam and Solar Blade in rain, sand and snow.
@@ -449,7 +452,7 @@ internal object LocalPublicMoveDamageInputs {
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
         "knockoff", "ivycudgel",
-        "lowkick", "grassknot", "heavyslam", "heatcrash", "tripleaxel", "triplekick", "solarbeam", "solarblade",
+        "beatup", "lowkick", "grassknot", "heavyslam", "heatcrash", "tripleaxel", "triplekick", "solarbeam", "solarblade",
         "gravapple", "terablast", "lastrespects", "return", "frustration", "judgment", "multiattack",
         "revelationdance", "aurawheel", "ragingbull", "photongeyser", "shellsidearm", "terastarstorm", "pollenpuff",
         "stompingtantrum", "temperflare", "fusionflare", "fusionbolt", "ragefist", "echoedvoice", "furycutter",

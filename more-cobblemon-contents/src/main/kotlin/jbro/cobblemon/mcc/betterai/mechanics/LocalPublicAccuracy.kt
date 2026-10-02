@@ -48,6 +48,8 @@ internal object LocalPublicAccuracy {
             moveId in RAIN_ACCURATE_MOVES && !targetIgnoresWeather && weather in SUN_WEATHER -> base = 0.5
         }
 
+        // A Glaive Rush user is hit by everything until it moves again.
+        if (target?.knownVolatileEffectIds?.any { canonical(it) == "glaiverush" } == true) return 1.0
         // A Poison type's Toxic never misses.
         if (moveId == "toxic" && actor.knownTypeIds.any { canonical(it) == "poison" }) return 1.0
         if (actorAbility == COMPOUND_EYES) base *= COMPOUND_EYES_MODIFIER
@@ -61,6 +63,15 @@ internal object LocalPublicAccuracy {
             if (targetAbility == "snowcloak" && weather in SNOW_WEATHER) base *= 0.8
         }
         if (aimedAtFoe && LocalPublicItemState.activeItemId(state, target) == "brightpowder") base *= 0.9
+        // Tangled Feet halves accuracy against its confused holder.
+        if (aimedAtFoe && !ignoresTargetAbility && targetAbility == "tangledfeet" &&
+            target?.knownVolatileEffectIds?.any { canonical(it) == "confusion" } == true) base *= 0.5
+        // Zoom Lens: 20% more accurate for a holder that moves after its target (read from public Speed).
+        if (aimedAtFoe && LocalPublicItemState.activeItemId(state, actor) == "zoomlens") {
+            val mine = LocalPublicTurnOrder.effectiveSpeed(state, actor)
+            val theirs = target?.let { LocalPublicTurnOrder.effectiveSpeed(state, it) }
+            if (mine != null && theirs != null && mine.second < theirs.first) base *= 1.2
+        }
         if (
             actorAbility == HUSTLE &&
             candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.PHYSICAL

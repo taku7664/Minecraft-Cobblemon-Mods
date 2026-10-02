@@ -487,7 +487,7 @@ class Cobblemon173ShowdownObservationAdapter(
 
         private val TRACKED_VOLATILES = setOf(
             "leechseed", "confusion", "yawn", "curse", "saltcure", "partiallytrapped", "perishsong", "focusenergy",
-            "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer",
+            "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer", "throatchop",
         )
 
         fun transfersSubstitute(message: BattleMessage): Boolean =

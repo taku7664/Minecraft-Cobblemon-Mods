@@ -45,6 +45,12 @@ internal object LocalAfterHitReactions {
                 reactiveBoost(ability, moveType, details.damageCategory, targetBefore.hpFraction, target.hpFraction)
                     ?.let { state = LocalStatStageChange.apply(state, target.battlePokemonId, null, it) }
             }
+            // Clear Smog resets its target's stat stages.
+            if (alive && moveId == "clearsmog" && target.knownVolatileEffectIds.none { canonical(it) == "substitute" }) {
+                state = state.copyState(pokemon = state.pokemon.map {
+                    if (it.battlePokemonId == target.battlePokemonId) it.copyState(statStages = emptyMap()) else it
+                })
+            }
             // Knock Off removes an item it can take, whether or not the holder survives.
             if (moveId == KNOCK_OFF && target.knownHeldItemId != null && removable(target) && ability != STICKY_HOLD) {
                 state = setItem(state, target.battlePokemonId, null)

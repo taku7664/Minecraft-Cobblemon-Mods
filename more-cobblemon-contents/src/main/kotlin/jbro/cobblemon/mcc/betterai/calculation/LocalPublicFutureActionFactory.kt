@@ -329,6 +329,8 @@ internal object PublicFutureActionFactory {
         val volatiles = active.knownVolatileEffectIds.mapTo(hashSetOf()) { canonicalId(it) }
         val healBlocked = "healblock" in volatiles
         val tormentedMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf { "torment" in volatiles }
+        val disabledMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf { "disable" in volatiles }
+        val throatChopped = "throatchop" in volatiles
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
         val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
             FutureMoveOption(it.moveId, it.details)
@@ -355,7 +357,9 @@ internal object PublicFutureActionFactory {
                 (!healBlocked || option.details.effects?.effects.orEmpty().none {
                     it.kind == BattleMoveEffectKind.HEAL_FRACTION || it.kind == BattleMoveEffectKind.DRAIN_FRACTION
                 }) &&
-                (tormentedMoveId == null || canonicalId(option.moveId) != canonicalId(tormentedMoveId))
+                (tormentedMoveId == null || canonicalId(option.moveId) != canonicalId(tormentedMoveId)) &&
+                (disabledMoveId == null || canonicalId(option.moveId) != canonicalId(disabledMoveId)) &&
+                (!throatChopped || option.details.effects?.mechanicFlags.orEmpty().none { canonicalId(it) == "sound" })
             if (!legal) return@flatMapIndexed emptyList()
             moveTargetVariants(state, side, actorSlot, option.details.targetPattern).map { targets ->
                 BattleActionCandidate(
