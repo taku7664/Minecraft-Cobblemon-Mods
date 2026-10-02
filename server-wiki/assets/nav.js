@@ -46,12 +46,13 @@ window.WIKI_NAV = {
         { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동" },
         { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
         { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 음성 채팅 도감" },
+        { path: "pages/discord.html", title: "디스코드", icon: "💬", keywords: "디스코드 discord 인증 디코인증 verify 연결 등급 역할 피츄 봇 채널 접속자 전적 랭킹" },
       ],
     },
     {
       title: "참고",
       pages: [
-        { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room" },
+        { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room 문의 디코인증 디스코드 verify" },
         { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌" },
         { path: "pages/faq.html", title: "자주 묻는 질문", icon: "❓", keywords: "렉 문제 해결 질문 faq" },
         { path: "pages/support.html", title: "문의하기", icon: "✉️", keywords: "문의 신고 건의 버그 운영자 메일 inquiry" },
