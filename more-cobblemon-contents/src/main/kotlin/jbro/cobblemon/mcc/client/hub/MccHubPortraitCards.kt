@@ -91,10 +91,11 @@ object MccHubPortraitCards {
         private val secondary: Component,
         private val marked: Boolean,
         narration: Component,
-        /** A Pokemon the current rules keep out: the card is washed red and outlined. */
-        private val blocked: Boolean = false,
         private val press: () -> Unit,
     ) : AbstractButton(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height, narration) {
+        /** A Pokemon the current rules keep out: the card is washed red and outlined. */
+        var blocked: Boolean = false
+
         override fun onPress() = press()
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)

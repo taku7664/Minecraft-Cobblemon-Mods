@@ -132,9 +132,10 @@ internal class TowerHubTab : MccHubTabContent {
                     blocked -> tower("party_entry.narration.blocked", speciesName)
                     order == null -> tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
                     else -> tower("party_entry.narration.selected", order, speciesName, pokemon.battleLevel, heldItem)
-                }, blocked) {
+                }) {
                 if (controller.toggleSelection(pokemon.pokemonId)) host.rebuild()
             }
+            button.blocked = blocked
             // A blocked Pokemon can still be taken off the team, never put on it.
             button.active = state.phase == TowerPlayPhase.SELECTING && !controller.isPending && (!blocked || order != null)
             val tooltip = tower("party_entry.tooltip", speciesName, pokemon.level, pokemon.battleLevel, heldItem)
