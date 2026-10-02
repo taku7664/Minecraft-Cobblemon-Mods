@@ -114,6 +114,7 @@ internal class TowerPveBattleLauncher<P, O>(
                     request.progress.nextStage,
                     opponentKind,
                     opponent.profile.aiSkill,
+                    request.progress.mode,
                 ),
                 opponentKind = opponentKind,
             ),
