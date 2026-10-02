@@ -281,5 +281,9 @@
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "Hard Champion",
   "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "Wild trainers",
   "news.more_cobblemon_contents_league_challenge.champion": "%1$s defeated %2$s and became the Champion of the %3$s!",
-  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s defeated %2$s and became the Champion of the hard %3$s!"
+  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s defeated %2$s and became the Champion of the hard %3$s!",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.set": "Set %1$s's League progress to everything before %2$s beaten. Level cap %3$s, %4$s badges. The Elite Four and the Champion are one run, so a player set before any of them starts from the first of the Elite Four.",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.all": "Set %1$s's League, hard route included, as fully beaten. Level cap %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.reset": "Reset %1$s's League progress and took the badges back. Level cap %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "The League has no challenge '%s'."
 }

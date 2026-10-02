@@ -148,6 +148,27 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
             run = run.copy(index = run.index + 1, battleToken = UUID.randomUUID(), awaitingNext = false))
     }
 
+    /** Every challenge in the order it is played: normal gyms, normal finals, hard gyms, hard finals. */
+    fun route(): List<String> = catalog.gyms + catalog.finals + catalog.hardGyms + catalog.hardFinals
+
+    /**
+     * Progress as an operator sets it: every challenge on the [route] before [challengeId] beaten and none from it on,
+     * or the whole route when [challengeId] is null. Titles follow the beaten routes; no BP or reward is added. The
+     * Elite Four and the Champion are one run, so a player set just before a Champion still starts from the first
+     * of the Elite Four.
+     */
+    fun clearedBefore(state: LeagueProgress, challengeId: String?, now: Long): LeagueProgress {
+        require(state.run == null) { "run_active" }
+        val route = route()
+        val count = if (challengeId == null) route.size else route.indexOf(challengeId).also { require(it >= 0) { "unknown_challenge" } }
+        val cleared = route.take(count).toSet()
+        val champion = catalog.finals.all { it in cleared }
+        return state.copy(revision = state.revision + 1, cleared = cleared, champion = champion,
+            championAt = if (champion) state.championAt ?: now else null,
+            hardChampion = catalog.hasHard && catalog.hardFinals.all { it in cleared },
+            unlockedCap = (cleared.map { catalog.challenges.getValue(it).unlockCap } + catalog.initialCap).max())
+    }
+
     fun cancel(state: LeagueProgress): LeagueProgress = if (state.run == null) state else
         state.copy(revision = state.revision + 1, run = null)
 

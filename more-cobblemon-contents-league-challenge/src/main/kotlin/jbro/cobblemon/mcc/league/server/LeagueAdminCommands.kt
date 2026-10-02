@@ -13,7 +13,9 @@ import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.system.LeagueCatalog
 import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.system.LeagueProgress
+import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.arguments.EntityArgument
@@ -72,6 +74,12 @@ object LeagueAdminCommands {
                 Mod.LOGGER.info("MCC admin league run cancel actor={} target={}", it.source.textName, id)
                 1
             } })))
+        .then(literal("progress")
+            .then(literal("set").then(argument("player", EntityArgument.player())
+                .then(argument("challenge", StringArgumentType.word())
+                    .suggests { _, builder -> SharedSuggestionProvider.suggest(progressTargets(), builder) }
+                    .executes { context -> setProgress(context, StringArgumentType.getString(context, "challenge")) })))
+            .then(literal("reset").then(argument("player", EntityArgument.player()).executes { context -> setProgress(context, null) })))
         .then(literal("cap").then(literal("sync").then(argument("player", EntityArgument.player()).executes { context ->
             val player = EntityArgument.getPlayer(context, "player")
             val catalog = catalog(context.source) ?: return@executes 0
@@ -117,6 +125,52 @@ object LeagueAdminCommands {
             context.source.sendSuccess({ Component.translatable("command.${Mod.MOD_ID}.imported", imported.size, target.scoreboardName) }, true)
             1
         }))
+
+    /** The challenges `progress set` takes, by the last part of their ID (`cynthia_hard`), and `all`. */
+    private fun progressTargets(): List<String> =
+        LeagueCatalogResources.current?.let { catalog -> LeagueEngine(catalog).route().map { it.substringAfter(':') } + ALL }.orEmpty()
+
+    /**
+     * Sets an online player's progress for testing: everything before [target] beaten, everything with `all`, nothing
+     * when [target] is null (reset). The normal gyms' badges follow, given or taken back; the level cap follows through
+     * the commit's reconcile. No BP is paid.
+     */
+    private fun setProgress(context: CommandContext<CommandSourceStack>, target: String?): Int {
+        val player = EntityArgument.getPlayer(context, "player")
+        val catalog = catalog(context.source) ?: return 0
+        val engine = LeagueEngine(catalog)
+        val challengeId = when (target) {
+            null -> engine.route().first()
+            ALL -> null
+            else -> engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
+                context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
+                return 0
+            }
+        }
+        val before = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
+        if (before.run != null) {
+            context.source.sendFailure(Component.translatable("message.${Mod.MOD_ID}.run_active"))
+            return 0
+        }
+        val after = engine.clearedBefore(before, challengeId, System.currentTimeMillis())
+        LeagueServer.adminCommit(player.server, catalog, player.uuid, after)
+        catalog.gyms.forEach { gym ->
+            LeagueIntegrations.setBadge(player, requireNotNull(catalog.challenges.getValue(gym).badge), gym in after.cleared)
+        }
+        val cap = engine.cap(after)
+        val name = player.name.string
+        context.source.sendSuccess({
+            when (target) {
+                null -> Component.translatable("$KEY.progress.reset", name, cap)
+                ALL -> Component.translatable("$KEY.progress.all", name, cap)
+                else -> Component.translatable("$KEY.progress.set", name, target, cap, engine.badgeCount(after))
+            }
+        }, true)
+        Mod.LOGGER.info("MCC admin league progress actor={} target={} before={}", context.source.textName, player.uuid, target ?: "reset")
+        return 1
+    }
+
+    private const val ALL = "all"
 
     /** The shared operator view: the catalog and setup in `/mcc status`, undelivered rewards in `/mcc battle pending`. */
     private val source = object : MccAdminSource {

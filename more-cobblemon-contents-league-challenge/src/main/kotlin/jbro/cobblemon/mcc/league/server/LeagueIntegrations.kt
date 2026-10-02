@@ -53,6 +53,12 @@ object LeagueIntegrations {
             BadgeOperationResult.SUCCESS, BadgeOperationResult.ALREADY_OWNED,
         )
 
+    /** Gives [player] [badge] or takes it back; for operators setting progress. */
+    fun setBadge(player: ServerPlayer, badge: String, owned: Boolean) {
+        val id = ResourceLocation.parse(badge)
+        if (owned) PokeBadgesApi.awardBadge(player, id) else PokeBadgesApi.removeBadge(player, id)
+    }
+
     fun hasBadge(player: ServerPlayer, badge: String): Boolean =
         PokeBadgesApi.hasBadge(player, ResourceLocation.parse(badge)) == BadgeOperationResult.SUCCESS
 }

@@ -29,6 +29,30 @@ class LeagueEngineTest {
     }
     private fun party() = (1..6).map { "locked-pokemon-$it" }
 
+    @Test fun `an operator sets progress up to just before a challenge, to everything, or back to nothing`() {
+        val engine = LeagueEngine(hardCatalog())
+        val beforeHardChampion = engine.clearedBefore(LeagueProgress(), "test:hf5", 3000)
+        assertEquals(engine.route().dropLast(1).toSet(), beforeHardChampion.cleared)
+        assertTrue(beforeHardChampion.champion && !beforeHardChampion.hardChampion)
+        assertEquals(100, engine.cap(beforeHardChampion))
+        assertEquals(8, engine.badgeCount(beforeHardChampion))
+        // The hard finals are still one run from their first battle.
+        assertEquals("test:hf1", engine.begin(beforeHardChampion, "test:hf1", party()).run!!.challengeId)
+
+        val all = engine.clearedBefore(beforeHardChampion, null, 4000)
+        assertTrue(all.champion && all.hardChampion)
+        assertEquals(3000, all.championAt)
+
+        val reset = engine.clearedBefore(all, engine.route().first(), 5000)
+        assertTrue(reset.cleared.isEmpty() && !reset.champion && !reset.hardChampion && reset.championAt == null)
+        assertEquals(10, engine.cap(reset))
+        assertEquals("unknown_challenge", assertThrows(IllegalArgumentException::class.java) {
+            engine.clearedBefore(LeagueProgress(), "test:nobody", 0)
+        }.message)
+        val running = engine.begin(LeagueProgress(), "test:g1", party())
+        assertEquals("run_active", assertThrows(IllegalArgumentException::class.java) { engine.clearedBefore(running, null, 0) }.message)
+    }
+
     @Test fun `the hard route opens only for the normal Champion and has its own title`() {
         val engine = LeagueEngine(hardCatalog())
         var state = LeagueProgress()

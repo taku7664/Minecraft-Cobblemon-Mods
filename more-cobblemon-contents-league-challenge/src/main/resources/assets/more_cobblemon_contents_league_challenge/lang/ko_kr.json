@@ -281,5 +281,9 @@
   "screen.more_cobblemon_contents_league_challenge.dashboard.hard_champion": "하드 챔피언 달성",
   "screen.more_cobblemon_contents_league_challenge.dashboard.wild_trainers": "야생 트레이너",
   "news.more_cobblemon_contents_league_challenge.champion": "%1$s님이 %2$s을(를) 꺾고 %3$s의 챔피언이 되었습니다!",
-  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s님이 %2$s을(를) 꺾고 %3$s 하드 리그의 챔피언이 되었습니다!"
+  "news.more_cobblemon_contents_league_challenge.hard_champion": "%1$s님이 %2$s을(를) 꺾고 %3$s 하드 리그의 챔피언이 되었습니다!",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.set": "%1$s님의 리그 진행도를 %2$s 직전까지 클리어한 상태로 맞췄습니다. 레벨 캡 %3$s, 뱃지 %4$s개. 사천왕과 챔피언은 한 번의 도전이라, 그중 하나 직전으로 맞춰도 사천왕 첫 상대부터 시작합니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.all": "%1$s님의 리그를 하드까지 모두 클리어한 상태로 맞췄습니다. 레벨 캡 %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.reset": "%1$s님의 리그 진행도를 처음으로 되돌리고 뱃지를 회수했습니다. 레벨 캡 %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "리그에 '%s' 도전이 없습니다."
 }

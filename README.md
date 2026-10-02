@@ -86,6 +86,8 @@ PvP, 리그 챌린지는 각각 따로 설치하는 콘텐츠 모드이며, 설�
 | `/mcc league inspect <플레이어>` | 리그 진행 전체: 클리어, 노말·하드 챔피언, 레벨 캡, 진행 중인 도전, 받지 못한 보상 |
 | `/mcc league rewards list\|retry\|drop <플레이어>` | 받지 못한 보상을 보고, 다시 지급하거나, 지급하지 않고 완료로 표시해 다음 도전을 풉니다 |
 | `/mcc league run cancel <플레이어>` | 진행 중인 리그 도전을 취소합니다 |
+| `/mcc league progress set <플레이어> <도전>` | 테스트용으로 그 도전 직전까지 클리어한 상태로 맞춥니다(예: `cynthia_hard`). `all`이면 하드까지 전부 클리어. 뱃지와 레벨 캡도 따라가고 BP는 주지 않습니다. 접속 중인 플레이어만 |
+| `/mcc league progress reset <플레이어>` | 리그 진행도를 처음으로 되돌리고 뱃지를 회수합니다 |
 | `/mcc league cap sync <플레이어>` | 레벨 캡을 Cobbled Level Control에 다시 맞춥니다 |
 | `/mcc league validate` / `catalog` | 레벨 캡 설정 점검, 리그 카탈로그 상태와 마지막 재로드 실패 이유 |
 | `/mcc league import-badges <플레이어>` | 이미 가진 PokeBadges 배지를 리그 클리어로 가져옵니다(BP·챔피언은 주지 않음) |
