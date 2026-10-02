@@ -8,9 +8,9 @@ enum class RankIcon(val glyph: String) {
     GREAT_BALL("\uE001"),
     ULTRA_BALL("\uE002"),
     MASTER_BALL("\uE003"),
-    /** The hard League's Champions. */
+    /** Champions. */
     CHERISH_BALL("\uE004"),
-    /** Champions: the Nether Star, drawn by whatever resource pack the player runs. */
+    /** The hard League's Champions: the Nether Star, drawn by whatever resource pack the player runs. */
     NETHER_STAR("\uE005");
 
     companion object {
@@ -19,7 +19,7 @@ enum class RankIcon(val glyph: String) {
             LeagueRank.GREAT_BALL -> GREAT_BALL
             LeagueRank.ULTRA_BALL -> ULTRA_BALL
             LeagueRank.MASTER_BALL -> MASTER_BALL
-            LeagueRank.CHAMPION -> NETHER_STAR
+            LeagueRank.CHAMPION -> CHERISH_BALL
         }
     }
 }
