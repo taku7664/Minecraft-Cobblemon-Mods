@@ -7,7 +7,6 @@ import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.internal.ai.BattleLeadChoiceContext
-import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
@@ -59,49 +58,28 @@ internal object LocalLeadChoice {
         foe: BattleOpponentTeamPreviewPokemonView,
         context: BattleLeadChoiceContext,
         detailed: Boolean,
-    ): Double = edge(
-        own.knownTypeIds,
-        own.combatStats,
-        context.ownMoves.forPokemon(own.battlePokemonId).map { it.details },
-        foe.knownTypeIds,
-        foe.combatStats,
-        detailed,
-    )
-
-    /**
-     * Log-scale edge of a Pokemon with [ownTypes], [ownStats] and [ownMoves] over one with [foeTypes] and
-     * [foeStats]: its best attack against the foe's types versus the foe's best type against its own, with move
-     * power, the attacking and defending stats and a sure speed edge when [detailed].
-     */
-    internal fun edge(
-        ownTypes: Set<String>,
-        ownStats: BattleCombatStatRangesView?,
-        ownMoves: List<BattleMoveCandidateView>,
-        foeTypes: Set<String>,
-        foeStats: BattleCombatStatRangesView?,
-        detailed: Boolean,
     ): Double {
-        val offence = ownMoves
-            .filter { it.damageCategory != BattleMoveDamageCategory.STATUS && it.power > 0.0 }
+        val offence = context.ownMoves.forPokemon(own.battlePokemonId)
+            .filter { it.details.damageCategory != BattleMoveDamageCategory.STATUS && it.details.power > 0.0 }
             .maxOfOrNull { move ->
-                val stab = if (ownTypes.any { canonical(it) == canonical(move.typeId) }) STAB else 1.0
-                var value = StandardTypeEffectiveness.multiplier(move.typeId, foeTypes) * stab
+                val stab = if (own.knownTypeIds.any { canonical(it) == canonical(move.details.typeId) }) STAB else 1.0
+                var value = StandardTypeEffectiveness.multiplier(move.details.typeId, foe.knownTypeIds) * stab
                 if (detailed) {
-                    val physical = move.damageCategory == BattleMoveDamageCategory.PHYSICAL
-                    value *= move.power / REFERENCE_POWER * statRatio(
-                        ownStats?.let { if (physical) it.attack else it.specialAttack },
-                        foeStats?.let { if (physical) it.defence else it.specialDefence },
+                    val physical = move.details.damageCategory == BattleMoveDamageCategory.PHYSICAL
+                    value *= move.details.power / REFERENCE_POWER * statRatio(
+                        own.combatStats?.let { if (physical) it.attack else it.specialAttack },
+                        foe.combatStats?.let { if (physical) it.defence else it.specialDefence },
                     )
                 }
                 value
             } ?: MINIMUM_EDGE
-        val defence = foeTypes.maxOf { type ->
-            StandardTypeEffectiveness.multiplier(type, ownTypes) * STAB
+        val defence = foe.knownTypeIds.maxOf { type ->
+            StandardTypeEffectiveness.multiplier(type, own.knownTypeIds) * STAB
         }.let { value ->
-            if (!detailed) value else value * statRatio(foeStats?.let(::strongerAttack), ownStats?.let(::weakerDefence))
+            if (!detailed) value else value * statRatio(foe.combatStats?.let(::strongerAttack), own.combatStats?.let(::weakerDefence))
         }
         var edge = log2(offence.coerceAtLeast(MINIMUM_EDGE)) - log2(defence.coerceAtLeast(MINIMUM_EDGE))
-        if (detailed) edge += speedEdge(ownStats?.speed, foeStats?.speed)
+        if (detailed) edge += speedEdge(own.combatStats?.speed, foe.combatStats?.speed)
         return edge
     }
 
@@ -116,8 +94,7 @@ internal object LocalLeadChoice {
         return weights.keys.last()
     }
 
-    /** How sharply a tier's draw follows the scores: lower is closer to always taking the best. */
-    internal fun temperature(tier: BattleTrainerTier): Double = when (tier) {
+    private fun temperature(tier: BattleTrainerTier): Double = when (tier) {
         BattleTrainerTier.INTRODUCTORY, BattleTrainerTier.STANDARD -> 0.6
         BattleTrainerTier.ADVANCED -> 0.4
         BattleTrainerTier.BOSS -> 0.3
