@@ -2,7 +2,7 @@
   "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_shepherd",
   "tier": "normal",
-  "bp": 10,
+  "bp": 3,
   "pokemon": [
     {
       "species": "mareep",

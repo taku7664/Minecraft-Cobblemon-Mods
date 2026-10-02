@@ -2,7 +2,7 @@
   "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_bug_ace",
   "tier": "ace",
-  "bp": 20,
+  "bp": 6,
   "pokemon": [
     {
       "species": "scyther",

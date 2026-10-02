@@ -57,8 +57,9 @@ class WildTrainerDataTest {
 
     @Test
     fun `aces pay twice what normal trainers pay`() {
+        // A light side income: the Tower and the Factory pay better for the harder battles.
         definitions.values.forEach { definition ->
-            assertEquals(if (definition.tier == WildTrainerTier.ACE) 20L else 10L, definition.bp, definition.npcClass)
+            assertEquals(if (definition.tier == WildTrainerTier.ACE) 6L else 3L, definition.bp, definition.npcClass)
         }
     }
 

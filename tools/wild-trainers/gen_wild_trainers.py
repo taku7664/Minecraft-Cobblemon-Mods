@@ -19,7 +19,8 @@ RES = pathlib.Path(__file__).resolve().parents[2] / "more-cobblemon-contents-lea
 NS = "more_cobblemon_contents_league_challenge"
 NAME_KEY = f"npc.{NS}.wild_trainer."
 
-BP = {"normal": 10, "ace": 20}
+# A light side income: the Tower and the Factory pay better for the harder battles.
+BP = {"normal": 3, "ace": 6}
 SKILL = {"normal": 2, "ace": 3}
 EXCLUDED_LABELS = {"legendary", "mythical", "ultra_beast", "paradox", "restricted"}
 REGIONAL = re.compile(r"\b(alolan|galarian|hisuian|paldean|region_bias)")
