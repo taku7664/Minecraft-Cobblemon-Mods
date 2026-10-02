@@ -18,7 +18,16 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
 /** One inquiry as the operators receive it on Discord. */
-data class Inquiry(val nickname: String, val accountName: String, val playerId: UUID, val reason: String, val via: Inquiries.Via, val at: Long) {
+data class Inquiry(
+    val nickname: String,
+    val accountName: String,
+    val playerId: UUID,
+    val reason: String,
+    val via: Inquiries.Via,
+    val at: Long,
+    /** Eight hex digits that name the inquiry on its card and in its review. */
+    val id: String = UUID.randomUUID().toString().take(8),
+) {
     val subject: String get() = "[빡켓몬 문의] $nickname ($accountName)"
     val time: String get() = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         .format(ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), ZoneId.of("Asia/Seoul")))
@@ -86,8 +95,10 @@ object Inquiries {
         val inquiry = Inquiry(nickname, accountName, playerId, text, via, now)
         return CompletableFuture.supplyAsync({
             try {
-                DiscordWebhook.send(route, inquiry)
-                JbroPolicy.LOGGER.info("Sent an inquiry from {} ({}) via {} to Discord", accountName, playerId, via)
+                val cardId = DiscordWebhook.send(route, inquiry)
+                JbroPolicy.LOGGER.info("Sent inquiry {} from {} ({}) via {} to Discord", inquiry.id, accountName, playerId, via)
+                // Reviews answer under the card, which only the bot's own posts let them do.
+                if (route is DiscordSettings.InquiryRoute.Bot && cardId != null) InquiryReview.enqueue(inquiry, cardId)
                 Outcome.Sent
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Could not send the inquiry from {} ({}) to Discord", accountName, playerId, failure)

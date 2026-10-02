@@ -101,20 +101,22 @@ internal object DiscordWebhook {
     /** Discord's REST API; tests point it at a local server. */
     internal var apiBase = "https://discord.com/api/v10"
 
-    fun send(route: DiscordSettings.InquiryRoute, inquiry: Inquiry) = when (route) {
+    /** Posts the card; the bot's post answers with the card's message ID, a webhook's with nothing. */
+    fun send(route: DiscordSettings.InquiryRoute, inquiry: Inquiry): String? = when (route) {
         is DiscordSettings.InquiryRoute.Webhook -> send(route.url, inquiry)
         is DiscordSettings.InquiryRoute.Bot -> post(HttpRequest.newBuilder(URI.create("$apiBase/channels/${route.channelId}/messages"))
             .header("Authorization", "Bot ${route.token}"), payload(inquiry, webhook = false))
     }
 
-    fun send(url: String, inquiry: Inquiry) = post(HttpRequest.newBuilder(URI.create(url)), payload(inquiry, webhook = true))
+    fun send(url: String, inquiry: Inquiry): String? = post(HttpRequest.newBuilder(URI.create(url)), payload(inquiry, webhook = true))
 
-    private fun post(request: HttpRequest.Builder, body: JsonObject) {
+    private fun post(request: HttpRequest.Builder, body: JsonObject): String? {
         val response = client.send(request.timeout(Duration.ofSeconds(15))
             .header("Content-Type", "application/json; charset=utf-8")
             .header("User-Agent", DiscordBot.USER_AGENT)
             .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(), HttpResponse.BodyHandlers.ofString())
         check(response.statusCode() in 200..299) { "Discord answered ${response.statusCode()}: ${response.body().take(200)}" }
+        return runCatching { JsonParser.parseString(response.body()).asJsonObject.get("id")?.asString }.getOrNull()
     }
 
     internal fun payload(inquiry: Inquiry, webhook: Boolean = true) = JsonObject().apply {
@@ -133,6 +135,7 @@ internal object DiscordWebhook {
                     add(field("UUID", inquiry.playerId.toString(), inline = false))
                     add(field("시각", "${inquiry.time} (KST)", inline = false))
                 })
+                add("footer", JsonObject().apply { addProperty("text", "문의 번호 ${inquiry.id}") })
             })
         })
     }

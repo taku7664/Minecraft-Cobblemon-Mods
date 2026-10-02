@@ -304,9 +304,10 @@ internal object DiscordBot {
     /** Answers one slash command: acknowledges at once, works out the reply on the server thread, then edits it in. */
     private fun answer(interaction: JsonObject) {
         val client = rest ?: return
-        if (interaction.get("type")?.asInt != APPLICATION_COMMAND) return
         val id = interaction.get("id").asString
         val interactionToken = interaction.get("token").asString
+        if (interaction.get("type")?.asInt == MESSAGE_COMPONENT) return press(client, interaction, id, interactionToken)
+        if (interaction.get("type")?.asInt != APPLICATION_COMMAND) return
         val applicationId = interaction.get("application_id").asString
         val data = interaction.getAsJsonObject("data")
         val options = data.getAsJsonArray("options")?.associate { option ->
@@ -343,6 +344,15 @@ internal object DiscordBot {
             DiscordRest.message("답을 만들지 못했어요. 운영진에게 알려 주세요."), authorized = false)
     }
 
+    /** Answers a button press; the only buttons are the inquiry reviews' "처리 완료". */
+    private fun press(client: DiscordRest, interaction: JsonObject, id: String, interactionToken: String) {
+        val customId = interaction.getAsJsonObject("data")?.get("custom_id")?.asString.orEmpty()
+        if (!customId.startsWith(InquiryReview.BUTTON_PREFIX)) return
+        val answer = InquiryReview.press(customId, caller(interaction), interaction.getAsJsonObject("message"))
+        val response = client.request("POST", "/interactions/$id/$interactionToken/callback", answer, authorized = false)
+        if (!response.ok) JbroPolicy.LOGGER.warn("Discord refused a button answer ({}): {}", response.status, response.body.take(300))
+    }
+
     /** The member in a server channel; a direct message carries the user alone. */
     private fun caller(interaction: JsonObject): DiscordCaller {
         val member = interaction.getAsJsonObject("member")
@@ -356,6 +366,7 @@ internal object DiscordBot {
     }
 
     private const val APPLICATION_COMMAND = 2
+    private const val MESSAGE_COMPONENT = 3
     private const val DEFERRED_REPLY = 5
 
     private fun send(payload: JsonObject) {
