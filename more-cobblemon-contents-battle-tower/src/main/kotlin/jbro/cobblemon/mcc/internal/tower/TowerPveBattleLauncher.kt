@@ -89,7 +89,13 @@ internal class TowerPveBattleLauncher<P, O>(
             )
             return TowerBattleLaunchResult.Unavailable
         }
-        val opponentTeam = opponentMaterializer.materialize(opponent.team)
+        // The first Champion (the 10th win, practical stage) comes at IVs of 25; their full strength waits for the 20th.
+        val team = if (opponent.profile.fixedRoster && request.progress.nextStage == TowerStreakStage.PRACTICAL) {
+            opponent.team.map { it.withIvs(FIRST_CHAMPION_IVS) }
+        } else {
+            opponent.team
+        }
+        val opponentTeam = opponentMaterializer.materialize(team)
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {
             reportSafely("opponent team ${opponent.profile.profileId} could not be materialized")
             return TowerBattleLaunchResult.Unavailable
@@ -159,3 +165,5 @@ internal class TowerPveBattleLauncher<P, O>(
         }
     }
 }
+
+private val FIRST_CHAMPION_IVS = jbro.cobblemon.mcc.internal.tower.opponent.TowerStatSpread(25, 25, 25, 25, 25, 25)

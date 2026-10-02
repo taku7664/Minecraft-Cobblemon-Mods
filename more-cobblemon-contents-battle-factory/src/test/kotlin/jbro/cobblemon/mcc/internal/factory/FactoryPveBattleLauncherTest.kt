@@ -33,7 +33,8 @@ class FactoryPveBattleLauncherTest {
         )
         assertEquals(request.opponentTeam.keys, starts.single().opponentTeam.keys)
         assertEquals(1, starts.single().battleNumber)
-        assertEquals(BattleTrainerTier.ADVANCED, starts.single().trainerProfile.difficulty.tier)
+        // Round 1 plays STANDARD whatever the trainer's skill.
+        assertEquals(BattleTrainerTier.STANDARD, starts.single().trainerProfile.difficulty.tier)
         assertEquals(BattleBrainContentIds.BATTLE_FACTORY, starts.single().brainSelectionContext.contentId)
         assertEquals(BattleEncounterRole.REGULAR, starts.single().brainSelectionContext.encounterRole)
     }

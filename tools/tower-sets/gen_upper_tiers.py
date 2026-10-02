@@ -1,9 +1,10 @@
 """Adds the Battle Tower's tier 3 and tier 4 sets, derived from its tier 2 sets.
 
 Tier 2 (from the 6th win) has IVs of 20 and one 252 EV stat. Tier 3 (the advanced stage, wins 11 to 20) and tier 4
-(the pro stage, from the 21st win) keep each set's species, moves, ability, item, nature and gimmick fields, and
-train it fully: IVs of 25 or 31, and a second 252 stat plus 4 picked from what the set does and its nature. Running
-it again rewrites the upper tiers from the current tier 2 sets.
+(the pro stage, from the 21st win) keep each set's species, moves, ability, item, nature and gimmick fields and
+train it further, so EVs climb 0, 252, 384, 508 through the stages: tier 3 has IVs of 25 and a second stat at 128,
+tier 4 IVs of 31 and the second stat at 252, plus 4 elsewhere. The second stat is picked from what the set does and
+its nature. Running it again rewrites the upper tiers from the current tier 2 sets.
 
     python tools/tower-sets/gen_upper_tiers.py
 """
@@ -12,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower"
-TIERS = {3: 25, 4: 31}
+TIERS = {3: (25, 128), 4: (31, 252)}  # tier: (IVs, EVs in the second stat)
 STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
 
 SLOW = {"brave", "relaxed", "quiet", "sassy"}
@@ -22,8 +23,8 @@ RAISES_DEFENSE = {"bold", "impish", "relaxed", "lax"}
 RAISES_SPECIAL_DEFENSE = {"calm", "careful", "sassy", "gentle"}
 
 
-def spread(tier2_evs, nature):
-    """A full 252/252/4 spread that keeps tier 2's 252 stat."""
+def spread(tier2_evs, nature, second_evs):
+    """A 252/second/4 spread that keeps tier 2's 252 stat."""
     main = max(STATS, key=lambda s: tier2_evs.get(s, 0))
     if main in ("attack", "special_attack"):
         second = "hp" if nature in SLOW else "speed"
@@ -35,7 +36,7 @@ def spread(tier2_evs, nature):
         second = "hp"
     rest = "hp" if "hp" not in (main, second) else ("defense" if "defense" not in (main, second) else "special_defense")
     evs = {stat: 0 for stat in STATS}
-    evs[main], evs[second], evs[rest] = 252, 252, 4
+    evs[main], evs[second], evs[rest] = 252, second_evs, 4
     return evs
 
 
@@ -46,7 +47,7 @@ def main():
         document = json.loads(raw)
         base = [s for s in document["pokemon_sets"] if s["set_tier"] <= 2]
         upper = []
-        for tier, iv in TIERS.items():
+        for tier, (iv, second_evs) in TIERS.items():
             for source in (s for s in base if s["set_tier"] == 2):
                 nature = source["nature_id"].split(":")[1]
                 derived = dict(source)
@@ -54,7 +55,7 @@ def main():
                 assert derived["set_id"] != source["set_id"], source["set_id"]
                 derived["set_tier"] = tier
                 derived["ivs"] = {stat: iv for stat in STATS}
-                derived["evs"] = spread(source["evs"], nature)
+                derived["evs"] = spread(source["evs"], nature, second_evs)
                 upper.append(derived)
         document["pokemon_sets"] = base + upper
         text = json.dumps(document, ensure_ascii=False, indent=2) + "\n"

@@ -93,7 +93,7 @@
         "attack": 0,
         "defense": 4,
         "special_attack": 0,
-        "special_defense": 252,
+        "special_defense": 128,
         "speed": 0
       }
     },

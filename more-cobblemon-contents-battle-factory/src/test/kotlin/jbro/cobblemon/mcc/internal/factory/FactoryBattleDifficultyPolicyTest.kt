@@ -6,13 +6,15 @@ import org.junit.jupiter.api.Test
 
 class FactoryBattleDifficultyPolicyTest {
     @Test
-    fun `only the Factory Head plays at BOSS, a skill 5 trainer plays ADVANCED elsewhere`() {
+    fun `the AI climbs with the round and only the Factory Head plays at BOSS`() {
         assertEquals(BattleTrainerTier.BOSS, FactoryBattleDifficultyPolicy.resolve(21, FactoryBattleFormat.SINGLE, 2).difficulty.tier)
         assertEquals(BattleTrainerTier.BOSS, FactoryBattleDifficultyPolicy.resolve(49, FactoryBattleFormat.SINGLE, 5).difficulty.tier)
         assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(20, FactoryBattleFormat.SINGLE, 5).difficulty.tier)
         assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(21, FactoryBattleFormat.DOUBLE, 5).difficulty.tier)
-        assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(3, FactoryBattleFormat.SINGLE, 4).difficulty.tier)
-        assertEquals(BattleTrainerTier.STANDARD, FactoryBattleDifficultyPolicy.resolve(3, FactoryBattleFormat.SINGLE, 2).difficulty.tier)
+        assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(15, FactoryBattleFormat.SINGLE, 2).difficulty.tier)
+        // Rounds 1 and 2 play STANDARD whatever trainer is drawn.
+        assertEquals(BattleTrainerTier.STANDARD, FactoryBattleDifficultyPolicy.resolve(3, FactoryBattleFormat.SINGLE, 5).difficulty.tier)
+        assertEquals(BattleTrainerTier.STANDARD, FactoryBattleDifficultyPolicy.resolve(14, FactoryBattleFormat.SINGLE, 4).difficulty.tier)
         // The trainer's own skill still drives Cobblemon's fallback AI.
         assertEquals(5, FactoryBattleDifficultyPolicy.resolve(20, FactoryBattleFormat.SINGLE, 5).skillLevel)
     }

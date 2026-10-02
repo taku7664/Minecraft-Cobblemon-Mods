@@ -225,7 +225,7 @@
       "evs": {
         "hp": 252,
         "attack": 0,
-        "defense": 252,
+        "defense": 128,
         "special_attack": 0,
         "special_defense": 4,
         "speed": 0
@@ -259,7 +259,7 @@
       "evs": {
         "hp": 252,
         "attack": 0,
-        "defense": 252,
+        "defense": 128,
         "special_attack": 0,
         "special_defense": 4,
         "speed": 0
@@ -292,7 +292,7 @@
       "evs": {
         "hp": 252,
         "attack": 0,
-        "defense": 252,
+        "defense": 128,
         "special_attack": 0,
         "special_defense": 4,
         "speed": 0

@@ -37,6 +37,10 @@ internal class TowerPokemonSet internal constructor(
 ) {
     val moves: List<String> = moves.immutableCopy()
 
+    /** The same set with other IVs, such as a Champion held back for their first appearance. */
+    fun withIvs(ivs: TowerStatSpread): TowerPokemonSet = TowerPokemonSet(setId, setTier, mechanic, speciesId, formId, abilityId,
+        natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor)
+
     init {
         require(teraType == null || teraType in SUPPORTED_TERA_TYPES) {
             "Tera type must be one of the 18 standard Pokemon types"

@@ -70,6 +70,29 @@ class TowerBalanceScenarioTest {
         return team.values.toList()
     }
 
+    private val championAces = mapOf("blue" to "cobblemon:blastoise", "lance" to "cobblemon:dragonite", "cynthia" to "cobblemon:garchomp")
+
+    /**
+     * A Champion's Tera team the way the Tower draws one against a challenger without legendaries: the ace and two
+     * other members, each one of its sets, with IVs of [iv] (25 for the first Champion, 31 from the 20th win).
+     */
+    private fun championTeam(random: Random, iv: Int): List<RefSet> {
+        val name = championAces.keys.toList()[random.nextInt(championAces.size)]
+        val sets = towerSets.filter {
+            it["set_id"].asString.startsWith("champion_${name}_tera_") && LegendaryClassPolicy.categoryFor(it["species_id"].asString) == null
+        }.groupBy { it["species_id"].asString }
+        val ace = championAces.getValue(name)
+        val order = listOf(ace) + (sets.keys - ace).shuffled(random)
+        val team = ArrayList<RefSet>()
+        for (species in order) {
+            if (team.size == 3) break
+            val variants = sets.getValue(species)
+            val ref = refSet(variants[random.nextInt(variants.size)], trained = false)?.copy(ivs = RefSet.STATS.associateWith { iv }) ?: continue
+            if (team.none { it.item == ref.item }) team += ref
+        }
+        return team
+    }
+
     private fun fullyTrained(species: String, moves: List<String>, ability: String, item: String, nature: String, attack: String) =
         RefSet(dex.species(species)!!.name, moves, ability = ability, item = item, nature = nature,
             evs = mapOf(attack to 252, "spe" to 252, "hp" to 4), gender = dex.species(species)!!.gender.ifEmpty { "M" })
@@ -146,30 +169,50 @@ class TowerBalanceScenarioTest {
     @Test
     fun `how far a strong team runs through the Tower's regular opponents`() {
         val battles = 200
-        val report = StringBuilder("# Battle Tower balance scenario\n\nSingle 3 vs 3, level 50, $battles battles per row, " +
-            "opponents drawn from the Tower's Tera sets of a tier (2: IV 20 and 252 EVs, wins 6 to 10; 3: IV 25 and full " +
-            "EVs, wins 11 to 20; 4: IV 31 and full EVs, from the 21st win), both sides on the same greedy policy.\n\n" +
-            "| player team | opponents' tier | legendary class | win rate | expected streak | reach 21 wins | reach 49 wins |\n" +
-            "|---|---|---|---|---|---|---|\n")
-        data class Case(val name: String, val tier: Int, val legendary: Boolean, val team: (Random) -> List<RefSet>)
-        val cases = listOf(
-            Case("tier 2 sets like the opponents", 2, false) { randomTeam(it, pool(false), trained = false) },
-            Case("random tier 2 species, fully trained", 2, false) { randomTeam(it, pool(false), trained = true) },
-            Case("random tier 2 species, fully trained", 4, false) { randomTeam(it, pool(false), trained = true) },
-            Case("Dragonite, Kingambit, Gholdengo (fully trained)", 2, false) { firepower },
-            Case("Dragonite, Kingambit, Gholdengo (fully trained)", 3, false) { firepower },
-            Case("Dragonite, Kingambit, Gholdengo (fully trained)", 4, false) { firepower },
-            Case("Calyrex-Shadow, Koraidon, Miraidon (fully trained)", 4, true) { legendaryFirepower },
+        val report = StringBuilder("# Battle Tower balance scenario\n\nSingle 3 vs 3, level 50, $battles battles per cell, " +
+            "Tera sets, both sides on the same greedy policy (so the Tower's AI levels are not modelled). Opponents by " +
+            "stage: tier 1 (IV 15, 0 EVs) wins 1 to 5, tier 2 (IV 20, 252 EVs) 6 to 10, tier 3 (IV 25, 384 EVs) 11 to 20, " +
+            "tier 4 (IV 31, 508 EVs) from 21; Champions at every 10th win (IV 25 the first time, 31 after).\n\n")
+        val opponents: List<Pair<String, (Random) -> List<RefSet>>> = listOf(
+            "tier 1" to { r -> randomTeam(r, pool(false, 1), trained = false) },
+            "tier 2" to { r -> randomTeam(r, pool(false, 2), trained = false) },
+            "tier 3" to { r -> randomTeam(r, pool(false, 3), trained = false) },
+            "tier 4" to { r -> randomTeam(r, pool(false, 4), trained = false) },
+            "Champion, IV 25" to { r -> championTeam(r, 25) },
+            "Champion, IV 31" to { r -> championTeam(r, 31) },
         )
-        cases.forEachIndexed { index, case ->
-            val random = Random(20261002L + index)
-            val opponents = pool(case.legendary, case.tier)
+        val players: List<Pair<String, (Random) -> List<RefSet>>> = listOf(
+            "random species, tier 2 sets" to { r -> randomTeam(r, pool(false, 2), trained = false) },
+            "random species, fully trained" to { r -> randomTeam(r, pool(false, 2), trained = true) },
+            "Dragonite, Kingambit, Gholdengo" to { _ -> firepower },
+        )
+        report.append("| player team | " + opponents.joinToString(" | ") { it.first } + " | reach 10 | reach 20 | reach 30 | reach 49 |\n")
+        report.append("|---|" + opponents.joinToString("") { "---|" } + "---|---|---|---|\n")
+        players.forEachIndexed { playerIndex, (playerName, player) ->
+            val rates = opponents.mapIndexed { opponentIndex, (_, opponent) ->
+                val random = Random(20261002L + playerIndex * 31L + opponentIndex)
+                var wins = 0
+                repeat(battles) { if (play(player(random), opponent(random), random)) wins++ }
+                wins.toDouble() / battles
+            }
+            // The opponent of each win: tiers by stage, a Champion every 10th (the Aces between fight with their stage's sets).
+            fun rateFor(win: Int): Double = when {
+                win % 10 == 0 -> if (win == 10) rates[4] else rates[5]
+                win <= 5 -> rates[0]
+                win <= 10 -> rates[1]
+                win <= 20 -> rates[2]
+                else -> rates[3]
+            }
+            fun reach(wins: Int) = (1..wins).fold(1.0) { p, win -> p * rateFor(win) }
+            report.append("| $playerName | " + rates.joinToString(" | ") { "%.1f%%".format(it * 100) } + " | " +
+                listOf(10, 20, 30, 49).joinToString(" | ") { "%.1f%%".format(reach(it) * 100) } + " |\n")
+        }
+        run {
+            val random = Random(20261003L)
             var wins = 0
-            repeat(battles) { if (play(case.team(random), randomTeam(random, opponents, trained = false), random)) wins++ }
-            val p = wins.toDouble() / battles
-            val streak = if (p >= 1.0) "∞" else "%.1f".format(p / (1 - p))
-            report.append("| ${case.name} | ${case.tier} | ${if (case.legendary) "on" else "off"} | ${"%.1f%%".format(p * 100)} | $streak |" +
-                " ${"%.1f%%".format(p.pow(21) * 100)} | ${"%.1f%%".format(p.pow(49) * 100)} |\n")
+            repeat(battles) { if (play(legendaryFirepower, randomTeam(random, pool(true, 4), trained = false), random)) wins++ }
+            report.append("\nCalyrex-Shadow, Koraidon and Miraidon against tier 4 with the legendary class on: " +
+                "%.1f%%".format(wins * 100.0 / battles) + "\n")
         }
         val out = Path.of("build/reports/tower-balance.md")
         Files.createDirectories(out.parent)
