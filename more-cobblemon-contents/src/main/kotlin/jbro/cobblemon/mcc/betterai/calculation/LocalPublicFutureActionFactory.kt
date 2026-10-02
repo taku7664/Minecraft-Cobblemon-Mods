@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
@@ -317,6 +318,17 @@ internal object PublicFutureActionFactory {
             ?.moveId
         val taunted = active.actionConstraints.taunted ||
             (history.tauntTurnsByPokemon[active.battlePokemonId] ?: 0) > 0
+        val item = LocalPublicItemState.activeItemId(state, active)
+        // A Choice item (or Gorilla Tactics) locks the move used since coming in; an Assault Vest allows no status
+        // move. Without the lock the search let a Choice Scarf user change moves every turn.
+        // The last move is kept only while its user stays in (and seeded from the battle's moves since entry).
+        val choiceLockedMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf {
+            item in CHOICE_ITEMS || LocalPublicAbilityState.effectiveKnownAbility(state, active) == "gorillatactics"
+        }
+        val assaultVest = item == "assaultvest"
+        val volatiles = active.knownVolatileEffectIds.mapTo(hashSetOf()) { canonicalId(it) }
+        val healBlocked = "healblock" in volatiles
+        val tormentedMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf { "torment" in volatiles }
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
         val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
             FutureMoveOption(it.moveId, it.details)
@@ -325,6 +337,10 @@ internal object PublicFutureActionFactory {
             .inferredOptions(active, currentCatalog, history, moveUsage)
             .filterKeys { move -> knownOptions.none { canonicalId(it.moveId) == canonicalId(move) } }
             .map { (move, option) -> FutureMoveOption(move, option.details, option.knowledge) } else emptyList()
+        // A lock onto a move this list does not hold (unrevealed, out of PP) is no evidence about the others.
+        val lockedMoveId = choiceLockedMoveId?.takeIf { locked ->
+            (knownOptions + hypotheses).any { canonicalId(it.moveId) == canonicalId(locked) }
+        }
         val moves = (knownOptions + hypotheses).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
             val remainingPp = (option.details.currentPp - used).coerceAtLeast(0)
@@ -333,7 +349,13 @@ internal object PublicFutureActionFactory {
                     active.battlePokemonId !in history.actedSinceEntryPokemonIds) &&
                 (!taunted || option.details.damageCategory != BattleMoveDamageCategory.STATUS) &&
                 (chargingMoveId == null || option.moveId == chargingMoveId) &&
-                (encoreMoveId == null || option.moveId == encoreMoveId)
+                (encoreMoveId == null || option.moveId == encoreMoveId) &&
+                (lockedMoveId == null || canonicalId(option.moveId) == canonicalId(lockedMoveId)) &&
+                (!assaultVest || option.details.damageCategory != BattleMoveDamageCategory.STATUS) &&
+                (!healBlocked || option.details.effects?.effects.orEmpty().none {
+                    it.kind == BattleMoveEffectKind.HEAL_FRACTION || it.kind == BattleMoveEffectKind.DRAIN_FRACTION
+                }) &&
+                (tormentedMoveId == null || canonicalId(option.moveId) != canonicalId(tormentedMoveId))
             if (!legal) return@flatMapIndexed emptyList()
             moveTargetVariants(state, side, actorSlot, option.details.targetPattern).map { targets ->
                 BattleActionCandidate(
@@ -475,6 +497,7 @@ internal object PublicFutureActionFactory {
     private fun BattleActionCandidate.isInferredMove(): Boolean =
         "inferred_opponent_move" in tags || "hypothetical_public_move" in tags
 
+    private val CHOICE_ITEMS = setOf("choiceband", "choicespecs", "choicescarf")
     private val FIRST_ENTRY_ONLY_MOVES = setOf("fakeout", "firstimpression", "matblock")
     /** Attacker abilities that hit through a type or ability immunity. */
     private val IMMUNITY_PIERCING_ABILITIES = setOf("scrappy", "mindseye", "moldbreaker", "teravolt", "turboblaze")

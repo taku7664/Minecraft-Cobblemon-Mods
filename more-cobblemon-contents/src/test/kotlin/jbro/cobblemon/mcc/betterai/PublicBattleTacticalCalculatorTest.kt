@@ -207,19 +207,24 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
-    fun `unavailable cumulative inputs do not publish a false exact rage fist range`() {
-        val calculated = PublicBattleTacticalCalculator.calculate(
+    fun `rage fist takes its printed power as the floor of its unknown hit count`() {
+        // The hit count is not public, so the printed 50 is the least it can do (LOCAL_GAPS G-125): a range is
+        // published from it, never a zero that ranked the move below every other attack.
+        val ghost = PublicBattleTacticalCalculator.calculate(
             context(
                 setOf("normal"), true, moveId = "ragefist", moveType = "ghost",
                 damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
             ),
         )
-        val facts = requireNotNull(calculated.candidates.single().facts)
-
-        assertNull(facts.standardDamageFractionRange)
-        assertNull(facts.standardKnockoutAssessment)
-        assertTrue(BattleCalculationUnknown.DAMAGE_ENGINE in facts.unknowns)
-        assertEquals(0.0, LocalTacticalScorer.unprojectedPressureOf(calculated.candidates.single(), calculated))
+        assertEquals(0.0, requireNotNull(ghost.candidates.single().facts?.standardDamageFractionRange).maximum,
+            "into a Normal type it is still immune")
+        val fighting = PublicBattleTacticalCalculator.calculate(
+            context(
+                setOf("psychic"), true, moveId = "ragefist", moveType = "ghost",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
+            ),
+        )
+        assertTrue(requireNotNull(fighting.candidates.single().facts?.standardDamageFractionRange).maximum > 0.0)
     }
 
     @Test

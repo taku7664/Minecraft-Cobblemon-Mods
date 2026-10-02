@@ -48,7 +48,19 @@ internal object LocalPublicAccuracy {
             moveId in RAIN_ACCURATE_MOVES && !targetIgnoresWeather && weather in SUN_WEATHER -> base = 0.5
         }
 
+        // A Poison type's Toxic never misses.
+        if (moveId == "toxic" && actor.knownTypeIds.any { canonical(it) == "poison" }) return 1.0
         if (actorAbility == COMPOUND_EYES) base *= COMPOUND_EYES_MODIFIER
+        if (actorAbility == "victorystar") base *= 1.1
+        if (LocalPublicItemState.activeItemId(state, actor) == "widelens") base *= 1.1
+        if (LocalPublicFieldMechanics.gravityActive(state)) base *= 5.0 / 3.0
+        val aimedAtFoe = target != null && target.side != actor.side &&
+            candidate.moveDetails?.targetPattern !in setOf(BattleMoveTargetPattern.SELF, BattleMoveTargetPattern.SIDE)
+        if (aimedAtFoe && !ignoresTargetAbility) {
+            if (targetAbility == "sandveil" && weather in setOf("sand", "sandstorm")) base *= 0.8
+            if (targetAbility == "snowcloak" && weather in SNOW_WEATHER) base *= 0.8
+        }
+        if (aimedAtFoe && LocalPublicItemState.activeItemId(state, target) == "brightpowder") base *= 0.9
         if (
             actorAbility == HUSTLE &&
             candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.PHYSICAL
@@ -62,7 +74,7 @@ internal object LocalPublicAccuracy {
         val ignoresEvasion = candidate.moveDetails?.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_EVASION_STAGES
         }
-        val evasionStage = if (ignoresEvasion || actorAbility == UNAWARE) {
+        val evasionStage = if (ignoresEvasion || actorAbility == UNAWARE || actorAbility == "keeneye" || actorAbility == "mindseye") {
             0
         } else {
             target?.stage("evasion", "eva") ?: 0

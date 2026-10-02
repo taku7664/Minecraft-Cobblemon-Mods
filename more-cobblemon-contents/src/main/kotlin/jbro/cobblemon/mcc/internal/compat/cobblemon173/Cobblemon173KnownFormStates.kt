@@ -16,6 +16,7 @@ internal object Cobblemon173KnownFormStates {
                 formId = form.name,
                 knownTypeIds = form.types.mapTo(linkedSetOf()) { it.name },
                 combatStats = exactStats(pokemon, form),
+                abilityId = soleAbility(form),
             )
         }
 
@@ -26,9 +27,14 @@ internal object Cobblemon173KnownFormStates {
                     formId = form.name,
                     knownTypeIds = form.types.mapTo(linkedSetOf()) { it.name },
                     combatStats = stats,
+                    abilityId = soleAbility(form),
                 )
             }
         }.toMap(linkedMapOf())
+
+    /** A form whose ability pool holds one ability (every Mega Evolution) names it publicly. */
+    private fun soleAbility(form: FormData): String? =
+        form.abilities.map { it.template.name }.distinct().singleOrNull()
 
     private fun Species.battleForms(): List<FormData> = (listOf(standardForm) + forms)
         .distinctBy { it.name.lowercase() }

@@ -19,10 +19,13 @@ internal object LocalDirectHitMechanics {
         incomingDamageFraction: Double,
         effects: List<BattleMoveEffectView>,
         ignoreTargetAbility: Boolean,
+        /** A sound move or an Infiltrator reaches past a Substitute. */
+        bypassesSubstitute: Boolean = false,
     ): LocalAppliedDirectHit {
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
         val targetResolution = target?.let {
-            resolveTarget(state, it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
+            substituteAbsorbs(it, actorId, incomingDamageFraction, bypassesSubstitute)
+                ?: resolveTarget(state, it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
         }
         val directDamage = targetResolution?.directDamageFraction ?: 0.0
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
@@ -87,6 +90,24 @@ internal object LocalDirectHitMechanics {
         return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage, actualRecoil)
     }
 
+    /**
+     * A Substitute takes the hit instead of its user. Its own HP is not public to track, so it is read as taking one
+     * hit and breaking, the common case against anything that threatens a knockout.
+     */
+    private fun substituteAbsorbs(
+        target: BattlePokemonStateView,
+        actorId: UUID,
+        incomingDamage: Double,
+        bypassed: Boolean,
+    ): TargetResolution? {
+        if (bypassed || incomingDamage <= 0.0 || target.battlePokemonId == actorId) return null
+        if (target.knownVolatileEffectIds.none { canonical(it) == SUBSTITUTE }) return null
+        return TargetResolution(
+            pokemon = target.copyState(knownVolatileEffectIds = target.knownVolatileEffectIds.filterNot { canonical(it) == SUBSTITUTE }.toSet()),
+            directDamageFraction = 0.0,
+        )
+    }
+
     private fun resolveTarget(
         state: BattleStateView,
         target: BattlePokemonStateView,
@@ -115,7 +136,10 @@ internal object LocalDirectHitMechanics {
             target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
         val sturdyReady = !ignoreTargetAbility &&
             LocalPublicAbilityState.effectiveKnownAbility(state, target) == "sturdy" &&
-            target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
+            target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction ||
+            // Endure leaves its user on one HP from any hit this turn.
+            target.knownVolatileEffectIds.any { canonical(it) == "endure" } && incomingDamage >= target.hpFraction &&
+            target.hpFraction > oneHpFraction(target)
         if (sturdyReady || sashReady) {
             val oneHp = oneHpFraction(target)
             return TargetResolution(
@@ -264,4 +288,5 @@ internal object LocalDirectHitMechanics {
     private const val DISGUISE_HP_LOSS = 1.0 / 8.0
     private const val FULL_HP_EPSILON = 1.0 - 1e-9
     private const val DEFAULT_ONE_HP_FRACTION = 1e-6
+    private const val SUBSTITUTE = "substitute"
 }

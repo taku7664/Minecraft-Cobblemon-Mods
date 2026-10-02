@@ -145,6 +145,13 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.MoveOutcome -> appendMoveOutcome(observation)
 
+            is Cobblemon173PublicObservation.VolatileChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
+                    if (observation.active) actor.knownVolatileEffectIds + observation.effectId
+                    else actor.knownVolatileEffectIds - observation.effectId)
+            }
+
             is Cobblemon173PublicObservation.SubstituteChanged -> {
                 val actor = knownOrUpsert(observation.pokemon)
                 pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
@@ -760,6 +767,10 @@ internal sealed interface Cobblemon173PublicObservation {
 
     data class SubstituteChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
         val active: Boolean) : Cobblemon173PublicObservation
+
+    /** Any other tracked volatile starting or ending (see Cobblemon173ShowdownObservationAdapter.volatileChange). */
+    data class VolatileChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val effectId: String, val active: Boolean) : Cobblemon173PublicObservation
 
     data class TypesChanged(
         override val turn: Int,

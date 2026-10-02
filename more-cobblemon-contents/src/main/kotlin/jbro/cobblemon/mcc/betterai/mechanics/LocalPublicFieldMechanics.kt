@@ -12,6 +12,10 @@ internal object LocalPublicFieldMechanics {
 
     fun trickRoomActive(state: BattleStateView): Boolean = roomActive(state, "trickroom")
 
+    fun gravityActive(state: BattleStateView): Boolean = state.field.globalEffects.any {
+        PublicIds.canonical(it.effectId) == "gravity" && (it.remainingTurns == null || it.remainingTurns > 0)
+    }
+
     fun effectiveWeatherId(state: BattleStateView): String? = weather[state]
 
     fun terrainId(state: BattleStateView): String? = state.field.terrain?.takeIf(::active)?.effectId?.let(::canonical)

@@ -227,10 +227,10 @@ internal object LocalFieldEffectProjector {
     private val TERRAIN_IDS = setOf("electricterrain", "grassyterrain", "mistyterrain", "psychicterrain")
     private val ROOM_IDS = setOf("trickroom", "wonderroom", "magicroom")
     private val FIELD_DURATIONS = mapOf(
-        "trickroom" to BattleIntegerRange(5, 7),
-        "wonderroom" to BattleIntegerRange(5, 7),
-        "magicroom" to BattleIntegerRange(5, 7),
-        "gravity" to BattleIntegerRange(5, 7),
+        "trickroom" to BattleIntegerRange(5, 5),
+        "wonderroom" to BattleIntegerRange(5, 5),
+        "magicroom" to BattleIntegerRange(5, 5),
+        "gravity" to BattleIntegerRange(5, 5),
         "fairylock" to BattleIntegerRange(2, 2),
         "iondeluge" to BattleIntegerRange(1, 1),
         "mudsport" to BattleIntegerRange(5, 5),

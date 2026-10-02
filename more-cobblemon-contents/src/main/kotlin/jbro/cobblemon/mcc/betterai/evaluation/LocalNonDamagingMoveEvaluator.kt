@@ -98,6 +98,8 @@ internal object LocalNonDamagingMoveEvaluator {
                 usesSetupPressure = true
                 setupPressure
             }
+            calloutValue(candidate, context, actor, target) != null ->
+                requireNotNull(calloutValue(candidate, context, actor, target)) * accuracy
             else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
                 .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
         }
@@ -159,6 +161,37 @@ internal object LocalNonDamagingMoveEvaluator {
     private fun canonicalEffectId(effectId: String): String =
         PublicIds.canonical(effectId)
 
+    /**
+     * Status moves whose whole effect is in a callback, so no declared effect scores them: what each one is worth
+     * on this board, in the same units as recovery (a full HP bar is 100). Null for every other move.
+     */
+    private fun calloutValue(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actor: BattlePokemonStateView?,
+        target: BattlePokemonStateView?,
+    ): Double? {
+        actor ?: return null
+        val missing = (1.0 - actor.hpFraction).coerceIn(0.0, 1.0)
+        return when (PublicIds.canonical(candidate.moveId.orEmpty())) {
+            // Half HP at the end of next turn, to whoever is in the slot then: discounted for the wait.
+            "wish" -> minOf(0.5, missing) * 100.0 * WISH_DELAY_DISCOUNT
+            // Both take the average: what the user gains plus what the target loses.
+            "painsplit" -> target?.let { ((it.hpFraction - actor.hpFraction) * 100.0).coerceAtLeast(0.0) }
+            // Every statused Pokemon on the team cured.
+            "healbell", "aromatherapy" -> context.state.pokemon.count {
+                it.side == BattleSide.ALLY && !it.fainted && it.statusId != null
+            } * PARTY_CURE_VALUE
+            // An eighth of the target's HP every turn it stays in, back to the user.
+            "leechseed" -> target?.takeIf { foe -> foe.knownTypeIds.none { PublicIds.canonical(it) == "grass" } }
+                ?.let { LEECH_SEED_TURNS * 12.5 }
+            else -> null
+        }
+    }
+
+    private const val WISH_DELAY_DISCOUNT = 0.6
+    private const val PARTY_CURE_VALUE = 30.0
+    private const val LEECH_SEED_TURNS = 2.5
     private const val GENERIC_STATUS_PRESSURE = 20.0
     private const val MAJOR_STATUS_PRESSURE = 35.0
     private const val ADDITIONAL_SCREEN_OPPORTUNITY_COST = 10.0

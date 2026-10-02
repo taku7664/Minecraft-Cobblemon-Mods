@@ -176,10 +176,20 @@ class Cobblemon173ShowdownObservationAdapter(
                         observer.observe(Cobblemon173PublicObservation.SubstituteChanged(observedTurn, pokemon, active))
                     }
                 }
+                volatileChange(message)?.let { (effect, active) ->
+                    resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                        observer.observe(Cobblemon173PublicObservation.VolatileChanged(observedTurn, pokemon, effect, active))
+                    }
+                }
             }
 
             "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective", "-extremelyeffective",
             "-resisted", "-mostlyineffective", "-immune", "-hitcount", "-activate", "-singleturn" -> {
+                volatileChange(message)?.let { (effect, active) ->
+                    resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                        observer.observe(Cobblemon173PublicObservation.VolatileChanged(observedTurn, pokemon, effect, active))
+                    }
+                }
                 spitePpLoss(message)?.let { (move, amount) ->
                     resolvePokemon(activeBattle, message, 0)?.let { target ->
                         observer.observePpLoss(target.battlePokemonId, move, amount)
@@ -454,6 +464,31 @@ class Cobblemon173ShowdownObservationAdapter(
         fun substituteChange(message: BattleMessage): Boolean? =
             if (message.id in setOf("-start", "-end") && effectId(message.argumentAt(1)) == "substitute")
                 message.id == "-start" else null
+
+        /**
+         * The public volatiles the local search reads besides Substitute: Leech Seed, confusion, Yawn, Ghost Curse,
+         * Salt Cure, a binding move, Perish Song, Focus Energy and the move-locking ones, as `-start` and `-end` show.
+         */
+        fun volatileChange(message: BattleMessage): Pair<String, Boolean>? {
+            // A binding move announces itself with -activate (Showdown's partiallytrapped onStart).
+            if (message.id == "-activate") {
+                val bound = effectId(message.argumentAt(1))
+                return if (bound in PARTIAL_TRAPPING_MOVE_IDS) "partiallytrapped" to true else null
+            }
+            if (message.id !in setOf("-start", "-end")) return null
+            val raw = effectId(message.argumentAt(1))
+            val id = when {
+                raw.startsWith("perish") -> "perishsong"
+                raw in PARTIAL_TRAPPING_MOVE_IDS -> "partiallytrapped"
+                else -> raw
+            }
+            return if (id in TRACKED_VOLATILES) id to (message.id == "-start") else null
+        }
+
+        private val TRACKED_VOLATILES = setOf(
+            "leechseed", "confusion", "yawn", "curse", "saltcure", "partiallytrapped", "perishsong", "focusenergy",
+            "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer",
+        )
 
         fun transfersSubstitute(message: BattleMessage): Boolean =
             message.id == "switch" && message.effect("from")?.id in setOf("batonpass", "shedtail")

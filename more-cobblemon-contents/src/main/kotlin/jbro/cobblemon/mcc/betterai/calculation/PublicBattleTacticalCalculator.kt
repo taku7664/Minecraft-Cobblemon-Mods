@@ -147,6 +147,20 @@ internal object PublicBattleTacticalCalculator {
                 (damage.toDouble() / maxHp.minimum).coerceAtMost(targetHp),
             )
         }
+        // Damage set by the HP on the board: half the target's (Super Fang, Ruination, Nature's Madness), the gap
+        // down to the user's (Endeavor), the user's own (Final Gambit). All public.
+        when (PublicIds.canonical(candidate.moveId.orEmpty())) {
+            "superfang", "ruination", "naturesmadness" -> return listOf((targetHp / 2.0).coerceAtLeast(1.0 / maxHp.maximum))
+            "endeavor" -> {
+                val actorHp = actor?.combatStats?.maxHp?.let { it.minimum * actor.hpFraction } ?: return null
+                val gap = (targetHp * maxHp.minimum - actorHp).coerceAtLeast(0.0)
+                return listOf((gap / maxHp.minimum).coerceAtMost(targetHp))
+            }
+            "finalgambit" -> {
+                val actorHp = actor?.combatStats?.maxHp?.let { it.minimum * actor.hpFraction } ?: return null
+                return listOf((actorHp / maxHp.maximum).coerceAtMost(targetHp), (actorHp / maxHp.minimum).coerceAtMost(targetHp))
+            }
+        }
         effects.firstOrNull { it.kind == BattleMoveEffectKind.FIXED_DAMAGE_VALUE }?.let { effect ->
             val amount = effect.amountRange ?: return null
             return listOf(
@@ -255,6 +269,25 @@ internal object PublicBattleTacticalCalculator {
                 ),
             )
         val projection = if (survivesOneHit) rawProjection?.withoutKnockout(target) else rawProjection
+        // Fixed-damage moves (Seismic Toss, Super Fang, Endeavor, Final Gambit) have no formula projection; the
+        // ranking reads their declared damage, which the search already used.
+        val fixedDamage = details.effects?.effects.orEmpty().any {
+            it.kind == BattleMoveEffectKind.ONE_HIT_KO || it.kind == BattleMoveEffectKind.FIXED_DAMAGE_LEVEL ||
+                it.kind == BattleMoveEffectKind.FIXED_DAMAGE_VALUE
+        } || PublicIds.canonical(candidate.moveId.orEmpty()) in HP_SET_DAMAGE_MOVES
+        val declaredRolls = if (projection == null && fixedDamage && details.damageCategory != BattleMoveDamageCategory.STATUS) {
+            declaredDamageRollFractions(candidate, actor, target,
+                LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide), context.state)
+        } else null
+        val declaredRange = declaredRolls?.takeIf { it.isNotEmpty() }?.let { BattleDamageFractionRange(it.min(), it.max()) }
+        val declaredKnockout = declaredRolls?.takeIf { it.isNotEmpty() && target != null }?.let { rolls ->
+            val knockouts = rolls.count { it >= target!!.hpFraction - 1e-9 }
+            when (knockouts) {
+                rolls.size -> BattleKnockoutAssessment.GUARANTEED
+                0 -> BattleKnockoutAssessment.IMPOSSIBLE
+                else -> BattleKnockoutAssessment.POSSIBLE
+            } to knockouts.toDouble() / rolls.size
+        }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS && projection == null) {
             if (actor?.combatStats == null) unknowns += BattleCalculationUnknown.ATTACKER_OFFENSIVE_STATS
             if (target?.combatStats == null) unknowns += BattleCalculationUnknown.OPPONENT_DEFENSIVE_STATS
@@ -296,10 +329,11 @@ internal object PublicBattleTacticalCalculator {
                 actorAction = candidate,
                 opponentPriority = 0,
             ),
-            standardDamageModel = projection?.let { BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL },
-            standardDamageFractionRange = projection?.damageFractionRange,
-            standardDamageRollKoProbabilityRange = projection?.koProbabilityRange,
-            standardKnockoutAssessment = projection?.knockoutAssessment,
+            standardDamageModel = (projection ?: declaredRange)?.let { BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL },
+            standardDamageFractionRange = projection?.damageFractionRange ?: declaredRange,
+            standardDamageRollKoProbabilityRange = projection?.koProbabilityRange
+                ?: declaredKnockout?.second?.let { BattleFractionRange(it, it) },
+            standardKnockoutAssessment = projection?.knockoutAssessment ?: declaredKnockout?.first,
             selfHealingFractionRange = declaredHeal?.fractionRange,
             // The projector has always refused a status the target cannot take; the facts the root
             // ranking is built from did not, so Toxic into a Steel type was priced as a normal play
@@ -563,6 +597,7 @@ internal object PublicBattleTacticalCalculator {
 
     /** Gen 9 reduces a spread move to 0.75x when it actually lands on more than one target. */
     private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
+    private val HP_SET_DAMAGE_MOVES = setOf("superfang", "ruination", "naturesmadness", "endeavor", "finalgambit")
 
     private val DAMAGE_TARGET_PATTERNS = setOf(
         BattleMoveTargetPattern.SELECTED,

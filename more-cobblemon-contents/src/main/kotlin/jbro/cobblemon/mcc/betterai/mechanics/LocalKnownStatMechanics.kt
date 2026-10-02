@@ -106,9 +106,8 @@ internal object LocalKnownStatMechanics {
         val vest = if (
             stat == LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE && item == "assaultvest"
         ) 1.5 else 1.0
-        // Eviolite needs to know the holder can still evolve, which the public state does not say. It
-        // is left out rather than guessed: over-stating a defence makes the AI decline attacks that
-        // would have worked, which is the more damaging way to be wrong.
+        // Eviolite is applied with the other defensive modifiers (LocalDamageAbilityModifiers), where species
+        // data says whether the holder can still evolve.
         return vest
     }
 

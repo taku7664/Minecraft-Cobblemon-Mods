@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
+
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -88,7 +90,14 @@ internal object LocalStatStageMarginalEvaluator {
         effects.forEach { effect ->
             val targetIds = effectTargets(candidate, state, effect.target)
             if (targetIds.isEmpty()) return@forEach
-            val applied = applyStages(state, targetIds, effect.statStages)
+            // Contrary, Simple and drop-stopping abilities change what the move does to each target.
+            val actorId = state.pokemon.firstOrNull {
+                it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
+            }?.battlePokemonId
+            val applied = targetIds.fold(state) { current, id ->
+                val target = current.pokemon.firstOrNull { it.battlePokemonId == id } ?: return@fold current
+                applyStages(current, setOf(id), LocalStatStageChange.reshape(current, target, actorId, effect.statStages))
+            }
             appliedAny = true
             val resolvedScore = scoreWithUnknownFallback(
                 state,

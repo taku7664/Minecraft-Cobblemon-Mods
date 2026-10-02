@@ -30,6 +30,7 @@ internal object LocalPublicMoveDamageInputs {
         val details = candidate.moveDetails ?: return null
         val id = canonical(candidate.moveId)
         if (isUnresolvedDynamicDamage(candidate)) return null
+        if (id == "pollenpuff" && target.side == actor.side) return null
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
         val dynamicPower = speedRatioPower(id, actor, target, state)
             ?: hpDependentPowers(id, actor, wholePower)
@@ -85,6 +86,29 @@ internal object LocalPublicMoveDamageInputs {
             "wakeupslap" -> wholePower?.let {
                 if (canonical(target.statusId) in SLEEP_STATUSES) it * 2 else it
             }
+            // Weight is species data, so these are public. Unknown weight leaves the move unresolved.
+            "lowkick", "grassknot" -> weightKg(target, state)?.let(::targetWeightPower) ?: return null
+            "heavyslam", "heatcrash" -> {
+                val user = weightKg(actor, state) ?: return null
+                val defender = weightKg(target, state)?.takeIf { it > 0.0 } ?: return null
+                ratioWeightPower(user / defender)
+            }
+            // The escalating hits average to the middle one; per-hit accuracy is applied by the multi-hit rules.
+            "tripleaxel" -> 40
+            "triplekick" -> 20
+            // Showdown halves Solar Beam and Solar Blade in rain, sand and snow.
+            "solarbeam", "solarblade" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.effectiveWeatherId(state) in SOLAR_WEAK_WEATHER) it / 2 else it
+            }
+            "gravapple" -> wholePower?.let { if (LocalPublicFieldMechanics.gravityActive(state)) it * 3 / 2 else it }
+            "terablast" -> wholePower?.let { if (canonical(actor.knownTeraTypeId) == "stellar") 100 else it }
+            "lastrespects" -> 50 + 50 * state.pokemon.count { it.side == actor.side && it.fainted }
+            "return" -> 102
+            "frustration" -> 1
+            // The printed power is the floor of a condition the public board cannot settle (a failed move last
+            // turn, an ally fusion move, a hit counter, the Fickle Beam roll, a stat drop this turn, a switch
+            // out), so these take it rather than zero.
+            in PRINTED_POWER_FLOOR_MOVES -> wholePower
             else -> wholePower
         }
         val powers = dynamicPower ?: when (id) {
@@ -93,15 +117,21 @@ internal object LocalPublicMoveDamageInputs {
             else -> fixedPower?.let(::setOf) ?: return null
         }
         val offensivePokemon = if (id == "foulplay") target else actor
+        val physicalIfStronger = id == "photongeyser" || id == "shellsidearm" || id == "terastarstorm" ||
+            id == "terablast" && actor.knownTeraTypeId != null
         val offensiveStat = (
             overrideStat(details, "override_offensive_stat") ?: when {
                 id == "bodypress" -> CombatStat.DEFENCE
+                // Photon Geyser, Tera Blast once terastallized and Shell Side Arm use the higher attacking stat.
+                physicalIfStronger -> if (attackExceedsSpecialAttack(actor)) CombatStat.ATTACK else CombatStat.SPECIAL_ATTACK
                 details.damageCategory == BattleMoveDamageCategory.SPECIAL -> CombatStat.SPECIAL_ATTACK
                 else -> CombatStat.ATTACK
             }
             ).swapDefencesIfWonderRoom(state)
         val defensiveStat = (
-            overrideStat(details, "override_defensive_stat") ?: when (details.damageCategory) {
+            overrideStat(details, "override_defensive_stat") ?: if (physicalIfStronger && id != "shellsidearm") {
+                if (attackExceedsSpecialAttack(actor)) CombatStat.DEFENCE else CombatStat.SPECIAL_DEFENCE
+            } else when (details.damageCategory) {
                 BattleMoveDamageCategory.PHYSICAL -> CombatStat.DEFENCE
                 BattleMoveDamageCategory.SPECIAL -> CombatStat.SPECIAL_DEFENCE
                 BattleMoveDamageCategory.STATUS -> return null
@@ -124,6 +154,12 @@ internal object LocalPublicMoveDamageInputs {
         state: BattleStateView,
     ): String? {
         val details = candidate.moveDetails ?: return null
+        // Pixilate and its kind turn Normal moves into their type; Normalize turns every move Normal.
+        if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
+            val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
+            if (ability == "normalize") return "normal"
+            ATE_ABILITY_TYPES[ability]?.let { if (canonical(details.typeId) == "normal") return it }
+        }
         return when (canonical(candidate.moveId)) {
             "weatherball" -> when (weatherBallWeather(actor, state)) {
                 in FIRE_WEATHER -> "fire"
@@ -139,8 +175,61 @@ internal object LocalPublicMoveDamageInputs {
             }
             // Ogerpon's mask sets the type (`onModifyType`); the form is public.
             "ivycudgel" -> ivyCudgelType(actor) ?: details.typeId
+            "terablast" -> actor.knownTeraTypeId?.takeIf { canonical(it) != "stellar" } ?: details.typeId
+            // The held Plate sets Judgment; the Arceus form says the same.
+            "judgment" -> PLATE_TYPES[canonical(actor.knownHeldItemId)]
+                ?: canonical(actor.formId).takeIf { it in TYPE_IDS }
+                ?: details.typeId
+            "multiattack" -> canonical(actor.knownHeldItemId).takeIf { it.endsWith("memory") }?.removeSuffix("memory")
+                ?.takeIf { it in TYPE_IDS } ?: details.typeId
+            "revelationdance" -> (actor.knownTeraTypeId?.takeIf { canonical(it) != "stellar" }
+                ?: actor.knownTypeIds.firstOrNull()) ?: details.typeId
+            "aurawheel" -> if (canonical(actor.formId).contains("hangry")) "dark" else details.typeId
+            "ragingbull" -> when {
+                canonical(actor.formId).contains("blaze") -> "fire"
+                canonical(actor.formId).contains("aqua") -> "water"
+                canonical(actor.formId).contains("combat") -> "fighting"
+                else -> details.typeId
+            }
             else -> details.typeId
         }
+    }
+
+    private fun attackExceedsSpecialAttack(actor: BattlePokemonStateView): Boolean {
+        val stats = actor.combatStats ?: return false
+        fun staged(value: Int, stage: Int) = value * if (stage >= 0) (2 + stage) / 2.0 else 2.0 / (2 - stage)
+        val attack = staged((stats.attack.minimum + stats.attack.maximum) / 2, actor.stage(CombatStat.ATTACK))
+        val special = staged((stats.specialAttack.minimum + stats.specialAttack.maximum) / 2, actor.stage(CombatStat.SPECIAL_ATTACK))
+        return attack > special
+    }
+
+    /** Public weight in kg: species data, halved by Light Metal or a Float Stone and doubled by Heavy Metal. */
+    private fun weightKg(pokemon: BattlePokemonStateView, state: BattleStateView): Double? {
+        val kg = LocalPublicSpeciesData.weightKg(pokemon) ?: return null
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
+        val item = LocalPublicItemState.activeItemId(state, pokemon)
+        var weight = kg
+        if (ability == "heavymetal") weight *= 2.0
+        if (ability == "lightmetal") weight /= 2.0
+        if (item == "floatstone") weight /= 2.0
+        return weight.coerceAtLeast(0.1)
+    }
+
+    private fun targetWeightPower(kg: Double): Int = when {
+        kg >= 200.0 -> 120
+        kg >= 100.0 -> 100
+        kg >= 50.0 -> 80
+        kg >= 25.0 -> 60
+        kg >= 10.0 -> 40
+        else -> 20
+    }
+
+    private fun ratioWeightPower(ratio: Double): Int = when {
+        ratio >= 5.0 -> 120
+        ratio >= 4.0 -> 100
+        ratio >= 3.0 -> 80
+        ratio >= 2.0 -> 60
+        else -> 40
     }
 
     private fun ivyCudgelType(actor: BattlePokemonStateView): String? {
@@ -360,6 +449,30 @@ internal object LocalPublicMoveDamageInputs {
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
         "knockoff", "ivycudgel",
+        "lowkick", "grassknot", "heavyslam", "heatcrash", "tripleaxel", "triplekick", "solarbeam", "solarblade",
+        "gravapple", "terablast", "lastrespects", "return", "frustration", "judgment", "multiattack",
+        "revelationdance", "aurawheel", "ragingbull", "photongeyser", "shellsidearm", "terastarstorm", "pollenpuff",
+        "stompingtantrum", "temperflare", "fusionflare", "fusionbolt", "ragefist", "echoedvoice", "furycutter",
+        "rollout", "iceball", "ficklebeam", "lashout", "pursuit", "retaliate",
+    )
+    private val ATE_ABILITY_TYPES = mapOf(
+        "pixilate" to "fairy", "refrigerate" to "ice", "aerilate" to "flying", "galvanize" to "electric",
+    )
+    private val PRINTED_POWER_FLOOR_MOVES = setOf(
+        "stompingtantrum", "temperflare", "fusionflare", "fusionbolt", "ragefist", "echoedvoice", "furycutter",
+        "rollout", "iceball", "ficklebeam", "lashout", "pursuit", "retaliate",
+    )
+    private val SOLAR_WEAK_WEATHER = setOf("rain", "raindance", "primordialsea", "sand", "sandstorm", "hail", "snow", "snowscape")
+    private val TYPE_IDS = setOf(
+        "normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground", "flying", "psychic",
+        "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy",
+    )
+    private val PLATE_TYPES = mapOf(
+        "flameplate" to "fire", "splashplate" to "water", "zapplate" to "electric", "meadowplate" to "grass",
+        "icicleplate" to "ice", "fistplate" to "fighting", "toxicplate" to "poison", "earthplate" to "ground",
+        "skyplate" to "flying", "mindplate" to "psychic", "insectplate" to "bug", "stoneplate" to "rock",
+        "spookyplate" to "ghost", "dracoplate" to "dragon", "dreadplate" to "dark", "ironplate" to "steel",
+        "pixieplate" to "fairy",
     )
     private val IVY_CUDGEL_FORMS = mapOf("wellspring" to "water", "hearthflame" to "fire", "cornerstone" to "rock")
     /** Items whose `onTakeItem` refuses removal for their usual holder, so Knock Off gets no boost. */

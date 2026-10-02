@@ -153,6 +153,19 @@ internal object LocalPublicMechanicsKernel {
             )
         }
 
+        // An Air Balloon lifts its holder off the ground: Ground moves miss it until it pops (Gravity and an
+        // Iron Ball keep it grounded). Mold Breaker does not reach an item.
+        if (moveType == GROUND && !ignoresTypeImmunity &&
+            LocalPublicItemState.activeItemId(context.state, target) == AIR_BALLOON &&
+            !LocalPublicTurnOrder.grounded(context.state, target)
+        ) {
+            return LocalPublicMoveProjection(
+                knownDamageMultiplier = 0.0,
+                targetHpFraction = target.hpFraction,
+                publiclyNullified = true,
+            )
+        }
+
         val abilityImmune = !ignoresAbility && (
             targetAbility in TYPE_IMMUNITY_ABILITIES[moveType].orEmpty() ||
                 targetAbility == WONDER_GUARD && publicTypeMultiplier?.let { it <= 1.0 } == true ||
@@ -175,6 +188,7 @@ internal object LocalPublicMechanicsKernel {
             moveId = canonicalOrNull(candidate.moveId),
             moveType = moveType,
             actorItem = actorItem,
+            targetItem = LocalPublicItemState.activeItemId(context.state, target),
             context = context,
         )
         if (weatherMultiplier == 0.0) {
@@ -202,8 +216,13 @@ internal object LocalPublicMechanicsKernel {
             // partner (Showdown's Reflect reduces any hit on its side, a partner's included).
             targetSide = target.side,
         )
+        val offence = LocalDamageAbilityModifiers.attacker(candidate, details, actor, actorAbility, actorItem, target,
+            publicTypeMultiplier, context)
+        val defence = LocalDamageAbilityModifiers.defender(candidate, details, actor, target,
+            if (ignoresAbility) null else targetAbility, publicTypeMultiplier, context)
         return LocalPublicMoveProjection(
-            knownDamageMultiplier = abilityMultiplier * weatherMultiplier * terrainMultiplier * screenMultiplier,
+            knownDamageMultiplier = abilityMultiplier * weatherMultiplier * terrainMultiplier * screenMultiplier *
+                offence * defence,
             targetHpFraction = target.hpFraction,
             publiclyNullified = false,
         )
@@ -294,21 +313,14 @@ internal object LocalPublicMechanicsKernel {
         val target = singleStatusTarget(candidate, context, actingSide)
             ?: return LocalPublicMoveProjection.neutral()
         val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
-        val ability = publicAbility(target, context)
         val moveId = canonicalOrNull(candidate.moveId)
+        val user = context.state.pokemon.firstOrNull {
+            it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
+        }
+        // The same immunity rules the search applies, the field and a Substitute included.
         val nullified = targetStatuses.all { effect ->
-            val status = canonical(requireNotNull(effect.valueId))
-            target.statusId != null || when {
-                status in POISON_STATUSES -> POISON in types || STEEL in types ||
-                    !ignoresAbility && ability == "immunity"
-                status in BURN_STATUSES -> FIRE in types ||
-                    !ignoresAbility && (ability == "waterveil" || ability == "waterbubble")
-                status in PARALYSIS_STATUSES -> ELECTRIC in types || !ignoresAbility && ability == "limber" ||
-                    moveId == "thunderwave" && GROUND in types
-                status in SLEEP_STATUSES -> !ignoresAbility && ability in SLEEP_IMMUNITY_ABILITIES
-                status in FREEZE_STATUSES -> ICE in types || !ignoresAbility && ability == "magmaarmor"
-                else -> false
-            }
+            LocalPublicStatusImmunity.blocked(context.state, target, effect.valueId, user, ignoresAbility) ||
+                canonical(requireNotNull(effect.valueId)) in PARALYSIS_STATUSES && moveId == "thunderwave" && GROUND in types
         }
         return LocalPublicMoveProjection(
             knownDamageMultiplier = 1.0,
@@ -331,11 +343,22 @@ internal object LocalPublicMechanicsKernel {
         moveId: String?,
         moveType: String,
         actorItem: String?,
+        targetItem: String?,
         context: BattleDecisionContext,
     ): Double {
-        if (actorItem == UTILITY_UMBRELLA) return 1.0
         val weather = LocalPublicFieldMechanics.effectiveWeatherId(context.state)
-        if (moveId == HYDRO_STEAM && weather in SUN_WEATHER) return 1.5
+        // Hydro Steam's sun boost is the one weather modifier the attacker's Utility Umbrella cancels; every
+        // other one is cancelled by the defender's. Extreme weather stopping Fire or Water ignores umbrellas.
+        if (moveId == HYDRO_STEAM && weather in SUN_WEATHER && weather !in HARSH_SUN_WEATHER) {
+            return if (actorItem == UTILITY_UMBRELLA) 1.0 else 1.5
+        }
+        if (targetItem == UTILITY_UMBRELLA) {
+            return when {
+                weather in HEAVY_RAIN_WEATHER && moveType == FIRE -> 0.0
+                weather in HARSH_SUN_WEATHER && moveType == WATER -> 0.0
+                else -> 1.0
+            }
+        }
         return when (weather) {
             in HEAVY_RAIN_WEATHER -> when (moveType) {
                 WATER -> 1.5
@@ -533,6 +556,7 @@ internal object LocalPublicMechanicsKernel {
     private const val STEEL = "steel"
     private const val WONDER_GUARD = "wonderguard"
     private const val UTILITY_UMBRELLA = "utilityumbrella"
+    private const val AIR_BALLOON = "airballoon"
     private const val INFILTRATOR = "infiltrator"
     private const val ABILITY_INFERENCE_CATEGORY = "ability"
     private const val REFLECT = "reflect"

@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalHpArithmetic
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -13,18 +14,50 @@ internal object LocalEndTurnStateProjector {
         state: BattleStateView,
         badPoisonTurnsByPokemon: Map<java.util.UUID, Int> = emptyMap(),
         saltCuredPokemonIds: Set<java.util.UUID> = emptySet(),
+        leechSeedSourceByPokemon: Map<java.util.UUID, java.util.UUID> = emptyMap(),
+        ghostCursedPokemonIds: Set<java.util.UUID> = emptySet(),
+        partiallyTrappedPokemonIds: Set<java.util.UUID> = emptySet(),
+        /** Speed Boost waits a turn after its holder comes in (Showdown checks `activeTurns`). */
+        enteredThisTurnPokemonIds: Set<java.util.UUID> = emptySet(),
+        /** Slots whose Wish comes true this turn: half HP for whoever stands there. */
+        wishSlots: Set<Pair<BattleSide, Int>> = emptySet(),
+        /** Drowsy from last turn's Yawn: asleep now, unless something already stops it. */
+        yawnPokemonIds: Set<java.util.UUID> = emptySet(),
     ): BattleStateView {
         // Weather expires before its residual callback. Unknown durations retain the existing estimate.
         val nextField = decrementField(state.field)
-        val sandActive = canonical(nextField.weather?.effectId) == "sandstorm" && state.pokemon.none {
+        val weatherSuppressed = state.pokemon.any {
             it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, it) in WEATHER_SUPPRESSION_ABILITIES
+        }
+        val weather = canonical(nextField.weather?.effectId)?.takeUnless { weatherSuppressed }
+        val sandActive = weather == "sandstorm"
+        val sun = weather in SUN_IDS
+        val rain = weather in RAIN_IDS
+        val snow = weather in SNOW_IDS
+        val grassyTerrain = canonical(state.field.terrain?.effectId) == "grassyterrain"
+        // Leech Seed's drain heals its seeder, so every drain is worked out first.
+        val seedHealing = hashMapOf<java.util.UUID, Double>()
+        val drained = state.pokemon.associate { pokemon ->
+            val sourceId = leechSeedSourceByPokemon[pokemon.battlePokemonId]
+            val drain = if (sourceId == null || pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0 ||
+                LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "magicguard") 0.0
+                else minOf(hpFractionTick(pokemon, 8), pokemon.hpFraction)
+            if (drain > 0.0 && sourceId != null) {
+                // Liquid Ooze turns the seeder's heal into damage.
+                val sign = if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "liquidooze") -1.0 else 1.0
+                seedHealing[sourceId] = (seedHealing[sourceId] ?: 0.0) + sign * drain
+            }
+            pokemon.battlePokemonId to drain
         }
         val next = state.pokemon.map { pokemon ->
             if (pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) return@map pokemon
             val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
             val item = LocalPublicItemState.activeItemId(state, pokemon)
-            val stages = if (ability == "speedboost") {
+            val umbrella = item == "utilityumbrella"
+            val magicGuard = ability == "magicguard"
+            val types = pokemon.knownTypeIds.mapTo(hashSetOf()) { canonical(it) }
+            val stages = if (ability == "speedboost" && pokemon.battlePokemonId !in enteredThisTurnPokemonIds) {
                 pokemon.statStages.toMutableMap().also { current ->
                     val speedKey = current.keys.firstOrNull { canonical(it) in SPEED_IDS } ?: "speed"
                     current[speedKey] = ((current[speedKey] ?: 0) + 1).coerceAtMost(6)
@@ -32,36 +65,76 @@ internal object LocalEndTurnStateProjector {
             } else {
                 pokemon.statStages
             }
-            val status = canonical(pokemon.statusId)
+            var status = canonical(pokemon.statusId)
+            // Hydration cures in rain before the status deals its damage.
+            if (ability == "hydration" && rain && !umbrella && status != null) status = null
             val poisonHeal = ability == "poisonheal" && status in POISON_IDS
             var hp = pokemon.hpFraction
             fun apply(change: Double) {
                 if (hp > 0.0) hp = LocalHpArithmetic.change(pokemon, hp, change).coerceIn(0.0, 1.0)
             }
-            // Native event order: weather (1), item healing (5), poison/burn (9/10), Salt Cure (13).
+            // Native event order: weather (1), weather abilities (2), terrain and item healing (5), Leech Seed (8),
+            // poison/burn (9/10), Curse (12), binding and Salt Cure (13).
             if (sandActive && ability !in SAND_IMMUNE_ABILITIES &&
                 item != "safetygoggles" &&
-                pokemon.knownTypeIds.none { canonical(it) in SAND_IMMUNE_TYPES }) {
+                types.none { it in SAND_IMMUNE_TYPES }) {
                 apply(-hpFractionTick(pokemon, 16))
             }
+            if (!umbrella) when {
+                rain && ability == "raindish" -> apply(hpFractionTick(pokemon, 16))
+                rain && ability == "dryskin" -> apply(hpFractionTick(pokemon, 8))
+                sun && ability == "dryskin" && !magicGuard -> apply(-hpFractionTick(pokemon, 8))
+                sun && ability == "solarpower" && !magicGuard -> apply(-hpFractionTick(pokemon, 8))
+            }
+            if (snow && ability == "icebody") apply(hpFractionTick(pokemon, 16))
+            if ((pokemon.side to pokemon.activeSlot) in wishSlots) apply(0.5)
+            val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf()) { canonical(it) }
+            if ("aquaring" in volatiles) apply(hpFractionTick(pokemon, 16))
+            if ("ingrain" in volatiles) apply(hpFractionTick(pokemon, 16))
+            // Bad Dreams: an eighth from every sleeping foe.
+            if (!magicGuard && canonical(pokemon.statusId) in SLEEP_IDS && state.pokemon.any {
+                    it.side != pokemon.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                        LocalPublicAbilityState.effectiveKnownAbility(state, it) == "baddreams"
+                }) apply(-hpFractionTick(pokemon, 8))
+            if (grassyTerrain && LocalPublicTurnOrder.grounded(state, pokemon)) apply(hpFractionTick(pokemon, 16))
             if (item == "leftovers") apply(hpFractionTick(pokemon, 16))
+            if (item == "blacksludge") {
+                if ("poison" in types) apply(hpFractionTick(pokemon, 16)) else if (!magicGuard) apply(-hpFractionTick(pokemon, 8))
+            }
+            drained[pokemon.battlePokemonId]?.takeIf { it > 0.0 }?.let { apply(-it) }
+            seedHealing[pokemon.battlePokemonId]?.let { apply(it) }
             if (poisonHeal) {
                 apply(hpFractionTick(pokemon, 8))
-            } else if (ability != "magicguard") {
+            } else if (!magicGuard) {
                 apply(-when (status) {
                     in BAD_POISON_IDS -> hpFractionTick(pokemon, 16,
                         (badPoisonTurnsByPokemon[pokemon.battlePokemonId] ?: 1)
                             .coerceIn(1, LocalBadPoisonCounter.MAXIMUM_BAD_POISON_TURN))
                     in REGULAR_POISON_IDS -> hpFractionTick(pokemon, 8)
-                    in BURN_IDS -> hpFractionTick(pokemon, 16)
+                    in BURN_IDS -> hpFractionTick(pokemon, if (ability == "heatproof") 32 else 16)
                     else -> 0.0
                 })
             }
-            if (ability != "magicguard" && pokemon.battlePokemonId in saltCuredPokemonIds) {
-                val divisor = if (pokemon.knownTypeIds.any { canonical(it) in SALT_CURE_WEAK_TYPES }) 4 else 8
+            if (!magicGuard && pokemon.battlePokemonId in ghostCursedPokemonIds) apply(-hpFractionTick(pokemon, 4))
+            if (!magicGuard && pokemon.battlePokemonId in partiallyTrappedPokemonIds) {
+                apply(-hpFractionTick(pokemon, if (item == "bindingband") 6 else 8))
+            }
+            if (!magicGuard && pokemon.battlePokemonId in saltCuredPokemonIds) {
+                val divisor = if (types.any { it in SALT_CURE_WEAK_TYPES }) 4 else 8
                 apply(-hpFractionTick(pokemon, divisor))
             }
-            copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0)
+            // A Flame Orb or Toxic Orb inflicts its status at the end of the turn (Guts and Poison Heal want it).
+            val orbStatus = when (item) {
+                "flameorb" -> "brn".takeIf { status == null && "fire" !in types }
+                "toxicorb" -> "tox".takeIf { status == null && "poison" !in types && "steel" !in types }
+                else -> null
+            }
+            val yawnSleep = "slp".takeIf {
+                pokemon.battlePokemonId in yawnPokemonIds && status == null && hp > 0.0 &&
+                    !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, pokemon, "slp")
+            }
+            copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0,
+                statusId = yawnSleep ?: orbStatus ?: if (status == null) null else pokemon.statusId)
         }
         return state.derive(
             pokemon = next,
@@ -127,6 +200,7 @@ internal object LocalEndTurnStateProjector {
         hpFraction: Double,
         statStages: Map<String, Int>,
         fainted: Boolean,
+        statusId: String? = pokemon.statusId,
     ) = BattlePokemonStateView(
         battlePokemonId = pokemon.battlePokemonId,
         side = pokemon.side,
@@ -135,7 +209,7 @@ internal object LocalEndTurnStateProjector {
         formId = pokemon.formId,
         level = pokemon.level,
         hpFraction = hpFraction,
-        statusId = pokemon.statusId,
+        statusId = statusId,
         statStages = statStages,
         knownMoveIds = pokemon.knownMoveIds,
         knownAbilityId = pokemon.knownAbilityId,
@@ -145,7 +219,8 @@ internal object LocalEndTurnStateProjector {
         combatStats = pokemon.combatStats,
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
-        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
+        // Endure lasts the turn it was used.
+        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds.filterNot { canonical(it) == "endure" }.toSet(),
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
@@ -162,4 +237,8 @@ internal object LocalEndTurnStateProjector {
     private val SAND_IMMUNE_TYPES = setOf("rock", "ground", "steel")
     private val SAND_IMMUNE_ABILITIES = setOf("magicguard", "overcoat", "sandveil", "sandrush", "sandforce")
     private val WEATHER_SUPPRESSION_ABILITIES = setOf("airlock", "cloudnine")
+    private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
+    private val SUN_IDS = setOf("sunnyday", "sun", "desolateland", "harshsunlight")
+    private val RAIN_IDS = setOf("raindance", "rain", "primordialsea", "heavyrain")
+    private val SNOW_IDS = setOf("snow", "snowscape", "hail")
 }

@@ -31,6 +31,17 @@ internal data class RecursiveActionHistory(
     val actedSinceEntryPokemonIds: Set<UUID> = emptySet(),
     val badPoisonTurnsByPokemon: Map<UUID, Int> = emptyMap(),
     val saltCuredPokemonIds: Set<UUID> = emptySet(),
+    /** Seeded Pokemon and the Pokemon that seeded them. */
+    val leechSeedSourceByPokemon: Map<UUID, UUID> = emptyMap(),
+    val ghostCursedPokemonIds: Set<UUID> = emptySet(),
+    /** Held by a binding move (Fire Spin, Whirlpool): chipped every turn while its binder stays in. */
+    val partiallyTrappedPokemonIds: Set<UUID> = emptySet(),
+    /** Slots a Wish heals at the end of the coming turn. */
+    val pendingWishSlots: Set<Pair<BattleSide, Int>> = emptySet(),
+    /** Made drowsy by Yawn: asleep at the end of the coming turn. */
+    val drowsyPokemonIds: Set<UUID> = emptySet(),
+    /** Confused: a third of their moves become a hit on themselves (about three turns, until they switch). */
+    val confusedPokemonIds: Set<UUID> = emptySet(),
     val protectionChainByPokemon: Map<UUID, Int> = emptyMap(),
     val allySwitchChainByPokemon: Map<UUID, Int> = emptyMap(),
     val delayedStrikes: List<RecursiveDelayedStrike> = emptyList(),
@@ -101,6 +112,17 @@ internal object RecursiveSnapshotActionConstraints {
                 pokemon.actionConstraints.encoreMoveId?.let { pokemon.battlePokemonId to it }
             }.toMap() + publicMoveStreaks.mapValues { it.value.moveId },
             moveStreakByPokemon = publicMoveStreaks,
+            // Volatiles the battle has shown: a seed drains to the Pokemon facing it, the rest act on their holder.
+            leechSeedSourceByPokemon = active.filter { it.hasVolatile("leechseed") }.mapNotNull { pokemon ->
+                activeBySide.getValue(if (pokemon.side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY)
+                    .firstOrNull()?.let { pokemon.battlePokemonId to it.battlePokemonId }
+            }.toMap(),
+            ghostCursedPokemonIds = active.filter { it.hasVolatile("curse") }.mapTo(linkedSetOf()) { it.battlePokemonId },
+            saltCuredPokemonIds = active.filter { it.hasVolatile("saltcure") }.mapTo(linkedSetOf()) { it.battlePokemonId },
+            partiallyTrappedPokemonIds = active.filter { it.hasVolatile("partiallytrapped") }
+                .mapTo(linkedSetOf()) { it.battlePokemonId },
+            drowsyPokemonIds = active.filter { it.hasVolatile("yawn") }.mapTo(linkedSetOf()) { it.battlePokemonId },
+            confusedPokemonIds = active.filter { it.hasVolatile("confusion") }.mapTo(linkedSetOf()) { it.battlePokemonId },
             badPoisonTurnsByPokemon = LocalBadPoisonCounter.seed(state),
             protectionChainByPokemon = publicProtectionChains,
             allySwitchChainByPokemon = active.mapNotNull { pokemon ->
@@ -110,6 +132,9 @@ internal object RecursiveSnapshotActionConstraints {
             }.toMap(),
         )
     }
+
+    private fun BattlePokemonStateView.hasVolatile(id: String): Boolean =
+        knownVolatileEffectIds.any { jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(it) == id }
 
     private fun consecutiveSuccessfulAllySwitches(state: BattleStateView, pokemonId: UUID): Int {
         var consecutive = 0
@@ -233,6 +258,13 @@ internal object RecursiveHistoryProjector {
         val recharge = linkedSetOf<UUID>()
         val charging = linkedMapOf<UUID, String>()
         val saltCured = previous.saltCuredPokemonIds.toMutableSet()
+        val leechSeeds = previous.leechSeedSourceByPokemon.toMutableMap()
+        val ghostCursed = previous.ghostCursedPokemonIds.toMutableSet()
+        val partiallyTrapped = previous.partiallyTrappedPokemonIds.toMutableSet()
+        // Last turn's Wish has healed; this turn's heals at the end of the next one.
+        val wishes = linkedSetOf<Pair<BattleSide, Int>>()
+        val drowsy = linkedSetOf<UUID>()
+        val confused = previous.confusedPokemonIds.toMutableSet()
         val delayedStrikes = previous.delayedStrikes.mapNotNull { strike ->
             strike.copy(remainingTurns = strike.remainingTurns - 1).takeIf { it.remainingTurns > 0 }
         }.toMutableList()
@@ -255,6 +287,26 @@ internal object RecursiveHistoryProjector {
                     remainingTurns = MINIMUM_TRAP_FUTURE_TURNS,
                 )
                 RecursiveControlEffectKind.SALT_CURE -> saltCured += effect.targetPokemonId
+                RecursiveControlEffectKind.LEECH_SEED -> leechSeeds.putIfAbsent(effect.targetPokemonId, effect.sourcePokemonId)
+                RecursiveControlEffectKind.GHOST_CURSE -> ghostCursed += effect.targetPokemonId
+                // A flinch lasts the turn it happens in.
+                RecursiveControlEffectKind.FLINCH, RecursiveControlEffectKind.DESTINY_BOND, RecursiveControlEffectKind.ENDURE -> Unit
+                RecursiveControlEffectKind.YAWN -> drowsy += effect.targetPokemonId
+                RecursiveControlEffectKind.CONFUSION -> confused += effect.targetPokemonId
+                RecursiveControlEffectKind.LOCKED_MOVE -> outcome.executedMoveIdsByPokemon[effect.targetPokemonId]?.let { moveId ->
+                    // Already locked from last turn: the rampage ends after this one.
+                    if (previous.encoreByPokemon[effect.targetPokemonId]?.moveId != moveId) {
+                        encore[effect.targetPokemonId] = RecursiveEncoreLock(moveId, LOCKED_MOVE_TURNS)
+                    }
+                }
+                RecursiveControlEffectKind.WISH -> effect.valueId?.toIntOrNull()?.let { wishes += effect.sourceSide to it }
+                RecursiveControlEffectKind.PARTIAL_TRAP -> {
+                    partiallyTrapped += effect.targetPokemonId
+                    trapped[effect.targetPokemonId] = RecursiveTrapLock(
+                        sourcePokemonId = effect.sourcePokemonId,
+                        remainingTurns = MINIMUM_TRAP_FUTURE_TURNS,
+                    )
+                }
                 RecursiveControlEffectKind.ENCORE -> {
                     val lockedMove = if (targetMovedFirst) {
                         outcome.executedMoveIdsByPokemon[effect.targetPokemonId]
@@ -298,6 +350,9 @@ internal object RecursiveHistoryProjector {
         recharge.retainAll(activeIds)
         charging.keys.retainAll(activeIds)
         saltCured.retainAll(activeIds)
+        leechSeeds.keys.retainAll(activeIds)
+        ghostCursed.retainAll(activeIds)
+        partiallyTrapped.retainAll(trapped.keys)
         lastMoves.keys.retainAll(activeIds)
         moveStreaks.keys.retainAll(activeIds)
         protectionChains.keys.retainAll(activeIds)
@@ -321,11 +376,19 @@ internal object RecursiveHistoryProjector {
             actedSinceEntryPokemonIds = actedSinceEntry,
             badPoisonTurnsByPokemon = outcome.badPoisonTurnsByPokemon,
             saltCuredPokemonIds = saltCured,
+            leechSeedSourceByPokemon = leechSeeds,
+            ghostCursedPokemonIds = ghostCursed,
+            partiallyTrappedPokemonIds = partiallyTrapped,
+            pendingWishSlots = wishes,
+            drowsyPokemonIds = drowsy.filterTo(linkedSetOf()) { it in activeIds },
+            confusedPokemonIds = confused.filterTo(linkedSetOf()) { it in activeIds },
             protectionChainByPokemon = protectionChains,
             allySwitchChainByPokemon = allySwitchChains,
             delayedStrikes = delayedStrikes,
         )
     }
+
+    private const val LOCKED_MOVE_TURNS = 1
 
     private fun decrement(values: Map<UUID, Int>): Map<UUID, Int> = values.mapNotNull { (id, turns) ->
         (turns - 1).takeIf { it > 0 }?.let { id to it }

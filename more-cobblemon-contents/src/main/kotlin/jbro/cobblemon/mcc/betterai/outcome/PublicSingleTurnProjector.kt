@@ -11,6 +11,7 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicMoveOutcomeBranchProjector
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.mcc.betterai.mechanics.LocalAfterHitReactions
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.mcc.betterai.mechanics.LocalContactAfterHitMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
@@ -20,11 +21,14 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.mcc.betterai.mechanics.LocalSideGuardRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStanceChangeStateProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStellarBoostStateProjector
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffect
@@ -32,6 +36,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffectKind
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveDelayedStrike
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector
+import jbro.cobblemon.mcc.betterai.state.LocalFieldClearing
 import jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector
 import jbro.cobblemon.mcc.betterai.state.LocalBranchMoveInputs
 import jbro.cobblemon.mcc.betterai.state.LocalFieldEffectProjector
@@ -240,12 +245,30 @@ internal object PublicSingleTurnProjector {
                             it.battlePokemonId == id && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
                         }
                     }
+                fun active(id: UUID) = outcome.state.pokemon.any {
+                    it.battlePokemonId == id && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+                }
+                fun applied(kind: RecursiveControlEffectKind) = outcome.controlEffects.filter { it.kind == kind }
+                val leechSeeds = (history.leechSeedSourceByPokemon +
+                    applied(RecursiveControlEffectKind.LEECH_SEED).associate { it.targetPokemonId to it.sourcePokemonId })
+                    .filterKeys(::active)
+                val ghostCursed = (history.ghostCursedPokemonIds +
+                    applied(RecursiveControlEffectKind.GHOST_CURSE).map { it.targetPokemonId }).filterTo(linkedSetOf(), ::active)
+                val bound = (history.partiallyTrappedPokemonIds.filter { id -> history.trappedByPokemon[id]?.sourcePokemonId?.let(::active) == true } +
+                    applied(RecursiveControlEffectKind.PARTIAL_TRAP).filter { active(it.sourcePokemonId) }.map { it.targetPokemonId })
+                    .filterTo(linkedSetOf(), ::active)
                 PublicTurnProjection(
                     incrementTurn(
                         LocalEndTurnStateProjector.project(
                             outcome.state,
                             badPoisonTurns,
                             saltCuredPokemonIds,
+                            leechSeedSourceByPokemon = leechSeeds,
+                            ghostCursedPokemonIds = ghostCursed,
+                            partiallyTrappedPokemonIds = bound,
+                            enteredThisTurnPokemonIds = activePokemonIds(outcome.state) - activePokemonIds(initialState),
+                            wishSlots = history.pendingWishSlots,
+                            yawnPokemonIds = history.drowsyPokemonIds,
                         ),
                     ),
                     completed.order.map(TurnPrimitiveAction::side),
@@ -322,6 +345,35 @@ internal object PublicSingleTurnProjector {
         shouldContinue: () -> Boolean,
     ): List<WeightedState> {
         if (!shouldContinue()) return emptyList()
+        // Flinched earlier this turn: the move does not happen.
+        if (ordered.action.kind == BattleActionKind.USE_MOVE && ordered.actorPokemonId != null && branch.controlEffects.any {
+                it.kind == RecursiveControlEffectKind.FLINCH && it.targetPokemonId == ordered.actorPokemonId
+            }) return listOf(branch)
+        // Confused (from an earlier turn or earlier this one): a third of the time it hits itself instead.
+        val confusedActor = ordered.actorPokemonId?.takeIf { id ->
+            ordered.action.kind == BattleActionKind.USE_MOVE &&
+                (id in history.confusedPokemonIds || branch.controlEffects.any {
+                    it.kind == RecursiveControlEffectKind.CONFUSION && it.targetPokemonId == id
+                })
+        }
+        if (confusedActor != null) {
+            val selfHit = confusionSelfHit(branch.state, confusedActor)
+            val acted = applyScheduledAction(
+                branch.copy(controlEffects = branch.controlEffects.filterNot {
+                    it.kind == RecursiveControlEffectKind.CONFUSION && it.targetPokemonId == confusedActor
+                }),
+                ordered, pending, sourceContext, history.copy(confusedPokemonIds = history.confusedPokemonIds - confusedActor),
+                maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
+            ).map { outcome ->
+                outcome.copy(
+                    probability = outcome.probability * (1.0 - CONFUSION_SELF_HIT_CHANCE),
+                    controlEffects = outcome.controlEffects + branch.controlEffects.filter {
+                        it.kind == RecursiveControlEffectKind.CONFUSION && it.targetPokemonId == confusedActor
+                    },
+                )
+            }
+            return acted + branch.copy(state = selfHit, probability = branch.probability * CONFUSION_SELF_HIT_CHANCE)
+        }
         return applyMove(
             branch.state,
             ordered.side,
@@ -384,8 +436,24 @@ internal object PublicSingleTurnProjector {
             }.mapNotNull { effect ->
                 branch.lastMoveByPokemon[effect.targetPokemonId]?.let { effect.targetPokemonId to it }
             }.toMap()
+            // Rapid Spin, Defog, Brick Break and the rest clear what their callbacks clear.
+            val clearedState = destinyBond(
+                branch,
+                ordered,
+                itemAndHpSwaps(branch, ordered, outcome.executedMoveIdsByPokemon, outcome.executedMoveIdsByPokemon.entries.fold(outcome.state) { current, (userId, moveId) ->
+                    // Hit callbacks: nothing is cleared by a miss, a Protect or an immunity.
+                    val landed = if (LocalFieldClearing.needsDamage(moveId)) {
+                        outcome.directDamage.amounts.any { (recipient, amount) -> recipient.actorId == userId && amount > 0.0 }
+                    } else {
+                        ordered.action.targets.none { slot ->
+                            current.pokemon.any { it.side == slot.side && it.activeSlot == slot.slot && it.battlePokemonId in branch.protectedPokemonIds + outcome.protectedPokemonIds }
+                        }
+                    }
+                    if (landed) LocalFieldClearing.apply(current, userId, moveId) else current
+                }),
+            )
             WeightedState(
-                outcome.state,
+                clearedState,
                 branch.probability * outcome.probability,
                 branch.executedSides + outcome.executedSides,
                 branch.protectedPokemonIds + outcome.protectedPokemonIds,
@@ -490,9 +558,12 @@ internal object PublicSingleTurnProjector {
                 attempt(woken, action).map { it.copy(probability = it.probability * SLEEP_WAKE_PROBABILITY) }
         }
         if (!availabilityChecked && publicStatus in FREEZE_IDS) {
+            // Scald, Flare Blitz, Sacred Fire and the other defrost moves thaw their user before it moves.
+            val thawChance = if (DEFROST_FLAG in action.moveDetails?.effects?.mechanicFlags.orEmpty() ||
+                canonicalId(action.moveId) in DEFROST_MOVES) 1.0 else FREEZE_THAW_PROBABILITY
             val unable = WeightedState(
                 state = state,
-                probability = 1.0 - FREEZE_THAW_PROBABILITY,
+                probability = 1.0 - thawChance,
                 protectedPokemonIds = protectedPokemonIds,
             )
             val thawedState = state.copyState(
@@ -520,8 +591,8 @@ internal object PublicSingleTurnProjector {
                 shouldContinue,
                 availabilityChecked = true,
                 pendingDamagingMovePokemonIds = pendingDamagingMovePokemonIds,
-            ).map { outcome -> outcome.copy(probability = outcome.probability * FREEZE_THAW_PROBABILITY) }
-            return listOf(unable) + able
+            ).map { outcome -> outcome.copy(probability = outcome.probability * thawChance) }
+            return if (thawChance >= 1.0) able else listOf(unable) + able
         }
         if (!availabilityChecked && publicStatus in PARALYSIS_IDS) {
             val unable = WeightedState(
@@ -651,6 +722,21 @@ internal object PublicSingleTurnProjector {
             )
         }
         val slotCondition = effects.singleOrNull { it.kind == BattleMoveEffectKind.SLOT_CONDITION }
+        // Wish heals whoever stands in its user's slot at the end of the next turn (the history carries it there).
+        if (canonicalId(slotCondition?.valueId) == "wish" && actor.activeSlot != null) {
+            return listOf(
+                WeightedState(
+                    projectedFormState,
+                    1.0,
+                    executedSides = setOf(side),
+                    executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                    controlEffects = listOf(RecursiveControlEffect(
+                        RecursiveControlEffectKind.WISH, side, actor.battlePokemonId, actor.battlePokemonId,
+                        valueId = actor.activeSlot.toString(),
+                    )),
+                ),
+            )
+        }
         if (canonicalId(slotCondition?.valueId) == "revivalblessing") {
             val faintedAllies = projectedFormState.pokemon.filter { it.side == side && it.fainted }
             if (faintedAllies.isEmpty()) {
@@ -813,7 +899,8 @@ internal object PublicSingleTurnProjector {
             )
         }
         val targetIsProtected = target?.battlePokemonId in protectedPokemonIds
-        val breaksProtection = effects.any { it.kind == BattleMoveEffectKind.BREAKS_PROTECTION }
+        val breaksProtection = effects.any { it.kind == BattleMoveEffectKind.BREAKS_PROTECTION } ||
+            unseenFist(calculatedAction, actor, projectedFormState)
         val blockedBySideGuard = target?.let {
             LocalSideGuardRules.blocks(projectedFormState, side, calculatedAction, it.side)
         } == true
@@ -869,7 +956,12 @@ internal object PublicSingleTurnProjector {
             } else {
                 projectedFormState
             }
-            val blockedState = applyCrashRecoil(protectionState, actor.battlePokemonId, effects)
+            val blockedState = applyCrashRecoil(
+                if (projection.publiclyNullified && !targetIsProtected) absorbed(protectionState, calculatedAction, actor, target)
+                else protectionState,
+                actor.battlePokemonId,
+                effects,
+            )
             return listOf(
                 WeightedState(
                     state = blockedState,
@@ -918,9 +1010,14 @@ internal object PublicSingleTurnProjector {
                         target,
                         projectedFormState,
                     ),
+                    bypassesSubstitute = bypassesSubstitute(calculatedAction, actor, projectedFormState),
                 )
+                val subTookHit = subTookHit(stellarState, appliedHit.state, target?.battlePokemonId)
                 LocalContactAfterHitMechanics.project(
-                    appliedHit.state,
+                    LocalAfterHitReactions.apply(
+                        stellarState, appliedHit.state, actor.battlePokemonId, target?.battlePokemonId,
+                        calculatedAction, appliedHit.directDamageFraction,
+                    ),
                     actor.battlePokemonId,
                     target?.battlePokemonId,
                     calculatedAction,
@@ -930,7 +1027,7 @@ internal object PublicSingleTurnProjector {
                         contactOutcome.state,
                         actor.battlePokemonId,
                         target?.battlePokemonId,
-                        effects,
+                        if (subTookHit) effects.filterNot { it.target == BattleMoveEffectTarget.SELECTED_TARGET } else effects,
                         executedSide = side,
                         mode = chanceEffectMode,
                         sourceContext = sourceContext,
@@ -1225,7 +1322,7 @@ internal object PublicSingleTurnProjector {
                 val targetIsProtected = currentTarget.battlePokemonId in protectedPokemonIds
                 val breaksProtection = calculatedAction.moveDetails?.effects?.effects.orEmpty().any {
                     it.kind == BattleMoveEffectKind.BREAKS_PROTECTION
-                }
+                } || unseenFist(calculatedAction, currentActor, branch.state)
                 val blockedBySideGuard = LocalSideGuardRules.blocks(
                     branch.state,
                     side,
@@ -1259,9 +1356,14 @@ internal object PublicSingleTurnProjector {
                                 currentTarget,
                                 branch.state,
                             ),
+                            bypassesSubstitute = bypassesSubstitute(calculatedAction, currentActor, branch.state),
                         )
+                        val subTookHit = subTookHit(branch.state, applied.state, currentTarget.battlePokemonId)
                         LocalContactAfterHitMechanics.project(
-                            applied.state,
+                            LocalAfterHitReactions.apply(
+                                branch.state, applied.state, currentActor.battlePokemonId, currentTarget.battlePokemonId,
+                                calculatedAction, applied.directDamageFraction, userEffects = targetIndex == targets.lastIndex,
+                            ),
                             currentActor.battlePokemonId,
                             currentTarget.battlePokemonId,
                             calculatedAction,
@@ -1271,7 +1373,8 @@ internal object PublicSingleTurnProjector {
                                 contactOutcome.state,
                                 currentActor.battlePokemonId,
                                 currentTarget.battlePokemonId,
-                                perTargetEffects,
+                                if (subTookHit) perTargetEffects.filterNot { it.target == BattleMoveEffectTarget.SELECTED_TARGET }
+                                else perTargetEffects,
                                 executedSide = side,
                                 mode = chanceEffectMode,
                                 sourceContext = sourceContext,
@@ -1490,7 +1593,8 @@ internal object PublicSingleTurnProjector {
                 !it.fainted && it.hpFraction > 0.0
         } ?: return branch
         if (branch.controlEffects.any {
-                it.kind == RecursiveControlEffectKind.TRAP && it.targetPokemonId == outgoing.battlePokemonId
+                (it.kind == RecursiveControlEffectKind.TRAP || it.kind == RecursiveControlEffectKind.PARTIAL_TRAP) &&
+                    it.targetPokemonId == outgoing.battlePokemonId
             }
         ) return branch
         val choices = PublicFutureActionFactory.primitiveActionsForPokemon(
@@ -1507,7 +1611,8 @@ internal object PublicSingleTurnProjector {
                 switchPokemonId = generated.switchPokemonId,
                 tags = generated.tags + "pivot_follow_up",
             )
-            val projected = LocalSwitchStateProjector.project(branch.state, side, action)
+            // Calculated like any other switch, so the Pokemon a pivot brings in pays Stealth Rock and Spikes.
+            val projected = applySwitch(branch.state, side, action, sourceContext, calculationCache)
             val evaluationHistory = LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon)
             val evaluationSource = LocalBranchMoveInputs.context(sourceContext, projected, evaluationHistory, spendPp = true)
             projected to LocalLookaheadStateEvaluator.evaluate(
@@ -1543,12 +1648,21 @@ internal object PublicSingleTurnProjector {
                 effect.target in PROJECTED_EFFECT_TARGETS
         }
         var branches = listOf(WeightedState(initial, 1.0, setOf(executedSide)))
+        val actorAbility = initial.pokemon.firstOrNull { it.battlePokemonId == actorId }
+            ?.let { LocalPublicAbilityState.effectiveKnownAbility(initial, it) }
         projectable.forEach { effect ->
             if (!shouldContinue()) return emptyList()
-            val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
+            val declared = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
+            // Serene Grace doubles a secondary chance; Sheer Force trades every secondary for power.
+            val probability = when {
+                declared >= CERTAIN_PROBABILITY -> declared
+                actorAbility == "sheerforce" -> 0.0
+                actorAbility == "serenegrace" -> (declared * 2.0).coerceAtMost(1.0)
+                else -> declared
+            }
             if (probability <= 0.0) return@forEach
             branches = branches.flatMap { branch ->
-                val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide)
+                val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide, branch.state)
                 val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
@@ -1557,7 +1671,10 @@ internal object PublicSingleTurnProjector {
                             controlEffects = branch.controlEffects + listOfNotNull(controlEffect),
                         ),
                     )
-                    mode == ChanceEffectProjectionMode.EXPECTED_SCORE -> listOf(
+                    // A flinch changes who moves this turn, which no score of the board after the hit can stand in
+                    // for, so it is a branch even when other chances are only scored.
+                    mode == ChanceEffectProjectionMode.EXPECTED_SCORE &&
+                        controlEffect?.kind != RecursiveControlEffectKind.FLINCH -> listOf(
                         branch.copy(
                             expectedScoreAdjustment = branch.expectedScoreAdjustment +
                                 LocalImmediateTurnScorer.expectedEffectScore(
@@ -1589,6 +1706,7 @@ internal object PublicSingleTurnProjector {
         actorId: UUID,
         targetId: UUID?,
         sourceSide: BattleSide,
+        state: BattleStateView? = null,
     ): RecursiveControlEffect? {
         if (effect.kind != BattleMoveEffectKind.VOLATILE_STATUS) return null
         val targetPokemonId = when (effect.target) {
@@ -1596,12 +1714,55 @@ internal object PublicSingleTurnProjector {
             BattleMoveEffectTarget.SELECTED_TARGET -> targetId
             else -> null
         } ?: return null
-        val kind = when (canonicalId(effect.valueId)) {
+        val victim = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+        val volatileId = canonicalId(effect.valueId)
+        if (state != null && victim != null && targetPokemonId != actorId && volatileId in MENTAL_EFFECTS) {
+            // A Mental Herb cures the first of these (and is spent, see applyEffect); Aroma Veil blocks them,
+            // Oblivious blocks Taunt.
+            if (LocalPublicItemState.activeItemId(state, victim) == MENTAL_HERB) return null
+            val ability = LocalPublicAbilityState.effectiveKnownAbility(state, victim)
+            if (ability == "aromaveil" || ability == "oblivious" && volatileId == "taunt") return null
+        }
+        val kind = when (volatileId) {
             "taunt" -> RecursiveControlEffectKind.TAUNT
             "encore" -> RecursiveControlEffectKind.ENCORE
-            "trapped", "partiallytrapped", "meanlook", "octolock", "jawlock" -> RecursiveControlEffectKind.TRAP
+            "trapped", "meanlook", "octolock", "jawlock" -> RecursiveControlEffectKind.TRAP
+            // Fire Spin, Whirlpool, Infestation: trapped and chipped for 1/8 at the end of each turn.
+            "partiallytrapped" -> RecursiveControlEffectKind.PARTIAL_TRAP
+            // Leech Seed misses Grass types; the drain is applied at the end of the turn.
+            "leechseed" -> RecursiveControlEffectKind.LEECH_SEED.takeUnless {
+                state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+                    ?.knownTypeIds?.any { type -> canonicalId(type) == "grass" } == true
+            } ?: return null
+            // The Ghost half of Curse: a quarter of its target's HP every turn (the user's half is paid on use).
+            "curse" -> if (targetPokemonId == actorId) return null else RecursiveControlEffectKind.GHOST_CURSE
+            // Confusion: a third of the target's moves turn into a hit on itself for a few turns.
+            "confusion" -> RecursiveControlEffectKind.CONFUSION.takeUnless {
+                val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+                target == null || LocalPublicAbilityState.effectiveKnownAbility(state, target) == "owntempo" ||
+                    LocalPublicFieldMechanics.terrainId(state) == "mistyterrain" && LocalPublicTurnOrder.grounded(state, target) &&
+                    targetPokemonId != actorId
+            } ?: return null
+            // Destiny Bond: whoever knocks its user out this turn goes down with it.
+            "destinybond" -> if (targetPokemonId == actorId) RecursiveControlEffectKind.DESTINY_BOND else return null
+            // Yawn: the target falls asleep at the end of the next turn.
+            "yawn" -> if (targetPokemonId == actorId) return null else RecursiveControlEffectKind.YAWN.takeUnless {
+                val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+                target == null || target.statusId != null || LocalPublicStatusImmunity.blocked(state, target, "slp")
+            } ?: return null
+            // Outrage and Petal Dance lock their user into them for the next turn too.
+            "lockedmove" -> if (targetPokemonId == actorId) RecursiveControlEffectKind.LOCKED_MOVE else return null
+            // A flinch costs the target its move this turn if it has not moved yet (Fake Out, Rock Slide, Iron Head).
+            "flinch" -> RecursiveControlEffectKind.FLINCH.takeUnless {
+                val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+                target != null && (LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES ||
+                    LocalPublicItemState.activeItemId(state, target) == "covertcloak")
+            } ?: return null
             else -> return null
         }
+        // A Substitute keeps another Pokemon's Leech Seed, Curse, binding and flinch off its user.
+        if (targetPokemonId != actorId && state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
+                ?.knownVolatileEffectIds?.any { canonicalId(it) == SUBSTITUTE } == true) return null
         return RecursiveControlEffect(kind, sourceSide, actorId, targetPokemonId)
     }
 
@@ -1622,19 +1783,43 @@ internal object PublicSingleTurnProjector {
         } ?: return state
         val affected = state.pokemon.firstOrNull { it.battlePokemonId == affectedId } ?: return state
         if (affected.fainted || affected.hpFraction <= 0.0) return state
+        if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && affectedId != actorId &&
+            canonicalId(effect.valueId) in MENTAL_EFFECTS && LocalPublicItemState.activeItemId(state, affected) == MENTAL_HERB
+        ) {
+            return state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == affectedId) it.copyState(knownHeldItemId = null) else it })
+        }
+        // Volatiles a move puts on its own user that later rules read: crit stage, levitation, residual healing.
+        if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && affectedId == actorId &&
+            canonicalId(effect.valueId) in SELF_VOLATILES
+        ) {
+            val id = requireNotNull(canonicalId(effect.valueId))
+            if (affected.knownVolatileEffectIds.any { canonicalId(it) == id }) return state
+            return state.copyState(pokemon = state.pokemon.map {
+                if (it.battlePokemonId == affectedId) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + id) else it
+            })
+        }
+        // Substitute: a quarter of the user's HP becomes a decoy that takes the next hit in its place.
+        if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && canonicalId(effect.valueId) == SUBSTITUTE &&
+            affectedId == actorId
+        ) {
+            if (affected.hpFraction <= SUBSTITUTE_COST || affected.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return state
+            return state.copyState(pokemon = state.pokemon.map {
+                if (it.battlePokemonId != affectedId) it else it.copyState(
+                    hpFraction = it.hpFraction - SUBSTITUTE_COST,
+                    knownVolatileEffectIds = it.knownVolatileEffectIds + SUBSTITUTE,
+                )
+            })
+        }
         val updated = when (effect.kind) {
             BattleMoveEffectKind.STATUS -> {
-                if (effect.valueId == null || LocalPublicStatusImmunity.blocked(state, affected, effect.valueId)) return state
-                affected.copyState(statusId = effect.valueId)
+                val inflicter = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
+                if (effect.valueId == null || LocalPublicStatusImmunity.blocked(state, affected, effect.valueId, inflicter)) return state
+                // A Lum Berry cures a new status at once and is eaten.
+                if (LocalPublicItemState.activeItemId(state, affected) == "lumberry") affected.copyState(knownHeldItemId = null)
+                else affected.copyState(statusId = effect.valueId)
             }
-            BattleMoveEffectKind.STAT_STAGE -> {
-                val stages = affected.statStages.toMutableMap()
-                effect.statStages.forEach { (stat, amount) ->
-                    stages[stat] = ((stages[stat] ?: 0) + amount).coerceIn(-6, 6)
-                }
-                if (stages == affected.statStages) return state
-                affected.copyState(statStages = stages)
-            }
+            // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
+            BattleMoveEffectKind.STAT_STAGE -> return LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages)
             else -> return state
         }
         return state.copyState(
@@ -1878,6 +2063,128 @@ internal object PublicSingleTurnProjector {
             ),
         )
     }
+
+    /**
+     * The ability that nullified a move takes something from it: Sap Sipper, Motor Drive, Lightning Rod, Storm Drain
+     * and Well-Baked Body raise a stat, Water Absorb, Volt Absorb, Earth Eater and Dry Skin heal a quarter.
+     */
+    private fun absorbed(
+        state: BattleStateView,
+        action: BattleActionCandidate,
+        actor: BattlePokemonStateView,
+        target: BattlePokemonStateView?,
+    ): BattleStateView {
+        target ?: return state
+        if (action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) return state
+        if (LocalPublicAbilityMechanics.ignoresTargetAbility(action, actor, target, state)) return state
+        val type = canonicalId(action.moveDetails?.typeId)
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target) ?: return state
+        val boost = when {
+            ability == "sapsipper" && type == "grass" -> mapOf("attack" to 1)
+            ability == "motordrive" && type == "electric" -> mapOf("speed" to 1)
+            ability == "lightningrod" && type == "electric" -> mapOf("special_attack" to 1)
+            ability == "stormdrain" && type == "water" -> mapOf("special_attack" to 1)
+            ability == "wellbakedbody" && type == "fire" -> mapOf("defence" to 2)
+            else -> null
+        }
+        if (boost != null) return LocalStatStageChange.apply(state, target.battlePokemonId, null, boost)
+        val heals = ability in setOf("waterabsorb", "dryskin") && type == "water" ||
+            ability == "voltabsorb" && type == "electric" || ability == "eartheater" && type == "ground"
+        if (!heals) return state
+        return state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId) it.copyState(hpFraction = (it.hpFraction + 0.25).coerceAtMost(1.0)) else it
+        })
+    }
+
+    /**
+     * Trick and Switcheroo swap held items (the target then carries a Choice item it is locked by); Pain Split sets
+     * both to the average of their HP.
+     */
+    private fun itemAndHpSwaps(
+        branch: WeightedState,
+        ordered: TurnPrimitiveAction,
+        executed: Map<UUID, String>,
+        after: BattleStateView,
+    ): BattleStateView {
+        val id = canonicalId(ordered.action.moveId)
+        if (id !in setOf("trick", "switcheroo", "painsplit")) return after
+        val userId = ordered.actorPokemonId ?: return after
+        if (canonicalId(executed[userId]) != id) return after
+        if (after.pokemon.firstOrNull { it.battlePokemonId == userId }?.let { it.fainted || it.activeSlot == null } != false) return after
+        val slot = ordered.action.targets.singleOrNull() ?: return after
+        val target = after.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted } ?: return after
+        if (target.battlePokemonId in branch.protectedPokemonIds) return after
+        if (target.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return after
+        val user = after.pokemon.first { it.battlePokemonId == userId }
+        return if (id == "painsplit") {
+            val average = (user.hpFraction + target.hpFraction) / 2.0
+            after.copyState(pokemon = after.pokemon.map {
+                if (it.battlePokemonId == userId || it.battlePokemonId == target.battlePokemonId) it.copyState(hpFraction = average) else it
+            })
+        } else {
+            if (LocalPublicAbilityState.effectiveKnownAbility(after, target) == "stickyhold") return after
+            if (user.knownHeldItemId == null && target.knownHeldItemId == null) return after
+            after.copyState(pokemon = after.pokemon.map {
+                when (it.battlePokemonId) {
+                    userId -> it.copyState(knownHeldItemId = target.knownHeldItemId)
+                    target.battlePokemonId -> it.copyState(knownHeldItemId = user.knownHeldItemId)
+                    else -> it
+                }
+            })
+        }
+    }
+
+    /** A 40-power typeless physical hit on itself, from its own Attack against its own Defence. */
+    private fun confusionSelfHit(state: BattleStateView, pokemonId: UUID): BattleStateView {
+        val pokemon = state.pokemon.firstOrNull { it.battlePokemonId == pokemonId } ?: return state
+        val stats = pokemon.combatStats
+        val damage = if (stats == null) 0.1 else {
+            val attack = (stats.attack.minimum + stats.attack.maximum) / 2.0
+            val defence = (stats.defence.minimum + stats.defence.maximum) / 2.0
+            val maxHp = (stats.maxHp.minimum + stats.maxHp.maximum) / 2.0
+            ((2.0 * (pokemon.level ?: 50) / 5.0 + 2.0) * 40.0 * attack / defence / 50.0 + 2.0) * 0.925 / maxHp
+        }
+        val hp = (pokemon.hpFraction - damage).coerceAtLeast(0.0)
+        return state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId == pokemonId) it.copyState(hpFraction = hp, fainted = hp <= 0.0) else it
+        })
+    }
+
+    /** A Destiny Bond user knocked out by this action takes the attacker with it; an Endure user hangs on at one HP. */
+    private fun destinyBond(branch: WeightedState, ordered: TurnPrimitiveAction, beforeEndure: BattleStateView): BattleStateView {
+        val attackerId = ordered.actorPokemonId ?: return beforeEndure
+        if (ordered.action.kind != BattleActionKind.USE_MOVE) return beforeEndure
+        val after = beforeEndure
+        val bonded = branch.controlEffects.filter { it.kind == RecursiveControlEffectKind.DESTINY_BOND }.map { it.targetPokemonId }
+        if (bonded.isEmpty()) return after
+        val attacker = after.pokemon.firstOrNull { it.battlePokemonId == attackerId } ?: return after
+        val takenDown = bonded.any { id ->
+            val before = branch.state.pokemon.firstOrNull { it.battlePokemonId == id }
+            val now = after.pokemon.firstOrNull { it.battlePokemonId == id }
+            id != attackerId && before != null && now != null && before.side != attacker.side &&
+                !before.fainted && before.hpFraction > 0.0 && (now.fainted || now.hpFraction <= 0.0)
+        }
+        if (!takenDown || attacker.fainted) return after
+        return after.copyState(pokemon = after.pokemon.map {
+            if (it.battlePokemonId == attackerId) it.copyState(hpFraction = 0.0, fainted = true) else it
+        })
+    }
+
+    private fun subTookHit(before: BattleStateView, after: BattleStateView, targetId: UUID?): Boolean {
+        targetId ?: return false
+        fun hasSub(state: BattleStateView) = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
+            ?.knownVolatileEffectIds?.any { canonicalId(it) == SUBSTITUTE } == true
+        return hasSub(before) && !hasSub(after)
+    }
+
+    /** Unseen Fist: contact moves strike through Protect. */
+    private fun unseenFist(action: BattleActionCandidate, actor: BattlePokemonStateView, state: BattleStateView): Boolean =
+        LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "unseenfist" &&
+            action.moveDetails?.effects?.mechanicFlags.orEmpty().any { canonicalId(it) == "contact" }
+
+    private fun bypassesSubstitute(action: BattleActionCandidate, actor: BattlePokemonStateView, state: BattleStateView): Boolean =
+        action.moveDetails?.effects?.mechanicFlags.orEmpty().any { canonicalId(it) == "sound" } ||
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "infiltrator"
 
     private fun rebindPendingActors(
         remaining: List<TurnPrimitiveAction>,
@@ -2243,6 +2550,18 @@ internal object PublicSingleTurnProjector {
     /** Moves whose whole purpose is to become this turn's target. */
     private val REDIRECTING_MOVE_IDS = setOf("followme", "ragepowder", "spotlight")
     private const val SPOTLIGHT = "spotlight"
+    private const val DEFROST_FLAG = "defrost"
+    private const val SUBSTITUTE = "substitute"
+    private val SELF_VOLATILES = setOf("focusenergy", "dragoncheer", "magnetrise", "aquaring", "ingrain", "laserfocus", "endure")
+    private const val CONFUSION_SELF_HIT_CHANCE = 1.0 / 3.0
+    private const val MENTAL_HERB = "mentalherb"
+    private val MENTAL_EFFECTS = setOf("taunt", "encore", "torment", "disable", "attract", "healblock")
+    private const val SUBSTITUTE_COST = 0.25
+    private val FLINCH_IMMUNE_ABILITIES = setOf("innerfocus", "shielddust")
+    private val DEFROST_MOVES = setOf(
+        "scald", "flareblitz", "sacredfire", "flamewheel", "fusionflare", "pyroball", "scorchingsands",
+        "steameruption", "burnup", "matchagotcha", "ragingfury",
+    )
 
     /** Only a move that picks one slot can be drawn to a different one. */
     private val REDIRECTABLE_TARGET_PATTERNS = setOf(

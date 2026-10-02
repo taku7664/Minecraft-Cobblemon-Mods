@@ -225,10 +225,26 @@ internal object LocalLookaheadStateEvaluator {
             val knockoutProbability = leaf.knockoutRange?.let { range ->
                 (range.minimum + range.maximum) / 2.0 * accuracy
             } ?: 0.0
-            expectedDamage + knockoutProbability * tuning.leafKnockoutPressure
+            (expectedDamage + knockoutProbability * tuning.leafKnockoutPressure) * actingChance(state, side, action)
         }
         .maxOrNull()
         ?: 0.0
+
+    /** A sleeping or frozen attacker moves about a third of the time, a paralysed one three times in four. */
+    private fun actingChance(state: BattleStateView, side: BattleSide, action: BattleActionCandidate): Double {
+        val actor = state.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot && !it.fainted }
+            ?: return 1.0
+        return when (actor.statusId?.let(PublicIds::canonical)) {
+            "slp", "sleep", "asleep" ->
+                if (PublicIds.canonical(action.moveId.orEmpty()) in setOf("sleeptalk", "snore")) 1.0 else 1.0 / 3.0
+            "frz", "freeze", "frozen" ->
+                if (DEFROST_FLAG in action.moveDetails?.effects?.mechanicFlags.orEmpty()) 1.0 else 0.2
+            "par", "paralysis", "paralyzed" -> 0.75
+            else -> 1.0
+        }
+    }
+
+    private const val DEFROST_FLAG = "defrost"
 
     private fun initiativeValue(relation: LocalPublicSpeedRelation): Double = when (relation) {
         LocalPublicSpeedRelation.ALLY_FIRST -> 1.0

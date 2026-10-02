@@ -4,30 +4,87 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
-/** Checks only status immunities proven by public type or a known/confirmed ability. */
+/**
+ * Checks only status immunities proven by public facts: type, a known/confirmed ability, the field (Safeguard,
+ * Misty and Electric Terrain) and a Substitute.
+ */
 internal object LocalPublicStatusImmunity {
-    fun blocked(state: BattleStateView, target: BattlePokemonStateView, statusId: String?): Boolean {
+    fun blocked(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        statusId: String?,
+        /** Who inflicts it. Null is an unknown inflicter: field protection still applies. */
+        source: BattlePokemonStateView? = null,
+        ignoreTargetAbility: Boolean = false,
+        /** False for a status that does not come from a move (Flame Body, an orb, Yawn falling due). */
+        byMove: Boolean = true,
+    ): Boolean {
         if (target.statusId != null) return true
         val status = canonical(statusId)
         val types = target.knownTypeIds.mapTo(hashSetOf(), ::canonical)
-        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target) ?: state.inferences.asSequence()
-            .filter { it.subjectPokemonId == target.battlePokemonId && canonical(it.categoryId) == "ability" }
-            .mapNotNull { canonical(it.candidateId) }
-            .distinct()
-            .singleOrNull()
-            ?.takeIf { LocalPublicAbilityState.isActive(state, target, it) }
+        val ability = if (ignoreTargetAbility) null else LocalPublicAbilityState.effectiveKnownAbility(state, target)
+            ?: state.inferences.asSequence()
+                .filter { it.subjectPokemonId == target.battlePokemonId && canonical(it.categoryId) == "ability" }
+                .mapNotNull { canonical(it.candidateId) }
+                .distinct()
+                .singleOrNull()
+                ?.takeIf { LocalPublicAbilityState.isActive(state, target, it) }
+        val sourceAbility = source?.let { LocalPublicAbilityState.effectiveKnownAbility(state, it) }
+        val fromOther = source != null && source.battlePokemonId != target.battlePokemonId
+        if (fieldBlocks(state, target, status, sourceAbility, source, fromOther && byMove)) return true
+        if (ability in ALL_STATUS_IMMUNITIES) return true
+        if (ability == LEAF_GUARD && LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER &&
+            LocalPublicItemState.activeItemId(state, target) != UTILITY_UMBRELLA) return true
         return when (status) {
-            "psn", "poison", "poisoned", "tox", "toxic", "badlypoisoned" ->
-                "poison" in types || "steel" in types || ability == "immunity"
-            "brn", "burn", "burned", "burnt" ->
-                "fire" in types || ability == "waterveil" || ability == "waterbubble"
-            "par", "paralysis", "paralyzed", "paralysed" ->
-                "electric" in types || ability == "limber"
-            "slp", "sleep", "asleep" -> ability in setOf("insomnia", "vitalspirit", "sweetveil")
-            "frz", "freeze", "frozen" -> "ice" in types || ability == "magmaarmor"
+            // Corrosion poisons Steel and Poison types alike.
+            in POISON -> sourceAbility != CORROSION && ("poison" in types || "steel" in types) ||
+                ability == "immunity" || ability == "pastelveil"
+            in BURN -> "fire" in types || ability == "waterveil" || ability == "waterbubble" || ability == "thermalexchange"
+            in PARALYSIS -> "electric" in types || ability == "limber"
+            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil")
+            in FREEZE -> "ice" in types || ability == "magmaarmor" ||
+                LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER
             else -> false
         }
     }
 
+    /** Safeguard, Misty Terrain (any status) and Electric Terrain (sleep) for a grounded target, and a Substitute. */
+    private fun fieldBlocks(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        status: String?,
+        sourceAbility: String?,
+        source: BattlePokemonStateView?,
+        /** Safeguard and a Substitute stop another Pokemon's move, not a Pokemon's own or an ability's. */
+        moveFromOther: Boolean,
+    ): Boolean {
+        val terrain = LocalPublicFieldMechanics.terrainId(state)
+        val grounded = target.activeSlot != null && LocalPublicTurnOrder.grounded(state, target)
+        if (grounded && terrain == MISTY_TERRAIN) return true
+        if (grounded && terrain == ELECTRIC_TERRAIN && status in SLEEP) return true
+        if (!moveFromOther) return false
+        val infiltrates = sourceAbility == INFILTRATOR && source?.side != target.side
+        if (!infiltrates && state.field.sideConditions[target.side].orEmpty().any {
+                canonical(it.effectId) == SAFEGUARD && (it.remainingTurns == null || it.remainingTurns > 0)
+            }) return true
+        return !infiltrates && SUBSTITUTE in target.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
+    }
+
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
+
+    private val POISON = setOf("psn", "poison", "poisoned", "tox", "toxic", "badlypoisoned")
+    private val BURN = setOf("brn", "burn", "burned", "burnt")
+    private val PARALYSIS = setOf("par", "paralysis", "paralyzed", "paralysed")
+    private val SLEEP = setOf("slp", "sleep", "asleep")
+    private val FREEZE = setOf("frz", "freeze", "frozen")
+    private val ALL_STATUS_IMMUNITIES = setOf("comatose", "purifyingsalt")
+    private val SUN_WEATHER = setOf("sun", "sunnyday", "harshsunlight", "desolateland")
+    private const val LEAF_GUARD = "leafguard"
+    private const val CORROSION = "corrosion"
+    private const val INFILTRATOR = "infiltrator"
+    private const val SAFEGUARD = "safeguard"
+    private const val SUBSTITUTE = "substitute"
+    private const val MISTY_TERRAIN = "mistyterrain"
+    private const val ELECTRIC_TERRAIN = "electricterrain"
+    private const val UTILITY_UMBRELLA = "utilityumbrella"
 }

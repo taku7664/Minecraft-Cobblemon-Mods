@@ -23,6 +23,8 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStab
@@ -258,6 +260,7 @@ internal object LocalTacticalScorer {
                 0.0
             }) + LocalSetupMovePreference.bonus(candidate, context) -
             publicAllyCollateral(candidate, context, tuning) -
+            contactRecoilCost(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -652,6 +655,36 @@ internal object LocalTacticalScorer {
      * is one of them: a partner the opponent is publicly certain to knock out this turn has no health
      * left to protect, so declining the spread move buys nothing and costs the second target.
      */
+    /**
+     * What a contact move costs its user against a Rocky Helmet, Rough Skin or Iron Barbs: a sixth or an eighth of
+     * its HP. The search has always charged it; the ranking did not, so a contact move into a helmet looked free to
+     * a trainer that leans on the ranking.
+     */
+    private fun contactRecoilCost(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+    ): Double {
+        val details = candidate.moveDetails ?: return 0.0
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
+        if (details.effects?.mechanicFlags.orEmpty().none { PublicIds.canonical(it) == "contact" }) return 0.0
+        val actor = LocalPublicPositionFacts.activeAlly(candidate, context) ?: return 0.0
+        if (LocalPublicAbilityState.effectiveKnownAbility(context.state, actor) in CONTACT_SAFE_ABILITIES) return 0.0
+        if (LocalPublicItemState.activeItemId(context.state, actor) == "protectivepads") return 0.0
+        val target = LocalPublicMoveTargets.resolve(candidate, context, BattleSide.ALLY).firstOrNull() ?: return 0.0
+        var lost = 0.0
+        if (LocalPublicItemState.activeItemId(context.state, target) == "rockyhelmet") lost += 1.0 / 6.0
+        if (LocalPublicAbilityState.effectiveKnownAbility(context.state, target) in setOf("roughskin", "ironbarbs")) lost += 1.0 / 8.0
+        if (lost <= 0.0) return 0.0
+        val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
+        val hits = LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state)
+        val total = minOf(lost * hits, actor.hpFraction)
+        val knockout = if (lost * hits >= actor.hpFraction) tuning.knockoutMaterialScore else 0.0
+        return (total * tuning.boardToScore + knockout) * accuracy
+    }
+
+    private val CONTACT_SAFE_ABILITIES = setOf("magicguard", "longreach")
+
     private fun publicAllyCollateral(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,

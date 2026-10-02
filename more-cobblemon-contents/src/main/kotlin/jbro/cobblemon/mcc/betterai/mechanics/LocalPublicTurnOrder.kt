@@ -175,6 +175,8 @@ internal object LocalPublicTurnOrder {
             ability == SAND_RUSH && weather == SANDSTORM -> 2.0
             ability == SLUSH_RUSH && weather in SNOW_WEATHERS -> 2.0
             ability == SURGE_SURFER && LocalPublicFieldMechanics.terrainId(state) == ELECTRIC_TERRAIN -> 2.0
+            // Protosynthesis and Quark Drive raise Speed by half when it is the holder's highest stat.
+            LocalDamageAbilityModifiers.paradoxSpeedActive(state, pokemon) -> 1.5
             else -> 1.0
         }
         val tailwind = if (
@@ -198,6 +200,7 @@ internal object LocalPublicTurnOrder {
         val item = LocalPublicItemState.activeItemId(state, pokemon)
         if (item == IRON_BALL) return true
         if (pokemon.knownTypeIds.any { canonical(it) == FLYING }) return false
+        if (volatiles.any { it == "magnetrise" || it == "telekinesis" }) return false
         if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == LEVITATE) return false
         if (item == AIR_BALLOON) return false
         return true

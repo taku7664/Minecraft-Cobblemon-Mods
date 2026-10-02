@@ -6,7 +6,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -71,8 +74,10 @@ internal object PublicMoveOutcomeBranchProjector {
                 it.side == defaultTargetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
             }?.hpFraction
         }
-        val criticalHits = candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
+        // Always-critical moves are already projected as critical hits, so they take no extra crit branch.
+        val criticalHits = if (candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
             candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
+        ) criticalChance(candidate, context, actingSide) else 0.0
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
             return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits)
         }
@@ -90,7 +95,7 @@ internal object PublicMoveOutcomeBranchProjector {
         accuracy: Double,
         damageRolls: List<Double>,
         targetHp: Double?,
-        criticalHits: Boolean,
+        criticalHits: Double,
     ): List<PublicMoveOutcomeBranch> {
         val maximum = LocalDeclaredMultiHit.maximumCount(candidate)
         val branches = mutableListOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0))
@@ -112,7 +117,7 @@ internal object PublicMoveOutcomeBranchProjector {
         rolls: List<Double>,
         targetHp: Double?,
         probability: Double,
-        criticalHits: Boolean,
+        criticalHits: Double,
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
         if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, criticalHits)
@@ -134,12 +139,12 @@ internal object PublicMoveOutcomeBranchProjector {
         rolls: List<Double>,
         targetHp: Double?,
         probability: Double,
-        criticalHits: Boolean,
+        criticalHits: Double,
     ): List<PublicMoveOutcomeBranch> {
         val sorted = rolls.sorted()
         val fixed = highRoll(sorted)
         if (targetHp == null || targetHp <= 0.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed))
-        val critical = if (criticalHits) CRITICAL_HIT_CHANCE else 0.0
+        val critical = criticalHits
         val knockouts = sorted.count { it + DAMAGE_EPSILON >= targetHp }
         val criticalKnockouts = sorted.count { it * CRITICAL_HIT_MULTIPLIER + DAMAGE_EPSILON >= targetHp }
         val knockoutShare = (1.0 - critical) * knockouts / sorted.size + critical * criticalKnockouts / sorted.size
@@ -183,6 +188,43 @@ internal object PublicMoveOutcomeBranchProjector {
         val range = candidate.facts?.standardDamageFractionRange ?: return listOf(0.0)
         return listOf(if (actingSide == BattleSide.ALLY) range.minimum else range.maximum)
     }
+
+    /**
+     * The crit chance at this move's crit stage: high-crit moves (Stone Edge, Leaf Blade), Super Luck, a Scope Lens
+     * or Razor Claw raise it; Battle Armor and Shell Armor, publicly known, rule it out.
+     */
+    private fun criticalChance(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): Double {
+        val state = context.state
+        val target = candidate.targets.singleOrNull()?.let { slot ->
+            state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
+        }
+        if (target != null && LocalPublicAbilityState.effectiveKnownAbility(state, target) in CRIT_IMMUNE_ABILITIES) return 0.0
+        val actor = state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted }
+        var stage = 0
+        if (PublicIds.canonical(candidate.moveId.orEmpty()) in HIGH_CRIT_MOVES) stage++
+        if (actor != null) {
+            if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "superluck") stage++
+            if (LocalPublicItemState.activeItemId(state, actor) in CRIT_ITEMS) stage++
+            if (actor.knownVolatileEffectIds.any { PublicIds.canonical(it) in FOCUS_VOLATILES }) stage += 2
+            if (actor.knownVolatileEffectIds.any { PublicIds.canonical(it) == "laserfocus" }) stage += 3
+        }
+        return when (stage) {
+            0 -> CRITICAL_HIT_CHANCE
+            1 -> 1.0 / 8.0
+            2 -> 1.0 / 2.0
+            else -> 1.0
+        }
+    }
+
+    private val CRIT_IMMUNE_ABILITIES = setOf("battlearmor", "shellarmor")
+    private val CRIT_ITEMS = setOf("scopelens", "razorclaw")
+    private val FOCUS_VOLATILES = setOf("focusenergy", "dragoncheer")
+    private val HIGH_CRIT_MOVES = setOf(
+        "stoneedge", "leafblade", "drillrun", "psychocut", "nightslash", "crabhammer", "crosschop", "slash",
+        "shadowclaw", "aircutter", "attackorder", "aeroblast", "blazekick", "crosspoison", "karatechop",
+        "poisontail", "razorleaf", "razorwind", "skyattack", "spacialrend", "snipeshot", "esperwing", "aquacutter",
+        "triplearrows", "ivycudgel",
+    )
 
     private const val DAMAGE_EPSILON = 1e-9
 

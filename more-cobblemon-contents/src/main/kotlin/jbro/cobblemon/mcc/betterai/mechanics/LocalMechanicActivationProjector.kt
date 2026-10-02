@@ -38,7 +38,11 @@ internal object LocalMechanicActivationProjector {
             MEGA -> megaEvolve(actor, action)
             else -> null
         } ?: return state
-        return state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it })
+        val evolved = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it })
+        // A Mega's new ability starts as it evolves: Charizard-Y's Drought, Tyranitar's Sand Stream.
+        return if (mechanicKind(mechanic.mechanicId) == MEGA && updated.knownAbilityId != null) {
+            jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.project(evolved, actor.battlePokemonId)
+        } else evolved
     }
 
     private fun terastallize(actor: BattlePokemonStateView, action: BattleActionCandidate): BattlePokemonStateView? {
@@ -68,8 +72,8 @@ internal object LocalMechanicActivationProjector {
             statusId = actor.statusId,
             statStages = actor.statStages,
             knownMoveIds = actor.knownMoveIds,
-            // A Mega's ability is not in the public form facts; keeping the old one would be a guess.
-            knownAbilityId = null,
+            // A Mega has one ability, carried with its form. Unknown, keeping the old one would be a guess.
+            knownAbilityId = form.abilityId,
             knownHeldItemId = actor.knownHeldItemId,
             fainted = actor.fainted,
             knownTypeIds = form.knownTypeIds,

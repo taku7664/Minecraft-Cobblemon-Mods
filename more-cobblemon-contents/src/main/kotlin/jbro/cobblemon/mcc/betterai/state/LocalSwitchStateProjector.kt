@@ -25,6 +25,9 @@ internal object LocalSwitchStateProjector {
                         hpFraction = projectedSwitchOutHp(state, pokemon),
                         statStages = emptyMap(),
                         formState = pokemon.stanceResetForm(),
+                        // Natural Cure heals its status on the way out.
+                        statusId = if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "naturalcure") null
+                            else pokemon.statusId,
                     )
                 pokemon.battlePokemonId == incomingId -> {
                     val hp = (incoming.hpFraction - (action.facts?.switchEntryHpLossFraction ?: 0.0)).coerceAtLeast(0.0)
@@ -75,6 +78,7 @@ internal object LocalSwitchStateProjector {
         statStages: Map<String, Int> = this.statStages,
         fainted: Boolean = this.fainted,
         formState: BattlePokemonFormStateView? = null,
+        statusId: String? = this.statusId,
     ) = BattlePokemonStateView(
         battlePokemonId = battlePokemonId,
         side = side,

@@ -300,6 +300,8 @@ class BattlePokemonFormStateView(
     val formId: String,
     knownTypeIds: Set<String>,
     val combatStats: BattleCombatStatRangesView,
+    /** The form's ability when it has exactly one, as a Mega Evolution does. */
+    val abilityId: String? = null,
 ) {
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
 

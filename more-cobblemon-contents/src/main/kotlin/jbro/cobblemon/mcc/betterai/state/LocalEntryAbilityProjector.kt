@@ -14,6 +14,9 @@ internal object LocalEntryAbilityProjector {
         } ?: return state
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, incoming)
         val fieldState = projectField(state, incoming, ability)
+        entryBoost(fieldState, incoming, ability)?.let { boost ->
+            return jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.apply(fieldState, incoming.battlePokemonId, null, boost)
+        }
         if (ability != "intimidate") return fieldState
 
         var reflectedDrops = 0
@@ -21,17 +24,22 @@ internal object LocalEntryAbilityProjector {
             if (pokemon.side == incoming.side || pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) {
                 return@map pokemon
             }
-            when (LocalPublicAbilityState.effectiveKnownAbility(fieldState, pokemon)) {
+            val ability = LocalPublicAbilityState.effectiveKnownAbility(fieldState, pokemon)
+            // A Clear Amulet stops the drop, so Defiant, Competitive and Rattled have nothing to answer.
+            val amulet = LocalPublicItemState.activeItemId(fieldState, pokemon) == CLEAR_AMULET
+            when (ability) {
                 in INTIMIDATE_IMMUNITIES -> pokemon
+                "guarddog" -> changeStage(pokemon, "attack", 1)
                 "mirrorarmor" -> {
                     reflectedDrops++
                     pokemon
                 }
-                "guarddog" -> changeStage(pokemon, "attack", 1)
+                else -> if (amulet) pokemon else when (ability) {
                 "defiant" -> changeStage(changeStage(pokemon, "attack", -1), "attack", 2)
                 "competitive" -> changeStage(changeStage(pokemon, "attack", -1), "special_attack", 2)
                 "rattled" -> changeStage(changeStage(pokemon, "attack", -1), "speed", 1)
                 else -> changeStage(pokemon, "attack", -1)
+                }
             }
         }.map { pokemon ->
             if (pokemon.battlePokemonId == incomingPokemonId && reflectedDrops > 0) {
@@ -42,6 +50,24 @@ internal object LocalEntryAbilityProjector {
         }
         return copyState(fieldState, next)
     }
+
+    /**
+     * Download raises Attack or Special Attack by the foes' weaker defence; Intrepid Sword and Dauntless Shield raise
+     * Attack and Defence on entry.
+     */
+    private fun entryBoost(state: BattleStateView, incoming: BattlePokemonStateView, ability: String?): Map<String, Int>? =
+        when (ability) {
+            "intrepidsword" -> mapOf("attack" to 1)
+            "dauntlessshield" -> mapOf("defence" to 1)
+            "download" -> {
+                val foes = state.pokemon.filter { it.side != incoming.side && it.activeSlot != null && !it.fainted }
+                val defence = foes.sumOf { it.combatStats?.defence?.let { r -> (r.minimum + r.maximum) / 2 } ?: 0 }
+                val special = foes.sumOf { it.combatStats?.specialDefence?.let { r -> (r.minimum + r.maximum) / 2 } ?: 0 }
+                if (foes.isEmpty() || defence == 0 && special == 0) null
+                else if (defence < special) mapOf("attack" to 1) else mapOf("special_attack" to 1)
+            }
+            else -> null
+        }
 
     private fun projectField(
         state: BattleStateView,
@@ -105,6 +131,7 @@ internal object LocalEntryAbilityProjector {
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
+    private const val CLEAR_AMULET = "clearamulet"
     private val INTIMIDATE_IMMUNITIES = setOf(
         "clearbody",
         "fullmetalbody",

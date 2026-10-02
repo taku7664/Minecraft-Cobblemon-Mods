@@ -24,6 +24,11 @@ internal object LocalContactAfterHitMechanics {
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
+        // Protective Pads and Long Reach make no contact for these reactions.
+        if (LocalPublicItemState.activeItemId(state, actor) == "protectivepads" ||
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "longreach") {
+            return listOf(LocalContactAfterHitBranch(state, 1.0))
+        }
         val indirectImmune = LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "magicguard"
         val contactDamage = if (indirectImmune) 0.0 else {
             (if (LocalPublicItemState.activeItemId(state, target) == "rockyhelmet"
@@ -40,22 +45,59 @@ internal object LocalContactAfterHitMechanics {
         } else {
             state
         }
-        if (!canFlameBodyBurn(state, actor, target)) return listOf(LocalContactAfterHitBranch(damaged, 1.0))
-        val burned = updateActor(damaged, actorId) { current -> copyPokemon(current, statusId = "cobblemon:burn") }
-        return listOf(
-            LocalContactAfterHitBranch(damaged, 0.70),
-            LocalContactAfterHitBranch(burned, 0.30),
-        )
+        val targetAbility = LocalPublicAbilityState.effectiveKnownAbility(state, target)
+        // Gooey and Tangling Hair lower the attacker's Speed; Aftermath takes a quarter from whoever knocked it out.
+        var reacted = when (targetAbility) {
+            "gooey", "tanglinghair" -> LocalStatStageChange.apply(damaged, actorId, targetId, mapOf("speed" to -1))
+            "aftermath" -> if (!indirectImmune && (target.fainted || target.hpFraction <= 0.0)) updateActor(damaged, actorId) { current ->
+                val hp = (current.hpFraction - 0.25).coerceAtLeast(0.0)
+                copyPokemon(current, hpFraction = hp, fainted = hp <= 0.0)
+            } else damaged
+            else -> damaged
+        }
+        // A contact status on the attacker: Flame Body, Static, Poison Point (30%), Effect Spore (10% each).
+        val statuses = when (targetAbility) {
+            "flamebody" -> listOf("cobblemon:burn" to 0.30)
+            "static" -> listOf("par" to 0.30)
+            "poisonpoint" -> listOf("psn" to 0.30)
+            "effectspore" -> if (actor.knownTypeIds.any { canonical(it) == "grass" } ||
+                LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "overcoat") emptyList()
+                else listOf("slp" to 0.10, "par" to 0.10, "psn" to 0.10)
+            else -> emptyList()
+        }.filter { (status, _) ->
+            val current = reacted.pokemon.first { it.battlePokemonId == actorId }
+            !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, target, byMove = false)
+        }
+        // Poison Touch and Toxic Chain poison the target in turn.
+        val attackerStatus = when (LocalPublicAbilityState.effectiveKnownAbility(state, actor)) {
+            "poisontouch" -> "psn" to 0.30
+            "toxicchain" -> "tox" to 0.30
+            else -> null
+        }?.takeIf { (status, _) ->
+            val current = reacted.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+            !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, actor)
+        }
+        var branches = listOf(LocalContactAfterHitBranch(reacted, 1.0))
+        if (statuses.isNotEmpty()) {
+            val untouched = 1.0 - statuses.sumOf { it.second }
+            branches = listOf(LocalContactAfterHitBranch(reacted, untouched)) + statuses.map { (status, chance) ->
+                LocalContactAfterHitBranch(updateActor(reacted, actorId) { copyPokemon(it, statusId = status) }, chance)
+            }
+        }
+        if (attackerStatus != null) {
+            val (status, chance) = attackerStatus
+            branches = branches.flatMap { branch ->
+                listOf(
+                    branch.copy(probability = branch.probability * (1.0 - chance)),
+                    LocalContactAfterHitBranch(
+                        updateActor(branch.state, target.battlePokemonId) { copyPokemon(it, statusId = status) },
+                        branch.probability * chance,
+                    ),
+                )
+            }
+        }
+        return branches
     }
-
-    private fun canFlameBodyBurn(
-        state: BattleStateView,
-        actor: BattlePokemonStateView,
-        target: BattlePokemonStateView,
-    ): Boolean =
-        LocalPublicAbilityState.effectiveKnownAbility(state, target) == "flamebody" &&
-            actor.statusId == null &&
-            actor.knownTypeIds.none { canonical(it) == "fire" }
 
     private fun updateActor(
         state: BattleStateView,

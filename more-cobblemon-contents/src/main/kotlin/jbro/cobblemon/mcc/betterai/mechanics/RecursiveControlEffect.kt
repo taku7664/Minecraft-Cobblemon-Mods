@@ -12,7 +12,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * them need the type. Declaring it beside one of the two consumers is what kept those two files
  * mutually dependent after everything else had been separated.
  */
-internal enum class RecursiveControlEffectKind { CHARGE, RECHARGE, DELAYED_STRIKE, TAUNT, ENCORE, TRAP, SALT_CURE }
+internal enum class RecursiveControlEffectKind { CHARGE, RECHARGE, DELAYED_STRIKE, TAUNT, ENCORE, TRAP, SALT_CURE, LEECH_SEED, GHOST_CURSE, PARTIAL_TRAP, FLINCH, WISH, LOCKED_MOVE, DESTINY_BOND, YAWN, CONFUSION, ENDURE }
 
 internal data class RecursiveDelayedStrike(
     val sourcePokemon: BattlePokemonStateView,
