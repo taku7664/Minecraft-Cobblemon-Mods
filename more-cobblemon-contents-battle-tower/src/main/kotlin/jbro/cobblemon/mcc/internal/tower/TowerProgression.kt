@@ -55,11 +55,11 @@ internal object TowerProgression {
     }
 
     /**
-     * The opponents' level for the [win]th win: the Tower's level 50 up to the 20th, then one more each win (51 at the
-     * 21st, 52 at the 22nd), up to Cobblemon's level 100. The challenger stays at 50.
+     * The opponents' level for the [win]th win: the Tower's level 50 for the first 5 wins, then one more every 5 wins
+     * (51 from the 6th, 52 from the 11th, 59 at the 49th), up to Cobblemon's level 100. The challenger stays at 50.
      */
     fun opponentLevel(win: Int): Int =
-        (TOWER_BATTLE_LEVEL_CAP + (win - LEVEL_CLIMB_AFTER_WIN).coerceAtLeast(0)).coerceAtMost(MAX_OPPONENT_LEVEL)
+        (TOWER_BATTLE_LEVEL_CAP + (win - 1).coerceAtLeast(0) / TOWER_BOSS_INTERVAL).coerceAtMost(MAX_OPPONENT_LEVEL)
 
     fun record(progress: TowerProgress, outcome: TowerBattleOutcome): TowerProgressUpdate {
         val after = when (outcome) {
@@ -74,7 +74,6 @@ internal object TowerProgression {
 }
 
 internal const val TOWER_BOSS_INTERVAL = 5
-private const val LEVEL_CLIMB_AFTER_WIN = 20
 private const val MAX_OPPONENT_LEVEL = 100
 /** Every second boss, so every 10th win, is a Champion. */
 internal const val TOWER_CHAMPION_INTERVAL = 10

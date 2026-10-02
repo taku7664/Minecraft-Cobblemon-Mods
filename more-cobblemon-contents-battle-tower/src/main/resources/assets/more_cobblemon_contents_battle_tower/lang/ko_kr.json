@@ -64,7 +64,7 @@
   "screen.more_cobblemon_contents.tower.guide.registered_team.title": "5. 확정한 6마리 유지",
   "screen.more_cobblemon_contents.tower.guide.registered_team.body": "처음 팀 확정 시 등록한 6마리는 도전이 끝날 때까지 별도로 보관됩니다. 그 뒤 모험 파티를 바꿔도 배틀타워 팀은 바뀌지 않습니다. 층 사이의 팀 변경은 등록한 6마리 안에서 출전할 3마리 또는 4마리를 다시 고르는 기능입니다. 도전 포기나 접속 종료로 세션이 끝나면 등록 팀은 폐기됩니다.",
   "screen.more_cobblemon_contents.tower.guide.progression.title": "6. 연승과 보상",
-  "screen.more_cobblemon_contents.tower.guide.progression.body": "승리하면 현재 연승과 최고 연승이 갱신되고 화면에 표시된 BP를 받습니다. 매 5번째 승리는 보스전이며 추가 BP가 붙습니다. 10연승마다 챔피언이, 그 사이 5연승째마다 타워 에이스가 나옵니다. 연승이 높아질수록 입문·실전·고급·프로 단계로 올라가고, 21연승째부터는 상대 레벨이 이길 때마다 1씩 오릅니다(최대 100). 패배하면 현재 연승은 0이 되지만 최고 연승 기록은 남습니다.",
+  "screen.more_cobblemon_contents.tower.guide.progression.body": "승리하면 현재 연승과 최고 연승이 갱신되고 화면에 표시된 BP를 받습니다. 매 5번째 승리는 보스전이며 추가 BP가 붙습니다. 10연승마다 챔피언이, 그 사이 5연승째마다 타워 에이스가 나옵니다. 상대는 처음부터 실전 육성(개체값 31, 노력치 최대)이고, 레벨은 Lv.50에서 시작해 5승마다 1씩 오릅니다(6연승째 Lv.51, 11연승째 Lv.52, 최대 100). 연승이 높아질수록 입문·실전·고급·프로 단계로 올라가며 상대 AI도 강해집니다. 패배하면 현재 연승은 0이 되지만 최고 연승 기록은 남습니다.",
   "screen.more_cobblemon_contents.tower.guide.controls.title": "7. 버튼 사용법",
   "screen.more_cobblemon_contents.tower.guide.controls.body": "포켓몬 카드를 누른 순서가 출전 순서가 됩니다. 팀 확정으로 등록과 선출을 검증하고, 시작으로 다음 배틀에 들어갑니다. 팀 변경은 등록한 6마리를 교체하지 않습니다. 우측 상단 X는 화면만 닫으며, 다시 열면 진행 중인 세션으로 돌아옵니다.",
   "screen.more_cobblemon_contents.tower.guide.troubleshooting.title": "8. 시작되지 않을 때",

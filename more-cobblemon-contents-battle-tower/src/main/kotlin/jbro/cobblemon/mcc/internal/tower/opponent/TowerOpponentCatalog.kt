@@ -39,10 +39,6 @@ internal class TowerPokemonSet internal constructor(
 ) {
     val moves: List<String> = moves.immutableCopy()
 
-    /** The same set with other IVs, such as a Champion held back for their first appearance. */
-    fun withIvs(ivs: TowerStatSpread): TowerPokemonSet = TowerPokemonSet(setId, setTier, mechanic, speciesId, formId, abilityId,
-        natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor, battleLevel)
-
     /** The same set at another level. */
     fun withBattleLevel(level: Int): TowerPokemonSet = TowerPokemonSet(setId, setTier, mechanic, speciesId, formId, abilityId,
         natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor, level)

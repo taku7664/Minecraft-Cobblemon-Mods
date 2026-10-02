@@ -1,10 +1,11 @@
 """Adds the Battle Tower's tier 3 and tier 4 sets, derived from its tier 2 sets.
 
 Tier 2 (from the 6th win) has IVs of 20 and one 252 EV stat. Tier 3 (the advanced stage, wins 11 to 20) and tier 4
-(the pro stage, from the 21st win) keep each set's species, moves, ability, item, nature and gimmick fields and
-train it further, so EVs climb 0, 252, 384, 508 through the stages: tier 3 has IVs of 25 and a second stat at 128,
-tier 4 IVs of 31 and the second stat at 252, plus 4 elsewhere. The second stat is picked from what the set does and
-its nature. Running it again rewrites the upper tiers from the current tier 2 sets.
+(the pro stage, from the 21st win) keep each set's species, moves, ability, item, nature and gimmick fields with a
+full competitive spread: IVs of 31, the tier 2 set's 252 stat, a second stat at 252 picked from what the set does and
+its nature, plus 4 elsewhere. Every tier is trained like this since competitive_spreads.py (the Tower climbs through
+level instead); a tier 2 set already trained keeps its spread. Running it again rewrites the upper tiers from the
+current tier 2 sets.
 
     python tools/tower-sets/gen_upper_tiers.py
 """
@@ -13,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower"
-TIERS = {3: (25, 128), 4: (31, 252)}  # tier: (IVs, EVs in the second stat)
+TIERS = {3: (31, 252), 4: (31, 252)}  # tier: (IVs, EVs in the second stat)
 STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
 
 SLOW = {"brave", "relaxed", "quiet", "sassy"}
@@ -25,6 +26,8 @@ RAISES_SPECIAL_DEFENSE = {"calm", "careful", "sassy", "gentle"}
 
 def spread(tier2_evs, nature, second_evs):
     """A 252/second/4 spread that keeps tier 2's 252 stat."""
+    if sum(tier2_evs.values()) >= 508:
+        return dict(tier2_evs)
     main = max(STATS, key=lambda s: tier2_evs.get(s, 0))
     if main in ("attack", "special_attack"):
         second = "hp" if nature in SLOW else "speed"

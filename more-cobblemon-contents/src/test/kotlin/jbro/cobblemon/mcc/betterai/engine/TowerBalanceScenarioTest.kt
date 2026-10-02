@@ -15,8 +15,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import kotlin.math.pow
 
 /**
- * Battle Tower balance scenario on the AI engine: single 3 vs 3 battles at level 50 against teams drawn from the
- * Tower's own tier 2 Tera sets (the sets every regular opponent from the 6th win on uses), with several player teams.
+ * Battle Tower balance scenario on the AI engine: single 3 vs 3 battles against teams drawn from the Tower's own Tera
+ * sets, trained competitively from the first win and one level higher every 5 wins, with several player teams.
  * Both sides play the same greedy policy: try each move in a forked battle against a random reply and use the one
  * that dealt the most damage. So the win rates compare teams, not players; the Tower's real AI plays better than
  * random replies but not like a person. Report: build/reports/tower-balance.md.
@@ -74,9 +74,9 @@ class TowerBalanceScenarioTest {
 
     /**
      * A Champion's Tera team the way the Tower draws one against a challenger without legendaries: the ace and two
-     * other members, each one of its sets, with IVs of [iv] (25 for the first Champion, 31 from the 20th win).
+     * other members, each one of its sets.
      */
-    private fun championTeam(random: Random, iv: Int): List<RefSet> {
+    private fun championTeam(random: Random): List<RefSet> {
         val name = championAces.keys.toList()[random.nextInt(championAces.size)]
         val sets = towerSets.filter {
             it["set_id"].asString.startsWith("champion_${name}_tera_") && LegendaryClassPolicy.categoryFor(it["species_id"].asString) == null
@@ -87,7 +87,7 @@ class TowerBalanceScenarioTest {
         for (species in order) {
             if (team.size == 3) break
             val variants = sets.getValue(species)
-            val ref = refSet(variants[random.nextInt(variants.size)], trained = false)?.copy(ivs = RefSet.STATS.associateWith { iv }) ?: continue
+            val ref = refSet(variants[random.nextInt(variants.size)], trained = false) ?: continue
             if (team.none { it.item == ref.item }) team += ref
         }
         return team
@@ -171,23 +171,19 @@ class TowerBalanceScenarioTest {
         val battles = 200
         val report = StringBuilder("# Battle Tower balance scenario\n\nSingle 3 vs 3, $battles battles per cell, Tera sets, " +
             "both sides on the same greedy policy (so the Tower's AI levels are not modelled). The challenger stays at " +
-            "level 50. Opponents by stage: tier 1 (IV 15, 0 EVs) wins 1 to 5, tier 2 (IV 20, 252 EVs) 6 to 10, tier 3 " +
-            "(IV 25, 384 EVs) 11 to 20, tier 4 (IV 31, 508 EVs) from 21; Champions at every 10th win (IV 25 the first " +
-            "time, 31 after). From the 21st win opponents are one level higher each win (51, 52, ...); the reach columns " +
-            "use the level of each win, interpolating between the measured levels.\n\n")
+            "level 50. Every opponent is trained competitively (IV 31, 508 EVs) and is one level higher every 5 wins: " +
+            "level 50 for wins 1 to 5, 51 for 6 to 10, up to 59 at the 49th. Tier 1 sets for wins 1 to 5, tier 2 to 4 " +
+            "sets (the same sets now) after; Champions at every 10th win. Each level is measured, not interpolated.\n\n")
         fun at(level: Int, team: List<RefSet>) = team.map { it.copy(level = level) }
-        val climbLevels = listOf(50, 55, 60, 70, 79)
+        fun levelOf(win: Int) = TOWER_LEVEL + (win - 1) / 5
+        val regularLevels = (51..59).toList()
+        val championWins = listOf(10, 20, 30, 40)
         val opponents = ArrayList<Pair<String, (Random) -> List<RefSet>>>()
-        opponents += "tier 1" to { r: Random -> randomTeam(r, pool(false, 1), trained = false) }
-        opponents += "tier 2" to { r: Random -> randomTeam(r, pool(false, 2), trained = false) }
-        opponents += "tier 3" to { r: Random -> randomTeam(r, pool(false, 3), trained = false) }
-        opponents += "Champion Lv50 IV25" to { r: Random -> championTeam(r, 25) }
-        opponents += "Champion Lv50" to { r: Random -> championTeam(r, 31) }
-        opponents += "Champion Lv60" to { r: Random -> at(60, championTeam(r, 31)) }
-        opponents += "Champion Lv70" to { r: Random -> at(70, championTeam(r, 31)) }
-        climbLevels.forEach { level -> opponents += "tier 4 Lv$level" to { r: Random -> at(level, randomTeam(r, pool(false, 4), trained = false)) } }
+        opponents += "tier 1 Lv50" to { r: Random -> randomTeam(r, pool(false, 1), trained = false) }
+        regularLevels.forEach { level -> opponents += "Lv$level" to { r: Random -> at(level, randomTeam(r, pool(false, 4), trained = false)) } }
+        championWins.forEach { win -> opponents += "Champion Lv${levelOf(win)}" to { r: Random -> at(levelOf(win), championTeam(r)) } }
         val players: List<Pair<String, (Random) -> List<RefSet>>> = listOf(
-            "random species, tier 2 sets" to { r -> randomTeam(r, pool(false, 2), trained = false) },
+            "random species, Tower sets" to { r -> randomTeam(r, pool(false, 2), trained = false) },
             "random species, fully trained" to { r -> randomTeam(r, pool(false, 2), trained = true) },
             "Dragonite, Kingambit, Gholdengo" to { _ -> firepower },
         )
@@ -200,24 +196,12 @@ class TowerBalanceScenarioTest {
                 repeat(battles) { if (play(player(random), opponent(random), random)) wins++ }
                 wins.toDouble() / battles
             }
-            val climb = climbLevels.indices.map { rates[7 + it] }
-            /** Tier 4 at [level], read off the measured levels in a straight line between them. */
-            fun tier4(level: Int): Double {
-                val upper = climbLevels.indexOfFirst { it >= level }.takeIf { it >= 0 } ?: return climb.last()
-                if (upper == 0) return climb.first()
-                val (lo, hi) = climbLevels[upper - 1] to climbLevels[upper]
-                return climb[upper - 1] + (climb[upper] - climb[upper - 1]) * (level - lo) / (hi - lo)
-            }
-            // The opponent of each win: tiers by stage, a Champion every 10th (the Aces between fight with their stage's sets).
+            // The opponent of each win: tier 1 to the 5th, a Champion every 10th (the Aces between fight with their
+            // stage's sets), the regular sets at the win's level otherwise.
             fun rateFor(win: Int): Double = when {
-                win == 10 -> rates[3]
-                win == 20 -> rates[4]
-                win == 30 -> rates[5]
-                win == 40 -> rates[6]
+                win in championWins -> rates[1 + regularLevels.size + championWins.indexOf(win)]
                 win <= 5 -> rates[0]
-                win <= 10 -> rates[1]
-                win <= 20 -> rates[2]
-                else -> tier4(TOWER_LEVEL + win - 20)
+                else -> rates[1 + regularLevels.indexOf(levelOf(win))]
             }
             fun reach(wins: Int) = (1..wins).fold(1.0) { p, win -> p * rateFor(win) }
             report.append("| $playerName | " + rates.joinToString(" | ") { "%.1f%%".format(it * 100) } + " | " +
