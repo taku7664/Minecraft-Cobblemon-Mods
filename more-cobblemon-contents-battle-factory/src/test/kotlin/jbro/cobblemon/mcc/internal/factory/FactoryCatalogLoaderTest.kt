@@ -176,7 +176,7 @@ class FactoryCatalogLoaderTest {
               "trainer_id": "cynthia",
               "display_name_key": "factory.trainer.cynthia.name",
               "description_key": "factory.trainer.shared.description",
-              "formats": ["single", "double"],
+              "formats": ["single"],
               "weight": 10,
               "ai_skill": 3,
               "ai_summary": "Choose a legal team from the current Factory rental pool.",

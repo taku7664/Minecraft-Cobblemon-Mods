@@ -337,7 +337,7 @@ object MccHubCaptureHarness {
             listOf(ManagedBattleContentIds.BATTLE_TOWER, ManagedBattleContentIds.BATTLE_FACTORY, ManagedBattleContentIds.PVP)
                 .forEach { content ->
                     val formats = if (content == ManagedBattleContentIds.BATTLE_FACTORY) {
-                        listOf("single_level_50", "single_open_level", "double_level_50", "double_open_level")
+                        listOf("single_level_50", "single_open_level")
                     } else {
                         listOf("single", "double")
                     }

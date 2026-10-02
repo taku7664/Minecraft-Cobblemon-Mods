@@ -115,6 +115,5 @@ internal class Cobblemon173FactoryPveBattleRuntime(
 
     private fun FactoryBattleFormat.toBrainFormat(): BrainBattleFormat = when (this) {
         FactoryBattleFormat.SINGLE -> BrainBattleFormat.SINGLE
-        FactoryBattleFormat.DOUBLE -> BrainBattleFormat.DOUBLE
     }
 }

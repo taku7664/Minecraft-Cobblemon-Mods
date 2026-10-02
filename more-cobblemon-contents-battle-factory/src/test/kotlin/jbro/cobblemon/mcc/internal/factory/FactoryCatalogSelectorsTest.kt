@@ -107,11 +107,11 @@ class FactoryCatalogSelectorsTest {
             )
         }
         val selected = FactoryOpponentSelector(FactoryCatalog("test", listOf(trainer("riley")), sets), firstChoiceRandom)
-            .select(FactoryBattleFormat.DOUBLE, FactoryLevelMode.OPEN_LEVEL, round = 1)
+            .select(FactoryBattleFormat.SINGLE, FactoryLevelMode.OPEN_LEVEL, round = 1)
             as FactoryOpponentSelectionResult.Selected
 
-        assertEquals(4, selected.team.size)
-        assertEquals(4, selected.team.map(FactoryRentalSet::speciesId).distinct().size)
+        assertEquals(3, selected.team.size)
+        assertEquals(3, selected.team.map(FactoryRentalSet::speciesId).distinct().size)
         assertEquals(1, selected.team.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
         assertEquals(1, selected.strategy.members.count { BattleTeamRole.ACE in it.roles })
         selected.team.zip(selected.strategy.members).forEach { (set, member) ->

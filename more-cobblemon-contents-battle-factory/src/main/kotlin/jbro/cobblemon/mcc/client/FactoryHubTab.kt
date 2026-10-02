@@ -97,12 +97,8 @@ internal class FactoryHubTab : MccHubTabContent {
 
     private fun buildOptions(host: MccHubContentHost, layout: FactoryHubLayout, controller: FactoryPlayScreenController) {
         val enabled = !controller.isPending
+        // Singles is the only format, so the level is the one choice before a run.
         val rows = listOf(
-            MccHubKit.ChoiceRow(factory("section.format"),
-                FactoryBattleFormat.entries.map { MccHubKit.Choice(it.name.lowercase(), factory("format.${it.name.lowercase()}")) },
-                controller.chosenFormat.name.lowercase(), enabled) { id ->
-                if (controller.chooseFormat(FactoryBattleFormat.entries.first { it.name.lowercase() == id })) host.rebuild()
-            },
             MccHubKit.ChoiceRow(factory("section.level"),
                 FactoryLevelMode.entries.map { MccHubKit.Choice(it.id, factory("level.${it.id}")) },
                 controller.chosenLevelMode.id, enabled) { id ->

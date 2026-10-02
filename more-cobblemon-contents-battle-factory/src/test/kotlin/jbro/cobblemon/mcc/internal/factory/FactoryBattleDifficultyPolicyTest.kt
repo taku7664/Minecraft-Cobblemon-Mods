@@ -10,7 +10,6 @@ class FactoryBattleDifficultyPolicyTest {
         assertEquals(BattleTrainerTier.BOSS, FactoryBattleDifficultyPolicy.resolve(21, FactoryBattleFormat.SINGLE, 2).difficulty.tier)
         assertEquals(BattleTrainerTier.BOSS, FactoryBattleDifficultyPolicy.resolve(49, FactoryBattleFormat.SINGLE, 5).difficulty.tier)
         assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(20, FactoryBattleFormat.SINGLE, 5).difficulty.tier)
-        assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(21, FactoryBattleFormat.DOUBLE, 5).difficulty.tier)
         assertEquals(BattleTrainerTier.ADVANCED, FactoryBattleDifficultyPolicy.resolve(15, FactoryBattleFormat.SINGLE, 2).difficulty.tier)
         // Rounds 1 and 2 play STANDARD whatever trainer is drawn.
         assertEquals(BattleTrainerTier.STANDARD, FactoryBattleDifficultyPolicy.resolve(3, FactoryBattleFormat.SINGLE, 5).difficulty.tier)

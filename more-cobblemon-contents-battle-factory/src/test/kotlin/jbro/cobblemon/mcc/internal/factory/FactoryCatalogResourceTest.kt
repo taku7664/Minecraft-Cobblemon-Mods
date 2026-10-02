@@ -48,7 +48,6 @@ class FactoryCatalogResourceTest {
         assertTrue(allSets.all { it.roles.isNotEmpty() })
         assertTrue(allSets.all { it.ivs == null })
         assertEquals(84, catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
-        assertEquals(84, catalog.trainersFor(FactoryBattleFormat.DOUBLE).size)
 
         resourceFiles(RENTAL_SET_DIRECTORY).forEach { path ->
             val root = Files.newBufferedReader(path).use(JsonParser::parseReader).asJsonObject

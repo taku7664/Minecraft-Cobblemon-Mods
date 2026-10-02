@@ -16,7 +16,6 @@ class FactoryRentalRulesTest {
 
         assertEquals(6, draft.sets.size)
         assertEquals(3, draft.select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE).sets.size)
-        assertEquals(4, draft.select(listOf("set1", "set2", "set3", "set4"), FactoryBattleFormat.DOUBLE).sets.size)
         assertThrows<IllegalArgumentException> { draft.select(listOf("set1", "set2"), FactoryBattleFormat.SINGLE) }
         assertThrows<IllegalArgumentException> { draft.select(listOf("set1", "set1", "set2"), FactoryBattleFormat.SINGLE) }
     }
@@ -51,7 +50,7 @@ class FactoryRentalRulesTest {
         assertEquals(2, FactoryProgression.roundForBattle(8))
         assertTrue(FactoryProgression.isFactoryHeadBattle(21, FactoryBattleFormat.SINGLE))
         assertTrue(FactoryProgression.isFactoryHeadBattle(49, FactoryBattleFormat.SINGLE))
-        assertFalse(FactoryProgression.isFactoryHeadBattle(21, FactoryBattleFormat.DOUBLE))
+        assertFalse(FactoryProgression.isFactoryHeadBattle(20, FactoryBattleFormat.SINGLE))
     }
 
     @Test

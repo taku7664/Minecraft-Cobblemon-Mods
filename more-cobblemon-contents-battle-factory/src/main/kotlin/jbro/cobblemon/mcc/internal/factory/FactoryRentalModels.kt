@@ -3,12 +3,12 @@ package jbro.cobblemon.mcc.internal.factory
 import java.util.Collections
 import jbro.cobblemon.mcc.internal.validation.IdentifierSyntax
 
+/** The Factory runs singles only: three rentals of six battle. */
 internal enum class FactoryBattleFormat(
     private val id: String,
     val selectionSize: Int,
 ) {
     SINGLE("single", 3),
-    DOUBLE("double", 4),
     ;
 
     fun recordId(levelMode: FactoryLevelMode): String = "${id}_${levelMode.id}"

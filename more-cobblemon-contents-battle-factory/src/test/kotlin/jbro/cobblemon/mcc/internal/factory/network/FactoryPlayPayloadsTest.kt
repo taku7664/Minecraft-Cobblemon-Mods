@@ -51,8 +51,8 @@ class FactoryPlayPayloadsTest {
     @Test
     fun `all screen intents and rejection round trip`() {
         val intents = listOf(
-            FactoryPlayIntent.Start(requestId, FactoryBattleFormat.DOUBLE, FactoryLevelMode.OPEN_LEVEL),
-            FactoryPlayIntent.SelectRentals(requestId, listOf("set_1", "set_2", "set_3", "set_4")),
+            FactoryPlayIntent.Start(requestId, FactoryBattleFormat.SINGLE, FactoryLevelMode.OPEN_LEVEL),
+            FactoryPlayIntent.SelectRentals(requestId, listOf("set_1", "set_2", "set_3")),
             FactoryPlayIntent.ReviseSelection(requestId),
             FactoryPlayIntent.BeginBattle(requestId, listOf("set_3", "set_1", "set_2")),
             FactoryPlayIntent.KeepTeam(requestId),

@@ -6,8 +6,7 @@
       "display_name_key": "factory.more_cobblemon_contents.concept.zapdos_pivot.name",
       "description_key": "factory.more_cobblemon_contents.trainer.shared.description",
       "formats": [
-        "single",
-        "double"
+        "single"
       ],
       "weight": 10,
       "ai_skill": 5,

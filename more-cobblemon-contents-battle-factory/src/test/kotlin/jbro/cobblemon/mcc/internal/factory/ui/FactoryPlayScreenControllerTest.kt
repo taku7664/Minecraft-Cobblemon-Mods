@@ -46,10 +46,9 @@ class FactoryPlayScreenControllerTest {
     fun `start and swap actions use typed values selected by cards`() {
         val sent = ArrayList<FactoryPlayIntent>()
         val available = FactoryPlayScreenController(view(FactoryPlayPhase.AVAILABLE), sent::add)
-        available.chooseFormat(FactoryBattleFormat.DOUBLE)
         available.chooseLevelMode(FactoryLevelMode.OPEN_LEVEL)
         assertTrue(available.start())
-        assertEquals(FactoryBattleFormat.DOUBLE, (sent.single() as FactoryPlayIntent.Start).format)
+        assertEquals(FactoryBattleFormat.SINGLE, (sent.single() as FactoryPlayIntent.Start).format)
         assertEquals(FactoryLevelMode.OPEN_LEVEL, (sent.single() as FactoryPlayIntent.Start).levelMode)
 
         val incomingToken = UUID.randomUUID()
