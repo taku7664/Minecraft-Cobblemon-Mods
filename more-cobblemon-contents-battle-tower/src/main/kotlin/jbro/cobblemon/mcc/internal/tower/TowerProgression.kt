@@ -49,9 +49,19 @@ internal data class TowerProgressUpdate(
 }
 
 internal object TowerProgression {
-    fun rewardForNextVictory(progress: TowerProgress): Int =
-        progress.nextStage.bpPerWin +
-            if (nextOpponent(progress) == TowerOpponentKind.REGULAR) 0 else TOWER_BOSS_BP_BONUS
+    /**
+     * The BP for the next win: the stage's BP, 5 more for a boss, and a milestone bonus: 30 for clearing Normal at its
+     * 20th win, 10 for every 10th win in Endless.
+     */
+    fun rewardForNextVictory(progress: TowerProgress): Int {
+        val nextWin = Math.addExact(progress.currentWinStreak, 1)
+        val boss = if (nextOpponent(progress) == TowerOpponentKind.REGULAR) 0 else TOWER_BOSS_BP_BONUS
+        val milestone = when (progress.mode) {
+            TowerMode.NORMAL -> if (nextWin == TOWER_NORMAL_CLEAR_WINS) TOWER_NORMAL_CLEAR_BP_BONUS else 0
+            TowerMode.ENDLESS -> if (nextWin % TOWER_ENDLESS_MILESTONE_WINS == 0) TOWER_ENDLESS_MILESTONE_BP_BONUS else 0
+        }
+        return progress.nextStage.bpPerWin + boss + milestone
+    }
 
     fun nextOpponent(progress: TowerProgress): TowerOpponentKind {
         val nextWin = Math.addExact(progress.currentWinStreak, 1)
@@ -99,4 +109,7 @@ internal const val TOWER_BOSS_INTERVAL = 5
 private const val MAX_OPPONENT_LEVEL = 100
 private const val NORMAL_CHAMPION_INTERVAL = 10
 internal const val TOWER_BOSS_BP_BONUS = 5
+internal const val TOWER_NORMAL_CLEAR_BP_BONUS = 30
+internal const val TOWER_ENDLESS_MILESTONE_WINS = 10
+internal const val TOWER_ENDLESS_MILESTONE_BP_BONUS = 10
 private const val BOSS_INTERVAL = TOWER_BOSS_INTERVAL

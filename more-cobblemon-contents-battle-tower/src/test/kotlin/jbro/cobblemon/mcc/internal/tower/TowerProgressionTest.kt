@@ -72,7 +72,8 @@ class TowerProgressionTest {
 
     @Test
     fun `every boss victory adds five bp to the stage reward`() {
-        val expected = mapOf(5 to 6, 10 to 7, 15 to 8, 20 to 8, 25 to 9, 50 to 9)
+        // Endless, the default: the 10th, 20th and 50th wins add its milestone 10 as well.
+        val expected = mapOf(5 to 6, 10 to 17, 15 to 8, 20 to 18, 25 to 9, 50 to 19)
 
         expected.forEach { (win, bp) ->
             val before = TowerProgress(TowerBattleFormat.SINGLE, win - 1, win - 1)
@@ -82,6 +83,19 @@ class TowerProgressionTest {
             0,
             TowerProgression.record(TowerProgress(TowerBattleFormat.SINGLE, 4, 4), TowerBattleOutcome.LOSS).rewardBp,
         )
+    }
+
+    @Test
+    fun `clearing Normal pays 30 more and every 10th win in Endless 10 more`() {
+        fun reward(mode: TowerMode, win: Int) =
+            TowerProgression.record(TowerProgress(TowerBattleFormat.SINGLE, win - 1, win - 1, mode), TowerBattleOutcome.WIN).rewardBp
+        assertEquals(7, reward(TowerMode.NORMAL, 10))
+        assertEquals(3 + 5 + 30, reward(TowerMode.NORMAL, 20))
+        // A full Normal run: 10 + 15 + 40 for the stages and bosses, and the clear.
+        assertEquals(95, (1..20).sumOf { reward(TowerMode.NORMAL, it) })
+        assertEquals(2 + 5 + 10, reward(TowerMode.ENDLESS, 10))
+        assertEquals(4 + 5 + 10, reward(TowerMode.ENDLESS, 30))
+        assertEquals(4, reward(TowerMode.ENDLESS, 31))
     }
 
     @Test
