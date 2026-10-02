@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerProgression
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryClassPolicy
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryCount
+import jbro.cobblemon.mcc.internal.tower.TowerLegendaryGroup
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -137,6 +138,9 @@ class TowerOpponentCatalogResourceTest {
         regularProfiles.forEach { profile ->
             val sets = catalog.setsFor(profile)
             assertTrue(sets.map(TowerPokemonSet::speciesId).distinct().size >= MINIMUM_SPECIES_PER_MECHANIC_TIER, profile.profileId)
+            // A trainer answering a restricted Legendary draws one of many, not the pool's only one (once always Mewtwo).
+            val restricted = sets.filter { TowerLegendaryClassPolicy.group(it.speciesId) == TowerLegendaryGroup.LEGENDARY }
+            assertTrue(restricted.map(TowerPokemonSet::speciesId).distinct().size >= 10, "${profile.profileId} restricted: ${restricted.map { it.speciesId }.distinct()}")
             assertTrue(sets.mapNotNull(TowerPokemonSet::heldItemId).distinct().size >= 6, profile.profileId)
             sets.forEach { set -> assertMechanicShape(profile.mechanic!!, set) }
         }
@@ -392,7 +396,10 @@ class TowerOpponentCatalogResourceTest {
     private fun assertMechanicShape(mechanic: MajorBattleMechanic, set: TowerPokemonSet) {
         when (mechanic) {
             MajorBattleMechanic.MEGA -> {
-                assertTrue(set.heldItemId!!.startsWith("mega_showdown:"), set.setId)
+                // A restricted Legendary answering the challenger's holds a battle item, as on the Champions' teams.
+                if (TowerLegendaryClassPolicy.group(set.speciesId) != TowerLegendaryGroup.LEGENDARY || set.speciesId == "cobblemon:mewtwo") {
+                    assertTrue(set.heldItemId!!.startsWith("mega_showdown:"), set.setId)
+                }
                 assertEquals(null, set.teraType)
                 assertEquals(null, set.dmaxLevel)
                 assertEquals(null, set.gmaxFactor)

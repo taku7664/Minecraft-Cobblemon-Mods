@@ -2,18 +2,18 @@
   "schema_version": 4,
   "pokemon_sets": [
     {
-      "set_id": "generated_mega_tier1_dialga",
+      "set_id": "generated_mega_tier1_xerneas",
       "set_tier": 1,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -34,18 +34,18 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier1_dialga",
+      "set_id": "generated_dynamax_tier1_xerneas",
       "set_tier": 1,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -68,18 +68,18 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier1_dialga",
+      "set_id": "generated_tera_tier1_xerneas",
       "set_tier": 1,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -98,21 +98,21 @@
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "poison"
+      "tera_type": "fairy"
     },
     {
-      "set_id": "generated_mega_tier2_dialga",
+      "set_id": "generated_mega_tier2_xerneas",
       "set_tier": 2,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -133,18 +133,18 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier2_dialga",
+      "set_id": "generated_dynamax_tier2_xerneas",
       "set_tier": 2,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -167,18 +167,18 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier2_dialga",
+      "set_id": "generated_tera_tier2_xerneas",
       "set_tier": 2,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -197,21 +197,21 @@
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "poison"
+      "tera_type": "fairy"
     },
     {
-      "set_id": "generated_mega_tier3_dialga",
+      "set_id": "generated_mega_tier3_xerneas",
       "set_tier": 3,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -232,18 +232,18 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier3_dialga",
+      "set_id": "generated_dynamax_tier3_xerneas",
       "set_tier": 3,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -266,18 +266,18 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier3_dialga",
+      "set_id": "generated_tera_tier3_xerneas",
       "set_tier": 3,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -296,21 +296,21 @@
         "special_defense": 0,
         "speed": 128
       },
-      "tera_type": "poison"
+      "tera_type": "fairy"
     },
     {
-      "set_id": "generated_mega_tier4_dialga",
+      "set_id": "generated_mega_tier4_xerneas",
       "set_tier": 4,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -331,18 +331,18 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier4_dialga",
+      "set_id": "generated_dynamax_tier4_xerneas",
       "set_tier": 4,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -365,18 +365,18 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier4_dialga",
+      "set_id": "generated_tera_tier4_xerneas",
       "set_tier": 4,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:xerneas",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
+      "ability_id": "cobblemon:fairyaura",
       "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "held_item_id": "cobblemon:power_herb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
+        "cobblemon:geomancy",
+        "cobblemon:moonblast",
+        "cobblemon:focusblast",
         "cobblemon:thunderbolt"
       ],
       "ivs": {
@@ -395,7 +395,7 @@
         "special_defense": 0,
         "speed": 252
       },
-      "tera_type": "poison"
+      "tera_type": "fairy"
     }
   ]
 }

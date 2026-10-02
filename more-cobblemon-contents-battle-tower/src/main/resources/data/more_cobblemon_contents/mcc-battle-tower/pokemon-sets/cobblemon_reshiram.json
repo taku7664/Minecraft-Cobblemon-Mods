@@ -2,19 +2,19 @@
   "schema_version": 4,
   "pokemon_sets": [
     {
-      "set_id": "generated_mega_tier1_giratina",
+      "set_id": "generated_mega_tier1_reshiram",
       "set_tier": 1,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 15,
@@ -34,19 +34,19 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier1_giratina",
+      "set_id": "generated_dynamax_tier1_reshiram",
       "set_tier": 1,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 15,
@@ -68,19 +68,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier1_giratina",
+      "set_id": "generated_tera_tier1_reshiram",
       "set_tier": 1,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 15,
@@ -98,22 +98,22 @@
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "fighting"
+      "tera_type": "fire"
     },
     {
-      "set_id": "generated_mega_tier2_giratina",
+      "set_id": "generated_mega_tier2_reshiram",
       "set_tier": 2,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 20,
@@ -124,28 +124,28 @@
         "speed": 20
       },
       "evs": {
-        "hp": 252,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 0,
+        "special_attack": 252,
         "special_defense": 0,
         "speed": 0
       }
     },
     {
-      "set_id": "generated_dynamax_tier2_giratina",
+      "set_id": "generated_dynamax_tier2_reshiram",
       "set_tier": 2,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 20,
@@ -156,10 +156,10 @@
         "speed": 20
       },
       "evs": {
-        "hp": 252,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 0,
+        "special_attack": 252,
         "special_defense": 0,
         "speed": 0
       },
@@ -167,19 +167,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier2_giratina",
+      "set_id": "generated_tera_tier2_reshiram",
       "set_tier": 2,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 20,
@@ -190,29 +190,29 @@
         "speed": 20
       },
       "evs": {
-        "hp": 252,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 0,
+        "special_attack": 252,
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "fighting"
+      "tera_type": "fire"
     },
     {
-      "set_id": "generated_mega_tier3_giratina",
+      "set_id": "generated_mega_tier3_reshiram",
       "set_tier": 3,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 25,
@@ -223,28 +223,28 @@
         "speed": 25
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 128,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 128
       }
     },
     {
-      "set_id": "generated_dynamax_tier3_giratina",
+      "set_id": "generated_dynamax_tier3_reshiram",
       "set_tier": 3,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 25,
@@ -255,30 +255,30 @@
         "speed": 25
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 128,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 128
       },
       "dmax_level": 10,
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier3_giratina",
+      "set_id": "generated_tera_tier3_reshiram",
       "set_tier": 3,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 25,
@@ -289,29 +289,29 @@
         "speed": 25
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 128,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 128
       },
-      "tera_type": "fighting"
+      "tera_type": "fire"
     },
     {
-      "set_id": "generated_mega_tier4_giratina",
+      "set_id": "generated_mega_tier4_reshiram",
       "set_tier": 4,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 31,
@@ -322,28 +322,28 @@
         "speed": 31
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 252,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
       }
     },
     {
-      "set_id": "generated_dynamax_tier4_giratina",
+      "set_id": "generated_dynamax_tier4_reshiram",
       "set_tier": 4,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 31,
@@ -354,30 +354,30 @@
         "speed": 31
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 252,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
       },
       "dmax_level": 10,
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier4_giratina",
+      "set_id": "generated_tera_tier4_reshiram",
       "set_tier": 4,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:giratina",
+      "species_id": "cobblemon:reshiram",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:impish",
+      "ability_id": "cobblemon:turboblaze",
+      "nature_id": "cobblemon:modest",
       "held_item_id": "cobblemon:heavy_duty_boots",
       "moves": [
-        "cobblemon:dragontail",
-        "cobblemon:rest",
-        "cobblemon:shadowball",
-        "cobblemon:sleeptalk"
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roost"
       ],
       "ivs": {
         "hp": 31,
@@ -388,14 +388,14 @@
         "speed": 31
       },
       "evs": {
-        "hp": 252,
+        "hp": 4,
         "attack": 0,
-        "defense": 252,
-        "special_attack": 0,
-        "special_defense": 4,
-        "speed": 0
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
       },
-      "tera_type": "fighting"
+      "tera_type": "fire"
     }
   ]
 }

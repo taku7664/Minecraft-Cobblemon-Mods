@@ -2,19 +2,19 @@
   "schema_version": 4,
   "pokemon_sets": [
     {
-      "set_id": "generated_mega_tier1_dialga",
+      "set_id": "generated_mega_tier1_kyurem",
       "set_tier": 1,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 15,
@@ -34,19 +34,19 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier1_dialga",
+      "set_id": "generated_dynamax_tier1_kyurem",
       "set_tier": 1,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 15,
@@ -68,19 +68,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier1_dialga",
+      "set_id": "generated_tera_tier1_kyurem",
       "set_tier": 1,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 15,
@@ -98,22 +98,22 @@
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "poison"
+      "tera_type": "ice"
     },
     {
-      "set_id": "generated_mega_tier2_dialga",
+      "set_id": "generated_mega_tier2_kyurem",
       "set_tier": 2,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 20,
@@ -133,19 +133,19 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier2_dialga",
+      "set_id": "generated_dynamax_tier2_kyurem",
       "set_tier": 2,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 20,
@@ -167,19 +167,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier2_dialga",
+      "set_id": "generated_tera_tier2_kyurem",
       "set_tier": 2,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 20,
@@ -197,22 +197,22 @@
         "special_defense": 0,
         "speed": 0
       },
-      "tera_type": "poison"
+      "tera_type": "ice"
     },
     {
-      "set_id": "generated_mega_tier3_dialga",
+      "set_id": "generated_mega_tier3_kyurem",
       "set_tier": 3,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 25,
@@ -232,19 +232,19 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier3_dialga",
+      "set_id": "generated_dynamax_tier3_kyurem",
       "set_tier": 3,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 25,
@@ -266,19 +266,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier3_dialga",
+      "set_id": "generated_tera_tier3_kyurem",
       "set_tier": 3,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 25,
@@ -296,22 +296,22 @@
         "special_defense": 0,
         "speed": 128
       },
-      "tera_type": "poison"
+      "tera_type": "ice"
     },
     {
-      "set_id": "generated_mega_tier4_dialga",
+      "set_id": "generated_mega_tier4_kyurem",
       "set_tier": 4,
       "mechanic_id": "mega",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 31,
@@ -331,19 +331,19 @@
       }
     },
     {
-      "set_id": "generated_dynamax_tier4_dialga",
+      "set_id": "generated_dynamax_tier4_kyurem",
       "set_tier": 4,
       "mechanic_id": "dynamax",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 31,
@@ -365,19 +365,19 @@
       "gmax_factor": false
     },
     {
-      "set_id": "generated_tera_tier4_dialga",
+      "set_id": "generated_tera_tier4_kyurem",
       "set_tier": 4,
       "mechanic_id": "tera",
-      "species_id": "cobblemon:dialga",
+      "species_id": "cobblemon:kyurem",
       "form_id": null,
-      "ability_id": "cobblemon:telepathy",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:focus_sash",
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:fireblast",
-        "cobblemon:heavyslam",
-        "cobblemon:thunderbolt"
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
       ],
       "ivs": {
         "hp": 31,
@@ -395,7 +395,7 @@
         "special_defense": 0,
         "speed": 252
       },
-      "tera_type": "poison"
+      "tera_type": "ice"
     }
   ]
 }
