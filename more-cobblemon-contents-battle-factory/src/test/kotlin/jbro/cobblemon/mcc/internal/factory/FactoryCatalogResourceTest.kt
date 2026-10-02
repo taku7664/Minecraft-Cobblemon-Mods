@@ -25,7 +25,7 @@ class FactoryCatalogResourceTest {
     fun `every bundled trainer is named and wears an RCT Trainers+ look no more than one other trainer wears`() {
         val catalog = bundledCatalog()
         val trainers = FactoryBattleFormat.entries.flatMap(catalog::trainersFor).distinctBy { it.trainerId }
-        assertEquals(116, trainers.size)
+        assertEquals(162, trainers.size)
         trainers.forEach { trainer ->
             val skin = trainer.appearance?.texture
             assertTrue(skin != null && skin.startsWith("rctmod:textures/trainers/single/") && skin.endsWith(".png"), "${trainer.trainerId} wears $skin")
@@ -33,7 +33,7 @@ class FactoryCatalogResourceTest {
             assertTrue(trainer.displayNameKey == "trainer.more_cobblemon_contents.${trainer.trainerId}", trainer.displayNameKey)
         }
         val wearers = trainers.groupBy { it.appearance?.texture }
-        assertEquals(58, wearers.size)
+        assertEquals(81, wearers.size)
         assertTrue(wearers.values.all { it.size <= 2 }, "a look worn more than twice")
         // Neighbours in the list wear different looks.
         trainers.sortedBy { it.trainerId }.zipWithNext().forEach { (a, b) -> assertTrue(a.appearance?.texture != b.appearance?.texture) }
@@ -62,7 +62,7 @@ class FactoryCatalogResourceTest {
         assertTrue(allSets.all { it.preferredMoveIds.all(it.moveIds::contains) })
         assertTrue(allSets.all { it.roles.isNotEmpty() })
         assertTrue(allSets.all { it.ivs == null })
-        assertEquals(116, catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
+        assertEquals(162, catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
 
         resourceFiles(RENTAL_SET_DIRECTORY).forEach { path ->
             val root = Files.newBufferedReader(path).use(JsonParser::parseReader).asJsonObject

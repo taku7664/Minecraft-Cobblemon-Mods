@@ -1,9 +1,10 @@
-"""Writes the Battle Factory's trainers: 116 named trainers, each dressed in one of 58 RCT Trainers+ looks.
+"""Writes the Battle Factory's trainers: 162 named trainers, each dressed in one of 81 RCT Trainers+ looks.
 
 The Factory's opponents rent their team from the round's pool like the challenger, so a trainer is a name, a look,
-an AI skill and a pair of battle objectives. Every ordinary adult look in the pack (children, swimmers, villains,
-named characters and looks whose gender reads unclear are left out) dresses two trainers of its gender, so no look
-is worn more than twice; neighbours in the list wear different looks. Names are Korean full names with an English
+an AI skill and a pair of battle objectives. Every trainer-class look in the pack, children and swimmers included,
+dresses two trainers of the gender it shows, so no look is worn more than twice; neighbours in the list wear
+different looks. Only villains (grunts, admins), named characters (leaders, Elite Four, Champions, players) and the
+joke NPCs are left out, since a Factory trainer has an ordinary name. Names are Korean full names with an English
 counterpart of the same gender. Running it again rewrites every trainer file and the trainers' language keys.
 
     python tools/facility-trainers/gen_factory_trainers.py [path/to/RCT Trainers+.zip]
@@ -35,29 +36,39 @@ MALE_LOOKS = [
     "pokemon_trainer_cedric_0396", "police_officer_alex_0330", "rancher_marco_03be", "rich_boy_jason_032b",
     "rocker_luca_011d", "ruin_mamoac_benjamin_025b", "sailor_damian_03eb", "science_society_scientist_rogue_electivire_05df",
     "skier_bjorn_0356", "super_nerd_aavery_00b2", "tamer_cole_0129", "veteran_armando_03fb", "worker_braden_0460",
-    "expert_kenlawa_mimikyu_1_05e5",
+    "expert_kenlawa_mimikyu_1_05e5", "bug_catcher_01ec", "camper_anthony_0304", "youngster_austin_0303",
+    "school_kid_brunore_001e", "tuber_conner_03f8", "ninja_boy_antonio_0359", "swimmer_adrian_035e", "psychic_abigail_0345",
+    "pokemon_ranger_allison_0337", "trainer_77_05f6", "crush_kin_mik_and_kia_022d", "sis_and_bro_ava_and_geb_0240",
+    "interviewers_oli_03ff",
 ]
 FEMALE_LOOKS = [
     "aroma_lady_alison_0480", "battle_girl_helen_0308", "beauty_bridget_0109", "breeder_alize_0208", "channeler_01c6",
     "cowgirl_shelley_0312", "crush_girl_cyndy_024f", "cyclist_kayla_0301", "friendly_teacher_0007", "idol_grace_0402",
     "lady_gillian_0234", "madame_rebecca_0488", "painter_celina_0232", "parasol_lady_alexa_03e1", "ranger_beth_0255",
     "reporter_kinsey_0401", "skier_andrea_0352", "waitress_kati_03fc", "lass_ali_007b", "picnicker_alicia_009a",
+    "school_kid_christine_03f1", "tuber_alexis_022f", "poke_kid_ariel_0444", "swimmer_aubree_0375", "poke_fan_leonard_0479",
+    "twins_eli_and_anne_01e4", "young_couple_eve_and_jon_024d", "young_couple_nat_047f", "cool_couple_lex_and_nya_0259",
+    "double_team_al_0390",
 ]
 
 KO_SURNAMES = ["한", "오", "서", "신", "권", "황", "안", "송", "류", "전", "홍", "고", "문", "양", "손", "배", "백", "허", "남", "노"]
 KO_MALE = ["도윤", "서준", "하준", "은우", "시우", "지호", "예준", "유준", "수호", "이안", "선우", "주원", "건우", "우진", "현우",
            "지훈", "민준", "도현", "준우", "연우", "태윤", "시윤", "정우", "승우", "윤우", "지환", "은찬", "민재", "준혁", "서진",
-           "재윤", "하람", "로운", "태오", "이준", "시후", "준서", "유찬"]
+           "재윤", "하람", "로운", "태오", "이준", "시후", "준서", "유찬", "준호", "성민", "동현", "민혁", "재민", "현수",
+           "지성", "태민", "우현", "승민", "정훈", "상우", "영재"]
 KO_FEMALE = ["서아", "하윤", "지안", "아린", "지우", "서윤", "하은", "수아", "윤서", "채원", "지유", "시아", "다은", "예린", "소율",
-             "유나", "하린", "은서", "가은", "나은"]
+             "유나", "하린", "은서", "가은", "나은", "민지", "예은", "수빈", "지민", "서연", "다인", "채은", "소윤", "유진",
+             "혜원"]
 EN_SURNAMES = ["Adams", "Baker", "Brooks", "Clark", "Cole", "Davis", "Ellis", "Foster", "Gray", "Hall", "Hill", "Hughes",
                "King", "Lane", "Long", "Moore", "Nash", "Price", "Scott", "Shaw", "Stone", "Ward", "West", "Wood", "Young",
                "Bell", "Cross", "Fox", "Hart"]
 EN_MALE = ["Aaron", "Adrian", "Austin", "Blake", "Brandon", "Carter", "Colin", "Connor", "Daniel", "David", "Dylan", "Eli",
            "Ethan", "Evan", "Felix", "Finn", "Henry", "Hugo", "Ian", "Jack", "Jacob", "Jason", "Jonah", "Kevin", "Leo",
-           "Liam", "Lucas", "Marcus", "Mason", "Max", "Miles", "Nathan", "Noah", "Oliver", "Owen", "Peter", "Ryan", "Simon"]
+           "Liam", "Lucas", "Marcus", "Mason", "Max", "Miles", "Nathan", "Noah", "Oliver", "Owen", "Peter", "Ryan", "Simon",
+           "Tyler", "Victor", "Wesley", "Zach", "Caleb", "Gavin", "Isaac", "Jasper", "Kyle", "Logan", "Nolan", "Reid", "Toby"]
 EN_FEMALE = ["Alice", "Amelia", "Anna", "Ava", "Bella", "Chloe", "Clara", "Daisy", "Ella", "Emma", "Grace", "Hannah",
-             "Ivy", "Julia", "Kate", "Lily", "Lucy", "Mia", "Nora", "Ruby"]
+             "Ivy", "Julia", "Kate", "Lily", "Lucy", "Mia", "Nora", "Ruby", "Zoe", "Sophie", "Rose", "Paige", "Olivia",
+             "Naomi", "Maya", "Leah", "Hazel", "Fiona"]
 
 # The AI skills and objective pairs the Factory's trainers had, spread over the new list in turn.
 SKILLS = [2, 3, 4, 5, 3, 4, 5]

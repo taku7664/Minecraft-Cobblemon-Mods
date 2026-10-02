@@ -15,8 +15,8 @@
         "field_control",
         "preserve_core"
       ],
-      "skin": "rctmod:textures/trainers/single/idol_grace_0402.png",
-      "slim": false
+      "skin": "rctmod:textures/trainers/single/double_team_al_0390.png",
+      "slim": true
     }
   ]
 }
