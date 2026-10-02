@@ -21,10 +21,10 @@ class TowerBattleDifficultyPolicyTest {
     }
 
     @Test
-    fun `Normal bosses climb a step at a time and only its last Champion plays boss difficulty`() {
+    fun `Normal's Tower Aces play advanced and only its last Champion plays boss difficulty`() {
         fun tier(stage: TowerStreakStage, champion: Boolean) =
             TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.TIER_BOSS, 4, TowerMode.NORMAL, champion).difficulty.tier
-        assertEquals(BattleTrainerTier.STANDARD, tier(TowerStreakStage.INTRODUCTORY, champion = false))
+        assertEquals(BattleTrainerTier.ADVANCED, tier(TowerStreakStage.INTRODUCTORY, champion = false))
         assertEquals(BattleTrainerTier.ADVANCED, tier(TowerStreakStage.PRACTICAL, champion = true))
         assertEquals(BattleTrainerTier.ADVANCED, tier(TowerStreakStage.ADVANCED, champion = false))
         assertEquals(BattleTrainerTier.BOSS, tier(TowerStreakStage.ADVANCED, champion = true))
