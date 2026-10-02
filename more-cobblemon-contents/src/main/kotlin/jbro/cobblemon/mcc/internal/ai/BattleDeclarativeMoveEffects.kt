@@ -407,7 +407,53 @@ object BattleDeclarativeMoveEffects {
                 fractionRange = BattleFractionRange(1.0, 1.0)),
             BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.USER, 1.0, valueId = "slp"),
         ),
+        // Heals that Showdown computes in onHit. The weather scaling and Strength Sap's amount depend on the board,
+        // so they carry a marker and the calculator resolves the fraction per user (PublicBattleTacticalCalculator).
+        "synthesis" to listOf(halfHeal(WEATHER_HEAL_SUN)),
+        "morningsun" to listOf(halfHeal(WEATHER_HEAL_SUN)),
+        "moonlight" to listOf(halfHeal(WEATHER_HEAL_SUN)),
+        "shoreup" to listOf(halfHeal(WEATHER_HEAL_SAND)),
+        "strengthsap" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER, 1.0,
+                valueId = HEAL_TARGET_ATTACK, fractionRange = BattleFractionRange(0.0, 0.0)),
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, 1.0,
+                statStages = mapOf("atk" to -1)),
+        ),
+        // Belly Drum maximises Attack for half the user's HP; the calculator turns +6 into what reaches +6 from the
+        // user's current stage.
+        "bellydrum" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
+                valueId = MAXIMISE_STAGE, statStages = mapOf("atk" to 6)),
+            hpCost(0.5),
+        ),
+        // Curse depends on the user's type: a Ghost pays half its HP to curse the target, anyone else raises Attack
+        // and Defense and lowers Speed. Both halves are declared; the calculator keeps the one the user's type picks.
+        "curse" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
+                valueId = NON_GHOST_CURSE, statStages = mapOf("atk" to 1, "def" to 1, "spe" to -1)),
+            BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, 1.0,
+                valueId = GHOST_CURSE, fractionRange = BattleFractionRange(0.5, 0.5)),
+        ),
+        "filletaway" to listOf(hpCost(0.5)),
+        "clangoroussoul" to listOf(hpCost(1.0 / 3.0)),
+        "tidyup" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
+                statStages = mapOf("atk" to 1, "spe" to 1)),
+        ),
     )
+
+    const val WEATHER_HEAL_SUN = "weather_heal_sun"
+    const val WEATHER_HEAL_SAND = "weather_heal_sand"
+    const val HEAL_TARGET_ATTACK = "heal_target_attack"
+    const val GHOST_CURSE = "ghost_curse"
+    const val NON_GHOST_CURSE = "non_ghost_curse"
+    const val MAXIMISE_STAGE = "maximise_stage"
+
+    private fun halfHeal(marker: String) = BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION,
+        BattleMoveEffectTarget.USER, 1.0, valueId = marker, fractionRange = BattleFractionRange(0.5, 0.5))
+
+    private fun hpCost(fraction: Double) = BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL,
+        BattleMoveEffectTarget.USER, 1.0, fractionRange = BattleFractionRange(fraction, fraction))
 
     private fun effect(
         kind: BattleMoveEffectKind,

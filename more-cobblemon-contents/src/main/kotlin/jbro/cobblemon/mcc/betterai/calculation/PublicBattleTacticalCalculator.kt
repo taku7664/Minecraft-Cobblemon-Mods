@@ -12,6 +12,8 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
@@ -675,10 +677,120 @@ internal object PublicBattleTacticalCalculator {
     ): BattleActionCandidate {
         val details = candidate.moveDetails ?: return candidate
         val actor = candidate.actorSlot?.let { active(context, actingSide, it) } ?: return candidate
-        val typeId = LocalPublicMoveDamageInputs.resolvedTypeId(candidate, actor, context.state) ?: return candidate
-        if (typeId == details.typeId) return candidate
-        return candidate.copyWith(moveDetails = details.copy(typeId = typeId))
+        val typeId = LocalPublicMoveDamageInputs.resolvedTypeId(candidate, actor, context.state) ?: details.typeId
+        val effects = details.effects?.let { resolveCallbackEffects(it, candidate, actor, context, actingSide) }
+        if (typeId == details.typeId && effects === details.effects) return candidate
+        return candidate.copyWith(moveDetails = details.copy(typeId = typeId, effects = effects))
     }
+
+    /**
+     * Effects Showdown works out in a move's callbacks, declared with a marker (BattleDeclarativeMoveEffects) and
+     * settled here for this user on this board: the weather a Synthesis heals in, the Attack a Strength Sap drains,
+     * the user's type that picks Curse's half, and the stage Belly Drum actually adds.
+     */
+    private fun resolveCallbackEffects(
+        effects: BattleMoveEffectsView,
+        candidate: BattleActionCandidate,
+        actor: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): BattleMoveEffectsView {
+        if (effects.effects.none { it.valueId in CALLBACK_MARKERS || it.kind == BattleMoveEffectKind.VOLATILE_STATUS }) return effects
+        val ghost = actor.knownTypeIds.takeIf { it.isNotEmpty() }?.any { PublicIds.canonical(it) == "ghost" }
+        var changed = false
+        val resolved = effects.effects.mapNotNull { effect ->
+            val next = when {
+                effect.valueId == BattleDeclarativeMoveEffects.WEATHER_HEAL_SUN ->
+                    healFraction(effect, sunHealFraction(actor, context))
+                effect.valueId == BattleDeclarativeMoveEffects.WEATHER_HEAL_SAND ->
+                    healFraction(effect, if (LocalPublicFieldMechanics.effectiveWeatherId(context.state) in SAND_WEATHER) 2.0 / 3.0 else 0.5)
+                effect.valueId == BattleDeclarativeMoveEffects.HEAL_TARGET_ATTACK ->
+                    strengthSapTarget(candidate, context, actingSide)
+                        ?.let { target -> strengthSapFraction(actor, target) }
+                        ?.let { healFraction(effect, it) }
+                        ?: effect
+                effect.valueId == BattleDeclarativeMoveEffects.NON_GHOST_CURSE -> effect.takeIf { ghost != true }
+                effect.valueId == BattleDeclarativeMoveEffects.GHOST_CURSE -> effect.takeIf { ghost != false }
+                effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && PublicIds.canonical(effect.valueId.orEmpty()) == "curse" ->
+                    effect.takeIf { ghost != false }
+                effect.valueId == BattleDeclarativeMoveEffects.MAXIMISE_STAGE -> {
+                    val stages = effect.statStages.mapValues { (stat, _) -> 6 - currentStage(actor, stat) }
+                        .filterValues { it > 0 }
+                    if (stages.isEmpty()) null else BattleMoveEffectView(effect.kind, effect.target, effect.probability,
+                        effect.valueId, effect.fractionRange, effect.amountRange, stages)
+                }
+                else -> effect
+            }
+            if (next !== effect) changed = true
+            next
+        }
+        if (!changed) return effects
+        return BattleMoveEffectsView(effects.coverage, resolved, effects.scriptedBehavior, effects.requirements, effects.mechanicFlags)
+    }
+
+    /** Synthesis, Morning Sun and Moonlight: 2/3 in sun, 1/4 in any other weather, 1/2 without. */
+    private fun sunHealFraction(actor: BattlePokemonStateView, context: BattleDecisionContext): Double {
+        val weather = LocalPublicFieldMechanics.effectiveWeatherId(context.state)
+        // A Utility Umbrella holder heals as if there were no sun or rain (Pokemon.effectiveWeather).
+        val umbrella = LocalPublicItemState.activeItemId(context.state, actor) == "utilityumbrella"
+        return when {
+            weather in SUN_WEATHER -> if (umbrella) 0.5 else 2.0 / 3.0
+            weather in RAIN_WEATHER -> if (umbrella) 0.5 else 0.25
+            weather in SAND_WEATHER || weather in SNOW_WEATHER -> 0.25
+            else -> 0.5
+        }
+    }
+
+    private fun strengthSapTarget(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): BattlePokemonStateView? {
+        val explicit = candidate.targets.singleOrNull()
+        val foe = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
+        return if (explicit != null) {
+            context.state.pokemon.firstOrNull { it.side == explicit.side && it.activeSlot == explicit.slot && !it.fainted }
+        } else {
+            context.state.pokemon.singleOrNull { it.side == foe && it.activeSlot != null && !it.fainted }
+        }
+    }
+
+    /** Strength Sap heals by the target's Attack with its stage, as a fraction of the user's maximum HP. */
+    private fun strengthSapFraction(actor: BattlePokemonStateView, target: BattlePokemonStateView): Double? {
+        val attack = target.combatStats?.attack ?: return null
+        val maxHp = actor.combatStats?.maxHp ?: return null
+        val stage = currentStage(target, "atk")
+        val multiplier = if (stage >= 0) (2.0 + stage) / 2.0 else 2.0 / (2.0 - stage)
+        val midpointAttack = (attack.minimum + attack.maximum) / 2.0
+        val midpointHp = (maxHp.minimum + maxHp.maximum) / 2.0
+        if (midpointHp <= 0.0) return null
+        return (kotlin.math.floor(midpointAttack * multiplier) / midpointHp).coerceIn(0.0, 1.0)
+    }
+
+    /** States carry a stage under its short or its long name, depending on what wrote it. */
+    private fun currentStage(pokemon: BattlePokemonStateView, stat: String): Int {
+        val names = STAGE_NAMES[PublicIds.canonical(stat)] ?: setOf(PublicIds.canonical(stat))
+        return pokemon.statStages.entries.filter { PublicIds.canonical(it.key) in names }.sumOf { it.value }.coerceIn(-6, 6)
+    }
+
+    private val STAGE_NAMES = listOf(
+        setOf("atk", "attack"), setOf("def", "defense", "defence"), setOf("spa", "specialattack"),
+        setOf("spd", "specialdefense", "specialdefence"), setOf("spe", "speed"),
+    ).flatMap { names -> names.map { it to names } }.toMap()
+
+    private fun healFraction(effect: BattleMoveEffectView, fraction: Double): BattleMoveEffectView =
+        BattleMoveEffectView(effect.kind, effect.target, effect.probability, effect.valueId,
+            BattleFractionRange(fraction, fraction), effect.amountRange, effect.statStages)
+
+    private val CALLBACK_MARKERS = setOf(
+        BattleDeclarativeMoveEffects.WEATHER_HEAL_SUN, BattleDeclarativeMoveEffects.WEATHER_HEAL_SAND,
+        BattleDeclarativeMoveEffects.HEAL_TARGET_ATTACK, BattleDeclarativeMoveEffects.NON_GHOST_CURSE,
+        BattleDeclarativeMoveEffects.GHOST_CURSE, BattleDeclarativeMoveEffects.MAXIMISE_STAGE,
+    )
+    private val SUN_WEATHER = setOf("sun", "sunnyday", "harshsunlight", "desolateland")
+    private val RAIN_WEATHER = setOf("rain", "raindance", "heavyrain", "primordialsea")
+    private val SAND_WEATHER = setOf("sand", "sandstorm")
+    private val SNOW_WEATHER = setOf("hail", "snow", "snowscape")
 
 
     private fun active(context: BattleDecisionContext, side: BattleSide, slot: Int): BattlePokemonStateView? =
