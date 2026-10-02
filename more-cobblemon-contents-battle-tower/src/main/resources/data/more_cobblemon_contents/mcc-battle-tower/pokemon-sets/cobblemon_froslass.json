@@ -131,6 +131,204 @@
         "special_defense": 0,
         "speed": 0
       }
+    },
+    {
+      "set_id": "generated_dynamax_tier3_froslass",
+      "set_tier": 3,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier3_froslass",
+      "set_tier": 3,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "generated_mega_tier3_froslass",
+      "set_tier": 3,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "mega_showdown:froslassite",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier4_froslass",
+      "set_tier": 4,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier4_froslass",
+      "set_tier": 4,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "generated_mega_tier4_froslass",
+      "set_tier": 4,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:froslass",
+      "form_id": null,
+      "ability_id": "cobblemon:cursedbody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "mega_showdown:froslassite",
+      "moves": [
+        "cobblemon:destinybond",
+        "cobblemon:poltergeist",
+        "cobblemon:tripleaxel",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      }
     }
   ]
 }

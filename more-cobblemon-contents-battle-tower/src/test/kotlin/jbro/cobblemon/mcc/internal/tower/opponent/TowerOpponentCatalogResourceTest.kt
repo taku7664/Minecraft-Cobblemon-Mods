@@ -342,7 +342,8 @@ class TowerOpponentCatalogResourceTest {
         const val SIGNATURE_SPECIES_PER_TRAINER = 3
         const val MINIMUM_DISTINCT_SIGNATURE_GROUPS = 60
         const val MINIMUM_SPECIES_PER_MECHANIC_TIER = 50
-        const val EXPECTED_PROFILE_CATEGORY_COUNT = 24
+        // Per mechanic and format: introductory, practical, advanced and pro regulars, and the two boss kinds.
+        const val EXPECTED_PROFILE_CATEGORY_COUNT = 36
         const val TRAINER_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/trainers"
         const val POOL_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/pools"
         const val ENCOUNTER_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/encounters"

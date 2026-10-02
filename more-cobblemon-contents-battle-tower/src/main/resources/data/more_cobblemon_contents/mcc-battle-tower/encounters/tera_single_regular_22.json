@@ -102,9 +102,7 @@
         "trainer_096"
       ],
       "stage_ids": [
-        "practical",
-        "advanced",
-        "pro"
+        "practical"
       ],
       "format": "single",
       "opponent_kind": "regular",
