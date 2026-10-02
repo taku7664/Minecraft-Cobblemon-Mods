@@ -2,6 +2,7 @@
   "chat.type.jbro_policy.chat": "%s: %s",
   "message.jbro_policy.announcement": "[공지]",
   "message.jbro_policy.tip": "[안내]",
+  "message.jbro_policy.operator_whisper": "[운영자로부터 메세지가 왔어요]",
   "rank.jbro_policy.hard_champion": "하드 챔피언",
 
   "message.jbro_policy.plaza.usage": "사용법: /plaza enter (입장), /plaza exit (퇴장)",

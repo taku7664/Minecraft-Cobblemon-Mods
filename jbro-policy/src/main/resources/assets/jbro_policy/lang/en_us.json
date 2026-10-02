@@ -2,6 +2,7 @@
   "chat.type.jbro_policy.chat": "%s: %s",
   "message.jbro_policy.announcement": "[Notice]",
   "message.jbro_policy.tip": "[Tip]",
+  "message.jbro_policy.operator_whisper": "[A message from the operators]",
   "rank.jbro_policy.hard_champion": "Hard Champion",
 
   "message.jbro_policy.plaza.usage": "Usage: /plaza enter, /plaza exit",
