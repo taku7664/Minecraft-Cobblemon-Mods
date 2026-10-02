@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_lance",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_lance",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:dragonite"
+      ],
+      "roster_set_ids": [
+        "champion_lance_mega_gyarados",
+        "champion_lance_mega_aerodactyl",
+        "champion_lance_mega_charizard",
+        "champion_lance_mega_kingdra",
+        "champion_lance_mega_salamence",
+        "champion_lance_mega_dragonite",
+        "champion_lance_mega_rayquaza",
+        "champion_lance_dynamax_gyarados",
+        "champion_lance_dynamax_aerodactyl",
+        "champion_lance_dynamax_charizard",
+        "champion_lance_dynamax_kingdra",
+        "champion_lance_dynamax_salamence",
+        "champion_lance_dynamax_dragonite",
+        "champion_lance_dynamax_rayquaza",
+        "champion_lance_tera_gyarados",
+        "champion_lance_tera_aerodactyl",
+        "champion_lance_tera_charizard",
+        "champion_lance_tera_kingdra",
+        "champion_lance_tera_salamence",
+        "champion_lance_tera_dragonite",
+        "champion_lance_tera_rayquaza"
+      ],
+      "skin": "rctmod:textures/trainers/single/champion_lance_0027.png",
+      "slim": false
+    }
+  ]
+}

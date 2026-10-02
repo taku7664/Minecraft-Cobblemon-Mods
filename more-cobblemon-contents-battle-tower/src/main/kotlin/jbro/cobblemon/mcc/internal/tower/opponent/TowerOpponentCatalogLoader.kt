@@ -104,6 +104,7 @@ internal object TowerOpponentCatalogLoader {
                     ),
                     signatureSpeciesIds,
                     trainerSkin(value, path),
+                    rosterSetIds(value, path),
                 )
             }
         }
@@ -173,6 +174,7 @@ internal object TowerOpponentCatalogLoader {
         rejectDuplicateIds(sets.map(TowerPokemonSet::setId), "$.pokemon_sets")
 
         val trainersById = trainers.associateBy(TowerTrainerDefinition::trainerId)
+        val setsById = sets.associateBy(TowerPokemonSet::setId)
         val poolsById = pools.associateBy(TowerPoolDefinition::poolId)
         val profiles = encounters.flatMap { encounter ->
             val pool = poolsById[encounter.poolId]
@@ -197,14 +199,14 @@ internal object TowerOpponentCatalogLoader {
                     weight = encounter.weight,
                     aiSkill = encounter.aiSkill,
                     theme = encounter.theme,
-                    setIds = setIds,
+                    setIds = if (trainer.rosterSetIds.isEmpty()) setIds else rosterFor(trainer, encounter.mechanic, setsById),
+                    fixedRoster = trainer.rosterSetIds.isNotEmpty(),
                     teamStyle = trainer.teamStyle,
                     signatureSpeciesIds = trainer.signatureSpeciesIds,
                     appearance = trainer.appearance,
                 )
             }
         }
-        val setsById = sets.associateBy(TowerPokemonSet::setId)
         profiles.forEach { profile ->
             if (profile.teamStyle != TowerTrainerStyle.BALANCED && profile.setIds.map(setsById::getValue).none(profile.teamStyle::matches)) {
                 reject(
@@ -743,7 +745,35 @@ private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
 private val POOL_FRAGMENT_FIELDS = setOf("schema_version", "pools")
 private val ENCOUNTER_FRAGMENT_FIELDS = setOf("schema_version", "encounters")
 private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets")
-private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids", "skin", "slim")
+private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids", "skin", "slim", "roster_set_ids")
+
+/**
+ * A trainer's own sets, such as a Champion's entries, in place of the encounter's pool. The roster may hold sets of
+ * every mechanic; each encounter takes the ones of its own.
+ */
+private fun rosterSetIds(value: JsonObject, path: String): List<String> {
+    if (!value.has("roster_set_ids")) return emptyList()
+    val ids = value.requiredStringList(path, "roster_set_ids")
+    requireNotEmpty(ids, "$path.roster_set_ids", "roster_set_ids")
+    rejectDuplicateIds(ids, "$path.roster_set_ids")
+    return ids
+}
+
+private fun rosterFor(
+    trainer: TowerTrainerDefinition,
+    mechanic: MajorBattleMechanic,
+    setsById: Map<String, TowerPokemonSet>,
+): List<String> {
+    val path = "$.trainers.${trainer.trainerId}.roster_set_ids"
+    val roster = trainer.rosterSetIds.map { id ->
+        setsById[id] ?: reject(TowerOpponentCatalogIssueCode.UNKNOWN_REFERENCE, path, "Unknown roster set: $id")
+    }.filter { it.mechanic == mechanic }.map(TowerPokemonSet::setId)
+    if (roster.size < MINIMUM_PROFILE_POOL_SIZE) {
+        reject(TowerOpponentCatalogIssueCode.INSUFFICIENT_POOL, path,
+            "A roster needs at least $MINIMUM_PROFILE_POOL_SIZE ${mechanic.id} sets, found ${roster.size}")
+    }
+    return roster
+}
 
 /**
  * The skin a trainer wears in battle (a resource-pack texture such as an RCT Trainers+ skin), or null to show the
@@ -796,6 +826,7 @@ private data class TowerTrainerDefinition(
     val teamStyle: TowerTrainerStyle,
     val signatureSpeciesIds: List<String>,
     val appearance: TrainerResourceSkin?,
+    val rosterSetIds: List<String>,
 )
 private data class TowerPoolDefinition(
     val poolId: String,

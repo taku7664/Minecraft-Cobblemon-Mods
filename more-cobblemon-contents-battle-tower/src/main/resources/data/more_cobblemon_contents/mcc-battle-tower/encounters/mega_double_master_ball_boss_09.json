@@ -4,10 +4,9 @@
     {
       "encounter_id": "mega_double_master_ball_boss_09",
       "trainer_ids": [
-        "trainer_105",
-        "trainer_106",
-        "trainer_107",
-        "trainer_108"
+        "champion_blue",
+        "champion_lance",
+        "champion_cynthia"
       ],
       "stage_ids": [
         "pro"

@@ -233,5 +233,8 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.best_streak": "Best streak",
   "screen.more_cobblemon_contents_battle_tower.dashboard.wins": "Wins",
   "screen.more_cobblemon_contents_battle_tower.dashboard.streak": "Streak %s",
-  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "Best %s · %sW %sL"
+  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "Best %s · %sW %sL",
+  "trainer.more_cobblemon_contents.tower_champion_blue": "Champion Blue",
+  "trainer.more_cobblemon_contents.tower_champion_lance": "Champion Lance",
+  "trainer.more_cobblemon_contents.tower_champion_cynthia": "Champion Cynthia"
 }

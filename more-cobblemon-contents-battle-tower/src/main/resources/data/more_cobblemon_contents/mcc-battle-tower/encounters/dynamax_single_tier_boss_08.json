@@ -2,17 +2,12 @@
   "schema_version": 1,
   "encounters": [
     {
-      "encounter_id": "dynamax_single_tier_boss_08",
+      "encounter_id": "dynamax_single_tier_boss_08_introductory",
       "trainer_ids": [
-        "trainer_101",
-        "trainer_102",
-        "trainer_103",
-        "trainer_104"
+        "champion_blue"
       ],
       "stage_ids": [
-        "introductory",
-        "practical",
-        "advanced"
+        "introductory"
       ],
       "format": "single",
       "opponent_kind": "tier_boss",

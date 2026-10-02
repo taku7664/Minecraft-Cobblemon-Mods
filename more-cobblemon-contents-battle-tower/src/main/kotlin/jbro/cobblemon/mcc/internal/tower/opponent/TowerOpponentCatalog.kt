@@ -92,6 +92,8 @@ internal class TowerOpponentProfile internal constructor(
     signatureSpeciesIds: List<String> = emptyList(),
     /** The skin the trainer wears in battle; null shows the challenger's own hologram. */
     val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
+    /** [setIds] is the trainer's own roster, such as a Champion's, rather than an encounter pool. */
+    val fixedRoster: Boolean = false,
 ) {
     val stageIds: List<TowerStreakStage> = stageIds.immutableCopy()
     val setIds: List<String> = setIds.immutableCopy()

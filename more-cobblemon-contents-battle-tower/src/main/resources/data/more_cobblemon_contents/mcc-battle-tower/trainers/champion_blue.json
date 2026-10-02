@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_blue",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_blue",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:blastoise"
+      ],
+      "roster_set_ids": [
+        "champion_blue_mega_pidgeot",
+        "champion_blue_mega_alakazam",
+        "champion_blue_mega_rhyperior",
+        "champion_blue_mega_gyarados",
+        "champion_blue_mega_exeggutor",
+        "champion_blue_mega_blastoise",
+        "champion_blue_mega_mewtwo",
+        "champion_blue_dynamax_pidgeot",
+        "champion_blue_dynamax_alakazam",
+        "champion_blue_dynamax_rhyperior",
+        "champion_blue_dynamax_gyarados",
+        "champion_blue_dynamax_exeggutor",
+        "champion_blue_dynamax_blastoise",
+        "champion_blue_dynamax_mewtwo",
+        "champion_blue_tera_pidgeot",
+        "champion_blue_tera_alakazam",
+        "champion_blue_tera_rhyperior",
+        "champion_blue_tera_gyarados",
+        "champion_blue_tera_exeggutor",
+        "champion_blue_tera_blastoise",
+        "champion_blue_tera_mewtwo"
+      ],
+      "skin": "rctmod:textures/trainers/single/champion_terry_01b6.png",
+      "slim": false
+    }
+  ]
+}

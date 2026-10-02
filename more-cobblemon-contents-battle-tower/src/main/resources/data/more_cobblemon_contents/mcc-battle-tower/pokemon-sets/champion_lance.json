@@ -1,0 +1,698 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "champion_lance_mega_gyarados",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_aerodactyl",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:aerodactyl",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_charizard",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:charizard",
+      "form_id": null,
+      "ability_id": "cobblemon:blaze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:airslash",
+        "cobblemon:focusblast",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_kingdra",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:kingdra",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_salamence",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:salamence",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_dragonite",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:dragonite",
+      "form_id": null,
+      "ability_id": "cobblemon:multiscale",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "mega_showdown:dragoninite",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:firepunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_mega_rayquaza",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:rayquaza",
+      "form_id": null,
+      "ability_id": "cobblemon:airlock",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:dragonascent",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:dragondance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_lance_dynamax_gyarados",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_aerodactyl",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:aerodactyl",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_charizard",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:charizard",
+      "form_id": null,
+      "ability_id": "cobblemon:blaze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:airslash",
+        "cobblemon:focusblast",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_kingdra",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:kingdra",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_salamence",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:salamence",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_dragonite",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:dragonite",
+      "form_id": null,
+      "ability_id": "cobblemon:multiscale",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:firepunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_dynamax_rayquaza",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:rayquaza",
+      "form_id": null,
+      "ability_id": "cobblemon:airlock",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:dragonascent",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:dragondance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_lance_tera_gyarados",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "flying"
+    },
+    {
+      "set_id": "champion_lance_tera_aerodactyl",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:aerodactyl",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "champion_lance_tera_charizard",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:charizard",
+      "form_id": null,
+      "ability_id": "cobblemon:blaze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:airslash",
+        "cobblemon:focusblast",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "fire"
+    },
+    {
+      "set_id": "champion_lance_tera_kingdra",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:kingdra",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_lance_tera_salamence",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:salamence",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_lance_tera_dragonite",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:dragonite",
+      "form_id": null,
+      "ability_id": "cobblemon:multiscale",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:firepunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "normal"
+    },
+    {
+      "set_id": "champion_lance_tera_rayquaza",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:rayquaza",
+      "form_id": null,
+      "ability_id": "cobblemon:airlock",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:dragonascent",
+        "cobblemon:extremespeed",
+        "cobblemon:earthquake",
+        "cobblemon:dragondance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "normal"
+    }
+  ]
+}

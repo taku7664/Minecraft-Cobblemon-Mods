@@ -2,17 +2,12 @@
   "schema_version": 1,
   "encounters": [
     {
-      "encounter_id": "tera_single_tier_boss_24",
+      "encounter_id": "tera_single_tier_boss_24_introductory",
       "trainer_ids": [
-        "trainer_117",
-        "trainer_118",
-        "trainer_119",
-        "trainer_120"
+        "champion_blue"
       ],
       "stage_ids": [
-        "introductory",
-        "practical",
-        "advanced"
+        "introductory"
       ],
       "format": "single",
       "opponent_kind": "tier_boss",

@@ -4,10 +4,9 @@
     {
       "encounter_id": "mega_single_master_ball_boss_13",
       "trainer_ids": [
-        "trainer_109",
-        "trainer_110",
-        "trainer_111",
-        "trainer_112"
+        "champion_blue",
+        "champion_lance",
+        "champion_cynthia"
       ],
       "stage_ids": [
         "pro"

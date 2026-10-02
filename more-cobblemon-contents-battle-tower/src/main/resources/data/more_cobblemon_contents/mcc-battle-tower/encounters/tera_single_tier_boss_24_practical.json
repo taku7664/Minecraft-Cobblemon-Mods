@@ -2,19 +2,19 @@
   "schema_version": 1,
   "encounters": [
     {
-      "encounter_id": "tera_double_tier_boss_20_introductory",
+      "encounter_id": "tera_single_tier_boss_24_practical",
       "trainer_ids": [
-        "champion_blue"
+        "champion_lance"
       ],
       "stage_ids": [
-        "introductory"
+        "practical"
       ],
-      "format": "double",
+      "format": "single",
       "opponent_kind": "tier_boss",
       "mechanic_id": "tera",
       "weight": 100,
       "ai_skill": 4,
-      "theme": "tera_double_boss",
+      "theme": "tera_single_boss",
       "pool_id": "tera_tier_2"
     }
   ]

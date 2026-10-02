@@ -59,6 +59,11 @@ internal class TowerOpponentSelector(
         val selectableProfiles = profilesWithFreshTeams.ifEmpty { profiles }
 
         val profile = selectWeighted(selectableProfiles)
+        if (profile.fixedRoster) {
+            val team = rosterTeam(profile, catalog.setsFor(profile).filter(isEligibleSet), teamSize, legendaryClassAllowed)
+                ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
+            return TowerOpponentSelectionResult.Selected(profile, Collections.unmodifiableList(ArrayList(team)))
+        }
         val completePool = catalog.setsFor(profile).filter(isEligibleSet)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
         // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
@@ -70,6 +75,22 @@ internal class TowerOpponentSelector(
             profile,
             Collections.unmodifiableList(ArrayList(team)),
         )
+    }
+
+    /**
+     * A team from a fixed roster: the ace (the signature species) always, then the legendary when the legendary class
+     * is allowed, then the others in random order. Recently faced species do not apply; a roster is who the trainer is.
+     */
+    private fun rosterTeam(
+        profile: TowerOpponentProfile,
+        roster: List<TowerPokemonSet>,
+        teamSize: Int,
+        legendaryClassAllowed: Boolean,
+    ): List<TowerPokemonSet>? {
+        val aces = roster.filter { it.speciesId in profile.signatureSpeciesIds }
+        val legends = if (legendaryClassAllowed) roster.filterNot(::isNormal).filterNot(aces::contains) else emptyList()
+        val others = roster.filterNot { it in aces || it in legends }.toMutableList().also(::shuffle)
+        return TowerLegalTeamSearch.select(aces + legends + others, teamSize)
     }
 
     private fun selectStyledTeamFrom(

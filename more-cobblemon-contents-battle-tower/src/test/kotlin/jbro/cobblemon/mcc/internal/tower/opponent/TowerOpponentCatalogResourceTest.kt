@@ -81,11 +81,13 @@ class TowerOpponentCatalogResourceTest {
                 MajorBattleMechanic.entries.forEach { mechanic ->
                     reachableKinds.forEach { kind ->
                         val profiles = catalog.profilesFor(stage, format, kind, mechanic)
-                        val minimum = if (kind == TowerOpponentKind.REGULAR) {
-                            MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
-                        } else {
-                            MINIMUM_BOSSES_PER_CATEGORY
+                        // Each tier boss stage has its Champion; the Master Ball bosses are any of them.
+                        val minimum = when (kind) {
+                            TowerOpponentKind.REGULAR -> MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
+                            TowerOpponentKind.TIER_BOSS -> 1
+                            TowerOpponentKind.MASTER_BALL_BOSS -> CHAMPIONS.size
                         }
+                        if (kind != TowerOpponentKind.REGULAR) assertTrue(profiles.all { it.fixedRoster }, "$stage $format $kind $mechanic")
                         assertTrue(profiles.size >= minimum, "$stage $format $kind $mechanic has only ${profiles.size} eligible trainers")
                     }
                 }
@@ -98,8 +100,9 @@ class TowerOpponentCatalogResourceTest {
         val catalog = bundledCatalog()
         val profiles = approvedProfiles(catalog)
 
-        val distinctTrainers = profiles.distinctBy(TowerOpponentProfile::profileId)
-        assertEquals(EXPECTED_DISTINCT_TRAINERS, distinctTrainers.size)
+        assertEquals(EXPECTED_DISTINCT_TRAINERS, profiles.distinctBy(TowerOpponentProfile::profileId).size)
+        // The Champions bring their own rosters; everything below is about the pool-driven trainers.
+        val distinctTrainers = profiles.filterNot { it.fixedRoster }.distinctBy(TowerOpponentProfile::profileId)
         assertTrue(distinctTrainers.map(TowerOpponentProfile::profileId).toSet().containsAll(setOf("trainer_001", "trainer_096")))
         assertEquals(TowerTrainerStyle.entries.toSet(), distinctTrainers.map(TowerOpponentProfile::teamStyle).toSet())
         assertTrue(distinctTrainers.all { it.signatureSpeciesIds.size == SIGNATURE_SPECIES_PER_TRAINER })
@@ -114,16 +117,11 @@ class TowerOpponentCatalogResourceTest {
             listOf(it.stageIds, it.format, it.opponentKind, it.mechanic, it.theme)
         }
         assertEquals(EXPECTED_PROFILE_CATEGORY_COUNT, categories.size)
-        categories.forEach { (category, trainers) ->
-            val minimum = if (trainers.first().opponentKind == TowerOpponentKind.REGULAR) {
-                MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
-            } else {
-                MINIMUM_BOSSES_PER_CATEGORY
-            }
-            assertTrue(trainers.size >= minimum, category.toString())
+        categories.filterValues { trainers -> trainers.none { it.fixedRoster } }.forEach { (category, trainers) ->
+            assertTrue(trainers.size >= MINIMUM_REGULAR_TRAINERS_PER_CATEGORY, category.toString())
             assertEquals(1, trainers.map { it.setIds.sorted() }.distinct().size, "Trainers in $category must share its rule-driven pool")
         }
-        profiles.forEach { profile ->
+        profiles.filterNot { it.fixedRoster }.forEach { profile ->
             assertTrue(profile.setIds.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER)
             assertEquals(profile.setIds.size, profile.setIds.distinct().size)
         }
@@ -201,6 +199,43 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
+    fun `every boss is a Champion bringing their ace, and their legendary only when the legendary class is allowed`() {
+        val catalog = bundledCatalog()
+        val tierBoss = mapOf(TowerStreakStage.INTRODUCTORY to "champion_blue", TowerStreakStage.PRACTICAL to "champion_lance",
+            TowerStreakStage.ADVANCED to "champion_cynthia")
+        TowerBattleFormat.entries.forEach { format ->
+            MajorBattleMechanic.entries.forEach { mechanic ->
+                tierBoss.forEach { (stage, champion) ->
+                    assertEquals(listOf(champion), catalog.profilesFor(stage, format, TowerOpponentKind.TIER_BOSS, mechanic).map { it.profileId })
+                }
+                listOf(false, true).forEach { legendary ->
+                    CHAMPIONS.forEach { (champion, ace) ->
+                        val result = TowerOpponentSelector(catalog).select(TowerStreakStage.PRO, format, TowerOpponentKind.MASTER_BALL_BOSS,
+                            mechanic, excludedProfileIds = CHAMPIONS.keys - champion, legendaryClassAllowed = legendary)
+                            as TowerOpponentSelectionResult.Selected
+                        assertEquals(champion, result.profile.profileId)
+                        assertEquals(format.selectionSize, result.team.size)
+                        assertTrue(result.team.all { it.setId.startsWith("${champion}_${mechanic.id}_") }, "$champion $mechanic ${result.team}")
+                        assertTrue(result.team.any { it.speciesId == ace }, "$champion leaves out $ace")
+                        assertEquals(legendary, result.team.any { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) }, "$champion legendary=$legendary")
+                        result.team.forEach { set ->
+                            assertEquals(TowerStatSpread(31, 31, 31, 31, 31, 31), set.ivs)
+                            assertTrue(set.evs.total >= 508, set.setId)
+                            // Only the ace holds a Mega Stone; the rest of a Champion's team holds battle items.
+                            if (mechanic != MajorBattleMechanic.MEGA || set.speciesId == ace) assertMechanicShape(mechanic, set)
+                            if (mechanic == MajorBattleMechanic.MEGA) assertEquals(null, set.teraType ?: set.dmaxLevel ?: set.gmaxFactor)
+                        }
+                        if (mechanic == MajorBattleMechanic.MEGA) {
+                            assertTrue(result.team.single { it.speciesId == ace }.heldItemId!!.startsWith("mega_showdown:"), "$champion's Mega Stone")
+                        }
+                    }
+                }
+            }
+        }
+        assertEquals(true, catalog.allSets().single { it.setId == "champion_blue_dynamax_blastoise" }.gmaxFactor)
+    }
+
+    @Test
     fun `approved trainer profile names exist in both bundled languages`() {
         val english = language("en_us")
         val korean = language("ko_kr")
@@ -211,9 +246,9 @@ class TowerOpponentCatalogResourceTest {
         assertEquals(EXPECTED_DISTINCT_TRAINERS, englishNames.distinct().size)
         assertEquals(EXPECTED_DISTINCT_TRAINERS, koreanNames.distinct().size)
         val bosses = profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.distinctBy(TowerOpponentProfile::profileId)
-        assertEquals(EXPECTED_DEDICATED_BOSSES, bosses.size)
-        assertTrue(bosses.all { english[it.displayNameKey].asString.startsWith("Tower Ace ") })
-        assertTrue(bosses.all { korean[it.displayNameKey].asString.startsWith("타워 에이스 ") })
+        assertEquals(CHAMPIONS.keys, bosses.map(TowerOpponentProfile::profileId).toSet())
+        assertTrue(bosses.all { english[it.displayNameKey].asString.startsWith("Champion ") })
+        assertTrue(bosses.all { korean[it.displayNameKey].asString.startsWith("챔피언 ") })
     }
 
     @Test
@@ -336,14 +371,20 @@ class TowerOpponentCatalogResourceTest {
 
     private companion object {
         const val MINIMUM_REGULAR_TRAINERS_PER_CATEGORY = 84
-        const val MINIMUM_BOSSES_PER_CATEGORY = 4
-        const val EXPECTED_DISTINCT_TRAINERS = 120
-        const val EXPECTED_DEDICATED_BOSSES = 24
+        /** 96 regulars, the 24 Tower Aces (now advanced and pro regulars) and the three Champions. */
+        const val EXPECTED_DISTINCT_TRAINERS = 123
+        /** Each Champion, by the ace every one of their teams carries. */
+        val CHAMPIONS = mapOf(
+            "champion_blue" to "cobblemon:blastoise",
+            "champion_lance" to "cobblemon:dragonite",
+            "champion_cynthia" to "cobblemon:garchomp",
+        )
         const val SIGNATURE_SPECIES_PER_TRAINER = 3
         const val MINIMUM_DISTINCT_SIGNATURE_GROUPS = 60
         const val MINIMUM_SPECIES_PER_MECHANIC_TIER = 50
-        // Per mechanic and format: introductory, practical, advanced and pro regulars, and the two boss kinds.
-        const val EXPECTED_PROFILE_CATEGORY_COUNT = 36
+        // Per mechanic and format: introductory, practical, advanced and pro regulars, a tier boss per stage up to
+        // advanced, and the Master Ball boss.
+        const val EXPECTED_PROFILE_CATEGORY_COUNT = 48
         const val TRAINER_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/trainers"
         const val POOL_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/pools"
         const val ENCOUNTER_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-tower/encounters"

@@ -233,5 +233,8 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.best_streak": "최고 연승",
   "screen.more_cobblemon_contents_battle_tower.dashboard.wins": "총 승리",
   "screen.more_cobblemon_contents_battle_tower.dashboard.streak": "연승 %s",
-  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "최고 연승 %s · %s승 %s패"
+  "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "최고 연승 %s · %s승 %s패",
+  "trainer.more_cobblemon_contents.tower_champion_blue": "챔피언 그린",
+  "trainer.more_cobblemon_contents.tower_champion_lance": "챔피언 목호",
+  "trainer.more_cobblemon_contents.tower_champion_cynthia": "챔피언 난천"
 }

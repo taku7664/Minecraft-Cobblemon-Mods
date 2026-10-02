@@ -2,20 +2,20 @@
   "schema_version": 1,
   "encounters": [
     {
-      "encounter_id": "tera_double_tier_boss_20_introductory",
+      "encounter_id": "dynamax_double_tier_boss_04_advanced",
       "trainer_ids": [
-        "champion_blue"
+        "champion_cynthia"
       ],
       "stage_ids": [
-        "introductory"
+        "advanced"
       ],
       "format": "double",
       "opponent_kind": "tier_boss",
-      "mechanic_id": "tera",
+      "mechanic_id": "dynamax",
       "weight": 100,
       "ai_skill": 4,
-      "theme": "tera_double_boss",
-      "pool_id": "tera_tier_2"
+      "theme": "dynamax_double_boss",
+      "pool_id": "dynamax_tier_2"
     }
   ]
 }

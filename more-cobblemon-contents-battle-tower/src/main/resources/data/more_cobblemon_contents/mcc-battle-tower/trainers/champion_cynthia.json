@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_cynthia",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_cynthia",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:garchomp"
+      ],
+      "roster_set_ids": [
+        "champion_cynthia_mega_spiritomb",
+        "champion_cynthia_mega_roserade",
+        "champion_cynthia_mega_milotic",
+        "champion_cynthia_mega_togekiss",
+        "champion_cynthia_mega_lucario",
+        "champion_cynthia_mega_garchomp",
+        "champion_cynthia_mega_giratina",
+        "champion_cynthia_dynamax_spiritomb",
+        "champion_cynthia_dynamax_roserade",
+        "champion_cynthia_dynamax_milotic",
+        "champion_cynthia_dynamax_togekiss",
+        "champion_cynthia_dynamax_lucario",
+        "champion_cynthia_dynamax_garchomp",
+        "champion_cynthia_dynamax_giratina",
+        "champion_cynthia_tera_spiritomb",
+        "champion_cynthia_tera_roserade",
+        "champion_cynthia_tera_milotic",
+        "champion_cynthia_tera_togekiss",
+        "champion_cynthia_tera_lucario",
+        "champion_cynthia_tera_garchomp",
+        "champion_cynthia_tera_giratina"
+      ],
+      "skin": "rctmod:textures/trainers/single/champion_cynthia_03a5.png",
+      "slim": false
+    }
+  ]
+}

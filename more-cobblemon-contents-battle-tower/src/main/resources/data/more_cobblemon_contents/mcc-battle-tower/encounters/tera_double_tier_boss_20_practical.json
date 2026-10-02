@@ -2,21 +2,19 @@
   "schema_version": 1,
   "encounters": [
     {
-      "encounter_id": "tera_double_master_ball_boss_17",
+      "encounter_id": "tera_double_tier_boss_20_practical",
       "trainer_ids": [
-        "champion_blue",
-        "champion_lance",
-        "champion_cynthia"
+        "champion_lance"
       ],
       "stage_ids": [
-        "pro"
+        "practical"
       ],
       "format": "double",
-      "opponent_kind": "master_ball_boss",
+      "opponent_kind": "tier_boss",
       "mechanic_id": "tera",
       "weight": 100,
       "ai_skill": 4,
-      "theme": "tera_double_master_boss",
+      "theme": "tera_double_boss",
       "pool_id": "tera_tier_2"
     }
   ]
