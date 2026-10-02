@@ -175,41 +175,39 @@ class TowerBalanceScenarioTest : TowerScenarioBase() {
         val battles = 200
         val report = StringBuilder("# Battle Tower balance scenario\n\nSingle 3 vs 3, $battles battles per cell, Tera sets, " +
             "both sides on the same greedy policy (so the Tower's AI levels are not modelled). The challenger stays at " +
-            "level 50. Every opponent is trained competitively (IV 31, 508 EVs) and is one level higher every 5 wins: " +
-            "level 50 for wins 1 to 5, 51 for 6 to 10, up to 59 at the 49th. Tier 1 sets for wins 1 to 5, tier 2 to 4 " +
-            "sets (the same sets now) after; Champions at every 10th win. Each level is measured, not interpolated.\n\n")
-        fun at(level: Int, team: List<RefSet>) = team.map { it.copy(level = level) }
+            "level 50; opponents are one level higher every 5 wins (50 for wins 1 to 5, 51 for 6 to 10, 59 at the " +
+            "49th). Regular opponents by stage: tier 1 (IV 15, 0 EVs) wins 1 to 5, tier 2 (IV 20, 252 EVs) 6 to 10, " +
+            "tier 3 (IV 25, 384 EVs) 11 to 20, tier 4 (IV 31, 508 EVs) from 21. Every 5th win is a fully trained " +
+            "Champion. Each win's opponent is measured at its own level.\n\n")
         fun levelOf(win: Int) = TOWER_LEVEL + (win - 1) / 5
-        val regularLevels = (51..59).toList()
-        val championWins = listOf(10, 20, 30, 40)
-        val opponents = ArrayList<Pair<String, (Random) -> List<RefSet>>>()
-        opponents += "tier 1 Lv50" to { r: Random -> randomTeam(r, pool(false, 1), trained = false) }
-        regularLevels.forEach { level -> opponents += "Lv$level" to { r: Random -> at(level, randomTeam(r, pool(false, 4), trained = false)) } }
-        championWins.forEach { win -> opponents += "Champion Lv${levelOf(win)}" to { r: Random -> at(levelOf(win), championTeam(r)) } }
+        fun tierOf(win: Int) = when { win <= 5 -> 1; win <= 10 -> 2; win <= 20 -> 3; else -> 4 }
+        /** The opponent of a win: "champion" or the regular tier, at the win's level. */
+        fun cellOf(win: Int) = (if (win % 5 == 0) 0 else tierOf(win)) to levelOf(win)
+        val cells = (1..49).map(::cellOf).distinct()
+        fun opponent(cell: Pair<Int, Int>): (Random) -> List<RefSet> = { r ->
+            val team = if (cell.first == 0) championTeam(r) else randomTeam(r, pool(false, cell.first), trained = false)
+            team.map { it.copy(level = cell.second) }
+        }
+        fun label(cell: Pair<Int, Int>) = (if (cell.first == 0) "Champion" else "tier ${cell.first}") + " Lv${cell.second}"
         val players: List<Pair<String, (Random) -> List<RefSet>>> = listOf(
-            "random species, Tower sets" to { r -> randomTeam(r, pool(false, 2), trained = false) },
+            "random species, tier 2 sets" to { r -> randomTeam(r, pool(false, 2), trained = false) },
             "random species, fully trained" to { r -> randomTeam(r, pool(false, 2), trained = true) },
             "Dragonite, Kingambit, Gholdengo" to { _ -> firepower },
         )
-        report.append("| player team | " + opponents.joinToString(" | ") { it.first } + " | reach 10 | reach 20 | reach 30 | reach 49 |\n")
-        report.append("|---|" + opponents.joinToString("") { "---|" } + "---|---|---|---|\n")
+        val reachAt = listOf(5, 10, 15, 20, 25, 30, 40, 49)
+        report.append("| player team | " + cells.joinToString(" | ", transform = ::label) + " | " +
+            reachAt.joinToString(" | ") { "reach $it" } + " |\n")
+        report.append("|---|" + cells.joinToString("") { "---|" } + reachAt.joinToString("") { "---|" } + "\n")
         players.forEachIndexed { playerIndex, (playerName, player) ->
-            val rates = opponents.mapIndexed { opponentIndex, (_, opponent) ->
-                val random = Random(20261002L + playerIndex * 31L + opponentIndex)
+            val rates = cells.mapIndexed { cellIndex, cell ->
+                val random = Random(20261002L + playerIndex * 31L + cellIndex)
                 var wins = 0
-                repeat(battles) { if (play(player(random), opponent(random), random)) wins++ }
-                wins.toDouble() / battles
-            }
-            // The opponent of each win: tier 1 to the 5th, a Champion every 10th (the Aces between fight with their
-            // stage's sets), the regular sets at the win's level otherwise.
-            fun rateFor(win: Int): Double = when {
-                win in championWins -> rates[1 + regularLevels.size + championWins.indexOf(win)]
-                win <= 5 -> rates[0]
-                else -> rates[1 + regularLevels.indexOf(levelOf(win))]
-            }
-            fun reach(wins: Int) = (1..wins).fold(1.0) { p, win -> p * rateFor(win) }
-            report.append("| $playerName | " + rates.joinToString(" | ") { "%.1f%%".format(it * 100) } + " | " +
-                listOf(10, 20, 30, 49).joinToString(" | ") { "%.1f%%".format(reach(it) * 100) } + " |\n")
+                repeat(battles) { if (play(player(random), opponent(cell)(random), random)) wins++ }
+                cell to wins.toDouble() / battles
+            }.toMap()
+            fun reach(wins: Int) = (1..wins).fold(1.0) { p, win -> p * rates.getValue(cellOf(win)) }
+            report.append("| $playerName | " + cells.joinToString(" | ") { "%.1f%%".format(rates.getValue(it) * 100) } + " | " +
+                reachAt.joinToString(" | ") { "%.1f%%".format(reach(it) * 100) } + " |\n")
         }
         run {
             val random = Random(20261003L)
