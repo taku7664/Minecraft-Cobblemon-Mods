@@ -1369,13 +1369,18 @@ class LocalRecursiveLookaheadTest {
                 ),
             ),
         )
+        // This fixture tests continuation, independent of the shipping standard tier's one-ply limit.
+        val profile = BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD).let {
+            it.copy(difficulty = it.difficulty.copy(lookaheadPlies = 2))
+        }
         val result = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(knockout)),
             context(initial, listOf(knockout), catalog),
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            profile,
+            clockMillis = { 0L },
         )
 
-        assertEquals(2, result.depthCompleted)
+        assertEquals(2, result.depthCompleted, result.toString())
         assertFalse(result.publicResponseIncomplete)
     }
 
@@ -1450,20 +1455,25 @@ class LocalRecursiveLookaheadTest {
         assertEquals(2, postKnockout.remainingPokemonBySide.getValue(BattleSide.OPPONENT))
         assertEquals(0.5, replacementResolution.publiclyKnownFraction)
 
+        val profile = BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD).let {
+            it.copy(difficulty = it.difficulty.copy(lookaheadPlies = 2))
+        }
         val forward = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(knockout), rank(chip)),
             source,
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            profile,
+            clockMillis = { 0L },
         )
         val reversed = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(chip), rank(knockout)),
             source,
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            profile,
+            clockMillis = { 0L },
         )
         val forwardScores = forward.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
         val reversedScores = reversed.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
 
-        assertEquals(2, forward.depthCompleted)
+        assertEquals(2, forward.depthCompleted, forward.toString())
         assertTrue(forward.publicResponseIncomplete)
         assertEquals(forwardScores.keys, reversedScores.keys)
         forwardScores.forEach { (actionId, score) ->
