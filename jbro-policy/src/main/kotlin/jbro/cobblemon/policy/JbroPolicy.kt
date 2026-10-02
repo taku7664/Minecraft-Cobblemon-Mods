@@ -13,7 +13,6 @@ import jbro.cobblemon.policy.pokemon.PokenavCommand
 import jbro.cobblemon.policy.support.DiscordBot
 import jbro.cobblemon.policy.support.DiscordSettings
 import jbro.cobblemon.policy.support.Inquiries
-import jbro.cobblemon.policy.support.MailSettings
 import jbro.cobblemon.policy.welcome.WelcomeKit
 import jbro.cobblemon.policy.wild.WildPokemonPolicy
 import net.fabricmc.api.ModInitializer
@@ -57,10 +56,7 @@ object JbroPolicy : ModInitializer {
         Tips.register(config.tipIntervalSeconds, config.tips)
         val configDir = FabricLoader.getInstance().configDir
         val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
-        Inquiries.register(
-            MailSettings.load(configDir.resolve("jbro-policy-mail.json")) { message, failure -> LOGGER.warn(message, failure) },
-            discord,
-        )
+        Inquiries.register(discord)
         DiscordBot.register(discord, configDir.resolve("jbro-policy-discord-status.json"),
             withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         // Built-in data packs, so either can be turned off per world with /datapack disable.
