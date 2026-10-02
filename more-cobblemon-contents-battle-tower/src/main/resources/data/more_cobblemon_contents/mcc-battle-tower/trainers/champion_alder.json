@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_alder",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_alder",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:volcarona"
+      ],
+      "roster_set_ids": [
+        "champion_alder_mega_accelgor_1",
+        "champion_alder_mega_bouffalant_1",
+        "champion_alder_mega_druddigon_1",
+        "champion_alder_mega_vanilluxe_1",
+        "champion_alder_mega_escavalier_1",
+        "champion_alder_mega_emboar_1",
+        "champion_alder_mega_volcarona_1",
+        "champion_alder_mega_volcarona_2",
+        "champion_alder_mega_kyurem_1",
+        "champion_alder_mega_slitherwing_1",
+        "champion_alder_mega_keldeo_1",
+        "champion_alder_mega_victini_1",
+        "champion_alder_dynamax_accelgor_1",
+        "champion_alder_dynamax_bouffalant_1",
+        "champion_alder_dynamax_druddigon_1",
+        "champion_alder_dynamax_vanilluxe_1",
+        "champion_alder_dynamax_escavalier_1",
+        "champion_alder_dynamax_volcarona_1",
+        "champion_alder_dynamax_volcarona_2",
+        "champion_alder_dynamax_kyurem_1",
+        "champion_alder_dynamax_slitherwing_1",
+        "champion_alder_dynamax_keldeo_1",
+        "champion_alder_dynamax_victini_1",
+        "champion_alder_tera_accelgor_1",
+        "champion_alder_tera_bouffalant_1",
+        "champion_alder_tera_druddigon_1",
+        "champion_alder_tera_vanilluxe_1",
+        "champion_alder_tera_escavalier_1",
+        "champion_alder_tera_volcarona_1",
+        "champion_alder_tera_volcarona_2",
+        "champion_alder_tera_kyurem_1",
+        "champion_alder_tera_slitherwing_1",
+        "champion_alder_tera_keldeo_1",
+        "champion_alder_tera_victini_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:kyurem",
+          "replaces": "cobblemon:vanilluxe",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:slitherwing",
+          "replaces": "cobblemon:accelgor",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:keldeo",
+          "replaces": "cobblemon:bouffalant",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:victini",
+          "replaces": "cobblemon:escavalier",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/unovachampion_alder.png",
+      "slim": false
+    }
+  ]
+}

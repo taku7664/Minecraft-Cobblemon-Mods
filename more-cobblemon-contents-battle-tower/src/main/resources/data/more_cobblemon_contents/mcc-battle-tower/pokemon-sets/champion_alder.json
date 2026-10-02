@@ -1,0 +1,1126 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "champion_alder_mega_accelgor_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:accelgor",
+      "form_id": null,
+      "ability_id": "cobblemon:stickyhold",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:focusblast",
+        "cobblemon:energyball",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_bouffalant_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:bouffalant",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:headcharge",
+        "cobblemon:earthquake",
+        "cobblemon:megahorn",
+        "cobblemon:superpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:glare",
+        "cobblemon:suckerpunch",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_vanilluxe_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:vanilluxe",
+      "form_id": null,
+      "ability_id": "cobblemon:snowwarning",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:light_clay",
+      "moves": [
+        "cobblemon:blizzard",
+        "cobblemon:freezedry",
+        "cobblemon:flashcannon",
+        "cobblemon:auroraveil"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_escavalier_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:escavalier",
+      "form_id": null,
+      "ability_id": "cobblemon:overcoat",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:ironhead",
+        "cobblemon:megahorn",
+        "cobblemon:knockoff",
+        "cobblemon:drillrun"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_emboar_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:emboar",
+      "form_id": null,
+      "ability_id": "cobblemon:reckless",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:emboarite",
+      "moves": [
+        "cobblemon:flareblitz",
+        "cobblemon:closecombat",
+        "cobblemon:wildcharge",
+        "cobblemon:knockoff"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_volcarona_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fierydance",
+        "cobblemon:bugbuzz",
+        "cobblemon:gigadrain"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_volcarona_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fireblast",
+        "cobblemon:bugbuzz",
+        "cobblemon:psychic"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_kyurem_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:kyurem",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_slitherwing_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:slitherwing",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:firstimpression",
+        "cobblemon:closecombat",
+        "cobblemon:flareblitz",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_keldeo_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:keldeo",
+      "form_id": null,
+      "ability_id": "cobblemon:justified",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:secretsword",
+        "cobblemon:vacuumwave",
+        "cobblemon:icywind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_mega_victini_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:victini",
+      "form_id": null,
+      "ability_id": "cobblemon:victorystar",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:vcreate",
+        "cobblemon:boltstrike",
+        "cobblemon:zenheadbutt",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_alder_dynamax_accelgor_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:accelgor",
+      "form_id": null,
+      "ability_id": "cobblemon:stickyhold",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:focusblast",
+        "cobblemon:energyball",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_bouffalant_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:bouffalant",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:headcharge",
+        "cobblemon:earthquake",
+        "cobblemon:megahorn",
+        "cobblemon:superpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:glare",
+        "cobblemon:suckerpunch",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_vanilluxe_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:vanilluxe",
+      "form_id": null,
+      "ability_id": "cobblemon:snowwarning",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:light_clay",
+      "moves": [
+        "cobblemon:blizzard",
+        "cobblemon:freezedry",
+        "cobblemon:flashcannon",
+        "cobblemon:auroraveil"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_escavalier_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:escavalier",
+      "form_id": null,
+      "ability_id": "cobblemon:overcoat",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:ironhead",
+        "cobblemon:megahorn",
+        "cobblemon:knockoff",
+        "cobblemon:drillrun"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_volcarona_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fierydance",
+        "cobblemon:bugbuzz",
+        "cobblemon:gigadrain"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_volcarona_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fireblast",
+        "cobblemon:bugbuzz",
+        "cobblemon:psychic"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_kyurem_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:kyurem",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_slitherwing_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:slitherwing",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:firstimpression",
+        "cobblemon:closecombat",
+        "cobblemon:flareblitz",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_keldeo_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:keldeo",
+      "form_id": null,
+      "ability_id": "cobblemon:justified",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:secretsword",
+        "cobblemon:vacuumwave",
+        "cobblemon:icywind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_dynamax_victini_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:victini",
+      "form_id": null,
+      "ability_id": "cobblemon:victorystar",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:vcreate",
+        "cobblemon:boltstrike",
+        "cobblemon:zenheadbutt",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_alder_tera_accelgor_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:accelgor",
+      "form_id": null,
+      "ability_id": "cobblemon:stickyhold",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:focusblast",
+        "cobblemon:energyball",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "bug"
+    },
+    {
+      "set_id": "champion_alder_tera_bouffalant_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:bouffalant",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:headcharge",
+        "cobblemon:earthquake",
+        "cobblemon:megahorn",
+        "cobblemon:superpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "normal"
+    },
+    {
+      "set_id": "champion_alder_tera_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:glare",
+        "cobblemon:suckerpunch",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_alder_tera_vanilluxe_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:vanilluxe",
+      "form_id": null,
+      "ability_id": "cobblemon:snowwarning",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:light_clay",
+      "moves": [
+        "cobblemon:blizzard",
+        "cobblemon:freezedry",
+        "cobblemon:flashcannon",
+        "cobblemon:auroraveil"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "ice"
+    },
+    {
+      "set_id": "champion_alder_tera_escavalier_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:escavalier",
+      "form_id": null,
+      "ability_id": "cobblemon:overcoat",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:ironhead",
+        "cobblemon:megahorn",
+        "cobblemon:knockoff",
+        "cobblemon:drillrun"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "steel"
+    },
+    {
+      "set_id": "champion_alder_tera_volcarona_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fierydance",
+        "cobblemon:bugbuzz",
+        "cobblemon:gigadrain"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_alder_tera_volcarona_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:quiverdance",
+        "cobblemon:fireblast",
+        "cobblemon:bugbuzz",
+        "cobblemon:psychic"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_alder_tera_kyurem_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:kyurem",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:icebeam",
+        "cobblemon:freezedry",
+        "cobblemon:earthpower",
+        "cobblemon:dracometeor"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "ice"
+    },
+    {
+      "set_id": "champion_alder_tera_slitherwing_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:slitherwing",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:firstimpression",
+        "cobblemon:closecombat",
+        "cobblemon:flareblitz",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "tera_type": "fighting"
+    },
+    {
+      "set_id": "champion_alder_tera_keldeo_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:keldeo",
+      "form_id": null,
+      "ability_id": "cobblemon:justified",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:secretsword",
+        "cobblemon:vacuumwave",
+        "cobblemon:icywind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_alder_tera_victini_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:victini",
+      "form_id": null,
+      "ability_id": "cobblemon:victorystar",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:vcreate",
+        "cobblemon:boltstrike",
+        "cobblemon:zenheadbutt",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "fire"
+    }
+  ]
+}

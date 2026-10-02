@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_iris",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_iris",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:haxorus"
+      ],
+      "roster_set_ids": [
+        "champion_iris_mega_hydreigon_1",
+        "champion_iris_mega_druddigon_1",
+        "champion_iris_mega_aggron_1",
+        "champion_iris_mega_aggron_2",
+        "champion_iris_mega_archeops_1",
+        "champion_iris_mega_lapras_1",
+        "champion_iris_mega_haxorus_1",
+        "champion_iris_mega_haxorus_2",
+        "champion_iris_mega_zekrom_1",
+        "champion_iris_mega_ragingbolt_1",
+        "champion_iris_mega_ironjugulis_1",
+        "champion_iris_mega_naganadel_1",
+        "champion_iris_dynamax_hydreigon_1",
+        "champion_iris_dynamax_druddigon_1",
+        "champion_iris_dynamax_aggron_1",
+        "champion_iris_dynamax_archeops_1",
+        "champion_iris_dynamax_lapras_1",
+        "champion_iris_dynamax_haxorus_1",
+        "champion_iris_dynamax_haxorus_2",
+        "champion_iris_dynamax_zekrom_1",
+        "champion_iris_dynamax_ragingbolt_1",
+        "champion_iris_dynamax_ironjugulis_1",
+        "champion_iris_dynamax_naganadel_1",
+        "champion_iris_tera_hydreigon_1",
+        "champion_iris_tera_druddigon_1",
+        "champion_iris_tera_aggron_1",
+        "champion_iris_tera_archeops_1",
+        "champion_iris_tera_lapras_1",
+        "champion_iris_tera_haxorus_1",
+        "champion_iris_tera_haxorus_2",
+        "champion_iris_tera_zekrom_1",
+        "champion_iris_tera_ragingbolt_1",
+        "champion_iris_tera_ironjugulis_1",
+        "champion_iris_tera_naganadel_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:zekrom",
+          "replaces": "cobblemon:druddigon",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:ragingbolt",
+          "replaces": "cobblemon:lapras",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:ironjugulis",
+          "replaces": "cobblemon:archeops",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:naganadel",
+          "replaces": "cobblemon:hydreigon",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/unovachampion_iris.png",
+      "slim": false
+    }
+  ]
+}

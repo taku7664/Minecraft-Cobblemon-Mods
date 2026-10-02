@@ -1,0 +1,1126 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "champion_geeta_mega_espathra_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:espathra",
+      "form_id": null,
+      "ability_id": "cobblemon:opportunist",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:luminacrash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:shadowball",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_gogoat_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:gogoat",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hornleech",
+        "cobblemon:earthquake",
+        "cobblemon:bulkup",
+        "cobblemon:milkdrink"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_veluza_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:veluza",
+      "form_id": null,
+      "ability_id": "cobblemon:sharpness",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:aquacutter",
+        "cobblemon:psychocut",
+        "cobblemon:nightslash",
+        "cobblemon:aquajet"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_avalugg_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:avalugg",
+      "form_id": null,
+      "ability_id": "cobblemon:sturdy",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:avalanche",
+        "cobblemon:bodypress",
+        "cobblemon:recover",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_kingambit_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:kingambit",
+      "form_id": null,
+      "ability_id": "cobblemon:supremeoverlord",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:black_glasses",
+      "moves": [
+        "cobblemon:kowtowcleave",
+        "cobblemon:suckerpunch",
+        "cobblemon:ironhead",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_glimmora_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_glimmora_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_glimmora_3",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "mega_showdown:glimmoranite",
+      "moves": [
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_koraidon_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:koraidon",
+      "form_id": null,
+      "ability_id": "cobblemon:orichalcumpulse",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:collisioncourse",
+        "cobblemon:flareblitz",
+        "cobblemon:outrage",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_ironcrown_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:ironcrown",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:tachyoncutter",
+        "cobblemon:psyshock",
+        "cobblemon:focusblast",
+        "cobblemon:voltswitch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_ironboulder_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:ironboulder",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:mightycleave",
+        "cobblemon:zenheadbutt",
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_geeta_mega_pecharunt_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:pecharunt",
+      "form_id": null,
+      "ability_id": "cobblemon:poisonpuppeteer",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:malignantchain",
+        "cobblemon:shadowball",
+        "cobblemon:recover",
+        "cobblemon:partingshot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_geeta_dynamax_espathra_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:espathra",
+      "form_id": null,
+      "ability_id": "cobblemon:opportunist",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:luminacrash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:shadowball",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_gogoat_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:gogoat",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hornleech",
+        "cobblemon:earthquake",
+        "cobblemon:bulkup",
+        "cobblemon:milkdrink"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_veluza_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:veluza",
+      "form_id": null,
+      "ability_id": "cobblemon:sharpness",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:aquacutter",
+        "cobblemon:psychocut",
+        "cobblemon:nightslash",
+        "cobblemon:aquajet"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_avalugg_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:avalugg",
+      "form_id": null,
+      "ability_id": "cobblemon:sturdy",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:avalanche",
+        "cobblemon:bodypress",
+        "cobblemon:recover",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_kingambit_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:kingambit",
+      "form_id": null,
+      "ability_id": "cobblemon:supremeoverlord",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:black_glasses",
+      "moves": [
+        "cobblemon:kowtowcleave",
+        "cobblemon:suckerpunch",
+        "cobblemon:ironhead",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_glimmora_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_glimmora_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_koraidon_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:koraidon",
+      "form_id": null,
+      "ability_id": "cobblemon:orichalcumpulse",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:collisioncourse",
+        "cobblemon:flareblitz",
+        "cobblemon:outrage",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_ironcrown_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:ironcrown",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:tachyoncutter",
+        "cobblemon:psyshock",
+        "cobblemon:focusblast",
+        "cobblemon:voltswitch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_ironboulder_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:ironboulder",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:mightycleave",
+        "cobblemon:zenheadbutt",
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_dynamax_pecharunt_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:pecharunt",
+      "form_id": null,
+      "ability_id": "cobblemon:poisonpuppeteer",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:malignantchain",
+        "cobblemon:shadowball",
+        "cobblemon:recover",
+        "cobblemon:partingshot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_geeta_tera_espathra_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:espathra",
+      "form_id": null,
+      "ability_id": "cobblemon:opportunist",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:luminacrash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:shadowball",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "psychic"
+    },
+    {
+      "set_id": "champion_geeta_tera_gogoat_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:gogoat",
+      "form_id": null,
+      "ability_id": "cobblemon:sapsipper",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hornleech",
+        "cobblemon:earthquake",
+        "cobblemon:bulkup",
+        "cobblemon:milkdrink"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "grass"
+    },
+    {
+      "set_id": "champion_geeta_tera_veluza_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:veluza",
+      "form_id": null,
+      "ability_id": "cobblemon:sharpness",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:aquacutter",
+        "cobblemon:psychocut",
+        "cobblemon:nightslash",
+        "cobblemon:aquajet"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_geeta_tera_avalugg_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:avalugg",
+      "form_id": null,
+      "ability_id": "cobblemon:sturdy",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:avalanche",
+        "cobblemon:bodypress",
+        "cobblemon:recover",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "ice"
+    },
+    {
+      "set_id": "champion_geeta_tera_kingambit_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:kingambit",
+      "form_id": null,
+      "ability_id": "cobblemon:supremeoverlord",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:black_glasses",
+      "moves": [
+        "cobblemon:kowtowcleave",
+        "cobblemon:suckerpunch",
+        "cobblemon:ironhead",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "tera_type": "dark"
+    },
+    {
+      "set_id": "champion_geeta_tera_glimmora_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:stealthrock",
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "champion_geeta_tera_glimmora_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:glimmora",
+      "form_id": null,
+      "ability_id": "cobblemon:toxicdebris",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:powergem",
+        "cobblemon:sludgewave",
+        "cobblemon:earthpower",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "champion_geeta_tera_koraidon_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:koraidon",
+      "form_id": null,
+      "ability_id": "cobblemon:orichalcumpulse",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:collisioncourse",
+        "cobblemon:flareblitz",
+        "cobblemon:outrage",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "fighting"
+    },
+    {
+      "set_id": "champion_geeta_tera_ironcrown_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:ironcrown",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:tachyoncutter",
+        "cobblemon:psyshock",
+        "cobblemon:focusblast",
+        "cobblemon:voltswitch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "steel"
+    },
+    {
+      "set_id": "champion_geeta_tera_ironboulder_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:ironboulder",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:mightycleave",
+        "cobblemon:zenheadbutt",
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "rock"
+    },
+    {
+      "set_id": "champion_geeta_tera_pecharunt_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:pecharunt",
+      "form_id": null,
+      "ability_id": "cobblemon:poisonpuppeteer",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:malignantchain",
+        "cobblemon:shadowball",
+        "cobblemon:recover",
+        "cobblemon:partingshot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "poison"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
-"""Writes the Battle Tower's Champion bosses, Blue, Lance and Cynthia, and lays out the Tower's boss battles.
+"""Writes the Battle Tower's Champion bosses and lays out the Tower's boss battles.
 
-Bosses: every 5th win is a Champion drawn at random from the three. The Tower Aces, bosses once, fight among the
+Champions: Blue, Lance and Cynthia (skins from RCT Trainers+), and Steven, Wallace, Alder, Iris, Diantha, Geeta,
+Nemona and N (skins from the More Radical Textures pack of the More Radical Trainers add-on, "mrt").
+Bosses: every 5th win is a Champion drawn at random. The Tower Aces, bosses once, fight among the
 regular opponents of the advanced and pro stages (from the 11th win). Each Champion's roster holds several battle-trained sets per member (IVs of 31, full EVs, battle items),
 once per gimmick:
 - Mega runs: members that can Mega Evolve also have Mega Stone sets; the Tower draws one of them to hold its stone.
@@ -10,7 +12,7 @@ Each Champion also has a legend table. With the legendary class allowed they bri
 challenger: the main line (a restricted legendary) first, then sub lines (sub-legendary, Mythical, Ultra Beast,
 Paradox) at random, each in place of the member it stands for.
 
-    python tools/tower-sets/gen_champions.py [path/to/RCT Trainers+.zip]
+    python tools/tower-sets/gen_champions.py [path/to/RCT Trainers+.zip] [path/to/MoreRadicalTextures.zip]
 """
 import io
 import json
@@ -24,6 +26,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower"
 DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\RCT Trainers+ [1.7] v2.2.zip"))
+DEFAULT_MRT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\MoreRadicalTextures1.8.zip"))
 CHAMPION_TIER = 9  # outside every pool: only a Champion's roster uses these sets
 STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
 SHORT = {"hp": "hp", "atk": "attack", "def": "defense", "spa": "special_attack", "spd": "special_defense", "spe": "speed"}
@@ -127,6 +130,181 @@ CHAMPIONS = {
             ("azelf", "roserade", False, member("azelf", "psychic", [s("levitate", "timid", "focus_sash", "nastyplot psychic fireblast dazzlinggleam", SPECIAL)])),
         ],
     },
+    # From the More Radical Trainers textures (pack "mrt"): Hoenn, Unova, Kalos and Paldea, and N.
+    "steven": {
+        "skin": "hoennchampion_steven", "pack": "mrt",
+        "names": ("Champion Steven", "챔피언 성호"),
+        "ace": "metagross",
+        "team": [
+            member("skarmory", "ghost", [s("sturdy", "impish", "rocky_helmet", "bravebird spikes roost whirlwind", "hp def spd")],
+                   [s("sturdy", "impish", "mega_showdown:skarmorite", "bravebird bodypress roost spikes", "hp def spd")]),
+            member("claydol", "ground", [s("levitate", "bold", "light_clay", "reflect lightscreen earthpower stealthrock", "hp def spa")]),
+            member("aggron", "steel", [s("rockhead", "adamant", "weakness_policy", "heavyslam headsmash earthquake rockpolish", PHYSICAL)],
+                   [s("rockhead", "impish", "mega_showdown:aggronite", "heavyslam bodypress earthquake roar", "hp def atk")]),
+            member("cradily", "grass", [s("stormdrain", "careful", "leftovers", "gigadrain recover stealthrock toxic", "hp spd def")]),
+            member("armaldo", "rock", [s("battlearmor", "adamant", "choice_band", "stoneedge xscissor earthquake aquatail", PHYSICAL)]),
+            member("metagross", "steel", [s("clearbody", "jolly", "life_orb", "meteormash zenheadbutt earthquake bulletpunch", PHYSICAL),
+                                          s("clearbody", "adamant", "assault_vest", "meteormash zenheadbutt earthquake bulletpunch", "hp atk spd")],
+                   [s("clearbody", "jolly", "mega_showdown:metagrossite", "meteormash zenheadbutt earthquake icepunch", PHYSICAL)]),
+        ],
+        "legends": [
+            ("groudon", "aggron", True, member("groudon", "fire", [s("drought", "adamant", "lum_berry", "precipiceblades heatcrash stoneedge swordsdance", "atk hp spe")])),
+            ("jirachi", "claydol", False, member("jirachi", "steel", [s("serenegrace", "jolly", "choice_scarf", "ironhead uturn icepunch healingwish", PHYSICAL)])),
+            ("deoxys", "cradily", False, member("deoxys", "psychic", [s("pressure", "timid", "focus_sash", "psychoboost superpower icebeam knockoff", SPECIAL)])),
+            ("ironthorns", "armaldo", False, member("ironthorns", "rock", [s("quarkdrive", "jolly", "sitrus_berry", "dragondance stoneedge wildcharge earthquake", PHYSICAL)])),
+        ],
+    },
+    "wallace": {
+        "skin": "hoennleader_wallace", "pack": "mrt",
+        "names": ("Champion Wallace", "챔피언 윤진"),
+        "ace": "milotic",
+        "team": [
+            member("wailord", "water", [s("pressure", "modest", "choice_specs", "waterspout hydropump icebeam hypervoice", "hp spa def")]),
+            member("tentacruel", "poison", [s("liquidooze", "timid", "black_sludge", "scald sludgebomb rapidspin toxicspikes", "hp spe def")]),
+            member("ludicolo", "grass", [s("swiftswim", "modest", "life_orb", "raindance hydropump gigadrain icebeam", SPECIAL)]),
+            member("whiscash", "ground", [s("oblivious", "adamant", "lum_berry", "dragondance waterfall earthquake stoneedge", PHYSICAL)]),
+            member("gyarados", "flying", [s("intimidate", "jolly", "heavy_duty_boots", "dragondance waterfall earthquake taunt", PHYSICAL)],
+                   [s("intimidate", "adamant", "mega_showdown:gyaradosite", "dragondance waterfall crunch earthquake", PHYSICAL)]),
+            member("milotic", "water", [s("marvelscale", "bold", "flame_orb", "scald recover icebeam haze", "hp def spd"),
+                                        s("competitive", "modest", "leftovers", "hydropump icebeam recover dragonpulse", "hp spa spd")]),
+        ],
+        "legends": [
+            ("kyogre", "wailord", True, member("kyogre", "water", [s("drizzle", "modest", "choice_scarf", "waterspout originpulse icebeam thunder", SPECIAL)])),
+            ("manaphy", "whiscash", False, member("manaphy", "water", [s("hydration", "timid", "expert_belt", "tailglow surf icebeam energyball", SPECIAL)])),
+            ("walkingwake", "ludicolo", False, member("walkingwake", "dragon", [s("protosynthesis", "timid", "focus_sash", "hydrosteam dracometeor flamethrower flipturn", SPECIAL)])),
+            ("volcanion", "tentacruel", False, member("volcanion", "fire", [s("waterabsorb", "modest", "assault_vest", "steameruption fireblast earthpower sludgebomb", "hp spa spd")])),
+        ],
+    },
+    "alder": {
+        "skin": "unovachampion_alder", "pack": "mrt",
+        "names": ("Champion Alder", "챔피언 노간주"),
+        "ace": "volcarona",
+        "team": [
+            member("accelgor", "bug", [s("stickyhold", "timid", "focus_sash", "bugbuzz focusblast energyball spikes", SPECIAL)]),
+            member("bouffalant", "normal", [s("sapsipper", "adamant", "choice_band", "headcharge earthquake megahorn superpower", PHYSICAL)]),
+            member("druddigon", "dragon", [s("roughskin", "adamant", "rocky_helmet", "outrage glare suckerpunch stealthrock", "hp atk def")]),
+            member("vanilluxe", "ice", [s("snowwarning", "modest", "light_clay", "blizzard freezedry flashcannon auroraveil", SPECIAL)]),
+            member("escavalier", "steel", [s("overcoat", "adamant", "assault_vest", "ironhead megahorn knockoff drillrun", "hp atk spd")]),
+            # No member of Alder's team Mega Evolves: in Mega runs Emboar joins with its stone.
+            member("emboar", "fire", [], [s("reckless", "jolly", "mega_showdown:emboarite", "flareblitz closecombat wildcharge knockoff", PHYSICAL)]),
+            member("volcarona", "water", [s("flamebody", "timid", "heavy_duty_boots", "quiverdance fierydance bugbuzz gigadrain", SPECIAL),
+                                          s("flamebody", "modest", "lum_berry", "quiverdance fireblast bugbuzz psychic", SPECIAL)]),
+        ],
+        "legends": [
+            ("kyurem", "vanilluxe", True, member("kyurem", "ice", [s("pressure", "timid", "life_orb", "icebeam freezedry earthpower dracometeor", SPECIAL)])),
+            ("slitherwing", "accelgor", False, member("slitherwing", "fighting", [s("protosynthesis", "adamant", "leftovers", "firstimpression closecombat flareblitz uturn", "atk hp spe")])),
+            ("keldeo", "bouffalant", False, member("keldeo", "water", [s("justified", "timid", "choice_specs", "hydropump secretsword vacuumwave icywind", SPECIAL)])),
+            ("victini", "escavalier", False, member("victini", "fire", [s("victorystar", "jolly", "weakness_policy", "vcreate boltstrike zenheadbutt uturn", PHYSICAL)])),
+        ],
+    },
+    "iris": {
+        "skin": "unovachampion_iris", "pack": "mrt",
+        "names": ("Champion Iris", "챔피언 아이리스"),
+        "ace": "haxorus",
+        "team": [
+            member("hydreigon", "dark", [s("levitate", "timid", "choice_specs", "dracometeor darkpulse flamethrower uturn", SPECIAL)]),
+            member("druddigon", "dragon", [s("roughskin", "adamant", "rocky_helmet", "outrage suckerpunch glare stealthrock", "hp atk def")]),
+            member("aggron", "steel", [s("rockhead", "adamant", "weakness_policy", "heavyslam headsmash earthquake rockpolish", PHYSICAL)],
+                   [s("rockhead", "impish", "mega_showdown:aggronite", "heavyslam bodypress earthquake roar", "hp def atk")]),
+            member("archeops", "flying", [s("defeatist", "jolly", "life_orb", "stoneedge dualwingbeat earthquake uturn", PHYSICAL)]),
+            member("lapras", "ice", [s("waterabsorb", "modest", "assault_vest", "freezedry surf thunderbolt icebeam", "hp spa spd")], gmax=True),
+            member("haxorus", "dragon", [s("moldbreaker", "jolly", "lum_berry", "dragondance outrage earthquake poisonjab", PHYSICAL),
+                                         s("moldbreaker", "adamant", "choice_band", "outrage earthquake closecombat poisonjab", PHYSICAL)]),
+        ],
+        "legends": [
+            ("zekrom", "druddigon", True, member("zekrom", "electric", [s("teravolt", "adamant", "heavy_duty_boots", "boltstrike outrage dragondance crunch", "atk spe hp")])),
+            ("ragingbolt", "lapras", False, member("ragingbolt", "electric", [s("protosynthesis", "modest", "leftovers", "thunderbolt dracometeor dragonpulse calmmind", "hp spa spe")])),
+            ("ironjugulis", "archeops", False, member("ironjugulis", "dark", [s("quarkdrive", "timid", "choice_scarf", "hurricane darkpulse earthpower uturn", SPECIAL)])),
+            ("naganadel", "hydreigon", False, member("naganadel", "poison", [s("beastboost", "timid", "focus_sash", "sludgewave dracometeor fireblast nastyplot", SPECIAL)])),
+        ],
+    },
+    "diantha": {
+        "skin": "kaloschampion_diantha", "pack": "mrt",
+        "names": ("Champion Diantha", "챔피언 카르네"),
+        "ace": "gardevoir",
+        "team": [
+            member("hawlucha", "fighting", [s("unburden", "jolly", "sitrus_berry", "swordsdance closecombat acrobatics roost", PHYSICAL)],
+                   [s("moldbreaker", "jolly", "mega_showdown:hawluchanite", "swordsdance closecombat bravebird roost", PHYSICAL)]),
+            member("tyrantrum", "rock", [s("rockhead", "adamant", "choice_band", "headsmash outrage earthquake firefang", PHYSICAL)]),
+            member("aurorus", "ice", [s("refrigerate", "modest", "choice_specs", "hypervoice freezedry earthpower ancientpower", SPECIAL)]),
+            member("gourgeist", "ghost", [s("frisk", "impish", "leftovers", "willowisp leechseed poltergeist synthesis", "hp def atk")]),
+            member("goodra", "dragon", [s("sapsipper", "modest", "assault_vest", "dracometeor fireblast sludgebomb thunderbolt", "hp spa spd")]),
+            member("gardevoir", "fairy", [s("trace", "timid", "choice_scarf", "moonblast psychic mysticalfire trick", SPECIAL),
+                                          s("trace", "modest", "life_orb", "calmmind moonblast psyshock mysticalfire", "spa hp spe")],
+                   [s("trace", "timid", "mega_showdown:gardevoirite", "hypervoice psyshock mysticalfire calmmind", SPECIAL)]),
+        ],
+        "legends": [
+            ("xerneas", "aurorus", True, member("xerneas", "fairy", [s("fairyaura", "modest", "power_herb", "geomancy moonblast focusblast thunderbolt", SPECIAL)])),
+            ("diancie", "tyrantrum", False, member("diancie", "rock", [s("clearbody", "modest", "rocky_helmet", "moonblast powergem earthpower stealthrock", "hp spa def")])),
+            ("hoopa", "gourgeist", False, member("hoopa", "psychic", [s("magician", "modest", "expert_belt", "psychic shadowball focusblast nastyplot", SPECIAL)])),
+            ("ironvaliant", "hawlucha", False, member("ironvaliant", "fairy", [s("quarkdrive", "timid", "focus_sash", "moonblast shadowball psychic calmmind", SPECIAL)])),
+        ],
+    },
+    "geeta": {
+        "skin": "paldeachampion_geeta", "pack": "mrt",
+        "names": ("Champion Geeta", "챔피언 테사"),
+        "ace": "glimmora",
+        "team": [
+            member("espathra", "psychic", [s("opportunist", "timid", "life_orb", "luminacrash dazzlinggleam shadowball calmmind", SPECIAL)]),
+            member("gogoat", "grass", [s("sapsipper", "adamant", "leftovers", "hornleech earthquake bulkup milkdrink", "hp atk def")]),
+            member("veluza", "water", [s("sharpness", "adamant", "choice_band", "aquacutter psychocut nightslash aquajet", PHYSICAL)]),
+            member("avalugg", "ice", [s("sturdy", "impish", "heavy_duty_boots", "avalanche bodypress recover rapidspin", "hp def atk")]),
+            member("kingambit", "dark", [s("supremeoverlord", "adamant", "black_glasses", "kowtowcleave suckerpunch ironhead swordsdance", "atk hp spe")]),
+            member("glimmora", "rock", [s("toxicdebris", "timid", "focus_sash", "stealthrock powergem sludgewave earthpower", SPECIAL),
+                                        s("toxicdebris", "modest", "air_balloon", "powergem sludgewave earthpower energyball", SPECIAL)],
+                   [s("toxicdebris", "timid", "mega_showdown:glimmoranite", "powergem sludgewave earthpower dazzlinggleam", SPECIAL)]),
+        ],
+        "legends": [
+            ("koraidon", "gogoat", True, member("koraidon", "fighting", [s("orichalcumpulse", "jolly", "choice_scarf", "collisioncourse flareblitz outrage uturn", PHYSICAL)])),
+            ("ironcrown", "espathra", False, member("ironcrown", "steel", [s("quarkdrive", "modest", "choice_specs", "tachyoncutter psyshock focusblast voltswitch", SPECIAL)])),
+            ("ironboulder", "avalugg", False, member("ironboulder", "rock", [s("quarkdrive", "jolly", "lum_berry", "mightycleave zenheadbutt closecombat swordsdance", PHYSICAL)])),
+            ("pecharunt", "veluza", False, member("pecharunt", "poison", [s("poisonpuppeteer", "bold", "rocky_helmet", "malignantchain shadowball recover partingshot", "hp def spa")])),
+        ],
+    },
+    "nemona": {
+        "skin": "rival_nemona", "pack": "mrt",
+        "names": ("Champion Nemona", "챔피언 네모"),
+        "ace": "pawmot",
+        "team": [
+            member("lycanroc", "rock", [s("steadfast", "jolly", "life_orb", "accelerock stoneedge closecombat swordsdance", PHYSICAL)]),
+            member("goodra", "dragon", [s("sapsipper", "modest", "assault_vest", "dracometeor fireblast sludgebomb thunderbolt", "hp spa spd")]),
+            member("dudunsparce", "ghost", [s("serenegrace", "calm", "leftovers", "boomburst earthpower calmmind roost", "hp spd spa")]),
+            member("orthworm", "electric", [s("eartheater", "impish", "rocky_helmet", "shedtail ironhead bodypress stealthrock", "hp def atk")]),
+            member("meowscarada", "grass", [s("protean", "jolly", "choice_scarf", "flowertrick knockoff uturn tripleaxel", PHYSICAL)]),
+            # No member of Nemona's team Mega Evolves: in Mega runs Baxcalibur joins with its stone.
+            member("baxcalibur", "ground", [], [s("thermalexchange", "jolly", "mega_showdown:baxcalibrite", "iciclespear glaiverush earthquake dragondance", PHYSICAL)]),
+            member("pawmot", "electric", [s("ironfist", "jolly", "choice_band", "doubleshock closecombat machpunch icepunch", PHYSICAL),
+                                          s("voltabsorb", "jolly", "focus_sash", "revivalblessing doubleshock closecombat machpunch", PHYSICAL)]),
+        ],
+        "legends": [
+            ("miraidon", "orthworm", True, member("miraidon", "electric", [s("hadronengine", "timid", "choice_specs", "electrodrift dracometeor voltswitch dazzlinggleam", SPECIAL)])),
+            ("ironhands", "lycanroc", False, member("ironhands", "fighting", [s("quarkdrive", "adamant", "sitrus_berry", "drainpunch wildcharge icepunch swordsdance", "hp atk def")])),
+            ("zeraora", "goodra", False, member("zeraora", "electric", [s("voltabsorb", "jolly", "expert_belt", "plasmafists closecombat knockoff voltswitch", PHYSICAL)])),
+            ("irontreads", "dudunsparce", False, member("irontreads", "ground", [s("quarkdrive", "jolly", "heavy_duty_boots", "earthquake ironhead knockoff rapidspin", PHYSICAL)])),
+        ],
+    },
+    "n": {
+        "skin": "plasma_n", "pack": "mrt",
+        "names": ("N", "N"),
+        "ace": "zoroark",
+        "team": [
+            member("carracosta", "water", [s("solidrock", "adamant", "white_herb", "shellsmash liquidation stoneedge aquajet", PHYSICAL)]),
+            member("vanilluxe", "ice", [s("snowwarning", "modest", "light_clay", "blizzard freezedry flashcannon auroraveil", SPECIAL)]),
+            member("archeops", "flying", [s("defeatist", "jolly", "focus_sash", "stoneedge dualwingbeat earthquake uturn", PHYSICAL)]),
+            member("klinklang", "steel", [s("clearbody", "adamant", "leftovers", "shiftgear geargrind wildcharge substitute", PHYSICAL)]),
+            # N fielded a Scraggy on his way through Unova.
+            member("scrafty", "dark", [s("intimidate", "careful", "sitrus_berry", "drainpunch knockoff bulkup rest", "hp spd atk")],
+                   [s("intimidate", "adamant", "mega_showdown:scraftinite", "drainpunch knockoff bulkup icepunch", "hp atk spd")]),
+            member("zoroark", "dark", [s("illusion", "timid", "choice_specs", "darkpulse flamethrower sludgebomb focusblast", SPECIAL),
+                                       s("illusion", "timid", "life_orb", "nastyplot darkpulse flamethrower sludgebomb", SPECIAL)]),
+        ],
+        "legends": [
+            ("reshiram", "vanilluxe", True, member("reshiram", "fire", [s("turboblaze", "modest", "heavy_duty_boots", "blueflare dracometeor earthpower roost", SPECIAL)])),
+            ("genesect", "klinklang", False, member("genesect", "bug", [s("download", "jolly", "choice_scarf", "uturn ironhead leechlife blazekick", PHYSICAL)])),
+            ("meloetta", "carracosta", False, member("meloetta", "normal", [s("serenegrace", "timid", "expert_belt", "hypervoice psyshock focusblast calmmind", SPECIAL)])),
+            ("ironmoth", "archeops", False, member("ironmoth", "fire", [s("quarkdrive", "timid", "assault_vest", "fierydance sludgewave energyball dazzlinggleam", "hp spa spd")])),
+        ],
+    },
 }
 
 
@@ -179,13 +357,17 @@ def ace_ids(mechanic, fmt):
 
 
 def main():
-    pack = zipfile.ZipFile(Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PACK)
+    packs = {
+        "rct": zipfile.ZipFile(Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PACK),
+        "mrt": zipfile.ZipFile(Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_MRT_PACK),
+    }
     lang = {}
     for name, champion in CHAMPIONS.items():
         members = champion["team"] + [legend[3] for legend in champion["legends"]]
         sets = [entry for mechanic in ("mega", "dynamax", "tera") for mon in members for entry in sets_of(name, mon, mechanic)]
         write(TOWER / "pokemon-sets" / f"champion_{name}.json", {"schema_version": 4, "pokemon_sets": sets})
         skin = champion["skin"]
+        pack = packs[champion.get("pack", "rct")]
         image = Image.open(io.BytesIO(pack.read(f"assets/rctmod/textures/trainers/single/{skin}.png"))).convert("RGBA")
         trainer = {
             "trainer_id": f"champion_{name}",

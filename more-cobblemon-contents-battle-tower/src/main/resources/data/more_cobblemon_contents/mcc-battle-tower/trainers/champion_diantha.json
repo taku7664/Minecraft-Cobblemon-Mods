@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_diantha",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_diantha",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:gardevoir"
+      ],
+      "roster_set_ids": [
+        "champion_diantha_mega_hawlucha_1",
+        "champion_diantha_mega_hawlucha_2",
+        "champion_diantha_mega_tyrantrum_1",
+        "champion_diantha_mega_aurorus_1",
+        "champion_diantha_mega_gourgeist_1",
+        "champion_diantha_mega_goodra_1",
+        "champion_diantha_mega_gardevoir_1",
+        "champion_diantha_mega_gardevoir_2",
+        "champion_diantha_mega_gardevoir_3",
+        "champion_diantha_mega_xerneas_1",
+        "champion_diantha_mega_diancie_1",
+        "champion_diantha_mega_hoopa_1",
+        "champion_diantha_mega_ironvaliant_1",
+        "champion_diantha_dynamax_hawlucha_1",
+        "champion_diantha_dynamax_tyrantrum_1",
+        "champion_diantha_dynamax_aurorus_1",
+        "champion_diantha_dynamax_gourgeist_1",
+        "champion_diantha_dynamax_goodra_1",
+        "champion_diantha_dynamax_gardevoir_1",
+        "champion_diantha_dynamax_gardevoir_2",
+        "champion_diantha_dynamax_xerneas_1",
+        "champion_diantha_dynamax_diancie_1",
+        "champion_diantha_dynamax_hoopa_1",
+        "champion_diantha_dynamax_ironvaliant_1",
+        "champion_diantha_tera_hawlucha_1",
+        "champion_diantha_tera_tyrantrum_1",
+        "champion_diantha_tera_aurorus_1",
+        "champion_diantha_tera_gourgeist_1",
+        "champion_diantha_tera_goodra_1",
+        "champion_diantha_tera_gardevoir_1",
+        "champion_diantha_tera_gardevoir_2",
+        "champion_diantha_tera_xerneas_1",
+        "champion_diantha_tera_diancie_1",
+        "champion_diantha_tera_hoopa_1",
+        "champion_diantha_tera_ironvaliant_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:xerneas",
+          "replaces": "cobblemon:aurorus",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:diancie",
+          "replaces": "cobblemon:tyrantrum",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:hoopa",
+          "replaces": "cobblemon:gourgeist",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:ironvaliant",
+          "replaces": "cobblemon:hawlucha",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/kaloschampion_diantha.png",
+      "slim": false
+    }
+  ]
+}

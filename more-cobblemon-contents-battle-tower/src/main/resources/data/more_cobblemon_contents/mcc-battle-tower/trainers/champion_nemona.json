@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_nemona",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_nemona",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:pawmot"
+      ],
+      "roster_set_ids": [
+        "champion_nemona_mega_lycanroc_1",
+        "champion_nemona_mega_goodra_1",
+        "champion_nemona_mega_dudunsparce_1",
+        "champion_nemona_mega_orthworm_1",
+        "champion_nemona_mega_meowscarada_1",
+        "champion_nemona_mega_baxcalibur_1",
+        "champion_nemona_mega_pawmot_1",
+        "champion_nemona_mega_pawmot_2",
+        "champion_nemona_mega_miraidon_1",
+        "champion_nemona_mega_ironhands_1",
+        "champion_nemona_mega_zeraora_1",
+        "champion_nemona_mega_irontreads_1",
+        "champion_nemona_dynamax_lycanroc_1",
+        "champion_nemona_dynamax_goodra_1",
+        "champion_nemona_dynamax_dudunsparce_1",
+        "champion_nemona_dynamax_orthworm_1",
+        "champion_nemona_dynamax_meowscarada_1",
+        "champion_nemona_dynamax_pawmot_1",
+        "champion_nemona_dynamax_pawmot_2",
+        "champion_nemona_dynamax_miraidon_1",
+        "champion_nemona_dynamax_ironhands_1",
+        "champion_nemona_dynamax_zeraora_1",
+        "champion_nemona_dynamax_irontreads_1",
+        "champion_nemona_tera_lycanroc_1",
+        "champion_nemona_tera_goodra_1",
+        "champion_nemona_tera_dudunsparce_1",
+        "champion_nemona_tera_orthworm_1",
+        "champion_nemona_tera_meowscarada_1",
+        "champion_nemona_tera_pawmot_1",
+        "champion_nemona_tera_pawmot_2",
+        "champion_nemona_tera_miraidon_1",
+        "champion_nemona_tera_ironhands_1",
+        "champion_nemona_tera_zeraora_1",
+        "champion_nemona_tera_irontreads_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:miraidon",
+          "replaces": "cobblemon:orthworm",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:ironhands",
+          "replaces": "cobblemon:lycanroc",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:zeraora",
+          "replaces": "cobblemon:goodra",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:irontreads",
+          "replaces": "cobblemon:dudunsparce",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/rival_nemona.png",
+      "slim": true
+    }
+  ]
+}

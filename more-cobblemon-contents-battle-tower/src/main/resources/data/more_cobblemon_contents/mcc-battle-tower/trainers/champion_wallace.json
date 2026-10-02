@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_wallace",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_wallace",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:milotic"
+      ],
+      "roster_set_ids": [
+        "champion_wallace_mega_wailord_1",
+        "champion_wallace_mega_tentacruel_1",
+        "champion_wallace_mega_ludicolo_1",
+        "champion_wallace_mega_whiscash_1",
+        "champion_wallace_mega_gyarados_1",
+        "champion_wallace_mega_gyarados_2",
+        "champion_wallace_mega_milotic_1",
+        "champion_wallace_mega_milotic_2",
+        "champion_wallace_mega_kyogre_1",
+        "champion_wallace_mega_manaphy_1",
+        "champion_wallace_mega_walkingwake_1",
+        "champion_wallace_mega_volcanion_1",
+        "champion_wallace_dynamax_wailord_1",
+        "champion_wallace_dynamax_tentacruel_1",
+        "champion_wallace_dynamax_ludicolo_1",
+        "champion_wallace_dynamax_whiscash_1",
+        "champion_wallace_dynamax_gyarados_1",
+        "champion_wallace_dynamax_milotic_1",
+        "champion_wallace_dynamax_milotic_2",
+        "champion_wallace_dynamax_kyogre_1",
+        "champion_wallace_dynamax_manaphy_1",
+        "champion_wallace_dynamax_walkingwake_1",
+        "champion_wallace_dynamax_volcanion_1",
+        "champion_wallace_tera_wailord_1",
+        "champion_wallace_tera_tentacruel_1",
+        "champion_wallace_tera_ludicolo_1",
+        "champion_wallace_tera_whiscash_1",
+        "champion_wallace_tera_gyarados_1",
+        "champion_wallace_tera_milotic_1",
+        "champion_wallace_tera_milotic_2",
+        "champion_wallace_tera_kyogre_1",
+        "champion_wallace_tera_manaphy_1",
+        "champion_wallace_tera_walkingwake_1",
+        "champion_wallace_tera_volcanion_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:kyogre",
+          "replaces": "cobblemon:wailord",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:manaphy",
+          "replaces": "cobblemon:whiscash",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:walkingwake",
+          "replaces": "cobblemon:ludicolo",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:volcanion",
+          "replaces": "cobblemon:tentacruel",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/hoennleader_wallace.png",
+      "slim": true
+    }
+  ]
+}

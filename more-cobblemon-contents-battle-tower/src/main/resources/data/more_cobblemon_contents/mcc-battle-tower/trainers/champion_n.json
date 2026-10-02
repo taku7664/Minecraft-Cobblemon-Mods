@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_n",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_n",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:zoroark"
+      ],
+      "roster_set_ids": [
+        "champion_n_mega_carracosta_1",
+        "champion_n_mega_vanilluxe_1",
+        "champion_n_mega_archeops_1",
+        "champion_n_mega_klinklang_1",
+        "champion_n_mega_scrafty_1",
+        "champion_n_mega_scrafty_2",
+        "champion_n_mega_zoroark_1",
+        "champion_n_mega_zoroark_2",
+        "champion_n_mega_reshiram_1",
+        "champion_n_mega_genesect_1",
+        "champion_n_mega_meloetta_1",
+        "champion_n_mega_ironmoth_1",
+        "champion_n_dynamax_carracosta_1",
+        "champion_n_dynamax_vanilluxe_1",
+        "champion_n_dynamax_archeops_1",
+        "champion_n_dynamax_klinklang_1",
+        "champion_n_dynamax_scrafty_1",
+        "champion_n_dynamax_zoroark_1",
+        "champion_n_dynamax_zoroark_2",
+        "champion_n_dynamax_reshiram_1",
+        "champion_n_dynamax_genesect_1",
+        "champion_n_dynamax_meloetta_1",
+        "champion_n_dynamax_ironmoth_1",
+        "champion_n_tera_carracosta_1",
+        "champion_n_tera_vanilluxe_1",
+        "champion_n_tera_archeops_1",
+        "champion_n_tera_klinklang_1",
+        "champion_n_tera_scrafty_1",
+        "champion_n_tera_zoroark_1",
+        "champion_n_tera_zoroark_2",
+        "champion_n_tera_reshiram_1",
+        "champion_n_tera_genesect_1",
+        "champion_n_tera_meloetta_1",
+        "champion_n_tera_ironmoth_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:reshiram",
+          "replaces": "cobblemon:vanilluxe",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:genesect",
+          "replaces": "cobblemon:klinklang",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:meloetta",
+          "replaces": "cobblemon:carracosta",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:ironmoth",
+          "replaces": "cobblemon:archeops",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/plasma_n.png",
+      "slim": true
+    }
+  ]
+}

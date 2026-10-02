@@ -240,5 +240,13 @@
   "screen.more_cobblemon_contents.tower.party_entry.blocked": "출전 불가 · 전설급",
   "screen.more_cobblemon_contents.tower.party_entry.blocked.tooltip": "전설급 비허용이라 이 포켓몬은 출전할 수 없습니다.",
   "screen.more_cobblemon_contents.tower.party_entry.narration.blocked": "%s, 전설급 비허용이라 출전 불가",
-  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "전설·준전설은 1마리, 환상·울트라비스트·패러독스는 1마리까지 출전할 수 있습니다."
+  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "전설·준전설은 1마리, 환상·울트라비스트·패러독스는 1마리까지 출전할 수 있습니다.",
+  "trainer.more_cobblemon_contents.tower_champion_steven": "챔피언 성호",
+  "trainer.more_cobblemon_contents.tower_champion_wallace": "챔피언 윤진",
+  "trainer.more_cobblemon_contents.tower_champion_alder": "챔피언 노간주",
+  "trainer.more_cobblemon_contents.tower_champion_iris": "챔피언 아이리스",
+  "trainer.more_cobblemon_contents.tower_champion_diantha": "챔피언 카르네",
+  "trainer.more_cobblemon_contents.tower_champion_geeta": "챔피언 테사",
+  "trainer.more_cobblemon_contents.tower_champion_nemona": "챔피언 네모",
+  "trainer.more_cobblemon_contents.tower_champion_n": "N"
 }

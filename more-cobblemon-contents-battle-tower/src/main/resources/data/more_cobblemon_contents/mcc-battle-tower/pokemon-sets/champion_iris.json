@@ -1,0 +1,1126 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "champion_iris_mega_hydreigon_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:hydreigon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:darkpulse",
+        "cobblemon:flamethrower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:suckerpunch",
+        "cobblemon:glare",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_aggron_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:aggron",
+      "form_id": null,
+      "ability_id": "cobblemon:rockhead",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:heavyslam",
+        "cobblemon:headsmash",
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_aggron_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:aggron",
+      "form_id": null,
+      "ability_id": "cobblemon:rockhead",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "mega_showdown:aggronite",
+      "moves": [
+        "cobblemon:heavyslam",
+        "cobblemon:bodypress",
+        "cobblemon:earthquake",
+        "cobblemon:roar"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_archeops_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:archeops",
+      "form_id": null,
+      "ability_id": "cobblemon:defeatist",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:stoneedge",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_lapras_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:lapras",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:freezedry",
+        "cobblemon:surf",
+        "cobblemon:thunderbolt",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_haxorus_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_haxorus_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_zekrom_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:zekrom",
+      "form_id": null,
+      "ability_id": "cobblemon:teravolt",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:boltstrike",
+        "cobblemon:outrage",
+        "cobblemon:dragondance",
+        "cobblemon:crunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_ragingbolt_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:ragingbolt",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:dracometeor",
+        "cobblemon:dragonpulse",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 4
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_ironjugulis_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:ironjugulis",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:hurricane",
+        "cobblemon:darkpulse",
+        "cobblemon:earthpower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_mega_naganadel_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:naganadel",
+      "form_id": null,
+      "ability_id": "cobblemon:beastboost",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:sludgewave",
+        "cobblemon:dracometeor",
+        "cobblemon:fireblast",
+        "cobblemon:nastyplot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_iris_dynamax_hydreigon_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:hydreigon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:darkpulse",
+        "cobblemon:flamethrower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:suckerpunch",
+        "cobblemon:glare",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_aggron_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:aggron",
+      "form_id": null,
+      "ability_id": "cobblemon:rockhead",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:heavyslam",
+        "cobblemon:headsmash",
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_archeops_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:archeops",
+      "form_id": null,
+      "ability_id": "cobblemon:defeatist",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:stoneedge",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_lapras_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:lapras",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:freezedry",
+        "cobblemon:surf",
+        "cobblemon:thunderbolt",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": true
+    },
+    {
+      "set_id": "champion_iris_dynamax_haxorus_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_haxorus_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_zekrom_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:zekrom",
+      "form_id": null,
+      "ability_id": "cobblemon:teravolt",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:boltstrike",
+        "cobblemon:outrage",
+        "cobblemon:dragondance",
+        "cobblemon:crunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_ragingbolt_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:ragingbolt",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:dracometeor",
+        "cobblemon:dragonpulse",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_ironjugulis_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:ironjugulis",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:hurricane",
+        "cobblemon:darkpulse",
+        "cobblemon:earthpower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_dynamax_naganadel_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:naganadel",
+      "form_id": null,
+      "ability_id": "cobblemon:beastboost",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:sludgewave",
+        "cobblemon:dracometeor",
+        "cobblemon:fireblast",
+        "cobblemon:nastyplot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_iris_tera_hydreigon_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:hydreigon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:darkpulse",
+        "cobblemon:flamethrower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dark"
+    },
+    {
+      "set_id": "champion_iris_tera_druddigon_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:druddigon",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:suckerpunch",
+        "cobblemon:glare",
+        "cobblemon:stealthrock"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_iris_tera_aggron_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:aggron",
+      "form_id": null,
+      "ability_id": "cobblemon:rockhead",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:weakness_policy",
+      "moves": [
+        "cobblemon:heavyslam",
+        "cobblemon:headsmash",
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "steel"
+    },
+    {
+      "set_id": "champion_iris_tera_archeops_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:archeops",
+      "form_id": null,
+      "ability_id": "cobblemon:defeatist",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:stoneedge",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "flying"
+    },
+    {
+      "set_id": "champion_iris_tera_lapras_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:lapras",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:freezedry",
+        "cobblemon:surf",
+        "cobblemon:thunderbolt",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "ice"
+    },
+    {
+      "set_id": "champion_iris_tera_haxorus_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_iris_tera_haxorus_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:haxorus",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_iris_tera_zekrom_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:zekrom",
+      "form_id": null,
+      "ability_id": "cobblemon:teravolt",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:boltstrike",
+        "cobblemon:outrage",
+        "cobblemon:dragondance",
+        "cobblemon:crunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "electric"
+    },
+    {
+      "set_id": "champion_iris_tera_ragingbolt_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:ragingbolt",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:dracometeor",
+        "cobblemon:dragonpulse",
+        "cobblemon:calmmind"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 4
+      },
+      "tera_type": "electric"
+    },
+    {
+      "set_id": "champion_iris_tera_ironjugulis_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:ironjugulis",
+      "form_id": null,
+      "ability_id": "cobblemon:quarkdrive",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:hurricane",
+        "cobblemon:darkpulse",
+        "cobblemon:earthpower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dark"
+    },
+    {
+      "set_id": "champion_iris_tera_naganadel_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:naganadel",
+      "form_id": null,
+      "ability_id": "cobblemon:beastboost",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:sludgewave",
+        "cobblemon:dracometeor",
+        "cobblemon:fireblast",
+        "cobblemon:nastyplot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "poison"
+    }
+  ]
+}

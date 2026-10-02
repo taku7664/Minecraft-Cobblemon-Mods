@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "champion_steven",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_champion_steven",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:metagross"
+      ],
+      "roster_set_ids": [
+        "champion_steven_mega_skarmory_1",
+        "champion_steven_mega_skarmory_2",
+        "champion_steven_mega_claydol_1",
+        "champion_steven_mega_aggron_1",
+        "champion_steven_mega_aggron_2",
+        "champion_steven_mega_cradily_1",
+        "champion_steven_mega_armaldo_1",
+        "champion_steven_mega_metagross_1",
+        "champion_steven_mega_metagross_2",
+        "champion_steven_mega_metagross_3",
+        "champion_steven_mega_groudon_1",
+        "champion_steven_mega_jirachi_1",
+        "champion_steven_mega_deoxys_1",
+        "champion_steven_mega_ironthorns_1",
+        "champion_steven_dynamax_skarmory_1",
+        "champion_steven_dynamax_claydol_1",
+        "champion_steven_dynamax_aggron_1",
+        "champion_steven_dynamax_cradily_1",
+        "champion_steven_dynamax_armaldo_1",
+        "champion_steven_dynamax_metagross_1",
+        "champion_steven_dynamax_metagross_2",
+        "champion_steven_dynamax_groudon_1",
+        "champion_steven_dynamax_jirachi_1",
+        "champion_steven_dynamax_deoxys_1",
+        "champion_steven_dynamax_ironthorns_1",
+        "champion_steven_tera_skarmory_1",
+        "champion_steven_tera_claydol_1",
+        "champion_steven_tera_aggron_1",
+        "champion_steven_tera_cradily_1",
+        "champion_steven_tera_armaldo_1",
+        "champion_steven_tera_metagross_1",
+        "champion_steven_tera_metagross_2",
+        "champion_steven_tera_groudon_1",
+        "champion_steven_tera_jirachi_1",
+        "champion_steven_tera_deoxys_1",
+        "champion_steven_tera_ironthorns_1"
+      ],
+      "legend_lines": [
+        {
+          "species_id": "cobblemon:groudon",
+          "replaces": "cobblemon:aggron",
+          "main": true
+        },
+        {
+          "species_id": "cobblemon:jirachi",
+          "replaces": "cobblemon:claydol",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:deoxys",
+          "replaces": "cobblemon:cradily",
+          "main": false
+        },
+        {
+          "species_id": "cobblemon:ironthorns",
+          "replaces": "cobblemon:armaldo",
+          "main": false
+        }
+      ],
+      "skin": "rctmod:textures/trainers/single/hoennchampion_steven.png",
+      "slim": false
+    }
+  ]
+}

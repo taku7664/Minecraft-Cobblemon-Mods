@@ -6,7 +6,15 @@
       "trainer_ids": [
         "champion_blue",
         "champion_lance",
-        "champion_cynthia"
+        "champion_cynthia",
+        "champion_steven",
+        "champion_wallace",
+        "champion_alder",
+        "champion_iris",
+        "champion_diantha",
+        "champion_geeta",
+        "champion_nemona",
+        "champion_n"
       ],
       "stage_ids": [
         "advanced"

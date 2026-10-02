@@ -251,7 +251,12 @@ class TowerOpponentCatalogResourceTest {
                                 assertTrue(set.evs.total >= 508, set.setId)
                             }
                             if (mechanic == MajorBattleMechanic.MEGA) {
-                                assertEquals(1, team.count { it.heldItemId!!.matches(Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")) }, "$team")
+                                val stone = Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")
+                                val stones = team.count { it.heldItemId!!.matches(stone) }
+                                // One Mega Stone, unless the ace and the legendaries fill every seat and the ace cannot Mega Evolve.
+                                val aceMegas = catalog.setsFor(profile).any { it.speciesId == ace && it.heldItemId?.matches(stone) == true }
+                                val seatLeft = format.selectionSize > 1 + challenger.total
+                                if (seatLeft || aceMegas) assertEquals(1, stones, "$champion $format $challenger ${team.map { it.setId }}") else assertTrue(stones <= 1, "$team")
                             } else {
                                 team.forEach { assertMechanicShape(mechanic, it) }
                             }
@@ -300,6 +305,7 @@ class TowerOpponentCatalogResourceTest {
         val aces = profiles.filter { it.isTowerAce() }.distinctBy(TowerOpponentProfile::profileId)
         assertEquals(ACES_PER_CATEGORY * 6, aces.size)
         (bosses + aces).forEach { trainer ->
+            if (trainer.profileId == CHAMPION_CLASS_WITHOUT_TITLE) return@forEach
             val (en, ko) = if (trainer.fixedRoster) "Champion " to "챔피언 " else "Tower Ace " to "타워 에이스 "
             assertTrue(english[trainer.displayNameKey].asString.startsWith(en) && korean[trainer.displayNameKey].asString.startsWith(ko), trainer.profileId)
         }
@@ -430,13 +436,24 @@ class TowerOpponentCatalogResourceTest {
 
         /** Trainers 097 to 120, the Tower Aces: four per gimmick and format. */
         fun TowerOpponentProfile.isTowerAce(): Boolean = profileId.removePrefix("trainer_").toIntOrNull() in 97..120
-        const val EXPECTED_DISTINCT_TRAINERS = 123
+        const val EXPECTED_DISTINCT_TRAINERS = 131
         /** Each Champion, by the ace every one of their teams carries. */
         val CHAMPIONS = mapOf(
             "champion_blue" to "cobblemon:blastoise",
             "champion_lance" to "cobblemon:dragonite",
             "champion_cynthia" to "cobblemon:garchomp",
+            "champion_steven" to "cobblemon:metagross",
+            "champion_wallace" to "cobblemon:milotic",
+            "champion_alder" to "cobblemon:volcarona",
+            "champion_iris" to "cobblemon:haxorus",
+            "champion_diantha" to "cobblemon:gardevoir",
+            "champion_geeta" to "cobblemon:glimmora",
+            "champion_nemona" to "cobblemon:pawmot",
+            "champion_n" to "cobblemon:zoroark",
         )
+
+        /** N is no Champion, though he fights as one: his name goes without the title. */
+        const val CHAMPION_CLASS_WITHOUT_TITLE = "champion_n"
         const val SIGNATURE_SPECIES_PER_TRAINER = 3
         const val MINIMUM_DISTINCT_SIGNATURE_GROUPS = 60
         const val MINIMUM_SPECIES_PER_MECHANIC_TIER = 50

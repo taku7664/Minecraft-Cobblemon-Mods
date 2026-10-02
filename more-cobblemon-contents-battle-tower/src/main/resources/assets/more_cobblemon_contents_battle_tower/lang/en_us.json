@@ -240,5 +240,13 @@
   "screen.more_cobblemon_contents.tower.party_entry.blocked": "Cannot enter: Legendary class",
   "screen.more_cobblemon_contents.tower.party_entry.blocked.tooltip": "Legendary class is off, so this Pokémon cannot enter.",
   "screen.more_cobblemon_contents.tower.party_entry.narration.blocked": "%s, cannot enter while the Legendary class is off",
-  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "A battle team may bring one Legendary and one Mythical, Ultra Beast or Paradox Pokémon at most."
+  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "A battle team may bring one Legendary and one Mythical, Ultra Beast or Paradox Pokémon at most.",
+  "trainer.more_cobblemon_contents.tower_champion_steven": "Champion Steven",
+  "trainer.more_cobblemon_contents.tower_champion_wallace": "Champion Wallace",
+  "trainer.more_cobblemon_contents.tower_champion_alder": "Champion Alder",
+  "trainer.more_cobblemon_contents.tower_champion_iris": "Champion Iris",
+  "trainer.more_cobblemon_contents.tower_champion_diantha": "Champion Diantha",
+  "trainer.more_cobblemon_contents.tower_champion_geeta": "Champion Geeta",
+  "trainer.more_cobblemon_contents.tower_champion_nemona": "Champion Nemona",
+  "trainer.more_cobblemon_contents.tower_champion_n": "N"
 }

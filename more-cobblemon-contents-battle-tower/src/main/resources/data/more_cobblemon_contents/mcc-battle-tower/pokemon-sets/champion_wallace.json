@@ -1,0 +1,1126 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "champion_wallace_mega_wailord_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:wailord",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:hypervoice"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_tentacruel_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:tentacruel",
+      "form_id": null,
+      "ability_id": "cobblemon:liquidooze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:black_sludge",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:sludgebomb",
+        "cobblemon:rapidspin",
+        "cobblemon:toxicspikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_ludicolo_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:ludicolo",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:raindance",
+        "cobblemon:hydropump",
+        "cobblemon:gigadrain",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_whiscash_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:whiscash",
+      "form_id": null,
+      "ability_id": "cobblemon:oblivious",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_gyarados_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_gyarados_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "mega_showdown:gyaradosite",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:crunch",
+        "cobblemon:earthquake"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_milotic_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:marvelscale",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:flame_orb",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:recover",
+        "cobblemon:icebeam",
+        "cobblemon:haze"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_milotic_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:competitive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:recover",
+        "cobblemon:dragonpulse"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_kyogre_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:kyogre",
+      "form_id": null,
+      "ability_id": "cobblemon:drizzle",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:originpulse",
+        "cobblemon:icebeam",
+        "cobblemon:thunder"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_manaphy_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:manaphy",
+      "form_id": null,
+      "ability_id": "cobblemon:hydration",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:tailglow",
+        "cobblemon:surf",
+        "cobblemon:icebeam",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_walkingwake_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:walkingwake",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:hydrosteam",
+        "cobblemon:dracometeor",
+        "cobblemon:flamethrower",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_wallace_mega_volcanion_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:volcanion",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:steameruption",
+        "cobblemon:fireblast",
+        "cobblemon:earthpower",
+        "cobblemon:sludgebomb"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_wallace_dynamax_wailord_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:wailord",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:hypervoice"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_tentacruel_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:tentacruel",
+      "form_id": null,
+      "ability_id": "cobblemon:liquidooze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:black_sludge",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:sludgebomb",
+        "cobblemon:rapidspin",
+        "cobblemon:toxicspikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_ludicolo_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:ludicolo",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:raindance",
+        "cobblemon:hydropump",
+        "cobblemon:gigadrain",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_whiscash_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:whiscash",
+      "form_id": null,
+      "ability_id": "cobblemon:oblivious",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_gyarados_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_milotic_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:marvelscale",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:flame_orb",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:recover",
+        "cobblemon:icebeam",
+        "cobblemon:haze"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_milotic_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:competitive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:recover",
+        "cobblemon:dragonpulse"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_kyogre_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:kyogre",
+      "form_id": null,
+      "ability_id": "cobblemon:drizzle",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:originpulse",
+        "cobblemon:icebeam",
+        "cobblemon:thunder"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_manaphy_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:manaphy",
+      "form_id": null,
+      "ability_id": "cobblemon:hydration",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:tailglow",
+        "cobblemon:surf",
+        "cobblemon:icebeam",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_walkingwake_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:walkingwake",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:hydrosteam",
+        "cobblemon:dracometeor",
+        "cobblemon:flamethrower",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_dynamax_volcanion_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:volcanion",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:steameruption",
+        "cobblemon:fireblast",
+        "cobblemon:earthpower",
+        "cobblemon:sludgebomb"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_wallace_tera_wailord_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:wailord",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:hypervoice"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_wallace_tera_tentacruel_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:tentacruel",
+      "form_id": null,
+      "ability_id": "cobblemon:liquidooze",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:black_sludge",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:sludgebomb",
+        "cobblemon:rapidspin",
+        "cobblemon:toxicspikes"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "poison"
+    },
+    {
+      "set_id": "champion_wallace_tera_ludicolo_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:ludicolo",
+      "form_id": null,
+      "ability_id": "cobblemon:swiftswim",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:raindance",
+        "cobblemon:hydropump",
+        "cobblemon:gigadrain",
+        "cobblemon:icebeam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "grass"
+    },
+    {
+      "set_id": "champion_wallace_tera_whiscash_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:whiscash",
+      "form_id": null,
+      "ability_id": "cobblemon:oblivious",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "ground"
+    },
+    {
+      "set_id": "champion_wallace_tera_gyarados_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:earthquake",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "flying"
+    },
+    {
+      "set_id": "champion_wallace_tera_milotic_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:marvelscale",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:flame_orb",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:recover",
+        "cobblemon:icebeam",
+        "cobblemon:haze"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_wallace_tera_milotic_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:milotic",
+      "form_id": null,
+      "ability_id": "cobblemon:competitive",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:recover",
+        "cobblemon:dragonpulse"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_wallace_tera_kyogre_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:kyogre",
+      "form_id": null,
+      "ability_id": "cobblemon:drizzle",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:waterspout",
+        "cobblemon:originpulse",
+        "cobblemon:icebeam",
+        "cobblemon:thunder"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_wallace_tera_manaphy_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:manaphy",
+      "form_id": null,
+      "ability_id": "cobblemon:hydration",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:tailglow",
+        "cobblemon:surf",
+        "cobblemon:icebeam",
+        "cobblemon:energyball"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_wallace_tera_walkingwake_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:walkingwake",
+      "form_id": null,
+      "ability_id": "cobblemon:protosynthesis",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:hydrosteam",
+        "cobblemon:dracometeor",
+        "cobblemon:flamethrower",
+        "cobblemon:flipturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "dragon"
+    },
+    {
+      "set_id": "champion_wallace_tera_volcanion_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:volcanion",
+      "form_id": null,
+      "ability_id": "cobblemon:waterabsorb",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:steameruption",
+        "cobblemon:fireblast",
+        "cobblemon:earthpower",
+        "cobblemon:sludgebomb"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "fire"
+    }
+  ]
+}
