@@ -21,15 +21,13 @@ class TowerBattleDifficultyPolicyTest {
     }
 
     @Test
-    fun `Normal bosses climb one step above their stage up to boss difficulty`() {
-        val expected = mapOf(
-            TowerStreakStage.INTRODUCTORY to BattleTrainerTier.STANDARD,
-            TowerStreakStage.PRACTICAL to BattleTrainerTier.ADVANCED,
-            TowerStreakStage.ADVANCED to BattleTrainerTier.BOSS,
-        )
-        expected.forEach { (stage, tier) ->
-            assertEquals(tier, TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.TIER_BOSS, 4, TowerMode.NORMAL).difficulty.tier)
-        }
+    fun `Normal bosses climb a step at a time and only its last Champion plays boss difficulty`() {
+        fun tier(stage: TowerStreakStage, champion: Boolean) =
+            TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.TIER_BOSS, 4, TowerMode.NORMAL, champion).difficulty.tier
+        assertEquals(BattleTrainerTier.STANDARD, tier(TowerStreakStage.INTRODUCTORY, champion = false))
+        assertEquals(BattleTrainerTier.ADVANCED, tier(TowerStreakStage.PRACTICAL, champion = true))
+        assertEquals(BattleTrainerTier.ADVANCED, tier(TowerStreakStage.ADVANCED, champion = false))
+        assertEquals(BattleTrainerTier.BOSS, tier(TowerStreakStage.ADVANCED, champion = true))
         assertEquals(BattleTrainerTier.INTRODUCTORY,
             TowerBattleDifficultyPolicy.resolve(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.REGULAR, 1, TowerMode.NORMAL).difficulty.tier)
     }

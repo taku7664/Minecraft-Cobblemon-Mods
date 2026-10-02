@@ -9,11 +9,13 @@ internal object TowerBattleDifficultyPolicy {
         opponentKind: TowerOpponentKind,
         aiSkill: Int,
         mode: TowerMode = TowerMode.ENDLESS,
+        /** The boss is a Champion rather than a Tower Ace. */
+        champion: Boolean = true,
     ): BattleTrainerProfile {
         when (opponentKind) {
             TowerOpponentKind.TIER_BOSS,
             TowerOpponentKind.MASTER_BALL_BOSS,
-            -> return boss(stage, aiSkill, mode)
+            -> return boss(stage, aiSkill, mode, champion)
             TowerOpponentKind.REGULAR -> Unit
         }
         val difficulty = when (stage) {
@@ -28,17 +30,21 @@ internal object TowerBattleDifficultyPolicy {
     }
 
     /**
-     * Endless is for challengers who cleared Normal, so every boss plays at BOSS. Normal climbs one step above its
-     * stage instead of jumping from the introductory regulars straight to BOSS: the 5th-win Tower Ace at STANDARD,
-     * the 10th-win Champion at ADVANCED, and the 15th and 20th at BOSS.
+     * BOSS is the Champions' alone. Endless, for challengers who cleared Normal, brings a Champion at BOSS to every
+     * boss battle. Normal climbs a step at a time: the Tower Aces, strong trainers rather than Champions, play one
+     * step above their stage and never past ADVANCED (STANDARD at the 5th win, ADVANCED at the 15th); its Champions
+     * play ADVANCED at the 10th win and BOSS at the 20th.
      */
-    private fun boss(stage: TowerStreakStage, aiSkill: Int, mode: TowerMode): BattleTrainerProfile {
-        val champion = BattleTrainerProfile.champion(aiSkill)
-        if (mode == TowerMode.ENDLESS) return champion
+    private fun boss(stage: TowerStreakStage, aiSkill: Int, mode: TowerMode, champion: Boolean): BattleTrainerProfile {
+        if (!champion) {
+            val difficulty = if (stage == TowerStreakStage.INTRODUCTORY) BattleDifficultyProfiles.STANDARD else BattleDifficultyProfiles.ADVANCED
+            return BattleTrainerProfile.balanced(aiSkill, difficulty)
+        }
+        val profile = BattleTrainerProfile.champion(aiSkill)
+        if (mode == TowerMode.ENDLESS) return profile
         return when (stage) {
-            TowerStreakStage.INTRODUCTORY -> champion.copy(difficulty = BattleDifficultyProfiles.STANDARD)
-            TowerStreakStage.PRACTICAL -> champion.copy(difficulty = BattleDifficultyProfiles.ADVANCED)
-            TowerStreakStage.ADVANCED, TowerStreakStage.PRO -> champion
+            TowerStreakStage.INTRODUCTORY, TowerStreakStage.PRACTICAL -> profile.copy(difficulty = BattleDifficultyProfiles.ADVANCED)
+            TowerStreakStage.ADVANCED, TowerStreakStage.PRO -> profile
         }
     }
 }
