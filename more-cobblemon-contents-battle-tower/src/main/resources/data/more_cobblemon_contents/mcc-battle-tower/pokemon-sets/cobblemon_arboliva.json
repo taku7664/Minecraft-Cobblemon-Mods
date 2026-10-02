@@ -17,20 +17,20 @@
         "cobblemon:leafstorm"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
       },
       "evs": {
-        "hp": 4,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 252,
+        "special_attack": 0,
         "special_defense": 0,
-        "speed": 252
+        "speed": 0
       },
       "dmax_level": 10,
       "gmax_factor": false
@@ -51,20 +51,20 @@
         "cobblemon:leafstorm"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
       },
       "evs": {
-        "hp": 4,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 252,
+        "special_attack": 0,
         "special_defense": 0,
-        "speed": 252
+        "speed": 0
       },
       "tera_type": "grass"
     },
@@ -84,20 +84,20 @@
         "cobblemon:strengthsap"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
       },
       "evs": {
-        "hp": 4,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
         "special_attack": 252,
         "special_defense": 0,
-        "speed": 252
+        "speed": 0
       },
       "dmax_level": 10,
       "gmax_factor": false
@@ -118,20 +118,20 @@
         "cobblemon:strengthsap"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
       },
       "evs": {
-        "hp": 4,
+        "hp": 0,
         "attack": 0,
         "defense": 0,
         "special_attack": 252,
         "special_defense": 0,
-        "speed": 252
+        "speed": 0
       },
       "tera_type": "bug"
     },
@@ -151,12 +151,12 @@
         "cobblemon:strengthsap"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
       },
       "evs": {
         "hp": 4,
@@ -164,7 +164,7 @@
         "defense": 0,
         "special_attack": 252,
         "special_defense": 0,
-        "speed": 252
+        "speed": 128
       },
       "dmax_level": 10,
       "gmax_factor": false
@@ -185,12 +185,12 @@
         "cobblemon:strengthsap"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
       },
       "evs": {
         "hp": 4,
@@ -198,7 +198,7 @@
         "defense": 0,
         "special_attack": 252,
         "special_defense": 0,
-        "speed": 252
+        "speed": 128
       },
       "tera_type": "bug"
     },

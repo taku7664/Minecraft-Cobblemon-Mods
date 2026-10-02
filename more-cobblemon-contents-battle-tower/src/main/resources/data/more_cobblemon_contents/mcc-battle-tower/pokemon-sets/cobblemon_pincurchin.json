@@ -17,19 +17,19 @@
         "cobblemon:thunderbolt"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
       },
       "evs": {
-        "hp": 252,
+        "hp": 0,
         "attack": 0,
-        "defense": 4,
+        "defense": 0,
         "special_attack": 0,
-        "special_defense": 252,
+        "special_defense": 0,
         "speed": 0
       },
       "dmax_level": 10,
@@ -51,19 +51,19 @@
         "cobblemon:thunderbolt"
       ],
       "ivs": {
-        "hp": 31,
-        "attack": 31,
-        "defense": 31,
-        "special_attack": 31,
-        "special_defense": 31,
-        "speed": 31
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
       },
       "evs": {
-        "hp": 252,
+        "hp": 0,
         "attack": 0,
-        "defense": 4,
+        "defense": 0,
         "special_attack": 0,
-        "special_defense": 252,
+        "special_defense": 0,
         "speed": 0
       },
       "tera_type": "ice"

@@ -145,12 +145,15 @@ class TowerOpponentCatalogResourceTest {
         val highSets = uniqueSets.filter { it.setTier == 2 }
         assertTrue(lowSets.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER * MajorBattleMechanic.entries.size)
         assertTrue(highSets.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER * MajorBattleMechanic.entries.size)
-        // Every set is trained competitively from the first win; the Tower climbs through level instead.
+        // Training climbs with the stage: tier 1 IV 15 and no EVs, tier 2 IV 20 and 252, tier 3 IV 25 and 384, tier 4
+        // IV 31 and 508. Champions (tier 9) are always fully trained.
+        val training = mapOf(1 to (15 to 0), 2 to (20 to 252), 3 to (25 to 384), 4 to (31 to 508), 9 to (31 to 508))
         uniqueSets.forEach { set ->
-            assertEquals(TowerStatSpread(31, 31, 31, 31, 31, 31), set.ivs, set.setId)
-            assertEquals(508, set.evs.total, set.setId)
-            assertEquals(3, set.evs.nonZeroStatCount(), set.setId)
+            val (iv, evs) = training.getValue(set.setTier)
+            assertEquals(TowerStatSpread(iv, iv, iv, iv, iv, iv), set.ivs, set.setId)
+            assertEquals(evs, set.evs.total, set.setId)
         }
+        highSets.forEach { set -> assertEquals(1, set.evs.nonZeroStatCount(), set.setId) }
 
         profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.forEach { boss ->
             assertEquals(4, boss.aiSkill)

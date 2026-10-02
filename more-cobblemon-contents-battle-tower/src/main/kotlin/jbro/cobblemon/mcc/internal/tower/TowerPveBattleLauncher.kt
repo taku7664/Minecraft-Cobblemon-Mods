@@ -56,6 +56,7 @@ internal class TowerPveBattleLauncher<P, O>(
     private val opponentMaterializer = TowerOpponentBattleTeamMaterializer(opponentMemberFactory)
     private val recentProfiles = RecentSelectionHistory<UUID, String>(RECENT_PROFILE_LIMIT)
     private val recentSpecies = RecentSelectionHistory<UUID, String>(RECENT_SPECIES_LIMIT)
+    private val championRotation = TowerChampionRotation()
 
     override fun launch(request: TowerBattleLaunchRequest): TowerBattleLaunchResult {
         val playerTeam = registeredTeamMaterializer(request.playerId, request.selection)
@@ -68,16 +69,23 @@ internal class TowerPveBattleLauncher<P, O>(
             return TowerBattleLaunchResult.Unavailable
         }
         val opponentKind = TowerProgression.nextOpponent(request.progress)
+        // Every boss, so every 5th win, is a Champion, taken in turn so none comes back before the others.
+        val boss = opponentKind != TowerOpponentKind.REGULAR
+        val champions = if (boss) {
+            catalog.profilesFor(request.progress.nextStage, request.progress.format, opponentKind, request.mechanic)
+                .filter { it.fixedRoster }.map { it.profileId }.toSet()
+        } else {
+            emptySet()
+        }
         val opponent = TowerOpponentSelector(catalog, random).select(
             request.progress.nextStage,
             request.progress.format,
             opponentKind,
             request.mechanic,
-            recentProfiles.recent(request.playerId),
+            if (boss) championRotation.excluded(request.playerId, champions) else recentProfiles.recent(request.playerId),
             recentSpecies.recent(request.playerId),
             request.legendaryClassAllowed,
-            // Every boss, so every 5th win, is a Champion.
-            championBoss = opponentKind != TowerOpponentKind.REGULAR,
+            championBoss = boss,
             challengerLegendaries = TowerLegendaryClassPolicy.count(request.selection.members.filter { it.legendaryClass }.map { it.speciesId }),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
@@ -111,6 +119,7 @@ internal class TowerPveBattleLauncher<P, O>(
         )
         if (result is TowerBattleLaunchResult.Started) {
             recentProfiles.record(request.playerId, opponent.profile.profileId)
+            if (boss) championRotation.record(request.playerId, opponent.profile.profileId, champions)
             opponent.team.forEach { pokemon -> recentSpecies.record(request.playerId, pokemon.speciesId) }
         }
         return result
@@ -124,6 +133,7 @@ internal class TowerPveBattleLauncher<P, O>(
     fun clear() {
         recentProfiles.clear()
         recentSpecies.clear()
+        championRotation.clear()
     }
 
     private fun reportSafely(message: String) {
