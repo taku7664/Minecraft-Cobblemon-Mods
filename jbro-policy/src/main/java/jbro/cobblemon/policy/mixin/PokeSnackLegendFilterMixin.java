@@ -19,7 +19,7 @@ abstract class PokeSnackLegendFilterMixin {
     @Inject(method = "affectSpawnable", at = @At("HEAD"), cancellable = true)
     private void jbroPolicy$placerLegends(SpawnDetail detail, SpawnablePosition position, CallbackInfoReturnable<Boolean> cir) {
         if (detail instanceof PokemonSpawnDetail pokemon
-            && !LegendPolicy.snackMayOffer((PokeSnackBlockEntity) (Object) this, pokemon.getPokemon().getSpecies())) {
+            && !LegendPolicy.snackMayOffer((PokeSnackBlockEntity) (Object) this, pokemon.getPokemon())) {
             cir.setReturnValue(false);
         }
     }

@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents
 import java.util.concurrent.ExecutorService
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.api.Announcements
-import jbro.cobblemon.policy.legend.LegendCatalog
+import jbro.cobblemon.policy.legend.LegendPolicy
 
 /**
  * Server news posted to the news channel: More Cobblemon Contents' news (Champions, records), Legend and shiny
@@ -21,10 +21,12 @@ internal object DiscordNews {
         this.executor = executor
         CobblemonEvents.POKEMON_CAPTURED.subscribe { event ->
             val species = event.pokemon.species
-            val name = KoreanText.translate("${species.resourceIdentifier.namespace}.species.${species.resourceIdentifier.path}.name")
+            // A Legend's own name tells Galarian Zapdos from Zapdos.
+            val legend = LegendPolicy.legendOf(event.pokemon)
+            val name = legend?.let { KoreanText.translate(it.nameKey) }
+                ?: KoreanText.translate("${species.resourceIdentifier.namespace}.species.${species.resourceIdentifier.path}.name")
                 ?: species.name
-            catchNews(event.player.gameProfile.name, name,
-                legend = LegendCatalog[event.pokemon.species.resourceIdentifier.path] != null, shiny = event.pokemon.shiny)
+            catchNews(event.player.gameProfile.name, name, legend = legend != null, shiny = event.pokemon.shiny)
                 ?.let(::post)
         }
         Announcements.onBroadcast { _, message -> post("📢 [공지] " + KoreanText.render(message)) }

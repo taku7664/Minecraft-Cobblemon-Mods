@@ -22,11 +22,11 @@ object LegendCommand {
     fun register() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             val species = Commands.argument("legend", StringArgumentType.word())
-                .suggests { _, builder -> SharedSuggestionProvider.suggest(LegendCatalog.bySpecies.keys.sorted(), builder) }
+                .suggests { _, builder -> SharedSuggestionProvider.suggest(LegendCatalog.byId.keys.sorted(), builder) }
             dispatcher.register(Commands.literal("legends")
                 .then(Commands.literal("reset").requires { it.hasPermission(2) }
                     .then(Commands.argument("legend", StringArgumentType.word())
-                        .suggests { _, builder -> SharedSuggestionProvider.suggest(LegendCatalog.bySpecies.keys.sorted(), builder) }
+                        .suggests { _, builder -> SharedSuggestionProvider.suggest(LegendCatalog.byId.keys.sorted(), builder) }
                         .then(Commands.argument("player", GameProfileArgument.gameProfile()).executes { reset(it) })))
                 .then(species
                     .executes { show(it, it.source.playerOrException.gameProfile) }
@@ -36,8 +36,8 @@ object LegendCommand {
 
     private fun show(context: CommandContext<CommandSourceStack>, target: GameProfile): Int {
         val legend = legend(context)
-        val caught = LegendRecords.get(context.source.server).has(target.id, legend.species)
-        val name = speciesName(legend.species)
+        val caught = LegendRecords.get(context.source.server).has(target.id, legend.id)
+        val name = Component.translatable(legend.nameKey)
         context.source.sendSystemMessage(Component.translatable(KEY + if (caught) "caught" else "not_caught", target.name, name)
             .withStyle(if (caught) ChatFormatting.GREEN else ChatFormatting.GRAY))
         context.source.sendSystemMessage(Component.translatable(KEY + "rank", LegendRanks.name(legend.rank)).withStyle(ChatFormatting.GRAY))
@@ -58,8 +58,8 @@ object LegendCommand {
     private fun reset(context: CommandContext<CommandSourceStack>): Int {
         val legend = legend(context)
         val target = profile(context)
-        val removed = LegendRecords.get(context.source.server).remove(target.id, legend.species)
-        val name = speciesName(legend.species)
+        val removed = LegendRecords.get(context.source.server).remove(target.id, legend.id)
+        val name = Component.translatable(legend.nameKey)
         if (removed) context.source.sendSuccess({ Component.translatable(KEY + "reset_done", target.name, name) }, true)
         else context.source.sendFailure(Component.translatable(KEY + "reset_none", target.name, name))
         return if (removed) 1 else 0

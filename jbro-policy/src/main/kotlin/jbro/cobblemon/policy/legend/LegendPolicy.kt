@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.Priority
 import com.cobblemon.mod.common.api.battles.model.actor.ActorType
 import com.cobblemon.mod.common.api.events.CobblemonEvents
+import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail
 import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
@@ -63,7 +64,7 @@ object LegendPolicy {
         CobblemonEvents.POKEMON_CAPTURED.subscribe { event ->
             val legend = legendOf(event.pokemon) ?: return@subscribe
             event.pokemon.persistentData.remove(OWNER_KEY)
-            LegendRecords.get(event.player.server).add(event.player.uuid, legend.species)
+            LegendRecords.get(event.player.server).add(event.player.uuid, legend.id)
         }
     }
 
@@ -72,7 +73,7 @@ object LegendPolicy {
         val legend = legendOf(pokemon) ?: return null
         val owner = ownerOf(pokemon)
         if (owner != null && owner != player.uuid) return Component.translatable(KEY + "other_trainer")
-        if (LegendRecords.get(player.server).has(player.uuid, legend.species)) return Component.translatable(KEY + "already_caught")
+        if (LegendRecords.get(player.server).has(player.uuid, legend.id)) return Component.translatable(KEY + "already_caught")
         return when (val verdict = LegendRanks.check(player, legend.rank)) {
             LegendRanks.Verdict.Allowed -> null
             LegendRanks.Verdict.Unknown -> Component.translatable(KEY + "rank_unknown")
@@ -82,7 +83,7 @@ object LegendPolicy {
 
     /** Whether [legend] may spawn around [player]: not caught by them yet, and its entry Pokemon is in their party. */
     internal fun mayMeet(player: ServerPlayer, legend: Legend): Boolean {
-        if (LegendRecords.get(player.server).has(player.uuid, legend.species)) return false
+        if (LegendRecords.get(player.server).has(player.uuid, legend.id)) return false
         if (legend.entry.isEmpty()) return true
         return legend.entryMet(Cobblemon.storage.getParty(player).mapTo(mutableSetOf()) { it.species.resourceIdentifier.path })
     }
@@ -93,23 +94,44 @@ object LegendPolicy {
         if (ownerOf(pokemon) != null) return
         pokemon.persistentData.putUUID(OWNER_KEY, player.uuid)
         player.server.playerList.broadcastSystemMessage(Component.translatable(
-            "legend.${JbroPolicy.MOD_ID}.appeared.${legend.species}", player.displayName, pokemon.species.translatedName,
+            "legend.${JbroPolicy.MOD_ID}.appeared.${legend.id}", player.displayName, Component.translatable(legend.nameKey),
         ).withStyle(ChatFormatting.LIGHT_PURPLE), false)
     }
 
     /**
-     * For the Poke Snack mixin: whether a snack placed by [placer] may offer [species]. A Legend needs its placer
+     * For the Poke Snack mixin: whether a snack placed by [placer] may offer [pokemon]. A Legend needs its placer
      * online, because the entry rule reads their party.
      */
     @JvmStatic
-    fun snackMayOffer(snack: PokeSnackBlockEntity, species: String?): Boolean {
-        val legend = species?.let { LegendCatalog[it] } ?: return true
+    fun snackMayOffer(snack: PokeSnackBlockEntity, pokemon: PokemonProperties): Boolean {
+        val legend = legendOf(pokemon) ?: return true
         val placer = snack.placedBy ?: return false
         val player = snack.level?.server?.playerList?.getPlayer(placer) ?: return false
         return mayMeet(player, legend)
     }
 
-    private fun legendOf(pokemon: Pokemon): Legend? = LegendCatalog[pokemon.species.resourceIdentifier.path]
+    /** The Legend [pokemon] is, its regional form telling Galarian Zapdos from Zapdos; null for any other Pokemon. */
+    fun legendOf(pokemon: Pokemon): Legend? = LegendCatalog.of(pokemon.species.resourceIdentifier.path, pokemon.aspects)
+
+    /** The Legend a spawn or a command's [properties] make, or null; the aspects are read only for species with forms. */
+    fun legendOf(properties: PokemonProperties): Legend? {
+        val species = properties.species ?: return null
+        return LegendCatalog.of(species, if (LegendCatalog.hasForms(species)) aspectsOf(properties) else emptySet())
+    }
+
+    /**
+     * The aspects [properties] ask for. Cobblemon keeps a form flag such as `galarian` among its custom properties
+     * rather than in [PokemonProperties.aspects], and `form=galar` names the form instead, so every spelling counts.
+     */
+    internal fun aspectsOf(properties: PokemonProperties): Set<String> = buildSet {
+        addAll(properties.aspects)
+        for (token in properties.asString(" ").lowercase().split(' ')) {
+            add(token.substringAfter("aspect=").removeSuffix("=true"))
+        }
+        properties.form?.lowercase()?.let { form -> FORM_ASPECTS[form]?.let(::add) }
+    }
+
+    private val FORM_ASPECTS = mapOf("galar" to "galarian", "galarian" to "galarian")
 
     private fun ownerOf(pokemon: Pokemon): UUID? =
         if (pokemon.persistentData.hasUUID(OWNER_KEY)) pokemon.persistentData.getUUID(OWNER_KEY) else null
@@ -121,8 +143,7 @@ object LegendPolicy {
     /** Each player's spawner asks this before offering a spawn, and so does Cobblenav's spawn list. */
     private class SpawnFilter(private val player: ServerPlayer) : SpawningInfluence {
         override fun affectSpawnable(detail: SpawnDetail, spawnablePosition: SpawnablePosition): Boolean {
-            val species = (detail as? PokemonSpawnDetail)?.pokemon?.species ?: return true
-            val legend = LegendCatalog[species] ?: return true
+            val legend = (detail as? PokemonSpawnDetail)?.pokemon?.let(::legendOf) ?: return true
             return mayMeet(player, legend)
         }
     }

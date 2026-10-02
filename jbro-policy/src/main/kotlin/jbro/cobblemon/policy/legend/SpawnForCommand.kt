@@ -33,7 +33,7 @@ object SpawnForCommand {
                             return@executes 0
                         }
                         context.source.sendSuccess({
-                            Component.translatable(KEY + "done", spawned.entity.pokemon.species.translatedName, player.displayName)
+                            Component.translatable(KEY + "done", spawned.name, player.displayName)
                         }, true)
                         spawned.warnings.forEach { warning -> context.source.sendSystemMessage(warning) }
                         1
@@ -41,32 +41,33 @@ object SpawnForCommand {
         }
     }
 
-    /** A spawned Pokemon, with why its player still could not catch it when it is a Legend. */
-    class Spawned(val entity: PokemonEntity, val warnings: List<Component>)
+    /** A spawned Pokemon and its name (a Legend's own, so Galarian Zapdos says so), with why its player still could not catch it. */
+    class Spawned(val entity: PokemonEntity, val name: Component, val warnings: List<Component>)
 
     /** Spawns [properties] two blocks in front of [player] as theirs; null when the world refused the entity. */
     fun spawn(player: ServerPlayer, properties: PokemonProperties): Spawned? {
-        val legend = properties.species?.let { LegendCatalog[it] }
+        val legend = LegendPolicy.legendOf(properties)
         if (legend != null && properties.level == null) properties.level = wildLevel(legend)
         val entity = properties.createEntity(player.level(), null)
         val ahead = player.lookAngle.multiply(1.0, 0.0, 1.0).normalize().scale(2.0)
         entity.moveTo(player.x + ahead.x, player.y, player.z + ahead.z, player.yRot + 180f, 0f)
         LegendPolicy.claim(entity.pokemon, player)
         if (!player.serverLevel().addFreshEntity(entity)) return null
-        return Spawned(entity, legend?.let { warnings(player, it) }.orEmpty())
+        val name = legend?.let { Component.translatable(it.nameKey) } ?: entity.pokemon.species.translatedName
+        return Spawned(entity, name, legend?.let { warnings(player, it) }.orEmpty())
     }
 
     /** A level from the Legend's own wild spawn, so it matches what players meet in the world. */
     private fun wildLevel(legend: Legend): Int? {
         val detail = CobblemonSpawnPools.WORLD_SPAWN_POOL.details
-            .filterIsInstance<PokemonSpawnDetail>().firstOrNull { it.id == "jbro-legendary-${legend.species}" }
+            .filterIsInstance<PokemonSpawnDetail>().firstOrNull { it.id == "jbro-legendary-${legend.id}" }
         val range = detail?.levelRange ?: return null
         return ThreadLocalRandom.current().nextInt(range.first, range.last + 1)
     }
 
     /** Why [player] still could not catch the Legend spawned for them. */
     private fun warnings(player: ServerPlayer, legend: Legend): List<Component> = buildList {
-        if (LegendRecords.get(player.server).has(player.uuid, legend.species)) {
+        if (LegendRecords.get(player.server).has(player.uuid, legend.id)) {
             add(Component.translatable(KEY + "already_caught", player.displayName).withStyle(ChatFormatting.YELLOW))
         }
         if (LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) {

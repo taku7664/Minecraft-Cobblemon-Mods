@@ -44,11 +44,13 @@ def minecraft_lang(explicit):
 
 
 def catalog():
-    """species -> (tier, rank, entry, entry_all), read from LegendCatalog.kt."""
+    """Legend id -> (species, tier, rank, entry, entry_all, aspect), read from LegendCatalog.kt. A regional form that is
+    a Legend of its own (Galarian Zapdos) has its own id and its Cobblemon aspect."""
     out = {}
-    pattern = re.compile(r'Legend\("([a-z0-9]+)", LegendTier\.(\w+), LegendRank\.(\w+)(?:, listOf\(([^)]*)\))?(, entryAll = true)?\)')
-    for species, tier, rank, entry, entry_all in pattern.findall(CATALOG.read_text(encoding="utf-8")):
-        out[species] = (tier, rank, re.findall(r'"([a-z0-9]+)"', entry or ""), bool(entry_all))
+    pattern = re.compile(r'Legend\("([a-z0-9]+)", LegendTier\.(\w+), LegendRank\.(\w+)(?:, listOf\(([^)]*)\))?'
+                         r'(, entryAll = true)?(?:, aspect = "([a-z]+)", id = "([a-z0-9-]+)")?\)')
+    for species, tier, rank, entry, entry_all, aspect, id_ in pattern.findall(CATALOG.read_text(encoding="utf-8")):
+        out[id_ or species] = (species, tier, rank, re.findall(r'"([a-z0-9]+)"', entry or ""), bool(entry_all), aspect or None)
     return out
 
 
@@ -83,11 +85,11 @@ def main():
         return {"name": label, "group": False}
 
     spawns = json.loads(POOL.read_text(encoding="utf-8"))["spawns"]
-    assert {s["pokemon"] for s in spawns} == set(legends), "spawn pool and catalog name different Legends"
+    assert {s["id"].removeprefix("jbro-legendary-") for s in spawns} == set(legends), "spawn pool and catalog name different Legends"
     out = []
     for spawn in spawns:
-        id_ = spawn["pokemon"]
-        tier, rank, entry, entry_all = legends[id_]
+        id_ = spawn["id"].removeprefix("jbro-legendary-")
+        species_id, tier, rank, entry, entry_all, aspect = legends[id_]
         cond = spawn.get("condition", {})
         biomes = cond.get("biomes", [])
         dimensions = []
@@ -119,12 +121,17 @@ def main():
         for block in cond.get("neededNearbyBlocks", []):
             namespace, path = block.split(":", 1)
             conditions.append({"kind": "block", "text": f"근처에 {mc.get(f'block.{namespace}.{path}', block)}"})
-        data = species[id_]
+        data = species[species_id]
+        if aspect:
+            # The form's own types, falling back to the species' for what the form leaves out.
+            form = next(f for f in data.get("forms", []) if aspect in f.get("aspects", []))
+            data = {**data, **{k: v for k, v in form.items() if k in ("primaryType", "secondaryType")}}
         kinds = [data.get("primaryType"), data.get("secondaryType")]
         line = policy_lang[f"legend.jbro_policy.appeared.{id_}"].replace("%1$s", "(플레이어)")
         out.append({
             "id": id_,
-            "name": names.get(id_, id_),
+            "species": species_id,
+            "name": policy_lang[f"legend.jbro_policy.name.{id_}"] if aspect else names.get(species_id, species_id),
             "dex": data.get("nationalPokedexNumber", 0),
             "types": [{"id": t, "name": types.get(t, t)} for t in kinds if t],
             "tier": TIER[tier],

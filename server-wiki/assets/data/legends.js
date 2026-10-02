@@ -2,6 +2,7 @@
 window.WIKI_LEGENDS = [
  {
   "id": "articuno",
+  "species": "articuno",
   "name": "프리져",
   "dex": 144,
   "types": [
@@ -79,7 +80,53 @@ window.WIKI_LEGENDS = [
   "line": "차가운 눈보라가 몰아칩니다! 프리져가 (플레이어) 근처에 나타났습니다!"
  },
  {
+  "id": "articuno-galar",
+  "species": "articuno",
+  "name": "가라르 프리져",
+  "dex": 144,
+  "types": [
+   {
+    "id": "psychic",
+    "name": "에스퍼"
+   },
+   {
+    "id": "flying",
+    "name": "비행"
+   }
+  ],
+  "tier": "일반 전설",
+  "rank": "하이퍼볼",
+  "rarity": "희귀",
+  "weight": 0.3,
+  "position": "땅 위",
+  "dimensions": [
+   "오버월드"
+  ],
+  "biomes": [
+   {
+    "name": "마법 지형",
+    "group": true
+   },
+   {
+    "name": "꽃 지형",
+    "group": true
+   },
+   {
+    "name": "벚나무 지형",
+    "group": true
+   }
+  ],
+  "except": [
+   "목초지"
+  ],
+  "conditions": [],
+  "entry": [],
+  "entryAll": false,
+  "line": "신비로운 기운이 숲을 감쌉니다! 가라르 프리져가 (플레이어) 근처에 나타났습니다!"
+ },
+ {
   "id": "zapdos",
+  "species": "zapdos",
   "name": "썬더",
   "dex": 145,
   "types": [
@@ -127,7 +174,53 @@ window.WIKI_LEGENDS = [
   "line": "번개가 하늘을 가릅니다! 썬더가 (플레이어) 근처에 나타났습니다!"
  },
  {
+  "id": "zapdos-galar",
+  "species": "zapdos",
+  "name": "가라르 썬더",
+  "dex": 145,
+  "types": [
+   {
+    "id": "fighting",
+    "name": "격투"
+   },
+   {
+    "id": "flying",
+    "name": "비행"
+   }
+  ],
+  "tier": "일반 전설",
+  "rank": "하이퍼볼",
+  "rarity": "희귀",
+  "weight": 0.3,
+  "position": "땅 위",
+  "dimensions": [
+   "오버월드"
+  ],
+  "biomes": [
+   {
+    "name": "숲",
+    "group": true
+   },
+   {
+    "name": "정글",
+    "group": true
+   },
+   {
+    "name": "관목 지대",
+    "group": true
+   }
+  ],
+  "except": [
+   "목초지"
+  ],
+  "conditions": [],
+  "entry": [],
+  "entryAll": false,
+  "line": "땅을 박차는 발소리가 울려 퍼집니다! 가라르 썬더가 (플레이어) 근처에 나타났습니다!"
+ },
+ {
   "id": "moltres",
+  "species": "moltres",
   "name": "파이어",
   "dex": 146,
   "types": [
@@ -177,7 +270,54 @@ window.WIKI_LEGENDS = [
   "line": "하늘이 불꽃으로 물듭니다! 파이어가 (플레이어) 근처에 나타났습니다!"
  },
  {
+  "id": "moltres-galar",
+  "species": "moltres",
+  "name": "가라르 파이어",
+  "dex": 146,
+  "types": [
+   {
+    "id": "dark",
+    "name": "악"
+   },
+   {
+    "id": "flying",
+    "name": "비행"
+   }
+  ],
+  "tier": "일반 전설",
+  "rank": "하이퍼볼",
+  "rarity": "희귀",
+  "weight": 0.3,
+  "position": "땅 위",
+  "dimensions": [
+   "오버월드"
+  ],
+  "biomes": [
+   {
+    "name": "어두운 숲",
+    "group": false
+   },
+   {
+    "name": "으스스한 지형",
+    "group": true
+   }
+  ],
+  "except": [
+   "목초지"
+  ],
+  "conditions": [
+   {
+    "kind": "time",
+    "text": "밤"
+   }
+  ],
+  "entry": [],
+  "entryAll": false,
+  "line": "검은 불꽃이 어둠 속에서 타오릅니다! 가라르 파이어가 (플레이어) 근처에 나타났습니다!"
+ },
+ {
   "id": "mewtwo",
+  "species": "mewtwo",
   "name": "뮤츠",
   "dex": 150,
   "types": [
@@ -233,6 +373,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "mew",
+  "species": "mew",
   "name": "뮤",
   "dex": 151,
   "types": [
@@ -279,6 +420,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "raikou",
+  "species": "raikou",
   "name": "라이코",
   "dex": 243,
   "types": [
@@ -331,6 +473,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "entei",
+  "species": "entei",
   "name": "앤테이",
   "dex": 244,
   "types": [
@@ -394,6 +537,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "suicune",
+  "species": "suicune",
   "name": "스이쿤",
   "dex": 245,
   "types": [
@@ -436,6 +580,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "lugia",
+  "species": "lugia",
   "name": "루기아",
   "dex": 249,
   "types": [
@@ -499,6 +644,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "hooh",
+  "species": "hooh",
   "name": "칠색조",
   "dex": 250,
   "types": [
@@ -558,6 +704,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "celebi",
+  "species": "celebi",
   "name": "세레비",
   "dex": 251,
   "types": [
@@ -648,6 +795,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "regirock",
+  "species": "regirock",
   "name": "레지락",
   "dex": 377,
   "types": [
@@ -693,6 +841,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "regice",
+  "species": "regice",
   "name": "레지아이스",
   "dex": 378,
   "types": [
@@ -767,6 +916,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "registeel",
+  "species": "registeel",
   "name": "레지스틸",
   "dex": 379,
   "types": [
@@ -814,6 +964,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "latias",
+  "species": "latias",
   "name": "라티아스",
   "dex": 380,
   "types": [
@@ -866,6 +1017,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "latios",
+  "species": "latios",
   "name": "라티오스",
   "dex": 381,
   "types": [
@@ -914,6 +1066,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "kyogre",
+  "species": "kyogre",
   "name": "가이오가",
   "dex": 382,
   "types": [
@@ -964,6 +1117,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "groudon",
+  "species": "groudon",
   "name": "그란돈",
   "dex": 383,
   "types": [
@@ -1018,6 +1172,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "rayquaza",
+  "species": "rayquaza",
   "name": "레쿠쟈",
   "dex": 384,
   "types": [
@@ -1080,6 +1235,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "jirachi",
+  "species": "jirachi",
   "name": "지라치",
   "dex": 385,
   "types": [
@@ -1122,6 +1278,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "deoxys",
+  "species": "deoxys",
   "name": "테오키스",
   "dex": 386,
   "types": [
@@ -1172,6 +1329,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "uxie",
+  "species": "uxie",
   "name": "유크시",
   "dex": 480,
   "types": [
@@ -1214,6 +1372,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "mesprit",
+  "species": "mesprit",
   "name": "엠라이트",
   "dex": 481,
   "types": [
@@ -1256,6 +1415,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "azelf",
+  "species": "azelf",
   "name": "아그놈",
   "dex": 482,
   "types": [
@@ -1298,6 +1458,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "dialga",
+  "species": "dialga",
   "name": "디아루가",
   "dex": 483,
   "types": [
@@ -1359,6 +1520,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "palkia",
+  "species": "palkia",
   "name": "펄기아",
   "dex": 484,
   "types": [
@@ -1426,6 +1588,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "heatran",
+  "species": "heatran",
   "name": "히드런",
   "dex": 485,
   "types": [
@@ -1468,6 +1631,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "regigigas",
+  "species": "regigigas",
   "name": "레지기가스",
   "dex": 486,
   "types": [
@@ -1519,6 +1683,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "giratina",
+  "species": "giratina",
   "name": "기라티나",
   "dex": 487,
   "types": [
@@ -1572,6 +1737,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "cresselia",
+  "species": "cresselia",
   "name": "크레세리아",
   "dex": 488,
   "types": [
@@ -1615,6 +1781,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "phione",
+  "species": "phione",
   "name": "피오네",
   "dex": 489,
   "types": [
@@ -1663,6 +1830,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "manaphy",
+  "species": "manaphy",
   "name": "마나피",
   "dex": 490,
   "types": [
@@ -1706,6 +1874,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "darkrai",
+  "species": "darkrai",
   "name": "다크라이",
   "dex": 491,
   "types": [
@@ -1753,6 +1922,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "shaymin",
+  "species": "shaymin",
   "name": "쉐이미",
   "dex": 492,
   "types": [
@@ -1803,6 +1973,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "arceus",
+  "species": "arceus",
   "name": "아르세우스",
   "dex": 493,
   "types": [
@@ -1871,6 +2042,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "victini",
+  "species": "victini",
   "name": "비크티니",
   "dex": 494,
   "types": [
@@ -1925,6 +2097,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "cobalion",
+  "species": "cobalion",
   "name": "코바르온",
   "dex": 638,
   "types": [
@@ -1965,6 +2138,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "terrakion",
+  "species": "terrakion",
   "name": "테라키온",
   "dex": 639,
   "types": [
@@ -2005,6 +2179,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "virizion",
+  "species": "virizion",
   "name": "비리디온",
   "dex": 640,
   "types": [
@@ -2045,6 +2220,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tornadus",
+  "species": "tornadus",
   "name": "토네로스",
   "dex": 641,
   "types": [
@@ -2084,6 +2260,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "thundurus",
+  "species": "thundurus",
   "name": "볼트로스",
   "dex": 642,
   "types": [
@@ -2127,6 +2304,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "reshiram",
+  "species": "reshiram",
   "name": "레시라무",
   "dex": 643,
   "types": [
@@ -2174,6 +2352,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zekrom",
+  "species": "zekrom",
   "name": "제크로무",
   "dex": 644,
   "types": [
@@ -2217,6 +2396,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "landorus",
+  "species": "landorus",
   "name": "랜드로스",
   "dex": 645,
   "types": [
@@ -2273,6 +2453,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "kyurem",
+  "species": "kyurem",
   "name": "큐레무",
   "dex": 646,
   "types": [
@@ -2336,6 +2517,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "keldeo",
+  "species": "keldeo",
   "name": "케르디오",
   "dex": 647,
   "types": [
@@ -2389,6 +2571,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "meloetta",
+  "species": "meloetta",
   "name": "메로엣타",
   "dex": 648,
   "types": [
@@ -2435,6 +2618,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "genesect",
+  "species": "genesect",
   "name": "게노세크트",
   "dex": 649,
   "types": [
@@ -2495,6 +2679,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "xerneas",
+  "species": "xerneas",
   "name": "제르네아스",
   "dex": 716,
   "types": [
@@ -2545,6 +2730,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "yveltal",
+  "species": "yveltal",
   "name": "이벨타르",
   "dex": 717,
   "types": [
@@ -2591,6 +2777,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zygarde",
+  "species": "zygarde",
   "name": "지가르데",
   "dex": 718,
   "types": [
@@ -2653,6 +2840,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "diancie",
+  "species": "diancie",
   "name": "디안시",
   "dex": 719,
   "types": [
@@ -2705,6 +2893,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "hoopa",
+  "species": "hoopa",
   "name": "후파",
   "dex": 720,
   "types": [
@@ -2755,6 +2944,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "volcanion",
+  "species": "volcanion",
   "name": "볼케니온",
   "dex": 721,
   "types": [
@@ -2793,6 +2983,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "typenull",
+  "species": "typenull",
   "name": "타입:널",
   "dex": 772,
   "types": [
@@ -2844,6 +3035,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "silvally",
+  "species": "silvally",
   "name": "실버디",
   "dex": 773,
   "types": [
@@ -2890,6 +3082,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tapukoko",
+  "species": "tapukoko",
   "name": "카푸꼬꼬꼭",
   "dex": 785,
   "types": [
@@ -2938,6 +3131,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tapulele",
+  "species": "tapulele",
   "name": "카푸나비나",
   "dex": 786,
   "types": [
@@ -2986,6 +3180,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tapubulu",
+  "species": "tapubulu",
   "name": "카푸브루루",
   "dex": 787,
   "types": [
@@ -3034,6 +3229,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tapufini",
+  "species": "tapufini",
   "name": "카푸느지느",
   "dex": 788,
   "types": [
@@ -3080,6 +3276,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "cosmog",
+  "species": "cosmog",
   "name": "코스모그",
   "dex": 789,
   "types": [
@@ -3143,6 +3340,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "cosmoem",
+  "species": "cosmoem",
   "name": "코스모움",
   "dex": 790,
   "types": [
@@ -3182,6 +3380,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "solgaleo",
+  "species": "solgaleo",
   "name": "솔가레오",
   "dex": 791,
   "types": [
@@ -3234,6 +3433,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "lunala",
+  "species": "lunala",
   "name": "루나아라",
   "dex": 792,
   "types": [
@@ -3288,6 +3488,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "necrozma",
+  "species": "necrozma",
   "name": "네크로즈마",
   "dex": 800,
   "types": [
@@ -3348,6 +3549,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "magearna",
+  "species": "magearna",
   "name": "마기아나",
   "dex": 801,
   "types": [
@@ -3408,6 +3610,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "marshadow",
+  "species": "marshadow",
   "name": "마샤도",
   "dex": 802,
   "types": [
@@ -3454,6 +3657,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zeraora",
+  "species": "zeraora",
   "name": "제라오라",
   "dex": 807,
   "types": [
@@ -3490,6 +3694,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "meltan",
+  "species": "meltan",
   "name": "멜탄",
   "dex": 808,
   "types": [
@@ -3529,6 +3734,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "melmetal",
+  "species": "melmetal",
   "name": "멜메탈",
   "dex": 809,
   "types": [
@@ -3573,6 +3779,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zacian",
+  "species": "zacian",
   "name": "자시안",
   "dex": 888,
   "types": [
@@ -3619,6 +3826,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zamazenta",
+  "species": "zamazenta",
   "name": "자마젠타",
   "dex": 889,
   "types": [
@@ -3667,6 +3875,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "eternatus",
+  "species": "eternatus",
   "name": "무한다이노",
   "dex": 890,
   "types": [
@@ -3726,6 +3935,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "kubfu",
+  "species": "kubfu",
   "name": "치고마",
   "dex": 891,
   "types": [
@@ -3762,6 +3972,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "urshifu",
+  "species": "urshifu",
   "name": "우라오스",
   "dex": 892,
   "types": [
@@ -3812,6 +4023,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "zarude",
+  "species": "zarude",
   "name": "자루도",
   "dex": 893,
   "types": [
@@ -3850,6 +4062,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "regieleki",
+  "species": "regieleki",
   "name": "레지에레키",
   "dex": 894,
   "types": [
@@ -3880,6 +4093,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "regidrago",
+  "species": "regidrago",
   "name": "레지드래고",
   "dex": 895,
   "types": [
@@ -3935,6 +4149,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "glastrier",
+  "species": "glastrier",
   "name": "블리자포스",
   "dex": 896,
   "types": [
@@ -3975,6 +4190,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "spectrier",
+  "species": "spectrier",
   "name": "레이스포스",
   "dex": 897,
   "types": [
@@ -4015,6 +4231,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "calyrex",
+  "species": "calyrex",
   "name": "버드렉스",
   "dex": 898,
   "types": [
@@ -4058,6 +4275,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "enamorus",
+  "species": "enamorus",
   "name": "러브로스",
   "dex": 905,
   "types": [
@@ -4118,6 +4336,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "wochien",
+  "species": "wochien",
   "name": "총지엔",
   "dex": 1001,
   "types": [
@@ -4165,6 +4384,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "chienpao",
+  "species": "chienpao",
   "name": "파오젠",
   "dex": 1002,
   "types": [
@@ -4212,6 +4432,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "tinglu",
+  "species": "tinglu",
   "name": "딩루",
   "dex": 1003,
   "types": [
@@ -4257,6 +4478,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "chiyu",
+  "species": "chiyu",
   "name": "위유이",
   "dex": 1004,
   "types": [
@@ -4295,6 +4517,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "koraidon",
+  "species": "koraidon",
   "name": "코라이돈",
   "dex": 1007,
   "types": [
@@ -4355,6 +4578,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "miraidon",
+  "species": "miraidon",
   "name": "미라이돈",
   "dex": 1008,
   "types": [
@@ -4397,6 +4621,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "walkingwake",
+  "species": "walkingwake",
   "name": "굽이치는물결",
   "dex": 1009,
   "types": [
@@ -4440,6 +4665,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "ironleaves",
+  "species": "ironleaves",
   "name": "무쇠잎새",
   "dex": 1010,
   "types": [
@@ -4483,6 +4709,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "okidogi",
+  "species": "okidogi",
   "name": "조타구",
   "dex": 1014,
   "types": [
@@ -4526,6 +4753,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "munkidori",
+  "species": "munkidori",
   "name": "이야후",
   "dex": 1015,
   "types": [
@@ -4569,6 +4797,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "fezandipiti",
+  "species": "fezandipiti",
   "name": "기로치",
   "dex": 1016,
   "types": [
@@ -4614,6 +4843,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "ogerpon",
+  "species": "ogerpon",
   "name": "오거폰",
   "dex": 1017,
   "types": [
@@ -4672,6 +4902,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "gougingfire",
+  "species": "gougingfire",
   "name": "꿰뚫는화염",
   "dex": 1020,
   "types": [
@@ -4716,6 +4947,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "ragingbolt",
+  "species": "ragingbolt",
   "name": "날뛰는우레",
   "dex": 1021,
   "types": [
@@ -4761,6 +4993,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "ironboulder",
+  "species": "ironboulder",
   "name": "무쇠암석",
   "dex": 1022,
   "types": [
@@ -4805,6 +5038,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "ironcrown",
+  "species": "ironcrown",
   "name": "무쇠감투",
   "dex": 1023,
   "types": [
@@ -4848,6 +5082,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "terapagos",
+  "species": "terapagos",
   "name": "테라파고스",
   "dex": 1024,
   "types": [
@@ -4892,6 +5127,7 @@ window.WIKI_LEGENDS = [
  },
  {
   "id": "pecharunt",
+  "species": "pecharunt",
   "name": "복숭악동",
   "dex": 1025,
   "types": [

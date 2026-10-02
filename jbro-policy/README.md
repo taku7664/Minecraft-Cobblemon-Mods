@@ -49,7 +49,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 ## 전설 포켓몬
 
-전설·환상·전설급 패러독스 100종의 스폰 조건, 필요 등급, 엔트리 조건, 등장 대사는 [docs/LEGENDARY_SPAWNS.md](docs/LEGENDARY_SPAWNS.md)에 있습니다.
+전설·환상·전설급 패러독스 103종의 스폰 조건, 필요 등급, 엔트리 조건, 등장 대사는 [docs/LEGENDARY_SPAWNS.md](docs/LEGENDARY_SPAWNS.md)에 있습니다.
 
 - **내 전설:** 전설은 불러낸 플레이어만 배틀하거나 잡을 수 있습니다. 포케스낵으로 나온 전설은 포케스낵을 설치한 플레이어의 것이고, 설치한 사람이 접속해 있을 때만 나옵니다.
 - **종마다 한 마리:** 야생에서 직접 잡은 기록만 남고, 교환이나 PokemonToItem으로 받은 포켓몬은 기록되지 않습니다. 이미 잡은 전설은 그 플레이어 주변에 스폰되지 않고 포켓내비 스폰표에서도 빠집니다.
@@ -207,7 +207,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 아래 두 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
 
-- **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 100종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 울트라비스트는 빠져 있고, Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
+- **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 울트라비스트는 빠져 있고, Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
 - **`jbro_policy:no_stat_candy_l_xl`:** 캠프 냄비의 능력치 사탕 L/XL 레시피 12개를 막습니다.
 
 ## 설정

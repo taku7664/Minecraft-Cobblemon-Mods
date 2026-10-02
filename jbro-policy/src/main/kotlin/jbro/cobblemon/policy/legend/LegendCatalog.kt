@@ -5,6 +5,7 @@ internal object LegendCatalog {
     private val entries = listOf(
         Legend("arceus", LegendTier.MYTHICAL, LegendRank.CHAMPION, listOf("dialga", "palkia", "giratina")),
         Legend("articuno", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
+        Legend("articuno", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL, aspect = "galarian", id = "articuno-galar"),
         Legend("azelf", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
         Legend("calyrex", LegendTier.RESTRICTED, LegendRank.CHAMPION, listOf("glastrier", "spectrier")),
         Legend("celebi", LegendTier.MYTHICAL, LegendRank.MASTER_BALL),
@@ -55,6 +56,7 @@ internal object LegendCatalog {
         Legend("mewtwo", LegendTier.RESTRICTED, LegendRank.CHAMPION, listOf("mew")),
         Legend("miraidon", LegendTier.RESTRICTED, LegendRank.CHAMPION),
         Legend("moltres", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
+        Legend("moltres", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL, aspect = "galarian", id = "moltres-galar"),
         Legend("munkidori", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
         Legend("necrozma", LegendTier.RESTRICTED, LegendRank.CHAMPION, listOf("solgaleo", "lunala")),
         Legend("ogerpon", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL, listOf("okidogi", "munkidori", "fezandipiti")),
@@ -99,14 +101,30 @@ internal object LegendCatalog {
         Legend("zacian", LegendTier.RESTRICTED, LegendRank.CHAMPION),
         Legend("zamazenta", LegendTier.RESTRICTED, LegendRank.CHAMPION),
         Legend("zapdos", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
+        Legend("zapdos", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL, aspect = "galarian", id = "zapdos-galar"),
         Legend("zarude", LegendTier.MYTHICAL, LegendRank.MASTER_BALL),
         Legend("zekrom", LegendTier.RESTRICTED, LegendRank.CHAMPION),
         Legend("zeraora", LegendTier.MYTHICAL, LegendRank.MASTER_BALL),
         Legend("zygarde", LegendTier.RESTRICTED, LegendRank.CHAMPION),
     )
 
-    val bySpecies: Map<String, Legend> = entries.associateBy { it.species }
+    val byId: Map<String, Legend> = entries.associateBy { it.id }
+    private val bySpecies: Map<String, List<Legend>> = entries.groupBy { it.species }
 
-    /** [species] is a Cobblemon species id, with or without the `cobblemon:` namespace. */
-    operator fun get(species: String): Legend? = bySpecies[species.substringAfter(':').lowercase()]
+    /** A Legend by [id], such as `zapdos` or `zapdos-galar`, with or without the `cobblemon:` namespace. */
+    operator fun get(id: String): Legend? = byId[id.substringAfter(':').lowercase()]
+
+    /** Whether some form of [species] is a Legend of its own, so its aspects decide which Legend a Pokemon is. */
+    fun hasForms(species: String): Boolean = bySpecies[key(species)].orEmpty().any { it.aspect != null }
+
+    /**
+     * The Legend a Pokemon of [species] with [aspects] is: its regional form's own when one matches, else the
+     * species'. A form without its own Legend, say a Galarian form of a species listed only once, counts as the species.
+     */
+    fun of(species: String, aspects: Collection<String>): Legend? {
+        val forms = bySpecies[key(species)] ?: return null
+        return forms.firstOrNull { it.aspect != null && it.aspect in aspects } ?: forms.firstOrNull { it.aspect == null }
+    }
+
+    private fun key(species: String) = species.substringAfter(':').lowercase()
 }

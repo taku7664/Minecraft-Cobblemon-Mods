@@ -10,16 +10,26 @@ class LegendCatalogTest {
     private fun json(path: String) = JsonParser.parseString(checkNotNull(javaClass.getResource(path)) { "$path missing" }.readText()).asJsonObject
 
     private val spawned = json("/resourcepacks/legendary_spawns/data/jbro_policy/spawn_pool_world/legendary_wild_spawns.json")
-        .getAsJsonArray("spawns").map { it.asJsonObject.get("pokemon").asString }.toSet()
+        .getAsJsonArray("spawns").map { it.asJsonObject.get("id").asString.removePrefix("jbro-legendary-") }.toSet()
 
     @Test
     fun `every spawned Legend is in the catalog and nothing else`() {
-        assertEquals(spawned, LegendCatalog.bySpecies.keys)
+        assertEquals(spawned, LegendCatalog.byId.keys)
+    }
+
+    @Test
+    fun `a Galarian bird is its own Legend, other forms stay their species`() {
+        assertEquals("zapdos-galar", LegendCatalog.of("cobblemon:zapdos", setOf("galarian"))?.id)
+        assertEquals("zapdos", LegendCatalog.of("zapdos", emptySet())?.id)
+        assertEquals("deoxys", LegendCatalog.of("deoxys", setOf("attack"))?.id)
+        assertTrue(LegendCatalog.hasForms("moltres"))
+        assertFalse(LegendCatalog.hasForms("deoxys"))
+        assertEquals(null, LegendCatalog.of("meowth", setOf("galarian")))
     }
 
     @Test
     fun `entry Pokemon can be met without the Legend that needs them`() {
-        for (legend in LegendCatalog.bySpecies.values) {
+        for (legend in LegendCatalog.byId.values) {
             val seen = mutableSetOf(legend.species)
             val queue = ArrayDeque(legend.entry)
             while (queue.isNotEmpty()) {
@@ -32,7 +42,7 @@ class LegendCatalogTest {
 
     @Test
     fun `an entry never needs a higher rank than the Legend`() {
-        for (legend in LegendCatalog.bySpecies.values) {
+        for (legend in LegendCatalog.byId.values) {
             val entryRanks = legend.entry.mapNotNull { LegendCatalog[it]?.rank }
             if (entryRanks.isEmpty()) continue
             val needed = if (legend.entryAll) entryRanks.max() else entryRanks.min()
@@ -64,8 +74,9 @@ class LegendCatalogTest {
     fun `every Legend has an appearance line in both languages`() {
         for (lang in listOf("ko_kr", "en_us")) {
             val keys = json("/assets/jbro_policy/lang/$lang.json").keySet()
-            for (species in LegendCatalog.bySpecies.keys) {
-                assertTrue("legend.jbro_policy.appeared.$species" in keys) { "$lang has no appearance line for $species" }
+            for (legend in LegendCatalog.byId.values) {
+                assertTrue("legend.jbro_policy.appeared.${legend.id}" in keys) { "$lang has no appearance line for ${legend.id}" }
+                if (legend.aspect != null) assertTrue(legend.nameKey in keys) { "$lang has no name for ${legend.id}" }
             }
         }
     }
