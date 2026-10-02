@@ -42,11 +42,11 @@ internal object TowerLegendaryClassPolicy {
         entryFor(speciesId, labels) != null
 
     /** Which of the Tower's two legendary allowances a species counts against, or null for a regular Pokemon. */
-    fun group(speciesId: String, labels: Collection<String> = emptySet()): TowerLegendaryGroup? =
-        when (entryFor(speciesId, labels)?.category ?: return null) {
-            TowerLegendaryClassCategory.LEGENDARY -> TowerLegendaryGroup.LEGENDARY
-            else -> TowerLegendaryGroup.OTHER
-        }
+    fun group(speciesId: String, labels: Collection<String> = emptySet()): TowerLegendaryGroup? {
+        val category = entryFor(speciesId, labels)?.category ?: return null
+        val restricted = category == TowerLegendaryClassCategory.LEGENDARY && speciesId.substringAfter(':').lowercase() in RESTRICTED
+        return if (restricted) TowerLegendaryGroup.LEGENDARY else TowerLegendaryGroup.OTHER
+    }
 
     /** How many of each group [speciesIds] hold. */
     fun count(speciesIds: Collection<String>): TowerLegendaryCount = speciesIds.mapNotNull { group(it) }.let { groups ->
@@ -58,6 +58,13 @@ internal object TowerLegendaryClassPolicy {
             POWER_WEIGHTS.getValue(stage)[entry.singlesPowerGrade - 1].toLong(),
             entry.fameWeight.toLong(),
         )
+
+    /** The restricted Legendaries, the box and story legends that the "Legendary" allowance holds to one. */
+    private val RESTRICTED = setOf(
+        "mewtwo", "lugia", "hooh", "kyogre", "groudon", "rayquaza", "dialga", "palkia", "giratina", "reshiram",
+        "zekrom", "kyurem", "xerneas", "yveltal", "zygarde", "cosmog", "cosmoem", "solgaleo", "lunala", "necrozma",
+        "zacian", "zamazenta", "eternatus", "calyrex", "koraidon", "miraidon", "terapagos",
+    )
 
     private val POWER_WEIGHTS = mapOf(
         TowerStreakStage.INTRODUCTORY to listOf(55, 30, 12, 3),
@@ -102,8 +109,8 @@ internal object TowerLegendaryClassPolicy {
 }
 
 /**
- * With the legendary class allowed a battle team brings at most one of each group: a Legendary (restricted or
- * sub-legendary), and a Mythical, Ultra Beast or Paradox Pokemon.
+ * With the legendary class allowed a battle team brings at most one of each group: a restricted Legendary, and one
+ * of the rest (a sub-legendary, Mythical, Ultra Beast or Paradox Pokemon).
  */
 internal enum class TowerLegendaryGroup { LEGENDARY, OTHER }
 

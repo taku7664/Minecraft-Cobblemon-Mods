@@ -140,7 +140,7 @@ class TowerTeamRulesTest {
     }
 
     @Test
-    fun `with the legendary class allowed a team brings one Legendary and one Mythical, Ultra Beast or Paradox at most`() {
+    fun `with the legendary class allowed a team brings one restricted Legendary and one other legendary class at most`() {
         fun teamOf(vararg species: String): TowerRegisteredTeam = (TowerTeamRules.register(
             species.mapIndexed { index, speciesId -> pokemon(index + 1, speciesId).copy(legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(speciesId)) } +
                 (species.size + 1..6).map { pokemon(it, "cobblemon:filler$it") },
@@ -148,9 +148,12 @@ class TowerTeamRulesTest {
         fun select(team: TowerRegisteredTeam) = TowerTeamRules.select(team, TowerBattleFormat.SINGLE, listOf(id(1), id(2), id(3)), legendaryClassAllowed = true)
 
         assertTrue(select(teamOf("cobblemon:mewtwo", "cobblemon:mew")) is TowerTeamSelectionResult.Accepted)
-        assertTrue(select(teamOf("cobblemon:heatran", "cobblemon:fluttermane")) is TowerTeamSelectionResult.Accepted)
+        // A sub-legendary counts with the Mythicals, Ultra Beasts and Paradoxes, beside a restricted Legendary.
+        assertTrue(select(teamOf("cobblemon:mewtwo", "cobblemon:heatran")) is TowerTeamSelectionResult.Accepted)
         assertEquals(TowerTeamSelectionResult.Rejected(listOf(TowerTeamSelectionIssue.TooManyLegendaryClass(TowerLegendaryCount(2, 0)))),
-            select(teamOf("cobblemon:mewtwo", "cobblemon:heatran")))
+            select(teamOf("cobblemon:mewtwo", "cobblemon:kyogre")))
+        assertEquals(TowerTeamSelectionResult.Rejected(listOf(TowerTeamSelectionIssue.TooManyLegendaryClass(TowerLegendaryCount(0, 2)))),
+            select(teamOf("cobblemon:heatran", "cobblemon:fluttermane")))
         assertEquals(TowerTeamSelectionResult.Rejected(listOf(TowerTeamSelectionIssue.TooManyLegendaryClass(TowerLegendaryCount(0, 2)))),
             select(teamOf("cobblemon:mew", "cobblemon:nihilego")))
     }

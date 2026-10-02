@@ -146,11 +146,12 @@ internal class TowerOpponentSelector(
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
     }
 
-    /** One random set of each group the challenger brought, of different species. */
+    /** One random set of each group the challenger brought, of different species and held items. */
     private fun drawLegendaries(pool: List<TowerPokemonSet>, count: TowerLegendaryCount): List<TowerPokemonSet> {
         val drawn = ArrayList<TowerPokemonSet>()
         listOf(TowerLegendaryGroup.LEGENDARY to count.legendary, TowerLegendaryGroup.OTHER to count.other).forEach { (group, wanted) ->
             pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.toMutableList().also(::shuffle)
+                .filter { set -> drawn.none { it.speciesId == set.speciesId || (set.heldItemId != null && it.heldItemId == set.heldItemId) } }
                 .distinctBy(TowerPokemonSet::speciesId).take(wanted).let(drawn::addAll)
         }
         return drawn
