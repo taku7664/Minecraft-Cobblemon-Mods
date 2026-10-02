@@ -9,6 +9,23 @@ import net.minecraft.server.MinecraftServer
 
 /** Server-side read of a player's League rank for other mods. Call on the server thread. */
 object LeagueRanks {
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(MinecraftServer, UUID, LeagueRank) -> Unit>()
+
+    /** Hears every change of a player's rank in the current League, promotions and operator edits alike, on the server thread. */
+    fun onChange(listener: (MinecraftServer, UUID, LeagueRank) -> Unit) {
+        listeners += listener
+    }
+
+    internal fun changed(server: MinecraftServer, player: UUID, rank: LeagueRank) {
+        listeners.forEach { listener ->
+            try {
+                listener(server, player, rank)
+            } catch (failure: RuntimeException) {
+                jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge.LOGGER.warn("League rank listener failed", failure)
+            }
+        }
+    }
+
     /** Null while no League catalog is loaded. */
     fun of(server: MinecraftServer, player: UUID): LeagueRank? {
         val catalog = LeagueCatalogResources.current ?: return null

@@ -294,11 +294,15 @@ object LeagueServer {
     }
 
     private fun commit(server: MinecraftServer, league: String, player: UUID, state: LeagueProgress) {
-        LeagueSavedData.get(server).write(league, player, state)
+        val storage = LeagueSavedData.get(server)
+        val catalog = LeagueCatalogResources.current?.takeIf { it.id == league }
+        val before = catalog?.let { rank(it, storage.read(league, player)) }
+        storage.write(league, player, state)
         server.overworld().dataStorage.save()
-        val catalog = LeagueCatalogResources.current
-        val online = server.playerList.getPlayer(player)
-        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state).name)
+        if (catalog == null) return
+        val after = rank(catalog, state)
+        server.playerList.getPlayer(player)?.let { online -> syncRank(online, after.name) }
+        if (after != before) jbro.cobblemon.mcc.league.api.LeagueRanks.changed(server, player, after)
     }
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
