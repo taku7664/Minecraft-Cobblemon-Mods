@@ -44,13 +44,13 @@ internal object FactoryRecordContract {
 }
 
 internal fun interface FactoryBattleVictoryRewardSink {
-    fun reward(playerId: UUID, battleId: UUID)
+    fun reward(playerId: UUID, battleId: UUID, bp: Long)
 }
 
-private val NoopFactoryBattleVictoryRewardSink = FactoryBattleVictoryRewardSink { _, _ -> }
+private val NoopFactoryBattleVictoryRewardSink = FactoryBattleVictoryRewardSink { _, _, _ -> }
 
 internal sealed interface FactoryBattleCompletionResult {
-    class Victory(offers: Collection<FactorySwapOffer>) : FactoryBattleCompletionResult {
+    class Victory(offers: Collection<FactorySwapOffer>, val rewardBp: Long) : FactoryBattleCompletionResult {
         val offers: List<FactorySwapOffer> = Collections.unmodifiableList(ArrayList(offers))
     }
     data object Loss : FactoryBattleCompletionResult
@@ -71,11 +71,13 @@ internal class FactoryBattleCompletionService(
         observations: Map<String, FactoryOpponentObservation>,
     ): FactoryBattleCompletionResult = synchronized(session) {
         checkActive(session, battleId)?.let { return it }
+        var rewardBp = 0L
         val offers = session.recordVictory(battleId, opponentSets, observations) { winsAfter ->
-            victoryRewards.reward(playerId, battleId)
+            rewardBp = FactoryProgression.victoryRewardBp(winsAfter, session.team.format)
+            victoryRewards.reward(playerId, battleId, rewardBp)
             records.record(playerId, session.team.format, session.levelMode, BattleRecordOutcome.WIN, winsAfter)
         }
-        FactoryBattleCompletionResult.Victory(offers)
+        FactoryBattleCompletionResult.Victory(offers, rewardBp)
     }
 
     fun completeLoss(

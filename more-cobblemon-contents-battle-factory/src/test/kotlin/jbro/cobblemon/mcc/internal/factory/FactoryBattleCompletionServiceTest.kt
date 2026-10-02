@@ -16,9 +16,9 @@ class FactoryBattleCompletionServiceTest {
     @Test
     fun `victory records progress once then exposes a swap decision`() {
         val completions = ArrayList<BattleRecordCompletion>()
-        val rewards = ArrayList<Pair<UUID, UUID>>()
-        val service = FactoryBattleCompletionService(recordService(completions)) { rewardedPlayerId, rewardedBattleId ->
-            rewards += rewardedPlayerId to rewardedBattleId
+        val rewards = ArrayList<Triple<UUID, UUID, Long>>()
+        val service = FactoryBattleCompletionService(recordService(completions)) { rewardedPlayerId, rewardedBattleId, bp ->
+            rewards += Triple(rewardedPlayerId, rewardedBattleId, bp)
         }
         val session = session()
         session.beginBattle(battleId)
@@ -37,12 +37,14 @@ class FactoryBattleCompletionServiceTest {
         assertEquals(1L, completions.single().progressMetrics.values.single())
         assertEquals(1, session.wins)
         assertEquals(FactoryRunPhase.SWAP_DECISION, session.phase)
-        assertEquals(listOf(playerId to battleId), rewards)
+        // The first win of a run: the first round's 3 BP.
+        assertEquals(listOf(Triple(playerId, battleId, 3L)), rewards)
+        assertEquals(3L, (result as FactoryBattleCompletionResult.Victory).rewardBp)
 
         val duplicate = service.completeVictory(playerId, session, battleId, opponent(), emptyMap())
         assertTrue(duplicate is FactoryBattleCompletionResult.NoActiveBattle)
         assertEquals(1, completions.size)
-        assertEquals(listOf(playerId to battleId), rewards)
+        assertEquals(listOf(Triple(playerId, battleId, 3L)), rewards)
     }
 
     @Test
@@ -67,9 +69,9 @@ class FactoryBattleCompletionServiceTest {
     @Test
     fun `loss resets current progress records best cleared battle and completes run`() {
         val completions = ArrayList<BattleRecordCompletion>()
-        val rewards = ArrayList<Pair<UUID, UUID>>()
-        val service = FactoryBattleCompletionService(recordService(completions)) { rewardedPlayerId, rewardedBattleId ->
-            rewards += rewardedPlayerId to rewardedBattleId
+        val rewards = ArrayList<Triple<UUID, UUID, Long>>()
+        val service = FactoryBattleCompletionService(recordService(completions)) { rewardedPlayerId, rewardedBattleId, bp ->
+            rewards += Triple(rewardedPlayerId, rewardedBattleId, bp)
         }
         val session = session()
         repeat(2) { index ->

@@ -19,6 +19,7 @@ import jbro.cobblemon.mcc.internal.command.BattleProgressSetResult
 import jbro.cobblemon.mcc.internal.application.BattleContentId
 import jbro.cobblemon.mcc.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.mcc.internal.battle.finalizeCompletionOwner
+import jbro.cobblemon.mcc.internal.bp.BattlePointRewardSettlement
 import jbro.cobblemon.mcc.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.bp.requireAcceptedReward
@@ -106,11 +107,19 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                     val server = checkNotNull(currentServer) { "Factory server is unavailable during record settlement" }
                     BattleRecordService.recordCompletedBattle(server, completion)
                 },
-                victoryRewards = { playerId, battleId ->
+                victoryRewards = { playerId, battleId, bp ->
                     val server = checkNotNull(currentServer) { "Factory server is unavailable during reward settlement" }
                     BattlePointRewardSettlementService { request ->
                         BattlePointService.apply(server, request)
-                    }.settleVictory(battleId, playerId, FACTORY_CONTENT_ID).requireAcceptedReward()
+                    }.settle(
+                        BattlePointRewardSettlement(
+                            settlementId = battleId,
+                            playerId = playerId,
+                            contentId = FACTORY_CONTENT_ID,
+                            amount = bp,
+                            reason = "${FACTORY_CONTENT_ID.value.substringAfter(':')}_win",
+                        ),
+                    ).requireAcceptedReward()
                 },
             ),
             draftProvider = draftOffers::select,
@@ -441,9 +450,9 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
             ) {
                 onlinePlayers[completion.playerId]?.let { player ->
                     val opponent = jbro.cobblemon.mcc.api.presentation.ManagedBattleOpponents.name(completion.battleId)
-                    if (completion is PendingFactoryCompletion.Victory) {
-                        jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(player, opponent,
-                            BattlePointRewardSettlementService.STANDARD_VICTORY_REWARD)
+                    val victory = result.result as? FactoryBattleCompletionResult.Victory
+                    if (completion is PendingFactoryCompletion.Victory && victory != null) {
+                        jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(player, opponent, victory.rewardBp)
                     } else {
                         jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(player, opponent)
                     }
