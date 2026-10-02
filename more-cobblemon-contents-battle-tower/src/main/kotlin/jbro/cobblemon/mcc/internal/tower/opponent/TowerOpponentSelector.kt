@@ -161,13 +161,23 @@ internal class TowerOpponentSelector(
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
     }
 
-    /** One random set of each group the challenger brought, of different species and held items. */
+    /**
+     * One random set of each group the challenger brought, of different species and held items. Species are drawn
+     * first, so a species with several sets (Mewtwo's X and Y) comes up no more often than one with a single set.
+     */
     private fun drawLegendaries(pool: List<TowerPokemonSet>, count: TowerLegendaryCount): List<TowerPokemonSet> {
         val drawn = ArrayList<TowerPokemonSet>()
         listOf(TowerLegendaryGroup.LEGENDARY to count.legendary, TowerLegendaryGroup.OTHER to count.other).forEach { (group, wanted) ->
-            pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.toMutableList().also(::shuffle)
-                .filter { set -> drawn.none { it.speciesId == set.speciesId || (set.heldItemId != null && it.heldItemId == set.heldItemId) } }
-                .distinctBy(TowerPokemonSet::speciesId).take(wanted).let(drawn::addAll)
+            val bySpecies = pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.groupBy(TowerPokemonSet::speciesId)
+            var taken = 0
+            for (species in bySpecies.keys.toMutableList().also(::shuffleAny)) {
+                if (taken == wanted) break
+                val sets = bySpecies.getValue(species)
+                    .filter { set -> set.heldItemId == null || drawn.none { it.heldItemId == set.heldItemId } }
+                if (sets.isEmpty()) continue
+                drawn += sets[random.nextInt(sets.size)]
+                taken++
+            }
         }
         return drawn
     }

@@ -9,7 +9,7 @@
       "form_id": null,
       "ability_id": "cobblemon:unnerve",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "mega_showdown:mewtwonite_x",
+      "held_item_id": "mega_showdown:mewtwonite_y",
       "moves": [
         "cobblemon:aurasphere",
         "cobblemon:darkpulse",
@@ -34,6 +34,105 @@
       }
     },
     {
+      "set_id": "generated_mega_tier1_mewtwo_x",
+      "set_tier": 1,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:mewtwonite_x",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:drainpunch",
+        "cobblemon:zenheadbutt",
+        "cobblemon:icepunch"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier1_mewtwo",
+      "set_tier": 1,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier1_mewtwo",
+      "set_tier": 1,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "psychic"
+    },
+    {
       "set_id": "generated_mega_tier2_mewtwo",
       "set_tier": 2,
       "mechanic_id": "mega",
@@ -41,7 +140,7 @@
       "form_id": null,
       "ability_id": "cobblemon:unnerve",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "mega_showdown:mewtwonite_x",
+      "held_item_id": "mega_showdown:mewtwonite_y",
       "moves": [
         "cobblemon:aurasphere",
         "cobblemon:darkpulse",
@@ -66,6 +165,105 @@
       }
     },
     {
+      "set_id": "generated_mega_tier2_mewtwo_x",
+      "set_tier": 2,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:mewtwonite_x",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:drainpunch",
+        "cobblemon:zenheadbutt",
+        "cobblemon:icepunch"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier2_mewtwo",
+      "set_tier": 2,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier2_mewtwo",
+      "set_tier": 2,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "psychic"
+    },
+    {
       "set_id": "generated_mega_tier3_mewtwo",
       "set_tier": 3,
       "mechanic_id": "mega",
@@ -73,7 +271,7 @@
       "form_id": null,
       "ability_id": "cobblemon:unnerve",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "mega_showdown:mewtwonite_x",
+      "held_item_id": "mega_showdown:mewtwonite_y",
       "moves": [
         "cobblemon:aurasphere",
         "cobblemon:darkpulse",
@@ -98,6 +296,105 @@
       }
     },
     {
+      "set_id": "generated_mega_tier3_mewtwo_x",
+      "set_tier": 3,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:mewtwonite_x",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:drainpunch",
+        "cobblemon:zenheadbutt",
+        "cobblemon:icepunch"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 128
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier3_mewtwo",
+      "set_tier": 3,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 128
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier3_mewtwo",
+      "set_tier": 3,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 25,
+        "attack": 25,
+        "defense": 25,
+        "special_attack": 25,
+        "special_defense": 25,
+        "speed": 25
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 128
+      },
+      "tera_type": "psychic"
+    },
+    {
       "set_id": "generated_mega_tier4_mewtwo",
       "set_tier": 4,
       "mechanic_id": "mega",
@@ -105,7 +402,7 @@
       "form_id": null,
       "ability_id": "cobblemon:unnerve",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "mega_showdown:mewtwonite_x",
+      "held_item_id": "mega_showdown:mewtwonite_y",
       "moves": [
         "cobblemon:aurasphere",
         "cobblemon:darkpulse",
@@ -128,6 +425,105 @@
         "special_defense": 0,
         "speed": 252
       }
+    },
+    {
+      "set_id": "generated_mega_tier4_mewtwo_x",
+      "set_tier": 4,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:unnerve",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:mewtwonite_x",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:drainpunch",
+        "cobblemon:zenheadbutt",
+        "cobblemon:icepunch"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier4_mewtwo",
+      "set_tier": 4,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier4_mewtwo",
+      "set_tier": 4,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:mewtwo",
+      "form_id": null,
+      "ability_id": "cobblemon:pressure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "moves": [
+        "cobblemon:psystrike",
+        "cobblemon:icebeam",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "psychic"
     }
   ]
 }

@@ -35,7 +35,7 @@
 
 | 프로그램 | 이유 | 확인 |
 |---|---|---|
-| Antigravity CLI (`agy`) | 문의 자동 검토가 이 프로그램으로 로그와 문의를 대조한다. 없으면 검토가 매번 실패하고, 관리자 채널에 실패 카드만 올라간다. | 서버를 실행하는 Windows 계정에서 설치하고 로그인한다. 그 계정의 터미널에서 `agy --version`과 `agy models`가 동작해야 하고, `agy`가 PATH에 없으면 `config/jbro-policy-inquiry-review.json`의 `command`에 전체 경로를 적는다. Gemini CLI(`gemini`)는 개인 무료 계정을 더 이상 지원하지 않아 쓸 수 없다. |
+| Antigravity CLI (`agy`) **(필수)** | 문의 자동 검토가 이 프로그램으로 로그와 문의를 대조한다. 없으면 검토가 매번 실패하고(`Cannot run program "agy"`), 관리자 채널에 실패 카드만 올라간다. | 서버를 실행하는 Windows 계정에서, **Claude 데스크톱 같은 앱 안의 터미널이 아니라 일반 터미널(Windows Terminal, cmd)에서** 설치하고 로그인한다. MSIX 앱 안에서 설치하면 `%LOCALAPPDATA%`가 앱 전용 폴더(`%LOCALAPPDATA%\Packages\<앱>\LocalCache\Local\agy`)로 가상화돼, 앱 밖에서 뜬 서버에는 보이지 않는다. 확인도 일반 터미널에서 한다: `agy --version`과 `agy models`가 동작하고 `%LOCALAPPDATA%\agy\bin\agy.exe`가 있어야 한다. 서버는 PATH와 이 기본 설치 위치를 알아서 찾으므로 `command`는 `agy` 그대로 두고, 전체 경로를 적지 않는다(서버 환경이 바뀌면 깨진다). 로그인 정보는 `%USERPROFILE%\.gemini`에 남는다. Gemini CLI(`gemini`)는 개인 무료 계정을 더 이상 지원하지 않아 쓸 수 없다. |
 
 ## 확인만 할 설정
 

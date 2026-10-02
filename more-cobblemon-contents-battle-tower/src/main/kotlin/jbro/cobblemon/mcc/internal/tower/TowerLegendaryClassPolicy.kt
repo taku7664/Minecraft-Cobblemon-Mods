@@ -43,8 +43,9 @@ internal object TowerLegendaryClassPolicy {
 
     /** Which of the Tower's two legendary allowances a species counts against, or null for a regular Pokemon. */
     fun group(speciesId: String, labels: Collection<String> = emptySet()): TowerLegendaryGroup? {
-        val category = entryFor(speciesId, labels)?.category ?: return null
-        val restricted = category == TowerLegendaryClassCategory.LEGENDARY && speciesId.substringAfter(':').lowercase() in RESTRICTED
+        entryFor(speciesId, labels) ?: return null
+        // Koraidon and Miraidon are classed Paradox but are box legends all the same, so the list decides.
+        val restricted = speciesId.substringAfter(':').lowercase() in RESTRICTED
         return if (restricted) TowerLegendaryGroup.LEGENDARY else TowerLegendaryGroup.OTHER
     }
 

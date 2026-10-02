@@ -40,7 +40,7 @@ object ChatRankBadge {
         else Component.translatable(RANK_KEY_PREFIX + rank.name.lowercase()).withStyle(color(rank))
         return Component.empty()
             .append(Component.literal("[").withStyle(ChatFormatting.GRAY))
-            .append(icon(if (hard) RankIcon.CHERISH_BALL else RankIcon.of(rank))).append(" ")
+            .append(icon(if (hard) RankIcon.NETHER_STAR else RankIcon.of(rank))).append(" ")
             .append(label)
             .append(Component.literal("] ").withStyle(ChatFormatting.GRAY))
             .append(name)
