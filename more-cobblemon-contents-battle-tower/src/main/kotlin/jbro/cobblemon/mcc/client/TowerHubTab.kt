@@ -225,10 +225,15 @@ internal class TowerHubTab : MccHubTabContent {
             guideOffset = 0
             host.rebuild()
         }
+        // Between battles a run under way can be given up; its streak ends there.
+        val retire = listOfNotNull(MccHubKit.Action(tower("forfeit"), UiButtonVariant.DANGER, !pending) {
+            MccHubKit.confirm(tower("forfeit.confirm.title"), tower("retire.confirm.message"), tower("forfeit"),
+                Component.translatable("gui.back")) { submit(controller::retire) }
+        }.takeIf { TowerPlayInteractionPolicy.runInProgress(state) })
         val end = when (state.phase) {
-            TowerPlayPhase.SELECTING -> listOf(MccHubKit.Action(tower("lock"), UiButtonVariant.PRIMARY,
-                TowerPlayInteractionPolicy.canRequestLock(state, pending), minWidth = 96) { submit(controller::lockTeam) })
-            TowerPlayPhase.TEAM_LOCKED -> listOf(
+            TowerPlayPhase.SELECTING -> retire + MccHubKit.Action(tower("lock"), UiButtonVariant.PRIMARY,
+                TowerPlayInteractionPolicy.canRequestLock(state, pending), minWidth = 96) { submit(controller::lockTeam) }
+            TowerPlayPhase.TEAM_LOCKED -> retire + listOf(
                 MccHubKit.Action(tower("change_team"), enabled = !pending) { submit(controller::abandon) },
                 MccHubKit.Action(tower("start"), UiButtonVariant.PRIMARY, !pending, minWidth = 96) { submit(controller::start) },
             )

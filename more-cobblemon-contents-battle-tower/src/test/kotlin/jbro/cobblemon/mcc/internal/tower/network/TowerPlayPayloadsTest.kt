@@ -58,6 +58,7 @@ class TowerPlayPayloadsTest {
             TowerPlayIntent.Start(requestId, contextId, 7),
             TowerPlayIntent.Resume(requestId, contextId, 7),
             TowerPlayIntent.Abandon(requestId, contextId, 7),
+            TowerPlayIntent.Retire(requestId, contextId, 7),
         )
 
         intents.forEach { intent ->

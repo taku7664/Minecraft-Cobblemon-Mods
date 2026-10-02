@@ -267,6 +267,13 @@ internal sealed interface TowerPlayIntent {
         override val entryContextId: UUID,
         override val expectedRevision: Long,
     ) : TowerPlayIntent
+
+    /** Gives up the run between battles. */
+    data class Retire(
+        override val requestId: UUID,
+        override val entryContextId: UUID,
+        override val expectedRevision: Long,
+    ) : TowerPlayIntent
 }
 
 internal sealed interface TowerPlayMutationResult {

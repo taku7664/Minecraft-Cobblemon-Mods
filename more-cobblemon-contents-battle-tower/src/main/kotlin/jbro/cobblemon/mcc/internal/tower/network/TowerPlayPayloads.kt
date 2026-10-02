@@ -203,6 +203,7 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
         is TowerPlayIntent.Start -> "start"
         is TowerPlayIntent.Resume -> "resume"
         is TowerPlayIntent.Abandon -> "abandon"
+        is TowerPlayIntent.Retire -> "retire"
     }
     writeBoundedString(actionId)
     writeUUID(intent.requestId)
@@ -244,6 +245,7 @@ private fun RegistryFriendlyByteBuf.readIntent(): TowerPlayIntent {
         "start" -> TowerPlayIntent.Start(requestId, contextId, revision)
         "resume" -> TowerPlayIntent.Resume(requestId, contextId, revision)
         "abandon" -> TowerPlayIntent.Abandon(requestId, contextId, revision)
+        "retire" -> TowerPlayIntent.Retire(requestId, contextId, revision)
         else -> throw IllegalArgumentException("Unsupported tower play action: $actionId")
     }
 }

@@ -53,6 +53,8 @@ import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayBattleCompletionResult
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayMutationResult
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayEntryContext
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayBattleCompletionSink
+import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayIntent
+import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayRunRetirementSink
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlaySessionService
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayViewState
 import jbro.cobblemon.mcc.internal.tower.ui.TowerSessionAbandonResult
@@ -107,6 +109,14 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         TowerPlaySessionService(
             battleLauncher = launcher,
             registeredTeamSnapshots = registeredTeamSnapshots,
+            runRetirementSink = TowerPlayRunRetirementSink { playerId, track ->
+                val server = checkNotNull(onlinePlayers[playerId]?.server) { "Battle Tower retirement needs the player online" }
+                BattleRecordService.resetWinStreak(
+                    server,
+                    BattleRecordKey(playerId, BattleRecordCategory(TowerRecordContract.CONTENT_ID, track.recordId)),
+                    resetBest = false,
+                )
+            },
         )
     }
 
@@ -126,14 +136,18 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             val player = context.player()
             onlinePlayers[player.uuid] = player
             val access = BattleContentAccess.check(player, ManagedBattleContentIds.BATTLE_TOWER, ContentAccessAction.MUTATE)
-            if (access is ContentAccessDecision.Denied && payload.intent !is jbro.cobblemon.mcc.internal.tower.ui.TowerPlayIntent.Abandon) {
+            // Leaving a session stays open to a challenger who lost access.
+            if (access is ContentAccessDecision.Denied && payload.intent !is TowerPlayIntent.Abandon &&
+                payload.intent !is TowerPlayIntent.Retire
+            ) {
                 ServerPlayNetworking.send(player, TowerPlayRejectedPayload(TowerPlayMutationResult.Rejected(
                     payload.intent.requestId, payload.intent.expectedRevision, access.reasonKey,
                 )))
                 return@registerGlobalReceiver
             }
             val result = try {
-                val currentParty = if (payload.intent is jbro.cobblemon.mcc.internal.tower.ui.TowerPlayIntent.LockTeam) {
+                // A lock checks the party it registers; a retirement shows the party the next run registers.
+                val currentParty = if (payload.intent is TowerPlayIntent.LockTeam || payload.intent is TowerPlayIntent.Retire) {
                     Cobblemon173TowerPlayOpenRequestFactory.readParty(player)
                 } else {
                     null
@@ -449,6 +463,12 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         if (completion !is TowerPlayBattleCompletionResult.Completed) return
         val player = onlinePlayers[playerId] ?: return
         if (!ServerPlayNetworking.canSend(player, TowerPlayStatePayload.TYPE)) return
+        // A run that ended released its registered team: show the party the next one registers.
+        try {
+            sessions.refreshParty(playerId, Cobblemon173TowerPlayOpenRequestFactory.readParty(player))
+        } catch (failure: RuntimeException) {
+            MoreCobblemonContents.LOGGER.error("Battle Tower party refresh failed for $playerId", failure)
+        }
         val balance = BattlePointService.balance(player.server, playerId)
         val settled = sessions.refreshBpBalance(playerId, balance) ?: completion.state.copy(bpBalance = balance)
         ServerPlayNetworking.send(player, TowerPlayStatePayload(null, settled))

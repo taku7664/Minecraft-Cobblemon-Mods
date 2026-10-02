@@ -56,6 +56,10 @@ internal class TowerPlayScreenController(
         TowerPlayIntent.Resume(requestId, state.entryContextId, state.revision)
     }
 
+    fun retire(): Boolean = submit { requestId ->
+        TowerPlayIntent.Retire(requestId, state.entryContextId, state.revision)
+    }
+
     fun abandon(): Boolean = submit { requestId ->
         TowerPlayIntent.Abandon(requestId, state.entryContextId, state.revision)
     }
@@ -105,4 +109,8 @@ internal object TowerPlayInteractionPolicy {
             !isPending &&
             state.selectedMechanic != null &&
             state.selectedPokemonOrder.size == state.format.selectionSize
+
+    /** A run has begun once a battle started on it: it has wins, or its rules locked at its first battle. */
+    fun runInProgress(state: TowerPlayViewState): Boolean =
+        state.currentWinStreak > 0 || state.mechanicLocked || state.legendaryClassLocked
 }
