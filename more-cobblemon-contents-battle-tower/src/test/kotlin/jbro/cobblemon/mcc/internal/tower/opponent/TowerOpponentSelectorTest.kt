@@ -264,6 +264,33 @@ class TowerOpponentSelectorTest {
         assertTrue(result.team.any(TowerTrainerStyle.SETUP_SWEEP::matches))
     }
 
+    @Test
+    fun `a trainer reading the challenger's preview brings its best answers`() {
+        val trainer = profile("reader", 1, TowerBattleFormat.SINGLE, (1..6).map { "set_$it" })
+        // The challenger's preview favours the later sets: set 6 answers it best.
+        val preview = TowerPreviewScore(0.3) { set -> set.setId.removePrefix("set_").toDouble() }
+        val result = TowerOpponentSelector(catalog(listOf(trainer), validSets()), FixedRandom(), preview).select(
+            TowerStreakStage.INTRODUCTORY, TowerBattleFormat.SINGLE, TowerOpponentKind.REGULAR, MajorBattleMechanic.MEGA,
+        ) as TowerOpponentSelectionResult.Selected
+        assertEquals(setOf("set_4", "set_5", "set_6"), result.team.map(TowerPokemonSet::setId).toSet())
+    }
+
+    @Test
+    fun `a Champion reading the challenger's preview keeps the ace and brings the best answers beside it`() {
+        val champion = TowerOpponentProfile(
+            profileId = "champion", displayNameKey = "trainer.test.champion", stageIds = listOf(TowerStreakStage.INTRODUCTORY),
+            format = TowerBattleFormat.SINGLE, opponentKind = TowerOpponentKind.TIER_BOSS, mechanic = MajorBattleMechanic.MEGA,
+            weight = 1, aiSkill = 4, theme = "champion", setIds = (1..6).map { "set_$it" },
+            signatureSpeciesIds = listOf("cobblemon:species_1"), fixedRoster = true,
+        )
+        val preview = TowerPreviewScore(0.3) { set -> set.setId.removePrefix("set_").toDouble() }
+        val result = TowerOpponentSelector(catalog(listOf(champion), validSets()), FixedRandom(), preview).select(
+            TowerStreakStage.INTRODUCTORY, TowerBattleFormat.SINGLE, TowerOpponentKind.TIER_BOSS, MajorBattleMechanic.MEGA,
+            championBoss = true,
+        ) as TowerOpponentSelectionResult.Selected
+        assertEquals(setOf("set_1", "set_5", "set_6"), result.team.map(TowerPokemonSet::setId).toSet())
+    }
+
     private fun catalog(
         profiles: List<TowerOpponentProfile>,
         sets: List<TowerPokemonSet>,

@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.tower.TowerLegendaryClassPolicy
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryCount
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryGroup
 import jbro.cobblemon.mcc.internal.tower.TowerStreakStage
+import kotlin.math.ln
 import kotlin.random.Random
 
 internal interface TowerOpponentRandom {
@@ -18,6 +19,17 @@ internal interface TowerOpponentRandom {
 private object DefaultTowerOpponentRandom : TowerOpponentRandom {
     override fun nextLong(bound: Long): Long = Random.Default.nextLong(bound)
     override fun nextInt(bound: Int): Int = Random.Default.nextInt(bound)
+}
+
+/**
+ * How a trainer reads the challenger's team preview when it picks who to bring: [score] is a set's edge over the
+ * previewed team (null when unknown) and [temperature] how closely its draw follows the scores, lower for stronger
+ * AI tiers.
+ */
+internal class TowerPreviewScore(val temperature: Double, val score: (TowerPokemonSet) -> Double?) {
+    init {
+        require(temperature.isFinite() && temperature > 0.0) { "Preview temperature must be positive" }
+    }
 }
 
 internal sealed interface TowerOpponentSelectionResult {
@@ -33,6 +45,8 @@ internal sealed interface TowerOpponentSelectionResult {
 internal class TowerOpponentSelector(
     private val catalog: TowerOpponentCatalog,
     private val random: TowerOpponentRandom = DefaultTowerOpponentRandom,
+    /** The trainer's reading of the challenger's preview; without one it picks at random. */
+    private val preview: TowerPreviewScore? = null,
 ) {
     fun select(
         stage: TowerStreakStage,
@@ -122,10 +136,11 @@ internal class TowerOpponentSelector(
                 // With every seat spoken for, the stone goes to a member already on the team.
                 val candidates = members.values.flatten().filter { it.heldItemId.isMegaStone() }
                     .filter { required.size < teamSize || it.speciesId in required }
-                candidates.takeIf { it.isNotEmpty() }?.get(random.nextInt(candidates.size))
+                candidates.takeIf { it.isNotEmpty() }?.toMutableList()?.also(::consider)?.first()
             } else null
             megaHolder?.speciesId?.takeIf { it !in required }?.let(required::add)
-            val others = members.keys.filterNot(required::contains).toMutableList().also(::shuffleAny)
+            val others = members.keys.filterNot(required::contains).toMutableList()
+                .also { species -> considerSpecies(species, members) }
             val species = (required + others).take(teamSize)
             val team = species.map { id ->
                 if (megaHolder != null && id == megaHolder.speciesId) return@map megaHolder
@@ -164,9 +179,9 @@ internal class TowerOpponentSelector(
         forced: List<TowerPokemonSet> = emptyList(),
     ): List<TowerPokemonSet>? {
         if (pool.size + forced.size < teamSize) return null
-        val randomizedPool = pool.toMutableList()
-        shuffle(randomizedPool)
-        return selectStyledTeam(profile, randomizedPool, teamSize, forced)
+        val consideredPool = pool.toMutableList()
+        consider(consideredPool)
+        return selectStyledTeam(profile, consideredPool, teamSize, forced)
     }
 
     private fun isNormal(set: TowerPokemonSet): Boolean =
@@ -181,12 +196,12 @@ internal class TowerOpponentSelector(
         val speciesAnchors = if (profile.signatureSpeciesIds.isEmpty()) {
             listOf<TowerPokemonSet?>(null)
         } else {
-            pool.filter { it.speciesId in profile.signatureSpeciesIds }.toMutableList().also(::shuffle)
+            pool.filter { it.speciesId in profile.signatureSpeciesIds }.toMutableList().also(::consider)
         }
         val styleAnchors = if (profile.teamStyle == TowerTrainerStyle.BALANCED) {
             listOf<TowerPokemonSet?>(null)
         } else {
-            pool.filter(profile.teamStyle::matches).toMutableList().also(::shuffle)
+            pool.filter(profile.teamStyle::matches).toMutableList().also(::consider)
         }
         speciesAnchors.forEach { speciesAnchor ->
             styleAnchors.forEach { styleAnchor ->
@@ -215,6 +230,30 @@ internal class TowerOpponentSelector(
             if (ticket < upperBound) return profile
         }
         error("Weighted profile selection exceeded its validated total")
+    }
+
+    /**
+     * Puts [values] in the order the trainer considers them: drawn by preview score without replacement (a Gumbel
+     * draw, so a stronger tier's lower temperature keeps it closer to the best), or shuffled without a preview.
+     */
+    private fun consider(values: MutableList<TowerPokemonSet>) {
+        val reading = preview ?: return shuffle(values)
+        val keyed = values.map { set -> set to drawKey(reading.score(set), reading) }
+        values.clear()
+        keyed.sortedByDescending { it.second }.mapTo(values) { it.first }
+    }
+
+    /** As [consider] for a roster's species, each by the best of its sets. */
+    private fun considerSpecies(species: MutableList<String>, sets: Map<String, List<TowerPokemonSet>>) {
+        val reading = preview ?: return shuffleAny(species)
+        val keyed = species.map { id -> id to drawKey(sets[id].orEmpty().mapNotNull(reading.score).maxOrNull(), reading) }
+        species.clear()
+        keyed.sortedByDescending { it.second }.mapTo(species) { it.first }
+    }
+
+    private fun drawKey(score: Double?, reading: TowerPreviewScore): Double {
+        val uniform = (random.nextLong(1L shl 53) + 0.5) / (1L shl 53).toDouble()
+        return (score ?: 0.0) / reading.temperature - ln(-ln(uniform))
     }
 
     private fun shuffle(values: MutableList<TowerPokemonSet>) {

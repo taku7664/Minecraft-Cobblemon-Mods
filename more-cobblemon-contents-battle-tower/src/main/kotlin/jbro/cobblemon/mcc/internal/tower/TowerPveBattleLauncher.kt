@@ -9,13 +9,16 @@ import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentRandom
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentSelectionResult
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentSelector
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
+import jbro.cobblemon.mcc.internal.tower.opponent.TowerPreviewScore
 import jbro.cobblemon.mcc.internal.selection.RecentSelectionHistory
 import java.util.Collections
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
 import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 internal class TowerPreparedPveBattle<P, O>(
     val request: TowerBattleLaunchRequest,
@@ -52,6 +55,8 @@ internal class TowerPveBattleLauncher<P, O>(
     private val runtime: TowerPveBattleRuntime<P, O>,
     private val random: TowerOpponentRandom,
     private val diagnostics: (String) -> Unit = {},
+    /** How a trainer of an AI tier reads the challenger's team preview to pick its team; null picks at random. */
+    private val previewReader: (BattleTrainerTier, BattleOpponentTeamPreviewView) -> TowerPreviewScore? = { _, _ -> null },
 ) : TowerBattleLauncher {
     private val opponentMaterializer = TowerOpponentBattleTeamMaterializer(opponentMemberFactory)
     private val recentProfiles = RecentSelectionHistory<UUID, String>(RECENT_PROFILE_LIMIT)
@@ -78,7 +83,18 @@ internal class TowerPveBattleLauncher<P, O>(
         } else {
             emptySet()
         }
-        val opponent = TowerOpponentSelector(catalog, random).select(
+        // The trainer picks its team from the challenger's preview as its AI tier reads it; the tier depends on the
+        // stage, the kind and whether the boss is a Champion, not on the trainer's skill.
+        val tier = TowerBattleDifficultyPolicy.resolve(
+            request.progress.nextStage, opponentKind, PREVIEW_SKILL, request.progress.mode, champion = champion,
+        ).difficulty.tier
+        val preview = try {
+            previewReader(tier, request.playerTeamPreview)
+        } catch (failure: RuntimeException) {
+            reportSafely("the challenger's preview could not be read, so the opponent picks at random: ${failure.message}")
+            null
+        }
+        val opponent = TowerOpponentSelector(catalog, random, preview).select(
             request.progress.nextStage,
             request.progress.format,
             opponentKind,
@@ -152,6 +168,7 @@ internal class TowerPveBattleLauncher<P, O>(
     private companion object {
         const val RECENT_PROFILE_LIMIT = 3
         const val RECENT_SPECIES_LIMIT = 24
+        const val PREVIEW_SKILL = 4
 
         fun TowerRegisteredBattleTeamResult<*>.describe(): String = when (this) {
             is TowerRegisteredBattleTeamResult.Created -> "created"

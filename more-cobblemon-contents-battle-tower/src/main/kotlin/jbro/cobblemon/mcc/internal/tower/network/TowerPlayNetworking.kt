@@ -28,6 +28,7 @@ import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173TowerRegister
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleForfeit
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173OpponentPokemonPropertiesFactory
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173TowerPveBattleRuntime
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173TowerPreviewReader
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.runManagedCleanupActions
@@ -99,6 +100,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 override fun nextInt(bound: Int): Int = Random.Default.nextInt(bound)
             },
             diagnostics = { reason -> MoreCobblemonContents.LOGGER.error("Battle Tower launch failed: {}", reason) },
+            previewReader = Cobblemon173TowerPreviewReader::read,
         )
     }
     private val sessions: TowerPlaySessionService by lazy {
