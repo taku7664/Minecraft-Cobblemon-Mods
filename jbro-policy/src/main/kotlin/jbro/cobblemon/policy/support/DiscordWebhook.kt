@@ -27,6 +27,8 @@ import jbro.cobblemon.policy.JbroPolicy
  * @property adminAccess who may run which operator command: a Discord user or role ID to command names, `*` for all.
  * @property verifiedRoleId the role `/verify` gives a member who linked their Minecraft account; blank turns linking off.
  * @property syncNickname whether `/verify` also sets the member's server nickname to their Minecraft nickname.
+ * @property commandChannelId the only channel where the bot answers players' commands (/접속자, /전적 and so on);
+ *   blank answers them anywhere. `/verify` and the operator commands keep their own channels.
  * @property rankRoleIds the Discord role for each League rank (`POKE_BALL` to `CHAMPION`), kept in step with the game.
  */
 data class DiscordSettings(
@@ -40,6 +42,7 @@ data class DiscordSettings(
     val verifiedRoleId: String = "",
     val syncNickname: Boolean = true,
     val rankRoleIds: Map<String, String> = emptyMap(),
+    val commandChannelId: String = "",
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -64,6 +67,7 @@ data class DiscordSettings(
         require(newsChannelId.isBlank() || newsChannelId.all(Char::isDigit)) { "The news channel ID is the channel's number" }
         require(adminChannelId.isBlank() || adminChannelId.all(Char::isDigit)) { "The admin channel ID is the channel's number" }
         require(verifiedRoleId.isBlank() || verifiedRoleId.all(Char::isDigit)) { "The verified role ID is the role's number" }
+        require(commandChannelId.isBlank() || commandChannelId.all(Char::isDigit)) { "The command channel ID is the channel's number" }
         require(rankRoleIds.keys.all { it in RANKS }) { "Rank roles are keyed by League rank: $RANKS" }
         require(rankRoleIds.values.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Rank roles are Discord role IDs" }
         require(adminAccess.keys.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Admin access is keyed by Discord user or role IDs" }
@@ -86,7 +90,8 @@ data class DiscordSettings(
             return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"),
                 text("newsChannelId"), text("adminChannelId"), access, text("verifiedRoleId"),
                 root.get("syncNickname")?.asBoolean ?: true,
-                root.getAsJsonObject("rankRoleIds")?.entrySet()?.associate { (rank, role) -> rank.trim() to role.asString.trim() }.orEmpty())
+                root.getAsJsonObject("rankRoleIds")?.entrySet()?.associate { (rank, role) -> rank.trim() to role.asString.trim() }.orEmpty(),
+                text("commandChannelId"))
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */

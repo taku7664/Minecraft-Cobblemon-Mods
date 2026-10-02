@@ -324,12 +324,14 @@ internal object DiscordBot {
             option.asJsonObject.get("name").asString to option.asJsonObject.get("value").asString
         }.orEmpty()
         val command = DiscordCommands.find(data.get("name").asString)
+        val caller = caller(interaction)
+        val misplaced = command?.let { DiscordAdminAccess.channelRefusal(settings, it, caller.channelId) }
         client.request("POST", "/interactions/$id/$interactionToken/callback", JsonObject().apply {
             addProperty("type", DEFERRED_REPLY)
-            if (command?.ephemeral == true) add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
+            // A command in the wrong channel is told so to the caller alone.
+            if (command?.ephemeral == true || misplaced != null) add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
         }, authorized = false)
         val live = server
-        val caller = caller(interaction)
         val refusal = (command as? DiscordAdminCommand)?.let { DiscordAdminAccess.check(settings, caller, it.name) }
             as? DiscordAdminAccess.Verdict.Refused
         if (command is DiscordAdminCommand) {
@@ -337,6 +339,7 @@ internal object DiscordBot {
         }
         val reply = when {
             command == null -> DiscordRest.message("모르는 명령이에요.")
+            misplaced != null -> DiscordRest.message(misplaced)
             refusal != null -> DiscordRest.message(refusal.reason)
             live == null -> DiscordRest.message("서버가 아직 켜지는 중이에요. 잠시 뒤에 다시 해 주세요.")
             else -> try {

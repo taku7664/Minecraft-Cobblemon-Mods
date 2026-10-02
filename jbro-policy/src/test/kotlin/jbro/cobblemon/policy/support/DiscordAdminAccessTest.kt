@@ -40,4 +40,20 @@ class DiscordAdminAccessTest {
         assertTrue(DiscordAdminAccess.check(settings, caller("1", channel = "200"), "players") is Verdict.Refused)
         assertTrue(DiscordAdminAccess.check(settings.copy(adminChannelId = ""), caller("1"), "players") is Verdict.Refused)
     }
+
+    private fun command(anywhere: Boolean = false) = object : DiscordCommand {
+        override val name = "접속자"
+        override val description = ""
+        override val anyChannel = anywhere
+        override fun reply(server: net.minecraft.server.MinecraftServer, options: Map<String, String>) = com.google.gson.JsonObject()
+    }
+
+    @Test
+    fun `players' commands answer only in the command channel, verify and nothing set answer anywhere`() {
+        val limited = settings.copy(commandChannelId = "300")
+        assertEquals(null, DiscordAdminAccess.channelRefusal(limited, command(), "300"))
+        assertTrue(DiscordAdminAccess.channelRefusal(limited, command(), "200")!!.contains("<#300>"))
+        assertEquals(null, DiscordAdminAccess.channelRefusal(limited, command(anywhere = true), "200"))
+        assertEquals(null, DiscordAdminAccess.channelRefusal(settings, command(), "200"))
+    }
 }

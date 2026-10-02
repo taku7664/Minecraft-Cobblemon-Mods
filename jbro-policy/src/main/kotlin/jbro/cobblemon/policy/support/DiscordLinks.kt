@@ -84,6 +84,7 @@ internal object DiscordLinks {
         override val description = "마크에서 /디코인증으로 받은 코드로 마인크래프트 계정을 연결한다"
         override val options = JsonArray().apply { add(DiscordCommands.stringOption("code", "마크에서 받은 6자리 코드")) }
         override val ephemeral = true
+        override val anyChannel = true
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject = error("/verify needs its caller")
 

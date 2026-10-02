@@ -15,6 +15,9 @@ internal interface DiscordCommand {
     /** Whether only the caller sees the reply. */
     val ephemeral: Boolean get() = false
 
+    /** Whether it works outside the command channel, as `/verify` must in the verify channel. */
+    val anyChannel: Boolean get() = false
+
     /** The reply message body (content or embeds) to [options] given by name. Runs on the server thread. */
     fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject
 
@@ -61,6 +64,13 @@ internal interface DiscordAdminCommand : DiscordCommand {
 /** Whether a caller may run an operator command; kept apart from the bot so it can be tested. */
 internal object DiscordAdminAccess {
     const val ALL = "*"
+
+    /** Why a player's command cannot run in [channelId], or null when it can. */
+    fun channelRefusal(settings: DiscordSettings, command: DiscordCommand, channelId: String): String? = when {
+        command is DiscordAdminCommand || command.anyChannel -> null
+        settings.commandChannelId.isBlank() || channelId == settings.commandChannelId -> null
+        else -> "봇 명령은 <#${settings.commandChannelId}> 채널에서 써 주세요."
+    }
 
     sealed interface Verdict {
         data object Allowed : Verdict
