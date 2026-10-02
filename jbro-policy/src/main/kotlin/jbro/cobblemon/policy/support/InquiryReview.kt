@@ -32,6 +32,23 @@ data class InquiryReviewSettings(
     val timeoutSeconds: Long = 300,
     val home: String = "",
 ) {
+    /**
+     * The CLI to run. A bare name is looked up on the PATH and then where agy installs itself
+     * (`%LOCALAPPDATA%\agy\bin`), since a server started from a shell without the user's PATH cannot find it.
+     */
+    fun executable(env: Map<String, String> = System.getenv()): String {
+        if (command.contains('/') || command.contains('\\')) return command
+        val names = if (command.contains('.')) listOf(command) else listOf("$command.exe", "$command.cmd", command)
+        val dirs = env.entries.firstOrNull { it.key.equals("PATH", ignoreCase = true) }?.value.orEmpty()
+            .split(java.io.File.pathSeparatorChar).filter(String::isNotBlank).map { Path.of(it.trim('"')) } +
+            listOfNotNull(env["LOCALAPPDATA"]?.let { Path.of(it, command, "bin") })
+        for (dir in dirs) for (name in names) {
+            val candidate = runCatching { dir.resolve(name) }.getOrNull() ?: continue
+            if (Files.isRegularFile(candidate)) return candidate.toString()
+        }
+        return command
+    }
+
     fun home(): Path = if (home.isBlank()) Path.of(System.getProperty("user.home"), ".gemini", "antigravity-cli") else Path.of(home)
 
     companion object {

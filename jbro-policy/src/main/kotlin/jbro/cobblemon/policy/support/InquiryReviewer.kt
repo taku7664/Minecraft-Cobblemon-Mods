@@ -38,7 +38,7 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
         Files.createDirectories(workDir)
         if (!Files.exists(schemaFile)) Files.writeString(schemaFile, SCHEMA)
         val command = buildList {
-            add(settings.command)
+            add(settings.executable())
             addAll(listOf("--input-format", "stream-json", "--output-format", "stream-json", "--json-schema", schemaFile.toString()))
             addAll(listOf("--mode", "plan", "--disable-slash-commands"))
             if (settings.model.isNotBlank()) addAll(listOf("--model", settings.model))
