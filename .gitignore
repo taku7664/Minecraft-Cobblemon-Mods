@@ -27,6 +27,9 @@ config/
 !better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/**
 defaultconfigs/
 resourcepacks/
+# jbro-policy ships its built-in data packs from here.
+!jbro-policy/src/main/resources/resourcepacks/
+!jbro-policy/src/main/resources/resourcepacks/**
 shaderpacks/
 screenshots/
 replay_recordings/

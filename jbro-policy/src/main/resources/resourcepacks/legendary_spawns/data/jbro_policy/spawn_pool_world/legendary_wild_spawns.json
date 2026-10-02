@@ -1,0 +1,2269 @@
+{
+    "enabled": true,
+    "neededInstalledMods": [],
+    "neededUninstalledMods": [
+        "mythsandlegends"
+    ],
+    "spawns": [
+        {
+            "id": "jbro-legendary-arceus",
+            "pokemon": "arceus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "80",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands",
+                    "minecraft:dark_forest",
+                    "#cobblemon:is_end"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-articuno",
+            "pokemon": "articuno",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:frozen_ocean",
+                    "minecraft:frozen_peaks",
+                    "minecraft:frozen_river",
+                    "minecraft:snowy_beach",
+                    "minecraft:snowy_plains",
+                    "minecraft:snowy_slopes",
+                    "minecraft:snowy_taiga",
+                    "#cobblemon:is_cold",
+                    "#cobblemon:is_freezing",
+                    "#cobblemon:is_snowy_forest",
+                    "#cobblemon:is_glacial",
+                    "#cobblemon:is_frozen_ocean"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-articuno-galar",
+            "pokemon": "articuno galarian",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_magical",
+                    "#cobblemon:is_floral",
+                    "#cobblemon:is_cherry_blossom"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-azelf",
+            "pokemon": "azelf",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:mangrove_swamp",
+                    "minecraft:swamp",
+                    "#cobblemon:is_river",
+                    "#cobblemon:is_freshwater"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-calyrex",
+            "pokemon": "calyrex",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:flower_forest"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-celebi",
+            "pokemon": "celebi",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "30-70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:birch_forest",
+                    "minecraft:dark_forest",
+                    "minecraft:flower_forest",
+                    "minecraft:forest",
+                    "minecraft:jungle",
+                    "minecraft:mangrove_swamp",
+                    "minecraft:meadow",
+                    "minecraft:old_growth_birch_forest",
+                    "minecraft:old_growth_pine_taiga",
+                    "minecraft:old_growth_spruce_taiga",
+                    "minecraft:swamp",
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_magical",
+                    "#cobblemon:is_lush",
+                    "minecraft:cherry_grove"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-chienpao",
+            "pokemon": "chienpao",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_snowy",
+                    "#cobblemon:is_peak"
+                ],
+                "maxY": 180,
+                "canSeeSky": true,
+                "minY": 90
+            }
+        },
+        {
+            "id": "jbro-legendary-chiyu",
+            "pokemon": "chiyu",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:nether/is_basalt",
+                    "#cobblemon:nether/is_wasteland"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-cobalion",
+            "pokemon": "cobalion",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_highlands",
+                    "#cobblemon:is_hills"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-cosmoem",
+            "pokemon": "cosmoem",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "43-55",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_end"
+                ],
+                "canSeeSky": true,
+                "timeRange": "night"
+            }
+        },
+        {
+            "id": "jbro-legendary-cosmog",
+            "pokemon": "cosmog",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "15",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:cherry_grove",
+                    "minecraft:flower_forest",
+                    "minecraft:meadow",
+                    "minecraft:sunflower_plains",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-cresselia",
+            "pokemon": "cresselia",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:mushroom_fields"
+                ],
+                "moonPhase": 1,
+                "canSeeSky": true,
+                "timeRange": "night"
+            }
+        },
+        {
+            "id": "jbro-legendary-darkrai",
+            "pokemon": "darkrai",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "40-50",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "minecraft:swamp",
+                    "#cobblemon:is_spooky",
+                    "#cobblemon:is_deep_dark"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-deoxys",
+            "pokemon": "deoxys",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "75",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands",
+                    "#cobblemon:is_end"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-dialga",
+            "pokemon": "dialga",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "47-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:stony_peaks",
+                    "#cobblemon:is_highlands",
+                    "#cobblemon:is_peak",
+                    "#cobblemon:is_mountain"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-diancie",
+            "pokemon": "diancie",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "maxY": 10,
+                "minY": -64,
+                "biomes": [
+                    "#cobblemon:is_cave",
+                    "minecraft:dripstone_caves",
+                    "minecraft:lush_caves"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-enamorus",
+            "pokemon": "enamorus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "isThundering": true,
+                "biomes": [
+                    "minecraft:flower_forest",
+                    "minecraft:meadow",
+                    "minecraft:cherry_grove"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-entei",
+            "pokemon": "entei",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:badlands",
+                    "minecraft:eroded_badlands",
+                    "minecraft:nether_wastes",
+                    "minecraft:savanna",
+                    "minecraft:windswept_hills",
+                    "minecraft:windswept_forest",
+                    "#cobblemon:is_volcanic",
+                    "#cobblemon:is_thermal",
+                    "#cobblemon:is_badlands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-eternatus",
+            "pokemon": "eternatus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-fezandipiti",
+            "pokemon": "fezandipiti",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_cherry_blossom",
+                    "#cobblemon:is_floral"
+                ],
+                "canSeeSky": true
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-genesect",
+            "pokemon": "genesect",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ],
+                "neededNearbyBlocks": [
+                    "minecraft:iron_block"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-giratina",
+            "pokemon": "giratina",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "47-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:soul_sand_valley",
+                    "minecraft:the_end",
+                    "#cobblemon:is_spooky"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-glastrier",
+            "pokemon": "glastrier",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_snowy_forest",
+                    "#cobblemon:is_taiga",
+                    "#cobblemon:is_mountain"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-gougingfire",
+            "pokemon": "gougingfire",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:nether/is_basalt",
+                    "#cobblemon:is_volcanic"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-groudon",
+            "pokemon": "groudon",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "45-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_volcanic",
+                    "minecraft:badlands",
+                    "minecraft:desert",
+                    "minecraft:eroded_badlands",
+                    "#cobblemon:is_desert",
+                    "#cobblemon:is_arid",
+                    "#cobblemon:is_thermal"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-heatran",
+            "pokemon": "heatran",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:nether_wastes",
+                    "minecraft:basalt_deltas",
+                    "minecraft:crimson_forest"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-hooh",
+            "pokemon": "hooh",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "40-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:meadow",
+                    "minecraft:sunflower_plains",
+                    "minecraft:flower_forest",
+                    "#cobblemon:is_sky"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-hoopa",
+            "pokemon": "hoopa",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ironboulder",
+            "pokemon": "ironboulder",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_badlands",
+                    "#cobblemon:is_end"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ironcrown",
+            "pokemon": "ironcrown",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:lush_caves",
+                    "#cobblemon:is_deep_dark"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ironleaves",
+            "pokemon": "ironleaves",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_cherry_blossom"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-jirachi",
+            "pokemon": "jirachi",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "5-70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:mushroom_fields",
+                    "minecraft:windswept_gravelly_hills",
+                    "#cobblemon:is_magical"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-keldeo",
+            "pokemon": "keldeo",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_highlands",
+                    "#cobblemon:is_hills"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-koraidon",
+            "pokemon": "koraidon",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "68-72",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:badlands",
+                    "minecraft:eroded_badlands",
+                    "minecraft:savanna",
+                    "minecraft:savanna_plateau",
+                    "#cobblemon:is_savanna",
+                    "#cobblemon:is_plateau",
+                    "#cobblemon:is_mountain"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-kubfu",
+            "pokemon": "kubfu",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "15",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_mountain",
+                    "#cobblemon:is_bamboo"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-kyogre",
+            "pokemon": "kyogre",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "submerged",
+            "bucket": "ultra-rare",
+            "level": "45-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_ocean",
+                    "minecraft:deep_cold_ocean",
+                    "minecraft:deep_frozen_ocean",
+                    "minecraft:deep_ocean",
+                    "minecraft:ocean",
+                    "#cobblemon:is_deep_ocean"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-kyurem",
+            "pokemon": "kyurem",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "75",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:frozen_peaks",
+                    "minecraft:snowy_slopes",
+                    "minecraft:snowy_taiga",
+                    "#cobblemon:is_freezing",
+                    "#cobblemon:is_glacial",
+                    "#cobblemon:is_snowy_forest"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-landorus",
+            "pokemon": "landorus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "isThundering": true,
+                "biomes": [
+                    "minecraft:savanna",
+                    "minecraft:sunflower_plains",
+                    "minecraft:desert"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-latias",
+            "pokemon": "latias",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "30-50",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:flower_forest",
+                    "minecraft:birch_forest",
+                    "#cobblemon:is_coast",
+                    "#cobblemon:is_temperate",
+                    "#cobblemon:is_beach"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-latios",
+            "pokemon": "latios",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "30-50",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:plains",
+                    "#cobblemon:is_coast",
+                    "#cobblemon:is_temperate",
+                    "#cobblemon:is_beach"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-lugia",
+            "pokemon": "lugia",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "submerged",
+            "bucket": "ultra-rare",
+            "level": "40-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:deep_ocean",
+                    "minecraft:ocean",
+                    "#cobblemon:is_deep_ocean",
+                    "#cobblemon:is_ocean",
+                    "#cobblemon:is_cold_ocean"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-lunala",
+            "pokemon": "lunala",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "#cobblemon:is_hills"
+                ],
+                "timeRange": "night"
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-magearna",
+            "pokemon": "magearna",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ],
+                "neededNearbyBlocks": [
+                    "minecraft:iron_block"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-manaphy",
+            "pokemon": "manaphy",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "45-60",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_ocean"
+                ],
+                "timeRange": "night",
+                "isRaining": true,
+                "canSeeSky": true
+            }
+        },
+        {
+            "id": "jbro-legendary-marshadow",
+            "pokemon": "marshadow",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "minecraft:swamp",
+                    "#cobblemon:is_spooky",
+                    "#cobblemon:is_deep_dark"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-melmetal",
+            "pokemon": "melmetal",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_badlands",
+                    "#cobblemon:is_cave"
+                ],
+                "neededNearbyBlocks": [
+                    "minecraft:iron_block"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-meloetta",
+            "pokemon": "meloetta",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:cherry_grove",
+                    "minecraft:flower_forest",
+                    "minecraft:meadow",
+                    "minecraft:sunflower_plains"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-meltan",
+            "pokemon": "meltan",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "20-40",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:taiga",
+                    "minecraft:snowy_taiga"
+                ],
+                "neededNearbyBlocks": [
+                    "minecraft:iron_block"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-mesprit",
+            "pokemon": "mesprit",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:mangrove_swamp",
+                    "minecraft:swamp",
+                    "#cobblemon:is_river",
+                    "#cobblemon:is_freshwater"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-mew",
+            "pokemon": "mew",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "30-70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_jungle",
+                    "minecraft:bamboo_jungle",
+                    "minecraft:jungle",
+                    "#cobblemon:is_lush",
+                    "#cobblemon:is_bamboo"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-mewtwo",
+            "pokemon": "mewtwo",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-75",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:windswept_gravelly_hills",
+                    "minecraft:dark_forest",
+                    "minecraft:deep_dark",
+                    "#cobblemon:is_cave",
+                    "#cobblemon:is_deep_dark",
+                    "#cobblemon:is_spooky"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-miraidon",
+            "pokemon": "miraidon",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "68-72",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:windswept_gravelly_hills",
+                    "minecraft:deep_dark",
+                    "#cobblemon:is_deep_dark"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-moltres",
+            "pokemon": "moltres",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:badlands",
+                    "minecraft:windswept_hills",
+                    "#cobblemon:is_volcanic",
+                    "#cobblemon:is_thermal",
+                    "#cobblemon:is_sky"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-moltres-galar",
+            "pokemon": "moltres galarian",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "#cobblemon:is_spooky"
+                ],
+                "timeRange": "night"
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-munkidori",
+            "pokemon": "munkidori",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_jungle",
+                    "#cobblemon:is_spooky"
+                ],
+                "timeRange": "night"
+            }
+        },
+        {
+            "id": "jbro-legendary-necrozma",
+            "pokemon": "necrozma",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ogerpon",
+            "pokemon": "ogerpon",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "40-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_floral",
+                    "#cobblemon:is_bamboo",
+                    "#cobblemon:is_jungle"
+                ],
+                "moonPhase": 1
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-okidogi",
+            "pokemon": "okidogi",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_swamp",
+                    "#cobblemon:is_forest"
+                ],
+                "timeRange": "night"
+            }
+        },
+        {
+            "id": "jbro-legendary-palkia",
+            "pokemon": "palkia",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "47-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands",
+                    "#cobblemon:is_end"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-pecharunt",
+            "pokemon": "pecharunt",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "minecraft:swamp",
+                    "#cobblemon:is_spooky",
+                    "#cobblemon:is_swamp"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-phione",
+            "pokemon": "phione",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "20-35",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_warm_ocean",
+                    "#cobblemon:is_lukewarm_ocean"
+                ],
+                "canSeeSky": true,
+                "timeRange": "day"
+            }
+        },
+        {
+            "id": "jbro-legendary-ragingbolt",
+            "pokemon": "ragingbolt",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_plains",
+                    "#cobblemon:is_savanna"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-raikou",
+            "pokemon": "raikou",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:plains",
+                    "minecraft:savanna",
+                    "minecraft:savanna_plateau",
+                    "#cobblemon:is_plains",
+                    "#cobblemon:is_grassland",
+                    "#cobblemon:is_arid"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-rayquaza",
+            "pokemon": "rayquaza",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_jungle",
+                    "#cobblemon:is_sky",
+                    "#cobblemon:is_highlands",
+                    "minecraft:end_highlands",
+                    "#cobblemon:is_end"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-regice",
+            "pokemon": "regice",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:frozen_river",
+                    "minecraft:jagged_peaks",
+                    "minecraft:snowy_beach",
+                    "minecraft:snowy_plains",
+                    "minecraft:snowy_slopes",
+                    "#cobblemon:is_frozen_ocean",
+                    "#cobblemon:is_glacial",
+                    "#cobblemon:is_snowy_forest",
+                    "#cobblemon:is_freezing",
+                    "#cobblemon:is_peak",
+                    "#cobblemon:is_taiga",
+                    "#cobblemon:is_tundra"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-regidrago",
+            "pokemon": "regidrago",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "40",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_cave",
+                    "#cobblemon:is_end",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-regieleki",
+            "pokemon": "regieleki",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-regigigas",
+            "pokemon": "regigigas",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark",
+                    "minecraft:savanna_plateau",
+                    "#cobblemon:is_savanna"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-regirock",
+            "pokemon": "regirock",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "maxY": 63,
+                "biomes": [
+                    "minecraft:desert",
+                    "#cobblemon:is_badlands",
+                    "#cobblemon:is_mountain"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-registeel",
+            "pokemon": "registeel",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "40",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:deep_dark",
+                    "#cobblemon:is_deep_dark",
+                    "#cobblemon:is_cave",
+                    "#cobblemon:is_badlands"
+                ],
+                "neededNearbyBlocks": [
+                    "minecraft:iron_block"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-reshiram",
+            "pokemon": "reshiram",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:savanna",
+                    "minecraft:sunflower_plains",
+                    "minecraft:desert"
+                ],
+                "minLight": 8,
+                "maxLight": 15
+            }
+        },
+        {
+            "id": "jbro-legendary-shaymin",
+            "pokemon": "shaymin",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:sunflower_plains",
+                    "minecraft:flower_forest",
+                    "minecraft:meadow",
+                    "#cobblemon:is_floral",
+                    "#cobblemon:is_grassland",
+                    "#cobblemon:is_lush"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-silvally",
+            "pokemon": "silvally",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_plains",
+                    "#cobblemon:is_highlands"
+                ],
+                "canSeeSky": true
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-solgaleo",
+            "pokemon": "solgaleo",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_plateau",
+                    "minecraft:desert"
+                ],
+                "timeRange": "day"
+            }
+        },
+        {
+            "id": "jbro-legendary-spectrier",
+            "pokemon": "spectrier",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_plains",
+                    "#cobblemon:is_spooky"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-suicune",
+            "pokemon": "suicune",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:frozen_river",
+                    "minecraft:river",
+                    "#cobblemon:is_freshwater",
+                    "#cobblemon:is_cold_ocean"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tapubulu",
+            "pokemon": "tapubulu",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_jungle",
+                    "#cobblemon:is_floral",
+                    "minecraft:stony_shore",
+                    "#cobblemon:is_beach"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tapufini",
+            "pokemon": "tapufini",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_coast",
+                    "#cobblemon:is_warm_ocean",
+                    "minecraft:stony_shore",
+                    "#cobblemon:is_beach"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tapukoko",
+            "pokemon": "tapukoko",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_savanna",
+                    "#cobblemon:is_highlands",
+                    "minecraft:stony_shore",
+                    "#cobblemon:is_beach"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tapulele",
+            "pokemon": "tapulele",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_floral",
+                    "#cobblemon:is_magical",
+                    "minecraft:stony_shore",
+                    "#cobblemon:is_beach"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-terapagos",
+            "pokemon": "terapagos",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "75",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_mountain",
+                    "#cobblemon:is_magical",
+                    "#cobblemon:is_river",
+                    "#cobblemon:is_jungle"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-terrakion",
+            "pokemon": "terrakion",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_highlands",
+                    "#cobblemon:is_hills"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-thundurus",
+            "pokemon": "thundurus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "isThundering": true,
+                "biomes": [
+                    "minecraft:plains",
+                    "minecraft:badlands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tinglu",
+            "pokemon": "tinglu",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_badlands",
+                    "#cobblemon:is_mountain"
+                ],
+                "maxY": 90
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-tornadus",
+            "pokemon": "tornadus",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-70",
+            "weight": 0.3,
+            "condition": {
+                "isThundering": true,
+                "biomes": [
+                    "minecraft:jungle",
+                    "minecraft:bamboo_jungle"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-typenull",
+            "pokemon": "typenull",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_deep_dark",
+                    "minecraft:the_end",
+                    "minecraft:end_barrens",
+                    "minecraft:end_highlands",
+                    "minecraft:end_midlands",
+                    "minecraft:small_end_islands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-urshifu",
+            "pokemon": "urshifu",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_mountain",
+                    "#cobblemon:is_bamboo"
+                ],
+                "canSeeSky": true
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-uxie",
+            "pokemon": "uxie",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:mangrove_swamp",
+                    "minecraft:swamp",
+                    "#cobblemon:is_river",
+                    "#cobblemon:is_freshwater"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-victini",
+            "pokemon": "victini",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-100",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "minecraft:badlands",
+                    "minecraft:eroded_badlands",
+                    "minecraft:savanna",
+                    "#cobblemon:is_volcanic",
+                    "#cobblemon:is_thermal",
+                    "#cobblemon:is_savanna"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-virizion",
+            "pokemon": "virizion",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_highlands",
+                    "#cobblemon:is_hills"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-volcanion",
+            "pokemon": "volcanion",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_volcanic",
+                    "#cobblemon:is_thermal"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-walkingwake",
+            "pokemon": "walkingwake",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_river",
+                    "#cobblemon:is_deep_ocean"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-wochien",
+            "pokemon": "wochien",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "55-70",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_swamp",
+                    "#cobblemon:is_spooky"
+                ],
+                "canSeeSky": true,
+                "timeRange": "night"
+            }
+        },
+        {
+            "id": "jbro-legendary-xerneas",
+            "pokemon": "xerneas",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:flower_forest",
+                    "minecraft:forest",
+                    "minecraft:meadow",
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_magical",
+                    "#cobblemon:is_floral"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-yveltal",
+            "pokemon": "yveltal",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:dark_forest",
+                    "minecraft:swamp",
+                    "#cobblemon:is_spooky",
+                    "#cobblemon:is_tundra"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zacian",
+            "pokemon": "zacian",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:flower_forest",
+                    "minecraft:meadow",
+                    "#cobblemon:is_magical",
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_highlands"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zamazenta",
+            "pokemon": "zamazenta",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:taiga",
+                    "minecraft:windswept_forest",
+                    "#cobblemon:is_plateau",
+                    "#cobblemon:is_savanna",
+                    "#cobblemon:is_highlands"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zapdos",
+            "pokemon": "zapdos",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "minecraft:plains",
+                    "minecraft:savanna",
+                    "#cobblemon:is_sky",
+                    "#cobblemon:is_mountain"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zapdos-galar",
+            "pokemon": "zapdos galarian",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "50-60",
+            "weight": 0.3,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_jungle",
+                    "#cobblemon:is_shrubland"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zarude",
+            "pokemon": "zarude",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_jungle",
+                    "#cobblemon:is_bamboo"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zekrom",
+            "pokemon": "zekrom",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "60-70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:swamp",
+                    "minecraft:dark_forest"
+                ],
+                "minLight": 0,
+                "maxLight": 7
+            }
+        },
+        {
+            "id": "jbro-legendary-zeraora",
+            "pokemon": "zeraora",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.2,
+            "condition": {
+                "biomes": [
+                    "#cobblemon:is_savanna",
+                    "#cobblemon:is_highlands"
+                ]
+            },
+            "anticondition": {
+                "biomes": [
+                    "minecraft:meadow"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-zygarde",
+            "pokemon": "zygarde",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70",
+            "weight": 0.15,
+            "condition": {
+                "biomes": [
+                    "minecraft:birch_forest",
+                    "minecraft:forest",
+                    "minecraft:jungle",
+                    "minecraft:mangrove_swamp",
+                    "minecraft:swamp",
+                    "#cobblemon:is_forest",
+                    "#cobblemon:is_cave",
+                    "#cobblemon:is_swamp"
+                ]
+            }
+        }
+    ]
+}
