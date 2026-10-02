@@ -90,10 +90,10 @@ internal class TowerPveBattleLauncher<P, O>(
             return TowerBattleLaunchResult.Unavailable
         }
         // The first Champion (the 10th win, practical stage) comes at IVs of 25; their full strength waits for the 20th.
-        val team = if (opponent.profile.fixedRoster && request.progress.nextStage == TowerStreakStage.PRACTICAL) {
-            opponent.team.map { it.withIvs(FIRST_CHAMPION_IVS) }
-        } else {
-            opponent.team
+        val firstChampion = opponent.profile.fixedRoster && request.progress.nextStage == TowerStreakStage.PRACTICAL
+        val level = TowerProgression.opponentLevel(Math.addExact(request.progress.currentWinStreak, 1))
+        val team = opponent.team.map { set ->
+            (if (firstChampion) set.withIvs(FIRST_CHAMPION_IVS) else set).withBattleLevel(level)
         }
         val opponentTeam = opponentMaterializer.materialize(team)
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {

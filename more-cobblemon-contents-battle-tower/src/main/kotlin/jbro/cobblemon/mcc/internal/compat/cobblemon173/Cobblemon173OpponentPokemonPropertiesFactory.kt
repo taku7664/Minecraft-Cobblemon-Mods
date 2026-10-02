@@ -5,7 +5,6 @@ import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.pokemon.EVs
 import com.cobblemon.mod.common.pokemon.IVs
-import jbro.cobblemon.mcc.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerStatSpread
 
@@ -17,7 +16,7 @@ internal object Cobblemon173OpponentPokemonPropertiesFactory {
         nature = set.natureId
         heldItem = set.heldItemId
         moves = set.moves.map(String::toCobblemonShowdownName)
-        level = TOWER_BATTLE_LEVEL_CAP
+        level = set.battleLevel
         ivs = set.ivs.toIVs()
         evs = set.evs.toEVs()
         teraType = set.teraType

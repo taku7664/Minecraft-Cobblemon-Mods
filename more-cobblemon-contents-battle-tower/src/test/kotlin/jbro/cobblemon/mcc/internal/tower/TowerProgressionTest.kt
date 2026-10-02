@@ -6,6 +6,17 @@ import org.junit.jupiter.api.Test
 
 class TowerProgressionTest {
     @Test
+    fun `opponents stay at level 50 to the 20th win, then gain one level a win up to 100`() {
+        assertEquals(50, TowerProgression.opponentLevel(1))
+        assertEquals(50, TowerProgression.opponentLevel(20))
+        assertEquals(51, TowerProgression.opponentLevel(21))
+        assertEquals(52, TowerProgression.opponentLevel(22))
+        assertEquals(79, TowerProgression.opponentLevel(49))
+        assertEquals(100, TowerProgression.opponentLevel(70))
+        assertEquals(100, TowerProgression.opponentLevel(500))
+    }
+
+    @Test
     fun `wins grow the streak and losses reset only the current streak`() {
         var progress = TowerProgress.initial(TowerBattleFormat.SINGLE)
 

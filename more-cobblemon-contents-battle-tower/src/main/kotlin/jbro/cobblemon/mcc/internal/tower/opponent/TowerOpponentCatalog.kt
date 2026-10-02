@@ -34,12 +34,18 @@ internal class TowerPokemonSet internal constructor(
     val teraType: String? = null,
     val dmaxLevel: Int? = null,
     val gmaxFactor: Boolean? = null,
+    /** The level the set battles at: the Tower's level 50, raised for long streaks. */
+    val battleLevel: Int = jbro.cobblemon.mcc.internal.tower.TOWER_BATTLE_LEVEL_CAP,
 ) {
     val moves: List<String> = moves.immutableCopy()
 
     /** The same set with other IVs, such as a Champion held back for their first appearance. */
     fun withIvs(ivs: TowerStatSpread): TowerPokemonSet = TowerPokemonSet(setId, setTier, mechanic, speciesId, formId, abilityId,
-        natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor)
+        natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor, battleLevel)
+
+    /** The same set at another level. */
+    fun withBattleLevel(level: Int): TowerPokemonSet = TowerPokemonSet(setId, setTier, mechanic, speciesId, formId, abilityId,
+        natureId, heldItemId, moves, ivs, evs, teraType, dmaxLevel, gmaxFactor, level)
 
     init {
         require(teraType == null || teraType in SUPPORTED_TERA_TYPES) {
