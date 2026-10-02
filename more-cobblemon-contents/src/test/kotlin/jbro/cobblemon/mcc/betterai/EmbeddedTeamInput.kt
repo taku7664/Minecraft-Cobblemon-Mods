@@ -115,6 +115,10 @@ internal object EmbeddedTeamInput {
                 "turn" -> eventTurn = actor.toInt()
                 "teamsize" -> sizes[side(actor)] = p[3].toInt()
                 "switch", "drag", "replace" -> {
+                    // A broken Illusion is announced by "replace" without a condition: the HP is the disguise's.
+                    val disguise = seen.values.firstOrNull {
+                        it.active && it.ident.take(2) == actor.take(2) && activeSlot(it.ident) == activeSlot(actor)
+                    }
                     val inherited = if (kind == "replace" || kind == "switch" &&
                         p.drop(5).singleOrNull { it.startsWith("[from] ") }?.removePrefix("[from] ")
                             ?.let(::id) in setOf("batonpass", "shedtail")) {
@@ -132,7 +136,7 @@ internal object EmbeddedTeamInput {
                     }
                     val details = p[3].split(',').map(String::trim)
                     val species = id(details[0])
-                    val hp = condition(p[4])
+                    val hp = p.getOrNull(4)?.let(::condition) ?: disguise?.let { it.hp to it.status } ?: (1.0 to null)
                     val entry = Seen(actor, species, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                         hp.first, hp.second, types = baseTypes(species))
                     current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item

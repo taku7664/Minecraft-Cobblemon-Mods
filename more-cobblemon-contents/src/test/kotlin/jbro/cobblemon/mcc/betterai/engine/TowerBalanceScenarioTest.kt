@@ -70,7 +70,12 @@ abstract class TowerScenarioBase {
         return team.values.toList()
     }
 
-    protected val championAces = mapOf("blue" to "cobblemon:blastoise", "lance" to "cobblemon:dragonite", "cynthia" to "cobblemon:garchomp")
+    protected val championAces = mapOf(
+        "blue" to "cobblemon:blastoise", "lance" to "cobblemon:dragonite", "cynthia" to "cobblemon:garchomp",
+        "steven" to "cobblemon:metagross", "wallace" to "cobblemon:milotic", "alder" to "cobblemon:volcarona",
+        "iris" to "cobblemon:haxorus", "diantha" to "cobblemon:gardevoir", "geeta" to "cobblemon:glimmora",
+        "nemona" to "cobblemon:pawmot", "n" to "cobblemon:zoroark",
+    )
 
     /**
      * A Champion's Tera team the way the Tower draws one against a challenger without legendaries: the ace and two
