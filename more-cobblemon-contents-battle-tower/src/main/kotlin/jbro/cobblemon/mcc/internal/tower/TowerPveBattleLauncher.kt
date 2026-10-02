@@ -76,9 +76,8 @@ internal class TowerPveBattleLauncher<P, O>(
             recentProfiles.recent(request.playerId),
             recentSpecies.recent(request.playerId),
             request.legendaryClassAllowed,
-            // Every 10th win is a Champion; the bosses between are Tower Aces.
-            championBoss = if (opponentKind == TowerOpponentKind.REGULAR) null else
-                Math.addExact(request.progress.currentWinStreak, 1) % TOWER_CHAMPION_INTERVAL == 0,
+            // Every boss, so every 5th win, is a Champion.
+            championBoss = opponentKind != TowerOpponentKind.REGULAR,
             challengerLegendaries = TowerLegendaryClassPolicy.count(request.selection.members.filter { it.legendaryClass }.map { it.speciesId }),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {

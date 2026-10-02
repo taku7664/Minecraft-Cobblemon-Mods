@@ -4,10 +4,6 @@
     {
       "encounter_id": "tera_double_master_ball_boss_17",
       "trainer_ids": [
-        "trainer_113",
-        "trainer_114",
-        "trainer_115",
-        "trainer_116",
         "champion_blue",
         "champion_lance",
         "champion_cynthia"

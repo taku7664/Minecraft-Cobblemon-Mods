@@ -225,6 +225,8 @@ class TowerPveBattleLauncherTest {
             aiSkill = 1,
             theme = "balanced",
             setIds = sets.map(TowerPokemonSet::setId),
+            // Every boss is a Champion with their own roster.
+            fixedRoster = opponentKind != TowerOpponentKind.REGULAR,
         )
         return TowerOpponentCatalog("test", listOf(profile), sets)
     }

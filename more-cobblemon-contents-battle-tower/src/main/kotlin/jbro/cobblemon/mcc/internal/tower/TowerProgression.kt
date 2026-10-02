@@ -75,7 +75,5 @@ internal object TowerProgression {
 
 internal const val TOWER_BOSS_INTERVAL = 5
 private const val MAX_OPPONENT_LEVEL = 100
-/** Every second boss, so every 10th win, is a Champion. */
-internal const val TOWER_CHAMPION_INTERVAL = 10
 internal const val TOWER_BOSS_BP_BONUS = 5
 private const val BOSS_INTERVAL = TOWER_BOSS_INTERVAL

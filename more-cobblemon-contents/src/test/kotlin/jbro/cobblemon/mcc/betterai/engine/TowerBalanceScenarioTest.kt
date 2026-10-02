@@ -23,23 +23,23 @@ import kotlin.math.pow
  *
  *     ./gradlew :more-cobblemon-contents:unitTest -Pscope=engine -Ptests=TowerBalanceScenario -Psweeps
  */
-@EnabledIfSystemProperty(named = "betterai.sweeps", matches = "true")
-class TowerBalanceScenarioTest {
-    private val dex = EngineReferee.dex
-    private val towerSets: List<JsonObject> by lazy {
+/** The engine, the Tower's sets, the player teams and the greedy battle loop the Tower scenarios share. */
+abstract class TowerScenarioBase {
+    protected val dex = EngineReferee.dex
+    protected val towerSets: List<JsonObject> by lazy {
         val directory = Path.of("../more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets")
         Files.list(directory).use { paths -> paths.filter { it.toString().endsWith(".json") }.sorted().toList() }.flatMap { path ->
             JsonParser.parseString(Files.readString(path)).asJsonObject.getAsJsonArray("pokemon_sets").map { it.asJsonObject }
         }
     }
 
-    private fun id(value: String) = Js.toID(value.substringAfter(':'))
+    protected fun id(value: String) = Js.toID(value.substringAfter(':'))
 
-    private val statKeys = mapOf("hp" to "hp", "attack" to "atk", "defense" to "def", "special_attack" to "spa",
+    protected val statKeys = mapOf("hp" to "hp", "attack" to "atk", "defense" to "def", "special_attack" to "spa",
         "special_defense" to "spd", "speed" to "spe")
 
     /** A Tower set as the engine reads it; [trained] gives it 31 IVs and a full attack and speed spread instead. */
-    private fun refSet(set: JsonObject, trained: Boolean): RefSet? {
+    protected fun refSet(set: JsonObject, trained: Boolean): RefSet? {
         val name = id(set["species_id"].asString) + (set["form_id"]?.takeUnless { it.isJsonNull }?.asString?.let(::id) ?: "")
         val species = dex.species(name) ?: return null
         val moves = set.getAsJsonArray("moves").map { id(it.asString) }.filter { dex.move(it) != null }
@@ -54,12 +54,12 @@ class TowerBalanceScenarioTest {
             nature = nature, evs = evs, ivs = ivs, gender = species.gender.ifEmpty { "M" })
     }
 
-    private fun pool(legendaryAllowed: Boolean, tier: Int = 2): List<JsonObject> = towerSets.filter { set ->
+    protected fun pool(legendaryAllowed: Boolean, tier: Int = 2): List<JsonObject> = towerSets.filter { set ->
         set["mechanic_id"].asString == "tera" && set["set_tier"].asInt == tier &&
             (legendaryAllowed || LegendaryClassPolicy.categoryFor(set["species_id"].asString) == null)
     }
 
-    private fun randomTeam(random: Random, pool: List<JsonObject>, trained: Boolean): List<RefSet> {
+    protected fun randomTeam(random: Random, pool: List<JsonObject>, trained: Boolean): List<RefSet> {
         val team = LinkedHashMap<String, RefSet>()
         while (team.size < 3) {
             val set = pool[random.nextInt(pool.size)]
@@ -70,13 +70,13 @@ class TowerBalanceScenarioTest {
         return team.values.toList()
     }
 
-    private val championAces = mapOf("blue" to "cobblemon:blastoise", "lance" to "cobblemon:dragonite", "cynthia" to "cobblemon:garchomp")
+    protected val championAces = mapOf("blue" to "cobblemon:blastoise", "lance" to "cobblemon:dragonite", "cynthia" to "cobblemon:garchomp")
 
     /**
      * A Champion's Tera team the way the Tower draws one against a challenger without legendaries: the ace and two
      * other members, each one of its sets.
      */
-    private fun championTeam(random: Random): List<RefSet> {
+    protected fun championTeam(random: Random): List<RefSet> {
         val name = championAces.keys.toList()[random.nextInt(championAces.size)]
         val sets = towerSets.filter {
             it["set_id"].asString.startsWith("champion_${name}_tera_") && LegendaryClassPolicy.categoryFor(it["species_id"].asString) == null
@@ -93,33 +93,33 @@ class TowerBalanceScenarioTest {
         return team
     }
 
-    private fun fullyTrained(species: String, moves: List<String>, ability: String, item: String, nature: String, attack: String) =
+    protected fun fullyTrained(species: String, moves: List<String>, ability: String, item: String, nature: String, attack: String) =
         RefSet(dex.species(species)!!.name, moves, ability = ability, item = item, nature = nature,
             evs = mapOf(attack to 252, "spe" to 252, "hp" to 4), gender = dex.species(species)!!.gender.ifEmpty { "M" })
 
     /** Strong, ordinary picks a player brings to break a facility: no legendary class. */
-    private val firepower = listOf(
+    protected val firepower = listOf(
         fullyTrained("dragonite", listOf("extremespeed", "outrage", "earthquake", "firepunch"), "multiscale", "choiceband", "Adamant", "atk"),
         fullyTrained("kingambit", listOf("kowtowcleave", "suckerpunch", "ironhead", "swordsdance"), "supremeoverlord", "lifeorb", "Adamant", "atk"),
         fullyTrained("gholdengo", listOf("makeitrain", "shadowball", "focusblast", "nastyplot"), "goodasgold", "choicespecs", "Modest", "spa"),
     )
 
     /** The same with restricted legendaries, for the Tower's legendary class rule. */
-    private val legendaryFirepower = listOf(
+    protected val legendaryFirepower = listOf(
         fullyTrained("calyrexshadow", listOf("astralbarrage", "psyshock", "nastyplot", "protect"), "asonespectrier", "lifeorb", "Timid", "spa"),
         fullyTrained("koraidon", listOf("collisioncourse", "flareblitz", "outrage", "uturn"), "orichalcumpulse", "choiceband", "Jolly", "atk"),
         fullyTrained("miraidon", listOf("electrodrift", "dracometeor", "voltswitch", "dazzlinggleam"), "hadronengine", "choicespecs", "Timid", "spa"),
     )
 
-    private fun legalMoves(battle: Battle, side: Side): List<Int> {
+    protected fun legalMoves(battle: Battle, side: Side): List<Int> {
         val data = side.activeRequest?.active?.firstOrNull() ?: return emptyList()
         return data.moves.withIndex().filter { !Js.truthy(it.value.disabled) }.map { it.index + 1 }
     }
 
-    private fun benchSwitch(side: Side): String? =
+    protected fun benchSwitch(side: Side): String? =
         (side.active.size until side.pokemon.size).firstOrNull { !side.pokemon[it].fainted }?.let { "switch ${it + 1}" }
 
-    private fun randomChoice(random: Random, battle: Battle, side: Side): String {
+    protected fun randomChoice(random: Random, battle: Battle, side: Side): String {
         val request = side.activeRequest ?: return ""
         if (request.wait) return ""
         if (request.forceSwitch != null) return benchSwitch(side) ?: "pass"
@@ -127,7 +127,7 @@ class TowerBalanceScenarioTest {
     }
 
     /** The move that dealt the most damage over two forked tries against random replies. */
-    private fun greedyChoice(random: Random, battle: Battle, side: Side): String {
+    protected fun greedyChoice(random: Random, battle: Battle, side: Side): String {
         val request = side.activeRequest ?: return ""
         if (request.wait) return ""
         if (request.forceSwitch != null) return benchSwitch(side) ?: "pass"
@@ -151,7 +151,7 @@ class TowerBalanceScenarioTest {
     }
 
     /** True when [player] beats [opponent]. */
-    private fun play(player: List<RefSet>, opponent: List<RefSet>, random: Random): Boolean {
+    protected fun play(player: List<RefSet>, opponent: List<RefSet>, random: Random): Boolean {
         val battle = Battle(dex, BattleOptions(gameType = "singles", seed = IntArray(4) { random.nextInt(65536) }, log = false))
         battle.setPlayer("p1", "p1", player.mapIndexed { i, s -> s.toSet("p1", i) })
         battle.setPlayer("p2", "p2", opponent.mapIndexed { i, s -> s.toSet("p2", i) })
@@ -166,6 +166,10 @@ class TowerBalanceScenarioTest {
         return battle.winner == "p1"
     }
 
+}
+
+@EnabledIfSystemProperty(named = "betterai.sweeps", matches = "true")
+class TowerBalanceScenarioTest : TowerScenarioBase() {
     @Test
     fun `how far a strong team runs through the Tower's regular opponents`() {
         val battles = 200
@@ -222,3 +226,59 @@ class TowerBalanceScenarioTest {
 }
 
 private const val TOWER_LEVEL = 50
+
+/**
+ * The strong team's win rate over the opponents' training and level, for choosing the Tower's curve: regular sets
+ * (tier 1 for the first wins, the battle sets after) and Champions, each at training grades 0 to 3 and several levels.
+ * Report: build/reports/tower-grid.csv (kind, grade, level, win rate).
+ *
+ *     ./gradlew :more-cobblemon-contents:unitTest -Pscope=engine -Ptests=TowerBalanceGrid -Psweeps
+ */
+@EnabledIfSystemProperty(named = "betterai.sweeps", matches = "true")
+class TowerBalanceGridScenarioTest : TowerScenarioBase() {
+    /**
+     * [set] at training [grade]: 0 is IV 15 and no EVs, 1 IV 20 and 252 in its main stat, 2 IV 25 and 252/128/4,
+     * 3 IV 31 and its full 252/252/4 spread.
+     */
+    private fun graded(set: RefSet, grade: Int): RefSet {
+        val full = set.evs.filterValues { it == 252 }.keys
+        val main = listOf("atk", "spa", "hp").firstOrNull { it in full } ?: full.first()
+        val second = (full - main).firstOrNull()
+        val rest = set.evs.entries.firstOrNull { it.value == 4 }?.key
+        val evs = when (grade) {
+            0 -> emptyMap()
+            1 -> mapOf(main to 252)
+            2 -> listOfNotNull(main to 252, second?.let { it to 128 }, rest?.let { it to 4 }).toMap()
+            else -> set.evs
+        }
+        return set.copy(evs = evs, ivs = RefSet.STATS.associateWith { listOf(15, 20, 25, 31)[grade] })
+    }
+
+    @Test
+    fun `win rates over the opponents' training and level`() {
+        val battles = 200
+        val cells = ArrayList<Triple<String, Pair<Int, Int>, (Random) -> List<RefSet>>>()
+        for (grade in 0..3) {
+            for (level in listOf(50, 52)) {
+                cells += Triple("tier1", grade to level) { r: Random -> randomTeam(r, pool(false, 1), trained = false).map { graded(it, grade).copy(level = level) } }
+            }
+            for (level in listOf(50, 52, 54, 56, 58, 60)) {
+                cells += Triple("regular", grade to level) { r: Random -> randomTeam(r, pool(false, 4), trained = false).map { graded(it, grade).copy(level = level) } }
+            }
+            for (level in listOf(50, 52, 54, 56, 58)) {
+                cells += Triple("champion", grade to level) { r: Random -> championTeam(r).map { graded(it, grade).copy(level = level) } }
+            }
+        }
+        val csv = StringBuilder("kind,grade,level,rate\n")
+        cells.forEachIndexed { index, (kind, cell, opponent) ->
+            val random = Random(20261004L + index)
+            var wins = 0
+            repeat(battles) { if (play(firepower, opponent(random), random)) wins++ }
+            csv.append("$kind,${cell.first},${cell.second},${wins.toDouble() / battles}\n")
+        }
+        val out = Path.of("build/reports/tower-grid.csv")
+        Files.createDirectories(out.parent)
+        Files.writeString(out, csv)
+        println(csv)
+    }
+}

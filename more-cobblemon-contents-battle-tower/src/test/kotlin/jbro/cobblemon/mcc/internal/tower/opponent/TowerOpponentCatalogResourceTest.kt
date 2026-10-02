@@ -190,24 +190,25 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
-    fun `every 10th win is a Champion and the bosses between are Tower Aces`() {
+    fun `every 5th win is a Champion and the Tower Aces fight among the advanced and pro regulars`() {
         val catalog = bundledCatalog()
         TowerBattleFormat.entries.forEach { format ->
             MajorBattleMechanic.entries.forEach { mechanic ->
-                fun bosses(stage: TowerStreakStage, kind: TowerOpponentKind, champion: Boolean) =
-                    catalog.profilesFor(stage, format, kind, mechanic).filter { it.fixedRoster == champion }.map { it.profileId }.toSet()
-                // 5th win: Aces only; 10th: Champions only; 15th, 20th and from the 25th: both, picked by the win.
-                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS, false).size)
-                assertEquals(emptySet<String>(), bosses(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS, true))
-                assertEquals(emptySet<String>(), bosses(TowerStreakStage.PRACTICAL, TowerOpponentKind.TIER_BOSS, false))
-                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.PRACTICAL, TowerOpponentKind.TIER_BOSS, true))
-                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.ADVANCED, TowerOpponentKind.TIER_BOSS, true))
-                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.ADVANCED, TowerOpponentKind.TIER_BOSS, false).size)
-                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.PRO, TowerOpponentKind.MASTER_BALL_BOSS, true))
-                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.PRO, TowerOpponentKind.MASTER_BALL_BOSS, false).size)
-                val ace = TowerOpponentSelector(catalog).select(TowerStreakStage.PRO, format, TowerOpponentKind.MASTER_BALL_BOSS, mechanic,
-                    championBoss = false) as TowerOpponentSelectionResult.Selected
-                assertEquals(false, ace.profile.fixedRoster)
+                fun profiles(stage: TowerStreakStage, kind: TowerOpponentKind) =
+                    catalog.profilesFor(stage, format, kind, mechanic).map { it.profileId }.toSet()
+                assertEquals(CHAMPIONS.keys, profiles(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS))
+                assertEquals(CHAMPIONS.keys, profiles(TowerStreakStage.PRACTICAL, TowerOpponentKind.TIER_BOSS))
+                assertEquals(CHAMPIONS.keys, profiles(TowerStreakStage.ADVANCED, TowerOpponentKind.TIER_BOSS))
+                assertEquals(CHAMPIONS.keys, profiles(TowerStreakStage.PRO, TowerOpponentKind.MASTER_BALL_BOSS))
+                fun aces(stage: TowerStreakStage) = catalog.profilesFor(stage, format, TowerOpponentKind.REGULAR, mechanic)
+                    .count { it.isTowerAce() }
+                assertEquals(0, aces(TowerStreakStage.INTRODUCTORY))
+                assertEquals(0, aces(TowerStreakStage.PRACTICAL))
+                assertEquals(ACES_PER_CATEGORY, aces(TowerStreakStage.ADVANCED))
+                assertEquals(ACES_PER_CATEGORY, aces(TowerStreakStage.PRO))
+                CHAMPIONS.keys.forEach { champion ->
+                    assertTrue(catalog.profilesFor(TowerStreakStage.PRO, format, TowerOpponentKind.REGULAR, mechanic).none { it.profileId == champion })
+                }
             }
         }
     }
@@ -292,11 +293,12 @@ class TowerOpponentCatalogResourceTest {
         assertEquals(EXPECTED_DISTINCT_TRAINERS, englishNames.distinct().size)
         assertEquals(EXPECTED_DISTINCT_TRAINERS, koreanNames.distinct().size)
         val bosses = profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.distinctBy(TowerOpponentProfile::profileId)
-        assertEquals(CHAMPIONS.keys, bosses.filter { it.fixedRoster }.map(TowerOpponentProfile::profileId).toSet())
-        assertEquals(ACES_PER_CATEGORY * 6, bosses.count { !it.fixedRoster })
-        bosses.forEach { boss ->
-            val (en, ko) = if (boss.fixedRoster) "Champion " to "챔피언 " else "Tower Ace " to "타워 에이스 "
-            assertTrue(english[boss.displayNameKey].asString.startsWith(en) && korean[boss.displayNameKey].asString.startsWith(ko), boss.profileId)
+        assertEquals(CHAMPIONS.keys, bosses.map(TowerOpponentProfile::profileId).toSet())
+        val aces = profiles.filter { it.isTowerAce() }.distinctBy(TowerOpponentProfile::profileId)
+        assertEquals(ACES_PER_CATEGORY * 6, aces.size)
+        (bosses + aces).forEach { trainer ->
+            val (en, ko) = if (trainer.fixedRoster) "Champion " to "챔피언 " else "Tower Ace " to "타워 에이스 "
+            assertTrue(english[trainer.displayNameKey].asString.startsWith(en) && korean[trainer.displayNameKey].asString.startsWith(ko), trainer.profileId)
         }
     }
 
@@ -422,6 +424,9 @@ class TowerOpponentCatalogResourceTest {
         const val MINIMUM_REGULAR_TRAINERS_PER_CATEGORY = 84
         /** 96 regulars, the 24 Tower Aces and the three Champions. */
         const val ACES_PER_CATEGORY = 4
+
+        /** Trainers 097 to 120, the Tower Aces: four per gimmick and format. */
+        fun TowerOpponentProfile.isTowerAce(): Boolean = profileId.removePrefix("trainer_").toIntOrNull() in 97..120
         const val EXPECTED_DISTINCT_TRAINERS = 123
         /** Each Champion, by the ace every one of their teams carries. */
         val CHAMPIONS = mapOf(

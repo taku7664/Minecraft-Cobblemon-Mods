@@ -4,10 +4,6 @@
     {
       "encounter_id": "dynamax_double_master_ball_boss_01",
       "trainer_ids": [
-        "trainer_097",
-        "trainer_098",
-        "trainer_099",
-        "trainer_100",
         "champion_blue",
         "champion_lance",
         "champion_cynthia"
