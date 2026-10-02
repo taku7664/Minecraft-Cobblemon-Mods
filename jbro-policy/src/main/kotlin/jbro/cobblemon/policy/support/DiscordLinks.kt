@@ -55,11 +55,11 @@ internal object DiscordLinks {
                 dispatcher.register(Commands.literal(name).executes { context ->
                     val player = context.source.playerOrException
                     val code = issue(player, System.currentTimeMillis())
-                    player.sendSystemMessage(Component.translatable(KEY + "code",
+                    player.sendSystemMessage(KoreanText.message(KEY + "code",
                         Component.literal(code).withStyle { style ->
                             style.withColor(ChatFormatting.AQUA).withBold(true)
                                 .withClickEvent(ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "/verify $code"))
-                                .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(KEY + "copy")))
+                                .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, KoreanText.message(KEY + "copy")))
                         }, CODE_MINUTES).withStyle(ChatFormatting.GREEN))
                     1
                 })
@@ -99,7 +99,7 @@ internal object DiscordLinks {
             byPlayer[pending.player] = caller.userId
             JbroPolicy.LOGGER.info("Linked Discord {} to {} ({})", caller, pending.accountName, pending.player)
             server.playerList.getPlayer(pending.player)?.sendSystemMessage(
-                Component.translatable(KEY + "done", caller.userName).withStyle(ChatFormatting.GREEN))
+                KoreanText.message(KEY + "done", caller.userName).withStyle(ChatFormatting.GREEN))
             DiscordBot.later { rest -> grant(rest, settings, caller, pending.nickname) }
             if (previous != null && previous != caller.userId) DiscordRankRoles.clear(previous)
             DiscordRankRoles.refresh(server, pending.player)

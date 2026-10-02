@@ -26,6 +26,13 @@ internal object KoreanText {
     /** The Korean text of [key], or null when no mod translates it. */
     fun translate(key: String): String? = table[key]
 
+    /**
+     * [key] as a translatable message that carries its Korean text along, so a client whose mods lack the key (an
+     * older jar) still shows Korean instead of the bare key.
+     */
+    fun message(key: String, vararg args: Any): net.minecraft.network.chat.MutableComponent =
+        net.minecraft.network.chat.Component.translatableWithFallback(key, translate(key), *args)
+
     /** Every key and its Korean text, for reverse lookups such as a Pokémon by its Korean name. */
     fun entries(): Map<String, String> = table
 

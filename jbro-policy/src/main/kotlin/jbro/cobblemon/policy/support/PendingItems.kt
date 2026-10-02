@@ -61,7 +61,7 @@ class PendingItems private constructor(private val waiting: MutableMap<UUID, Mut
                 val stacks = get(server).take(player.uuid)
                 if (stacks.isEmpty()) return@register
                 hand(player, stacks)
-                player.sendSystemMessage(Component.translatable("message.${JbroPolicy.MOD_ID}.pending_items", stacks.sumOf { it.count })
+                player.sendSystemMessage(KoreanText.message("message.${JbroPolicy.MOD_ID}.pending_items", stacks.sumOf { it.count })
                     .withStyle(ChatFormatting.GREEN))
             }
         }
