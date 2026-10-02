@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "balanced_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/veteran_armando_03fb.png",
+      "slim": false
     }
   ]
 }

@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:charizard",
         "cobblemon:crabominable"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cowgirl_shelley_0312.png",
+      "slim": false
     }
   ]
 }

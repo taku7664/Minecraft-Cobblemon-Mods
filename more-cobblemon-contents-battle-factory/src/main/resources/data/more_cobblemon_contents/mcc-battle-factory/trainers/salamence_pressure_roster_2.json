@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "speed_control"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/hiker_alan_00b9.png",
+      "slim": false
     }
   ]
 }

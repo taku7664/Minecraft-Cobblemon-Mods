@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/madame_rebecca_0488.png",
+      "slim": false
     }
   ]
 }

@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:alcremie",
         "cobblemon:alomomola"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/veteran_armando_03fb.png",
+      "slim": false
     }
   ]
 }

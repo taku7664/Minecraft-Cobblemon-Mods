@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "focus_fire"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/biker_alex_00c6.png",
+      "slim": false
     }
   ]
 }

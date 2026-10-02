@@ -219,7 +219,23 @@ internal object FactoryCatalogLoader {
             aiSkill = aiSkill,
             aiSummary = aiSummary,
             objectives = objectives,
+            appearance = trainerSkin(value, path),
         )
+    }
+
+    /** The skin a trainer wears in battle (a resource-pack texture), or null to show the challenger's own hologram. */
+    private fun trainerSkin(value: JsonObject, path: String): jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? {
+        val skin = value.get("skin")?.takeUnless { it.isJsonNull } ?: return null
+        val slim = value.get("slim")?.takeUnless { it.isJsonNull }
+        if (!skin.isJsonPrimitive || !skin.asJsonPrimitive.isString) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.skin", "Expected a string")
+        if (slim != null && (!slim.isJsonPrimitive || !slim.asJsonPrimitive.isBoolean)) {
+            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.slim", "Expected a boolean")
+        }
+        return try {
+            jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(skin.asString, slim?.asBoolean ?: false)
+        } catch (_: IllegalArgumentException) {
+            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.skin", "Invalid trainer skin: ${skin.asString}")
+        }
     }
 
     private fun parseEvs(value: JsonObject, path: String): FactoryStatSpread = parseStats(value, path, 0..252).also { spread ->
@@ -401,6 +417,6 @@ private val SET_FIELDS = setOf(
     "roles", "preferred_move_ids", "lead_priority", "preservation_priority",
 )
 private val TRAINER_FIELDS = setOf(
-    "trainer_id", "display_name_key", "description_key", "formats", "weight", "ai_skill", "ai_summary", "objectives",
+    "trainer_id", "display_name_key", "description_key", "formats", "weight", "ai_skill", "ai_summary", "objectives", "skin", "slim",
 )
 private val STAT_FIELDS = setOf("hp", "attack", "defense", "special_attack", "special_defense", "speed")

@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/aroma_lady_alison_0480.png",
+      "slim": false
     }
   ]
 }

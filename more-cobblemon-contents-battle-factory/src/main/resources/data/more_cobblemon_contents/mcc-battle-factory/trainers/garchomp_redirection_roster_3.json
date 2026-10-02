@@ -15,7 +15,9 @@
       "objectives": [
         "focus_fire",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/ranger_beth_0255.png",
+      "slim": false
     }
   ]
 }

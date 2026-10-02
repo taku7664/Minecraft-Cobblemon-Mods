@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:altaria",
         "cobblemon:banette"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/psychic_abigail_0345.png",
+      "slim": false
     }
   ]
 }

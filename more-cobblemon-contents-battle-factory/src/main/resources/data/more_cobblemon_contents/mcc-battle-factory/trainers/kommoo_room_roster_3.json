@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "setup_sweep"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/breeder_alize_0208.png",
+      "slim": false
     }
   ]
 }

@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:altaria",
         "cobblemon:chimecho"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/gambler_darian_0105.png",
+      "slim": false
     }
   ]
 }

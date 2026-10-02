@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cowgirl_shelley_0312.png",
+      "slim": false
     }
   ]
 }

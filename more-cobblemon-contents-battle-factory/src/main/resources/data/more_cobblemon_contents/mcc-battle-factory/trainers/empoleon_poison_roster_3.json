@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cyclist_kayla_0301.png",
+      "slim": false
     }
   ]
 }

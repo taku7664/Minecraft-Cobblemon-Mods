@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/black_belt_aaron_0140.png",
+      "slim": false
     }
   ]
 }

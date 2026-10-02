@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "balanced_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/juggler_dalton_011e.png",
+      "slim": false
     }
   ]
 }

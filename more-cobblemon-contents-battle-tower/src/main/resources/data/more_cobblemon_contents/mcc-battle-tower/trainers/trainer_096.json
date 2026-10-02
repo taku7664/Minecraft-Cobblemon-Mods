@@ -9,7 +9,9 @@
         "cobblemon:altaria",
         "cobblemon:chimecho",
         "cobblemon:crabominable"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/waitress_kati_03fc.png",
+      "slim": false
     }
   ]
 }

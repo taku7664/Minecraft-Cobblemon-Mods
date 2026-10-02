@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/ace_trainer_abel_04a5.png",
+      "slim": false
     }
   ]
 }

@@ -80,12 +80,13 @@ internal class FactorySessionService(
         trainerNameKey: String,
         aiSkill: Int,
         strategyBrief: BattleStrategyBrief,
+        appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
     ): FactoryBattleLaunchResult {
         val session = sessions[playerId] ?: return FactoryBattleLaunchResult.Unavailable
         check(playerId !in launchingRuns) { "Factory run is already launching a battle" }
         launchingRuns[playerId] = session.runId
         return try {
-            runBattles.begin(playerId, session, opponentTeam, trainerNameKey, aiSkill, strategyBrief)
+            runBattles.begin(playerId, session, opponentTeam, trainerNameKey, aiSkill, strategyBrief, appearance)
         } finally {
             launchingRuns.remove(playerId, session.runId)
         }

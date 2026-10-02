@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:altaria",
         "cobblemon:blastoise"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/dragon_tamer_andre_0388.png",
+      "slim": false
     }
   ]
 }

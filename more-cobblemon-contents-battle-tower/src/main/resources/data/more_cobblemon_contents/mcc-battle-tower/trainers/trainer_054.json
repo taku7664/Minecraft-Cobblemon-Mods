@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:clefable",
         "cobblemon:glalie"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/painter_celina_0232.png",
+      "slim": false
     }
   ]
 }

@@ -15,7 +15,9 @@
       "objectives": [
         "speed_control",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/pokemon_ranger_kyler_0547.png",
+      "slim": false
     }
   ]
 }

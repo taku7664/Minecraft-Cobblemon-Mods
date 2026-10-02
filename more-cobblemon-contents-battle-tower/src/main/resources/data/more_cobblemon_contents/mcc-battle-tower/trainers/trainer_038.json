@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:chandelure",
         "cobblemon:clefable"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/beauty_bridget_0109.png",
+      "slim": false
     }
   ]
 }

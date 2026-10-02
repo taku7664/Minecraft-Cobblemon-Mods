@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "balanced_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/battle_girl_helen_0308.png",
+      "slim": false
     }
   ]
 }

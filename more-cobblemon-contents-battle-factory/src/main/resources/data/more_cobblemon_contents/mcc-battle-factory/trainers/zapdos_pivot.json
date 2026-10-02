@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "balanced_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/lady_gillian_0234.png",
+      "slim": false
     }
   ]
 }

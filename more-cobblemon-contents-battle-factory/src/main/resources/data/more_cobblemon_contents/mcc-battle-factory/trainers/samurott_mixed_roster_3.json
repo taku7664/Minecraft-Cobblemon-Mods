@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "focus_fire"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/ranger_beth_0255.png",
+      "slim": false
     }
   ]
 }

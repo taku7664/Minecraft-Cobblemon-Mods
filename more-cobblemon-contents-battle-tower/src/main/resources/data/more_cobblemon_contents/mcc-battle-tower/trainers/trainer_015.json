@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:ampharos",
         "cobblemon:chesnaught"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/engineer_baily_00dc.png",
+      "slim": false
     }
   ]
 }

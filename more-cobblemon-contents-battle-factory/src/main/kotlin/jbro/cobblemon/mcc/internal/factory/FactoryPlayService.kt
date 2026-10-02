@@ -187,6 +187,7 @@ internal class FactoryPlayService(
                 trainerNameKey = opponent.trainer.displayNameKey,
                 aiSkill = opponent.trainer.aiSkill,
                 strategyBrief = opponent.strategy,
+                appearance = opponent.trainer.appearance,
             )
             if (launched is FactoryBattleLaunchResult.Started) {
                 started = true

@@ -56,6 +56,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                 contentId = ManagedBattleContentIds.BATTLE_FACTORY,
                 diagnosticsLabel = "Battle Factory",
                 strategyBrief = prepared.request.strategyBrief,
+                appearance = prepared.request.appearance,
             ),
             onBattleStarted = { battle, trainerActorId ->
                 observationAdapter = Cobblemon173ShowdownObservationAdapter(

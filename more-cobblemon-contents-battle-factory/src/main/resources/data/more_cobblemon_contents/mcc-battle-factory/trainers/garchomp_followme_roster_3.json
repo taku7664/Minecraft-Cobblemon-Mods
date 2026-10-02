@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/psychic_abigail_0345.png",
+      "slim": false
     }
   ]
 }

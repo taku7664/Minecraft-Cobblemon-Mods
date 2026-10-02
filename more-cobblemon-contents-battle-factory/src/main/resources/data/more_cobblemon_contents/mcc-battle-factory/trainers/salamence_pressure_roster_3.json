@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "speed_control"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/psychic_abigail_0345.png",
+      "slim": false
     }
   ]
 }

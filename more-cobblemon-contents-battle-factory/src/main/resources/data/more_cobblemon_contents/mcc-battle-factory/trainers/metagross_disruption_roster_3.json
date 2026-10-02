@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "status_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/crush_girl_cyndy_024f.png",
+      "slim": false
     }
   ]
 }

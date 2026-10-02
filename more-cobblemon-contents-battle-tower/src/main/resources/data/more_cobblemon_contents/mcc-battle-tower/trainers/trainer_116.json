@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:alcremie",
         "cobblemon:amoonguss"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/crush_girl_cyndy_024f.png",
+      "slim": false
     }
   ]
 }

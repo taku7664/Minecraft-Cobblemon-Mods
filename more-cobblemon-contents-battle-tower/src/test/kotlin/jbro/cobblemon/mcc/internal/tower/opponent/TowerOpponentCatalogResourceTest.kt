@@ -21,6 +21,19 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogResourceTest {
     @Test
+    fun `every bundled trainer wears an RCT Trainers+ skin instead of the challenger's hologram`() {
+        val catalog = bundledCatalog()
+        val profiles = TowerStreakStage.entries.flatMap { stage ->
+            TowerBattleFormat.entries.flatMap { format -> TowerOpponentKind.entries.flatMap { kind -> catalog.profilesFor(stage, format, kind) } }
+        }
+        assertTrue(profiles.isNotEmpty())
+        profiles.forEach { profile ->
+            val skin = profile.appearance?.texture
+            assertTrue(skin != null && skin.startsWith("rctmod:textures/trainers/single/") && skin.endsWith(".png"), "${profile.profileId} wears $skin")
+        }
+    }
+
+    @Test
     fun `bundled catalog can prepare every streak stage with legendary class off and on`() {
         val catalog = bundledCatalog()
         val sampleStreaks = listOf(0, 4, 5, 9, 10, 14, 15, 19, 20, 24, 25)

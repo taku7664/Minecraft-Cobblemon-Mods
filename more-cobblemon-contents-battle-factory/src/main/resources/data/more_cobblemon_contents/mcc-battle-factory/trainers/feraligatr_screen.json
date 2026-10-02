@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/painter_celina_0232.png",
+      "slim": false
     }
   ]
 }

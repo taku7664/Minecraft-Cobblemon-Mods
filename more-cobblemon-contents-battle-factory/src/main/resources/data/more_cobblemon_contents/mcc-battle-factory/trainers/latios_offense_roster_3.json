@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/channeler_amanda_01ce.png",
+      "slim": false
     }
   ]
 }

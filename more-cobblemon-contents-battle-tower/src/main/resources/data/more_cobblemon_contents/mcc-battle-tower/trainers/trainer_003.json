@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:altaria",
         "cobblemon:camerupt"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/hiker_alan_00b9.png",
+      "slim": false
     }
   ]
 }

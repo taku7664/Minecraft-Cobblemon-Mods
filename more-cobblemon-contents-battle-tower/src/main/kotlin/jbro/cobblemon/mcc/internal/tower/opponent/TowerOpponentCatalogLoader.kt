@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.tower.opponent
 
+import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -102,6 +103,7 @@ internal object TowerOpponentCatalogLoader {
                         "$path.team_style",
                     ),
                     signatureSpeciesIds,
+                    trainerSkin(value, path),
                 )
             }
         }
@@ -198,6 +200,7 @@ internal object TowerOpponentCatalogLoader {
                     setIds = setIds,
                     teamStyle = trainer.teamStyle,
                     signatureSpeciesIds = trainer.signatureSpeciesIds,
+                    appearance = trainer.appearance,
                 )
             }
         }
@@ -740,7 +743,21 @@ private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
 private val POOL_FRAGMENT_FIELDS = setOf("schema_version", "pools")
 private val ENCOUNTER_FRAGMENT_FIELDS = setOf("schema_version", "encounters")
 private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets")
-private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids")
+private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids", "skin", "slim")
+
+/**
+ * The skin a trainer wears in battle (a resource-pack texture such as an RCT Trainers+ skin), or null to show the
+ * challenger's own hologram instead.
+ */
+private fun trainerSkin(value: JsonObject, path: String): TrainerResourceSkin? {
+    val skin = value.optionalString(path, "skin") ?: return null
+    val slim = value.optionalBoolean(path, "slim") ?: false
+    return try {
+        TrainerResourceSkin(skin, slim)
+    } catch (_: IllegalArgumentException) {
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.skin", "Invalid trainer skin: $skin")
+    }
+}
 private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers")
 private val ENCOUNTER_FIELDS = setOf(
     "encounter_id", "trainer_ids", "stage_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
@@ -778,6 +795,7 @@ private data class TowerTrainerDefinition(
     val displayNameKey: String,
     val teamStyle: TowerTrainerStyle,
     val signatureSpeciesIds: List<String>,
+    val appearance: TrainerResourceSkin?,
 )
 private data class TowerPoolDefinition(
     val poolId: String,

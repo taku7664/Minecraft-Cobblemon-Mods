@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "focus_fire"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/skier_andrea_0352.png",
+      "slim": false
     }
   ]
 }

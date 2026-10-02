@@ -18,6 +18,7 @@ internal class FactoryBattleLaunchRequest(
     val trainerNameKey: String,
     val aiSkill: Int,
     val strategyBrief: BattleStrategyBrief,
+    val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
 ) {
     val opponentTeam: Map<UUID, FactoryRentalSet> =
         Collections.unmodifiableMap(LinkedHashMap(opponentTeam))
@@ -154,6 +155,7 @@ internal class FactoryRunBattleService(
         trainerNameKey: String,
         aiSkill: Int,
         strategyBrief: BattleStrategyBrief,
+        appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
     ): FactoryBattleLaunchResult = synchronized(session) {
         check(session.phase == FactoryRunPhase.READY && session.activeBattleId == null) {
             "Factory run is not ready for a battle"
@@ -169,6 +171,7 @@ internal class FactoryRunBattleService(
                 trainerNameKey = trainerNameKey,
                 aiSkill = aiSkill,
                 strategyBrief = strategyBrief,
+                appearance = appearance,
             ),
         )
         if (result is FactoryBattleLaunchResult.Started) session.beginBattle(result.battleId)

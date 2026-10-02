@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/police_officer_alex_0330.png",
+      "slim": false
     }
   ]
 }

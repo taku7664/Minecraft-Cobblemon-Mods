@@ -9,7 +9,9 @@
         "cobblemon:altaria",
         "cobblemon:camerupt",
         "cobblemon:clefable"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/veteran_armando_03fb.png",
+      "slim": false
     }
   ]
 }

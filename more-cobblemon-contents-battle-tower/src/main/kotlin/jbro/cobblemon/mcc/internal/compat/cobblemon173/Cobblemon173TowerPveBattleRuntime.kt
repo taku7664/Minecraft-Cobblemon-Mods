@@ -43,6 +43,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 brainSelectionContext = prepared.brainSelectionContext,
                 contentId = ManagedBattleContentIds.BATTLE_TOWER,
                 diagnosticsLabel = "Battle Tower",
+                appearance = prepared.profile.appearance,
             ),
             onEnded = ::finish,
         ) }

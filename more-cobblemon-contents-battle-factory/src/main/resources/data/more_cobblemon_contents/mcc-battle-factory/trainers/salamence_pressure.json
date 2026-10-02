@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "speed_control"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/gentleman_arthur_01a6.png",
+      "slim": false
     }
   ]
 }

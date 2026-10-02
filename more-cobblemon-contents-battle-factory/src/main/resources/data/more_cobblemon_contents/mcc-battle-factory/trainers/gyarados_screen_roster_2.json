@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cyclist_axel_02fb.png",
+      "slim": false
     }
   ]
 }

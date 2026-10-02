@@ -15,7 +15,9 @@
       "objectives": [
         "focus_fire",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/sailor_damian_03eb.png",
+      "slim": false
     }
   ]
 }

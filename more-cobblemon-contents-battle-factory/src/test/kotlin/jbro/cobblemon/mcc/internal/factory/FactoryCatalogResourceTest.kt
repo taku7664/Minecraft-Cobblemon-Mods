@@ -22,6 +22,17 @@ class FactoryCatalogResourceTest {
     }
 
     @Test
+    fun `every bundled trainer wears an RCT Trainers+ skin instead of the challenger's hologram`() {
+        val catalog = bundledCatalog()
+        val trainers = FactoryBattleFormat.entries.flatMap(catalog::trainersFor)
+        assertEquals(84, trainers.distinctBy { it.trainerId }.size)
+        trainers.forEach { trainer ->
+            val skin = trainer.appearance?.texture
+            assertTrue(skin != null && skin.startsWith("rctmod:textures/trainers/single/") && skin.endsWith(".png"), "${trainer.trainerId} wears $skin")
+        }
+    }
+
+    @Test
     fun `bundled schema four catalog contains two thousand complete fixed presets`() {
         val catalog = bundledCatalog()
         val pools = approvedPools(catalog)

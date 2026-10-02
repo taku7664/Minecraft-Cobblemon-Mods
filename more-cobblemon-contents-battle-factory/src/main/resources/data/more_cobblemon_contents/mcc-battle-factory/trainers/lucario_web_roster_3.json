@@ -15,7 +15,9 @@
       "objectives": [
         "speed_control",
         "setup_sweep"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cowgirl_shelley_0312.png",
+      "slim": false
     }
   ]
 }

@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "setup_sweep"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/beauty_bridget_0109.png",
+      "slim": false
     }
   ]
 }

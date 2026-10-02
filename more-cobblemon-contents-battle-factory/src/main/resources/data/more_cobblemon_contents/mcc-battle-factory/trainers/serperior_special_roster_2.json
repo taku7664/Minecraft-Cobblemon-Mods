@@ -15,7 +15,9 @@
       "objectives": [
         "balanced_pressure",
         "focus_fire"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/cue_ball_camron_00fb.png",
+      "slim": false
     }
   ]
 }

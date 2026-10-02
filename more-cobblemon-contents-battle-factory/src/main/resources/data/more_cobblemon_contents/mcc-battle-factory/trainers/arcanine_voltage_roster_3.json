@@ -15,7 +15,9 @@
       "objectives": [
         "speed_control",
         "pivoting"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/aroma_lady_alison_0480.png",
+      "slim": false
     }
   ]
 }

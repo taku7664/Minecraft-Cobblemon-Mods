@@ -15,7 +15,9 @@
       "objectives": [
         "field_control",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/collector_brady_03ab.png",
+      "slim": false
     }
   ]
 }

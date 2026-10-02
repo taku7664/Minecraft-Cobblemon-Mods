@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:altaria",
         "cobblemon:glalie"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/channeler_amanda_01ce.png",
+      "slim": false
     }
   ]
 }

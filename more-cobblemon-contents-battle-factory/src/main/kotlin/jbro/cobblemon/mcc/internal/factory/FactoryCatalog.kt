@@ -69,6 +69,8 @@ internal class FactoryTrainerProfile(
     val aiSkill: Int,
     val aiSummary: String,
     objectives: Set<BattleStrategyObjective>,
+    /** The skin the trainer wears in battle; null shows the challenger's own hologram. */
+    val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
 ) {
     val formats: Set<FactoryBattleFormat> = immutableSet(formats)
     val objectives: Set<BattleStrategyObjective> = immutableSet(objectives)

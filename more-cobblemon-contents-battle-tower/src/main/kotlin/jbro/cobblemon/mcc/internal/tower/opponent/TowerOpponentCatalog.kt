@@ -90,6 +90,8 @@ internal class TowerOpponentProfile internal constructor(
     setIds: List<String>,
     val teamStyle: TowerTrainerStyle = TowerTrainerStyle.BALANCED,
     signatureSpeciesIds: List<String> = emptyList(),
+    /** The skin the trainer wears in battle; null shows the challenger's own hologram. */
+    val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
 ) {
     val stageIds: List<TowerStreakStage> = stageIds.immutableCopy()
     val setIds: List<String> = setIds.immutableCopy()

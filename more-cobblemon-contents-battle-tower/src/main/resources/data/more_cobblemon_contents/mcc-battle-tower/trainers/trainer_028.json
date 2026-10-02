@@ -9,7 +9,9 @@
         "cobblemon:abomasnow",
         "cobblemon:camerupt",
         "cobblemon:chandelure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/ranger_beth_0255.png",
+      "slim": false
     }
   ]
 }

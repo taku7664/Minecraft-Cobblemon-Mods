@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "status_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/worker_braden_0460.png",
+      "slim": false
     }
   ]
 }

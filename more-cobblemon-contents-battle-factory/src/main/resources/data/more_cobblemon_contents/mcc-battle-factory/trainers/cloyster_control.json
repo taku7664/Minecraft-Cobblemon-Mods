@@ -15,7 +15,9 @@
       "objectives": [
         "speed_control",
         "setup_sweep"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/super_nerd_aavery_00b2.png",
+      "slim": false
     }
   ]
 }

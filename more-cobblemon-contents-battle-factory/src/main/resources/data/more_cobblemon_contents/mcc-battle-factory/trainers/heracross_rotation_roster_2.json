@@ -15,7 +15,9 @@
       "objectives": [
         "pivoting",
         "balanced_pressure"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/fisher_alec_036a.png",
+      "slim": false
     }
   ]
 }

@@ -15,7 +15,9 @@
       "objectives": [
         "setup_sweep",
         "preserve_core"
-      ]
+      ],
+      "skin": "rctmod:textures/trainers/single/gentleman_arthur_01a6.png",
+      "slim": false
     }
   ]
 }
