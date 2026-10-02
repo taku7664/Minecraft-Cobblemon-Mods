@@ -54,7 +54,7 @@ object MoreCobblemonContentsBetterAi {
             logger.error("Better AI config could not be loaded; external decisions are disabled: {}", exception.javaClass.name)
             BetterAiConfig()
         }
-        // Only `/mcc test ai-*` battles write snapshots; see AiTestDecisionSnapshot.
+        // Only AI test battles (`/mcc league test`) write snapshots; see AiTestDecisionSnapshot.
         AiTestDecisionSnapshot.configuredDirectory = loader.gameDir.resolve("logs").resolve("betterai-decisions")
         val summaryPath = loader.gameDir.resolve("logs").resolve(DECISION_SUMMARY_FILE_NAME)
         val summaryExecutor = if (config.logDecisionSummary) createDecisionSummaryExecutor() else null

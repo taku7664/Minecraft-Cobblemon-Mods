@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.system.LeagueProgress
 import com.mojang.brigadier.arguments.StringArgumentType
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
@@ -186,7 +187,8 @@ object LeagueAdminCommands {
     /**
      * Starts a test battle between an online player's party (any size, at its own levels) and one League challenge's
      * team as the League fields it (Mega Evolution, skin), at the AI level [difficulty] names. It is an AI test
-     * battle: no progress, reward or record, and `/mcc test stop` ends it.
+     * battle: no progress, reward or record (a League run in progress stays as it was), and
+     * `/mcc battle end <player> void` ends it.
      */
     private fun testBattle(context: CommandContext<CommandSourceStack>, difficulty: String, skill: Int): Int {
         val player = EntityArgument.getPlayer(context, "player")
@@ -197,16 +199,13 @@ object LeagueAdminCommands {
             context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
             return 0
         }
-        if (LeagueSavedData.get(player.server).read(catalog.id, player.uuid).run != null) {
-            context.source.sendFailure(Component.translatable("message.${Mod.MOD_ID}.run_active"))
-            return 0
-        }
         val challenge = catalog.challenges.getValue(challengeId)
         val opponent = Component.translatable(challenge.nameKey)
         val name = player.name.string
         val id = try {
+            // The AI test persona makes the brain record its decisions under logs/betterai-decisions.
             ManagedPveBattles.start(player, ManagedPveBattles.Request(UUID.randomUUID(), ManagedBattleContentIds.AI_TEST,
-                challenge.id, challenge.nameKey, ManagedPveBattles.snapshotParty(player, MAX_LEVEL), challenge.team,
+                BattleBrainContentIds.AI_TEST_PERSONA_PREFIX + challengeId.substringAfter(':'), challenge.nameKey, ManagedPveBattles.snapshotParty(player, MAX_LEVEL), challenge.team,
                 ManagedPveBattles.Format.valueOf(challenge.format),
                 challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = skill,
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },

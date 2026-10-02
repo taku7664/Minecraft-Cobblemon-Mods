@@ -2,7 +2,6 @@ package jbro.cobblemon.mcc.internal.tower
 
 import java.nio.file.Files
 import java.nio.file.Path
-import jbro.cobblemon.mcc.internal.command.AiTestCommands
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -42,23 +41,9 @@ class BattleTowerContentContractTest {
     }
 
     @Test
-    fun `ai test command lists every difficulty for operators`() {
-        val aiTest = AiTestCommands.build().build()
-
-        assertEquals("test", aiTest.name)
-        assertEquals(
-            setOf("ai-입문", "ai-표준", "ai-상급", "ai-보스", "stop"),
-            aiTest.children.map { it.name }.toSet(),
-        )
-        assertEquals(AiTestCommands.ADMIN_PERMISSION_LEVEL, 2)
-
-    }
-
-    @Test
-    fun `tower and ai test battles and catalog cleanup go through the core`() {
+    fun `tower battles and catalog cleanup go through the core`() {
         listOf(
             "internal/compat/cobblemon173/Cobblemon173TowerPveBattleRuntime.kt",
-            "internal/compat/cobblemon173/Cobblemon173AiTestBattleRuntime.kt",
         ).forEach { path ->
             val source = source(path)
             assertTrue(source.contains("Cobblemon173ManagedAiBattleEngine("), path)
@@ -77,7 +62,7 @@ class BattleTowerContentContractTest {
         fun source(level: Int) = net.minecraft.commands.CommandSourceStack(net.minecraft.commands.CommandSource.NULL,
             net.minecraft.world.phys.Vec3.ZERO, net.minecraft.world.phys.Vec2.ZERO, null, level, "test",
             net.minecraft.network.chat.Component.literal("test"), null, null)
-        listOf(TowerProgressCommands.build().build(), AiTestCommands.build().build()).forEach { root ->
+        listOf(TowerProgressCommands.build().build()).forEach { root ->
             org.junit.jupiter.api.Assertions.assertFalse(root.requirement.test(source(0)), root.name)
             org.junit.jupiter.api.Assertions.assertTrue(root.requirement.test(source(2)), root.name)
         }

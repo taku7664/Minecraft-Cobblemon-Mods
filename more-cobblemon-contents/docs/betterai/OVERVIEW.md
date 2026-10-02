@@ -988,7 +988,7 @@ berry's activation threshold and healing amount.
 
 Run `watch-ai-log.bat` from this folder to follow the `cobblemon-dev` client's
 `latest.log` in a terminal. The watcher also follows a new client launch. It
-shows each `/mcc test ai-*` decision's public knowledge, inferred move slots,
+shows, for each decision in an AI test battle (`/mcc league test`), its public knowledge, inferred move slots,
 candidate scores, selected action, selection probability, and Brain elapsed
 seconds. The core battle-resolution line supplies the full coordinator elapsed
 time. Normal Tower and Factory decisions do not emit the detailed trace.
