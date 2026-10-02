@@ -6,6 +6,7 @@
 | 주 독자 | 빡대리님과 Better AI 설계·구현·검증 담당자 |
 | 작업 기록 | [`MEMORY.md`](MEMORY.md) — 날짜·시각별 작업 내역과 이슈(최신이 위) |
 | 사용법·테스트 도구 | [`OVERVIEW.md`](OVERVIEW.md) — 빌드, 사용률 스냅샷, 기준선·쌍 비교·native 하네스, 실시간 판단 로그 |
+| 미구현·버그 백로그 | [`engine/LOCAL_GAPS.md`](engine/LOCAL_GAPS.md) — 로컬 판단 계층에서 빠진 기술·특성·도구·상태·요청 처리 (2026-10-02 전수 조사). Better AI 작업 전에 먼저 본다 |
 
 이 폴더에는 현재 효력이 있는 계약 문서만 둔다. 작업 경과·배포·검증 기록은 `MEMORY.md`에 쓰고, 계약 문서에는 합격 조건과 규칙만 남긴다.
 
@@ -14,7 +15,8 @@
 1. [`architecture/NATIVE_SHOWDOWN_SIMULATION.md`](architecture/NATIVE_SHOWDOWN_SIMULATION.md) — 현재 핵심 계약과 합격표(INF·CORE·AUD·LIVE)
 2. [`architecture/BRAIN_OWNERSHIP.md`](architecture/BRAIN_OWNERSHIP.md) — 로컬·Router Brain의 판단 소유권과 폴백 순서
 3. [`MEMORY.md`](MEMORY.md) — 최근 작업과 열린 이슈
-4. 작업 대상에 해당하는 분류의 문서
+4. [`engine/LOCAL_GAPS.md`](engine/LOCAL_GAPS.md) — 미구현·버그 백로그
+5. 작업 대상에 해당하는 분류의 문서
 
 ## 우선순위
 
