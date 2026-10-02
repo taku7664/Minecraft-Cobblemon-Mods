@@ -14,6 +14,10 @@ import jbro.cobblemon.mcc.league.system.LeagueCatalog
 import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.system.LeagueProgress
 import com.mojang.brigadier.arguments.StringArgumentType
+import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
+import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.Commands.argument
@@ -80,6 +84,10 @@ object LeagueAdminCommands {
                     .suggests { _, builder -> SharedSuggestionProvider.suggest(progressTargets(), builder) }
                     .executes { context -> setProgress(context, StringArgumentType.getString(context, "challenge")) })))
             .then(literal("reset").then(argument("player", EntityArgument.player()).executes { context -> setProgress(context, null) })))
+        .then(literal("test").then(argument("player", EntityArgument.player())
+            .then(argument("challenge", StringArgumentType.word())
+                .suggests { _, builder -> SharedSuggestionProvider.suggest(progressTargets().filter { it != ALL }, builder) }
+                .apply { TEST_DIFFICULTIES.forEach { (name, skill) -> then(literal(name).executes { testBattle(it, name, skill) }) } })))
         .then(literal("cap").then(literal("sync").then(argument("player", EntityArgument.player()).executes { context ->
             val player = EntityArgument.getPlayer(context, "player")
             val catalog = catalog(context.source) ?: return@executes 0
@@ -171,6 +179,55 @@ object LeagueAdminCommands {
     }
 
     private const val ALL = "all"
+
+    /** The AI levels `test` takes, named as `/mcc test` names them, and the trainer skill each stands for. */
+    private val TEST_DIFFICULTIES = listOf("ai-입문" to 1, "ai-표준" to 2, "ai-상급" to 4, "ai-보스" to 5)
+
+    /**
+     * Starts a test battle between an online player's party (any size, at its own levels) and one League challenge's
+     * team as the League fields it (Mega Evolution, skin), at the AI level [difficulty] names. It is an AI test
+     * battle: no progress, reward or record, and `/mcc test stop` ends it.
+     */
+    private fun testBattle(context: CommandContext<CommandSourceStack>, difficulty: String, skill: Int): Int {
+        val player = EntityArgument.getPlayer(context, "player")
+        val catalog = catalog(context.source) ?: return 0
+        val target = StringArgumentType.getString(context, "challenge")
+        val engine = LeagueEngine(catalog)
+        val challengeId = engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
+            context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
+            return 0
+        }
+        if (LeagueSavedData.get(player.server).read(catalog.id, player.uuid).run != null) {
+            context.source.sendFailure(Component.translatable("message.${Mod.MOD_ID}.run_active"))
+            return 0
+        }
+        val challenge = catalog.challenges.getValue(challengeId)
+        val opponent = Component.translatable(challenge.nameKey)
+        val name = player.name.string
+        val id = try {
+            ManagedPveBattles.start(player, ManagedPveBattles.Request(UUID.randomUUID(), ManagedBattleContentIds.AI_TEST,
+                challenge.id, challenge.nameKey, ManagedPveBattles.snapshotParty(player, MAX_LEVEL), challenge.team,
+                ManagedPveBattles.Format.valueOf(challenge.format),
+                challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = skill,
+                appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
+                stage = engine.stage(challengeId))) { outcome ->
+                player.server.playerList.getPlayer(player.uuid)?.sendSystemMessage(
+                    Component.translatable("$KEY.test.${outcome.name.lowercase()}", opponent, target))
+            }
+        } catch (failure: RuntimeException) {
+            context.source.sendFailure(Component.translatable("$KEY.test.failed", name, reason(failure)))
+            return 0
+        }
+        if (id == null) {
+            context.source.sendFailure(Component.translatable("$KEY.test.busy", name))
+            return 0
+        }
+        context.source.sendSuccess({ Component.translatable("$KEY.test.started", name, opponent, target, difficulty) }, true)
+        Mod.LOGGER.info("MCC admin league test actor={} target={} challenge={} skill={}", context.source.textName, player.uuid, challengeId, skill)
+        return 1
+    }
+
+    private const val MAX_LEVEL = 100
 
     /** The shared operator view: the catalog and setup in `/mcc status`, undelivered rewards in `/mcc battle pending`. */
     private val source = object : MccAdminSource {

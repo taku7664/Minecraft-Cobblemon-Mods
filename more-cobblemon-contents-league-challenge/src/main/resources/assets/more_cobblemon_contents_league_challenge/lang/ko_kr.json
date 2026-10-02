@@ -285,5 +285,11 @@
   "command.more_cobblemon_contents_league_challenge.admin.progress.set": "%1$s님의 리그 진행도를 %2$s 직전까지 클리어한 상태로 맞췄습니다. 레벨 캡 %3$s, 뱃지 %4$s개. 사천왕과 챔피언은 한 번의 도전이라, 그중 하나 직전으로 맞춰도 사천왕 첫 상대부터 시작합니다.",
   "command.more_cobblemon_contents_league_challenge.admin.progress.all": "%1$s님의 리그를 하드까지 모두 클리어한 상태로 맞췄습니다. 레벨 캡 %2$s",
   "command.more_cobblemon_contents_league_challenge.admin.progress.reset": "%1$s님의 리그 진행도를 처음으로 되돌리고 뱃지를 회수했습니다. 레벨 캡 %2$s",
-  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "리그에 '%s' 도전이 없습니다."
+  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "리그에 '%s' 도전이 없습니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.started": "%1$s님과 %2$s(%3$s)의 테스트 배틀을 %4$s 난이도로 시작했습니다. 진행도와 보상에는 남지 않고, /mcc test stop으로 끝낼 수 있습니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.failed": "%1$s님의 테스트 배틀을 시작하지 못했습니다: %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.test.busy": "%s님은 이미 배틀 중이거나 결과를 정리하는 중입니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.win": "테스트 배틀에서 %1$s(%2$s)에게 이겼습니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.loss": "테스트 배틀에서 %1$s(%2$s)에게 졌습니다.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "%1$s(%2$s)와의 테스트 배틀이 끝났습니다."
 }

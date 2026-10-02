@@ -285,5 +285,11 @@
   "command.more_cobblemon_contents_league_challenge.admin.progress.set": "Set %1$s's League progress to everything before %2$s beaten. Level cap %3$s, %4$s badges. The Elite Four and the Champion are one run, so a player set before any of them starts from the first of the Elite Four.",
   "command.more_cobblemon_contents_league_challenge.admin.progress.all": "Set %1$s's League, hard route included, as fully beaten. Level cap %2$s",
   "command.more_cobblemon_contents_league_challenge.admin.progress.reset": "Reset %1$s's League progress and took the badges back. Level cap %2$s",
-  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "The League has no challenge '%s'."
+  "command.more_cobblemon_contents_league_challenge.admin.progress.unknown": "The League has no challenge '%s'.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.started": "Started a test battle between %1$s and %2$s (%3$s) at %4$s. It leaves no progress or reward; /mcc test stop ends it.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.failed": "Could not start a test battle for %1$s: %2$s",
+  "command.more_cobblemon_contents_league_challenge.admin.test.busy": "%s is already in a battle or settling one.",
+  "command.more_cobblemon_contents_league_challenge.admin.test.win": "You won the test battle against %1$s (%2$s).",
+  "command.more_cobblemon_contents_league_challenge.admin.test.loss": "You lost the test battle against %1$s (%2$s).",
+  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "The test battle against %1$s (%2$s) ended."
 }

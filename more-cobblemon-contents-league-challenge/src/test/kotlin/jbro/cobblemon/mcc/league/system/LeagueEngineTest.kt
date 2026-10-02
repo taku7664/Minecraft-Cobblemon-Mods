@@ -29,6 +29,16 @@ class LeagueEngineTest {
     }
     private fun party() = (1..6).map { "locked-pokemon-$it" }
 
+    @Test fun `a challenge on its own is a gym, an Elite Four member or the Champion of its route`() {
+        val engine = LeagueEngine(hardCatalog())
+        assertEquals("gym", engine.stage("test:g3"))
+        assertEquals("elite_four", engine.stage("test:f2"))
+        assertEquals("champion", engine.stage("test:f5"))
+        assertEquals("hard_gym", engine.stage("test:hg8"))
+        assertEquals("hard_elite_four", engine.stage("test:hf4"))
+        assertEquals("hard_champion", engine.stage("test:hf5"))
+    }
+
     @Test fun `an operator sets progress up to just before a challenge, to everything, or back to nothing`() {
         val engine = LeagueEngine(hardCatalog())
         val beforeHardChampion = engine.clearedBefore(LeagueProgress(), "test:hf5", 3000)

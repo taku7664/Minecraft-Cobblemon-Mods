@@ -140,6 +140,16 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         return if (id in catalog.hardGyms || id in catalog.hardFinals) "hard_$role" else role
     }
 
+    /** Where [challengeId] stands on its own, as [stage] names a run's battle: a Champion is the last of its finals. */
+    fun stage(challengeId: String): String {
+        val role = when (challengeId) {
+            in catalog.gyms, in catalog.hardGyms -> "gym"
+            catalog.finals.last(), catalog.hardFinals.lastOrNull() -> "champion"
+            else -> "elite_four"
+        }
+        return if (challengeId in catalog.hardGyms || challengeId in catalog.hardFinals) "hard_$role" else role
+    }
+
     fun next(state: LeagueProgress): LeagueProgress {
         val run = requireNotNull(state.run) { "no_run" }
         require(run.awaitingNext && run.index + 1 < run.encounters.size) { "phase_invalid" }
