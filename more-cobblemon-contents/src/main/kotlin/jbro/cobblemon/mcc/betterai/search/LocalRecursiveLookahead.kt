@@ -327,9 +327,15 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // retains the unresolved share instead of adding the same setup value twice. The
                     // heuristic withdrawal above already removes its authority-owned share, so only
                     // the share that remains at the root may be subtracted here.
+                    //
+                    // Only a status move's stages are withdrawn. A damaging move's damage stays counted at the root and
+                    // again in the search (the authority above is 0), so its stage side effects must too: withdrawing
+                    // only those counted the damage twice and a Draco Meteor's or Overheat's drop once, and the Boss
+                    // fired them turn after turn.
+                    val withdrawnStageUtility = if (rank.outcome.candidate.isPureStatusMove()) rank.outcome.statStageUtility else 0.0
                     val immediateAdjustment = immediateGain -
                         rootSecureKoBaselineCorrection * (1.0 - authority) -
-                        rank.outcome.statStageUtility * (1.0 - authority)
+                        withdrawnStageUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
                     val rawAdjustment = immediateAdjustment * coverage.immediate + foresightGain * coverage.future
                     val terminal = kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD
@@ -1425,4 +1431,11 @@ internal object LocalRecursiveLookaheadEvaluator {
 
     private fun BattleActionCandidate.isUnknownPublicResponse(): Boolean =
         UNKNOWN_PUBLIC_RESPONSE_TAG in tags || componentActions.any { it.isUnknownPublicResponse() }
+}
+
+/** True when every move in the action is a status move (a doubles turn counts all its slots). */
+private fun jbro.cobblemon.mcc.internal.ai.BattleActionCandidate.isPureStatusMove(): Boolean {
+    val parts = if (kind == jbro.cobblemon.mcc.internal.ai.BattleActionKind.COMPOSITE) componentActions else listOf(this)
+    val moves = parts.filter { it.kind == jbro.cobblemon.mcc.internal.ai.BattleActionKind.USE_MOVE }
+    return moves.isNotEmpty() && moves.all { it.moveDetails?.damageCategory == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
 }
