@@ -9,7 +9,17 @@ import jbro.cobblemon.mcc.betterai.engine.sim.Battle
 import jbro.cobblemon.mcc.betterai.engine.sim.BattleOptions
 import jbro.cobblemon.mcc.betterai.engine.sim.Side
 import jbro.cobblemon.mcc.betterai.engine.sim.fork
+import jbro.cobblemon.mcc.api.battle.TeamPreviewSelection
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.battle.LegendaryClassPolicy
+import kotlin.math.ln
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import kotlin.math.pow
@@ -77,17 +87,83 @@ abstract class TowerScenarioBase {
         "nemona" to "cobblemon:pawmot", "n" to "cobblemon:zoroark",
     )
 
+    /** The public stat range a Pokemon of [species] at [level] may have: any IVs, EVs and nature. */
+    private fun publicStats(species: jbro.cobblemon.mcc.betterai.engine.dex.Species, level: Int): BattleCombatStatRangesView {
+        fun range(stat: String): BattleIntegerRange {
+            val base = species.baseStats[stat] ?: 50
+            fun value(iv: Int, ev: Int, nature: Double): Int {
+                val core = (2 * base + iv + ev / 4) * level / 100
+                return if (stat == "hp") core + level + 10 else ((core + 5) * nature).toInt()
+            }
+            return if (stat == "hp") BattleIntegerRange(value(0, 0, 1.0), value(31, 252, 1.0))
+            else BattleIntegerRange(value(0, 0, 0.9), value(31, 252, 1.1))
+        }
+        return BattleCombatStatRangesView(range("hp"), range("atk"), range("def"), range("spa"), range("spd"), range("spe"),
+            BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE)
+    }
+
+    private fun types(species: jbro.cobblemon.mcc.betterai.engine.dex.Species) = species.types.map { it.lowercase() }.toSet()
+
+    /** The six a trainer sees before it picks its team, with the public facts the server gives the Better AI. */
+    protected fun previewOf(entry: List<RefSet>) = BattleOpponentTeamPreviewView(3, entry.mapIndexed { slot, set ->
+        val species = dex.species(set.species)!!
+        BattleOpponentTeamPreviewPokemonView(slot, "cobblemon:${Js.toID(set.species)}", null, set.level, types(species),
+            publicStats(species, set.level))
+    })
+
+    /** The Tower trainer of [tier]'s reading of [entry], or null for a tier that does not read the preview. */
+    protected fun previewScorer(tier: BattleTrainerTier, entry: List<RefSet>): TeamPreviewSelection.Scorer? =
+        TeamPreviewSelection.scorer(tier, previewOf(entry),
+            { speciesId, _, level ->
+                dex.species(speciesId.substringAfter(':'))?.let { TeamPreviewSelection.Facts(types(it), publicStats(it, level)) }
+            },
+            { moveId ->
+                dex.move(moveId)?.let { move ->
+                    val category = when (move.category) {
+                        "Physical" -> BattleMoveDamageCategory.PHYSICAL
+                        "Special" -> BattleMoveDamageCategory.SPECIAL
+                        else -> BattleMoveDamageCategory.STATUS
+                    }
+                    BattleMoveCandidateView(move.type.lowercase(), category, move.basePower.toDouble(), 1.0, move.priority, 10)
+                }
+            })
+
+    private fun RefSet.candidate() = TeamPreviewSelection.Candidate("cobblemon:${Js.toID(species)}", null, level, moves)
+
+    /** [values] in the order a trainer reading the preview considers them, as the Tower's selector draws them. */
+    private fun <T> considered(random: Random, values: List<T>, scorer: TeamPreviewSelection.Scorer?, score: (T) -> Double?): List<T> {
+        scorer ?: return values.shuffled(random)
+        return values.map { value ->
+            val uniform = ((random.nextLong() ushr 11) + 0.5) / (1L shl 53).toDouble()
+            value to (score(value) ?: 0.0) / scorer.temperature - ln(-ln(uniform))
+        }.sortedByDescending { it.second }.map { it.first }
+    }
+
+    /** A regular trainer's team from [pool], picked from the challenger's preview when [scorer] reads it. */
+    protected fun previewTeam(random: Random, pool: List<JsonObject>, scorer: TeamPreviewSelection.Scorer?): List<RefSet> {
+        scorer ?: return randomTeam(random, pool, trained = false)
+        val team = LinkedHashMap<String, RefSet>()
+        for (ref in considered(random, pool.mapNotNull { refSet(it, trained = false) }, scorer) { scorer.score(it.candidate()) }) {
+            if (team.size == 3) break
+            val base = dex.species(ref.species)!!.baseSpecies
+            if (team.keys.none { it == base } && team.values.none { it.item == ref.item }) team[base] = ref
+        }
+        return team.values.toList()
+    }
+
     /**
      * A Champion's Tera team the way the Tower draws one against a challenger without legendaries: the ace and two
-     * other members, each one of its sets.
+     * other members, each one of its sets; with a [scorer] the others are those that answer the preview best.
      */
-    protected fun championTeam(random: Random): List<RefSet> {
-        val name = championAces.keys.toList()[random.nextInt(championAces.size)]
+    protected fun championTeam(random: Random, scorer: TeamPreviewSelection.Scorer? = null, champion: String? = null): List<RefSet> {
+        val name = champion ?: championAces.keys.toList()[random.nextInt(championAces.size)]
         val sets = towerSets.filter {
             it["set_id"].asString.startsWith("champion_${name}_tera_") && LegendaryClassPolicy.categoryFor(it["species_id"].asString) == null
         }.groupBy { it["species_id"].asString }
         val ace = championAces.getValue(name)
-        val order = listOf(ace) + (sets.keys - ace).shuffled(random)
+        val order = listOf(ace) + considered(random, (sets.keys - ace).toList(), scorer) { species ->
+            sets.getValue(species).mapNotNull { refSet(it, trained = false)?.candidate() }.mapNotNull { scorer?.score(it) }.maxOrNull()
+        }
         val team = ArrayList<RefSet>()
         for (species in order) {
             if (team.size == 3) break

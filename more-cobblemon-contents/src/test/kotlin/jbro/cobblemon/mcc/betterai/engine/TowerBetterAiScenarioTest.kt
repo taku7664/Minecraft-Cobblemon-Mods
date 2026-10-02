@@ -30,13 +30,29 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 class TowerBetterAiScenarioTest : TowerScenarioBase() {
     private class Cell(val label: String, val opponent: (Random) -> List<jbro.cobblemon.mcc.betterai.engine.RefSet>, val profile: BattleTrainerProfile)
 
-    private fun regular(tier: Int, level: Int, difficulty: BattleDifficultyProfile, skill: Int) =
-        Cell("tier $tier Lv$level ${difficulty.tier.name.lowercase()}",
-            { r -> randomTeam(r, pool(false, tier), trained = false).map { it.copy(level = level) } },
-            BattleTrainerProfile.balanced(skill, difficulty))
+    /** The challenger's six as the opponents see them: the three that battle and three more. */
+    private val entry = firepower + listOf(
+        fullyTrained("garchomp", listOf("earthquake", "outrage", "stoneedge", "firefang"), "roughskin", "choicescarf", "Jolly", "atk"),
+        fullyTrained("rotomwash", listOf("hydropump", "voltswitch", "willowisp", "painsplit"), "levitate", "leftovers", "Modest", "spa"),
+        fullyTrained("clefable", listOf("moonblast", "flamethrower", "softboiled", "calmmind"), "magicguard", "sitrusberry", "Modest", "spa"),
+    )
 
-    private fun champion(level: Int) =
-        Cell("Champion Lv$level boss", { r -> championTeam(r).map { it.copy(level = level) } }, BattleTrainerProfile.champion(4))
+    /** Opponents read the challenger's preview as the Tower's do, unless TOWER_PREVIEW=0 keeps the random pick. */
+    private val readsPreview = System.getenv("TOWER_PREVIEW") != "0"
+
+    private fun scorer(tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier) = if (readsPreview) previewScorer(tier, entry) else null
+
+    private fun regular(tier: Int, level: Int, difficulty: BattleDifficultyProfile, skill: Int): Cell {
+        val reading = scorer(difficulty.tier)
+        return Cell("tier $tier Lv$level ${difficulty.tier.name.lowercase()}",
+            { r -> previewTeam(r, pool(false, tier), reading).map { it.copy(level = level) } },
+            BattleTrainerProfile.balanced(skill, difficulty))
+    }
+
+    private fun champion(level: Int): Cell {
+        val reading = scorer(jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.BOSS)
+        return Cell("Champion Lv$level boss", { r -> championTeam(r, reading).map { it.copy(level = level) } }, BattleTrainerProfile.champion(4))
+    }
 
     private fun team(sets: List<jbro.cobblemon.mcc.betterai.engine.RefSet>, side: String) = JsonObject().apply {
         add("setIds", JsonArray().apply { sets.forEach { add(it.species) } })
@@ -67,7 +83,9 @@ class TowerBetterAiScenarioTest : TowerScenarioBase() {
         }
         val report = StringBuilder("# Battle Tower (Endless) with Better AI\n\n$battles battles per cell. Challenger: " +
             "Dragonite, Kingambit, Gholdengo on the Advanced tier. Opponents as the Tower draws them, one level higher " +
-            "every 5 wins; Champions on the Boss tier with the Champion personality. Single 3 vs 3, no Tera.\n\n" +
+            "every 5 wins; Champions on the Boss tier with the Champion personality. Single 3 vs 3, no Tera. Opponents " +
+            (if (readsPreview) "pick their team from the challenger's six (with Garchomp, Rotom-Wash and Clefable) as their " +
+                "AI tier reads them" else "pick their team at random") + ".\n\n" +
             "| opponent | wins | losses | unfinished | errors | win rate |\n|---|---|---|---|---|---|\n")
         val out = Path.of("build/reports/tower-betterai.md")
         val rates = cells.mapIndexed { cellIndex, cell ->
