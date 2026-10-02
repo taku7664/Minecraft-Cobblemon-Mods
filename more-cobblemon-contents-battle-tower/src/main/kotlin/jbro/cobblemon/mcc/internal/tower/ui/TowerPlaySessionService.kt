@@ -70,6 +70,7 @@ internal object TowerPlayMessageKeys {
     const val SELECTION_SIZE = "$PREFIX.selection_size"
     const val UNREGISTERED_POKEMON = "$PREFIX.unregistered_pokemon"
     const val LEGENDARY_CLASS_NOT_ALLOWED = "$PREFIX.legendary_class_not_allowed"
+    const val TOO_MANY_LEGENDARY_CLASS = "$PREFIX.too_many_legendary_class"
 
 }
 
@@ -747,6 +748,7 @@ private fun List<TowerTeamSelectionIssue>.associateSelectionIssueKeys(): Map<Str
             is TowerTeamSelectionIssue.DuplicatePokemon -> "pokemon"
             is TowerTeamSelectionIssue.UnregisteredPokemon -> "pokemon"
             is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> "pokemon"
+            is TowerTeamSelectionIssue.TooManyLegendaryClass -> "selection"
         } to issue.messageKey()
     }
 
@@ -762,6 +764,7 @@ private fun TowerTeamSelectionIssue.messageKey(): String = when (this) {
     is TowerTeamSelectionIssue.DuplicatePokemon -> TowerPlayMessageKeys.DUPLICATE_POKEMON
     is TowerTeamSelectionIssue.UnregisteredPokemon -> TowerPlayMessageKeys.UNREGISTERED_POKEMON
     is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> TowerPlayMessageKeys.LEGENDARY_CLASS_NOT_ALLOWED
+    is TowerTeamSelectionIssue.TooManyLegendaryClass -> TowerPlayMessageKeys.TOO_MANY_LEGENDARY_CLASS
 }
 
 private fun orderedProgressCopy(source: Map<TowerBattleFormat, TowerProgress>): LinkedHashMap<TowerBattleFormat, TowerProgress> =

@@ -91,6 +91,8 @@ object MccHubPortraitCards {
         private val secondary: Component,
         private val marked: Boolean,
         narration: Component,
+        /** A Pokemon the current rules keep out: the card is washed red and outlined. */
+        private val blocked: Boolean = false,
         private val press: () -> Unit,
     ) : AbstractButton(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height, narration) {
         override fun onPress() = press()
@@ -126,6 +128,11 @@ object MccHubPortraitCards {
             // A marked card keeps its cursor while hovered; themes that fill the selection draw nothing more here.
             val indicator = if (marked) theme.style(UiButtonVariant.SECONDARY, UiWidgetState.SELECTED).selectionIndicator else style.selectionIndicator
             UiSurfaceRenderer.drawSelection(graphics, x, y, width, height, style.surface.shape, indicator)
+            if (blocked) {
+                val danger = theme.colors.accentDanger and 0xFFFFFF
+                graphics.fill(x, y, x + width, y + height, BLOCKED_WASH_ALPHA or danger)
+                graphics.renderOutline(x, y, width, height, OPAQUE or danger)
+            }
         }
 
         private fun animated(content: CobblemonUiRenderContent, animate: Boolean): CobblemonUiRenderContent = when (content) {
@@ -135,3 +142,6 @@ object MccHubPortraitCards {
         }
     }
 }
+
+private const val BLOCKED_WASH_ALPHA = 0x66 shl 24
+private const val OPAQUE = 0xFF shl 24

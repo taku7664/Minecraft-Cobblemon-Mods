@@ -4,7 +4,10 @@
     {
       "encounter_id": "tera_double_tier_boss_20_introductory",
       "trainer_ids": [
-        "champion_blue"
+        "trainer_113",
+        "trainer_114",
+        "trainer_115",
+        "trainer_116"
       ],
       "stage_ids": [
         "introductory"

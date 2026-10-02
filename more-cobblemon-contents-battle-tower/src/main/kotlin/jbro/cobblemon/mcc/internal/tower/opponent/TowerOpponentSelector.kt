@@ -5,6 +5,8 @@ import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerOpponentKind
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryClassPolicy
+import jbro.cobblemon.mcc.internal.tower.TowerLegendaryCount
+import jbro.cobblemon.mcc.internal.tower.TowerLegendaryGroup
 import jbro.cobblemon.mcc.internal.tower.TowerStreakStage
 import kotlin.random.Random
 
@@ -40,8 +42,16 @@ internal class TowerOpponentSelector(
         excludedProfileIds: Set<String> = emptySet(),
         excludedSpeciesIds: Set<String> = emptySet(),
         legendaryClassAllowed: Boolean = false,
+        /** For a boss: true picks among the rostered Champions, false among the other bosses, null among all. */
+        championBoss: Boolean? = null,
+        /**
+         * The challenger's legendary-class Pokemon by group. A Champion brings as many legendaries as the challenger
+         * in all; any other trainer as many of each group, drawn from its pool.
+         */
+        challengerLegendaries: TowerLegendaryCount = TowerLegendaryCount.NONE,
     ): TowerOpponentSelectionResult {
         val eligible = catalog.profilesFor(stage, format, opponentKind, mechanic)
+            .filter { championBoss == null || it.fixedRoster == championBoss }
         if (eligible.isEmpty()) return TowerOpponentSelectionResult.NoEligibleProfile
         val fresh = eligible.filterNot { it.profileId in excludedProfileIds }
         val profiles = fresh.ifEmpty { eligible }
@@ -60,15 +70,19 @@ internal class TowerOpponentSelector(
 
         val profile = selectWeighted(selectableProfiles)
         if (profile.fixedRoster) {
-            val team = rosterTeam(profile, catalog.setsFor(profile).filter(isEligibleSet), teamSize, legendaryClassAllowed)
+            val legendaries = if (legendaryClassAllowed) challengerLegendaries.total else 0
+            val team = rosterTeam(profile, catalog.setsFor(profile), teamSize, legendaries, mechanic)
                 ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
             return TowerOpponentSelectionResult.Selected(profile, Collections.unmodifiableList(ArrayList(team)))
         }
-        val completePool = catalog.setsFor(profile).filter(isEligibleSet)
+        // The trainer answers the challenger's legendaries group for group; the rest of the team is regular.
+        val legendaries = if (legendaryClassAllowed) drawLegendaries(catalog.setsFor(profile), challengerLegendaries) else emptyList()
+        val completePool = catalog.setsFor(profile).filter(::isNormal)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
         // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
         // signature or style anchor, so fall back to the complete pool instead of reporting no legal team.
-        val team = selectStyledTeamFrom(profile, freshPool, teamSize)
+        val team = selectStyledTeamFrom(profile, freshPool, teamSize, legendaries)
+            ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries)
             ?: selectStyledTeamFrom(profile, completePool, teamSize)
             ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
         return TowerOpponentSelectionResult.Selected(
@@ -78,30 +92,80 @@ internal class TowerOpponentSelector(
     }
 
     /**
-     * A team from a fixed roster: the ace (the signature species) always, then the legendary when the legendary class
-     * is allowed, then the others in random order. Recently faced species do not apply; a roster is who the trainer is.
+     * A team from a fixed roster such as a Champion's, which may hold several sets per member:
+     * - as many legendaries as the challenger brings (no more than the team has room for beside the ace), the main
+     *   line first and the rest drawn from the sub lines, each in place of the member it replaces;
+     * - the ace (the signature species) always;
+     * - in Mega battles one member drawn from those with a Mega Stone set holds its stone, everyone else a battle item;
+     * - the other members drawn at random, and every member one of its sets at random.
+     * Recently faced species do not apply; a roster is who the trainer is.
      */
     private fun rosterTeam(
         profile: TowerOpponentProfile,
         roster: List<TowerPokemonSet>,
         teamSize: Int,
-        legendaryClassAllowed: Boolean,
+        challengerLegendaryCount: Int,
+        mechanic: MajorBattleMechanic,
     ): List<TowerPokemonSet>? {
-        val aces = roster.filter { it.speciesId in profile.signatureSpeciesIds }
-        val legends = if (legendaryClassAllowed) roster.filterNot(::isNormal).filterNot(aces::contains) else emptyList()
-        val others = roster.filterNot { it in aces || it in legends }.toMutableList().also(::shuffle)
-        return TowerLegalTeamSearch.select(aces + legends + others, teamSize)
+        val ace = profile.signatureSpeciesIds.firstOrNull()
+        val lines = profile.legendLines
+        val count = challengerLegendaryCount.coerceIn(0, minOf(lines.size, teamSize - (if (ace == null) 0 else 1)))
+        repeat(ROSTER_ATTEMPTS) {
+            val chosenLines = if (count == 0) emptyList() else {
+                lines.filter(TowerLegendLine::main) + lines.filterNot(TowerLegendLine::main).toMutableList().also(::shuffleAny).take(count - 1)
+            }
+            val legendSpecies = lines.map(TowerLegendLine::speciesId).toSet()
+            val replaced = chosenLines.map(TowerLegendLine::replaces).toSet()
+            val members = roster.filter { it.speciesId !in legendSpecies && it.speciesId !in replaced }.groupBy(TowerPokemonSet::speciesId)
+            val required = (listOfNotNull(ace) + chosenLines.map(TowerLegendLine::speciesId)).toMutableList()
+            val megaHolder = if (mechanic == MajorBattleMechanic.MEGA) {
+                // With every seat spoken for, the stone goes to a member already on the team.
+                val candidates = members.values.flatten().filter { it.heldItemId.isMegaStone() }
+                    .filter { required.size < teamSize || it.speciesId in required }
+                candidates.takeIf { it.isNotEmpty() }?.get(random.nextInt(candidates.size))
+            } else null
+            megaHolder?.speciesId?.takeIf { it !in required }?.let(required::add)
+            val others = members.keys.filterNot(required::contains).toMutableList().also(::shuffleAny)
+            val species = (required + others).take(teamSize)
+            val team = species.map { id ->
+                if (megaHolder != null && id == megaHolder.speciesId) return@map megaHolder
+                val sets = (members[id] ?: roster.filter { it.speciesId == id })
+                    .filter { mechanic != MajorBattleMechanic.MEGA || !it.heldItemId.isMegaStone() }
+                    .ifEmpty { return@repeat }
+                sets[random.nextInt(sets.size)]
+            }
+            val items = team.mapNotNull(TowerPokemonSet::heldItemId)
+            if (team.size == teamSize && items.distinct().size == items.size) return team
+        }
+        return null
+    }
+
+    private fun String?.isMegaStone(): Boolean = this != null && MEGA_STONE.matches(this)
+
+    private fun <T> shuffleAny(values: MutableList<T>) {
+        for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
+    }
+
+    /** One random set of each group the challenger brought, of different species. */
+    private fun drawLegendaries(pool: List<TowerPokemonSet>, count: TowerLegendaryCount): List<TowerPokemonSet> {
+        val drawn = ArrayList<TowerPokemonSet>()
+        listOf(TowerLegendaryGroup.LEGENDARY to count.legendary, TowerLegendaryGroup.OTHER to count.other).forEach { (group, wanted) ->
+            pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.toMutableList().also(::shuffle)
+                .distinctBy(TowerPokemonSet::speciesId).take(wanted).let(drawn::addAll)
+        }
+        return drawn
     }
 
     private fun selectStyledTeamFrom(
         profile: TowerOpponentProfile,
         pool: List<TowerPokemonSet>,
         teamSize: Int,
+        forced: List<TowerPokemonSet> = emptyList(),
     ): List<TowerPokemonSet>? {
-        if (pool.size < teamSize) return null
+        if (pool.size + forced.size < teamSize) return null
         val randomizedPool = pool.toMutableList()
         shuffle(randomizedPool)
-        return selectStyledTeam(profile, randomizedPool, teamSize)
+        return selectStyledTeam(profile, randomizedPool, teamSize, forced)
     }
 
     private fun isNormal(set: TowerPokemonSet): Boolean =
@@ -111,6 +175,7 @@ internal class TowerOpponentSelector(
         profile: TowerOpponentProfile,
         pool: List<TowerPokemonSet>,
         teamSize: Int,
+        forced: List<TowerPokemonSet> = emptyList(),
     ): List<TowerPokemonSet>? {
         val speciesAnchors = if (profile.signatureSpeciesIds.isEmpty()) {
             listOf<TowerPokemonSet?>(null)
@@ -124,13 +189,16 @@ internal class TowerOpponentSelector(
         }
         speciesAnchors.forEach { speciesAnchor ->
             styleAnchors.forEach { styleAnchor ->
-                val anchors = listOfNotNull(speciesAnchor, styleAnchor).distinctBy(TowerPokemonSet::setId)
+                val anchors = forced + listOfNotNull(speciesAnchor, styleAnchor).distinctBy(TowerPokemonSet::setId)
                 val anchorIds = anchors.map(TowerPokemonSet::setId).toSet()
                 val ordered = anchors + pool.filterNot { it.setId in anchorIds }
                 val team = TowerLegalTeamSearch.select(ordered, teamSize) ?: return@forEach
+                if (!team.containsAll(forced)) return@forEach
                 val hasSignatureSpecies = profile.signatureSpeciesIds.isEmpty() ||
                     team.any { it.speciesId in profile.signatureSpeciesIds }
-                val hasStyleSignature = profile.teamStyle == TowerTrainerStyle.BALANCED || team.any(profile.teamStyle::matches)
+                // Legendaries the trainer must answer with can leave no seat for a style anchor; the signature stays.
+                val hasStyleSignature = profile.teamStyle == TowerTrainerStyle.BALANCED || forced.isNotEmpty() ||
+                    team.any(profile.teamStyle::matches)
                 if (hasSignatureSpecies && hasStyleSignature) return team
             }
         }
@@ -155,3 +223,7 @@ internal class TowerOpponentSelector(
         }
     }
 }
+
+/** Mega Stones end in -ite (Garchompite, Charizardite X, Lucarionite Z); a Griseous Core is no Mega Stone. */
+private val MEGA_STONE = Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")
+private const val ROSTER_ATTEMPTS = 32

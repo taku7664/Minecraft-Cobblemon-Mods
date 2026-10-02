@@ -23,7 +23,7 @@
   "screen.more_cobblemon_contents.tower.rule.items": "• No duplicate held items",
   "screen.more_cobblemon_contents.tower.rule.bag": "• Bag items disabled in battle",
   "screen.more_cobblemon_contents.tower.rule.mechanic": "• One chosen mechanic per side",
-  "screen.more_cobblemon_contents.tower.rule.legendary_class": "• Legendary class OFF bans them from both sides",
+  "screen.more_cobblemon_contents.tower.rule.legendary_class": "• Legendary class OFF bans them from both sides; ON allows 1 Legendary and 1 Mythical/UB/Paradox",
   "screen.more_cobblemon_contents.tower.selection_summary": "%s/%s selected · %s",
   "screen.more_cobblemon_contents.tower.processing": "Checking with server…",
   "screen.more_cobblemon_contents.tower.option.selected": "✓ %s",
@@ -41,7 +41,7 @@
   "screen.more_cobblemon_contents.tower.legendary_class.disallowed.compact": "LEG X",
   "screen.more_cobblemon_contents.tower.legendary_class.allowed": "Allow Legendary Class",
   "screen.more_cobblemon_contents.tower.legendary_class.allowed.compact": "LEG O",
-  "screen.more_cobblemon_contents.tower.legendary_class.tooltip": "Legendary class includes Legendary, Mythical, Ultra Beast, and Paradox Pokémon. Allowing it permits either side to select them but does not require one. This rule locks after the first battle until the session ends.",
+  "screen.more_cobblemon_contents.tower.legendary_class.tooltip": "Legendary class includes Legendary, Mythical, Ultra Beast, and Paradox Pokémon. Allowing it lets a battle team bring one Legendary (restricted or sub-legendary) and one Mythical, Ultra Beast or Paradox Pokémon, and your opponents answer with as many of their own. This rule locks after the first battle until the session ends.",
   "screen.more_cobblemon_contents.tower.lock": "Confirm Team",
   "screen.more_cobblemon_contents.tower.start": "Start",
   "screen.more_cobblemon_contents.tower.resume": "Resume",
@@ -236,5 +236,9 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "Best %s · %sW %sL",
   "trainer.more_cobblemon_contents.tower_champion_blue": "Champion Blue",
   "trainer.more_cobblemon_contents.tower_champion_lance": "Champion Lance",
-  "trainer.more_cobblemon_contents.tower_champion_cynthia": "Champion Cynthia"
+  "trainer.more_cobblemon_contents.tower_champion_cynthia": "Champion Cynthia",
+  "screen.more_cobblemon_contents.tower.party_entry.blocked": "Cannot enter: Legendary class",
+  "screen.more_cobblemon_contents.tower.party_entry.blocked.tooltip": "Legendary class is off, so this Pokémon cannot enter.",
+  "screen.more_cobblemon_contents.tower.party_entry.narration.blocked": "%s, cannot enter while the Legendary class is off",
+  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "A battle team may bring one Legendary and one Mythical, Ultra Beast or Paradox Pokémon at most."
 }

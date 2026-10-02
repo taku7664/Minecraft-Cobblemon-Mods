@@ -41,6 +41,18 @@ internal object TowerLegendaryClassPolicy {
     fun isLegendaryClass(speciesId: String, labels: Collection<String> = emptySet()): Boolean =
         entryFor(speciesId, labels) != null
 
+    /** Which of the Tower's two legendary allowances a species counts against, or null for a regular Pokemon. */
+    fun group(speciesId: String, labels: Collection<String> = emptySet()): TowerLegendaryGroup? =
+        when (entryFor(speciesId, labels)?.category ?: return null) {
+            TowerLegendaryClassCategory.LEGENDARY -> TowerLegendaryGroup.LEGENDARY
+            else -> TowerLegendaryGroup.OTHER
+        }
+
+    /** How many of each group [speciesIds] hold. */
+    fun count(speciesIds: Collection<String>): TowerLegendaryCount = speciesIds.mapNotNull { group(it) }.let { groups ->
+        TowerLegendaryCount(groups.count { it == TowerLegendaryGroup.LEGENDARY }, groups.count { it == TowerLegendaryGroup.OTHER })
+    }
+
     fun selectionWeight(stage: TowerStreakStage, entry: TowerLegendaryClassEntry): Long =
         Math.multiplyExact(
             POWER_WEIGHTS.getValue(stage)[entry.singlesPowerGrade - 1].toLong(),
@@ -87,4 +99,18 @@ internal object TowerLegendaryClassPolicy {
         ).forEach { put(it, 3) }
     }
 
+}
+
+/**
+ * With the legendary class allowed a battle team brings at most one of each group: a Legendary (restricted or
+ * sub-legendary), and a Mythical, Ultra Beast or Paradox Pokemon.
+ */
+internal enum class TowerLegendaryGroup { LEGENDARY, OTHER }
+
+internal data class TowerLegendaryCount(val legendary: Int = 0, val other: Int = 0) {
+    val total: Int get() = legendary + other
+
+    companion object {
+        val NONE = TowerLegendaryCount()
+    }
 }

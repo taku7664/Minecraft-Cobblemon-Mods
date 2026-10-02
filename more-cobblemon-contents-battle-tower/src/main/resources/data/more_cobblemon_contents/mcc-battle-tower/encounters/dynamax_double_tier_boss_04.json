@@ -4,7 +4,10 @@
     {
       "encounter_id": "dynamax_double_tier_boss_04_introductory",
       "trainer_ids": [
-        "champion_blue"
+        "trainer_097",
+        "trainer_098",
+        "trainer_099",
+        "trainer_100"
       ],
       "stage_ids": [
         "introductory"

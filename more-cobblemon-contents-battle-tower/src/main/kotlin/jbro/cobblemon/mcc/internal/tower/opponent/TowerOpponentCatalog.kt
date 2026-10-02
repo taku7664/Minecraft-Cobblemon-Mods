@@ -94,7 +94,10 @@ internal class TowerOpponentProfile internal constructor(
     val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
     /** [setIds] is the trainer's own roster, such as a Champion's, rather than an encounter pool. */
     val fixedRoster: Boolean = false,
+    /** The roster's legendaries and the member each replaces; one is the main line. */
+    legendLines: List<TowerLegendLine> = emptyList(),
 ) {
+    val legendLines: List<TowerLegendLine> = legendLines.immutableCopy()
     val stageIds: List<TowerStreakStage> = stageIds.immutableCopy()
     val setIds: List<String> = setIds.immutableCopy()
     val signatureSpeciesIds: List<String> = signatureSpeciesIds.immutableCopy()
@@ -205,3 +208,9 @@ internal class TowerOpponentCatalogStore {
 }
 
 private fun <T> List<T>.immutableCopy(): List<T> = Collections.unmodifiableList(ArrayList(this))
+
+/**
+ * One legendary a rostered trainer may bring: [speciesId] takes the place of [replaces] on the team. The [main] line
+ * (a restricted legendary) joins first; the others are sub-legendary, Mythical, Ultra Beast or Paradox.
+ */
+internal data class TowerLegendLine(val speciesId: String, val replaces: String, val main: Boolean)

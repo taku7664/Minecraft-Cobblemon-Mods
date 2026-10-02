@@ -4,7 +4,10 @@
     {
       "encounter_id": "mega_double_tier_boss_12_introductory",
       "trainer_ids": [
-        "champion_blue"
+        "trainer_105",
+        "trainer_106",
+        "trainer_107",
+        "trainer_108"
       ],
       "stage_ids": [
         "introductory"

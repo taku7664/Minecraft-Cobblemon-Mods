@@ -1,11 +1,14 @@
-"""Writes the Battle Tower's Champion bosses: Blue, Lance and Cynthia with their own competitive entries.
+"""Writes the Battle Tower's Champion bosses, Blue, Lance and Cynthia, and lays out the Tower's boss battles.
 
-Each Champion has six Pokemon from their main-series teams, trained like a real battle team (IVs of 31, full EVs,
-battle items, one item each), plus a legendary that joins only when the Tower allows the legendary class. Every
-entry exists once per gimmick: in Mega runs the ace holds its Mega Stone, in Dynamax runs everyone has a Dynamax
-level and the ace Gigantamaxes where it can, in Tera runs everyone has a Tera Type. The script also points the boss
-encounters at the Champions (Blue at the 5th win, Lance at the 10th, Cynthia at the 15th and 20th, any of the three
-for the Master Ball bosses) and moves the Tower Aces, who used to be the bosses, to the advanced and pro regulars.
+Bosses: every 10th win is a Champion drawn at random from the three, every boss between (the 5th, 15th, 25th...)
+a Tower Ace. Each Champion's roster holds several battle-trained sets per member (IVs of 31, full EVs, battle items),
+once per gimmick:
+- Mega runs: members that can Mega Evolve also have Mega Stone sets; the Tower draws one of them to hold its stone.
+- Dynamax runs: everyone has a Dynamax level; Blastoise and Charizard Gigantamax.
+- Tera runs: everyone has a Tera Type.
+Each Champion also has a legend table. With the legendary class allowed they bring as many legendaries as the
+challenger: the main line (a restricted legendary) first, then sub lines (sub-legendary, Mythical, Ultra Beast,
+Paradox) at random, each in place of the member it stands for.
 
     python tools/tower-sets/gen_champions.py [path/to/RCT Trainers+.zip]
 """
@@ -24,110 +27,145 @@ DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemo
 CHAMPION_TIER = 9  # outside every pool: only a Champion's roster uses these sets
 STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
 SHORT = {"hp": "hp", "atk": "attack", "def": "defense", "spa": "special_attack", "spd": "special_defense", "spe": "speed"}
+SPECIAL = "spa spe hp"
+PHYSICAL = "atk spe hp"
+# The Tower Aces of each gimmick and format: the bosses between the Champions.
+ACES = {
+    ("dynamax", "double"): range(97, 101), ("dynamax", "single"): range(101, 105),
+    ("mega", "double"): range(105, 109), ("mega", "single"): range(109, 113),
+    ("tera", "double"): range(113, 117), ("tera", "single"): range(117, 121),
+}
 
 
-def mon(species, ability, nature, item, moves, evs, tera, form=None, legendary=False):
-    return {"species": species, "form": form, "ability": ability, "nature": nature, "item": item, "moves": moves,
-            "evs": evs, "tera": tera, "legendary": legendary}
+def s(ability, nature, item, moves, evs, tera=None):
+    """One set: ability, nature, item, four moves, a 252/252/4 spread and an optional Tera Type override."""
+    return {"ability": ability, "nature": nature, "item": item, "moves": moves.split(), "evs": evs, "tera": tera}
 
 
-def ns(value):
-    return value if ":" in value else f"cobblemon:{value}"
+def member(species, tera, sets, stones=(), gmax=False, form=None):
+    return {"species": species, "tera": tera, "sets": list(sets), "stones": list(stones), "gmax": gmax, "form": form}
 
 
-# The ace's gimmick overrides: Mega Stone and set for Mega runs, Gigantamax for Dynamax runs.
 CHAMPIONS = {
     "blue": {
         "skin": "champion_terry_01b6",
         "names": ("Champion Blue", "챔피언 그린"),
         "ace": "blastoise",
         "team": [
-            mon("pidgeot", "keeneye", "timid", "heavy_duty_boots", ["hurricane", "heatwave", "roost", "uturn"], "spa spe hp", "normal"),
-            mon("alakazam", "magicguard", "timid", "life_orb", ["psyshock", "shadowball", "focusblast", "nastyplot"], "spa spe hp", "psychic"),
-            mon("rhyperior", "solidrock", "adamant", "weakness_policy", ["earthquake", "stoneedge", "megahorn", "icepunch"], "hp atk def", "rock"),
-            mon("gyarados", "intimidate", "jolly", "lum_berry", ["dragondance", "waterfall", "earthquake", "icefang"], "atk spe hp", "ground"),
-            mon("exeggutor", "harvest", "modest", "sitrus_berry", ["leafstorm", "psychic", "sludgebomb", "sleeppowder"], "spa hp def", "grass"),
-            mon("blastoise", "torrent", "modest", "white_herb", ["shellsmash", "hydropump", "icebeam", "darkpulse"], "spa spe hp", "water"),
-            mon("mewtwo", "pressure", "timid", "leftovers", ["psystrike", "icebeam", "fireblast", "recover"], "spa spe hp", "psychic", legendary=True),
+            member("pidgeot", "normal", [s("keeneye", "timid", "heavy_duty_boots", "hurricane heatwave roost uturn", SPECIAL)],
+                   [s("keeneye", "timid", "mega_showdown:pidgeotite", "hurricane heatwave roost uturn", SPECIAL)]),
+            member("alakazam", "psychic", [s("magicguard", "timid", "life_orb", "psyshock shadowball focusblast nastyplot", SPECIAL),
+                                           s("magicguard", "timid", "choice_specs", "psychic shadowball focusblast dazzlinggleam", SPECIAL)],
+                   [s("magicguard", "timid", "mega_showdown:alakazite", "psyshock shadowball focusblast nastyplot", SPECIAL)]),
+            member("rhyperior", "rock", [s("solidrock", "adamant", "weakness_policy", "earthquake stoneedge megahorn icepunch", "hp atk def")]),
+            member("gyarados", "ground", [s("intimidate", "jolly", "lum_berry", "dragondance waterfall earthquake icefang", PHYSICAL)],
+                   [s("intimidate", "adamant", "mega_showdown:gyaradosite", "dragondance waterfall crunch earthquake", PHYSICAL)]),
+            member("exeggutor", "grass", [s("harvest", "modest", "sitrus_berry", "leafstorm psychic sludgebomb sleeppowder", "spa hp def")]),
+            member("blastoise", "water", [s("torrent", "modest", "white_herb", "shellsmash hydropump icebeam darkpulse", SPECIAL),
+                                          s("torrent", "calm", "assault_vest", "scald icebeam aurasphere rapidspin", "hp spd def")],
+                   [s("torrent", "modest", "mega_showdown:blastoisinite", "waterpulse aurasphere darkpulse icebeam", SPECIAL),
+                    s("torrent", "modest", "mega_showdown:blastoisinite", "shellsmash waterpulse darkpulse aurasphere", SPECIAL)], gmax=True),
         ],
-        "mega": {"item": "mega_showdown:blastoisinite", "ability": "torrent", "moves": ["waterpulse", "aurasphere", "darkpulse", "icebeam"]},
-        "gmax": True,
+        "legends": [
+            ("mewtwo", "alakazam", True, member("mewtwo", "psychic", [s("pressure", "timid", "life_orb", "psystrike icebeam fireblast recover", SPECIAL)])),
+            ("zapdos", "pidgeot", False, member("zapdos", "electric", [s("static", "timid", "heavy_duty_boots", "thunderbolt hurricane heatwave roost", SPECIAL)])),
+            ("moltres", "exeggutor", False, member("moltres", "fire", [s("flamebody", "timid", "rocky_helmet", "fireblast hurricane roost willowisp", SPECIAL)])),
+            ("mew", "rhyperior", False, member("mew", "psychic", [s("synchronize", "timid", "expert_belt", "nastyplot psyshock aurasphere fireblast", SPECIAL)])),
+        ],
     },
     "lance": {
         "skin": "champion_lance_0027",
         "names": ("Champion Lance", "챔피언 목호"),
         "ace": "dragonite",
         "team": [
-            mon("gyarados", "intimidate", "jolly", "lum_berry", ["dragondance", "waterfall", "earthquake", "taunt"], "atk spe hp", "flying"),
-            mon("aerodactyl", "unnerve", "jolly", "focus_sash", ["stealthrock", "stoneedge", "earthquake", "taunt"], "atk spe hp", "rock"),
-            mon("charizard", "blaze", "timid", "expert_belt", ["fireblast", "airslash", "focusblast", "roost"], "spa spe hp", "fire"),
-            mon("kingdra", "swiftswim", "modest", "choice_specs", ["dracometeor", "hydropump", "icebeam", "flipturn"], "spa spe hp", "water"),
-            mon("salamence", "intimidate", "jolly", "leftovers", ["dragondance", "dualwingbeat", "earthquake", "roost"], "atk spe hp", "dragon"),
-            mon("dragonite", "multiscale", "adamant", "life_orb", ["dragondance", "extremespeed", "earthquake", "firepunch"], "atk spe hp", "normal"),
-            mon("rayquaza", "airlock", "jolly", "weakness_policy", ["dragonascent", "extremespeed", "earthquake", "dragondance"], "atk spe hp", "normal", legendary=True),
+            member("gyarados", "flying", [s("intimidate", "jolly", "lum_berry", "dragondance waterfall earthquake taunt", PHYSICAL)],
+                   [s("intimidate", "adamant", "mega_showdown:gyaradosite", "dragondance waterfall crunch earthquake", PHYSICAL)]),
+            member("aerodactyl", "rock", [s("unnerve", "jolly", "focus_sash", "stealthrock stoneedge earthquake taunt", PHYSICAL)],
+                   [s("unnerve", "jolly", "mega_showdown:aerodactylite", "stoneedge dualwingbeat earthquake firefang", PHYSICAL)]),
+            member("charizard", "fire", [s("blaze", "timid", "expert_belt", "fireblast airslash focusblast roost", SPECIAL)],
+                   [s("blaze", "jolly", "mega_showdown:charizardite_x", "dragondance flareblitz dragonclaw earthquake", PHYSICAL),
+                    s("blaze", "timid", "mega_showdown:charizardite_y", "fireblast solarbeam airslash focusblast", SPECIAL)], gmax=True),
+            member("kingdra", "water", [s("swiftswim", "modest", "choice_specs", "dracometeor hydropump icebeam flipturn", SPECIAL)]),
+            member("salamence", "dragon", [s("intimidate", "jolly", "leftovers", "dragondance dualwingbeat earthquake roost", PHYSICAL)],
+                   [s("intimidate", "adamant", "mega_showdown:salamencite", "doubleedge earthquake dragondance roost", PHYSICAL)]),
+            member("dragonite", "normal", [s("multiscale", "adamant", "life_orb", "dragondance extremespeed earthquake firepunch", PHYSICAL),
+                                           s("multiscale", "adamant", "choice_band", "extremespeed outrage earthquake firepunch", PHYSICAL)],
+                   [s("multiscale", "adamant", "mega_showdown:dragoninite", "dragondance extremespeed earthquake firepunch", PHYSICAL)]),
         ],
-        "mega": {"item": "mega_showdown:dragoninite", "ability": "multiscale", "moves": ["dragondance", "extremespeed", "earthquake", "firepunch"]},
-        "gmax": False,
+        "legends": [
+            ("rayquaza", "salamence", True, member("rayquaza", "normal", [s("airlock", "jolly", "weakness_policy", "dragonascent extremespeed earthquake dragondance", PHYSICAL)])),
+            ("latios", "kingdra", False, member("latios", "dragon", [s("levitate", "timid", "choice_specs", "dracometeor lusterpurge surf flipturn", SPECIAL)])),
+            ("latias", "charizard", False, member("latias", "dragon", [s("levitate", "timid", "expert_belt", "dracometeor mistball psyshock recover", SPECIAL)])),
+            ("roaringmoon", "aerodactyl", False, member("roaringmoon", "flying", [s("protosynthesis", "jolly", "focus_sash", "dragondance acrobatics knockoff earthquake", PHYSICAL)])),
+        ],
     },
     "cynthia": {
         "skin": "champion_cynthia_03a5",
         "names": ("Champion Cynthia", "챔피언 난천"),
         "ace": "garchomp",
         "team": [
-            mon("spiritomb", "infiltrator", "careful", "sitrus_berry", ["willowisp", "foulplay", "painsplit", "suckerpunch"], "hp spd atk", "ghost"),
-            mon("roserade", "naturalcure", "timid", "focus_sash", ["spikes", "toxicspikes", "sleeppowder", "sludgebomb"], "spa spe hp", "poison"),
-            mon("milotic", "marvelscale", "bold", "flame_orb", ["scald", "recover", "icebeam", "haze"], "hp def spd", "water"),
-            mon("togekiss", "serenegrace", "calm", "leftovers", ["airslash", "dazzlinggleam", "thunderwave", "roost"], "hp spd def", "fairy"),
-            mon("lucario", "justified", "jolly", "life_orb", ["swordsdance", "closecombat", "meteormash", "extremespeed"], "atk spe hp", "steel"),
-            mon("garchomp", "roughskin", "jolly", "lum_berry", ["swordsdance", "earthquake", "dragonclaw", "stoneedge"], "atk spe hp", "ground"),
-            mon("giratina", "levitate", "modest", "mega_showdown:griseous_core", ["willowisp", "hex", "dracometeor", "earthpower"], "hp spa spd", "ghost",
-                form="origin", legendary=True),
+            member("spiritomb", "ghost", [s("infiltrator", "careful", "sitrus_berry", "willowisp foulplay painsplit suckerpunch", "hp spd atk")]),
+            member("roserade", "poison", [s("naturalcure", "timid", "focus_sash", "spikes toxicspikes sleeppowder sludgebomb", SPECIAL),
+                                          s("naturalcure", "timid", "choice_specs", "leafstorm sludgebomb shadowball extrasensory", SPECIAL)]),
+            member("milotic", "water", [s("marvelscale", "bold", "flame_orb", "scald recover icebeam haze", "hp def spd")]),
+            member("togekiss", "fairy", [s("serenegrace", "calm", "leftovers", "airslash dazzlinggleam thunderwave roost", "hp spd def"),
+                                         s("serenegrace", "timid", "choice_scarf", "airslash dazzlinggleam aurasphere trick", SPECIAL)]),
+            member("lucario", "steel", [s("justified", "jolly", "life_orb", "swordsdance closecombat meteormash extremespeed", PHYSICAL),
+                                        s("innerfocus", "timid", "expert_belt", "nastyplot aurasphere flashcannon vacuumwave", SPECIAL)],
+                   [s("justified", "jolly", "mega_showdown:lucarionite", "swordsdance closecombat meteormash extremespeed", PHYSICAL),
+                    s("innerfocus", "timid", "mega_showdown:lucarionite", "nastyplot aurasphere flashcannon vacuumwave", SPECIAL)]),
+            member("garchomp", "ground", [s("roughskin", "jolly", "lum_berry", "swordsdance earthquake dragonclaw stoneedge", PHYSICAL),
+                                          s("roughskin", "jolly", "choice_band", "outrage earthquake stoneedge firefang", PHYSICAL)],
+                   [s("roughskin", "jolly", "mega_showdown:garchompite", "swordsdance earthquake dragonclaw stoneedge", PHYSICAL),
+                    # Pokemon Champions players' Mega Garchomp Z: Power Gem, Draco Meteor, Flamethrower, Earth Power.
+                    s("roughskin", "timid", "mega_showdown:garchompite_z", "dracometeor powergem flamethrower earthpower", SPECIAL)]),
         ],
-        # Pokemon Champions players' set: Power Gem, Draco Meteor, Flamethrower, Earth Power around Protect.
-        "mega": {"item": "mega_showdown:garchompite_z", "ability": "roughskin", "nature": "timid", "evs": "spa spe hp",
-                 "moves": ["dracometeor", "powergem", "flamethrower", "earthpower"]},
-        "gmax": False,
+        "legends": [
+            ("giratina", "spiritomb", True, member("giratina", "ghost", [s("levitate", "modest", "mega_showdown:griseous_core", "willowisp hex dracometeor earthpower", "hp spa spd")], form="origin")),
+            ("cresselia", "togekiss", False, member("cresselia", "psychic", [s("levitate", "bold", "leftovers", "moonblast psyshock moonlight thunderwave", "hp def spd")])),
+            ("heatran", "lucario", False, member("heatran", "steel", [s("flashfire", "modest", "air_balloon", "magmastorm earthpower flashcannon taunt", SPECIAL)])),
+            ("azelf", "roserade", False, member("azelf", "psychic", [s("levitate", "timid", "focus_sash", "nastyplot psychic fireblast dazzlinggleam", SPECIAL)])),
+        ],
     },
 }
 
 
+def ns(value):
+    return value if ":" in value else f"cobblemon:{value}"
+
+
 def evs(spec):
-    first, second, rest = (SHORT[s] for s in spec.split())
+    first, second, rest = (SHORT[x] for x in spec.split())
     values = {stat: 0 for stat in STATS}
     values[first], values[second], values[rest] = 252, 252, 4
     return values
 
 
-def champion_sets(name, champion):
-    sets = []
-    for mechanic in ("mega", "dynamax", "tera"):
-        for member in champion["team"]:
-            ace = member["species"] == champion["ace"]
-            entry = dict(member)
-            if ace and mechanic == "mega":
-                entry.update(champion["mega"])
-            moves = entry["moves"]
-            spread = entry["evs"]
-            set_ = {
-                "set_id": f"champion_{name}_{mechanic}_{member['species']}",
-                "set_tier": CHAMPION_TIER,
-                "mechanic_id": mechanic,
-                "species_id": f"cobblemon:{member['species']}",
-                "form_id": member["form"],
-                "ability_id": ns(entry["ability"]),
-                "nature_id": ns(entry["nature"]),
-                "held_item_id": ns(entry["item"]),
-                "moves": [ns(m) for m in moves],
-                "ivs": {stat: 31 for stat in STATS},
-                "evs": evs(spread),
-            }
-            if mechanic == "dynamax":
-                set_["dmax_level"] = 10
-                set_["gmax_factor"] = bool(ace and champion["gmax"])
-            if mechanic == "tera":
-                set_["tera_type"] = member["tera"]
-            sets.append(set_)
-    return sets
+def sets_of(name, mon, mechanic):
+    """Every set of one member for one gimmick; Mega Stone sets only in Mega runs."""
+    variants = mon["sets"] + (mon["stones"] if mechanic == "mega" else [])
+    out = []
+    for index, variant in enumerate(variants, start=1):
+        entry = {
+            "set_id": f"champion_{name}_{mechanic}_{mon['species']}_{index}",
+            "set_tier": CHAMPION_TIER,
+            "mechanic_id": mechanic,
+            "species_id": f"cobblemon:{mon['species']}",
+            "form_id": mon["form"],
+            "ability_id": ns(variant["ability"]),
+            "nature_id": ns(variant["nature"]),
+            "held_item_id": ns(variant["item"]),
+            "moves": [ns(m) for m in variant["moves"]],
+            "ivs": {stat: 31 for stat in STATS},
+            "evs": evs(variant["evs"]),
+        }
+        if mechanic == "dynamax":
+            entry["dmax_level"] = 10
+            entry["gmax_factor"] = mon["gmax"]
+        if mechanic == "tera":
+            entry["tera_type"] = variant["tera"] or mon["tera"]
+        out.append(entry)
+    return out
 
 
 def write(path, document):
@@ -136,16 +174,16 @@ def write(path, document):
     path.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
 
 
+def ace_ids(mechanic, fmt):
+    return [f"trainer_{n:03d}" for n in ACES[(mechanic, fmt)]]
+
+
 def main():
     pack = zipfile.ZipFile(Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PACK)
     lang = {}
     for name, champion in CHAMPIONS.items():
-        sets = champion_sets(name, champion)
-        items = {}
-        for s in sets:
-            items.setdefault(s["mechanic_id"], []).append(s["held_item_id"])
-        for mechanic, held in items.items():
-            assert len(held) == len(set(held)), (name, mechanic, held)
+        members = champion["team"] + [legend[3] for legend in champion["legends"]]
+        sets = [entry for mechanic in ("mega", "dynamax", "tera") for mon in members for entry in sets_of(name, mon, mechanic)]
         write(TOWER / "pokemon-sets" / f"champion_{name}.json", {"schema_version": 4, "pokemon_sets": sets})
         skin = champion["skin"]
         image = Image.open(io.BytesIO(pack.read(f"assets/rctmod/textures/trainers/single/{skin}.png"))).convert("RGBA")
@@ -154,50 +192,50 @@ def main():
             "display_name_key": f"trainer.more_cobblemon_contents.tower_champion_{name}",
             "team_style": "balanced",
             "signature_species_ids": [f"cobblemon:{champion['ace']}"],
-            "roster_set_ids": [s["set_id"] for s in sets],
+            "roster_set_ids": [entry["set_id"] for entry in sets],
+            "legend_lines": [{"species_id": f"cobblemon:{species}", "replaces": f"cobblemon:{replaces}", "main": main_line}
+                             for species, replaces, main_line, _ in champion["legends"]],
             "skin": f"rctmod:textures/trainers/single/{skin}.png",
             "slim": image.getpixel((54, 20))[3] == 0,
         }
         write(TOWER / "trainers" / f"champion_{name}.json", {"schema_version": 1, "trainers": [trainer]})
         lang[trainer["display_name_key"]] = champion["names"]
 
-    aces = {}
+    champions = [f"champion_{name}" for name in CHAMPIONS]
     for path in sorted((TOWER / "encounters").glob("*_boss_*.json")):
         document = json.loads(path.read_text(encoding="utf-8"))
         encounter = document["encounters"][0]
-        key = (encounter["mechanic_id"], encounter["format"])
-        aces[key] = sorted(set(aces.get(key, [])) | {t for t in encounter["trainer_ids"] if t.startswith("trainer_")})
-        if encounter["opponent_kind"] == "master_ball_boss":
-            encounter["trainer_ids"] = [f"champion_{name}" for name in CHAMPIONS]
-            write(path, document)
-        else:
-            # One tier boss encounter per stage, each with its Champion.
-            for stage, champion in (("introductory", "blue"), ("practical", "lance"), ("advanced", "cynthia")):
-                staged = dict(encounter, encounter_id=f"{encounter['encounter_id']}_{stage}", stage_ids=[stage],
-                              trainer_ids=[f"champion_{champion}"])
-                target = path if stage == "introductory" else path.with_name(f"{path.stem}_{stage}.json")
-                write(target, {"schema_version": document["schema_version"], "encounters": [staged]})
-    # The Tower Aces were the bosses; they join the regulars of the advanced and pro stages.
-    for path in sorted((TOWER / "encounters").glob("*_regular_*_advanced.json")) + sorted((TOWER / "encounters").glob("*_regular_*_pro.json")):
+        mechanic, fmt = encounter["mechanic_id"], encounter["format"]
+        aces = ace_ids(mechanic, fmt)
+        stage = encounter["stage_ids"][0]
+        # 5th win: an Ace; 10th: a Champion; 15th and 20th: one of each; from the 25th: an Ace or a Champion by turns.
+        trainers, tier = {
+            "introductory": (aces, 2), "practical": (champions, 2), "advanced": (aces + champions, 3), "pro": (aces + champions, 4),
+        }[stage]
+        encounter["trainer_ids"] = trainers
+        encounter["pool_id"] = f"{mechanic}_tier_{tier}"
+        write(path, document)
+    # The Tower Aces are the bosses again: take them back out of the advanced and pro regulars.
+    for path in sorted((TOWER / "encounters").glob("*_regular_*.json")):
         document = json.loads(path.read_text(encoding="utf-8"))
         encounter = document["encounters"][0]
-        extra = aces.get((encounter["mechanic_id"], encounter["format"]), [])
-        encounter["trainer_ids"] = [t for t in encounter["trainer_ids"] if t not in extra] + extra
-        write(path, document)
+        aces = set(ace_ids(encounter["mechanic_id"], encounter["format"]))
+        kept = [t for t in encounter["trainer_ids"] if t not in aces]
+        if kept != encounter["trainer_ids"]:
+            encounter["trainer_ids"] = kept
+            write(path, document)
 
     for locale, index in (("en_us", 0), ("ko_kr", 1)):
         path = ROOT / f"more-cobblemon-contents-battle-tower/src/main/resources/assets/more_cobblemon_contents_battle_tower/lang/{locale}.json"
         raw = path.read_bytes().decode("utf-8")
         data = json.loads(raw)
-        missing = {key: names[index] for key, names in lang.items() if data.get(key) != names[index]}
+        missing = {key: names[index] for key, names in lang.items() if key not in data}
         if missing:
-            body = raw.rstrip().rstrip("}").rstrip()
             newline = "\r\n" if "\r\n" in raw else "\n"
-            body += "".join(f",{newline}  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in missing.items() if k not in data)
-            text = body + newline + "}" + newline
-            assert all(k in json.loads(text) for k in lang)
-            path.write_bytes(text.encode("utf-8"))
-    print(f"{len(CHAMPIONS)} Champions written; Tower Aces moved to the regulars: {sum(map(len, aces.values()))}")
+            body = raw.rstrip().rstrip("}").rstrip()
+            body += "".join(f",{newline}  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}" for k, v in missing.items())
+            path.write_bytes((body + newline + "}" + newline).encode("utf-8"))
+    print(f"{len(CHAMPIONS)} Champions written")
 
 
 if __name__ == "__main__":

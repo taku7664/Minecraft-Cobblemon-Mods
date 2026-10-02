@@ -123,15 +123,22 @@ internal class TowerHubTab : MccHubTabContent {
             val order = state.selectedPokemonOrder.indexOf(pokemon.pokemonId).takeIf { it >= 0 }?.plus(1)
             val speciesName = speciesName(pokemon.speciesId)
             val heldItem = itemName(pokemon.heldItemId)
+            // With the legendary class off, a legendary-class Pokemon cannot enter: say so on its card.
+            val blocked = pokemon.legendaryClass && !state.legendaryClassAllowed
             val button = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId),
                 if (order == null) speciesName else tower("party_entry.order_name", order, speciesName),
-                tower("party_entry.details", pokemon.battleLevel, heldItem), order != null,
-                if (order == null) tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
-                else tower("party_entry.narration.selected", order, speciesName, pokemon.battleLevel, heldItem)) {
+                if (blocked) tower("party_entry.blocked") else tower("party_entry.details", pokemon.battleLevel, heldItem), order != null,
+                when {
+                    blocked -> tower("party_entry.narration.blocked", speciesName)
+                    order == null -> tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
+                    else -> tower("party_entry.narration.selected", order, speciesName, pokemon.battleLevel, heldItem)
+                }, blocked) {
                 if (controller.toggleSelection(pokemon.pokemonId)) host.rebuild()
             }
-            button.active = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
-            button.setTooltip(Tooltip.create(tower("party_entry.tooltip", speciesName, pokemon.level, pokemon.battleLevel, heldItem)))
+            // A blocked Pokemon can still be taken off the team, never put on it.
+            button.active = state.phase == TowerPlayPhase.SELECTING && !controller.isPending && (!blocked || order != null)
+            val tooltip = tower("party_entry.tooltip", speciesName, pokemon.level, pokemon.battleLevel, heldItem)
+            button.setTooltip(Tooltip.create(if (blocked) tooltip.copy().append("\n").append(tower("party_entry.blocked.tooltip")) else tooltip))
             host.add(button)
         }
     }

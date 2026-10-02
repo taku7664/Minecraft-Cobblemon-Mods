@@ -105,6 +105,7 @@ internal object TowerOpponentCatalogLoader {
                     signatureSpeciesIds,
                     trainerSkin(value, path),
                     rosterSetIds(value, path),
+                    legendLines(value, path),
                 )
             }
         }
@@ -201,6 +202,7 @@ internal object TowerOpponentCatalogLoader {
                     theme = encounter.theme,
                     setIds = if (trainer.rosterSetIds.isEmpty()) setIds else rosterFor(trainer, encounter.mechanic, setsById),
                     fixedRoster = trainer.rosterSetIds.isNotEmpty(),
+                    legendLines = trainer.legendLines,
                     teamStyle = trainer.teamStyle,
                     signatureSpeciesIds = trainer.signatureSpeciesIds,
                     appearance = trainer.appearance,
@@ -745,7 +747,31 @@ private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
 private val POOL_FRAGMENT_FIELDS = setOf("schema_version", "pools")
 private val ENCOUNTER_FRAGMENT_FIELDS = setOf("schema_version", "encounters")
 private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets")
-private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids", "skin", "slim", "roster_set_ids")
+private val TRAINER_FIELDS = setOf(
+    "trainer_id", "display_name_key", "team_style", "signature_species_ids", "skin", "slim", "roster_set_ids", "legend_lines",
+)
+private val LEGEND_LINE_FIELDS = setOf("species_id", "replaces", "main")
+
+/**
+ * A rostered trainer's legendaries: each one stands in for one of the regular members, and exactly one is the main
+ * line, who always comes first.
+ */
+private fun legendLines(value: JsonObject, path: String): List<TowerLegendLine> {
+    val lines = value.optionalArray(path, "legend_lines") ?: return emptyList()
+    val parsed = lines.mapIndexed { index, element ->
+        val linePath = "$path.legend_lines[$index]"
+        val line = element.requireObject(linePath)
+        line.rejectUnknownFields(linePath, LEGEND_LINE_FIELDS)
+        TowerLegendLine(line.requiredResourceId(linePath, "species_id"), line.requiredResourceId(linePath, "replaces"),
+            line.optionalBoolean(linePath, "main") ?: false)
+    }
+    if (parsed.isNotEmpty() && parsed.count(TowerLegendLine::main) != 1) {
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.legend_lines", "Exactly one legend line must be the main line")
+    }
+    rejectDuplicateIds(parsed.map(TowerLegendLine::speciesId), "$path.legend_lines")
+    rejectDuplicateIds(parsed.map(TowerLegendLine::replaces), "$path.legend_lines")
+    return parsed
+}
 
 /**
  * A trainer's own sets, such as a Champion's entries, in place of the encounter's pool. The roster may hold sets of
@@ -827,6 +853,7 @@ private data class TowerTrainerDefinition(
     val signatureSpeciesIds: List<String>,
     val appearance: TrainerResourceSkin?,
     val rosterSetIds: List<String>,
+    val legendLines: List<TowerLegendLine>,
 )
 private data class TowerPoolDefinition(
     val poolId: String,

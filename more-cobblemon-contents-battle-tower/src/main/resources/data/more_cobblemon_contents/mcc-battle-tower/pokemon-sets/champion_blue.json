@@ -2,7 +2,7 @@
   "schema_version": 4,
   "pokemon_sets": [
     {
-      "set_id": "champion_blue_mega_pidgeot",
+      "set_id": "champion_blue_mega_pidgeot_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:pidgeot",
@@ -34,7 +34,39 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_alakazam",
+      "set_id": "champion_blue_mega_pidgeot_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:pidgeot",
+      "form_id": null,
+      "ability_id": "cobblemon:keeneye",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "mega_showdown:pidgeotite",
+      "moves": [
+        "cobblemon:hurricane",
+        "cobblemon:heatwave",
+        "cobblemon:roost",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_alakazam_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:alakazam",
@@ -66,7 +98,71 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_rhyperior",
+      "set_id": "champion_blue_mega_alakazam_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:alakazam",
+      "form_id": null,
+      "ability_id": "cobblemon:magicguard",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:psychic",
+        "cobblemon:shadowball",
+        "cobblemon:focusblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_alakazam_3",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:alakazam",
+      "form_id": null,
+      "ability_id": "cobblemon:magicguard",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "mega_showdown:alakazite",
+      "moves": [
+        "cobblemon:psyshock",
+        "cobblemon:shadowball",
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_rhyperior_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:rhyperior",
@@ -98,7 +194,7 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_gyarados",
+      "set_id": "champion_blue_mega_gyarados_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:gyarados",
@@ -130,7 +226,39 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_exeggutor",
+      "set_id": "champion_blue_mega_gyarados_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:gyarados",
+      "form_id": null,
+      "ability_id": "cobblemon:intimidate",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "mega_showdown:gyaradosite",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:waterfall",
+        "cobblemon:crunch",
+        "cobblemon:earthquake"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_exeggutor_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:exeggutor",
@@ -162,7 +290,71 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_blastoise",
+      "set_id": "champion_blue_mega_blastoise_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:blastoise",
+      "form_id": null,
+      "ability_id": "cobblemon:torrent",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:white_herb",
+      "moves": [
+        "cobblemon:shellsmash",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:darkpulse"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_blastoise_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:blastoise",
+      "form_id": null,
+      "ability_id": "cobblemon:torrent",
+      "nature_id": "cobblemon:calm",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:icebeam",
+        "cobblemon:aurasphere",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_blastoise_3",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:blastoise",
@@ -194,14 +386,46 @@
       }
     },
     {
-      "set_id": "champion_blue_mega_mewtwo",
+      "set_id": "champion_blue_mega_blastoise_4",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:blastoise",
+      "form_id": null,
+      "ability_id": "cobblemon:torrent",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "mega_showdown:blastoisinite",
+      "moves": [
+        "cobblemon:shellsmash",
+        "cobblemon:waterpulse",
+        "cobblemon:darkpulse",
+        "cobblemon:aurasphere"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_mewtwo_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:mewtwo",
       "form_id": null,
       "ability_id": "cobblemon:pressure",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:leftovers",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
         "cobblemon:psystrike",
         "cobblemon:icebeam",
@@ -226,7 +450,103 @@
       }
     },
     {
-      "set_id": "champion_blue_dynamax_pidgeot",
+      "set_id": "champion_blue_mega_zapdos_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:zapdos",
+      "form_id": null,
+      "ability_id": "cobblemon:static",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:hurricane",
+        "cobblemon:heatwave",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_moltres_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:moltres",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:hurricane",
+        "cobblemon:roost",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_mega_mew_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:mew",
+      "form_id": null,
+      "ability_id": "cobblemon:synchronize",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:aurasphere",
+        "cobblemon:fireblast"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_blue_dynamax_pidgeot_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:pidgeot",
@@ -260,7 +580,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_dynamax_alakazam",
+      "set_id": "champion_blue_dynamax_alakazam_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:alakazam",
@@ -294,7 +614,41 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_dynamax_rhyperior",
+      "set_id": "champion_blue_dynamax_alakazam_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:alakazam",
+      "form_id": null,
+      "ability_id": "cobblemon:magicguard",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:psychic",
+        "cobblemon:shadowball",
+        "cobblemon:focusblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_blue_dynamax_rhyperior_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:rhyperior",
@@ -328,7 +682,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_dynamax_gyarados",
+      "set_id": "champion_blue_dynamax_gyarados_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:gyarados",
@@ -362,7 +716,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_dynamax_exeggutor",
+      "set_id": "champion_blue_dynamax_exeggutor_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:exeggutor",
@@ -396,7 +750,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_dynamax_blastoise",
+      "set_id": "champion_blue_dynamax_blastoise_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:blastoise",
@@ -430,14 +784,48 @@
       "gmax_factor": true
     },
     {
-      "set_id": "champion_blue_dynamax_mewtwo",
+      "set_id": "champion_blue_dynamax_blastoise_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:blastoise",
+      "form_id": null,
+      "ability_id": "cobblemon:torrent",
+      "nature_id": "cobblemon:calm",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:icebeam",
+        "cobblemon:aurasphere",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": true
+    },
+    {
+      "set_id": "champion_blue_dynamax_mewtwo_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:mewtwo",
       "form_id": null,
       "ability_id": "cobblemon:pressure",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:leftovers",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
         "cobblemon:psystrike",
         "cobblemon:icebeam",
@@ -464,7 +852,109 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_blue_tera_pidgeot",
+      "set_id": "champion_blue_dynamax_zapdos_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:zapdos",
+      "form_id": null,
+      "ability_id": "cobblemon:static",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:hurricane",
+        "cobblemon:heatwave",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_blue_dynamax_moltres_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:moltres",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:hurricane",
+        "cobblemon:roost",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_blue_dynamax_mew_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:mew",
+      "form_id": null,
+      "ability_id": "cobblemon:synchronize",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:aurasphere",
+        "cobblemon:fireblast"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_blue_tera_pidgeot_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:pidgeot",
@@ -497,7 +987,7 @@
       "tera_type": "normal"
     },
     {
-      "set_id": "champion_blue_tera_alakazam",
+      "set_id": "champion_blue_tera_alakazam_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:alakazam",
@@ -530,7 +1020,40 @@
       "tera_type": "psychic"
     },
     {
-      "set_id": "champion_blue_tera_rhyperior",
+      "set_id": "champion_blue_tera_alakazam_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:alakazam",
+      "form_id": null,
+      "ability_id": "cobblemon:magicguard",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:psychic",
+        "cobblemon:shadowball",
+        "cobblemon:focusblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "psychic"
+    },
+    {
+      "set_id": "champion_blue_tera_rhyperior_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:rhyperior",
@@ -563,7 +1086,7 @@
       "tera_type": "rock"
     },
     {
-      "set_id": "champion_blue_tera_gyarados",
+      "set_id": "champion_blue_tera_gyarados_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:gyarados",
@@ -596,7 +1119,7 @@
       "tera_type": "ground"
     },
     {
-      "set_id": "champion_blue_tera_exeggutor",
+      "set_id": "champion_blue_tera_exeggutor_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:exeggutor",
@@ -629,7 +1152,7 @@
       "tera_type": "grass"
     },
     {
-      "set_id": "champion_blue_tera_blastoise",
+      "set_id": "champion_blue_tera_blastoise_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:blastoise",
@@ -662,19 +1185,151 @@
       "tera_type": "water"
     },
     {
-      "set_id": "champion_blue_tera_mewtwo",
+      "set_id": "champion_blue_tera_blastoise_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:blastoise",
+      "form_id": null,
+      "ability_id": "cobblemon:torrent",
+      "nature_id": "cobblemon:calm",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:icebeam",
+        "cobblemon:aurasphere",
+        "cobblemon:rapidspin"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "tera_type": "water"
+    },
+    {
+      "set_id": "champion_blue_tera_mewtwo_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:mewtwo",
       "form_id": null,
       "ability_id": "cobblemon:pressure",
       "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:leftovers",
+      "held_item_id": "cobblemon:life_orb",
       "moves": [
         "cobblemon:psystrike",
         "cobblemon:icebeam",
         "cobblemon:fireblast",
         "cobblemon:recover"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "psychic"
+    },
+    {
+      "set_id": "champion_blue_tera_zapdos_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:zapdos",
+      "form_id": null,
+      "ability_id": "cobblemon:static",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:hurricane",
+        "cobblemon:heatwave",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "electric"
+    },
+    {
+      "set_id": "champion_blue_tera_moltres_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:moltres",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:hurricane",
+        "cobblemon:roost",
+        "cobblemon:willowisp"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "fire"
+    },
+    {
+      "set_id": "champion_blue_tera_mew_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:mew",
+      "form_id": null,
+      "ability_id": "cobblemon:synchronize",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:aurasphere",
+        "cobblemon:fireblast"
       ],
       "ivs": {
         "hp": 31,

@@ -4,7 +4,9 @@
     {
       "encounter_id": "mega_double_tier_boss_12_practical",
       "trainer_ids": [
-        "champion_lance"
+        "champion_blue",
+        "champion_lance",
+        "champion_cynthia"
       ],
       "stage_ids": [
         "practical"

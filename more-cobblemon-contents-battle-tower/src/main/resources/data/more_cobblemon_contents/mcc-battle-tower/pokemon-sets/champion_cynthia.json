@@ -2,7 +2,7 @@
   "schema_version": 4,
   "pokemon_sets": [
     {
-      "set_id": "champion_cynthia_mega_spiritomb",
+      "set_id": "champion_cynthia_mega_spiritomb_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:spiritomb",
@@ -34,7 +34,7 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_roserade",
+      "set_id": "champion_cynthia_mega_roserade_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:roserade",
@@ -66,7 +66,39 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_milotic",
+      "set_id": "champion_cynthia_mega_roserade_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:roserade",
+      "form_id": null,
+      "ability_id": "cobblemon:naturalcure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:leafstorm",
+        "cobblemon:sludgebomb",
+        "cobblemon:shadowball",
+        "cobblemon:extrasensory"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_milotic_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:milotic",
@@ -98,7 +130,7 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_togekiss",
+      "set_id": "champion_cynthia_mega_togekiss_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:togekiss",
@@ -130,7 +162,39 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_lucario",
+      "set_id": "champion_cynthia_mega_togekiss_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:togekiss",
+      "form_id": null,
+      "ability_id": "cobblemon:serenegrace",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:airslash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:aurasphere",
+        "cobblemon:trick"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_lucario_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:lucario",
@@ -162,7 +226,199 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_garchomp",
+      "set_id": "champion_cynthia_mega_lucario_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:lucario",
+      "form_id": null,
+      "ability_id": "cobblemon:innerfocus",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:aurasphere",
+        "cobblemon:flashcannon",
+        "cobblemon:vacuumwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_lucario_3",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:lucario",
+      "form_id": null,
+      "ability_id": "cobblemon:justified",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:lucarionite",
+      "moves": [
+        "cobblemon:swordsdance",
+        "cobblemon:closecombat",
+        "cobblemon:meteormash",
+        "cobblemon:extremespeed"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_lucario_4",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:lucario",
+      "form_id": null,
+      "ability_id": "cobblemon:innerfocus",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "mega_showdown:lucarionite",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:aurasphere",
+        "cobblemon:flashcannon",
+        "cobblemon:vacuumwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_garchomp_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:garchomp",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:lum_berry",
+      "moves": [
+        "cobblemon:swordsdance",
+        "cobblemon:earthquake",
+        "cobblemon:dragonclaw",
+        "cobblemon:stoneedge"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_garchomp_2",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:garchomp",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge",
+        "cobblemon:firefang"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_garchomp_3",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:garchomp",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:garchompite",
+      "moves": [
+        "cobblemon:swordsdance",
+        "cobblemon:earthquake",
+        "cobblemon:dragonclaw",
+        "cobblemon:stoneedge"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_garchomp_4",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:garchomp",
@@ -194,7 +450,7 @@
       }
     },
     {
-      "set_id": "champion_cynthia_mega_giratina",
+      "set_id": "champion_cynthia_mega_giratina_1",
       "set_tier": 9,
       "mechanic_id": "mega",
       "species_id": "cobblemon:giratina",
@@ -226,7 +482,103 @@
       }
     },
     {
-      "set_id": "champion_cynthia_dynamax_spiritomb",
+      "set_id": "champion_cynthia_mega_cresselia_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:cresselia",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:moonblast",
+        "cobblemon:psyshock",
+        "cobblemon:moonlight",
+        "cobblemon:thunderwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_heatran_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:heatran",
+      "form_id": null,
+      "ability_id": "cobblemon:flashfire",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:magmastorm",
+        "cobblemon:earthpower",
+        "cobblemon:flashcannon",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_mega_azelf_1",
+      "set_tier": 9,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:azelf",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psychic",
+        "cobblemon:fireblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_spiritomb_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:spiritomb",
@@ -260,7 +612,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_roserade",
+      "set_id": "champion_cynthia_dynamax_roserade_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:roserade",
@@ -294,7 +646,41 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_milotic",
+      "set_id": "champion_cynthia_dynamax_roserade_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:roserade",
+      "form_id": null,
+      "ability_id": "cobblemon:naturalcure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:leafstorm",
+        "cobblemon:sludgebomb",
+        "cobblemon:shadowball",
+        "cobblemon:extrasensory"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_milotic_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:milotic",
@@ -328,7 +714,7 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_togekiss",
+      "set_id": "champion_cynthia_dynamax_togekiss_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:togekiss",
@@ -362,7 +748,41 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_lucario",
+      "set_id": "champion_cynthia_dynamax_togekiss_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:togekiss",
+      "form_id": null,
+      "ability_id": "cobblemon:serenegrace",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:airslash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:aurasphere",
+        "cobblemon:trick"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_lucario_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:lucario",
@@ -396,7 +816,41 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_garchomp",
+      "set_id": "champion_cynthia_dynamax_lucario_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:lucario",
+      "form_id": null,
+      "ability_id": "cobblemon:innerfocus",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:aurasphere",
+        "cobblemon:flashcannon",
+        "cobblemon:vacuumwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_garchomp_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:garchomp",
@@ -430,7 +884,41 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_dynamax_giratina",
+      "set_id": "champion_cynthia_dynamax_garchomp_2",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:garchomp",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge",
+        "cobblemon:firefang"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_giratina_1",
       "set_tier": 9,
       "mechanic_id": "dynamax",
       "species_id": "cobblemon:giratina",
@@ -464,7 +952,109 @@
       "gmax_factor": false
     },
     {
-      "set_id": "champion_cynthia_tera_spiritomb",
+      "set_id": "champion_cynthia_dynamax_cresselia_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:cresselia",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:moonblast",
+        "cobblemon:psyshock",
+        "cobblemon:moonlight",
+        "cobblemon:thunderwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_heatran_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:heatran",
+      "form_id": null,
+      "ability_id": "cobblemon:flashfire",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:magmastorm",
+        "cobblemon:earthpower",
+        "cobblemon:flashcannon",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_dynamax_azelf_1",
+      "set_tier": 9,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:azelf",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psychic",
+        "cobblemon:fireblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "champion_cynthia_tera_spiritomb_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:spiritomb",
@@ -497,7 +1087,7 @@
       "tera_type": "ghost"
     },
     {
-      "set_id": "champion_cynthia_tera_roserade",
+      "set_id": "champion_cynthia_tera_roserade_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:roserade",
@@ -530,7 +1120,40 @@
       "tera_type": "poison"
     },
     {
-      "set_id": "champion_cynthia_tera_milotic",
+      "set_id": "champion_cynthia_tera_roserade_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:roserade",
+      "form_id": null,
+      "ability_id": "cobblemon:naturalcure",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_specs",
+      "moves": [
+        "cobblemon:leafstorm",
+        "cobblemon:sludgebomb",
+        "cobblemon:shadowball",
+        "cobblemon:extrasensory"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "poison"
+    },
+    {
+      "set_id": "champion_cynthia_tera_milotic_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:milotic",
@@ -563,7 +1186,7 @@
       "tera_type": "water"
     },
     {
-      "set_id": "champion_cynthia_tera_togekiss",
+      "set_id": "champion_cynthia_tera_togekiss_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:togekiss",
@@ -596,7 +1219,40 @@
       "tera_type": "fairy"
     },
     {
-      "set_id": "champion_cynthia_tera_lucario",
+      "set_id": "champion_cynthia_tera_togekiss_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:togekiss",
+      "form_id": null,
+      "ability_id": "cobblemon:serenegrace",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:choice_scarf",
+      "moves": [
+        "cobblemon:airslash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:aurasphere",
+        "cobblemon:trick"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "fairy"
+    },
+    {
+      "set_id": "champion_cynthia_tera_lucario_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:lucario",
@@ -629,7 +1285,40 @@
       "tera_type": "steel"
     },
     {
-      "set_id": "champion_cynthia_tera_garchomp",
+      "set_id": "champion_cynthia_tera_lucario_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:lucario",
+      "form_id": null,
+      "ability_id": "cobblemon:innerfocus",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:aurasphere",
+        "cobblemon:flashcannon",
+        "cobblemon:vacuumwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "steel"
+    },
+    {
+      "set_id": "champion_cynthia_tera_garchomp_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:garchomp",
@@ -662,7 +1351,40 @@
       "tera_type": "ground"
     },
     {
-      "set_id": "champion_cynthia_tera_giratina",
+      "set_id": "champion_cynthia_tera_garchomp_2",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:garchomp",
+      "form_id": null,
+      "ability_id": "cobblemon:roughskin",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_band",
+      "moves": [
+        "cobblemon:outrage",
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge",
+        "cobblemon:firefang"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "ground"
+    },
+    {
+      "set_id": "champion_cynthia_tera_giratina_1",
       "set_tier": 9,
       "mechanic_id": "tera",
       "species_id": "cobblemon:giratina",
@@ -693,6 +1415,105 @@
         "speed": 0
       },
       "tera_type": "ghost"
+    },
+    {
+      "set_id": "champion_cynthia_tera_cresselia_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:cresselia",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:moonblast",
+        "cobblemon:psyshock",
+        "cobblemon:moonlight",
+        "cobblemon:thunderwave"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "tera_type": "psychic"
+    },
+    {
+      "set_id": "champion_cynthia_tera_heatran_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:heatran",
+      "form_id": null,
+      "ability_id": "cobblemon:flashfire",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:air_balloon",
+      "moves": [
+        "cobblemon:magmastorm",
+        "cobblemon:earthpower",
+        "cobblemon:flashcannon",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "steel"
+    },
+    {
+      "set_id": "champion_cynthia_tera_azelf_1",
+      "set_tier": 9,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:azelf",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psychic",
+        "cobblemon:fireblast",
+        "cobblemon:dazzlinggleam"
+      ],
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "tera_type": "psychic"
     }
   ]
 }

@@ -23,7 +23,7 @@
   "screen.more_cobblemon_contents.tower.rule.items": "• 같은 지닌도구 중복 금지",
   "screen.more_cobblemon_contents.tower.rule.bag": "• 전투 중 가방 사용 금지",
   "screen.more_cobblemon_contents.tower.rule.mechanic": "• 선택 기믹 · 진영당 1회",
-  "screen.more_cobblemon_contents.tower.rule.legendary_class": "• 전설급 OFF면 양쪽 모두 선출 불가",
+  "screen.more_cobblemon_contents.tower.rule.legendary_class": "• 전설급 OFF면 양쪽 모두 선출 불가, ON이면 전설 1 + 환상·울비·패러독스 1",
   "screen.more_cobblemon_contents.tower.selection_summary": "선출 %s/%s · %s",
   "screen.more_cobblemon_contents.tower.processing": "서버 확인 중…",
   "screen.more_cobblemon_contents.tower.option.selected": "✓ %s",
@@ -41,7 +41,7 @@
   "screen.more_cobblemon_contents.tower.legendary_class.disallowed.compact": "전설 X",
   "screen.more_cobblemon_contents.tower.legendary_class.allowed": "전설급 허용",
   "screen.more_cobblemon_contents.tower.legendary_class.allowed.compact": "전설 O",
-  "screen.more_cobblemon_contents.tower.legendary_class.tooltip": "전설·환상·울트라비스트·패러독스를 전설급으로 분류합니다. 허용하면 양쪽 모두 전설급을 선출할 수 있지만 사용이 강제되지는 않습니다. 첫 배틀 후 세션 종료까지 고정됩니다.",
+  "screen.more_cobblemon_contents.tower.legendary_class.tooltip": "전설·환상·울트라비스트·패러독스를 전설급으로 분류합니다. 허용하면 한 배틀에 전설·준전설 1마리와 환상·울트라비스트·패러독스 1마리까지 데려갈 수 있고, 상대도 도전자가 데려온 만큼 전설급을 꺼냅니다. 첫 배틀 후 세션 종료까지 고정됩니다.",
   "screen.more_cobblemon_contents.tower.lock": "팀 확정",
   "screen.more_cobblemon_contents.tower.start": "시작",
   "screen.more_cobblemon_contents.tower.resume": "재개",
@@ -236,5 +236,9 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.detail": "최고 연승 %s · %s승 %s패",
   "trainer.more_cobblemon_contents.tower_champion_blue": "챔피언 그린",
   "trainer.more_cobblemon_contents.tower_champion_lance": "챔피언 목호",
-  "trainer.more_cobblemon_contents.tower_champion_cynthia": "챔피언 난천"
+  "trainer.more_cobblemon_contents.tower_champion_cynthia": "챔피언 난천",
+  "screen.more_cobblemon_contents.tower.party_entry.blocked": "출전 불가 · 전설급",
+  "screen.more_cobblemon_contents.tower.party_entry.blocked.tooltip": "전설급 비허용이라 이 포켓몬은 출전할 수 없습니다.",
+  "screen.more_cobblemon_contents.tower.party_entry.narration.blocked": "%s, 전설급 비허용이라 출전 불가",
+  "screen.more_cobblemon_contents.tower.error.too_many_legendary_class": "전설·준전설은 1마리, 환상·울트라비스트·패러독스는 1마리까지 출전할 수 있습니다."
 }

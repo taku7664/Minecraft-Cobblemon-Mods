@@ -14,6 +14,7 @@ import jbro.cobblemon.mcc.internal.tower.TowerStreakStage
 import jbro.cobblemon.mcc.internal.tower.TowerProgress
 import jbro.cobblemon.mcc.internal.tower.TowerProgression
 import jbro.cobblemon.mcc.internal.tower.TowerLegendaryClassPolicy
+import jbro.cobblemon.mcc.internal.tower.TowerLegendaryCount
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -81,13 +82,8 @@ class TowerOpponentCatalogResourceTest {
                 MajorBattleMechanic.entries.forEach { mechanic ->
                     reachableKinds.forEach { kind ->
                         val profiles = catalog.profilesFor(stage, format, kind, mechanic)
-                        // Each tier boss stage has its Champion; the Master Ball bosses are any of them.
-                        val minimum = when (kind) {
-                            TowerOpponentKind.REGULAR -> MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
-                            TowerOpponentKind.TIER_BOSS -> 1
-                            TowerOpponentKind.MASTER_BALL_BOSS -> CHAMPIONS.size
-                        }
-                        if (kind != TowerOpponentKind.REGULAR) assertTrue(profiles.all { it.fixedRoster }, "$stage $format $kind $mechanic")
+                        // Bosses are the Tower Aces and the Champions (see the boss schedule test).
+                        val minimum = if (kind == TowerOpponentKind.REGULAR) MINIMUM_REGULAR_TRAINERS_PER_CATEGORY else CHAMPIONS.size
                         assertTrue(profiles.size >= minimum, "$stage $format $kind $mechanic has only ${profiles.size} eligible trainers")
                     }
                 }
@@ -117,7 +113,7 @@ class TowerOpponentCatalogResourceTest {
             listOf(it.stageIds, it.format, it.opponentKind, it.mechanic, it.theme)
         }
         assertEquals(EXPECTED_PROFILE_CATEGORY_COUNT, categories.size)
-        categories.filterValues { trainers -> trainers.none { it.fixedRoster } }.forEach { (category, trainers) ->
+        categories.filterValues { trainers -> trainers.first().opponentKind == TowerOpponentKind.REGULAR }.forEach { (category, trainers) ->
             assertTrue(trainers.size >= MINIMUM_REGULAR_TRAINERS_PER_CATEGORY, category.toString())
             assertEquals(1, trainers.map { it.setIds.sorted() }.distinct().size, "Trainers in $category must share its rule-driven pool")
         }
@@ -199,40 +195,95 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
-    fun `every boss is a Champion bringing their ace, and their legendary only when the legendary class is allowed`() {
+    fun `every 10th win is a Champion and the bosses between are Tower Aces`() {
         val catalog = bundledCatalog()
-        val tierBoss = mapOf(TowerStreakStage.INTRODUCTORY to "champion_blue", TowerStreakStage.PRACTICAL to "champion_lance",
-            TowerStreakStage.ADVANCED to "champion_cynthia")
         TowerBattleFormat.entries.forEach { format ->
             MajorBattleMechanic.entries.forEach { mechanic ->
-                tierBoss.forEach { (stage, champion) ->
-                    assertEquals(listOf(champion), catalog.profilesFor(stage, format, TowerOpponentKind.TIER_BOSS, mechanic).map { it.profileId })
-                }
-                listOf(false, true).forEach { legendary ->
+                fun bosses(stage: TowerStreakStage, kind: TowerOpponentKind, champion: Boolean) =
+                    catalog.profilesFor(stage, format, kind, mechanic).filter { it.fixedRoster == champion }.map { it.profileId }.toSet()
+                // 5th win: Aces only; 10th: Champions only; 15th, 20th and from the 25th: both, picked by the win.
+                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS, false).size)
+                assertEquals(emptySet<String>(), bosses(TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS, true))
+                assertEquals(emptySet<String>(), bosses(TowerStreakStage.PRACTICAL, TowerOpponentKind.TIER_BOSS, false))
+                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.PRACTICAL, TowerOpponentKind.TIER_BOSS, true))
+                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.ADVANCED, TowerOpponentKind.TIER_BOSS, true))
+                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.ADVANCED, TowerOpponentKind.TIER_BOSS, false).size)
+                assertEquals(CHAMPIONS.keys, bosses(TowerStreakStage.PRO, TowerOpponentKind.MASTER_BALL_BOSS, true))
+                assertEquals(ACES_PER_CATEGORY, bosses(TowerStreakStage.PRO, TowerOpponentKind.MASTER_BALL_BOSS, false).size)
+                val ace = TowerOpponentSelector(catalog).select(TowerStreakStage.PRO, format, TowerOpponentKind.MASTER_BALL_BOSS, mechanic,
+                    championBoss = false) as TowerOpponentSelectionResult.Selected
+                assertEquals(false, ace.profile.fixedRoster)
+            }
+        }
+    }
+
+    @Test
+    fun `a Champion brings the ace, one Mega Stone and as many legendaries as the challenger, main line first`() {
+        val catalog = bundledCatalog()
+        val counts = listOf(TowerLegendaryCount(0, 0), TowerLegendaryCount(1, 0), TowerLegendaryCount(0, 1), TowerLegendaryCount(1, 1))
+        TowerBattleFormat.entries.forEach { format ->
+            MajorBattleMechanic.entries.forEach { mechanic ->
+                counts.forEach { challenger ->
                     CHAMPIONS.forEach { (champion, ace) ->
-                        val result = TowerOpponentSelector(catalog).select(TowerStreakStage.PRO, format, TowerOpponentKind.MASTER_BALL_BOSS,
-                            mechanic, excludedProfileIds = CHAMPIONS.keys - champion, legendaryClassAllowed = legendary)
-                            as TowerOpponentSelectionResult.Selected
-                        assertEquals(champion, result.profile.profileId)
-                        assertEquals(format.selectionSize, result.team.size)
-                        assertTrue(result.team.all { it.setId.startsWith("${champion}_${mechanic.id}_") }, "$champion $mechanic ${result.team}")
-                        assertTrue(result.team.any { it.speciesId == ace }, "$champion leaves out $ace")
-                        assertEquals(legendary, result.team.any { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) }, "$champion legendary=$legendary")
-                        result.team.forEach { set ->
-                            assertEquals(TowerStatSpread(31, 31, 31, 31, 31, 31), set.ivs)
-                            assertTrue(set.evs.total >= 508, set.setId)
-                            // Only the ace holds a Mega Stone; the rest of a Champion's team holds battle items.
-                            if (mechanic != MajorBattleMechanic.MEGA || set.speciesId == ace) assertMechanicShape(mechanic, set)
-                            if (mechanic == MajorBattleMechanic.MEGA) assertEquals(null, set.teraType ?: set.dmaxLevel ?: set.gmaxFactor)
+                        val profile = catalog.profilesFor(TowerStreakStage.PRO, format, TowerOpponentKind.MASTER_BALL_BOSS, mechanic)
+                            .single { it.profileId == champion }
+                        val variety = HashSet<String>()
+                        repeat(12) { seed ->
+                            val result = TowerOpponentSelector(catalog, SeededRandom(seed.toLong())).select(TowerStreakStage.PRO, format,
+                                TowerOpponentKind.MASTER_BALL_BOSS, mechanic, excludedProfileIds = CHAMPIONS.keys - champion,
+                                legendaryClassAllowed = true, championBoss = true, challengerLegendaries = challenger)
+                                as TowerOpponentSelectionResult.Selected
+                            val team = result.team
+                            assertEquals(champion, result.profile.profileId)
+                            assertEquals(format.selectionSize, team.size)
+                            assertEquals(team.size, team.map { it.speciesId }.distinct().size)
+                            assertEquals(team.size, team.mapNotNull { it.heldItemId }.distinct().size, "item clause $team")
+                            assertTrue(team.all { it.setId.startsWith("${champion}_${mechanic.id}_") }, "$champion $mechanic $team")
+                            assertTrue(team.any { it.speciesId == ace }, "$champion leaves out $ace")
+                            val legends = team.filter { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) }.map { it.speciesId }
+                            assertEquals(challenger.total, legends.size, "$champion against $challenger: $legends")
+                            val main = profile.legendLines.single { it.main }
+                            if (challenger.total > 0) assertTrue(main.speciesId in legends, "$champion leaves out ${main.speciesId}")
+                            profile.legendLines.filter { it.speciesId in legends }.forEach { line ->
+                                assertTrue(team.none { it.speciesId == line.replaces }, "${line.speciesId} plays beside ${line.replaces}")
+                            }
+                            team.forEach { set ->
+                                assertEquals(TowerStatSpread(31, 31, 31, 31, 31, 31), set.ivs)
+                                assertTrue(set.evs.total >= 508, set.setId)
+                            }
+                            if (mechanic == MajorBattleMechanic.MEGA) {
+                                assertEquals(1, team.count { it.heldItemId!!.matches(Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")) }, "$team")
+                            } else {
+                                team.forEach { assertMechanicShape(mechanic, it) }
+                            }
+                            variety += team.map { it.setId }
                         }
-                        if (mechanic == MajorBattleMechanic.MEGA) {
-                            assertTrue(result.team.single { it.speciesId == ace }.heldItemId!!.startsWith("mega_showdown:"), "$champion's Mega Stone")
-                        }
+                        // Several sets per member: the same Champion does not field the same six sets every time.
+                        assertTrue(variety.size > format.selectionSize, "$champion $mechanic always fields $variety")
                     }
                 }
             }
         }
-        assertEquals(true, catalog.allSets().single { it.setId == "champion_blue_dynamax_blastoise" }.gmaxFactor)
+        assertEquals(true, catalog.allSets().single { it.setId == "champion_blue_dynamax_blastoise_1" }.gmaxFactor)
+    }
+
+    @Test
+    fun `a regular trainer answers the challenger's legendaries group for group`() {
+        val catalog = bundledCatalog()
+        listOf(TowerLegendaryCount(0, 0), TowerLegendaryCount(1, 0), TowerLegendaryCount(0, 1), TowerLegendaryCount(1, 1)).forEach { challenger ->
+            repeat(8) { seed ->
+                val result = TowerOpponentSelector(catalog, SeededRandom(seed.toLong())).select(TowerStreakStage.PRO, TowerBattleFormat.SINGLE,
+                    TowerOpponentKind.REGULAR, MajorBattleMechanic.TERA, legendaryClassAllowed = true, challengerLegendaries = challenger)
+                    as TowerOpponentSelectionResult.Selected
+                assertEquals(challenger, TowerLegendaryClassPolicy.count(result.team.map { it.speciesId }), "${result.team}")
+            }
+        }
+    }
+
+    private class SeededRandom(seed: Long) : TowerOpponentRandom {
+        private val random = kotlin.random.Random(seed)
+        override fun nextLong(bound: Long): Long = random.nextLong(bound)
+        override fun nextInt(bound: Int): Int = random.nextInt(bound)
     }
 
     @Test
@@ -246,9 +297,12 @@ class TowerOpponentCatalogResourceTest {
         assertEquals(EXPECTED_DISTINCT_TRAINERS, englishNames.distinct().size)
         assertEquals(EXPECTED_DISTINCT_TRAINERS, koreanNames.distinct().size)
         val bosses = profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.distinctBy(TowerOpponentProfile::profileId)
-        assertEquals(CHAMPIONS.keys, bosses.map(TowerOpponentProfile::profileId).toSet())
-        assertTrue(bosses.all { english[it.displayNameKey].asString.startsWith("Champion ") })
-        assertTrue(bosses.all { korean[it.displayNameKey].asString.startsWith("챔피언 ") })
+        assertEquals(CHAMPIONS.keys, bosses.filter { it.fixedRoster }.map(TowerOpponentProfile::profileId).toSet())
+        assertEquals(ACES_PER_CATEGORY * 6, bosses.count { !it.fixedRoster })
+        bosses.forEach { boss ->
+            val (en, ko) = if (boss.fixedRoster) "Champion " to "챔피언 " else "Tower Ace " to "타워 에이스 "
+            assertTrue(english[boss.displayNameKey].asString.startsWith(en) && korean[boss.displayNameKey].asString.startsWith(ko), boss.profileId)
+        }
     }
 
     @Test
@@ -371,7 +425,8 @@ class TowerOpponentCatalogResourceTest {
 
     private companion object {
         const val MINIMUM_REGULAR_TRAINERS_PER_CATEGORY = 84
-        /** 96 regulars, the 24 Tower Aces (now advanced and pro regulars) and the three Champions. */
+        /** 96 regulars, the 24 Tower Aces and the three Champions. */
+        const val ACES_PER_CATEGORY = 4
         const val EXPECTED_DISTINCT_TRAINERS = 123
         /** Each Champion, by the ace every one of their teams carries. */
         val CHAMPIONS = mapOf(

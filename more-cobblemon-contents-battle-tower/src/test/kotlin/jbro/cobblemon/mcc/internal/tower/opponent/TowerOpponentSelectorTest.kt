@@ -176,7 +176,7 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
-    fun `legendary class on includes specials in the eligible pool`() {
+    fun `legendary class on fields as many specials as the challenger brings`() {
         val allSets = listOf(
             pokemonSet(1),
             pokemonSet(2),
@@ -191,6 +191,7 @@ class TowerOpponentSelectorTest {
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
             legendaryClassAllowed = true,
+            challengerLegendaries = jbro.cobblemon.mcc.internal.tower.TowerLegendaryCount(other = 1),
         ) as TowerOpponentSelectionResult.Selected
 
         assertEquals(3, enabled.team.size)

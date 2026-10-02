@@ -140,6 +140,22 @@ class TowerTeamRulesTest {
     }
 
     @Test
+    fun `with the legendary class allowed a team brings one Legendary and one Mythical, Ultra Beast or Paradox at most`() {
+        fun teamOf(vararg species: String): TowerRegisteredTeam = (TowerTeamRules.register(
+            species.mapIndexed { index, speciesId -> pokemon(index + 1, speciesId).copy(legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(speciesId)) } +
+                (species.size + 1..6).map { pokemon(it, "cobblemon:filler$it") },
+        ) as TowerTeamRegistrationResult.Accepted).team
+        fun select(team: TowerRegisteredTeam) = TowerTeamRules.select(team, TowerBattleFormat.SINGLE, listOf(id(1), id(2), id(3)), legendaryClassAllowed = true)
+
+        assertTrue(select(teamOf("cobblemon:mewtwo", "cobblemon:mew")) is TowerTeamSelectionResult.Accepted)
+        assertTrue(select(teamOf("cobblemon:heatran", "cobblemon:fluttermane")) is TowerTeamSelectionResult.Accepted)
+        assertEquals(TowerTeamSelectionResult.Rejected(listOf(TowerTeamSelectionIssue.TooManyLegendaryClass(TowerLegendaryCount(2, 0)))),
+            select(teamOf("cobblemon:mewtwo", "cobblemon:heatran")))
+        assertEquals(TowerTeamSelectionResult.Rejected(listOf(TowerTeamSelectionIssue.TooManyLegendaryClass(TowerLegendaryCount(0, 2)))),
+            select(teamOf("cobblemon:mew", "cobblemon:nihilego")))
+    }
+
+    @Test
     fun `caps levels above fifty without raising lower levels`() {
         assertEquals(1, pokemon(1, "cobblemon:pikachu", level = 1).battleLevel)
         assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 50).battleLevel)

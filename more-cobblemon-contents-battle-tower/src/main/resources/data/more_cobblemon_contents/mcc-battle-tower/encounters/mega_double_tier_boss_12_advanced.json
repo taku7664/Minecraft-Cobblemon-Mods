@@ -4,6 +4,12 @@
     {
       "encounter_id": "mega_double_tier_boss_12_advanced",
       "trainer_ids": [
+        "trainer_105",
+        "trainer_106",
+        "trainer_107",
+        "trainer_108",
+        "champion_blue",
+        "champion_lance",
         "champion_cynthia"
       ],
       "stage_ids": [
@@ -15,7 +21,7 @@
       "weight": 100,
       "ai_skill": 4,
       "theme": "mega_double_boss",
-      "pool_id": "mega_tier_2"
+      "pool_id": "mega_tier_3"
     }
   ]
 }
