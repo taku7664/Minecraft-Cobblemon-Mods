@@ -154,6 +154,11 @@
     el("div", { class: "wiki-body" }, [rail, content]),
   ]);
   main.replaceWith(shell);
+  // The rail scrolls on its own; open it at the current page rather than at its top.
+  var currentLink = rail.querySelector("a.current");
+  if (currentLink && rail.scrollHeight > rail.clientHeight) {
+    rail.scrollTop = currentLink.offsetTop - (rail.clientHeight - currentLink.offsetHeight) / 2;
+  }
   document.body.appendChild(el("footer", { class: "wiki-footer", text: nav.title }));
   if (current && !child) document.title = current === pages[0] ? nav.title : current.title + " · " + nav.title;
 

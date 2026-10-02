@@ -164,6 +164,11 @@ a:hover { color: var(--primary); }
   align-self: start;
   position: sticky;
   top: 16px;
+  /* Taller than the window it would only scroll with the page's end; give it its own scroll instead. */
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   padding: 10px;
   background: var(--panel);
   border: 2px solid var(--border);
@@ -343,7 +348,7 @@ kbd {
   .wiki-brand strong { font-size: 17px; }
   .wiki-search { width: 100%; }
   .wiki-body { grid-template-columns: 1fr; }
-  .wiki-rail { position: static; }
+  .wiki-rail { position: static; max-height: none; overflow: visible; }
   .wiki-content { padding: 16px; }
 }
 
