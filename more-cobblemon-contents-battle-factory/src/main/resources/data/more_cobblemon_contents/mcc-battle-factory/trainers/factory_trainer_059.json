@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "factory_trainer_059",
+      "display_name_key": "trainer.more_cobblemon_contents.factory_trainer_059",
+      "description_key": "factory.more_cobblemon_contents.trainer.shared.description",
+      "formats": [
+        "single"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "balanced_pressure",
+        "focus_fire"
+      ],
+      "skin": "rctmod:textures/trainers/single/picnicker_alicia_009a.png",
+      "slim": false
+    }
+  ]
+}

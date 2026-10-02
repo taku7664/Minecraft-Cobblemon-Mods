@@ -1,4 +1,5 @@
-"""Gives every Battle Tower and Battle Factory trainer an RCT Trainers+ skin.
+"""Gives every Battle Tower trainer an RCT Trainers+ skin. The Battle Factory's trainers, looks included, come from
+gen_factory_trainers.py.
 
 Writes `skin` and `slim` into each trainer's JSON. RCT Trainers+ ships about one look per trainer class (its many
 files per class are copies of one image), so a trainer gets a look, not a personal skin: Tower Aces one of the strong
@@ -20,7 +21,6 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\RCT Trainers+ [1.7] v2.2.zip"))
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources"
-FACTORY = ROOT / "more-cobblemon-contents-battle-factory/src/main/resources"
 
 FEMALE_NAMES = {"Alice", "Amy", "Anna", "Bianca", "Claire", "Daphne", "Emily", "Fiona", "Hazel", "Jenna", "Julia", "Kate",
                 "Laura", "Leah", "Lena", "Lucy", "Maya", "Nina", "Ruby", "Sarah", "Zoe"}
@@ -67,7 +67,7 @@ def main():
     turns = {key: 0 for key in ("ace_male", "ace_female", "male", "female")}
     looks = {"ace_male": ACE_MALE, "ace_female": ACE_FEMALE, "male": MALE, "female": FEMALE}
     written = {}
-    entries = list(trainers(TOWER, "mcc-battle-tower")) + list(trainers(FACTORY, "mcc-battle-factory"))
+    entries = list(trainers(TOWER, "mcc-battle-tower"))
     for path, raw, document, trainer, name in entries:
         ace = name.startswith("Tower Ace ")
         female = name.removeprefix("Tower Ace ").split()[0] in FEMALE_NAMES

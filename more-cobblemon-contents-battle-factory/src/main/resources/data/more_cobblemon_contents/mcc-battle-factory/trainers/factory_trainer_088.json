@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "factory_trainer_088",
+      "display_name_key": "trainer.more_cobblemon_contents.factory_trainer_088",
+      "description_key": "factory.more_cobblemon_contents.trainer.shared.description",
+      "formats": [
+        "single"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "field_control",
+        "balanced_pressure"
+      ],
+      "skin": "rctmod:textures/trainers/single/mega_trainer_aloysius_05cc.png",
+      "slim": false
+    }
+  ]
+}
