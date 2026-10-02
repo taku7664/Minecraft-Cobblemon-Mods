@@ -80,9 +80,14 @@ class FactoryRentalRulesTest {
             FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1)),
             FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 1),
         )
+        // Variant 4 alone is narrow without the legendary class, so its rounds mix in variant 3.
         assertEquals(
-            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(4)),
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4)),
             FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 4),
+        )
+        assertEquals(
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4)),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 7),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4), legendaryClassAllowed = true),

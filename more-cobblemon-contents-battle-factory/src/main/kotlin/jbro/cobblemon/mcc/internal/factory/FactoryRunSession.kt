@@ -33,11 +33,14 @@ internal object FactoryProgression {
                 1 -> FactoryPoolWindow(FactoryPoolGroup.STARTER, setOf(1))
                 2 -> FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(1))
                 3 -> FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(2))
-                in 4..7 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round - 3))
+                in 4..6 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round - 3))
+                // Variant 4 alone has few species once the legendary class is out, so round 7 mixes in variant 3.
+                7 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4))
                 else -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS, legendaryClassAllowed = true)
             }
             FactoryLevelMode.OPEN_LEVEL -> when (round) {
-                in 1..4 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round))
+                in 1..3 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round))
+                4 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4))
                 in 5..7 -> FactoryPoolWindow(
                     FactoryPoolGroup.ADVANCED,
                     setOf(3, 4),

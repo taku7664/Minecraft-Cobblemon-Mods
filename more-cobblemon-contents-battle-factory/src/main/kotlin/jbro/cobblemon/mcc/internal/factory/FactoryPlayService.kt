@@ -55,6 +55,7 @@ internal class FactoryPlayService(
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
     private val recentOpponentTrainers = RecentSelectionHistory<UUID, String>(RECENT_TRAINER_LIMIT)
+    private val recentOpponentSpecies = RecentSelectionHistory<UUID, String>(RECENT_OPPONENT_SPECIES_LIMIT)
 
     @Synchronized
     fun status(playerId: UUID): FactoryPlayView = current(playerId)
@@ -176,6 +177,7 @@ internal class FactoryPlayService(
                     snapshot.levelMode,
                     round,
                     recentOpponentTrainers.recent(playerId),
+                    recentOpponentSpecies.recent(playerId),
                 )
             if (opponent !is FactoryOpponentSelectionResult.Selected) {
                 return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
@@ -192,6 +194,7 @@ internal class FactoryPlayService(
             if (launched is FactoryBattleLaunchResult.Started) {
                 started = true
                 recentOpponentTrainers.record(playerId, opponent.trainer.trainerId)
+                opponent.team.forEach { recentOpponentSpecies.record(playerId, it.speciesId) }
                 return FactoryPlayResult.Accepted(current(playerId))
             }
             return FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
@@ -249,6 +252,7 @@ internal class FactoryPlayService(
         pendingStarts.remove(playerId)
         draftOffers.forget(playerId)
         recentOpponentTrainers.forget(playerId)
+        recentOpponentSpecies.forget(playerId)
         sessions.disconnect(playerId, terminateBattle)
     }
 
@@ -259,6 +263,7 @@ internal class FactoryPlayService(
     fun clear() {
         pendingStarts.clear()
         recentOpponentTrainers.clear()
+        recentOpponentSpecies.clear()
         draftOffers.clear()
         sessions.clear()
     }
@@ -331,5 +336,7 @@ internal class FactoryPlayService(
 
     private companion object {
         const val RECENT_TRAINER_LIMIT = 3
+        /** About a round of singles opponents (7 battles of 3). */
+        const val RECENT_OPPONENT_SPECIES_LIMIT = 24
     }
 }

@@ -120,12 +120,10 @@ internal class FactoryDraftSelector(
         return false
     }
 
-    private fun <T> shuffled(values: List<T>): List<T> = values.toMutableList().also(::shuffle)
-
     private fun orderedCandidates(
         values: List<FactoryRentalTemplate>,
         recentSpeciesIds: Set<String>,
-    ): List<FactoryRentalTemplate> = shuffled(values).sortedBy { if (it.speciesId in recentSpeciesIds) 1 else 0 }
+    ): List<FactoryRentalTemplate> = onePerSpecies(values, random).sortedBy { if (it.speciesId in recentSpeciesIds) 1 else 0 }
 
     private fun <T> shuffle(values: MutableList<T>) {
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
@@ -158,9 +156,10 @@ internal class FactoryOpponentSelector(
         levelMode: FactoryLevelMode,
         round: Int,
         excludedTrainerIds: Set<String> = emptySet(),
+        recentSpeciesIds: Set<String> = emptySet(),
     ): FactoryOpponentSelectionResult {
         val window = FactoryProgression.opponentPoolWindow(levelMode, round)
-        val templates = selectTeam(catalog.rentalPool(window), format.selectionSize)
+        val templates = selectTeam(catalog.rentalPool(window), format.selectionSize, recentSpeciesIds)
             ?: return FactoryOpponentSelectionResult.NoEligibleTrainer
         val eligible = catalog.trainersFor(format)
         if (eligible.isEmpty()) return FactoryOpponentSelectionResult.NoEligibleTrainer
@@ -193,8 +192,9 @@ internal class FactoryOpponentSelector(
         )
     }
 
-    private fun selectTeam(candidates: List<FactoryRentalTemplate>, size: Int): List<FactoryRentalTemplate>? {
-        val ordered = candidates.toMutableList().also(::shuffle)
+    /** A team of [size] species drawn evenly by species; species the player met lately come last. */
+    private fun selectTeam(candidates: List<FactoryRentalTemplate>, size: Int, recentSpeciesIds: Set<String>): List<FactoryRentalTemplate>? {
+        val ordered = onePerSpecies(candidates, random).sortedBy { if (it.speciesId in recentSpeciesIds) 1 else 0 }
         val selected = ArrayList<FactoryRentalTemplate>(size)
         return selected.takeIf { selectTeam(ordered, size, 0, selected, HashSet()) }
     }
@@ -234,4 +234,14 @@ internal class FactoryOpponentSelector(
     private fun <T> shuffle(values: MutableList<T>) {
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
     }
+}
+
+/**
+ * One random set of each species, the species in random order. Draws go by species, not by set, so a species with
+ * many forms or presets (Arceus has 72) comes up no more often than any other.
+ */
+private fun onePerSpecies(values: List<FactoryRentalTemplate>, random: FactoryCatalogRandom): List<FactoryRentalTemplate> {
+    val picks = values.groupBy { it.speciesId }.values.map { sets -> sets[random.nextInt(sets.size)] }.toMutableList()
+    for (index in picks.lastIndex downTo 1) Collections.swap(picks, index, random.nextInt(index + 1))
+    return picks
 }
