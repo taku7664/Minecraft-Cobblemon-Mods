@@ -1,7 +1,9 @@
 package jbro.cobblemon.ui.extended
 
 import com.cobblemon.mod.common.client.CobblemonClient
+import com.mojang.blaze3d.platform.InputConstants
 import jbro.cobblemon.ui.dialogue.BattleDialogueQueue
+import jbro.cobblemon.ui.dialogue.HoldRepeat
 import jbro.cobblemon.ui.extended.battle.messages.TranslationKeys
 import jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts
 import jbro.cobblemon.ui.extended.ui.shared.BattleDialogueStyle
@@ -16,11 +18,13 @@ import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.contents.TranslatableContents
+import org.lwjgl.glfw.GLFW
 
 /**
  * Short, acknowledged battle narration drawn over the command area, in the games' message-box manner: text is
@@ -42,6 +46,8 @@ object BattleDialogue {
     private var revealing: Any? = null
     private var revealNanos = 0L
     private var revealHeld = false
+    // Paced like a keyboard's own repeat: a pause long enough for a single tap, then a quick run.
+    private val hold = HoldRepeat(400_000_000L, 70_000_000L)
 
     fun enqueue(messages: List<Component>) {
         queue.enqueue(messages.filter { message ->
@@ -56,24 +62,65 @@ object BattleDialogue {
         if (!CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) return false
         if (!queue.hasPending() && !queue.isConfirmHeld && !revealHeld) return false
         // A press that finishes the line is held until release, so key repeat cannot also skip it.
+        // Holding the key repeats on its own timer (see [tickHold]), not the system's key repeat.
         if (revealHeld) return true
         val current = queue.current()
         if (current != null && !queue.isConfirmHeld && revealed(current) < current.string.length) {
             revealNanos = 0L
             revealHeld = true
+            hold.press(System.nanoTime())
             BattleUiSounds.click()
             return true
         }
         // A held key only waits for its release; the press that moves on clicks.
-        if (!queue.isConfirmHeld && current != null) BattleUiSounds.click()
+        if (!queue.isConfirmHeld && current != null) {
+            BattleUiSounds.click()
+            hold.press(System.nanoTime())
+        }
         queue.pressConfirm()
         return true
     }
 
     fun releaseConfirm(keyCode: Int, scanCode: Int) {
-        if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) {
-            queue.releaseConfirm()
-            revealHeld = false
+        if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) releaseHold()
+    }
+
+    private fun releaseHold() {
+        queue.releaseConfirm()
+        revealHeld = false
+        hold.release()
+    }
+
+    /**
+     * Held confirm runs on like a keyboard's key repeat: after a short pause each step finishes the line being
+     * written, or moves on when it is already complete.
+     */
+    private fun tickHold() {
+        if (!hold.isHeld()) return
+        if (!confirmKeyDown()) {
+            // The release can land while another screen has the keyboard; the key's own state settles it.
+            releaseHold()
+            return
+        }
+        if (!hold.due(System.nanoTime())) return
+        val current = queue.current() ?: return
+        if (revealed(current) < current.string.length) {
+            revealNanos = 0L
+            return
+        }
+        // Keep the latch on, so the eventual release is still the one that frees the key.
+        if (!queue.isConfirmHeld) queue.pressConfirm() else queue.repeatConfirm()
+        revealHeld = true
+        BattleUiSounds.click()
+    }
+
+    private fun confirmKeyDown(): Boolean {
+        val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey)
+        val window = Minecraft.getInstance().window.window
+        return when (key.type) {
+            InputConstants.Type.KEYSYM -> InputConstants.isKeyDown(window, key.value)
+            InputConstants.Type.MOUSE -> GLFW.glfwGetMouseButton(window, key.value) == GLFW.GLFW_PRESS
+            else -> true
         }
     }
 
@@ -91,6 +138,7 @@ object BattleDialogue {
         queue.clear()
         revealing = null
         revealHeld = false
+        hold.release()
     }
 
     fun render(context: GuiGraphics) {
@@ -99,7 +147,8 @@ object BattleDialogue {
         val client = Minecraft.getInstance()
         if (battle.minimised || client.options.hideGui || BattleInfoPanel.isExpanded ||
             jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.isOpen) return
-        renderMessage(context, message)
+        tickHold()
+        renderMessage(context, queue.current() ?: return)
     }
 
     /**

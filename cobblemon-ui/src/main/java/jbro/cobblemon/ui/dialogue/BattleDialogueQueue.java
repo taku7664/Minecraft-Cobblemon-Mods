@@ -31,6 +31,13 @@ public final class BattleDialogueQueue<T> {
         return true;
     }
 
+    /** A key-repeat step while confirm stays held: moves on without waiting for a release. */
+    public synchronized boolean repeatConfirm() {
+        if (!confirmHeld || messages.isEmpty()) return false;
+        messages.removeFirst();
+        return true;
+    }
+
     public synchronized void releaseConfirm() {
         confirmHeld = false;
     }
