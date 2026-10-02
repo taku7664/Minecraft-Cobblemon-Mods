@@ -507,15 +507,29 @@ class Cobblemon173ShowdownObservationAdapter(
             "whirlpool",
             "wrap",
         )
-        private val PUBLIC_LEVEL = Regex("(?:^|,\\s*)L(\\d+)(?:,|$)")
+        private val PUBLIC_LEVEL = Regex("L(\\d+)")
+        private val PUBLIC_TERA_TYPE = Regex("tera:[A-Za-z]+")
 
         fun publicSwitchSnapshot(
             resolved: Cobblemon173PublicPokemonSnapshot,
             publicDetails: String?,
         ): Cobblemon173PublicPokemonSnapshot {
-            val publicName = publicDetails.orEmpty().substringBefore(',').trim()
+            val details = publicDetails.orEmpty().split(',').map(String::trim)
+            val publicName = details.first()
             val showdownSpeciesId = effectId(publicName).takeIf(String::isNotBlank)
-            val publicLevel = PUBLIC_LEVEL.find(publicDetails.orEmpty())?.groupValues?.get(1)?.toIntOrNull()
+            val attributes = details.drop(1)
+            val levelAttributes = attributes.filter { it.startsWith("L") }
+            val validDetails = showdownSpeciesId != null && attributes.all {
+                it == "M" || it == "F" || it == "shiny" || PUBLIC_LEVEL.matches(it) ||
+                    PUBLIC_TERA_TYPE.matches(it) || runCatching { UUID.fromString(it) }.isSuccess
+            }
+            // Showdown omits L100. This is public protocol information, not the resolver's hidden level.
+            // Missing/malformed details remain unknown rather than silently becoming level 100.
+            val publicLevel = if (!validDetails || levelAttributes.size > 1) null else {
+                levelAttributes.singleOrNull()?.let {
+                    PUBLIC_LEVEL.matchEntire(it)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { level -> level > 0 }
+                } ?: if (levelAttributes.isEmpty()) 100 else null
+            }
             return resolved.copy(
                 speciesId = showdownSpeciesId?.let { "showdown:$it" } ?: UNKNOWN_PUBLIC_SPECIES_ID,
                 formId = null,
