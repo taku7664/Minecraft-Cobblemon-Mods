@@ -111,6 +111,8 @@ internal object InquiryReview {
         val cardMessageId: String,
         val conversationId: String? = null,
         val reviewed: Boolean = false,
+        /** The inquiry's private thread; null for cards posted straight in the inquiry channel. */
+        val cardChannelId: String? = null,
     ) {
         fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason, Inquiries.Via.valueOf(via), at, id)
     }
@@ -139,11 +141,11 @@ internal object InquiryReview {
         }
     }
 
-    /** Called once [inquiry]'s card is up as [cardMessageId]; the review runs in the background. */
-    fun enqueue(inquiry: Inquiry, cardMessageId: String) {
+    /** Called once [inquiry]'s card is up as [cardMessageId] in [cardChannelId]; the review runs in the background. */
+    fun enqueue(inquiry: Inquiry, cardMessageId: String, cardChannelId: String? = null) {
         if (!active) return
         val record = Record(inquiry.id, inquiry.nickname, inquiry.accountName, inquiry.playerId.toString(), inquiry.reason,
-            inquiry.via.name, inquiry.at, cardMessageId)
+            inquiry.via.name, inquiry.at, cardMessageId, cardChannelId = cardChannelId)
         save(record)
         worker.execute { review(record) }
     }
@@ -171,7 +173,7 @@ internal object InquiryReview {
         val verdict = answer.verdict
         JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}", record.id, record.accountName, verdict.verdict)
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, verdict.playerSummary, inquiry.reason) }
-        post(discord.inquiryChannelId, reply(record.cardMessageId, verdict.playerSummary))
+        post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, verdict.playerSummary))
         post(discord.adminChannelId, DiscordRest.message(embed = reviewEmbed(inquiry, verdict)).withButton(record.id))
     }
 

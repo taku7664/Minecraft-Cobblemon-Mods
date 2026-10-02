@@ -11,6 +11,7 @@ import java.net.http.HttpResponse
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
+import jbro.cobblemon.policy.JbroPolicy
 
 /**
  * The server's Discord, kept in `config/jbro-policy-discord.json` apart from the main config because the bot token and
@@ -24,6 +25,8 @@ import java.time.Duration
  * @property webhookUrl posts inquiries without a bot, used when the bot has no channel.
  * @property adminChannelId the only channel where the bot takes operator commands; blank turns them off.
  * @property adminAccess who may run which operator command: a Discord user or role ID to command names, `*` for all.
+ * @property verifiedRoleId the role `/verify` gives a member who linked their Minecraft account; blank turns linking off.
+ * @property syncNickname whether `/verify` also sets the member's server nickname to their Minecraft nickname.
  */
 data class DiscordSettings(
     val webhookUrl: String = "",
@@ -33,6 +36,8 @@ data class DiscordSettings(
     val newsChannelId: String = "",
     val adminChannelId: String = "",
     val adminAccess: Map<String, Set<String>> = emptyMap(),
+    val verifiedRoleId: String = "",
+    val syncNickname: Boolean = true,
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -56,6 +61,7 @@ data class DiscordSettings(
         require(statusChannelId.isBlank() || statusChannelId.all(Char::isDigit)) { "The status channel ID is the channel's number" }
         require(newsChannelId.isBlank() || newsChannelId.all(Char::isDigit)) { "The news channel ID is the channel's number" }
         require(adminChannelId.isBlank() || adminChannelId.all(Char::isDigit)) { "The admin channel ID is the channel's number" }
+        require(verifiedRoleId.isBlank() || verifiedRoleId.all(Char::isDigit)) { "The verified role ID is the role's number" }
         require(adminAccess.keys.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Admin access is keyed by Discord user or role IDs" }
         require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
     }
@@ -73,7 +79,8 @@ data class DiscordSettings(
                 id.trim() to commands.asJsonArray.map { it.asString.trim() }.toSet()
             }.orEmpty()
             return DiscordSettings(text("webhookUrl"), text("botToken"), text("inquiryChannelId"), text("statusChannelId"),
-                text("newsChannelId"), text("adminChannelId"), access)
+                text("newsChannelId"), text("adminChannelId"), access, text("verifiedRoleId"),
+                root.get("syncNickname")?.asBoolean ?: true)
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */
@@ -101,20 +108,69 @@ internal object DiscordWebhook {
     /** Discord's REST API; tests point it at a local server. */
     internal var apiBase = "https://discord.com/api/v10"
 
-    /** Posts the card; the bot's post answers with the card's message ID, a webhook's with nothing. */
-    fun send(route: DiscordSettings.InquiryRoute, inquiry: Inquiry): String? = when (route) {
-        is DiscordSettings.InquiryRoute.Webhook -> send(route.url, inquiry)
-        is DiscordSettings.InquiryRoute.Bot -> post(HttpRequest.newBuilder(URI.create("$apiBase/channels/${route.channelId}/messages"))
-            .header("Authorization", "Bot ${route.token}"), payload(inquiry, webhook = false))
+    /** Where the bot put a card: the channel or thread, and the message. */
+    data class Card(val channelId: String, val messageId: String)
+
+    /**
+     * Posts the card. The bot opens a private thread for it in the inquiry channel and adds [memberId], the player's
+     * linked Discord account, so each player sees their own inquiries alone; without the thread permission it posts
+     * in the channel. The bot answers with where the card is, a webhook with nothing.
+     */
+    fun send(route: DiscordSettings.InquiryRoute, inquiry: Inquiry, memberId: String? = null): Card? = when (route) {
+        is DiscordSettings.InquiryRoute.Webhook -> { send(route.url, inquiry); null }
+        is DiscordSettings.InquiryRoute.Bot -> {
+            val thread = openThread(route, inquiry)
+            val channel = thread ?: route.channelId
+            val message = post(bot(route, "/channels/$channel/messages"), payload(inquiry, webhook = false))
+            if (thread != null && memberId != null) addMember(route, thread, memberId)
+            message?.let { Card(channel, it) }
+        }
     }
 
     fun send(url: String, inquiry: Inquiry): String? = post(HttpRequest.newBuilder(URI.create(url)), payload(inquiry, webhook = true))
 
-    private fun post(request: HttpRequest.Builder, body: JsonObject): String? {
-        val response = client.send(request.timeout(Duration.ofSeconds(15))
+    private fun bot(route: DiscordSettings.InquiryRoute.Bot, path: String) =
+        HttpRequest.newBuilder(URI.create(apiBase + path)).header("Authorization", "Bot ${route.token}")
+
+    /** A private thread only its members and the operators see, or null when Discord refused one. */
+    private fun openThread(route: DiscordSettings.InquiryRoute.Bot, inquiry: Inquiry): String? {
+        val body = JsonObject().apply {
+            addProperty("name", threadName(inquiry))
+            addProperty("type", PRIVATE_THREAD)
+            // Members cannot invite others; the operators still can.
+            addProperty("invitable", false)
+            addProperty("auto_archive_duration", WEEK_MINUTES)
+        }
+        val response = request(bot(route, "/channels/${route.channelId}/threads"), "POST", body)
+        if (response.statusCode() !in 200..299) {
+            JbroPolicy.LOGGER.warn("Discord refused a private inquiry thread ({}), so the card goes in the channel: {}",
+                response.statusCode(), response.body().take(200))
+            return null
+        }
+        return runCatching { JsonParser.parseString(response.body()).asJsonObject.get("id")?.asString }.getOrNull()
+    }
+
+    private fun addMember(route: DiscordSettings.InquiryRoute.Bot, thread: String, memberId: String) {
+        val response = request(bot(route, "/channels/$thread/thread-members/$memberId"), "PUT", null)
+        if (response.statusCode() !in 200..299) {
+            JbroPolicy.LOGGER.warn("Could not add {} to inquiry thread {} ({}): {}", memberId, thread, response.statusCode(), response.body().take(200))
+        }
+    }
+
+    internal fun threadName(inquiry: Inquiry) = "문의 ${inquiry.id} · ${inquiry.nickname}".take(100)
+
+    private const val PRIVATE_THREAD = 12
+    private const val WEEK_MINUTES = 10080
+
+    private fun request(request: HttpRequest.Builder, method: String, body: JsonObject?): HttpResponse<String> =
+        client.send(request.timeout(Duration.ofSeconds(15))
             .header("Content-Type", "application/json; charset=utf-8")
             .header("User-Agent", DiscordBot.USER_AGENT)
-            .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(), HttpResponse.BodyHandlers.ofString())
+            .method(method, body?.let { HttpRequest.BodyPublishers.ofString(it.toString()) } ?: HttpRequest.BodyPublishers.noBody())
+            .build(), HttpResponse.BodyHandlers.ofString())
+
+    private fun post(request: HttpRequest.Builder, body: JsonObject): String? {
+        val response = request(request, "POST", body)
         check(response.statusCode() in 200..299) { "Discord answered ${response.statusCode()}: ${response.body().take(200)}" }
         return runCatching { JsonParser.parseString(response.body()).asJsonObject.get("id")?.asString }.getOrNull()
     }

@@ -95,10 +95,10 @@ object Inquiries {
         val inquiry = Inquiry(nickname, accountName, playerId, text, via, now)
         return CompletableFuture.supplyAsync({
             try {
-                val cardId = DiscordWebhook.send(route, inquiry)
+                val card = DiscordWebhook.send(route, inquiry, DiscordLinks.discordOf(playerId))
                 JbroPolicy.LOGGER.info("Sent inquiry {} from {} ({}) via {} to Discord", inquiry.id, accountName, playerId, via)
                 // Reviews answer under the card, which only the bot's own posts let them do.
-                if (route is DiscordSettings.InquiryRoute.Bot && cardId != null) InquiryReview.enqueue(inquiry, cardId)
+                if (card != null) InquiryReview.enqueue(inquiry, card.messageId, card.channelId)
                 Outcome.Sent
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Could not send the inquiry from {} ({}) to Discord", accountName, playerId, failure)

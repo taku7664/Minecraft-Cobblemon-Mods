@@ -172,6 +172,7 @@ internal object DiscordBot {
         if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
         DiscordCommands.registerBuiltIns()
         if (withContents) MccDiscordCommands.register()
+        if (settings.verifiedRoleId.isNotBlank()) DiscordLinks.registerDiscord(settings)
         if (settings.adminChannelId.isNotBlank()) {
             DiscordAdminCommands.register()
             if (withContents) MccDiscordCommands.registerAdmin()
@@ -313,9 +314,11 @@ internal object DiscordBot {
         val options = data.getAsJsonArray("options")?.associate { option ->
             option.asJsonObject.get("name").asString to option.asJsonObject.get("value").asString
         }.orEmpty()
-        client.request("POST", "/interactions/$id/$interactionToken/callback",
-            JsonObject().apply { addProperty("type", DEFERRED_REPLY) }, authorized = false)
         val command = DiscordCommands.find(data.get("name").asString)
+        client.request("POST", "/interactions/$id/$interactionToken/callback", JsonObject().apply {
+            addProperty("type", DEFERRED_REPLY)
+            if (command?.ephemeral == true) add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
+        }, authorized = false)
         val live = server
         val caller = caller(interaction)
         val refusal = (command as? DiscordAdminCommand)?.let { DiscordAdminAccess.check(settings, caller, it.name) }
@@ -329,7 +332,7 @@ internal object DiscordBot {
             live == null -> DiscordRest.message("서버가 아직 켜지는 중이에요. 잠시 뒤에 다시 해 주세요.")
             else -> try {
                 live.submit(Supplier {
-                    if (command is DiscordAdminCommand) command.run(live, options, caller) else command.reply(live, options)
+                    if (command is DiscordAdminCommand) command.run(live, options, caller) else command.reply(live, options, caller)
                 }).get(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Discord command /{} failed", command.name, failure)
@@ -362,12 +365,20 @@ internal object DiscordBot {
             user?.get("username")?.asString.orEmpty(),
             member?.getAsJsonArray("roles")?.map { it.asString }.orEmpty(),
             interaction.get("channel_id")?.asString.orEmpty(),
+            interaction.get("guild_id")?.asString.orEmpty(),
         )
     }
 
     private const val APPLICATION_COMMAND = 2
     private const val MESSAGE_COMPONENT = 3
     private const val DEFERRED_REPLY = 5
+    private const val EPHEMERAL = 64
+
+    /** Runs [task] with the bot's REST client off the server thread, after the reply in hand; dropped without a bot. */
+    fun later(task: (DiscordRest) -> Unit) {
+        val client = rest ?: return
+        restWorker.execute(guarded { task(client) })
+    }
 
     private fun send(payload: JsonObject) {
         val open = socket ?: return JbroPolicy.LOGGER.warn("Discord bot had no open connection to send on")

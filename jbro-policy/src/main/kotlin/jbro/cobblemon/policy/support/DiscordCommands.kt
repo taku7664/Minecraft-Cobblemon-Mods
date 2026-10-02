@@ -12,8 +12,14 @@ internal interface DiscordCommand {
     /** Options as Discord defines them; empty for a command that takes none. */
     val options: JsonArray get() = JsonArray()
 
+    /** Whether only the caller sees the reply. */
+    val ephemeral: Boolean get() = false
+
     /** The reply message body (content or embeds) to [options] given by name. Runs on the server thread. */
     fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject
+
+    /** [reply] for a command that needs to know who ran it. */
+    fun reply(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject = reply(server, options)
 
     fun definition() = JsonObject().apply {
         addProperty("name", name)
@@ -24,7 +30,13 @@ internal interface DiscordCommand {
 }
 
 /** Who ran an operator command, as Discord tells it. */
-internal data class DiscordCaller(val userId: String, val userName: String, val roleIds: List<String>, val channelId: String) {
+internal data class DiscordCaller(
+    val userId: String,
+    val userName: String,
+    val roleIds: List<String>,
+    val channelId: String,
+    val guildId: String = "",
+) {
     override fun toString() = "$userName ($userId)"
 }
 
