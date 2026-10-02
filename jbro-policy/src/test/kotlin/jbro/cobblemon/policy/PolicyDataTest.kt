@@ -32,6 +32,13 @@ class PolicyDataTest {
     }
 
     @Test
+    fun `the Ability Patch recipe never loads, so the BP shop is the only way to a hidden ability`() {
+        val recipe = json("/resourcepacks/no_ability_patch/data/mega_showdown/recipe/ability_patch.json")
+        assertTrue(recipe.has("fabric:load_conditions"))
+        for (lang in listOf("ko_kr", "en_us")) assertTrue(json("/assets/jbro_policy/lang/$lang.json").has("pack.jbro_policy.no_ability_patch"))
+    }
+
+    @Test
     fun `player chat reads name colon message`() {
         val chat = json("/data/jbro_policy/chat_type/chat.json").getAsJsonObject("chat")
         val key = chat.get("translation_key").asString
