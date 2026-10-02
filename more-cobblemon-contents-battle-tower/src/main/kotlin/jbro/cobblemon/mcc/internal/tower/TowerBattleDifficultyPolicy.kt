@@ -31,11 +31,14 @@ internal object TowerBattleDifficultyPolicy {
 
     /**
      * BOSS is the Champions' alone. Endless, for challengers who cleared Normal, brings a Champion at BOSS to every
-     * boss battle. In Normal the Tower Aces, strong trainers rather than Champions, play ADVANCED at the 5th and
-     * 15th wins, and its Champions ADVANCED at the 10th win and BOSS at the 20th.
+     * boss battle. Normal climbs a step at a time: STANDARD for the 5th-win Tower Ace, ADVANCED for the 10th-win
+     * Champion and the 15th-win Tower Ace, and BOSS for the 20th-win Champion.
      */
     private fun boss(stage: TowerStreakStage, aiSkill: Int, mode: TowerMode, champion: Boolean): BattleTrainerProfile {
-        if (!champion) return BattleTrainerProfile.balanced(aiSkill, BattleDifficultyProfiles.ADVANCED)
+        if (!champion) {
+            val difficulty = if (stage == TowerStreakStage.INTRODUCTORY) BattleDifficultyProfiles.STANDARD else BattleDifficultyProfiles.ADVANCED
+            return BattleTrainerProfile.balanced(aiSkill, difficulty)
+        }
         val profile = BattleTrainerProfile.champion(aiSkill)
         if (mode == TowerMode.ENDLESS) return profile
         return when (stage) {
