@@ -17,6 +17,16 @@ class TowerLegendaryClassPolicyTest {
     }
 
     @Test
+    fun `box legends count as restricted even when classed Paradox`() {
+        assertEquals(TowerLegendaryGroup.LEGENDARY, TowerLegendaryClassPolicy.group("cobblemon:koraidon"))
+        assertEquals(TowerLegendaryGroup.LEGENDARY, TowerLegendaryClassPolicy.group("cobblemon:miraidon"))
+        assertEquals(TowerLegendaryGroup.LEGENDARY, TowerLegendaryClassPolicy.group("cobblemon:mewtwo"))
+        assertEquals(TowerLegendaryGroup.OTHER, TowerLegendaryClassPolicy.group("cobblemon:iron_valiant"))
+        assertEquals(TowerLegendaryGroup.OTHER, TowerLegendaryClassPolicy.group("cobblemon:latios"))
+        assertNull(TowerLegendaryClassPolicy.group("cobblemon:pikachu"))
+    }
+
+    @Test
     fun `labels classify addon species while explicit paradox fallback covers compact ids`() {
         assertNotNull(TowerLegendaryClassPolicy.entryFor("addon:custom_mon", setOf("legendary")))
         assertEquals(
