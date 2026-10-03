@@ -9,8 +9,8 @@ final class MusicLowPassFilterTest {
     @Test
     void mapsTransitionAmountToHighFrequencyAttenuation() {
         assertEquals(1.0F, MusicLowPassFilter.gainHighFrequency(0.0), 0.0001F);
-        assertEquals(0.51F, MusicLowPassFilter.gainHighFrequency(0.5), 0.0001F);
-        assertEquals(0.02F, MusicLowPassFilter.gainHighFrequency(1.0), 0.0001F);
+        assertEquals(0.625F, MusicLowPassFilter.gainHighFrequency(0.5), 0.0001F);
+        assertEquals(0.25F, MusicLowPassFilter.gainHighFrequency(1.0), 0.0001F);
         assertEquals(1.0F, MusicLowPassFilter.gain(0.0), 0.0001F);
         assertEquals(1.0F, MusicLowPassFilter.gain(0.5), 0.0001F);
         assertEquals(1.0F, MusicLowPassFilter.gain(1.0), 0.0001F);

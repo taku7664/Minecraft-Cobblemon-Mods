@@ -1,6 +1,8 @@
 package jbro.cobblemon.bettermusic.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -15,13 +17,13 @@ final class LastPokemonMuffleTrackerTest {
     private static final UUID THIRD = UUID.fromString("10000000-0000-0000-0000-000000000003");
 
     @Test
-    void stagesEffectsAtHalfAndCobblemonRedHealthForMyLastUsablePokemon() {
+    void mufflesTheLastUsablePokemonButAlertsAtRedHpWithTeammatesRemaining() {
         var tracker = new LastPokemonMuffleTracker();
         var team = team(false, false, false);
 
-        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.NONE);
+        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.ALERT);
         tracker.markFainted(BATTLE_ONE, FIRST);
-        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.NONE);
+        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.ALERT);
         tracker.markFainted(BATTLE_ONE, SECOND);
         assertEffect(tracker, team, 0.5001, LastPokemonMuffleTracker.Effect.NONE);
         assertEffect(tracker, team, 0.5, LastPokemonMuffleTracker.Effect.MUFFLED);
@@ -66,7 +68,7 @@ final class LastPokemonMuffleTrackerTest {
         assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.CRITICAL);
 
         assertEquals(
-            LastPokemonMuffleTracker.Effect.NONE,
+            LastPokemonMuffleTracker.Effect.ALERT,
             tracker.update(BATTLE_TWO, team, health(THIRD, 0.2))
         );
     }
@@ -81,7 +83,27 @@ final class LastPokemonMuffleTrackerTest {
 
         tracker.updatePokemon(BATTLE_ONE, new LastPokemonMuffleTracker.TeamPokemon(SECOND, false));
 
-        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.NONE);
+        assertEffect(tracker, team, 0.2, LastPokemonMuffleTracker.Effect.ALERT);
+    }
+
+    @Test
+    void onlyActiveOwnedPokemonCanTriggerTheAlertWithMultipleUsableTeammates() {
+        var tracker = new LastPokemonMuffleTracker();
+        var team = team(false, false, false);
+
+        assertEquals(LastPokemonMuffleTracker.Effect.NONE,
+            tracker.update(BATTLE_ONE, team, Map.of()));
+        assertEquals(LastPokemonMuffleTracker.Effect.NONE,
+            tracker.update(BATTLE_ONE, team, health(THIRD, 0.2001)));
+        var alert = tracker.update(BATTLE_ONE, team, Map.of(FIRST, 0.6, THIRD, 0.2));
+        assertEquals(LastPokemonMuffleTracker.Effect.ALERT, alert);
+        assertTrue(alert.lowHpAlert());
+        assertFalse(alert.muffled());
+        assertEquals(LastPokemonMuffleTracker.Effect.NONE,
+            tracker.update(BATTLE_ONE, team, health(THIRD, 0.0)));
+        tracker.markFainted(BATTLE_ONE, THIRD);
+        assertEquals(LastPokemonMuffleTracker.Effect.NONE,
+            tracker.update(BATTLE_ONE, team, health(THIRD, 0.2)));
     }
 
     private static List<LastPokemonMuffleTracker.TeamPokemon> team(

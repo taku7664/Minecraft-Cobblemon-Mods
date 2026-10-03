@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 
 final class MusicLowPassFilter {
     private static final float FULL_MUFFLE_GAIN = 1.0F;
-    private static final float FULL_MUFFLE_GAIN_HF = 0.02F;
+    private static final float FULL_MUFFLE_GAIN_HF = 0.25F;
 
     private final Logger logger;
     private int filter;

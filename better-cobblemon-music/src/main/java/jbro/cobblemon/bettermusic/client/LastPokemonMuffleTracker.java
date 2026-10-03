@@ -125,9 +125,14 @@ public final class LastPokemonMuffleTracker {
         List<TeamPokemon> usablePokemon = team.stream()
             .filter(pokemon -> !pokemon.fainted())
             .filter(pokemon -> !observedFaintedPokemon.contains(pokemon.id()))
-            .limit(2)
             .toList();
         if (usablePokemon.size() != 1) {
+            for (TeamPokemon pokemon : usablePokemon) {
+                Double healthRatio = activeHealthRatios.get(pokemon.id());
+                if (healthRatio != null && healthRatio > 0.0 && healthRatio <= RED_HEALTH_RATIO) {
+                    return Effect.ALERT;
+                }
+            }
             return Effect.NONE;
         }
         Double healthRatio = activeHealthRatios.get(usablePokemon.getFirst().id());
@@ -175,6 +180,7 @@ public final class LastPokemonMuffleTracker {
 
     enum Effect {
         NONE(false, false),
+        ALERT(false, true),
         MUFFLED(true, false),
         CRITICAL(true, true);
 
