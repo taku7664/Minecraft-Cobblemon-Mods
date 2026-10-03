@@ -102,7 +102,13 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             cir.setReturnValue(true);
             return;
         }
-        if (BattleInfoPanel.INSTANCE.isExpanded() || BattleDialogue.INSTANCE.hasPending()) {
+        if (BattleInfoPanel.INSTANCE.isExpanded()) {
+            cir.setReturnValue(true);
+            return;
+        }
+        if (BattleDialogue.INSTANCE.hasPending()) {
+            // A click moves the narration on, as the confirm key does; nothing behind it is pressed.
+            BattleDialogue.INSTANCE.click(button);
             cir.setReturnValue(true);
         }
     }

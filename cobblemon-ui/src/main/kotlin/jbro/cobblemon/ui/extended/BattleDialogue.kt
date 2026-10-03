@@ -52,6 +52,8 @@ object BattleDialogue {
     // Paced like a keyboard's own repeat: a pause long enough for a single tap, then a quick run.
     private val hold = HoldRepeat(400_000_000L, 70_000_000L)
     private var completeNanos = 0L
+    private const val NO_MOUSE_BUTTON = -1
+    private var heldMouseButton = NO_MOUSE_BUTTON
 
     fun enqueue(messages: List<Component>) {
         val shown = messages.filter { message ->
@@ -88,6 +90,16 @@ object BattleDialogue {
 
     fun confirm(keyCode: Int, scanCode: Int): Boolean {
         if (!CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) return false
+        return press(NO_MOUSE_BUTTON)
+    }
+
+    /** A left click on the battle screen does what the confirm key does, holding included. */
+    fun click(button: Int): Boolean {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !queue.hasPending()) return false
+        return press(button)
+    }
+
+    private fun press(mouseButton: Int): Boolean {
         if (!queue.hasPending() && !queue.isConfirmHeld && !revealHeld) return false
         // A press that finishes the line is held until release, so key repeat cannot also skip it.
         // Holding the key repeats on its own timer (see [tickHold]), not the system's key repeat.
@@ -96,26 +108,34 @@ object BattleDialogue {
         if (current != null && !queue.isConfirmHeld && revealed(current) < current.string.length) {
             revealNanos = 0L
             revealHeld = true
-            hold.press(System.nanoTime())
+            holdFrom(mouseButton)
             BattleUiSounds.click()
             return true
         }
         // A held key only waits for its release; the press that moves on clicks.
         if (!queue.isConfirmHeld && current != null) {
             BattleUiSounds.click()
-            hold.press(System.nanoTime())
+            holdFrom(mouseButton)
         }
         queue.pressConfirm()
         return true
     }
 
+    private fun holdFrom(mouseButton: Int) {
+        heldMouseButton = mouseButton
+        hold.press(System.nanoTime())
+    }
+
     fun releaseConfirm(keyCode: Int, scanCode: Int) {
-        if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) releaseHold()
+        if (heldMouseButton == NO_MOUSE_BUTTON && CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) {
+            releaseHold()
+        }
     }
 
     private fun releaseHold() {
         queue.releaseConfirm()
         revealHeld = false
+        heldMouseButton = NO_MOUSE_BUTTON
         hold.release()
     }
 
@@ -142,9 +162,12 @@ object BattleDialogue {
         BattleUiSounds.click()
     }
 
+    /** Whether whatever started the hold, the confirm key or a mouse button, is still down. */
     private fun confirmKeyDown(): Boolean {
-        val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey)
         val window = Minecraft.getInstance().window.window
+        // No hook watches mouse releases; the button's own state stands in for one.
+        if (heldMouseButton != NO_MOUSE_BUTTON) return GLFW.glfwGetMouseButton(window, heldMouseButton) == GLFW.GLFW_PRESS
+        val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey)
         return when (key.type) {
             InputConstants.Type.KEYSYM -> InputConstants.isKeyDown(window, key.value)
             InputConstants.Type.MOUSE -> GLFW.glfwGetMouseButton(window, key.value) == GLFW.GLFW_PRESS
@@ -167,6 +190,7 @@ object BattleDialogue {
         revealing = null
         revealHeld = false
         completeNanos = 0L
+        heldMouseButton = NO_MOUSE_BUTTON
         hold.release()
     }
 
