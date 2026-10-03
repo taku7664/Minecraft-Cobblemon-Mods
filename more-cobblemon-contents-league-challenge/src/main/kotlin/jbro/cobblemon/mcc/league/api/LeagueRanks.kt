@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.league.server.LeagueCatalogResources
 import jbro.cobblemon.mcc.league.server.LeagueSavedData
 import jbro.cobblemon.mcc.league.server.LeagueServer
+import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.ui.LeagueRank
 import net.minecraft.server.MinecraftServer
 
@@ -30,6 +31,12 @@ object LeagueRanks {
     fun of(server: MinecraftServer, player: UUID): LeagueRank? {
         val catalog = LeagueCatalogResources.current ?: return null
         return LeagueServer.rank(catalog, LeagueSavedData.get(server).read(catalog.id, player))
+    }
+
+    /** The level cap [player] has unlocked in the current League; null while no League catalog is loaded. */
+    fun levelCap(server: MinecraftServer, player: UUID): Int? {
+        val catalog = LeagueCatalogResources.current ?: return null
+        return LeagueEngine(catalog).cap(LeagueSavedData.get(server).read(catalog.id, player))
     }
 
     /** Whether [player] beat the hard League's Champion; false while no League catalog is loaded. */
