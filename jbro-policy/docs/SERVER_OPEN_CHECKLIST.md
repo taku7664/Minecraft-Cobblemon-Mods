@@ -45,4 +45,4 @@
 
 ## 예전 서버와의 차이
 
-예전 운영 서버(`Mincraft-Cobblemon-Server`)는 2026-10-01 기준으로 `pokemontoitem` 두 명령이 권한 2로 남아 있다. 그 서버를 다시 쓴다면 위 표대로 고친다.
+예전 운영 서버(`Mincraft-Cobblemon-Server`)의 `pokemontoitem` 두 명령은 2026-10-03 실행 훅으로 권한 0에 맞췄으며, 시작할 때마다 다시 적용한다. 신규 MCC·Jbro Policy·CLC 등 아직 설치되지 않은 모드는 실행 전 검사에서 경고한다. 안내 60초의 코드 변경과 개발 서버 배포는 [적용 기록](TIP_INTERVAL_DEPLOYMENT_2026-10-03.md)을 참고한다.
