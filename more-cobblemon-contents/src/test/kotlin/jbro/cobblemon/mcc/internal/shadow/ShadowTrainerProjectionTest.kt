@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class ShadowTrainerProjectionTest {
     @Test
-    fun `projection payload preserves player appearance and placement`() {
+    fun `projection payload preserves trainer appearance and placement`() {
         val projection = projection(UUID.randomUUID())
         val payload = ShowShadowTrainerPayload(projection)
         val buffer = RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY)
@@ -37,8 +37,6 @@ class ShadowTrainerProjectionTest {
 
     private fun projection(battleId: UUID) = ShadowTrainerProjection(
         battleId = battleId,
-        profileId = UUID.fromString("ed9d3b59-753f-42f7-a840-9b766ef0a86b"),
-        profileName = "Park_JH",
         x = 4.5,
         y = 72.0,
         z = 14.5,

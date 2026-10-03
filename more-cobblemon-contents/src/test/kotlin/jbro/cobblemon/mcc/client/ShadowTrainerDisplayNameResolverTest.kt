@@ -8,16 +8,17 @@ import java.util.UUID
 import jbro.cobblemon.mcc.internal.shadow.ShadowTrainerProjection
 import net.minecraft.network.chat.Component
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 
 class ShadowTrainerDisplayNameResolverTest {
     @Test
-    fun `shadow keeps the player appearance profile but uses the opposing battle actor name`() {
+    fun `trainer uses the opposing battle actor name`() {
         val battleId = UUID.randomUUID()
         val playerId = UUID.randomUUID()
-        val projection = projection(battleId, playerId)
+        val projection = projection(battleId)
         val battle = ClientBattle(battleId, BattleFormat.GEN_9_SINGLES)
         val playerActor = ClientBattleActor("p1", Component.literal("Park_JH"), playerId, ActorType.PLAYER)
         val trainerActor = ClientBattleActor(
@@ -32,8 +33,15 @@ class ShadowTrainerDisplayNameResolverTest {
         val displayName = ShadowTrainerDisplayNameResolver.resolve(projection, battle, playerId)
 
         assertSame(trainerActor.displayName, displayName)
-        assertEquals("Park_JH", projection.profileName)
-        assertEquals(playerId, projection.profileId)
+    }
+
+    @Test
+    fun `trainer never takes the challenger's profile`() {
+        val battleId = UUID.randomUUID()
+        val profile = ShadowTrainerProjectionRenderer.trainerProfile(battleId)
+
+        assertEquals(profile.id, ShadowTrainerProjectionRenderer.trainerProfile(battleId).id)
+        assertNotEquals(battleId, profile.id)
     }
 
     @Test
@@ -41,13 +49,13 @@ class ShadowTrainerDisplayNameResolverTest {
         val playerId = UUID.randomUUID()
         val battle = ClientBattle(UUID.randomUUID(), BattleFormat.GEN_9_SINGLES)
 
-        assertNull(ShadowTrainerDisplayNameResolver.resolve(projection(UUID.randomUUID(), playerId), battle, playerId))
+        assertNull(ShadowTrainerDisplayNameResolver.resolve(projection(UUID.randomUUID()), battle, playerId))
     }
 
     @Test
     fun `the trainer name sent with the projection wins, before the battle reaches the client`() {
         val playerId = UUID.randomUUID()
-        val projection = projection(UUID.randomUUID(), playerId).copy(trainerName = "trainer.more_cobblemon_contents.tower_trainer_001")
+        val projection = projection(UUID.randomUUID()).copy(trainerName = "trainer.more_cobblemon_contents.tower_trainer_001")
 
         assertEquals(
             Component.translatable("trainer.more_cobblemon_contents.tower_trainer_001"),
@@ -55,10 +63,8 @@ class ShadowTrainerDisplayNameResolverTest {
         )
     }
 
-    private fun projection(battleId: UUID, playerId: UUID) = ShadowTrainerProjection(
+    private fun projection(battleId: UUID) = ShadowTrainerProjection(
         battleId = battleId,
-        profileId = playerId,
-        profileName = "Park_JH",
         x = 4.5,
         y = 72.0,
         z = 14.5,

@@ -24,16 +24,16 @@ import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
-import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 import org.joml.Matrix3f
 import org.joml.Matrix4f
 
 /**
- * Renders the opponent trainer client-side; no entity is added to either world. Without a skin from the content it is
- * a hologram copy of the challenger (a shadow battle); with one, such as a League gym leader's, it is that trainer,
- * drawn solid and lit like any other entity.
+ * Renders the opponent trainer client-side; no entity is added to either world. The trainer is its own player model
+ * with its own identity, never the challenger's, so mods keyed on the challenger (voice chat, emotes) leave it alone.
+ * With a skin from the content, such as a League gym leader's, it wears that skin, drawn solid and lit like any other
+ * entity; without one it borrows the challenger's skin and is drawn as a hologram (a shadow battle).
  */
 internal object ShadowTrainerProjectionRenderer {
     private val state = ShadowTrainerProjectionState()
@@ -129,7 +129,6 @@ internal object ShadowTrainerProjectionRenderer {
         val partialTick = frame.partialTick
         val shadow = shadowPlayer(level, projection)
         val hologram = projection.isHologram
-        if (hologram) copyVisibleEquipment(sourcePlayer, shadow)
         place(
             shadow,
             projection,
@@ -167,7 +166,7 @@ internal object ShadowTrainerProjectionRenderer {
     private fun shadowPlayer(level: ClientLevel, projection: ShadowTrainerProjection): ShadowPlayer {
         val cached = shadowPlayer
         if (cached != null && cached.clientLevel === level && renderedBattleId == projection.battleId) return cached
-        return ShadowPlayer(level, GameProfile(projection.profileId, projection.profileName), projection).also {
+        return ShadowPlayer(level, trainerProfile(projection.battleId), projection).also {
             shadowPlayer = it
             renderedBattleId = projection.battleId
         }
@@ -185,10 +184,6 @@ internal object ShadowTrainerProjectionRenderer {
         player.isInvisible = invisible
         player.customName = displayName
         player.isCustomNameVisible = displayName != null
-    }
-
-    private fun copyVisibleEquipment(source: net.minecraft.client.player.LocalPlayer, target: ShadowPlayer) {
-        HOLOGRAM_ARMOR_SLOTS.forEach { slot -> target.setItemSlot(slot, source.getItemBySlot(slot).copy()) }
     }
 
     private fun renderPass(
@@ -243,7 +238,8 @@ internal object ShadowTrainerProjectionRenderer {
 
     private class ShadowPlayer(level: ClientLevel, profile: GameProfile, private val projection: ShadowTrainerProjection) : RemotePlayer(level, profile) {
         override fun getSkin(): net.minecraft.client.resources.PlayerSkin {
-            val resource = projection.resourceSkin ?: return super.getSkin()
+            val resource = projection.resourceSkin
+                ?: return Minecraft.getInstance().player?.skin ?: super.getSkin()
             val requested = net.minecraft.resources.ResourceLocation.parse(resource)
             val texture = if (Minecraft.getInstance().resourceManager.getResource(requested).isPresent) requested
                 else net.minecraft.resources.ResourceLocation.parse("minecraft:textures/entity/player/wide/steve.png")
@@ -251,17 +247,14 @@ internal object ShadowTrainerProjectionRenderer {
                 if (projection.slim) net.minecraft.client.resources.PlayerSkin.Model.SLIM else net.minecraft.client.resources.PlayerSkin.Model.WIDE, false)
         }
         override fun shouldShowName(): Boolean = customName != null
-        // A player's name tag shows its profile name, which is the challenger's; the trainer's name goes there instead.
+        // A player's name tag shows its profile name; the trainer's name goes there instead.
         override fun getDisplayName(): Component = customName ?: checkNotNull(super.getDisplayName())
         override fun isInvisibleTo(player: Player): Boolean = false
     }
 
-    private val HOLOGRAM_ARMOR_SLOTS = listOf(
-        EquipmentSlot.FEET,
-        EquipmentSlot.LEGS,
-        EquipmentSlot.CHEST,
-        EquipmentSlot.HEAD,
-    )
+    /** A profile of the trainer's own, stable for the battle and shared with no real player. */
+    internal fun trainerProfile(battleId: UUID): GameProfile =
+        GameProfile(UUID.nameUUIDFromBytes("mcc-trainer:$battleId".toByteArray()), "MCC_Trainer")
 
 }
 

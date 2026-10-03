@@ -14,8 +14,6 @@ import net.minecraft.world.phys.Vec3
 
 internal data class ShadowTrainerProjection(
     val battleId: UUID,
-    val profileId: UUID,
-    val profileName: String,
     val x: Double,
     val y: Double,
     val z: Double,
@@ -26,7 +24,6 @@ internal data class ShadowTrainerProjection(
     val trainerName: String? = null,
 ) {
     init {
-        require(profileName.isNotBlank() && profileName.length <= MAX_PROFILE_NAME_LENGTH)
         require(x.isFinite() && y.isFinite() && z.isFinite() && yaw.isFinite())
         resourceSkin?.let { jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(it, slim) }
         require(trainerName == null || trainerName.length <= MAX_TRAINER_NAME_LENGTH)
@@ -57,13 +54,11 @@ internal data class ShowShadowTrainerPayload(
     override fun type(): CustomPacketPayload.Type<ShowShadowTrainerPayload> = TYPE
 
     companion object {
-        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show_v3"))
+        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show_v4"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, ShowShadowTrainerPayload> = StreamCodec.of(
             { buffer, payload ->
                 val projection = payload.projection
                 buffer.writeUUID(projection.battleId)
-                buffer.writeUUID(projection.profileId)
-                buffer.writeUtf(projection.profileName, MAX_PROFILE_NAME_LENGTH)
                 buffer.writeDouble(projection.x)
                 buffer.writeDouble(projection.y)
                 buffer.writeDouble(projection.z)
@@ -76,8 +71,6 @@ internal data class ShowShadowTrainerPayload(
                 ShowShadowTrainerPayload(
                     ShadowTrainerProjection(
                         battleId = buffer.readUUID(),
-                        profileId = buffer.readUUID(),
-                        profileName = buffer.readUtf(MAX_PROFILE_NAME_LENGTH),
                         x = buffer.readDouble(),
                         y = buffer.readDouble(),
                         z = buffer.readDouble(),
@@ -122,8 +115,6 @@ internal object ShadowTrainerProjectionNetworking {
                     ShowShadowTrainerPayload(
                         ShadowTrainerProjection(
                             battleId = battleId,
-                            profileId = player.gameProfile.id,
-                            profileName = player.gameProfile.name,
                             x = position.x,
                             y = position.y,
                             z = position.z,
@@ -167,6 +158,5 @@ internal object ShadowTrainerProjectionNetworking {
 
 private fun id(path: String) = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, path)
 
-private const val MAX_PROFILE_NAME_LENGTH = 16
 private const val MAX_TRAINER_NAME_LENGTH = 256
 private const val HALF_TURN_DEGREES = 180.0F

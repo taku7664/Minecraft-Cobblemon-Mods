@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class ShadowTrainerAppearanceTest {
     private fun projection(skin: String?) = ShadowTrainerProjection(
-        battleId = UUID.randomUUID(), profileId = UUID.randomUUID(), profileName = "Park_JH",
+        battleId = UUID.randomUUID(),
         x = 0.0, y = 64.0, z = 8.0, yaw = 180F, resourceSkin = skin,
     )
 
