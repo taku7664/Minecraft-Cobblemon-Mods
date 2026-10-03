@@ -224,7 +224,7 @@ class LocalRecursiveLookaheadTest {
     }
 
     @Test
-    fun `confirmed same-priority action order resolves an otherwise overlapping speed range`() {
+    fun `observed same-priority winner remains favored without removing a possible fresh tie`() {
         val initial = state(
             ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.10, speed = 100),
             opponents = listOf(
@@ -251,16 +251,23 @@ class LocalRecursiveLookaheadTest {
         )
         val allyMove = move("ally_hit", 0, power = 120.0)
 
-        val result = PublicSingleTurnProjector.project(
+        val results = PublicSingleTurnProjector.project(
             initial,
             allyMove,
             move("observed_faster_ko", 0, power = 200.0, targetSide = BattleSide.ALLY),
             context(initial, listOf(allyMove)),
-        ).single()
+        )
 
-        assertEquals(listOf(BattleSide.OPPONENT, BattleSide.ALLY), result.order)
-        assertEquals(0.0, result.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction)
-        assertEquals(1.0, result.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction)
+        assertEquals(setOf(listOf(BattleSide.OPPONENT, BattleSide.ALLY), listOf(BattleSide.ALLY, BattleSide.OPPONENT)),
+            results.map { it.order }.toSet())
+        val observedFirst = results.filter { it.order.first() == BattleSide.OPPONENT }
+        val observedProbability = observedFirst.map { it.orderProbability }.distinct().single()
+        assertTrue(observedProbability > 0.99 && observedProbability < 1.0,
+            "One observation favors the winner but cannot exclude a fresh tie inside the public speed range")
+        observedFirst.forEach { result ->
+            assertEquals(0.0, result.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction)
+            assertEquals(1.0, result.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction)
+        }
     }
 
     @Test
