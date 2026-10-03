@@ -75,16 +75,14 @@ object BattleEntryTransition {
     }
 
     /**
-     * Plays [kind] against [species], whose primary type colours a legendary transition (the others keep the theme's
-     * colours), and runs [onCovered] once the screen is covered. False when the transition is turned off, and
+     * Plays [kind] against [species] (the wild Pokémon, or the trainer's lead), whose primary type colours the
+     * transition, and runs [onCovered] once the screen is covered. False when the transition is turned off, and
      * [onCovered] will not run.
      */
     @JvmStatic
     @JvmOverloads
     fun play(kind: BattleEntryKind, species: ResourceLocation?, onCovered: Runnable?, blockInput: Boolean = true): Boolean {
-        val accent = if (kind == BattleEntryKind.LEGENDARY) {
-            species?.let { PokemonSpecies.getByIdentifier(it) }?.let { UIUtils.getTypeColor(it.primaryType) }
-        } else null
+        val accent = species?.let { PokemonSpecies.getByIdentifier(it) }?.let { UIUtils.getTypeColor(it.primaryType) }
         return play(kind, accent, blockInput, onCovered)
     }
 
