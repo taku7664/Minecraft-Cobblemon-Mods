@@ -445,6 +445,8 @@ internal data class NativePokemonFrame(
     val baseStabTypes: List<String> = types,
     val terastallizedType: String = "",
     val stellarBoostedTypes: List<String> = emptyList(),
+    /** Exact remaining decoy HP in this hypothesis; absent when there is no active decoy. */
+    val substituteHp: Int? = null,
 )
 
 /** Immutable team-set identity, kept separate from callback-mutated live Pokemon state. */

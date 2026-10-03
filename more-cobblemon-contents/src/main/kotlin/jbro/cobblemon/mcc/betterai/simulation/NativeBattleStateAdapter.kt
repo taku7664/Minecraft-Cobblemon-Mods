@@ -5,6 +5,7 @@ import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
 import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
@@ -74,6 +75,10 @@ internal object NativeBattleStateAdapter {
                 mustRecharge = "mustrecharge" in native.volatiles,
             ),
             knownVolatileEffectIds = native.volatiles.mapTo(linkedSetOf(), ::nativeId),
+            knownSubstituteHpFractionRange = native.substituteHp?.takeIf { it > 0 && "substitute" in native.volatiles }
+                // Baton Pass and Shed Tail retain decoy HP even when the new holder has less maximum HP.
+                ?.let { hp -> hp.toDouble() / native.maxHp }
+                ?.let { fraction -> BattleDamageFractionRange(fraction, fraction) },
             knownBaseStabTypeIds = native.baseStabTypes.mapTo(linkedSetOf(), ::nativeId),
             knownTeraTypeId = native.terastallizedType.takeIf(String::isNotBlank)?.let(::nativeId),
             knownStellarBoostedTypeIds = native.stellarBoostedTypes.mapTo(linkedSetOf(), ::nativeId),

@@ -285,6 +285,7 @@ internal class EngineBranchWorker(
         types = p.getTypes(),
         boosts = LinkedHashMap(p.boosts),
         volatiles = p.volatiles.keys.sorted(),
+        substituteHp = p.volatiles["substitute"]?.int("hp")?.takeIf { it > 0 },
         moves = p.moveSlots.map { NativeMoveFrame(it.id, it.pp, it.maxpp, Js.truthy(it.disabled),
             p.battle.dex.move(it.id)?.category ?: "") },
         activeSlot = activeSlot,

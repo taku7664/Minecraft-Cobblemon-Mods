@@ -145,6 +145,7 @@ function pokemonFrame(pokemon, activeSlot) {
       category: pokemon.battle.dex.moves.get(slot.id).category || '',
     })),
     activeSlot,
+    substituteHp: pokemon.volatiles.substitute?.hp > 0 ? pokemon.volatiles.substitute.hp : null,
     level: pokemon.level,
     stats: {
       atk: pokemon.storedStats.atk,

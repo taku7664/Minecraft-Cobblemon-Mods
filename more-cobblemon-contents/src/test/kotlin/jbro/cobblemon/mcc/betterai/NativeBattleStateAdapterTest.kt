@@ -21,6 +21,22 @@ import org.junit.jupiter.api.Test
 
 class NativeBattleStateAdapterTest {
     @Test
+    fun `a passed Substitute can retain more HP than its new holder's full body`() {
+        val stats = mapOf("atk" to 100, "def" to 100, "spa" to 100, "spd" to 100, "spe" to 100)
+        val holder = pokemon(ALLY, 0, 1, "", "wonderguard", "", listOf("Bug", "Ghost"),
+            boosts = emptyMap(), volatiles = listOf("substitute"), stats = stats)
+            .copy(species = "shedinja", maxHp = 1, substituteHp = 23)
+        val opponent = pokemon(OPPONENT, 0, 100, "", "synchronize", "", listOf("Psychic"),
+            boosts = emptyMap(), volatiles = emptyList(), stats = stats)
+        val frame = NativeBattleFrame(snapshotJson = "{}", turn = 3, requestState = "move", ended = false,
+            p1Active = listOf(holder), p2Active = listOf(opponent), p1Team = listOf(holder), p2Team = listOf(opponent),
+            p1RequestJson = "{}", p2RequestJson = "{}", log = emptyList())
+        val hp = requireNotNull(NativeBattleStateAdapter.adapt(frame, template()).pokemon.first().knownSubstituteHpFractionRange)
+        assertEquals(23.0, hp.minimum)
+        assertEquals(23.0, hp.maximum)
+    }
+
+    @Test
     fun `native frame becomes a complete evaluation state`() {
         val ally = pokemon(
             uuid = ALLY,
