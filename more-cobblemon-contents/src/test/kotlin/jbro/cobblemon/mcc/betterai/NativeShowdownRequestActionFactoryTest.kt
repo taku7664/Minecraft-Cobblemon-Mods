@@ -29,6 +29,7 @@ class NativeShowdownRequestActionFactoryTest {
                       "moves": [{"move":"Tackle","id":"tackle","pp":35,"maxpp":35,"target":"normal","disabled":false}],
                       "canMegaEvo":true,
                       "canDynamax":true,
+                      "maxMoves":{"maxMoves":[{"move":"maxstrike","target":"adjacentFoe"}]},
                       "canTerastallize":"Electric"
                     },
                     {
@@ -60,6 +61,7 @@ class NativeShowdownRequestActionFactoryTest {
                       "moves": [{"move":"Tackle","id":"tackle","pp":35,"maxpp":35,"target":"normal","disabled":false}],
                       "canMegaEvo":true,
                       "canDynamax":true,
+                      "maxMoves":{"maxMoves":[{"move":"maxstrike","target":"adjacentFoe"}]},
                       "canTerastallize":"Electric"
                     },
                     {

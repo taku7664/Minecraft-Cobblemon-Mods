@@ -333,6 +333,7 @@ internal class EngineBranchWorker(
                                 moves.add(JsonObject().apply {
                                     addProperty("move", m.move)
                                     addProperty("id", m.id)
+                                    battle.dex.move(m.id)?.category?.let { addProperty("category", it) }
                                     m.pp?.let { addProperty("pp", it) }
                                     m.maxpp?.let { addProperty("maxpp", it) }
                                     if (m.target.isNotEmpty()) addProperty("target", m.target)
@@ -345,12 +346,40 @@ internal class EngineBranchWorker(
                         if (!locked) {
                             if (pokemon.canMegaEvo != null) addProperty("canMegaEvo", true)
                             if (data.canDynamax) addProperty("canDynamax", true)
+                            if ((data.canDynamax || pokemon.volatiles.containsKey("dynamax")) && pokemon.getDynamaxRequest(true)) {
+                                add("maxMoves", JsonObject().apply {
+                                    add("maxMoves", JsonArray().also { maxMoves ->
+                                        pokemon.moveSlots.forEach { move ->
+                                            battle.actions.getMaxMove(move.id, pokemon)?.let { maxMove ->
+                                                maxMoves.add(JsonObject().apply {
+                                                    addProperty("move", maxMove.id)
+                                                    addProperty("target", maxMove.target)
+                                                    addProperty("category", maxMove.category)
+                                                    if (pokemon.maxMoveDisabled(move.id)) addProperty("disabled", true)
+                                                })
+                                            }
+                                        }
+                                    })
+                                })
+                            }
                             (pokemon.canTerastallize as? String)?.let { addProperty("canTerastallize", it) }
                         }
                     })
                 }
             })
         }
+        out.add("side", JsonObject().apply {
+            add("pokemon", JsonArray().also { team ->
+                side.pokemon.forEach { pokemon ->
+                    team.add(JsonObject().apply {
+                        addProperty("uuid", pokemon.uuid)
+                        if (side.slotConditions.getOrNull(pokemon.position)?.containsKey("revivalblessing") == true) {
+                            addProperty("reviving", true)
+                        }
+                    })
+                }
+            })
+        })
         return out.toString()
     }
 
