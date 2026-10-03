@@ -175,6 +175,16 @@ internal object PublicSingleTurnProjector {
                         state = current.branch.state,
                         damagedPokemonIds = current.damagedPokemonIds,
                     )
+                    val anyRemainingMove = remaining.any { pending ->
+                        pending.action.kind == BattleActionKind.USE_MOVE && current.branch.state.pokemon.any {
+                            it.battlePokemonId == pending.actorPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+                        }
+                    }
+                    effectiveNext = effectiveNext.copy(action = effectiveNext.action.withAddedTag(
+                        if (anyRemainingMove) "projected_not_last_move" else "projected_last_move"))
+                    current.newlySwitchedPokemonIds.forEach { id ->
+                        effectiveNext = effectiveNext.copy(action = effectiveNext.action.withAddedTag("stakeout_switched:$id"))
+                    }
                     applyScheduledAction(
                         branch = current.branch,
                         ordered = effectiveNext.withTurnPowerMultiplier(powerMultiplier),

@@ -83,9 +83,14 @@ internal object LocalTacticalSituationalEvaluator {
             BattleKnockoutAssessment.POSSIBLE -> facts.standardDamageRollKoProbabilityRange
                 ?.let { (it.minimum + it.maximum) / 2.0 }
                 ?: 0.0
-            else -> return 0.0
+            else -> 0.0
         }
-        val probability = context?.let { publicKnockoutProbability(candidate, it, declared) } ?: declared
+        val sniper = context?.let {
+            jbro.cobblemon.mcc.betterai.calculation.PublicSniperDamageProjection.summary(candidate, it, BattleSide.ALLY)
+        }
+        val probability = sniper?.knockoutProbability?.let { chance ->
+            if (accuracy > 0.0) chance / accuracy else 0.0
+        } ?: context?.let { publicKnockoutProbability(candidate, it, declared) } ?: declared
         if (probability <= 0.0) return 0.0
         // The accuracy handed in is the move's printed one. Evasion and accuracy stages are resolved
         // in exactly one place, and until now only the outcome projection called it - so a Double

@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalConditionalDamageAbilities
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -56,6 +57,15 @@ internal object PublicMoveOutcomeBranchProjector {
         context: BattleDecisionContext,
         actingSide: BattleSide,
     ): List<PublicMoveOutcomeBranch> {
+        if (LocalConditionalDamageAbilities.randomSniper(candidate, context, actingSide) &&
+            candidate.tags.none { it in setOf("projected_critical", "projected_noncritical") }) {
+            val chance = criticalChance(candidate, context, actingSide)
+            val ordinary = project(LocalConditionalDamageAbilities.marked(candidate, "projected_noncritical"), context, actingSide)
+            if (chance <= 0.0) return ordinary
+            val critical = project(LocalConditionalDamageAbilities.marked(candidate, "projected_critical"), context, actingSide)
+            return ordinary.map { it.copy(probability = it.probability * (1.0 - chance)) } +
+                critical.map { it.copy(probability = it.probability * chance) }
+        }
         val accuracy = LocalPublicAccuracy.probability(candidate, context, actingSide)
         val calculatedRolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(
             candidate,
@@ -76,6 +86,7 @@ internal object PublicMoveOutcomeBranchProjector {
         }
         // Always-critical moves are already projected as critical hits, so they take no extra crit branch.
         val criticalHits = if (candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
+            candidate.tags.none { it in setOf("projected_critical", "projected_noncritical") } &&
             candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
         ) criticalChance(candidate, context, actingSide) else 0.0
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
@@ -193,7 +204,7 @@ internal object PublicMoveOutcomeBranchProjector {
      * The crit chance at this move's crit stage: high-crit moves (Stone Edge, Leaf Blade), Super Luck, a Scope Lens
      * or Razor Claw raise it; Battle Armor and Shell Armor, publicly known, rule it out.
      */
-    private fun criticalChance(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): Double {
+    internal fun criticalChance(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): Double {
         val state = context.state
         val target = candidate.targets.singleOrNull()?.let { slot ->
             state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }

@@ -69,7 +69,9 @@ internal object LocalDamageAbilityModifiers {
             "orichalcumpulse" -> if (physical && weather in SUN) 4.0 / 3.0 else 1.0
             // Pixilate and its kind: the Normal move they turned into their type is 20% stronger.
             "pixilate", "refrigerate", "aerilate", "galvanize", "normalize" -> if (printedType(candidate) == "normal") 1.2 else 1.0
-            "sniper", "analytic", "stakeout" -> 1.0
+            "sniper" -> if (LocalConditionalDamageAbilities.critical(candidate, state, actor, target)) 1.5 else 1.0
+            "analytic" -> LocalConditionalDamageAbilities.analytic(candidate, actor, context)
+            "stakeout" -> if ("stakeout_switched:${target.battlePokemonId}" in candidate.tags) 2.0 else 1.0
             "protean", "libero" -> if (stab) 1.0 else 1.5
             "hadronengine" -> if (special && terrain == "electricterrain") 4.0 / 3.0 else 1.0
             "protosynthesis" -> paradox(actor, item, weather in SUN, physical, special, offence = true)

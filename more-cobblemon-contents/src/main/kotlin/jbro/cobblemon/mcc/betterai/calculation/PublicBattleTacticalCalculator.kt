@@ -484,7 +484,7 @@ internal object PublicBattleTacticalCalculator {
             else -> return null
         }
         val effects = details.effects?.effects.orEmpty()
-        val guaranteedCritical = effects.any { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
+        val guaranteedCritical = jbro.cobblemon.mcc.betterai.mechanics.LocalConditionalDamageAbilities.critical(candidate, state, actor, target)
         val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val attackStage = moveInputs.offensiveStage
         val defenceStage = moveInputs.defensiveStage

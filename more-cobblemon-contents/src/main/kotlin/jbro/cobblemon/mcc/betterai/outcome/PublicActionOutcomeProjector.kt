@@ -86,7 +86,8 @@ internal object PublicActionOutcomeProjector {
             null
         }
         val adjustedDamage = standardAdjustedDamage ?: declaredDamage
-        val expectedDamage = adjustedDamage?.let { damage ->
+        val expectedDamage = jbro.cobblemon.mcc.betterai.calculation.PublicSniperDamageProjection
+            .summary(candidate, context, actingSide)?.expectedDamage ?: adjustedDamage?.let { damage ->
             // The single place the sixteen-roll range becomes one number. Everything downstream -
             // the scorer's cancellation, knockout pressure, the search's board value - resolves to
             // this, so it is the only place a trainer's expectation of the dice has to be applied.
