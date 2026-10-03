@@ -11,25 +11,41 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class LocalEntryHazardUtilityTest {
-    @Test fun `public selection size supplies the original denominator for an unseen bench`() {
+    @Test fun `public selection size supplies the maximum bench denominator for an unseen bench`() {
         val s = state(mon(BattleSide.ALLY, 0), mon(BattleSide.OPPONENT, 0))
             .derive(remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 2))
         val move = hazard("toxicspikes")
         val ctx = context(s, move).copy(opponentTeamPreview = BattleOpponentTeamPreviewView(3,
             (0..2).map { BattleOpponentTeamPreviewPokemonView(it, "showdown:probe", null, 50) }))
-        assertEquals(20.0 / 3.0, LocalNonDamagingMoveEvaluator.pressure(move, ctx, 1.0), 1e-9)
-        assertEquals(0.1 / 3.0, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes"), ctx), 1e-9)
+        assertEquals(20.0 / 2.0, LocalNonDamagingMoveEvaluator.pressure(move, ctx, 1.0), 1e-9)
+        assertEquals(0.1 / 2.0, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes"), ctx), 1e-9)
     }
-    @Test fun `a three Pokemon battle scales hazard value by remaining switches over three`() {
+    @Test fun `a three Pokemon singles battle scales hazard value by remaining switches over two`() {
         val a = mon(BattleSide.ALLY, 0)
         for (bench in 0..2) {
             val opponents = listOf(mon(BattleSide.OPPONENT, 0)) + (1..2).map { index ->
                 mon(BattleSide.OPPONENT, null, hp = if (index <= bench) 1.0 else 0.0)
             }
             val s = state(a, *opponents.toTypedArray()); val move = hazard("toxicspikes")
-            assertEquals(20.0 * bench / 3.0, LocalNonDamagingMoveEvaluator.pressure(move, context(s, move), 1.0), 1e-9)
-            assertEquals(0.1 * bench / 3.0, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes")), 1e-9)
+            assertEquals(20.0 * bench / 2.0, LocalNonDamagingMoveEvaluator.pressure(move, context(s, move), 1.0), 1e-9)
+            assertEquals(0.1 * bench / 2.0, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes")), 1e-9)
         }
+    }
+    @Test fun `a three Pokemon doubles battle starts with full value for its one bench member`() {
+        val s = state(mon(BattleSide.ALLY, 0), mon(BattleSide.ALLY, 1),
+            mon(BattleSide.OPPONENT, 0), mon(BattleSide.OPPONENT, 1), mon(BattleSide.OPPONENT, null),
+            format = BattleFormat.DOUBLE)
+        val move = hazard("toxicspikes")
+        assertEquals(20.0, LocalNonDamagingMoveEvaluator.pressure(move, context(s, move), 1.0), 1e-9)
+        assertEquals(0.1, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes")), 1e-9)
+    }
+    @Test fun `a fainted doubles slot does not change the original maximum bench count`() {
+        val s = state(mon(BattleSide.ALLY, 0), mon(BattleSide.ALLY, 1),
+            mon(BattleSide.OPPONENT, 0), mon(BattleSide.OPPONENT, 1, hp = 0.0), mon(BattleSide.OPPONENT, null),
+            format = BattleFormat.DOUBLE)
+        val move = hazard("toxicspikes")
+        assertEquals(20.0, LocalNonDamagingMoveEvaluator.pressure(move, context(s, move), 1.0), 1e-9)
+        assertEquals(0.1, LocalImmediateTurnScorer.positionEffectValue(withHazard(s, "toxicspikes")), 1e-9)
     }
     @Test fun `hazards earn no root or leaf value against the last opponent`() {
         val s = state(mon(BattleSide.ALLY, 0), mon(BattleSide.OPPONENT, 0))

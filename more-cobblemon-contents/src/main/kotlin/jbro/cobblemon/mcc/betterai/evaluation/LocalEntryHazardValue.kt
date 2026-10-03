@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.betterai.evaluation
 
 import jbro.cobblemon.mcc.internal.ai.*
 
-/** Entry hazards need a future switch. The denominator is the original selected team size. */
+/** Entry hazards need a future switch. Full bench availability retains the whole hazard value. */
 internal object LocalEntryHazardValue {
     val layerLimits = mapOf("stealthrock" to 1, "spikes" to 3, "toxicspikes" to 2, "stickyweb" to 1,
         "steelsurge" to 1, "gmaxsteelsurge" to 1)
@@ -13,11 +13,18 @@ internal object LocalEntryHazardValue {
         val switches = (remaining - active).coerceAtLeast(0)
         // Fainted public members remain in the state: remaining + fainted preserves the start count
         // through knockouts and revival. Preview/exact-own selection is authoritative when supplied.
-        val maximum = when (affectedSide) {
+        val selectedTeamSize = when (affectedSide) {
             BattleSide.OPPONENT -> source?.opponentTeamPreview?.selectionSize
             BattleSide.ALLY -> source?.exactOwnTeam?.builds?.size
         } ?: (remaining + state.pokemon.count { it.side == affectedSide && (it.fainted || it.hpFraction <= 0.0) })
-        return if (maximum > 0) (switches.toDouble() / maximum).coerceIn(0.0, 1.0) else 0.0
+        // Use the format's original active capacity, not its currently living actives: a knockout
+        // must not change how many reserves the full team could originally have kept on its bench.
+        val activeCapacity = when (state.format) {
+            BattleFormat.SINGLE -> 1
+            BattleFormat.DOUBLE -> 2
+        }
+        val maximumBench = (selectedTeamSize - activeCapacity).coerceAtLeast(0)
+        return if (maximumBench > 0) (switches.toDouble() / maximumBench).coerceIn(0.0, 1.0) else 0.0
     }
 
     fun installationFactor(candidate: BattleActionCandidate, context: BattleDecisionContext): Double? {
