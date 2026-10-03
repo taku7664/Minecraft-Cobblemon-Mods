@@ -1,7 +1,5 @@
 package jbro.cobblemon.mcc.client
 
-import com.google.gson.JsonParser
-import java.io.InputStreamReader
 import jbro.cobblemon.mcc.client.hub.MccHubKit
 import jbro.cobblemon.mcc.client.hub.MccHubPortraitCards
 import jbro.cobblemon.uikit.UiRect
@@ -37,21 +35,6 @@ class TowerHubLayoutTest {
         sizes.forEach { bounds ->
             val body = MccHubKit.cardBody(TowerHubLayout.calculate(bounds).party)
             assertEquals(TowerHubLayout.PARTY_SIZE, MccHubPortraitCards.grid(body, TowerHubLayout.PARTY_SIZE).size, "$bounds")
-        }
-    }
-
-    @Test
-    fun `both languages define every guide section`() {
-        listOf("en_us", "ko_kr").forEach { language ->
-            val stream = requireNotNull(javaClass.getResourceAsStream(
-                "/assets/more_cobblemon_contents_battle_tower/lang/$language.json",
-            ))
-            val entries = InputStreamReader(stream).use(JsonParser::parseReader).asJsonObject
-            assertTrue(entries.has(TowerGuideContent.TITLE_KEY))
-            TowerGuideContent.sections.forEach { section ->
-                assertTrue(entries.has(section.titleKey), "$language is missing ${section.titleKey}")
-                assertTrue(entries.has(section.bodyKey), "$language is missing ${section.bodyKey}")
-            }
         }
     }
 }

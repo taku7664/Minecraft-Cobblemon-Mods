@@ -14,9 +14,6 @@ internal data class TowerHubLayout(
     val setup: UiRect,
     val footer: UiRect,
 ) {
-    /** The room of both cards together, from the party card's left edge to the setup card's right one. */
-    val body: UiRect get() = UiRect(party.x, party.y, setup.right - party.x, party.height)
-
     companion object {
         const val PARTY_SIZE = 6
 

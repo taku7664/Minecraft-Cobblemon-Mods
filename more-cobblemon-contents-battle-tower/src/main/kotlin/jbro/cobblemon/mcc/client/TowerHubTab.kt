@@ -61,17 +61,11 @@ internal object TowerHubClient {
 
 /** Battle Tower inside the MCC hub: pick six, choose the session rules, lock the team and climb. */
 internal class TowerHubTab : MccHubTabContent {
-    private var showingGuide = false
-    private var guideOffset = 0
-    private var scrollable: MccHubKit.Scrollable? = null
-
     override fun shown() {
-        showingGuide = false
         if (!TowerHubClient.takeOpenedByServer()) MccHubTabs.requestContent(TowerHubClient.CONTENT)
     }
 
     override fun build(host: MccHubContentHost, bounds: UiRect) {
-        scrollable = null
         val controller = TowerHubClient.controller
         if (controller == null) {
             MccHubKit.placeholder(host, bounds, tower("processing"))
@@ -87,29 +81,9 @@ internal class TowerHubTab : MccHubTabContent {
                     state.bestWinStreak, state.bpPerWin)
             },
             tower("phase.${state.phase.name.lowercase()}"), progress = state.winsIntoSet to TOWER_BOSS_INTERVAL)
-        if (showingGuide) {
-            buildGuide(host, layout)
-            return
-        }
         addParty(host, layout, controller)
         addSetup(host, layout, controller)
         addFooter(host, layout, controller)
-    }
-
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollY: Double): Boolean =
-        scrollable?.scroll(mouseX, mouseY, scrollY) == true
-
-    private fun buildGuide(host: MccHubContentHost, layout: TowerHubLayout) {
-        // The guide takes both cards' room.
-        val body = MccHubKit.card(host, layout.body, Component.translatable(TowerGuideContent.TITLE_KEY), MccHubKit.CardTone.FEATURE)
-        val sections = TowerGuideContent.sections.map {
-            MccHubKit.Section(Component.translatable(it.titleKey), Component.translatable(it.bodyKey))
-        }
-        scrollable = MccHubKit.document(host, body, sections, guideOffset) { guideOffset = it }
-        MccHubKit.footer(host, layout.footer, listOf(MccHubKit.Action(Component.translatable(TowerGuideContent.CLOSE_KEY)) {
-            showingGuide = false
-            host.rebuild()
-        }), emptyList())
     }
 
     private fun addParty(host: MccHubContentHost, layout: TowerHubLayout, controller: TowerPlayScreenController) {
@@ -209,12 +183,6 @@ internal class TowerHubTab : MccHubTabContent {
         val state = controller.state
         val pending = controller.isPending
         fun submit(action: () -> Boolean) { if (action()) host.rebuild() }
-        val guide = MccHubKit.Action(Component.translatable(TowerGuideContent.OPEN_KEY), enabled = !pending,
-            tooltip = Component.translatable(TowerGuideContent.BUTTON_TOOLTIP_KEY)) {
-            showingGuide = true
-            guideOffset = 0
-            host.rebuild()
-        }
         // Between battles a run under way can be given up; its streak ends there.
         val retire = listOfNotNull(MccHubKit.Action(tower("forfeit"), UiButtonVariant.DANGER, !pending) {
             MccHubKit.confirm(tower("forfeit.confirm.title"), tower("retire.confirm.message"), tower("forfeit"),
@@ -240,7 +208,7 @@ internal class TowerHubTab : MccHubTabContent {
                 MccHubKit.Action(tower("in_progress"), UiButtonVariant.PRIMARY, enabled = false, minWidth = 96) {},
             )
         }
-        MccHubKit.footer(host, layout.footer, listOf(guide), end)
+        MccHubKit.footer(host, layout.footer, emptyList(), end)
     }
 }
 
