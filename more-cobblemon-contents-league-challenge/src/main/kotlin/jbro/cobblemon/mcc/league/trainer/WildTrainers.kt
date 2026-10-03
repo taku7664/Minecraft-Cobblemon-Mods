@@ -16,6 +16,7 @@ import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.BattleRegistry
+import com.cobblemon.mod.common.battles.ErroredBattleStart
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.entity.npc.NPCBattleActor
@@ -84,6 +85,8 @@ object WildTrainers {
     private val starting = HashSet<UUID>()
     private val cooldowns = HashMap<Pair<UUID, UUID>, Long>()
     private val despawns = HashMap<UUID, Long>()
+    /** Trainers named before their skin aspect arrived, to name again a little later. */
+    private val renames = HashMap<UUID, Long>()
 
     fun register() {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(Resources)
@@ -120,9 +123,19 @@ object WildTrainers {
         }
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             val npc = entity as? NPCEntity ?: return@register
-            if (definitionOf(npc) != null && npc.customName == null) name(npc)
+            if (definitionOf(npc) == null) return@register
+            if (npc.customName == null) name(npc)
+            // The skin, and with it the personal name, can land after the trainer joins the world.
+            if (!hasPersonalName(npc)) renames[npc.uuid] = (npc.level().server?.overworld()?.gameTime ?: 0L) + RENAME_DELAY_TICKS
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
+            if (renames.isNotEmpty()) {
+                val due = server.overworld().gameTime
+                renames.entries.filter { it.value <= due }.map { it.key }.forEach { id ->
+                    renames.remove(id)
+                    server.allLevels.firstNotNullOfOrNull { it.getEntity(id) as? NPCEntity }?.let(::name)
+                }
+            }
             if (despawns.isEmpty()) return@register
             val now = server.overworld().gameTime
             despawns.entries.filter { it.value <= now }.map { it.key }.forEach { id ->
@@ -131,7 +144,7 @@ object WildTrainers {
             }
         }
         ServerLifecycleEvents.SERVER_STOPPED.register {
-            fights.clear(); starting.clear(); cooldowns.clear(); despawns.clear()
+            fights.clear(); starting.clear(); cooldowns.clear(); despawns.clear(); renames.clear()
         }
     }
 
@@ -163,6 +176,13 @@ object WildTrainers {
         npc.customName = if (personal == null) title.copy() else title.copy().append(" ").append(personal)
     }
 
+    private fun hasPersonalName(npc: NPCEntity): Boolean =
+        npc.aspects.any { it.startsWith("rct_") && personalName(it) != null }
+
+    /** Whether [npc] is in a battle still going on; a battle that was cancelled before it began can leave its ID behind. */
+    private fun inLiveBattle(npc: NPCEntity): Boolean =
+        npc.isInBattle() && npc.battleIds.any { BattleRegistry.getBattle(it) != null }
+
     /** The given name in an RCT skin aspect such as `rct_aroma_lady_elizabeth_02f7`, as "Elizabeth". */
     fun personalName(aspect: String): String? {
         val base = aspect.removePrefix("rct_").replace(Regex("_[0-9a-f]{4}$"), "")
@@ -171,10 +191,10 @@ object WildTrainers {
     }
 
     private fun offer(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
-        if (npc.customName == null) name(npc)
+        if (npc.customName == null || !hasPersonalName(npc)) name(npc)
         val refusal = when {
             BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null -> return
-            npc.isInBattle() -> "busy"
+            inLiveBattle(npc) -> "busy"
             npc.uuid in despawns -> "done"
             (cooldowns[player.uuid to npc.uuid] ?: 0L) > player.serverLevel().gameTime -> "cooldown"
             Cobblemon.storage.getParty(player).none { !it.isFainted() } -> "no_pokemon"
@@ -216,7 +236,7 @@ object WildTrainers {
     }
 
     private fun start(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
-        if (!npc.isAlive || npc.isInBattle() || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
+        if (!npc.isAlive || inLiveBattle(npc) || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
         val lead = Cobblemon.storage.getParty(player).firstOrNull { !it.isFainted() } ?: return say(player, npc, "$KEY.refuse.no_pokemon")
         val party = NPCPartyStore(npc)
         val cap = cap(player)
@@ -234,7 +254,10 @@ object WildTrainers {
             }
             party.add(pokemon)
         }
-        if (party.none()) return say(player, npc, "$KEY.refuse.busy")
+        if (party.none()) {
+            Mod.LOGGER.warn("Wild trainer {} raised no Pokemon at cap {}", definition.npcClass, cap)
+            return say(player, npc, "$KEY.refuse.busy")
+        }
         npc.skill = WildTrainerQuality.of(definition.tier, cap).skill
         starting += npc.uuid
         val result = try {
@@ -248,10 +271,15 @@ object WildTrainers {
         } finally {
             starting -= npc.uuid
         }
-        if (result is SuccessfulBattleStart) {
-            fights[result.battle.battleId] = Fight(npc.uuid, player.uuid, definition)
-        } else {
-            say(player, npc, "$KEY.refuse.busy")
+        when (result) {
+            is SuccessfulBattleStart -> fights[result.battle.battleId] = Fight(npc.uuid, player.uuid, definition)
+            // Cobblemon says why (a fainted or busy Pokemon, a battle already on); the trainer is not to blame.
+            is ErroredBattleStart -> {
+                Mod.LOGGER.warn("Wild trainer battle for {} did not start: {}", player.uuid,
+                    result.errors.joinToString { it.getMessageFor(player).string })
+                result.sendTo(player) { it }
+            }
+            else -> say(player, npc, "$KEY.refuse.busy")
         }
     }
 
@@ -310,6 +338,7 @@ object WildTrainers {
     }
 
     private const val GREETINGS = 4
+    private const val RENAME_DELAY_TICKS = 20L
 
     private object Resources : SimpleSynchronousResourceReloadListener {
         override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "wild_trainers")
