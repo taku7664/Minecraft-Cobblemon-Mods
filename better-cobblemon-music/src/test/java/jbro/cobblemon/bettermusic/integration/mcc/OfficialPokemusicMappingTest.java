@@ -67,7 +67,7 @@ final class OfficialPokemusicMappingTest {
         }
         assertEquals("3a3c66d0732c94cbce6628547b7fcaa6cad5691340f65371654b65429ee23e6e",
             sha256(pack.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg")));
-        assertEquals(87, compiled.trackEvents().size());
+        assertEquals(88, compiled.trackEvents().size());
     }
 
     @Test
@@ -203,8 +203,12 @@ final class OfficialPokemusicMappingTest {
         expectBattle(resolver, "hard_champion", "more_cobblemon_contents_league_challenge:cynthia_hard", "battle/champion/sinnoh_cynthia_battle");
         expectBattle(resolver, "champion", "example:other", "battle/trainer/sinnoh_trainer_battle");
         expectBattle(resolver, "hard_champion", "example:other", "battle/trainer/sinnoh_trainer_battle");
-        expectTracks(compiled.snapshot().battle().pvp(), "battle/trainer/sinnoh_trainer_battle");
-        assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:pvp"));
+        expectTracks(compiled.snapshot().battle().pvp(), "battle/pvp/pokemon_champions_arena_battle");
+        expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:pvp"),
+            "battle/pvp/pokemon_champions_arena_battle");
+        var pvpKeys = MccMusicKeys.battle("more_cobblemon_contents:pvp", "single", null);
+        expectTracks(resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.PVP,
+            Set.of(), Set.of(), pvpKeys)).playlist(), "battle/pvp/pokemon_champions_arena_battle");
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/champion"));
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/hard_champion"));
         expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_tower"), "battle/trainer/sinnoh_trainer_battle");

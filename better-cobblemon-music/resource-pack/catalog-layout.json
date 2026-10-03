@@ -58,6 +58,7 @@
     "cobleserver:battle/legendary/xy_mewtwo_battle": "전투! 뮤츠 (X·Y)",
     "cobleserver:battle/legendary/xy_xerneas_yveltal_zygarde_battle": "전투! 제르네아스·이벨타르·지가르데 (X·Y)",
     "cobleserver:battle/legendary/za_darkrai_battle": "다크라이 전투 (PLZA)",
+    "cobleserver:battle/pvp/pokemon_champions_arena_battle": "아레나 배틀 (PC)",
     "cobleserver:battle/trainer/sinnoh_trainer_battle": "전투! 트레이너 (D·P)",
     "cobleserver:battle/ultra_beast/alola_ultra_beast_battle": "전투! 울트라비스트 (S·M)",
     "cobleserver:battle/wild/bw_strong_wild_pokemon_battle": "전투! 강한 야생 포켓몬 (B·W)",
@@ -269,10 +270,11 @@
     "battle": {
       "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",
       "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-      "pvp": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+      "pvp": "cobleserver:track/battle/pvp/pokemon_champions_arena_battle",
       "content": {
         "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:pvp": "cobleserver:track/battle/pvp/pokemon_champions_arena_battle",
         "more_cobblemon_contents:league_challenge/wild_trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/wild_trainer_ace": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/gym": "cobleserver:battle_gym_leader",

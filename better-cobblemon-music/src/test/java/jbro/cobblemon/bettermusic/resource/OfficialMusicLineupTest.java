@@ -50,7 +50,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(87, eventTitles.size());
+        assertEquals(88, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -82,6 +82,7 @@ final class OfficialMusicLineupTest {
         assertTitle("battle/legendary/hgss_lugia_battle", "전투! 루기아 (HG·SS)");
         assertTitle("battle/legendary/bdsp_dialga_palkia_battle", "전투! 디아루가·펄기아 (BD·SP)");
         assertTitle("battle/legendary/dppt_dialga_palkia_battle", "전투! 디아루가·펄기아 (D·P)");
+        assertTitle("battle/pvp/pokemon_champions_arena_battle", "아레나 배틀 (PC)");
     }
 
     @Test
@@ -102,7 +103,7 @@ final class OfficialMusicLineupTest {
         assertEquals(List.of("cobleserver:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");
         assertEquals(List.of("cobleserver:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
-        assertEquals(battle.trainer(), battle.pvp());
+        assertEquals(List.of("cobleserver:battle/pvp/pokemon_champions_arena_battle"), battle.pvp().tracks());
     }
 
     @Test
@@ -110,6 +111,14 @@ final class OfficialMusicLineupTest {
         byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
             "pack/assets/cobleserver/sounds/music/battle/legendary/hgss_lugia_battle.ogg"));
         assertEquals("b1e82d1430c823f9b195a4f1b3c4f835865f530de621a0a296ab3b699b8de278",
+            HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
+    }
+
+    @Test
+    void pvpResourceRestoresOnlyTheOriginalChampionsAudio() throws Exception {
+        byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
+            "pack/assets/cobleserver/sounds/music/battle/pvp/pokemon_champions_arena_battle.ogg"));
+        assertEquals("88702ffa56a2a05e7c152232c0cd03724b713b278263ca5bd7c4076900f9fc50",
             HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
     }
 
