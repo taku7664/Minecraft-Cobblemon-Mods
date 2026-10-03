@@ -3,6 +3,9 @@ package jbro.cobblemon.mcc.betterai
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffectKind
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
+import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -95,6 +98,142 @@ class LocalCallbackMoveEffectsTest {
         assertNull(effects("recover").singleOrNull { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL })
     }
 
+    @Test
+    fun `Take Heart cures a status and raises both special stats`() {
+        val user = mon(BattleSide.ALLY, "water", status = "brn")
+        project(user, move("takeheart", BattleMoveTargetPattern.SELF)).forEach { outcome ->
+            val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
+            assertNull(after.statusId)
+            assertEquals(1, stage(after, "spa"))
+            assertEquals(1, stage(after, "spd"))
+        }
+        assertTrue(effects("takeheart").any {
+            it.kind == BattleMoveEffectKind.STAT_STAGE && it.statStages == mapOf("spa" to 1, "spd" to 1)
+        })
+    }
+
+    @Test
+    fun `Take Heart still cures at the stat cap and uses existing ability stage rules`() {
+        for ((ability, initial, expected) in listOf(
+            Triple(null, 6, 6), Triple("contrary", 0, -1), Triple("simple", 0, 2),
+        )) {
+            val user = mon(BattleSide.ALLY, "water", status = "psn", ability = ability,
+                stages = mapOf("spa" to initial, "spd" to initial))
+            project(user, move("takeheart", BattleMoveTargetPattern.SELF)).forEach { outcome ->
+                val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
+                assertNull(after.statusId)
+                assertEquals(expected, stage(after, "spa"), ability ?: "cap")
+                assertEquals(expected, stage(after, "spd"), ability ?: "cap")
+            }
+        }
+    }
+
+    @Test
+    fun `Meteor Beam boosts on preparation without dealing damage`() {
+        val user = mon(BattleSide.ALLY, "rock")
+        project(user, beam("meteorbeam")).forEach { outcome ->
+            val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
+            assertEquals(1, stage(after, "spa"))
+            assertEquals(1.0, outcome.stateBeforeResidual.pokemon.single { it.side == BattleSide.OPPONENT }.hpFraction)
+            assertTrue(outcome.controlEffects.any { it.kind == RecursiveControlEffectKind.CHARGE })
+        }
+    }
+
+    @Test
+    fun `Meteor Beam continuation does not boost again`() {
+        val user = mon(BattleSide.ALLY, "rock", stages = mapOf("spa" to 1))
+        val history = RecursiveActionHistory(chargingMoveByPokemon = mapOf(user.battlePokemonId to "meteorbeam"))
+        val outcomes = project(user, beam("meteorbeam"), history)
+        outcomes.forEach { outcome ->
+            assertEquals(1, stage(outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }, "spa"))
+            assertTrue(outcome.controlEffects.none { it.kind == RecursiveControlEffectKind.CHARGE })
+        }
+        assertTrue(outcomes.any { it.stateBeforeResidual.pokemon.single { mon -> mon.side == BattleSide.OPPONENT }.hpFraction < 1.0 })
+    }
+
+    @Test
+    fun `Power Herb Meteor Beam boosts once before firing and consumes the item`() {
+        val user = mon(BattleSide.ALLY, "rock", item = "powerherb")
+        val outcomes = project(user, beam("meteorbeam"))
+        outcomes.forEach { outcome ->
+            val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
+            assertEquals(1, stage(after, "spa"))
+            assertNull(after.knownHeldItemId)
+            assertTrue(outcome.controlEffects.none { it.kind == RecursiveControlEffectKind.CHARGE })
+        }
+        assertTrue(outcomes.any { it.stateBeforeResidual.pokemon.single { mon -> mon.side == BattleSide.OPPONENT }.hpFraction < 1.0 })
+        val alreadyCharged = mon(BattleSide.ALLY, "rock", stages = mapOf("spa" to 1))
+        val continuation = project(alreadyCharged, beam("meteorbeam"), RecursiveActionHistory(
+            chargingMoveByPokemon = mapOf(alreadyCharged.battlePokemonId to "meteorbeam"),
+        ))
+        fun foeHpDistribution(turns: List<jbro.cobblemon.mcc.betterai.state.PublicTurnProjection>) = turns
+            .map { it.stateBeforeResidual.pokemon.single { mon -> mon.side == BattleSide.OPPONENT }.hpFraction }.sorted()
+        assertEquals(foeHpDistribution(continuation), foeHpDistribution(outcomes), "The immediate hit must use the boosted stat")
+    }
+
+    @Test
+    fun `Electro Shot in rain boosts before firing and keeps Power Herb`() {
+        val user = mon(BattleSide.ALLY, "electric", item = "powerherb")
+        val outcomes = project(user, beam("electroshot"), weather = "raindance")
+        outcomes.forEach { outcome ->
+            val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
+            assertEquals(1, stage(after, "spa"))
+            assertEquals("powerherb", after.knownHeldItemId)
+            assertTrue(outcome.controlEffects.none { it.kind == RecursiveControlEffectKind.CHARGE })
+        }
+        assertTrue(outcomes.any { it.stateBeforeResidual.pokemon.single { mon -> mon.side == BattleSide.OPPONENT }.hpFraction < 1.0 })
+    }
+
+    @Test
+    fun `faster Encore does not repeat Electro Shot preparation in rain`() {
+        val user = mon(BattleSide.ALLY, "electric", speed = 50)
+        val foe = mon(BattleSide.OPPONENT, "normal", speed = 200)
+        val state = state(user, foe, "raindance")
+        val shot = beam("electroshot")
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(user.battlePokemonId,
+            listOf(BattlePublicMoveOptionView("electroshot", shot.moveDetails!!, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)),
+            moveSetComplete = true)))
+        val context = BattleDecisionContext(UUID.randomUUID(), state, listOf(shot), Long.MAX_VALUE,
+            BattleTacticalMemoryView.empty(), publicActionCatalog = catalog)
+        val encore = BattleActionCandidate("encore", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "encore", targets = listOf(BattleTargetSlot(BattleSide.ALLY, 0)),
+            moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 5,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+                effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    listOf(BattleMoveEffectView(BattleMoveEffectKind.VOLATILE_STATUS,
+                        BattleMoveEffectTarget.SELECTED_TARGET, 1.0, "encore")), false)))
+        val outcomes = PublicSingleTurnProjector.project(state, shot, encore, context,
+            RecursiveActionHistory(lastMoveByPokemon = mapOf(user.battlePokemonId to "electroshot")))
+        assertTrue(outcomes.isNotEmpty())
+        outcomes.forEach { outcome ->
+            assertTrue(outcome.controlEffects.any { it.kind == RecursiveControlEffectKind.ENCORE })
+            assertEquals(1, stage(outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }, "spa"))
+        }
+    }
+
+    private fun beam(id: String) = BattleActionCandidate(
+        actionId = id, kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = id,
+        moveDetails = move(id, BattleMoveTargetPattern.SELECTED_OPPONENT).moveDetails!!.copy(
+            typeId = if (id == "electroshot") "electric" else "rock",
+            damageCategory = BattleMoveDamageCategory.SPECIAL, power = 120.0,
+        ), targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)))
+
+    private fun project(
+        user: BattlePokemonStateView, candidate: BattleActionCandidate,
+        history: RecursiveActionHistory = RecursiveActionHistory(), weather: String? = null,
+    ): List<jbro.cobblemon.mcc.betterai.state.PublicTurnProjection> {
+        val state = state(user, mon(BattleSide.OPPONENT, "normal"), weather)
+        val context = PublicBattleTacticalCalculator.calculate(context(state, candidate))
+        val outcomes = PublicSingleTurnProjector.project(
+            state, context.candidates.single(), BattleActionCandidate("wait", BattleActionKind.WAIT), context, history,
+        )
+        assertTrue(outcomes.isNotEmpty())
+        return outcomes
+    }
+
+    private fun stage(mon: BattlePokemonStateView, stat: String): Int =
+        mon.statStages.entries.firstOrNull { LocalStatStageChange.normalise(it.key) == LocalStatStageChange.normalise(stat) }?.value ?: 0
+
     private fun healOf(moveId: String, weather: String?): Double {
         val user = mon(BattleSide.ALLY, "grass", hp = 0.2)
         val calculated = calculate(move(moveId, BattleMoveTargetPattern.SELF), user, mon(BattleSide.OPPONENT, "normal"), weather)
@@ -136,14 +275,16 @@ class LocalCallbackMoveEffectsTest {
     private fun mon(
         side: BattleSide, type: String, hp: Double = 1.0, maxHp: Int = 300, attack: Int = 120,
         stages: Map<String, Int> = emptyMap(),
+        status: String? = null, ability: String? = null, item: String? = null,
+        speed: Int = 100,
     ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0, speciesId = "showdown:probe", formId = null,
-        level = 50, hpFraction = hp, statusId = null, statStages = stages, knownMoveIds = emptySet(),
-        knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = setOf(type),
+        level = 50, hpFraction = hp, statusId = status, statStages = stages, knownMoveIds = emptySet(),
+        knownAbilityId = ability, knownHeldItemId = item, fainted = false, knownTypeIds = setOf(type),
         combatStats = BattleCombatStatRangesView(
             maxHp = BattleIntegerRange(maxHp, maxHp), attack = BattleIntegerRange(attack, attack),
             defence = BattleIntegerRange(100, 100), specialAttack = BattleIntegerRange(100, 100),
-            specialDefence = BattleIntegerRange(100, 100), speed = BattleIntegerRange(100, 100),
+            specialDefence = BattleIntegerRange(100, 100), speed = BattleIntegerRange(speed, speed),
             knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
         ),
         knownVolatileEffectIds = emptySet(), knownBaseStabTypeIds = setOf(type),
