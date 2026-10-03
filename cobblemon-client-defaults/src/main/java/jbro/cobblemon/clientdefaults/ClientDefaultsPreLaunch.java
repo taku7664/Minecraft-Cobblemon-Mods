@@ -16,6 +16,7 @@ public final class ClientDefaultsPreLaunch implements PreLaunchEntrypoint {
     public void onPreLaunch() {
         FabricLoader loader = FabricLoader.getInstance();
         if (loader.getEnvironmentType() != EnvType.CLIENT) return;
+        var installedMods = loader.getAllMods().stream().map(mod -> mod.getMetadata().getId()).collect(Collectors.toSet());
         try {
             if (ClientDefaults.apply(loader.getConfigDir(), loader.isModLoaded("cobbled_level_control"))
                 == ClientDefaults.Result.APPLIED) {
@@ -26,10 +27,16 @@ public final class ClientDefaultsPreLaunch implements PreLaunchEntrypoint {
         }
         try {
             int applied = KeybindingDefaults.apply(loader.getGameDir(), loader.getConfigDir(),
-                loader.getAllMods().stream().map(mod -> mod.getMetadata().getId()).collect(Collectors.toSet()));
+                installedMods);
             if (applied > 0) LOGGER.info("Applied keybinding cleanup for {} installed mods", applied);
         } catch (IOException exception) {
             LOGGER.error("Could not apply keybinding defaults; initialization will retry next launch", exception);
+        }
+        try {
+            int applied = XaeroDefaults.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);
+            if (applied > 0) LOGGER.info("Applied Xaero map preset for {} installed map mods", applied);
+        } catch (IOException exception) {
+            LOGGER.error("Could not apply Xaero map defaults; initialization will retry next launch", exception);
         }
     }
 }

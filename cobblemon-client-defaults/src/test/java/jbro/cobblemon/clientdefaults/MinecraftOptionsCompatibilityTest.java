@@ -45,6 +45,13 @@ final class MinecraftOptionsCompatibilityTest {
         assertEquals("key.keyboard.unknown", migrated.getString("key_key.hide_icons"));
     }
 
+    @Test void freshXaeroOnlyOptionsPassMinecraftMigration() throws Exception {
+        XaeroDefaults.apply(gameDirectory, gameDirectory.resolve("config"), Set.of("xaerominimap", "xaeroworldmap"));
+        CompoundTag migrated = readWithMinecraftMigration(Files.readString(gameDirectory.resolve("options.txt")));
+        assertEquals("key.keyboard.j", migrated.getString("key_gui.xaero_open_map"));
+        assertEquals("key.keyboard.unknown", migrated.getString("key_gui.xaero_instant_waypoint"));
+    }
+
     @Test void expectedDataVersionMatchesBundledMinecraftVersion() throws Exception {
         try (var stream = getClass().getResourceAsStream("/version.json")) {
             assertNotNull(stream);

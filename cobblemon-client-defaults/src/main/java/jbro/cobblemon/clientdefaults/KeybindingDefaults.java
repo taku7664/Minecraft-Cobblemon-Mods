@@ -13,8 +13,6 @@ import java.util.regex.Pattern;
 /** Applies the approved key cleanup before Minecraft reads options.txt. */
 public final class KeybindingDefaults {
     private static final String MODE = "keybindings.mode";
-    // Minecraft 1.21.1 data version; unversioned modern keys enter the legacy numeric-key migration.
-    private static final String NEW_OPTIONS_VERSION = "version:3955\n";
     private static final List<Rule> RULES = List.of(
         new Rule("cobbled_level_control", List.of("key_key.cobbled_level_control.toggle_hud")),
         new Rule("talkingheads", List.of("key_talkingheads.keybinding.modToggle")),
@@ -40,7 +38,7 @@ public final class KeybindingDefaults {
 
         Path optionsFile = gameDirectory.resolve("options.txt");
         String original = Files.exists(optionsFile) ? Files.readString(optionsFile) : "";
-        String updated = clearKeys(original.isEmpty() ? NEW_OPTIONS_VERSION : original, pending);
+        String updated = clearKeys(DefaultsFiles.seedOptions(original), pending);
         Path craftingFile = configDirectory.resolve("craftingtweaks-common.toml");
         // Validate every pending file before changing options, so invalid TOML cannot partially clear keys.
         CommentedConfig crafting = pending.stream().anyMatch(rule -> rule.modId().equals("craftingtweaks"))

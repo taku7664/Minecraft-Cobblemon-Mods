@@ -51,6 +51,11 @@ public final class ClientDefaults {
         DefaultsFiles.saveModes(directory, Map.of(HUD_MODE, hudMode, "keybindings.mode", keybindingsMode));
     }
 
+    public static synchronized void saveModes(Path directory, ApplyMode hudMode, ApplyMode keybindingsMode, ApplyMode xaeroMode) throws IOException {
+        if (hudMode == null || keybindingsMode == null || xaeroMode == null) throw new IOException("All application modes are required");
+        DefaultsFiles.saveModes(directory, Map.of(HUD_MODE, hudMode, "keybindings.mode", keybindingsMode, "xaero.mode", xaeroMode));
+    }
+
     private static void writeHud(Path directory, boolean enabled) throws IOException {
         CommentedConfig config = readClient(directory);
         if (Boolean.valueOf(enabled).equals(config.get(HUD_ENABLED))) return;

@@ -30,6 +30,28 @@ Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTT
 파일이 이미 `BUTTONS`이면 다시 쓰지 않으며, 다른 값과 주석은 유지합니다.
 기존 TOML을 다시 작성할 때는 들여쓰기와 줄바꿈이 정리될 수 있습니다.
 
+## Xaero 지도 설정
+
+Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기화 전에 준비합니다.
+설치된 지도 모드만 처리하며 다른 프로필 파일은 수정하지 않습니다.
+
+- Minimap `config/xaero/minimap/profiles/default.cfg`: `waypoints_in_world`, `waypoints_on_minimap`, `deathpoints`를 `false`, `display_radar`를 `true`로 설정합니다.
+- World Map `config/xaero/world-map/profiles/default.cfg`: `waypoints`, `render_waypoints`, `map_teleport_allowed`를 `false`, `display_minimap_radar`를 `true`로 설정합니다.
+- 두 기본 프로필의 `ignore_enforcement_if_edit_permission`을 `false`로 설정합니다.
+- `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
+- 전체 지도는 J, 미니맵 설정은 Y, 웨이포인트 관련 7개 단축키는 미지정입니다.
+- `resourcepacks/E19-Xaero-Icons-1.5.1.zip`이 설치되어 있으면 활성화하고 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
+- JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
+
+Xaero의 기본 적용 방식은 `ALWAYS`입니다. Mod Menu에서 `ONCE`로 바꾸면 각 지도 모드의
+성공 기록을 `xaero-<mod ID>-v1=true`로 남기며, 나중에 다른 지도 모드를 설치하면 그 모드만 처리합니다.
+기존 CFG의 무관한 설정·주석·줄바꿈과 다른 리소스팩의 상대 순서는 유지합니다.
+레이더 JSON의 값을 바꾸면 들여쓰기를 다시 정리할 수 있습니다.
+
+클라이언트 표시 설정만으로 생성 메뉴까지 막지는 못합니다. 서버의 강제 프로필과
+`xaero-waypoint-lock` 데이터팩이 `xaerominimap:no_waypoints` 효과를 유지하여 생성 메뉴를 차단합니다.
+이 클라이언트 훅은 서버 파일과 데이터팩을 수정하지 않습니다.
+
 ## 적용 방식
 
 각 설정 항목은 `ONCE`(최초 한 번) 또는 `ALWAYS`(매 실행)를 선택할 수 있습니다.
@@ -47,6 +69,9 @@ mode = "ALWAYS"
 
 [keybindings]
 mode = "ONCE"
+
+[xaero]
+mode = "ALWAYS"
 ```
 
 `ONCE`로 바꾸면 성공한 항목을
@@ -63,8 +88,8 @@ mode = "ONCE"
 잘못된 TOML, 지원하지 않는 적용 방식 또는 파일 접근 오류는 로그에 남기고 게임 시작을
 계속합니다. `ONCE`의 성공 기록이 없으면 다음 실행에서 다시 시도합니다.
 Mod Menu에서 저장한 적용 방식은 다음 게임 실행부터 사용합니다.
-CLC와 단축키 정리의 오류는 각각 로그에 남기므로 한쪽이 실패해도 다른 쪽은 시도합니다.
-단축키 정리는 필요한 파일을 먼저 읽고 검증한 후 저장합니다. 저장 도중 일부 파일이
+CLC, 단축키 정리와 Xaero의 오류는 각각 로그에 남기므로 한쪽이 실패해도 다른 쪽은 시도합니다.
+단축키 정리와 Xaero는 필요한 파일을 먼저 읽고 검증한 후 저장합니다. 저장 도중 일부 파일이
 실패하면 성공 기록을 남기지 않고 다음 실행에 재시도합니다.
 
 ## 빌드 및 배포
@@ -76,5 +101,7 @@ CLC와 단축키 정리의 오류는 각각 로그에 남기므로 한쪽이 실
 
 빌드에는 매 실행 적용, 최초 한 번 적용, 기존 값·주석 보존, CLC 미설치,
 잘못된 설정 및 파일 접근 실패, 6개 키의 정확한 변경 범위, 나중에 설치한 모드,
-개인 키 설정 유지와 두 규칙의 성공 기록 보존을 검증하는 단위 테스트가 포함됩니다.
+개인 키 설정 유지와 세 규칙의 성공 기록 보존을 검증하는 단위 테스트가 포함됩니다.
+Xaero의 새 프로필 생성, 매 실행 복구, 무관한 설정·팩 순서 보존, 모드별 최초 한 번 적용,
+잘못된 JSON과 쓰기 실패 시 재시도, 이미 올바른 파일의 재작성 방지도 검증합니다.
 Minecraft 1.21.1의 실제 설정 변환기로 새 옵션 파일과 기존 버전 파일의 호환성도 확인합니다.

@@ -20,6 +20,9 @@ import java.util.Properties;
 final class DefaultsFiles {
     private DefaultsFiles() {}
 
+    // Minecraft 1.21.1: unversioned modern keys enter the legacy numeric-key migration.
+    static String seedOptions(String original) { return original.isEmpty() ? "version:3955\n" : original; }
+
     static ClientDefaults.ApplyMode mode(Path directory, String key, ClientDefaults.ApplyMode fallback) throws IOException {
         try {
             Object mode = readToml(settingsFile(directory)).get(key);

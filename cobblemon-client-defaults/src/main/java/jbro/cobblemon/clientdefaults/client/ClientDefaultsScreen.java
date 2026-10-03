@@ -4,6 +4,7 @@ import java.io.IOException;
 import jbro.cobblemon.clientdefaults.ClientDefaults;
 import jbro.cobblemon.clientdefaults.ClientDefaultsPreLaunch;
 import jbro.cobblemon.clientdefaults.KeybindingDefaults;
+import jbro.cobblemon.clientdefaults.XaeroDefaults;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -17,7 +18,9 @@ final class ClientDefaultsScreen extends Screen {
     private final Screen parent;
     private ClientDefaults.ApplyMode mode = ClientDefaults.ApplyMode.ALWAYS;
     private ClientDefaults.ApplyMode keybindingsMode = ClientDefaults.ApplyMode.ONCE;
+    private ClientDefaults.ApplyMode xaeroMode = ClientDefaults.ApplyMode.ALWAYS;
     private final boolean clcInstalled;
+    private final boolean xaeroInstalled;
     private boolean editable = true;
     private Component status = Component.empty();
 
@@ -25,10 +28,12 @@ final class ClientDefaultsScreen extends Screen {
         super(Component.translatable(KEY + "title"));
         this.parent = parent;
         clcInstalled = FabricLoader.getInstance().isModLoaded("cobbled_level_control");
+        xaeroInstalled = FabricLoader.getInstance().isModLoaded("xaerominimap") || FabricLoader.getInstance().isModLoaded("xaeroworldmap");
         if (!clcInstalled) status = Component.translatable(KEY + "clc_missing");
         try {
             mode = ClientDefaults.mode(FabricLoader.getInstance().getConfigDir());
             keybindingsMode = KeybindingDefaults.mode(FabricLoader.getInstance().getConfigDir());
+            xaeroMode = XaeroDefaults.mode(FabricLoader.getInstance().getConfigDir());
         } catch (IOException exception) {
             editable = false;
             status = Component.translatable(KEY + "read_failed");
@@ -52,18 +57,25 @@ final class ClientDefaultsScreen extends Screen {
         }).bounds(width / 2 - 130, y + 25, 260, 20)
             .tooltip(Tooltip.create(Component.translatable(KEY + "keybindings_help"))).build());
         keys.active = editable;
+        Button maps = addRenderableWidget(Button.builder(xaeroLabel(), button -> {
+            xaeroMode = xaeroMode == ClientDefaults.ApplyMode.ALWAYS
+                ? ClientDefaults.ApplyMode.ONCE : ClientDefaults.ApplyMode.ALWAYS;
+            button.setMessage(xaeroLabel());
+        }).bounds(width / 2 - 130, y + 50, 260, 20)
+            .tooltip(Tooltip.create(Component.translatable(KEY + "xaero_help"))).build());
+        maps.active = editable && xaeroInstalled;
         Button save = addRenderableWidget(Button.builder(Component.translatable(KEY + "save"), button -> {
             try {
-                ClientDefaults.saveModes(FabricLoader.getInstance().getConfigDir(), mode, keybindingsMode);
+                ClientDefaults.saveModes(FabricLoader.getInstance().getConfigDir(), mode, keybindingsMode, xaeroMode);
                 status = Component.translatable(KEY + "saved");
             } catch (IOException exception) {
                 status = Component.translatable(KEY + "save_failed");
                 ClientDefaultsPreLaunch.LOGGER.error("Could not save client defaults settings", exception);
             }
-        }).bounds(width / 2 - 130, y + 60, 125, 20).build());
+        }).bounds(width / 2 - 130, y + 85, 125, 20).build());
         save.active = editable;
         addRenderableWidget(Button.builder(Component.translatable("gui.back"), button -> onClose())
-            .bounds(width / 2 + 5, y + 60, 125, 20).build());
+            .bounds(width / 2 + 5, y + 85, 125, 20).build());
     }
 
     @Override
@@ -73,7 +85,7 @@ final class ClientDefaultsScreen extends Screen {
         MultiLineLabel.create(font, Component.translatable(KEY + "description"), Math.min(360, width - 40))
             .renderCentered(graphics, width / 2, 44, 12, 0xAAAAAA);
         MultiLineLabel.create(font, status, Math.min(360, width - 40))
-            .renderCentered(graphics, width / 2, rowY() + 92, 12, 0xFFFFFF);
+            .renderCentered(graphics, width / 2, rowY() + 117, 12, 0xFFFFFF);
     }
 
     @Override
@@ -89,5 +101,9 @@ final class ClientDefaultsScreen extends Screen {
         return Component.translatable(KEY + "keybindings", Component.translatable(KEY + "mode." + keybindingsMode.name().toLowerCase(java.util.Locale.ROOT)));
     }
 
-    private int rowY() { return Math.max(100, height / 2 - 35); }
+    private Component xaeroLabel() {
+        return Component.translatable(KEY + "xaero", Component.translatable(KEY + "mode." + xaeroMode.name().toLowerCase(java.util.Locale.ROOT)));
+    }
+
+    private int rowY() { return Math.max(100, height / 2 - 48); }
 }
