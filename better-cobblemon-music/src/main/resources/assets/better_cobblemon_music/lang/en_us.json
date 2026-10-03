@@ -42,6 +42,7 @@
   "better_cobblemon_music.config.mapping.battle.pvp": "Player battle",
   "better_cobblemon_music.config.mapping.battle.legendary": "Legendary Pokémon battle",
   "better_cobblemon_music.config.mapping.battle.ultra_beast": "Ultra Beast battle",
+  "better_cobblemon_music.config.mapping.battle.alpha": "Alpha Pokémon battle",
   "better_cobblemon_music.config.mapping.type.dimensions": "Dimension",
   "better_cobblemon_music.config.mapping.type.biomes": "Biome",
   "better_cobblemon_music.config.mapping.type.biome_path": "Biome path contains",

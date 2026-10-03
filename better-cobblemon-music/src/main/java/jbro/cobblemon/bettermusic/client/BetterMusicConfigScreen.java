@@ -197,6 +197,9 @@ public final class BetterMusicConfigScreen {
         base.battle().ultraBeastPlaylistId().ifPresent(value -> addBattleCore(
             battle, entries, "ultra_beast", initial.battle().ultraBeastPlaylistId(), value, playlists, edited
         ));
+        base.battle().alphaPlaylistId().ifPresent(value -> addBattleCore(
+            battle, entries, "alpha", initial.battle().alphaPlaylistId(), value, playlists, edited
+        ));
         addBattleContent(battle, entries, base.battle().content(), initial.battle().content(),
             BattleMusicContentProviders.global().knownKeys(), playlists, edited);
         addPokemonMappings(battle, entries, base.battle().pokemon(), initial.battle().pokemon(), playlists, edited);
@@ -368,7 +371,8 @@ public final class BetterMusicConfigScreen {
             type.equals("trainer") ? value : battle.trainerPlaylistId(),
             type.equals("pvp") ? value : battle.pvpPlaylistId(), battle.content(),
             type.equals("legendary") ? value : battle.legendaryPlaylistId(),
-            type.equals("ultra_beast") ? value : battle.ultraBeastPlaylistId(), battle.pokemon()
+            type.equals("ultra_beast") ? value : battle.ultraBeastPlaylistId(),
+            type.equals("alpha") ? value : battle.alphaPlaylistId(), battle.pokemon()
         ));
     }
 
@@ -380,7 +384,7 @@ public final class BetterMusicConfigScreen {
         putOrRemove(content, key, value);
         return old.withBattle(new MusicMappingOverrides.Battle(
             battle.wildPlaylistId(), battle.trainerPlaylistId(), battle.pvpPlaylistId(), content,
-            battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), battle.pokemon()
+            battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), battle.alphaPlaylistId(), battle.pokemon()
         ));
     }
 
@@ -393,7 +397,7 @@ public final class BetterMusicConfigScreen {
         value.ifPresent(playlist -> pokemon.add(new CatalogMappings.PokemonMapping(base.species(), base.only(), playlist)));
         return old.withBattle(new MusicMappingOverrides.Battle(
             battle.wildPlaylistId(), battle.trainerPlaylistId(), battle.pvpPlaylistId(), battle.content(),
-            battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), pokemon
+            battle.legendaryPlaylistId(), battle.ultraBeastPlaylistId(), battle.alphaPlaylistId(), pokemon
         ));
     }
 

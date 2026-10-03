@@ -15,6 +15,7 @@ public record BattleMusicConfig(
     Map<String, PlaylistDefinition> content,
     Optional<PlaylistDefinition> legendary,
     Optional<PlaylistDefinition> ultraBeast,
+    Optional<PlaylistDefinition> alpha,
     List<PokemonRule> pokemon
 ) {
     public BattleMusicConfig {
@@ -24,7 +25,14 @@ public record BattleMusicConfig(
         content = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(content, "content")));
         legendary = Objects.requireNonNull(legendary, "legendary");
         ultraBeast = Objects.requireNonNull(ultraBeast, "ultraBeast");
+        alpha = Objects.requireNonNull(alpha, "alpha");
         pokemon = List.copyOf(Objects.requireNonNull(pokemon, "pokemon"));
+    }
+
+    public BattleMusicConfig(PlaylistDefinition wild, PlaylistDefinition trainer, PlaylistDefinition pvp,
+        Map<String, PlaylistDefinition> content, Optional<PlaylistDefinition> legendary,
+        Optional<PlaylistDefinition> ultraBeast, List<PokemonRule> pokemon) {
+        this(wild, trainer, pvp, content, legendary, ultraBeast, Optional.empty(), pokemon);
     }
 
     public record PokemonRule(Set<String> species, Set<BattleType> only, PlaylistDefinition playlist) {

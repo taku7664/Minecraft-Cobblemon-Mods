@@ -44,6 +44,7 @@ public record CatalogMappings(Field field, Battle battle, Map<String, String> sc
         Map<String, String> content,
         Optional<String> legendaryPlaylistId,
         Optional<String> ultraBeastPlaylistId,
+        Optional<String> alphaPlaylistId,
         List<PokemonMapping> pokemon
     ) {
         public Battle {
@@ -53,7 +54,15 @@ public record CatalogMappings(Field field, Battle battle, Map<String, String> sc
             content = ordered(content, "content");
             legendaryPlaylistId = Objects.requireNonNull(legendaryPlaylistId, "legendaryPlaylistId");
             ultraBeastPlaylistId = Objects.requireNonNull(ultraBeastPlaylistId, "ultraBeastPlaylistId");
+            alphaPlaylistId = Objects.requireNonNull(alphaPlaylistId, "alphaPlaylistId");
             pokemon = List.copyOf(Objects.requireNonNull(pokemon, "pokemon"));
+        }
+
+        public Battle(String wildPlaylistId, String trainerPlaylistId, String pvpPlaylistId,
+            Map<String, String> content, Optional<String> legendaryPlaylistId,
+            Optional<String> ultraBeastPlaylistId, List<PokemonMapping> pokemon) {
+            this(wildPlaylistId, trainerPlaylistId, pvpPlaylistId, content, legendaryPlaylistId,
+                ultraBeastPlaylistId, Optional.empty(), pokemon);
         }
     }
 

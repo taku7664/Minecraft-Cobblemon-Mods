@@ -42,6 +42,7 @@
   "better_cobblemon_music.config.mapping.battle.pvp": "플레이어 전투",
   "better_cobblemon_music.config.mapping.battle.legendary": "전설 포켓몬 전투",
   "better_cobblemon_music.config.mapping.battle.ultra_beast": "울트라비스트 전투",
+  "better_cobblemon_music.config.mapping.battle.alpha": "알파 포켓몬 전투",
   "better_cobblemon_music.config.mapping.type.dimensions": "차원",
   "better_cobblemon_music.config.mapping.type.biomes": "바이옴",
   "better_cobblemon_music.config.mapping.type.biome_path": "바이옴 경로 포함",

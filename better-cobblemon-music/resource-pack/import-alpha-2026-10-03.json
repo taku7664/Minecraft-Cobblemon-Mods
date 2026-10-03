@@ -1,0 +1,8 @@
+{
+  "quality": 4,
+  "mode": "music",
+  "files": [
+    ["기타", "1-25*.mp3", "battle/boss/pla_boss_battle.ogg"],
+    ["기타", "2-15*.mp3", "battle/boss/sv_leader_pokemon_battle.ogg"]
+  ]
+}

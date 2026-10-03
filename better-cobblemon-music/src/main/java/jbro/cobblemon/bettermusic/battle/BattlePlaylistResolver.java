@@ -43,10 +43,15 @@ public final class BattlePlaylistResolver {
         if (context.type() == BattleMusicConfig.BattleType.WILD) {
             Optional<Selection> special = special(
                 context,
+                BattleMusicContext.Label.ALPHA,
+                "battle.alpha",
+                config.alpha()
+            ).or(() -> special(
+                context,
                 BattleMusicContext.Label.ULTRA_BEAST,
                 "battle.ultra_beast",
                 config.ultraBeast()
-            ).or(() -> special(
+            )).or(() -> special(
                 context,
                 BattleMusicContext.Label.LEGENDARY,
                 "battle.legendary",

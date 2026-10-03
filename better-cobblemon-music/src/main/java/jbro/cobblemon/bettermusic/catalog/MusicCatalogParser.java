@@ -157,7 +157,7 @@ public final class MusicCatalogParser {
     }
 
     static CatalogMappings.Battle battleMappings(JsonObject object, String path) {
-        CatalogJson.only(object, path, "wild", "trainer", "pvp", "content", "legendary", "ultraBeast", "pokemon");
+        CatalogJson.only(object, path, "wild", "trainer", "pvp", "content", "legendary", "ultraBeast", "alpha", "pokemon");
         return new CatalogMappings.Battle(
             CatalogJson.resourceId(CatalogJson.string(object, "wild", path), path + ".wild"),
             CatalogJson.resourceId(CatalogJson.string(object, "trainer", path), path + ".trainer"),
@@ -165,6 +165,7 @@ public final class MusicCatalogParser {
             idMap(CatalogJson.optionalObject(object, "content", path), path + ".content", KeyType.RESOURCE),
             optionalId(object, "legendary", path),
             optionalId(object, "ultraBeast", path),
+            optionalId(object, "alpha", path),
             pokemon(CatalogJson.optionalArray(object, "pokemon", path), path + ".pokemon")
         );
     }

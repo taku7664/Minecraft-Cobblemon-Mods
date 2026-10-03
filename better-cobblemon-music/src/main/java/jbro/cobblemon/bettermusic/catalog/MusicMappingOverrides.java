@@ -61,6 +61,7 @@ public record MusicMappingOverrides(Field field, Battle battle, Map<String, Stri
         Map<String, String> content,
         Optional<String> legendaryPlaylistId,
         Optional<String> ultraBeastPlaylistId,
+        Optional<String> alphaPlaylistId,
         List<CatalogMappings.PokemonMapping> pokemon
     ) {
         public Battle {
@@ -70,7 +71,15 @@ public record MusicMappingOverrides(Field field, Battle battle, Map<String, Stri
             content = ordered(content, "content");
             legendaryPlaylistId = Objects.requireNonNull(legendaryPlaylistId, "legendaryPlaylistId");
             ultraBeastPlaylistId = Objects.requireNonNull(ultraBeastPlaylistId, "ultraBeastPlaylistId");
+            alphaPlaylistId = Objects.requireNonNull(alphaPlaylistId, "alphaPlaylistId");
             pokemon = List.copyOf(Objects.requireNonNull(pokemon, "pokemon"));
+        }
+
+        public Battle(Optional<String> wildPlaylistId, Optional<String> trainerPlaylistId,
+            Optional<String> pvpPlaylistId, Map<String, String> content, Optional<String> legendaryPlaylistId,
+            Optional<String> ultraBeastPlaylistId, List<CatalogMappings.PokemonMapping> pokemon) {
+            this(wildPlaylistId, trainerPlaylistId, pvpPlaylistId, content, legendaryPlaylistId,
+                ultraBeastPlaylistId, Optional.empty(), pokemon);
         }
 
         public static Battle empty() {

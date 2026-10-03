@@ -56,7 +56,7 @@ public final class MusicMappingOverridesParser {
 
     private static MusicMappingOverrides.Battle battle(JsonObject object) {
         String path = "$.battle";
-        CatalogJson.only(object, path, "wild", "trainer", "pvp", "content", "legendary", "ultraBeast", "pokemon");
+        CatalogJson.only(object, path, "wild", "trainer", "pvp", "content", "legendary", "ultraBeast", "alpha", "pokemon");
         Map<String, String> content = MusicCatalogParser.idMap(
             CatalogJson.optionalObject(object, "content", path), path + ".content", MusicCatalogParser.KeyType.RESOURCE
         );
@@ -67,6 +67,7 @@ public final class MusicMappingOverridesParser {
             content,
             MusicCatalogParser.optionalId(object, "legendary", path),
             MusicCatalogParser.optionalId(object, "ultraBeast", path),
+            MusicCatalogParser.optionalId(object, "alpha", path),
             MusicCatalogParser.pokemon(CatalogJson.optionalArray(object, "pokemon", path), path + ".pokemon")
         );
     }
@@ -88,6 +89,7 @@ public final class MusicMappingOverridesParser {
             discardMapValues(battle, "content");
             discardProperty(battle, "legendary");
             discardProperty(battle, "ultraBeast");
+            discardProperty(battle, "alpha");
             discardPokemon(battle);
         }
         discardMapValues(root, "screens");

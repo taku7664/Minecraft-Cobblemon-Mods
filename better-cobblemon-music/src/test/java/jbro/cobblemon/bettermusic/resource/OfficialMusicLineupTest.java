@@ -42,6 +42,19 @@ final class OfficialMusicLineupTest {
     }
 
     @Test
+    void alphaBossTracksAreAvailableButNeverReplaceTheApprovedSpeciesThemes() {
+        var alpha = Set.of(BattleMusicContext.Label.ALPHA);
+        var ordinaryAlpha = resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.WILD,
+            Set.of("cobblemon:snorlax"), alpha));
+        assertEquals("battle.alpha", ordinaryAlpha.id());
+        assertEquals(List.of("cobleserver:battle/boss/pla_boss_battle", "cobleserver:battle/boss/sv_leader_pokemon_battle"),
+            ordinaryAlpha.playlist().tracks());
+        var lugiaAlpha = resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.WILD,
+            Set.of("cobblemon:lugia"), alpha));
+        assertEquals(List.of("cobleserver:battle/legendary/hgss_lugia_battle"), lugiaAlpha.playlist().tracks());
+    }
+
+    @Test
     void ordinaryWildUsesDiamondPearlAndLugiaKeepsItsExistingTrack() {
         assertEquals(List.of("cobleserver:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");

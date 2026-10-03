@@ -246,6 +246,7 @@ public final class MusicCatalogCompiler {
         ids.addAll(battle.content().values());
         battle.legendaryPlaylistId().ifPresent(ids::add);
         battle.ultraBeastPlaylistId().ifPresent(ids::add);
+        battle.alphaPlaylistId().ifPresent(ids::add);
         battle.pokemon().forEach(rule -> ids.add(rule.playlistId()));
         ids.addAll(mappings.screens().values());
         List<String> missing = ids.stream().filter(id -> !playlists.containsKey(id)).distinct().toList();
@@ -308,6 +309,9 @@ public final class MusicCatalogCompiler {
         Optional<String> ultraBeast = optionalOverride(
             "battle.ultraBeast", overrides.ultraBeastPlaylistId(), base.ultraBeastPlaylistId(), playlists, inactive
         );
+        Optional<String> alpha = optionalOverride(
+            "battle.alpha", overrides.alphaPlaylistId(), base.alphaPlaylistId(), playlists, inactive
+        );
         List<BattleMusicConfig.PokemonRule> pokemon = new ArrayList<>();
         addPokemonRules("battle.pokemon.override", overrides.pokemon(), playlists, inactive, pokemon);
         addPokemonRules("battle.pokemon.base", base.pokemon(), playlists, inactive, pokemon);
@@ -318,6 +322,7 @@ public final class MusicCatalogCompiler {
             materializeMappings(content, playlists),
             legendary.map(playlists::get),
             ultraBeast.map(playlists::get),
+            alpha.map(playlists::get),
             pokemon
         );
     }

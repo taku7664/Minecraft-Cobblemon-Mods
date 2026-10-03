@@ -88,6 +88,9 @@
     "cobleserver:battle_terapagos": {
       "selection": "random",
       "tracks": ["cobleserver:battle/legendary/sv_terapagos_battle", "cobleserver:battle/legendary/sv_stellar_terapagos_battle"]
+    },
+    "cobleserver:battle_alpha": {
+      "tracks": ["cobleserver:battle/boss/pla_boss_battle", "cobleserver:battle/boss/sv_leader_pokemon_battle"]
     }
   },
   "mappings": {
@@ -143,6 +146,7 @@
       },
       "legendary": "cobleserver:battle_legendary_generic",
       "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",
+      "alpha": "cobleserver:battle_alpha",
       "pokemon": [
         {
           "species": ["articuno", "zapdos", "moltres", "mew"],

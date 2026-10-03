@@ -41,6 +41,7 @@ public record BattleMusicContext(
     }
 
     public enum Label {
+        ALPHA,
         LEGENDARY,
         ULTRA_BEAST
     }

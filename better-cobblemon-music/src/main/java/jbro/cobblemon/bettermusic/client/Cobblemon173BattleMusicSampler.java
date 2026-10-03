@@ -99,12 +99,22 @@ public final class Cobblemon173BattleMusicSampler {
         if (type != BattleMusicConfig.BattleType.WILD) {
             return;
         }
+        // BattleInitializePacket omits the alpha property but transmits the alpha aspect.
+        // This state is also refreshed by ClientBattlePokemon.updateAspects during battle.
+        collectAlphaLabel(type, battlePokemon.getState().getCurrentAspects(), labels);
         Set<String> speciesLabels = pokemonSpecies.getLabels();
         if (speciesLabels.contains("ultra_beast")) {
             labels.add(BattleMusicContext.Label.ULTRA_BEAST);
         }
         if (speciesLabels.contains("legendary") || speciesLabels.contains("mythical")) {
             labels.add(BattleMusicContext.Label.LEGENDARY);
+        }
+    }
+
+    static void collectAlphaLabel(BattleMusicConfig.BattleType type, Set<String> aspects,
+        Set<BattleMusicContext.Label> labels) {
+        if (type == BattleMusicConfig.BattleType.WILD && aspects.contains("alpha")) {
+            labels.add(BattleMusicContext.Label.ALPHA);
         }
     }
 

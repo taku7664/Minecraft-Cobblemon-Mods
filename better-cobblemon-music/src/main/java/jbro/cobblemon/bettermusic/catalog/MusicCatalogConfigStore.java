@@ -213,6 +213,7 @@ public final class MusicCatalogConfigStore {
         addMap(battle, "content", overrides.battle().content());
         overrides.battle().legendaryPlaylistId().ifPresent(value -> battle.addProperty("legendary", value));
         overrides.battle().ultraBeastPlaylistId().ifPresent(value -> battle.addProperty("ultraBeast", value));
+        overrides.battle().alphaPlaylistId().ifPresent(value -> battle.addProperty("alpha", value));
         if (!overrides.battle().pokemon().isEmpty()) {
             var pokemon = new com.google.gson.JsonArray();
             for (CatalogMappings.PokemonMapping rule : overrides.battle().pokemon()) {
