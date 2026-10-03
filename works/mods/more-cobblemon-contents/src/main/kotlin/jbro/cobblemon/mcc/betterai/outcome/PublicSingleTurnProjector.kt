@@ -2050,7 +2050,7 @@ internal object PublicSingleTurnProjector {
     ): List<WeightedOrder> {
         val constraints = actions.indices.flatMap { firstIndex ->
             (firstIndex + 1 until actions.size).mapNotNull { secondIndex ->
-                definiteOrder(observedState, state, actions[firstIndex], actions[secondIndex])
+                definiteOrder(state, actions[firstIndex], actions[secondIndex])
             }
         }
         val allowed = permutations(actions).filter { order ->
@@ -2059,7 +2059,17 @@ internal object PublicSingleTurnProjector {
         if (allowed.size == 1) return listOf(WeightedOrder(allowed.single(), 1.0))
         if (allowed.size == 2 && actions.size == 2) {
             val firstLeads = allowed.first().first() == actions.first()
-            val leadProbability = actsFirstProbability(state, actions[0], actions[1])
+            val prior = actsFirstProbability(state, actions[0], actions[1])
+            val specialOrder = actions.any {
+                LocalPublicTurnOrder.alwaysLastWithinPriority(state, it.side, it.action) ||
+                    LocalPublicTurnOrder.fractionalPriorityChance(state, it.side, it.action) > 0.0
+            }
+            val leadProbability = if (prior != null && !specialOrder &&
+                state.field.roomEffects.none { canonicalId(it.effectId) == "trickroom" }) {
+                LocalObservedActionOrder.probability(observedState, state,
+                    actions[0].actorPokemonId ?: return allowed.map { WeightedOrder(it, 0.5) },
+                    actions[1].actorPokemonId ?: return allowed.map { WeightedOrder(it, 0.5) }, prior)
+            } else prior
             if (leadProbability != null) {
                 val head = if (firstLeads) leadProbability else 1.0 - leadProbability
                 return listOf(
@@ -2539,7 +2549,6 @@ internal object PublicSingleTurnProjector {
     )
 
     private fun definiteOrder(
-        observedState: BattleStateView,
         state: BattleStateView,
         first: TurnPrimitiveAction,
         second: TurnPrimitiveAction,
@@ -2582,14 +2591,7 @@ internal object PublicSingleTurnProjector {
                 else -> null
             }
         }
-        if (speedOrder != null || trickRoom) return speedOrder
-        val firstActorId = first.actorPokemonId ?: return null
-        val secondActorId = second.actorPokemonId ?: return null
-        return when (LocalObservedActionOrder.before(observedState, state, firstActorId, secondActorId)) {
-            true -> first to second
-            false -> second to first
-            null -> null
-        }
+        return speedOrder
     }
 
     private fun permutations(actions: List<TurnPrimitiveAction>): List<List<TurnPrimitiveAction>> {

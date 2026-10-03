@@ -70,8 +70,25 @@ internal object LocalObservedActionOrder {
      * Trick Room is deliberately absent: the projector resolves it before it ever asks for an
      * observation, so a room that appears or expires mid-search never reaches this comparison.
      */
-    private data class SpeedContext(val stage: Int, val paralysed: Boolean, val tailwind: Boolean,
-        val effectiveSpeed: Pair<Int, Int>?)
+    private data class SpeedContext(
+        val stage: Int, val paralysed: Boolean, val tailwind: Boolean,
+        val speed: Pair<Int, Int>?, val form: String?, val ability: String?, val item: String?,
+        val weather: String?, val terrain: String?,
+    )
+
+    /** One observed winner conditions the speed hypotheses; it cannot settle a fresh speed tie. */
+    fun probability(observed: BattleStateView, projected: BattleStateView, firstId: UUID, secondId: UUID, prior: Double): Double {
+        val relation = before(observed, projected, firstId, secondId) ?: return prior
+        val first = projected.pokemon.firstOrNull { it.battlePokemonId == firstId } ?: return prior
+        val second = projected.pokemon.firstOrNull { it.battlePokemonId == secondId } ?: return prior
+        val a = LocalPublicTurnOrder.effectiveSpeed(projected, first) ?: return prior
+        val b = LocalPublicTurnOrder.effectiveSpeed(projected, second) ?: return prior
+        val equal = (minOf(a.second, b.second) - maxOf(a.first, b.first) + 1).coerceAtLeast(0).toDouble() /
+            ((a.second.toLong() - a.first + 1) * (b.second.toLong() - b.first + 1))
+        val evidence = if (relation) prior else 1.0 - prior
+        if (evidence <= 0.0) return prior
+        return (if (relation) 1.0 - equal * 0.25 / evidence else equal * 0.25 / evidence).coerceIn(0.0, 1.0)
+    }
 
     private fun speedContextUnchanged(
         observedState: BattleStateView,
@@ -90,7 +107,12 @@ internal object LocalObservedActionOrder {
                 ?.value?.coerceIn(-6, 6) ?: 0,
             paralysed = normalize(pokemon.statusId) in PARALYSIS_IDS,
             tailwind = tailwind(state, pokemon.side),
-            effectiveSpeed = LocalPublicTurnOrder.effectiveSpeed(state, pokemon),
+            speed = LocalPublicTurnOrder.effectiveSpeed(state, pokemon),
+            form = pokemon.formId,
+            ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon),
+            item = LocalPublicItemState.activeItemId(state, pokemon),
+            weather = LocalPublicFieldMechanics.effectiveWeatherId(state),
+            terrain = LocalPublicFieldMechanics.terrainId(state),
         )
     }
 
