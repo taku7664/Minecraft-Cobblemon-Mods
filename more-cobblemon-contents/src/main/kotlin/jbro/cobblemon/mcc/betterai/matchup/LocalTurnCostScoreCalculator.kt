@@ -3,10 +3,11 @@ package jbro.cobblemon.mcc.betterai.matchup
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
-import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -73,7 +74,8 @@ internal object LocalTurnCostScoreCalculator {
                 if (aimsAtTarget && LocalPublicMoveTargets.resolve(candidate, calculated, side).firstOrNull()?.battlePokemonId != target.battlePokemonId) {
                     return@mapNotNull null
                 }
-                val applied = applyEffects(worn, effects, user.battlePokemonId, target) ?: return@mapNotNull null
+                val applied = applyEffects(worn, effects, user.battlePokemonId, target,
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, target, state)) ?: return@mapNotNull null
                 // A move that cannot land does no more than a miss.
                 val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
                 val landed = if (nullified) worn else applied
@@ -176,6 +178,7 @@ internal object LocalTurnCostScoreCalculator {
         effects: List<BattleMoveEffectView>,
         userId: UUID,
         target: BattlePokemonStateView,
+        ignoresTargetAbility: Boolean,
     ): BattleStateView? {
         var next = state
         var applied = false
@@ -193,7 +196,8 @@ internal object LocalTurnCostScoreCalculator {
                 effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.statStages.isNotEmpty() &&
                     (effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.USER) -> {
                     val subject = if (effect.target == BattleMoveEffectTarget.USER) userId else target.battlePokemonId
-                    next = LocalStatStageMarginalEvaluator.applyStages(next, setOf(subject), effect.statStages)
+                    next = LocalStatStageChange.apply(next, subject, userId, effect.statStages,
+                        ignoreTargetAbility = ignoresTargetAbility && effect.target == BattleMoveEffectTarget.SELECTED_TARGET)
                     applied = true
                 }
             }

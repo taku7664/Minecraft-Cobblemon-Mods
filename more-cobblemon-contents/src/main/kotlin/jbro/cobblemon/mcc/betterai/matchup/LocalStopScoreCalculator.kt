@@ -1,11 +1,15 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
-import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
@@ -16,6 +20,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
@@ -38,8 +43,9 @@ internal object LocalStopScoreCalculator {
         val sweeperId = sweeperPokemon.battlePokemonId
         val position = LocalMatchupPosition.face(context, subject, sweeperPokemon, cache) ?: return null
         val sweeperStages = sweeper.setupMoveId?.let { LocalMatchupScoreCalculator.setupMoves(context, sweeperPokemon)[it] }
-            ?.mapValues { it.value * sweeper.setupUses }.orEmpty()
-        val boosted = position.copy(state = LocalStatStageMarginalEvaluator.applyStages(position.state, setOf(sweeperId), sweeperStages))
+            .orEmpty()
+        val boosted = position.copy(state = LocalMatchupScoreCalculator.setupState(position.state,
+            sweeperId, sweeperStages, sweeper.setupUses))
         fun exchange(state: BattleStateView = boosted.state, field: MatchupSpeedField = MatchupSpeedField.CURRENT): PokemonMatchupScore? {
             val faced = boosted.copy(state = state)
             val read = if (field == MatchupSpeedField.CURRENT) faced else LocalMatchupScoreCalculator.withTrickRoomToggled(faced)
@@ -96,7 +102,14 @@ internal object LocalStopScoreCalculator {
                 val stages = drops.fold(mutableMapOf<String, Int>()) { all, effect ->
                     effect.statStages.forEach { (stat, delta) -> all.merge(stat, delta, Int::plus) }; all
                 }
-                val dropped = LocalStatStageMarginalEvaluator.applyStages(boosted.state, setOf(sweeperId), stages)
+                val action = BattleActionCandidate("$moveId:stop", BattleActionKind.USE_MOVE,
+                    actorSlot = boostedSubject.activeSlot, moveSlot = 0, moveId = moveId, moveDetails = details,
+                    targets = listOf(BattleTargetSlot(boostedSweeper.side, boostedSweeper.activeSlot ?: 0)))
+                val read = boosted.copy(candidates = listOf(action))
+                val dropped = if (LocalPublicMechanicsKernel.projectMove(action, read, subject.side).publiclyNullified) boosted.state
+                    else LocalStatStageChange.apply(boosted.state, sweeperId, subjectId, stages,
+                        ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(action,
+                            boostedSubject, boostedSweeper, boosted.state))
                 tools += StopTool(StopToolKind.STAT_DROP, moveId, actsBeforeKnockout * accuracy * win(dropped))
             }
         }
