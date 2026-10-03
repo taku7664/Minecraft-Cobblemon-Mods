@@ -205,10 +205,10 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 ## 내장 데이터팩
 
-아래 두 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
+아래 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
 
 - **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 울트라비스트는 빠져 있고, Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
-- **`jbro_policy:no_stat_candy_l_xl`:** 캠프 냄비의 능력치 사탕 L/XL 레시피 12개를 막습니다.
+- **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 XS·S·M·L·XL 제작을 모두 막습니다. 캠프 냄비 5개, 조합대 분할 4개, Create 연동 1개로 총 10개 레시피를 차단합니다. 기존 월드의 팩 활성화 설정을 유지하려고 팩 ID는 보존했습니다. 이전의 능력치 사탕 제작 제한은 해제합니다. 능력치 사탕에는 L·XL 크기가 없으며, 기존 레시피 이름의 L·XL은 재료인 경험사탕의 크기를 뜻했습니다.
 
 ## 설정
 

@@ -67,6 +67,8 @@ object JbroPolicy : ModInitializer {
             withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
+        // Keep the legacy candy pack ID so existing worlds retain their activation setting.
+        // Its resources now block experience candy crafting, not stat candy crafting.
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl", "no_ability_patch")) {
             ResourceManagerHelper.registerBuiltinResourcePack(id(pack), mod,
                 Component.translatable("pack.$MOD_ID.$pack"), ResourcePackActivationType.DEFAULT_ENABLED)

@@ -67,7 +67,7 @@
   "message.jbro_policy.spawn_for.rank": "%1$s은(는) 리그 등급이 %2$s보다 낮아서 포획할 수 없습니다.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
-  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 능력치 사탕 L/XL 캠프 냄비 레시피 차단",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 경험사탕 전체 제작 차단",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: 특성패치 제작 레시피 차단",
 
   "legend.jbro_policy.appeared.arceus": "하늘 저편에서 눈부신 빛이 쏟아집니다! 아르세우스가 %1$s 근처에 나타났습니다!",

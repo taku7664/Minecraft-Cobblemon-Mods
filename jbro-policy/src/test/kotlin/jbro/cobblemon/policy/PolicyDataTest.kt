@@ -24,10 +24,18 @@ class PolicyDataTest {
     }
 
     @Test
-    fun `stat candy L and XL recipes never load`() {
+    fun `every experience candy recipe is disabled including splitting and Create`() {
+        val recipes = listOf("xs", "s", "m", "l", "xl").map { "campfire_pot/exp_candy_$it" } +
+            listOf("xs_from_exp_candy_s", "s_from_exp_candy_m", "m_from_exp_candy_l", "l_from_exp_candy_xl").map { "exp_candy_$it" } +
+            "mod_compatibility/create/campfire_pot/exp_candy_xs_create"
+        for (path in recipes) {
+            val recipe = json("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/$path.json")
+            val condition = recipe.getAsJsonArray("fabric:load_conditions").single().asJsonObject
+            assertEquals("fabric:not", condition.get("condition").asString)
+            assertEquals("fabric:true", condition.getAsJsonObject("value").get("condition").asString)
+        }
         for (stat in listOf("courage", "health", "mighty", "quick", "smart", "tough")) for (size in listOf("l", "xl")) {
-            val recipe = json("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/campfire_pot/${stat}_candy_$size.json")
-            assertTrue(recipe.has("fabric:load_conditions")) { "${stat}_candy_$size" }
+            assertEquals(null, javaClass.getResource("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/campfire_pot/${stat}_candy_$size.json"))
         }
     }
 
