@@ -151,7 +151,7 @@ internal object LocalDirectHitMechanics {
                     target,
                     hpFraction = oneHp,
                     // Sturdy's damage callback precedes Sash, so the item is not consumed.
-                    knownHeldItemId = if (sturdyReady) target.knownHeldItemId else null,
+                    knownHeldItemId = if (sturdyReady) target.knownHeldItemId else "",
                     fainted = false,
                 ),
                 directDamageFraction = (target.hpFraction - oneHp).coerceAtLeast(0.0),

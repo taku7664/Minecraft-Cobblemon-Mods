@@ -44,7 +44,7 @@ internal object LocalBerryMechanics {
             val markers = it.knownVolatileEffectIds.filterNot { marker -> marker.startsWith(LAST_CONSUMED_ITEM) }.toSet() +
                 (LAST_CONSUMED_ITEM + canonical(itemId)) +
                 if (LocalPublicAbilityState.effectiveKnownAbility(state, it) == "unburden") setOf("unburden") else emptySet()
-            it.copyState(knownHeldItemId = null, knownVolatileEffectIds = markers)
+            it.copyState(knownHeldItemId = "", knownVolatileEffectIds = markers)
         }
     })
 

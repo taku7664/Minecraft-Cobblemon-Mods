@@ -63,7 +63,7 @@ internal object NativeBattleStateAdapter {
             statStages = native.boosts.filterValues { it != 0 },
             knownMoveIds = native.moves.mapTo(linkedSetOf()) { "cobblemon:${nativeId(it.id)}" },
             knownAbilityId = native.ability.takeIf(String::isNotBlank)?.let(::nativeId),
-            knownHeldItemId = native.item.takeIf(String::isNotBlank)?.let(::nativeId),
+            knownHeldItemId = nativeId(native.item),
             fainted = fainted,
             knownTypeIds = native.types.mapTo(linkedSetOf()) { nativeId(it) },
             combatStats = combatStats(native, side),

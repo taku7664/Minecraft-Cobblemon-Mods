@@ -174,12 +174,12 @@ internal object NativeBattleRootValidator {
                     issue(issues, NativeBattleRootIssueCode.ABILITY_MISMATCH, id)
                 }
             }
-            val publicItem = public.knownHeldItemId?.let(::normalizedId)
-            val actualItem = actual.knownHeldItemId?.let(::normalizedId)
+            val publicItem = public.canonicalKnownHeldItemId
+            val actualItem = actual.canonicalKnownHeldItemId
             val itemMismatch = if (public.side == BattleSide.ALLY) {
                 publicItem != actualItem
             } else {
-                publicItem != null && publicItem != actualItem
+                public.knownHeldItemId != null && publicItem != actualItem
             }
             if (itemMismatch) issue(issues, NativeBattleRootIssueCode.ITEM_MISMATCH, id)
             val publicMoves = public.knownMoveIds.mapTo(linkedSetOf(), ::normalizedId)

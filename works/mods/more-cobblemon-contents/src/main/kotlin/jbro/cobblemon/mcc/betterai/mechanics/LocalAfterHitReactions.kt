@@ -47,11 +47,11 @@ internal object LocalAfterHitReactions {
                         marker -> marker.startsWith(LocalReactiveAbilityState.ILLUSION_AS)
                     }.toSet()) else it
                 })
-                if (item == AIR_BALLOON) state = setItem(state, target.battlePokemonId, null)
+                if (item == AIR_BALLOON) state = setItem(state, target.battlePokemonId, "")
                 val chart = StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds, false)
                 if (item == WEAKNESS_POLICY && target.knownTypeIds.isNotEmpty() && chart > 1.0) {
                     state = LocalStatStageChange.apply(state, target.battlePokemonId, null, mapOf("attack" to 2, "special_attack" to 2))
-                    state = setItem(state, target.battlePokemonId, null)
+                    state = setItem(state, target.battlePokemonId, "")
                 }
                 // Berry Update may already have healed the recipient. Half-HP crossing belongs to
                 // the damaging event before that heal, rather than the final recipient HP.
@@ -78,8 +78,8 @@ internal object LocalAfterHitReactions {
                 })
             }
             // Knock Off removes an item it can take, whether or not the holder survives.
-            if (moveId == KNOCK_OFF && target.knownHeldItemId != null && removable(target) && ability != STICKY_HOLD) {
-                state = setItem(state, target.battlePokemonId, null)
+            if (moveId == KNOCK_OFF && target.canonicalKnownHeldItemId != null && removable(target) && ability != STICKY_HOLD) {
+                state = setItem(state, target.battlePokemonId, "")
             }
         }
         if (!userEffects) return state

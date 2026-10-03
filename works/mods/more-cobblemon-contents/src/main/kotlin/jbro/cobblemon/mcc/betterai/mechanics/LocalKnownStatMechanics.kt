@@ -141,7 +141,7 @@ internal object LocalKnownStatMechanics {
         }
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
         val abilityMultiplier = when {
-            ability == "unburden" && pokemon.knownHeldItemId == null &&
+            ability == "unburden" && pokemon.canonicalKnownHeldItemId == null &&
                 pokemon.knownVolatileEffectIds.any { canonical(it) == "unburden" } -> 2.0
             ability == "slowstart" && LocalReactiveAbilityState.slowStartActive(pokemon) -> .5
             else -> 1.0

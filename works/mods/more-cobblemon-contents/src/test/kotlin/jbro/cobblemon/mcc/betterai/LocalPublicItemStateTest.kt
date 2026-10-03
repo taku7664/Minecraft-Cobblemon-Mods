@@ -3,11 +3,30 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class LocalPublicItemStateTest {
+    @Test
+    fun `explicitly absent item has no active effect`() {
+        val mon = pokemon("").copyState(knownHeldItemId = "", knownAbilityId = null)
+        assertNull(LocalPublicItemState.activeItemId(state(""), mon))
+        assertEquals("", mon.knownHeldItemId)
+    }
+
+    @Test
+    fun `a projected consumed white herb stays confirmed absent`() {
+        val initial = state("whiteherb").copyState(pokemon = listOf(pokemon("whiteherb").copyState(knownAbilityId = null)))
+        val after = LocalStatStageChange.apply(initial, POKEMON_ID, null, mapOf("attack" to -1))
+        val holder = after.pokemon.single()
+        assertEquals(0, holder.statStages["attack"] ?: 0)
+        assertEquals("", holder.knownHeldItemId)
+        assertNull(holder.canonicalKnownHeldItemId)
+    }
+
     @Test
     fun `klutz suppresses ordinary items but preserves the declared ignore klutz set`() {
         assertNull(LocalPublicItemState.activeItemId(state("leftovers"), pokemon("leftovers")))

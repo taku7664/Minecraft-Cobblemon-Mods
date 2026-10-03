@@ -243,7 +243,8 @@ internal class Cobblemon173PublicBattleObserver(
                 if (observation.removed && PublicIds.canonical((observation.ownAbilityAtRemoval ?: actor.knownAbilityId).orEmpty()) == "unburden")
                     markers = markers + "unburden"
                 if (!observation.removed) markers = markers - "unburden"
-                pokemon[actor.battlePokemonId] = actor.copyView(knownHeldItemId = observation.itemId.takeUnless { observation.removed },
+                // "" is a publicly confirmed absence, unlike null (not yet seen).
+                pokemon[actor.battlePokemonId] = actor.copyView(knownHeldItemId = if (observation.removed) "" else observation.itemId,
                     knownVolatileEffectIds = markers)
                 appendEvent(
                     observation.turn,
@@ -1131,7 +1132,6 @@ private fun BattlePokemonStateView.withKnownMove(moveId: String) = copyView(know
 private fun BattlePokemonStateView.withKnownAbility(abilityId: String, baseAbilityId: String? = null) =
     copyView(knownAbilityId = abilityId, knownBaseAbilityId = knownBaseAbilityId ?: baseAbilityId)
 
-private fun BattlePokemonStateView.withKnownHeldItem(itemId: String) = copyView(knownHeldItemId = itemId)
 
 private fun BattlePokemonStateView.withActiveSlot(slot: Int?) = copyView(activeSlot = slot)
 

@@ -178,7 +178,7 @@ internal object LocalPersistentMoveState {
             target.knownHeldItemId?.let { PublicIds.canonical(it).endsWith("berry") } == true &&
             LocalPublicAbilityState.effectiveKnownAbility(current, target) != "stickyhold") {
             val berry = requireNotNull(target.knownHeldItemId)
-            current = current.copyState(pokemon = current.pokemon.map { if (it.battlePokemonId == targetId) it.copyState(knownHeldItemId = null) else it })
+            current = current.copyState(pokemon = current.pokemon.map { if (it.battlePokemonId == targetId) it.copyState(knownHeldItemId = "") else it })
             // These moves run the stolen berry's Eat callback; Unnerve does not stop external consumption.
             current = LocalBerryMechanics.eatExternalBerry(current, user.battlePokemonId, berry)
         }

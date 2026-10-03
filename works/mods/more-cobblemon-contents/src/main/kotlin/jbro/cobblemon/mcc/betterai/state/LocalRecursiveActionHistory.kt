@@ -349,7 +349,7 @@ internal object RecursiveHistoryProjector {
         val lumCuredIds = outcome.state.pokemon.filter { after ->
             val beforeResidual = beforeResidualById[after.battlePokemonId]
             canonicalId(beforeResidual?.knownHeldItemId.orEmpty()) == "lumberry" &&
-                after.knownHeldItemId == null && after.statusId == null && !after.fainted && after.hpFraction > 0.0
+                after.canonicalKnownHeldItemId == null && after.statusId == null && !after.fainted && after.hpFraction > 0.0
         }.mapTo(hashSetOf()) { it.battlePokemonId }
         confused.removeAll(lumCuredIds)
 

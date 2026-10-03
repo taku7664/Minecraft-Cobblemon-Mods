@@ -131,6 +131,7 @@ class BattlePokemonStateView(
     statStages: Map<String, Int>,
     knownMoveIds: Set<String>,
     val knownAbilityId: String?,
+    /** null: unknown opponent item (or legacy own absence); empty: publicly confirmed absence. */
     val knownHeldItemId: String?,
     val fainted: Boolean,
     knownTypeIds: Set<String> = emptySet(),

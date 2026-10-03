@@ -73,9 +73,9 @@ internal object LocalReactiveAbilityState {
                 PublicIds.canonical(it) == "slowstart" || it.startsWith(SLOW_START_TURNS)
             }.toSet()
             if (currentAbility != "unburden") effects = effects - "unburden"
-            if (ability == "unburden" && holder.activeSlot != null && previous?.knownHeldItemId != null && holder.knownHeldItemId == null)
+            if (ability == "unburden" && holder.activeSlot != null && previous?.canonicalKnownHeldItemId != null && holder.canonicalKnownHeldItemId == null)
                 effects = effects + "unburden"
-            if (holder.knownHeldItemId != null) effects = effects - "unburden"
+            if (holder.canonicalKnownHeldItemId != null) effects = effects - "unburden"
             if (holder.battlePokemonId == actorId && electric) effects = effects.filterNot { PublicIds.canonical(it) == "charge" }.toSet()
             if (effects == holder.knownVolatileEffectIds) holder else holder.copyState(knownVolatileEffectIds = effects)
         }

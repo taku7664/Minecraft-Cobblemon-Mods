@@ -34,7 +34,7 @@ internal object LocalTraitResidualBranches {
     }
     private fun harvest(state: BattleStateView, holder: BattlePokemonStateView): List<LocalTraitStateBranch> {
         val item = LocalBerryMechanics.lastConsumedItem(holder)?.takeIf { it.endsWith("berry") } ?: return listOf(LocalTraitStateBranch(state, 1.0))
-        if (holder.knownHeldItemId != null) return listOf(LocalTraitStateBranch(state, 1.0))
+        if (holder.canonicalKnownHeldItemId != null) return listOf(LocalTraitStateBranch(state, 1.0))
         val restored = state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId != holder.battlePokemonId) it else it.copyState(knownHeldItemId = item,
                 knownVolatileEffectIds = it.knownVolatileEffectIds.filterNot { marker -> marker.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }.toSet())

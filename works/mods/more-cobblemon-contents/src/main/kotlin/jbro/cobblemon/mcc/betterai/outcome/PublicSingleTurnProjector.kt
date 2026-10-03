@@ -915,7 +915,7 @@ internal object PublicSingleTurnProjector {
             // A Power Herb spends itself to fire the move at once.
             return applyMove(
                 preparedChargeState.copyState(pokemon = preparedChargeState.pokemon.map {
-                    if (it.battlePokemonId == actor.battlePokemonId) it.copyState(knownHeldItemId = null) else it
+                    if (it.battlePokemonId == actor.battlePokemonId) it.copyState(knownHeldItemId = "") else it
                 }),
                 side, effectiveAction.withoutCharge(), sourceContext, protectedPokemonIds, protectionAttackDrops, tauntedPokemonIds,
                 forcedMoveIdsByPokemon - actor.battlePokemonId, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
@@ -1936,7 +1936,7 @@ internal object PublicSingleTurnProjector {
         if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && affectedId != actorId &&
             canonicalId(effect.valueId) in MENTAL_EFFECTS && LocalPublicItemState.activeItemId(state, affected) == MENTAL_HERB
         ) {
-            return state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == affectedId) it.copyState(knownHeldItemId = null) else it })
+            return state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == affectedId) it.copyState(knownHeldItemId = "") else it })
         }
         // Throat Chop, Disable and Attract leave a mark the next turn's options and moves read.
         if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && affectedId != actorId &&
@@ -2301,7 +2301,7 @@ internal object PublicSingleTurnProjector {
             })
         } else {
             if (LocalPublicAbilityState.effectiveKnownAbility(after, target) == "stickyhold") return after
-            if (user.knownHeldItemId == null && target.knownHeldItemId == null) return after
+            if (user.canonicalKnownHeldItemId == null && target.canonicalKnownHeldItemId == null) return after
             after.copyState(pokemon = after.pokemon.map {
                 when (it.battlePokemonId) {
                     userId -> it.copyState(knownHeldItemId = target.knownHeldItemId)
