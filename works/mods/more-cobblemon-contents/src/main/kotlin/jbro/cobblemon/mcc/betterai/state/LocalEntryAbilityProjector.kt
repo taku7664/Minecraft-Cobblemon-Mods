@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicSpeciesData
 import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
@@ -29,40 +30,37 @@ internal object LocalEntryAbilityProjector {
         }
         val fieldState = projectField(state, incoming, ability)
         entryBoost(fieldState, incoming, ability)?.let { boost ->
-            return jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.apply(fieldState, incoming.battlePokemonId, null, boost)
+            return LocalStatStageChange.apply(fieldState, incoming.battlePokemonId, null, boost)
         }
         if (ability != "intimidate") return fieldState
 
-        var reflectedDrops = 0
-        val next = fieldState.pokemon.map { pokemon ->
-            if (pokemon.side == incoming.side || pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) {
-                return@map pokemon
-            }
-            val ability = LocalPublicAbilityState.effectiveKnownAbility(fieldState, pokemon)
-            // A Clear Amulet stops the drop, so Defiant, Competitive and Rattled have nothing to answer.
-            val amulet = LocalPublicItemState.activeItemId(fieldState, pokemon) == CLEAR_AMULET
-            when (ability) {
-                in INTIMIDATE_IMMUNITIES -> pokemon
-                "guarddog" -> changeStage(pokemon, "attack", 1)
-                "mirrorarmor" -> {
-                    reflectedDrops++
-                    pokemon
-                }
-                else -> if (amulet) pokemon else when (ability) {
-                "defiant" -> changeStage(changeStage(pokemon, "attack", -1), "attack", 2)
-                "competitive" -> changeStage(changeStage(pokemon, "attack", -1), "special_attack", 2)
-                "rattled" -> changeStage(changeStage(pokemon, "attack", -1), "speed", 1)
-                else -> changeStage(pokemon, "attack", -1)
-                }
-            }
-        }.map { pokemon ->
-            if (pokemon.battlePokemonId == incomingPokemonId && reflectedDrops > 0) {
-                changeStage(pokemon, "attack", -reflectedDrops)
+        val foes = fieldState.pokemon.filter {
+            it.side != incoming.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }
+        var next = fieldState
+        for (foe in foes) {
+            val current = next.pokemon.first { it.battlePokemonId == foe.battlePokemonId }
+            // Intimidate never calls boost through a decoy, even when Contrary would turn it positive.
+            if ("substitute" in current.canonicalKnownVolatileEffectIds) continue
+            val targetAbility = LocalPublicAbilityState.effectiveKnownAbility(next, current)
+            if (targetAbility in INTIMIDATE_IMMUNITIES) continue
+            if (targetAbility == "guarddog") {
+                // TryBoost receives the already capped change, so a floor of -6 gives it zero.
+                val attack = current.statStages.entries.firstOrNull {
+                    LocalStatStageChange.normalise(it.key) == "attack"
+                }?.value ?: 0
+                if (attack > -6) next = LocalStatStageChange.apply(next, current.battlePokemonId,
+                    current.battlePokemonId, mapOf("attack" to 1), updateItems = false)
             } else {
-                pokemon
+                next = LocalStatStageChange.apply(next, current.battlePokemonId, incomingPokemonId,
+                    mapOf("attack" to -1), updateItems = false)
+                // AfterBoost still runs when an item or a stage limit removed the attempted drop.
+                if (targetAbility == "rattled") next = LocalStatStageChange.apply(next, current.battlePokemonId,
+                    current.battlePokemonId, mapOf("speed" to 1), updateItems = false)
             }
         }
-        return copyState(fieldState, next)
+        // Showdown updates held items after this entry event, including all Mirror Armor reflections.
+        return (foes.map { it.battlePokemonId } + incomingPokemonId).fold(next, LocalStatStageChange::whiteHerb)
     }
 
     /** Trace samples eligible foes; hidden alternatives are limited to publicly legal species abilities. */
@@ -212,43 +210,8 @@ internal object LocalEntryAbilityProjector {
         )
     }
 
-    private fun changeStage(pokemon: BattlePokemonStateView, stat: String, amount: Int): BattlePokemonStateView {
-        val stages = pokemon.statStages.toMutableMap()
-        val existingKey = stages.keys.firstOrNull { canonical(it) in STAT_ALIASES.getValue(stat) } ?: stat
-        stages[existingKey] = ((stages[existingKey] ?: 0) + amount).coerceIn(-6, 6)
-        return BattlePokemonStateView(
-            battlePokemonId = pokemon.battlePokemonId,
-            side = pokemon.side,
-            activeSlot = pokemon.activeSlot,
-            speciesId = pokemon.speciesId,
-            formId = pokemon.formId,
-            level = pokemon.level,
-            hpFraction = pokemon.hpFraction,
-            statusId = pokemon.statusId,
-            statStages = stages,
-            knownMoveIds = pokemon.knownMoveIds,
-            knownAbilityId = pokemon.knownAbilityId,
-            knownHeldItemId = pokemon.knownHeldItemId,
-            fainted = pokemon.fainted,
-            knownTypeIds = pokemon.knownTypeIds,
-            combatStats = pokemon.combatStats,
-            knownFormStates = pokemon.knownFormStates,
-            actionConstraints = pokemon.actionConstraints,
-            knownVolatileEffectIds = pokemon.knownVolatileEffectIds,
-            knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
-            knownTeraTypeId = pokemon.knownTeraTypeId,
-            knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
-            knownBaseAbilityId = pokemon.knownBaseAbilityId,
-        )
-    }
-
-    private fun copyState(state: BattleStateView, pokemon: List<BattlePokemonStateView>) = state.derive(
-        pokemon = pokemon,
-    )
-
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
-    private const val CLEAR_AMULET = "clearamulet"
     private val INTIMIDATE_IMMUNITIES = setOf(
         "clearbody",
         "fullmetalbody",
@@ -258,11 +221,6 @@ internal object LocalEntryAbilityProjector {
         "owntempo",
         "scrappy",
         "whitesmoke",
-    )
-    private val STAT_ALIASES = mapOf(
-        "attack" to setOf("attack", "atk"),
-        "special_attack" to setOf("specialattack", "spa"),
-        "speed" to setOf("speed", "spe"),
     )
     private val ENTRY_WEATHER = mapOf(
         "drizzle" to "raindance",
