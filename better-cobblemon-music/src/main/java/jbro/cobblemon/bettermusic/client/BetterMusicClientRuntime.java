@@ -22,6 +22,7 @@ import jbro.cobblemon.bettermusic.api.ScreenMusicProviders;
 import jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.tags.FluidTags;
 import org.slf4j.Logger;
 
 public final class BetterMusicClientRuntime {
@@ -80,6 +81,9 @@ public final class BetterMusicClientRuntime {
             return;
         }
 
+        player.setUnderwater(client.player != null && client.level != null
+            && audioEffects.underwaterEffectsEnabled() && client.player.isEyeInFluid(FluidTags.WATER)
+            ? audioEffects.underwaterEffectStrength() : 0.0);
         player.tick(nowSeconds);
         if (client.player == null || client.level == null) {
             leaveWorld(nowSeconds);

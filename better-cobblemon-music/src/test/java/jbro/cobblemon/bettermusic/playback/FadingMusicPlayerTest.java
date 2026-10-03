@@ -2,6 +2,7 @@ package jbro.cobblemon.bettermusic.playback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -194,6 +195,32 @@ final class FadingMusicPlayerTest {
         assertEquals(1.0, backend.muffleAmount, 0.0001);
     }
 
+    @Test
+    void underwaterEffectFadesInAndOutIndependentlyOfLastPokemonMuffling() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+        player.setUnderwater(0.35);
+        player.tick(0.0);
+        player.tick(0.15);
+        assertEquals(0.2, backend.underwaterAmount, 0.0001);
+        assertEquals(0.0, backend.muffleAmount, 0.0001);
+
+        player.setMuffled(true);
+        player.tick(0.3);
+        assertEquals(0.35, backend.underwaterAmount, 0.0001);
+        assertEquals(0.2, backend.muffleAmount, 0.0001);
+
+        player.setUnderwater(0.0);
+        player.tick(0.45);
+        assertEquals(0.15, backend.underwaterAmount, 0.0001);
+        assertEquals(0.4, backend.muffleAmount, 0.0001);
+        player.tick(0.6);
+        assertEquals(0.0, backend.underwaterAmount, 0.0001);
+        assertEquals(0.6, backend.muffleAmount, 0.0001);
+        assertThrows(IllegalArgumentException.class, () -> player.setUnderwater(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> player.setUnderwater(1.01));
+    }
+
     private static FadingMusicPlayer.TrackSource source(
         FadingMusicPlayer.Track track,
         double betweenTracksSeconds
@@ -214,6 +241,7 @@ final class FadingMusicPlayerTest {
     private static final class FakeBackend implements FadingMusicPlayer.Backend {
         private final List<FakeHandle> handles = new ArrayList<>();
         private double muffleAmount;
+        private double underwaterAmount;
 
         @Override
         public FadingMusicPlayer.Handle play(FadingMusicPlayer.Track track, double initialVolume) {
@@ -228,8 +256,9 @@ final class FadingMusicPlayerTest {
         }
 
         @Override
-        public void setMuffle(double amount) {
-            muffleAmount = amount;
+        public void setEffects(double muffleAmount, double underwaterAmount) {
+            this.muffleAmount = muffleAmount;
+            this.underwaterAmount = underwaterAmount;
         }
 
         @Override

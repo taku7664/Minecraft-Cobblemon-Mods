@@ -26,4 +26,14 @@ final class AudioEffectsSettingsTest {
             () -> new AudioEffectsSettings(true, 1.0, true, 2.01)
         );
     }
+
+    @Test
+    void underwaterStrengthHasAConservativeDefaultAndRejectsInvalidValues() {
+        assertEquals(0.35, AudioEffectsSettings.defaults().underwaterEffectStrength(), 0.0001);
+        assertEquals(true, AudioEffectsSettings.defaults().underwaterEffectsEnabled());
+        for (double strength : new double[]{Double.NaN, -0.01, 1.01}) {
+            assertThrows(IllegalArgumentException.class,
+                () -> new AudioEffectsSettings(true, 1.0, true, 1.0, true, strength));
+        }
+    }
 }

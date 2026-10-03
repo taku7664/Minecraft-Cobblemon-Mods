@@ -27,6 +27,9 @@ final class MusicCatalogConfigStoreTest {
         assertTrue(Files.isRegularFile(temporaryDirectory.resolve("settings.json")));
         assertFalse(Files.exists(temporaryDirectory.resolve("overrides.json")));
         assertEquals(MusicMappingOverrides.empty(), store.loadOverrides());
+        var json = com.google.gson.JsonParser.parseString(Files.readString(store.settingsFile())).getAsJsonObject();
+        assertTrue(json.get("underwaterEffectsEnabled").getAsBoolean());
+        assertEquals(0.35, json.get("underwaterEffectStrength").getAsDouble(), 0.0001);
     }
 
     @Test
@@ -78,6 +81,36 @@ final class MusicCatalogConfigStoreTest {
             Files.writeString(store.settingsFile(), root.toString());
             assertThrows(CatalogValidationException.class, store::loadSettings);
         }
+    }
+
+    @Test
+    void olderSettingsDefaultUnderwaterEffectsAndSavedValuesRoundTrip() throws Exception {
+        var store = new MusicCatalogConfigStore(temporaryDirectory);
+        store.initializeSettings("cobleserver:official");
+        var root = com.google.gson.JsonParser.parseString(Files.readString(store.settingsFile())).getAsJsonObject();
+        root.remove("underwaterEffectsEnabled");
+        root.remove("underwaterEffectStrength");
+        Files.writeString(store.settingsFile(), root.toString());
+        var original = store.loadSettings();
+        assertTrue(original.audioEffects().underwaterEffectsEnabled());
+        assertEquals(0.35, original.audioEffects().underwaterEffectStrength(), 0.0001);
+
+        root.addProperty("underwaterEffectsEnabled", false);
+        root.addProperty("underwaterEffectStrength", 0.7);
+        Files.writeString(store.settingsFile(), root.toString());
+        var changed = store.loadSettings();
+        store.saveSettings(changed);
+        assertFalse(store.loadSettings().audioEffects().underwaterEffectsEnabled());
+        assertEquals(0.7, store.loadSettings().audioEffects().underwaterEffectStrength(), 0.0001);
+        assertEquals(original.playback(), changed.playback());
+
+        root.addProperty("underwaterEffectStrength", 1.01);
+        Files.writeString(store.settingsFile(), root.toString());
+        assertThrows(CatalogValidationException.class, store::loadSettings);
+        root.addProperty("underwaterEffectStrength", 0.7);
+        root.addProperty("underwaterEffectsEnabled", "false");
+        Files.writeString(store.settingsFile(), root.toString());
+        assertThrows(CatalogValidationException.class, store::loadSettings);
     }
 
     @Test

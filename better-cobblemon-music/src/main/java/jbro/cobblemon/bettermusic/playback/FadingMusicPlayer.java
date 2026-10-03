@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 public final class FadingMusicPlayer {
     private static final double STARTUP_GRACE_SECONDS = 0.1;
     private static final double MUFFLE_TRANSITION_SECONDS = 0.75;
+    private static final double UNDERWATER_TRANSITION_SECONDS = 0.75;
 
     private final Backend backend;
     private final Consumer<Track> trackStarted;
@@ -15,8 +16,10 @@ public final class FadingMusicPlayer {
     private ActiveTrack outgoing;
     private double restartAtSeconds = Double.POSITIVE_INFINITY;
     private double lastTimeSeconds = Double.NEGATIVE_INFINITY;
-    private double lastMuffleUpdateSeconds = Double.NaN;
+    private double lastEffectUpdateSeconds = Double.NaN;
     private double muffleAmount;
+    private double underwaterAmount;
+    private double underwaterTarget;
     private boolean muffled;
 
     public FadingMusicPlayer(Backend backend) {
@@ -57,8 +60,8 @@ public final class FadingMusicPlayer {
 
     public void tick(double nowSeconds) {
         requireTime(nowSeconds);
-        updateMuffle(nowSeconds);
-        backend.setMuffle(muffleAmount);
+        updateEffects(nowSeconds);
+        backend.setEffects(muffleAmount, underwaterAmount);
         updateEnvelopes(nowSeconds);
 
         if (active != null
@@ -93,6 +96,13 @@ public final class FadingMusicPlayer {
 
     public void setMuffled(boolean muffled) {
         this.muffled = muffled;
+    }
+
+    public void setUnderwater(double target) {
+        if (!Double.isFinite(target) || target < 0.0 || target > 1.0) {
+            throw new IllegalArgumentException("underwater target must be finite and between zero and one");
+        }
+        underwaterTarget = target;
     }
 
     private void startTrack(Track track, double nowSeconds, double fadeInSeconds) {
@@ -134,20 +144,22 @@ public final class FadingMusicPlayer {
         backend.setVolume(track.handle, track.currentVolume);
     }
 
-    private void updateMuffle(double nowSeconds) {
-        if (Double.isNaN(lastMuffleUpdateSeconds)) {
-            lastMuffleUpdateSeconds = nowSeconds;
+    private void updateEffects(double nowSeconds) {
+        if (Double.isNaN(lastEffectUpdateSeconds)) {
+            lastEffectUpdateSeconds = nowSeconds;
             return;
         }
-        double elapsed = nowSeconds - lastMuffleUpdateSeconds;
-        lastMuffleUpdateSeconds = nowSeconds;
-        double target = muffled ? 1.0 : 0.0;
-        double maximumChange = elapsed / MUFFLE_TRANSITION_SECONDS;
-        if (muffleAmount < target) {
-            muffleAmount = Math.min(target, muffleAmount + maximumChange);
-        } else if (muffleAmount > target) {
-            muffleAmount = Math.max(target, muffleAmount - maximumChange);
+        double elapsed = nowSeconds - lastEffectUpdateSeconds;
+        lastEffectUpdateSeconds = nowSeconds;
+        muffleAmount = approach(muffleAmount, muffled ? 1.0 : 0.0, elapsed / MUFFLE_TRANSITION_SECONDS);
+        underwaterAmount = approach(underwaterAmount, underwaterTarget, elapsed / UNDERWATER_TRANSITION_SECONDS);
+    }
+
+    private static double approach(double current, double target, double maximumChange) {
+        if (current < target) {
+            return Math.min(target, current + maximumChange);
         }
+        return Math.max(target, current - maximumChange);
     }
 
     private void stopOutgoing() {
@@ -182,7 +194,7 @@ public final class FadingMusicPlayer {
 
         void setVolume(Handle handle, double volume);
 
-        void setMuffle(double amount);
+        void setEffects(double muffleAmount, double underwaterAmount);
 
         void stop(Handle handle);
 

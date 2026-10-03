@@ -65,7 +65,7 @@ final class FadingMusicSoundInstanceTest {
         public void setVolume(FadingMusicPlayer.Handle handle, double volume) {
             ((FadingMusicSoundInstance) handle).setMusicVolume(volume);
         }
-        public void setMuffle(double amount) { }
+        public void setEffects(double muffleAmount, double underwaterAmount) { }
         public void stop(FadingMusicPlayer.Handle handle) { playing.remove(handle); }
         public boolean isPlaying(FadingMusicPlayer.Handle handle) { return playing.contains(handle); }
     }

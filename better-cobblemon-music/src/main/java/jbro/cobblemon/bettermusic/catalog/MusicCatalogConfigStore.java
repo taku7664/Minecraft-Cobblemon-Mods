@@ -137,7 +137,7 @@ public final class MusicCatalogConfigStore {
             "schemaVersion", "basePackId", "scanIntervalSeconds", "fieldChangeDelaySeconds",
             "betweenTracksSeconds", "fadeInSeconds", "fadeOutSeconds", "selection", "volume",
             "hitSoundsEnabled", "hitSoundVolume", "lastPokemonHpEffectsEnabled", "lastPokemonHpEffectVolume",
-            "nowPlayingEnabled"
+            "underwaterEffectsEnabled", "underwaterEffectStrength", "nowPlayingEnabled"
         );
         if (CatalogJson.integer(root, "schemaVersion", "$") != 1) {
             throw CatalogJson.error("$.schemaVersion", "must be 1");
@@ -163,7 +163,9 @@ public final class MusicCatalogConfigStore {
             bool(root, "hitSoundsEnabled"),
             CatalogJson.number(root, "hitSoundVolume", "$"),
             bool(root, "lastPokemonHpEffectsEnabled"),
-            CatalogJson.number(root, "lastPokemonHpEffectVolume", "$")
+            CatalogJson.number(root, "lastPokemonHpEffectVolume", "$"),
+            !root.has("underwaterEffectsEnabled") || bool(root, "underwaterEffectsEnabled"),
+            underwaterStrength(root)
         );
         return new MusicCatalogSettings(basePackId, playback, selection, volume, effects,
             !root.has("nowPlayingEnabled") || bool(root, "nowPlayingEnabled"));
@@ -176,6 +178,17 @@ public final class MusicCatalogConfigStore {
             throw CatalogJson.error("$." + key, "must be a boolean");
         }
         return root.get(key).getAsBoolean();
+    }
+
+    private static double underwaterStrength(JsonObject root) {
+        if (!root.has("underwaterEffectStrength")) {
+            return AudioEffectsSettings.DEFAULT_UNDERWATER_STRENGTH;
+        }
+        double strength = CatalogJson.number(root, "underwaterEffectStrength", "$");
+        if (strength < 0.0 || strength > 1.0) {
+            throw CatalogJson.error("$.underwaterEffectStrength", "must be between 0.0 and 1.0");
+        }
+        return strength;
     }
 
     private static String settingsJson(MusicCatalogSettings settings) {
@@ -193,6 +206,8 @@ public final class MusicCatalogConfigStore {
         root.addProperty("hitSoundVolume", settings.audioEffects().hitSoundVolume());
         root.addProperty("lastPokemonHpEffectsEnabled", settings.audioEffects().lastPokemonHpEffectsEnabled());
         root.addProperty("lastPokemonHpEffectVolume", settings.audioEffects().lastPokemonHpEffectVolume());
+        root.addProperty("underwaterEffectsEnabled", settings.audioEffects().underwaterEffectsEnabled());
+        root.addProperty("underwaterEffectStrength", settings.audioEffects().underwaterEffectStrength());
         root.addProperty("nowPlayingEnabled", settings.nowPlayingEnabled());
         return GSON.toJson(root) + System.lineSeparator();
     }

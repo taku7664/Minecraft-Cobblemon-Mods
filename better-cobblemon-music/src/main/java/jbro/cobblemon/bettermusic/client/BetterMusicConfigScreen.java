@@ -149,26 +149,43 @@ public final class BetterMusicConfigScreen {
         category.addEntry(entries.startBooleanToggle(text("hit_sounds_enabled"), effects.hitSoundsEnabled())
             .setDefaultValue(true).setTooltip(text("hit_sounds_enabled.tooltip"))
             .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
-                value, old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(), old.lastPokemonHpEffectVolume()
+                value, old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(), old.lastPokemonHpEffectVolume(),
+                old.underwaterEffectsEnabled(), old.underwaterEffectStrength()
             ))).build());
         category.addEntry(entries.startDoubleField(text("hit_sound_volume"), effects.hitSoundVolume())
             .setDefaultValue(1.0).setMin(0.0).setMax(AudioEffectsSettings.MAX_VOLUME)
             .setTooltip(text("hit_sound_volume.tooltip"))
             .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
-                old.hitSoundsEnabled(), value, old.lastPokemonHpEffectsEnabled(), old.lastPokemonHpEffectVolume()
+                old.hitSoundsEnabled(), value, old.lastPokemonHpEffectsEnabled(), old.lastPokemonHpEffectVolume(),
+                old.underwaterEffectsEnabled(), old.underwaterEffectStrength()
             ))).build());
         category.addEntry(entries.startBooleanToggle(
                 text("last_pokemon_hp_effects_enabled"), effects.lastPokemonHpEffectsEnabled()
             ).setDefaultValue(true).setTooltip(text("last_pokemon_hp_effects_enabled.tooltip"))
             .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
-                old.hitSoundsEnabled(), old.hitSoundVolume(), value, old.lastPokemonHpEffectVolume()
+                old.hitSoundsEnabled(), old.hitSoundVolume(), value, old.lastPokemonHpEffectVolume(),
+                old.underwaterEffectsEnabled(), old.underwaterEffectStrength()
             ))).build());
         category.addEntry(entries.startDoubleField(
                 text("last_pokemon_hp_effect_volume"), effects.lastPokemonHpEffectVolume()
             ).setDefaultValue(1.0).setMin(0.0).setMax(AudioEffectsSettings.MAX_VOLUME)
             .setTooltip(text("last_pokemon_hp_effect_volume.tooltip"))
             .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
-                old.hitSoundsEnabled(), old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(), value
+                old.hitSoundsEnabled(), old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(), value,
+                old.underwaterEffectsEnabled(), old.underwaterEffectStrength()
+            ))).build());
+        category.addEntry(entries.startBooleanToggle(text("underwater_effects_enabled"), effects.underwaterEffectsEnabled())
+            .setDefaultValue(true).setTooltip(text("underwater_effects_enabled.tooltip"))
+            .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
+                old.hitSoundsEnabled(), old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(),
+                old.lastPokemonHpEffectVolume(), value, old.underwaterEffectStrength()
+            ))).build());
+        category.addEntry(entries.startDoubleField(text("underwater_effect_strength"), effects.underwaterEffectStrength())
+            .setDefaultValue(AudioEffectsSettings.DEFAULT_UNDERWATER_STRENGTH).setMin(0.0).setMax(1.0)
+            .setTooltip(text("underwater_effect_strength.tooltip"))
+            .setSaveConsumer(value -> updateEffects(edited, old -> new AudioEffectsSettings(
+                old.hitSoundsEnabled(), old.hitSoundVolume(), old.lastPokemonHpEffectsEnabled(),
+                old.lastPokemonHpEffectVolume(), old.underwaterEffectsEnabled(), value
             ))).build());
     }
 

@@ -4,13 +4,26 @@ public record AudioEffectsSettings(
     boolean hitSoundsEnabled,
     double hitSoundVolume,
     boolean lastPokemonHpEffectsEnabled,
-    double lastPokemonHpEffectVolume
+    double lastPokemonHpEffectVolume,
+    boolean underwaterEffectsEnabled,
+    double underwaterEffectStrength
 ) {
     public static final double MAX_VOLUME = 2.0;
+    public static final double DEFAULT_UNDERWATER_STRENGTH = 0.35;
 
     public AudioEffectsSettings {
         requireVolume(hitSoundVolume, "hitSoundVolume");
         requireVolume(lastPokemonHpEffectVolume, "lastPokemonHpEffectVolume");
+        if (!Double.isFinite(underwaterEffectStrength) || underwaterEffectStrength < 0.0
+            || underwaterEffectStrength > 1.0) {
+            throw new IllegalArgumentException("underwaterEffectStrength must be finite and between 0.0 and 1.0");
+        }
+    }
+
+    public AudioEffectsSettings(boolean hitSoundsEnabled, double hitSoundVolume,
+        boolean lastPokemonHpEffectsEnabled, double lastPokemonHpEffectVolume) {
+        this(hitSoundsEnabled, hitSoundVolume, lastPokemonHpEffectsEnabled, lastPokemonHpEffectVolume,
+            true, DEFAULT_UNDERWATER_STRENGTH);
     }
 
     public static AudioEffectsSettings defaults() {
