@@ -43,11 +43,12 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `each transition runs about five seconds, holding the covered screen with a pulse`() {
+    fun `a legendary runs about five seconds and the others about four, holding the cover with a pulse`() {
         for (kind in BattleEntryKind.entries) {
             val total = BattleEntryTimeline.readyAt(kind) + (kind.revealMillis * BattleEntryTimeline.WHITE_RISE).toLong() +
                 kind.fadeMillis
-            assertTrue(total in 4500L..5500L, "${kind.id} runs $total ms")
+            val expected = if (kind == BattleEntryKind.LEGENDARY) 4800L..5500L else 3500L..4300L
+            assertTrue(total in expected, "${kind.id} runs $total ms")
             assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
             assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))
             assertEquals(0f, BattleEntryTimeline.pulse(kind, BattleEntryTimeline.coverEnd(kind) - 1))
@@ -55,6 +56,15 @@ class BattleEntryTimelineTest {
                 .map { BattleEntryTimeline.pulse(kind, it) }
             assertTrue(hold.max() > .6f, "${kind.id} pulses up to ${hold.max()}")
         }
+    }
+
+    @Test
+    fun `a legendary's slash crosses before its plates close`() {
+        assertEquals(0f, BattleEntryTimeline.slash(0f))
+        assertEquals(1f, BattleEntryTimeline.slash(.25f), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.plates(.2f))
+        assertTrue(BattleEntryTimeline.plates(.25f) < .3f)
+        assertEquals(1f, BattleEntryTimeline.plates(1f), 1e-3f)
     }
 
     @Test

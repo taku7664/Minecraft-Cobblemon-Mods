@@ -5,8 +5,9 @@ import kotlin.math.abs
 /**
  * What kind of battle is starting, which sets the entry transition's beats: when it flashes, how long the pattern
  * takes to cover the screen, how long the covered screen pulses before the battle may start, how fast the white rises
- * and how slowly it fades into the battle. Each kind runs about five seconds. A legendary first darkens the world,
- * flashes three times faster and faster with a shockwave on each, and shakes as its pattern closes in.
+ * and how slowly it fades into the battle. Wild and trainer battles run about four seconds; a legendary runs about
+ * five: it darkens the world, flashes three times faster and faster with a shockwave on each, then a slash splits the
+ * screen and two black plates close on it under focus lines in its colour.
  */
 enum class BattleEntryKind(
     val id: String,
@@ -18,8 +19,8 @@ enum class BattleEntryKind(
     val fadeMillis: Long,
 ) {
     LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1700, 750, 400, 1100),
-    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 1500, 400, 1000),
-    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 1600, 400, 1000);
+    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 400, 1000),
+    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 400, 1000);
 
     companion object {
         fun fromId(id: String?): BattleEntryKind? = entries.firstOrNull { it.id == id }
@@ -139,6 +140,15 @@ object BattleEntryTimeline {
      */
     fun piece(progress: Float, distance: Float): Float =
         (progress * (1f + SPREAD) - distance.coerceIn(0f, 1f) * SPREAD).coerceIn(0f, 1f)
+
+    /** How far a legendary's slash has crossed the screen, 0 to 1: it leads the plates by a quarter of the cover. */
+    fun slash(cover: Float): Float = smooth((cover / .25f).coerceIn(0f, 1f))
+
+    /** How far a legendary's two plates have closed on the slash, 0 to 1, starting once the slash is across. */
+    fun plates(cover: Float): Float {
+        val closing = ((cover - .2f) / .8f).coerceIn(0f, 1f)
+        return 1f - (1f - closing) * (1f - closing) * (1f - closing)
+    }
 
     /** A piece's size while covering, then clearing. */
     fun pieceSize(cover: Float, reveal: Float, distance: Float): Float =
