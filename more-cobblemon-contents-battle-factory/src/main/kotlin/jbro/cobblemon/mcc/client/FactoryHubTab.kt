@@ -101,7 +101,7 @@ internal class FactoryHubTab : MccHubTabContent {
             if (index > 0) steps.append(Component.literal("\n"))
             steps.append(Component.literal("${index + 1}. ")).append(factory(key, controller.chosenFormat.selectionSize))
         }
-        // A run is singles at Lv. 50, so nothing is chosen before it: the card states the rule and walks through the
+        // A run is singles at open level (Lv. 100), so nothing is chosen before it: the card states the rule and walks through the
         // run ahead, only as tall as that, centered in a taller body.
         val inner = MccHubKit.cardBody(layout.body)
         val stepsHeight = Minecraft.getInstance().font.split(steps, inner.width).size * 10
@@ -118,7 +118,7 @@ internal class FactoryHubTab : MccHubTabContent {
         if (stepsRect.height >= 10) MccHubKit.text(host, stepsRect, steps)
         MccHubKit.footer(host, layout.footer, emptyList(),
             listOf(action(controller, host, "start", UiButtonVariant.PRIMARY, primary = true) {
-                controller.chooseLevelMode(FactoryLevelMode.LEVEL_50)
+                controller.chooseLevelMode(FactoryLevelMode.OPEN_LEVEL)
                 controller.start()
             }))
     }
@@ -237,7 +237,7 @@ internal class FactoryHubTab : MccHubTabContent {
         position: Int?,
         press: () -> Unit,
     ): MccHubPortraitCards.Button {
-        val level = controller.state.levelMode?.battleLevel ?: 50
+        val level = controller.state.levelMode?.battleLevel ?: FactoryLevelMode.OPEN_LEVEL.battleLevel
         val name = speciesName(set.speciesId, set.formId)
         val details = factory("card.details", level, itemName(set.heldItemId))
         val card = MccHubPortraitCards.Button(cell, portrait("factory:${set.setId}", set.speciesId, set.formId),

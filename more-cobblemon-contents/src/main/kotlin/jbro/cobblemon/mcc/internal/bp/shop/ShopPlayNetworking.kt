@@ -178,8 +178,8 @@ internal fun homeLeaderboardBoardSpecs(): List<HomeLeaderboardBoardSpec> = build
     formats.forEach { format ->
         add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_TOWER, format, HomeLeaderboardRanking.TOWER))
     }
-    // The Battle Factory runs singles at Lv. 50 only.
-    add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_FACTORY, "single_level_50", HomeLeaderboardRanking.FACTORY))
+    // The Battle Factory runs singles at open level (Lv. 100) only.
+    add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_FACTORY, "single_open_level", HomeLeaderboardRanking.FACTORY))
     formats.forEach { format ->
         add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.PVP, format, HomeLeaderboardRanking.PVP))
     }

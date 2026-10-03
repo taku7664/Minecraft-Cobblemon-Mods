@@ -53,7 +53,7 @@ internal class FactoryPlayScreenController(
         private set
     var chosenFormat: FactoryBattleFormat = initialState.format ?: FactoryBattleFormat.SINGLE
         private set
-    var chosenLevelMode: FactoryLevelMode = initialState.levelMode ?: FactoryLevelMode.LEVEL_50
+    var chosenLevelMode: FactoryLevelMode = initialState.levelMode ?: FactoryLevelMode.OPEN_LEVEL
         private set
     var feedbackKey: String? = null
         private set
