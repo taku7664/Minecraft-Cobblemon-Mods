@@ -112,6 +112,7 @@ internal object InquiryReview {
     private var discord = DiscordSettings()
     private var rest: DiscordRest? = null
     private var reviewer: InquiryReviewer? = null
+    private var withContents = false
     private lateinit var records: Path
     private lateinit var logs: Path
     @Volatile private var server: MinecraftServer? = null
@@ -142,8 +143,9 @@ internal object InquiryReview {
     /** Whether [customId] names one of the inquiry reviews' buttons. */
     fun handles(customId: String) = customId.startsWith(BUTTON_PREFIX) || customId.startsWith(ACTIONS_PREFIX)
 
-    fun register(discord: DiscordSettings, settings: InquiryReviewSettings, gameDir: Path) {
+    fun register(discord: DiscordSettings, settings: InquiryReviewSettings, gameDir: Path, withContents: Boolean = false) {
         if (!settings.enabled) return
+        this.withContents = withContents
         if (!discord.botConfigured || discord.inquiryChannelId.isBlank() || discord.adminChannelId.isBlank()) {
             JbroPolicy.LOGGER.warn("Inquiry reviews need botToken, inquiryChannelId and adminChannelId in config/jbro-policy-discord.json; they stay off")
             return
@@ -184,7 +186,7 @@ internal object InquiryReview {
         val outcome = runCatching {
             val window = InquiryLogWindow.collect(InquiryLogWindow.read(logs, from, to), from, to, at,
                 listOf(inquiry.accountName, inquiry.nickname, inquiry.playerId.toString()), settings.maxLogCharacters)
-            reviewer.review(InquiryReviewer.prompt(inquiry, window, settings.minutesBefore, settings.minutesAfter))
+            reviewer.review(InquiryReviewer.prompt(inquiry, window, settings.minutesBefore, settings.minutesAfter, playerData(inquiry)))
         }
         // The server stopped mid-review: it runs again on the next start.
         if (server == null) return
@@ -201,6 +203,16 @@ internal object InquiryReview {
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, verdict.playerSummary, inquiry.reason) }
         post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, verdict.playerSummary))
         post(discord.adminChannelId, DiscordRest.message(embed = reviewEmbed(inquiry, verdict)).withButton(record.id, actions = true))
+    }
+
+    /** The player's standing in the contents, or null without More Cobblemon Contents or when it cannot be read. */
+    private fun playerData(inquiry: Inquiry): String? {
+        val server = server ?: return null
+        if (!withContents) return null
+        return try { InquiryPlayerData.of(server, inquiry.playerId) } catch (failure: Exception) {
+            JbroPolicy.LOGGER.warn("Could not read the player data of inquiry {}", inquiry.id, failure)
+            null
+        }
     }
 
     /**
@@ -324,6 +336,7 @@ internal object InquiryReview {
         })
         add("fields", JsonArray().apply {
             add(field("문의", inquiry.reason, inline = false))
+            add(field("유형", verdict.category.label))
             add(field("근거 로그", if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
             add(field("권장 조치", verdict.suggestedActions.joinToString("\n") { "• $it" }, inline = false))
             add(field("플레이어에게 보낸 답", verdict.playerSummary, inline = false))

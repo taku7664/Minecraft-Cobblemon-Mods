@@ -62,7 +62,7 @@ object JbroPolicy : ModInitializer {
         Inquiries.register(discord)
         InquiryReview.register(discord,
             InquiryReviewSettings.load(configDir.resolve("jbro-policy-inquiry-review.json")) { message, failure -> LOGGER.warn(message, failure) },
-            FabricLoader.getInstance().gameDir)
+            FabricLoader.getInstance().gameDir, withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         DiscordBot.register(discord, configDir.resolve("jbro-policy-discord-status.json"),
             withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         // Built-in data packs, so either can be turned off per world with /datapack disable.
