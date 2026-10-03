@@ -3,6 +3,7 @@ package jbro.cobblemon.bettermusic.catalog;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -41,6 +42,42 @@ final class MusicCatalogConfigStoreTest {
         assertEquals(1.75, settings.volume());
         assertEquals(2.5, settings.playback().fadeInSeconds());
         assertEquals(legacyJson, Files.readString(legacy, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void acceptsAndPreservesTheNowPlayingToggleWithoutChangingOtherSettings() throws Exception {
+        var store = new MusicCatalogConfigStore(temporaryDirectory);
+        var original = store.initializeSettings("cobleserver:official");
+        Path file = store.settingsFile();
+        String json = Files.readString(file).replace("\"volume\": 1.0", "\"volume\": 1.75");
+        var root = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+        root.addProperty("nowPlayingEnabled", false);
+        Files.writeString(file, root.toString());
+
+        var loaded = store.loadSettings();
+        store.saveSettings(loaded);
+
+        var saved = com.google.gson.JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+        assertFalse(saved.get("nowPlayingEnabled").getAsBoolean());
+        assertEquals(1.75, loaded.volume());
+        assertEquals(original.playback(), loaded.playback());
+        assertEquals(original.audioEffects(), loaded.audioEffects());
+    }
+
+    @Test
+    void olderSettingsDefaultAnnouncementsOnAndRejectNonBooleanValues() throws Exception {
+        var store = new MusicCatalogConfigStore(temporaryDirectory);
+        store.initializeSettings("cobleserver:official");
+        var root = com.google.gson.JsonParser.parseString(Files.readString(store.settingsFile())).getAsJsonObject();
+        root.remove("nowPlayingEnabled");
+        Files.writeString(store.settingsFile(), root.toString());
+        assertTrue(store.loadSettings().nowPlayingEnabled());
+        for (var invalid : java.util.List.of(com.google.gson.JsonParser.parseString("0"),
+            com.google.gson.JsonParser.parseString("\"false\""), com.google.gson.JsonNull.INSTANCE)) {
+            root.add("nowPlayingEnabled", invalid);
+            Files.writeString(store.settingsFile(), root.toString());
+            assertThrows(CatalogValidationException.class, store::loadSettings);
+        }
     }
 
     @Test

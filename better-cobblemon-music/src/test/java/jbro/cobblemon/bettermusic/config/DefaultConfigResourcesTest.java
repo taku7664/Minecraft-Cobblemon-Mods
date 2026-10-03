@@ -24,6 +24,19 @@ final class DefaultConfigResourcesTest {
     }
 
     @Test
+    void announcementToggleAndTooltipAreLocalizedInBothLanguages() throws Exception {
+        for (String language : java.util.List.of("ko_kr", "en_us")) {
+            try (var stream = getClass().getResourceAsStream("/assets/better_cobblemon_music/lang/" + language + ".json")) {
+                assertNotNull(stream);
+                var root = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+                for (String suffix : java.util.List.of("", ".tooltip")) {
+                    assertTrue(!root.get("better_cobblemon_music.config.now_playing_enabled" + suffix).getAsString().isBlank());
+                }
+            }
+        }
+    }
+
+    @Test
     void bundledMusicConfigUsesSchemaTwoOrderedBiomeRules() {
         var root = JsonParser.parseReader(resource("music.json")).getAsJsonObject();
 

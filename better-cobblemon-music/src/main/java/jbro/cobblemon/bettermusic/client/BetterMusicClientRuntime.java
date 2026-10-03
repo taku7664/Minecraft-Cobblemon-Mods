@@ -35,6 +35,7 @@ public final class BetterMusicClientRuntime {
     private final Map<String, String> fallbackPlaylistIds = new HashMap<>();
     private final PlaylistNavigator playlistNavigator = new PlaylistNavigator(ThreadLocalRandom.current());
     private final LastPokemonLowHpAlertPlayer lowHpAlertPlayer = new LastPokemonLowHpAlertPlayer();
+    private final NowPlayingTextOverlay nowPlaying = new NowPlayingTextOverlay();
     private BetterMusicConfigSnapshot snapshot;
     private CompiledMusicConfiguration configuration;
     private MinecraftMusicBackend backend;
@@ -58,6 +59,7 @@ public final class BetterMusicClientRuntime {
     }
 
     public void register() {
+        nowPlaying.register();
         ClientTickEvents.END_CLIENT_TICK.register(this::tick);
     }
 
@@ -98,9 +100,11 @@ public final class BetterMusicClientRuntime {
             backend = new MinecraftMusicBackend(client.getSoundManager(), logger);
         }
         if (player == null) {
-            player = new FadingMusicPlayer(backend);
+            player = new FadingMusicPlayer(backend, track -> nowPlaying.trackStarted(track.sound(),
+                configuration.eventTitles().getOrDefault(track.sound(), track.sound())));
         }
         configuration = latestConfiguration;
+        nowPlaying.setEnabled(latestConfiguration.nowPlayingEnabled());
         snapshot = latest;
         audioEffects = latest.audioEffects();
         BattleHitSoundPlayer.configure(audioEffects, latestConfiguration.audioEvents());
@@ -192,6 +196,9 @@ public final class BetterMusicClientRuntime {
             transition.fadeOutSeconds(),
             transition.fadeInSeconds()
         );
+        if (target.isEmpty()) {
+            nowPlaying.clear();
+        }
         suppressOriginalMusic = target.isPresent();
     }
 

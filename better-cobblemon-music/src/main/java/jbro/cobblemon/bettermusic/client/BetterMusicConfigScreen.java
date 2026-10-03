@@ -102,7 +102,7 @@ public final class BetterMusicConfigScreen {
             ).setSelections(choices).setDefaultValue(BetterMusicConfigManager.DEFAULT_BASE_PACK_ID)
             .setTooltip(text("base_pack.tooltip"))
             .setSaveConsumer(value -> edited.updateAndGet(old -> new MusicCatalogSettings(
-                value, old.playback(), old.selection(), old.volume(), old.audioEffects()
+                value, old.playback(), old.selection(), old.volume(), old.audioEffects(), old.nowPlayingEnabled()
             )))
             .build());
     }
@@ -123,15 +123,20 @@ public final class BetterMusicConfigScreen {
             .setEnumNameProvider(value -> text("selection." + value.name().toLowerCase(Locale.ROOT)))
             .setTooltip(text("selection.tooltip"))
             .setSaveConsumer(value -> edited.updateAndGet(old -> new MusicCatalogSettings(
-                old.basePackId(), old.playback(), value, old.volume(), old.audioEffects()
+                old.basePackId(), old.playback(), value, old.volume(), old.audioEffects(), old.nowPlayingEnabled()
             )))
             .build());
         category.addEntry(entries.startDoubleField(text("volume"), initial.volume())
             .setDefaultValue(1.0).setMin(0.0).setMax(4.0).setTooltip(text("volume.tooltip"))
             .setSaveConsumer(value -> edited.updateAndGet(old -> new MusicCatalogSettings(
-                old.basePackId(), old.playback(), old.selection(), value, old.audioEffects()
+                old.basePackId(), old.playback(), old.selection(), value, old.audioEffects(), old.nowPlayingEnabled()
             )))
             .build());
+        category.addEntry(entries.startBooleanToggle(text("now_playing_enabled"), initial.nowPlayingEnabled())
+            .setDefaultValue(true).setTooltip(text("now_playing_enabled.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(old -> new MusicCatalogSettings(
+                old.basePackId(), old.playback(), old.selection(), old.volume(), old.audioEffects(), value
+            ))).build());
     }
 
     private static void addEffects(
@@ -239,7 +244,7 @@ public final class BetterMusicConfigScreen {
             key.equals("between_tracks") ? value : playback.betweenTracksSeconds(),
             key.equals("fade_in") ? value : playback.fadeInSeconds(),
             key.equals("fade_out") ? value : playback.fadeOutSeconds()
-        ), old.selection(), old.volume(), old.audioEffects());
+        ), old.selection(), old.volume(), old.audioEffects(), old.nowPlayingEnabled());
     }
 
     private static void updateEffects(
@@ -247,7 +252,7 @@ public final class BetterMusicConfigScreen {
         java.util.function.UnaryOperator<AudioEffectsSettings> update
     ) {
         edited.updateAndGet(old -> new MusicCatalogSettings(
-            old.basePackId(), old.playback(), old.selection(), old.volume(), update.apply(old.audioEffects())
+            old.basePackId(), old.playback(), old.selection(), old.volume(), update.apply(old.audioEffects()), old.nowPlayingEnabled()
         ));
     }
 

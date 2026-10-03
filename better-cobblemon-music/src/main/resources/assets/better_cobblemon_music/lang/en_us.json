@@ -27,6 +27,8 @@
   "better_cobblemon_music.config.selection.sequential": "Sequential",
   "better_cobblemon_music.config.volume": "Default music volume",
   "better_cobblemon_music.config.volume.tooltip": "Used by playlists that do not specify their own volume. 1.0 is normal volume.",
+  "better_cobblemon_music.config.now_playing_enabled": "Show BGM track announcements",
+  "better_cobblemon_music.config.now_playing_enabled.tooltip": "Briefly shows the track title at the top left when the BGM changes. Text only, with a smooth slide and fade lasting about 3 seconds. Hit sounds and low-HP alerts are excluded.",
   "better_cobblemon_music.config.hit_sounds_enabled": "Enable hit sounds",
   "better_cobblemon_music.config.hit_sounds_enabled.tooltip": "Plays an effectiveness-based hit sound when a move reduces HP.",
   "better_cobblemon_music.config.hit_sound_volume": "Hit sound volume",

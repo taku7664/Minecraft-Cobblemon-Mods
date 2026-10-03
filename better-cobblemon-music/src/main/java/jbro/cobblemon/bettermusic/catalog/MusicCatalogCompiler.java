@@ -77,6 +77,8 @@ public final class MusicCatalogCompiler {
         }
         Map<String, String> trackEvents = new LinkedHashMap<>();
         tracks.forEach((id, track) -> trackEvents.put(id, track.eventId()));
+        Map<String, String> eventTitles = new LinkedHashMap<>();
+        tracks.values().forEach(track -> eventTitles.putIfAbsent(track.eventId(), track.title()));
         return new CompiledMusicConfiguration(
             snapshot,
             trackEvents,
@@ -85,7 +87,9 @@ public final class MusicCatalogCompiler {
             base.audioEvents().orElseThrow(),
             activeExtensions,
             diagnostics,
-            inactiveOverrides
+            inactiveOverrides,
+            eventTitles,
+            settings.nowPlayingEnabled()
         );
     }
 

@@ -136,7 +136,8 @@ public final class MusicCatalogConfigStore {
             "$",
             "schemaVersion", "basePackId", "scanIntervalSeconds", "fieldChangeDelaySeconds",
             "betweenTracksSeconds", "fadeInSeconds", "fadeOutSeconds", "selection", "volume",
-            "hitSoundsEnabled", "hitSoundVolume", "lastPokemonHpEffectsEnabled", "lastPokemonHpEffectVolume"
+            "hitSoundsEnabled", "hitSoundVolume", "lastPokemonHpEffectsEnabled", "lastPokemonHpEffectVolume",
+            "nowPlayingEnabled"
         );
         if (CatalogJson.integer(root, "schemaVersion", "$") != 1) {
             throw CatalogJson.error("$.schemaVersion", "must be 1");
@@ -164,7 +165,8 @@ public final class MusicCatalogConfigStore {
             bool(root, "lastPokemonHpEffectsEnabled"),
             CatalogJson.number(root, "lastPokemonHpEffectVolume", "$")
         );
-        return new MusicCatalogSettings(basePackId, playback, selection, volume, effects);
+        return new MusicCatalogSettings(basePackId, playback, selection, volume, effects,
+            !root.has("nowPlayingEnabled") || bool(root, "nowPlayingEnabled"));
     }
 
     private static boolean bool(JsonObject root, String key) {
@@ -191,6 +193,7 @@ public final class MusicCatalogConfigStore {
         root.addProperty("hitSoundVolume", settings.audioEffects().hitSoundVolume());
         root.addProperty("lastPokemonHpEffectsEnabled", settings.audioEffects().lastPokemonHpEffectsEnabled());
         root.addProperty("lastPokemonHpEffectVolume", settings.audioEffects().lastPokemonHpEffectVolume());
+        root.addProperty("nowPlayingEnabled", settings.nowPlayingEnabled());
         return GSON.toJson(root) + System.lineSeparator();
     }
 

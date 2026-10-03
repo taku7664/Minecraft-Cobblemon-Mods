@@ -45,6 +45,20 @@ final class MusicCatalogCompilerTest {
             compiled.trackEvents().get("username:custom")
         );
         assertTrue(compiled.activeExtensionPackIds().contains("username:one"));
+        assertEquals("Plains", compiled.eventTitles().get("cobleserver:music.track.plains"));
+        assertEquals(extension.tracks().get("username:custom").title(), compiled.eventTitles().get("username:music.track.custom"));
+        assertTrue(compiled.nowPlayingEnabled());
+    }
+
+    @Test
+    void announcementSettingSurvivesCompilation() {
+        var base = parse(MusicCatalogParserTest.baseCatalogJson());
+        var defaults = MusicCatalogSettings.defaults("cobleserver:official");
+        var settings = new MusicCatalogSettings(defaults.basePackId(), defaults.playback(), defaults.selection(),
+            defaults.volume(), defaults.audioEffects(), false);
+        var compiled = MusicCatalogCompiler.compile("cobleserver:official", List.of(base), settings, MusicMappingOverrides.empty());
+        assertFalse(compiled.nowPlayingEnabled());
+        assertEquals("Wild", compiled.eventTitles().get("cobleserver:music.track.wild"));
     }
 
     @Test

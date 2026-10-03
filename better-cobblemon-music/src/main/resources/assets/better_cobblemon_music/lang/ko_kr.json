@@ -27,6 +27,8 @@
   "better_cobblemon_music.config.selection.sequential": "적힌 순서대로",
   "better_cobblemon_music.config.volume": "기본 음악 음량",
   "better_cobblemon_music.config.volume.tooltip": "음량을 별도로 정하지 않은 플레이리스트에 적용합니다. 1.0이 기본 음량입니다.",
+  "better_cobblemon_music.config.now_playing_enabled": "BGM 곡명 알림 표시",
+  "better_cobblemon_music.config.now_playing_enabled.tooltip": "BGM 곡이 바뀔 때 좌측 상단에 곡명을 약 3초간 표시합니다. 패널 없이 텍스트만 부드럽게 나타났다 사라집니다. 타격음과 HP 경고음은 표시하지 않습니다.",
   "better_cobblemon_music.config.hit_sounds_enabled": "타격음 사용",
   "better_cobblemon_music.config.hit_sounds_enabled.tooltip": "기술로 체력이 감소할 때 효과별 타격음을 재생합니다.",
   "better_cobblemon_music.config.hit_sound_volume": "타격음 음량",

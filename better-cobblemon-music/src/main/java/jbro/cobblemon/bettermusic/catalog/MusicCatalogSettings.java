@@ -10,7 +10,8 @@ public record MusicCatalogSettings(
     PlaybackSettings playback,
     PlaylistDefinition.Selection selection,
     double volume,
-    AudioEffectsSettings audioEffects
+    AudioEffectsSettings audioEffects,
+    boolean nowPlayingEnabled
 ) {
     public MusicCatalogSettings {
         Objects.requireNonNull(basePackId, "basePackId");
@@ -20,6 +21,11 @@ public record MusicCatalogSettings(
         if (!Double.isFinite(volume) || volume < 0.0 || volume > Float.MAX_VALUE) {
             throw new IllegalArgumentException("volume must be a non-negative finite float");
         }
+    }
+
+    public MusicCatalogSettings(String basePackId, PlaybackSettings playback, PlaylistDefinition.Selection selection,
+        double volume, AudioEffectsSettings audioEffects) {
+        this(basePackId, playback, selection, volume, audioEffects, true);
     }
 
     public static MusicCatalogSettings defaults(String basePackId) {

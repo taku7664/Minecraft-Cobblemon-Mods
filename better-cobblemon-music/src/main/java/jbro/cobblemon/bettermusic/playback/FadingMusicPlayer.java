@@ -2,12 +2,14 @@ package jbro.cobblemon.bettermusic.playback;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public final class FadingMusicPlayer {
     private static final double STARTUP_GRACE_SECONDS = 0.1;
     private static final double MUFFLE_TRANSITION_SECONDS = 0.75;
 
     private final Backend backend;
+    private final Consumer<Track> trackStarted;
     private Optional<TrackSource> desiredSource = Optional.empty();
     private ActiveTrack active;
     private ActiveTrack outgoing;
@@ -18,7 +20,12 @@ public final class FadingMusicPlayer {
     private boolean muffled;
 
     public FadingMusicPlayer(Backend backend) {
+        this(backend, ignored -> { });
+    }
+
+    public FadingMusicPlayer(Backend backend, Consumer<Track> trackStarted) {
         this.backend = Objects.requireNonNull(backend, "backend");
+        this.trackStarted = Objects.requireNonNull(trackStarted, "trackStarted");
     }
 
     public void transitionSource(
@@ -90,6 +97,7 @@ public final class FadingMusicPlayer {
             initialVolume
         );
         restartAtSeconds = Double.POSITIVE_INFINITY;
+        trackStarted.accept(track);
     }
 
     private void updateEnvelopes(double nowSeconds) {

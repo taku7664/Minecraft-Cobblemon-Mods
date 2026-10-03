@@ -10,6 +10,33 @@ import org.junit.jupiter.api.Test;
 
 final class FadingMusicPlayerTest {
     @Test
+    void announcesActualTrackStartsIncludingPlaylistRotationButNotTicksOrStops() {
+        var backend = new FakeBackend();
+        var started = new ArrayList<String>();
+        var player = new FadingMusicPlayer(backend, track -> {
+            assertTrue(!backend.handles.isEmpty());
+            started.add(track.sound());
+        });
+        int[] next = {0};
+        var source = new FadingMusicPlayer.TrackSource() {
+            public FadingMusicPlayer.Track nextTrack() {
+                return new FadingMusicPlayer.Track("example:track_" + next[0]++, 1.0);
+            }
+            public double betweenTracksSeconds() { return 0.0; }
+        };
+        player.transitionSource(0.0, Optional.of(source), 0.0, 0.0);
+        player.tick(0.5);
+        player.tick(1.0);
+        assertEquals(List.of("example:track_0"), started);
+        backend.handles.getFirst().playing = false;
+        player.tick(2.0);
+        assertEquals(List.of("example:track_0", "example:track_1"), started);
+        player.transitionSource(3.0, Optional.empty(), 0.0, 0.0);
+        player.tick(4.0);
+        assertEquals(2, started.size());
+    }
+
+    @Test
     void crossFadeUsesTheCurrentOutgoingVolumeAndTheConfiguredTargetVolume() {
         var backend = new FakeBackend();
         var player = new FadingMusicPlayer(backend);

@@ -17,7 +17,9 @@ public record CompiledMusicConfiguration(
     MusicCatalog.AudioEvents audioEvents,
     Set<String> activeExtensionPackIds,
     List<String> diagnostics,
-    Map<String, String> inactiveOverrides
+    Map<String, String> inactiveOverrides,
+    Map<String, String> eventTitles,
+    boolean nowPlayingEnabled
 ) {
     public CompiledMusicConfiguration {
         Objects.requireNonNull(snapshot, "snapshot");
@@ -28,6 +30,7 @@ public record CompiledMusicConfiguration(
         activeExtensionPackIds = Set.copyOf(Objects.requireNonNull(activeExtensionPackIds, "activeExtensionPackIds"));
         diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));
         inactiveOverrides = immutableMap(inactiveOverrides, "inactiveOverrides");
+        eventTitles = immutableMap(eventTitles, "eventTitles");
     }
 
     private static <T> Map<String, T> immutableMap(Map<String, T> values, String name) {
