@@ -45,8 +45,6 @@ class TowerPlayRunEndTest {
         // The rules change again, and the next lock registers the party the challenger has now.
         var state = accepted(service.mutate(playerId,
             TowerPlayIntent.ChangeMechanic(next(), contextId, lost.revision, MajorBattleMechanic.TERA)))
-        state = accepted(service.mutate(playerId,
-            TowerPlayIntent.ChangeLegendaryClassAllowed(next(), contextId, state.revision, false)))
         val changed = party(offset = 10)
         state = service.refreshParty(playerId, changed)!!
         assertEquals(changed, state.party)

@@ -28,11 +28,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.network.chat.Component
 
-internal enum class TowerLegendaryClassOption(val allowed: Boolean, val translationKey: String) {
-    DISALLOWED(false, "screen.more_cobblemon_contents.tower.legendary_class.disallowed"),
-    ALLOWED(true, "screen.more_cobblemon_contents.tower.legendary_class.allowed"),
-}
-
 /**
  * The Tower session the client knows, fed by the Tower network receivers. The server authors every state; the
  * controller only tracks the one request in flight.
@@ -131,8 +126,8 @@ internal class TowerHubTab : MccHubTabContent {
             val order = state.selectedPokemonOrder.indexOf(pokemon.pokemonId).takeIf { it >= 0 }?.plus(1)
             val speciesName = speciesName(pokemon.speciesId)
             val heldItem = itemName(pokemon.heldItemId)
-            // With the legendary class off, a legendary-class Pokemon cannot enter: say so on its card.
-            val blocked = pokemon.legendaryClass && !state.legendaryClassAllowed
+            // The Tower takes no legendary-class Pokemon: say so on its card.
+            val blocked = pokemon.legendaryClass
             val button = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId),
                 if (order == null) speciesName else tower("party_entry.order_name", order, speciesName),
                 if (blocked) tower("party_entry.blocked") else tower("party_entry.details", pokemon.battleLevel, heldItem), order != null,
@@ -178,13 +173,6 @@ internal class TowerHubTab : MccHubTabContent {
                 state.selectedMechanic?.id, rulesOpen,
                 state.selectedMechanic?.let { tower("mechanic.tooltip", tower("mechanic.${it.id}")) }) { id ->
                 if (controller.changeMechanic(MajorBattleMechanic.entries.first { it.id == id })) host.rebuild()
-            },
-            MccHubKit.ChoiceRow(tower("section.legendary_class"),
-                TowerLegendaryClassOption.entries.map { MccHubKit.Choice(it.name.lowercase(), Component.translatable(it.translationKey)) },
-                TowerLegendaryClassOption.entries.first { it.allowed == state.legendaryClassAllowed }.name.lowercase(),
-                rulesOpen, tower("legendary_class.tooltip")) { id ->
-                val option = TowerLegendaryClassOption.entries.first { it.name.lowercase() == id }
-                if (controller.changeLegendaryClassAllowed(option.allowed)) host.rebuild()
             },
         )) + MccHubKit.GAP + 2
         val feedback = controller.fieldFeedbackKeys.firstOrNull() ?: controller.feedbackKey ?: state.errorKeys.firstOrNull()

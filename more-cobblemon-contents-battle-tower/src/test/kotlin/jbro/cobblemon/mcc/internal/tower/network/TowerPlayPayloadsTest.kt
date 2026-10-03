@@ -105,7 +105,6 @@ class TowerPlayPayloadsTest {
         bpBalance = 123,
         errorKeys = listOf("screen.more_cobblemon_contents.tower.warning.example"),
         selectedMechanic = MajorBattleMechanic.DYNAMAX,
-        legendaryClassAllowed = true,
         runStarted = true,
     )
 

@@ -71,9 +71,8 @@ internal sealed interface TowerTeamSelectionIssue {
 
     data class DuplicatePokemon(val pokemonId: UUID) : TowerTeamSelectionIssue
     data class UnregisteredPokemon(val pokemonId: UUID) : TowerTeamSelectionIssue
+    /** The Tower takes no Legendary, Mythical, Ultra Beast or Paradox Pokemon. */
     data class LegendaryClassNotAllowed(val pokemonId: UUID) : TowerTeamSelectionIssue
-    /** More than one Legendary, or more than one Mythical, Ultra Beast or Paradox Pokemon. */
-    data class TooManyLegendaryClass(val count: TowerLegendaryCount) : TowerTeamSelectionIssue
 }
 
 internal sealed interface TowerTeamSelectionResult {
@@ -109,7 +108,6 @@ internal object TowerTeamRules {
         team: TowerRegisteredTeam,
         format: TowerBattleFormat,
         pokemonIds: List<UUID>,
-        legendaryClassAllowed: Boolean = false,
     ): TowerTeamSelectionResult {
         val registeredById = team.members.associateBy { it.pokemonId }
         val issues = buildList {
@@ -122,14 +120,8 @@ internal object TowerTeamRules {
             pokemonIds.distinct().filterNot(registeredById::containsKey).forEach {
                 add(TowerTeamSelectionIssue.UnregisteredPokemon(it))
             }
-            val legendaryClass = pokemonIds.distinct().mapNotNull(registeredById::get).filter { it.legendaryClass }
-            if (!legendaryClassAllowed) {
-                legendaryClass.forEach { add(TowerTeamSelectionIssue.LegendaryClassNotAllowed(it.pokemonId)) }
-            } else {
-                val count = TowerLegendaryClassPolicy.count(legendaryClass.map { it.speciesId })
-                if (count.legendary > TOWER_MAX_PER_LEGENDARY_GROUP || count.other > TOWER_MAX_PER_LEGENDARY_GROUP) {
-                    add(TowerTeamSelectionIssue.TooManyLegendaryClass(count))
-                }
+            pokemonIds.distinct().mapNotNull(registeredById::get).filter { it.legendaryClass }.forEach {
+                add(TowerTeamSelectionIssue.LegendaryClassNotAllowed(it.pokemonId))
             }
         }
 
@@ -157,8 +149,6 @@ private fun <T> Iterable<T>.duplicateValues(): List<T> {
 }
 
 internal const val TOWER_REGISTERED_TEAM_SIZE = 6
-/** With the legendary class allowed, a battle team brings at most this many of each [TowerLegendaryGroup]. */
-internal const val TOWER_MAX_PER_LEGENDARY_GROUP = 1
 internal const val TOWER_BATTLE_LEVEL_CAP = 50
 private const val MIN_LEVEL = 1
 private const val MAX_LEVEL = 100

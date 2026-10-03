@@ -41,16 +41,12 @@ class TowerHubLayoutTest {
     }
 
     @Test
-    fun `both languages define the legendary choices and every guide section`() {
+    fun `both languages define every guide section`() {
         listOf("en_us", "ko_kr").forEach { language ->
             val stream = requireNotNull(javaClass.getResourceAsStream(
                 "/assets/more_cobblemon_contents_battle_tower/lang/$language.json",
             ))
             val entries = InputStreamReader(stream).use(JsonParser::parseReader).asJsonObject
-            TowerLegendaryClassOption.entries.forEach { option ->
-                assertTrue(entries.has(option.translationKey), "$language is missing ${option.translationKey}")
-            }
-            assertTrue(entries.has("screen.more_cobblemon_contents.tower.legendary_class.tooltip"))
             assertTrue(entries.has(TowerGuideContent.TITLE_KEY))
             TowerGuideContent.sections.forEach { section ->
                 assertTrue(entries.has(section.titleKey), "$language is missing ${section.titleKey}")

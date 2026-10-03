@@ -98,7 +98,6 @@ private fun RegistryFriendlyByteBuf.writeState(state: TowerPlayViewState) {
     writeBoundedString(state.phase.name.lowercase())
     writeBoolean(state.selectedMechanic != null)
     state.selectedMechanic?.let { writeBoundedString(it.id) }
-    writeBoolean(state.legendaryClassAllowed)
     writeBoolean(state.runStarted)
     writeVarInt(state.party.size)
     state.party.forEach(::writePartySlot)
@@ -129,7 +128,6 @@ private fun RegistryFriendlyByteBuf.readState(): TowerPlayViewState {
     } else {
         null
     }
-    val legendaryClassAllowed = readBoolean()
     val runStarted = readBoolean()
     val party = ArrayList<TowerPlayPartySlot>()
     repeat(readBoundedSize(TOWER_REGISTERED_TEAM_SIZE, "party")) { party += readPartySlot() }
@@ -152,7 +150,6 @@ private fun RegistryFriendlyByteBuf.readState(): TowerPlayViewState {
         bpBalance = bpBalance,
         errorKeys = errors,
         selectedMechanic = mechanic,
-        legendaryClassAllowed = legendaryClassAllowed,
         runStarted = runStarted,
         mode = mode,
         endlessUnlocked = endlessUnlocked,
@@ -195,7 +192,6 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
         is TowerPlayIntent.ChangeFormat -> "change_format"
         is TowerPlayIntent.ChangeMode -> "change_mode"
         is TowerPlayIntent.ChangeMechanic -> "change_mechanic"
-        is TowerPlayIntent.ChangeLegendaryClassAllowed -> "change_legendary_class_allowed"
         is TowerPlayIntent.LockTeam -> "lock_team"
         is TowerPlayIntent.Start -> "start"
         is TowerPlayIntent.ChangeTeam -> "change_team"
@@ -211,7 +207,6 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
         is TowerPlayIntent.ChangeFormat -> writeBoundedString(intent.format.recordId)
         is TowerPlayIntent.ChangeMode -> writeBoundedString(intent.mode.id)
         is TowerPlayIntent.ChangeMechanic -> writeBoundedString(intent.mechanic.id)
-        is TowerPlayIntent.ChangeLegendaryClassAllowed -> writeBoolean(intent.allowed)
         else -> Unit
     }
 }
@@ -236,8 +231,6 @@ private fun RegistryFriendlyByteBuf.readIntent(): TowerPlayIntent {
                 ?: throw IllegalArgumentException("Unsupported tower mechanic: $mechanicId")
             TowerPlayIntent.ChangeMechanic(requestId, contextId, revision, mechanic)
         }
-        "change_legendary_class_allowed" ->
-            TowerPlayIntent.ChangeLegendaryClassAllowed(requestId, contextId, revision, readBoolean())
         "lock_team" -> TowerPlayIntent.LockTeam(requestId, contextId, revision)
         "start" -> TowerPlayIntent.Start(requestId, contextId, revision)
         "change_team" -> TowerPlayIntent.ChangeTeam(requestId, contextId, revision)

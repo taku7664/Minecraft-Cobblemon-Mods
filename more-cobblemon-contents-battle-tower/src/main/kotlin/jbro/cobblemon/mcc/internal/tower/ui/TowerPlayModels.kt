@@ -84,7 +84,6 @@ internal class TowerPlayViewState(
     val bpBalance: Long,
     errorKeys: Collection<String>,
     val selectedMechanic: MajorBattleMechanic? = null,
-    val legendaryClassAllowed: Boolean = false,
     /** A battle has started on the registered team: the run is under way and can only be given up, not reset. */
     val runStarted: Boolean = false,
     val mode: TowerMode = TowerMode.ENDLESS,
@@ -143,7 +142,6 @@ internal class TowerPlayViewState(
         bpBalance: Long = this.bpBalance,
         errorKeys: Collection<String> = this.errorKeys,
         selectedMechanic: MajorBattleMechanic? = this.selectedMechanic,
-        legendaryClassAllowed: Boolean = this.legendaryClassAllowed,
         runStarted: Boolean = this.runStarted,
         mode: TowerMode = this.mode,
         endlessUnlocked: Boolean = this.endlessUnlocked,
@@ -159,7 +157,6 @@ internal class TowerPlayViewState(
         bpBalance,
         errorKeys,
         selectedMechanic,
-        legendaryClassAllowed,
         runStarted,
         mode,
         endlessUnlocked,
@@ -178,7 +175,6 @@ internal class TowerPlayViewState(
             bpBalance == other.bpBalance &&
             errorKeys == other.errorKeys &&
             selectedMechanic == other.selectedMechanic &&
-            legendaryClassAllowed == other.legendaryClassAllowed &&
             runStarted == other.runStarted &&
             mode == other.mode &&
             endlessUnlocked == other.endlessUnlocked
@@ -195,7 +191,6 @@ internal class TowerPlayViewState(
         result = 31 * result + bpBalance.hashCode()
         result = 31 * result + errorKeys.hashCode()
         result = 31 * result + (selectedMechanic?.hashCode() ?: 0)
-        result = 31 * result + legendaryClassAllowed.hashCode()
         result = 31 * result + runStarted.hashCode()
         result = 31 * result + mode.hashCode()
         result = 31 * result + endlessUnlocked.hashCode()
@@ -208,7 +203,7 @@ internal class TowerPlayViewState(
             "currentWinStreak=$currentWinStreak, bestWinStreak=$bestWinStreak, winsIntoSet=$winsIntoSet, " +
             "bpPerWin=$bpPerWin, " +
             "bpBalance=$bpBalance, errorKeys=$errorKeys, selectedMechanic=$selectedMechanic, " +
-            "legendaryClassAllowed=$legendaryClassAllowed, runStarted=$runStarted, mode=$mode, endlessUnlocked=$endlessUnlocked)"
+            "runStarted=$runStarted, mode=$mode, endlessUnlocked=$endlessUnlocked)"
 }
 
 internal sealed interface TowerPlayIntent {
@@ -242,13 +237,6 @@ internal sealed interface TowerPlayIntent {
         override val entryContextId: UUID,
         override val expectedRevision: Long,
         val mechanic: MajorBattleMechanic,
-    ) : TowerPlayIntent
-
-    data class ChangeLegendaryClassAllowed(
-        override val requestId: UUID,
-        override val entryContextId: UUID,
-        override val expectedRevision: Long,
-        val allowed: Boolean,
     ) : TowerPlayIntent
 
     data class LockTeam(

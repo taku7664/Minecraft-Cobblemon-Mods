@@ -10,7 +10,6 @@ internal data class TowerBattleLaunchRequest(
     val selection: TowerSelectedTeam,
     val playerTeamPreview: BattleOpponentTeamPreviewView,
     val mechanic: MajorBattleMechanic,
-    val legendaryClassAllowed: Boolean = false,
     val learningScopeId: UUID = UUID.randomUUID(),
 ) {
     init {

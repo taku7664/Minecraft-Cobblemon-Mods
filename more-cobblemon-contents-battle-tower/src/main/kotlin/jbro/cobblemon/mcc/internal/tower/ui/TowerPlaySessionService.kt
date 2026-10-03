@@ -79,7 +79,6 @@ internal object TowerPlayMessageKeys {
     const val SELECTION_SIZE = "$PREFIX.selection_size"
     const val UNREGISTERED_POKEMON = "$PREFIX.unregistered_pokemon"
     const val LEGENDARY_CLASS_NOT_ALLOWED = "$PREFIX.legendary_class_not_allowed"
-    const val TOO_MANY_LEGENDARY_CLASS = "$PREFIX.too_many_legendary_class"
 
 }
 
@@ -151,7 +150,6 @@ internal class TowerPlaySessionService(
                 bpBalance = request.bpBalance,
                 errorKeys = registrationErrors(request.party),
                 selectedMechanic = shown.selectedMechanic ?: DEFAULT_TOWER_MECHANIC,
-                legendaryClassAllowed = shown.legendaryClassAllowed,
                 endlessUnlocked = request.endlessUnlocked,
             )
             sessions[playerId] = Session(request.progressByTrack, entryContext, refreshed)
@@ -444,8 +442,6 @@ internal class TowerPlaySessionService(
             is TowerPlayIntent.ChangeFormat -> changeRules(session, intent) { switchTrack(session, TowerTrack(intent.format, it.mode)) }
             is TowerPlayIntent.ChangeMode -> changeMode(session, intent)
             is TowerPlayIntent.ChangeMechanic -> changeRules(session, intent) { it.copy(selectedMechanic = intent.mechanic) }
-            is TowerPlayIntent.ChangeLegendaryClassAllowed ->
-                changeRules(session, intent) { it.copy(legendaryClassAllowed = intent.allowed) }
             is TowerPlayIntent.LockTeam -> lockTeam(playerId, session, intent, currentParty)
             is TowerPlayIntent.Start -> startBattle(playerId, session, intent)
             is TowerPlayIntent.ChangeTeam -> changeTeam(session, intent, currentParty)
@@ -514,7 +510,6 @@ internal class TowerPlaySessionService(
             bpBalance = state.bpBalance,
             errorKeys = state.errorKeys,
             selectedMechanic = state.selectedMechanic,
-            legendaryClassAllowed = state.legendaryClassAllowed,
             endlessUnlocked = state.endlessUnlocked,
         )
     }
@@ -557,7 +552,6 @@ internal class TowerPlaySessionService(
             registration.team,
             state.format,
             state.selectedPokemonOrder,
-            state.legendaryClassAllowed,
         )
         if (selection is TowerTeamSelectionResult.Rejected) {
             return rejected(
@@ -608,7 +602,6 @@ internal class TowerPlaySessionService(
                         selection = selection,
                         playerTeamPreview = state.publicTeamPreview(),
                         mechanic = mechanic,
-                        legendaryClassAllowed = state.legendaryClassAllowed,
                         learningScopeId = runScopeId,
                     ),
                 )
@@ -840,7 +833,6 @@ private fun viewState(
     bpBalance: Long,
     errorKeys: Collection<String>,
     selectedMechanic: MajorBattleMechanic? = null,
-    legendaryClassAllowed: Boolean = false,
     endlessUnlocked: Boolean = false,
 ): TowerPlayViewState = TowerPlayViewState(
     entryContextId = entryContextId,
@@ -856,7 +848,6 @@ private fun viewState(
     bpBalance = bpBalance,
     errorKeys = errorKeys,
     selectedMechanic = selectedMechanic,
-    legendaryClassAllowed = legendaryClassAllowed,
 )
 
 /** The picked entries still in [party], in their order. */
@@ -911,7 +902,6 @@ private fun List<TowerTeamSelectionIssue>.associateSelectionIssueKeys(): Map<Str
             is TowerTeamSelectionIssue.DuplicatePokemon -> "pokemon"
             is TowerTeamSelectionIssue.UnregisteredPokemon -> "pokemon"
             is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> "pokemon"
-            is TowerTeamSelectionIssue.TooManyLegendaryClass -> "selection"
         } to issue.messageKey()
     }
 
@@ -927,7 +917,6 @@ private fun TowerTeamSelectionIssue.messageKey(): String = when (this) {
     is TowerTeamSelectionIssue.DuplicatePokemon -> TowerPlayMessageKeys.DUPLICATE_POKEMON
     is TowerTeamSelectionIssue.UnregisteredPokemon -> TowerPlayMessageKeys.UNREGISTERED_POKEMON
     is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> TowerPlayMessageKeys.LEGENDARY_CLASS_NOT_ALLOWED
-    is TowerTeamSelectionIssue.TooManyLegendaryClass -> TowerPlayMessageKeys.TOO_MANY_LEGENDARY_CLASS
 }
 
 private fun orderedProgressCopy(source: Map<TowerTrack, TowerProgress>): LinkedHashMap<TowerTrack, TowerProgress> =

@@ -101,15 +101,12 @@ internal class TowerPveBattleLauncher<P, O>(
             request.mechanic,
             if (champion) championRotation.excluded(request.playerId, champions) else recentProfiles.recent(request.playerId),
             recentSpecies.recent(request.playerId),
-            request.legendaryClassAllowed,
             championBoss = champion,
-            challengerLegendaries = TowerLegendaryClassPolicy.count(request.selection.members.filter { it.legendaryClass }.map { it.speciesId }),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
             reportSafely(
                 "no opponent could be selected for stage ${request.progress.nextStage}, format " +
-                    "${request.progress.format}, kind $opponentKind, mechanic ${request.mechanic}, " +
-                    "legendaryClassAllowed=${request.legendaryClassAllowed}: ${opponent.describe()}",
+                    "${request.progress.format}, kind $opponentKind, mechanic ${request.mechanic}: ${opponent.describe()}",
             )
             return TowerBattleLaunchResult.Unavailable
         }
