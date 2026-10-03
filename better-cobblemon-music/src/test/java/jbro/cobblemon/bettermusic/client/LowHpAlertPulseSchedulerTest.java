@@ -8,8 +8,20 @@ import org.junit.jupiter.api.Test;
 
 final class LowHpAlertPulseSchedulerTest {
     @Test
-    void playerCadenceLeavesTheFullAlertClipUnclipped() {
-        assertEquals(0.70, LastPokemonLowHpAlertPlayer.CADENCE_SECONDS, 0.0001);
+    void playerThrottlesOnlyRecoveryAttemptsNotTheAudioLoop() {
+        assertEquals(0.70, LastPokemonLowHpAlertPlayer.RETRY_SECONDS, 0.0001);
+    }
+
+    @Test
+    void nativeAlertIsOneNonPositionalLoopOnTheExistingUiSoundCategory() {
+        var sound = LastPokemonLowHpAlertPlayer.loopingSound("cobleserver:battle.low_hp.alert", 0.1F);
+        assertTrue(sound.isLooping());
+        assertTrue(sound.isRelative());
+        assertEquals(0, sound.getDelay());
+        assertEquals(net.minecraft.sounds.SoundSource.MASTER, sound.getSource());
+        assertEquals(net.minecraft.client.resources.sounds.SoundInstance.Attenuation.NONE, sound.getAttenuation());
+        assertEquals("cobleserver:battle.low_hp.alert", sound.getLocation().toString());
+        // getVolume() needs a resolved Minecraft Sound; gain is covered separately below.
     }
 
     @Test
