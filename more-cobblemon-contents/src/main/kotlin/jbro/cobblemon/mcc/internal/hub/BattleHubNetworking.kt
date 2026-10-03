@@ -64,9 +64,14 @@ object BattleHubNetworking {
 
     /** Opens the hub from [terminal]; the verified [use] stays attached to the entries opened during this hub session. */
     fun openTerminal(player: ServerPlayer, terminal: HoloTerminal, use: TerminalInteractionResult.Verified): Boolean {
-        val tabs = BattleHubTabConfigFile.current.terminals[terminal.id.toString()] ?: terminal.defaultTabs
+        val tabs = BattleHubTabConfigFile.current.terminalTabs(terminal.id.toString(), terminal.defaultTabs)
         return open(player, tabs, BattleHubIds.DASHBOARD, use)
     }
+
+    /** NPC/server commands share terminal tabs, but the session has no block identity or distance restriction. */
+    fun openTerminalCommand(player: ServerPlayer, terminal: HoloTerminal): Boolean =
+        open(player, BattleHubTabConfigFile.current.terminalTabs(terminal.id.toString(), terminal.defaultTabs),
+            BattleHubIds.DASHBOARD, null)
 
     /** Shows [configured] on [home], or on the first tab when the list leaves [home] out. */
     private fun open(player: ServerPlayer, configured: List<String>, home: String, terminal: TerminalInteractionResult.Verified?): Boolean {

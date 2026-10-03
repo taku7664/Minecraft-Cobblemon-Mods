@@ -16,7 +16,7 @@ import net.fabricmc.loader.api.FabricLoader
 /**
  * Which hub tabs each way into the hub shows: [command] for `/mcc`, [terminals] per hologram terminal block ID.
  * [commandPermission] is the permission level `/mcc` needs to open the hub: 0 lets every player, 2 only operators;
- * the commands under it stay for operators either way.
+ * targeting another player and the administrative commands still require operator permission.
  * Entries for terminals whose mod is not installed are kept, so removing a mod does not lose them.
  */
 internal data class BattleHubTabConfig(
@@ -24,6 +24,8 @@ internal data class BattleHubTabConfig(
     val terminals: Map<String, List<String>>,
     val commandPermission: Int = DEFAULT_COMMAND_PERMISSION,
 ) {
+    fun terminalTabs(id: String, defaults: List<String>): List<String> = terminals[id] ?: defaults
+
     /** A read config, and whether the file lacked entries it should be rewritten with. */
     data class Read(val config: BattleHubTabConfig, val incomplete: Boolean, val problems: List<String>)
 

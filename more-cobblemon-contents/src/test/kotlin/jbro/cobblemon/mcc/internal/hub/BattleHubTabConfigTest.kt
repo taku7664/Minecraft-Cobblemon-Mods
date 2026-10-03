@@ -21,6 +21,16 @@ class BattleHubTabConfigTest {
     }
 
     @Test
+    fun `terminal opens use the terminal override and fall back to registered tabs not the command tabs`() {
+        val custom = listOf("more_cobblemon_contents:league_challenge")
+        val config = BattleHubTabConfig.read("""{"terminals":{"$league":["${custom.single()}"]}}""", defaults).config
+        assertEquals(custom, config.terminalTabs(league, defaults.getValue(league)))
+        assertEquals(defaults.getValue(tower), config.terminalTabs(tower, defaults.getValue(tower)))
+        assertEquals(custom, config.terminalTabs("new_mod:terminal", custom))
+        assertEquals(BattleHubTabConfig.DEFAULT_COMMAND, config.command)
+    }
+
+    @Test
     fun `written defaults read back unchanged and complete`() {
         val config = BattleHubTabConfig.defaults(defaults)
         val read = BattleHubTabConfig.read(BattleHubTabConfig.write(config), defaults)

@@ -23,7 +23,17 @@ class BattleContentCommandsTest {
 
         assertEquals("mcc", root.name)
         assertNotNull(root.command)
-        assertEquals(setOf("bp"), root.children.map { it.name }.toSet())
+        assertEquals(setOf("bp", "terminal"), root.children.map { it.name }.toSet())
+
+        val terminal = root.getChild("terminal")
+        assertEquals(setOf("all", "league", "tower", "factory"), terminal.children.map { it.name }.toSet())
+        terminal.children.forEach { kind ->
+            assertNotNull(kind.command)
+            assertNotNull(kind.getChild("player").command)
+            assertTrue(kind.requirement.test(source(0)))
+            assertFalse(kind.getChild("player").requirement.test(source(0)))
+            assertTrue(kind.getChild("player").requirement.test(source(2)))
+        }
 
         val bp = root.getChild("bp")
         assertEquals(setOf("get", "history", "add", "remove", "set"), bp.children.map { it.name }.toSet())
@@ -45,7 +55,7 @@ class BattleContentCommandsTest {
     }
 
     @Test
-    fun `a player can run only the hub and their own BP, and operators everything`() {
+    fun `players open their own terminals and operators may target players`() {
         val dir = java.nio.file.Files.createTempDirectory("mcc-command")
         val admin = listOf(MccAdminCommands::status, MccAdminCommands::records, MccAdminCommands::battle).map { make ->
             object : MccCommandContributor {
@@ -55,10 +65,14 @@ class BattleContentCommandsTest {
         fun root() = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = admin).build()
 
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
-        assertEquals(setOf("mcc", "mcc bp", "mcc bp history", "mcc bp history <count>"), runnable(root(), source(0)))
+        assertEquals(setOf("mcc", "mcc bp", "mcc bp history", "mcc bp history <count>") +
+            listOf("all", "league", "tower", "factory").map { "mcc terminal $it" }, runnable(root(), source(0)))
         val everything = runnable(root(), source(2))
         listOf("mcc status", "mcc records reset <player>", "mcc battle list", "mcc bp add <player> <amount>").forEach {
             assertTrue(it in everything, it)
+        }
+        listOf("all", "league", "tower", "factory").forEach {
+            assertTrue("mcc terminal $it <player>" in everything)
         }
 
         val restricted = dir.resolve("restricted.json")
@@ -67,6 +81,42 @@ class BattleContentCommandsTest {
         assertTrue(runnable(root(), source(0)).isEmpty())
         assertTrue("mcc" in runnable(root(), source(2)))
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
+    }
+
+    @Test
+    fun `each terminal command routes to its block id and rejects non operator targets`() {
+        val dispatcher = com.mojang.brigadier.CommandDispatcher<CommandSourceStack>()
+        val calls = mutableListOf<Pair<String, Boolean>>()
+        dispatcher.register(net.minecraft.commands.Commands.literal("mcc").then(TerminalCommands.build { _, id, targeted ->
+            calls += id.toString() to targeted
+            1
+        }))
+        val expected = linkedMapOf(
+            "all" to "more_cobblemon_contents:holo_battle_terminal",
+            "league" to "more_cobblemon_contents_league_challenge:league_terminal",
+            "tower" to "more_cobblemon_contents_battle_tower:battle_tower_terminal",
+            "factory" to "more_cobblemon_contents_battle_factory:battle_factory_terminal",
+        )
+        expected.forEach { (alias, id) ->
+            assertEquals(1, dispatcher.execute("mcc terminal $alias", source(0)))
+            assertEquals(id to false, calls.last())
+            org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
+                dispatcher.execute("mcc terminal $alias Alex", source(0))
+            }
+            assertEquals(1, dispatcher.execute("mcc terminal $alias Alex", source(2)))
+            assertEquals(id to true, calls.last())
+        }
+        assertEquals(8, calls.size)
+    }
+
+    @Test
+    fun `an absent terminal fails instead of reporting a successful open`() {
+        val dispatcher = com.mojang.brigadier.CommandDispatcher<CommandSourceStack>()
+        dispatcher.register(net.minecraft.commands.Commands.literal("mcc").then(TerminalCommands.build()))
+        val failure = org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
+            dispatcher.execute("mcc terminal league", source(0))
+        }
+        assertTrue(failure.rawMessage.string.contains("command.more_cobblemon_contents.terminal.unavailable"))
     }
 
     companion object {

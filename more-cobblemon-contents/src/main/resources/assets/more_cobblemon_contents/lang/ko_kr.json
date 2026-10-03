@@ -1,6 +1,8 @@
 {
   "screen.more_cobblemon_contents.access.provider_failed": "접근 조건을 확인할 수 없어 이 콘텐츠가 잠겼습니다.",
   "command.more_cobblemon_contents.open": "사용 가능한 배틀 콘텐츠: %s",
+  "command.more_cobblemon_contents.terminal.unavailable": "터미널 %s을(를) 사용할 수 없습니다. 서버에 해당 콘텐츠 모드를 설치해 주세요.",
+  "command.more_cobblemon_contents.terminal.open_failed": "%s님의 터미널 화면을 열지 못했습니다. 해당 플레이어의 MCC 클라이언트 설치와 서버 로그를 확인해 주세요.",
   "command.more_cobblemon_contents.error.content_failure": "배틀 콘텐츠 요청 처리에 실패했습니다. 서버 로그를 확인해 주세요.",
   "command.more_cobblemon_contents.bp.balance": "%s님의 BP: %s",
   "command.more_cobblemon_contents.bp.history.header": "%s님의 BP 거래 이력 (%s건):",
