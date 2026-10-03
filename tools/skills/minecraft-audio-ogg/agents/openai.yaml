@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minecraft OGG 변환"
+  short_description: "Minecraft용 음원을 압축하고 영상 제거·모노/스테레오·디코딩을 검증합니다"
+  default_prompt: "Use $minecraft-audio-ogg to convert these audio files into compact, validated OGG Vorbis for a Minecraft Java resource pack."
