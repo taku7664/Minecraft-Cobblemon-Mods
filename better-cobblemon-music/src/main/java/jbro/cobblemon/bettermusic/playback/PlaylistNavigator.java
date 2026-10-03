@@ -42,6 +42,9 @@ public final class PlaylistNavigator {
         if (state.tracks.size() == 1) {
             return select(state, 0);
         }
+        if (state.lastIndex < 0) {
+            return select(state, random.nextInt(state.tracks.size()));
+        }
         int candidate = random.nextInt(state.tracks.size() - 1);
         if (candidate >= state.lastIndex && state.lastIndex >= 0) {
             candidate++;

@@ -11,6 +11,21 @@ import org.junit.jupiter.api.Test;
 
 final class PlaylistNavigatorTest {
     @Test
+    void randomFirstPickCanSelectTheLastTrackAndResetRestoresAllCandidates() {
+        var navigator = new PlaylistNavigator(new Random() {
+            @Override
+            public int nextInt(int bound) {
+                return bound - 1;
+            }
+        });
+        var playlist = playlist(PlaylistDefinition.Selection.RANDOM, "a.ogg", "b.ogg");
+        assertEquals("b.ogg", navigator.next("title", playlist));
+        assertEquals("a.ogg", navigator.next("title", playlist));
+        navigator.reset();
+        assertEquals("b.ogg", navigator.next("title", playlist));
+    }
+
+    @Test
     void shufflePlaysEveryTrackBeforeRepeatingAndAvoidsCycleBoundaryRepeat() {
         var navigator = new PlaylistNavigator(new Random(17));
         var playlist = playlist(PlaylistDefinition.Selection.SHUFFLE, "a.ogg", "b.ogg", "c.ogg");
