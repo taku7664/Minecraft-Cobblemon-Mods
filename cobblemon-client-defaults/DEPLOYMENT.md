@@ -84,3 +84,29 @@ Minecraft 1.21.1은 이를 버전 0으로 처리하여 숫자 키를 전제로 �
 Fabric 로더 소스와 설치된 CLC·Forge Config API Port·Balm의 초기화 경로는 확인했습니다.
 Minecraft는 실행하지 않았으므로, 완전히 새 프로필에서의 전체 시작과 실제 게임 동작은
 확인하지 않았습니다. 클라이언트 전용이며 서버에는 배포하지 않았습니다.
+
+## 0.1.3 — Xaero 시작 훅
+
+- 소스 커밋: `e879e707`
+- 파일: `mods/cobblemon-client-defaults-0.1.3.jar`
+- SHA-256: `1D6E165DDB03D041617187A1102FC870234A531134A08857F57602F4A6B72A3B`
+- 검증: 테스트 49개 및 Gradle build 통과, JDK JAR 검증 통과. 한국어·영어 번역 키 16개 일치.
+- 대상: 기존 `cobblemon-dev` 프로필. 빌드·배포 파일 해시 일치, 같은 mod ID의 설치 파일은 하나.
+- 이전 JAR 백업: `codex-deploy-backups/20261003-183733708/cobblemon_client_defaults/cobblemon-client-defaults-0.1.2.jar`
+- 설정 백업: `F:\AI\Temp\codex-xaero-hook-20261003\before-hook`에 수정 전 옵션·Xaero 설정·초기 설정·성공 기록을 보관.
+
+`ClientDefaultsPreLaunch.onPreLaunch()`에 Xaero 프리셋 호출을 추가했습니다.
+설치된 지도 모드만 처리하고 기본 적용 방식은 `ALWAYS`입니다. 웨이포인트·사망 지점·지도
+텔레포트를 끄고, 아이콘 항상 표시와 지도 J·설정 Y·웨이포인트 키 미지정을 적용합니다.
+설치된 E19 전용 아이콘팩을 활성화하며 기존 다른 팩의 상대 순서를 유지합니다.
+Mod Menu에서 Xaero 항목도 최초 한 번 또는 매 실행 적용을 선택할 수 있습니다.
+
+배포된 JAR의 Xaero 적용 코드를 Minecraft 없이 실행하여 현재 프로필도 준비했습니다.
+독립 비교 결과 기존 `options.txt`, 미니맵 기본 프로필, 레이더 JSON 및 기존 성공 기록은
+바이트 단위로 동일합니다. 초기 설정 TOML에는 `[xaero] mode = "ALWAYS"`만 추가됐고,
+전체 지도 기본 프로필에는 `display_minimap_radar = true`만 추가됐습니다.
+
+새 Xaero 전용 프로필의 옵션 파일은 Minecraft 1.21.1의 실제 설정 변환기로도 검증했습니다.
+실제 Fabric 클라이언트 시작, 지도·아이콘 렌더링 및 Mod Menu 화면은 확인하지 않았습니다.
+서버 웨이포인트 생성 메뉴 차단은 기존 강제 프로필과 `xaero-waypoint-lock` 데이터팩이
+담당합니다. 이번 변경에서는 서버 파일을 수정하거나 서버에 이 클라이언트 모드를 설치하지 않았습니다.
