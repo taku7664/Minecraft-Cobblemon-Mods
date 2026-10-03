@@ -6,10 +6,13 @@ import com.cobblemon.mod.common.client.gui.ProfileTransformType
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
+import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.uikit.UiRect
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
+import org.lwjgl.opengl.GL11
 
 /** Draws Cobblemon profile portraits for render slots; kept apart so only this file touches Cobblemon's client. */
 internal object CobblemonUiPokemonRenderer {
@@ -52,6 +55,10 @@ internal object CobblemonUiPokemonRenderer {
             )
         } finally {
             pose.popPose()
+            // The model's depth reaches past the z of dialogs and tooltips drawn later, so it would show through
+            // them; clearing depth once it is drawn leaves later 2D layers on top in draw order.
+            graphics.flush()
+            RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX)
         }
     }
 
