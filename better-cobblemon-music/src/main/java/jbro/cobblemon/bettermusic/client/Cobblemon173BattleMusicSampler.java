@@ -16,6 +16,7 @@ import jbro.cobblemon.bettermusic.battle.BattleMusicContext;
 import jbro.cobblemon.bettermusic.battle.BattleOpponentSideSelector;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 import jbro.cobblemon.bettermusic.api.BattleMusicContentProviders;
+import jbro.cobblemon.bettermusic.api.PendingBattleMusic;
 import net.minecraft.client.Minecraft;
 
 public final class Cobblemon173BattleMusicSampler {
@@ -25,7 +26,8 @@ public final class Cobblemon173BattleMusicSampler {
         }
         ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
         if (battle == null) {
-            return Optional.empty();
+            // A battle held behind its entry transition plays its music from the transition's start.
+            return PendingBattleMusic.current().map(PendingBattleMusic.Pending::context);
         }
 
         ClientBattleActor participant = battle.getParticipatingActor(client.player.getUUID());
@@ -118,7 +120,7 @@ public final class Cobblemon173BattleMusicSampler {
         }
     }
 
-    static List<String> battleMusicSpeciesKeys(String speciesId, String form) {
+    public static List<String> battleMusicSpeciesKeys(String speciesId, String form) {
         if (form == null || form.isBlank()) {
             return List.of(speciesId);
         }

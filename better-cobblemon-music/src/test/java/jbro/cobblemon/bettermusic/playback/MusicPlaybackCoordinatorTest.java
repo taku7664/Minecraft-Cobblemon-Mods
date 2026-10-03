@@ -71,6 +71,9 @@ final class MusicPlaybackCoordinatorTest {
         )).orElseThrow();
         assertEquals(selection(MusicPlaybackCoordinator.Mode.FIELD, "field.forest"), battle.from().orElseThrow());
         assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.trainer"), battle.to().orElseThrow());
+        // A battle cuts in at full volume while the field falls away quickly.
+        assertEquals(0.0, battle.fadeInSeconds());
+        assertEquals(MusicPlaybackCoordinator.BATTLE_ENTRY_FADE_OUT_SECONDS, battle.fadeOutSeconds());
 
         assertTrue(coordinator.update(5.5, new MusicPlaybackCoordinator.Input(
             Optional.of("field.forest"),
@@ -108,6 +111,9 @@ final class MusicPlaybackCoordinatorTest {
         var endBattle = coordinator.update(5.0, MusicPlaybackCoordinator.Input.field("field.plains"))
             .orElseThrow();
         assertEquals(selection(MusicPlaybackCoordinator.Mode.FIELD, "field.plains"), endBattle.to().orElseThrow());
+        // Leaving a battle crossfades as before.
+        assertEquals(1.0, endBattle.fadeInSeconds());
+        assertEquals(1.0, endBattle.fadeOutSeconds());
     }
 
     @Test

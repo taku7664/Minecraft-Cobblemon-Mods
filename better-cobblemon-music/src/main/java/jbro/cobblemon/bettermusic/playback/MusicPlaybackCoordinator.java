@@ -5,6 +5,9 @@ import java.util.Optional;
 import jbro.cobblemon.bettermusic.config.PlaybackSettings;
 
 public final class MusicPlaybackCoordinator {
+    /** How long the field's music takes to fall away when a battle cuts in. */
+    static final double BATTLE_ENTRY_FADE_OUT_SECONDS = 0.35;
+
     private final PlaybackSettings settings;
     private Optional<Selection> current = Optional.empty();
     private String pendingFieldCue;
@@ -34,11 +37,14 @@ public final class MusicPlaybackCoordinator {
         if (target.equals(current)) {
             return Optional.empty();
         }
+        // Entering a battle cuts in at once, as the games do with the entry transition; the rest crossfade.
+        boolean enteringBattle = target.map(selection -> selection.mode() == Mode.BATTLE).orElse(false)
+            && current.map(selection -> selection.mode() != Mode.BATTLE).orElse(true);
         var transition = new Transition(
             current,
             target,
-            settings.fadeOutSeconds(),
-            settings.fadeInSeconds()
+            enteringBattle ? Math.min(settings.fadeOutSeconds(), BATTLE_ENTRY_FADE_OUT_SECONDS) : settings.fadeOutSeconds(),
+            enteringBattle ? 0.0 : settings.fadeInSeconds()
         );
         current = target;
         return Optional.of(transition);

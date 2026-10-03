@@ -17,6 +17,7 @@ import jbro.cobblemon.bettermusic.playback.FadingMusicPlayer;
 import jbro.cobblemon.bettermusic.playback.MusicPlaybackCoordinator;
 import jbro.cobblemon.bettermusic.playback.PlaylistNavigator;
 import jbro.cobblemon.bettermusic.playback.PlayablePlaylistResolver;
+import jbro.cobblemon.bettermusic.api.PendingBattleMusic;
 import jbro.cobblemon.bettermusic.api.ScreenMusicProviders;
 import jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -51,6 +52,7 @@ public final class BetterMusicClientRuntime {
     private LastPokemonMuffleTracker.Effect lastPokemonEffect = LastPokemonMuffleTracker.Effect.NONE;
     private AudioEffectsSettings audioEffects = AudioEffectsSettings.defaults();
     private String lastDesiredPlaylistId;
+    private java.util.UUID lastPendingBattleId;
 
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
         this.configManager = java.util.Objects.requireNonNull(configManager, "configManager");
@@ -83,6 +85,14 @@ public final class BetterMusicClientRuntime {
             leaveWorld(nowSeconds);
         } else {
             inWorld = true;
+        }
+        // A battle entry transition starting is worth a scan now rather than at the next interval.
+        java.util.UUID pendingBattleId = PendingBattleMusic.current().map(PendingBattleMusic.Pending::battleId).orElse(null);
+        if (!java.util.Objects.equals(pendingBattleId, lastPendingBattleId)) {
+            lastPendingBattleId = pendingBattleId;
+            if (pendingBattleId != null) {
+                nextScanSeconds = nowSeconds;
+            }
         }
         scanContextIfDue(client, nowSeconds);
         lowHpAlertPlayer.tick(
