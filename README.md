@@ -91,7 +91,7 @@ PvP, 리그 챌린지는 각각 따로 설치하는 콘텐츠 모드이며, 설�
 | `/mcc league cap sync <플레이어>` | 레벨 캡을 Cobbled Level Control에 다시 맞춥니다 |
 | `/mcc league validate` / `catalog` | 레벨 캡 설정 점검, 리그 카탈로그 상태와 마지막 재로드 실패 이유 |
 | `/mcc league import-badges <플레이어>` | 이미 가진 PokeBadges 배지를 리그 클리어로 가져옵니다(BP·챔피언은 주지 않음) |
-| `/mcc league trainer spawn <종류>` | 그 자리에 야생 트레이너를 불러냅니다 |
+| `/mcc league trainer spawn [종류\|random] [마릿수] [좌표]` | 야생 트레이너를 불러냅니다. 종류를 빼면 무작위, 좌표를 빼면 실행한 사람 2블록 앞입니다. 어느 월드에서든 되고, 블록 속이나 공중이면 설 자리를 찾아 세웁니다 |
 | `/mcc league trainer despawn [반경]` / `list [반경]` | 주변 야생 트레이너를 없애거나(전투 중 제외) 봅니다 |
 | `/mcc league trainer cooldown reset <플레이어>` | 그 플레이어의 재대결 대기를 없앱니다 |
 
