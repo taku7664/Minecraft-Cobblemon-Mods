@@ -4,7 +4,6 @@ import java.util.IdentityHashMap
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
-import kotlin.math.roundToInt
 
 /**
  * A structural key for a projected battle state, memoized by object identity.
@@ -36,13 +35,15 @@ internal class LocalBattleStateFingerprint {
     fun ofActionInputs(state: BattleStateView): String = actionInputsByIdentity.getOrPut(state) { build(state, activeHpBands = true) }
 
     private fun build(state: BattleStateView, activeHpBands: Boolean = false): String = buildString {
-        append(state.turn).append('|')
+        append(state.battleId).append(':').append(state.format).append(':').append(state.turn).append('|')
         state.pokemon.sortedBy { it.battlePokemonId }.forEach { pokemon ->
             append(pokemon.battlePokemonId).append(':')
             append(pokemon.side.ordinal).append(':')
             append(pokemon.activeSlot ?: -1).append(':')
             if (activeHpBands && pokemon.activeSlot != null) append(hpBand(pokemon.hpFraction)).append(':')
-            else append((pokemon.hpFraction * 10_000).roundToInt()).append(':')
+            else append(pokemon.hpFraction).append(':')
+            append(pokemon.fainted).append(':')
+            append(pokemon.speciesId).append(':').append(pokemon.level).append(':')
             append(pokemon.statusId ?: "-").append(':')
             append(pokemon.formId ?: "-").append(':')
             append(pokemon.knownTypeIds.sorted().joinToString(",")).append(':')
@@ -52,6 +53,14 @@ internal class LocalBattleStateFingerprint {
             append(pokemon.knownHeldItemId ?: "-").append(':')
             append(pokemon.knownAbilityId ?: "-").append(':')
             append(pokemon.knownBaseAbilityId ?: "?").append(':')
+            append(pokemon.knownMoveIds.sorted().joinToString(",")).append(':')
+            // Stat ranges are a data class, including their knowledge boundary.
+            append(pokemon.combatStats).append(':')
+            pokemon.knownFormStates.toSortedMap().forEach { (id, form) ->
+                append("form:").append(id).append(':').append(form.formId).append(':')
+                append(form.knownTypeIds.sorted().joinToString(",")).append(':')
+                append(form.combatStats).append(':').append(form.abilityId).append(';')
+            }
             append(pokemon.actionConstraints.taunted).append(':')
             append(pokemon.actionConstraints.encoreMoveId ?: "-").append(':')
             append(pokemon.actionConstraints.trapped).append(':')
@@ -73,6 +82,22 @@ internal class LocalBattleStateFingerprint {
         appendTimedEffect("terrain", state.field.terrain)
         state.field.roomEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("room", it) }
         state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
+        // Protect chains, last hits and public ability hypotheses can change mechanics without
+        // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
+        state.observedEvents.forEach { event ->
+            append("event:").append(event.sequence).append(':').append(event.turn).append(':').append(event.kind).append(':')
+            append(event.actorPokemonId).append(':').append(event.actorSlot).append(':')
+            append(event.targetPokemonIds).append(':').append(event.publicValueId).append(':').append(event.hpFractionDelta).append(':')
+            append(event.baseMovePriority).append(':').append(event.precedingActionSequence).append(':')
+            append(event.precedingActionActorPokemonId).append(':').append(event.precedingActionMoveId).append(':')
+            append(event.publicSourceEffectId).append(':').append(event.moveOutcome).append(';')
+        }
+        state.inferences.forEach { inference ->
+            append("inference:").append(inference.subjectPokemonId).append(':').append(inference.categoryId).append(':')
+            append(inference.candidateId).append(':').append(inference.confidence).append(':').append(inference.probabilityRange).append(':')
+            append(inference.basis.sorted()).append(':').append(inference.evidenceEventSequences).append(':')
+            append(inference.relatedPokemonId).append(':').append(inference.abilityAvailability).append(';')
+        }
     }
 
     private fun hpBand(hp: Double): Char = when {

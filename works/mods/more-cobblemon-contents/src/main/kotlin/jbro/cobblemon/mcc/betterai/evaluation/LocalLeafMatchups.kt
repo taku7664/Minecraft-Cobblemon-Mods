@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCach
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import java.util.UUID
@@ -20,8 +21,9 @@ import java.util.UUID
  *   threat kept alive all show here, where the pressure term saw only the next hit between the two in front.
  * - Field: the [jbro.cobblemon.mcc.betterai.matchup.PokemonMatchupScore] of the two Pokemon facing each other.
  *
- * Each pair is scored as the matchup scores do, both Pokemon entered as the public projection has it. A pair is
- * kept per search, keyed by what the exchange reads: HP to [HP_BUCKET], stages, status and the field.
+ * Each pair is scored as the matchup scores do, both Pokemon entered as the public projection has it.
+ * The key includes the whole public position and move catalog: item loss, ability changes, decoys,
+ * hazards and one remaining HP point can all change who wins the exchange.
  */
 internal object LocalLeafMatchups {
     class Value(val team: Double, val field: Double)
@@ -65,11 +67,8 @@ internal object LocalLeafMatchups {
         cache: LocalProjectedActionCalculationCache,
     ): Pair<Double, Double>? {
         val key = PairKey(
-            ally.battlePokemonId, opponent.battlePokemonId,
-            bucket(ally.hpFraction), bucket(opponent.hpFraction),
-            ally.statStages, opponent.statStages, ally.statusId, opponent.statusId,
-            ally.activeSlot != null, opponent.activeSlot != null,
-            state.field.weather?.effectId, state.field.terrain?.effectId, state.field.roomEffects.map { it.effectId },
+            cache.fingerprints.of(state), ally.battlePokemonId, opponent.battlePokemonId,
+            context.publicActionCatalog, cache.matchupRecovery,
         )
         cache.leafMatchups[key]?.let { return it.value }
         val position = LocalMatchupPosition.face(context, ally, opponent, cache)
@@ -86,15 +85,8 @@ internal object LocalLeafMatchups {
         it.side == side && !it.fainted && it.hpFraction > 0.0 && it.knownTypeIds.isNotEmpty() && it.combatStats != null
     }
 
-    private fun bucket(hp: Double): Int = kotlin.math.ceil(hp / HP_BUCKET).toInt()
-
     private data class PairKey(
-        val ally: UUID, val opponent: UUID, val allyHp: Int, val opponentHp: Int,
-        val allyStages: Map<String, Int>, val opponentStages: Map<String, Int>,
-        val allyStatus: String?, val opponentStatus: String?,
-        val allyActive: Boolean, val opponentActive: Boolean,
-        val weather: String?, val terrain: String?, val rooms: List<String>,
+        val state: String, val ally: UUID, val opponent: UUID,
+        val catalog: BattlePublicActionCatalogView, val recovery: Boolean,
     )
-
-    private const val HP_BUCKET = 0.05
 }

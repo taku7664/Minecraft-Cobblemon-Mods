@@ -12,6 +12,8 @@ import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveCandidatePoolView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceView
 
 /**
  * Reuses an equal projected state's public tactical calculation within one search.
@@ -96,7 +98,7 @@ internal class LocalProjectedActionCalculationCache(
     private fun catalogKey(source: BattlePublicActionCatalogView): CatalogKey = catalogKeys.getOrPut(source) {
         fun entries(values: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView>) =
             values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
-        CatalogKey(entries(source.entries), entries(source.originalEntries))
+        CatalogKey(entries(source.entries), entries(source.originalEntries), source.candidatePools, source.opponentMoveInferences)
     }
 
     fun getOrCalculate(
@@ -131,12 +133,22 @@ internal class LocalProjectedActionCalculationCache(
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is ActionKey || other.hash != hash || other.side != side || other.catalog != catalog) return false
-            val a = action
-            val b = other.action
+            return sameInputs(action, other.action)
+        }
+
+        private fun sameInputs(a: BattleActionCandidate, b: BattleActionCandidate): Boolean {
+            val am = a.mechanic
+            val bm = b.mechanic
+            val sameMechanic = am === bm || am != null && bm != null &&
+                am.mechanicId == bm.mechanicId && am.target == bm.target && am.publicCost == bm.publicCost &&
+                am.transformedMoveId == bm.transformedMoveId && am.transformedActorTypeIds == bm.transformedActorTypeIds &&
+                am.transformedActorCombatStats == bm.transformedActorCombatStats
             return a === b || a.actionId == b.actionId && a.kind == b.kind && a.actorSlot == b.actorSlot &&
                 a.moveSlot == b.moveSlot && a.moveId == b.moveId && a.targets == b.targets &&
-                a.switchPokemonId == b.switchPokemonId && a.mechanic?.mechanicId == b.mechanic?.mechanicId &&
-                a.moveDetails == b.moveDetails && a.tags == b.tags
+                a.switchPokemonId == b.switchPokemonId && sameMechanic &&
+                a.moveDetails == b.moveDetails && a.facts == b.facts && a.tags == b.tags &&
+                a.componentActionIds == b.componentActionIds && a.componentActions.size == b.componentActions.size &&
+                a.componentActions.zip(b.componentActions).all { (first, second) -> sameInputs(first, second) }
         }
     }
 
@@ -144,7 +156,10 @@ internal class LocalProjectedActionCalculationCache(
 
     private fun actionHash(action: BattleActionCandidate): Int = listOf(
         action.actionId, action.kind, action.actorSlot, action.moveSlot, action.moveId, action.targets,
-        action.switchPokemonId, action.mechanic?.mechanicId, action.moveDetails, action.tags,
+        action.switchPokemonId, action.mechanic?.let { listOf(it.mechanicId, it.target, it.publicCost,
+            it.transformedMoveId, it.transformedActorTypeIds, it.transformedActorCombatStats) },
+        action.moveDetails, action.facts, action.tags, action.componentActionIds,
+        action.componentActions.map { component -> actionHashes.getOrPut(component) { actionHash(component) } },
     ).hashCode()
     private data class SlotActionsKey(
         val state: String,
@@ -154,11 +169,13 @@ internal class LocalProjectedActionCalculationCache(
     )
     private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)
     /** Hashed once; one is made per catalog object and every lookup of it hashed the whole catalog. */
-    private class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>) {
-        private val hash = current.hashCode() * 31 + original.hashCode()
+    private class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>,
+        val pools: List<BattlePublicMoveCandidatePoolView>, val inferences: List<BattleOpponentMoveInferenceView>) {
+        private val hash = ((current.hashCode() * 31 + original.hashCode()) * 31 + pools.hashCode()) * 31 + inferences.hashCode()
         override fun hashCode(): Int = hash
         override fun equals(other: Any?): Boolean =
-            this === other || other is CatalogKey && other.hash == hash && other.current == current && other.original == original
+            this === other || other is CatalogKey && other.hash == hash && other.current == current && other.original == original &&
+                other.pools == pools && other.inferences == inferences
     }
 
     companion object {
