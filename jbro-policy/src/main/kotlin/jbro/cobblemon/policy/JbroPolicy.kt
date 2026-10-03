@@ -9,6 +9,7 @@ import jbro.cobblemon.policy.legend.SpawnForCommand
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
 import jbro.cobblemon.policy.pokemon.PokemonItemRestore
+import jbro.cobblemon.policy.pokemon.PokemonSummaryOnInteract
 import jbro.cobblemon.policy.pokemon.PokenavCommand
 import jbro.cobblemon.policy.support.DiscordBot
 import jbro.cobblemon.policy.support.DiscordSettings
@@ -43,6 +44,7 @@ object JbroPolicy : ModInitializer {
         PartyRelease.register()
         PokenavCommand.register()
         PokemonItemRestore.register()
+        PokemonSummaryOnInteract.register()
         jbro.cobblemon.policy.support.PendingItems.register()
         jbro.cobblemon.policy.api.OperatorWhisper.register()
         LegendPolicy.register()

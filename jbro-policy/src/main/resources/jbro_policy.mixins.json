@@ -12,6 +12,7 @@
     "PistonBaseBlockPlazaMixin",
     "PokeSnackBlockDropMixin",
     "PokeSnackLegendFilterMixin",
+    "PokemonEntitySummaryMixin",
     "ServerGamePacketListenerChatRankMixin",
     "SpawnPokemonHiddenAbilityMixin"
   ],
