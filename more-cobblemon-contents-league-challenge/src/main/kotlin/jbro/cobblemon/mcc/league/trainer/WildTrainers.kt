@@ -259,11 +259,13 @@ object WildTrainers {
             return say(player, npc, "$KEY.refuse.busy")
         }
         npc.skill = WildTrainerQuality.of(definition.tier, cap).skill
+        // Cobblemon reads the trainer's side from the NPC itself; pvn's own party argument is the player's.
+        npc.party = party
         starting += npc.uuid
         val result = try {
             val stage = if (definition.tier == WildTrainerTier.ACE) "wild_trainer_ace" else "wild_trainer"
             MccBattleTags.during(setOf(player.uuid), MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, stage, definition.npcClass)) {
-                BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false, party)
+                BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false)
             }
         } catch (failure: RuntimeException) {
             Mod.LOGGER.error("Wild trainer battle could not start for {}", player.uuid, failure)

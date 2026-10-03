@@ -156,4 +156,13 @@ class WildTrainerBuildTest {
         assertTrue(WildTrainerParty.averageGap(100, WildTrainerTier.NORMAL, 6) > WildTrainerParty.averageGap(100, WildTrainerTier.ACE, 6))
         assertEquals(listOf(1, 1, 1), WildTrainerParty.levels(1, WildTrainerTier.NORMAL, 3, Random(0)))
     }
+
+    @Test
+    fun `the trainer's party goes on the NPC, since pvn's party argument is the player's`() {
+        val source = java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/main/kotlin/jbro/cobblemon/mcc/league/trainer/WildTrainers.kt"),
+        )
+        assertTrue(source.contains("npc.party = party"))
+        assertTrue(source.contains("BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false)"))
+    }
 }
