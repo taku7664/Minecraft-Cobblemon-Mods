@@ -3,8 +3,8 @@ package jbro.cobblemon.mcc.betterai.matchup
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
-import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
@@ -119,8 +119,7 @@ internal object LocalMatchupScoreCalculator {
                 val survives = base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0
                 val taken = base.opponentMove?.damageWhileStandingByUses?.getOrNull(uses) ?: 0.0
                 val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
-                val raised = LocalStatStageMarginalEvaluator.applyStages(position.state,
-                    setOf(subject.battlePokemonId), stages.mapValues { it.value * uses })
+                val raised = setupState(position.state, subject.battlePokemonId, stages, uses)
                 val worn = raised.copyState(pokemon = raised.pokemon.map {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
@@ -172,8 +171,7 @@ internal object LocalMatchupScoreCalculator {
             }
             val byOpponent = foes.mapNotNull { foe ->
                 val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
-                val raised = LocalStatStageMarginalEvaluator.applyStages(position.state,
-                    setOf(subject.battlePokemonId), stages.mapValues { it.value * uses })
+                val raised = setupState(position.state, subject.battlePokemonId, stages, uses)
                 val worn = raised.copyState(pokemon = raised.pokemon.map {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
@@ -253,6 +251,12 @@ internal object LocalMatchupScoreCalculator {
                 }
             }
     }
+
+    /** Each use resolves abilities, caps and item consumption before the next setup use. */
+    internal fun setupState(state: BattleStateView, subjectId: UUID, stages: Map<String, Int>, uses: Int): BattleStateView =
+        (0 until uses).fold(state) { current, _ ->
+            LocalStatStageChange.apply(current, subjectId, subjectId, stages)
+        }
 
     /** A scored move and the action it was scored from, which turn order needs. */
     internal class ScoredMove(val score: MoveMatchupScore, val action: BattleActionCandidate)
