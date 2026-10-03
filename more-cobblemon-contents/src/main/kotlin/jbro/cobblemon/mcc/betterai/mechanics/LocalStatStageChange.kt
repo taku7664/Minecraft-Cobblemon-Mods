@@ -21,6 +21,17 @@ internal object LocalStatStageChange {
         ignoreTargetAbility: Boolean = false,
         /** Entry ability batches run item updates after all adjacent boost attempts. */
         updateItems: Boolean = true,
+    ): BattleStateView = applyBoost(state, targetId, sourceId, stages, ignoreTargetAbility, updateItems,
+        mirrorReflection = false)
+
+    private fun applyBoost(
+        state: BattleStateView,
+        targetId: UUID,
+        sourceId: UUID?,
+        stages: Map<String, Int>,
+        ignoreTargetAbility: Boolean,
+        updateItems: Boolean,
+        mirrorReflection: Boolean,
     ): BattleStateView {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
@@ -43,63 +54,45 @@ internal object LocalStatStageChange {
             val drops = change.filterValues { it < 0 }
             val stopped = ability in DROP_STOPPING_ABILITIES ||
                 LocalPublicStatusImmunity.flowerVeiled(state, target) ||
-                target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
+                !mirrorReflection && target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
                 LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
                 source != null && source.side != target.side && mistActive(state, target)
             when {
-                ability == MIRROR_ARMOR -> {
+                stopped -> change = change.filterValues { it >= 0 }
+                ability == MIRROR_ARMOR && !mirrorReflection -> {
                     reflected = drops
                     change = change.filterValues { it >= 0 }
                 }
-                stopped -> change = change.filterValues { it >= 0 }
-                source != null && source.side == target.side -> Unit
-                else -> {
-                    val stat = when (ability) {
-                        "defiant" -> "attack"
-                        "competitive" -> "special_attack"
-                        else -> null
-                    }
-                    if (stat != null) {
-                        val key = change.keys.firstOrNull { normalise(it) == stat }
-                            ?: target.statStages.keys.firstOrNull { normalise(it) == stat } ?: stat
-                        change = change + (key to (change[key] ?: 0) + 2)
-                    }
+            }
+        }
+        var next = state
+        // TryBoost reflects each drop before the original boost loop. Its source is the reflector;
+        // the ability origin prevents a second reflection and bypasses the original user's decoy.
+        if (source != null) reflected.forEach { (stat, amount) ->
+            next = applyBoost(next, source.battlePokemonId, targetId, mapOf(stat to amount),
+                ignoreTargetAbility = false, updateItems = false, mirrorReflection = true)
+        }
+        for ((stat, amount) in change) {
+            val current = next.pokemon.first { it.battlePokemonId == targetId }
+            val before = current.statStages.entries.firstOrNull { normalise(it.key) == normalise(stat) }?.value ?: 0
+            next = changeStages(next, current, mapOf(stat to amount))
+            val after = next.pokemon.first { it.battlePokemonId == targetId }.statStages.entries
+                .firstOrNull { normalise(it.key) == normalise(stat) }?.value ?: 0
+            // AfterEachBoost reacts to each actual decrease, with its own cap, before the next stat.
+            if (after < before && source != null && source.side != target.side) {
+                val reactiveStat = when (ability) {
+                    "defiant" -> "attack"
+                    "competitive" -> "special_attack"
+                    else -> null
                 }
+                if (reactiveStat != null) next = applyBoost(next, targetId, targetId,
+                    mapOf(reactiveStat to 2), ignoreTargetAbility = false, updateItems = false,
+                    mirrorReflection = false)
             }
         }
-        var next = changeStages(state, target, change)
-        if (reflected.isNotEmpty() && source != null) next = apply(next, source.battlePokemonId, null, reflected,
-            updateItems = updateItems)
-        return if (updateItems) whiteHerb(next, targetId) else next
-    }
-
-    /**
-     * The change [target] actually takes, in the caller's stat spelling, for readers that apply stages themselves:
-     * Contrary and Simple, and drops from another Pokemon stopped or turned into Defiant and Competitive.
-     */
-    fun reshape(state: BattleStateView, target: BattlePokemonStateView, sourceId: UUID?, stages: Map<String, Int>): Map<String, Int> {
-        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target)
-        var change = stages.mapValues { (_, amount) ->
-            when (ability) {
-                "contrary" -> -amount
-                "simple" -> amount * 2
-                else -> amount
-            }
-        }
-        if (sourceId != null && sourceId != target.battlePokemonId && change.values.any { it < 0 }) {
-            val source = state.pokemon.firstOrNull { it.battlePokemonId == sourceId }
-            val stopped = ability in DROP_STOPPING_ABILITIES || ability == MIRROR_ARMOR ||
-                LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
-                source != null && source.side != target.side && mistActive(state, target)
-            if (stopped) {
-                change = change.filterValues { it >= 0 }
-            } else if (ability == "defiant" || ability == "competitive") {
-                val stat = if (ability == "defiant") "attack" else "special_attack"
-                val key = change.keys.firstOrNull { normalise(it) == stat } ?: stat
-                change = change + (key to (change[key] ?: 0) + 2)
-            }
-        }
-        return change
+        if (!updateItems) return next
+        next = whiteHerb(next, targetId)
+        return if (reflected.isNotEmpty() && source != null) whiteHerb(next, source.battlePokemonId) else next
     }
 
     /** A White Herb restores lowered stats once, then is spent. */
