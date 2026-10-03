@@ -22,7 +22,7 @@ final class NowPlayingAnnouncementTest {
         assertTrue(leaving.offsetX() < 0.0);
         assertTrue(alert.frame(13.0).isEmpty());
         alert.trackStarted("example:b", "Second", 13.0);
-        assertEquals("Second", alert.frame(14.0).orElseThrow().title());
+        assertEquals("[Music] Second", alert.frame(14.0).orElseThrow().title());
     }
 
     @Test
@@ -32,7 +32,7 @@ final class NowPlayingAnnouncementTest {
         alert.trackStarted("example:a", "First", 2.0);
         assertTrue(alert.frame(3.0).isEmpty());
         alert.trackStarted("example:b", "Second", 3.0);
-        assertEquals("Second", alert.frame(4.0).orElseThrow().title());
+        assertEquals("[Music] Second", alert.frame(4.0).orElseThrow().title());
         alert.clear();
         assertTrue(alert.frame(4.0).isEmpty());
         alert.trackStarted("example:b", "Second", 5.0);
@@ -51,15 +51,23 @@ final class NowPlayingAnnouncementTest {
         alert.trackStarted("example:b", "Second", 2.0);
         assertTrue(alert.frame(2.5).isEmpty());
         alert.trackStarted("example:c", "Third", 3.0);
-        assertEquals("Third", alert.frame(4.0).orElseThrow().title());
+        assertEquals("[Music] Third", alert.frame(4.0).orElseThrow().title());
     }
 
     @Test
     void titlesAreSingleLineAndCannotInjectMinecraftFormatting() {
         var alert = new NowPlayingAnnouncement();
         alert.trackStarted("example:a", "  Title\nSecond\tLine\u00a7c  ", 0.0);
-        assertEquals("Title Second Line", alert.frame(1.0).orElseThrow().title());
+        assertEquals("[Music] Title Second Line", alert.frame(1.0).orElseThrow().title());
         alert.trackStarted("example:b", "   ", 1.0);
-        assertEquals("example:b", alert.frame(2.0).orElseThrow().title());
+        assertEquals("[Music] example:b", alert.frame(2.0).orElseThrow().title());
+    }
+
+    @Test
+    void musicHeaderPrecedesTheKoreanTrackTitleWithoutChangingItsGameLabel() {
+        var alert = new NowPlayingAnnouncement();
+        alert.trackStarted("cobleserver:lugia", "전투! 루기아 (HG·SS)", 0.0);
+        assertEquals("[Music] 전투! 루기아 (HG·SS)", alert.frame(1.0).orElseThrow().title());
+        assertEquals("[Music] 전투! 루기아 (HG·SS)", alert.frame(2.8).orElseThrow().title());
     }
 }

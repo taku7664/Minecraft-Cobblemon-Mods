@@ -65,7 +65,7 @@ public final class NowPlayingAnnouncement {
             opacity = 1.0 - progress * progress * progress;
             offset = -12.0 * progress * progress * progress;
         }
-        return Optional.of(new Frame(title, opacity, offset));
+        return Optional.of(new Frame("[Music] " + title, opacity, offset));
     }
 
     public record Frame(String title, double opacity, double offsetX) { }
