@@ -102,7 +102,7 @@
   "cobblemon_ui.config.battleTheme.champions": "테마1",
   "cobblemon_ui.config.battleTheme.galar": "테마2",
   "cobblemon_ui.config.enableBattleEntryTransition": "전투 진입 연출",
-  "cobblemon_ui.config.enableBattleEntryTransition.tooltip": "전투가 시작될 때 배틀 테마의 무늬로 화면을 덮었다가 엽니다. 전설의 포켓몬은 먼저 두 번 번쩍이고, 그 포켓몬의 타입 색으로 덮습니다.",
+  "cobblemon_ui.config.enableBattleEntryTransition.tooltip": "전투가 시작될 때 배틀 테마의 무늬로 화면을 덮었다가 하얗게 바래며 엽니다. 전설의 포켓몬은 화면이 어두워진 뒤 세 번 번쩍이며 흔들리고, 그 포켓몬의 타입 색으로 덮습니다.",
   "cobblemon_ui.config.uiStyle": "UI 스타일",
   "cobblemon_ui.config.uiStyle.tooltip": "MCC 허브, 대화창, HUD 버튼이 함께 쓰는 창 모양을 고릅니다.",
   "cobblemon_ui.config.uiStyle.option": "스타일%s",
