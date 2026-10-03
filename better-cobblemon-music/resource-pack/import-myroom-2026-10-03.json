@@ -1,0 +1,15 @@
+{
+  "channels": 2,
+  "sample_rate": 44100,
+  "logical_streams": 1,
+  "duration_seconds": 158,
+  "input_bytes": 20556550,
+  "output_bytes": 2574490,
+  "quality": 4,
+  "mode": "music",
+  "sourceFile": "43 - Eterna Forest.flac",
+  "target": "field/myroom/eterna_forest.ogg",
+  "sourceSha256": "3d59a9a01daeec6fc8558204fb1ed8a808735dc5fbcc47b45fa81d6db3f166e4",
+  "outputSha256": "f24bab0b73f3918268fb73591bcde00118e1e7af6b955023c7b51374ebf598e2",
+  "gain": "unchanged"
+}

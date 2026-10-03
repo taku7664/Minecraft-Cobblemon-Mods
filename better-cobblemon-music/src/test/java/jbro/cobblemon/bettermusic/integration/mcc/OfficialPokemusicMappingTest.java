@@ -66,7 +66,26 @@ final class OfficialPokemusicMappingTest {
         }
         assertEquals("3a3c66d0732c94cbce6628547b7fcaa6cad5691340f65371654b65429ee23e6e",
             sha256(pack.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg")));
-        assertEquals(111, compiled.trackEvents().size());
+        assertEquals(112, compiled.trackEvents().size());
+    }
+
+    @Test
+    void myRoomUsesEternaForestAtBothTimesRegardlessOfBiomeOrUnderground() throws Exception {
+        for (var time : FieldMusicContext.TimeOfDay.values()) {
+            for (String biome : List.of("minecraft:plains", "minecraft:forest", "minecraft:deep_dark")) {
+                for (boolean underground : new boolean[]{false, true}) {
+                    var selection = field.select(new FieldMusicContext("myroom:rooms", biome, Set.of(), underground, time));
+                    assertEquals("field.dimension:myroom:rooms", selection.id());
+                    expectTracks(selection.playlist(), "field/myroom/eterna_forest");
+                }
+            }
+        }
+        expectField("minecraft:forest", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        try (var reader = Files.newBufferedReader(module.resolve("resource-pack/import-myroom-2026-10-03.json"))) {
+            var report = JsonParser.parseReader(reader).getAsJsonObject();
+            assertEquals(report.get("outputSha256").getAsString(), sha256(pack.resolve(
+                "assets/cobleserver/sounds/music/field/myroom/eterna_forest.ogg")));
+        }
     }
 
     @Test

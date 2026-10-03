@@ -126,6 +126,7 @@
     "field": {
       "default": "cobleserver:track/field/plains/sinnoh_route_201_night",
       "dimensions": {
+        "myroom:rooms": "cobleserver:track/field/myroom/eterna_forest",
         "jbro_policy:plaza": "cobleserver:field_plaza",
         "cobblemon_policy:plaza": "cobleserver:field_plaza",
         "minecraft:the_nether": "cobleserver:track/field/nether/sinnoh_stark_mountain",
