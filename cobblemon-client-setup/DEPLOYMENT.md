@@ -175,3 +175,21 @@ Xaero 적용 코드를 종료된 개발 프로필에 직접 실행해 미니맵�
 만들도록 구현했습니다. 이름이 없으면 `Waypoint`입니다. 실제 게임에서 단축키·명령 입력,
 웨이포인트 표시·저장, 텔레포트 버튼 동작은 아직 확인하지 않았습니다. 서버 프로필과
 기존 금지 효과 제거는 서버 저장소에서 별도로 배포했습니다.
+
+## 0.1.7 — 시작 훅의 기존 월드 텔레포트 차단
+
+- 소스 커밋: `2fd3e6fd`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-setup-0.1.7.jar`
+- SHA-256: `12DAF49871C291386A9DE1E913910BE0BBF695F0D55E9C5CA5BE34A49D3202E9`
+- 이전 JAR 백업: `codex-deploy-backups/20261003-233601574/cobblemon_client_setup/cobblemon-client-setup-0.1.6.jar`
+- 검증: 테스트 60개와 Gradle build, JDK JAR 검증 통과. 배포된 JAR의 Xaero 적용 코드를 개발 프로필에 실행하여 웨이포인트 허용·원형 배치·지도 텔레포트 금지 값을 확인.
+- 서버 배포본: `client-mods/cobblemon-client-setup-0.1.7.jar`, 같은 SHA-256. 서버 저장소 커밋 `39275b7`.
+
+`preLaunch`에서 기존 Xaero 월드별 `config.txt`의 `teleportationEnabled`도 게임 초기화 전에
+끄도록 했습니다. 새 월드에서는 클라이언트 진입점이 매 틱 같은 값을 확인해 끕니다.
+`ONCE`를 사용하면서 이전 Xaero 정책의 완료 기록이 있는 클라이언트도 새 정책을 한 번
+적용하도록 완료 기록 버전을 `v2`로 올렸습니다. 기존 `v1` 기록은 삭제하지 않습니다.
+
+개발 프로필의 기존 월드 값은 이미 `false`였으며 재적용 후에도 유지됐습니다. 실제 Fabric
+클라이언트 시작과 B·`/waypoint` 입력, 텔레포트 버튼의 게임 내 동작은 확인하지 않았습니다.
