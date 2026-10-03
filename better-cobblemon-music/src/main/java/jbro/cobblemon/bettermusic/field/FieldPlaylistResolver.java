@@ -15,6 +15,13 @@ public final class FieldPlaylistResolver {
     public Selection select(FieldMusicContext context) {
         Objects.requireNonNull(context, "context");
 
+        boolean night = context.timeOfDay() == FieldMusicContext.TimeOfDay.NIGHT;
+        PlaylistDefinition timedDimension = (night ? config.nightDimensions() : config.dayDimensions())
+            .get(context.dimensionId());
+        if (timedDimension != null) {
+            return new Selection("field.dimension." + (night ? "night:" : "day:") + context.dimensionId(), timedDimension);
+        }
+
         PlaylistDefinition dimension = config.dimensions().get(context.dimensionId());
         if (dimension != null) {
             return new Selection("field.dimension:" + context.dimensionId(), dimension);

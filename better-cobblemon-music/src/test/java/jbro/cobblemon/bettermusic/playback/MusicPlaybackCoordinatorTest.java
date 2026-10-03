@@ -17,6 +17,20 @@ final class MusicPlaybackCoordinatorTest {
     );
 
     @Test
+    void titleMusicWorksWithoutAWorldAndWorldExitClearsTheSettledField() {
+        var coordinator = new MusicPlaybackCoordinator(SETTINGS);
+        var title = new MusicPlaybackCoordinator.Input(Optional.empty(), false, Optional.empty(), Optional.of("screen:title"));
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.SCREEN, "screen:title"),
+            coordinator.update(0.0, title).orElseThrow().to().orElseThrow());
+        assertTrue(coordinator.update(1.0, title).isEmpty());
+        assertTrue(coordinator.update(2.0, MusicPlaybackCoordinator.Input.field("field.plains")).orElseThrow().to().isEmpty());
+        coordinator.update(6.0, MusicPlaybackCoordinator.Input.field("field.plains")).orElseThrow();
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.SCREEN, "screen:title"),
+            coordinator.update(7.0, title).orElseThrow().to().orElseThrow());
+        assertTrue(coordinator.update(8.0, MusicPlaybackCoordinator.Input.none()).orElseThrow().to().isEmpty());
+    }
+
+    @Test
     void fieldCueMustRemainStableBeforeItStarts() {
         var coordinator = new MusicPlaybackCoordinator(SETTINGS);
         var forest = MusicPlaybackCoordinator.Input.field("field.forest");

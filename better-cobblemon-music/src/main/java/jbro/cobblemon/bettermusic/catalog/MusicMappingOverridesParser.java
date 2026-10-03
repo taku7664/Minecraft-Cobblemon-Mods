@@ -38,7 +38,8 @@ public final class MusicMappingOverridesParser {
 
     private static MusicMappingOverrides.Field field(JsonObject object) {
         String path = "$.field";
-        CatalogJson.only(object, path, "default", "dimensions", "biomes", "biomePathContains", "underground");
+        CatalogJson.only(object, path, "default", "dimensions", "biomes", "biomePathContains", "underground",
+            "dayDimensions", "nightDimensions");
         return new MusicMappingOverrides.Field(
             MusicCatalogParser.optionalId(object, "default", path),
             MusicCatalogParser.idMap(
@@ -50,7 +51,11 @@ public final class MusicMappingOverridesParser {
             MusicCatalogParser.idMap(
                 CatalogJson.optionalObject(object, "biomePathContains", path), path + ".biomePathContains", MusicCatalogParser.KeyType.PATH
             ),
-            MusicCatalogParser.optionalId(object, "underground", path)
+            MusicCatalogParser.optionalId(object, "underground", path),
+            MusicCatalogParser.idMap(CatalogJson.optionalObject(object, "dayDimensions", path),
+                path + ".dayDimensions", MusicCatalogParser.KeyType.RESOURCE),
+            MusicCatalogParser.idMap(CatalogJson.optionalObject(object, "nightDimensions", path),
+                path + ".nightDimensions", MusicCatalogParser.KeyType.RESOURCE)
         );
     }
 
@@ -77,6 +82,8 @@ public final class MusicMappingOverridesParser {
         if (field != null) {
             discardProperty(field, "default");
             discardMapValues(field, "dimensions");
+            discardMapValues(field, "dayDimensions");
+            discardMapValues(field, "nightDimensions");
             discardMapValues(field, "biomes");
             discardMapValues(field, "biomePathContains");
             discardProperty(field, "underground");

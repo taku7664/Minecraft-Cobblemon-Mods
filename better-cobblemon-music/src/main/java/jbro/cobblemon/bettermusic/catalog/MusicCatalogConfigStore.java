@@ -200,6 +200,8 @@ public final class MusicCatalogConfigStore {
         JsonObject field = new JsonObject();
         overrides.field().defaultPlaylistId().ifPresent(value -> field.addProperty("default", value));
         addMap(field, "dimensions", overrides.field().dimensions());
+        addMap(field, "dayDimensions", overrides.field().dayDimensions());
+        addMap(field, "nightDimensions", overrides.field().nightDimensions());
         addMap(field, "biomes", overrides.field().biomes());
         addMap(field, "biomePathContains", overrides.field().biomePathContains());
         overrides.field().undergroundPlaylistId().ifPresent(value -> field.addProperty("underground", value));

@@ -236,6 +236,8 @@ public final class MusicCatalogCompiler {
         CatalogMappings.Field field = mappings.field();
         ids.add(field.defaultPlaylistId());
         ids.addAll(field.dimensions().values());
+        ids.addAll(field.dayDimensions().values());
+        ids.addAll(field.nightDimensions().values());
         ids.addAll(field.biomes().values());
         ids.addAll(field.biomePathContains().values());
         field.undergroundPlaylistId().ifPresent(ids::add);
@@ -267,6 +269,12 @@ public final class MusicCatalogCompiler {
         Map<String, String> dimensions = applyMapOverrides(
             "field.dimensions", base.dimensions(), overrides.dimensions(), playlists, inactive
         );
+        Map<String, String> dayDimensions = applyMapOverrides(
+            "field.dayDimensions", base.dayDimensions(), overrides.dayDimensions(), playlists, inactive
+        );
+        Map<String, String> nightDimensions = applyMapOverrides(
+            "field.nightDimensions", base.nightDimensions(), overrides.nightDimensions(), playlists, inactive
+        );
         Map<String, String> biomes = applyMapOverrides(
             "field.biomes", base.biomes(), overrides.biomes(), playlists, inactive
         );
@@ -285,7 +293,9 @@ public final class MusicCatalogCompiler {
             materializeMappings(dimensions, playlists),
             materializeMappings(biomes, playlists),
             materializeMappings(paths, playlists),
-            underground.map(playlists::get)
+            underground.map(playlists::get),
+            materializeMappings(dayDimensions, playlists),
+            materializeMappings(nightDimensions, playlists)
         );
     }
 

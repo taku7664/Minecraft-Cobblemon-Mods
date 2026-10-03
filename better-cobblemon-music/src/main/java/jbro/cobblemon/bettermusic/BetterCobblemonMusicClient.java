@@ -23,6 +23,7 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
             jbro.cobblemon.bettermusic.audio.ClientHitSoundTracker.INSTANCE.clear();
             jbro.cobblemon.bettermusic.client.LastPokemonMuffleTracker.INSTANCE.clear();
         });
+        jbro.cobblemon.bettermusic.client.MinecraftMenuMusicProvider.register();
         MoreCobblemonContentsIntegration.registerIfInstalled(LOGGER);
         var configDirectory = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
         var configManager = new BetterMusicConfigManager(configDirectory);

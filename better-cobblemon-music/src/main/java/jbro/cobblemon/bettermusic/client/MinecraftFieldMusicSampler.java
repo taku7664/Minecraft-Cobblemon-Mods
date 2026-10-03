@@ -39,7 +39,8 @@ public final class MinecraftFieldMusicSampler {
             level.dimension().location().toString(),
             biomeId,
             biomeTags,
-            underground
+            underground,
+            FieldMusicContext.TimeOfDay.fromWorldTime(level.dimensionType().fixedTime().orElse(level.getDayTime()))
         ));
     }
 }

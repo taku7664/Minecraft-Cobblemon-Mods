@@ -144,7 +144,8 @@ public final class MusicCatalogParser {
 
     private static CatalogMappings.Field fieldMappings(JsonObject object) {
         String path = "$.mappings.field";
-        CatalogJson.only(object, path, "default", "dimensions", "biomes", "biomePathContains", "underground");
+        CatalogJson.only(object, path, "default", "dimensions", "biomes", "biomePathContains", "underground",
+            "dayDimensions", "nightDimensions");
         return new CatalogMappings.Field(
             CatalogJson.resourceId(CatalogJson.string(object, "default", path), path + ".default"),
             idMap(CatalogJson.optionalObject(object, "dimensions", path), path + ".dimensions", KeyType.RESOURCE),
@@ -152,7 +153,9 @@ public final class MusicCatalogParser {
             idMap(CatalogJson.optionalObject(object, "biomePathContains", path), path + ".biomePathContains", KeyType.PATH),
             object.has("underground")
                 ? Optional.of(CatalogJson.resourceId(CatalogJson.string(object, "underground", path), path + ".underground"))
-                : Optional.empty()
+                : Optional.empty(),
+            idMap(CatalogJson.optionalObject(object, "dayDimensions", path), path + ".dayDimensions", KeyType.RESOURCE),
+            idMap(CatalogJson.optionalObject(object, "nightDimensions", path), path + ".nightDimensions", KeyType.RESOURCE)
         );
     }
 

@@ -39,7 +39,9 @@ public record MusicMappingOverrides(Field field, Battle battle, Map<String, Stri
         Map<String, String> dimensions,
         Map<String, String> biomes,
         Map<String, String> biomePathContains,
-        Optional<String> undergroundPlaylistId
+        Optional<String> undergroundPlaylistId,
+        Map<String, String> dayDimensions,
+        Map<String, String> nightDimensions
     ) {
         public Field {
             defaultPlaylistId = Objects.requireNonNull(defaultPlaylistId, "defaultPlaylistId");
@@ -47,6 +49,13 @@ public record MusicMappingOverrides(Field field, Battle battle, Map<String, Stri
             biomes = ordered(biomes, "biomes");
             biomePathContains = ordered(biomePathContains, "biomePathContains");
             undergroundPlaylistId = Objects.requireNonNull(undergroundPlaylistId, "undergroundPlaylistId");
+            dayDimensions = ordered(dayDimensions, "dayDimensions");
+            nightDimensions = ordered(nightDimensions, "nightDimensions");
+        }
+
+        public Field(Optional<String> defaultPlaylistId, Map<String, String> dimensions, Map<String, String> biomes,
+            Map<String, String> biomePathContains, Optional<String> undergroundPlaylistId) {
+            this(defaultPlaylistId, dimensions, biomes, biomePathContains, undergroundPlaylistId, Map.of(), Map.of());
         }
 
         public static Field empty() {

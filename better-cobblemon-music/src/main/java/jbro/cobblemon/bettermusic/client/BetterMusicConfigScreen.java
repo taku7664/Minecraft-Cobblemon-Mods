@@ -184,6 +184,8 @@ public final class BetterMusicConfigScreen {
             playlists, value -> edited.updateAndGet(old -> withFieldCore(old, "underground", value))
         ));
         addFieldMap(field, entries, "dimensions", base.field().dimensions(), initial.field().dimensions(), playlists, edited);
+        addFieldMap(field, entries, "day_dimensions", base.field().dayDimensions(), initial.field().dayDimensions(), playlists, edited);
+        addFieldMap(field, entries, "night_dimensions", base.field().nightDimensions(), initial.field().nightDimensions(), playlists, edited);
         addFieldMap(field, entries, "biomes", base.field().biomes(), initial.field().biomes(), playlists, edited);
         addFieldMap(field, entries, "biome_path", base.field().biomePathContains(), initial.field().biomePathContains(), playlists, edited);
 
@@ -342,7 +344,8 @@ public final class BetterMusicConfigScreen {
         var field = old.field();
         return old.withField(new MusicMappingOverrides.Field(
             type.equals("default") ? value : field.defaultPlaylistId(), field.dimensions(), field.biomes(),
-            field.biomePathContains(), type.equals("underground") ? value : field.undergroundPlaylistId()
+            field.biomePathContains(), type.equals("underground") ? value : field.undergroundPlaylistId(),
+            field.dayDimensions(), field.nightDimensions()
         ));
     }
 
@@ -352,6 +355,8 @@ public final class BetterMusicConfigScreen {
         var field = old.field();
         Map<String, String> map = switch (type) {
             case "dimensions" -> editable(field.dimensions());
+            case "day_dimensions" -> editable(field.dayDimensions());
+            case "night_dimensions" -> editable(field.nightDimensions());
             case "biomes" -> editable(field.biomes());
             case "biome_path" -> editable(field.biomePathContains());
             default -> throw new IllegalArgumentException("Unknown field mapping: " + type);
@@ -360,7 +365,9 @@ public final class BetterMusicConfigScreen {
         return old.withField(new MusicMappingOverrides.Field(
             field.defaultPlaylistId(), type.equals("dimensions") ? map : field.dimensions(),
             type.equals("biomes") ? map : field.biomes(),
-            type.equals("biome_path") ? map : field.biomePathContains(), field.undergroundPlaylistId()
+            type.equals("biome_path") ? map : field.biomePathContains(), field.undergroundPlaylistId(),
+            type.equals("day_dimensions") ? map : field.dayDimensions(),
+            type.equals("night_dimensions") ? map : field.nightDimensions()
         ));
     }
 

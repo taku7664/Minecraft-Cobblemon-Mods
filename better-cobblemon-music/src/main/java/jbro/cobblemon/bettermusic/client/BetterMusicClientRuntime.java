@@ -73,8 +73,8 @@ public final class BetterMusicClientRuntime {
             leaveWorld(nowSeconds);
         } else {
             inWorld = true;
-            scanContextIfDue(client, nowSeconds);
         }
+        scanContextIfDue(client, nowSeconds);
         lowHpAlertPlayer.tick(
             client,
             nowSeconds,
@@ -123,8 +123,6 @@ public final class BetterMusicClientRuntime {
         inWorld = false;
         setLastPokemonEffect(LastPokemonMuffleTracker.Effect.NONE);
         LastPokemonMuffleTracker.INSTANCE.clear();
-        coordinator.update(nowSeconds, MusicPlaybackCoordinator.Input.none())
-            .ifPresent(transition -> applyTransition(nowSeconds, transition));
         nextScanSeconds = nowSeconds;
     }
 
@@ -133,7 +131,8 @@ public final class BetterMusicClientRuntime {
             return;
         }
         nextScanSeconds = nowSeconds + snapshot.playback().scanIntervalSeconds();
-        setLastPokemonEffect(audioEffects.lastPokemonHpEffectsEnabled()
+        boolean hasWorld = client.player != null && client.level != null;
+        setLastPokemonEffect(hasWorld && audioEffects.lastPokemonHpEffectsEnabled()
             ? LastPokemonMuffleTracker.INSTANCE.sampleEffect(client)
             : LastPokemonMuffleTracker.Effect.NONE);
 
@@ -153,7 +152,8 @@ public final class BetterMusicClientRuntime {
                 });
                 return selection.id();
             });
-        Optional<String> screenCue = screenResolver.select(ScreenMusicProviders.global().resolveKeys())
+        Optional<String> screenCue = screenResolver.select(hasWorld
+            ? ScreenMusicProviders.global().resolveKeys() : MinecraftMenuMusicProvider.keys(client))
             .map(selection -> {
                 playlistsById.put(selection.id(), selection.playlist());
                 return selection.id();
