@@ -8,8 +8,8 @@ import kotlin.math.abs
  * screen takes to turn white ([revealMillis]) and how long the white takes to give way to the battle ([fadeMillis]).
  * Wild and trainer battles run about four seconds; a legendary runs about six: it darkens the world,
  * flashes three times faster and faster with a shockwave on each, a slash splits the screen and two black plates close
- * on it under focus lines in its colour, then the slash swells into light over the whole screen, which cracks and
- * shatters to show the battle.
+ * on it under focus lines in its colour, then the slash swells into light over the whole screen, which holds white for
+ * a second, cracks, and comes apart in shards that drift out from the center and fade to show the battle.
  */
 enum class BattleEntryKind(
     val id: String,
@@ -20,7 +20,7 @@ enum class BattleEntryKind(
     val revealMillis: Long,
     val fadeMillis: Long,
 ) {
-    LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1800, 750, 650, 1300),
+    LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1400, 600, 650, 1900),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000);
 
@@ -41,8 +41,9 @@ object BattleEntryTimeline {
     const val HOLD_TIMEOUT_MILLIS = 6000L
     /** How long a legendary's shockwave takes to reach past the screen's corners. */
     const val RING_MILLIS = 450L
-    /** How long a legendary's white screen shows its cracks before it shatters. */
-    const val CRACK_MILLIS = 250L
+    /** How long a legendary's screen stays white before it shatters; its cracks run in the last [CRACK_MILLIS]. */
+    const val WHITE_HOLD_MILLIS = 1000L
+    const val CRACK_MILLIS = 300L
 
     fun flashEnd(kind: BattleEntryKind): Long = kind.flashStarts.last() + kind.flashMillis
 
@@ -111,13 +112,15 @@ object BattleEntryTimeline {
 
     /** How far a legendary's cracks have run across the white, 0 to 1. */
     fun crack(kind: BattleEntryKind, sinceReveal: Long): Float {
-        val share = ((sinceReveal - kind.revealMillis).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
+        val start = kind.revealMillis + WHITE_HOLD_MILLIS - CRACK_MILLIS
+        val share = ((sinceReveal - start).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
         return 1f - (1f - share) * (1f - share)
     }
 
-    /** How far a legendary's white has shattered and fallen away, 0 to 1, after its cracks. */
+    /** How far a legendary's white has shattered and faded away, 0 to 1, after it has held. */
     fun shatter(kind: BattleEntryKind, sinceReveal: Long): Float =
-        ((sinceReveal - kind.revealMillis - CRACK_MILLIS).toFloat() / (kind.fadeMillis - CRACK_MILLIS)).coerceIn(0f, 1f)
+        ((sinceReveal - kind.revealMillis - WHITE_HOLD_MILLIS).toFloat() / (kind.fadeMillis - WHITE_HOLD_MILLIS))
+            .coerceIn(0f, 1f)
 
     /** A legendary's darkening of the world before its pattern, 0 to 1. */
     fun dim(kind: BattleEntryKind, elapsed: Long): Float {

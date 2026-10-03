@@ -396,9 +396,10 @@ object BattleEntryTransition {
         val impactX = centerX
         val impactY = h * .46f
         val shatter = BattleEntryTimeline.shatter(kind, sinceReveal)
+        val crack = BattleEntryTimeline.crack(kind, sinceReveal)
         if (shatter <= 0f) {
             context.fill(0, 0, width, height, 0xFFFFFFFF.toInt())
-            drawCracks(context, impactX, impactY, far, accent, BattleEntryTimeline.crack(kind, sinceReveal))
+            drawCracks(context, impactX, impactY, far, accent, crack, 1f)
             return
         }
         // The white tiled in jittered triangles that together cover the screen exactly until they start to move.
@@ -420,31 +421,35 @@ object BattleEntryTransition {
                 val seed = column * 7333 + row * 1291
                 val shards = if (hash(seed) < .5f) listOf(listOf(a, b, c), listOf(a, c, d)) else listOf(listOf(a, b, d), listOf(b, c, d))
                 shards.forEachIndexed { index, shard -> drawShard(buffer, matrix, shard, seed * 3 + index, impactX, impactY,
-                    far, h, accent, shatter) }
+                    far, accent, shatter) }
             }
         }
+        // The cracks stay on the shards for a moment as they part.
+        drawCracks(context, impactX, impactY, far, accent, crack, 1f - shatter * 4f)
     }
 
-    /** One shard of a legendary's white: flung away from the impact, spinning and falling as it fades. */
+    /**
+     * One shard of a legendary's white: from the center outward each shard in turn drifts a little away from the
+     * impact at an even pace, turning slightly, and fades as it goes.
+     */
     private fun drawShard(buffer: VertexConsumer, matrix: Matrix4f, points: List<Pair<Float, Float>>, seed: Int,
-                          impactX: Float, impactY: Float, far: Float, height: Float, accent: Int, shatter: Float) {
+                          impactX: Float, impactY: Float, far: Float, accent: Int, shatter: Float) {
         val cx = points.sumOf { it.first.toDouble() }.toFloat() / 3f
         val cy = points.sumOf { it.second.toDouble() }.toFloat() / 3f
         val dx = cx - impactX
         val dy = cy - impactY
         val distance = (hypot(dx, dy) / far).coerceAtMost(1f)
-        // Shards near the impact break away first.
-        val delay = distance * .35f
-        val t = ((shatter - delay) / (1f - .35f)).coerceIn(0f, 1f)
-        val alpha = 1f - BattleEntryTimeline.smooth(t)
+        // Shards near the impact part first; the parting spreads outward across the screen.
+        val delay = distance * SHARD_SPREAD
+        val t = ((shatter - delay) / (1f - SHARD_SPREAD)).coerceIn(0f, 1f)
+        val alpha = 1f - t
         if (alpha <= 0f) return
         val norm = hypot(dx, dy).coerceAtLeast(1f)
-        val push = far * (.35f + .45f * hash(seed + 1)) * (1f - (1f - t) * (1f - t))
-        val fall = height * .8f * t * t
+        val push = far * (.04f + .05f * hash(seed + 1)) * t
         val moveX = dx / norm * push
-        val moveY = dy / norm * push + fall
-        val spin = (hash(seed + 2) - .5f) * 4f * t
-        val scale = 1f - .35f * t
+        val moveY = dy / norm * push
+        val spin = (hash(seed + 2) - .5f) * .5f * t
+        val scale = 1f - .08f * t
         val spinCos = cos(spin)
         val spinSin = sin(spin)
         val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), accent, .06f + .14f * hash(seed + 3))
@@ -461,9 +466,11 @@ object BattleEntryTransition {
     }
 
     /** Cracks running out from the impact across the white, each a jagged line of a few segments. */
-    private fun drawCracks(context: GuiGraphics, impactX: Float, impactY: Float, far: Float, accent: Int, growth: Float) {
-        if (growth <= 0f) return
-        val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(accent, 0xFF000000.toInt(), .45f), .7f)
+    private fun drawCracks(context: GuiGraphics, impactX: Float, impactY: Float, far: Float, accent: Int, growth: Float,
+                           opacity: Float) {
+        if (growth <= 0f || opacity <= 0f) return
+        val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(accent, 0xFF000000.toInt(), .45f),
+            .7f * opacity.coerceAtMost(1f))
         quads(context) { buffer, matrix ->
             for (crack in 0 until CRACKS) {
                 val seed = crack * 4099 + 7
@@ -552,12 +559,12 @@ object BattleEntryTransition {
         }
     }
 
+    /** Draws quads in one batch, each turned to face the screen so the GUI's back-face culling keeps it. */
     private inline fun quads(context: GuiGraphics, draw: (VertexConsumer, Matrix4f) -> Unit) {
-        val buffer = context.bufferSource().getBuffer(RenderType.gui())
+        val buffer = FrontFacingQuads(context.bufferSource().getBuffer(RenderType.gui()))
         draw(buffer, context.pose().last().pose())
-        RenderSystem.disableCull()
+        buffer.finish()
         context.flush()
-        RenderSystem.enableCull()
     }
 
     private fun quad(buffer: VertexConsumer, matrix: Matrix4f, x1: Float, y1: Float, x2: Float, y2: Float, color: Int) =
@@ -580,6 +587,8 @@ object BattleEntryTransition {
     private const val SHARD_ROWS = 7
     private const val CRACKS = 11
     private const val CRACK_SEGMENTS = 5
+    /** The share of the shatter by which the farthest shard starts after the nearest. */
+    private const val SHARD_SPREAD = .5f
     private const val BAND = 26f
     private const val SLOPE = .55f
     private const val SHAKE_PIXELS = 5f

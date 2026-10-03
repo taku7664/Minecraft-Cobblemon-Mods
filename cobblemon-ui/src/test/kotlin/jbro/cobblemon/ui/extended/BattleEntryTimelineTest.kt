@@ -64,9 +64,11 @@ class BattleEntryTimelineTest {
         assertEquals(0f, BattleEntryTimeline.beam(kind, 0))
         assertTrue(BattleEntryTimeline.beam(kind, rise / 2) < .2f)
         assertEquals(1f, BattleEntryTimeline.beam(kind, rise), 1e-3f)
-        assertEquals(0f, BattleEntryTimeline.crack(kind, rise))
-        assertEquals(1f, BattleEntryTimeline.crack(kind, rise + BattleEntryTimeline.CRACK_MILLIS), 1e-3f)
-        assertEquals(0f, BattleEntryTimeline.shatter(kind, rise + BattleEntryTimeline.CRACK_MILLIS))
+        // The white holds a second, cracking only in its last moments, before it shatters.
+        val hold = BattleEntryTimeline.WHITE_HOLD_MILLIS
+        assertEquals(0f, BattleEntryTimeline.crack(kind, rise + hold - BattleEntryTimeline.CRACK_MILLIS))
+        assertEquals(1f, BattleEntryTimeline.crack(kind, rise + hold), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.shatter(kind, rise + hold))
         assertEquals(1f, BattleEntryTimeline.shatter(kind, rise + kind.fadeMillis), 1e-3f)
     }
 
