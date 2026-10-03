@@ -9,7 +9,6 @@ import net.minecraft.sounds.SoundSource;
 final class LastPokemonLowHpAlertPlayer {
     static final double RETRY_SECONDS = 0.70;
     private static final float PITCH = 1.0F;
-    private static final float BASE_VOLUME = 0.1F;
 
     private final LowHpAlertLoopPlayer loopPlayer = new LowHpAlertLoopPlayer(RETRY_SECONDS);
     private LowHpAlertLoopPlayer.Backend backend;
@@ -59,6 +58,6 @@ final class LastPokemonLowHpAlertPlayer {
         if (!Double.isFinite(volumeMultiplier) || volumeMultiplier < 0.0) {
             throw new IllegalArgumentException("volumeMultiplier must be non-negative and finite");
         }
-        return (float) (BASE_VOLUME * volumeMultiplier);
+        return (float) volumeMultiplier;
     }
 }
