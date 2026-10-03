@@ -181,5 +181,11 @@
   "command.jbro_policy.wiki.link_for": "%s의 위키 링크: %s",
   "command.jbro_policy.wiki.hover": "브라우저에서 위키를 엽니다. 이 링크는 다른 사람에게 알려 주지 마세요.",
   "command.jbro_policy.wiki.off": "서버 위키가 꺼져 있습니다.",
-  "command.jbro_policy.wiki.one_player": "플레이어를 한 명만 지정해 주세요."
+  "command.jbro_policy.wiki.one_player": "플레이어를 한 명만 지정해 주세요.",
+
+  "message.jbro_policy.test.party_empty": "파티가 비어 있습니다.",
+  "message.jbro_policy.test.slot_empty": "파티 %s번 슬롯이 비어 있습니다.",
+  "message.jbro_policy.test.no_cap": "레벨 캡을 읽지 못했습니다. League Challenge가 없거나 리그 데이터가 로드되지 않았습니다.",
+  "message.jbro_policy.test.level_all": "파티 포켓몬 %s마리를 Lv.%s로 맞췄습니다.",
+  "message.jbro_policy.test.level_one": "파티 %s번 %s을(를) Lv.%s로 맞췄습니다."
 }

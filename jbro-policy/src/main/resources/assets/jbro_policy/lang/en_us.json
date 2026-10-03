@@ -181,5 +181,11 @@
   "command.jbro_policy.wiki.link_for": "%s's wiki link: %s",
   "command.jbro_policy.wiki.hover": "Opens the wiki in your browser. Keep this link to yourself.",
   "command.jbro_policy.wiki.off": "The server wiki is off.",
-  "command.jbro_policy.wiki.one_player": "Name exactly one player."
+  "command.jbro_policy.wiki.one_player": "Name exactly one player.",
+
+  "message.jbro_policy.test.party_empty": "Your party is empty.",
+  "message.jbro_policy.test.slot_empty": "Party slot %s is empty.",
+  "message.jbro_policy.test.no_cap": "Could not read your level cap: League Challenge is missing or no League is loaded.",
+  "message.jbro_policy.test.level_all": "Set %s party Pokémon to Lv. %s.",
+  "message.jbro_policy.test.level_one": "Set party slot %s, %s, to Lv. %s."
 }

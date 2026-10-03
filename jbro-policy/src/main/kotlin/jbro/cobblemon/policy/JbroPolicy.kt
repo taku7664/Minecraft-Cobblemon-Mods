@@ -1,5 +1,6 @@
 package jbro.cobblemon.policy
 
+import jbro.cobblemon.policy.admin.TestCommand
 import jbro.cobblemon.policy.api.Announcements
 import jbro.cobblemon.policy.api.Tips
 import jbro.cobblemon.policy.config.PolicyConfig
@@ -45,6 +46,7 @@ object JbroPolicy : ModInitializer {
         PokenavCommand.register()
         PokemonItemRestore.register()
         PokemonSummaryOnInteract.register()
+        TestCommand.register()
         jbro.cobblemon.policy.support.PendingItems.register()
         jbro.cobblemon.policy.api.OperatorWhisper.register()
         LegendPolicy.register()
