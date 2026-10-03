@@ -42,7 +42,8 @@ internal object LocalIdleUtilityMoveRules {
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
-            in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
+            in HAZARD_LAYERS.keys -> LocalEntryHazardValue.factor(context.state, opposing(actor.side), context) <= 0.0 ||
+                hazardIsFull(context, opposing(actor.side), moveId)
             else -> false
         }
     }
@@ -121,11 +122,5 @@ internal object LocalIdleUtilityMoveRules {
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
 
     /** How many times each entry hazard can be stacked before another use does nothing. */
-    private val HAZARD_LAYERS = mapOf(
-        "spikes" to 3,
-        "toxicspikes" to 2,
-        "stealthrock" to 1,
-        "stickyweb" to 1,
-        "steelsurge" to 1,
-    )
+    private val HAZARD_LAYERS = LocalEntryHazardValue.layerLimits
 }

@@ -110,7 +110,8 @@ internal object LocalNonDamagingMoveEvaluator {
             calloutValue(candidate, context, actor, target) != null ->
                 requireNotNull(calloutValue(candidate, context, actor, target)) * accuracy
             else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
-                .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
+                .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability *
+                (LocalEntryHazardValue.installationFactor(candidate, context) ?: 1.0)
         }
         // A pure heal is its own value, the losing-loop penalty included; anything else takes the better reading.
         val total = if (declaresPureRecovery) recovery else maxOf(recovery, status)
