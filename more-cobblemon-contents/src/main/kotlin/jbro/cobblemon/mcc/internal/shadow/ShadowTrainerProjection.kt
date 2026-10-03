@@ -22,11 +22,14 @@ internal data class ShadowTrainerProjection(
     val yaw: Float,
     val resourceSkin: String? = null,
     val slim: Boolean = false,
+    /** The trainer's name, a translation key or plain text, shown over the trainer instead of the player's. */
+    val trainerName: String? = null,
 ) {
     init {
         require(profileName.isNotBlank() && profileName.length <= MAX_PROFILE_NAME_LENGTH)
         require(x.isFinite() && y.isFinite() && z.isFinite() && yaw.isFinite())
         resourceSkin?.let { jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(it, slim) }
+        require(trainerName == null || trainerName.length <= MAX_TRAINER_NAME_LENGTH)
     }
 }
 
@@ -54,7 +57,7 @@ internal data class ShowShadowTrainerPayload(
     override fun type(): CustomPacketPayload.Type<ShowShadowTrainerPayload> = TYPE
 
     companion object {
-        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show_v2"))
+        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show_v3"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, ShowShadowTrainerPayload> = StreamCodec.of(
             { buffer, payload ->
                 val projection = payload.projection
@@ -67,6 +70,7 @@ internal data class ShowShadowTrainerPayload(
                 buffer.writeFloat(projection.yaw)
                 buffer.writeUtf(projection.resourceSkin ?: "", 256)
                 buffer.writeBoolean(projection.slim)
+                buffer.writeUtf(projection.trainerName ?: "", MAX_TRAINER_NAME_LENGTH)
             },
             { buffer ->
                 ShowShadowTrainerPayload(
@@ -80,6 +84,7 @@ internal data class ShowShadowTrainerPayload(
                         yaw = buffer.readFloat(),
                         resourceSkin = buffer.readUtf(256).takeIf { it.isNotEmpty() },
                         slim = buffer.readBoolean(),
+                        trainerName = buffer.readUtf(MAX_TRAINER_NAME_LENGTH).takeIf { it.isNotEmpty() },
                     ),
                 )
             },
@@ -108,7 +113,7 @@ internal object ShadowTrainerProjectionNetworking {
     }
 
     fun show(player: ServerPlayer, battleId: UUID, position: Vec3,
-        appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null) {
+        appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null, trainerName: String? = null) {
         runOptionalProjectionSend(
             action = {
                 if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
@@ -125,6 +130,7 @@ internal object ShadowTrainerProjectionNetworking {
                             yaw = player.yRot + HALF_TURN_DEGREES,
                             resourceSkin = appearance?.texture,
                             slim = appearance?.slim ?: false,
+                            trainerName = trainerName?.take(MAX_TRAINER_NAME_LENGTH),
                         ),
                     ),
                 )
@@ -162,4 +168,5 @@ internal object ShadowTrainerProjectionNetworking {
 private fun id(path: String) = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, path)
 
 private const val MAX_PROFILE_NAME_LENGTH = 16
+private const val MAX_TRAINER_NAME_LENGTH = 256
 private const val HALF_TURN_DEGREES = 180.0F

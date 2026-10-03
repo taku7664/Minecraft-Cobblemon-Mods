@@ -251,6 +251,8 @@ internal object ShadowTrainerProjectionRenderer {
                 if (projection.slim) net.minecraft.client.resources.PlayerSkin.Model.SLIM else net.minecraft.client.resources.PlayerSkin.Model.WIDE, false)
         }
         override fun shouldShowName(): Boolean = customName != null
+        // A player's name tag shows its profile name, which is the challenger's; the trainer's name goes there instead.
+        override fun getDisplayName(): Component = customName ?: checkNotNull(super.getDisplayName())
         override fun isInvisibleTo(player: Player): Boolean = false
     }
 
@@ -338,6 +340,8 @@ internal object ShadowTrainerDisplayNameResolver {
         battle: ClientBattle?,
         localPlayerId: UUID,
     ): Component? {
+        // Every managed battle (Tower, Factory, League) sends its trainer's name with the projection.
+        projection.trainerName?.let { return Component.translatable(it) }
         if (battle == null || battle.battleId != projection.battleId) return null
         val ownSide = battle.sides.firstOrNull { side -> side.actors.any { it.uuid == localPlayerId } } ?: return null
         return battle.sides.asSequence()

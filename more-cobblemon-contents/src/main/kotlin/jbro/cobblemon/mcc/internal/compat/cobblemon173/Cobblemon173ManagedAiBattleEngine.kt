@@ -308,7 +308,8 @@ class Cobblemon173ManagedAiBattleEngine(
             } else {
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
-                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos, prepared.appearance)
+                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos, prepared.appearance,
+                    prepared.trainerDisplayNameKey)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
 
                 attachReplayableCompletionHandler(

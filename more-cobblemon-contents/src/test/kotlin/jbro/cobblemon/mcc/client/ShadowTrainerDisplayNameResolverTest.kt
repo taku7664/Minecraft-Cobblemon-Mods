@@ -44,6 +44,17 @@ class ShadowTrainerDisplayNameResolverTest {
         assertNull(ShadowTrainerDisplayNameResolver.resolve(projection(UUID.randomUUID(), playerId), battle, playerId))
     }
 
+    @Test
+    fun `the trainer name sent with the projection wins, before the battle reaches the client`() {
+        val playerId = UUID.randomUUID()
+        val projection = projection(UUID.randomUUID(), playerId).copy(trainerName = "trainer.more_cobblemon_contents.tower_trainer_001")
+
+        assertEquals(
+            Component.translatable("trainer.more_cobblemon_contents.tower_trainer_001"),
+            ShadowTrainerDisplayNameResolver.resolve(projection, null, playerId),
+        )
+    }
+
     private fun projection(battleId: UUID, playerId: UUID) = ShadowTrainerProjection(
         battleId = battleId,
         profileId = playerId,
