@@ -95,8 +95,7 @@ internal object PublicBattleTacticalCalculator {
         }
         return rolls.map { damage ->
             (damage.toDouble() / denominator * hitCount * mechanics.knownDamageMultiplier)
-                .coerceAtMost(target.hpFraction)
-                .coerceIn(0.0, 1.0)
+                .coerceAtLeast(0.0)
         }
     }
 
@@ -163,8 +162,8 @@ internal object PublicBattleTacticalCalculator {
         effects.firstOrNull { it.kind == BattleMoveEffectKind.FIXED_DAMAGE_LEVEL }?.let {
             val damage = actor?.level ?: return null
             return listOf(
-                (damage.toDouble() / maxHp.maximum).coerceAtMost(targetHp),
-                (damage.toDouble() / maxHp.minimum).coerceAtMost(targetHp),
+                (damage.toDouble() / maxHp.maximum),
+                (damage.toDouble() / maxHp.minimum),
             )
         }
         // Damage set by the HP on the board: half the target's (Super Fang, Ruination, Nature's Madness), the gap
@@ -178,14 +177,14 @@ internal object PublicBattleTacticalCalculator {
             }
             "finalgambit" -> {
                 val actorHp = actor?.combatStats?.maxHp?.let { it.minimum * actor.hpFraction } ?: return null
-                return listOf((actorHp / maxHp.maximum).coerceAtMost(targetHp), (actorHp / maxHp.minimum).coerceAtMost(targetHp))
+                return listOf((actorHp / maxHp.maximum), (actorHp / maxHp.minimum))
             }
         }
         effects.firstOrNull { it.kind == BattleMoveEffectKind.FIXED_DAMAGE_VALUE }?.let { effect ->
             val amount = effect.amountRange ?: return null
             return listOf(
-                (amount.minimum.toDouble() / maxHp.maximum).coerceAtMost(targetHp),
-                (amount.maximum.toDouble() / maxHp.minimum).coerceAtMost(targetHp),
+                (amount.minimum.toDouble() / maxHp.maximum),
+                (amount.maximum.toDouble() / maxHp.minimum),
             )
         }
         return null
@@ -289,7 +288,10 @@ internal object PublicBattleTacticalCalculator {
                     context.state,
                 ),
             )
-        val projection = if (survivesOneHit) rawProjection?.withoutKnockout(target) else rawProjection
+        val decoyBlocksSingleHit = target != null && LocalDeclaredMultiHit.maximumCount(candidate) <= 1 &&
+            jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.present(target) &&
+            !jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.bypasses(candidate, actor, context.state)
+        val projection = if (survivesOneHit || decoyBlocksSingleHit) rawProjection?.withoutKnockout(target) else rawProjection
         // Fixed-damage moves (Seismic Toss, Super Fang, Endeavor, Final Gambit) have no formula projection; the
         // ranking reads their declared damage, which the search already used.
         val fixedDamage = details.effects?.effects.orEmpty().any {
@@ -302,7 +304,7 @@ internal object PublicBattleTacticalCalculator {
         } else null
         val declaredRange = declaredRolls?.takeIf { it.isNotEmpty() }?.let { BattleDamageFractionRange(it.min(), it.max()) }
         val declaredKnockout = declaredRolls?.takeIf { it.isNotEmpty() && target != null }?.let { rolls ->
-            val knockouts = rolls.count { it >= target!!.hpFraction - 1e-9 }
+            val knockouts = if (decoyBlocksSingleHit) 0 else rolls.count { it >= target!!.hpFraction - 1e-9 }
             when (knockouts) {
                 rolls.size -> BattleKnockoutAssessment.GUARANTEED
                 0 -> BattleKnockoutAssessment.IMPOSSIBLE

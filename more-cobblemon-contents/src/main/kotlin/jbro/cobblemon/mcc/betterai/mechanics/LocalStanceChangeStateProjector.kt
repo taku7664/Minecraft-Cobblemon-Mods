@@ -47,6 +47,7 @@ internal object LocalStanceChangeStateProjector {
             knownBaseStabTypeIds = form.knownTypeIds,
             knownTeraTypeId = actor.knownTeraTypeId,
             knownStellarBoostedTypeIds = actor.knownStellarBoostedTypeIds,
+            knownSubstituteHpFractionRange = actor.knownSubstituteHpFractionRange,
         )
         val pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it }
         return state.derive(

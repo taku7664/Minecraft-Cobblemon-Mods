@@ -122,6 +122,7 @@ internal object LocalEntryAbilityProjector {
             knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
             knownTeraTypeId = pokemon.knownTeraTypeId,
             knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+            knownSubstituteHpFractionRange = pokemon.knownSubstituteHpFractionRange,
         )
     }
 

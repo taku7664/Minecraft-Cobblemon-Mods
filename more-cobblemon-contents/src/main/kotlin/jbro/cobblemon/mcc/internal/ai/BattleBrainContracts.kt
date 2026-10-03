@@ -141,7 +141,25 @@ class BattlePokemonStateView(
     knownBaseStabTypeIds: Set<String> = knownTypeIds,
     val knownTeraTypeId: String? = null,
     knownStellarBoostedTypeIds: Set<String>? = null,
+    /** Remaining decoy HP in units of its user's maximum HP; null means unobserved. */
+    knownSubstituteHpFractionRange: BattleDamageFractionRange? = null,
 ) {
+    /** Keep the pre-Substitute JVM and Kotlin default-argument constructor ABIs. */
+    @Deprecated("Binary compatibility", level = DeprecationLevel.HIDDEN)
+    constructor(
+        battlePokemonId: UUID, side: BattleSide, activeSlot: Int?, speciesId: String,
+        formId: String?, level: Int?, hpFraction: Double, statusId: String?,
+        statStages: Map<String, Int>, knownMoveIds: Set<String>, knownAbilityId: String?,
+        knownHeldItemId: String?, fainted: Boolean, knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
+        knownVolatileEffectIds: Set<String>, knownBaseStabTypeIds: Set<String> = knownTypeIds,
+        knownTeraTypeId: String? = null, knownStellarBoostedTypeIds: Set<String>? = null,
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownBaseStabTypeIds,
+        knownTeraTypeId, knownStellarBoostedTypeIds, null)
     /** Preserve the original JVM constructor and Kotlin default-argument constructor. */
     constructor(
         battlePokemonId: UUID,
@@ -220,6 +238,9 @@ class BattlePokemonStateView(
     // and was checked when it was first frozen (see FrozenSet).
     /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
     val knownVolatileEffectIds: Set<String> = FrozenSet.of(knownVolatileEffectIds)
+    val knownSubstituteHpFractionRange: BattleDamageFractionRange? = knownSubstituteHpFractionRange.takeIf {
+        activeSlot != null && !fainted && knownVolatileEffectIds.any { id -> PublicIds.canonical(id) == "substitute" }
+    }
     val statStages: Map<String, Int> = FrozenMap.of(statStages)
     val knownMoveIds: Set<String> = FrozenSet.of(knownMoveIds)
     val knownTypeIds: Set<String> = FrozenSet.of(knownTypeIds)

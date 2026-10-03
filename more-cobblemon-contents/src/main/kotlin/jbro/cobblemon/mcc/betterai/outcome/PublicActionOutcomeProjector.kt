@@ -85,8 +85,10 @@ internal object PublicActionOutcomeProjector {
         } else {
             null
         }
-        val adjustedDamage = standardAdjustedDamage ?: declaredDamage
-        val expectedDamage = jbro.cobblemon.mcc.betterai.calculation.PublicSniperDamageProjection
+        val decoy = jbro.cobblemon.mcc.betterai.calculation.PublicSubstituteDamageProjection.summary(candidate, context, actingSide)
+        val adjustedDamage = decoy?.bodyDamage ?: standardAdjustedDamage ?: declaredDamage
+        val transferDamage = decoy?.moveDamage ?: adjustedDamage?.let { BattleDamageFractionRange(it.minimum, it.maximum) }
+        val expectedDamage = decoy?.expectedBodyDamage ?: jbro.cobblemon.mcc.betterai.calculation.PublicSniperDamageProjection
             .summary(candidate, context, actingSide)?.expectedDamage ?: adjustedDamage?.let { damage ->
             // The single place the sixteen-roll range becomes one number. Everything downstream -
             // the scorer's cancellation, knockout pressure, the search's board value - resolves to
@@ -105,7 +107,7 @@ internal object PublicActionOutcomeProjector {
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
         fun transferBounds(kind: BattleMoveEffectKind, limit: Double): BattleFractionRange? {
             // A representative multi-hit count is not a bound on its full outcome distribution.
-            val damage = adjustedDamage?.takeIf { hitCount == 1.0 } ?: return null
+            val damage = transferDamage?.takeIf { hitCount == 1.0 } ?: return null
             val parts = effects.filter { it.kind == kind && it.target == BattleMoveEffectTarget.USER && it.fractionRange != null }
                 .map { effect ->
                     val bounds = LocalDamageHpTransfer.bounds(damage, requireNotNull(effect.fractionRange), actor, target, limit)
@@ -118,15 +120,15 @@ internal object PublicActionOutcomeProjector {
             if (parts.isEmpty()) return null
             return BattleFractionRange(parts.sumOf { it.minimum }.coerceAtMost(limit), parts.sumOf { it.maximum }.coerceAtMost(limit))
         }
-        val uncertainTransfer = (expectedDamage ?: 0.0) > 0.0 &&
+        val uncertainTransfer = (decoy?.expectedMoveDamage ?: expectedDamage ?: 0.0) > 0.0 &&
             effects.any { it.kind == BattleMoveEffectKind.DRAIN_FRACTION || it.kind == BattleMoveEffectKind.RECOIL_FRACTION } &&
             !LocalDamageHpTransfer.hasExactMaxHp(actor, target)
         fun expectedTransfer(ratio: Double, hpLimit: Double): Double {
-            val fixedHit = adjustedDamage?.takeIf { it.minimum == it.maximum && hitCount == 1.0 }
+            val fixedHit = transferDamage?.takeIf { it.minimum == it.maximum && hitCount == 1.0 }
             return if (fixedHit != null) {
                 LocalDamageHpTransfer.fraction(fixedHit.minimum, ratio, actor, target).coerceAtMost(hpLimit) * accuracy
             } else {
-                LocalDamageHpTransfer.fraction(expectedDamage ?: 0.0, ratio, actor, target, roundActualHit = false)
+                LocalDamageHpTransfer.fraction(decoy?.expectedMoveDamage ?: expectedDamage ?: 0.0, ratio, actor, target, roundActualHit = false)
             }
         }
         val fixedHealing = effects.filter {

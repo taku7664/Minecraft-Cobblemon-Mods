@@ -2,12 +2,17 @@ package jbro.cobblemon.mcc.betterai.mechanics
 
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 import kotlin.math.roundToLong
 
 /** Converts damage in the target's HP units to a drain/recoil change in the user's units. */
 internal object LocalDamageHpTransfer {
     /** Conservative on-hit bounds, including integer rounding, not a probability interval. */
     fun bounds(damage: BattleFractionRange, ratio: BattleFractionRange,
+               actor: BattlePokemonStateView?, target: BattlePokemonStateView?, hpLimit: Double): BattleFractionRange =
+        bounds(BattleDamageFractionRange(damage.minimum, damage.maximum), ratio, actor, target, hpLimit)
+
+    fun bounds(damage: BattleDamageFractionRange, ratio: BattleFractionRange,
                actor: BattlePokemonStateView?, target: BattlePokemonStateView?, hpLimit: Double): BattleFractionRange {
         val limit = hpLimit.coerceIn(0.0, 1.0)
         if (damage.maximum <= 0.0 || ratio.maximum <= 0.0 || limit == 0.0) return BattleFractionRange(0.0, 0.0)

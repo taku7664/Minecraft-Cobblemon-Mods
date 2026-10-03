@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 
 /**
  * Structural copies of the immutable public state views.
@@ -47,6 +48,7 @@ internal fun BattlePokemonStateView.copyState(
     combatStats: BattleCombatStatRangesView? = this.combatStats,
     knownAbilityId: String? = this.knownAbilityId,
     knownHeldItemId: String? = this.knownHeldItemId,
+    knownSubstituteHpFractionRange: BattleDamageFractionRange? = this.knownSubstituteHpFractionRange,
 ): BattlePokemonStateView = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -69,4 +71,7 @@ internal fun BattlePokemonStateView.copyState(
     knownBaseStabTypeIds = knownBaseStabTypeIds,
     knownTeraTypeId = knownTeraTypeId,
     knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
+    knownSubstituteHpFractionRange = knownSubstituteHpFractionRange.takeIf {
+        !fainted && activeSlot != null && knownVolatileEffectIds.any { id -> jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(id) == "substitute" }
+    },
 )

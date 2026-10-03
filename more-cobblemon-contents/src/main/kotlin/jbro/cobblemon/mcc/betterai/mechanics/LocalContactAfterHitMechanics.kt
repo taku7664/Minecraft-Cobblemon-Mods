@@ -172,6 +172,7 @@ internal object LocalContactAfterHitMechanics {
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+        knownSubstituteHpFractionRange = pokemon.knownSubstituteHpFractionRange,
     )
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)

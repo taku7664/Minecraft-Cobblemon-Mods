@@ -5,9 +5,11 @@ import jbro.cobblemon.mcc.internal.ai.*
 
 internal data class LocalAppliedDirectHit(
     val state: BattleStateView,
-    /** Damage attributed to the move itself. Drain, recoil, and contact reactions use this value. */
+    /** Body damage only; contact reactions must not fire against a decoy. */
     val directDamageFraction: Double,
     val recoilHpFraction: Double,
+    val moveDamageFraction: Double = directDamageFraction,
+    val hitSubstitute: Boolean = false,
 )
 
 /** Resolves one damaging hit, including one-hit survival and disguise consumption. */
@@ -21,13 +23,25 @@ internal object LocalDirectHitMechanics {
         ignoreTargetAbility: Boolean,
         /** A sound move or an Infiltrator reaches past a Substitute. */
         bypassesSubstitute: Boolean = false,
+        hitCount: Int = 1,
     ): LocalAppliedDirectHit {
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
-        val targetResolution = target?.let {
-            substituteAbsorbs(it, actorId, incomingDamageFraction, bypassesSubstitute)
-                ?: resolveTarget(state, it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
+        var bodyDamage = 0.0
+        var attributedDamage = 0.0
+        val targetResolution = target?.let { initial ->
+            var resolution = TargetResolution(initial, 0.0)
+            repeat(hitCount.coerceAtLeast(1)) {
+                if (!resolution.pokemon.fainted) {
+                    val current = resolution.pokemon
+                    resolution = substituteAbsorbs(current, actorId, incomingDamageFraction / hitCount.coerceAtLeast(1), bypassesSubstitute)
+                        ?: resolveTarget(state, current, (incomingDamageFraction / hitCount.coerceAtLeast(1)).coerceAtMost(current.hpFraction), ignoreTargetAbility)
+                    bodyDamage += resolution.directDamageFraction
+                    attributedDamage += resolution.moveDamageFraction
+                }
+            }
+            resolution
         }
-        val directDamage = targetResolution?.directDamageFraction ?: 0.0
+        val directDamage = bodyDamage
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
         val fixedHealing = effects.filter {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION &&
@@ -36,24 +50,24 @@ internal object LocalDirectHitMechanics {
         val drainHealing = effects.filter {
             it.kind == BattleMoveEffectKind.DRAIN_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
-        }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
+        }.sumOf { LocalDamageHpTransfer.fraction(attributedDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
         val damageRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.RECOIL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
-        }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
+        }.sumOf { LocalDamageHpTransfer.fraction(attributedDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
         val maxHpRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.MAX_HP_RECOIL || it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
         }.sumOf { effect -> effect.fractionRange?.let(::midpoint)?.times(effect.probability ?: 1.0) ?: 0.0 }
         val selfDestructs = effects.any {
             it.kind == BattleMoveEffectKind.SELF_DESTRUCT && (it.probability ?: 1.0) == 1.0
         }
-        val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
+        val stealsStages = targetResolution?.substituteHit != true && effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val stolenStages = if (stealsStages) {
             target?.statStages.orEmpty().filterValues { it > 0 }
         } else {
             emptyMap()
         }
-        val thawsTarget = effects.any { it.kind == BattleMoveEffectKind.THAWS_TARGET }
+        val thawsTarget = targetResolution?.substituteHit != true && effects.any { it.kind == BattleMoveEffectKind.THAWS_TARGET }
         val nextPokemon = state.pokemon.map { pokemon ->
             when (pokemon.battlePokemonId) {
                 actorId -> {
@@ -87,13 +101,10 @@ internal object LocalDirectHitMechanics {
                 .coerceIn(0.0, 1.0)
             beforeRecoil - afterRecoil
         } ?: 0.0
-        return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage, actualRecoil)
+        return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage, actualRecoil, attributedDamage, targetResolution?.substituteHit == true)
     }
 
-    /**
-     * A Substitute takes the hit instead of its user. Its own HP is not public to track, so it is read as taking one
-     * hit and breaking, the common case against anything that threatens a knockout.
-     */
+    /** The breaking hit has no overflow. Later hits of the same move can reach the body. */
     private fun substituteAbsorbs(
         target: BattlePokemonStateView,
         actorId: UUID,
@@ -102,9 +113,18 @@ internal object LocalDirectHitMechanics {
     ): TargetResolution? {
         if (bypassed || incomingDamage <= 0.0 || target.battlePokemonId == actorId) return null
         if (target.knownVolatileEffectIds.none { canonical(it) == SUBSTITUTE }) return null
+        val before = LocalSubstituteRules.hp(target)
+        val after = BattleDamageFractionRange((before.minimum - incomingDamage).coerceAtLeast(0.0),
+            (before.maximum - incomingDamage).coerceAtLeast(0.0))
+        val broken = after.maximum <= 1e-9
         return TargetResolution(
-            pokemon = target.copyState(knownVolatileEffectIds = target.knownVolatileEffectIds.filterNot { canonical(it) == SUBSTITUTE }.toSet()),
+            pokemon = target.copyState(
+                knownVolatileEffectIds = if (broken) target.knownVolatileEffectIds.filterNot { canonical(it) == SUBSTITUTE }.toSet() else target.knownVolatileEffectIds,
+                knownSubstituteHpFractionRange = if (broken) null else after,
+            ),
             directDamageFraction = 0.0,
+            moveDamageFraction = minOf(incomingDamage, (before.minimum + before.maximum) / 2.0),
+            substituteHit = true,
         )
     }
 
@@ -271,6 +291,7 @@ internal object LocalDirectHitMechanics {
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+        knownSubstituteHpFractionRange = if (fainted) null else pokemon.knownSubstituteHpFractionRange,
     )
 
     private fun midpoint(range: BattleFractionRange): Double = (range.minimum + range.maximum) / 2.0
@@ -280,6 +301,8 @@ internal object LocalDirectHitMechanics {
     private data class TargetResolution(
         val pokemon: BattlePokemonStateView,
         val directDamageFraction: Double,
+        val moveDamageFraction: Double = directDamageFraction,
+        val substituteHit: Boolean = false,
     )
 
     private val MIMIKYU_SPECIES = setOf("mimikyu", "mimikyutotem")

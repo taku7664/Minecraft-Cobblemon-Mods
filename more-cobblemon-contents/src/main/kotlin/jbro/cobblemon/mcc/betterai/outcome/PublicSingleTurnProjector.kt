@@ -1060,7 +1060,7 @@ internal object PublicSingleTurnProjector {
                     calculatedAction,
                 )
                 val appliedHit = LocalDirectHitMechanics.apply(
-                    stellarState,
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.seed(stellarState, target?.battlePokemonId, moveOutcome.substituteHpBefore),
                     actor.battlePokemonId,
                     target?.battlePokemonId,
                     moveOutcome.damageFraction,
@@ -1072,8 +1072,9 @@ internal object PublicSingleTurnProjector {
                         projectedFormState,
                     ),
                     bypassesSubstitute = bypassesSubstitute(calculatedAction, actor, projectedFormState),
+                    hitCount = moveOutcome.hitCount,
                 )
-                val subTookHit = subTookHit(stellarState, appliedHit.state, target?.battlePokemonId)
+                val subTookHit = appliedHit.hitSubstitute
                 LocalContactAfterHitMechanics.project(
                     LocalAfterHitReactions.apply(
                         stellarState, appliedHit.state, actor.battlePokemonId, target?.battlePokemonId,
@@ -1099,7 +1100,7 @@ internal object PublicSingleTurnProjector {
                     applyForcedTargetSwitch(
                         effectOutcome,
                         target,
-                        effects,
+                        if (subTookHit) effects.filterNot { it.target == BattleMoveEffectTarget.SELECTED_TARGET } else effects,
                         sourceContext,
                         calculationCache,
                     )
@@ -1247,12 +1248,13 @@ internal object PublicSingleTurnProjector {
                     )
                     DelayedStrikeResolution(
                         LocalDirectHitMechanics.apply(
-                            stellarState,
+                            jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.seed(stellarState, target.battlePokemonId, branch.substituteHpBefore),
                             strike.sourcePokemon.battlePokemonId,
                             target.battlePokemonId,
                             branch.damageFraction,
                             emptyList(),
                             ignoreTargetAbility = false,
+                            hitCount = branch.hitCount,
                         ).state,
                         branch.probability,
                     )
@@ -1406,7 +1408,7 @@ internal object PublicSingleTurnProjector {
                         listOf(branch.copy(probability = branch.probability * outcome.probability))
                     } else {
                         val applied = LocalDirectHitMechanics.apply(
-                            branch.state,
+                            jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.seed(branch.state, currentTarget.battlePokemonId, outcome.substituteHpBefore),
                             currentActor.battlePokemonId,
                             currentTarget.battlePokemonId,
                             outcome.damageFraction,
@@ -1418,8 +1420,9 @@ internal object PublicSingleTurnProjector {
                                 branch.state,
                             ),
                             bypassesSubstitute = bypassesSubstitute(calculatedAction, currentActor, branch.state),
+                            hitCount = outcome.hitCount,
                         )
-                        val subTookHit = subTookHit(branch.state, applied.state, currentTarget.battlePokemonId)
+                        val subTookHit = applied.hitSubstitute
                         LocalContactAfterHitMechanics.project(
                             LocalAfterHitReactions.apply(
                                 branch.state, applied.state, currentActor.battlePokemonId, currentTarget.battlePokemonId,
@@ -1681,7 +1684,15 @@ internal object PublicSingleTurnProjector {
             // Calculated like any other switch, so the Pokemon a pivot brings in pays Stealth Rock and Spikes.
             val switched = applySwitch(leaving, side, action, sourceContext, calculationCache)
             val projected = if (!shedTail) switched else switched.copyState(pokemon = switched.pokemon.map {
-                if (it.battlePokemonId == generated.switchPokemonId) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + SUBSTITUTE) else it
+                if (it.battlePokemonId == generated.switchPokemonId) {
+                    val outgoingMax = outgoing.combatStats?.maxHp
+                    val incomingMax = it.combatStats?.maxHp
+                    val hp = if (outgoingMax != null && incomingMax != null) BattleDamageFractionRange(
+                        kotlin.math.floor(outgoingMax.minimum / 4.0) / incomingMax.maximum,
+                        kotlin.math.floor(outgoingMax.maximum / 4.0) / incomingMax.minimum,
+                    ) else null
+                    it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + SUBSTITUTE, knownSubstituteHpFractionRange = hp)
+                } else it
             })
             val evaluationHistory = LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon)
             val evaluationSource = LocalBranchMoveInputs.context(sourceContext, projected, evaluationHistory, spendPp = true)
@@ -1890,11 +1901,13 @@ internal object PublicSingleTurnProjector {
         if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && canonicalId(effect.valueId) == SUBSTITUTE &&
             affectedId == actorId
         ) {
-            if (affected.hpFraction <= SUBSTITUTE_COST || affected.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return state
+            val decoyHp = jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.creationHp(affected)
+            if (affected.hpFraction <= decoyHp || affected.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return state
             return state.copyState(pokemon = state.pokemon.map {
                 if (it.battlePokemonId != affectedId) it else it.copyState(
-                    hpFraction = it.hpFraction - SUBSTITUTE_COST,
+                    hpFraction = it.hpFraction - decoyHp,
                     knownVolatileEffectIds = it.knownVolatileEffectIds + SUBSTITUTE,
+                    knownSubstituteHpFractionRange = BattleDamageFractionRange(decoyHp, decoyHp),
                 )
             })
         }
@@ -2284,13 +2297,6 @@ internal object PublicSingleTurnProjector {
         })
     }
 
-    private fun subTookHit(before: BattleStateView, after: BattleStateView, targetId: UUID?): Boolean {
-        targetId ?: return false
-        fun hasSub(state: BattleStateView) = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
-            ?.knownVolatileEffectIds?.any { canonicalId(it) == SUBSTITUTE } == true
-        return hasSub(before) && !hasSub(after)
-    }
-
     /** Unseen Fist: contact moves strike through Protect. */
     private fun unseenFist(action: BattleActionCandidate, actor: BattlePokemonStateView, state: BattleStateView): Boolean =
         LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "unseenfist" &&
@@ -2311,8 +2317,7 @@ internal object PublicSingleTurnProjector {
     }
 
     private fun bypassesSubstitute(action: BattleActionCandidate, actor: BattlePokemonStateView, state: BattleStateView): Boolean =
-        action.moveDetails?.effects?.mechanicFlags.orEmpty().any { canonicalId(it) == "sound" } ||
-            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "infiltrator"
+        jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.bypasses(action, actor, state)
 
     private fun rebindPendingActors(
         remaining: List<TurnPrimitiveAction>,
@@ -2596,6 +2601,9 @@ internal object PublicSingleTurnProjector {
             append(it.battlePokemonId).append(':').append(it.side).append(':').append(it.activeSlot).append(':')
             append((it.hpFraction * 10_000).roundToInt()).append(':').append(it.statusId).append(':')
             append(it.formId).append(':').append(it.knownHeldItemId).append(':')
+            append(it.knownAbilityId).append(':').append(it.actionConstraints).append(':')
+            append(it.knownVolatileEffectIds.sorted()).append(':')
+            append(it.knownSubstituteHpFractionRange).append(':')
             append(it.statStages).append(':')
             append(it.knownTypeIds.sorted()).append(':')
             append(it.knownBaseStabTypeIds.sorted()).append(':')

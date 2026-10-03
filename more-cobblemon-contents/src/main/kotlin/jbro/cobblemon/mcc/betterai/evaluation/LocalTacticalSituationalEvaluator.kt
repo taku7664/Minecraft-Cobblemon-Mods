@@ -123,6 +123,10 @@ internal object LocalTacticalSituationalEvaluator {
     ): Double {
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context)
         if (mechanics.publiclyNullified) return 0.0
+        jbro.cobblemon.mcc.betterai.calculation.PublicSubstituteDamageProjection.summary(candidate, context, BattleSide.ALLY)?.let {
+            val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
+            return if (accuracy > 0.0) it.knockoutProbability / accuracy else 0.0
+        }
         if (mechanics.knownDamageMultiplier == 1.0) return declared
         val target = candidate.targets.singleOrNull()?.let { slot ->
             context.state.pokemon.firstOrNull {
@@ -161,13 +165,18 @@ internal object LocalTacticalSituationalEvaluator {
         if (extras.isEmpty()) return 0.0
         return extras.sumOf { extra ->
             // The projection is of the full hit; a target can lose no more than the HP it has left.
-            val remaining = context.state.pokemon.firstOrNull {
+            val target = context.state.pokemon.firstOrNull {
                 it.side == extra.side && it.activeSlot == extra.slot && !it.fainted
-            }?.hpFraction ?: 1.0
-            val damage = extra.standardDamageFractionRange
+            }
+            val remaining = target?.hpFraction ?: 1.0
+            val decoy = target?.let {
+                val hit = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets.spreadHitOn(candidate, it, candidate.actionId + ":extra")
+                jbro.cobblemon.mcc.betterai.calculation.PublicSubstituteDamageProjection.summary(hit, context, BattleSide.ALLY)
+            }
+            val damage = decoy?.expectedBodyDamage?.times(100.0) ?: extra.standardDamageFractionRange
                 ?.let { (it.minimum.coerceAtMost(remaining) + it.maximum.coerceAtMost(remaining)) * 50.0 * accuracy }
                 ?: 0.0
-            val knockoutProbability = when (extra.standardKnockoutAssessment) {
+            val knockoutProbability = decoy?.knockoutProbability?.let { if (accuracy > 0.0) it / accuracy else 0.0 } ?: when (extra.standardKnockoutAssessment) {
                 BattleKnockoutAssessment.GUARANTEED -> 1.0
                 BattleKnockoutAssessment.POSSIBLE -> extra.standardDamageRollKoProbabilityRange
                     ?.let { (it.minimum + it.maximum) / 2.0 }

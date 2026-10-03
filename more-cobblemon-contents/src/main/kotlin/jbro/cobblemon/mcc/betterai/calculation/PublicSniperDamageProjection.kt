@@ -8,6 +8,9 @@ internal object PublicSniperDamageProjection {
     data class Summary(val expectedDamage: Double, val knockoutProbability: Double)
     fun summary(action: BattleActionCandidate, context: BattleDecisionContext, side: BattleSide): Summary? {
         if (!LocalConditionalDamageAbilities.randomSniper(action, context, side)) return null
+        PublicSubstituteDamageProjection.summary(action, context, side)?.let {
+            return Summary(it.expectedBodyDamage, it.knockoutProbability)
+        }
         val actor = context.state.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot && !it.fainted } ?: return null
         val target = LocalPublicMoveTargets.resolve(action, context, side).firstOrNull() ?: return null
         val chance = PublicMoveOutcomeBranchProjector.criticalChance(action, context, side)
@@ -23,7 +26,8 @@ internal object PublicSniperDamageProjection {
                 val after = LocalDirectHitMechanics.apply(context.state, actor.battlePokemonId, target.battlePokemonId,
                     damage, emptyList(), LocalPublicAbilityMechanics.ignoresTargetAbility(action, actor, target, context.state),
                     bypassesSubstitute = LocalPublicAbilityState.effectiveKnownAbility(context.state, actor) == "infiltrator" ||
-                        action.moveDetails?.effects?.mechanicFlags.orEmpty().any { PublicIds.canonical(it) == "sound" })
+                        action.moveDetails?.effects?.mechanicFlags.orEmpty().any { PublicIds.canonical(it) == "sound" },
+                    hitCount = LocalDeclaredMultiHit.representativeCount(action, actor, context.state))
                     .state.pokemon.single { it.battlePokemonId == target.battlePokemonId }
                 val probability = weight * accuracy / rolls.size
                 expected += probability * (target.hpFraction - after.hpFraction).coerceAtLeast(0.0)

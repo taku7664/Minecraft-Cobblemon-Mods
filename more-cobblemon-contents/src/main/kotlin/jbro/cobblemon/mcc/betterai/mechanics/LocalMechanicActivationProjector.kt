@@ -106,6 +106,7 @@ internal object LocalMechanicActivationProjector {
             knownBaseStabTypeIds = form.knownTypeIds,
             knownTeraTypeId = actor.knownTeraTypeId,
             knownStellarBoostedTypeIds = actor.knownStellarBoostedTypeIds,
+            knownSubstituteHpFractionRange = actor.knownSubstituteHpFractionRange,
         )
     }
 

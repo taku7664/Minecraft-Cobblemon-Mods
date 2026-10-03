@@ -126,7 +126,12 @@ internal object LocalTacticalScorer {
             buildList {
                 if (primary?.side == BattleSide.OPPONENT) add(primary to (knockoutUtility(action, tuning, context) / tuning.knockoutMaterialScore))
                 spread.drop(1).filter { it.side == BattleSide.OPPONENT }.forEach { extra ->
-                    val probability = when (extra.standardKnockoutAssessment) {
+                    val target = context.state.pokemon.firstOrNull { it.side == extra.side && it.activeSlot == extra.slot && !it.fainted }
+                    val decoy = target?.let {
+                        jbro.cobblemon.mcc.betterai.calculation.PublicSubstituteDamageProjection.summary(
+                            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets.spreadHitOn(action, it, action.actionId + ":extra"), context, BattleSide.ALLY)
+                    }
+                    val probability = decoy?.knockoutProbability?.let { if (accuracy > 0.0) it / accuracy else 0.0 } ?: when (extra.standardKnockoutAssessment) {
                         BattleKnockoutAssessment.GUARANTEED -> 1.0
                         BattleKnockoutAssessment.POSSIBLE -> extra.standardDamageRollKoProbabilityRange
                             ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0

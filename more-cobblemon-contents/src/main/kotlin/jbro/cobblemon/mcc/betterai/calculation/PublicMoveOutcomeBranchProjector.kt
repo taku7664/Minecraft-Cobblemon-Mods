@@ -10,6 +10,9 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalConditionalDamageAbilities
+import jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -19,6 +22,8 @@ internal data class PublicMoveOutcomeBranch(
     val probability: Double,
     val hit: Boolean,
     val damageFraction: Double,
+    val hitCount: Int = 1,
+    val substituteHpBefore: BattleDamageFractionRange? = null,
 )
 
 internal data class PublicDamageRollSummary(
@@ -67,6 +72,15 @@ internal object PublicMoveOutcomeBranchProjector {
                 critical.map { it.copy(probability = it.probability * chance) }
         }
         val accuracy = LocalPublicAccuracy.probability(candidate, context, actingSide)
+        val actor = context.state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted }
+        val decoyTarget = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()
+            ?.takeIf { LocalSubstituteRules.present(it) && !LocalSubstituteRules.bypasses(candidate, actor, context.state) }
+        fun decoyBranches(branches: List<PublicMoveOutcomeBranch>) = branches.flatMap { branch ->
+            if (!branch.hit || decoyTarget == null) listOf(branch) else
+                LocalSubstituteRules.hypotheses(decoyTarget, branch.damageFraction, branch.hitCount).map { (hp, weight) ->
+                    branch.copy(probability = branch.probability * weight, substituteHpBefore = hp)
+                }
+        }
         val calculatedRolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(
             candidate,
             context,
@@ -90,15 +104,16 @@ internal object PublicMoveOutcomeBranchProjector {
             candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
         ) criticalChance(candidate, context, actingSide) else 0.0
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
-            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits)
+            return decoyBranches(perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits, decoyTarget != null))
         }
-        val hitBranches = damageBranches(rolls, targetHp, accuracy, criticalHits)
+        val count = LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state)
+        val hitBranches = damageBranches(rolls, targetHp, accuracy, criticalHits, decoyTarget != null).map { it.copy(hitCount = count) }
         val miss = if (accuracy < 1.0) {
             listOf(PublicMoveOutcomeBranch(1.0 - accuracy, hit = false, damageFraction = 0.0))
         } else {
             emptyList()
         }
-        return (miss + hitBranches).filter { it.probability > 0.0 }
+        return decoyBranches((miss + hitBranches).filter { it.probability > 0.0 })
     }
 
     private fun perHitAccuracyBranches(
@@ -107,14 +122,15 @@ internal object PublicMoveOutcomeBranchProjector {
         damageRolls: List<Double>,
         targetHp: Double?,
         criticalHits: Double,
+        preserveRolls: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         val maximum = LocalDeclaredMultiHit.maximumCount(candidate)
         val branches = mutableListOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0))
         for (hits in 1 until maximum) {
             val probability = accuracy.pow(hits) * (1.0 - accuracy)
-            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability, criticalHits)
+            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability, criticalHits, preserveRolls).map { it.copy(hitCount = hits) }
         }
-        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum), criticalHits)
+        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum), criticalHits, preserveRolls).map { it.copy(hitCount = maximum) }
         return branches.filter { it.probability > 0.0 }
     }
 
@@ -129,8 +145,12 @@ internal object PublicMoveOutcomeBranchProjector {
         targetHp: Double?,
         probability: Double,
         criticalHits: Double,
+        preserveRolls: Boolean = false,
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
+        if (preserveRolls) return rolls.groupBy { it }.map { (damage, group) ->
+            PublicMoveOutcomeBranch(probability * group.size / rolls.size, true, damage)
+        }
         if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, criticalHits)
         return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
             PublicMoveOutcomeBranch(
