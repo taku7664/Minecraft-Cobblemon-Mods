@@ -75,14 +75,16 @@ object BattleEntryTransition {
     }
 
     /**
-     * Plays [kind] against [species] (the wild Pokémon, or the trainer's lead), whose primary type colours the
-     * transition, and runs [onCovered] once the screen is covered. False when the transition is turned off, and
+     * Plays [kind] against [species], whose primary type colours a legendary transition (the others keep the theme's
+     * colours), and runs [onCovered] once the screen is covered. False when the transition is turned off, and
      * [onCovered] will not run.
      */
     @JvmStatic
     @JvmOverloads
     fun play(kind: BattleEntryKind, species: ResourceLocation?, onCovered: Runnable?, blockInput: Boolean = true): Boolean {
-        val accent = species?.let { PokemonSpecies.getByIdentifier(it) }?.let { UIUtils.getTypeColor(it.primaryType) }
+        val accent = if (kind == BattleEntryKind.LEGENDARY) {
+            species?.let { PokemonSpecies.getByIdentifier(it) }?.let { UIUtils.getTypeColor(it.primaryType) }
+        } else null
         return play(kind, accent, blockInput, onCovered)
     }
 
@@ -198,7 +200,9 @@ object BattleEntryTransition {
         BattleEntryTimeline.rings(kind, elapsed).forEach { ring(context, width, height, current.accent, it) }
         val pulse = if (sinceReveal == null) BattleEntryTimeline.pulse(kind, elapsed) else 0f
         when {
-            kind == BattleEntryKind.LEGENDARY -> drawLegendaryCover(context, width, height, current.accent, elapsed, cover, pulse)
+            kind == BattleEntryKind.LEGENDARY -> if (reveal < 1f) {
+                drawLegendaryCover(context, width, height, current.accent, elapsed, cover, pulse)
+            }
             BattleUiTheme.palette.entryPattern == BattleEntryPattern.CELLS ->
                 drawCells(context, width, height, kind, current.accent, cover, reveal, pulse)
             else -> drawStripes(context, width, height, current.accent, cover, reveal, pulse)
@@ -216,8 +220,12 @@ object BattleEntryTransition {
             val strength = if (kind == BattleEntryKind.LEGENDARY) .95f else .85f
             context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), flash * strength))
         }
-        val white = sinceReveal?.let { BattleEntryTimeline.white(kind, it) } ?: 0f
-        if (white > 0f) context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), white))
+        if (kind == BattleEntryKind.LEGENDARY) {
+            if (sinceReveal != null) drawLegendaryReveal(context, width, height, current.accent, sinceReveal)
+        } else {
+            val white = sinceReveal?.let { BattleEntryTimeline.white(kind, it) } ?: 0f
+            if (white > 0f) context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), white))
+        }
         pose.popPose()
     }
 
@@ -294,8 +302,8 @@ object BattleEntryTransition {
         val centerY = h / 2f
         val far = hypot(centerX, centerY)
         // The slash runs from the top right to the bottom left through the center.
-        val dirX = -.55f
-        val dirY = 1f
+        val dirX = SLASH_X
+        val dirY = SLASH_Y
         val dirLength = hypot(dirX, dirY)
         val ux = dirX / dirLength
         val uy = dirY / dirLength
@@ -356,6 +364,133 @@ object BattleEntryTransition {
                 buffer.addVertex(matrix, baseX - cy * half, baseY + cx * half, 0f).setColor(color)
                 buffer.addVertex(matrix, baseX + cy * half, baseY - cx * half, 0f).setColor(color)
                 buffer.addVertex(matrix, tipX, tipY, 0f).setColor(color)
+            }
+        }
+    }
+
+    /**
+     * A legendary's reveal: the slash swells until its light covers the whole screen, then the white cracks from just
+     * above the center and shatters, its shards flung outward and falling as they fade, nearest the center first.
+     */
+    private fun drawLegendaryReveal(context: GuiGraphics, width: Int, height: Int, accent: Int, sinceReveal: Long) {
+        val kind = BattleEntryKind.LEGENDARY
+        val w = width.toFloat()
+        val h = height.toFloat()
+        val centerX = w / 2f
+        val centerY = h / 2f
+        val far = hypot(centerX, centerY)
+        val glow = BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .6f)
+        if (sinceReveal < kind.revealMillis) {
+            val length = hypot(SLASH_X, SLASH_Y)
+            val ux = SLASH_X / length
+            val uy = SLASH_Y / length
+            val beam = BattleEntryTimeline.beam(kind, sinceReveal)
+            val thickness = 7f + far * 2.3f * beam
+            quads(context) { buffer, matrix ->
+                strip(buffer, matrix, centerX, centerY, ux, uy, -uy, ux, -far * 1.6f, far * 1.6f, thickness * 1.3f + 10f,
+                    BattleSurfaceRenderer.withOpacity(glow, .55f + .45f * beam))
+                strip(buffer, matrix, centerX, centerY, ux, uy, -uy, ux, -far * 1.6f, far * 1.6f, thickness, 0xFFFFFFFF.toInt())
+            }
+            return
+        }
+        val impactX = centerX
+        val impactY = h * .46f
+        val shatter = BattleEntryTimeline.shatter(kind, sinceReveal)
+        if (shatter <= 0f) {
+            context.fill(0, 0, width, height, 0xFFFFFFFF.toInt())
+            drawCracks(context, impactX, impactY, far, accent, BattleEntryTimeline.crack(kind, sinceReveal))
+            return
+        }
+        // The white tiled in jittered triangles that together cover the screen exactly until they start to move.
+        val cellW = w / SHARD_COLUMNS
+        val cellH = h / SHARD_ROWS
+        fun corner(column: Int, row: Int): Pair<Float, Float> {
+            val inside = column in 1 until SHARD_COLUMNS && row in 1 until SHARD_ROWS
+            val seed = column * 92821 + row * 68917
+            val jitterX = if (inside) (hash(seed) - .5f) * cellW * .7f else 0f
+            val jitterY = if (inside) (hash(seed + 5) - .5f) * cellH * .7f else 0f
+            return column * cellW + jitterX to row * cellH + jitterY
+        }
+        quads(context) { buffer, matrix ->
+            for (row in 0 until SHARD_ROWS) for (column in 0 until SHARD_COLUMNS) {
+                val a = corner(column, row)
+                val b = corner(column + 1, row)
+                val c = corner(column + 1, row + 1)
+                val d = corner(column, row + 1)
+                val seed = column * 7333 + row * 1291
+                val shards = if (hash(seed) < .5f) listOf(listOf(a, b, c), listOf(a, c, d)) else listOf(listOf(a, b, d), listOf(b, c, d))
+                shards.forEachIndexed { index, shard -> drawShard(buffer, matrix, shard, seed * 3 + index, impactX, impactY,
+                    far, h, accent, shatter) }
+            }
+        }
+    }
+
+    /** One shard of a legendary's white: flung away from the impact, spinning and falling as it fades. */
+    private fun drawShard(buffer: VertexConsumer, matrix: Matrix4f, points: List<Pair<Float, Float>>, seed: Int,
+                          impactX: Float, impactY: Float, far: Float, height: Float, accent: Int, shatter: Float) {
+        val cx = points.sumOf { it.first.toDouble() }.toFloat() / 3f
+        val cy = points.sumOf { it.second.toDouble() }.toFloat() / 3f
+        val dx = cx - impactX
+        val dy = cy - impactY
+        val distance = (hypot(dx, dy) / far).coerceAtMost(1f)
+        // Shards near the impact break away first.
+        val delay = distance * .35f
+        val t = ((shatter - delay) / (1f - .35f)).coerceIn(0f, 1f)
+        val alpha = 1f - BattleEntryTimeline.smooth(t)
+        if (alpha <= 0f) return
+        val norm = hypot(dx, dy).coerceAtLeast(1f)
+        val push = far * (.35f + .45f * hash(seed + 1)) * (1f - (1f - t) * (1f - t))
+        val fall = height * .8f * t * t
+        val moveX = dx / norm * push
+        val moveY = dy / norm * push + fall
+        val spin = (hash(seed + 2) - .5f) * 4f * t
+        val scale = 1f - .35f * t
+        val spinCos = cos(spin)
+        val spinSin = sin(spin)
+        val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), accent, .06f + .14f * hash(seed + 3))
+        val color = BattleSurfaceRenderer.withOpacity(tint, alpha)
+        val placed = points.map { (x, y) ->
+            val rx = (x - cx) * scale
+            val ry = (y - cy) * scale
+            (cx + moveX + rx * spinCos - ry * spinSin) to (cy + moveY + rx * spinSin + ry * spinCos)
+        }
+        buffer.addVertex(matrix, placed[0].first, placed[0].second, 0f).setColor(color)
+        buffer.addVertex(matrix, placed[1].first, placed[1].second, 0f).setColor(color)
+        buffer.addVertex(matrix, placed[2].first, placed[2].second, 0f).setColor(color)
+        buffer.addVertex(matrix, placed[2].first, placed[2].second, 0f).setColor(color)
+    }
+
+    /** Cracks running out from the impact across the white, each a jagged line of a few segments. */
+    private fun drawCracks(context: GuiGraphics, impactX: Float, impactY: Float, far: Float, accent: Int, growth: Float) {
+        if (growth <= 0f) return
+        val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(accent, 0xFF000000.toInt(), .45f), .7f)
+        quads(context) { buffer, matrix ->
+            for (crack in 0 until CRACKS) {
+                val seed = crack * 4099 + 7
+                var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
+                var x = impactX
+                var y = impactY
+                val segments = CRACK_SEGMENTS * growth
+                for (segment in 0 until CRACK_SEGMENTS) {
+                    val share = (segments - segment).coerceIn(0f, 1f)
+                    if (share <= 0f) break
+                    angle += (hash(seed + segment * 13 + 1) - .5f) * .7f
+                    val length = far * (.12f + .14f * hash(seed + segment * 13 + 2)) * share
+                    val nx = x + cos(angle) * length
+                    val ny = y + sin(angle) * length
+                    val dx = nx - x
+                    val dy = ny - y
+                    val norm = hypot(dx, dy).coerceAtLeast(.001f)
+                    val half = .8f * (1f - segment / CRACK_SEGMENTS.toFloat()) + .35f
+                    val px = -dy / norm * half
+                    val py = dx / norm * half
+                    buffer.addVertex(matrix, x + px, y + py, 0f).setColor(color)
+                    buffer.addVertex(matrix, x - px, y - py, 0f).setColor(color)
+                    buffer.addVertex(matrix, nx - px, ny - py, 0f).setColor(color)
+                    buffer.addVertex(matrix, nx + px, ny + py, 0f).setColor(color)
+                    x = nx
+                    y = ny
+                }
             }
         }
     }
@@ -439,6 +574,12 @@ object BattleEntryTransition {
 
     private const val CELL = 20
     private const val FOCUS_LINES = 56
+    private const val SLASH_X = -.55f
+    private const val SLASH_Y = 1f
+    private const val SHARD_COLUMNS = 11
+    private const val SHARD_ROWS = 7
+    private const val CRACKS = 11
+    private const val CRACK_SEGMENTS = 5
     private const val BAND = 26f
     private const val SLOPE = .55f
     private const val SHAKE_PIXELS = 5f

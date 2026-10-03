@@ -102,7 +102,7 @@
   "cobblemon_ui.config.battleTheme.champions": "Theme 1",
   "cobblemon_ui.config.battleTheme.galar": "Theme 2",
   "cobblemon_ui.config.enableBattleEntryTransition": "Battle Entry Transition",
-  "cobblemon_ui.config.enableBattleEntryTransition.tooltip": "Cover the screen with a pattern in the opponent's type colour as a battle starts, then fade in from white. Legendary Pokémon darken the screen, flash three times, then a slash splits the screen under focus lines.",
+  "cobblemon_ui.config.enableBattleEntryTransition.tooltip": "Cover the screen with the battle theme's pattern as a battle starts, turn it white, then fade into the battle. Legendary Pokémon darken the screen, flash three times, split it with a slash under focus lines, then flood it with light that shatters.",
   "cobblemon_ui.config.uiStyle": "UI Style",
   "cobblemon_ui.config.uiStyle.tooltip": "The window style the MCC hub, the dialogue box and the HUD buttons share.",
   "cobblemon_ui.config.uiStyle.option": "Style %s",

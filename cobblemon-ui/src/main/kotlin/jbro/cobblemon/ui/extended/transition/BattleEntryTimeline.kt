@@ -4,10 +4,12 @@ import kotlin.math.abs
 
 /**
  * What kind of battle is starting, which sets the entry transition's beats: when it flashes, how long the pattern
- * takes to cover the screen, how long the covered screen pulses before the battle may start, how fast the white rises
- * and how slowly it fades into the battle. Wild and trainer battles run about four seconds; a legendary runs about
- * five: it darkens the world, flashes three times faster and faster with a shockwave on each, then a slash splits the
- * screen and two black plates close on it under focus lines in its colour.
+ * takes to cover the screen, how long the covered screen pulses before the battle may start, how long the covered
+ * screen takes to turn white ([revealMillis]) and how long the white takes to give way to the battle ([fadeMillis]).
+ * Wild and trainer battles run about four seconds; a legendary runs about six: it darkens the world,
+ * flashes three times faster and faster with a shockwave on each, a slash splits the screen and two black plates close
+ * on it under focus lines in its colour, then the slash swells into light over the whole screen, which cracks and
+ * shatters to show the battle.
  */
 enum class BattleEntryKind(
     val id: String,
@@ -18,9 +20,9 @@ enum class BattleEntryKind(
     val revealMillis: Long,
     val fadeMillis: Long,
 ) {
-    LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1700, 750, 400, 1100),
-    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 400, 1000),
-    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 400, 1000);
+    LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1800, 750, 650, 1300),
+    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000),
+    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000);
 
     companion object {
         fun fromId(id: String?): BattleEntryKind? = entries.firstOrNull { it.id == id }
@@ -29,7 +31,8 @@ enum class BattleEntryKind(
 
 /**
  * The transition's timing, apart from drawing: flashes, then the pattern covering the screen, a hold while the server
- * starts the battle, then white over the pattern that slowly fades to show the battle.
+ * starts the battle, then white rising over the still covered screen; only once it is fully white does the pattern go
+ * and the white give way to the battle.
  */
 object BattleEntryTimeline {
     /** How far behind the first piece the last one starts, as a share of the cover. */
@@ -38,8 +41,8 @@ object BattleEntryTimeline {
     const val HOLD_TIMEOUT_MILLIS = 6000L
     /** How long a legendary's shockwave takes to reach past the screen's corners. */
     const val RING_MILLIS = 450L
-    /** The share of the reveal spent turning the covered screen white, before the white starts to fade. */
-    const val WHITE_RISE = .4f
+    /** How long a legendary's white screen shows its cracks before it shatters. */
+    const val CRACK_MILLIS = 250L
 
     fun flashEnd(kind: BattleEntryKind): Long = kind.flashStarts.last() + kind.flashMillis
 
@@ -82,21 +85,39 @@ object BattleEntryTimeline {
 
     fun covered(kind: BattleEntryKind, elapsed: Long): Boolean = cover(kind, elapsed) >= 1f
 
-    /** How far the pattern has cleared, 0 to 1, since the reveal began; it is gone by the time the white is full. */
-    fun reveal(kind: BattleEntryKind, sinceReveal: Long): Float =
-        (sinceReveal.toFloat() / (kind.revealMillis * WHITE_RISE)).coerceIn(0f, 1f)
+    /**
+     * Whether the pattern is gone, 0 or 1, since the reveal began: it stays whole under the rising white and goes the
+     * moment the screen is fully white, so the white gives way straight to the battle.
+     */
+    fun reveal(kind: BattleEntryKind, sinceReveal: Long): Float = if (sinceReveal >= kind.revealMillis) 1f else 0f
 
-    /** The white over the screen since the reveal began: it rises over the pattern, then slowly fades. */
+    /** The white over the screen since the reveal began: it rises over the covered screen, then slowly fades. */
     fun white(kind: BattleEntryKind, sinceReveal: Long): Float {
         if (sinceReveal < 0) return 0f
-        val rise = kind.revealMillis * WHITE_RISE
+        val rise = kind.revealMillis.toFloat()
         if (sinceReveal < rise) return sinceReveal / rise
         return 1f - smooth(((sinceReveal - rise) / kind.fadeMillis).coerceIn(0f, 1f))
     }
 
     /** Whether the reveal has finished and nothing is left on screen. */
     fun revealed(kind: BattleEntryKind, sinceReveal: Long): Boolean =
-        sinceReveal >= kind.revealMillis * WHITE_RISE + kind.fadeMillis
+        sinceReveal >= kind.revealMillis + kind.fadeMillis
+
+    /** How wide a legendary's slash has swelled toward covering the screen, 0 to 1: slow to start, then flooding. */
+    fun beam(kind: BattleEntryKind, sinceReveal: Long): Float {
+        val share = (sinceReveal.toFloat() / kind.revealMillis).coerceIn(0f, 1f)
+        return share * share * share
+    }
+
+    /** How far a legendary's cracks have run across the white, 0 to 1. */
+    fun crack(kind: BattleEntryKind, sinceReveal: Long): Float {
+        val share = ((sinceReveal - kind.revealMillis).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
+        return 1f - (1f - share) * (1f - share)
+    }
+
+    /** How far a legendary's white has shattered and fallen away, 0 to 1, after its cracks. */
+    fun shatter(kind: BattleEntryKind, sinceReveal: Long): Float =
+        ((sinceReveal - kind.revealMillis - CRACK_MILLIS).toFloat() / (kind.fadeMillis - CRACK_MILLIS)).coerceIn(0f, 1f)
 
     /** A legendary's darkening of the world before its pattern, 0 to 1. */
     fun dim(kind: BattleEntryKind, elapsed: Long): Float {
