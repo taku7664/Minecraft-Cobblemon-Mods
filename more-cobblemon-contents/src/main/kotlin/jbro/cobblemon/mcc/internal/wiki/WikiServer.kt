@@ -132,7 +132,7 @@ internal object WikiServer {
         return json(200, body)
     }
 
-    private fun dashboard(server: MinecraftServer, playerId: UUID): JsonObject = JsonObject().apply {
+    internal fun dashboard(server: MinecraftServer, playerId: UUID): JsonObject = JsonObject().apply {
         add("player", JsonObject().apply {
             addProperty("uuid", playerId.toString())
             addProperty("name", server.playerList.getPlayer(playerId)?.gameProfile?.name

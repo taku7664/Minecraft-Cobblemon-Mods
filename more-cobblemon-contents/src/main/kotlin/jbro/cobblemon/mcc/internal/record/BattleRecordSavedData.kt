@@ -130,7 +130,7 @@ object BattleRecordService {
         server: MinecraftServer,
         key: BattleRecordKey,
         outcome: BattleRecordOutcome,
-    ): BattleRecordStats = data(server).recordOutcome(key, outcome)
+    ): BattleRecordStats = data(server).recordOutcome(key, outcome).also { logOutcome(server, outcome, it) }
 
     fun recordCompletedBattle(
         server: MinecraftServer,
@@ -138,7 +138,10 @@ object BattleRecordService {
     ): BattleRecordStats {
         val data = data(server)
         val before = data.get(completion.key)
-        return data.recordCompletedBattle(completion).also { after -> announceSafely(server, before, after) }
+        return data.recordCompletedBattle(completion).also { after ->
+            logOutcome(server, completion.outcome, after)
+            announceSafely(server, before, after)
+        }
     }
 
     fun recordCompletedBattles(
@@ -148,8 +151,22 @@ object BattleRecordService {
         val data = data(server)
         val before = completions.map { data.get(it.key) }
         return data.recordCompletedBattles(completions).also { after ->
+            completions.zip(after).forEach { (completion, new) -> logOutcome(server, completion.outcome, new) }
             before.zip(after).forEach { (old, new) -> announceSafely(server, old, new) }
         }
+    }
+
+    /**
+     * One line per finished battle, naming the player, so an operator (or the inquiry review) can see in the log
+     * when someone won or lost what; the saved records keep only totals.
+     */
+    private fun logOutcome(server: MinecraftServer, outcome: BattleRecordOutcome, after: BattleRecordStats) {
+        val playerId = after.key.playerId
+        val name = server.playerList.getPlayer(playerId)?.gameProfile?.name
+            ?: server.profileCache?.get(playerId)?.orElse(null)?.name ?: playerId.toString()
+        MoreCobblemonContents.LOGGER.info("Battle record: {} ({}) {} {}/{}; wins={} losses={} streak={}",
+            name, playerId, outcome, after.key.category.contentId, after.key.category.formatId,
+            after.totalWins, after.totalLosses, after.currentWinStreak)
     }
 
     /** A news failure never undoes or fails the record that was just saved. */
