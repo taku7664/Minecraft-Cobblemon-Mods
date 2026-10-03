@@ -34,7 +34,7 @@ import kotlin.math.sin
  * It draws above every screen and the HUD with plain quads only, in the battle theme's pattern: square cells for
  * Theme 1, slanted bands for Theme 2. A wild battle's cells grow from the center, a trainer's sweep in from a corner,
  * and a legendary darkens the world, flashes three times with a shockwave each, slams black bars in and shakes as
- * cells in its type's colour close.
+ * plates close and focus lines in its type's colour stab in, until the lines flood the screen white and it shatters.
  */
 object BattleEntryTransition {
     private class Run(val kind: BattleEntryKind, val accent: Int, val startedAt: Long, val onCovered: Runnable?) {
@@ -201,7 +201,8 @@ object BattleEntryTransition {
         val pulse = if (reveal < 1f) BattleEntryTimeline.pulse(kind, elapsed) else 0f
         when {
             kind == BattleEntryKind.LEGENDARY -> if (reveal < 1f) {
-                drawLegendaryCover(context, width, height, current.accent, elapsed, cover, pulse)
+                drawLegendaryCover(context, width, height, current.accent, elapsed, cover,
+                    BattleEntryTimeline.beam(kind, elapsed))
             }
             BattleUiTheme.palette.entryPattern == BattleEntryPattern.CELLS ->
                 drawCells(context, width, height, kind, current.accent, cover, reveal, pulse)
@@ -288,71 +289,58 @@ object BattleEntryTransition {
     }
 
     /**
-     * A legendary's cover: a bright slash crosses the screen on a diagonal, two near-black plates tinted in [accent]
-     * slide in from either side and close on it, its seam glowing, and focus lines in [accent] stab in from the edges
-     * toward the center. Once covered the lines reach deeper on each heartbeat of [pulse]. The white of the reveal
-     * covers all of it, so it needs no clearing of its own.
+     * A legendary's cover: two near-black plates tinted in [accent] slide in from either side of a diagonal and close
+     * on it, and focus lines in [accent] stab in from the edges toward the center, flickering. As the screen turns
+     * white ([flood], 0 to 1) the lines thicken, whiten and drive to the center until their light fills the screen.
      */
     private fun drawLegendaryCover(context: GuiGraphics, width: Int, height: Int, accent: Int, elapsed: Long,
-                                   cover: Float, pulse: Float) {
+                                   cover: Float, flood: Float) {
         if (cover <= 0f) return
         val w = width.toFloat()
         val h = height.toFloat()
         val centerX = w / 2f
         val centerY = h / 2f
         val far = hypot(centerX, centerY)
-        // The slash runs from the top right to the bottom left through the center.
-        val dirX = SLASH_X
-        val dirY = SLASH_Y
-        val dirLength = hypot(dirX, dirY)
-        val ux = dirX / dirLength
-        val uy = dirY / dirLength
+        // The plates meet on a line from the top right to the bottom left through the center.
+        val dirLength = hypot(SLASH_X, SLASH_Y)
+        val ux = SLASH_X / dirLength
+        val uy = SLASH_Y / dirLength
         // The normal points to the top left plate's side.
         val nx = -uy
         val ny = ux
         val reach = far * 1.6f
         val plate = BattleSurfaceRenderer.interpolate(accent, 0xFF000000.toInt(), .88f)
-        val closed = BattleEntryTimeline.plates(cover)
-        val gap = (1f - closed) * far * 1.25f
-        val slash = BattleEntryTimeline.slash(cover)
-        val glow = BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .55f)
+        val gap = (1f - BattleEntryTimeline.plates(cover)) * far * 1.25f
         quads(context) { buffer, matrix ->
-            // Each plate: a band reaching from the slash out past the screen on its side, held [gap] away from it.
+            // Each plate: a band reaching from the seam out past the screen on its side, held [gap] away from it.
             for (side in intArrayOf(1, -1)) {
-                val offset = gap + 1f
-                val nearX = centerX + nx * side * (offset - 1.5f)
-                val nearY = centerY + ny * side * (offset - 1.5f)
-                val farX = centerX + nx * side * (offset + reach)
-                val farY = centerY + ny * side * (offset + reach)
+                val nearX = centerX + nx * side * (gap - .5f)
+                val nearY = centerY + ny * side * (gap - .5f)
+                val farX = centerX + nx * side * (gap + reach)
+                val farY = centerY + ny * side * (gap + reach)
                 buffer.addVertex(matrix, nearX - ux * reach, nearY - uy * reach, 0f).setColor(plate)
                 buffer.addVertex(matrix, farX - ux * reach, farY - uy * reach, 0f).setColor(plate)
                 buffer.addVertex(matrix, farX + ux * reach, farY + uy * reach, 0f).setColor(plate)
                 buffer.addVertex(matrix, nearX + ux * reach, nearY + uy * reach, 0f).setColor(plate)
             }
-            // The slash: a blade of light drawn across from its top end, widest while the plates are open, then the
-            // seam they close on.
-            if (slash > 0f) {
-                val thickness = 1.5f + 5f * (1f - closed) + 2f * pulse
-                val alpha = (.65f + .35f * (1f - closed)).coerceAtMost(1f)
-                val start = -reach
-                val end = -reach + 2f * reach * slash
-                val color = BattleSurfaceRenderer.withOpacity(glow, alpha)
-                val core = BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), alpha)
-                strip(buffer, matrix, centerX, centerY, ux, uy, nx, ny, start, end, thickness * 2.2f, color)
-                strip(buffer, matrix, centerX, centerY, ux, uy, nx, ny, start, end, thickness * .7f, core)
-            }
-            // Focus lines from the edges toward the center, each its own length, width and flicker.
+            // Focus lines from the edges toward the center, each its own length, width and flicker; the flicker
+            // settles as they flood.
             val lineColor = BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .3f)
             val flicker = (elapsed / 70L).toInt()
+            val wide = far * FLOOD_WIDTH
             for (line in 0 until FOCUS_LINES) {
                 val seed = line * 7919 + 13
                 val angle = (line + hash(seed) * .8f) / FOCUS_LINES * TAU
-                val depth = (.38f + .32f * hash(seed + 1)) * (.35f + .65f * cover) + .18f * pulse
+                val resting = (.38f + .32f * hash(seed + 1)) * (.35f + .65f * cover)
+                val depth = resting + (1.05f - resting) * flood
                 val inner = far * (1.05f - depth)
                 val outer = far * 1.25f
-                val half = 2.5f + 5f * hash(seed + 2)
-                val alpha = cover * (.45f + .45f * hash(seed + flicker * 31))
-                val color = BattleSurfaceRenderer.withOpacity(lineColor, alpha.coerceIn(0f, 1f))
+                val thin = 2.5f + 5f * hash(seed + 2)
+                val half = thin + (wide - thin) * flood
+                val restingAlpha = cover * (.45f + .45f * hash(seed + flicker * 31))
+                val alpha = restingAlpha + (1f - restingAlpha) * flood
+                val color = BattleSurfaceRenderer.withOpacity(
+                    BattleSurfaceRenderer.interpolate(lineColor, 0xFFFFFFFF.toInt(), flood), alpha.coerceIn(0f, 1f))
                 val cx = cos(angle)
                 val cy = sin(angle)
                 val tipX = centerX + cx * inner
@@ -366,11 +354,14 @@ object BattleEntryTransition {
                 buffer.addVertex(matrix, tipX, tipY, 0f).setColor(color)
             }
         }
+        // The last of the flood closes the gaps between the lines.
+        val fill = BattleEntryTimeline.smooth(((flood - .7f) / .3f).coerceIn(0f, 1f))
+        if (fill > 0f) context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), fill))
     }
 
     /**
-     * A legendary's reveal: the slash swells until its light covers the whole screen, then the white cracks from just
-     * above the center and shatters, its shards flung outward and falling as they fade, nearest the center first.
+     * A legendary's reveal, once its focus lines have flooded the screen white: the white holds, cracks from just above
+     * the center, stays still, then comes apart in shards that drift out from the center and fade, nearest first.
      */
     private fun drawLegendaryReveal(context: GuiGraphics, width: Int, height: Int, accent: Int, elapsed: Long,
                                     revealAt: Long?) {
@@ -381,20 +372,8 @@ object BattleEntryTransition {
         val centerX = w / 2f
         val centerY = h / 2f
         val far = hypot(centerX, centerY)
-        val glow = BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .6f)
-        if (!BattleEntryTimeline.patternGone(kind, elapsed)) {
-            val length = hypot(SLASH_X, SLASH_Y)
-            val ux = SLASH_X / length
-            val uy = SLASH_Y / length
-            val beam = BattleEntryTimeline.beam(kind, elapsed)
-            val thickness = 7f + far * 2.3f * beam
-            quads(context) { buffer, matrix ->
-                strip(buffer, matrix, centerX, centerY, ux, uy, -uy, ux, -far * 1.6f, far * 1.6f, thickness * 1.3f + 10f,
-                    BattleSurfaceRenderer.withOpacity(glow, .55f + .45f * beam))
-                strip(buffer, matrix, centerX, centerY, ux, uy, -uy, ux, -far * 1.6f, far * 1.6f, thickness, 0xFFFFFFFF.toInt())
-            }
-            return
-        }
+        // Until the screen is white the cover draws the flood itself.
+        if (!BattleEntryTimeline.patternGone(kind, elapsed)) return
         val impactX = centerX
         val impactY = h * .46f
         val shatter = BattleEntryTimeline.shatter(kind, elapsed, revealAt)
@@ -504,16 +483,6 @@ object BattleEntryTransition {
         }
     }
 
-    /** A band along the slash's direction, from [start] to [end] along it, [thickness] wide. */
-    private fun strip(buffer: VertexConsumer, matrix: Matrix4f, centerX: Float, centerY: Float, ux: Float, uy: Float,
-                      nx: Float, ny: Float, start: Float, end: Float, thickness: Float, color: Int) {
-        val half = thickness / 2f
-        buffer.addVertex(matrix, centerX + ux * start + nx * half, centerY + uy * start + ny * half, 0f).setColor(color)
-        buffer.addVertex(matrix, centerX + ux * start - nx * half, centerY + uy * start - ny * half, 0f).setColor(color)
-        buffer.addVertex(matrix, centerX + ux * end - nx * half, centerY + uy * end - ny * half, 0f).setColor(color)
-        buffer.addVertex(matrix, centerX + ux * end + nx * half, centerY + uy * end + ny * half, 0f).setColor(color)
-    }
-
     /** A steady pseudo-random share, 0 to 1, for [seed]. */
     private fun hash(seed: Int): Float {
         var x = seed * -0x61c88647
@@ -583,6 +552,8 @@ object BattleEntryTransition {
 
     private const val CELL = 20
     private const val FOCUS_LINES = 56
+    /** How wide each focus line grows at the screen's edge, as a share of the center-to-corner distance. */
+    private const val FLOOD_WIDTH = .11f
     private const val SLASH_X = -.55f
     private const val SLASH_Y = 1f
     private const val SHARD_COLUMNS = 11

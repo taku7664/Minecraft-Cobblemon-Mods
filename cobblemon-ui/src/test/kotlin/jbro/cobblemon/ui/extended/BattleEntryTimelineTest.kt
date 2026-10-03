@@ -59,12 +59,12 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary's light floods the screen before the battle starts, then holds, cracks, waits and shatters`() {
+    fun `a legendary's focus lines flood the screen before the battle starts, then it holds, cracks, waits and shatters`() {
         val kind = BattleEntryKind.LEGENDARY
         val start = BattleEntryTimeline.riseStart(kind)
         val ready = BattleEntryTimeline.readyAt(kind)
         assertEquals(0f, BattleEntryTimeline.beam(kind, start))
-        assertTrue(BattleEntryTimeline.beam(kind, (start + ready) / 2) < .2f)
+        assertTrue(BattleEntryTimeline.beam(kind, (start + ready) / 2) < .3f)
         assertEquals(1f, BattleEntryTimeline.beam(kind, ready), 1e-3f)
         // Until the battle opens the white just holds.
         assertEquals(0f, BattleEntryTimeline.crack(kind, ready + 5000, null))
@@ -83,11 +83,9 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary's slash crosses before its plates close`() {
-        assertEquals(0f, BattleEntryTimeline.slash(0f))
-        assertEquals(1f, BattleEntryTimeline.slash(.25f), 1e-3f)
-        assertEquals(0f, BattleEntryTimeline.plates(.2f))
-        assertTrue(BattleEntryTimeline.plates(.25f) < .3f)
+    fun `a legendary's plates close fast and settle as they meet`() {
+        assertEquals(0f, BattleEntryTimeline.plates(0f))
+        assertTrue(BattleEntryTimeline.plates(.5f) > .8f)
         assertEquals(1f, BattleEntryTimeline.plates(1f), 1e-3f)
     }
 

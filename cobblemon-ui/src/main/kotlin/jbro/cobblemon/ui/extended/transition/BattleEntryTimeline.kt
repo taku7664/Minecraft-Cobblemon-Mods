@@ -9,9 +9,10 @@ import kotlin.math.abs
  * started, so the hitch of a battle opening happens behind the white.
  *
  * Wild and trainer battles run about four seconds. A legendary runs about six: it darkens the world, flashes three
- * times faster and faster with a shockwave on each, a slash splits the screen and two black plates close on it under
- * focus lines in its colour, the slash swells into light over the whole screen, which holds white for a second,
- * cracks, stays still for half a second, and comes apart in shards that drift out from the center and fade.
+ * times faster and faster with a shockwave on each, two black plates close on a diagonal under
+ * focus lines in its colour, the focus lines thicken and drive to the center until their light fills the screen,
+ * which holds white for a second, cracks, stays still for half a second, and comes apart in shards that drift out
+ * from the center and fade.
  */
 enum class BattleEntryKind(
     val id: String,
@@ -22,7 +23,7 @@ enum class BattleEntryKind(
     val revealMillis: Long,
     val fadeMillis: Long,
 ) {
-    LEGENDARY("legendary", listOf(450L, 850L, 1150L), 130, 1200, 450, 650, 800),
+    LEGENDARY("legendary", listOf(450L, 850L, 1150L), 130, 1000, 450, 900, 800),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000);
 
@@ -113,10 +114,10 @@ object BattleEntryTimeline {
         return 1f - smooth(((elapsed - fade).toFloat() / kind.fadeMillis).coerceIn(0f, 1f))
     }
 
-    /** How wide a legendary's slash has swelled toward covering the screen, 0 to 1: slow to start, then flooding. */
+    /** How far a legendary's focus lines have flooded toward filling the screen, 0 to 1: gentle at first, then quick. */
     fun beam(kind: BattleEntryKind, elapsed: Long): Float {
         val share = rise(kind, elapsed)
-        return share * share * share
+        return share * share
     }
 
     /** When a legendary's white cracks: a second after it is full, and not before the battle has opened and settled. */
@@ -189,12 +190,9 @@ object BattleEntryTimeline {
     fun piece(progress: Float, distance: Float): Float =
         (progress * (1f + SPREAD) - distance.coerceIn(0f, 1f) * SPREAD).coerceIn(0f, 1f)
 
-    /** How far a legendary's slash has crossed the screen, 0 to 1: it leads the plates by a quarter of the cover. */
-    fun slash(cover: Float): Float = smooth((cover / .25f).coerceIn(0f, 1f))
-
-    /** How far a legendary's two plates have closed on the slash, 0 to 1, starting once the slash is across. */
+    /** How far a legendary's two plates have closed on their seam, 0 to 1: fast at first, settling as they meet. */
     fun plates(cover: Float): Float {
-        val closing = ((cover - .2f) / .8f).coerceIn(0f, 1f)
+        val closing = cover.coerceIn(0f, 1f)
         return 1f - (1f - closing) * (1f - closing) * (1f - closing)
     }
 
