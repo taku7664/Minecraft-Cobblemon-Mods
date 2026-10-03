@@ -55,6 +55,39 @@ final class MusicResourcePackBuildToolTest {
     }
 
     @Test
+    void customTrackTitlesReachTheCatalogAndInvalidTitlesCannotReplaceAGoodPack() throws IOException {
+        Path source = temporaryDirectory.resolve("title-source");
+        Path output = temporaryDirectory.resolve("title-output");
+        write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
+        for (String file : java.util.List.of("music/field/plains/theme.ogg", "battle/low_hp/alert.ogg",
+            "battle/hit/normal.ogg", "battle/hit/super_effective.ogg", "battle/hit/not_very_effective.ogg")) {
+            writeOgg(source.resolve("assets/cobleserver/sounds/" + file));
+        }
+        Path layout = temporaryDirectory.resolve("titles-layout.json");
+        var root = JsonParser.parseString(layoutJson()).getAsJsonObject();
+        var titles = new com.google.gson.JsonObject();
+        titles.addProperty("cobleserver:field/plains/theme", "한글 곡명 \"Forest\"");
+        root.add("trackTitles", titles);
+        write(layout, root.toString());
+        MusicResourcePackBuildTool.build(source, layout, output);
+        Path catalog = output.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json");
+        String good = Files.readString(catalog);
+        assertEquals("한글 곡명 \"Forest\"", MusicCatalogParser.parse(new StringReader(good)).tracks()
+            .get("cobleserver:field/plains/theme").title());
+        for (var invalid : java.util.List.of(JsonParser.parseString("42"), JsonParser.parseString("\"  \""))) {
+            titles.add("cobleserver:field/plains/theme", invalid);
+            write(layout, root.toString());
+            assertThrows(IOException.class, () -> MusicResourcePackBuildTool.build(source, layout, output));
+            assertEquals(good, Files.readString(catalog));
+        }
+        titles.remove("cobleserver:field/plains/theme");
+        titles.addProperty("cobleserver:missing", "Unknown");
+        write(layout, root.toString());
+        assertThrows(IOException.class, () -> MusicResourcePackBuildTool.build(source, layout, output));
+        assertEquals(good, Files.readString(catalog));
+    }
+
+    @Test
     void rejectsInvalidOggBeforePublishingOutput() throws IOException {
         Path source = temporaryDirectory.resolve("bad-source");
         Path output = temporaryDirectory.resolve("bad-output");

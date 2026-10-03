@@ -95,6 +95,9 @@ public final class MusicResourcePackBuildTool {
             ? requiredObject(catalog, "legacyAliases", "catalog layout")
             : new JsonObject();
         catalog.remove("legacyAliases");
+        JsonObject configuredTitles = catalog.has("trackTitles")
+            ? requiredObject(catalog, "trackTitles", "catalog layout") : new JsonObject();
+        catalog.remove("trackTitles");
         JsonObject tracks = new JsonObject();
         JsonObject playlists = requiredObject(catalog, "playlists", "catalog layout");
         JsonObject sounds = new JsonObject();
@@ -109,7 +112,7 @@ public final class MusicResourcePackBuildTool {
                 String eventId = NAMESPACE + ":" + eventPath;
                 JsonObject track = new JsonObject();
                 track.addProperty("event", eventId);
-                track.addProperty("title", title(trackPath));
+                track.addProperty("title", configuredTitle(configuredTitles, trackId, trackPath));
                 JsonArray legacyPaths = new JsonArray();
                 legacyPaths.add(trackPath + ".ogg");
                 if (legacyAliases.has(trackId)) {
@@ -141,6 +144,11 @@ public final class MusicResourcePackBuildTool {
         for (String trackId : legacyAliases.keySet()) {
             if (!tracks.has(trackId)) {
                 throw new IOException("legacyAliases references unknown track " + trackId);
+            }
+        }
+        for (String trackId : configuredTitles.keySet()) {
+            if (!tracks.has(trackId)) {
+                throw new IOException("trackTitles references unknown track " + trackId);
             }
         }
         addHitSound(sounds, sourceDirectory, "normal");
@@ -210,6 +218,17 @@ public final class MusicResourcePackBuildTool {
             }
         }
         return title.toString();
+    }
+
+    private static String configuredTitle(JsonObject titles, String trackId, String trackPath) throws IOException {
+        if (!titles.has(trackId)) {
+            return title(trackPath);
+        }
+        var value = titles.get(trackId);
+        if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString() || value.getAsString().isBlank()) {
+            throw new IOException("trackTitles." + trackId + " must be a nonblank string");
+        }
+        return value.getAsString();
     }
 
     private static JsonObject readObject(Path path) throws IOException {

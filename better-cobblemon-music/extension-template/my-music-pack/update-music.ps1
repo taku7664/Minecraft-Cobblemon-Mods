@@ -8,14 +8,30 @@ $musicDir = Join-Path $root "assets\$ns\sounds\music"
 $soundsFile = Join-Path $root "assets\$ns\sounds.json"
 $catalogDir = Join-Path $root 'assets\better_cobblemon_music\catalogs\extensions'
 $catalogFile = Join-Path $catalogDir "$ns.json"
+$titlesFile = Join-Path $root 'track-titles.json'
 $utf8 = New-Object System.Text.UTF8Encoding $false
 
 function Quote([string]$value) {
-    '"' + $value.Replace('\', '\\').Replace('"', '\"') + '"'
+    ConvertTo-Json -InputObject $value -Compress
 }
 
 function Write-Json([string]$path, [string]$text) {
     [System.IO.File]::WriteAllText($path, $text, $utf8)
+}
+
+# Validate editable input before touching any generated files. UTF-8 supports Korean titles.
+$titleOverrides = @{}
+if (Test-Path -LiteralPath $titlesFile) {
+    $titleJson = Get-Content -Raw -Encoding UTF8 -LiteralPath $titlesFile
+    if (-not $titleJson.TrimStart().StartsWith('{')) { throw 'track-titles.json must be a JSON object.' }
+    $titleInput = $titleJson | ConvertFrom-Json
+    if ($titleInput -isnot [pscustomobject]) { throw 'track-titles.json must be a JSON object.' }
+    foreach ($entry in $titleInput.PSObject.Properties) {
+        if ($entry.Value -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Value)) {
+            throw "track-titles.json: $($entry.Name) must be a nonblank string."
+        }
+        $titleOverrides[$entry.Name] = $entry.Value
+    }
 }
 
 New-Item -ItemType Directory -Force $musicDir | Out-Null
@@ -52,6 +68,7 @@ if ($tracks.Count -eq 0) {
         $trackId = "${ns}:$path"
         $event = 'music.' + $path.Replace('/', '.')
         $title = $path.Substring($path.LastIndexOf('/') + 1)
+        if ($titleOverrides.ContainsKey($trackId)) { $title = $titleOverrides[$trackId] }
         if ($sounds.Length -gt 0) { [void]$sounds.Append(",`n") }
         [void]$sounds.Append("  $(Quote $event): {`n    `"sounds`": [{ `"name`": $(Quote "${ns}:music/$path"), `"stream`": true }]`n  }")
         $trackEntries.Add("    $(Quote $trackId): { `"event`": $(Quote "${ns}:$event"), `"title`": $(Quote $title) }")
