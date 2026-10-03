@@ -233,6 +233,7 @@ internal object LocalEndTurnStateProjector {
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+        knownBaseAbilityId = pokemon.knownBaseAbilityId,
     )
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)

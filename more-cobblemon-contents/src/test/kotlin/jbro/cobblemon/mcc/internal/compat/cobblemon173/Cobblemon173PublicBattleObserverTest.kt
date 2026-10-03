@@ -1,6 +1,10 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.battles.interpreter.BattleMessage
+import com.cobblemon.mod.common.battles.ShowdownActionRequest
+import com.cobblemon.mod.common.battles.ShowdownPokemon
+import com.cobblemon.mod.common.battles.ShowdownSide
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
@@ -11,6 +15,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.PublicAbilityPossibility
@@ -21,6 +27,182 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
+    @Test
+    fun `a visible Mega Trace form keeps its already publicly copied ability`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        val megaStats = BattleCombatStatRangesView.exact(100, 100, 100, 200, 100, 100)
+        val mega = actor.copy(formId = "mega", knownFormStates = mapOf("mega" to
+            BattlePokemonFormStateView("mega", setOf("psychic"), megaStats, "trace")),
+            knownTypeIds = setOf("psychic"), combatStats = megaStats)
+        observer.observeActivePresence(mega)
+        val current = observer.publicSnapshot().pokemon.single()
+        assertEquals("mega", current.formId)
+        assertEquals("levitate", current.knownAbilityId)
+        assertEquals("trace", current.knownBaseAbilityId)
+        assertEquals(setOf("psychic"), current.knownTypeIds)
+    }
+
+    @Test
+    fun `a publicly visible Mega form replaces prior Trace without clearing active effects`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "confusion", true))
+        observer.observe(Cobblemon173PublicObservation.ActionConstraintChanged(
+            1, actor, BattleActionConstraintKind.TAUNT, true))
+        val megaStats = BattleCombatStatRangesView.exact(100, 100, 100, 200, 100, 100)
+        val mega = actor.copy(formId = "mega", knownFormStates = mapOf("mega" to
+            BattlePokemonFormStateView("mega", setOf("fairy"), megaStats, "pixilate")),
+            knownTypeIds = setOf("fairy"), combatStats = megaStats)
+        observer.observeActivePresence(mega)
+        val current = observer.publicSnapshot().pokemon.single()
+        assertEquals("mega", current.formId)
+        assertEquals("pixilate", current.knownAbilityId)
+        assertEquals("pixilate", current.knownBaseAbilityId)
+        assertTrue("confusion" in current.knownVolatileEffectIds)
+        assertTrue(current.actionConstraints.taunted)
+        val replacement = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, replacement))
+        val benched = observer.publicSnapshot().pokemon.single { it.battlePokemonId == actor.battlePokemonId }
+        assertEquals("pixilate", benched.knownAbilityId)
+    }
+
+    @Test
+    fun `own request resolves copied and permanent abilities by owned Pokemon identity`() {
+        val ownId = UUID.randomUUID()
+        val otherId = UUID.randomUUID()
+        for ((currentAbility, baseAbility) in listOf("levitate" to "trace", "pixilate" to "pixilate")) {
+            val request = ShowdownActionRequest().also { action ->
+                action.side = ShowdownSide().also { side ->
+                    side.pokemon = listOf(
+                        ShowdownPokemon().also {
+                            it.details = "Gardevoir, $otherId"
+                            it.ability = "hiddenotherability"
+                            it.baseAbility = "hiddenotherability"
+                        },
+                        ShowdownPokemon().also {
+                            it.details = "Gardevoir, $ownId"
+                            it.ability = currentAbility
+                            it.baseAbility = baseAbility
+                        },
+                    )
+                }
+            }
+            assertEquals(currentAbility to baseAbility,
+                Cobblemon173ShowdownObservationAdapter.ownAbilityState(request, ownId, "trace"))
+            assertEquals("trace" to null,
+                Cobblemon173ShowdownObservationAdapter.ownAbilityState(request, UUID.randomUUID(), "trace"))
+        }
+        assertEquals("trace" to null,
+            Cobblemon173ShowdownObservationAdapter.ownAbilityState(null, ownId, "trace"))
+    }
+
+    @Test
+    fun `a Mega permanent ability overrides an older public Trace copy in the brain input`() {
+        val own = ownPokemon(formId = "mega").copyState(knownAbilityId = "pixilate", knownBaseAbilityId = "pixilate")
+        val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        val assembled = Cobblemon173BattleStateAssembler.assemble(
+            UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(own), observer.publicSnapshot(),
+            inferenceKnowledge = { _, _ -> emptyList() },
+        ).pokemon.single()
+        assertEquals("pixilate", assembled.knownAbilityId)
+        assertEquals("pixilate", assembled.knownBaseAbilityId)
+    }
+
+    @Test
+    fun `own Trace public copy reaches the final brain input and restores on observed switching`() {
+        val own = ownPokemon().copyState(knownAbilityId = "trace")
+        val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
+        val replacementOwn = ownPokemon().copyState(activeSlot = null)
+        val replacement = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = replacementOwn.battlePokemonId)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        fun assembled(current: BattlePokemonStateView) = Cobblemon173BattleStateAssembler.assemble(
+            UUID.randomUUID(), BattleFormat.SINGLE, 2,
+            listOf(current, replacementOwn.copyState(activeSlot = if (current.activeSlot == null) 0 else null)),
+            observer.publicSnapshot(),
+            inferenceKnowledge = { _, _ -> emptyList() },
+        ).pokemon.single { it.battlePokemonId == own.battlePokemonId }
+        val copied = assembled(own)
+        assertEquals("levitate", copied.knownAbilityId)
+        assertEquals("trace", copied.knownBaseAbilityId)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, replacement))
+        val benched = assembled(own.copyState(activeSlot = null))
+        assertEquals("trace", benched.knownAbilityId)
+        assertEquals("trace", benched.knownBaseAbilityId)
+    }
+
+    @Test
+    fun `a publicly changed Trace origin replaces the earlier own ability in the brain input`() {
+        val own = ownPokemon().copyState(knownAbilityId = "magicguard")
+        val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        val assembled = Cobblemon173BattleStateAssembler.assemble(
+            UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(own), observer.publicSnapshot(),
+            inferenceKnowledge = { _, _ -> emptyList() },
+        ).pokemon.single()
+        assertEquals("levitate", assembled.knownAbilityId)
+        assertEquals("trace", assembled.knownBaseAbilityId)
+    }
+
+    @Test
+    fun `an observed switch restores publicly known Trace before the next entry`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val replacement = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(2)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        val captured = observer.publicSnapshot().pokemon.single()
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, replacement))
+        val benched = observer.publicSnapshot().pokemon.single { it.battlePokemonId == actor.battlePokemonId }
+        assertNull(benched.activeSlot)
+        assertEquals("trace", benched.knownAbilityId)
+        assertEquals("trace", benched.knownBaseAbilityId)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, actor))
+        val reentered = observer.publicSnapshot().pokemon.single { it.battlePokemonId == actor.battlePokemonId }
+        assertEquals("trace", reentered.knownAbilityId)
+        assertEquals("levitate", captured.knownAbilityId)
+    }
+
+    @Test
+    fun `a publicly announced Trace origin survives observer state copies and snapshots`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate", baseAbilityId = "trace"))
+        val captured = observer.publicSnapshot().pokemon.single()
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "leftovers"))
+        observer.observe(Cobblemon173PublicObservation.HpChanged(1, actor.copy(hpFraction = 0.5)))
+        val current = observer.publicSnapshot().pokemon.single()
+        assertEquals("trace", captured.knownBaseAbilityId)
+        assertEquals("trace", current.knownBaseAbilityId)
+        assertEquals("levitate", current.knownAbilityId)
+        assertEquals(1.0, captured.hpFraction)
+        assertEquals(0.5, current.hpFraction)
+    }
+
+    @Test
+    fun `a revealed current ability does not invent an unknown permanent ability`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(1, actor, "levitate"))
+        observer.observe(Cobblemon173PublicObservation.HpChanged(1, actor.copy(hpFraction = 0.5)))
+        val current = observer.publicSnapshot().pokemon.single()
+        assertEquals("levitate", current.knownAbilityId)
+        assertNull(current.knownBaseAbilityId)
+    }
+
     @Test
     fun `own copied request moves survive a locked request and assembler drops them after switch`() {
         val own = ownPokemon()
@@ -1008,12 +1190,12 @@ class Cobblemon173PublicBattleObserverTest {
         fainted = false,
     )
 
-    private fun ownPokemon() = BattlePokemonStateView(
+    private fun ownPokemon(formId: String = "normal") = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = BattleSide.ALLY,
         activeSlot = 0,
         speciesId = "cobblemon:metagross",
-        formId = "normal",
+        formId = formId,
         level = 50,
         hpFraction = 1.0,
         statusId = null,

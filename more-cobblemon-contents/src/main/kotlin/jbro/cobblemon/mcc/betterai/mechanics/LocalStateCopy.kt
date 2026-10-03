@@ -47,6 +47,7 @@ internal fun BattlePokemonStateView.copyState(
     combatStats: BattleCombatStatRangesView? = this.combatStats,
     knownAbilityId: String? = this.knownAbilityId,
     knownHeldItemId: String? = this.knownHeldItemId,
+    knownBaseAbilityId: String? = this.knownBaseAbilityId,
 ): BattlePokemonStateView = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -69,4 +70,5 @@ internal fun BattlePokemonStateView.copyState(
     knownBaseStabTypeIds = knownBaseStabTypeIds,
     knownTeraTypeId = knownTeraTypeId,
     knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
+    knownBaseAbilityId = knownBaseAbilityId,
 )

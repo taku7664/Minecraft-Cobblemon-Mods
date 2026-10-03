@@ -45,6 +45,18 @@ internal object LocalAfterHitReactions {
                 reactiveBoost(ability, moveType, details.damageCategory, targetBefore.hpFraction, target.hpFraction)
                     ?.let { state = LocalStatStageChange.apply(state, target.battlePokemonId, null, it) }
             }
+            // Cotton Down's DamagingHit callback precedes faint resolution and lowers every other
+            // living active Pokemon, including its partner. It is an ability boost, so Substitute
+            // and secondary-effect immunity do not stop it; each recipient's boost reactions do.
+            if (ability == "cottondown") {
+                val recipients = state.pokemon.filter {
+                    it.battlePokemonId != target.battlePokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+                }
+                for (recipient in recipients) {
+                    state = LocalStatStageChange.apply(state, recipient.battlePokemonId, target.battlePokemonId,
+                        mapOf("speed" to -1), bypassesSubstitute = true)
+                }
+            }
             // Clear Smog resets its target's stat stages.
             if (alive && moveId == "clearsmog" && target.knownVolatileEffectIds.none { canonical(it) == "substitute" }) {
                 state = state.copyState(pokemon = state.pokemon.map {

@@ -271,6 +271,7 @@ internal object LocalDirectHitMechanics {
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+        knownBaseAbilityId = pokemon.knownBaseAbilityId,
     )
 
     private fun midpoint(range: BattleFractionRange): Double = (range.minimum + range.maximum) / 2.0
