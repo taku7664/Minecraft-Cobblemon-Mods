@@ -53,6 +53,12 @@ import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageLookup
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentSpreadUsage
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
+import jbro.cobblemon.mcc.betterai.simulation.NativeBattleRootValidator
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -60,6 +66,116 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeInitialProductWorldPlannerTest {
+    @Test
+    fun `bootstrap reports unavailable hidden counters instead of resetting them`() {
+        val source = context(turn = 7)
+        val actor = source.state.pokemon.first()
+        for (status in listOf("slp", "tox")) {
+            val board = source.state.derive(pokemon = source.state.pokemon.map {
+                if (it == actor) it.copyState(statusId = status) else it
+            })
+            val result = planner().plan(source.copy(state = board), BattleTrainerTier.INTRODUCTORY)
+            assertTrue(result.worlds.isEmpty())
+            assertTrue(result.issues.all { it.code == NativeInitialProductWorldPlanIssueCode.PUBLIC_BOOTSTRAP_UNAVAILABLE })
+            assertTrue(result.issues.any { it.detailCode?.startsWith("STATUS_COUNTER_UNAVAILABLE") == true })
+        }
+        val board = source.state.derive(field = BattleFieldStateView(
+            BattleTimedEffectView("raindance", null, remainingTurnsRange = BattleIntegerRange(1, 3)),
+            null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() },
+        ))
+        val result = planner().plan(source.copy(state = board), BattleTrainerTier.INTRODUCTORY)
+        assertTrue(result.issues.any { it.detailCode?.startsWith("FIELD_DURATION_UNAVAILABLE") == true })
+    }
+
+    @Test
+    fun `bootstrap restores publicly exact substitute hp without transferring damage to body`() {
+        val source = context(turn = 5, ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120))
+        val board = source.state.derive(pokemon = source.state.pokemon.map { mon ->
+            if (mon.side == BattleSide.ALLY && mon.activeSlot == 0) mon.copyState(
+                knownVolatileEffectIds = setOf("substitute"),
+                knownSubstituteHpFractionRange = BattleDamageFractionRange(43.0 / 175.0, 43.0 / 175.0),
+            ) else mon
+        })
+        val result = planner().plan(source.copy(state = board), BattleTrainerTier.INTRODUCTORY)
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        val world = result.worlds.first()
+        EngineBranchWorker().use { worker ->
+            val root = worker.createBattle(world.definition)
+            assertTrue("substitute" in root.p1Active.single().volatiles)
+            val next = worker.branch(root.snapshotJson, "move 1", "move 1")
+            assertEquals(175, next.p1Team.first { it.uuid == ALLIES.first().toString() }.hp)
+        }
+    }
+
+    @Test
+    fun `missing session bootstraps current public board instead of refusing later turns`() {
+        val source = context(turn = 7, ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120),
+            openingEvents = listOf(BattleObservedEventView(
+            1, 6, BattleObservedEventKind.MOVE_USED, ALLIES.first(), publicValueId = "psychic")))
+        val board = source.state.derive(
+            pokemon = source.state.pokemon.map { mon ->
+                if (mon.side == BattleSide.ALLY && mon.activeSlot == 0) {
+                    mon.copyState(hpFraction = 88.0 / 175.0, statusId = "brn", statStages = mapOf("atk" to 2))
+                } else mon
+            },
+            field = BattleFieldStateView(
+                BattleTimedEffectView("raindance", 3), null,
+                listOf(BattleTimedEffectView("trickroom", 2)), emptyList(),
+                mapOf(BattleSide.ALLY to emptyList(), BattleSide.OPPONENT to listOf(BattleTimedEffectView("spikes", null, 2))),
+            ),
+        )
+        val currentCatalog = BattlePublicActionCatalogView(source.publicActionCatalog.entries.map { entry ->
+            BattlePokemonActionCatalogView(entry.battlePokemonId, entry.moves.map {
+                it.copy(details = it.details.copy(currentPp = 2))
+            }, entry.moveSetComplete)
+        })
+        val result = planner().plan(source.copy(state = board, publicActionCatalog = currentCatalog), BattleTrainerTier.INTRODUCTORY)
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        EngineBranchWorker().use { worker ->
+            result.worlds.forEach { world ->
+                val frame = worker.createBattle(world.definition)
+                assertTrue(NativeBattleRootValidator.validate(world.definition, frame, world.publicContext.state).isEmpty())
+                assertEquals(7, frame.turn)
+                val actor = frame.p1Active.single()
+                assertEquals(88, actor.hp)
+                assertEquals("brn", actor.status)
+                assertEquals(2, actor.boosts["atk"])
+                assertEquals(2, actor.moves.single().pp)
+                assertEquals("raindance", frame.field.weather?.id)
+                assertEquals(3, frame.field.weather?.remainingTurns)
+                assertEquals(2, frame.field.pseudoWeather.single().remainingTurns)
+                assertEquals(2, frame.field.p2SideConditions.single().stacks)
+                val next = worker.branch(frame.snapshotJson, "move 1", "move 1")
+                assertTrue(next.turn >= 7)
+            }
+        }
+    }
+
+    @Test
+    fun `later turn keeps revealed fainted opponent and current active identity`() {
+        val source = context(turn = 9, ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120))
+        val first = source.state.pokemon.single { it.side == BattleSide.OPPONENT }
+        val secondPreview = source.opponentTeamPreview!!.pokemon[1]
+        val current = pokemon(OPPONENTS[1], BattleSide.OPPONENT, 0,
+            secondPreview.speciesId.substringAfter(':'), secondPreview.knownTypeIds, null)
+        val board = source.state.derive(
+            pokemon = source.state.pokemon.filter { it.side == BattleSide.ALLY } +
+                first.copyState(activeSlot = null, hpFraction = 0.0, fainted = true) + current,
+            remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 2),
+        )
+        val result = planner().plan(source.copy(state = board), BattleTrainerTier.INTRODUCTORY)
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        EngineBranchWorker().use { worker ->
+            result.worlds.forEach { world ->
+                val frame = worker.createBattle(world.definition)
+                assertTrue(NativeBattleRootValidator.validate(world.definition, frame, world.publicContext.state).isEmpty())
+                assertEquals(OPPONENTS[1].toString(), frame.p2Active.single().uuid)
+                assertEquals(0, frame.p2Team.single { it.uuid == first.battlePokemonId.toString() }.hp)
+                assertEquals(2, frame.p2Team.count { it.hp > 0 })
+            }
+        }
+    }
+
     @Test
     fun `planner normalizes Cobblemon Normal forms before materializing a world`() {
         val result = planner().plan(

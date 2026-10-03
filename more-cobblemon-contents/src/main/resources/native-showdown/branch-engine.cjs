@@ -478,6 +478,81 @@ function refreshRequestsAfterRebind(battle, reboundPokemon) {
   }
 }
 
+// Public DTO seed, never a live opponent snapshot. Entry callbacks already ran when the sets
+// were constructed; replace their board effects without executing them a second time.
+function applyPublicBootstrap(battle, seed) {
+  const byUuid = new Map(seed.pokemon.map(p => [p.uuid, p]));
+  const effectState = effect => ({ id: effect.id,
+    ...(effect.remainingTurns == null ? {} : { duration: effect.remainingTurns }),
+    ...(effect.stacks == null ? {} : { layers: effect.stacks }) });
+  battle.turn = seed.turn;
+  for (const side of battle.sides) {
+    side.pokemon.sort((a, b) => (byUuid.get(a.uuid).activeSlot ?? 99) - (byUuid.get(b.uuid).activeSlot ?? 99));
+    side.active.fill(null);
+    side.pokemon.forEach((mon, position) => {
+      const value = byUuid.get(mon.uuid);
+      mon.position = position;
+      if (value.publicPercentHp && value.hpFraction >= 0.01 && value.hpFraction <= 0.99) {
+        const compatible = [];
+        for (let hp = 1; hp < mon.maxhp; hp++) {
+          if (Math.abs(Math.min(99, Math.ceil(hp * 100 / mon.maxhp)) / 100 - value.hpFraction) < 1e-9) compatible.push(hp);
+        }
+        if (!compatible.length) throw new Error(`Public HP cannot be represented by hypothesis ${mon.uuid}`);
+        mon.hp = compatible[Math.floor(compatible.length / 2)];
+      } else mon.hp = Math.max(0, Math.min(mon.maxhp, Math.round(mon.maxhp * value.hpFraction)));
+      mon.fainted = mon.hp === 0;
+      mon.faintQueued = false;
+      mon.isActive = value.activeSlot != null && !mon.fainted;
+      mon.isStarted = mon.isActive;
+      mon.status = value.status;
+      mon.statusState = { id: value.status, target: mon };
+      mon.volatiles = {};
+      if (value.substituteHpFraction != null) mon.volatiles.substitute = {
+        id: 'substitute', target: mon, hp: Math.max(1, Math.round(value.substituteHpFraction * mon.maxhp)) };
+      for (const stat of Object.keys(mon.boosts)) mon.boosts[stat] = 0;
+      Object.assign(mon.boosts, value.boosts);
+      if (value.ability != null) { mon.ability = value.ability; mon.abilityState = { id: value.ability, target: mon }; }
+      if (value.item != null) { mon.item = value.item; mon.itemState = { id: value.item, target: mon }; }
+      mon.activeTurns = value.activeTurns;
+      mon.activeMoveActions = value.activeMoveActions;
+      mon.lastMove = value.lastMoveId ? battle.dex.getActiveMove(value.lastMoveId) : null;
+      mon.lastMoveUsed = mon.lastMove;
+      if (['choiceband', 'choicespecs', 'choicescarf'].includes(mon.item) && mon.lastMove) {
+        mon.volatiles.choicelock = { id: 'choicelock', target: mon, move: mon.lastMove.id };
+      }
+      mon.moveThisTurn = '';
+      mon.newlySwitched = false;
+      mon.switchFlag = false;
+      mon.forceSwitchFlag = false;
+      for (const [move, pp] of Object.entries(value.movePp)) {
+        const slot = mon.moveSlots.find(m => m.id === move);
+        if (slot) { slot.maxpp = Math.max(slot.maxpp, pp); slot.pp = pp; }
+      }
+      if (mon.isActive) side.active[value.activeSlot] = mon;
+    });
+    side.pokemonLeft = side.pokemon.filter(p => !p.fainted).length;
+    side.totalFainted = side.pokemon.filter(p => p.fainted).length;
+    side.sideConditions = {};
+    for (const effect of (side.n === 0 ? seed.p1SideConditions : seed.p2SideConditions)) {
+      side.sideConditions[effect.id] = { ...effectState(effect), target: side };
+    }
+  }
+  battle.field.weather = seed.weather?.id || '';
+  battle.field.weatherState = seed.weather ? effectState(seed.weather) : { id: '' };
+  battle.field.terrain = seed.terrain?.id || '';
+  battle.field.terrainState = seed.terrain ? effectState(seed.terrain) : { id: '' };
+  battle.field.pseudoWeather = {};
+  for (const effect of seed.pseudoWeather) battle.field.pseudoWeather[effect.id] = effectState(effect);
+  for (const mon of battle.sides.flatMap(side => side.active.filter(Boolean))) {
+    refreshMoveDisables(battle, mon);
+    mon.trapped = false;
+    mon.maybeTrapped = false;
+    battle.runEvent('TrapPokemon', mon);
+    battle.runEvent('MaybeTrapPokemon', mon);
+  }
+  battle.makeRequest('move');
+}
+
 globalThis.mccCreateBattle = function(payload) {
   const input = JSON.parse(payload);
   const openingByUuid = indexPokemonOpeningState(input.openingState);
@@ -495,6 +570,7 @@ globalThis.mccCreateBattle = function(payload) {
       battle.deserialized = false;
       battle.start();
     }
+    if (input.publicBootstrap) applyPublicBootstrap(battle, input.publicBootstrap);
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();

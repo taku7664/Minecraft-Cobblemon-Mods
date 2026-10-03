@@ -91,11 +91,13 @@ class NativeInitialProductDecisionEvaluatorTest {
     }
 
     @Test
-    fun `non opening state is not applicable and invokes no native dependency`() {
+    fun `later turn without a session invokes public world planning and search`() {
         var invoked = false
         val evaluator = NativeInitialProductDecisionEvaluator(
-            planWorlds = { _, _ -> invoked = true; error("must not plan") },
-            searchWorlds = { invoked = true; error("must not search") },
+            planWorlds = { supplied, _ -> invoked = true; plan(supplied) },
+            searchWorlds = { NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED) },
+            nowEpochMillis = { 1_000L },
+            leafEvaluator = { _, _, _, _ -> 0.05 },
         )
 
         val result = evaluator.evaluate(
@@ -105,16 +107,18 @@ class NativeInitialProductDecisionEvaluatorTest {
             LocalLookaheadBudget(250L, 100, 1),
         )
 
-        assertEquals(NativeInitialProductDecisionStatus.NOT_APPLICABLE, result.status)
-        assertFalse(invoked)
+        assertEquals(NativeInitialProductDecisionStatus.SEARCH_FAILED, result.status)
+        assertTrue(invoked)
     }
 
     @Test
-    fun `turn one after a real action does not retry opening compilation`() {
+    fun `turn one after a public action can bootstrap without a retained session`() {
         var invoked = false
         val evaluator = NativeInitialProductDecisionEvaluator(
-            planWorlds = { _, _ -> invoked = true; error("must not plan") },
-            searchWorlds = { invoked = true; error("must not search") },
+            planWorlds = { supplied, _ -> invoked = true; plan(supplied) },
+            searchWorlds = { NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED) },
+            nowEpochMillis = { 1_000L },
+            leafEvaluator = { _, _, _, _ -> 0.05 },
         )
         val opening = context(turn = 1)
         val advanced = opening.copy(state = BattleStateView(
@@ -137,8 +141,8 @@ class NativeInitialProductDecisionEvaluatorTest {
             LocalLookaheadBudget(250L, 100, 1),
         )
 
-        assertEquals(NativeInitialProductDecisionStatus.NOT_APPLICABLE, result.status)
-        assertFalse(invoked)
+        assertEquals(NativeInitialProductDecisionStatus.SEARCH_FAILED, result.status)
+        assertTrue(invoked)
     }
 
     @Test

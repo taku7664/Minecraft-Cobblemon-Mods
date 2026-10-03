@@ -28,6 +28,7 @@ internal enum class NativeInitialProductWorldPlanIssueCode {
     INITIAL_WORLD_ASSEMBLY_FAILED,
     WORLD_PRIOR_INVALID,
     BATTLE_DEFINITION_COMPILATION_FAILED,
+    PUBLIC_BOOTSTRAP_UNAVAILABLE,
 }
 
 internal data class NativeInitialProductWorldPlanIssue(
@@ -98,10 +99,17 @@ internal class NativeInitialProductWorldPlanner(
         val exactOwnTeam = context.exactOwnTeam ?: return failure(
             NativeInitialProductWorldPlanIssueCode.EXACT_OWN_TEAM_MISSING,
         )
+        val bootstrap = NativePublicBootstrapCompiler.needed(context.state)
+        if (bootstrap) {
+            val issues = NativePublicBootstrapCompiler.issues(context.state)
+            if (issues.isNotEmpty()) return failure(
+                NativeInitialProductWorldPlanIssueCode.PUBLIC_BOOTSTRAP_UNAVAILABLE, detailCodes = issues,
+            )
+        }
         val identities = publicIdentityResolver(context, preview, exactOwnTeam)
         if (identities.issues.isNotEmpty()) return NativeInitialProductWorldPlan(emptyList(), identities.issues)
 
-        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview)
+        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview, allowCurrentState = bootstrap)
         if (rosterCompilation.issues.isNotEmpty()) {
             return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_COMPILATION_FAILED,
@@ -120,7 +128,8 @@ internal class NativeInitialProductWorldPlanner(
                 context.state,
                 preview,
                 rosterHypothesis,
-                identities.resolve,
+                allowCurrentState = bootstrap,
+                resolveShowdownSpecies = identities.resolve,
             )
             val roster = materialization.roster ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_MATERIALIZATION_FAILED,
@@ -207,7 +216,7 @@ internal class NativeInitialProductWorldPlanner(
             val catalogContext = context.copy(state = roster.state, publicActionCatalog = prepared.moveWorld.catalog)
             val probability = prepared.probability / retainedMass
             val compilation = NativeInitialBattleDefinitionCompiler.compile(
-                state = roster.state,
+                state = if (bootstrap) NativePublicBootstrapCompiler.setCompilationState(roster.state, exactOwnTeam) else roster.state,
                 catalog = prepared.moveWorld.catalog,
                 identities = roster.identities,
                 world = assembled.copy(probability = probability),
@@ -222,10 +231,18 @@ internal class NativeInitialProductWorldPlanner(
                 prepared.hypothesisId,
                 compilation.issues.map { it.code.name },
             )
+            val publicSeed = if (bootstrap) NativePublicBootstrapCompiler.compile(roster.state, prepared.moveWorld.catalog) else null
+            if (publicSeed != null) {
+                val bootstrapIssues = NativePublicBootstrapCompiler.hypothesisIssues(definition, publicSeed, roster.state)
+                if (bootstrapIssues.isNotEmpty()) return failure(
+                    NativeInitialProductWorldPlanIssueCode.PUBLIC_BOOTSTRAP_UNAVAILABLE,
+                    prepared.hypothesisId, bootstrapIssues,
+                )
+            }
             NativeInitialProductWorld(
                 hypothesisId = prepared.hypothesisId,
                 probability = probability,
-                definition = definition,
+                definition = definition.copy(publicBootstrap = publicSeed),
                 publicContext = catalogContext,
             )
         }

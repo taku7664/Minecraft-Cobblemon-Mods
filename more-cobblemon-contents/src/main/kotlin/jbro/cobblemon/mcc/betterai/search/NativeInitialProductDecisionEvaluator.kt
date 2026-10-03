@@ -17,7 +17,6 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.mcc.betterai.simulation.NativeMechanicAllowance
-import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.mcc.betterai.simulation.NativeProductSeedPolicy
 import jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
@@ -87,7 +86,7 @@ private typealias NativeLeafEvaluator = (
     shouldContinue: () -> Boolean,
 ) -> Double
 
-/** Converts the opening public posterior into native product ranks on the existing score scale. */
+/** Converts a retained or reconstructable public posterior into native product ranks. */
 internal class NativeInitialProductDecisionEvaluator(
     private val planWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::plan,
     private val searchWorlds: NativeWorldSearcher = NativeProductWorldSearchAggregator()::search,
@@ -114,7 +113,7 @@ internal class NativeInitialProductDecisionEvaluator(
         if (sessionState != null) {
             return evaluateContinuation(context, profile, tuning, budget, sessionState)
         }
-        if (!isOpeningCandidate(context)) {
+        if (!hasWorldInputs(context)) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
         }
         val allowedMechanics = NativeMechanicAllowance.merge(null, context.candidates)
@@ -378,9 +377,8 @@ internal class NativeInitialProductDecisionEvaluator(
         reconciliationStatus = status,
     )
 
-    private fun isOpeningCandidate(context: BattleDecisionContext): Boolean =
-        context.state.turn in 0..1 && NativeOpeningStateRules.acceptsObservations(context.state) &&
-            context.opponentTeamPreview != null && context.exactOwnTeam != null
+    private fun hasWorldInputs(context: BattleDecisionContext): Boolean =
+        context.opponentTeamPreview != null && context.exactOwnTeam != null
 
     private fun nativeDeadline(externalDeadlineMillis: Long, budgetMillis: Long): Long? {
         val nowMillis = nowEpochMillis()

@@ -40,6 +40,8 @@ internal data class NativeMaterializedOpponentRoster(
     val state: BattleStateView,
     val identities: List<NativePublicPokemonIdentity>,
     val opponentPreviewSlotByPokemonId: Map<UUID, Int>,
+    val revealedOpponentIds: Set<UUID> = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null }
+        .mapTo(linkedSetOf()) { it.battlePokemonId },
 ) {
     init {
         val stateIds = state.pokemon.mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId)
@@ -71,6 +73,14 @@ internal object NativeOpponentRosterStateMaterializer {
         preview: BattleOpponentTeamPreviewView,
         hypothesis: NativeOpponentRosterHypothesis,
         resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
+    ): NativeOpponentRosterMaterialization = materialize(state, preview, hypothesis, false, resolveShowdownSpecies)
+
+    fun materialize(
+        state: BattleStateView,
+        preview: BattleOpponentTeamPreviewView,
+        hypothesis: NativeOpponentRosterHypothesis,
+        allowCurrentState: Boolean,
+        resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
         val selectionRuleSupported = when (state.format) {
@@ -81,7 +91,8 @@ internal object NativeOpponentRosterStateMaterializer {
         }
         if (!selectionRuleSupported ||
             hypothesis.selectedPreviewSlotIds.size != preview.selectionSize ||
-            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
+            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) +
+                (if (allowCurrentState) state.pokemon.count { it.side == BattleSide.OPPONENT && it.fainted } else 0) != preview.selectionSize
         ) {
             issues += issue(NativeOpponentRosterMaterializationIssueCode.SELECTION_SIZE_MISMATCH)
         }
@@ -103,10 +114,10 @@ internal object NativeOpponentRosterStateMaterializer {
             BattleFormat.SINGLE -> listOf(0)
             BattleFormat.DOUBLE -> listOf(0, 1)
         }
-        if (state.turn !in 0..1 ||
+        if (!allowCurrentState && (state.turn !in 0..1 ||
             !NativeOpeningStateRules.acceptsObservations(state) ||
             revealed.any { it.fainted || it.activeSlot == null } ||
-            revealed.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != expectedActiveSlots
+            revealed.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != expectedActiveSlots)
         ) {
             issues += issue(NativeOpponentRosterMaterializationIssueCode.PUBLIC_STATE_NOT_INITIAL)
         }
@@ -188,7 +199,7 @@ internal object NativeOpponentRosterStateMaterializer {
             inferences = state.inferences,
         )
         return NativeOpponentRosterMaterialization(
-            roster = NativeMaterializedOpponentRoster(rootState, identities, opponentSlots),
+            roster = NativeMaterializedOpponentRoster(rootState, identities, opponentSlots, revealedIds),
             issues = emptyList(),
         )
     }

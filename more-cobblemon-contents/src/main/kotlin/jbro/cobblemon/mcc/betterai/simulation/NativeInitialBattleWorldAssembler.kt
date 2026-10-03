@@ -109,9 +109,7 @@ internal object NativeInitialBattleWorldAssembler {
         }
 
         val selectedSlots = roster.opponentPreviewSlotByPokemonId.values.toSet()
-        val revealedOpponentIds = roster.state.pokemon.asSequence()
-            .filter { it.side == BattleSide.OPPONENT && it.activeSlot != null }
-            .mapTo(linkedSetOf()) { it.battlePokemonId }
+        val revealedOpponentIds = roster.revealedOpponentIds
         val revealedAssignmentsMatch = rosterHypothesis.revealedAssignments.keys == revealedOpponentIds &&
             rosterHypothesis.revealedAssignments.all { (pokemonId, slot) ->
                 roster.opponentPreviewSlotByPokemonId[pokemonId] == slot

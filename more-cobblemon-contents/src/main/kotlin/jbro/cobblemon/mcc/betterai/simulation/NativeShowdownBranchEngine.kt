@@ -254,6 +254,7 @@ internal data class NativeBattleDefinition(
     val p1Team: List<NativePokemonSet>,
     val p2Team: List<NativePokemonSet>,
     val openingState: NativeBattleOpeningState? = null,
+    val publicBootstrap: NativePublicBootstrap? = null,
 ) {
     init {
         require(formatId.isNotBlank())
@@ -261,6 +262,12 @@ internal data class NativeBattleDefinition(
         require(p1Team.size in 1..6 && p2Team.size in 1..6)
         require((p1Team + p2Team).map(NativePokemonSet::uuid).distinct().size == p1Team.size + p2Team.size) {
             "Native battle Pokemon UUIDs must be unique"
+        }
+        publicBootstrap?.let { state ->
+            require(openingState == null) { "Opening and current public seeds are mutually exclusive" }
+            require(state.turn >= 1)
+            require(state.pokemon.map { it.uuid }.distinct().size == state.pokemon.size &&
+                state.pokemon.map { it.uuid }.toSet() == (p1Team + p2Team).map { it.uuid }.toSet())
         }
         openingState?.let { state ->
             val setsByUuid = (p1Team + p2Team).associateBy(NativePokemonSet::uuid)

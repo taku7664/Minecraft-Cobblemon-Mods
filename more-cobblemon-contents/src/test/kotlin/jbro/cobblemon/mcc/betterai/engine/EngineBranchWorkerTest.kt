@@ -9,6 +9,9 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleOpeningState
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonOpeningState
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet
+import jbro.cobblemon.mcc.betterai.simulation.NativePublicBootstrap
+import jbro.cobblemon.mcc.betterai.simulation.NativePublicPokemonSeed
+import jbro.cobblemon.mcc.betterai.simulation.NativeTimedEffectFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownBranchEngine
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions
@@ -148,6 +151,55 @@ class EngineBranchWorkerTest {
             NativePokemonOpeningState(uuid(4), 175, 175, "Defiant", "Black Glasses"),
         )),
     ))
+
+    @Test
+    fun `engine frames and replay match Showdown after public midbattle bootstrap`() {
+        val bootstrap = NativePublicBootstrap(
+            turn = 8,
+            pokemon = (definition.p1Team + definition.p2Team).mapIndexed { index, set ->
+                NativePublicPokemonSeed(set.uuid, if (index % 2 == 0) 0 else null,
+                    if (index % 2 == 0) 0.5 else 1.0, index >= 2,
+                    if (index == 0) "brn" else "", if (index == 0) mapOf("atk" to 2) else emptyMap(),
+                    null, if (index == 0) "" else null,
+                    set.moves.associateWith { 5 }, 4, 3, null, null)
+            },
+            weather = NativeTimedEffectFrame("raindance", 3, null), terrain = null,
+            pseudoWeather = listOf(NativeTimedEffectFrame("trickroom", 2, null)),
+            p1SideConditions = emptyList(), p2SideConditions = listOf(NativeTimedEffectFrame("spikes", null, 2)),
+        )
+        assertSameLines(definition.copy(publicBootstrap = bootstrap))
+        EngineBranchWorker(cacheLimit = 1).use { worker ->
+            val root = worker.createBattle(definition.copy(publicBootstrap = bootstrap))
+            val next = worker.branch(root.snapshotJson, "move 1", "move 2")
+            worker.branch(root.snapshotJson, "move 2", "move 1")
+            val replay = worker.branch(root.snapshotJson, "move 1", "move 2")
+            assertEquals(comparable(next), comparable(replay))
+        }
+    }
+
+    @Test
+    fun `public bootstrap restores a known choice lock on both engines`() {
+        Assumptions.assumeTrue(showdownRoot != null, "No dev server Showdown")
+        val seeded = definition.copy(publicBootstrap = NativePublicBootstrap(
+            8, (definition.p1Team + definition.p2Team).mapIndexed { index, set ->
+                NativePublicPokemonSeed(set.uuid, if (index % 2 == 0) 0 else null, 1.0, index >= 2,
+                    "", emptyMap(), null, if (index == 0) "choiceband" else null,
+                    set.moves.associateWith { 5 }, 3, 2, if (index == 0) "earthquake" else null, null)
+            }, null, null, emptyList(), emptyList(), emptyList(),
+        ))
+        NativeShowdownBranchEngine.open(showdownRoot!!).use { oracle ->
+            EngineBranchWorker().use { worker ->
+                val expected = oracle.createBattle(seeded)
+                val actual = worker.createBattle(seeded)
+                assertEquals(comparable(expected), comparable(actual))
+                val request = JsonParser.parseString(actual.p1RequestJson).asJsonObject
+                    .getAsJsonArray("active")[0].asJsonObject.getAsJsonArray("moves")
+                assertEquals(1, request.count { it.asJsonObject.get("disabled")?.asBoolean != true })
+                val next = worker.branch(actual.snapshotJson, "move 1", "move 1")
+                assertEquals(comparable(oracle.branch(expected.snapshotJson, "move 1", "move 1")), comparable(next))
+            }
+        }
+    }
 
     @Test
     fun `an evicted snapshot is rebuilt by replay`() {

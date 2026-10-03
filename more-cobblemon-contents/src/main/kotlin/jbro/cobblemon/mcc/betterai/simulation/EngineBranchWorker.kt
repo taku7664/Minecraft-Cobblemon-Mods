@@ -101,6 +101,7 @@ internal class EngineBranchWorker(
             for (side in battle.sides) require(side.pokemon[0].hp > 0) { "Native opening state cannot select a fainted lead Pokemon" }
         }
         battle.start()
+        definition.publicBootstrap?.let { EnginePublicBootstrap.apply(battle, it) }
         return battle
     }
 

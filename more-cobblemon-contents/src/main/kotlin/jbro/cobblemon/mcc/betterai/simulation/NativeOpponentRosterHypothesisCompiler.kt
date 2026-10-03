@@ -61,6 +61,7 @@ internal object NativeOpponentRosterHypothesisCompiler {
         state: BattleStateView,
         preview: BattleOpponentTeamPreviewView,
         compatiblePreviewSlots: Map<UUID, Set<Int>> = emptyMap(),
+        allowCurrentState: Boolean = false,
     ): NativeOpponentRosterCompilation {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
@@ -78,15 +79,15 @@ internal object NativeOpponentRosterHypothesisCompiler {
         if (!selectionRuleSupported) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.UNSUPPORTED_SELECTION_RULE)
         }
-        if (state.turn !in 0..1 ||
+        if (!allowCurrentState && (state.turn !in 0..1 ||
             !NativeOpeningStateRules.acceptsObservations(state) ||
             revealed.any(BattlePokemonStateView::fainted) ||
-            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
+            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize)
         ) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.PUBLIC_STATE_NOT_INITIAL)
         }
         val revealedActiveSlots = revealed.mapNotNull(BattlePokemonStateView::activeSlot).toSet()
-        if (revealed.isNotEmpty() &&
+        if (!allowCurrentState && revealed.isNotEmpty() &&
             (revealed.any { it.activeSlot == null } ||
                 revealed.size != expectedActiveSlots.size ||
                 revealedActiveSlots != expectedActiveSlots)
