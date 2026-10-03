@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -29,7 +31,8 @@ internal object LocalPublicPositionFacts {
     fun switchTarget(candidate: BattleActionCandidate, context: BattleDecisionContext): BattlePokemonStateView? =
         candidate.switchPokemonId?.let { targetId ->
             context.state.pokemon.firstOrNull {
-                it.side == BattleSide.ALLY && it.battlePokemonId == targetId && !it.fainted
+                it.side == BattleSide.ALLY && it.battlePokemonId == targetId &&
+                    (if (LocalRevivalBlessing.applies(candidate)) it.fainted else !it.fainted)
             }
         }
 

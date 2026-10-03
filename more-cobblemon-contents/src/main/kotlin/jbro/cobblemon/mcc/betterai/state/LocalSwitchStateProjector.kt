@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.state
 
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
 
 /** Applies the public, event-free part of a single switch for scoring and recursive projection. */
 internal object LocalSwitchStateProjector {
@@ -12,6 +13,7 @@ internal object LocalSwitchStateProjector {
         /** Off when other Pokemon switch in on the same turn: abilities wait until every one is in. */
         entryAbility: Boolean = true,
     ): BattleStateView {
+        if (LocalRevivalBlessing.applies(action)) return LocalRevivalBlessing.project(state, side, action, entryAbility)
         val incomingId = action.switchPokemonId ?: return state
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingId && it.side == side && !it.fainted

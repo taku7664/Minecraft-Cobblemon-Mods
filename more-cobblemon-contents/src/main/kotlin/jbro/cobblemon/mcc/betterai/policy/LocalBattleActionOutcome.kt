@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.policy
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -319,14 +321,18 @@ internal object LocalBattleActionOutcomeEvaluator {
     ): LocalBattleActionOutcome {
         val active = LocalPublicPositionFacts.activeAlly(candidate, context)
         val target = LocalPublicPositionFacts.switchTarget(candidate, context)
-        val postEntryHp = target?.let { LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction) }
+        val revival = LocalRevivalBlessing.applies(candidate)
+        val postEntryHp = target?.let {
+            if (revival) LocalRevivalBlessing.restoredHp(it)
+            else LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction)
+        }
         val currentExposure = active?.let {
             LocalPublicPositionFacts.defensiveExposure(it, context, tuning = tuning)
         }
         val targetExposure = target?.let {
             LocalPublicPositionFacts.defensiveExposure(it, context, candidate.actorSlot, tuning)
         }
-        val improvement = if (active != null && target != null && postEntryHp != null &&
+        val improvement = if (!revival && active != null && target != null && postEntryHp != null &&
             currentExposure != null && targetExposure != null
         ) {
             LocalPublicPositionFacts.survivalPosition(postEntryHp, targetExposure, tuning) -
