@@ -338,6 +338,26 @@ function collectDamageRollEvidence(input, actualHits, forcedDamagePercents) {
   });
 }
 
+function requestJson(side) {
+  const request = side.activeRequest;
+  if (!request || !request.active) return JSON.stringify(request || null);
+  const moveWithCategory = move => ({
+    ...move,
+    category: side.battle.dex.moves.get(move.id || move.move).category || '',
+  });
+  return JSON.stringify({
+    ...request,
+    active: request.active.map(active => active ? {
+      ...active,
+      moves: active.moves.map(moveWithCategory),
+      ...(active.maxMoves ? { maxMoves: {
+        ...active.maxMoves,
+        maxMoves: active.maxMoves.maxMoves.map(moveWithCategory),
+      } } : {}),
+    } : null),
+  });
+}
+
 function frame(battle, executedDamageRolls = []) {
   return {
     snapshotJson: JSON.stringify(deterministicSnapshot(battle)),
@@ -348,8 +368,8 @@ function frame(battle, executedDamageRolls = []) {
     p2Active: activeFrames(battle.p2),
     p1Team: sideFrames(battle.p1),
     p2Team: sideFrames(battle.p2),
-    p1RequestJson: JSON.stringify(battle.p1.activeRequest || null),
-    p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
+    p1RequestJson: requestJson(battle.p1),
+    p2RequestJson: requestJson(battle.p2),
     field: fieldFrame(battle),
     log: deterministicLog(battle.log),
     executedMoveOrder: ensureExecutedMoveOrder(battle).map(entry => ({ ...entry })),

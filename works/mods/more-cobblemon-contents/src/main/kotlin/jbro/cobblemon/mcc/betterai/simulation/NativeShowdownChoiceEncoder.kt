@@ -61,6 +61,21 @@ internal object NativeShowdownChoiceEncoder {
         val moveSlot = requireNotNull(action.moveSlot)
         val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == actorSlot }
         requireNotNull(actor) { "Native active slot $actorSlot does not exist for $side" }
+        val requestJson = if (side == BattleSide.ALLY) frame.p1RequestJson else frame.p2RequestJson
+        val request = com.google.gson.JsonParser.parseString(requestJson)
+        val requestedMoves = request.takeIf { it.isJsonObject }?.asJsonObject
+            ?.getAsJsonArray("active")?.let { active -> if (actorSlot < active.size()) active[actorSlot] else null }
+            ?.takeIf { it.isJsonObject }?.asJsonObject?.getAsJsonArray("moves")
+        if (requestedMoves != null) {
+            val id = action.moveId?.let(::nativeId) ?: actor.moves.getOrNull(moveSlot)?.id?.let(::nativeId)
+            val requestSlot = requestedMoves.indexOfFirst { move ->
+                val entry = move.asJsonObject
+                nativeId(entry.get("id")?.asString ?: entry.get("move")?.asString.orEmpty()) == id
+            }
+            require(requestSlot >= 0) { "Candidate move $id is absent from native request slot $actorSlot" }
+            val target = if (action.targets.size == 1) " ${relativeTarget(action.targets.single(), side)}" else ""
+            return "move ${requestSlot + 1}$target" + action.mechanic?.let { " ${mechanicSuffix(it.mechanicId)}" }.orEmpty()
+        }
         val nativeMove = actor.moves.getOrNull(moveSlot)
         requireNotNull(nativeMove) { "Native move slot $moveSlot does not exist for active slot $actorSlot" }
         action.moveId?.let { candidateMove ->
@@ -101,7 +116,13 @@ internal object NativeShowdownChoiceEncoder {
         frame: NativeBattleFrame,
     ): String {
         action.actorSlot?.let { actorSlot ->
-            require(activeTeam(side, frame).any { it.activeSlot == actorSlot }) {
+            val requestJson = if (side == BattleSide.ALLY) frame.p1RequestJson else frame.p2RequestJson
+            val request = com.google.gson.JsonParser.parseString(requestJson)
+                .takeIf { it.isJsonObject }?.asJsonObject
+            val requestSlotCount = request?.getAsJsonArray("active")?.size()
+                ?: request?.getAsJsonArray("forceSwitch")?.size() ?: 0
+            require(activeTeam(side, frame).any { it.activeSlot == actorSlot } ||
+                actorSlot in 0 until requestSlotCount) {
                 "Native active slot $actorSlot does not exist for $side"
             }
         }

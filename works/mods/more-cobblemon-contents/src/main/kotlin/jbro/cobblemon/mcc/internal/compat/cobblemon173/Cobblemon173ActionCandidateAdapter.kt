@@ -15,6 +15,7 @@ import com.cobblemon.mod.common.battles.ShowdownMoveset
 import com.cobblemon.mod.common.battles.SwitchActionResponse
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleProductAllyTargetPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
@@ -23,7 +24,6 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
-import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 
 /** Contains every direct Cobblemon 1.7.3 action-request dependency used by the public Brain boundary. */
@@ -66,6 +66,15 @@ internal object Cobblemon173ActionCandidateAdapter {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.INVALID_REQUEST, format)
         }
 
+        val requestPokemonBySlot = actor.activePokemon.take(slotCount).map { active ->
+            request.side?.pokemon?.firstOrNull { it.uuid == active.battlePokemon?.uuid }
+        }
+        val ordinaryForcedSlots = (0 until slotCount).filter {
+            request.forceSwitch.getOrElse(it) { false } && requestPokemonBySlot[it]?.reviving != true
+        }
+        val activeIds = actor.getSide().activePokemon.mapNotNull { it.battlePokemon?.uuid }.toSet()
+        val replacementCount = Cobblemon173RequestSlotRules.replacementCount(ordinaryForcedSlots.size,
+            actor.pokemonList.count { it.health > 0 && it.uuid !in activeIds })
         val choicesBySlot = List(slotCount) { slot ->
             choicesForSlot(
                 actor = actor,
@@ -74,12 +83,19 @@ internal object Cobblemon173ActionCandidateAdapter {
                 forceSwitch = request.forceSwitch.getOrElse(slot) { false },
                 slot = slot,
                 mechanicPolicy = mechanicPolicy,
+                switchRequest = request.forceSwitch.isNotEmpty(),
+                reviving = requestPokemonBySlot[slot]?.reviving == true,
+                commanding = requestPokemonBySlot[slot]?.commanding == true,
+                allowReplacementPass = slot in ordinaryForcedSlots && replacementCount < ordinaryForcedSlots.size,
             )
         }
         if (choicesBySlot.any { it.isEmpty() }) {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.NO_LEGAL_ACTIONS, format)
         }
-        val choices = if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot)
+        val choices = (if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot)).filter { choice ->
+            val parts = choice.candidate.componentActions.ifEmpty { listOf(choice.candidate) }
+            parts.count { it.actorSlot in ordinaryForcedSlots && it.kind == BattleActionKind.SWITCH } == replacementCount
+        }
         if (choices.isEmpty()) {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.NO_LEGAL_ACTIONS, format)
         }
@@ -135,11 +151,25 @@ internal object Cobblemon173ActionCandidateAdapter {
         forceSwitch: Boolean,
         slot: Int,
         mechanicPolicy: Cobblemon173MechanicPolicy,
+        switchRequest: Boolean,
+        reviving: Boolean,
+        commanding: Boolean,
+        allowReplacementPass: Boolean,
     ): List<Cobblemon173ActionChoice> = buildList {
+        val pass = Cobblemon173ActionChoice(
+            candidate = BattleActionCandidate("pass:$slot", BattleActionKind.WAIT, actorSlot = slot),
+            responses = listOf(PassActionResponse),
+        )
+        if (Cobblemon173RequestSlotRules.mustPass(switchRequest, forceSwitch, active.isAlive(), commanding)) {
+            add(pass)
+            return@buildList
+        }
+        if (allowReplacementPass) add(pass)
         if (!forceSwitch && moveset != null) {
             val gimmick = allowedGimmick(moveset, mechanicPolicy)
             moveset.moves.forEachIndexed { moveSlot, move ->
-                addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null)
+                val currentMaxMove = currentMaxMove(moveset, moveSlot)
+                addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null, currentMaxMove)
                 if (gimmick != null) {
                     val transformed = transformedMove(moveset, moveSlot, gimmick)
                     if (gimmick != ShowdownMoveset.Gimmick.DYNAMAX || transformed != null) {
@@ -149,8 +179,11 @@ internal object Cobblemon173ActionCandidateAdapter {
             }
         }
         actor.pokemonList.forEach { pokemon ->
-            val response = SwitchActionResponse(pokemon.uuid)
-            if (response.isValid(active, moveset, forceSwitch)) {
+            val response: ShowdownActionResponse = if (reviving) Cobblemon173RevivalActionResponse(pokemon.uuid)
+                else SwitchActionResponse(pokemon.uuid)
+            val alreadyActive = actor.getSide().activePokemon.any { it.battlePokemon?.uuid == pokemon.uuid }
+            if (Cobblemon173RequestSlotRules.eligibleReplacement(reviving, pokemon.health > 0, alreadyActive) &&
+                response.isValid(active, moveset, forceSwitch)) {
                 add(
                     Cobblemon173ActionChoice(
                         candidate = BattleActionCandidate(
@@ -158,6 +191,7 @@ internal object Cobblemon173ActionCandidateAdapter {
                             kind = BattleActionKind.SWITCH,
                             actorSlot = slot,
                             switchPokemonId = pokemon.uuid,
+                            tags = if (reviving) setOf("revival_blessing") else emptySet(),
                         ),
                         responses = listOf(response),
                     ),
@@ -216,13 +250,8 @@ internal object Cobblemon173ActionCandidateAdapter {
             )
         }
         val details = moveDetails(move, transformed, targetType)
-        // Cobblemon lists the partner among a normal or any-target move's targets. An attack aimed at it
-        // was scored as pressure on a foe, so a Close Combat into the partner could rank first; the native
-        // engine offers foes only for these moves, and this path now matches it.
-        if (targetView?.side == BattleSide.ALLY && targetType in FOE_AIMED_TARGETS &&
-            details?.damageCategory != BattleMoveDamageCategory.STATUS &&
-            PublicIds.canonical(transformed?.move ?: move.id) !in ALLY_AIMED_DAMAGING_MOVES
-        ) return
+        if (!isMoveTargetAllowed(transformed?.move ?: move.id, targetView?.side,
+                targetType, details?.damageCategory)) return
         val variantId = gimmick?.id ?: "base"
         add(
             Cobblemon173ActionChoice(
@@ -260,8 +289,13 @@ internal object Cobblemon173ActionCandidateAdapter {
         transformed: InBattleGimmickMove?,
     ): Boolean = when (gimmick) {
         ShowdownMoveset.Gimmick.DYNAMAX -> transformed != null && !transformed.disabled
+        null -> if (transformed != null) !transformed.disabled else move.canBeUsed()
         else -> move.canBeUsed()
     }
+
+    /** Showdown only includes Max moves without canDynamax when Dynamax is already active. */
+    internal fun currentMaxMove(moveset: ShowdownMoveset, moveSlot: Int): InBattleGimmickMove? =
+        moveset.maxMoves?.getOrNull(moveSlot).takeIf { !moveset.canDynamax }
 
     private fun transformedMove(
         moveset: ShowdownMoveset,
@@ -446,10 +480,13 @@ internal object Cobblemon173ActionCandidateAdapter {
     private val BattleFormat.activeSlotsPerSide: Int
         get() = if (this == BattleFormat.SINGLE) 1 else 2
 
-    private val FOE_AIMED_TARGETS = setOf(MoveTarget.normal, MoveTarget.any)
-
-    /** Damaging moves that have a reason to land on the partner: Pollen Puff heals it. */
-    private val ALLY_AIMED_DAMAGING_MOVES = setOf("pollenpuff")
+    internal fun isMoveTargetAllowed(
+        moveId: String,
+        targetSide: BattleSide?,
+        targetType: MoveTarget,
+        damageCategory: BattleMoveDamageCategory?,
+    ): Boolean = BattleProductAllyTargetPolicy.permits(
+        moveId, targetSide, targetType == MoveTarget.normal || targetType == MoveTarget.any, damageCategory)
 }
 
 data class Cobblemon173MechanicPolicy(

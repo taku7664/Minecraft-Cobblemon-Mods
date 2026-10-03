@@ -11,6 +11,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleProductAllyTargetPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
@@ -38,11 +39,22 @@ internal object NativeShowdownRequestActionFactory {
             return listOf(BattleActionCandidate(nativeActionId(side, "wait"), BattleActionKind.WAIT))
         }
         request.getAsJsonArray("forceSwitch")?.let { forced ->
+            val reviving = activeTeam(side, frame).associate { it.activeSlot to isReviving(request, it.uuid) }
+            val ordinaryForced = (0 until forced.size()).filter { forced[it].asBoolean && reviving[it] != true }
+            val replacementCount = minOf(ordinaryForced.size,
+                fullTeam(side, frame).count { it.activeSlot == null && it.hp > 0 })
             val bySlot = forced.mapIndexed { slot, element ->
-                if (element.asBoolean) switchActions(side, slot, frame)
+                if (element.asBoolean) {
+                    switchActions(side, slot, frame, revive = reviving[slot] == true) +
+                        if (slot in ordinaryForced && replacementCount < ordinaryForced.size)
+                            listOf(passAction(side, slot)) else emptyList()
+                }
                 else listOf(passAction(side, slot))
             }
-            return combine(side, bySlot)
+            return combine(side, bySlot).filter { action ->
+                val components = action.componentActions.ifEmpty { listOf(action) }
+                components.count { it.actorSlot in ordinaryForced && it.kind == BattleActionKind.SWITCH } == replacementCount
+            }
         }
         val active = request.getAsJsonArray("active")
             ?: throw IllegalArgumentException("Native Showdown request has no move, switch or wait action")
@@ -52,11 +64,13 @@ internal object NativeShowdownRequestActionFactory {
             preferredVoluntarySwitches(side, frame, active, limit, publicState, publicActionCatalog)
         }
         val bySlot = active.mapIndexed { slot, element ->
-            if (element.isJsonNull) {
+            val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == slot }
+            if (element.isJsonNull || actor == null || actor.hp <= 0 ||
+                actor.volatiles.any { nativeId(it) == "commanding" }) {
                 listOf(passAction(side, slot))
             } else {
                 val activeRequest = element.asJsonObject
-                moveActions(side, slot, activeRequest, frame, allowedMechanics) +
+                moveActions(side, slot, activeRequest, frame, allowedMechanics, active.size() > 1) +
                     if (activeRequest.boolean("trapped") || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
                         switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
@@ -70,6 +84,7 @@ internal object NativeShowdownRequestActionFactory {
         request: JsonObject,
         frame: NativeBattleFrame,
         allowedMechanics: Set<String>?,
+        multiSlotRequest: Boolean,
     ): List<BattleActionCandidate> {
         val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == actorSlot }
         requireNotNull(actor) { "Native request names missing active slot $actorSlot for $side" }
@@ -77,26 +92,43 @@ internal object NativeShowdownRequestActionFactory {
             ?: throw IllegalArgumentException("Native move request is missing its moves")
         return moves.flatMapIndexed { moveSlot, element ->
             val move = element.asJsonObject
-            if (move.boolean("disabled")) return@flatMapIndexed emptyList()
             val moveId = nativeId(move.get("id")?.asString ?: move.get("move")?.asString.orEmpty())
             require(moveId.isNotBlank()) { "Native move request contains a blank move ID" }
-            require(actor.moves.getOrNull(moveSlot)?.id?.let(::nativeId) == moveId) {
+            require(actor.moves.any { nativeId(it.id) == moveId } || moveId in setOf("recharge", "struggle")) {
                 "Native request move $moveId disagrees with active slot $actorSlot move $moveSlot"
             }
-            val targets = targetVariants(
-                target = nativeId(move.get("target")?.asString.orEmpty()),
-                side = side,
-                actorSlot = actorSlot,
-                frame = frame,
-            )
-            val mechanics = buildList<String?> {
-                add(null)
-                if (request.enabled("canMegaEvo")) add("mega")
-                if (request.enabled("canDynamax")) add("dynamax")
-                if (request.enabled("canTerastallize")) add("tera")
-            }.filter { mechanic -> mechanic == null || allowedMechanics == null || mechanic in allowedMechanics }
-            targets.flatMap { targetSlots ->
-                mechanics.map { mechanic ->
+            val maxMoves = request.getAsJsonObject("maxMoves")?.getAsJsonArray("maxMoves")
+            val maxMove = maxMoves?.takeIf { moveSlot < it.size() }?.get(moveSlot)
+                ?.takeIf { it.isJsonObject }?.asJsonObject?.takeUnless { it.boolean("disabled") }
+            val alreadyDynamaxed = actor.volatiles.any { nativeId(it) == "dynamax" } &&
+                moveId !in setOf("recharge", "struggle")
+            val variants = buildList<Pair<String?, JsonObject>> {
+                if (alreadyDynamaxed) {
+                    if (maxMove != null) add(null to maxMove)
+                } else {
+                    if (!move.boolean("disabled")) {
+                        add(null to move)
+                        if (request.enabled("canMegaEvo")) add("mega" to move)
+                    }
+                    if (request.enabled("canDynamax") && maxMove != null) add("dynamax" to maxMove)
+                    if (!move.boolean("disabled") && request.enabled("canTerastallize")) add("tera" to move)
+                }
+            }.filter { (mechanic, _) -> mechanic == null || allowedMechanics == null || mechanic in allowedMechanics }
+            variants.flatMap { (mechanic, effectiveMove) ->
+                val targetId = nativeId(effectiveMove.get("target")?.asString.orEmpty())
+                val category = when (nativeId(effectiveMove.get("category")?.asString.orEmpty())) {
+                    "status" -> BattleMoveDamageCategory.STATUS
+                    "physical" -> BattleMoveDamageCategory.PHYSICAL
+                    "special" -> BattleMoveDamageCategory.SPECIAL
+                    else -> null
+                }
+                targetVariants(targetId, side, actorSlot, frame, multiSlotRequest).filter { targetSlots ->
+                    BattleProductAllyTargetPolicy.permits(
+                        effectiveMove.takeIf { it !== move }?.get("move")?.asString ?: moveId,
+                        targetSlots.singleOrNull()?.side?.let {
+                            if (it == side) BattleSide.ALLY else BattleSide.OPPONENT
+                        }, targetId in setOf("normal", "any"), category)
+                }.map { targetSlots ->
                     BattleActionCandidate(
                         actionId = nativeActionId(
                             side,
@@ -109,7 +141,8 @@ internal object NativeShowdownRequestActionFactory {
                         moveSlot = moveSlot,
                         moveId = moveId,
                         targets = targetSlots,
-                        mechanic = mechanic?.let { BattleMechanicCandidate(it, null, null) },
+                        mechanic = mechanic?.let { BattleMechanicCandidate(it, null, null,
+                            transformedMoveId = effectiveMove.takeIf { it !== move }?.get("move")?.asString?.let(::nativeId)) },
                         tags = setOf("native_showdown_request"),
                     )
                 }
@@ -122,8 +155,9 @@ internal object NativeShowdownRequestActionFactory {
         actorSlot: Int,
         frame: NativeBattleFrame,
         permittedPokemonUuids: Set<String>? = null,
+        revive: Boolean = false,
     ): List<BattleActionCandidate> = fullTeam(side, frame).asSequence()
-        .filter { it.activeSlot == null && it.hp > 0 }
+        .filter { if (revive) it.hp <= 0 else it.activeSlot == null && it.hp > 0 }
         .filter { permittedPokemonUuids == null || it.uuid in permittedPokemonUuids }
         .map { pokemon ->
             BattleActionCandidate(
@@ -131,7 +165,7 @@ internal object NativeShowdownRequestActionFactory {
                 kind = BattleActionKind.SWITCH,
                 actorSlot = actorSlot,
                 switchPokemonId = java.util.UUID.fromString(pokemon.uuid),
-                tags = setOf("native_showdown_request"),
+                tags = if (revive) setOf("native_showdown_request", "revival_blessing") else setOf("native_showdown_request"),
             )
         }
         .toList()
@@ -194,13 +228,20 @@ internal object NativeShowdownRequestActionFactory {
         side: BattleSide,
         actorSlot: Int,
         frame: NativeBattleFrame,
+        multiSlotRequest: Boolean,
     ): List<List<BattleTargetSlot>> {
         val allies = activeTeam(side, frame).filter { it.hp > 0 }.sortedBy { it.activeSlot }
         val opponents = activeTeam(opposite(side), frame).filter { it.hp > 0 }.sortedBy { it.activeSlot }
         // A singles command has no target location even for a selected move.
-        val singleTargetBattle = allies.size <= 1 && opponents.size <= 1
+        val singleTargetBattle = !multiSlotRequest && activeTeam(side, frame).size <= 1 &&
+            activeTeam(opposite(side), frame).size <= 1
         return when (target) {
-            "normal", "adjacentfoe" -> if (singleTargetBattle) listOf(emptyList()) else opponents.map {
+            "normal" -> if (singleTargetBattle) listOf(emptyList()) else (allies.filter {
+                it.activeSlot != actorSlot
+            }.map { BattleTargetSlot(side, requireNotNull(it.activeSlot)) } + opponents.map {
+                BattleTargetSlot(opposite(side), requireNotNull(it.activeSlot))
+            }).map(::listOf)
+            "adjacentfoe" -> if (singleTargetBattle) listOf(emptyList()) else opponents.map {
                 listOf(BattleTargetSlot(opposite(side), requireNotNull(it.activeSlot)))
             }
             "adjacentally" -> allies.filter { it.activeSlot != actorSlot }.map {
@@ -253,6 +294,13 @@ internal object NativeShowdownRequestActionFactory {
         require(parsed.isJsonObject) { "Native Showdown request is unavailable" }
         return parsed.asJsonObject
     }
+
+    private fun isReviving(request: JsonObject, uuid: String): Boolean =
+        request.getAsJsonObject("side")?.getAsJsonArray("pokemon")?.any { element ->
+            val pokemon = element.asJsonObject
+            pokemon.boolean("reviving") && (pokemon.get("uuid")?.asString == uuid ||
+                pokemon.get("details")?.asString?.split(',')?.any { it.trim() == uuid } == true)
+        } == true
 
     private fun requestJson(side: BattleSide, frame: NativeBattleFrame): String = when (side) {
         BattleSide.ALLY -> frame.p1RequestJson
