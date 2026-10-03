@@ -325,6 +325,16 @@ internal object RecursiveHistoryProjector {
             }
         }
 
+        // An Update after residuals can eat Lum and remove confusion. Do not carry the cured state
+        // from the previous history or this turn's control effects into the next turn.
+        val beforeResidualById = outcome.stateBeforeResidual.pokemon.associateBy { it.battlePokemonId }
+        val lumCuredIds = outcome.state.pokemon.filter { after ->
+            val beforeResidual = beforeResidualById[after.battlePokemonId]
+            canonicalId(beforeResidual?.knownHeldItemId.orEmpty()) == "lumberry" &&
+                after.knownHeldItemId == null && after.statusId == null && !after.fainted && after.hpFraction > 0.0
+        }.mapTo(hashSetOf()) { it.battlePokemonId }
+        confused.removeAll(lumCuredIds)
+
         val activeIds = outcome.state.pokemon.filter { it.activeSlot != null && !it.fainted }.mapTo(hashSetOf()) {
             it.battlePokemonId
         }
