@@ -31,6 +31,12 @@ final class FadingMusicSoundInstance extends AbstractTickableSoundInstance
     public void tick() {
     }
 
+    @Override
+    public boolean canStartSilent() {
+        // Fade-ins start at zero; otherwise Minecraft rejects the first selected track.
+        return true;
+    }
+
     void setMusicVolume(double volume) {
         this.volume = toVolume(volume);
     }

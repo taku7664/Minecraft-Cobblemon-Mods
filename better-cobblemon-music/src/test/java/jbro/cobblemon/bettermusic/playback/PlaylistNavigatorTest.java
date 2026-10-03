@@ -11,6 +11,22 @@ import org.junit.jupiter.api.Test;
 
 final class PlaylistNavigatorTest {
     @Test
+    void everyModeExcludesThePreviousSongForBothTwoAndThreeTrackPlaylists() {
+        for (var mode : PlaylistDefinition.Selection.values()) {
+            for (var tracks : List.of(List.of("a.ogg", "b.ogg"), List.of("a.ogg", "b.ogg", "c.ogg"))) {
+                var navigator = new PlaylistNavigator(new Random(42));
+                var playlist = new PlaylistDefinition(mode, 1.0, 0.0, tracks);
+                String previous = navigator.next("test", playlist);
+                for (int index = 0; index < 100; index++) {
+                    String current = navigator.next("test", playlist);
+                    assertNotEquals(previous, current, mode + " must exclude the just-finished song");
+                    previous = current;
+                }
+            }
+        }
+    }
+
+    @Test
     void randomFirstPickCanSelectTheLastTrackAndResetRestoresAllCandidates() {
         var navigator = new PlaylistNavigator(new Random() {
             @Override
