@@ -8,8 +8,8 @@ import kotlin.math.abs
  * how long the white takes to give way to the battle ([fadeMillis]). The screen is fully white before the battle is
  * started, so the hitch of a battle opening happens behind the white.
  *
- * Wild and trainer battles run about four seconds. A legendary runs about six: it darkens the world, flashes three
- * times faster and faster with a shockwave on each, two black plates close on a diagonal under
+ * Wild and trainer battles run about four seconds. A legendary runs about six: it darkens the world, rushes outward in
+ * fading copies of itself three times, two black plates close on a diagonal under
  * focus lines in its colour, the focus lines thicken and drive to the center until their light fills the screen,
  * which holds white for a second, cracks, stays still for half a second, and comes apart in shards that drift out
  * from the center and fade.
@@ -22,10 +22,14 @@ enum class BattleEntryKind(
     val holdMillis: Long,
     val revealMillis: Long,
     val fadeMillis: Long,
+    val stages: EntryStages,
 ) {
-    LEGENDARY("legendary", listOf(450L, 850L, 1150L), 130, 1000, 450, 900, 800),
-    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000),
-    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000);
+    LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 800,
+        EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER)),
+    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
+        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE)),
+    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
+        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE));
 
     companion object {
         fun fromId(id: String?): BattleEntryKind? = entries.firstOrNull { it.id == id }
@@ -42,8 +46,6 @@ object BattleEntryTimeline {
     const val SPREAD = 1.1f
     /** A hold with no battle in sight past [readyAt] ends on its own, so a lost battle never leaves the screen covered. */
     const val HOLD_TIMEOUT_MILLIS = 6000L
-    /** How long a legendary's shockwave takes to reach past the screen's corners. */
-    const val RING_MILLIS = 450L
     /** How long the white stays after the battle opens before it gives way, so the opening's hitch stays hidden. */
     const val SETTLE_MILLIS = 150L
     /** How long a legendary's screen stays white, counted from when it is full, before it cracks. */
@@ -72,7 +74,7 @@ object BattleEntryTimeline {
         val since = elapsed - coverEnd(kind)
         if (since < 0) return 0f
         val ease = (since / 250f).coerceAtMost(1f)
-        val wave = if (kind == BattleEntryKind.LEGENDARY) {
+        val wave = if (kind.stages.mood == EntryMood.OMINOUS) {
             val beat = (since % 700L) / 700f
             maxOf(1f - abs(beat - .12f) / .1f, .7f * (1f - abs(beat - .34f) / .1f), 0f)
         } else {
@@ -81,8 +83,9 @@ object BattleEntryTimeline {
         return ease * wave
     }
 
-    /** The white flash's strength, 0 to 1, rising and falling within each flash. */
+    /** The white flash's strength, 0 to 1, rising and falling within each flash; a legendary zooms instead. */
     fun flash(kind: BattleEntryKind, elapsed: Long): Float {
+        if (kind.stages.intro != EntryIntro.FLASHES) return 0f
         val start = kind.flashStarts.lastOrNull { it <= elapsed } ?: return 0f
         val within = elapsed - start
         if (within >= kind.flashMillis) return 0f
@@ -114,8 +117,8 @@ object BattleEntryTimeline {
         return 1f - smooth(((elapsed - fade).toFloat() / kind.fadeMillis).coerceIn(0f, 1f))
     }
 
-    /** How far a legendary's focus lines have flooded toward filling the screen, 0 to 1: gentle at first, then quick. */
-    fun beam(kind: BattleEntryKind, elapsed: Long): Float {
+    /** How far focus lines have flooded toward filling the screen, 0 to 1: gentle at first, then quick. */
+    fun flood(kind: BattleEntryKind, elapsed: Long): Float {
         val share = rise(kind, elapsed)
         return share * share
     }
@@ -143,37 +146,42 @@ object BattleEntryTimeline {
 
     /** When nothing is left on screen, for a battle that opened at [revealAt]. */
     fun finishedAt(kind: BattleEntryKind, revealAt: Long?): Long? =
-        if (kind == BattleEntryKind.LEGENDARY) shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
-        else fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
+        when (kind.stages.fadeIn) {
+            EntryFadeIn.SHATTER -> shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
+            EntryFadeIn.WHITE_FADE -> fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
+        }
 
     fun revealed(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Boolean =
         finishedAt(kind, revealAt)?.let { elapsed >= it } ?: false
 
     /** A legendary's darkening of the world before its pattern, 0 to 1, gone with the pattern. */
     fun dim(kind: BattleEntryKind, elapsed: Long): Float {
-        if (kind != BattleEntryKind.LEGENDARY || patternGone(kind, elapsed)) return 0f
+        if (kind.stages.mood != EntryMood.OMINOUS || patternGone(kind, elapsed)) return 0f
         return smooth((elapsed / kind.flashStarts.first().toFloat()).coerceIn(0f, 1f))
     }
 
-    /** Each legendary shockwave's progress, 0 to 1, for the flashes it has followed so far. */
-    fun rings(kind: BattleEntryKind, elapsed: Long): List<Float> {
-        if (kind != BattleEntryKind.LEGENDARY) return emptyList()
+    /**
+     * Each of a legendary's zooms in progress, 0 to 1: at each of its beats the screen rushes outward in fading
+     * copies of itself.
+     */
+    fun zooms(kind: BattleEntryKind, elapsed: Long): List<Float> {
+        if (kind.stages.intro != EntryIntro.SCREEN_ZOOM) return emptyList()
         return kind.flashStarts.mapNotNull { start ->
-            val progress = (elapsed - start).toFloat() / RING_MILLIS
+            val progress = (elapsed - start).toFloat() / kind.flashMillis
             progress.takeIf { it in 0f..1f }
         }
     }
 
     /** A legendary's black bars, 0 (gone) to 1 (in): they slam in on the last flash and go with the pattern. */
     fun bars(kind: BattleEntryKind, elapsed: Long): Float {
-        if (kind != BattleEntryKind.LEGENDARY || patternGone(kind, elapsed)) return 0f
+        if (kind.stages.mood != EntryMood.OMINOUS || patternGone(kind, elapsed)) return 0f
         val slam = ((elapsed - kind.flashStarts.last()) / 120f).coerceIn(0f, 1f)
         return 1f - (1f - slam) * (1f - slam) * (1f - slam)
     }
 
     /** How hard a legendary shakes, 0 to 1: a jolt on each flash, then a rumble that settles as the cover closes. */
     fun shake(kind: BattleEntryKind, elapsed: Long): Float {
-        if (kind != BattleEntryKind.LEGENDARY) return 0f
+        if (kind.stages.mood != EntryMood.OMINOUS) return 0f
         val jolt = kind.flashStarts.maxOf { start ->
             val since = elapsed - start
             if (since < 0) 0f else (1f - since / 180f).coerceAtLeast(0f)

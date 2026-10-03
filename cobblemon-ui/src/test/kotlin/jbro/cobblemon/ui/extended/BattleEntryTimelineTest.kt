@@ -9,13 +9,13 @@ import org.junit.jupiter.api.Test
 
 class BattleEntryTimelineTest {
     @Test
-    fun `a legendary flashes three times before the cover starts`() {
+    fun `a legendary zooms three times instead of flashing before the cover starts`() {
         val kind = BattleEntryKind.LEGENDARY
-        val peaks = (0 until BattleEntryTimeline.flashEnd(kind).toInt()).map { BattleEntryTimeline.flash(kind, it.toLong()) }
-        val rises = peaks.zipWithNext().count { (a, b) -> a == 0f && b > 0f } + if (peaks.first() > 0f) 1 else 0
-        assertEquals(3, rises)
+        assertEquals(3, kind.flashStarts.size)
+        for (start in kind.flashStarts) assertTrue(BattleEntryTimeline.zooms(kind, start).contains(0f))
+        assertTrue(BattleEntryTimeline.zooms(kind, kind.flashStarts.first() - 1).isEmpty())
+        for (elapsed in 0L..BattleEntryTimeline.flashEnd(kind)) assertEquals(0f, BattleEntryTimeline.flash(kind, elapsed))
         val first = kind.flashStarts.first()
-        assertEquals(1f, BattleEntryTimeline.flash(kind, first + kind.flashMillis / 2), 1e-3f)
         // The world darkens before the first flash.
         assertTrue(BattleEntryTimeline.dim(kind, first) >= 1f - 1e-3f)
         assertEquals(0f, BattleEntryTimeline.cover(kind, BattleEntryTimeline.flashEnd(kind)))
@@ -63,9 +63,9 @@ class BattleEntryTimelineTest {
         val kind = BattleEntryKind.LEGENDARY
         val start = BattleEntryTimeline.riseStart(kind)
         val ready = BattleEntryTimeline.readyAt(kind)
-        assertEquals(0f, BattleEntryTimeline.beam(kind, start))
-        assertTrue(BattleEntryTimeline.beam(kind, (start + ready) / 2) < .3f)
-        assertEquals(1f, BattleEntryTimeline.beam(kind, ready), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.flood(kind, start))
+        assertTrue(BattleEntryTimeline.flood(kind, (start + ready) / 2) < .3f)
+        assertEquals(1f, BattleEntryTimeline.flood(kind, ready), 1e-3f)
         // Until the battle opens the white just holds.
         assertEquals(0f, BattleEntryTimeline.crack(kind, ready + 5000, null))
         assertEquals(0f, BattleEntryTimeline.shatter(kind, ready + 5000, null))
@@ -111,20 +111,20 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `only a legendary darkens, rings, shakes and brings bars`() {
+    fun `only a legendary darkens, zooms, shakes and brings bars`() {
         for (kind in listOf(BattleEntryKind.WILD, BattleEntryKind.TRAINER)) {
             for (elapsed in 0L..BattleEntryTimeline.coverEnd(kind) step 20) {
                 assertEquals(0f, BattleEntryTimeline.dim(kind, elapsed))
                 assertEquals(0f, BattleEntryTimeline.shake(kind, elapsed))
                 assertEquals(0f, BattleEntryTimeline.bars(kind, elapsed))
-                assertTrue(BattleEntryTimeline.rings(kind, elapsed).isEmpty())
+                assertTrue(BattleEntryTimeline.zooms(kind, elapsed).isEmpty())
             }
         }
         val legendary = BattleEntryKind.LEGENDARY
         val last = legendary.flashStarts.last()
         assertEquals(1f, BattleEntryTimeline.bars(legendary, last + 200), 1e-3f)
         assertEquals(0f, BattleEntryTimeline.bars(legendary, BattleEntryTimeline.readyAt(legendary)))
-        assertTrue(BattleEntryTimeline.rings(legendary, last + 10).isNotEmpty())
+        assertTrue(BattleEntryTimeline.zooms(legendary, last + 10).isNotEmpty())
         assertTrue(BattleEntryTimeline.shake(legendary, last + 10) > .9f)
         assertEquals(0f, BattleEntryTimeline.shake(legendary, BattleEntryTimeline.coverEnd(legendary)), 1e-3f)
     }
@@ -134,5 +134,18 @@ class BattleEntryTimelineTest {
         val center = BattleEntryTimeline.pieceSize(1f, .3f, 0f)
         val corner = BattleEntryTimeline.pieceSize(1f, .3f, 1f)
         assertTrue(center < corner, "center $center, corner $corner")
+    }
+
+    @Test
+    fun `any whiteout hands a fully white screen to any fade-in`() {
+        for (kind in BattleEntryKind.entries) {
+            val ready = BattleEntryTimeline.readyAt(kind)
+            // The whiteout ends full, and the fade-in starts full until the battle opens.
+            assertEquals(1f, BattleEntryTimeline.rise(kind, ready))
+            assertEquals(1f, BattleEntryTimeline.flood(kind, ready), 1e-3f)
+            assertEquals(1f, BattleEntryTimeline.white(kind, ready, null))
+            assertEquals(0f, BattleEntryTimeline.shatter(kind, ready, null))
+            assertTrue(BattleEntryTimeline.patternGone(kind, ready))
+        }
     }
 }
