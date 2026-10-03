@@ -198,7 +198,7 @@ public final class BetterMusicClientRuntime {
 
     private void setLastPokemonEffect(LastPokemonMuffleTracker.Effect effect) {
         if (lastPokemonEffect != effect) {
-            logger.info("Last-Pokémon battle audio effect changed from {} to {}", lastPokemonEffect, effect);
+            logger.info("Battle HP audio effect changed from {} to {}", lastPokemonEffect, effect);
             lastPokemonEffect = effect;
         }
         player.setMuffled(effect.muffled());
