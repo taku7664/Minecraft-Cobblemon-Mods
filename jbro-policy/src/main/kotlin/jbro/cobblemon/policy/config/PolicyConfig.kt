@@ -28,7 +28,7 @@ data class PolicyConfig(
     val wildIvEnabled: Boolean = true,
     val wildIvRanges: List<IvRange> = DEFAULT_IV_RANGES,
     /** Seconds between two `[안내]` tips; 0 turns them off. */
-    val tipIntervalSeconds: Int = 30,
+    val tipIntervalSeconds: Int = 60,
     /** The tips, one picked at random each time. */
     val tips: List<String> = DEFAULT_TIPS,
 ) {
