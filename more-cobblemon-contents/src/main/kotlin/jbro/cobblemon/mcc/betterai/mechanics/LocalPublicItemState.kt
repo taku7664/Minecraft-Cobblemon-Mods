@@ -8,6 +8,7 @@ internal object LocalPublicItemState {
     fun activeItemId(state: BattleStateView, pokemon: BattlePokemonStateView?): String? {
         val item = pokemon?.canonicalKnownHeldItemId ?: return null
         if (LocalPublicFieldMechanics.magicRoomActive(state)) return null
+        if ("embargo" in pokemon.canonicalKnownVolatileEffectIds) return null
         if (item !in KLUTZ_PROOF_ITEMS &&
             LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == KLUTZ
         ) return null

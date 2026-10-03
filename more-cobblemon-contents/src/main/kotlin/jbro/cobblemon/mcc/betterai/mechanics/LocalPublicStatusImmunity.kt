@@ -16,8 +16,10 @@ internal object LocalPublicStatusImmunity {
         /** Who inflicts it. Null is an unknown inflicter: field protection still applies. */
         source: BattlePokemonStateView? = null,
         ignoreTargetAbility: Boolean = false,
-        /** False for a status that does not come from a move (Flame Body, an orb, Yawn falling due). */
+        /** A Substitute and Infiltrator are move rules; Safeguard also stops other-source abilities. */
         byMove: Boolean = true,
+        /** Yawn's delayed SetStatus bypasses Safeguard and Flower Veil, unlike its initial volatile. */
+        effectId: String? = null,
     ): Boolean {
         if (target.statusId != null) return true
         val status = canonical(statusId)
@@ -31,22 +33,35 @@ internal object LocalPublicStatusImmunity {
                 ?.takeIf { LocalPublicAbilityState.isActive(state, target, it) }
         val sourceAbility = source?.let { LocalPublicAbilityState.effectiveKnownAbility(state, it) }
         val fromOther = source != null && source.battlePokemonId != target.battlePokemonId
-        if (fieldBlocks(state, target, status, sourceAbility, source, fromOther && byMove)) return true
+        if (fieldBlocks(state, target, status, sourceAbility, source, fromOther, byMove, effectId == "yawn")) return true
         if (ability in ALL_STATUS_IMMUNITIES) return true
-        if (fromOther && flowerVeiled(state, target)) return true
+        if (fromOther && effectId != "yawn" && flowerVeiled(state, target)) return true
         if (ability == LEAF_GUARD && LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER &&
             LocalPublicItemState.activeItemId(state, target) != UTILITY_UMBRELLA) return true
         return when (status) {
             // Corrosion poisons Steel and Poison types alike.
             in POISON -> sourceAbility != CORROSION && ("poison" in types || "steel" in types) ||
-                ability == "immunity" || ability == "pastelveil"
+                ability == "immunity" || ability == "pastelveil" || allyAbility(state, target, "pastelveil")
             in BURN -> "fire" in types || ability == "waterveil" || ability == "waterbubble" || ability == "thermalexchange"
             in PARALYSIS -> "electric" in types || ability == "limber"
-            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil")
+            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil") || allyAbility(state, target, "sweetveil")
             in FREEZE -> "ice" in types || ability == "magmaarmor" ||
                 LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER
             else -> false
         }
+    }
+
+    fun volatileBlocked(state: BattleStateView, target: BattlePokemonStateView, volatileId: String,
+        source: BattlePokemonStateView?): Boolean {
+        if (volatileId == "confusion" && LocalPublicAbilityState.effectiveKnownAbility(state, target) == "owntempo") return true
+        val fromOther = source != null && source.battlePokemonId != target.battlePokemonId
+        return fieldBlocks(state, target, volatileId,
+            source?.let { LocalPublicAbilityState.effectiveKnownAbility(state, it) }, source, fromOther, true)
+    }
+
+    private fun allyAbility(state: BattleStateView, target: BattlePokemonStateView, ability: String): Boolean = state.pokemon.any {
+        it.battlePokemonId != target.battlePokemonId && it.side == target.side && it.activeSlot != null &&
+            !it.fainted && it.hpFraction > 0.0 && LocalPublicAbilityState.effectiveKnownAbility(state, it) == ability
     }
 
     /** A Grass type beside (or holding) Flower Veil. */
@@ -63,19 +78,21 @@ internal object LocalPublicStatusImmunity {
         status: String?,
         sourceAbility: String?,
         source: BattlePokemonStateView?,
-        /** Safeguard and a Substitute stop another Pokemon's move, not a Pokemon's own or an ability's. */
-        moveFromOther: Boolean,
+        fromOther: Boolean,
+        byMove: Boolean,
+        delayedYawn: Boolean = false,
     ): Boolean {
         val terrain = LocalPublicFieldMechanics.terrainId(state)
-        val grounded = target.activeSlot != null && LocalPublicTurnOrder.grounded(state, target)
+        val grounded = target.activeSlot != null && LocalPublicTurnOrder.grounded(state, target) &&
+            target.canonicalKnownVolatileEffectIds.none { it in SEMI_INVULNERABLE }
         if (grounded && terrain == MISTY_TERRAIN) return true
         if (grounded && terrain == ELECTRIC_TERRAIN && status in SLEEP) return true
-        if (!moveFromOther) return false
-        val infiltrates = sourceAbility == INFILTRATOR && source?.side != target.side
-        if (!infiltrates && state.field.sideConditions[target.side].orEmpty().any {
+        if (!fromOther) return false
+        val infiltrates = byMove && sourceAbility == INFILTRATOR && source?.side != target.side
+        if (!delayedYawn && !infiltrates && state.field.sideConditions[target.side].orEmpty().any {
                 canonical(it.effectId) == SAFEGUARD && (it.remainingTurns == null || it.remainingTurns > 0)
             }) return true
-        return !infiltrates && SUBSTITUTE in target.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
+        return byMove && !infiltrates && SUBSTITUTE in target.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
     }
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
@@ -95,4 +112,5 @@ internal object LocalPublicStatusImmunity {
     private const val MISTY_TERRAIN = "mistyterrain"
     private const val ELECTRIC_TERRAIN = "electricterrain"
     private const val UTILITY_UMBRELLA = "utilityumbrella"
+    private val SEMI_INVULNERABLE = setOf("fly", "bounce", "dig", "dive", "phantomforce", "shadowforce", "skydrop")
 }

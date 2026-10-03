@@ -7,6 +7,9 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusEffects
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusProjection
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -26,6 +29,26 @@ internal object LocalEndTurnStateProjector {
         /** Cured at the end of this turn (Shed Skin's roll came up). */
         curedPokemonIds: Set<java.util.UUID> = emptySet(),
     ): BattleStateView {
+        return projectWithCures(state, badPoisonTurnsByPokemon, saltCuredPokemonIds, leechSeedSourceByPokemon,
+            ghostCursedPokemonIds, partiallyTrappedPokemonIds, enteredThisTurnPokemonIds, wishSlots,
+            yawnPokemonIds, curedPokemonIds).state
+    }
+
+    fun projectWithCures(
+        initialState: BattleStateView,
+        badPoisonTurnsByPokemon: Map<java.util.UUID, Int> = emptyMap(),
+        saltCuredPokemonIds: Set<java.util.UUID> = emptySet(),
+        leechSeedSourceByPokemon: Map<java.util.UUID, java.util.UUID> = emptyMap(),
+        ghostCursedPokemonIds: Set<java.util.UUID> = emptySet(),
+        partiallyTrappedPokemonIds: Set<java.util.UUID> = emptySet(),
+        enteredThisTurnPokemonIds: Set<java.util.UUID> = emptySet(),
+        wishSlots: Set<Pair<BattleSide, Int>> = emptySet(),
+        yawnPokemonIds: Set<java.util.UUID> = emptySet(),
+        curedPokemonIds: Set<java.util.UUID> = emptySet(),
+    ): LocalPublicStatusProjection {
+        val initialUpdate = LocalPublicStatusEffects.updateLum(initialState)
+        val state = initialUpdate.state
+        val confusionCured = initialUpdate.confusionCuredPokemonIds.toMutableSet()
         // Weather expires before its residual callback. Unknown durations retain the existing estimate.
         val nextField = decrementField(state.field)
         val weatherSuppressed = state.pokemon.any {
@@ -126,20 +149,27 @@ internal object LocalEndTurnStateProjector {
                 val divisor = if (types.any { it in SALT_CURE_WEAK_TYPES }) 4 else 8
                 apply(-hpFractionTick(pokemon, divisor))
             }
-            // A Flame Orb or Toxic Orb inflicts its status at the end of the turn (Guts and Poison Heal want it).
-            val orbStatus = when (item) {
-                "flameorb" -> "brn".takeIf { status == null && "fire" !in types }
-                "toxicorb" -> "tox".takeIf { status == null && "poison" !in types && "steel" !in types }
-                else -> null
+            var projected = copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0,
+                statusId = if (status == null) null else pokemon.statusId)
+            fun statusState(field: BattleFieldStateView) = state.derive(field = field,
+                pokemon = state.pokemon.map { if (it.battlePokemonId == projected.battlePokemonId) projected else it })
+            fun applyStatus(statusId: String, field: BattleFieldStateView, sourceId: java.util.UUID? = null, effectId: String? = null) {
+                val result = LocalPublicStatusEffects.setStatus(statusState(field), projected.battlePokemonId,
+                    statusId, sourceId, byMove = false, effectId = effectId)
+                projected = result.state.pokemon.first { it.battlePokemonId == projected.battlePokemonId }
+                confusionCured += result.confusionCuredPokemonIds
             }
-            val yawnSleep = "slp".takeIf {
-                pokemon.battlePokemonId in yawnPokemonIds && status == null && hp > 0.0 &&
-                    !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, pokemon, "slp")
+            // Yawn falls due at order 23, while terrain and room effects expire at 27 and orbs act at 28.
+            if (pokemon.battlePokemonId in yawnPokemonIds) applyStatus("slp", BattleFieldStateView(
+                nextField.weather, state.field.terrain, state.field.roomEffects, state.field.globalEffects,
+                state.field.sideConditions), effectId = "yawn")
+            when (LocalPublicItemState.activeItemId(statusState(nextField), projected)) {
+                "flameorb" -> applyStatus("brn", nextField, projected.battlePokemonId)
+                "toxicorb" -> applyStatus("tox", nextField, projected.battlePokemonId)
             }
-            copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0,
-                statusId = yawnSleep ?: orbStatus ?: if (status == null) null else pokemon.statusId)
+            projected
         }
-        return state.derive(
+        return LocalPublicStatusProjection(state.derive(
             pokemon = next,
             field = nextField,
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
@@ -152,7 +182,7 @@ internal object LocalEndTurnStateProjector {
                 (state.remainingPokemonBySide.getValue(side) + nextKnownLiving - previousKnownLiving)
                     .coerceAtLeast(0)
             },
-        )
+        ), confusionCured)
     }
 
     private fun hpFractionTick(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
@@ -204,32 +234,15 @@ internal object LocalEndTurnStateProjector {
         statStages: Map<String, Int>,
         fainted: Boolean,
         statusId: String? = pokemon.statusId,
-    ) = BattlePokemonStateView(
-        battlePokemonId = pokemon.battlePokemonId,
-        side = pokemon.side,
-        activeSlot = pokemon.activeSlot,
-        speciesId = pokemon.speciesId,
-        formId = pokemon.formId,
-        level = pokemon.level,
+    ) = pokemon.copyState(
         hpFraction = hpFraction,
         statusId = statusId,
         statStages = statStages,
-        knownMoveIds = pokemon.knownMoveIds,
-        knownAbilityId = pokemon.knownAbilityId,
-        knownHeldItemId = pokemon.knownHeldItemId,
         fainted = fainted,
-        knownTypeIds = pokemon.knownTypeIds,
-        combatStats = pokemon.combatStats,
-        knownFormStates = pokemon.knownFormStates,
-        actionConstraints = pokemon.actionConstraints,
         // Endure lasts the turn it was used.
         // Endure and Glaive Rush's check last the turn; Throat Chop's two turns are read as one search turn.
         knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds
             .filterNot { canonical(it) in TURN_VOLATILES }.toSet(),
-        knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
-        knownTeraTypeId = pokemon.knownTeraTypeId,
-        knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
-        knownSubstituteHpFractionRange = pokemon.knownSubstituteHpFractionRange,
     )
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)

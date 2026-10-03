@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.internal.ai.*
 internal data class LocalContactAfterHitBranch(
     val state: BattleStateView,
     val probability: Double,
+    val confusionCuredPokemonIds: Set<UUID> = emptySet(),
 )
 
 /** Applies public contact reactions only after the move dealt direct damage. */
@@ -102,26 +103,29 @@ internal object LocalContactAfterHitMechanics {
             else -> null
         }?.takeIf { (status, _) ->
             val current = reacted.pokemon.first { it.battlePokemonId == target.battlePokemonId }
-            !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, actor)
+            !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, actor, byMove = false)
         }
         var branches = listOf(LocalContactAfterHitBranch(reacted, 1.0))
         if (statuses.isNotEmpty()) {
             val untouched = 1.0 - statuses.sumOf { it.second }
             branches = listOf(LocalContactAfterHitBranch(reacted, untouched)) + statuses.map { (status, chance) ->
-                LocalContactAfterHitBranch(updateActor(reacted, actorId) {
-                    if (status == CUTE_CHARM) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + "attract")
-                    else copyPokemon(it, statusId = status)
-                }, chance)
+                if (status == CUTE_CHARM) LocalContactAfterHitBranch(updateActor(reacted, actorId) {
+                    it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + "attract")
+                }, chance) else LocalPublicStatusEffects.setStatus(reacted, actorId, status, targetId, byMove = false).let {
+                    LocalContactAfterHitBranch(it.state, chance, it.confusionCuredPokemonIds)
+                }
             }
         }
         if (attackerStatus != null) {
             val (status, chance) = attackerStatus
             branches = branches.flatMap { branch ->
+                val applied = LocalPublicStatusEffects.setStatus(branch.state, target.battlePokemonId, status, actorId, byMove = false)
                 listOf(
                     branch.copy(probability = branch.probability * (1.0 - chance)),
                     LocalContactAfterHitBranch(
-                        updateActor(branch.state, target.battlePokemonId) { copyPokemon(it, statusId = status) },
+                        applied.state,
                         branch.probability * chance,
+                        branch.confusionCuredPokemonIds + applied.confusionCuredPokemonIds,
                     ),
                 )
             }

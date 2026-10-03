@@ -30,6 +30,8 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemTransferRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusEffects
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusProjection
 import jbro.cobblemon.mcc.betterai.mechanics.LocalSideGuardRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
@@ -118,6 +120,8 @@ internal object PublicSingleTurnProjector {
         // Mechanics resolve after switches and before any move, and persist beyond this turn.
         switchedState = LocalMechanicActivationProjector.beforeMoves(switchedState, BattleSide.ALLY, allyAction)
         switchedState = LocalMechanicActivationProjector.beforeMoves(switchedState, BattleSide.OPPONENT, opponentAction)
+        val statusUpdate = LocalPublicStatusEffects.updateLum(switchedState)
+        switchedState = statusUpdate.state
 
         val moveActions = turnActions.filter { it.action.kind == BattleActionKind.USE_MOVE }
         val initiallyActivePokemonIds = activePokemonIds(initialState)
@@ -126,6 +130,7 @@ internal object PublicSingleTurnProjector {
                 branch = WeightedState(
                     state = switchedState,
                     probability = 1.0,
+                    controlEffects = confusionCureEffects(switchedState, statusUpdate.confusionCuredPokemonIds),
                     lastMoveByPokemon = history.lastMoveByPokemon,
                 ),
                 remaining = moveActions,
@@ -274,9 +279,7 @@ internal object PublicSingleTurnProjector {
                 val bound = (history.partiallyTrappedPokemonIds.filter { id -> history.trappedByPokemon[id]?.sourcePokemonId?.let(::active) == true } +
                     applied(RecursiveControlEffectKind.PARTIAL_TRAP).filter { active(it.sourcePokemonId) }.map { it.targetPokemonId })
                     .filterTo(linkedSetOf()) { active(it) && it !in spun }
-                PublicTurnProjection(
-                    incrementTurn(
-                        LocalEndTurnStateProjector.project(
+                val residual = LocalEndTurnStateProjector.projectWithCures(
                             outcome.state,
                             badPoisonTurns,
                             saltCuredPokemonIds,
@@ -287,14 +290,15 @@ internal object PublicSingleTurnProjector {
                             wishSlots = history.pendingWishSlots,
                             yawnPokemonIds = history.drowsyPokemonIds,
                             curedPokemonIds = shedSkinCured,
-                        ),
-                    ),
+                        )
+                PublicTurnProjection(
+                    incrementTurn(residual.state),
                     completed.order.map(TurnPrimitiveAction::side),
                     completed.order.mapNotNull(TurnPrimitiveAction::actorPokemonId),
                     outcome.probability,
                     completed.orderProbability,
                     outcome.executedSides,
-                    outcome.controlEffects,
+                    outcome.controlEffects + confusionCureEffects(residual.state, residual.confusionCuredPokemonIds),
                     outcome.switchedSides,
                     outcome.executedMoveIdsByPokemon,
                     badPoisonTurns,
@@ -400,10 +404,11 @@ internal object PublicSingleTurnProjector {
         }
         // Confused (from an earlier turn or earlier this one): a third of the time it hits itself instead.
         val confusedActor = ordered.actorPokemonId?.takeIf { id ->
+            val latest = branch.controlEffects.lastOrNull {
+                it.targetPokemonId == id && it.kind in setOf(RecursiveControlEffectKind.CONFUSION, RecursiveControlEffectKind.CONFUSION_CURE)
+            }
             ordered.action.kind == BattleActionKind.USE_MOVE &&
-                (id in history.confusedPokemonIds || branch.controlEffects.any {
-                    it.kind == RecursiveControlEffectKind.CONFUSION && it.targetPokemonId == id
-                })
+                (latest?.kind == RecursiveControlEffectKind.CONFUSION || latest == null && id in history.confusedPokemonIds)
         }
         if (confusedActor != null) {
             val selfHit = confusionSelfHit(branch.state, confusedActor)
@@ -1096,7 +1101,8 @@ internal object PublicSingleTurnProjector {
                         sourceContext = sourceContext,
                         calculationCache = calculationCache,
                         shouldContinue = shouldContinue,
-                    ).map { it.copy(probability = it.probability * contactOutcome.probability) }
+                    ).map { it.copy(probability = it.probability * contactOutcome.probability,
+                        controlEffects = confusionCureEffects(contactOutcome.state, contactOutcome.confusionCuredPokemonIds) + it.controlEffects) }
                 }.flatMap { effectOutcome ->
                     applyForcedTargetSwitch(
                         effectOutcome,
@@ -1450,7 +1456,9 @@ internal object PublicSingleTurnProjector {
                                     probability = branch.probability * outcome.probability *
                                         contactOutcome.probability * effectOutcome.probability,
                                     executedSides = branch.executedSides + effectOutcome.executedSides,
-                                    controlEffects = branch.controlEffects + effectOutcome.controlEffects +
+                                    controlEffects = branch.controlEffects +
+                                        confusionCureEffects(contactOutcome.state, contactOutcome.confusionCuredPokemonIds) +
+                                        effectOutcome.controlEffects +
                                         scriptedTrapEffects(
                                             calculatedAction,
                                             side,
@@ -1750,13 +1758,17 @@ internal object PublicSingleTurnProjector {
             }
             if (probability <= 0.0) return@forEach
             branches = branches.flatMap { branch ->
-                val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide, branch.state)
-                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide)
+                val projection = projectStatusEffect(branch.state, actorId, targetId, effect, effectSourceSide)
+                val applied = projection.state
+                val isConfusion = effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && canonicalId(effect.valueId) == "confusion"
+                val controlEffect = if (isConfusion && applied === branch.state) null else
+                    recursiveControlEffect(effect, actorId, targetId, effectSourceSide, if (isConfusion) applied else branch.state)
+                val controls = listOfNotNull(controlEffect) + confusionCureEffects(applied, projection.confusionCuredPokemonIds)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
                         branch.copy(
                             state = applied,
-                            controlEffects = branch.controlEffects + listOfNotNull(controlEffect),
+                            controlEffects = branch.controlEffects + controls,
                         ),
                     )
                     // A flinch changes who moves this turn, which no score of the board after the hit can stand in
@@ -1780,7 +1792,7 @@ internal object PublicSingleTurnProjector {
                         branch.copy(
                             state = applied,
                             probability = branch.probability * probability,
-                            controlEffects = branch.controlEffects + listOfNotNull(controlEffect),
+                            controlEffects = branch.controlEffects + controls,
                         ),
                     )
                 }
@@ -1827,16 +1839,15 @@ internal object PublicSingleTurnProjector {
             // Confusion: a third of the target's moves turn into a hit on itself for a few turns.
             "confusion" -> RecursiveControlEffectKind.CONFUSION.takeUnless {
                 val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
-                target == null || LocalPublicAbilityState.effectiveKnownAbility(state, target) == "owntempo" ||
-                    LocalPublicFieldMechanics.terrainId(state) == "mistyterrain" && LocalPublicTurnOrder.grounded(state, target) &&
-                    targetPokemonId != actorId
+                target == null || "confusion" !in target.canonicalKnownVolatileEffectIds
             } ?: return null
             // Destiny Bond: whoever knocks its user out this turn goes down with it.
             "destinybond" -> if (targetPokemonId == actorId) RecursiveControlEffectKind.DESTINY_BOND else return null
             // Yawn: the target falls asleep at the end of the next turn.
             "yawn" -> if (targetPokemonId == actorId) return null else RecursiveControlEffectKind.YAWN.takeUnless {
                 val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
-                target == null || target.statusId != null || LocalPublicStatusImmunity.blocked(state, target, "slp")
+                target == null || target.statusId != null || LocalPublicStatusImmunity.blocked(state, target, "slp",
+                    state.pokemon.firstOrNull { it.battlePokemonId == actorId })
             } ?: return null
             // Outrage and Petal Dance lock their user into them for the next turn too.
             "lockedmove" -> if (targetPokemonId == actorId) RecursiveControlEffectKind.LOCKED_MOVE else return null
@@ -1853,6 +1864,29 @@ internal object PublicSingleTurnProjector {
                 ?.knownVolatileEffectIds?.any { canonicalId(it) == SUBSTITUTE } == true) return null
         return RecursiveControlEffect(kind, sourceSide, actorId, targetPokemonId)
     }
+
+    private fun projectStatusEffect(state: BattleStateView, actorId: UUID, targetId: UUID?,
+        effect: BattleMoveEffectView, executedSide: BattleSide): LocalPublicStatusProjection {
+        val affectedId = when (effect.target) {
+            BattleMoveEffectTarget.USER -> actorId
+            BattleMoveEffectTarget.SELECTED_TARGET -> targetId
+            else -> null
+        }
+        if (affectedId != null) {
+            if (effect.kind == BattleMoveEffectKind.STATUS && effect.valueId != null) {
+                return LocalPublicStatusEffects.setStatus(state, affectedId, effect.valueId, actorId)
+            }
+            if (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && canonicalId(effect.valueId) == "confusion") {
+                return LocalPublicStatusEffects.confuse(state, affectedId, actorId)
+            }
+        }
+        return LocalPublicStatusProjection(applyEffect(state, actorId, targetId, effect, executedSide))
+    }
+
+    private fun confusionCureEffects(state: BattleStateView, curedIds: Set<UUID>): List<RecursiveControlEffect> =
+        curedIds.mapNotNull { id -> state.pokemon.firstOrNull { it.battlePokemonId == id }?.let {
+            RecursiveControlEffect(RecursiveControlEffectKind.CONFUSION_CURE, it.side, id, id)
+        } }
 
     private fun applyEffect(
         state: BattleStateView,
@@ -1912,23 +1946,11 @@ internal object PublicSingleTurnProjector {
                 )
             })
         }
-        val updated = when (effect.kind) {
-            BattleMoveEffectKind.STATUS -> {
-                val inflicter = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
-                if (effect.valueId == null || LocalPublicStatusImmunity.blocked(state, affected, effect.valueId, inflicter)) return state
-                // A Lum Berry cures a new status at once and is eaten.
-                if (LocalPublicItemState.activeItemId(state, affected) == "lumberry") affected.copyState(knownHeldItemId = "")
-                else affected.copyState(statusId = effect.valueId)
-            }
+        return when (effect.kind) {
             // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
-            BattleMoveEffectKind.STAT_STAGE -> return LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages)
-            else -> return state
+            BattleMoveEffectKind.STAT_STAGE -> LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages)
+            else -> state
         }
-        return state.copyState(
-            pokemon = state.pokemon.map { pokemon ->
-                if (pokemon.battlePokemonId == affectedId) updated else pokemon
-            },
-        )
     }
 
     private fun mergeBranches(branches: List<WeightedState>, maxBranches: Int): List<WeightedState> {

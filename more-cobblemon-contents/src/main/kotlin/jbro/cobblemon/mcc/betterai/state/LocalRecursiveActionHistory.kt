@@ -293,6 +293,7 @@ internal object RecursiveHistoryProjector {
                 RecursiveControlEffectKind.FLINCH, RecursiveControlEffectKind.DESTINY_BOND, RecursiveControlEffectKind.ENDURE -> Unit
                 RecursiveControlEffectKind.YAWN -> drowsy += effect.targetPokemonId
                 RecursiveControlEffectKind.CONFUSION -> confused += effect.targetPokemonId
+                RecursiveControlEffectKind.CONFUSION_CURE -> confused -= effect.targetPokemonId
                 RecursiveControlEffectKind.LOCKED_MOVE -> outcome.executedMoveIdsByPokemon[effect.targetPokemonId]?.let { moveId ->
                     // Already locked from last turn: the rampage ends after this one.
                     if (previous.encoreByPokemon[effect.targetPokemonId]?.moveId != moveId) {
