@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 import jbro.cobblemon.bettermusic.config.PlaylistDefinition;
+import jbro.cobblemon.bettermusic.field.FieldMusicRule;
 
 public final class MusicCatalogParser {
     private MusicCatalogParser() {
@@ -145,18 +146,26 @@ public final class MusicCatalogParser {
     private static CatalogMappings.Field fieldMappings(JsonObject object) {
         String path = "$.mappings.field";
         CatalogJson.only(object, path, "default", "dimensions", "biomes", "biomePathContains", "underground",
-            "dayDimensions", "nightDimensions");
-        return new CatalogMappings.Field(
-            CatalogJson.resourceId(CatalogJson.string(object, "default", path), path + ".default"),
-            idMap(CatalogJson.optionalObject(object, "dimensions", path), path + ".dimensions", KeyType.RESOURCE),
-            idMap(CatalogJson.optionalObject(object, "biomes", path), path + ".biomes", KeyType.BIOME),
-            idMap(CatalogJson.optionalObject(object, "biomePathContains", path), path + ".biomePathContains", KeyType.PATH),
-            object.has("underground")
-                ? Optional.of(CatalogJson.resourceId(CatalogJson.string(object, "underground", path), path + ".underground"))
-                : Optional.empty(),
-            idMap(CatalogJson.optionalObject(object, "dayDimensions", path), path + ".dayDimensions", KeyType.RESOURCE),
-            idMap(CatalogJson.optionalObject(object, "nightDimensions", path), path + ".nightDimensions", KeyType.RESOURCE)
-        );
+            "dayDimensions", "nightDimensions", "ruleOrder");
+        try {
+            return new CatalogMappings.Field(
+                CatalogJson.resourceId(CatalogJson.string(object, "default", path), path + ".default"),
+                idMap(CatalogJson.optionalObject(object, "dimensions", path), path + ".dimensions", KeyType.RESOURCE),
+                idMap(CatalogJson.optionalObject(object, "biomes", path), path + ".biomes", KeyType.BIOME),
+                idMap(CatalogJson.optionalObject(object, "biomePathContains", path), path + ".biomePathContains", KeyType.PATH),
+                object.has("underground")
+                    ? Optional.of(CatalogJson.resourceId(CatalogJson.string(object, "underground", path), path + ".underground"))
+                    : Optional.empty(),
+                idMap(CatalogJson.optionalObject(object, "dayDimensions", path), path + ".dayDimensions", KeyType.RESOURCE),
+                idMap(CatalogJson.optionalObject(object, "nightDimensions", path), path + ".nightDimensions", KeyType.RESOURCE),
+                CatalogJson.uniqueStrings(CatalogJson.optionalArray(object, "ruleOrder", path), path + ".ruleOrder",
+                    (value, ignored) -> value).stream().map(FieldMusicRule::parse).toList()
+            );
+        } catch (CatalogValidationException exception) {
+            throw exception;
+        } catch (IllegalArgumentException exception) {
+            throw CatalogJson.error(path + ".ruleOrder", exception.getMessage());
+        }
     }
 
     static CatalogMappings.Battle battleMappings(JsonObject object, String path) {

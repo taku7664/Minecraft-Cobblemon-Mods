@@ -37,6 +37,27 @@ final class MusicCatalogParserTest {
     }
 
     @Test
+    void validatesOrderedFieldReferencesAndKeepsOldPacksCompatible() {
+        var root = com.google.gson.JsonParser.parseString(baseCatalogJson()).getAsJsonObject();
+        var field = root.getAsJsonObject("mappings").getAsJsonObject("field");
+        field.getAsJsonObject("biomes").addProperty("minecraft:deep_dark", "cobleserver:field_plains");
+        field.addProperty("underground", "cobleserver:field_plains");
+        field.add("ruleOrder", com.google.gson.JsonParser.parseString("[\"biome:minecraft:deep_dark\",\"underground\"]"));
+        var parsed = MusicCatalogParser.parse(new StringReader(root.toString())).mappings().orElseThrow().field();
+        assertEquals(java.util.List.of("biome:minecraft:deep_dark", "underground"),
+            parsed.ruleOrder().stream().map(jbro.cobblemon.bettermusic.field.FieldMusicRule::selector).toList());
+        for (String invalid : java.util.List.of("[\"path:missing\"]", "[\"dimension:minecraft:the_end\"]",
+            "[\"underground\",\"underground\"]", "[42]", "[\"path:\"]")) {
+            field.add("ruleOrder", com.google.gson.JsonParser.parseString(invalid));
+            var failure = assertThrows(CatalogValidationException.class,
+                () -> MusicCatalogParser.parse(new StringReader(root.toString())));
+            assertTrue(failure.getMessage().contains("ruleOrder"), invalid);
+        }
+        assertTrue(MusicCatalogParser.parse(new StringReader(baseCatalogJson())).mappings().orElseThrow()
+            .field().ruleOrder().isEmpty());
+    }
+
+    @Test
     void extensionCannotDeclareDefaultMappings() {
         String json = baseCatalogJson()
             .replace("\"kind\": \"base\"", "\"kind\": \"extension\"");

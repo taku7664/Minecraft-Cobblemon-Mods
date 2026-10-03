@@ -27,6 +27,17 @@ public final class FieldPlaylistResolver {
             return new Selection("field.dimension:" + context.dimensionId(), dimension);
         }
 
+        for (var rule : config.ruleOrder()) {
+            if (rule.matches(context)) {
+                return switch (rule.kind()) {
+                    case BIOME -> new Selection("field.biome:" + rule.key(), config.biomes().get(rule.key()));
+                    case PATH -> new Selection("field.path:" + rule.key(), config.biomePathContains().get(rule.key()));
+                    case UNDERGROUND -> new Selection("field.underground", config.underground().orElseThrow());
+                };
+            }
+        }
+
+        // Unlisted personal rules and older packs retain the original fallback precedence.
         PlaylistDefinition exactBiome = config.biomes().get(context.biomeId());
         if (exactBiome != null) {
             return new Selection("field.biome:" + context.biomeId(), exactBiome);

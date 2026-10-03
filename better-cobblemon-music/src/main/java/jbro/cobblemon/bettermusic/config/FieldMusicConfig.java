@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.List;
+import jbro.cobblemon.bettermusic.field.FieldMusicRule;
 
 public record FieldMusicConfig(
     PlaylistDefinition defaultPlaylist,
@@ -12,7 +14,8 @@ public record FieldMusicConfig(
     Map<String, PlaylistDefinition> biomePathContains,
     Optional<PlaylistDefinition> underground,
     Map<String, PlaylistDefinition> dayDimensions,
-    Map<String, PlaylistDefinition> nightDimensions
+    Map<String, PlaylistDefinition> nightDimensions,
+    List<FieldMusicRule> ruleOrder
 ) {
     public FieldMusicConfig {
         Objects.requireNonNull(defaultPlaylist, "defaultPlaylist");
@@ -22,6 +25,14 @@ public record FieldMusicConfig(
         underground = Objects.requireNonNull(underground, "underground");
         dayDimensions = copyOrdered(dayDimensions, "dayDimensions");
         nightDimensions = copyOrdered(nightDimensions, "nightDimensions");
+        ruleOrder = FieldMusicRule.validate(ruleOrder, biomes, biomePathContains, underground.isPresent());
+    }
+
+    public FieldMusicConfig(PlaylistDefinition defaultPlaylist, Map<String, PlaylistDefinition> dimensions,
+        Map<String, PlaylistDefinition> biomes, Map<String, PlaylistDefinition> biomePathContains,
+        Optional<PlaylistDefinition> underground, Map<String, PlaylistDefinition> dayDimensions,
+        Map<String, PlaylistDefinition> nightDimensions) {
+        this(defaultPlaylist, dimensions, biomes, biomePathContains, underground, dayDimensions, nightDimensions, List.of());
     }
 
     public FieldMusicConfig(PlaylistDefinition defaultPlaylist, Map<String, PlaylistDefinition> dimensions,

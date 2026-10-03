@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.StringReader;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -122,6 +123,44 @@ final class OfficialPokemusicMappingTest {
         for (var time : FieldMusicContext.TimeOfDay.values()) {
             expectTracks(field.select(context("minecraft:the_nether", time)).playlist(), "field/nether/sinnoh_stark_mountain");
             expectTracks(field.select(context("minecraft:the_end", time)).playlist(), "field/end/distortion_world");
+        }
+    }
+
+    @Test
+    void readmePriorityAppliesAcrossExactBiomesTagsPathsAndUnderground() {
+        for (String biome : List.of("minecraft:cherry_grove", "minecraft:stony_shore", "minecraft:deep_ocean")) {
+            expectField(biome, true, "field/cave/sinnoh_oreburgh_mine", "field/cave/sinnoh_lake_caverns");
+        }
+        expectField("minecraft:deep_dark", true, "field/deep_dark/sinnoh_old_chateau", "field/deep_dark/union_cave");
+        expectField("example:forest_desert", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        expectField("example:desert_badlands", false, "field/desert/route_111");
+        expectField("example:plains_desert", false, "field/plains/sinnoh_route_201_night");
+        expectField("example:river_ocean", false, "field/river/sinnoh_lake_theme", "field/river/sealed_chamber");
+        expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:snowy_ridge",
+            Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(), "field/snow/sinnoh_route_205_night");
+        expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:wooded_ridge",
+            Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(),
+            "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
+    }
+
+    @Test
+    void personalPlaylistRemappingDoesNotChangeThePacksFieldPriority() throws Exception {
+        var overrides = jbro.cobblemon.bettermusic.catalog.MusicMappingOverridesParser.parse(new StringReader("""
+            {"schemaVersion":1,"field":{"underground":"cobleserver:track/field/myroom/eterna_forest",
+              "biomes":{"minecraft:cherry_grove":"cobleserver:track/field/desert/route_111"}}}
+            """));
+        try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"))) {
+            var custom = MusicCatalogCompiler.compile("cobleserver:official", List.of(MusicCatalogParser.parse(reader)),
+                MusicCatalogSettings.defaults("cobleserver:official"), overrides);
+            var resolver = new FieldPlaylistResolver(custom.snapshot().field());
+            expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
+                Set.of(), true)).playlist(), "field/myroom/eterna_forest");
+            expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
+                Set.of(), false)).playlist(), "field/desert/route_111");
+            expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
+                Set.of("minecraft:is_mountain"), false)).playlist(), "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
+            assertEquals(compiled.snapshot().field().ruleOrder(), custom.snapshot().field().ruleOrder());
+            assertTrue(custom.inactiveOverrides().isEmpty());
         }
     }
 

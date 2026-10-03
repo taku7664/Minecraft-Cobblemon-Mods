@@ -147,9 +147,16 @@
         "minecraft:stony_shore": "cobleserver:track/field/beach/pmd_beach_at_dusk",
         "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_205_night",
         "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_205_night",
-        "minecraft:cherry_grove": "cobleserver:field_forest"
+        "minecraft:cherry_grove": "cobleserver:field_forest",
+        "#minecraft:is_river": "cobleserver:field_river",
+        "#minecraft:is_ocean": "cobleserver:field_ocean",
+        "#minecraft:is_jungle": "cobleserver:track/field/jungle/route_210",
+        "#minecraft:is_mountain": "cobleserver:field_mountain",
+        "#minecraft:is_forest": "cobleserver:field_forest"
       },
       "biomePathContains": {
+        "deep_dark": "cobleserver:field_deep_dark",
+        "cave": "cobleserver:field_cave",
         "river": "cobleserver:field_river",
         "beach": "cobleserver:track/field/beach/pmd_beach_at_dusk",
         "ocean": "cobleserver:field_ocean",
@@ -164,9 +171,25 @@
         "windswept": "cobleserver:field_mountain",
         "forest": "cobleserver:field_forest",
         "birch": "cobleserver:field_forest",
-        "taiga": "cobleserver:field_forest"
+        "taiga": "cobleserver:field_forest",
+        "plains": "cobleserver:track/field/plains/sinnoh_route_201_night"
       },
-      "underground": "cobleserver:field_cave"
+      "underground": "cobleserver:field_cave",
+      "ruleOrder": [
+        "biome:minecraft:deep_dark", "path:deep_dark",
+        "biome:minecraft:lush_caves", "biome:minecraft:dripstone_caves", "path:cave", "underground",
+        "biome:#minecraft:is_river", "path:river",
+        "biome:#minecraft:is_ocean", "path:ocean",
+        "path:swamp",
+        "biome:#minecraft:is_jungle", "path:jungle",
+        "biome:minecraft:ice_spikes", "biome:minecraft:grove", "path:snow", "path:frozen",
+        "biome:#minecraft:is_mountain", "path:peak", "path:slope", "path:windswept",
+        "biome:minecraft:cherry_grove", "biome:#minecraft:is_forest", "path:forest", "path:birch", "path:taiga",
+        "path:plains",
+        "path:desert",
+        "path:badlands",
+        "biome:minecraft:stony_shore", "path:beach"
+      ]
     },
     "battle": {
       "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",

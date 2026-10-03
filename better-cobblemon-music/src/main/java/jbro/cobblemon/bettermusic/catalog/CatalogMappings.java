@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
+import jbro.cobblemon.bettermusic.field.FieldMusicRule;
 
 /** A base pack's mappings; {@code screens} maps screen keys, such as a content hub, to playlists. */
 public record CatalogMappings(Field field, Battle battle, Map<String, String> screens) {
@@ -28,7 +29,8 @@ public record CatalogMappings(Field field, Battle battle, Map<String, String> sc
         Map<String, String> biomePathContains,
         Optional<String> undergroundPlaylistId,
         Map<String, String> dayDimensions,
-        Map<String, String> nightDimensions
+        Map<String, String> nightDimensions,
+        List<FieldMusicRule> ruleOrder
     ) {
         public Field {
             Objects.requireNonNull(defaultPlaylistId, "defaultPlaylistId");
@@ -38,6 +40,14 @@ public record CatalogMappings(Field field, Battle battle, Map<String, String> sc
             undergroundPlaylistId = Objects.requireNonNull(undergroundPlaylistId, "undergroundPlaylistId");
             dayDimensions = ordered(dayDimensions, "dayDimensions");
             nightDimensions = ordered(nightDimensions, "nightDimensions");
+            ruleOrder = FieldMusicRule.validate(ruleOrder, biomes, biomePathContains, undergroundPlaylistId.isPresent());
+        }
+
+        public Field(String defaultPlaylistId, Map<String, String> dimensions, Map<String, String> biomes,
+            Map<String, String> biomePathContains, Optional<String> undergroundPlaylistId,
+            Map<String, String> dayDimensions, Map<String, String> nightDimensions) {
+            this(defaultPlaylistId, dimensions, biomes, biomePathContains, undergroundPlaylistId,
+                dayDimensions, nightDimensions, List.of());
         }
 
         public Field(String defaultPlaylistId, Map<String, String> dimensions, Map<String, String> biomes,

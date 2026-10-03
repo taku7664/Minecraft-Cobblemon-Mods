@@ -295,7 +295,8 @@ public final class MusicCatalogCompiler {
             materializeMappings(paths, playlists),
             underground.map(playlists::get),
             materializeMappings(dayDimensions, playlists),
-            materializeMappings(nightDimensions, playlists)
+            materializeMappings(nightDimensions, playlists),
+            base.ruleOrder()
         );
     }
 
