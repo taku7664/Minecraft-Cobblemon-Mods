@@ -17,6 +17,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -25,6 +26,30 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173ActionCandidateAdapterTest {
+    @Test
+    fun `explicit friendly targets preserve healing and status support while excluding ordinary attacks`() {
+        for (target in listOf(MoveTarget.normal, MoveTarget.any)) {
+            assertFalse(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "closecombat", BattleSide.ALLY, target, BattleMoveDamageCategory.PHYSICAL))
+            assertFalse(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "beatup", BattleSide.ALLY, target, BattleMoveDamageCategory.PHYSICAL))
+            assertFalse(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "unknown", BattleSide.ALLY, target, null))
+            assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "cobblemon:Pollen-Puff", BattleSide.ALLY, target, BattleMoveDamageCategory.SPECIAL))
+            assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "skillswap", BattleSide.ALLY, target, BattleMoveDamageCategory.STATUS))
+            assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "closecombat", BattleSide.OPPONENT, target, BattleMoveDamageCategory.PHYSICAL))
+            assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+                "closecombat", null, target, BattleMoveDamageCategory.PHYSICAL))
+        }
+        assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+            "specialallymove", BattleSide.ALLY, MoveTarget.adjacentAlly, BattleMoveDamageCategory.PHYSICAL))
+        assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed(
+            "specialselfmove", BattleSide.ALLY, MoveTarget.self, BattleMoveDamageCategory.PHYSICAL))
+    }
+
     @Test
     fun `Pressure target flags override self and side targets only when declared`() {
         assertEquals(BattleMoveTargetPattern.ALL_OPPONENTS,
@@ -265,8 +290,11 @@ class Cobblemon173ActionCandidateAdapterTest {
                 maxMove,
             ),
         )
+        // The same transformed move remains authoritative on the following Dynamax turns.
+        assertTrue(Cobblemon173ActionCandidateAdapter.isMoveChoiceAvailable(move, null, maxMove))
 
         maxMove.disabled = true
+        assertFalse(Cobblemon173ActionCandidateAdapter.isMoveChoiceAvailable(move, null, maxMove))
         assertFalse(
             Cobblemon173ActionCandidateAdapter.isMoveChoiceAvailable(
                 move,

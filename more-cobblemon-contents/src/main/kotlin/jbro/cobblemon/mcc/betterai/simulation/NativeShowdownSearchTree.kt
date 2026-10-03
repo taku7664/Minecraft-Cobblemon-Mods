@@ -43,7 +43,16 @@ internal class NativeShowdownSearchTree(
     ): List<BattleActionCandidate> =
         NativeShowdownRequestActionFactory.actions(
             side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog,
-            allowedMechanics)
+            allowedMechanics).let { actions ->
+                if (side != BattleSide.ALLY) actions else actions.filter { action ->
+                    NativeProductAllyTargetPolicy.permits(action) { part ->
+                        val actor = position.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot }
+                        actor?.let { publicActionCatalog?.forPokemon(it.battlePokemonId) }?.firstOrNull {
+                            it.moveId.substringAfter(':').equals(part.moveId?.substringAfter(':'), true)
+                        }?.details?.damageCategory
+                    }
+                }
+            }
 
     /** Attack-only extension uses exact own move metadata; forced replacements remain untouched. */
     fun attackingActions(position: NativeSearchPosition): List<BattleActionCandidate> {

@@ -285,7 +285,8 @@ internal class EngineBranchWorker(
         types = p.getTypes(),
         boosts = LinkedHashMap(p.boosts),
         volatiles = p.volatiles.keys.sorted(),
-        moves = p.moveSlots.map { NativeMoveFrame(it.id, it.pp, it.maxpp, Js.truthy(it.disabled)) },
+        moves = p.moveSlots.map { NativeMoveFrame(it.id, it.pp, it.maxpp, Js.truthy(it.disabled),
+            p.battle.dex.move(it.id)?.category ?: "") },
         activeSlot = activeSlot,
         level = p.level,
         stats = LinkedHashMap(p.storedStats),
@@ -346,6 +347,21 @@ internal class EngineBranchWorker(
                         if (!locked) {
                             if (pokemon.canMegaEvo != null) addProperty("canMegaEvo", true)
                             if (data.canDynamax) addProperty("canDynamax", true)
+                            if ((data.canDynamax || pokemon.volatiles.containsKey("dynamax")) && pokemon.getDynamaxRequest(true)) {
+                                add("maxMoves", JsonObject().apply {
+                                    add("maxMoves", JsonArray().also { maxMoves ->
+                                        pokemon.moveSlots.forEach { move ->
+                                            battle.actions.getMaxMove(move.id, pokemon)?.let { maxMove ->
+                                                maxMoves.add(JsonObject().apply {
+                                                    addProperty("move", maxMove.id)
+                                                    addProperty("target", maxMove.target)
+                                                    if (pokemon.maxMoveDisabled(move.id)) addProperty("disabled", true)
+                                                })
+                                            }
+                                        }
+                                    })
+                                })
+                            }
                             (pokemon.canTerastallize as? String)?.let { addProperty("canTerastallize", it) }
                         }
                     })

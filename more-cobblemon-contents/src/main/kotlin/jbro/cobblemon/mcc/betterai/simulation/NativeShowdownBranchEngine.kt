@@ -468,6 +468,7 @@ internal data class NativeMoveFrame(
     val pp: Int,
     val maxPp: Int,
     val disabled: Boolean,
+    val category: String = "",
 )
 
 internal data class NativeBattleFieldFrame(

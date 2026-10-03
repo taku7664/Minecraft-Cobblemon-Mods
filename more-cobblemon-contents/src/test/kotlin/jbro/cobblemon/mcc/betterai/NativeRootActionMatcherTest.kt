@@ -5,6 +5,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.betterai.simulation.NativeRootActionMatcher
@@ -14,6 +16,40 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeRootActionMatcherTest {
+    @Test
+    fun `native ordinary allied attacks omitted by the live policy do not invalidate the product root`() {
+        val product = move("product:foe", 0, 0, "closecombat", BattleTargetSlot(BattleSide.OPPONENT, 0),
+            details = BattleMoveCandidateView("fighting", BattleMoveDamageCategory.PHYSICAL, 120.0, 100.0, 0, 5))
+        val nativeFoe = move("native:foe", 0, 0, "closecombat", BattleTargetSlot(BattleSide.OPPONENT, 0),
+            tags = setOf("native_target_normal"))
+        val nativeAlly = move("native:ally", 0, 0, "closecombat", BattleTargetSlot(BattleSide.ALLY, 1),
+            tags = setOf("native_target_normal"))
+
+        val result = NativeRootActionMatcher.match(BattleFormat.DOUBLE, listOf(product), listOf(nativeFoe, nativeAlly))
+
+        assertTrue(result.complete)
+        assertEquals(nativeFoe, result.productToNative.getValue(product.actionId))
+    }
+
+    @Test
+    fun `missing allied support and ordinary opposing actions still fail closed`() {
+        for ((moveId, category) in listOf("pollenpuff" to BattleMoveDamageCategory.SPECIAL,
+                "skillswap" to BattleMoveDamageCategory.STATUS)) {
+            val product = move("product:foe", 0, 0, moveId, BattleTargetSlot(BattleSide.OPPONENT, 0),
+                details = BattleMoveCandidateView("bug", category, 90.0, 100.0, 0, 5))
+            val nativeFoe = move("native:foe", 0, 0, moveId, BattleTargetSlot(BattleSide.OPPONENT, 0),
+                tags = setOf("native_target_normal"))
+            val nativeAlly = move("native:ally", 0, 0, moveId, BattleTargetSlot(BattleSide.ALLY, 1),
+                tags = setOf("native_target_normal"))
+            assertFalse(NativeRootActionMatcher.match(BattleFormat.DOUBLE, listOf(product), listOf(nativeFoe, nativeAlly)).complete,
+                "Supported friendly $moveId must remain part of the strict product action set")
+        }
+        val product = move("product:foe", 0, 0, "closecombat", BattleTargetSlot(BattleSide.OPPONENT, 0))
+        val nativeExtraFoe = move("native:foe1", 0, 0, "closecombat", BattleTargetSlot(BattleSide.OPPONENT, 1),
+            tags = setOf("native_target_normal"))
+        assertFalse(NativeRootActionMatcher.match(BattleFormat.DOUBLE, listOf(product), listOf(product, nativeExtraFoe)).complete)
+    }
+
     @Test
     fun `namespaced moves and every mechanic alias map to native actions`() {
         val aliases = listOf(
@@ -198,6 +234,8 @@ class NativeRootActionMatcherTest {
         moveId: String,
         target: BattleTargetSlot? = null,
         mechanic: String? = null,
+        details: BattleMoveCandidateView? = null,
+        tags: Set<String> = emptySet(),
     ) = BattleActionCandidate(
         actionId = actionId,
         kind = BattleActionKind.USE_MOVE,
@@ -205,6 +243,8 @@ class NativeRootActionMatcherTest {
         moveSlot = moveSlot,
         moveId = moveId,
         targets = listOfNotNull(target),
+        moveDetails = details,
+        tags = tags,
         mechanic = mechanic?.let { BattleMechanicCandidate(it, null, null) },
     )
 

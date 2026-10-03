@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonFrame
@@ -19,6 +20,70 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeShowdownRequestActionFactoryTest {
+    @Test
+    fun `Dynamax uses transformed foe targeting while ordinary Pollen Puff retains its allied heal`() {
+        val current = frame("""{"active":[{"moves":[{"id":"pollenpuff","target":"normal"}],
+            "canDynamax":true,"maxMoves":{"maxMoves":[{"move":"maxflutterby","target":"adjacentFoe"}]}},
+            {"moves":[{"id":"splash","target":"self"}]}]}""",
+            listOf(pokemon(ALLY_LEFT, 0, 100, "pollenpuff"), pokemon(ALLY_RIGHT, 1, 100, "splash")))
+        val parts = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current).map { it.componentActions.first() }
+        assertEquals(5, parts.size)
+        assertTrue(parts.filter { it.mechanic?.mechanicId == "dynamax" }
+            .all { it.targets.single().side == BattleSide.OPPONENT })
+        assertTrue(parts.any { it.mechanic == null && it.targets.single().side == BattleSide.ALLY })
+    }
+
+    @Test
+    fun `ongoing Dynamax status moves use Max Guard without activating the mechanic again`() {
+        val current = frame("""{"active":[{"moves":[{"id":"skillswap","target":"normal"}],
+            "maxMoves":{"maxMoves":[{"move":"maxguard","target":"self"}]}},
+            {"moves":[{"id":"splash","target":"self"}]}]}""",
+            listOf(pokemon(ALLY_LEFT, 0, 100, "skillswap").copy(volatiles = listOf("dynamax")),
+                pokemon(ALLY_RIGHT, 1, 100, "splash")))
+        val action = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current).single()
+        assertTrue(action.componentActions.first().targets.isEmpty())
+        assertTrue(action.componentActions.first().mechanic == null)
+        assertEquals("move 1, move 1", NativeShowdownChoiceEncoder.encode(action, BattleSide.ALLY, current))
+    }
+
+    @Test
+    fun `Max move availability is independent of the disabled base move`() {
+        val current = frame("""{"active":[{"moves":[{"id":"tackle","target":"normal","disabled":true}],
+            "canDynamax":true,"maxMoves":{"maxMoves":[{"move":"maxstrike","target":"adjacentFoe","disabled":false}]}},
+            {"moves":[{"id":"splash","target":"self"}]}]}""")
+        val actions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+        assertEquals(2, actions.size)
+        assertTrue(actions.all { it.componentActions.first().mechanic?.mechanicId == "dynamax" })
+        val blocked = current.copy(p1RequestJson = current.p1RequestJson.replace("\"disabled\":false", "\"disabled\":true"))
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, blocked).isEmpty())
+    }
+
+    @Test
+    fun `normal doubles moves retain legal allied targets for healing and cooperation`() {
+        for (moveId in listOf("pollenpuff", "beatup", "skillswap")) {
+            val current = frame(
+                """{"active":[{"moves":[{"id":"$moveId","target":"normal"}]},{"moves":[{"id":"splash","target":"self"}]}]}""",
+                listOf(pokemon(ALLY_LEFT, 0, 100, moveId), pokemon(ALLY_RIGHT, 1, 100, "splash")),
+            )
+            val actions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+            assertEquals(setOf(BattleTargetSlot(BattleSide.ALLY, 1), BattleTargetSlot(BattleSide.OPPONENT, 0),
+                BattleTargetSlot(BattleSide.OPPONENT, 1)), actions.map { it.componentActions.first().targets.single() }.toSet(), moveId)
+            assertTrue(actions.any { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, current) == "move 1 -2, move 1" }, moveId)
+        }
+    }
+
+    @Test
+    fun `foe only targets and fainted allies never become allied normal variants`() {
+        val request = """{"active":[{"moves":[{"id":"tackle","target":"adjacentfoe"}]},{"moves":[{"id":"splash","target":"self"}]}]}"""
+        val foeOnly = frame(request)
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, foeOnly)
+            .all { it.componentActions.first().targets.single().side == BattleSide.OPPONENT })
+        val deadPartner = frame(request.replace("adjacentfoe", "normal"),
+            listOf(pokemon(ALLY_LEFT, 0, 100, "tackle"), pokemon(ALLY_RIGHT, 1, 0, "splash")))
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, deadPartner)
+            .all { it.componentActions.first().targets.single().side == BattleSide.OPPONENT })
+    }
+
     @Test
     fun `locked recharge and struggle requests use request slots rather than original move slots`() {
         for (id in listOf("outrage", "recharge", "struggle")) {
@@ -88,6 +153,7 @@ class NativeShowdownRequestActionFactoryTest {
                       "moves": [{"move":"Tackle","id":"tackle","pp":35,"maxpp":35,"target":"normal","disabled":false}],
                       "canMegaEvo":true,
                       "canDynamax":true,
+                      "maxMoves":{"maxMoves":[{"move":"maxstrike","target":"adjacentFoe"}]},
                       "canTerastallize":"Electric"
                     },
                     {
@@ -102,7 +168,7 @@ class NativeShowdownRequestActionFactoryTest {
             .map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }
             .toSet()
 
-        assertEquals(8, choices.size)
+        assertEquals(11, choices.size)
         assertTrue("move 1 1, move 1" in choices)
         assertTrue("move 1 2 mega, move 1" in choices)
         assertTrue("move 1 1 dynamax, move 1" in choices)
@@ -119,6 +185,7 @@ class NativeShowdownRequestActionFactoryTest {
                       "moves": [{"move":"Tackle","id":"tackle","pp":35,"maxpp":35,"target":"normal","disabled":false}],
                       "canMegaEvo":true,
                       "canDynamax":true,
+                      "maxMoves":{"maxMoves":[{"move":"maxstrike","target":"adjacentFoe"}]},
                       "canTerastallize":"Electric"
                     },
                     {
@@ -265,7 +332,7 @@ class NativeShowdownRequestActionFactoryTest {
         ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet()
 
         assertTrue("switch 3, switch 4" in choices)
-        assertEquals(6, choices.size)
+        assertEquals(8, choices.size)
     }
 
     @Test

@@ -48,9 +48,20 @@ internal object NativeRootActionMatcher {
             }
         }
         val usedNative = matches.values.mapTo(hashSetOf(), BattleActionCandidate::actionId)
+        // The engine may explore friendly attacks that the live product deliberately excludes.
+        // Keep every other native omission (including healing and status support) a mismatch.
+        val policyOmittedNative = if (format == BattleFormat.DOUBLE) {
+            val productMoves = productActions.flatMap { it.componentActions.ifEmpty { listOf(it) } }
+                .filter { it.kind == BattleActionKind.USE_MOVE }
+            nativeActions.filter { action ->
+                action.componentActions.ifEmpty { listOf(action) }.any { component ->
+                    omittedFriendlyAttack(component, productMoves)
+                }
+            }.mapTo(hashSetOf(), BattleActionCandidate::actionId)
+        } else emptySet()
         val unmatchedNative = nativeActions.asSequence()
             .map(BattleActionCandidate::actionId)
-            .filterNot { it in usedNative || it in ambiguousNative }
+            .filterNot { it in usedNative || it in ambiguousNative || it in policyOmittedNative }
             .toCollection(linkedSetOf())
         return NativeRootActionMapping(
             productToNative = matches,
@@ -59,6 +70,24 @@ internal object NativeRootActionMatcher {
             ambiguousProductActionIds = ambiguousProduct,
             ambiguousNativeActionIds = ambiguousNative,
         )
+    }
+
+    private fun omittedFriendlyAttack(native: BattleActionCandidate, products: List<BattleActionCandidate>): Boolean {
+        if (native.kind != BattleActionKind.USE_MOVE ||
+            native.targets.singleOrNull()?.side != BattleSide.ALLY ||
+            native.tags.none { it == "native_target_normal" || it == "native_target_any" }
+        ) return false
+        val moveId = native.moveId ?: return false
+        val corresponding = products.filter {
+            it.actorSlot == native.actorSlot &&
+                it.moveId?.let(::nativeId) == native.moveId?.let(::nativeId) &&
+                it.mechanic?.mechanicId?.let(NativeMechanicAllowance::canonical) ==
+                    native.mechanic?.mechanicId?.let(NativeMechanicAllowance::canonical)
+        }
+        if (corresponding.isEmpty()) return false
+        return corresponding.all { product ->
+            !NativeProductAllyTargetPolicy.permits(native) { product.moveDetails?.damageCategory }
+        }
     }
 
     private fun signature(format: BattleFormat, action: BattleActionCandidate): ActionSignature? = when (action.kind) {

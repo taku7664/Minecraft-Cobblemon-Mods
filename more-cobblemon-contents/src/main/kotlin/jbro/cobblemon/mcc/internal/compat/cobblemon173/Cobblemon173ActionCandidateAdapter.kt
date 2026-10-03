@@ -14,6 +14,7 @@ import com.cobblemon.mod.common.battles.ShowdownActionResponse
 import com.cobblemon.mod.common.battles.ShowdownMoveset
 import com.cobblemon.mod.common.battles.SwitchActionResponse
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleProductAllyTargetPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
@@ -168,7 +169,9 @@ internal object Cobblemon173ActionCandidateAdapter {
         if (!forceSwitch && moveset != null) {
             val gimmick = allowedGimmick(moveset, mechanicPolicy)
             moveset.moves.forEachIndexed { moveSlot, move ->
-                addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null)
+                val currentMaxMove = if (!moveset.canDynamax && moveset.maxMoves != null)
+                    moveset.maxMoves?.getOrNull(moveSlot) else null
+                addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null, currentMaxMove)
                 if (gimmick != null) {
                     val transformed = transformedMove(moveset, moveSlot, gimmick)
                     if (gimmick != ShowdownMoveset.Gimmick.DYNAMAX || transformed != null) {
@@ -249,13 +252,8 @@ internal object Cobblemon173ActionCandidateAdapter {
             )
         }
         val details = moveDetails(move, transformed, targetType)
-        // Cobblemon lists the partner among a normal or any-target move's targets. An attack aimed at it
-        // was scored as pressure on a foe, so a Close Combat into the partner could rank first; the native
-        // engine offers foes only for these moves, and this path now matches it.
-        if (targetView?.side == BattleSide.ALLY && targetType in FOE_AIMED_TARGETS &&
-            details?.damageCategory != BattleMoveDamageCategory.STATUS &&
-            PublicIds.canonical(transformed?.move ?: move.id) !in ALLY_AIMED_DAMAGING_MOVES
-        ) return
+        if (!isMoveTargetAllowed(transformed?.move ?: move.id, targetView?.side,
+                targetType, details?.damageCategory)) return
         val variantId = gimmick?.id ?: "base"
         add(
             Cobblemon173ActionChoice(
@@ -293,6 +291,7 @@ internal object Cobblemon173ActionCandidateAdapter {
         transformed: InBattleGimmickMove?,
     ): Boolean = when (gimmick) {
         ShowdownMoveset.Gimmick.DYNAMAX -> transformed != null && !transformed.disabled
+        null -> if (transformed != null) !transformed.disabled else move.canBeUsed()
         else -> move.canBeUsed()
     }
 
@@ -479,10 +478,13 @@ internal object Cobblemon173ActionCandidateAdapter {
     private val BattleFormat.activeSlotsPerSide: Int
         get() = if (this == BattleFormat.SINGLE) 1 else 2
 
-    private val FOE_AIMED_TARGETS = setOf(MoveTarget.normal, MoveTarget.any)
-
-    /** Damaging moves that have a reason to land on the partner: Pollen Puff heals it. */
-    private val ALLY_AIMED_DAMAGING_MOVES = setOf("pollenpuff")
+    internal fun isMoveTargetAllowed(
+        moveId: String,
+        targetSide: BattleSide?,
+        targetType: MoveTarget,
+        damageCategory: BattleMoveDamageCategory?,
+    ): Boolean = BattleProductAllyTargetPolicy.permits(
+        moveId, targetSide, targetType == MoveTarget.normal || targetType == MoveTarget.any, damageCategory)
 }
 
 data class Cobblemon173MechanicPolicy(

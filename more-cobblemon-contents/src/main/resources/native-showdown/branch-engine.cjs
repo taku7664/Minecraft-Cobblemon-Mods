@@ -142,6 +142,7 @@ function pokemonFrame(pokemon, activeSlot) {
       pp: slot.pp,
       maxPp: slot.maxpp,
       disabled: !!slot.disabled,
+      category: pokemon.battle.dex.moves.get(slot.id).category || '',
     })),
     activeSlot,
     level: pokemon.level,
