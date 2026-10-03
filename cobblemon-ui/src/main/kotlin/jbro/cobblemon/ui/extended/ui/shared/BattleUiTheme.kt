@@ -45,6 +45,15 @@ enum class BattleDialogueStyle {
     DARK_BAND
 }
 
+/** The pattern the battle entry transition covers the screen with. */
+enum class BattleEntryPattern {
+    /** Rounded cells in a checker that bloom from the center. */
+    CELLS,
+
+    /** Slanted bands that widen from the center outward. */
+    STRIPES
+}
+
 /**
  * Every color, surface and shape choice the battle screens draw with. The screens lay out the same information in
  * every theme; a theme only changes how it looks.
@@ -136,6 +145,9 @@ data class BattleUiPalette(
     val moveFill: BattleMoveFill,
     val hudShape: BattleHudShape,
     val dialogue: BattleDialogueStyle,
+    val entryPattern: BattleEntryPattern,
+    /** The entry pattern's dark tone, which the battle's colour is mixed into. */
+    val entryBase: Int,
 )
 
 /** The battle themes and the one in use. */
@@ -182,6 +194,7 @@ object BattleUiThemes {
             controlShape = BattleControlShape.ROUNDED_START, commandAccent = BattleCommandAccent.BAR,
             moveFill = BattleMoveFill.PANEL, hudShape = BattleHudShape.ROUNDED_ACCENT,
             dialogue = BattleDialogueStyle.SHARED_WINDOW,
+            entryPattern = BattleEntryPattern.CELLS, entryBase = 0xFF0A1322.toInt(),
         )
     }
 
@@ -230,6 +243,7 @@ object BattleUiThemes {
             controlShape = BattleControlShape.PILL, commandAccent = BattleCommandAccent.END_CAP,
             moveFill = BattleMoveFill.TYPE, hudShape = BattleHudShape.SLANT,
             dialogue = BattleDialogueStyle.DARK_BAND,
+            entryPattern = BattleEntryPattern.STRIPES, entryBase = 0xFF1F1F1F.toInt(),
         )
     }
 
