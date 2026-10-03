@@ -1,0 +1,14 @@
+{
+  "modmenu.nameTranslation.cobblemon_client_defaults": "Cobblemon Client Defaults",
+  "modmenu.descriptionTranslation.cobblemon_client_defaults": "Applies client defaults once or on every launch before the game initializes.",
+  "screen.cobblemon_client_defaults.title": "Client Defaults",
+  "screen.cobblemon_client_defaults.description": "Automatically disables the CLC level-cap HUD. Applies every launch by default; you can select once instead.",
+  "screen.cobblemon_client_defaults.clc_hud": "Disable CLC HUD: %s",
+  "screen.cobblemon_client_defaults.mode.once": "Once",
+  "screen.cobblemon_client_defaults.mode.always": "Every launch",
+  "screen.cobblemon_client_defaults.save": "Save",
+  "screen.cobblemon_client_defaults.clc_missing": "Cobbled Level Control is not installed.",
+  "screen.cobblemon_client_defaults.read_failed": "Could not read CLC settings. Check client.toml and the game log.",
+  "screen.cobblemon_client_defaults.save_failed": "Could not save. Check the game log.",
+  "screen.cobblemon_client_defaults.saved": "Saved. The selected mode takes effect on the next game launch."
+}

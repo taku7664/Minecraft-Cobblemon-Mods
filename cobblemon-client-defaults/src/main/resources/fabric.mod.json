@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_client_defaults",
+  "version": "${version}",
+  "name": "Cobblemon Client Defaults",
+  "description": "Applies client pack defaults once or on every launch, before the game initializes.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "preLaunch": ["jbro.cobblemon.clientdefaults.ClientDefaultsPreLaunch"],
+    "modmenu": ["jbro.cobblemon.clientdefaults.client.ClientDefaultsModMenu"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  },
+  "suggests": {
+    "cobbled_level_control": ">=1.2.0 <1.3.0",
+    "modmenu": "*"
+  }
+}
