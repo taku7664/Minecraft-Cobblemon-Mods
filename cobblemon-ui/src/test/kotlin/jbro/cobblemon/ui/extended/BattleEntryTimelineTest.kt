@@ -45,8 +45,9 @@ class BattleEntryTimelineTest {
     @Test
     fun `a legendary runs about six seconds and the others about four, holding the cover with a pulse`() {
         for (kind in BattleEntryKind.entries) {
-            val total = BattleEntryTimeline.readyAt(kind) + kind.revealMillis + kind.fadeMillis
-            val expected = if (kind == BattleEntryKind.LEGENDARY) 5700L..6300L else 3500L..4300L
+            // A battle that opens the moment the screen is white.
+            val total = BattleEntryTimeline.finishedAt(kind, BattleEntryTimeline.readyAt(kind))!!
+            val expected = if (kind == BattleEntryKind.LEGENDARY) 5700L..6400L else 3500L..4400L
             assertTrue(total in expected, "${kind.id} runs $total ms")
             assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
             assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))
@@ -58,18 +59,27 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary's light floods the screen, cracks, then shatters`() {
+    fun `a legendary's light floods the screen before the battle starts, then holds, cracks, waits and shatters`() {
         val kind = BattleEntryKind.LEGENDARY
-        val rise = kind.revealMillis
-        assertEquals(0f, BattleEntryTimeline.beam(kind, 0))
-        assertTrue(BattleEntryTimeline.beam(kind, rise / 2) < .2f)
-        assertEquals(1f, BattleEntryTimeline.beam(kind, rise), 1e-3f)
-        // The white holds a second, cracking only in its last moments, before it shatters.
+        val start = BattleEntryTimeline.riseStart(kind)
+        val ready = BattleEntryTimeline.readyAt(kind)
+        assertEquals(0f, BattleEntryTimeline.beam(kind, start))
+        assertTrue(BattleEntryTimeline.beam(kind, (start + ready) / 2) < .2f)
+        assertEquals(1f, BattleEntryTimeline.beam(kind, ready), 1e-3f)
+        // Until the battle opens the white just holds.
+        assertEquals(0f, BattleEntryTimeline.crack(kind, ready + 5000, null))
+        assertEquals(0f, BattleEntryTimeline.shatter(kind, ready + 5000, null))
+        // A battle that opens at once: a second of white, cracks, half a second still, then the shatter.
         val hold = BattleEntryTimeline.WHITE_HOLD_MILLIS
-        assertEquals(0f, BattleEntryTimeline.crack(kind, rise + hold - BattleEntryTimeline.CRACK_MILLIS))
-        assertEquals(1f, BattleEntryTimeline.crack(kind, rise + hold), 1e-3f)
-        assertEquals(0f, BattleEntryTimeline.shatter(kind, rise + hold))
-        assertEquals(1f, BattleEntryTimeline.shatter(kind, rise + kind.fadeMillis), 1e-3f)
+        val crackEnd = ready + hold + BattleEntryTimeline.CRACK_MILLIS
+        assertEquals(0f, BattleEntryTimeline.crack(kind, ready + hold, ready))
+        assertEquals(1f, BattleEntryTimeline.crack(kind, crackEnd, ready), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.shatter(kind, crackEnd + BattleEntryTimeline.STILL_MILLIS, ready))
+        assertEquals(1f, BattleEntryTimeline.shatter(kind, crackEnd + BattleEntryTimeline.STILL_MILLIS + kind.fadeMillis,
+            ready), 1e-3f)
+        // A battle that opens late still gets its white to settle before the cracks.
+        val late = ready + 2000
+        assertEquals(late + BattleEntryTimeline.SETTLE_MILLIS, BattleEntryTimeline.crackStart(kind, late))
     }
 
     @Test
@@ -82,17 +92,23 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `the reveal turns the covered screen white, and only then drops the cover and fades`() {
-        for (kind in BattleEntryKind.entries) {
-            val rise = kind.revealMillis
-            assertEquals(0f, BattleEntryTimeline.white(kind, 0))
-            assertEquals(1f, BattleEntryTimeline.white(kind, rise), 1e-2f)
+    fun `the covered screen turns white before the battle starts, and only then drops the cover and fades`() {
+        for (kind in listOf(BattleEntryKind.WILD, BattleEntryKind.TRAINER)) {
+            val start = BattleEntryTimeline.riseStart(kind)
+            val ready = BattleEntryTimeline.readyAt(kind)
+            assertEquals(0f, BattleEntryTimeline.white(kind, start, null))
+            assertEquals(1f, BattleEntryTimeline.white(kind, ready, null), 1e-2f)
             // The cover stays whole under the rising white and goes once the white is full.
-            assertEquals(0f, BattleEntryTimeline.reveal(kind, rise - 1))
-            assertEquals(1f, BattleEntryTimeline.reveal(kind, rise))
-            assertTrue(BattleEntryTimeline.white(kind, rise + kind.fadeMillis / 2) in .2f..0.8f)
-            assertFalse(BattleEntryTimeline.revealed(kind, rise + kind.fadeMillis - 1))
-            assertTrue(BattleEntryTimeline.revealed(kind, rise + kind.fadeMillis))
+            assertFalse(BattleEntryTimeline.patternGone(kind, ready - 1))
+            assertTrue(BattleEntryTimeline.patternGone(kind, ready))
+            // The white waits for the battle, then settles a moment and fades.
+            assertEquals(1f, BattleEntryTimeline.white(kind, ready + 3000, null))
+            val opened = ready + 800
+            val fade = opened + BattleEntryTimeline.SETTLE_MILLIS
+            assertEquals(1f, BattleEntryTimeline.white(kind, fade, opened))
+            assertTrue(BattleEntryTimeline.white(kind, fade + kind.fadeMillis / 2, opened) in .2f..0.8f)
+            assertFalse(BattleEntryTimeline.revealed(kind, fade + kind.fadeMillis - 1, opened))
+            assertTrue(BattleEntryTimeline.revealed(kind, fade + kind.fadeMillis, opened))
         }
     }
 
@@ -102,13 +118,14 @@ class BattleEntryTimelineTest {
             for (elapsed in 0L..BattleEntryTimeline.coverEnd(kind) step 20) {
                 assertEquals(0f, BattleEntryTimeline.dim(kind, elapsed))
                 assertEquals(0f, BattleEntryTimeline.shake(kind, elapsed))
-                assertEquals(0f, BattleEntryTimeline.bars(kind, elapsed, null))
+                assertEquals(0f, BattleEntryTimeline.bars(kind, elapsed))
                 assertTrue(BattleEntryTimeline.rings(kind, elapsed).isEmpty())
             }
         }
         val legendary = BattleEntryKind.LEGENDARY
         val last = legendary.flashStarts.last()
-        assertEquals(1f, BattleEntryTimeline.bars(legendary, last + 200, null), 1e-3f)
+        assertEquals(1f, BattleEntryTimeline.bars(legendary, last + 200), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.bars(legendary, BattleEntryTimeline.readyAt(legendary)))
         assertTrue(BattleEntryTimeline.rings(legendary, last + 10).isNotEmpty())
         assertTrue(BattleEntryTimeline.shake(legendary, last + 10) > .9f)
         assertEquals(0f, BattleEntryTimeline.shake(legendary, BattleEntryTimeline.coverEnd(legendary)), 1e-3f)

@@ -48,7 +48,7 @@ object BattleEntryTransition {
     /** Whether a transition is on screen. */
     val active: Boolean get() = run != null
 
-    /** Whether the screen is covered and has pulsed long enough for the battle to start. */
+    /** Whether the screen is fully white and the battle may start. */
     val covered: Boolean
         get() = run?.let { it.revealAt == null && BattleEntryTimeline.ready(it.kind, Util.getMillis() - it.startedAt) }
             ?: false
@@ -111,7 +111,7 @@ object BattleEntryTransition {
     fun reveal() {
         val current = run ?: return
         if (current.revealAt != null) return
-        // A reveal asked for early waits for the cover and its pulse to finish, so the transition always plays out.
+        // A reveal asked for early waits for the screen to turn white, so the transition always plays out.
         val elapsed = Util.getMillis() - current.startedAt
         current.revealAt = current.startedAt + maxOf(elapsed, BattleEntryTimeline.readyAt(current.kind))
         jbro.cobblemon.ui.extended.CobblemonUi.LOGGER.info("Battle entry {} reveals after {} ms (ready at {} ms)",
@@ -169,22 +169,22 @@ object BattleEntryTransition {
         val current = run ?: return
         val now = Util.getMillis()
         val elapsed = now - current.startedAt
-        val sinceReveal = current.revealAt?.let { now - it }
-        if (sinceReveal != null && BattleEntryTimeline.revealed(current.kind, sinceReveal)) {
+        val revealAt = current.revealAt?.let { it - current.startedAt }
+        val kind = current.kind
+        if (BattleEntryTimeline.revealed(kind, elapsed, revealAt)) {
             run = null
             return
         }
-        val kind = current.kind
         val width = context.guiWidth()
         val height = context.guiHeight()
         val cover = BattleEntryTimeline.cover(kind, elapsed)
-        val reveal = sinceReveal?.let { BattleEntryTimeline.reveal(kind, it) } ?: 0f
+        val reveal = if (BattleEntryTimeline.patternGone(kind, elapsed)) 1f else 0f
         val pose = context.pose()
         pose.pushPose()
         pose.translate(0f, 0f, 500f)
 
         // Behind the pattern: a legendary's darkened world, tinted at the edges in its colour.
-        val dim = BattleEntryTimeline.dim(kind, elapsed) * (1f - reveal)
+        val dim = BattleEntryTimeline.dim(kind, elapsed)
         if (dim > 0f) {
             context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFF000000.toInt(), dim * .55f))
             vignette(context, width, height, current.accent, dim)
@@ -198,7 +198,7 @@ object BattleEntryTransition {
             pose.translate(sin(elapsed * .09f) * amplitude, cos(elapsed * .123f) * amplitude * .7f, 0f)
         }
         BattleEntryTimeline.rings(kind, elapsed).forEach { ring(context, width, height, current.accent, it) }
-        val pulse = if (sinceReveal == null) BattleEntryTimeline.pulse(kind, elapsed) else 0f
+        val pulse = if (reveal < 1f) BattleEntryTimeline.pulse(kind, elapsed) else 0f
         when {
             kind == BattleEntryKind.LEGENDARY -> if (reveal < 1f) {
                 drawLegendaryCover(context, width, height, current.accent, elapsed, cover, pulse)
@@ -209,7 +209,7 @@ object BattleEntryTransition {
         }
         pose.popPose()
 
-        val bars = BattleEntryTimeline.bars(kind, elapsed, sinceReveal)
+        val bars = BattleEntryTimeline.bars(kind, elapsed)
         if (bars > 0f) {
             val bar = (height * BAR_SHARE * bars).toInt()
             context.fill(0, 0, width, bar, 0xFF000000.toInt())
@@ -221,9 +221,9 @@ object BattleEntryTransition {
             context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), flash * strength))
         }
         if (kind == BattleEntryKind.LEGENDARY) {
-            if (sinceReveal != null) drawLegendaryReveal(context, width, height, current.accent, sinceReveal)
+            drawLegendaryReveal(context, width, height, current.accent, elapsed, revealAt)
         } else {
-            val white = sinceReveal?.let { BattleEntryTimeline.white(kind, it) } ?: 0f
+            val white = BattleEntryTimeline.white(kind, elapsed, revealAt)
             if (white > 0f) context.fill(0, 0, width, height, BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), white))
         }
         pose.popPose()
@@ -372,19 +372,21 @@ object BattleEntryTransition {
      * A legendary's reveal: the slash swells until its light covers the whole screen, then the white cracks from just
      * above the center and shatters, its shards flung outward and falling as they fade, nearest the center first.
      */
-    private fun drawLegendaryReveal(context: GuiGraphics, width: Int, height: Int, accent: Int, sinceReveal: Long) {
+    private fun drawLegendaryReveal(context: GuiGraphics, width: Int, height: Int, accent: Int, elapsed: Long,
+                                    revealAt: Long?) {
         val kind = BattleEntryKind.LEGENDARY
+        if (elapsed < BattleEntryTimeline.riseStart(kind)) return
         val w = width.toFloat()
         val h = height.toFloat()
         val centerX = w / 2f
         val centerY = h / 2f
         val far = hypot(centerX, centerY)
         val glow = BattleSurfaceRenderer.interpolate(accent, 0xFFFFFFFF.toInt(), .6f)
-        if (sinceReveal < kind.revealMillis) {
+        if (!BattleEntryTimeline.patternGone(kind, elapsed)) {
             val length = hypot(SLASH_X, SLASH_Y)
             val ux = SLASH_X / length
             val uy = SLASH_Y / length
-            val beam = BattleEntryTimeline.beam(kind, sinceReveal)
+            val beam = BattleEntryTimeline.beam(kind, elapsed)
             val thickness = 7f + far * 2.3f * beam
             quads(context) { buffer, matrix ->
                 strip(buffer, matrix, centerX, centerY, ux, uy, -uy, ux, -far * 1.6f, far * 1.6f, thickness * 1.3f + 10f,
@@ -395,8 +397,8 @@ object BattleEntryTransition {
         }
         val impactX = centerX
         val impactY = h * .46f
-        val shatter = BattleEntryTimeline.shatter(kind, sinceReveal)
-        val crack = BattleEntryTimeline.crack(kind, sinceReveal)
+        val shatter = BattleEntryTimeline.shatter(kind, elapsed, revealAt)
+        val crack = BattleEntryTimeline.crack(kind, elapsed, revealAt)
         if (shatter <= 0f) {
             context.fill(0, 0, width, height, 0xFFFFFFFF.toInt())
             drawCracks(context, impactX, impactY, far, accent, crack, 1f)
