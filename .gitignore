@@ -6,6 +6,15 @@
 build/
 out/
 
+# Local runtime downloads and deployment recovery copies are not source.
+/versions/
+/deployment-backups/
+
+# Music pack archives and copied distribution JARs are local build/deploy outputs.
+cobleserver-music-resourcepack-*.zip
+/dist/better-cobblemon-music-*.jar
+/release/better-cobblemon-music-*.jar
+
 # Local Minecraft runtimes
 run/
 runs/
