@@ -133,3 +133,23 @@ Mod Menu에서 Xaero 항목도 최초 한 번 또는 매 실행 적용을 선택
 
 실제 게임 화면에서 원형·우측 상단 렌더링은 아직 확인하지 않았습니다. 클라이언트 전용
 변경이며 서버에는 배포하지 않았습니다.
+
+## 0.1.5 — Cobblemon Client Setup 이름 변경
+
+- 소스 커밋: `77577a4397f954abdc324234ef53c1d867d5b536`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-setup-0.1.5.jar`
+- 이름 및 모드 ID: `Cobblemon Client Setup` / `코블몬 클라이언트 셋업` / `cobblemon_client_setup`
+- SHA-256: `A9429ACF65E97342D3BE9B8674759348710D9146AFB0B21C7257512004106A1E`
+- 이전 JAR 및 설정 백업: `codex-deploy-backups/20261003-215846439/client-setup-rename`
+- 검증: 테스트 56개, Gradle build 및 JDK JAR 검증 통과. 한국어·영어 번역 키 16개 일치.
+
+기존 `cobblemon-client-defaults-0.1.4.jar`를 활성 mods 폴더에서 제거하고 새 JAR를
+배포했습니다. 설치 파일 해시는 빌드 산출물과 일치합니다. 기존 설정 폴더를
+`config/cobblemon-client-setup`으로 이동했으며 `client.toml`과
+`applied-defaults.properties`는 바이트 단위로 동일합니다. 기존 설정과 최초 적용
+완료 기록을 보존했으며, 이전 이름의 활성 JAR와 설정 폴더는 남아 있지 않습니다.
+
+업그레이드 시 이전 설정 폴더가 있으면 preLaunch에서 같은 이동을 수행합니다.
+이전 폴더와 새 폴더가 모두 있으면 덮어쓰지 않고 해당 실행의 프리셋 적용을 건너뜁니다.
+Minecraft는 실행하지 않았으며 서버 파일은 변경하지 않았습니다.
