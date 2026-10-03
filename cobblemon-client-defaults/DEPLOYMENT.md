@@ -110,3 +110,26 @@ Mod Menu에서 Xaero 항목도 최초 한 번 또는 매 실행 적용을 선택
 실제 Fabric 클라이언트 시작, 지도·아이콘 렌더링 및 Mod Menu 화면은 확인하지 않았습니다.
 서버 웨이포인트 생성 메뉴 차단은 기존 강제 프로필과 `xaero-waypoint-lock` 데이터팩이
 담당합니다. 이번 변경에서는 서버 파일을 수정하거나 서버에 이 클라이언트 모드를 설치하지 않았습니다.
+
+## 0.1.4 — Xaero 원형 미니맵 우측 상단 배치
+
+- 소스 커밋: `b7aebf78`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-defaults-0.1.4.jar`
+- SHA-256: `C3AC40A2C71D8FB005EA33EE67325D465F9FE9DFE4F0355E47FA562768FA13C2`
+- 이전 JAR 백업: `codex-deploy-backups/20261003-214510983/cobblemon_client_defaults/cobblemon-client-defaults-0.1.3.jar`
+- 설정 백업: `F:\AI\Temp\codex-xaero-round-topright-20261003\live-before`
+- 검증: 테스트 51개 및 Gradle build 통과, JDK JAR 검증 통과. 한국어·영어 번역 키 16개 일치.
+
+배포된 JAR의 Xaero 적용 코드를 종료된 개발 프로필에 실행하여 `config/xaero/minimap/profiles/default.cfg`의
+`minimap_shape`를 `0`에서 `1`로, `config/xaerohud.txt`의 미니맵 모듈 `fromRight`를 `false`에서
+`true`로 변경했습니다. `fromBottom=false`, `x=0`, `y=0`은 유지되어 우측 상단 기준입니다.
+같은 모드 ID의 설치 JAR는 0.1.4 하나이며, 설치 JAR 해시는 빌드 산출물과 일치합니다.
+
+적용 전후 백업 파일을 비교한 결과 초기 설정 TOML, 완료 기록, 레이더 JSON, 전체 지도 기본
+프로필은 바이트 단위로 동일합니다. `options.txt`의 음악 리소스팩 참조는 비교 사이에
+`cobleserver-music-resourcepack-1.3.8.zip`에서 `1.3.9.zip`으로 변경되어 있었습니다.
+이는 Xaero 배치 설정과 무관하므로 그대로 보존했습니다.
+
+실제 게임 화면에서 원형·우측 상단 렌더링은 아직 확인하지 않았습니다. 클라이언트 전용
+변경이며 서버에는 배포하지 않았습니다.
