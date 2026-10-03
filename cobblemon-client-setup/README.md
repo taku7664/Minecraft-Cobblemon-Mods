@@ -49,12 +49,14 @@ Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTT
 Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기화 전에 준비합니다.
 설치된 지도 모드만 처리하며 다른 프로필 파일은 수정하지 않습니다.
 
-- Minimap `config/xaero/minimap/profiles/default.cfg`: `waypoints_in_world`, `waypoints_on_minimap`, `deathpoints`를 `false`, `display_radar`를 `true`로 설정합니다.
-- World Map `config/xaero/world-map/profiles/default.cfg`: `waypoints`, `render_waypoints`, `map_teleport_allowed`를 `false`, `display_minimap_radar`를 `true`로 설정합니다.
+- Minimap `config/xaero/minimap/profiles/default.cfg`: `waypoints_in_world`, `waypoints_on_minimap`, `display_radar`를 `true`, `deathpoints`를 `false`로 설정합니다.
+- World Map `config/xaero/world-map/profiles/default.cfg`: `waypoints`, `render_waypoints`, `display_minimap_radar`를 `true`, `map_teleport_allowed`를 `false`로 설정합니다.
 - 두 기본 프로필의 `ignore_enforcement_if_edit_permission`을 `false`로 설정합니다.
 - 미니맵 기본 프로필의 `minimap_shape = 1`로 원형을 선택합니다. `config/xaerohud.txt`에서 미니맵 모듈만 `x=0`, `y=0`, `centered=false`, `fromRight=true`, `fromBottom=false`로 변경하여 우측 상단에 둡니다. 다른 HUD 모듈과 무관한 속성은 유지합니다.
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
-- 전체 지도는 J, 미니맵 설정은 Y, 웨이포인트 관련 7개 단축키는 미지정입니다.
+- 전체 지도는 J, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 두며, 이 모드의 B 키는 현재 위치에 영구 웨이포인트를 바로 저장합니다.
+- 클라이언트 명령 `/waypoint`는 기본 이름 `Waypoint`, `/waypoint <이름>`은 지정한 이름으로 현재 위치에 영구 웨이포인트를 만듭니다. 이름에는 줄바꿈·콜론을 사용할 수 없습니다.
+- 접속한 Xaero 세계의 웨이포인트 텔레포트 설정을 꺼서 해당 지도 버튼이 텔레포트 명령을 보내지 않도록 합니다. 서버는 별도로 전체 지도 텔레포트를 금지하고 일반 플레이어에게 `/tp` 권한을 주지 않아야 합니다.
 - `resourcepacks/E19-Xaero-Icons-1.5.1.zip`이 설치되어 있으면 활성화하고 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
 - JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
 
@@ -63,9 +65,8 @@ Xaero의 기본 적용 방식은 `ALWAYS`입니다. Mod Menu에서 `ONCE`로 바
 기존 CFG의 무관한 설정·주석·줄바꿈과 다른 리소스팩의 상대 순서는 유지합니다.
 레이더 JSON의 값을 바꾸면 들여쓰기를 다시 정리할 수 있습니다.
 
-클라이언트 표시 설정만으로 생성 메뉴까지 막지는 못합니다. 서버의 강제 프로필과
-`xaero-waypoint-lock` 데이터팩이 `xaerominimap:no_waypoints` 효과를 유지하여 생성 메뉴를 차단합니다.
-이 클라이언트 훅은 서버 파일과 데이터팩을 수정하지 않습니다.
+기존 서버 데이터팩은 남아 있는 `xaerominimap:no_waypoints` 효과를 제거하도록 전환해야 합니다.
+이 클라이언트 모드는 서버 파일과 데이터팩을 수정하지 않습니다.
 
 ## 적용 방식
 

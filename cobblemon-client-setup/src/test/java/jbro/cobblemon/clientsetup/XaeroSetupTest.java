@@ -31,7 +31,11 @@ final class XaeroSetupTest {
         assertTrue(keys.contains("key_gui.xaero_open_map:key.keyboard.j\n"));
         assertTrue(keys.contains("key_gui.xaero_minimap_settings:key.keyboard.y\n"));
         assertTrue(keys.contains("key_gui.xaero_instant_waypoint:key.keyboard.unknown\n"));
+        assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
+        assertTrue(Files.readString(minimap()).contains("waypoints_on_minimap = true"));
         assertTrue(Files.readString(minimap()).contains("deathpoints = false"));
+        assertTrue(Files.readString(worldmap()).contains("waypoints = true"));
+        assertTrue(Files.readString(worldmap()).contains("render_waypoints = true"));
         assertTrue(Files.readString(worldmap()).contains("map_teleport_allowed = false"));
         assertEquals(2, JsonParser.parseString(Files.readString(radar())).getAsJsonObject()
             .getAsJsonObject("settingOverrides").get("icons").getAsInt());
@@ -50,13 +54,13 @@ final class XaeroSetupTest {
         assertTrue(first.startsWith("version:3955\r\nfullscreen:true\r\nkey_key.other:key.keyboard.k\r\n"));
         assertFalse(first.contains("journeymap"));
         assertTrue(first.contains("resourcePacks:[\"vanilla\",\"file/other.zip\",\"file/E19-Xaero-Icons-1.5.1.zip\"]\r\n"));
-        assertTrue(Files.readString(minimap()).startsWith("# personal\r\nprofile_name = My map\r\nwaypoints_in_world = false # keep\r\nzoom = 3\r\n"));
+        assertTrue(Files.readString(minimap()).startsWith("# personal\r\nprofile_name = My map\r\nwaypoints_in_world = true # keep\r\nzoom = 3\r\n"));
         var json = JsonParser.parseString(Files.readString(radar())).getAsJsonObject();
         assertEquals(42, json.get("custom").getAsInt());
         assertEquals(1, json.getAsJsonObject("settingOverrides").get("names").getAsInt());
-        write(minimap(), Files.readString(minimap()).replace("waypoints_in_world = false", "waypoints_in_world = true"));
+        write(minimap(), Files.readString(minimap()).replace("waypoints_in_world = true", "waypoints_in_world = false"));
         XaeroSetup.apply(game, config(), MAPS);
-        assertTrue(Files.readString(minimap()).contains("waypoints_in_world = false"));
+        assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
         assertEquals(first, Files.readString(options()));
     }
 
@@ -64,11 +68,11 @@ final class XaeroSetupTest {
         XaeroSetup.saveMode(config(), ClientSetup.ApplyMode.ONCE);
         assertEquals(1, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
         assertFalse(Files.exists(worldmap()));
-        write(minimap(), "waypoints_in_world = true\n");
+        write(minimap(), "waypoints_in_world = false\n");
         assertEquals(0, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
         assertEquals(1, XaeroSetup.apply(game, config(), MAPS));
-        assertEquals("waypoints_in_world = true\n", Files.readString(minimap()));
-        assertTrue(Files.readString(worldmap()).contains("waypoints = false"));
+        assertEquals("waypoints_in_world = false\n", Files.readString(minimap()));
+        assertTrue(Files.readString(worldmap()).contains("waypoints = true"));
     }
 
     @Test void absentMapsLeaveEveryFileUntouched() throws Exception {

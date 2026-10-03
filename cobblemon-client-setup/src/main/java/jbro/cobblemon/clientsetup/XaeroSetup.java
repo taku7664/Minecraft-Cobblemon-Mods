@@ -41,8 +41,10 @@ public final class XaeroSetup {
         if (minimap) {
             Path file = configDirectory.resolve("xaero/minimap/profiles/default.cfg");
             String cfg = profile(file);
-            for (String key : List.of("ignore_enforcement_if_edit_permission", "waypoints_in_world", "waypoints_on_minimap", "deathpoints"))
-                cfg = setting(cfg, key, "false");
+            cfg = setting(cfg, "ignore_enforcement_if_edit_permission", "false");
+            cfg = setting(cfg, "waypoints_in_world", "true");
+            cfg = setting(cfg, "waypoints_on_minimap", "true");
+            cfg = setting(cfg, "deathpoints", "false");
             cfg = setting(cfg, "minimap_shape", "1");
             writes.put(file, setting(cfg, "display_radar", "true"));
             Path hud = configDirectory.resolve("xaerohud.txt");
@@ -53,8 +55,10 @@ public final class XaeroSetup {
         if (worldmap) {
             Path file = configDirectory.resolve("xaero/world-map/profiles/default.cfg");
             String cfg = profile(file);
-            for (String key : List.of("ignore_enforcement_if_edit_permission", "waypoints", "render_waypoints", "map_teleport_allowed"))
-                cfg = setting(cfg, key, "false");
+            cfg = setting(cfg, "ignore_enforcement_if_edit_permission", "false");
+            cfg = setting(cfg, "waypoints", "true");
+            cfg = setting(cfg, "render_waypoints", "true");
+            cfg = setting(cfg, "map_teleport_allowed", "false");
             writes.put(file, setting(cfg, "display_minimap_radar", "true"));
         }
 
