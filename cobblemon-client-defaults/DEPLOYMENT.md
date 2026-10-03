@@ -1,4 +1,6 @@
-# cobblemon-dev 배포 — 2026-10-03
+# cobblemon-dev 배포 기록 — 2026-10-03
+
+## 0.1.0 — CLC HUD 자동 끄기
 
 - 소스 커밋: `28b9aff997dafcf6c20dd6f2edb38f3b18d2416e`
 - 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev\mods`
@@ -10,3 +12,53 @@
 - 초기 설정 모드의 `client.toml`은 첫 게임 실행에서 생성 예정.
 - 실제 게임 실행, HUD 표시 및 Mod Menu 화면은 이번 배포에서 확인하지 않음.
 - 클라이언트 전용 배포. 서버에는 배포하지 않음.
+
+## 0.1.1 — 단축키 최초 한 번 정리
+
+- 소스 커밋: `ab74a4d53988b2c035700b2cdef540c289bc3ffb`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-defaults-0.1.1.jar`
+- SHA-256: `C5BB0D4F8DEB51E342A0DAAEF2929AA98B5945B668410A4C5FF14233F5A9AFF6`
+- 검증: 단위 테스트 33개, Gradle build, JDK jar 검증 통과. 한국어·영어 번역 키 14개 일치. 빌드와 배포 파일 해시 일치, 같은 mod ID의 설치 파일은 하나.
+- 이전 JAR 백업: `codex-deploy-backups/20261003-175110033/cobblemon_client_defaults/cobblemon-client-defaults-0.1.0.jar`
+- 설정 백업: `codex-deploy-backups/20261003-175205182/client-defaults-config/` 아래 기존 `options.txt`, Crafting Tweaks와 CLC TOML을 원본 경로대로 저장.
+- 실행 중인 클라이언트가 없음을 확인한 뒤, 배포 JAR에 들어 있는 적용 코드로 현재 프로필도 초기 설정함. Minecraft는 실행하지 않음.
+
+`options.txt`에서 다음 6개 값만 변경했으며, 다른 줄은 모두 유지했음을 독립 비교로 확인했습니다.
+
+```text
+key_key.cobbled_level_control.toggle_hud:key.keyboard.unknown
+key_talkingheads.keybinding.modToggle:key.keyboard.unknown
+key_key.hide_icons:key.keyboard.unknown
+key_zoomify.key.zoom.secondary:key.keyboard.unknown
+key_key.craftingtweaks.compress_stack:key.keyboard.unknown
+key_key.craftingtweaks.refill_last_stack:key.keyboard.unknown
+```
+
+`config/craftingtweaks-common.toml`의 `client.mode`를 `BUTTONS`로 변경하고, 파싱한 모든
+다른 값을 원본과 비교하여 유지됨을 확인했습니다. 주석은 유지되며 TOML 들여쓰기와
+줄바꿈은 작성기에 의해 정리되었습니다. 이미 꺼져 있던 CLC TOML은 바이트 단위로 동일합니다.
+
+새로 생성한 `config/cobblemon-client-defaults/client.toml`:
+
+```toml
+[clc_hud]
+mode = "ALWAYS"
+
+[keybindings]
+mode = "ONCE"
+```
+
+`applied-defaults.properties`에는 설치된 5개 모드의 `keybindings-<mod ID>-v1=true`를
+기록했습니다. 같은 적용 코드를 한 번 더 호출했을 때 적용 수가 0이었고, 옵션·Crafting
+Tweaks·완료 기록이 바이트 단위로 동일하여 재실행이 파일을 변경하지 않음을 확인했습니다.
+
+| 배포 후 파일 | SHA-256 |
+| --- | --- |
+| `options.txt` | `1C1F7BCF922255E47BC9ED5C646727EA8C4CF68F4B15D4F2CD2B240FB1E3E372` |
+| `config/craftingtweaks-common.toml` | `7D687DDF881DBB3ACA4206DCF974420C0A0531B6EE2E5A8D33D05CCEAE779389` |
+| `config/cobblemon-client-defaults/client.toml` | `26720E2A0B0FF0B6E1A8A466E95F068F9BEC74D324D47CD73818E20ED0EFC296` |
+| `config/cobblemon-client-defaults/applied-defaults.properties` | `05639AEA136217C74B03B0C918210B2F1A5697B3E5428AC7BB70430A1D9AB8F3` |
+
+실제 Minecraft 시작 시 `preLaunch` 호출, HUD·단축키 동작과 Mod Menu 화면 표시는 이번
+배포에서 확인하지 않았습니다. 클라이언트 전용이며 서버에는 배포하지 않았습니다.
