@@ -33,8 +33,8 @@ class LeagueCatalogParserTest {
         }
     }
 
-    @Test fun `the bundled league spawns wild Pokemon ten below the cap, seven either way, leaning by four chunk areas`() {
-        assertEquals(WildLevelRule(belowCap = 10, spread = 7, regionChunks = 4), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
+    @Test fun `the bundled league spawns wild Pokemon from level ten up to three below the cap, leaning by four chunk areas`() {
+        assertEquals(WildLevelRule(belowCap = 10, spread = 7, regionChunks = 4, floorLevel = 10), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
     }
 
     @Test fun `wild level fields are optional and each falls back alone`() {

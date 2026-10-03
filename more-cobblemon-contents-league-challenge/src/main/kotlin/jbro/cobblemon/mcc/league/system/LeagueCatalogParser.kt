@@ -45,7 +45,10 @@ private fun wildLevel(league: JsonObject): WildLevelRule {
     if (!league.has("wild_level") || league.get("wild_level").isJsonNull) return defaults
     val rule = league.get("wild_level").also { require(it.isJsonObject) { "Expected object: wild_level" } }.asJsonObject
     fun field(key: String, fallback: Int) = if (rule.has(key)) rule.number(key).toInt() else fallback
-    return WildLevelRule(field("below_cap", defaults.belowCap), field("spread", defaults.spread), field("region_chunks", defaults.regionChunks))
+    return WildLevelRule(
+        field("below_cap", defaults.belowCap), field("spread", defaults.spread), field("region_chunks", defaults.regionChunks),
+        field("floor_level", defaults.floorLevel),
+    )
 }
 
 internal fun JsonObject.string(key: String): String = requireNotNull(get(key)) { "Missing $key" }.let {

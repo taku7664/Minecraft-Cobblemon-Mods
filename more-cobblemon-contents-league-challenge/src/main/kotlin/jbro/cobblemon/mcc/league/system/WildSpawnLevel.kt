@@ -4,15 +4,30 @@ import kotlin.math.exp
 import kotlin.math.floor
 
 /**
- * Where wild Pokemon levels sit under a player's cap: every spawn lands within [spread] levels of `cap - belowCap`,
- * never above the cap (so it can always be caught) nor below level 1. Areas of [regionChunks] by [regionChunks]
- * chunks lean weak or strong, which only makes the low or the high end of that range more likely there.
+ * Where wild Pokemon levels sit under a player's cap. The top of the range is `cap - belowCap + spread`; the bottom is
+ * `cap - belowCap - spread`, or [floorLevel] once the cap is high enough to reach past it, so a high cap still brings
+ * low-level Pokemon. Spawns never go above the cap (so they can always be caught) nor below level 1. Areas of
+ * [regionChunks] by [regionChunks] chunks lean weak or strong, which only makes the low or the high end of that range
+ * more likely there.
  */
-data class WildLevelRule(val belowCap: Int = 10, val spread: Int = 7, val regionChunks: Int = 4) {
+data class WildLevelRule(
+    val belowCap: Int = 10,
+    val spread: Int = 7,
+    val regionChunks: Int = 4,
+    val floorLevel: Int = 10,
+) {
     init {
         require(belowCap in 0..99) { "below_cap must be between 0 and 99" }
         require(spread in 0..50) { "spread must be between 0 and 50" }
         require(regionChunks in 1..64) { "region_chunks must be between 1 and 64" }
+        require(floorLevel in 1..100) { "floor_level must be between 1 and 100" }
+    }
+
+    /** The levels a spawn under [cap] can take. */
+    fun range(cap: Int): IntRange {
+        val top = (cap - belowCap + spread).coerceIn(1, cap)
+        val bottom = minOf(floorLevel, cap - belowCap - spread).coerceIn(1, top)
+        return bottom..top
     }
 }
 
@@ -28,18 +43,16 @@ object WildSpawnLevel {
         require(cap in 1..100)
         require(lean in -1.0..1.0)
         require(roll >= 0.0 && roll < 1.0)
-        val offsets = (-rule.spread..rule.spread).toList()
-        val weights = offsets.map { if (rule.spread == 0) 1.0 else exp(LEAN_STRENGTH * lean * it / rule.spread) }
+        val levels = rule.range(cap).toList()
+        val half = (levels.size - 1) / 2.0
+        // Each level's place in the range from -1 (bottom) to 1 (top), so a lean tilts any width alike.
+        val weights = levels.indices.map { if (half == 0.0) 1.0 else exp(LEAN_STRENGTH * lean * (it - half) / half) }
         var target = roll * weights.sum()
-        var offset = offsets.last()
-        for (index in offsets.indices) {
+        for (index in levels.indices) {
             target -= weights[index]
-            if (target < 0) {
-                offset = offsets[index]
-                break
-            }
+            if (target < 0) return levels[index]
         }
-        return (cap - rule.belowCap + offset).coerceIn(1, cap)
+        return levels.last()
     }
 }
 

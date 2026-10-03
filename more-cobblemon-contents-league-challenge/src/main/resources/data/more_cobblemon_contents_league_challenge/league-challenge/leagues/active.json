@@ -6,7 +6,8 @@
   "wild_level": {
     "below_cap": 10,
     "spread": 7,
-    "region_chunks": 4
+    "region_chunks": 4,
+    "floor_level": 10
   },
   "gyms": [
     "more_cobblemon_contents_league_challenge:roark",

@@ -11,26 +11,33 @@ class WildSpawnLevelTest {
     private val rule = WildLevelRule()
     private val rolls = (0 until 1000).map { it / 1000.0 }
 
-    @Test fun `every spawn lands within seven levels of ten below the cap`() {
+    @Test fun `spawns run from level ten up to three below the cap`() {
         for (lean in listOf(-1.0, -0.4, 0.0, 0.6, 1.0)) {
-            val levels = rolls.map { WildSpawnLevel.roll(50, rule, lean, it) }
-            assertTrue(levels.all { it in 33..47 }, "lean $lean")
+            val levels = rolls.map { WildSpawnLevel.roll(100, rule, lean, it) }
+            assertTrue(levels.all { it in 10..97 }, "lean $lean")
             // The whole range stays reachable wherever the area leans.
-            assertEquals(33, levels.min(), "lean $lean")
-            assertEquals(47, levels.max(), "lean $lean")
+            assertEquals(10, WildSpawnLevel.roll(100, rule, lean, 0.0), "lean $lean")
+            assertEquals(97, WildSpawnLevel.roll(100, rule, lean, 0.999999), "lean $lean")
         }
     }
 
-    @Test fun `an even area spreads spawns evenly around the centre`() {
-        val levels = rolls.map { WildSpawnLevel.roll(50, rule, 0.0, it) }
-        assertEquals(40.0, levels.average(), 0.1)
+    @Test fun `a cap too low to reach the floor keeps seven levels either side of ten below it`() {
+        assertEquals(1..13, rule.range(16))
+        assertEquals(6..20, rule.range(23))
+        assertEquals(10..31, rule.range(34))
+        assertEquals(10..97, rule.range(100))
+    }
+
+    @Test fun `an even area spreads spawns evenly across the range`() {
+        val levels = rolls.map { WildSpawnLevel.roll(100, rule, 0.0, it) }
+        assertEquals(53.5, levels.average(), 0.2)
     }
 
     @Test fun `a strong area favours the high end and a weak one the low end`() {
-        val weak = rolls.map { WildSpawnLevel.roll(50, rule, -1.0, it) }.average()
-        val strong = rolls.map { WildSpawnLevel.roll(50, rule, 1.0, it) }.average()
-        assertTrue(weak < 38.0, "weak $weak")
-        assertTrue(strong > 42.0, "strong $strong")
+        val weak = rolls.map { WildSpawnLevel.roll(100, rule, -1.0, it) }.average()
+        val strong = rolls.map { WildSpawnLevel.roll(100, rule, 1.0, it) }.average()
+        assertTrue(weak < 40.0, "weak $weak")
+        assertTrue(strong > 67.0, "strong $strong")
     }
 
     @Test fun `low caps never create a zero level pokemon and spawns never exceed the cap`() {
@@ -44,6 +51,7 @@ class WildSpawnLevelTest {
         assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(50, rule, 0.0, 1.0) }
         assertThrows(IllegalArgumentException::class.java) { WildLevelRule(spread = -1) }
         assertThrows(IllegalArgumentException::class.java) { WildLevelRule(regionChunks = 0) }
+        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(floorLevel = 0) }
     }
 
     @Test fun `a chunk's lean is fixed by the world and stays within range`() {
