@@ -118,7 +118,7 @@ private fun nativeFailureMessage(
     }
 
 internal class LocalTacticalBrain(
-    private val actionSelector: LocalActionSelector = LocalHighestRankedActionSelector,
+    private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
     private val nativeInitialDecision: NativeInitialDecisionSource =

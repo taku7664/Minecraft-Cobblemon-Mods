@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 
 class LocalDecisionTraceSelectorTest {
     @Test
-    fun `observing final ranks preserves actual brain decision and tags`() {
+    fun `observing final ranks preserves actual brain decision and tactical tags`() {
         val context = LocalContestedDecisionCatalog.all(LocalTacticalBrainSimulationTest()).first().context
         val observer = LocalDecisionTraceSelector()
         val traced = LocalTacticalBrain(actionSelector = observer)
@@ -17,8 +17,14 @@ class LocalDecisionTraceSelectorTest {
             trainerProfile = BattleTrainerProfile.balanced(2))
         val actual = traced.decide(traced.openSession(open), context).toCompletableFuture().get()
         val expected = plain.decide(plain.openSession(open), context).toCompletableFuture().get()
+        assertTrue("contextual_human_mix" in expected.tags)
+        assertFalse("highest_ranked" in expected.tags)
         assertEquals(expected.actionId, actual.actionId)
-        fun stableTags(tags: Set<String>) = tags.filterNot { it.startsWith("lookahead_elapsed_ms_") }.toSet()
+        // The observation wrapper delegates the draw but has its own selector identity.
+        val selectorTags = setOf("mixed_top40", "contextual_human_mix", "evidence_gated_mixup")
+        fun stableTags(tags: Set<String>) = tags.filterNot {
+            it.startsWith("lookahead_elapsed_ms_") || it in selectorTags
+        }.toSet()
         assertEquals(stableTags(expected.tags), stableTags(actual.tags))
         assertEquals(1, expected.tags.count { it.startsWith("lookahead_elapsed_ms_") })
         assertEquals(1, actual.tags.count { it.startsWith("lookahead_elapsed_ms_") })
