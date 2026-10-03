@@ -58,7 +58,7 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
   "schemaVersion": 1,
   "battle": {
     "content": {
-      "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
+      "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/gym/sinnoh_gym_leader_battle"
     }
   },
   "screens": {
@@ -90,6 +90,8 @@ Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소�
 1.3.8은 표시명을 한국어로 바꾸고 게임명을 `HG·SS` 등 영문 약자로 줄였습니다. [배포 검증 기록](RELEASE_1_3_8_2026-10-03.md)에 음원·매핑·개인 설정 보존 결과를 정리했습니다.
 
 1.3.9부터 곡명 알림은 `[Music] 전투! 루기아 (HG·SS)`처럼 표시합니다. `[Music]`은 알림 표시 단계에서만 붙이며, 리소스팩의 곡명·음원·매핑은 변경하지 않습니다. [클라이언트 교체 검증 기록](RELEASE_1_3_9_2026-10-03.md)을 참고하세요.
+
+1.3.10은 README 지정곡과 별도로 요청한 전포·야생·알파 곡만 남깁니다. 미지정·미사용 BGM 25곡과 해당 매핑·곡명·이벤트를 제거해 BGM 87곡과 기존 효과음 4개만 포함합니다. 해변·돌해안 전용 매핑과 일반 챔피언 전용 매핑은 삭제하여 기존 필드·트레이너 기본곡으로 돌아갑니다. PvP도 지정된 트레이너 기본곡을 사용합니다. 수중 전용곡이나 새 판정 기능은 추가하지 않습니다. [정리 기준 및 검증](MUSIC_ASSET_PRUNING_2026-10-03.md)을 참고하세요.
 
 야생 특수 분류는 알파 → 울트라비스트 → 전설 순입니다. [알파 음악](ALPHA_MUSIC_2026-10-03.md)은 서버가 전투에 전달한 `alpha` 표시로 판단하며, 포켓몬 전용곡이 있으면 전용곡을 유지합니다. 전용곡이 없는 야생 알파는 보스 2곡을 사용합니다. Mod Menu의 전투 매핑에서 `알파 포켓몬 전투` 음악을 변경할 수 있습니다.
 

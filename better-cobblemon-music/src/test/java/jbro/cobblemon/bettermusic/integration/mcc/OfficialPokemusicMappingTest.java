@@ -67,7 +67,7 @@ final class OfficialPokemusicMappingTest {
         }
         assertEquals("3a3c66d0732c94cbce6628547b7fcaa6cad5691340f65371654b65429ee23e6e",
             sha256(pack.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg")));
-        assertEquals(112, compiled.trackEvents().size());
+        assertEquals(87, compiled.trackEvents().size());
     }
 
     @Test
@@ -119,7 +119,10 @@ final class OfficialPokemusicMappingTest {
         expectField("minecraft:plains", false, "field/plains/sinnoh_route_201_night");
         expectField("minecraft:desert", false, "field/desert/route_111");
         expectField("minecraft:wooded_badlands", false, "field/badlands/abandoned_ship");
-        expectField("minecraft:beach", false, "field/beach/pmd_beach_at_dusk");
+        for (String biome : List.of("minecraft:beach", "minecraft:stony_shore")) {
+            expectField(biome, false, "field/plains/sinnoh_route_201_night");
+        }
+        expectField("minecraft:snowy_beach", false, "field/snow/sinnoh_route_205_night");
         for (var time : FieldMusicContext.TimeOfDay.values()) {
             expectTracks(field.select(context("minecraft:the_nether", time)).playlist(), "field/nether/sinnoh_stark_mountain");
             expectTracks(field.select(context("minecraft:the_end", time)).playlist(), "field/end/distortion_world");
@@ -185,7 +188,7 @@ final class OfficialPokemusicMappingTest {
     }
 
     @Test
-    void leagueStageAndCynthiaMappingsDoNotReplaceTheBlankDefaultChampionOrTowerMemo() {
+    void leagueStageAndCynthiaUseRequestedMusicAndUnassignedBattlesUseTheTrainerDefault() {
         var resolver = new BattlePlaylistResolver(compiled.snapshot().battle());
         for (String stage : List.of("wild_trainer", "wild_trainer_ace")) {
             expectBattle(resolver, stage, "example:trainer", "battle/trainer/sinnoh_trainer_battle");
@@ -198,8 +201,12 @@ final class OfficialPokemusicMappingTest {
         }
         expectBattle(resolver, "champion", "more_cobblemon_contents_league_challenge:cynthia", "battle/champion/sinnoh_cynthia_battle");
         expectBattle(resolver, "hard_champion", "more_cobblemon_contents_league_challenge:cynthia_hard", "battle/champion/sinnoh_cynthia_battle");
-        expectBattle(resolver, "champion", "example:other", "battle/champion/oras_champion_battle");
-        expectBattle(resolver, "hard_champion", "example:other", "battle/champion/oras_champion_battle");
+        expectBattle(resolver, "champion", "example:other", "battle/trainer/sinnoh_trainer_battle");
+        expectBattle(resolver, "hard_champion", "example:other", "battle/trainer/sinnoh_trainer_battle");
+        expectTracks(compiled.snapshot().battle().pvp(), "battle/trainer/sinnoh_trainer_battle");
+        assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:pvp"));
+        assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/champion"));
+        assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/hard_champion"));
         expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_tower"), "battle/trainer/sinnoh_trainer_battle");
     }
 

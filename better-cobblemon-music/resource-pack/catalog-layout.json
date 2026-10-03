@@ -3,9 +3,6 @@
   "packId": "cobleserver:official",
   "kind": "base",
   "legacyAliases": {
-    "cobleserver:battle/pvp/swsh_gym_leader_battle": [
-      "battle/content/swsh_gym_leader_battle.ogg"
-    ],
     "cobleserver:battle/legendary/frlg_deoxys_battle_music": [
       "battle/legendary/frlg_deoxys_battle.ogg"
     ]
@@ -13,14 +10,9 @@
   "trackTitles": {
     "cobleserver:battle/boss/pla_boss_battle": "승부: 우두머리 포켓몬 (PLA)",
     "cobleserver:battle/boss/sv_leader_pokemon_battle": "전투! 주인 포켓몬 (S·V)",
-    "cobleserver:battle/champion/oras_champion_battle": "결전! 성호 (OR·AS)",
     "cobleserver:battle/champion/sinnoh_cynthia_battle": "전투! 챔피언 (D·P)",
     "cobleserver:battle/elite/sinnoh_elite_four_battle": "전투! 사천왕 (D·P)",
-    "cobleserver:battle/elite/unova_elite_four_battle": "전투! 사천왕 (B·W)",
-    "cobleserver:battle/gym/galar_gym_leader_battle": "전투! 체육관 관장 (Sw·Sh)",
-    "cobleserver:battle/gym/oras_gym_leader_battle": "전투! 체육관 관장 (OR·AS)",
     "cobleserver:battle/gym/sinnoh_gym_leader_battle": "전투! 체육관 관장 (D·P)",
-    "cobleserver:battle/gym/unova_gym_leader_battle": "전투! 체육관 관장 (B·W)",
     "cobleserver:battle/legendary/bdsp_arceus_battle": "전투! 아르세우스 (BD·SP)",
     "cobleserver:battle/legendary/bdsp_azelf_mesprit_uxie_battle": "전투! 유크시·엠라이트·아그놈 (BD·SP)",
     "cobleserver:battle/legendary/bdsp_dialga_palkia_battle": "전투! 디아루가·펄기아 (BD·SP)",
@@ -66,11 +58,6 @@
     "cobleserver:battle/legendary/xy_mewtwo_battle": "전투! 뮤츠 (X·Y)",
     "cobleserver:battle/legendary/xy_xerneas_yveltal_zygarde_battle": "전투! 제르네아스·이벨타르·지가르데 (X·Y)",
     "cobleserver:battle/legendary/za_darkrai_battle": "다크라이 전투 (PLZA)",
-    "cobleserver:battle/pvp/pokemon_champions_arena_battle": "아레나 배틀 (PC)",
-    "cobleserver:battle/pvp/swsh_elite_leader_battle": "포켓몬 배틀 (Sw·Sh)",
-    "cobleserver:battle/pvp/swsh_gym_leader_battle": "전투! 체육관 관장 (Sw·Sh)",
-    "cobleserver:battle/pvp/xy_elite_four_battle": "전투! 사천왕 (X·Y)",
-    "cobleserver:battle/rival/unova_rival_battle": "전투! 라이벌 (B·W)",
     "cobleserver:battle/trainer/sinnoh_trainer_battle": "전투! 트레이너 (D·P)",
     "cobleserver:battle/ultra_beast/alola_ultra_beast_battle": "전투! 울트라비스트 (S·M)",
     "cobleserver:battle/wild/bw_strong_wild_pokemon_battle": "전투! 강한 야생 포켓몬 (B·W)",
@@ -82,43 +69,28 @@
     "cobleserver:battle/wild/swsh_wild_pokemon_battle": "전투! 야생 포켓몬 (Sw·Sh)",
     "cobleserver:battle/wild/xy_wild_pokemon_battle": "전투! 야생 포켓몬 (X·Y)",
     "cobleserver:field/badlands/abandoned_ship": "버려진배",
-    "cobleserver:field/beach/pmd_beach_at_dusk": "해질녘 해변에서 (PMD2)",
-    "cobleserver:field/cave/johto_dark_cave": "어둠의 동굴",
     "cobleserver:field/cave/sinnoh_lake_caverns": "호수의 공동",
     "cobleserver:field/cave/sinnoh_oreburgh_mine": "무쇠탄갱",
-    "cobleserver:field/deep_dark/johto_ilex_forest": "너도밤나무숲",
     "cobleserver:field/deep_dark/sinnoh_old_chateau": "숲의 양옥집",
     "cobleserver:field/deep_dark/union_cave": "연결동굴",
-    "cobleserver:field/desert/alola_haina_desert": "하이나사막",
     "cobleserver:field/desert/route_111": "111번도로",
     "cobleserver:field/end/distortion_world": "깨어진세계",
-    "cobleserver:field/end/sinnoh_snowpoint_city_day": "선단시티 (낮)",
     "cobleserver:field/forest/sinnoh_route_203_day": "203번도로 (낮)",
     "cobleserver:field/forest/viridian_forest": "상록숲",
     "cobleserver:field/jungle/route_210": "210번도로 (낮)",
-    "cobleserver:field/jungle_swamp/alola_lush_jungle": "셰이드정글",
     "cobleserver:field/mountain/route_3": "3번도로",
     "cobleserver:field/mountain/sinnoh_route_205_day": "205번도로 (낮)",
-    "cobleserver:field/mountain/unova_route_4": "4번도로",
     "cobleserver:field/myroom/eterna_forest": "영원의숲",
     "cobleserver:field/nether/sinnoh_stark_mountain": "하드마운틴",
-    "cobleserver:field/ocean/dive": "다이빙",
-    "cobleserver:field/ocean/pmd_beach_at_dusk": "해질녘 해변에서 (PMD2)",
     "cobleserver:field/ocean/route_47": "47번도로",
     "cobleserver:field/ocean/underground_ruins": "땅밑유적",
-    "cobleserver:field/plains/sinnoh_route_201_day": "201번도로 (낮)",
     "cobleserver:field/plains/sinnoh_route_201_night": "201번도로 (밤)",
-    "cobleserver:field/plaza/goldenrod_city": "금빛시티",
-    "cobleserver:field/plaza/jubilife_city": "축복시티",
     "cobleserver:field/plaza/pallet_town": "태초마을",
     "cobleserver:field/plaza/route_1": "1번도로",
-    "cobleserver:field/plaza/sinnoh_oreburgh_city_midday": "무쇠시티 (낮)",
     "cobleserver:field/river/sealed_chamber": "고시의 석실",
     "cobleserver:field/river/sinnoh_lake_theme": "호수",
     "cobleserver:field/snow/sinnoh_route_205_night": "205번도로 (밤)",
-    "cobleserver:field/snow/sinnoh_route_216_day": "216번도로 (낮)",
     "cobleserver:field/swamp/road_to_reversal_mountain": "리버스마운틴으로 가는 길",
-    "cobleserver:field/swamp/route_120": "120번도로",
     "cobleserver:screen/mcc/boutique": "부티크",
     "cobleserver:screen/mcc/poke_mart": "프렌들리숍",
     "cobleserver:screen/title/sinnoh_introduction": "인트로",
@@ -157,14 +129,6 @@
     "cobleserver:field_forest": {
       "selection": "random",
       "tracks": ["cobleserver:field/forest/sinnoh_route_203_day", "cobleserver:field/forest/viridian_forest"]
-    },
-    "cobleserver:battle_pvp": {
-      "tracks": [
-        "cobleserver:battle/pvp/pokemon_champions_arena_battle",
-        "cobleserver:battle/pvp/swsh_elite_leader_battle",
-        "cobleserver:battle/pvp/swsh_gym_leader_battle",
-        "cobleserver:battle/pvp/xy_elite_four_battle"
-      ]
     },
     "cobleserver:battle_legendary_generic": {
       "tracks": [
@@ -258,7 +222,6 @@
         "minecraft:deep_dark": "cobleserver:field_deep_dark",
         "minecraft:lush_caves": "cobleserver:field_cave",
         "minecraft:dripstone_caves": "cobleserver:field_cave",
-        "minecraft:stony_shore": "cobleserver:track/field/beach/pmd_beach_at_dusk",
         "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_205_night",
         "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_205_night",
         "minecraft:cherry_grove": "cobleserver:field_forest",
@@ -272,7 +235,6 @@
         "deep_dark": "cobleserver:field_deep_dark",
         "cave": "cobleserver:field_cave",
         "river": "cobleserver:field_river",
-        "beach": "cobleserver:track/field/beach/pmd_beach_at_dusk",
         "ocean": "cobleserver:field_ocean",
         "badlands": "cobleserver:track/field/badlands/abandoned_ship",
         "desert": "cobleserver:track/field/desert/route_111",
@@ -301,18 +263,16 @@
         "biome:minecraft:cherry_grove", "biome:#minecraft:is_forest", "path:forest", "path:birch", "path:taiga",
         "path:plains",
         "path:desert",
-        "path:badlands",
-        "biome:minecraft:stony_shore", "path:beach"
+        "path:badlands"
       ]
     },
     "battle": {
       "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",
       "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-      "pvp": "cobleserver:battle_pvp",
+      "pvp": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
       "content": {
         "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:pvp": "cobleserver:battle_pvp",
         "more_cobblemon_contents:league_challenge/wild_trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/wild_trainer_ace": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/gym": "cobleserver:battle_gym_leader",
@@ -320,9 +280,7 @@
         "more_cobblemon_contents:league_challenge/elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
         "more_cobblemon_contents:league_challenge/hard_elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
         "more_cobblemon_contents:league_challenge/champion/cynthia": "cobleserver:track/battle/champion/sinnoh_cynthia_battle",
-        "more_cobblemon_contents:league_challenge/hard_champion/cynthia_hard": "cobleserver:track/battle/champion/sinnoh_cynthia_battle",
-        "more_cobblemon_contents:league_challenge/champion": "cobleserver:track/battle/champion/oras_champion_battle",
-        "more_cobblemon_contents:league_challenge/hard_champion": "cobleserver:track/battle/champion/oras_champion_battle"
+        "more_cobblemon_contents:league_challenge/hard_champion/cynthia_hard": "cobleserver:track/battle/champion/sinnoh_cynthia_battle"
       },
       "legendary": "cobleserver:battle_legendary_generic",
       "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",

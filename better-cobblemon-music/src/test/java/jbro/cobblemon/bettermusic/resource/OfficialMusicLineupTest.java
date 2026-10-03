@@ -50,7 +50,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(112, eventTitles.size());
+        assertEquals(87, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -102,7 +102,7 @@ final class OfficialMusicLineupTest {
         assertEquals(List.of("cobleserver:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");
         assertEquals(List.of("cobleserver:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
-        assertEquals(4, battle.pvp().tracks().size());
+        assertEquals(battle.trainer(), battle.pvp());
     }
 
     @Test
