@@ -1005,6 +1005,7 @@ internal object PublicSingleTurnProjector {
                         actor.battlePokemonId,
                         actor.battlePokemonId,
                         effects,
+                        actorAction = effectiveAction,
                         executedSide = side,
                         effectSourceSide = reflectedSide,
                         mode = chanceEffectMode,
@@ -1096,6 +1097,7 @@ internal object PublicSingleTurnProjector {
                         actor.battlePokemonId,
                         target?.battlePokemonId,
                         if (subTookHit) effects.filterNot { it.target == BattleMoveEffectTarget.SELECTED_TARGET } else effects,
+                        actorAction = calculatedAction,
                         executedSide = side,
                         mode = chanceEffectMode,
                         sourceContext = sourceContext,
@@ -1446,6 +1448,7 @@ internal object PublicSingleTurnProjector {
                                 currentTarget.battlePokemonId,
                                 if (subTookHit) perTargetEffects.filterNot { it.target == BattleMoveEffectTarget.SELECTED_TARGET }
                                 else perTargetEffects,
+                                actorAction = calculatedAction,
                                 executedSide = side,
                                 mode = chanceEffectMode,
                                 sourceContext = sourceContext,
@@ -1726,6 +1729,7 @@ internal object PublicSingleTurnProjector {
         actorId: UUID,
         targetId: UUID?,
         effects: List<BattleMoveEffectView>,
+        actorAction: BattleActionCandidate,
         executedSide: BattleSide,
         effectSourceSide: BattleSide = executedSide,
         mode: ChanceEffectProjectionMode,
@@ -1758,7 +1762,7 @@ internal object PublicSingleTurnProjector {
             }
             if (probability <= 0.0) return@forEach
             branches = branches.flatMap { branch ->
-                val projection = projectStatusEffect(branch.state, actorId, targetId, effect, effectSourceSide)
+                val projection = projectStatusEffect(branch.state, actorId, targetId, effect, effectSourceSide, actorAction)
                 val applied = projection.state
                 val isConfusion = effect.kind == BattleMoveEffectKind.VOLATILE_STATUS && canonicalId(effect.valueId) == "confusion"
                 val controlEffect = if (isConfusion && applied === branch.state) null else
@@ -1866,7 +1870,7 @@ internal object PublicSingleTurnProjector {
     }
 
     private fun projectStatusEffect(state: BattleStateView, actorId: UUID, targetId: UUID?,
-        effect: BattleMoveEffectView, executedSide: BattleSide): LocalPublicStatusProjection {
+        effect: BattleMoveEffectView, executedSide: BattleSide, actorAction: BattleActionCandidate): LocalPublicStatusProjection {
         val affectedId = when (effect.target) {
             BattleMoveEffectTarget.USER -> actorId
             BattleMoveEffectTarget.SELECTED_TARGET -> targetId
@@ -1880,7 +1884,7 @@ internal object PublicSingleTurnProjector {
                 return LocalPublicStatusEffects.confuse(state, affectedId, actorId)
             }
         }
-        return LocalPublicStatusProjection(applyEffect(state, actorId, targetId, effect, executedSide))
+        return LocalPublicStatusProjection(applyEffect(state, actorId, targetId, effect, executedSide, actorAction))
     }
 
     private fun confusionCureEffects(state: BattleStateView, curedIds: Set<UUID>): List<RecursiveControlEffect> =
@@ -1894,6 +1898,7 @@ internal object PublicSingleTurnProjector {
         targetId: UUID?,
         effect: BattleMoveEffectView,
         executedSide: BattleSide,
+        actorAction: BattleActionCandidate,
     ): BattleStateView {
         if (effect.kind in FIELD_EFFECT_KINDS) {
             return LocalFieldEffectProjector.apply(state, executedSide, effect, actorId)
@@ -1948,7 +1953,9 @@ internal object PublicSingleTurnProjector {
         }
         return when (effect.kind) {
             // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
-            BattleMoveEffectKind.STAT_STAGE -> LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages)
+            BattleMoveEffectKind.STAT_STAGE -> LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages,
+                ignoreTargetAbility = affectedId != actorId && LocalPublicAbilityMechanics.ignoresTargetAbility(actorAction,
+                    state.pokemon.firstOrNull { it.battlePokemonId == actorId }, null, state))
             else -> state
         }
     }

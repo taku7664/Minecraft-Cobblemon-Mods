@@ -109,7 +109,7 @@ internal object LocalStopScoreCalculator {
                 val dropped = if (LocalPublicMechanicsKernel.projectMove(action, read, subject.side).publiclyNullified) boosted.state
                     else LocalStatStageChange.apply(boosted.state, sweeperId, subjectId, stages,
                         ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(action,
-                            boostedSubject, boostedSweeper, boosted.state))
+                            boostedSubject, null, boosted.state))
                 tools += StopTool(StopToolKind.STAT_DROP, moveId, actsBeforeKnockout * accuracy * win(dropped))
             }
         }

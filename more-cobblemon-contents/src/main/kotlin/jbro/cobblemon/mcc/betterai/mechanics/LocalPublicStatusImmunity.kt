@@ -65,10 +65,11 @@ internal object LocalPublicStatusImmunity {
     }
 
     /** A Grass type beside (or holding) Flower Veil. */
-    fun flowerVeiled(state: BattleStateView, target: BattlePokemonStateView): Boolean =
+    fun flowerVeiled(state: BattleStateView, target: BattlePokemonStateView, ignoreAbilities: Boolean = false): Boolean =
         target.knownTypeIds.any { canonical(it) == "grass" } && state.pokemon.any {
             it.side == target.side && it.activeSlot != null && !it.fainted &&
-                LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowerveil"
+                LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowerveil" &&
+                (!ignoreAbilities || LocalPublicItemState.activeItemId(state, it) == "abilityshield")
         }
 
     /** Safeguard, Misty Terrain (any status) and Electric Terrain (sleep) for a grounded target, and a Substitute. */

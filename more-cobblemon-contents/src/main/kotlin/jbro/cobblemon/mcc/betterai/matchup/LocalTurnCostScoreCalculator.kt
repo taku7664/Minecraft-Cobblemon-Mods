@@ -75,7 +75,7 @@ internal object LocalTurnCostScoreCalculator {
                     return@mapNotNull null
                 }
                 val applied = applyEffects(worn, effects, user.battlePokemonId, target,
-                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, target, state)) ?: return@mapNotNull null
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, null, state)) ?: return@mapNotNull null
                 // A move that cannot land does no more than a miss.
                 val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
                 val landed = if (nullified) worn else applied

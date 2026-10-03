@@ -17,7 +17,7 @@ internal object LocalStatStageChange {
         targetId: UUID,
         sourceId: UUID?,
         stages: Map<String, Int>,
-        /** Mold Breaker and its kind ignore the target's Contrary, Simple and drop-stopping abilities. */
+        /** The move bypasses breakable abilities; each holder's active Ability Shield still protects it. */
         ignoreTargetAbility: Boolean = false,
         /** Entry ability batches run item updates after all adjacent boost attempts. */
         updateItems: Boolean = true,
@@ -36,7 +36,9 @@ internal object LocalStatStageChange {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
         if (target.fainted || target.hpFraction <= 0.0) return state
-        val ability = if (ignoreTargetAbility) null else LocalPublicAbilityState.effectiveKnownAbility(state, target)
+        val ignoresHolder = ignoreTargetAbility && LocalPublicItemState.activeItemId(state, target) != ABILITY_SHIELD
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target)
+            ?.takeUnless { ignoresHolder && it in BREAKABLE_ABILITIES }
         val fromOther = sourceId != null && sourceId != targetId
         val source = sourceId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } }
         // The caller's spelling is kept; stats are compared by their normalised name.
@@ -53,7 +55,7 @@ internal object LocalStatStageChange {
         if (fromOther && change.values.any { it < 0 }) {
             val drops = change.filterValues { it < 0 }
             val stopped = ability in DROP_STOPPING_ABILITIES ||
-                LocalPublicStatusImmunity.flowerVeiled(state, target) ||
+                LocalPublicStatusImmunity.flowerVeiled(state, target, ignoreTargetAbility) ||
                 !mirrorReflection && target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
                 LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
                 source != null && source.side != target.side && mistActive(state, target)
@@ -139,6 +141,8 @@ internal object LocalStatStageChange {
     }
 
     private val DROP_STOPPING_ABILITIES = setOf("clearbody", "whitesmoke", "fullmetalbody")
+    private val BREAKABLE_ABILITIES = setOf("contrary", "simple", "clearbody", "whitesmoke", "mirrorarmor")
+    private const val ABILITY_SHIELD = "abilityshield"
     private const val MIRROR_ARMOR = "mirrorarmor"
     private const val CLEAR_AMULET = "clearamulet"
     private const val WHITE_HERB = "whiteherb"

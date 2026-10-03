@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.UUID
@@ -95,7 +96,10 @@ internal object LocalStatStageMarginalEvaluator {
                 it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
             }?.battlePokemonId
             val applied = targetIds.fold(state) { current, id ->
-                LocalStatStageChange.apply(current, id, actorId, effect.statStages)
+                val actor = current.pokemon.firstOrNull { it.battlePokemonId == actorId }
+                LocalStatStageChange.apply(current, id, actorId, effect.statStages,
+                    ignoreTargetAbility = id != actorId &&
+                        LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, null, current))
             }
             appliedAny = true
             val resolvedScore = scoreWithUnknownFallback(
