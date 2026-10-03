@@ -68,7 +68,7 @@ internal object TowerPlayMessageKeys {
     const val TEAM_INVALID = "$PREFIX.team_invalid"
     const val BATTLE_UNAVAILABLE = "$PREFIX.battle_unavailable"
     const val MECHANIC_REQUIRED = "$PREFIX.mechanic_required"
-    const val NOTHING_TO_ABANDON = "$PREFIX.nothing_to_abandon"
+    const val NOTHING_TO_CHANGE = "$PREFIX.nothing_to_change"
     const val NOTHING_TO_RETIRE = "$PREFIX.nothing_to_retire"
     const val ENDLESS_LOCKED = "$PREFIX.endless_locked"
 
@@ -119,11 +119,18 @@ internal class TowerPlaySessionService(
     private val registeredTeamSnapshots: TowerRegisteredTeamSnapshots = UnavailableTowerRegisteredTeamSnapshots,
     private val battleCompletionSink: TowerPlayBattleCompletionSink = NoopTowerPlayBattleCompletionSink,
     private val runRetirementSink: TowerPlayRunRetirementSink = NoopTowerPlayRunRetirementSink,
+    /** Asks the battle under way to forfeit; true once the request went through. */
+    private val battleForfeit: (playerId: UUID, battleId: UUID) -> Boolean = { _, _ -> false },
+    private val runScopeIdFactory: () -> UUID = UUID::randomUUID,
     private val entryContextIdFactory: () -> UUID = UUID::randomUUID,
 ) {
     private val sessions = HashMap<UUID, Session>()
     private val launchingPlayers = HashSet<UUID>()
 
+    /**
+     * Opens the Tower for [playerId]. A session holding a registered team shows its run as it stands; a selecting one
+     * takes the party, progress and balance [request] read now and keeps the rules the challenger chose.
+     */
     @Synchronized
     fun open(
         playerId: UUID,
@@ -131,36 +138,23 @@ internal class TowerPlaySessionService(
         entryContext: TowerPlayEntryContext = TowerPlayEntryContext.Command(entryContextIdFactory()),
     ): TowerPlayViewState {
         sessions[playerId]?.let { existing ->
-            if (existing.state.phase != TowerPlayPhase.SELECTING) return existing.state
-            val keepRegisteredTeam = existing.hasRegisteredSnapshot
-            val progressByTrack = if (keepRegisteredTeam) {
-                existing.progressByTrack
-            } else {
-                request.progressByTrack
-            }
-            val progress = progressByTrack.getValue(TowerTrack(existing.state.format, existing.state.mode))
+            val shown = existing.state
+            if (shown.phase != TowerPlayPhase.SELECTING) return shown
+            val progress = request.progressByTrack.getValue(TowerTrack(shown.format, shown.mode))
             val refreshed = viewState(
                 entryContextId = entryContext.entryContextId,
                 revision = 0,
                 phase = TowerPlayPhase.SELECTING,
-                party = if (keepRegisteredTeam) existing.state.party else request.party,
-                selected = emptySet(),
+                party = request.party,
+                selected = shown.selectedPokemonOrder.keptIn(request.party),
                 progress = progress,
                 bpBalance = request.bpBalance,
-                errorKeys = if (keepRegisteredTeam) existing.state.errorKeys else registrationErrors(request.party),
-                selectedMechanic = existing.state.selectedMechanic ?: DEFAULT_TOWER_MECHANIC,
-                mechanicLocked = existing.state.mechanicLocked,
-                legendaryClassAllowed = existing.state.legendaryClassAllowed,
-                legendaryClassLocked = existing.state.legendaryClassLocked,
-                endlessUnlocked = TowerTrack.endlessUnlocked(progressByTrack),
+                errorKeys = registrationErrors(request.party),
+                selectedMechanic = shown.selectedMechanic ?: DEFAULT_TOWER_MECHANIC,
+                legendaryClassAllowed = shown.legendaryClassAllowed,
+                endlessUnlocked = request.endlessUnlocked,
             )
-            sessions[playerId] = Session(
-                progressByTrack = progressByTrack,
-                entryContext = entryContext,
-                state = refreshed,
-                lockedSelection = existing.lockedSelection,
-                hasRegisteredSnapshot = keepRegisteredTeam,
-            )
+            sessions[playerId] = Session(request.progressByTrack, entryContext, refreshed)
             return refreshed
         }
         registeredTeamSnapshots.discard(playerId)
@@ -216,20 +210,17 @@ internal class TowerPlaySessionService(
         return session.state.copy(bpBalance = balance).also { session.state = it }
     }
 
-    /**
-     * Shows [party] in a selecting session that holds no registered team, as after a run ended; a session still
-     * on its registered team keeps it.
-     */
+    /** Shows [party] in a selecting session; a registered team stays as it is until its run ends. */
     @Synchronized
     fun refreshParty(playerId: UUID, party: Collection<TowerPlayPartySlot>): TowerPlayViewState? {
         val session = sessions[playerId] ?: return null
         val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING || session.hasRegisteredSnapshot) return state
+        if (state.phase != TowerPlayPhase.SELECTING) return state
         if (party.sortedBy(TowerPlayPartySlot::slot) == state.party.sortedBy(TowerPlayPartySlot::slot)) return state
         return state.copy(
             revision = state.revision + 1,
             party = party,
-            selectedPokemonIds = emptySet(),
+            selectedPokemonIds = state.selectedPokemonOrder.keptIn(party),
             errorKeys = registrationErrors(party),
         ).also { session.state = it }
     }
@@ -242,6 +233,7 @@ internal class TowerPlaySessionService(
         completionSink: TowerPlayBattleCompletionSink = battleCompletionSink,
     ): TowerPlayBattleCompletionResult = finishBattle(playerId, battleId, outcome, completionSink)
 
+    /** Closes [playerId]'s session; a battle under way is forfeited first and the session closes once it settles. */
     @Synchronized
     fun abandonSession(
         playerId: UUID,
@@ -253,26 +245,53 @@ internal class TowerPlaySessionService(
             removeSessionAndDiscardSnapshot(playerId)
             return TowerSessionAbandonResult.SessionClosed
         }
-        if (session.abandonRequested) return TowerSessionAbandonResult.ForfeitRequested(battleId)
+        if (session.forfeitRequested) {
+            session.closeAfterBattle = true
+            return TowerSessionAbandonResult.ForfeitRequested(battleId)
+        }
+        return when (requestForfeit(playerId, session, battleId, forfeit, close = true)) {
+            ForfeitRequest.REQUESTED -> TowerSessionAbandonResult.ForfeitRequested(battleId)
+            ForfeitRequest.UNAVAILABLE -> TowerSessionAbandonResult.ForfeitUnavailable(battleId)
+            ForfeitRequest.SETTLED -> TowerSessionAbandonResult.SessionClosed
+        }
+    }
 
-        session.abandonRequested = true
+    /**
+     * Asks [battleId] to forfeit, with [session] marked first: a battle that ends inside the call already counts as
+     * the loss. [close] also closes the session once the battle settles.
+     */
+    private fun requestForfeit(
+        playerId: UUID,
+        session: Session,
+        battleId: UUID,
+        forfeit: (UUID) -> Boolean,
+        close: Boolean,
+    ): ForfeitRequest {
+        val closeBefore = session.closeAfterBattle
+        session.forfeitRequested = true
+        session.closeAfterBattle = closeBefore || close
+        fun settled() = sessions[playerId] !== session || session.activeBattleId != battleId
+        fun withdraw() {
+            session.forfeitRequested = false
+            session.closeAfterBattle = closeBefore
+        }
         val requested = try {
             forfeit(battleId)
-        } catch (exception: RuntimeException) {
-            if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
-            session.abandonRequested = false
-            throw exception
-        } catch (exception: LinkageError) {
-            if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
-            session.abandonRequested = false
-            throw exception
+        } catch (failure: RuntimeException) {
+            if (settled()) return ForfeitRequest.SETTLED
+            withdraw()
+            throw failure
+        } catch (failure: LinkageError) {
+            if (settled()) return ForfeitRequest.SETTLED
+            withdraw()
+            throw failure
         }
-        if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
+        if (settled()) return ForfeitRequest.SETTLED
         if (!requested) {
-            session.abandonRequested = false
-            return TowerSessionAbandonResult.ForfeitUnavailable(battleId)
+            withdraw()
+            return ForfeitRequest.UNAVAILABLE
         }
-        return TowerSessionAbandonResult.ForfeitRequested(battleId)
+        return ForfeitRequest.REQUESTED
     }
 
     private fun finishBattle(
@@ -288,7 +307,7 @@ internal class TowerPlaySessionService(
         val state = session.state
         val track = TowerTrack(state.format, state.mode)
         val progress = session.progressByTrack.getValue(track)
-        val recordedOutcome = if (session.abandonRequested) TowerBattleOutcome.LOSS else outcome
+        val recordedOutcome = if (session.forfeitRequested) TowerBattleOutcome.LOSS else outcome
         val update = TowerProgression.record(progress, recordedOutcome)
         completionSink.record(playerId, update)
 
@@ -296,7 +315,8 @@ internal class TowerPlaySessionService(
         val after = if (update.cleared) update.after.copy(currentWinStreak = 0) else update.after
         session.progressByTrack[track] = after
         session.activeBattleId = null
-        if (session.abandonRequested) {
+        session.forfeitRequested = false
+        if (session.closeAfterBattle) {
             removeSessionAndDiscardSnapshot(playerId)
             return TowerPlayBattleCompletionResult.SessionAbandoned
         }
@@ -323,7 +343,8 @@ internal class TowerPlaySessionService(
         val session = sessions[playerId] ?: return TowerPlayBattleCompletionResult.SessionNotFound
         val activeBattleId = session.activeBattleId ?: return TowerPlayBattleCompletionResult.NoActiveBattle
         if (activeBattleId != battleId) return TowerPlayBattleCompletionResult.StaleBattle(activeBattleId)
-        if (session.abandonRequested) {
+        // A battle given up stays a loss even when it ends without a result.
+        if (session.forfeitRequested || session.closeAfterBattle) {
             return finishBattle(playerId, battleId, TowerBattleOutcome.LOSS, completionSink)
         }
 
@@ -387,6 +408,10 @@ internal class TowerPlaySessionService(
         return true
     }
 
+    /**
+     * Applies [intent]. [currentParty] is the challenger's party now, read for the intents that register it or show
+     * it once a registration is let go: a lock, a team change and giving up.
+     */
     @Synchronized
     fun mutate(
         playerId: UUID,
@@ -416,14 +441,15 @@ internal class TowerPlaySessionService(
 
         val result = when (intent) {
             is TowerPlayIntent.ToggleSelection -> toggle(session, intent)
-            is TowerPlayIntent.ChangeFormat -> changeFormat(session, intent)
+            is TowerPlayIntent.ChangeFormat -> changeRules(session, intent) { switchTrack(session, TowerTrack(intent.format, it.mode)) }
             is TowerPlayIntent.ChangeMode -> changeMode(session, intent)
-            is TowerPlayIntent.ChangeMechanic -> changeMechanic(session, intent)
-            is TowerPlayIntent.ChangeLegendaryClassAllowed -> changeLegendaryClassAllowed(session, intent)
+            is TowerPlayIntent.ChangeMechanic -> changeRules(session, intent) { it.copy(selectedMechanic = intent.mechanic) }
+            is TowerPlayIntent.ChangeLegendaryClassAllowed ->
+                changeRules(session, intent) { it.copy(legendaryClassAllowed = intent.allowed) }
             is TowerPlayIntent.LockTeam -> lockTeam(playerId, session, intent, currentParty)
             is TowerPlayIntent.Start -> startBattle(playerId, session, intent)
-            is TowerPlayIntent.Resume -> rejected(intent, session.state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
-            is TowerPlayIntent.Abandon -> abandon(playerId, session, intent)
+            is TowerPlayIntent.ChangeTeam -> changeTeam(session, intent, currentParty)
+            is TowerPlayIntent.Forfeit -> forfeit(playerId, session, intent)
             is TowerPlayIntent.Retire -> retire(playerId, session, intent, currentParty)
         }
         return cache(session, intent, result)
@@ -434,7 +460,7 @@ internal class TowerPlaySessionService(
         intent: TowerPlayIntent.ToggleSelection,
     ): TowerPlayMutationResult {
         val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING) {
+        if (!TowerPlayInteractionPolicy.picking(state)) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
         }
         if (state.party.none { it.pokemonId == intent.pokemonId }) {
@@ -451,15 +477,17 @@ internal class TowerPlaySessionService(
         return accept(session, intent, state.copy(revision = state.revision + 1, selectedPokemonIds = selected))
     }
 
-    private fun changeFormat(
+    /** Changes a session rule, open only while no team is registered. */
+    private fun changeRules(
         session: Session,
-        intent: TowerPlayIntent.ChangeFormat,
+        intent: TowerPlayIntent,
+        change: (TowerPlayViewState) -> TowerPlayViewState,
     ): TowerPlayMutationResult {
         val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING) {
+        if (!TowerPlayInteractionPolicy.rulesOpen(state)) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
         }
-        return switchTrack(session, intent, TowerTrack(intent.format, state.mode))
+        return accept(session, intent, change(state).copy(revision = state.revision + 1))
     }
 
     private fun changeMode(
@@ -467,75 +495,34 @@ internal class TowerPlaySessionService(
         intent: TowerPlayIntent.ChangeMode,
     ): TowerPlayMutationResult {
         val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING) {
-            return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
-        }
-        if (intent.mode == TowerMode.ENDLESS && !state.endlessUnlocked) {
+        if (TowerPlayInteractionPolicy.rulesOpen(state) && intent.mode == TowerMode.ENDLESS && !state.endlessUnlocked) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.ENDLESS_LOCKED)
         }
-        return switchTrack(session, intent, TowerTrack(state.format, intent.mode))
+        return changeRules(session, intent) { switchTrack(session, TowerTrack(it.format, intent.mode)) }
     }
 
-    /** Moves a selecting session to [track]'s run: its own streak, and a fresh pick of the team. */
-    private fun switchTrack(
-        session: Session,
-        intent: TowerPlayIntent,
-        track: TowerTrack,
-    ): TowerPlayMutationResult {
+    /** [track]'s run as a selecting session shows it: its own streak, and a fresh pick of the entries. */
+    private fun switchTrack(session: Session, track: TowerTrack): TowerPlayViewState {
         val state = session.state
-        val progress = session.progressByTrack.getValue(track)
-        session.lockedSelection = null
-        return accept(
-            session,
-            intent,
-            viewState(
-                entryContextId = state.entryContextId,
-                revision = state.revision + 1,
-                phase = TowerPlayPhase.SELECTING,
-                party = state.party,
-                selected = emptySet(),
-                progress = progress,
-                bpBalance = state.bpBalance,
-                errorKeys = state.errorKeys,
-                selectedMechanic = state.selectedMechanic,
-                mechanicLocked = state.mechanicLocked,
-                legendaryClassAllowed = state.legendaryClassAllowed,
-                legendaryClassLocked = state.legendaryClassLocked,
-                endlessUnlocked = state.endlessUnlocked,
-            ),
+        return viewState(
+            entryContextId = state.entryContextId,
+            revision = state.revision,
+            phase = TowerPlayPhase.SELECTING,
+            party = state.party,
+            selected = emptySet(),
+            progress = session.progressByTrack.getValue(track),
+            bpBalance = state.bpBalance,
+            errorKeys = state.errorKeys,
+            selectedMechanic = state.selectedMechanic,
+            legendaryClassAllowed = state.legendaryClassAllowed,
+            endlessUnlocked = state.endlessUnlocked,
         )
     }
 
-    private fun changeMechanic(
-        session: Session,
-        intent: TowerPlayIntent.ChangeMechanic,
-    ): TowerPlayMutationResult {
-        val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING || state.mechanicLocked) {
-            return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
-        }
-        return accept(
-            session,
-            intent,
-            state.copy(revision = state.revision + 1, selectedMechanic = intent.mechanic),
-        )
-    }
-
-    private fun changeLegendaryClassAllowed(
-        session: Session,
-        intent: TowerPlayIntent.ChangeLegendaryClassAllowed,
-    ): TowerPlayMutationResult {
-        val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING || state.legendaryClassLocked) {
-            return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
-        }
-        return accept(
-            session,
-            intent,
-            state.copy(revision = state.revision + 1, legendaryClassAllowed = intent.allowed),
-        )
-    }
-
+    /**
+     * Fixes the entries for the next battle. From [TowerPlayPhase.SELECTING] it first registers the six shown, which
+     * must still be the challenger's party; between battles it picks again from the six already registered.
+     */
     private fun lockTeam(
         playerId: UUID,
         session: Session,
@@ -543,13 +530,14 @@ internal class TowerPlaySessionService(
         currentParty: Collection<TowerPlayPartySlot>?,
     ): TowerPlayMutationResult {
         val state = session.state
-        if (state.phase != TowerPlayPhase.SELECTING) {
+        if (!TowerPlayInteractionPolicy.picking(state)) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
         }
         if (state.selectedMechanic == null) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.MECHANIC_REQUIRED)
         }
-        if (!session.hasRegisteredSnapshot && currentParty != null &&
+        val registering = state.phase == TowerPlayPhase.SELECTING
+        if (registering && currentParty != null &&
             currentParty.sortedBy { it.slot } != state.party.sortedBy { it.slot }
         ) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.PARTY_CHANGED)
@@ -580,11 +568,10 @@ internal class TowerPlaySessionService(
             )
         }
         selection as TowerTeamSelectionResult.Accepted
-        if (!session.hasRegisteredSnapshot) {
-            if (registeredTeamSnapshots.snapshot(playerId, registration.team) != TowerRegisteredTeamSnapshotResult.Stored) {
-                return rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
-            }
-            session.hasRegisteredSnapshot = true
+        if (registering &&
+            registeredTeamSnapshots.snapshot(playerId, registration.team) != TowerRegisteredTeamSnapshotResult.Stored
+        ) {
+            return rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
         }
         session.lockedSelection = selection.selection
         return accept(
@@ -610,6 +597,7 @@ internal class TowerPlaySessionService(
         val mechanic = checkNotNull(state.selectedMechanic) {
             "A locked Battle Tower team must retain its selected mechanic"
         }
+        val runScopeId = session.runScopeId ?: runScopeIdFactory()
         check(launchingPlayers.add(playerId)) { "Battle Tower session is already launching a battle" }
         return try {
             when (
@@ -621,21 +609,17 @@ internal class TowerPlaySessionService(
                         playerTeamPreview = state.publicTeamPreview(),
                         mechanic = mechanic,
                         legendaryClassAllowed = state.legendaryClassAllowed,
-                        learningScopeId = session.state.entryContextId,
+                        learningScopeId = runScopeId,
                     ),
                 )
             ) {
                 is TowerBattleLaunchResult.Started -> {
                     session.activeBattleId = launch.battleId
+                    session.runScopeId = runScopeId
                     accept(
                         session,
                         intent,
-                        state.copy(
-                            revision = state.revision + 1,
-                            phase = TowerPlayPhase.ACTIVE,
-                            mechanicLocked = true,
-                            legendaryClassLocked = true,
-                        ),
+                        state.copy(revision = state.revision + 1, phase = TowerPlayPhase.ACTIVE, runStarted = true),
                     )
                 }
 
@@ -647,28 +631,58 @@ internal class TowerPlaySessionService(
         }
     }
 
-    private fun abandon(
-        playerId: UUID,
+    /**
+     * Unlocks the picked entries. A run under way picks again from its registered six; before its first battle the
+     * registration is let go, so the challenger's party ([currentParty]) and the rules open again.
+     */
+    private fun changeTeam(
         session: Session,
-        intent: TowerPlayIntent.Abandon,
+        intent: TowerPlayIntent.ChangeTeam,
+        currentParty: Collection<TowerPlayPartySlot>?,
     ): TowerPlayMutationResult {
         val state = session.state
-        if (state.phase == TowerPlayPhase.SELECTING) {
-            return rejected(intent, state.revision, TowerPlayMessageKeys.NOTHING_TO_ABANDON)
+        when (state.phase) {
+            TowerPlayPhase.TEAM_LOCKED -> Unit
+            TowerPlayPhase.ACTIVE -> return rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
+            else -> return rejected(intent, state.revision, TowerPlayMessageKeys.NOTHING_TO_CHANGE)
         }
-        if (state.phase == TowerPlayPhase.ACTIVE) {
-            return rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
+        if (state.runStarted) {
+            session.lockedSelection = null
+            return accept(session, intent, state.copy(revision = state.revision + 1, phase = TowerPlayPhase.CHANGING_TEAM))
         }
-        session.lockedSelection = null
+        releaseRegistration(session)
+        val party = currentParty ?: state.party
         return accept(
             session,
             intent,
             state.copy(
                 revision = state.revision + 1,
                 phase = TowerPlayPhase.SELECTING,
-                selectedPokemonIds = emptySet(),
+                party = party,
+                selectedPokemonIds = state.selectedPokemonOrder.keptIn(party),
+                errorKeys = registrationErrors(party),
             ),
         )
+    }
+
+    /** Forfeits the battle under way from the Tower screen: a loss, which ends the run once the battle settles. */
+    private fun forfeit(
+        playerId: UUID,
+        session: Session,
+        intent: TowerPlayIntent.Forfeit,
+    ): TowerPlayMutationResult {
+        val battleId = session.activeBattleId
+        if (session.state.phase != TowerPlayPhase.ACTIVE || battleId == null) {
+            return rejected(intent, session.state.revision, TowerPlayMessageKeys.PHASE_INVALID)
+        }
+        if (!session.forfeitRequested &&
+            requestForfeit(playerId, session, battleId, { battleForfeit(playerId, it) }, close = false) ==
+            ForfeitRequest.UNAVAILABLE
+        ) {
+            return rejected(intent, session.state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
+        }
+        val state = session.state
+        return accept(session, intent, state.copy(revision = state.revision + 1))
     }
 
     /** Gives up the run between battles: the streak ends as a loss would end it, without a battle. */
@@ -682,7 +696,7 @@ internal class TowerPlaySessionService(
         if (state.phase == TowerPlayPhase.ACTIVE) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
         }
-        if (!TowerPlayInteractionPolicy.runInProgress(state)) {
+        if (!TowerPlayInteractionPolicy.canRetire(state)) {
             return rejected(intent, state.revision, TowerPlayMessageKeys.NOTHING_TO_RETIRE)
         }
         val track = TowerTrack(state.format, state.mode)
@@ -692,27 +706,36 @@ internal class TowerPlaySessionService(
     }
 
     /**
-     * Ends the session's run on its stored progress: back to selecting, with the registered team released (the next
-     * lock registers [party], or the shown party when null) and the rules open again.
+     * Ends the session's run on its stored progress: back to selecting, with the registered team let go and the
+     * rules open again. [party] is the challenger's party now, or the shown one when it was not read.
      */
     private fun endRun(session: Session, party: Collection<TowerPlayPartySlot>?): TowerPlayViewState {
-        session.lockedSelection = null
-        // The next lock takes a new snapshot, which replaces this run's.
-        session.hasRegisteredSnapshot = false
+        releaseRegistration(session)
         val state = session.state
+        val shownParty = party ?: state.party
         val progress = session.progressByTrack.getValue(TowerTrack(state.format, state.mode))
         return state.copy(
             revision = state.revision + 1,
             phase = TowerPlayPhase.SELECTING,
-            party = party ?: state.party,
+            party = shownParty,
             selectedPokemonIds = emptySet(),
             currentWinStreak = progress.currentWinStreak,
             bestWinStreak = progress.bestWinStreak,
-            errorKeys = party?.let(::registrationErrors) ?: state.errorKeys,
-            mechanicLocked = false,
-            legendaryClassLocked = false,
+            errorKeys = registrationErrors(shownParty),
+            runStarted = false,
             endlessUnlocked = state.endlessUnlocked || TowerTrack.endlessUnlocked(session.progressByTrack),
         ).also { session.state = it }
+    }
+
+    /**
+     * Lets the registered six go, with what the opponents' AI learned of them over the run. The stored snapshot stays
+     * until the next lock replaces it or the session closes, so a run that ends inside a battle's settlement cannot
+     * fail on its cleanup after the result was recorded.
+     */
+    private fun releaseRegistration(session: Session) {
+        session.lockedSelection = null
+        session.runScopeId?.let(BattleTacticalRunMemoryStore::discard)
+        session.runScopeId = null
     }
 
     private fun accept(
@@ -724,8 +747,8 @@ internal class TowerPlaySessionService(
         return TowerPlayMutationResult.Accepted(intent.requestId, state)
     }
 
-    private fun removeSession(playerId: UUID): Session? = sessions.remove(playerId)?.also {
-        BattleTacticalRunMemoryStore.discard(it.state.entryContextId)
+    private fun removeSession(playerId: UUID): Session? = sessions.remove(playerId)?.also { removed ->
+        removed.runScopeId?.let(BattleTacticalRunMemoryStore::discard)
     }
 
     private fun removeSessionAndDiscardSnapshot(
@@ -781,17 +804,24 @@ internal class TowerPlaySessionService(
         return result
     }
 
+    private enum class ForfeitRequest { REQUESTED, UNAVAILABLE, SETTLED }
+
     private class Session(
         progressByTrack: Map<TowerTrack, TowerProgress>,
         val entryContext: TowerPlayEntryContext,
         var state: TowerPlayViewState,
-        var lockedSelection: TowerSelectedTeam? = null,
-        var activeBattleId: UUID? = null,
-        var hasRegisteredSnapshot: Boolean = false,
-        var abandonRequested: Boolean = false,
-        val responses: LinkedHashMap<UUID, CachedResponse> = LinkedHashMap(),
     ) {
         val progressByTrack: MutableMap<TowerTrack, TowerProgress> = progressByTrack.toMutableMap()
+        /** The entries checked at the last lock, which the next battle fields. */
+        var lockedSelection: TowerSelectedTeam? = null
+        var activeBattleId: UUID? = null
+        /** The run's scope for what the opponents' AI learns of the challenger, from its first battle to its end. */
+        var runScopeId: UUID? = null
+        /** The battle under way was given up: however it ends, it counts as a loss. */
+        var forfeitRequested: Boolean = false
+        /** The session closes once the battle under way settles. */
+        var closeAfterBattle: Boolean = false
+        val responses: LinkedHashMap<UUID, CachedResponse> = LinkedHashMap()
     }
 
     private data class CachedResponse(
@@ -810,9 +840,7 @@ private fun viewState(
     bpBalance: Long,
     errorKeys: Collection<String>,
     selectedMechanic: MajorBattleMechanic? = null,
-    mechanicLocked: Boolean = false,
     legendaryClassAllowed: Boolean = false,
-    legendaryClassLocked: Boolean = false,
     endlessUnlocked: Boolean = false,
 ): TowerPlayViewState = TowerPlayViewState(
     entryContextId = entryContextId,
@@ -828,10 +856,14 @@ private fun viewState(
     bpBalance = bpBalance,
     errorKeys = errorKeys,
     selectedMechanic = selectedMechanic,
-    mechanicLocked = mechanicLocked,
     legendaryClassAllowed = legendaryClassAllowed,
-    legendaryClassLocked = legendaryClassLocked,
 )
+
+/** The picked entries still in [party], in their order. */
+private fun List<UUID>.keptIn(party: Collection<TowerPlayPartySlot>): List<UUID> {
+    val ids = party.mapTo(HashSet(), TowerPlayPartySlot::pokemonId)
+    return filter(ids::contains)
+}
 
 private val DEFAULT_TOWER_MECHANIC = MajorBattleMechanic.DYNAMAX
 

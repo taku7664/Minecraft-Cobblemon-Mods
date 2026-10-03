@@ -13,9 +13,17 @@ import jbro.cobblemon.mcc.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.mcc.internal.tower.TOWER_REGISTERED_TEAM_SIZE
 import jbro.cobblemon.mcc.internal.validation.IdentifierSyntax
 
+/**
+ * Where a challenger stands. A run begins when a lock registers six Pokemon and ends at a loss, a Normal clear, giving
+ * up or leaving; only [SELECTING] holds no registered team, so only there do the six and the session rules change.
+ */
 internal enum class TowerPlayPhase {
+    /** No registered team: the six, the mode, the format and the rules are all open. */
     SELECTING,
+    /** The six are registered and the entries for the next battle picked. */
     TEAM_LOCKED,
+    /** Between battles of a run under way: the entries are picked again from the registered six. */
+    CHANGING_TEAM,
     ACTIVE,
 }
 
@@ -76,9 +84,9 @@ internal class TowerPlayViewState(
     val bpBalance: Long,
     errorKeys: Collection<String>,
     val selectedMechanic: MajorBattleMechanic? = null,
-    val mechanicLocked: Boolean = false,
     val legendaryClassAllowed: Boolean = false,
-    val legendaryClassLocked: Boolean = false,
+    /** A battle has started on the registered team: the run is under way and can only be given up, not reset. */
+    val runStarted: Boolean = false,
     val mode: TowerMode = TowerMode.ENDLESS,
     /** Endless can be chosen: the challenger has cleared Normal. */
     val endlessUnlocked: Boolean = mode == TowerMode.ENDLESS,
@@ -115,7 +123,11 @@ internal class TowerPlayViewState(
         require(bestWinStreak >= currentWinStreak) { "Best win streak cannot be below current win streak" }
         require(bpBalance >= 0) { "BP balance cannot be negative" }
         require(this.errorKeys.none(String::isBlank)) { "Error keys cannot be blank" }
-        require(!mechanicLocked || selectedMechanic != null) { "A locked mechanic selection cannot be absent" }
+        require(phase == TowerPlayPhase.SELECTING || selectedMechanic != null) { "A registered team needs its mechanic" }
+        require(!runStarted || phase != TowerPlayPhase.SELECTING) { "A run under way keeps its registered team" }
+        require(runStarted || phase == TowerPlayPhase.SELECTING || phase == TowerPlayPhase.TEAM_LOCKED) {
+            "Only a run under way changes its team between battles or fights"
+        }
         require(mode != TowerMode.ENDLESS || endlessUnlocked) { "Endless cannot be chosen before it is unlocked" }
     }
 
@@ -131,9 +143,8 @@ internal class TowerPlayViewState(
         bpBalance: Long = this.bpBalance,
         errorKeys: Collection<String> = this.errorKeys,
         selectedMechanic: MajorBattleMechanic? = this.selectedMechanic,
-        mechanicLocked: Boolean = this.mechanicLocked,
         legendaryClassAllowed: Boolean = this.legendaryClassAllowed,
-        legendaryClassLocked: Boolean = this.legendaryClassLocked,
+        runStarted: Boolean = this.runStarted,
         mode: TowerMode = this.mode,
         endlessUnlocked: Boolean = this.endlessUnlocked,
     ): TowerPlayViewState = TowerPlayViewState(
@@ -148,9 +159,8 @@ internal class TowerPlayViewState(
         bpBalance,
         errorKeys,
         selectedMechanic,
-        mechanicLocked,
         legendaryClassAllowed,
-        legendaryClassLocked,
+        runStarted,
         mode,
         endlessUnlocked,
     )
@@ -168,9 +178,8 @@ internal class TowerPlayViewState(
             bpBalance == other.bpBalance &&
             errorKeys == other.errorKeys &&
             selectedMechanic == other.selectedMechanic &&
-            mechanicLocked == other.mechanicLocked &&
             legendaryClassAllowed == other.legendaryClassAllowed &&
-            legendaryClassLocked == other.legendaryClassLocked &&
+            runStarted == other.runStarted &&
             mode == other.mode &&
             endlessUnlocked == other.endlessUnlocked
 
@@ -186,9 +195,8 @@ internal class TowerPlayViewState(
         result = 31 * result + bpBalance.hashCode()
         result = 31 * result + errorKeys.hashCode()
         result = 31 * result + (selectedMechanic?.hashCode() ?: 0)
-        result = 31 * result + mechanicLocked.hashCode()
         result = 31 * result + legendaryClassAllowed.hashCode()
-        result = 31 * result + legendaryClassLocked.hashCode()
+        result = 31 * result + runStarted.hashCode()
         result = 31 * result + mode.hashCode()
         result = 31 * result + endlessUnlocked.hashCode()
         return result
@@ -200,8 +208,7 @@ internal class TowerPlayViewState(
             "currentWinStreak=$currentWinStreak, bestWinStreak=$bestWinStreak, winsIntoSet=$winsIntoSet, " +
             "bpPerWin=$bpPerWin, " +
             "bpBalance=$bpBalance, errorKeys=$errorKeys, selectedMechanic=$selectedMechanic, " +
-            "mechanicLocked=$mechanicLocked, legendaryClassAllowed=$legendaryClassAllowed, " +
-            "legendaryClassLocked=$legendaryClassLocked, mode=$mode, endlessUnlocked=$endlessUnlocked)"
+            "legendaryClassAllowed=$legendaryClassAllowed, runStarted=$runStarted, mode=$mode, endlessUnlocked=$endlessUnlocked)"
 }
 
 internal sealed interface TowerPlayIntent {
@@ -256,13 +263,18 @@ internal sealed interface TowerPlayIntent {
         override val expectedRevision: Long,
     ) : TowerPlayIntent
 
-    data class Resume(
+    /**
+     * Unlocks the picked entries. Before the run's first battle it releases the registration, so the six and the
+     * rules open again; once the run is under way it picks again from the registered six.
+     */
+    data class ChangeTeam(
         override val requestId: UUID,
         override val entryContextId: UUID,
         override val expectedRevision: Long,
     ) : TowerPlayIntent
 
-    data class Abandon(
+    /** Forfeits the battle under way: it counts as a loss, which ends the run. */
+    data class Forfeit(
         override val requestId: UUID,
         override val entryContextId: UUID,
         override val expectedRevision: Long,
