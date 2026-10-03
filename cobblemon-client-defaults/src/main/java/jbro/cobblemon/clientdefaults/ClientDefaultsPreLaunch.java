@@ -1,13 +1,14 @@
 package jbro.cobblemon.clientdefaults;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Keep this class independent of Minecraft and CLC classes during early startup. */
+/** Keep this class independent of Minecraft and other mods' classes during early startup. */
 public final class ClientDefaultsPreLaunch implements PreLaunchEntrypoint {
     public static final Logger LOGGER = LoggerFactory.getLogger("cobblemon-client-defaults");
 
@@ -22,6 +23,13 @@ public final class ClientDefaultsPreLaunch implements PreLaunchEntrypoint {
             }
         } catch (IOException exception) {
             LOGGER.error("Could not apply CLC HUD default; initialization will retry next launch", exception);
+        }
+        try {
+            int applied = KeybindingDefaults.apply(loader.getGameDir(), loader.getConfigDir(),
+                loader.getAllMods().stream().map(mod -> mod.getMetadata().getId()).collect(Collectors.toSet()));
+            if (applied > 0) LOGGER.info("Applied keybinding cleanup for {} installed mods", applied);
+        } catch (IOException exception) {
+            LOGGER.error("Could not apply keybinding defaults; initialization will retry next launch", exception);
         }
     }
 }
