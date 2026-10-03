@@ -193,10 +193,13 @@ internal object InquiryReview {
         val at = InquiryLogWindow.local(inquiry.at)
         val from = at.minusMinutes(settings.minutesBefore)
         val to = at.plusMinutes(settings.minutesAfter)
+        var window: InquiryLogWindow.Window? = null
+        val data = playerData(inquiry)
         val outcome = runCatching {
-            val window = InquiryLogWindow.collect(InquiryLogWindow.read(logs, from, to), from, to, at,
+            val collected = InquiryLogWindow.collect(InquiryLogWindow.read(logs, from, to), from, to, at,
                 listOf(inquiry.accountName, inquiry.nickname, inquiry.playerId.toString()), settings.maxLogCharacters)
-            reviewer.review(InquiryReviewer.prompt(inquiry, window, settings.minutesBefore, settings.minutesAfter, playerData(inquiry)))
+            window = collected
+            reviewer.review(InquiryReviewer.prompt(inquiry, collected, settings.minutesBefore, settings.minutesAfter, data?.take(PLAYER_DATA_CHARACTERS)))
         }
         // The server stopped mid-review: it runs again on the next start.
         if (server == null) return
@@ -209,7 +212,8 @@ internal object InquiryReview {
         val verdict = answer.verdict
         save(record.copy(conversationId = answer.conversationId, reviewed = true,
             suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))
-        val handling = settle(record, verdict)
+        val unpaid = window?.let { InquiryAutoResolve.unpaidWins(it.text, record.accountName, data, from, to) }
+        val handling = settle(record, verdict, unpaid)
         JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}, {}", record.id, record.accountName, verdict.verdict, handling.note)
         val answerText = InquiryReviewer.reply(verdict.playerSummary, handling.handedOver, handling.ran.isNotEmpty())
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, answerText, inquiry.reason) }
@@ -227,12 +231,15 @@ internal object InquiryReview {
     /** How Pichu dealt with an inquiry: what it ran, and whether an operator still has to look. */
     internal data class Handling(val handedOver: Boolean, val ran: List<String>, val note: String)
 
+    /** How much of the player data the prompt carries; the server's own checks read all of it. */
+    private const val PLAYER_DATA_CHARACTERS = 20_000
+
     private val ledger by lazy { InquiryAutoResolve.Ledger(records.resolve("auto-bp.json")) }
 
-    private fun settle(record: Record, verdict: InquiryVerdict): Handling {
+    private fun settle(record: Record, verdict: InquiryVerdict, unpaidWins: Int?): Handling {
         if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
         val limits = InquiryAutoResolve.Limits(settings.autoMaxBpPerInquiry, settings.autoMaxBpPerDay)
-        return when (val plan = InquiryAutoResolve.plan(verdict, record.accountName, record.id, ledger.paidToday(record.playerId), limits)) {
+        return when (val plan = InquiryAutoResolve.plan(verdict, record.accountName, record.id, ledger.paidToday(record.playerId), limits, unpaidWins)) {
             is InquiryAutoResolve.Plan.HandOver -> Handling(true, emptyList(), plan.why)
             InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "설명으로 마무리했어요")
             is InquiryAutoResolve.Plan.Run -> {
@@ -272,7 +279,7 @@ internal object InquiryReview {
     private fun playerData(inquiry: Inquiry): String? {
         val server = server ?: return null
         if (!withContents) return null
-        return try { InquiryPlayerData.of(server, inquiry.playerId) } catch (failure: Exception) {
+        return try { InquiryPlayerData.of(server, inquiry.playerId, Int.MAX_VALUE) } catch (failure: Exception) {
             JbroPolicy.LOGGER.warn("Could not read the player data of inquiry {}", inquiry.id, failure)
             null
         }

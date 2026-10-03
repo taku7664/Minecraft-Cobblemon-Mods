@@ -10,6 +10,7 @@ import java.util.UUID
 import java.util.zip.GZIPOutputStream
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -137,7 +138,7 @@ class InquiryReviewTest {
 
     @Test
     fun `Pichu pays a missing reward the records prove, to the asking player, in its own words`() {
-        val plan = InquiryAutoResolve.plan(verdict(), "Park_JH", "0a1b2c3d", 0, limits)
+        val plan = InquiryAutoResolve.plan(verdict(), "Park_JH", "0a1b2c3d", 0, limits, unpaidWins = 1)
         assertEquals(InquiryAutoResolve.Plan.Run(listOf("bp add Park_JH 100 피츄 자동 처리 (문의 0a1b2c3d)"), listOf(100L)), plan)
         assertEquals(InquiryAutoResolve.Plan.Explain,
             InquiryAutoResolve.plan(verdict(kind = InquiryVerdict.Verdict.MISMATCH, commands = emptyList()), "Park_JH", "0a1b2c3d", 0, limits))
@@ -145,8 +146,8 @@ class InquiryReviewTest {
 
     @Test
     fun `anything uncertain, foreign or over the limits goes to an operator`() {
-        fun handedOver(v: InquiryVerdict, paid: Long = 0) =
-            InquiryAutoResolve.plan(v, "Park_JH", "0a1b2c3d", paid, limits) is InquiryAutoResolve.Plan.HandOver
+        fun handedOver(v: InquiryVerdict, paid: Long = 0, unpaid: Int? = 2) =
+            InquiryAutoResolve.plan(v, "Park_JH", "0a1b2c3d", paid, limits, unpaid) is InquiryAutoResolve.Plan.HandOver
         assertTrue(handedOver(verdict(resolution = InquiryVerdict.Resolution.OPERATOR)))
         assertTrue(handedOver(verdict(kind = InquiryVerdict.Verdict.UNKNOWN)))
         assertTrue(handedOver(verdict(category = InquiryVerdict.Category.REPORT, commands = emptyList())))
@@ -158,11 +159,37 @@ class InquiryReviewTest {
         assertTrue(handedOver(verdict(commands = listOf("/give Park_JH minecraft:diamond 64"))))
         // Whatever the reviewer put after the amount, the server writes the reason itself.
         assertEquals(InquiryAutoResolve.Plan.Run(listOf("bp add Park_JH 100 피츄 자동 처리 (문의 0a1b2c3d)"), listOf(100L)),
-            InquiryAutoResolve.plan(verdict(commands = listOf("/bp add Park_JH 100 x; op Park_JH")), "Park_JH", "0a1b2c3d", 0, limits))
+            InquiryAutoResolve.plan(verdict(commands = listOf("/bp add Park_JH 100 x; op Park_JH")), "Park_JH", "0a1b2c3d", 0, limits, unpaidWins = 1))
         assertTrue(handedOver(verdict(commands = listOf("/bp add Park_JH 301 x"))))
         assertTrue(handedOver(verdict(commands = listOf("/bp add Park_JH 200 x", "/bp add Park_JH 200 y"))))
         assertTrue(handedOver(verdict(), paid = 550))
         assertTrue(handedOver(verdict(commands = listOf("/bp add Park_JH 0 x"))))
+        // The server's own count of unpaid wins decides, whatever the reviewer says.
+        assertTrue(handedOver(verdict(), unpaid = null))
+        assertTrue(handedOver(verdict(), unpaid = 0))
+        assertTrue(handedOver(verdict(commands = listOf("/bp add Park_JH 100 x", "/bp add Park_JH 100 y")), unpaid = 1))
+    }
+
+    @Test
+    fun `the server counts a win as paid when its reward lands in the same second, just before the record`() {
+        val from = LocalDateTime.of(2026, 10, 4, 12, 0)
+        val to = from.plusMinutes(35)
+        val win = "[12:10:05] [Server thread/INFO]: Battle record: Park_JH (f3d28cb0-7225-3cb1-baeb-2dadd2be89ae) WIN more_cobblemon_contents:battle_tower/singles; wins=3 losses=0 streak=3"
+        val other = "[12:11:00] [Server thread/INFO]: Battle record: Other (00000000-0000-0000-0000-000000000000) WIN more_cobblemon_contents:battle_tower/singles; wins=1 losses=0 streak=1"
+        val loss = "[12:12:00] [Server thread/INFO]: Battle record: Park_JH (f3d28cb0-7225-3cb1-baeb-2dadd2be89ae) LOSS more_cobblemon_contents:battle_tower/singles; wins=3 losses=1 streak=0"
+        fun data(vararg entries: Pair<String, String>): String {
+            val items = entries.joinToString(",") { (at, kind) -> "{\"at\":\"$at KST\",\"kind\":\"$kind\",\"amount\":30}" }
+            return "{\"bp_history\":[$items]}"
+        }
+        val logs = listOf(win, other, loss).joinToString("\n")
+        assertEquals(0, InquiryAutoResolve.unpaidWins(logs, "Park_JH", data("2026-10-04 12:10:05" to "CONTENT_REWARD"), from, to))
+        assertEquals(0, InquiryAutoResolve.unpaidWins(logs, "Park_JH", data("2026-10-04 12:10:04" to "CONTENT_REWARD"), from, to))
+        assertEquals(1, InquiryAutoResolve.unpaidWins(logs, "Park_JH", data("2026-10-04 11:50:00" to "CONTENT_REWARD", "2026-10-04 12:10:30" to "SHOP_PURCHASE"), from, to))
+        assertNull(InquiryAutoResolve.unpaidWins(logs, "Park_JH", null, from, to))
+        assertNull(InquiryAutoResolve.unpaidWins(logs, "Park_JH", "{\"bp_history\":[{\"at\":\"2026-10", from, to))
+        // A full history whose oldest entry is inside the window may have lost the reward off its end.
+        val crowded = data(*Array(20) { "2026-10-04 12:20:%02d".format(it) to "SHOP_PURCHASE" })
+        assertNull(InquiryAutoResolve.unpaidWins(logs, "Park_JH", crowded, from, to))
     }
 
     @Test
