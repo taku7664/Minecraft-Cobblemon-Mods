@@ -89,7 +89,9 @@ internal object LocalLeadChoice {
                 }
                 val stab = if (actor.knownTypeIds.any { canonical(it) == canonical(details.typeId) }) STAB else 1.0
                 var value = StandardTypeEffectiveness.multiplier(details.typeId, foe.knownTypeIds) * stab
-                if (action != null && opening != null) value *= LocalPublicMechanicsKernel.projectMove(action, opening.context).knownDamageMultiplier
+                if (action != null && opening != null) value *=
+                    LocalPublicMechanicsKernel.projectMove(action, opening.context).knownDamageMultiplier *
+                        LocalDoubleLeadOpeningMechanics.attackMultiplier(action, opening.context)
                 if (detailed) {
                     val physical = details.damageCategory == BattleMoveDamageCategory.PHYSICAL
                     val inputs = if (action != null && opening != null)

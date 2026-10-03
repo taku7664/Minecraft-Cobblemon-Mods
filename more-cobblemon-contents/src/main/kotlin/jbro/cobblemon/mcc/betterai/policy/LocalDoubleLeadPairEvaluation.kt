@@ -53,22 +53,29 @@ internal object LocalDoubleLeadPairEvaluation {
             LocalPublicTurnOrder.uniformGreaterProbability(requireNotNull(speed[0]), requireNotNull(speed[1]))
         val orders = listOf(active to firstBeforeSecond, active.reversed() to 1.0 - firstBeforeSecond)
         return orders.filter { it.second > 0.0 }.sumOf { (order, probability) ->
-            val entered = order.fold(opening) { state, incoming -> LocalEntryAbilityProjector.project(state, incoming.battlePokemonId) }
+            val entered = LocalDoubleLeadOpeningMechanics.afterOwnEntries(
+                order.fold(opening) { state, incoming -> LocalEntryAbilityProjector.project(state, incoming.battlePokemonId) })
             val publicDecision = BattleDecisionContext(UUID(0, 0), entered,
                 listOf(BattleActionCandidate("lead:opening", BattleActionKind.WAIT)), Long.MAX_VALUE,
                 BattleTacticalMemoryView.empty(), context.ownMoves, context.opponentTeamPreview)
             // A lead view permits partial builds; the turn-decision exact view requires the whole own team.
             val decision = if (context.exactOwnTeam.builds.mapTo(HashSet()) { it.battlePokemonId } == ownIds)
                 publicDecision.copy(exactOwnTeam = context.exactOwnTeam) else publicDecision
-            val matchups = pair.map { pokemon -> opposing.mapIndexed { slot, preview ->
+            val acting = pair.filter { pokemon -> "commanding" !in entered.pokemon.single {
+                it.battlePokemonId == pokemon.battlePokemonId
+            }.canonicalKnownVolatileEffectIds }
+            val matchups = acting.map { pokemon -> opposing.mapIndexed { slot, preview ->
                 LocalLeadChoice.matchup(pokemon, preview, context, detailed,
                     LocalLeadOpeningMatchup(decision, entered.pokemon.single {
                         it.battlePokemonId == projectedFoes[slot].battlePokemonId
                     }))
             } }
-            val score = if (opposing.size == 1) (matchups[0][0] + matchups[1][0]) / 2.0 else
+            val score = if (acting.size == 1) matchups.single().average() else
+                if (opposing.size == 1) (matchups[0][0] + matchups[1][0]) / 2.0 else
                 maxOf(matchups[0][0] + matchups[1][1], matchups[0][1] + matchups[1][0]) / 2.0
-            probability * score
+            // One cancelled actor means half as many attacks; retain the existing log-doubling unit.
+            val actingCapacity = kotlin.math.ln(acting.size.toDouble() / pair.size) / kotlin.math.ln(2.0)
+            probability * (score + actingCapacity)
         }
     }
 }
