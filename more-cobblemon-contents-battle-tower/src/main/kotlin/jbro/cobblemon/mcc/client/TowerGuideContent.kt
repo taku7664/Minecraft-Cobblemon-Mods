@@ -16,7 +16,6 @@ internal object TowerGuideContent {
         section("overview"),
         section("registration"),
         section("setup"),
-        section("legendary"),
         section("registered_team"),
         section("progression"),
         section("controls"),
