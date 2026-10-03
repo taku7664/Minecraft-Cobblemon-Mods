@@ -61,21 +61,24 @@ internal object LocalDoubleLeadPairEvaluation {
             // A lead view permits partial builds; the turn-decision exact view requires the whole own team.
             val decision = if (context.exactOwnTeam.builds.mapTo(HashSet()) { it.battlePokemonId } == ownIds)
                 publicDecision.copy(exactOwnTeam = context.exactOwnTeam) else publicDecision
-            val acting = pair.filter { pokemon -> "commanding" !in entered.pokemon.single {
-                it.battlePokemonId == pokemon.battlePokemonId
-            }.canonicalKnownVolatileEffectIds }
-            val matchups = acting.map { pokemon -> opposing.mapIndexed { slot, preview ->
-                LocalLeadChoice.matchup(pokemon, preview, context, detailed,
-                    LocalLeadOpeningMatchup(decision, entered.pokemon.single {
-                        it.battlePokemonId == projectedFoes[slot].battlePokemonId
-                    }))
-            } }
-            val score = if (acting.size == 1) matchups.single().average() else
-                if (opposing.size == 1) (matchups[0][0] + matchups[1][0]) / 2.0 else
-                maxOf(matchups[0][0] + matchups[1][1], matchups[0][1] + matchups[1][0]) / 2.0
-            // One cancelled actor means half as many attacks; retain the existing log-doubling unit.
-            val actingCapacity = kotlin.math.ln(acting.size.toDouble() / pair.size) / kotlin.math.ln(2.0)
-            probability * (score + actingCapacity)
+            fun score(current: BattleDecisionContext): Double {
+                val acting = pair.filter { pokemon -> "commanding" !in current.state.pokemon.single {
+                    it.battlePokemonId == pokemon.battlePokemonId
+                }.canonicalKnownVolatileEffectIds }
+                val matchups = acting.map { pokemon -> opposing.mapIndexed { slot, preview ->
+                    LocalLeadChoice.matchup(pokemon, preview, context, detailed,
+                        LocalLeadOpeningMatchup(current, current.state.pokemon.single {
+                            it.battlePokemonId == projectedFoes[slot].battlePokemonId
+                        }))
+                } }
+                val value = if (acting.size == 1) matchups.single().average() else
+                    if (opposing.size == 1) (matchups[0][0] + matchups[1][0]) / 2.0 else
+                    maxOf(matchups[0][0] + matchups[1][1], matchups[0][1] + matchups[1][0]) / 2.0
+                // One cancelled actor means half as many attacks; retain the existing log-doubling unit.
+                return value + kotlin.math.ln(acting.size.toDouble() / pair.size) / kotlin.math.ln(2.0)
+            }
+            val baseline = score(decision)
+            probability * if (detailed) LocalDoubleLeadOpeningPotential.best(decision, baseline, ::score) else baseline
         }
     }
 }

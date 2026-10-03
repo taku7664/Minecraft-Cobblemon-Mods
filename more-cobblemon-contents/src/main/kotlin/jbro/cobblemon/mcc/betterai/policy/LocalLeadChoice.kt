@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
@@ -139,7 +140,8 @@ internal object LocalLeadChoice {
         if (detailed) edge += if (opening == null) speedEdge(own.combatStats?.speed, foe.combatStats?.speed) else {
             fun speed(pokemon: BattlePokemonStateView) = LocalPublicTurnOrder.effectiveSpeed(opening.context.state, pokemon)
                 ?.let { BattleIntegerRange(it.first, it.second) }
-            speedEdge(speed(actor), speed(opening.foe))
+            val edge = speedEdge(speed(actor), speed(opening.foe))
+            if (LocalPublicFieldMechanics.trickRoomActive(opening.context.state)) -edge else edge
         }
         return edge
     }
