@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.battles.BattleFormat;
 import com.cobblemon.mod.common.battles.BattleSide;
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks;
+import jbro.cobblemon.mcc.internal.battle.BattleEntryHold;
 import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,6 +21,11 @@ abstract class PokemonBattleMixin {
         CallbackInfo callbackInfo
     ) {
         Cobblemon173BattleRuleHooks.attachConstructed((PokemonBattle) (Object) this);
+    }
+
+    @Inject(method = "stop", at = @At("HEAD"))
+    private void mcc$startHeldBattleBeforeStop(CallbackInfo callbackInfo) {
+        BattleEntryHold.beforeStop((PokemonBattle) (Object) this);
     }
 
     @Inject(method = "end", at = @At("HEAD"))

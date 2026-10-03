@@ -6,7 +6,8 @@
   "mixins": [
     "BattleActorMixin",
     "BattleLangMixin",
-    "ChallengeHandlerMixin",
+    "BattleRegistryInvoker",
+    "BattleRegistryMixin",
     "EntityManagedBattlePersistenceMixin",
     "PlayerBattleActorMixin",
     "PokemonBattleMixin",
