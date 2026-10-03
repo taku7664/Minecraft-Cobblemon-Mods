@@ -1,4 +1,6 @@
 {
+  "better_cobblemon_music.command.now_playing": "[Music] 현재 BGM: %s",
+  "better_cobblemon_music.command.no_music": "[Music] 현재 Music 모드가 재생 중인 BGM이 없습니다.",
   "better_cobblemon_music.command.reload.success": "Better Cobblemon Music 설정을 다시 불러왔습니다.",
   "better_cobblemon_music.command.reload.failure": "Better Cobblemon Music 설정 재로드 실패: %s",
   "better_cobblemon_music.config.title": "Better Cobblemon Music",

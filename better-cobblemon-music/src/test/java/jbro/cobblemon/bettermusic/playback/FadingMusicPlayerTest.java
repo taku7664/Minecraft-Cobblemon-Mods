@@ -10,6 +10,50 @@ import org.junit.jupiter.api.Test;
 
 final class FadingMusicPlayerTest {
     @Test
+    void currentTrackReportsPlaybackInsteadOfTheDesiredPlaylistDuringGapsAndStops() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+        var track = new FadingMusicPlayer.Track("example:forest", 1.0);
+        assertTrue(player.currentTrack().isEmpty());
+
+        player.transitionSource(0.0, Optional.of(source(track, 2.0)), 0.0, 0.0);
+        assertEquals(Optional.of(track), player.currentTrack());
+        backend.handles.getFirst().playing = false;
+        assertTrue(player.currentTrack().isEmpty());
+        player.tick(1.0);
+        assertTrue(player.ownsMusic());
+        assertTrue(player.currentTrack().isEmpty());
+        player.tick(3.0);
+        assertEquals(Optional.of(track), player.currentTrack());
+
+        player.transitionSource(4.0, Optional.empty(), 0.0, 0.0);
+        assertTrue(player.currentTrack().isEmpty());
+    }
+
+    @Test
+    void currentTrackPrefersTheNewPlayingTrackAndReportsTheOutgoingFadeWhenItIsAllThatRemains() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+        var oldTrack = new FadingMusicPlayer.Track("example:old", 1.0);
+        var newTrack = new FadingMusicPlayer.Track("example:new", 1.0);
+        player.transitionSource(0.0, Optional.of(source(oldTrack, 0.0)), 0.0, 0.0);
+        player.transitionSource(1.0, Optional.of(source(newTrack, 0.0)), 2.0, 2.0);
+        assertEquals(Optional.of(newTrack), player.currentTrack());
+
+        // A new sound can still be loading while the previous song is fading out.
+        backend.handles.getLast().playing = false;
+        assertEquals(Optional.of(oldTrack), player.currentTrack());
+        backend.handles.getLast().playing = true;
+        assertEquals(Optional.of(newTrack), player.currentTrack());
+        player.tick(3.0);
+
+        player.transitionSource(4.0, Optional.empty(), 2.0, 0.0);
+        assertEquals(Optional.of(newTrack), player.currentTrack());
+        player.tick(6.0);
+        assertTrue(player.currentTrack().isEmpty());
+    }
+
+    @Test
     void announcesActualTrackStartsIncludingPlaylistRotationButNotTicksOrStops() {
         var backend = new FakeBackend();
         var started = new ArrayList<String>();
@@ -31,6 +75,7 @@ final class FadingMusicPlayerTest {
         backend.handles.getFirst().playing = false;
         player.tick(2.0);
         assertEquals(List.of("example:track_0", "example:track_1"), started);
+        assertEquals("example:track_1", player.currentTrack().orElseThrow().sound());
         player.transitionSource(3.0, Optional.empty(), 0.0, 0.0);
         player.tick(4.0);
         assertEquals(2, started.size());
@@ -69,6 +114,7 @@ final class FadingMusicPlayerTest {
         backend.handles.get(0).playing = false;
 
         player.tick(5.0);
+        assertTrue(backend.handles.getFirst().stopped);
         player.tick(6.99);
         assertEquals(1, backend.handles.size());
 

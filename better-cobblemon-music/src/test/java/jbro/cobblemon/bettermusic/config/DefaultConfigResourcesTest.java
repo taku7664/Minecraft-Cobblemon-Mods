@@ -37,6 +37,22 @@ final class DefaultConfigResourcesTest {
     }
 
     @Test
+    void currentMusicCommandMessagesAreLocalizedWithTheMusicHeader() throws Exception {
+        for (String language : java.util.List.of("ko_kr", "en_us")) {
+            try (var stream = getClass().getResourceAsStream("/assets/better_cobblemon_music/lang/" + language + ".json")) {
+                assertNotNull(stream);
+                var root = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+                var playing = root.get("better_cobblemon_music.command.now_playing").getAsString();
+                var absent = root.get("better_cobblemon_music.command.no_music").getAsString();
+                assertTrue(playing.startsWith("[Music] "));
+                assertTrue(playing.contains("%s"));
+                assertTrue(absent.startsWith("[Music] "));
+                assertTrue(!absent.contains("%s"));
+            }
+        }
+    }
+
+    @Test
     void bundledMusicConfigUsesSchemaTwoOrderedBiomeRules() {
         var root = JsonParser.parseReader(resource("music.json")).getAsJsonObject();
 

@@ -33,8 +33,9 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
             new MusicCatalogResourceReloadListener(configManager, LOGGER)
         );
-        BetterMusicClientCommands.register(configManager);
-        new BetterMusicClientRuntime(configManager, LOGGER).register();
+        var runtime = new BetterMusicClientRuntime(configManager, LOGGER);
+        BetterMusicClientCommands.register(configManager, runtime);
+        runtime.register();
     }
 
     private static void logInitialLoad(BetterMusicConfigManager.ReloadResult result) {

@@ -64,6 +64,7 @@ public final class FadingMusicPlayer {
         if (active != null
             && nowSeconds - active.startedAtSeconds >= STARTUP_GRACE_SECONDS
             && !backend.isPlaying(active.handle)) {
+            backend.stop(active.handle);
             active = null;
             restartAtSeconds = desiredSource.isPresent()
                 ? nowSeconds + desiredSource.orElseThrow().betweenTracksSeconds()
@@ -77,6 +78,17 @@ public final class FadingMusicPlayer {
 
     public boolean ownsMusic() {
         return desiredSource.isPresent() || active != null || outgoing != null;
+    }
+
+    /** Reports a live track, not a selected playlist or the last announcement. */
+    public Optional<Track> currentTrack() {
+        if (active != null && backend.isPlaying(active.handle)) {
+            return Optional.of(active.track);
+        }
+        if (outgoing != null && backend.isPlaying(outgoing.handle)) {
+            return Optional.of(outgoing.track);
+        }
+        return Optional.empty();
     }
 
     public void setMuffled(boolean muffled) {

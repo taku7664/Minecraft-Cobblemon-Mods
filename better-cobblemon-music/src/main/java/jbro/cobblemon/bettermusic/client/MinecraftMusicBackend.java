@@ -80,12 +80,9 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     @Override
     public boolean isPlaying(FadingMusicPlayer.Handle handle) {
         FadingMusicSoundInstance sound = requireSound(handle);
-        boolean active = soundManager.isActive(sound);
-        if (!active) {
-            ownedSounds.remove(sound);
-            muffledSounds.remove(sound);
-        }
-        return active;
+        // Status queries must not drop a sound that is still loading from effect tracking.
+        // The player releases ended tracks through stop(), including natural endings.
+        return soundManager.isActive(sound);
     }
 
     private static FadingMusicSoundInstance requireSound(FadingMusicPlayer.Handle handle) {

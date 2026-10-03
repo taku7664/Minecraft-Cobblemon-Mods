@@ -12,16 +12,25 @@ public final class BetterMusicClientCommands {
     private BetterMusicClientCommands() {
     }
 
-    public static void register(BetterMusicConfigManager configManager) {
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+    public static void register(BetterMusicConfigManager configManager, BetterMusicClientRuntime runtime) {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            dispatcher.register(literal("music").executes(context -> nowPlaying(runtime, context.getSource())));
             dispatcher.register(
                 literal("bcm")
                     .then(literal("reload").executes(context -> reload(
                         configManager,
                         context.getSource()
                     )))
-            )
-        );
+            );
+        });
+    }
+
+    private static int nowPlaying(BetterMusicClientRuntime runtime, FabricClientCommandSource source) {
+        var title = runtime.currentMusicTitle();
+        source.sendFeedback(title
+            .map(value -> Component.translatable("better_cobblemon_music.command.now_playing", value))
+            .orElseGet(() -> Component.translatable("better_cobblemon_music.command.no_music")));
+        return 1;
     }
 
     private static int reload(

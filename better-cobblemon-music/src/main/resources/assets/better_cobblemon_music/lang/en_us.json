@@ -1,4 +1,6 @@
 {
+  "better_cobblemon_music.command.now_playing": "[Music] Current BGM: %s",
+  "better_cobblemon_music.command.no_music": "[Music] The Music mod is not currently playing any BGM.",
   "better_cobblemon_music.command.reload.success": "Better Cobblemon Music configuration reloaded.",
   "better_cobblemon_music.command.reload.failure": "Better Cobblemon Music reload failed: %s",
   "better_cobblemon_music.config.title": "Better Cobblemon Music",

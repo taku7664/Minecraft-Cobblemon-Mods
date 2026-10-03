@@ -63,6 +63,14 @@ public final class BetterMusicClientRuntime {
         ClientTickEvents.END_CLIENT_TICK.register(this::tick);
     }
 
+    public Optional<String> currentMusicTitle() {
+        if (player == null || configuration == null) {
+            return Optional.empty();
+        }
+        return player.currentTrack().map(track ->
+            configuration.eventTitles().getOrDefault(track.sound(), track.sound()));
+    }
+
     private void tick(Minecraft client) {
         double nowSeconds = clientTicks++ / TICKS_PER_SECOND;
         applyConfigIfChanged(client, nowSeconds);
