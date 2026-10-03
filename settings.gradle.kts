@@ -15,7 +15,7 @@ include(
     "better-battle-presentation",
     "cobblemon-ui",
     "cobblemon-custom-species",
-    "cobblemon-client-defaults",
+    "cobblemon-client-setup",
     "font-glyph-race-fix",
     "jbro-policy",
     "more-cobblemon-contents",
