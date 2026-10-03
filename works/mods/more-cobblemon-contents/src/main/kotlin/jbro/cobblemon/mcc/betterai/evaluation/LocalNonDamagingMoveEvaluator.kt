@@ -9,6 +9,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 
 /**
  * Values a non-damaging move by the progress it can still make from public state.
@@ -48,6 +50,13 @@ internal object LocalNonDamagingMoveEvaluator {
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        if (effects.any { it.kind == BattleMoveEffectKind.SLOT_CONDITION && PublicIds.canonical(it.valueId.orEmpty()) == "revivalblessing" }) {
+            val best = context.state.pokemon.filter { it.side == BattleSide.ALLY && it.fainted }.maxOfOrNull { target ->
+                LocalRevivalBlessing.score(BattleActionCandidate("revive:${target.battlePokemonId}", BattleActionKind.SWITCH,
+                    actorSlot = candidate.actorSlot, switchPokemonId = target.battlePokemonId, tags = setOf("revival_blessing")), context, tuning)
+            } ?: 0.0
+            return Score(best * accuracy, 0.0)
+        }
         if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return Score(0.0, 0.0)
         val protectionSuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
             LocalStallingProtectionRules.nextSuccessProbability(
