@@ -2,6 +2,8 @@
 
 Cobblemon의 필드·전투 상황에 맞춰 리소스팩 음악을 재생하는 Fabric 클라이언트 모드입니다. 타격음과 마지막 포켓몬 HP 효과도 제공합니다.
 
+공식 팩의 BGM 표시명은 한국어이며, 게임 구분은 `전투! 루기아 (HG·SS)`처럼 영문 약자로 표시합니다. [한국어 곡명 대조와 미확정 항목](KOREAN_TRACK_TITLES_2026-10-03.md)을 참고하세요.
+
 - Mod ID: `better_cobblemon_music`
 - 실행 환경: 클라이언트 전용
 - 필요 모드: Fabric API, Cobblemon 1.8.1

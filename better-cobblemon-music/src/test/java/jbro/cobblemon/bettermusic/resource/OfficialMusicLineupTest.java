@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.battle.BattleMusicContext;
 import jbro.cobblemon.bettermusic.battle.BattlePlaylistResolver;
@@ -26,6 +27,8 @@ final class OfficialMusicLineupTest {
     static Path temporaryDirectory;
     static BattleMusicConfig battle;
     static BattlePlaylistResolver resolver;
+    static Map<String, String> eventTitles;
+    static Map<String, String> trackEvents;
 
     @BeforeAll
     static void compileOfficialPack() throws Exception {
@@ -40,7 +43,45 @@ final class OfficialMusicLineupTest {
             assertTrue(compiled.inactiveOverrides().isEmpty());
             battle = compiled.snapshot().battle();
             resolver = new BattlePlaylistResolver(battle);
+            eventTitles = compiled.eventTitles();
+            trackEvents = compiled.trackEvents();
         }
+    }
+
+    @Test
+    void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
+        assertEquals(112, eventTitles.size());
+        eventTitles.forEach((event, title) -> assertTrue(
+            title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
+            event + " still uses an untranslated filename: " + title));
+        for (String game : List.of("레전즈", "하트골드", "소울실버", "브릴리언트", "샤이닝 펄",
+            "오메가루비", "알파사파이어", "크리스탈", "블랙", "화이트", "스칼렛", "바이올렛",
+            "소드", "실드", "금·은", "루비·사파이어", "파이어레드", "리프그린", "썬·문",
+            "Pt 기라티나", "불가사의 던전", "포켓몬 챔피언스")) {
+            eventTitles.forEach((event, title) -> assertTrue(!title.contains(game),
+                event + " includes a full game name instead of English initials: " + title));
+        }
+    }
+
+    @Test
+    void localizedTitlesUseCheckedPlaceAndSoundtrackNamesInsteadOfTranslatingIds() {
+        assertTitle("field/myroom/eterna_forest", "영원의숲");
+        assertTitle("field/nether/sinnoh_stark_mountain", "하드마운틴");
+        assertTitle("field/deep_dark/sinnoh_old_chateau", "숲의 양옥집");
+        assertTitle("field/cave/sinnoh_oreburgh_mine", "무쇠탄갱");
+        assertTitle("field/cave/sinnoh_lake_caverns", "호수의 공동");
+        assertTitle("field/ocean/underground_ruins", "땅밑유적");
+        assertTitle("field/river/sealed_chamber", "고시의 석실");
+        assertTitle("field/swamp/road_to_reversal_mountain", "리버스마운틴으로 가는 길");
+        assertTitle("field/plains/sinnoh_route_201_night", "201번도로 (밤)");
+        assertTitle("screen/mcc/poke_mart", "프렌들리숍");
+        assertTitle("battle/boss/pla_boss_battle", "승부: 우두머리 포켓몬 (PLA)");
+        assertTitle("battle/boss/sv_leader_pokemon_battle", "전투! 주인 포켓몬 (S·V)");
+        assertTitle("battle/legendary/oras_groudon_kyogre_battle", "전투! 초고대 포켓몬 (OR·AS)");
+        assertTitle("battle/legendary/sv_stellar_terapagos_battle", "전투! 제로의 비보 테라파고스 (S·V)");
+        assertTitle("battle/legendary/hgss_lugia_battle", "전투! 루기아 (HG·SS)");
+        assertTitle("battle/legendary/bdsp_dialga_palkia_battle", "전투! 디아루가·펄기아 (BD·SP)");
+        assertTitle("battle/legendary/dppt_dialga_palkia_battle", "전투! 디아루가·펄기아 (D·P)");
     }
 
     @Test
@@ -125,6 +166,14 @@ final class OfficialMusicLineupTest {
                 Set.of(species, "cobblemon:" + key), Set.of()));
             assertEquals(base.playlist(), form.playlist(), key);
         }
+    }
+
+    private static String title(String path) {
+        return eventTitles.get(trackEvents.get("cobleserver:" + path));
+    }
+
+    private static void assertTitle(String path, String expected) {
+        assertEquals(expected, title(path), path);
     }
 
     private static void expect(String speciesList, String... paths) {
