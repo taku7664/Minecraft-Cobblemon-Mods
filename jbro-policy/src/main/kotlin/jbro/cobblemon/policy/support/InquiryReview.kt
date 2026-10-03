@@ -8,6 +8,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.api.OperatorWhisper
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -21,6 +24,7 @@ import net.minecraft.server.MinecraftServer
  * @property minutesBefore how far before the inquiry the log is read.
  * @property minutesAfter how far after it.
  * @property home where agy keeps its conversations; blank is `~/.gemini/antigravity-cli`.
+ * @property autoResolve whether Pichu settles inquiries the records make certain, within the BP limits below.
  */
 data class InquiryReviewSettings(
     val enabled: Boolean = false,
@@ -31,6 +35,9 @@ data class InquiryReviewSettings(
     val maxLogCharacters: Int = 150_000,
     val timeoutSeconds: Long = 300,
     val home: String = "",
+    val autoResolve: Boolean = true,
+    val autoMaxBpPerInquiry: Long = 300,
+    val autoMaxBpPerDay: Long = 600,
 ) {
     /**
      * The CLI to run. A bare name is looked up on the PATH and then where agy installs itself
@@ -66,6 +73,9 @@ data class InquiryReviewSettings(
                 root.get("maxLogCharacters")?.asInt ?: defaults.maxLogCharacters,
                 root.get("timeoutSeconds")?.asLong ?: defaults.timeoutSeconds,
                 root.get("home")?.asString?.trim() ?: defaults.home,
+                root.get("autoResolve")?.asBoolean ?: defaults.autoResolve,
+                root.get("autoMaxBpPerInquiry")?.asLong ?: defaults.autoMaxBpPerInquiry,
+                root.get("autoMaxBpPerDay")?.asLong ?: defaults.autoMaxBpPerDay,
             )
         }
 
@@ -199,10 +209,63 @@ internal object InquiryReview {
         val verdict = answer.verdict
         save(record.copy(conversationId = answer.conversationId, reviewed = true,
             suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))
-        JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}", record.id, record.accountName, verdict.verdict)
-        server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, verdict.playerSummary, inquiry.reason) }
-        post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, verdict.playerSummary))
-        post(discord.adminChannelId, DiscordRest.message(embed = reviewEmbed(inquiry, verdict)).withButton(record.id, actions = true))
+        val handling = settle(record, verdict)
+        JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}, {}", record.id, record.accountName, verdict.verdict, handling.note)
+        val answerText = InquiryReviewer.reply(verdict.playerSummary, handling.handedOver, handling.ran.isNotEmpty())
+        server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, answerText, inquiry.reason) }
+        post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, answerText))
+        val card = DiscordRest.message(embed = reviewEmbed(inquiry, verdict, handling, answerText))
+        if (handling.handedOver) {
+            post(discord.adminChannelId, card.withButton(record.id, actions = true))
+        } else {
+            // Settled: kept in the admin channel as a record, with nothing left to press.
+            post(discord.adminChannelId, card)
+            resolve(record.id)
+        }
+    }
+
+    /** How Pichu dealt with an inquiry: what it ran, and whether an operator still has to look. */
+    internal data class Handling(val handedOver: Boolean, val ran: List<String>, val note: String)
+
+    private val ledger by lazy { InquiryAutoResolve.Ledger(records.resolve("auto-bp.json")) }
+
+    private fun settle(record: Record, verdict: InquiryVerdict): Handling {
+        if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
+        val limits = InquiryAutoResolve.Limits(settings.autoMaxBpPerInquiry, settings.autoMaxBpPerDay)
+        return when (val plan = InquiryAutoResolve.plan(verdict, record.accountName, record.id, ledger.paidToday(record.playerId), limits)) {
+            is InquiryAutoResolve.Plan.HandOver -> Handling(true, emptyList(), plan.why)
+            InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "설명으로 마무리했어요")
+            is InquiryAutoResolve.Plan.Run -> {
+                val ran = runAsServer(plan.commands)
+                if (ran.isNotEmpty()) ledger.add(record.playerId, plan.amounts.take(ran.size).sum())
+                if (ran.size == plan.commands.size) Handling(false, ran, "자동 처리했어요")
+                else Handling(true, ran, "명령을 실행하지 못했어요. 플레이어가 접속해 있지 않을 수 있어요")
+            }
+        }
+    }
+
+    /** Runs [commands] in order as the server console, stopping at the first that fails; the ones that ran. */
+    private fun runAsServer(commands: List<String>): List<String> {
+        val server = server ?: return emptyList()
+        return try {
+            server.submit(Supplier {
+                val ran = mutableListOf<String>()
+                for (command in commands) {
+                    val ok = try {
+                        server.commands.dispatcher.execute(command, server.createCommandSourceStack()) > 0
+                    } catch (failure: CommandSyntaxException) {
+                        JbroPolicy.LOGGER.warn("Pichu could not run '{}': {}", command, failure.message)
+                        false
+                    }
+                    if (!ok) break
+                    ran += command
+                }
+                ran.toList()
+            }).get(10, TimeUnit.SECONDS)
+        } catch (failure: Exception) {
+            JbroPolicy.LOGGER.warn("Pichu could not run its commands", failure)
+            emptyList()
+        }
     }
 
     /** The player's standing in the contents, or null without More Cobblemon Contents or when it cannot be read. */
@@ -326,10 +389,11 @@ internal object InquiryReview {
         addProperty("custom_id", customId)
     }
 
-    internal fun reviewEmbed(inquiry: Inquiry, verdict: InquiryVerdict) = JsonObject().apply {
-        addProperty("title", "문의 검토 · ${inquiry.nickname} (${inquiry.accountName})".take(256))
+    internal fun reviewEmbed(inquiry: Inquiry, verdict: InquiryVerdict, handling: Handling? = null, answer: String = verdict.playerSummary) = JsonObject().apply {
+        val settled = handling != null && !handling.handedOver
+        addProperty("title", "${if (settled) "🤖 피츄 자동 처리" else "문의 검토"} · ${inquiry.nickname} (${inquiry.accountName})".take(256))
         addProperty("description", "**${verdict.verdict.label}**\n\n${verdict.operatorDetail}".take(4096))
-        addProperty("color", when (verdict.verdict) {
+        addProperty("color", if (settled) COLOR_DONE else when (verdict.verdict) {
             InquiryVerdict.Verdict.MATCH -> COLOR_MATCH
             InquiryVerdict.Verdict.MISMATCH -> COLOR_MISMATCH
             InquiryVerdict.Verdict.UNKNOWN -> COLOR_UNKNOWN
@@ -337,13 +401,19 @@ internal object InquiryReview {
         add("fields", JsonArray().apply {
             add(field("문의", inquiry.reason, inline = false))
             add(field("유형", verdict.category.label))
+            if (handling != null) add(field("피츄 처리", buildString {
+                append(if (handling.handedOver) "🙋 관리자 확인 필요 · " else "✅ ").append(handling.note)
+                if (handling.ran.isNotEmpty()) append("\n").append(handling.ran.joinToString("\n") { "`/$it`" })
+            }, inline = false))
             add(field("근거 로그", if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
             add(field("권장 조치", verdict.suggestedActions.joinToString("\n") { "• $it" }, inline = false))
-            add(field("플레이어에게 보낸 답", verdict.playerSummary, inline = false))
+            add(field("플레이어에게 보낸 답", answer, inline = false))
             add(field("UUID", inquiry.playerId.toString()))
             add(field("시각", "${inquiry.time} (KST)"))
         })
-        add("footer", JsonObject().apply { addProperty("text", "문의 번호 ${inquiry.id} · 권장 조치는 자동으로 실행되지 않아요") })
+        add("footer", JsonObject().apply {
+            addProperty("text", "문의 번호 ${inquiry.id} · " + if (settled) "운영자가 할 일은 없어요" else "권장 조치는 자동으로 실행되지 않아요")
+        })
     }
 
     private fun failedEmbed(inquiry: Inquiry, reason: String) = JsonObject().apply {

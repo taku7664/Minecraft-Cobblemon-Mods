@@ -22,6 +22,7 @@
 | `config/jbro-policy-discord.json` | `rankRoleIds` | 리그 등급(`POKE_BALL`~`CHAMPION`)별 디스코드 역할 ID | 비어 있으면 등급 역할을 맞추지 않는다. 디스코드 역할 목록에서 봇 역할을 맨 위로 올려 둔다. 봇은 자기 역할보다 아래 역할만 주고 뗄 수 있다. |
 | `config/jbro-policy-discord.json` | `adminChannelId`, `adminAccess` | 관리자 명령을 받을 비공개 채널 ID, 운영진 디스코드 사용자·역할 ID별로 쓸 수 있는 명령 | 비어 있으면 디스코드 관리자 명령(`/announce`, `/players`, `/ban`, `/bp`, `/give`, `/spawn`, `/console`)이 꺼진다. 채널은 운영진만 볼 수 있게 만든다. `/console`은 서버 콘솔과 같은 권한이므로 꼭 필요한 사람에게만 준다. 문의 검토의 "처리 완료" 버튼을 누를 사람에게는 `resolve`를 준다. |
 | `config/jbro-policy-inquiry-review.json` | `enabled`, `command`, `model` | `true`, `agy`, `gemini-3.8-flash-low` | 문의를 Antigravity CLI로 로그와 대조한다. 서버를 실행하는 Windows 계정에서 `agy`를 설치하고 로그인해 둬야 한다. 봇 토큰, 문의 채널, 관리자 채널이 모두 있어야 켜진다. 문의 채널은 공개해도 되고(카드와 요약 답글만 올라감), 관리자 채널은 비공개로 둔다. |
+| `config/jbro-policy-inquiry-review.json` | `autoResolve`, `autoMaxBpPerInquiry`, `autoMaxBpPerDay` | `true`, `300`, `600` | 기록으로 확실한 문의는 피츄가 직접 처리하고, 모호한 것만 관리자 채널에 넘긴다. 지금 자동으로 실행하는 것은 보상 누락이 확인됐을 때 문의한 본인에게 주는 `/bp add` 하나이고, 1건·하루 한도를 넘으면 넘긴다. 하루 지급량은 `jbro-policy/inquiries/auto-bp.json`에 남는다. 끄면 모든 문의를 넘긴다. |
 
 ## 설치할 모드
 

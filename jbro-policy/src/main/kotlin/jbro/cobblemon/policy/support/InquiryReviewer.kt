@@ -19,8 +19,14 @@ data class InquiryVerdict(
     /** Commands an operator may copy and run; none is ever run by itself. */
     val suggestedCommands: List<SuggestedCommand> = emptyList(),
     val category: Category = Category.OTHER,
+    /** Whether the reviewer thinks Pichu can settle it alone; the server still decides ([InquiryAutoResolve]). */
+    val resolution: Resolution = Resolution.OPERATOR,
+    /** Commands the reviewer would have Pichu run itself, checked against [InquiryAutoResolve] before any runs. */
+    val autoCommands: List<String> = emptyList(),
 ) {
     data class SuggestedCommand(val command: String, val why: String)
+
+    enum class Resolution { AUTO, OPERATOR }
 
     /** What the inquiry is about, as the reviewer sorted it; [key] is the schema's value. */
     enum class Category(val key: String, val label: String) {
@@ -97,7 +103,10 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
     }
 
     companion object {
+        /** The old fixed ending, still taken off a summary that carries it. */
         const val CLOSING = "운영자에게 세부 사항을 전달했어요."
+        const val HANDLED = "피츄가 바로 처리했어요."
+        const val HANDED_OVER = "모호한 부분이 있어서 관리자에게 넘겼어요."
         private const val MAX_COMMAND_LENGTH = 256
 
         /** The operator commands the reviewer may suggest, as the server's mods define them. */
@@ -124,8 +133,10 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
               "suggestedActions":{"type":"array","items":{"type":"string"}},
               "playerSummary":{"type":"string"},
               "suggestedCommands":{"type":"array","items":{"type":"object","properties":{
-                "command":{"type":"string"},"why":{"type":"string"}},"required":["command","why"]}}},
-             "required":["category","verdict","evidence","operatorDetail","suggestedActions","playerSummary","suggestedCommands"]}
+                "command":{"type":"string"},"why":{"type":"string"}},"required":["command","why"]}},
+              "resolution":{"type":"string","enum":["auto","operator"]},
+              "autoCommands":{"type":"array","items":{"type":"string"}}},
+             "required":["category","verdict","evidence","operatorDetail","suggestedActions","playerSummary","suggestedCommands","resolution","autoCommands"]}
         """.trimIndent()
 
         fun input(prompt: String): String = JsonObject().apply {
@@ -161,7 +172,9 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             - suggestedActions: 운영자가 할 만한 조치. 운영자가 직접 판단해서 실행하니, 이미 실행했다고 쓰지 마라.
             - suggestedCommands: suggestedActions 중 명령어로 할 수 있는 것. command에는 운영자가 복사해서 채팅창에 그대로 붙일 수 있는 "/"로 시작하는 한 줄을, why에는 그 명령이 무엇을 하는지 한 줄로 쓴다. 아래 목록의 명령과 마인크래프트 기본 명령만 쓰고, 목록에 없는 명령을 지어내지 마라. 플레이어 자리에는 플레이어 아이디(${inquiry.accountName})를 그대로 넣어라. 로그로 확인하지 못한 수치(지급할 BP 양 등)는 짐작해서 넣지 말고 <양>처럼 꺾쇠로 비워 둬라. 맞는 명령이 없으면 빈 배열로 둬라.
               $COMMANDS
-            - playerSummary: 플레이어에게 보낼 답. 해요체로 세 문장 이내로 쓴다. 로그에서 확인한 내용을 쉽게 요약하고, 마지막 문장은 정확히 "$CLOSING"로 끝내라. 다른 플레이어의 이름, IP, 서버 내부 경로나 명령어는 쓰지 말고, 보상이나 처리 결과를 약속하지 마라.
+            - resolution: 기록으로 확실하게 결론이 나서 운영자가 볼 필요가 없으면 "auto", 조금이라도 모호하거나 운영자의 판단이 필요하면 "operator". 신고, 건의·질문, verdict가 "unknown"인 문의는 항상 "operator"다.
+            - autoCommands: resolution이 "auto"이고 고칠 것이 있을 때, 피츄 봇이 직접 실행할 명령. 지금 쓸 수 있는 것은 "/bp add ${inquiry.accountName} <양> <사유>" 하나뿐이고, 이긴 기록("Battle record:" 줄)이 있는데 그 뒤 CONTENT_REWARD가 없을 때만 쓴다. <양>은 bp_history에서 같은 콘텐츠의 앞선 CONTENT_REWARD 금액처럼 기록으로 확인한 값만 넣고, 확인할 수 없으면 명령을 쓰지 말고 resolution을 "operator"로 둬라. 다른 플레이어나 다른 명령은 쓰지 마라. 고칠 것이 없거나(이미 들어온 보상 등) 설명만 하면 되는 경우는 빈 배열로 둬라.
+            - playerSummary: 플레이어에게 보낼 답. 해요체로 두 문장 이내로, 기록에서 확인한 내용을 쉽게 요약한다. 처리했다거나 관리자에게 넘겼다는 말은 쓰지 마라(서버가 결과에 맞게 덧붙인다). 다른 플레이어의 이름, IP, 서버 내부 경로나 명령어는 쓰지 말고, 보상이나 처리 결과를 약속하지 마라.
 
             결과는 지정한 JSON 형식 하나로만 답해라.
 
@@ -209,7 +222,9 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
                 list(answer.get("suggestedActions")), playerSummary(text(answer.get("playerSummary"))), commands(answer.get("suggestedCommands")),
                 text(answer.get("category")).trim().lowercase().let { key ->
                     InquiryVerdict.Category.entries.firstOrNull { it.key == key } ?: InquiryVerdict.Category.OTHER
-                })
+                },
+                if (text(answer.get("resolution")).trim().lowercase() == "auto") InquiryVerdict.Resolution.AUTO else InquiryVerdict.Resolution.OPERATOR,
+                list(answer.get("autoCommands")).map { it.replace(Regex("\\s+"), " ").replace("`", "").trim().take(MAX_COMMAND_LENGTH) }.take(5))
         }
 
         /** Each command on one line starting with "/", kept from breaking out of the code block it is shown in. */
@@ -225,10 +240,21 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             }.take(10)
         }
 
-        /** At most 600 characters, always ending with [CLOSING]. */
+        /** At most 600 characters, without an ending of its own: [reply] adds the one that fits the outcome. */
         fun playerSummary(raw: String): String {
-            val body = raw.trim().removeSuffix(CLOSING).trim().take(600)
-            return if (body.isEmpty()) CLOSING else "$body $CLOSING"
+            var body = raw.trim()
+            for (ending in listOf(CLOSING, HANDLED, HANDED_OVER)) body = body.removeSuffix(ending).trim()
+            return body.take(600)
+        }
+
+        /** The player's answer: the summary, then whether Pichu settled it or an operator will. */
+        fun reply(summary: String, handedOver: Boolean, ranCommands: Boolean): String {
+            val ending = when {
+                handedOver -> HANDED_OVER
+                ranCommands -> HANDLED
+                else -> null
+            }
+            return listOfNotNull(summary.ifBlank { null }, ending).joinToString(" ").ifBlank { HANDLED }
         }
 
         // The model sometimes sends a field as a list of strings where one string was asked for, or the reverse.
