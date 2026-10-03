@@ -124,6 +124,11 @@ object BattleHubNetworking {
 
     fun clear() = sessions.clear()
 
+    /** Development hub captures open the hub on the client alone; this lets the server open [tabs] for it. */
+    internal fun openForCapture(player: ServerPlayer, tabs: List<String>) {
+        sessions[player.uuid] = Session(tabs, null)
+    }
+
     private fun balance(player: ServerPlayer): Long = BattlePointService.balance(player.server, player.uuid)
 
     private fun reportFailure(player: ServerPlayer, operation: String, failure: Throwable) {

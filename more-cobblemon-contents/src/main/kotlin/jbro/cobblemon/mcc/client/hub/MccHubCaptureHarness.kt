@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.mcc.api.hub.MccDashboardCards
 import jbro.cobblemon.mcc.internal.hub.BattleHubDashboardPayload
+import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -158,6 +159,11 @@ object MccHubCaptureHarness {
                     is MccHubTabKind.Screen -> false
                 }
                 if (!contentRequested) {
+                    // The server opens only the tabs of a hub it opened; this hub was opened on the client.
+                    client.singleplayerServer?.let { server ->
+                        val playerId = checkNotNull(client.player).uuid
+                        server.execute { server.playerList.getPlayer(playerId)?.let { BattleHubNetworking.openForCapture(it, listOf(openContent)) } }
+                    }
                     checkNotNull(client.screen as? MccHubScreen) { "Hub closed before selecting $openContent" }.selectTab(openContent)
                     contentRequested = true
                     logger.info("Selected hub tab {}", openContent)
