@@ -13,6 +13,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalAfterHitReactions
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter
+import jbro.cobblemon.mcc.betterai.mechanics.LocalCallbackMoveStateProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalContactAfterHitMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
@@ -756,6 +757,14 @@ internal object PublicSingleTurnProjector {
                 ),
             )
         }
+        if (canonicalId(moveId) == "takeheart") {
+            return listOf(WeightedState(
+                state = LocalCallbackMoveStateProjector.takeHeart(projectedFormState, actor.battlePokemonId),
+                probability = 1.0,
+                executedSides = setOf(side),
+                executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+            ))
+        }
         val slotCondition = effects.singleOrNull { it.kind == BattleMoveEffectKind.SLOT_CONDITION }
         // Wish heals whoever stands in its user's slot at the end of the next turn (the history carries it there).
         if (canonicalId(slotCondition?.valueId) == "wish" && actor.activeSlot != null) {
@@ -807,16 +816,28 @@ internal object PublicSingleTurnProjector {
             effect.kind == BattleMoveEffectKind.CHARGE_SKIP_WEATHER &&
                 canonicalId(effect.valueId) == canonicalId(projectedFormState.field.weather?.effectId)
         }
+        val preparedChargeState = if (!chargingContinuation && effects.any { it.kind == BattleMoveEffectKind.CHARGE_TURN }) {
+            LocalCallbackMoveStateProjector.prepareCharge(projectedFormState, actor.battlePokemonId, moveId)
+        } else projectedFormState
         val powerHerb = effects.any { it.kind == BattleMoveEffectKind.CHARGE_TURN } && !chargingContinuation && !skipsCharge &&
             LocalPublicItemState.activeItemId(projectedFormState, actor) == "powerherb"
         if (powerHerb) {
             // A Power Herb spends itself to fire the move at once.
             return applyMove(
-                projectedFormState.copyState(pokemon = projectedFormState.pokemon.map {
+                preparedChargeState.copyState(pokemon = preparedChargeState.pokemon.map {
                     if (it.battlePokemonId == actor.battlePokemonId) it.copyState(knownHeldItemId = null) else it
                 }),
-                side, action.withoutCharge(), sourceContext, protectedPokemonIds, protectionAttackDrops, tauntedPokemonIds,
-                forcedMoveIdsByPokemon, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
+                side, effectiveAction.withoutCharge(), sourceContext, protectedPokemonIds, protectionAttackDrops, tauntedPokemonIds,
+                forcedMoveIdsByPokemon - actor.battlePokemonId, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
+                availabilityChecked = true, pendingDamagingMovePokemonIds = pendingDamagingMovePokemonIds,
+            )
+        }
+        if (skipsCharge && preparedChargeState !== projectedFormState) {
+            // Recalculate the immediate hit with the preparation boost, without preparing a second time.
+            return applyMove(
+                preparedChargeState, side, effectiveAction.withoutCharge(), sourceContext, protectedPokemonIds,
+                protectionAttackDrops, tauntedPokemonIds, forcedMoveIdsByPokemon - actor.battlePokemonId, history,
+                maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
                 availabilityChecked = true, pendingDamagingMovePokemonIds = pendingDamagingMovePokemonIds,
             )
         }
@@ -826,7 +847,7 @@ internal object PublicSingleTurnProjector {
         ) {
             return listOf(
                 WeightedState(
-                    state = projectedFormState,
+                    state = preparedChargeState,
                     probability = 1.0,
                     executedSides = setOf(side),
                     controlEffects = listOf(

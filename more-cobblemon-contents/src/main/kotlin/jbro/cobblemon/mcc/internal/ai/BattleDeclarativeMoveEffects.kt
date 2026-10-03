@@ -407,6 +407,10 @@ object BattleDeclarativeMoveEffects {
                 fractionRange = BattleFractionRange(1.0, 1.0)),
             BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.USER, 1.0, valueId = "slp"),
         ),
+        "takeheart" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
+                statStages = mapOf("spa" to 1, "spd" to 1)),
+        ),
         // Heals that Showdown computes in onHit. The weather scaling and Strength Sap's amount depend on the board,
         // so they carry a marker and the calculator resolves the fraction per user (PublicBattleTacticalCalculator).
         "synthesis" to listOf(halfHeal(WEATHER_HEAL_SUN)),
