@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.battle.BattleMusicContext;
@@ -55,11 +57,19 @@ final class OfficialMusicLineupTest {
     }
 
     @Test
-    void ordinaryWildUsesDiamondPearlAndLugiaKeepsItsExistingTrack() {
+    void ordinaryWildUsesDiamondPearlAndLugiaKeepsItsStableTrackId() {
         assertEquals(List.of("cobleserver:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");
         assertEquals(List.of("cobleserver:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
         assertEquals(4, battle.pvp().tracks().size());
+    }
+
+    @Test
+    void lugiaResourceContainsTheApprovedFlacReplacement() throws Exception {
+        byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
+            "pack/assets/cobleserver/sounds/music/battle/legendary/hgss_lugia_battle.ogg"));
+        assertEquals("b1e82d1430c823f9b195a4f1b3c4f835865f530de621a0a296ab3b699b8de278",
+            HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
     }
 
     @Test
