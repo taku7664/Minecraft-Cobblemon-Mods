@@ -77,6 +77,26 @@ final class XaeroDefaultsTest {
         assertFalse(Files.exists(options()));
     }
 
+    @Test void roundMinimapMovesToTopRightWithoutMovingOtherHudModules() throws Exception {
+        Path hud = config().resolve("xaerohud.txt");
+        String other = "# keep this\r\nmodule;id=example:other;x=11;y=22;fromRight=false;custom=keep;\r\n";
+        write(hud, other + "module;id=xaerominimap:minimap;x=40;y=50;centered=true;fromRight=false;fromBottom=true;flippedHor=true;custom=keep;\r\n");
+        write(minimap(), "minimap_shape = 0\n");
+        XaeroDefaults.apply(game, config(), MAPS);
+        assertEquals(other + "module;id=xaerominimap:minimap;x=0;y=0;centered=false;fromRight=true;fromBottom=false;flippedHor=true;custom=keep;\r\n", Files.readString(hud));
+        assertTrue(Files.readString(minimap()).contains("minimap_shape = 1\n"));
+        var time = java.nio.file.attribute.FileTime.fromMillis(1000);
+        Files.setLastModifiedTime(hud, time);
+        XaeroDefaults.apply(game, config(), MAPS);
+        assertEquals(time, Files.getLastModifiedTime(hud));
+    }
+
+    @Test void missingLayoutGetsOneTopRightMinimapModule() throws Exception {
+        XaeroDefaults.apply(game, config(), Set.of("xaerominimap"));
+        assertEquals("module;id=xaerominimap:minimap;x=0;y=0;centered=false;fromRight=true;fromBottom=false;flippedVer=false;flippedHor=false;\n",
+            Files.readString(config().resolve("xaerohud.txt")));
+    }
+
     @Test void malformedRadarLeavesOptionsProfilesAndCompletionUntouchedThenRetries() throws Exception {
         XaeroDefaults.saveMode(config(), ClientDefaults.ApplyMode.ONCE);
         write(radar(), "{broken");

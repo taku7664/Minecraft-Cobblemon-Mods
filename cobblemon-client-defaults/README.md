@@ -38,6 +38,7 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - Minimap `config/xaero/minimap/profiles/default.cfg`: `waypoints_in_world`, `waypoints_on_minimap`, `deathpoints`를 `false`, `display_radar`를 `true`로 설정합니다.
 - World Map `config/xaero/world-map/profiles/default.cfg`: `waypoints`, `render_waypoints`, `map_teleport_allowed`를 `false`, `display_minimap_radar`를 `true`로 설정합니다.
 - 두 기본 프로필의 `ignore_enforcement_if_edit_permission`을 `false`로 설정합니다.
+- 미니맵 기본 프로필의 `minimap_shape = 1`로 원형을 선택합니다. `config/xaerohud.txt`에서 미니맵 모듈만 `x=0`, `y=0`, `centered=false`, `fromRight=true`, `fromBottom=false`로 변경하여 우측 상단에 둡니다. 다른 HUD 모듈과 무관한 속성은 유지합니다.
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
 - 전체 지도는 J, 미니맵 설정은 Y, 웨이포인트 관련 7개 단축키는 미지정입니다.
 - `resourcepacks/E19-Xaero-Icons-1.5.1.zip`이 설치되어 있으면 활성화하고 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.

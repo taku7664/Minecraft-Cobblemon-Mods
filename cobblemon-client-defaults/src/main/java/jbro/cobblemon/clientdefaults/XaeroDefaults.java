@@ -43,7 +43,10 @@ public final class XaeroDefaults {
             String cfg = profile(file);
             for (String key : List.of("ignore_enforcement_if_edit_permission", "waypoints_in_world", "waypoints_on_minimap", "deathpoints"))
                 cfg = setting(cfg, key, "false");
+            cfg = setting(cfg, "minimap_shape", "1");
             writes.put(file, setting(cfg, "display_radar", "true"));
+            Path hud = configDirectory.resolve("xaerohud.txt");
+            writes.put(hud, topRightLayout(read(hud)));
             Path radar = configDirectory.resolve("xaero/minimap/default_radar_categories_client.json");
             writes.put(radar, radarDefaults(radar));
         }
@@ -110,6 +113,29 @@ public final class XaeroDefaults {
     private static String append(String original, String line) {
         String newline = original.contains("\r\n") ? "\r\n" : "\n";
         return original + (!original.isEmpty() && !original.endsWith("\n") && !original.endsWith("\r") ? newline : "") + line + newline;
+    }
+
+    private static String topRightLayout(String original) {
+        var modules = Pattern.compile("(?m)^module;[^\\r\\n]*").matcher(original);
+        var minimapId = Pattern.compile("(?:^|;)id=xaerominimap:minimap(?:;|$)");
+        StringBuilder updated = new StringBuilder();
+        boolean found = false;
+        while (modules.find()) {
+            String line = modules.group();
+            if (minimapId.matcher(line).find()) {
+                found = true;
+                for (String field : List.of("x=0", "y=0", "centered=false", "fromRight=true", "fromBottom=false")) {
+                    String key = field.substring(0, field.indexOf('='));
+                    var value = Pattern.compile("(?<=;)" + Pattern.quote(key) + "=[^;]*").matcher(line);
+                    line = value.find() ? value.replaceAll(Matcher.quoteReplacement(field))
+                        : line + (line.endsWith(";") ? "" : ";") + field + ";";
+                }
+            }
+            modules.appendReplacement(updated, Matcher.quoteReplacement(line));
+        }
+        modules.appendTail(updated);
+        return found ? updated.toString() : append(original,
+            "module;id=xaerominimap:minimap;x=0;y=0;centered=false;fromRight=true;fromBottom=false;flippedVer=false;flippedHor=false;");
     }
 
     private static String radarDefaults(Path file) throws IOException {

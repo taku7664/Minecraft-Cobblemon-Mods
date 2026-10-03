@@ -7,7 +7,7 @@
   "screen.cobblemon_client_defaults.keybindings": "단축키 정리: %s",
   "screen.cobblemon_client_defaults.keybindings_help": "CLC HUD 토글, Talking Heads 토글, 음성 채팅 아이콘 숨기기, Zoomify 보조 줌, Crafting Tweaks 압축·재충전 키를 해제합니다. Crafting Tweaks는 버튼만 사용합니다. 최초 한 번 적용 후에는 개인 설정을 유지합니다.",
   "screen.cobblemon_client_defaults.xaero": "Xaero 지도 설정: %s",
-  "screen.cobblemon_client_defaults.xaero_help": "웨이포인트·사망 지점·지도 텔레포트 끄기, 아이콘 항상 표시, 지도 J·설정 Y를 적용합니다. 설치된 전용 아이콘팩을 활성화합니다. 생성 메뉴 차단은 서버 정책이 담당합니다.",
+  "screen.cobblemon_client_defaults.xaero_help": "미니맵을 원형·우측 상단으로 설정합니다. 웨이포인트·사망 지점·지도 텔레포트 끄기, 아이콘 항상 표시, 지도 J·설정 Y를 적용합니다. 설치된 전용 아이콘팩을 활성화합니다. 생성 메뉴 차단은 서버 정책이 담당합니다.",
   "screen.cobblemon_client_defaults.mode.once": "최초 한 번",
   "screen.cobblemon_client_defaults.mode.always": "매 실행",
   "screen.cobblemon_client_defaults.save": "저장",
