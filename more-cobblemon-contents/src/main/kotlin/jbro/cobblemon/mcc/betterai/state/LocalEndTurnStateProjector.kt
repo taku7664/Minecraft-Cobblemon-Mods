@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusBerry
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -139,7 +140,7 @@ internal object LocalEndTurnStateProjector {
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0,
                 statusId = yawnSleep ?: orbStatus ?: if (status == null) null else pokemon.statusId)
         }
-        return state.derive(
+        val projected = state.derive(
             pokemon = next,
             field = nextField,
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
@@ -153,6 +154,9 @@ internal object LocalEndTurnStateProjector {
                     .coerceAtLeast(0)
             },
         )
+        // Update uses the post-residual field and living foes: Magic Room may have expired,
+        // or Unnerve may have fainted. Curing here does not refund earlier poison/burn damage.
+        return LocalPublicStatusBerry.afterUpdate(projected)
     }
 
     private fun hpFractionTick(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
