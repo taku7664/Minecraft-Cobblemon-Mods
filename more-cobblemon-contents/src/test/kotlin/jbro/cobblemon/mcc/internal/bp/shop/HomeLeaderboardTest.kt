@@ -82,8 +82,8 @@ class HomeLeaderboardTest {
     fun `home leaderboard catalog covers every implemented record board`() {
         val specs = homeLeaderboardBoardSpecs()
 
-        assertEquals(8, specs.size)
-        assertEquals(mapOf("more_cobblemon_contents:battle_tower" to 2, "more_cobblemon_contents:battle_factory" to 4, "more_cobblemon_contents:pvp" to 2), specs.groupingBy { it.contentId }.eachCount())
+        assertEquals(5, specs.size)
+        assertEquals(mapOf("more_cobblemon_contents:battle_tower" to 2, "more_cobblemon_contents:battle_factory" to 1, "more_cobblemon_contents:pvp" to 2), specs.groupingBy { it.contentId }.eachCount())
         assertEquals(specs.size, specs.map { it.contentId to it.formatId }.distinct().size)
     }
 
