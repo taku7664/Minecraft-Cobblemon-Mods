@@ -188,7 +188,9 @@ class LocalLookaheadEvaluationTest {
         assertTrue(one.statStageUtility > 0.0)
         assertTrue(two.statStageUtility > one.statStageUtility)
         assertEquals(expected, two.statStageUtility, 1e-9)
-        assertEquals(two.statStageUtility, two.total, 1e-9)
+        // The existing pure-setup preference belongs to the candidate, separate from the
+        // realizable stage value that the turn search replaces.
+        assertEquals(two.statStageUtility + 10.0, two.total, 1e-9)
     }
 
     @Test
