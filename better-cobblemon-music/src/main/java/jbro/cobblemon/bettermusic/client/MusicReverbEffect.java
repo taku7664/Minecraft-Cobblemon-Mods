@@ -66,8 +66,8 @@ final class MusicReverbEffect {
         // Invalid IDs after a sound-device reload belong to the old context and are not deleted here.
         effect = EXTEfx.alGenEffects();
         EXTEfx.alEffecti(effect, EXTEfx.AL_EFFECT_TYPE, EXTEfx.AL_EFFECT_REVERB);
-        EXTEfx.alEffectf(effect, EXTEfx.AL_REVERB_DECAY_TIME, 0.9F);
-        EXTEfx.alEffectf(effect, EXTEfx.AL_REVERB_GAIN, 0.45F);
+        EXTEfx.alEffectf(effect, EXTEfx.AL_REVERB_DECAY_TIME, 1.1F);
+        EXTEfx.alEffectf(effect, EXTEfx.AL_REVERB_GAIN, 0.7F);
         EXTEfx.alEffectf(effect, EXTEfx.AL_REVERB_GAINHF, 0.3F);
         slot = EXTEfx.alGenAuxiliaryEffectSlots();
         EXTEfx.alAuxiliaryEffectSloti(slot, EXTEfx.AL_EFFECTSLOT_EFFECT, effect);

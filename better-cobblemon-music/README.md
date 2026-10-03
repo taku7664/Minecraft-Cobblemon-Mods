@@ -47,6 +47,8 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
   "hitSoundVolume": 1.0,
   "lastPokemonHpEffectsEnabled": true,
   "lastPokemonHpEffectVolume": 1.0,
+  "underwaterEffectsEnabled": true,
+  "underwaterEffectStrength": 0.35,
   "nowPlayingEnabled": true
 }
 ```
@@ -68,6 +70,8 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
 ```
 
 Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬·화면 매핑을 선택할 수 있습니다. 연동한 모드가 알려 준 콘텐츠 키와 화면 키도 매핑이 없더라도 목록에 나옵니다. 저장할 때 각 파일을 임시 파일에서 원자 교체하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
+
+1.3.16에서는 설정 음량을 바꾸지 않고 리소스팩의 타격음 원본 3개를 0.5배, 빨피 경고음 원본을 0.7배로 낮췄습니다. 물속 효과는 기본 강도 0.35에서도 더 분명하게 들리도록 필터·잔향 곡선을 조정했습니다. 실제 청감은 게임에서 확인해야 합니다.
 
 기존 `music.json`이 있고 `overrides.json`이 없으면 첫 카탈로그 로드 때 사용자 변경분만 변환합니다. 기존 `music.json`과 `music/`은 롤백을 위해 삭제하거나 덮어쓰지 않습니다.
 

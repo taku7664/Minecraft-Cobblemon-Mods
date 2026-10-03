@@ -51,7 +51,7 @@ final class OfficialPokemusicMappingTest {
     }
 
     @Test
-    void allThirtyImportedAudioFilesReachTheBuiltPackWithoutChangingTheApprovedAlert() throws Exception {
+    void allThirtyImportedAudioFilesReachTheBuiltPackWithApprovedEffectGains() throws Exception {
         try (var reader = Files.newBufferedReader(module.resolve("resource-pack/import-pokemusic-report-2026-10-03.json"))) {
             var files = JsonParser.parseReader(reader).getAsJsonObject().getAsJsonArray("files");
             assertEquals(30, files.size());
@@ -65,7 +65,13 @@ final class OfficialPokemusicMappingTest {
                 assertEquals(44100, report.get("sample_rate").getAsInt());
             }
         }
-        assertEquals("3a3c66d0732c94cbce6628547b7fcaa6cad5691340f65371654b65429ee23e6e",
+        assertEquals("3a0b977babf57f6ea5d3da04f0da85596d1fa2d50fe69f7f1c1064a91aa5666b",
+            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/normal.ogg")));
+        assertEquals("d4dbddb4c776544feb6d83e83dd1f89a27c7c1261b0cb5cb9477f0a6b9ad44bd",
+            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/not_very_effective.ogg")));
+        assertEquals("ac569053487563e8f037e4e984f29f5ad1b34fd5b78cf8339e0a2313a43e5b8b",
+            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/super_effective.ogg")));
+        assertEquals("b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad",
             sha256(pack.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg")));
         assertEquals(88, compiled.trackEvents().size());
     }

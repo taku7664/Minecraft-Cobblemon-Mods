@@ -50,7 +50,8 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
 
     @Override
     public void setEffects(double muffleAmount, double underwaterAmount) {
-        double lowPassAmount = Math.max(muffleAmount, underwaterAmount);
+        double underwaterIntensity = underwaterIntensity(underwaterAmount);
+        double lowPassAmount = Math.max(muffleAmount, underwaterIntensity);
         var soundEngine = ((SoundManagerAccessor) soundManager)
             .betterCobblemonMusic$getSoundEngine();
         var channels = ((SoundEngineAccessor) soundEngine)
@@ -60,7 +61,7 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
             if (channel == null) {
                 continue;
             }
-            boolean shouldApply = lowPassAmount > 0.0 || underwaterAmount > 0.0;
+            boolean shouldApply = lowPassAmount > 0.0 || underwaterIntensity > 0.0;
             if (shouldApply) {
                 affectedSounds.add(sound);
             } else if (!affectedSounds.remove(sound)) {
@@ -69,9 +70,17 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
             channel.execute(openAlChannel -> {
                 int source = ((ChannelAccessor) openAlChannel).betterCobblemonMusic$getSource();
                 lowPassFilter.apply(source, lowPassAmount);
-                reverbEffect.apply(source, underwaterAmount);
+                reverbEffect.apply(source, underwaterIntensity);
             });
         }
+    }
+
+    static double underwaterIntensity(double strength) {
+        if (!Double.isFinite(strength) || strength < 0.0 || strength > 1.0) {
+            throw new IllegalArgumentException("underwater strength must be finite and between zero and one");
+        }
+        // Preserve both slider endpoints while making its modest default audible.
+        return Math.sqrt(strength);
     }
 
     @Override
