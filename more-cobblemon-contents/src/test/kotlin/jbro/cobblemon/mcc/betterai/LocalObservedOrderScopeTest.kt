@@ -21,6 +21,9 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.mcc.betterai.mechanics.LocalObservedActionOrder
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,6 +44,28 @@ import java.util.UUID
  * this path. This is the position that does: the drop narrows the gap without closing it.
  */
 class LocalObservedOrderScopeTest {
+    @Test
+    fun `a single observed speed tie never removes the opposite order`() {
+        val tied = state(0).copyState(pokemon = listOf(
+            pokemon(ALLY_ID, BattleSide.ALLY, BattleIntegerRange(100, 100), 0),
+            pokemon(OPPONENT_ID, BattleSide.OPPONENT, BattleIntegerRange(100, 100), 0),
+        ))
+        assertEquals(2, project(tied, tied).size)
+        val source = BattleDecisionContext(UUID.randomUUID(), tied, listOf(move(BattleSide.ALLY)), Long.MAX_VALUE,
+            BattleTacticalMemoryView.empty(), publicActionCatalog = BattlePublicActionCatalogView(emptyList()))
+        val projected = PublicSingleTurnProjector.project(tied, move(BattleSide.ALLY), move(BattleSide.OPPONENT), source)
+        assertTrue(projected.all { kotlin.math.abs(it.orderProbability - 0.5) < 1e-9 })
+    }
+
+    @Test
+    fun `changing an ability invalidates the old ordering context`() {
+        val observed = state(0)
+        val changed = observed.copyState(pokemon = observed.pokemon.map {
+            if (it.battlePokemonId == OPPONENT_ID) it.copyState(knownAbilityId = "chlorophyll") else it
+        })
+        assertNull(LocalObservedActionOrder.before(observed, changed, ALLY_ID, OPPONENT_ID))
+    }
+
     @Test
     fun `a projected speed drop is not bound by the order observed before it`() {
         // Ally Speed is exactly 100. The opponent is publicly 120-200 and was seen moving first, which
