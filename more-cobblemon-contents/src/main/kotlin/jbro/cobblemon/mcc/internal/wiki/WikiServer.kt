@@ -49,11 +49,30 @@ internal object WikiServer {
         ServerLifecycleEvents.SERVER_STOPPING.register { stop() }
     }
 
-    fun linkFor(playerId: UUID): String? = tokens?.let { "${config.base}/?t=${it.tokenFor(playerId)}" }
+    @Volatile
+    private var server: MinecraftServer? = null
 
-    fun resetLinkFor(playerId: UUID): String? = tokens?.let { "${config.base}/?t=${it.reset(playerId)}" }
+    fun linkFor(playerId: UUID): String? = tokens?.let { "${baseFor(playerId)}/?t=${it.tokenFor(playerId)}" }
+
+    fun resetLinkFor(playerId: UUID): String? = tokens?.let { "${baseFor(playerId)}/?t=${it.reset(playerId)}" }
+
+    /**
+     * Where [playerId] opens the wiki: `public_url` when set, else the address they typed to join, whose game port
+     * serves the wiki too ([WikiPortSharing]), else this machine's own wiki port.
+     */
+    /** Where anyone opens the wiki: `public_url` when set, else the address the latest player from elsewhere joined at. */
+    fun sharedBase(): String =
+        if (config.publicUrl.isNotBlank()) config.base else WikiPortSharing.lastPublicBase ?: config.base
+
+    private fun baseFor(playerId: UUID): String {
+        if (config.publicUrl.isNotBlank()) return config.base
+        val connection = server?.playerList?.getPlayer(playerId)
+            ?.let { (it.connection as jbro.cobblemon.mcc.internal.mixin.ServerCommonPacketListenerImplAccessor).`mcc$connection`() }
+        return connection?.let(WikiPortSharing::baseFor) ?: config.base
+    }
 
     private fun start(server: MinecraftServer) {
+        this.server = server
         config = WikiConfig.load()
         if (!config.enabled) return
         val root = server.serverDirectory.resolve(config.directory).toAbsolutePath().normalize()
@@ -71,7 +90,8 @@ internal object WikiServer {
             if (Files.notExists(root.resolve("index.html"))) {
                 MoreCobblemonContents.LOGGER.warn("Wiki directory {} has no index.html; copy the server wiki there", root)
             }
-            MoreCobblemonContents.LOGGER.info("Wiki serving {} on {}:{} for {}", root, config.bind, config.port, config.base)
+            MoreCobblemonContents.LOGGER.info("Wiki serving {} on {}:{} for {}", root, config.bind, config.port,
+                if (config.publicUrl.isBlank()) "the game port at each player's own address" else config.base)
         } catch (failure: Exception) {
             MoreCobblemonContents.LOGGER.error("Wiki could not listen on {}:{}", config.bind, config.port, failure)
             stop()
@@ -79,6 +99,7 @@ internal object WikiServer {
     }
 
     private fun stop() {
+        server = null
         http?.stop(0)
         http = null
         executor?.shutdownNow()

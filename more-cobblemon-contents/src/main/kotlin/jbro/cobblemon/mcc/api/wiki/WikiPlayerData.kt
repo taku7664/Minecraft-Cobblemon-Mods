@@ -50,7 +50,7 @@ object WikiApi {
     fun handler(name: String): WikiApiHandler? = handlers[name]
 
     /** The address players open the wiki at, or null while the wiki is off. */
-    fun publicUrl(): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.takeIf { it.running }?.config?.base
+    fun publicUrl(): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.takeIf { it.running }?.sharedBase()
 
     /**
      * [playerId]'s own wiki link, carrying the token that shows the wiki their data, or null while the wiki is off.

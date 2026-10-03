@@ -10,7 +10,10 @@
     "EntityManagedBattlePersistenceMixin",
     "PlayerBattleActorMixin",
     "PokemonBattleMixin",
-    "PokemonMixin"
+    "PokemonMixin",
+    "ServerCommonPacketListenerImplAccessor",
+    "ServerConnectionListenerChannelMixin",
+    "ServerHandshakePacketListenerImplMixin"
   ],
   "client": [
     "client.BattleMoveSelectionMixin",

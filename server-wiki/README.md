@@ -41,8 +41,10 @@
 MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시보드를 `/api/me`로 실시간 제공합니다.
 
 1. 이 폴더의 `index.html`, `pages/`, `assets/`를 서버의 `config/more-cobblemon-contents/wiki/`에 복사합니다.
-2. `config/more-cobblemon-contents/wiki.json`에서 `enabled`를 `true`로, `public_url`을 플레이어가 접속할 주소로
-   바꾸고(예: `http://play.example.com:8100`) 그 포트를 엽니다. 설정은 서버를 다시 켜면 반영됩니다.
+2. `config/more-cobblemon-contents/wiki.json`에서 `enabled`를 `true`로 바꿉니다. 설정은 서버를 다시 켜면 반영됩니다.
+   위키는 게임 포트로도 열리고 링크는 플레이어가 접속할 때 입력한 주소(예: `http://play.example.com:25566`)를 쓰므로,
+   게임 포트 말고 따로 열 포트는 없습니다. `port`(기본 8100)는 서버 안에서만 쓰는 포트입니다. 위키를 별도 주소나
+   프록시 뒤에 둘 때만 `public_url`을 적습니다. 디스코드의 위키 링크는 마지막으로 외부에서 접속한 플레이어의 주소를 씁니다.
 3. 플레이어는 게임에서 `/wiki`를 입력하고 채팅의 링크를 누릅니다. 링크에 든 토큰은 브라우저에 저장되고
    주소창에서는 지워지며, 그다음부터는 새로고침할 때마다 최신 정보를 받아 옵니다. `/wiki reset`은 새 링크를
    만들고 예전 링크를 막습니다.

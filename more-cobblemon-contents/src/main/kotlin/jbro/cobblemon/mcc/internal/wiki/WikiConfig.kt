@@ -10,8 +10,9 @@ import net.fabricmc.loader.api.FabricLoader
 
 /**
  * The server wiki's settings, from `config/more-cobblemon-contents/wiki.json`. Off until an admin turns it on, since
- * it opens a port. [publicUrl] is the address players' browsers reach the wiki at; the server cannot know it
- * behind a host or proxy, so it is set here and falls back to this machine on [port].
+ * it opens a port. The game port serves the wiki too ([WikiPortSharing]), so links point at the address each player
+ * joined at; [publicUrl] overrides that for a wiki behind its own host or proxy. [port] is the wiki's own listener,
+ * which the game port relays to and which need not be reachable from outside.
  */
 internal data class WikiConfig(
     val enabled: Boolean = false,
