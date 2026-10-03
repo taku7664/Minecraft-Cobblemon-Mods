@@ -55,9 +55,9 @@ internal object PublicFutureActionFactory {
     }
 
     /**
-     * The single-slot actions of [actions]' turns, distinct by id, in the order flattening those turns
-     * gives, without building the joint turns. Callers that only score slots one at a time (attack
-     * pressure at every search leaf) used to build every doubles combination only to take it apart.
+     * Known single-slot actions for independent public pressure and matchup reads. Complete turns
+     * in [actions] require options for each slot; these reads can retain the revealed slot alone.
+     * When every slot has options, preserve the order and legality of flattening complete turns.
      */
     fun slotActions(
         state: BattleStateView,
@@ -76,7 +76,9 @@ internal object PublicFutureActionFactory {
                 Int.MAX_VALUE, Int.MAX_VALUE, LocalHypothesisPriorityReservation.NONE, null,
             )
         }
-        if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
+        if (bySlot.any(List<BattleActionCandidate>::isEmpty)) {
+            return bySlot.flatten().distinctBy(BattleActionCandidate::actionId)
+        }
         if (state.format == BattleFormat.SINGLE || bySlot.size == 1) return bySlot.single().distinctBy(BattleActionCandidate::actionId)
         val seen = HashSet<String>()
         val out = ArrayList<BattleActionCandidate>()
