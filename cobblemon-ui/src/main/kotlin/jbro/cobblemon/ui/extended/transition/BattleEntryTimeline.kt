@@ -23,13 +23,27 @@ enum class BattleEntryKind(
     val revealMillis: Long,
     val fadeMillis: Long,
     val stages: EntryStages,
+    /** The stage sets a battle of this kind may play, one picked at random each time; [stages] is the first. */
+    val variants: List<EntryStages> = listOf(stages),
 ) {
     LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 800,
         EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER)),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
-        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE)),
+        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+        listOf(
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
+            EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
+        )),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
-        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE));
+        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+        listOf(
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SLICES, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
+            EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
+            EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+        ));
 
     companion object {
         fun fromId(id: String?): BattleEntryKind? = entries.firstOrNull { it.id == id }
@@ -145,14 +159,33 @@ object BattleEntryTimeline {
     }
 
     /** When nothing is left on screen, for a battle that opened at [revealAt]. */
-    fun finishedAt(kind: BattleEntryKind, revealAt: Long?): Long? =
-        when (kind.stages.fadeIn) {
-            EntryFadeIn.SHATTER -> shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
-            EntryFadeIn.WHITE_FADE -> fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
-        }
+    fun finishedAt(kind: BattleEntryKind, revealAt: Long?, fadeIn: EntryFadeIn = kind.stages.fadeIn): Long? =
+        if (fadeIn == EntryFadeIn.SHATTER) shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
+        else fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
 
-    fun revealed(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Boolean =
-        finishedAt(kind, revealAt)?.let { elapsed >= it } ?: false
+    fun revealed(kind: BattleEntryKind, elapsed: Long, revealAt: Long?, fadeIn: EntryFadeIn = kind.stages.fadeIn): Boolean =
+        finishedAt(kind, revealAt, fadeIn)?.let { elapsed >= it } ?: false
+
+    /**
+     * How far an opening fade-in (the white fading, an iris opening, the white splitting) has gone, 0 to 1, eased:
+     * nothing until the battle has opened and settled.
+     */
+    fun opening(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
+        val start = fadeStart(kind, revealAt) ?: return 0f
+        return smooth(((elapsed - start).toFloat() / kind.fadeMillis).coerceIn(0f, 1f))
+    }
+
+    /** How far a mosaic intro has coarsened the screen, 0 to 1, over the kind's beats. */
+    fun mosaic(kind: BattleEntryKind, elapsed: Long): Float {
+        val start = kind.flashStarts.first()
+        return ((elapsed - start).toFloat() / (flashEnd(kind) - start)).coerceIn(0f, 1f)
+    }
+
+    /** Each beat's spin of a spinning zoom in progress, 0 to 1, as [zooms] for a zoom intro. */
+    fun spins(kind: BattleEntryKind, elapsed: Long): List<Float> = kind.flashStarts.mapNotNull { start ->
+        val progress = (elapsed - start).toFloat() / kind.flashMillis.coerceAtLeast(320L)
+        progress.takeIf { it in 0f..1f }
+    }
 
     /** A legendary's darkening of the world before its pattern, 0 to 1, gone with the pattern. */
     fun dim(kind: BattleEntryKind, elapsed: Long): Float {

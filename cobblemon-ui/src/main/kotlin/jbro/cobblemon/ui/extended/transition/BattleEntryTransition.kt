@@ -22,7 +22,8 @@ import net.minecraft.resources.ResourceLocation
  * It draws above every screen and the HUD.
  */
 object BattleEntryTransition {
-    private class Run(val kind: BattleEntryKind, val accent: Int, val startedAt: Long, val onCovered: Runnable?) {
+    private class Run(val kind: BattleEntryKind, val stages: EntryStages, val accent: Int, val startedAt: Long,
+                      val onCovered: Runnable?) {
         var revealAt: Long? = null
         var reported = false
     }
@@ -83,7 +84,7 @@ object BattleEntryTransition {
         val color = accent ?: if (kind == BattleEntryKind.TRAINER) palette.opponent else palette.ally
         // A transition this one replaces still owes its holder an answer.
         run?.takeIf { !it.reported }?.let { report(it) }
-        run = Run(kind, color, Util.getMillis(), onCovered)
+        run = Run(kind, kind.variants.random(), color, Util.getMillis(), onCovered)
         val client = Minecraft.getInstance()
         if (blockInput && client.screen == null) client.setScreen(BattleEntryScreen())
         return true
@@ -154,11 +155,11 @@ object BattleEntryTransition {
         val elapsed = Util.getMillis() - current.startedAt
         val revealAt = current.revealAt?.let { it - current.startedAt }
         val kind = current.kind
-        if (BattleEntryTimeline.revealed(kind, elapsed, revealAt)) {
+        val stages = current.stages
+        if (BattleEntryTimeline.revealed(kind, elapsed, revealAt, stages.fadeIn)) {
             run = null
             return
         }
-        val stages = kind.stages
         val pose = context.pose()
         pose.pushPose()
         pose.translate(0f, 0f, 500f)

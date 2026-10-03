@@ -148,4 +148,36 @@ class BattleEntryTimelineTest {
             assertTrue(BattleEntryTimeline.patternGone(kind, ready))
         }
     }
+
+    @Test
+    fun `variants only swap stages whose timing the kind already keeps`() {
+        for (kind in BattleEntryKind.entries) {
+            assertEquals(kind.stages, kind.variants.first())
+            for (variant in kind.variants) {
+                // Moods, zooms and shatters read the kind's own stages for their timing, so variants keep them.
+                assertEquals(kind.stages.mood, variant.mood)
+                assertEquals(kind.stages.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER,
+                    variant.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER)
+                assertEquals(kind.stages.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM,
+                    variant.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM)
+            }
+        }
+    }
+
+    @Test
+    fun `an opening waits for the battle, then eases from shut to open`() {
+        val kind = BattleEntryKind.WILD
+        val ready = BattleEntryTimeline.readyAt(kind)
+        assertEquals(0f, BattleEntryTimeline.opening(kind, ready + 5000, null))
+        val start = ready + BattleEntryTimeline.SETTLE_MILLIS
+        assertEquals(0f, BattleEntryTimeline.opening(kind, start, ready))
+        assertEquals(1f, BattleEntryTimeline.opening(kind, start + kind.fadeMillis, ready))
+        // Every opening fade-in finishes when the white fade would.
+        for (fadeIn in listOf(jbro.cobblemon.ui.extended.transition.EntryFadeIn.IRIS_OPEN,
+                jbro.cobblemon.ui.extended.transition.EntryFadeIn.SPLIT_OPEN)) {
+            assertEquals(BattleEntryTimeline.finishedAt(kind, ready), BattleEntryTimeline.finishedAt(kind, ready, fadeIn))
+        }
+        assertEquals(0f, BattleEntryTimeline.mosaic(kind, 0))
+        assertEquals(1f, BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.flashEnd(kind)))
+    }
 }

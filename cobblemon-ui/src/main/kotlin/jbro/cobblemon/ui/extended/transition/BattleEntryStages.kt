@@ -71,6 +71,32 @@ enum class EntryIntro {
         }
     },
 
+    /** The screen breaks up into ever coarser blocks over the kind's beats, as Pokémon Emerald's blur. */
+    MOSAIC {
+        override fun prepare(frame: EntryFrame): Int? {
+            val mosaic = BattleEntryTimeline.mosaic(frame.kind, frame.elapsed)
+            return if (mosaic <= 0f || !frame.covering) null else EntryDraw.captureScreen(frame.context)
+        }
+
+        override fun draw(frame: EntryFrame, screen: Int?) {
+            if (screen == null) return
+            EntryDraw.mosaic(frame, 1f + 15f * BattleEntryTimeline.mosaic(frame.kind, frame.elapsed))
+        }
+    },
+
+    /** At each beat the screen whirls outward in turning, growing copies of itself. */
+    SPIN_ZOOM {
+        override fun prepare(frame: EntryFrame): Int? =
+            if (BattleEntryTimeline.spins(frame.kind, frame.elapsed).isEmpty()) null else EntryDraw.captureScreen(frame.context)
+
+        override fun draw(frame: EntryFrame, screen: Int?) {
+            if (screen == null) return
+            BattleEntryTimeline.spins(frame.kind, frame.elapsed).forEachIndexed { index, progress ->
+                EntryDraw.zoom(frame, screen, progress, spin = if (index % 2 == 0) 1f else -1f)
+            }
+        }
+    },
+
     /**
      * At each of the kind's beats the screen rushes outward in copies of itself, each a little larger than the last,
      * laid over it additively in a light wash of the accent so it brightens; they fade as the zoom ends.
@@ -138,6 +164,26 @@ enum class EntryCover {
         override fun draw(frame: EntryFrame) = EntryDraw.themePattern(frame, sweep = true)
     },
 
+    /** The theme's cells filling in a rectangular spiral from the edges to the center. */
+    SPIRAL {
+        override fun draw(frame: EntryFrame) = EntryDraw.spiral(frame)
+    },
+
+    /** Horizontal bands sliding in from the left and the right in turn, top to bottom. */
+    SLICES {
+        override fun draw(frame: EntryFrame) = EntryDraw.slices(frame)
+    },
+
+    /** A clock hand sweeping from twelve o'clock round the screen, leaving slices of two tones behind it. */
+    CLOCK_WIPE {
+        override fun draw(frame: EntryFrame) = EntryDraw.clockWipe(frame)
+    },
+
+    /** A circle closing on the center, an accent rim at its edge. */
+    IRIS {
+        override fun draw(frame: EntryFrame) = EntryDraw.iris(frame)
+    },
+
     /**
      * Two near-black plates tinted in the accent slide in from either side of a diagonal and close on it, under focus
      * lines in the accent that stab in from the edges toward the center, flickering.
@@ -161,6 +207,11 @@ enum class EntryWhiteout {
             if (rise > 0f) frame.context.fill(0, 0, frame.width, frame.height,
                 BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), rise))
         }
+    },
+
+    /** A white circle bursting out from the center past the corners, its edge soft. */
+    WHITE_BURST {
+        override fun draw(frame: EntryFrame) = EntryDraw.whiteBurst(frame)
     },
 
     /** Focus lines thicken, whiten and drive in from the edges to the center until their light fills the screen. */
@@ -188,6 +239,16 @@ enum class EntryFadeIn {
             if (white > 0f) frame.context.fill(0, 0, frame.width, frame.height,
                 BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), white))
         }
+    },
+
+    /** The white waits for the battle, then a hole opens in it from the center out past the corners. */
+    IRIS_OPEN {
+        override fun draw(frame: EntryFrame) = EntryDraw.irisOpen(frame)
+    },
+
+    /** The white waits for the battle, then parts at the middle, its halves sliding off the top and bottom. */
+    SPLIT_OPEN {
+        override fun draw(frame: EntryFrame) = EntryDraw.splitOpen(frame)
     },
 
     /**
@@ -259,6 +320,213 @@ internal object EntryDraw {
                 quad(buffer, matrix, centerX - half, centerY - half, centerX + half, centerY + half, tones[(row + column) % 2])
             }
         }
+    }
+
+    private class SpiralOrder(val columns: Int, val rows: Int, val rank: IntArray)
+
+    private var spiralOrder: SpiralOrder? = null
+
+    /** Each cell's place in a clockwise rectangular spiral from the top left corner inward, as a share of all cells. */
+    private fun spiralRanks(columns: Int, rows: Int): IntArray {
+        spiralOrder?.takeIf { it.columns == columns && it.rows == rows }?.let { return it.rank }
+        val rank = IntArray(columns * rows)
+        var left = 0
+        var top = 0
+        var right = columns - 1
+        var bottom = rows - 1
+        var next = 0
+        while (left <= right && top <= bottom) {
+            for (x in left..right) rank[top * columns + x] = next++
+            for (y in top + 1..bottom) rank[y * columns + right] = next++
+            if (top < bottom) for (x in right - 1 downTo left) rank[bottom * columns + x] = next++
+            if (left < right) for (y in bottom - 1 downTo top + 1) rank[y * columns + left] = next++
+            left++; top++; right--; bottom--
+        }
+        spiralOrder = SpiralOrder(columns, rows, rank)
+        return rank
+    }
+
+    /** The theme's two cell tones filling in along a rectangular spiral. */
+    fun spiral(frame: EntryFrame) {
+        val base = BattleUiTheme.palette.entryBase
+        val pulse = BattleEntryTimeline.pulse(frame.kind, frame.elapsed) * .18f
+        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(frame.accent, base, .58f - pulse),
+            BattleSurfaceRenderer.interpolate(frame.accent, base, .70f - pulse))
+        val size = CELL * 2
+        val columns = ceil(frame.width / size.toFloat()).toInt()
+        val rows = ceil(frame.height / size.toFloat()).toInt()
+        val rank = spiralRanks(columns, rows)
+        val total = (columns * rows - 1).coerceAtLeast(1).toFloat()
+        quads(frame.context) { buffer, matrix ->
+            for (row in 0 until rows) for (column in 0 until columns) {
+                val share = (frame.cover * (1f + .15f) - rank[row * columns + column] / total).coerceIn(0f, .15f) / .15f
+                if (share <= 0f) continue
+                val centerX = column * size + size / 2f
+                val centerY = row * size + size / 2f
+                val half = (size + 1) * BattleEntryTimeline.smooth(share) / 2f
+                quad(buffer, matrix, centerX - half, centerY - half, centerX + half, centerY + half, tones[(row + column) % 2])
+            }
+        }
+    }
+
+    /** Horizontal bands, from alternate sides, each a little after the one above it. */
+    fun slices(frame: EntryFrame) {
+        val base = BattleUiTheme.palette.entryBase
+        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(frame.accent, base, .2f),
+            BattleSurfaceRenderer.interpolate(frame.accent, base, .75f))
+        val bands = 10
+        val bandHeight = frame.height / bands.toFloat()
+        val w = frame.width.toFloat()
+        quads(frame.context) { buffer, matrix ->
+            for (band in 0 until bands) {
+                val share = BattleEntryTimeline.smooth(BattleEntryTimeline.piece(frame.cover, band / (bands - 1f)))
+                if (share <= 0f) continue
+                val top = band * bandHeight
+                val bottom = top + bandHeight + 1f
+                if (band % 2 == 0) quad(buffer, matrix, 0f, top, w * share, bottom, tones[band % 2])
+                else quad(buffer, matrix, w * (1f - share), top, w, bottom, tones[band % 2])
+            }
+        }
+    }
+
+    /** A sector growing clockwise from twelve o'clock, in eight slices of two tones. */
+    fun clockWipe(frame: EntryFrame) {
+        if (frame.cover <= 0f) return
+        val base = BattleUiTheme.palette.entryBase
+        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(frame.accent, base, .3f),
+            BattleSurfaceRenderer.interpolate(frame.accent, base, .7f))
+        val sweep = BattleEntryTimeline.smooth(frame.cover) * TAU
+        val radius = frame.far * 1.1f
+        val segments = 96
+        quads(frame.context) { buffer, matrix ->
+            for (segment in 0 until segments) {
+                val from = segment * TAU / segments
+                if (from >= sweep) break
+                val to = minOf((segment + 1) * TAU / segments, sweep)
+                val color = tones[(segment * 8 / segments) % 2]
+                val a0 = from - TAU / 4f
+                val a1 = to - TAU / 4f
+                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX + cos(a0) * radius, frame.centerY + sin(a0) * radius, 0f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX + cos(a1) * radius, frame.centerY + sin(a1) * radius, 0f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(color)
+            }
+        }
+    }
+
+    /** A dark ring closing on the center with a bright accent rim. */
+    fun iris(frame: EntryFrame) {
+        if (frame.cover <= 0f) return
+        val base = BattleUiTheme.palette.entryBase
+        val dark = BattleSurfaceRenderer.interpolate(frame.accent, base, .8f)
+        val rim = BattleSurfaceRenderer.interpolate(frame.accent, 0xFFFFFFFF.toInt(), .35f)
+        val closing = 1f - (1f - frame.cover) * (1f - frame.cover)
+        val inner = frame.far * 1.05f * (1f - closing)
+        quads(frame.context) { buffer, matrix ->
+            ring(buffer, matrix, frame, inner, frame.far * 1.3f, dark, dark)
+            if (inner > 0f) ring(buffer, matrix, frame, (inner - 3f).coerceAtLeast(0f), inner + 1f, rim, rim)
+        }
+    }
+
+    /** A white disc growing from the center, its edge fading over a few pixels. */
+    fun whiteBurst(frame: EntryFrame) {
+        val rise = BattleEntryTimeline.rise(frame.kind, frame.elapsed)
+        if (rise <= 0f) return
+        val radius = frame.far * 1.1f * rise * rise
+        val white = 0xFFFFFFFF.toInt()
+        val clear = 0x00FFFFFF
+        quads(frame.context) { buffer, matrix ->
+            ring(buffer, matrix, frame, 0f, radius, white, white)
+            ring(buffer, matrix, frame, radius, radius + 14f, white, clear)
+        }
+    }
+
+    /** The white with a hole opening in it from the center, its inner edge soft. */
+    fun irisOpen(frame: EntryFrame) {
+        val opening = BattleEntryTimeline.opening(frame.kind, frame.elapsed, frame.revealAt)
+        val hole = frame.far * 1.15f * opening
+        val white = 0xFFFFFFFF.toInt()
+        val clear = 0x00FFFFFF
+        quads(frame.context) { buffer, matrix ->
+            if (hole > 0f) ring(buffer, matrix, frame, (hole - 14f).coerceAtLeast(0f), hole, clear, white)
+            ring(buffer, matrix, frame, hole, frame.far * 1.4f, white, white)
+        }
+    }
+
+    /** The white in two halves sliding apart off the top and bottom, a glow along their edges. */
+    fun splitOpen(frame: EntryFrame) {
+        val opening = BattleEntryTimeline.opening(frame.kind, frame.elapsed, frame.revealAt)
+        val half = frame.height / 2f
+        val offset = half * opening
+        val w = frame.width.toFloat()
+        val white = 0xFFFFFFFF.toInt()
+        val glow = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, white, .5f), 1f - opening)
+        quads(frame.context) { buffer, matrix ->
+            quad(buffer, matrix, 0f, -offset, w, half - offset + .5f, white)
+            quad(buffer, matrix, 0f, half + offset - .5f, w, frame.height + offset, white)
+            if (opening > 0f) {
+                gradient(buffer, matrix, 0f, half - offset, w, half - offset + 6f, glow, glow, 0, 0)
+                gradient(buffer, matrix, 0f, half + offset - 6f, w, half + offset, 0, 0, glow, glow)
+            }
+        }
+    }
+
+    /** A ring around the screen's center from [inner] to [outer], each edge in its own colour. */
+    private fun ring(buffer: VertexConsumer, matrix: Matrix4f, frame: EntryFrame, inner: Float, outer: Float,
+                     innerColor: Int, outerColor: Int) {
+        val segments = 72
+        for (segment in 0 until segments) {
+            val from = segment * TAU / segments
+            val to = (segment + 1) * TAU / segments
+            buffer.addVertex(matrix, frame.centerX + cos(from) * outer, frame.centerY + sin(from) * outer, 0f).setColor(outerColor)
+            buffer.addVertex(matrix, frame.centerX + cos(from) * inner, frame.centerY + sin(from) * inner, 0f).setColor(innerColor)
+            buffer.addVertex(matrix, frame.centerX + cos(to) * inner, frame.centerY + sin(to) * inner, 0f).setColor(innerColor)
+            buffer.addVertex(matrix, frame.centerX + cos(to) * outer, frame.centerY + sin(to) * outer, 0f).setColor(outerColor)
+        }
+    }
+
+    /** A target for the mosaic: the screen shrunk into its corner and drawn back up blocky; reused frame to frame. */
+    private var mosaicCopy: TextureTarget? = null
+
+    /** The screen drawn back in blocks [block] GUI pixels wide. */
+    fun mosaic(frame: EntryFrame, block: Float) {
+        val main = Minecraft.getInstance().mainRenderTarget
+        var copy = mosaicCopy
+        if (copy == null || copy.width != main.width || copy.height != main.height) {
+            copy?.destroyBuffers()
+            copy = TextureTarget(main.width, main.height, false, Minecraft.ON_OSX)
+            copy.setFilterMode(GL11.GL_NEAREST)
+            mosaicCopy = copy
+        }
+        val pixels = block * main.width / frame.width.toFloat()
+        val small = maxOf(1, (main.width / pixels).toInt())
+        val smallHeight = maxOf(1, (main.height / pixels).toInt())
+        frame.context.flush()
+        GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId)
+        GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, copy.frameBufferId)
+        GlStateManager._glBlitFrameBuffer(0, 0, main.width, main.height, 0, 0, small, smallHeight,
+            GL11.GL_COLOR_BUFFER_BIT, GL11.GL_LINEAR)
+        main.bindWrite(false)
+        val u = small / main.width.toFloat()
+        val v = smallHeight / main.height.toFloat()
+        val matrix = frame.context.pose().last().pose()
+        RenderSystem.setShader(GameRenderer::getPositionTexColorShader)
+        RenderSystem.setShaderTexture(0, copy.colorTextureId)
+        RenderSystem.disableBlend()
+        RenderSystem.disableDepthTest()
+        RenderSystem.disableCull()
+        val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR)
+        val w = frame.width.toFloat()
+        val h = frame.height.toFloat()
+        buffer.addVertex(matrix, 0f, 0f, 0f).setUv(0f, v).setColor(-1)
+        buffer.addVertex(matrix, 0f, h, 0f).setUv(0f, 0f).setColor(-1)
+        buffer.addVertex(matrix, w, h, 0f).setUv(u, 0f).setColor(-1)
+        buffer.addVertex(matrix, w, 0f, 0f).setUv(u, v).setColor(-1)
+        BufferUploader.drawWithShader(buffer.buildOrThrow())
+        RenderSystem.enableCull()
+        RenderSystem.enableDepthTest()
+        RenderSystem.enableBlend()
+        RenderSystem.defaultBlendFunc()
     }
 
     /** Slanted bands, dark and coloured in turn, that widen from their middles outward from the screen's center. */
@@ -501,8 +769,8 @@ internal object EntryDraw {
         }
     }
 
-    /** One zoom of the screen copy [texture] at [progress] (0 to 1). */
-    fun zoom(frame: EntryFrame, texture: Int, progress: Float) {
+    /** One zoom of the screen copy [texture] at [progress] (0 to 1), its copies turning by [spin] (a direction) as they grow. */
+    fun zoom(frame: EntryFrame, texture: Int, progress: Float, spin: Float = 0f) {
         val reach = 1f - (1f - progress) * (1f - progress)
         val fade = (1f - progress) * (1f - progress)
         val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), frame.accent, .3f)
@@ -520,11 +788,18 @@ internal object EntryDraw {
             val color = BattleSurfaceRenderer.withOpacity(tint, alpha)
             val halfW = frame.width / 2f * scale
             val halfH = frame.height / 2f * scale
+            val angle = spin * .09f * copy * reach
+            val turnCos = cos(angle)
+            val turnSin = sin(angle)
+            fun corner(dx: Float, dy: Float, u: Float, v: Float) {
+                buffer.addVertex(matrix, frame.centerX + dx * turnCos - dy * turnSin, frame.centerY + dx * turnSin + dy * turnCos, 0f)
+                    .setUv(u, v).setColor(color)
+            }
             // The copy's texture is upside down: framebuffers start at the bottom.
-            buffer.addVertex(matrix, frame.centerX - halfW, frame.centerY - halfH, 0f).setUv(0f, 1f).setColor(color)
-            buffer.addVertex(matrix, frame.centerX - halfW, frame.centerY + halfH, 0f).setUv(0f, 0f).setColor(color)
-            buffer.addVertex(matrix, frame.centerX + halfW, frame.centerY + halfH, 0f).setUv(1f, 0f).setColor(color)
-            buffer.addVertex(matrix, frame.centerX + halfW, frame.centerY - halfH, 0f).setUv(1f, 1f).setColor(color)
+            corner(-halfW, -halfH, 0f, 1f)
+            corner(-halfW, halfH, 0f, 0f)
+            corner(halfW, halfH, 1f, 0f)
+            corner(halfW, -halfH, 1f, 1f)
         }
         BufferUploader.drawWithShader(buffer.buildOrThrow())
         RenderSystem.enableCull()
