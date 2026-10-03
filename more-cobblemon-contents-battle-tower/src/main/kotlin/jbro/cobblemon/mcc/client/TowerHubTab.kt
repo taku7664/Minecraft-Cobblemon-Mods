@@ -126,7 +126,7 @@ internal class TowerHubTab : MccHubTabContent {
             val order = state.selectedPokemonOrder.indexOf(pokemon.pokemonId).takeIf { it >= 0 }?.plus(1)
             val speciesName = speciesName(pokemon.speciesId)
             val heldItem = itemName(pokemon.heldItemId)
-            // The Tower takes no legendary-class Pokemon: say so on its card.
+            // A legendary-class Pokemon cannot enter; its card says so without naming why.
             val blocked = pokemon.legendaryClass
             val button = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId),
                 if (order == null) speciesName else tower("party_entry.order_name", order, speciesName),
@@ -244,7 +244,7 @@ internal class TowerHubTab : MccHubTabContent {
     }
 }
 
-private val RULES = listOf("rule.species", "rule.items", "rule.bag", "rule.mechanic", "rule.legendary_class")
+private val RULES = listOf("rule.species", "rule.items", "rule.bag", "rule.mechanic")
 
 private fun tower(key: String, vararg args: Any): Component =
     Component.translatable("screen.more_cobblemon_contents.tower.$key", *args)
