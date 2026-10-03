@@ -262,7 +262,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val immediate = search.rootActionValue(context.state, rank.outcome.candidate, 1)
                         ?: return rank
                     singlePlyGain[id] = (immediate.value - baseline) * BOARD_TO_SCORE
-                    singlePlyCoverage[id] = search.publicResponseCoverage
+                    singlePlyCoverage[id] = immediate.publicResponseCoverage
                     singlePlyThreat[id] = immediate.threatDelta
                     singlePlyKnockouts[id] = immediate.opponentKnockouts
                 }
@@ -280,13 +280,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val searchBoardGain = (evaluation.value - baseline) * BOARD_TO_SCORE
                     val actionId = rank.outcome.candidate.actionId
                     if (depth == 1) singlePlyGain[actionId] = searchBoardGain
-                    if (depth == 1) singlePlyCoverage[actionId] = search.publicResponseCoverage
+                    if (depth == 1) singlePlyCoverage[actionId] = evaluation.publicResponseCoverage
                     if (depth == 1) singlePlyThreat[actionId] = evaluation.threatDelta
                     if (depth == 1) singlePlyKnockouts[actionId] = evaluation.opponentKnockouts
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val coverage = LocalLookaheadCoverage(
-                        singlePlyCoverage[actionId] ?: search.publicResponseCoverage,
-                        search.publicResponseCoverage,
+                        singlePlyCoverage[actionId] ?: evaluation.publicResponseCoverage,
+                        evaluation.publicResponseCoverage,
                     )
                     evaluatedCoverage[actionId] = coverage
                     val rootSecureKoBaselineCorrection = if (tuning.legacyRawPowerFallback) {
@@ -696,6 +696,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     responses = if (tuning.simultaneousResponseWeight > 0.0) {
                         calibratedResponses.associate { it.action.actionId to it.value.value }
                     } else emptyMap(),
+                    publicResponseCoverage = publicResponseCoverage,
                 )
             }
         }
@@ -1266,6 +1267,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         val opponentKnockouts: Double = 0.0,
         /** Each reply's value, keyed by the reply's action id. */
         val responses: Map<String, Double> = emptyMap(),
+        /** Retained with this root result when another candidate or a cached mix is evaluated. */
+        val publicResponseCoverage: Double = 1.0,
     ) {
         /** [weight] of the value moved to the expected value against the opponent's [mix]. */
         fun againstMix(mix: Map<String, Double>, weight: Double): RootActionEvaluation {
