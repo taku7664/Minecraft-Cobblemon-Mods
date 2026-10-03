@@ -66,6 +66,15 @@ internal object Cobblemon173ActionCandidateAdapter {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.INVALID_REQUEST, format)
         }
 
+        val requestPokemonBySlot = actor.activePokemon.take(slotCount).map { active ->
+            request.side?.pokemon?.firstOrNull { it.uuid == active.battlePokemon?.uuid }
+        }
+        val ordinaryForcedSlots = (0 until slotCount).filter {
+            request.forceSwitch.getOrElse(it) { false } && requestPokemonBySlot[it]?.reviving != true
+        }
+        val activeIds = actor.getSide().activePokemon.mapNotNull { it.battlePokemon?.uuid }.toSet()
+        val replacementCount = Cobblemon173RequestSlotRules.replacementCount(ordinaryForcedSlots.size,
+            actor.pokemonList.count { it.health > 0 && it.uuid !in activeIds })
         val choicesBySlot = List(slotCount) { slot ->
             choicesForSlot(
                 actor = actor,
@@ -74,12 +83,19 @@ internal object Cobblemon173ActionCandidateAdapter {
                 forceSwitch = request.forceSwitch.getOrElse(slot) { false },
                 slot = slot,
                 mechanicPolicy = mechanicPolicy,
+                switchRequest = request.forceSwitch.isNotEmpty(),
+                reviving = requestPokemonBySlot[slot]?.reviving == true,
+                commanding = requestPokemonBySlot[slot]?.commanding == true,
+                allowReplacementPass = slot in ordinaryForcedSlots && replacementCount < ordinaryForcedSlots.size,
             )
         }
         if (choicesBySlot.any { it.isEmpty() }) {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.NO_LEGAL_ACTIONS, format)
         }
-        val choices = if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot)
+        val choices = (if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot)).filter { choice ->
+            val parts = choice.candidate.componentActions.ifEmpty { listOf(choice.candidate) }
+            parts.count { it.actorSlot in ordinaryForcedSlots && it.kind == BattleActionKind.SWITCH } == replacementCount
+        }
         if (choices.isEmpty()) {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.NO_LEGAL_ACTIONS, format)
         }
@@ -135,7 +151,20 @@ internal object Cobblemon173ActionCandidateAdapter {
         forceSwitch: Boolean,
         slot: Int,
         mechanicPolicy: Cobblemon173MechanicPolicy,
+        switchRequest: Boolean,
+        reviving: Boolean,
+        commanding: Boolean,
+        allowReplacementPass: Boolean,
     ): List<Cobblemon173ActionChoice> = buildList {
+        val pass = Cobblemon173ActionChoice(
+            candidate = BattleActionCandidate("pass:$slot", BattleActionKind.WAIT, actorSlot = slot),
+            responses = listOf(PassActionResponse),
+        )
+        if (Cobblemon173RequestSlotRules.mustPass(switchRequest, forceSwitch, active.isAlive(), commanding)) {
+            add(pass)
+            return@buildList
+        }
+        if (allowReplacementPass) add(pass)
         if (!forceSwitch && moveset != null) {
             val gimmick = allowedGimmick(moveset, mechanicPolicy)
             moveset.moves.forEachIndexed { moveSlot, move ->
@@ -149,8 +178,11 @@ internal object Cobblemon173ActionCandidateAdapter {
             }
         }
         actor.pokemonList.forEach { pokemon ->
-            val response = SwitchActionResponse(pokemon.uuid)
-            if (response.isValid(active, moveset, forceSwitch)) {
+            val response: ShowdownActionResponse = if (reviving) Cobblemon173RevivalActionResponse(pokemon.uuid)
+                else SwitchActionResponse(pokemon.uuid)
+            val alreadyActive = actor.getSide().activePokemon.any { it.battlePokemon?.uuid == pokemon.uuid }
+            if (Cobblemon173RequestSlotRules.eligibleReplacement(reviving, pokemon.health > 0, alreadyActive) &&
+                (reviving || response.isValid(active, moveset, forceSwitch))) {
                 add(
                     Cobblemon173ActionChoice(
                         candidate = BattleActionCandidate(
@@ -158,6 +190,7 @@ internal object Cobblemon173ActionCandidateAdapter {
                             kind = BattleActionKind.SWITCH,
                             actorSlot = slot,
                             switchPokemonId = pokemon.uuid,
+                            tags = if (reviving) setOf("revival_blessing") else emptySet(),
                         ),
                         responses = listOf(response),
                     ),

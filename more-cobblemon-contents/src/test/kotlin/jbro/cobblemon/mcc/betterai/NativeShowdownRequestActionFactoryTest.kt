@@ -20,6 +20,65 @@ import org.junit.jupiter.api.Test
 
 class NativeShowdownRequestActionFactoryTest {
     @Test
+    fun `locked recharge and struggle requests use request slots rather than original move slots`() {
+        for (id in listOf("outrage", "recharge", "struggle")) {
+            val actor = pokemon(ALLY_LEFT, 0, 100, "tackle", "outrage")
+            val current = singleFrame("""{"active":[{"moves":[{"id":"$id"}],"trapped":true}]}""").copy(
+                p1Active = listOf(actor), p1Team = listOf(actor),
+            )
+            val action = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current).single()
+            assertEquals(id, action.moveId)
+            assertEquals("move 1", NativeShowdownChoiceEncoder.encode(action, BattleSide.ALLY, current))
+        }
+    }
+
+    @Test
+    fun `unfilled fainted and commanding active slots pass`() {
+        for (left in listOf(pokemon(ALLY_LEFT, 0, 0, "tackle"),
+            pokemon(ALLY_LEFT, 0, 100, "tackle").copy(volatiles = listOf("commanding")))) {
+            val current = frame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]},{"moves":[{"id":"splash","target":"self"}]}]}""",
+                p1Active = listOf(left, pokemon(ALLY_RIGHT, 1, 100, "splash")))
+            val choices = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+                .map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, current) }
+            assertEquals(listOf("pass, move 1"), choices)
+        }
+    }
+
+    @Test
+    fun `one remaining replacement may fill either fainted double slot`() {
+        val left = pokemon(ALLY_LEFT, 0, 0, "tackle")
+        val right = pokemon(ALLY_RIGHT, 1, 0, "splash")
+        val current = frame("""{"forceSwitch":[true,true]}""", listOf(left, right),
+            listOf(left, right, pokemon(ALLY_BENCH_ONE, null, 100, "tackle")))
+        val choices = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+            .map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, current) }.toSet()
+        assertEquals(setOf("switch 3, pass", "pass, switch 3"), choices)
+    }
+
+    @Test
+    fun `revival request offers fainted targets and excludes living bench`() {
+        val left = pokemon(ALLY_LEFT, 0, 100, "revivalblessing")
+        val dead = pokemon(ALLY_BENCH_ONE, null, 0, "tackle")
+        val current = singleFrame("""{"forceSwitch":[true],"side":{"pokemon":[{"uuid":"$ALLY_LEFT","reviving":true}]}}""").copy(
+            p1Active = listOf(left), p1Team = listOf(left, dead, pokemon(ALLY_BENCH_TWO, null, 100, "tackle")),
+        )
+        val choices = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+        assertEquals(listOf(ALLY_BENCH_ONE), choices.map { it.switchPokemonId })
+        assertEquals("switch 2", NativeShowdownChoiceEncoder.encode(choices.single(), BattleSide.ALLY, current))
+    }
+
+    @Test
+    fun `double targets stay explicit with one survivor on each side`() {
+        val left = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val dead = pokemon(ALLY_RIGHT, 1, 0, "splash")
+        val current = frame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]},{"moves":[{"id":"splash","target":"self"}]}]}""",
+            listOf(left, dead)).let { frame -> frame.copy(p2Active = frame.p2Active.mapIndexed { i, p -> if (i == 1) p.copy(hp = 0) else p }) }
+        val choices = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, current)
+            .map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, current) }
+        assertEquals(listOf("move 1 1, pass"), choices)
+    }
+
+    @Test
     fun `move request creates target and mechanic variants from native legality`() {
         val frame = frame(
             p1Request = """

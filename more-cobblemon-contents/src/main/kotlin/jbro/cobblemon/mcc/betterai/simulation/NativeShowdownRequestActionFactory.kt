@@ -38,11 +38,20 @@ internal object NativeShowdownRequestActionFactory {
             return listOf(BattleActionCandidate(nativeActionId(side, "wait"), BattleActionKind.WAIT))
         }
         request.getAsJsonArray("forceSwitch")?.let { forced ->
+            val reviving = activeTeam(side, frame).associate { it.activeSlot to isReviving(request, it.uuid) }
+            val ordinaryForced = (0 until forced.size()).filter { forced[it].asBoolean && reviving[it] != true }
+            val replacementCount = minOf(ordinaryForced.size, fullTeam(side, frame).count { it.activeSlot == null && it.hp > 0 })
             val bySlot = forced.mapIndexed { slot, element ->
-                if (element.asBoolean) switchActions(side, slot, frame)
+                if (element.asBoolean) {
+                    switchActions(side, slot, frame, revive = reviving[slot] == true) +
+                        if (slot in ordinaryForced && replacementCount < ordinaryForced.size) listOf(passAction(side, slot)) else emptyList()
+                }
                 else listOf(passAction(side, slot))
             }
-            return combine(side, bySlot)
+            return combine(side, bySlot).filter { action ->
+                val components = action.componentActions.ifEmpty { listOf(action) }
+                components.count { it.actorSlot in ordinaryForced && it.kind == BattleActionKind.SWITCH } == replacementCount
+            }
         }
         val active = request.getAsJsonArray("active")
             ?: throw IllegalArgumentException("Native Showdown request has no move, switch or wait action")
@@ -52,7 +61,8 @@ internal object NativeShowdownRequestActionFactory {
             preferredVoluntarySwitches(side, frame, active, limit, publicState, publicActionCatalog)
         }
         val bySlot = active.mapIndexed { slot, element ->
-            if (element.isJsonNull) {
+            val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == slot }
+            if (element.isJsonNull || actor == null || actor.hp <= 0 || actor.volatiles.any { nativeId(it) == "commanding" }) {
                 listOf(passAction(side, slot))
             } else {
                 val activeRequest = element.asJsonObject
@@ -80,7 +90,7 @@ internal object NativeShowdownRequestActionFactory {
             if (move.boolean("disabled")) return@flatMapIndexed emptyList()
             val moveId = nativeId(move.get("id")?.asString ?: move.get("move")?.asString.orEmpty())
             require(moveId.isNotBlank()) { "Native move request contains a blank move ID" }
-            require(actor.moves.getOrNull(moveSlot)?.id?.let(::nativeId) == moveId) {
+            require(actor.moves.any { nativeId(it.id) == moveId } || moveId in setOf("recharge", "struggle")) {
                 "Native request move $moveId disagrees with active slot $actorSlot move $moveSlot"
             }
             val targets = targetVariants(
@@ -122,8 +132,9 @@ internal object NativeShowdownRequestActionFactory {
         actorSlot: Int,
         frame: NativeBattleFrame,
         permittedPokemonUuids: Set<String>? = null,
+        revive: Boolean = false,
     ): List<BattleActionCandidate> = fullTeam(side, frame).asSequence()
-        .filter { it.activeSlot == null && it.hp > 0 }
+        .filter { if (revive) it.hp <= 0 else it.activeSlot == null && it.hp > 0 }
         .filter { permittedPokemonUuids == null || it.uuid in permittedPokemonUuids }
         .map { pokemon ->
             BattleActionCandidate(
@@ -131,7 +142,7 @@ internal object NativeShowdownRequestActionFactory {
                 kind = BattleActionKind.SWITCH,
                 actorSlot = actorSlot,
                 switchPokemonId = java.util.UUID.fromString(pokemon.uuid),
-                tags = setOf("native_showdown_request"),
+                tags = if (revive) setOf("native_showdown_request", "revival_blessing") else setOf("native_showdown_request"),
             )
         }
         .toList()
@@ -198,7 +209,7 @@ internal object NativeShowdownRequestActionFactory {
         val allies = activeTeam(side, frame).filter { it.hp > 0 }.sortedBy { it.activeSlot }
         val opponents = activeTeam(opposite(side), frame).filter { it.hp > 0 }.sortedBy { it.activeSlot }
         // A singles command has no target location even for a selected move.
-        val singleTargetBattle = allies.size <= 1 && opponents.size <= 1
+        val singleTargetBattle = activeTeam(side, frame).size <= 1 && activeTeam(opposite(side), frame).size <= 1
         return when (target) {
             "normal", "adjacentfoe" -> if (singleTargetBattle) listOf(emptyList()) else opponents.map {
                 listOf(BattleTargetSlot(opposite(side), requireNotNull(it.activeSlot)))
@@ -247,6 +258,13 @@ internal object NativeShowdownRequestActionFactory {
         actorSlot = actorSlot,
         tags = setOf("native_showdown_request"),
     )
+
+    private fun isReviving(request: JsonObject, uuid: String): Boolean =
+        request.getAsJsonObject("side")?.getAsJsonArray("pokemon")?.any { element ->
+            val pokemon = element.asJsonObject
+            pokemon.boolean("reviving") && (pokemon.get("uuid")?.asString == uuid ||
+                pokemon.get("details")?.asString?.split(',')?.any { it.trim() == uuid } == true)
+        } == true
 
     private fun parseRequest(json: String): JsonObject {
         val parsed = JsonParser.parseString(json)

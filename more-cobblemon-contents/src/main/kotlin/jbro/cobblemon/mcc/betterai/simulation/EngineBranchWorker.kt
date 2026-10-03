@@ -351,6 +351,18 @@ internal class EngineBranchWorker(
                 }
             })
         }
+        out.add("side", JsonObject().apply {
+            add("pokemon", JsonArray().also { team ->
+                side.pokemon.forEach { pokemon ->
+                    team.add(JsonObject().apply {
+                        addProperty("uuid", pokemon.uuid)
+                        if (side.slotConditions.getOrNull(pokemon.position)?.containsKey("revivalblessing") == true) {
+                            addProperty("reviving", true)
+                        }
+                    })
+                }
+            })
+        })
         return out.toString()
     }
 
