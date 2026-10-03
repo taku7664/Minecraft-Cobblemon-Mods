@@ -19,6 +19,8 @@ internal object LocalStatStageChange {
         stages: Map<String, Int>,
         /** Mold Breaker and its kind ignore the target's Contrary, Simple and drop-stopping abilities. */
         ignoreTargetAbility: Boolean = false,
+        /** Entry ability batches run item updates after all adjacent boost attempts. */
+        updateItems: Boolean = true,
     ): BattleStateView {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
@@ -27,13 +29,15 @@ internal object LocalStatStageChange {
         val fromOther = sourceId != null && sourceId != targetId
         val source = sourceId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } }
         // The caller's spelling is kept; stats are compared by their normalised name.
-        var change = stages.mapValues { (_, amount) ->
-            when (ability) {
+        var change = stages.mapValues { (stat, amount) ->
+            val reshaped = when (ability) {
                 "contrary" -> -amount
                 "simple" -> amount * 2
                 else -> amount
             }
-        }
+            val current = target.statStages.entries.firstOrNull { normalise(it.key) == normalise(stat) }?.value ?: 0
+            ((current + reshaped).coerceIn(-6, 6) - current)
+        }.filterValues { it != 0 }
         var reflected = emptyMap<String, Int>()
         if (fromOther && change.values.any { it < 0 }) {
             val drops = change.filterValues { it < 0 }
@@ -64,8 +68,9 @@ internal object LocalStatStageChange {
             }
         }
         var next = changeStages(state, target, change)
-        if (reflected.isNotEmpty() && source != null) next = apply(next, source.battlePokemonId, null, reflected)
-        return whiteHerb(next, targetId)
+        if (reflected.isNotEmpty() && source != null) next = apply(next, source.battlePokemonId, null, reflected,
+            updateItems = updateItems)
+        return if (updateItems) whiteHerb(next, targetId) else next
     }
 
     /**
