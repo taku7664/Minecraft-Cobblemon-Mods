@@ -171,6 +171,8 @@ object BattleDialogue {
     }
 
     fun render(context: GuiGraphics) {
+        // Checked with nothing to say too, so a release missed meanwhile cannot eat the next press in the menus.
+        if (hold.isHeld() && !confirmKeyDown()) releaseHold()
         val message = queue.current() ?: return
         val battle = CobblemonClient.battle ?: return
         val client = Minecraft.getInstance()
