@@ -62,3 +62,25 @@ Tweaks·완료 기록이 바이트 단위로 동일하여 재실행이 파일을
 
 실제 Minecraft 시작 시 `preLaunch` 호출, HUD·단축키 동작과 Mod Menu 화면 표시는 이번
 배포에서 확인하지 않았습니다. 클라이언트 전용이며 서버에는 배포하지 않았습니다.
+
+## 0.1.2 — 새 프로필의 options.txt 버전 누락 수정
+
+- 소스 커밋: `99cfe98d4ba28a79a09a935de4ee9f6c78af086f`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-defaults-0.1.2.jar`
+- SHA-256: `70BFCAAA90A759B84118EB1A76D8855BCE79A417D703DE43F7373D327FD2BC65`
+- 이전 JAR 백업: `codex-deploy-backups/20261003-180935331/cobblemon_client_defaults/cobblemon-client-defaults-0.1.1.jar`
+- 검증: Minecraft의 실제 옵션 마이그레이션을 포함한 테스트 38개, Gradle build, JDK jar 검증 통과.
+- 이번 배포는 JAR만 교체했으며, 현재 프로필의 설정과 최초 적용 완료 기록은 다시 변경하지 않음.
+
+0.1.1은 없는 `options.txt`를 만들 때 최신 키 값만 기록하고 `version`을 누락했습니다.
+Minecraft 1.21.1은 이를 버전 0으로 처리하여 숫자 키를 전제로 한 변환을 실행하며,
+실제 `DataFixTypes.OPTIONS`·`DataFixers` 통합 테스트에서 `NumberFormatException`을
+재현했습니다. 기존 파일 생성 테스트는 Minecraft가 파일을 읽는 단계까지 검사하지 못했습니다.
+
+0.1.2는 `options.txt`가 없거나 비어 있을 때 `version:3955`를 함께 기록합니다.
+기존 파일의 버전과 무관한 옵션, 최초 한 번 적용하는 완료 기록은 유지합니다.
+
+Fabric 로더 소스와 설치된 CLC·Forge Config API Port·Balm의 초기화 경로는 확인했습니다.
+Minecraft는 실행하지 않았으므로, 완전히 새 프로필에서의 전체 시작과 실제 게임 동작은
+확인하지 않았습니다. 클라이언트 전용이며 서버에는 배포하지 않았습니다.
