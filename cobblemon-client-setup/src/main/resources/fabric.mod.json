@@ -9,12 +9,10 @@
   "environment": "client",
   "entrypoints": {
     "preLaunch": ["jbro.cobblemon.clientsetup.ClientSetupPreLaunch"],
-    "client": ["jbro.cobblemon.clientsetup.client.ClientSetupClient"],
     "modmenu": ["jbro.cobblemon.clientsetup.client.ClientSetupModMenu"]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
-    "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21"
   },

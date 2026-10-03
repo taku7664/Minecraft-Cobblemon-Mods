@@ -193,3 +193,11 @@ Xaero 적용 코드를 종료된 개발 프로필에 직접 실행해 미니맵�
 
 개발 프로필의 기존 월드 값은 이미 `false`였으며 재적용 후에도 유지됐습니다. 실제 Fabric
 클라이언트 시작과 B·`/waypoint` 입력, 텔레포트 버튼의 게임 내 동작은 확인하지 않았습니다.
+
+## 0.1.8 — 게임 기능을 jbro-policy로 이전
+
+- 개발클라: `cobblemon-client-setup-0.1.8.jar` (SHA-256 `DF20ED3DF7DD4A756FA05A066BCC443FB8FFF4AE213DCDA830C07DDFDBE23CFD`)
+- 함께 필요한 클라이언트 모드: `jbro-policy-0.1.1.jar` (SHA-256 `3C67C161FE53E76A3CB51AEEB8FD675A254EB2188AE23B4D20C49047CA20E474`)
+- 두 JAR 모두 개발 프로필과 서버 저장소 `client-mods`에 배포했습니다. 개발 프로필의 이전 JAR은 `codex-deploy-backups`에 보관했습니다.
+- 셋업 JAR은 시작 전 Xaero 설정만 준비합니다. B 키, `/waypoint [이름]`, 접속 중 새 월드의 Xaero 텔레포트 차단은 jbro-policy JAR이 담당합니다.
+- 두 모듈 빌드와 테스트(셋업 58개, 정책 75개), JAR 내용 및 배포 해시를 확인했습니다. 실제 게임 입력과 텔레포트 버튼 동작은 확인하지 않았습니다.

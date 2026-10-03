@@ -9,6 +9,14 @@ jbro 포켓몬 서버에 적용하는 정책과 다듬기 기능을 하나로 �
 - 설정 파일: `config/jbro-policy.json`
 - 새 서버를 열 때 맞출 설정: [docs/SERVER_OPEN_CHECKLIST.md](docs/SERVER_OPEN_CHECKLIST.md)
 
+## Xaero 웨이포인트
+
+클라이언트에 Xaero's Minimap과 `jbro-policy`를 함께 설치하면 B 키 또는
+`/waypoint [이름]`으로 현재 위치에 영구 웨이포인트를 바로 저장합니다. 이름을 생략하면
+`Waypoint`입니다. 명령은 클라이언트에서 실행하며 이름의 줄바꿈·콜론은 허용하지 않습니다.
+접속 중 새로 생성된 Xaero 월드의 웨이포인트 텔레포트 설정은 끄고 저장합니다.
+기존 월드의 설정·기본 키를 게임 시작 전에 준비하는 코드는 `cobblemon-client-setup`에 있습니다.
+
 ## 광장
 
 `/plaza enter`로 광장 차원(`jbro_policy:plaza`)에 가고, `/plaza exit`로 들어오기 전 위치에 돌아옵니다.

@@ -14,7 +14,6 @@ dependencies {
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     implementation("com.electronwill.night-config:core:3.8.0")
     implementation("com.electronwill.night-config:toml:3.8.0")

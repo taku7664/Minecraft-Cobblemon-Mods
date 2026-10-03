@@ -1,4 +1,4 @@
-package jbro.cobblemon.clientsetup.client;
+package jbro.cobblemon.policy.waypoint;
 
 import static org.junit.jupiter.api.Assertions.*;
 

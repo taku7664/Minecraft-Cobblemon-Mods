@@ -54,9 +54,8 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - 두 기본 프로필의 `ignore_enforcement_if_edit_permission`을 `false`로 설정합니다.
 - 미니맵 기본 프로필의 `minimap_shape = 1`로 원형을 선택합니다. `config/xaerohud.txt`에서 미니맵 모듈만 `x=0`, `y=0`, `centered=false`, `fromRight=true`, `fromBottom=false`로 변경하여 우측 상단에 둡니다. 다른 HUD 모듈과 무관한 속성은 유지합니다.
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
-- 전체 지도는 J, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 두며, 이 모드의 B 키는 현재 위치에 영구 웨이포인트를 바로 저장합니다.
-- 클라이언트 명령 `/waypoint`는 기본 이름 `Waypoint`, `/waypoint <이름>`은 지정한 이름으로 현재 위치에 영구 웨이포인트를 만듭니다. 이름에는 줄바꿈·콜론을 사용할 수 없습니다.
-- 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 새로 생성된 월드는 클라이언트 진입점이 접속 중 매 틱 같은 설정을 끄고 저장합니다. 서버는 별도로 전체 지도 텔레포트를 금지하고 일반 플레이어에게 `/tp` 권한을 주지 않아야 합니다.
+- 전체 지도는 J, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다.
+- 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 접속 중 새로 생성된 월드는 `jbro-policy`가 처리합니다.
 - `resourcepacks/E19-Xaero-Icons-1.5.1.zip`이 설치되어 있으면 활성화하고 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
 - JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
 

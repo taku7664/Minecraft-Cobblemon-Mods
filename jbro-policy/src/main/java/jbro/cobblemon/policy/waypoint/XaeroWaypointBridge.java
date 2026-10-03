@@ -1,4 +1,4 @@
-package jbro.cobblemon.clientsetup.client;
+package jbro.cobblemon.policy.waypoint;
 
 import java.lang.reflect.InvocationTargetException;
 import net.minecraft.client.Minecraft;

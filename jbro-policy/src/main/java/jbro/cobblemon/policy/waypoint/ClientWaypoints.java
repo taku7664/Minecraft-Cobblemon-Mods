@@ -1,4 +1,4 @@
-package jbro.cobblemon.clientsetup.client;
+package jbro.cobblemon.policy.waypoint;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
@@ -15,11 +15,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 /** Client-local Xaero waypoint command and quick marker, sharing one creation path. */
-public final class ClientSetupClient implements ClientModInitializer {
+public final class ClientWaypoints implements ClientModInitializer {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("jbro_policy");
     private static boolean teleportErrorLogged;
     private static final KeyMapping QUICK_WAYPOINT = new KeyMapping(
-        "key.cobblemon_client_setup.quick_waypoint", InputConstants.Type.KEYSYM,
-        InputConstants.KEY_B, "key.categories.cobblemon_client_setup");
+        "key.jbro_policy.quick_waypoint", InputConstants.Type.KEYSYM,
+        InputConstants.KEY_B, "key.categories.jbro_policy");
 
     @Override
     public void onInitializeClient() {
@@ -32,7 +33,7 @@ public final class ClientSetupClient implements ClientModInitializer {
                     teleportErrorLogged = false;
                 } catch (Exception exception) {
                     if (!teleportErrorLogged)
-                        jbro.cobblemon.clientsetup.ClientSetupPreLaunch.LOGGER.error("Could not disable Xaero waypoint teleport", exception);
+                        LOGGER.error("Could not disable Xaero waypoint teleport", exception);
                     teleportErrorLogged = true;
                 }
             }
@@ -40,10 +41,10 @@ public final class ClientSetupClient implements ClientModInitializer {
                 if (client.player != null && client.screen == null) {
                     try {
                         String name = XaeroWaypointBridge.create(client, null);
-                        client.player.displayClientMessage(Component.translatable("message.cobblemon_client_setup.waypoint_created", name), false);
+                        client.player.displayClientMessage(Component.translatable("message.jbro_policy.waypoint_created", name), false);
                     } catch (Exception exception) {
-                        client.player.displayClientMessage(Component.translatable("message.cobblemon_client_setup.waypoint_failed"), false);
-                        jbro.cobblemon.clientsetup.ClientSetupPreLaunch.LOGGER.error("Could not create Xaero waypoint", exception);
+                        client.player.displayClientMessage(Component.translatable("message.jbro_policy.waypoint_failed"), false);
+                        LOGGER.error("Could not create Xaero waypoint", exception);
                     }
                 }
             }
@@ -59,11 +60,11 @@ public final class ClientSetupClient implements ClientModInitializer {
         if (client.player == null) return 0;
         try {
             String name = XaeroWaypointBridge.create(client, requestedName);
-            client.player.displayClientMessage(Component.translatable("message.cobblemon_client_setup.waypoint_created", name), false);
+            client.player.displayClientMessage(Component.translatable("message.jbro_policy.waypoint_created", name), false);
             return 1;
         } catch (Exception exception) {
-            client.player.displayClientMessage(Component.translatable("message.cobblemon_client_setup.waypoint_failed"), false);
-            jbro.cobblemon.clientsetup.ClientSetupPreLaunch.LOGGER.error("Could not create Xaero waypoint", exception);
+            client.player.displayClientMessage(Component.translatable("message.jbro_policy.waypoint_failed"), false);
+            LOGGER.error("Could not create Xaero waypoint", exception);
             return 0;
         }
     }
