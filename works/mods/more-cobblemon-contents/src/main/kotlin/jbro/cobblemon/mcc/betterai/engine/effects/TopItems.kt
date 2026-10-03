@@ -102,8 +102,7 @@ object TopItems : HookSet() {
                 Unit
             }
             on("TakeItem") {
-                val src = sourceMon ?: target as Pokemon
-                val tags = src.baseSpecies.list("tags")?.map { it as String } ?: emptyList()
+                val tags = pokemon.baseSpecies.list("tags")?.map { it as String } ?: emptyList()
                 "Paradox" !in tags
             }
         }
