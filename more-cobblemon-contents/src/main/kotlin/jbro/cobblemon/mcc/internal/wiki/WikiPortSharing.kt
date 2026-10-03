@@ -24,7 +24,8 @@ import net.minecraft.network.Connection
  * 0, so it never reads as "GET " or "HEAD".
  */
 object WikiPortSharing {
-    private val METHODS = listOf("GET ", "HEAD").map { it.toByteArray(StandardCharsets.US_ASCII) }
+    // OPTIONS: a player's local wiki copy asks first before reading their data cross-origin.
+    private val METHODS = listOf("GET ", "HEAD", "OPTI").map { it.toByteArray(StandardCharsets.US_ASCII) }
 
     /** The address and port each connection's client typed to reach the server, from its handshake. */
     private val addresses: MutableMap<Connection, String> = Collections.synchronizedMap(WeakHashMap())

@@ -2,7 +2,8 @@
  * Builds the wiki's shared frame around a page's <main>: the header with the search box, the rail from nav.js,
  * breadcrumbs, a table of contents from the page's <h2>s and previous/next links.
  *
- * Plain script, no modules or fetch: the wiki is opened from disk (file://), where browsers block both.
+ * Plain script, no modules, and fetch only for the server's data: the wiki may be opened from disk (file://),
+ * where browsers block modules and fetching local files.
  * Each page sets <body data-root> to the path back to the wiki root ("." or "..").
  */
 (function () {
@@ -14,18 +15,31 @@
 
   var root = document.body.getAttribute("data-root") || ".";
 
-  // ---- The player's live data, when the Minecraft server serves the wiki ----------------------------------------
-  // A `/wiki` link carries ?t=<token>. It is kept in this browser and taken out of the address bar, and every
-  // page load asks the server for the latest dashboard with it, so a refresh always shows current values.
+  // ---- The player's live data, from the Minecraft server ---------------------------------------------------------
+  // A `/wiki` link carries ?t=<token>, and ?s=<server> when the player's own client serves these pages on localhost
+  // and the data lives on the game server. Both are kept in this browser and taken out of the address bar, and every
+  // page load asks the server for the latest dashboard with them, so a refresh always shows current values.
   var TOKEN_KEY = "mccWikiToken";
+  var SERVER_KEY = "mccWikiServer";
   function storage(action) { try { return action(window.localStorage); } catch (ignored) { return null; } }
-  var linkToken = new URLSearchParams(location.search).get("t");
-  if (linkToken) {
-    storage(function (store) { store.setItem(TOKEN_KEY, linkToken); });
-    history.replaceState(null, "", location.pathname + location.hash);
+  var params = new URLSearchParams(location.search);
+  var linkToken = params.get("t");
+  var linkServer = /^https?:\/\/[^\/?#]+$/.test(params.get("s") || "") ? params.get("s") : null;
+  if (linkToken || linkServer) {
+    storage(function (store) {
+      if (linkToken) store.setItem(TOKEN_KEY, linkToken);
+      if (linkServer) store.setItem(SERVER_KEY, linkServer);
+    });
+    params.delete("t");
+    params.delete("s");
+    var rest = params.toString();
+    history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
   }
   var token = linkToken || storage(function (store) { return store.getItem(TOKEN_KEY); });
-  var served = location.protocol === "http:" || location.protocol === "https:";
+  var server = linkServer || storage(function (store) { return store.getItem(SERVER_KEY); });
+  var served = !!server || location.protocol === "http:" || location.protocol === "https:";
+  /** The address of the server's `/api/<path>`: the game server's when known, else the one serving these pages. */
+  function api(path) { return (server || root) + "/api/" + path; }
   var mePromise = null;
 
   window.MccWiki = {
@@ -34,7 +48,7 @@
       if (mePromise) return mePromise;
       mePromise = !served ? Promise.reject(new Error("offline"))
         : !token ? Promise.reject(new Error("no_token"))
-        : fetch(root + "/api/me", { headers: { "X-MCC-Wiki-Token": token }, cache: "no-store" }).then(function (response) {
+        : fetch(api("me"), { headers: { "X-MCC-Wiki-Token": token }, cache: "no-store" }).then(function (response) {
           if (response.status === 401) throw new Error("unknown_token");
           if (!response.ok) throw new Error("server_" + response.status);
           return response.json();
@@ -42,6 +56,9 @@
       return mePromise;
     },
     forget: function () { storage(function (store) { store.removeItem(TOKEN_KEY); }); },
+    api: api,
+    served: served,
+    token: function () { return token; },
   };
 
   // Fills <span data-me="bp"> and the like on any page; a path like "sections.league.cap" reaches content data.

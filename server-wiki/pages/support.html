@@ -48,16 +48,13 @@
 <script src="../assets/wiki.js"></script>
 <script>
 (function () {
-  var root = document.body.getAttribute("data-root") || ".";
-  var token = null;
-  try { token = window.localStorage.getItem("mccWikiToken"); } catch (ignored) {}
+  var token = MccWiki.token();
   var form = document.getElementById("inquiry");
   var reason = document.getElementById("inquiry-reason");
   var count = document.getElementById("inquiry-count");
   var result = document.getElementById("inquiry-result");
   var send = document.getElementById("inquiry-send");
-  var served = location.protocol === "http:" || location.protocol === "https:";
-  if (!served || !token) { document.getElementById("inquiry-login").hidden = false; return; }
+  if (!MccWiki.served || !token) { document.getElementById("inquiry-login").hidden = false; return; }
   form.hidden = false;
 
   function show(text, color) { result.textContent = text; result.style.color = color; }
@@ -75,7 +72,7 @@
     event.preventDefault();
     send.disabled = true;
     show("보내는 중…", "");
-    fetch(root + "/api/support/send?reason=" + encodeURIComponent(reason.value), {
+    fetch(MccWiki.api("support/send?reason=" + encodeURIComponent(reason.value)), {
       headers: { "X-MCC-Wiki-Token": token }, cache: "no-store",
     }).then(function (response) { return response.json(); }).then(function (body) {
       if (body.ok) { show("문의를 보냈습니다. 확인 후 답변드리겠습니다.", "green"); reason.value = ""; count.textContent = "0"; }

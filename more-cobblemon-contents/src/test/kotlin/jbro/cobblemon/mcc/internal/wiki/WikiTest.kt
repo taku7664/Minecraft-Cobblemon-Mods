@@ -29,6 +29,29 @@ class WikiTest {
     }
 
     @Test
+    fun `a player whose client serves the wiki gets a localhost link that names the server for their data`() {
+        val id = UUID.randomUUID()
+        assertEquals("http://localhost:18100/?t=abc&s=http%3A%2F%2Fplay.example.com%3A25566",
+            WikiServer.link(id, "abc", localPort = 18100, server = "http://play.example.com:25566"))
+        assertEquals("http://play.example.com:25566/?t=abc", WikiServer.link(id, "abc", localPort = null, server = "http://play.example.com:25566"))
+        assertTrue(WikiPortSharing.isHttp(io.netty.buffer.Unpooled.wrappedBuffer("OPTIONS /api/me HTTP/1.1\r\n".toByteArray())))
+    }
+
+    @Test
+    fun `local wiki files stay inside the wiki and get their types`() {
+        val root = Files.createTempDirectory("wiki")
+        Files.writeString(root.resolve("index.html"), "<p>hi</p>")
+        Files.createDirectories(root.resolve("assets"))
+        Files.writeString(root.resolve("assets/wiki.css"), "p{}")
+        Files.writeString(root.parent.resolve("secret.txt"), "no")
+        assertEquals("text/html; charset=utf-8", WikiFiles.read(root, "/").type)
+        assertEquals(200, WikiFiles.read(root, "/assets/wiki.css").status)
+        assertEquals(403, WikiFiles.read(root, "/../secret.txt").status)
+        assertEquals(403, WikiFiles.read(root, "/%2e%2e/secret.txt").status)
+        assertEquals(404, WikiFiles.read(root, "/missing.html").status)
+    }
+
+    @Test
     fun `links use the address the player typed, bracketing IPv6 and dropping client markers`() {
         assertEquals("play.example.com:25566", WikiPortSharing.address("play.example.com.", 25566))
         assertEquals("116.33.1.2:25566", WikiPortSharing.address("116.33.1.2\u0000FML3\u0000", 25566))

@@ -7,6 +7,8 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.net.URLDecoder
+import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,6 +24,9 @@ import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 
@@ -44,26 +49,42 @@ internal object WikiServer {
 
     val running: Boolean get() = http != null
 
+    /** The port each player's own client serves its copy of the wiki on, as it reported on joining. */
+    private val localPorts = ConcurrentHashMap<UUID, Int>()
+
     fun register() {
         ServerLifecycleEvents.SERVER_STARTED.register(::start)
         ServerLifecycleEvents.SERVER_STOPPING.register { stop() }
+        PayloadTypeRegistry.playC2S().register(WikiLocalPayload.TYPE, WikiLocalPayload.CODEC)
+        ServerPlayNetworking.registerGlobalReceiver(WikiLocalPayload.TYPE) { payload, context ->
+            if (payload.port in WikiLocalPayload.PORTS) localPorts[context.player().uuid] = payload.port
+        }
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> localPorts.remove(handler.player.uuid) }
     }
 
     @Volatile
     private var server: MinecraftServer? = null
 
-    fun linkFor(playerId: UUID): String? = tokens?.let { "${baseFor(playerId)}/?t=${it.tokenFor(playerId)}" }
+    fun linkFor(playerId: UUID): String? = tokens?.let { link(playerId, it.tokenFor(playerId)) }
 
-    fun resetLinkFor(playerId: UUID): String? = tokens?.let { "${baseFor(playerId)}/?t=${it.reset(playerId)}" }
+    fun resetLinkFor(playerId: UUID): String? = tokens?.let { link(playerId, it.reset(playerId)) }
 
     /**
-     * Where [playerId] opens the wiki: `public_url` when set, else the address they typed to join, whose game port
-     * serves the wiki too ([WikiPortSharing]), else this machine's own wiki port.
+     * The player's own copy of the wiki on localhost when their client serves one, reading their data from this
+     * server ([baseFor]) through `?s=`; else this server's pages.
      */
+    internal fun link(playerId: UUID, token: String, localPort: Int? = localPorts[playerId], server: String = baseFor(playerId)): String =
+        if (localPort == null) "$server/?t=$token"
+        else "http://localhost:$localPort/?t=$token&s=${URLEncoder.encode(server, StandardCharsets.UTF_8)}"
+
     /** Where anyone opens the wiki: `public_url` when set, else the address the latest player from elsewhere joined at. */
     fun sharedBase(): String =
         if (config.publicUrl.isNotBlank()) config.base else WikiPortSharing.lastPublicBase ?: config.base
 
+    /**
+     * Where [playerId] reaches this server's wiki: `public_url` when set, else the address they typed to join, whose
+     * game port serves the wiki too ([WikiPortSharing]), else this machine's own wiki port.
+     */
     private fun baseFor(playerId: UUID): String {
         if (config.publicUrl.isNotBlank()) return config.base
         val connection = server?.playerList?.getPlayer(playerId)
@@ -110,6 +131,17 @@ internal object WikiServer {
     private class Reply(val status: Int, val type: String, val body: ByteArray, val cache: Boolean = false)
 
     private fun respond(exchange: HttpExchange, handle: () -> Reply) {
+        // A player's local copy of the wiki asks for their data from another origin; the token in a header, not a
+        // cookie, is what names them, so any origin may ask.
+        exchange.responseHeaders.add("Access-Control-Allow-Origin", "*")
+        if (exchange.requestMethod == "OPTIONS") {
+            exchange.responseHeaders.add("Access-Control-Allow-Methods", "GET, HEAD")
+            exchange.responseHeaders.add("Access-Control-Allow-Headers", "X-MCC-Wiki-Token")
+            exchange.responseHeaders.add("Access-Control-Max-Age", "600")
+            exchange.sendResponseHeaders(204, -1)
+            exchange.close()
+            return
+        }
         val reply = try {
             if (exchange.requestMethod != "GET" && exchange.requestMethod != "HEAD") text(405, "method not allowed") else handle()
         } catch (failure: Exception) {
@@ -190,17 +222,8 @@ internal object WikiServer {
         addProperty("updated", System.currentTimeMillis())
     }
 
-    /** A file under [root]; a directory serves its index.html, and nothing outside [root] is ever read. */
-    private fun file(root: Path, exchange: HttpExchange): Reply {
-        val path = URLDecoder.decode(exchange.requestURI.rawPath, StandardCharsets.UTF_8).trimStart('/')
-        var target = root.resolve(path).normalize()
-        if (!target.startsWith(root)) return text(403, "forbidden")
-        if (Files.isDirectory(target)) target = target.resolve("index.html")
-        if (!Files.isRegularFile(target)) return text(404, "not found")
-        val extension = target.fileName.toString().substringAfterLast('.', "").lowercase()
-        val type = TYPES[extension] ?: "application/octet-stream"
-        return Reply(200, type, Files.readAllBytes(target), cache = extension in CACHED)
-    }
+    private fun file(root: Path, exchange: HttpExchange): Reply =
+        WikiFiles.read(root, exchange.requestURI.rawPath).let { Reply(it.status, it.type, it.body, it.cache) }
 
     private fun query(exchange: HttpExchange): Map<String, String> =
         exchange.requestURI.rawQuery.orEmpty().split('&').filter { '=' in it }.associate { pair ->
@@ -210,11 +233,4 @@ internal object WikiServer {
 
     private const val THREADS = 4
     private const val REQUEST_TIMEOUT_SECONDS = 5L
-    private val CACHED = setOf("woff2", "png", "jpg", "jpeg", "gif", "webp", "svg")
-    private val TYPES = mapOf(
-        "html" to "text/html; charset=utf-8", "css" to "text/css; charset=utf-8", "js" to "text/javascript; charset=utf-8",
-        "json" to "application/json; charset=utf-8", "txt" to "text/plain; charset=utf-8", "md" to "text/plain; charset=utf-8",
-        "woff2" to "font/woff2", "png" to "image/png", "jpg" to "image/jpeg", "jpeg" to "image/jpeg", "gif" to "image/gif",
-        "webp" to "image/webp", "svg" to "image/svg+xml",
-    )
 }

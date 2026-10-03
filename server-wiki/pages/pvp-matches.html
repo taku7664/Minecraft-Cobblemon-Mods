@@ -51,7 +51,7 @@
     var FORMAT = { single: "싱글", double: "더블" };
     var $ = function (id) { return document.getElementById(id); };
     function el(tag, className, text) { var n = document.createElement(tag); if (className) n.className = className; if (text != null) n.textContent = text; return n; }
-    var served = location.protocol === "http:" || location.protocol === "https:";
+    var served = MccWiki.served;
     var player = null, next = null, loading = false;
 
     function state(html) { var s = $("pm-state"); s.innerHTML = html; s.hidden = !html; }
@@ -83,10 +83,9 @@
       if (player) params.set("player", player);
       if (next) params.set("before", next);
       var headers = {};
-      var token = null;
-      try { token = localStorage.getItem("mccWikiToken"); } catch (ignored) {}
+      var token = MccWiki.token();
       if (token) headers["X-MCC-Wiki-Token"] = token;
-      fetch("../api/pvp/matches?" + params, { headers: headers, cache: "no-store" }).then(function (response) {
+      fetch(MccWiki.api("pvp/matches?" + params), { headers: headers, cache: "no-store" }).then(function (response) {
         return response.json().then(function (body) { return { ok: response.ok, body: body }; });
       }).then(function (result) {
         loading = false;
