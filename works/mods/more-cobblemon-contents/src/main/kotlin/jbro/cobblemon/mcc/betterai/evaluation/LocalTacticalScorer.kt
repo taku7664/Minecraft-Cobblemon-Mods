@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import java.util.Locale
@@ -365,6 +367,9 @@ internal object LocalTacticalScorer {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
     ): Double {
+        if (LocalRevivalBlessing.applies(candidate)) {
+            return LocalRevivalBlessing.score(candidate, context, tuning)
+        }
         val active = LocalPublicPositionFacts.activeAlly(candidate, context)
         val activeHp = active?.hpFraction ?: allyActiveHp(context)
         val target = LocalPublicPositionFacts.switchTarget(candidate, context)

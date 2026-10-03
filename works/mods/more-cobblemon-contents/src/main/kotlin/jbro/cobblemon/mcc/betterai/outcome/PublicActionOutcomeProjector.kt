@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.outcome
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalPublicPositionFacts
@@ -184,7 +186,9 @@ internal object PublicActionOutcomeProjector {
         return blank(candidate).copy(
             actorHpBefore = LocalPublicPositionFacts.activeAlly(candidate, context)?.hpFraction,
             switchEntryHpAfter = target?.let {
-                LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction)
+                if (LocalRevivalBlessing.applies(candidate))
+                    LocalRevivalBlessing.restoredHp(it)
+                else LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction)
             },
         )
     }

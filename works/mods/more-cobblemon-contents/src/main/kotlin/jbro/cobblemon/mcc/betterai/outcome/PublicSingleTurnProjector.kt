@@ -28,6 +28,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
@@ -598,7 +599,7 @@ internal object PublicSingleTurnProjector {
         passSource: BattlePokemonStateView? = null,
         shedTail: Boolean = false,
     ): BattleStateView {
-        if ("revival_blessing" in action.tags) return LocalPersistentMoveState.revive(state, side, action.switchPokemonId)
+        if (LocalRevivalBlessing.applies(action)) return LocalRevivalBlessing.project(state, side, action, entryAbility)
         val actionWithoutFacts = action.withoutFacts()
         val calculatedContext = calculationCache.getOrCalculate(state, side, actionWithoutFacts, catalog = sourceContext.publicActionCatalog) {
             PublicBattleTacticalCalculator.calculate(

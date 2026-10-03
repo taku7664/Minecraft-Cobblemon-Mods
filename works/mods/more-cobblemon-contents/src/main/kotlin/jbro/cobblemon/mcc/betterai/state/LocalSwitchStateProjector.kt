@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
 
 /** Applies the public, event-free part of a single switch for scoring and recursive projection. */
 internal object LocalSwitchStateProjector {
@@ -16,8 +17,8 @@ internal object LocalSwitchStateProjector {
         passSource: BattlePokemonStateView? = null,
         shedTail: Boolean = false,
     ): BattleStateView {
+        if (LocalRevivalBlessing.applies(action)) return LocalRevivalBlessing.project(state, side, action, entryAbility)
         val incomingId = action.switchPokemonId ?: return state
-        if ("revival_blessing" in action.tags) return LocalPersistentMoveState.revive(state, side, incomingId)
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingId && it.side == side && !it.fainted
         } ?: return state
