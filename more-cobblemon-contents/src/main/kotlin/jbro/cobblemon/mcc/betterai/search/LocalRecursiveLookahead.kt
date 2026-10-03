@@ -132,6 +132,9 @@ internal object LocalRecursiveLookaheadEvaluator {
         // not fit a decision's budget, and when it was forced in, narrowed or not, it played no better.
         val requestedDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
             else profile.difficulty.lookaheadPlies.coerceAtLeast(1)
+        // A doubles turn keeps all retained joint choices: its work is bounded by the clock rather
+        // than the singles node allowance, which could stop before even one complete turn.
+        val nodeLimit = budget.nodeLimit.takeUnless { context.state.format == BattleFormat.DOUBLE }
         val moveUsage = moveUsageForFormat(context.state.format)
         val searchStartedAt = clockMillis()
         val localDeadline = LocalLookaheadBudgetPolicy.deadline(
@@ -222,7 +225,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 profile = profile,
                 tuning = tuning,
                 deadlineMillis = localDeadline,
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = nodeLimit,
                 chanceBranchesPerMove = budget.chanceBranchesPerMove,
                 initialState = context.state,
                 initialStateUtility = baseline,
@@ -502,7 +505,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 previousSignature = previousDecisionSignature,
                 currentSignature = currentDecisionSignature,
                 rootPairs = if (tuning.skipHopelessDepth) search.rootPairsProjected else null,
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = nodeLimit,
             )
             previousDepthCost = currentDepthCost
             previousDecisionSignature = currentDecisionSignature
@@ -572,7 +575,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         private val profile: BattleTrainerProfile,
         private val tuning: LocalDecisionTuning,
         private val deadlineMillis: Long,
-        private val nodeLimit: Int,
+        private val nodeLimit: Int?,
         private val chanceBranchesPerMove: Int,
         initialState: BattleStateView,
         initialStateUtility: Double,
@@ -1219,7 +1222,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (truncated) return false
             nodesVisited++
             when {
-                nodesVisited > nodeLimit -> stop(LocalLookaheadTerminationReason.NODE_BUDGET)
+                nodeLimit != null && nodesVisited > nodeLimit -> stop(LocalLookaheadTerminationReason.NODE_BUDGET)
                 clockMillis() >= deadlineMillis - DEADLINE_MARGIN_MILLIS -> {
                     stop(LocalLookaheadTerminationReason.TIME_BUDGET)
                 }

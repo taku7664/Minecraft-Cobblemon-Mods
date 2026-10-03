@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.search
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
@@ -184,7 +185,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     )
                 },
                 productActions = context.candidates,
-                maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                maxDepth = requestedDepth(context, profile, tuning),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
@@ -192,7 +193,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = budget.nodeLimit.takeUnless { context.state.format == BattleFormat.DOUBLE },
                 deadlineNanos = deadlineNanos,
             ),
         )
@@ -263,7 +264,7 @@ internal class NativeInitialProductDecisionEvaluator(
             "An available native reconciliation must return its conditioned session"
         }
         val retained = reconciled.copy(allowedMechanics = allowedMechanics)
-        if (budget.nodeLimit < reconciled.worlds.size) {
+        if (context.state.format != BattleFormat.DOUBLE && budget.nodeLimit < reconciled.worlds.size) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                 searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
@@ -310,7 +311,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     )
                 },
                 productActions = context.candidates,
-                maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                maxDepth = requestedDepth(context, profile, tuning),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
@@ -318,7 +319,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = budget.nodeLimit.takeUnless { context.state.format == BattleFormat.DOUBLE },
                 deadlineNanos = deadlineNanos,
             ),
         )
@@ -359,6 +360,13 @@ internal class NativeInitialProductDecisionEvaluator(
             sessionState = retained.copy(worlds = searchedWorlds),
         )
     }
+
+    private fun requestedDepth(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+    ): Int = if (context.state.format == BattleFormat.DOUBLE && tuning.doublesSingleTurn) 1
+        else profile.difficulty.lookaheadPlies.coerceAtLeast(1)
 
     /** Computed from the real decision context, so weights key the real battle Pokemon IDs. */
     private fun threatWeights(

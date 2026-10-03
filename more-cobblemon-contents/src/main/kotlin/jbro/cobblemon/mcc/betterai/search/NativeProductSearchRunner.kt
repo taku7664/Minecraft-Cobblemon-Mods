@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
@@ -27,7 +28,8 @@ internal data class NativeProductSearchRequest(
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     val allowedMechanics: Set<String>? = null,
     val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
-    val nodeLimit: Int,
+    /** Singles keeps its world allocation; doubles has no node ceiling and retains its deadline. */
+    val nodeLimit: Int?,
     val deadlineNanos: Long,
     val evaluate: (BattleStateView) -> Double,
 ) {
@@ -38,7 +40,7 @@ internal data class NativeProductSearchRequest(
         }
         require(maxDepth > 0)
         require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
-        require(nodeLimit > 0)
+        require(nodeLimit != null && nodeLimit > 0 || publicState.format == BattleFormat.DOUBLE && nodeLimit == null)
     }
 }
 

@@ -31,6 +31,23 @@ import org.junit.jupiter.api.Test
 
 class NativeProductWorldSearchAggregatorTest {
     @Test
+    fun `doubles worlds share the deadline without per world or total node ceilings`() {
+        val limits = mutableListOf<Int?>()
+        val deadlines = mutableListOf<Long>()
+        val aggregator = NativeProductWorldSearchAggregator { request ->
+            limits += request.nodeLimit
+            deadlines += request.deadlineNanos
+            completed(request.productActions, 1, 1.0, 0.0, nodesVisited = 100)
+        }
+        val result = aggregator.search(request(nodeLimit = 1, format = BattleFormat.DOUBLE))
+
+        assertEquals(listOf(null, null), limits)
+        assertEquals(listOf(Long.MAX_VALUE, Long.MAX_VALUE), deadlines)
+        assertEquals(200, result.nodesVisited)
+        assertEquals(NativeProductWorldSearchStatus.COMPLETED, result.status)
+    }
+
+    @Test
     fun `failed native root keeps the actionable cause`() {
         val aggregator = NativeProductWorldSearchAggregator { _ ->
             NativeProductSearchRun(
@@ -138,8 +155,9 @@ class NativeProductWorldSearchAggregatorTest {
     fun `shares one total node budget across worlds`() {
         val limits = mutableListOf<Int>()
         val aggregator = NativeProductWorldSearchAggregator { request ->
-            limits += request.nodeLimit
-            completed(request.productActions, 1, 1.0, 0.0, nodesVisited = request.nodeLimit)
+            val limit = requireNotNull(request.nodeLimit) { "Singles must retain a bounded per-world node allocation" }
+            limits += limit
+            completed(request.productActions, 1, 1.0, 0.0, nodesVisited = limit)
         }
 
         val result = aggregator.search(request(nodeLimit = 10))
@@ -170,10 +188,11 @@ class NativeProductWorldSearchAggregatorTest {
     private fun request(
         maxDepth: Int = 1,
         nodeLimit: Int = 100,
+        format: BattleFormat = BattleFormat.SINGLE,
     ) = NativeProductWorldSearchRequest(
         worlds = listOf(
-            world("world-b", 0.75),
-            world("world-a", 0.25),
+            world("world-b", 0.75, format),
+            world("world-a", 0.25, format),
         ),
         productActions = ACTIONS,
         maxDepth = maxDepth,
@@ -181,11 +200,12 @@ class NativeProductWorldSearchAggregatorTest {
         deadlineNanos = Long.MAX_VALUE,
     )
 
-    private fun world(id: String, probability: Double) = NativeProductWorldSearchInput(
+    private fun world(id: String, probability: Double, format: BattleFormat) = NativeProductWorldSearchInput(
         key = NativeSearchWorldKey(id, 0),
         probability = probability,
         definition = DEFINITION,
-        publicState = STATE,
+        publicState = BattleStateView(STATE.battleId, format, STATE.turn, STATE.pokemon, STATE.field,
+            STATE.remainingPokemonBySide, STATE.observedEvents, STATE.inferences),
         evaluate = { 0.0 },
     )
 

@@ -298,13 +298,13 @@ internal class LocalTacticalBrain(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
         )
         val configuredBudget = lookaheadBudget(profile.difficulty.tier)
-        // The legacy search only: native nodes are full Showdown turns and keep their own bound.
+        // Position scaling applies to legacy singles nodes; native singles keeps its world budget.
         val phaseBudget = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS) {
             LocalLookaheadBudgetPolicy.forPosition(configuredBudget, calculatedContext.state)
         } else configuredBudget
         val budget = if (unboundedTestDecision) phaseBudget.copy(timeMillis = Long.MAX_VALUE) else phaseBudget
         // Native nodes are full Showdown turns, orders of magnitude costlier than legacy projections,
-        // so the node limit alone never stops them in time. AI test battles lift the wall clock for
+        // so native search always retains its bounded clock. AI test battles lift the wall clock for
         // the legacy search only; the native search keeps a bounded clock and falls back when it
         // completes no depth, exactly as it would in a real battle.
         val nativeBudget = if (unboundedTestDecision) {
@@ -320,7 +320,7 @@ internal class LocalTacticalBrain(
             nativeBudget,
             active?.nativeProductState,
         )
-        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, nativeBudget)
+        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, nativeBudget, tuning.doublesSingleTurn)
         var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
         // Roots that reconciled with the current board survive a failed native search. The legacy
         // choice made this turn becomes their pending action, so the next turn can continue natively
@@ -472,7 +472,7 @@ internal class LocalTacticalBrain(
                 )
             },
         )
-        decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
+        decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget, tuning.doublesSingleTurn)
         // The ace keeps the once-per-battle mechanics: worked out once, and again when a new opponent is seen.
         val aceScores = if (!rulesApply || active == null) emptyMap() else {
             val seen = difficultyContext.state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }

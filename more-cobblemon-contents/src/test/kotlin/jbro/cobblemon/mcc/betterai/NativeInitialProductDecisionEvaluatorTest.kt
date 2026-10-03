@@ -46,6 +46,45 @@ import org.junit.jupiter.api.Test
 
 class NativeInitialProductDecisionEvaluatorTest {
     @Test
+    fun `opening doubles searches one ply without a node allowance while singles keeps its policy`() {
+        checkSearchBudget(continued = false)
+    }
+
+    @Test
+    fun `continued doubles searches one ply without a node allowance while singles keeps its policy`() {
+        checkSearchBudget(continued = true)
+    }
+
+    private fun checkSearchBudget(continued: Boolean) {
+        val profile = BattleTrainerProfile.balanced(2)
+        for (format in BattleFormat.entries) {
+            val context = context(format = format)
+            val sourceSession = sessionState(context, frame(), null)
+            val twoWorldSession = sourceSession.copy(worlds = listOf(
+                sourceSession.worlds.single().copy(key = NativeSearchWorldKey("world-a", 0), probability = 0.5),
+                sourceSession.worlds.single().copy(key = NativeSearchWorldKey("world-b", 0), probability = 0.5),
+            ))
+            var observed: jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchRequest? = null
+            val evaluator = NativeInitialProductDecisionEvaluator(
+                planWorlds = { supplied, _ -> twoWorldPlan(supplied) },
+                reconcileSession = { _, _, _ -> NativeProductSessionReconciliation(
+                    NativeProductSessionReconcileStatus.AVAILABLE, sessionState = twoWorldSession) },
+                searchWorlds = { request -> observed = request
+                    NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED) },
+                nowEpochMillis = { 1_000L }, nanoTime = { 5_000_000L },
+                leafEvaluator = { _, _, _, _ -> 0.0 },
+            )
+            val nodes = if (format == BattleFormat.DOUBLE) 1 else 100
+            evaluator.evaluate(context, profile, LocalDecisionTuning.CURRENT,
+                LocalLookaheadBudget(250L, nodes, 2), if (continued) twoWorldSession else null)
+            val request = requireNotNull(observed) { "$format search must not fail the one-node-per-world reservation" }
+            assertEquals(if (format == BattleFormat.DOUBLE) null else 100, request.nodeLimit)
+            assertEquals(if (format == BattleFormat.DOUBLE) 1 else profile.difficulty.lookaheadPlies, request.maxDepth)
+            assertEquals(255_000_000L, request.deadlineNanos)
+        }
+    }
+
+    @Test
     fun `turns posterior native values into product ranks without handmade score carryover`() {
         val context = context()
         var observedDeadline = 0L
@@ -621,10 +660,10 @@ class NativeInitialProductDecisionEvaluatorTest {
         issues = emptyList(),
     )
 
-    private fun context(turn: Int = 1): BattleDecisionContext {
+    private fun context(turn: Int = 1, format: BattleFormat = BattleFormat.SINGLE): BattleDecisionContext {
         val state = BattleStateView(
             battleId = BATTLE,
-            format = BattleFormat.SINGLE,
+            format = format,
             turn = turn,
             pokemon = listOf(
                 pokemon(ALLY, BattleSide.ALLY),

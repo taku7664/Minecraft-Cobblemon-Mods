@@ -30,6 +30,50 @@ import org.junit.jupiter.api.Test
 
 class NativeRecursiveSearchTest {
     @Test
+    fun `native doubles exceeds the supplied node ceiling while singles still stops`() {
+        for (format in BattleFormat.entries) {
+            val root = frame("root", 1, 100, 100, listOf("tackle", "psychic", "shadowball"), listOf("growl"))
+            val worker = budgetWorker()
+            val result = NativeRecursiveSearch(NativeShowdownSearchTree(worker, root, template(format)),
+                NativeSearchWorldKey("budget-$format", 0), ::material, nodeLimit = 1).evaluate(1)
+
+            assertEquals(if (format == BattleFormat.DOUBLE) 3 else 1, result.nodesVisited)
+            assertEquals(if (format == BattleFormat.DOUBLE) 1 else 0, result.depthCompleted)
+            assertEquals(format == BattleFormat.SINGLE, result.truncated)
+            assertEquals(if (format == BattleFormat.DOUBLE) NativeSearchTerminationReason.COMPLETED
+                else NativeSearchTerminationReason.NODE_BUDGET, result.terminationReason)
+        }
+    }
+
+    @Test
+    fun `native doubles still obeys its deadline after passing the node ceiling`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "psychic", "shadowball"), listOf("growl"))
+        var visits = 0
+        val worker = budgetWorker { visits++ }
+        val result = NativeRecursiveSearch(NativeShowdownSearchTree(worker, root, template(BattleFormat.DOUBLE)),
+            NativeSearchWorldKey("deadline-double", 0), ::material, nodeLimit = 1,
+            shouldContinue = { visits < 2 }).evaluate(1)
+
+        assertEquals(2, result.nodesVisited)
+        assertEquals(0, result.depthCompleted)
+        assertTrue(result.truncated)
+        assertEquals(NativeSearchTerminationReason.DEADLINE, result.terminationReason)
+    }
+
+    private fun budgetWorker(onBranch: () -> Unit = {}): NativeBranchWorker = object : NativeBranchWorker {
+        override val rulesFingerprint = "test-rules"
+        override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = error("Existing frame")
+        override fun rebindMoves(snapshotJson: String,
+            rebindings: List<jbro.cobblemon.mcc.betterai.simulation.NativeMoveSetRebinding>): NativeBattleFrame =
+            error("No move hypotheses to rebind")
+        override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
+            onBranch()
+            return terminal("$snapshotJson|$p1Choice|$p2Choice", 100, 50)
+        }
+        override fun close() = Unit
+    }
+
+    @Test
     fun `admitted setup extension compares completed horizon and attacks on final voluntary turn`() {
         val root = frame("root", 1, 100, 100, listOf("tackle", "swordsdance"), listOf("growl"))
         val child = frame("child", 2, 100, 100, listOf("tackle", "swordsdance"), listOf("growl"))
@@ -568,9 +612,9 @@ class NativeRecursiveSearchTest {
 
     private fun rounded(value: Double): Double = kotlin.math.round(value * 10.0) / 10.0
 
-    private fun template() = BattleStateView(
+    private fun template(format: BattleFormat = BattleFormat.SINGLE) = BattleStateView(
         battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
-        format = BattleFormat.SINGLE,
+        format = format,
         turn = 1,
         pokemon = listOf(
             templatePokemon(ALLY, BattleSide.ALLY),

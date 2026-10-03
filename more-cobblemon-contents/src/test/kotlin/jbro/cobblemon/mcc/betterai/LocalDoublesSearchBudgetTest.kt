@@ -11,32 +11,14 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * What the joint action does to the search budget.
+ * Guards a complete current-turn doubles search over recorded self-play positions.
  *
- * A doubles turn is not one decision, it is a Cartesian product of two. The factory builds it as
- * exactly that, with no cap: each slot offers its moves times their target variants plus its
- * switches, and the turn is every pairing of the two. Singles asks the search to weigh about a dozen
- * actions; doubles asks it to weigh over a hundred, out of the same fixed budget.
- *
- * That is a thing to know rather than a thing to assume, and it was never measured because nothing
- * played doubles. The plan already records the shape of the risk from the singles side - "uncertainty
- * widens the branching while the budget stays fixed" - and this is that same sentence with a much
- * larger multiplier in front of it.
- *
- * The binding limit turned out to be the node allowance rather than the clock: a doubles position
- * spent about 18,000 nodes against the 15,000 a Standard trainer is given, while singles spends 2,600
- * of the same allowance and finishes two plies. Capping the root list at eight moved doubles from
- * 0.75 plies to 1.08 *and* made it cheaper, because the trainer's own move list was the one thing in
- * the search that had no cap - the opponent's replies were already limited to five a slot.
- *
- * The depth is still half of singles, and that is not the same as the search being wasted. Measured
- * separately, the doubles search changes the chosen action in 15% of positions against 5% in singles,
- * for 181ms against 51ms. A shallow search is not a useless one here: doubles is exactly where the
- * flat heuristic has the most to miss - the partner in the blast, a redirect, two attacks landing on
- * one target - and a single resolved turn catches those.
- *
- * So this reports and guards a floor rather than asserting a depth. The remaining gap to singles is
- * structural: a doubles turn is four actions and its ply costs roughly twenty times a singles one.
+ * Doubles retains joint choices from four actions per slot plus cooperative leaders. Applying the
+ * singles node allowance to that Cartesian product previously cut seven of these 24 positions
+ * before their first ply completed (mean depth 0.71). Doubles now resolves one ply without a node
+ * ceiling while preserving the ten-second clock deadline and existing candidate/chance limits.
+ * Singles keeps its tier node allowance and configured depth. This measurement reports both paths
+ * without treating a partially evaluated doubles root as a completed turn.
  */
 class LocalDoublesSearchBudgetTest {
     @Test
@@ -99,6 +81,11 @@ class LocalDoublesSearchBudgetTest {
                 profile = profile,
                 tuning = LocalDecisionTuning.CURRENT,
             )
+            if (evaluation.depthCompleted < 1) {
+                println("incomplete format=$format turn=${context.state.turn} reason=${evaluation.terminationReason}" +
+                    " nodes=${evaluation.nodesVisited} partial=${evaluation.partialDepthCandidates}" +
+                    " candidates=${calculated.candidates.size} remaining=${context.state.remainingPokemonBySide}")
+            }
             candidates += calculated.candidates.size
             depth += evaluation.depthCompleted
             nodes += evaluation.nodesVisited

@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.search
 
 import kotlin.math.abs
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
@@ -33,8 +34,8 @@ internal data class NativeProductWorldSearchRequest(
     /** Canonical mechanics the live battle permits; null leaves native legality unfiltered. */
     val allowedMechanics: Set<String>? = null,
     val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
-    /** One total deterministic budget shared by every retained world. */
-    val nodeLimit: Int,
+    /** One shared node ceiling for singles; null denotes doubles work bounded only by the deadline. */
+    val nodeLimit: Int?,
     val deadlineNanos: Long,
 ) {
     init {
@@ -47,7 +48,9 @@ internal data class NativeProductWorldSearchRequest(
         require(productActions.map(BattleActionCandidate::actionId).distinct().size == productActions.size)
         require(maxDepth > 0)
         require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
-        require(nodeLimit >= worlds.size) {
+        require(nodeLimit == null || nodeLimit > 0)
+        require(worlds.all { it.publicState.format == BattleFormat.DOUBLE } ||
+            nodeLimit != null && nodeLimit >= worlds.size) {
             "The native product node budget must reserve at least one node per retained world"
         }
     }
@@ -106,13 +109,15 @@ internal class NativeProductWorldSearchAggregator(
                 .thenBy { it.key.randomSampleIndex }
                 .thenBy { it.key.lineage },
         )
-        var remainingNodeBudget = request.nodeLimit
+        var remainingNodeBudget = request.nodeLimit.takeUnless {
+            orderedWorlds.all { it.publicState.format == BattleFormat.DOUBLE }
+        }
         var nodesVisited = 0
         val completed = mutableListOf<CompletedWorld>()
 
         orderedWorlds.forEachIndexed { index, world ->
             val remainingWorlds = orderedWorlds.size - index
-            val worldNodeLimit = (remainingNodeBudget / remainingWorlds).coerceAtLeast(1)
+            val worldNodeLimit = remainingNodeBudget?.let { (it / remainingWorlds).coerceAtLeast(1) }
             val run = runWorld(
                 NativeProductSearchRequest(
                     definition = world.definition,
@@ -136,7 +141,7 @@ internal class NativeProductWorldSearchAggregator(
             val result = run.result
             val visited = result?.nodesVisited ?: 0
             nodesVisited += visited
-            remainingNodeBudget = (remainingNodeBudget - visited).coerceAtLeast(0)
+            remainingNodeBudget = remainingNodeBudget?.let { (it - visited).coerceAtLeast(0) }
 
             if (run.status != NativeProductSearchRunStatus.COMPLETED &&
                 run.status != NativeProductSearchRunStatus.DEADLINE_EXHAUSTED
@@ -162,7 +167,7 @@ internal class NativeProductWorldSearchAggregator(
                 nodesVisited,
                 run,
             )
-            if (visited > worldNodeLimit) {
+            if (worldNodeLimit != null && visited > worldNodeLimit) {
                 return failure(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     world,

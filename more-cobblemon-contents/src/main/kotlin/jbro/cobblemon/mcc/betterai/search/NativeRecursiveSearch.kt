@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.search
 
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
@@ -77,7 +78,7 @@ internal class NativeRecursiveSearch(
     private val tree: NativeShowdownSearchTree,
     private val world: NativeSearchWorldKey,
     private val evaluate: (BattleStateView) -> Double,
-    private val nodeLimit: Int,
+    private val nodeLimit: Int?,
     private val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
     private val responseInformation: Double = 1.0,
     private val allowSetupAttackExtension: Boolean = false,
@@ -87,6 +88,7 @@ internal class NativeRecursiveSearch(
     /** AI-only threat multipliers; see [LocalOpponentThreat]. Never used to pick opponent replies. */
     private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
 ) {
+    private val effectiveNodeLimit = nodeLimit.takeUnless { tree.root.state.format == BattleFormat.DOUBLE }
     private var nodesVisited = 0
     private var truncated = false
     private var terminationReason = NativeSearchTerminationReason.COMPLETED
@@ -106,7 +108,8 @@ internal class NativeRecursiveSearch(
     }
 
     init {
-        require(nodeLimit > 0)
+        require(nodeLimit != null && nodeLimit > 0 ||
+            tree.root.state.format == BattleFormat.DOUBLE && nodeLimit == null)
         require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(cacheEntryLimit > 0)
     }
@@ -193,7 +196,7 @@ internal class NativeRecursiveSearch(
         val secondIncrement = (depthTwoTotal - depthOneTotal).coerceAtLeast(1)
         val growth = (secondIncrement.toDouble() / firstIncrement).coerceAtLeast(2.0)
         val estimatedThirdIncrement = secondIncrement * growth * 1.5
-        return estimatedThirdIncrement <= nodeLimit - nodesVisited && timeAvailable()
+        return (effectiveNodeLimit == null || estimatedThirdIncrement <= effectiveNodeLimit - nodesVisited) && timeAvailable()
     }
 
     private fun evaluateRootDepth(
@@ -339,7 +342,7 @@ internal class NativeRecursiveSearch(
             opponentAction.actionId,
         )
         branchCache[key]?.let { return it }
-        if (nodesVisited >= nodeLimit) {
+        if (effectiveNodeLimit != null && nodesVisited >= effectiveNodeLimit) {
             stop(NativeSearchTerminationReason.NODE_BUDGET)
             return null
         }

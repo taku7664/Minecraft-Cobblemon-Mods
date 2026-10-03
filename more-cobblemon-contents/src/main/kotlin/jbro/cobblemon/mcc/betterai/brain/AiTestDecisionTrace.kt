@@ -4,6 +4,7 @@ import java.util.Locale
 import org.slf4j.LoggerFactory
 import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
 import jbro.cobblemon.mcc.internal.ai.BattleSide
@@ -68,25 +69,33 @@ internal class AiTestDecisionTrace private constructor(
         logger.info("[BetterAI Trace] battle={} turn={} phase=events recent={}", battleId, turn, recentEvents)
     }
 
-    fun nativeSearch(result: NativeInitialProductDecisionEvaluation, requestedDepth: Int, budget: LocalLookaheadBudget) {
+    fun nativeSearch(result: NativeInitialProductDecisionEvaluation, configuredDepth: Int, budget: LocalLookaheadBudget,
+        doublesSingleTurn: Boolean) {
         logger.info(
             "[BetterAI Trace] battle={} turn={} phase=search engine=native status={} search={} requestedDepth={} completedDepth={} nodes={} nodeLimit={} timeLimitMs={} truncated={} worlds={} failedWorld={} failedRun={} detail={} elapsed_s={}",
-            battleId, turn, result.status, result.searchStatus ?: "-", requestedDepth,
-            result.depthCompleted, result.nodesVisited, budget.nodeLimit, budget.timeMillis,
+            battleId, turn, result.status, result.searchStatus ?: "-", requestedDepth(configuredDepth, doublesSingleTurn),
+            result.depthCompleted, result.nodesVisited, displayedNodeLimit(budget), budget.timeMillis,
             result.truncated, result.sessionState?.worlds?.size ?: 0,
             result.failedWorldId ?: "-", result.failedRunStatus ?: "-", result.failedRunDetail ?: "-",
             elapsedSeconds(),
         )
     }
 
-    fun legacySearch(result: LocalLookaheadEvaluation, requestedDepth: Int, budget: LocalLookaheadBudget) {
+    fun legacySearch(result: LocalLookaheadEvaluation, configuredDepth: Int, budget: LocalLookaheadBudget,
+        doublesSingleTurn: Boolean) {
         logger.info(
             "[BetterAI Trace] battle={} turn={} phase=search engine=legacy stop={} requestedDepth={} completedDepth={} nodes={} nodeLimit={} timeLimitMs={} pruned={} responseCoverage={} truncated={} elapsedMs={}",
-            battleId, turn, result.terminationReason, requestedDepth, result.depthCompleted,
-            result.nodesVisited, budget.nodeLimit, budget.timeMillis, result.branchesPruned,
+            battleId, turn, result.terminationReason, requestedDepth(configuredDepth, doublesSingleTurn), result.depthCompleted,
+            result.nodesVisited, displayedNodeLimit(budget), budget.timeMillis, result.branchesPruned,
             number(result.publicResponseCoverage), result.truncated, result.elapsedMillis,
         )
     }
+
+    private fun requestedDepth(configuredDepth: Int, doublesSingleTurn: Boolean): Int =
+        if (context.state.format == BattleFormat.DOUBLE && doublesSingleTurn) 1 else configuredDepth
+
+    private fun displayedNodeLimit(budget: LocalLookaheadBudget): Any =
+        if (context.state.format == BattleFormat.DOUBLE) "unlimited" else budget.nodeLimit
 
     fun resolved(mode: String, ranked: List<LocalBattleActionRank>, selection: LocalActionSelection) {
         ranked.forEachIndexed { index, rank ->

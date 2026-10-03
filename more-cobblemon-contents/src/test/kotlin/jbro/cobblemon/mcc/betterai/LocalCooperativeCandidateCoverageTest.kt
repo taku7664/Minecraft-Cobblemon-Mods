@@ -94,7 +94,9 @@ class LocalCooperativeCandidateCoverageTest {
         val ranked = LocalBattleActionPolicy.rank(calculated, null, profile, tuning)
         fun evaluate(settings: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
             ranked, calculated, profile, settings, clockMillis = { 0L })
-        val narrow = evaluate(tuning)
+        var narrowClockCalls = 0
+        val narrow = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, tuning,
+            clockMillis = { narrowClockCalls++; 0L })
         val wide = evaluate(tuning.copy(maximumRootCandidates = Int.MAX_VALUE))
         CooperativeSearchComparison.verifyPoolRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
             LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, tuning, clockMillis = { 0L },
@@ -112,8 +114,15 @@ class LocalCooperativeCandidateCoverageTest {
             // With finished candidates discarded, a cut depth leaves the ranking untouched.
             val enabled = tuning.copy(revalidateUnsearchedRootLeaders = true, keepFinishedCandidates = false)
             val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
+            // The normal root ends with two measurement calls. Leader validation replaces those
+            // with two outer deadline checks; expire on its next work call, inside the extra probe.
+            // Expiring on an outer check tests missing leader validation rather than a cut search.
+            fun interruptedClock(): () -> Long {
+                var calls = 0
+                return { if (++calls <= narrowClockCalls) 0L else budget.timeMillis }
+            }
             val interrupted = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, enabled,
-                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1))
+                clockMillis = interruptedClock(), budget = budget)
             assertTrue(interrupted.truncated, "Budget must include the additional leader probe")
             assertEquals(0, interrupted.depthCompleted)
             assertEquals(ranked, interrupted.ranked, "Discard the entire unfinished depth, not just the leader")
@@ -122,12 +131,13 @@ class LocalCooperativeCandidateCoverageTest {
             // searches one depth only, so discarding it played the bare heuristic whenever a decision ran long.
             val kept = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile,
                 enabled.copy(keepFinishedCandidates = true),
-                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1))
+                clockMillis = interruptedClock(), budget = budget)
             assertTrue(kept.truncated)
+            assertTrue(kept.partialDepthCandidates > 0, "The clock must interrupt after some root candidates finished")
             assertTrue(kept.responseCoverageByAction.isNotEmpty(), "The finished candidates keep their coverage")
             val interruptedPool = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile,
                 LocalDecisionTuning.CURRENT.copy(keepFinishedCandidates = false),
-                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1),
+                clockMillis = interruptedClock(), budget = budget,
                 rootChoicePool = CooperativeSearchComparison::choicePool)
             assertTrue(interruptedPool.truncated)
             assertEquals(0, interruptedPool.depthCompleted)

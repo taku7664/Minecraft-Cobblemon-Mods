@@ -1058,6 +1058,45 @@ class LocalRecursiveLookaheadTest {
     }
 
     @Test
+    fun `double search completes its turn beyond an explicitly supplied node allowance`() {
+        val source = budgetProbeContext(BattleFormat.DOUBLE)
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(source.candidates.map(::rank), source,
+            BattleTrainerProfile.balanced(2), clockMillis = { 0L },
+            budget = LocalLookaheadBudget(timeMillis = 10_000L, nodeLimit = 1, chanceBranchesPerMove = 24))
+
+        assertTrue(result.nodesVisited > 1)
+        assertEquals(1, result.depthCompleted, "Doubles must resolve its one turn despite the singles node allowance")
+        assertFalse(result.truncated)
+        assertEquals(LocalLookaheadTerminationReason.COMPLETED, result.terminationReason)
+    }
+
+    @Test
+    fun `single search still stops at its explicitly supplied node allowance`() {
+        val source = budgetProbeContext(BattleFormat.SINGLE)
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(source.candidates.map(::rank), source,
+            BattleTrainerProfile.balanced(2), clockMillis = { 0L },
+            budget = LocalLookaheadBudget(timeMillis = 10_000L, nodeLimit = 1, chanceBranchesPerMove = 24))
+
+        assertEquals(2, result.nodesVisited)
+        assertEquals(0, result.depthCompleted)
+        assertTrue(result.truncated)
+        assertEquals(LocalLookaheadTerminationReason.NODE_BUDGET, result.terminationReason)
+    }
+
+    @Test
+    fun `double search keeps its clock deadline after exceeding the node allowance`() {
+        val source = budgetProbeContext(BattleFormat.DOUBLE)
+        var clockCalls = 0
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(source.candidates.map(::rank), source,
+            BattleTrainerProfile.balanced(2), clockMillis = { if (++clockCalls < 20) 0L else 10_000L },
+            budget = LocalLookaheadBudget(timeMillis = 10_000L, nodeLimit = 1, chanceBranchesPerMove = 24))
+
+        assertTrue(result.nodesVisited > 1)
+        assertTrue(result.truncated)
+        assertEquals(LocalLookaheadTerminationReason.TIME_BUDGET, result.terminationReason)
+    }
+
+    @Test
     fun `difficulty budgets cap the whole iterative search`() {
         assertEquals(
             listOf(
@@ -1893,6 +1932,28 @@ class LocalRecursiveLookaheadTest {
         val result = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, BattleTrainerProfile.boss())
 
         assertEquals(0.0, result.ranked.single().worstResponseHpRetention, 1e-9)
+    }
+
+    private fun budgetProbeContext(format: BattleFormat): BattleDecisionContext {
+        val double = format == BattleFormat.DOUBLE
+        val allies = listOf(pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 110)) +
+            if (double) listOf(pokemon(UUID(0, 21), BattleSide.ALLY, 1, 1.0, speed = 100)) else emptyList()
+        val opponents = listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90)) +
+            if (double) listOf(pokemon(UUID(0, 22), BattleSide.OPPONENT, 1, 1.0, speed = 80)) else emptyList()
+        val initial = BattleStateView(UUID(0, 1), format, 1, allies + opponents, BattleFieldStateView.empty(),
+            mapOf(BattleSide.ALLY to allies.size, BattleSide.OPPONENT to opponents.size), emptyList(), emptyList())
+        val parts = allies.map { actor ->
+            BattleActionCandidate("probe-${actor.activeSlot}", BattleActionKind.USE_MOVE, actorSlot = actor.activeSlot,
+                moveSlot = 0, moveId = "cobblemon:probe", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+                moveDetails = moveDetails(power = 20.0))
+        }
+        val root = if (double) BattleActionCandidate("probe-turn", BattleActionKind.COMPOSITE,
+            componentActionIds = parts.map { it.actionId }, componentActions = parts) else parts.single()
+        val catalog = BattlePublicActionCatalogView(opponents.map { actor ->
+            BattlePokemonActionCatalogView(actor.battlePokemonId, listOf(BattlePublicMoveOptionView("cobblemon:reply",
+                moveDetails(power = 20.0), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), moveSetComplete = true)
+        })
+        return context(initial, listOf(root), catalog)
     }
 
     private fun rank(candidate: BattleActionCandidate) = LocalBattleActionRank(
