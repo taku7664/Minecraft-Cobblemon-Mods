@@ -96,42 +96,31 @@ internal class FactoryHubTab : MccHubTabContent {
     }
 
     private fun buildOptions(host: MccHubContentHost, layout: FactoryHubLayout, controller: FactoryPlayScreenController) {
-        val enabled = !controller.isPending
-        // Singles is the only format, so the level is the one choice before a run.
-        val rows = listOf(
-            MccHubKit.ChoiceRow(factory("section.level"),
-                FactoryLevelMode.entries.map { MccHubKit.Choice(it.id, factory("level.${it.id}")) },
-                controller.chosenLevelMode.id, enabled) { id ->
-                if (controller.chooseLevelMode(FactoryLevelMode.entries.first { it.id == id })) host.rebuild()
-            },
-        )
         val steps = Component.empty()
         listOf("instruction.draft", "instruction.ready", "instruction.swap").forEachIndexed { index, key ->
             if (index > 0) steps.append(Component.literal("\n"))
             steps.append(Component.literal("${index + 1}. ")).append(factory(key, controller.chosenFormat.selectionSize))
         }
-        // The card is only as tall as the settings, the instruction and the run's steps, centered in a taller body.
+        // A run is singles at Lv. 50, so nothing is chosen before it: the card states the rule and walks through the
+        // run ahead, only as tall as that, centered in a taller body.
         val inner = MccHubKit.cardBody(layout.body)
-        val settingsHeight = MccHubKit.choicesHeight(inner.width, inner.height - 20, rows)
         val stepsHeight = Minecraft.getInstance().font.split(steps, inner.width).size * 10
-        val wanted = MccHubKit.CARD_CHROME_HEIGHT + settingsHeight + 5 + 10 + 8 + stepsHeight
-        val fills = wanted >= layout.body.height
+        val wanted = MccHubKit.CARD_CHROME_HEIGHT + 10 + 8 + stepsHeight
         val card = UiLayout.align(UiLayout.leaf("card"), height = wanted, fit = true).solve(layout.body)["card"]
         val body = MccHubKit.card(host, card, factory("section.rules"), MccHubKit.CardTone.FEATURE)
-        val settingsBottom = MccHubKit.choices(host,
-            if (fills) MccHubKit.settingsArea(body) else MccHubKit.lineAbove(body, settingsHeight).first, rows)
-        // Spare room walks through the run ahead, reusing each phase's own instruction.
         val parts = UiLayout.column {
-            space(5)
             fixed(10, "instruction")
             space(8)
             weight("steps")
-        }.solve(MccHubKit.below(body, settingsBottom))
+        }.solve(body)
         instruction(host, parts["instruction"], controller)
         val stepsRect = parts["steps"]
-        if (stepsRect.height >= 20) MccHubKit.text(host, stepsRect, steps)
+        if (stepsRect.height >= 10) MccHubKit.text(host, stepsRect, steps)
         MccHubKit.footer(host, layout.footer, emptyList(),
-            listOf(action(controller, host, "start", UiButtonVariant.PRIMARY, primary = true) { controller.start() }))
+            listOf(action(controller, host, "start", UiButtonVariant.PRIMARY, primary = true) {
+                controller.chooseLevelMode(FactoryLevelMode.LEVEL_50)
+                controller.start()
+            }))
     }
 
     private fun buildDraft(host: MccHubContentHost, layout: FactoryHubLayout, controller: FactoryPlayScreenController) {
