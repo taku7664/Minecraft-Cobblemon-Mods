@@ -35,7 +35,7 @@
 
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
-  "message.jbro_policy.inquiry.sent": "Your inquiry was sent.",
+  "message.jbro_policy.inquiry.sent": "Your inquiry was sent. Pichu Bot has it.",
   "message.jbro_policy.inquiry.empty": "Write the reason for your inquiry.",
   "message.jbro_policy.inquiry.too_long": "Keep the reason within %s characters.",
   "message.jbro_policy.inquiry.cooldown": "You can send another inquiry in %s minute(s).",
