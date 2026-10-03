@@ -45,6 +45,24 @@ class LocalRevivalBlessingTest {
         val ctx = context(state, a, b)
         assertTrue(LocalTacticalScorer.score(a, ctx) > LocalTacticalScorer.score(b, ctx))
     }
+    @Test fun `casting Revival Blessing chooses its own best target instead of a random ally`() {
+        val water = mon(BattleSide.ALLY, null, "water", hp = 0.0)
+        val grass = mon(BattleSide.ALLY, null, "grass", hp = 0.0)
+        val state = state(mon(BattleSide.ALLY, 0), water, grass, mon(BattleSide.OPPONENT, 0, "fire"))
+        val action = BattleActionCandidate("revivalblessing", BattleActionKind.USE_MOVE, actorSlot = 0,
+            moveSlot = 0, moveId = "cobblemon:revivalblessing", moveDetails = BattleMoveCandidateView(
+                "normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 1, BattleMoveTargetPattern.SELF,
+                effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(
+                    BattleMoveEffectView(BattleMoveEffectKind.SLOT_CONDITION, BattleMoveEffectTarget.USER,
+                        1.0, valueId = "revivalblessing")), scriptedBehavior = false)))
+        val branches = jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector.project(
+            state, action, BattleActionCandidate("wait", BattleActionKind.WAIT), context(state, action))
+        assertTrue(branches.isNotEmpty())
+        branches.forEach { branch ->
+            assertFalse(branch.stateBeforeResidual.pokemon.single { it.battlePokemonId == water.battlePokemonId }.fainted)
+            assertTrue(branch.stateBeforeResidual.pokemon.single { it.battlePokemonId == grass.battlePokemonId }.fainted)
+        }
+    }
     private fun revive(target: BattlePokemonStateView) = BattleActionCandidate(
         "revive:${target.battlePokemonId}", BattleActionKind.SWITCH, actorSlot = 0,
         switchPokemonId = target.battlePokemonId, tags = setOf("revival_blessing"),

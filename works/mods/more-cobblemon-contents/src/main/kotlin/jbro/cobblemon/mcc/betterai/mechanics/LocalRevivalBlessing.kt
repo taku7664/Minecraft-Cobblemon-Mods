@@ -27,12 +27,21 @@ internal object LocalRevivalBlessing {
         val entered = LocalSwitchEntryEffectProjector.project(restored, target.battlePokemonId)
         return if (entryAbility) LocalEntryAbilityProjector.project(entered, target.battlePokemonId) else entered
     }
-    fun score(action: BattleActionCandidate, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double {
-        val target = target(context.state, BattleSide.ALLY, action) ?: return 0.0
+    fun score(action: BattleActionCandidate, context: BattleDecisionContext, tuning: LocalDecisionTuning,
+        side: BattleSide = BattleSide.ALLY): Double {
+        val target = target(context.state, side, action) ?: return 0.0
         val hp = restoredHp(target)
         val restored = target.copyState(hpFraction = hp, fainted = false, statusId = null)
-        val exposure = LocalPublicPositionFacts.defensiveExposure(restored, context, action.actorSlot, tuning)
-            ?: tuning.neutralHitHpFraction
+        val restoredContext = context.copy(state = project(context.state, side, action, entryAbility = false))
+        val exposure = if (side == BattleSide.ALLY) {
+            LocalPublicPositionFacts.defensiveExposure(restored, restoredContext, action.actorSlot, tuning)
+                ?: tuning.neutralHitHpFraction
+        } else {
+            context.state.pokemon.filter { it.side != side && it.activeSlot != null && !it.fainted }
+                .flatMap { it.knownTypeIds }.maxOfOrNull {
+                    StandardTypeEffectiveness.multiplier(it, restored.knownTypeIds)
+                }?.times(tuning.neutralHitHpFraction) ?: tuning.neutralHitHpFraction
+        }
         val survival = LocalPublicPositionFacts.survivalPosition(hp, exposure, tuning)
         return (tuning.livingPokemonValue + hp + survival * tuning.leafPressureWeight) * tuning.boardToScore
     }

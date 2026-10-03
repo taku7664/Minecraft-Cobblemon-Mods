@@ -1,5 +1,8 @@
 package jbro.cobblemon.mcc.betterai.outcome
 
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import java.util.IdentityHashMap
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.state.LocalDirectDamageLedger
@@ -869,10 +872,33 @@ internal object PublicSingleTurnProjector {
                 executedSides = setOf(side), executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId)))
         }
         if (canonicalId(slotCondition?.valueId) == "revivalblessing") {
-            val selected = effectiveAction.tags.firstOrNull { it.startsWith("revive_target:") }
-                ?.removePrefix("revive_target:")?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-            return listOf(WeightedState(LocalPersistentMoveState.revive(projectedFormState, side, selected), 1.0,
-                executedSides = setOf(side), executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId)))
+            val faintedAllies = projectedFormState.pokemon.filter { it.side == side && it.fainted }
+            if (faintedAllies.isEmpty()) {
+                return listOf(
+                    WeightedState(
+                        projectedFormState,
+                        1.0,
+                        executedSides = setOf(side),
+                        executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                    ),
+                )
+            }
+            val reviveChoices = faintedAllies.map { fainted ->
+                BattleActionCandidate("revive:${fainted.battlePokemonId}", BattleActionKind.SWITCH,
+                    actorSlot = actor.activeSlot, switchPokemonId = fainted.battlePokemonId, tags = setOf("revival_blessing"))
+            }
+            val chosen = reviveChoices.maxBy { choice ->
+                LocalRevivalBlessing.score(choice,
+                    sourceContext.copy(state = projectedFormState), LocalDecisionTuning.CURRENT, side)
+            }
+            return listOf(
+                WeightedState(
+                    state = LocalSwitchStateProjector.project(projectedFormState, side, chosen),
+                    probability = 1.0,
+                    executedSides = setOf(side),
+                    executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                )
+            )
         }
         val chargingContinuation = history.chargingMoveByPokemon[actor.battlePokemonId]
             ?.let { canonicalId(it) == canonicalId(moveId) } == true
