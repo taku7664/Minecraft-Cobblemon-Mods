@@ -5,6 +5,7 @@ import java.util.zip.ZipInputStream
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -44,10 +45,20 @@ class LocalVariableMoveDamageTest {
     @Test
     fun `knock off is boosted only by a public item it can remove`() {
         assertEquals(damage(state(), fixed("dark", 65)), damage(state(), knockOff()))
+        assertEquals(damage(state(opponentItem = ""), fixed("dark", 65)), damage(state(opponentItem = ""), knockOff()))
         assertEquals(damage(state(opponentItem = "leftovers"), fixed("dark", 97)), damage(state(opponentItem = "leftovers"), knockOff()))
         assertEquals(damage(state(opponentItem = "hearthflamemask"), fixed("dark", 65)),
             damage(state(opponentItem = "hearthflamemask"), knockOff()))
         assertEquals(damage(state(opponentItem = "eviolite"), fixed("dark", 97)), damage(state(opponentItem = "eviolite"), knockOff()))
+    }
+
+    @Test
+    fun `acrobatics doubles power after a publicly confirmed item removal`() {
+        val emptyHanded = state().derive(pokemon = state().pokemon.map {
+            if (it.side == BattleSide.ALLY) it.copyState(knownHeldItemId = "") else it
+        })
+        assertEquals(damage(emptyHanded, fixed("flying", 110)),
+            damage(emptyHanded, move("acrobatics", "flying", 55.0, emptySet())))
     }
 
     @Test

@@ -239,7 +239,7 @@ internal object LocalOpponentIntentPredictor {
             }
             if (values.isEmpty()) return emptyList()
             // Knock Off is worth the item it takes as well.
-            fun itemBonus(ally: BattlePokemonStateView) = if (moveId == KNOCK_OFF && ally.knownHeldItemId != null) KNOCK_OFF_ITEM else 0.0
+            fun itemBonus(ally: BattlePokemonStateView) = if (moveId == KNOCK_OFF && ally.canonicalKnownHeldItemId != null) KNOCK_OFF_ITEM else 0.0
             return if (details.targetPattern in SPREAD) {
                 listOf(option(IntentKind.ATTACK, values.sumOf { it.second }))
             } else {

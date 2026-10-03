@@ -33,7 +33,7 @@ class LocalSturdyHitTest {
     fun `ignoring sturdy still allows focus sash to activate`() {
         val target = hit(1.0, "focussash", ignoreAbility = true).state.pokemon.single { it.side == BattleSide.OPPONENT }
         assertEquals(0.005, target.hpFraction, 1e-9)
-        assertNull(target.knownHeldItemId)
+        assertEquals("", target.knownHeldItemId)
     }
 
     private fun hit(hp: Double, item: String?, ignoreAbility: Boolean): LocalAppliedDirectHit {

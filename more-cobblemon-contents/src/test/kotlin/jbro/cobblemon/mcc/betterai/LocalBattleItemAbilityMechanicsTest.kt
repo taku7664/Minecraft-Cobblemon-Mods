@@ -49,7 +49,7 @@ class LocalBattleItemAbilityMechanicsTest {
         val target = outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
 
         assertEquals(1.0 / 200.0, target.hpFraction, 1e-9)
-        assertNull(target.knownHeldItemId)
+        assertEquals("", target.knownHeldItemId)
     }
 
     @Test

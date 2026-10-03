@@ -71,6 +71,7 @@ internal object NativePublicBootstrapCompiler {
     fun needed(state: BattleStateView): Boolean = state.turn !in 0..1 ||
         !NativeOpeningStateRules.acceptsObservations(state) ||
         state.pokemon.any { it.fainted || it.hpFraction != 1.0 || it.statusId != null ||
+            it.knownHeldItemId?.isEmpty() == true ||
             it.statStages.isNotEmpty() || it.knownVolatileEffectIds.isNotEmpty() ||
             it.actionConstraints != BattlePokemonActionConstraintView.empty() } ||
         state.field.weather != null || state.field.terrain != null ||

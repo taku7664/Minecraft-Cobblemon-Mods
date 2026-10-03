@@ -301,7 +301,8 @@ class Cobblemon173ShowdownObservationAdapter(
             )
 
             ResourceKind.ITEM -> observer.observe(
-                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, id),
+                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, id,
+                    currentlyHeld = message.id != "-enditem"),
             )
         }
     }
@@ -335,7 +336,7 @@ class Cobblemon173ShowdownObservationAdapter(
             )
 
             ResourceKind.ITEM -> observer.observe(
-                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, effect.id),
+                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, effect.id, currentlyHeld = null),
             )
         }
     }

@@ -108,7 +108,7 @@ class LocalGapFixesTest {
         val struck = after.pokemon.single { it.battlePokemonId == target.battlePokemonId }
         val user = after.pokemon.single { it.battlePokemonId == attacker.battlePokemonId }
         assertEquals(2, struck.statStages["attack"], "Weakness Policy")
-        assertNull(struck.knownHeldItemId, "the policy is spent and Knock Off took nothing else")
+        assertEquals("", struck.knownHeldItemId, "the policy is spent and Knock Off took nothing else")
         assertTrue(user.hpFraction < 1.0, "Life Orb recoil")
     }
 

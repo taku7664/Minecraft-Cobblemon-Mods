@@ -30,7 +30,7 @@ class LocalPinchBerryTest {
             val unsuppressed = hitResult(item, 0.8, 0.6, field = field("trickroom"))
                 .state.pokemon.single { it.side == BattleSide.OPPONENT }
             assertTrue(unsuppressed.hpFraction > 0.2, item)
-            assertEquals(null, unsuppressed.knownHeldItemId, item)
+            assertEquals("", unsuppressed.knownHeldItemId, item)
         }
     }
 
@@ -52,11 +52,11 @@ class LocalPinchBerryTest {
             assertEquals(item, atHalf.knownHeldItemId, item)
             val atQuarter = hit(item, 0.4, 0.15)
             assertEquals(0.25 + 1.0 / 3.0, atQuarter.hpFraction, 1e-12, item)
-            assertEquals(null, atQuarter.knownHeldItemId, item)
+            assertEquals("", atQuarter.knownHeldItemId, item)
             val gluttony = hitResult(item, 0.8, 0.3, ability = "cobblemon:gluttony")
                 .state.pokemon.single { it.side == BattleSide.OPPONENT }
             assertEquals(0.5 + 1.0 / 3.0, gluttony.hpFraction, 1e-12, "$item with revealed Gluttony")
-            assertEquals(null, gluttony.knownHeldItemId)
+            assertEquals("", gluttony.knownHeldItemId)
         }
     }
 
@@ -79,7 +79,7 @@ class LocalPinchBerryTest {
         val after = hit(item = "cobblemon:oran_berry", startHp = 0.8, damage = 0.5)
         // The public maximum is 150..170, so the current point projection uses its midpoint 160.
         assertEquals(0.3 + 10.0 / 160, after.hpFraction, 1e-12)
-        assertEquals(null, after.knownHeldItemId)
+        assertEquals("", after.knownHeldItemId)
         for (maximum in listOf(100, 200, 400)) {
             val exact = hitResult("cobblemon:oran_berry", 0.8, 0.5, BattleIntegerRange(maximum, maximum))
                 .state.pokemon.single { it.side == BattleSide.OPPONENT }
@@ -102,7 +102,7 @@ class LocalPinchBerryTest {
     fun `a sitrus berry restores a quarter once the hit brings its holder to half`() {
         val after = hit(item = "cobblemon:sitrus_berry", startHp = 0.8, damage = 0.5)
         assertEquals(0.55, after.hpFraction, 1e-6, "0.30 left, plus a quarter of maximum.")
-        assertEquals(null, after.knownHeldItemId, "The berry is eaten.")
+        assertEquals("", after.knownHeldItemId, "The berry is eaten.")
     }
 
     @Test

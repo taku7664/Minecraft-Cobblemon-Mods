@@ -67,6 +67,28 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeInitialProductWorldPlannerTest {
     @Test
+    fun `bootstrap does not restore an opponent item that public evidence removed`() {
+        val source = context(turn = 5, ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120))
+        val board = source.state.derive(pokemon = source.state.pokemon.map {
+            if (it.side == BattleSide.OPPONENT) it.copyState(knownHeldItemId = "") else it
+        })
+        val result = planner().plan(source.copy(state = board), BattleTrainerTier.INTRODUCTORY)
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        EngineBranchWorker().use { worker ->
+            result.worlds.forEach { world ->
+                val frame = worker.createBattle(world.definition)
+                assertEquals("", frame.p2Active.single().item)
+                assertTrue(NativeBattleRootValidator.validate(world.definition, frame, world.publicContext.state).isEmpty())
+                val contradiction = frame.copy(p2Team = frame.p2Team.map {
+                    if (it.activeSlot == 0) it.copy(item = "leftovers") else it
+                }, p2Active = frame.p2Active.map { it.copy(item = "leftovers") })
+                assertTrue(NativeBattleRootValidator.validate(world.definition, contradiction, world.publicContext.state)
+                    .any { it.code.name == "ITEM_MISMATCH" })
+            }
+        }
+    }
+
+    @Test
     fun `bootstrap reports unavailable hidden counters instead of resetting them`() {
         val source = context(turn = 7)
         val actor = source.state.pokemon.first()

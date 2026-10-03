@@ -167,7 +167,7 @@ internal object LocalDirectHitMechanics {
                     target,
                     hpFraction = oneHp,
                     // Sturdy's damage callback precedes Sash, so the item is not consumed.
-                    knownHeldItemId = if (sturdyReady) target.knownHeldItemId else null,
+                    knownHeldItemId = if (sturdyReady) target.knownHeldItemId else "",
                     fainted = false,
                 ),
                 directDamageFraction = (target.hpFraction - oneHp).coerceAtLeast(0.0),
@@ -184,7 +184,7 @@ internal object LocalDirectHitMechanics {
         if (berryHealing > 0.0) {
             val healed = LocalHpArithmetic.change(target, hp, berryHealing).coerceAtMost(1.0)
             return TargetResolution(
-                pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = null, fainted = false),
+                pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = "", fainted = false),
                 directDamageFraction = incomingDamage,
             )
         }

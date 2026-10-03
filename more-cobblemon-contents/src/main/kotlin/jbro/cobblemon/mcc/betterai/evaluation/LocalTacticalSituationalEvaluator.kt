@@ -555,8 +555,11 @@ internal object LocalTacticalSituationalEvaluator {
             } else {
                 RequirementState.UNKNOWN
             }
-            BattleMoveRequirementKind.TARGET_HELD_ITEM_PRESENT ->
-                if (target?.knownHeldItemId != null) RequirementState.SATISFIED else RequirementState.UNKNOWN
+            BattleMoveRequirementKind.TARGET_HELD_ITEM_PRESENT -> when {
+                target?.canonicalKnownHeldItemId != null -> RequirementState.SATISFIED
+                target?.knownHeldItemId != null -> satisfied(false)
+                else -> RequirementState.UNKNOWN
+            }
             BattleMoveRequirementKind.FAINTED_ALLY_PRESENT -> satisfied(
                 context.state.pokemon.any { it.side == actingSide && it.fainted },
             )

@@ -105,7 +105,7 @@ internal object LocalStatStageChange {
         return state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId != pokemonId) it else it.copyState(
                 statStages = it.statStages.mapValues { (_, value) -> value.coerceAtLeast(0) },
-                knownHeldItemId = null,
+                knownHeldItemId = "",
             )
         })
     }

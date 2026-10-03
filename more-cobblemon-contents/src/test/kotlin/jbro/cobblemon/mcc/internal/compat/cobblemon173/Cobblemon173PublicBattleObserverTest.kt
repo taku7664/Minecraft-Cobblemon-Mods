@@ -22,6 +22,24 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `consumed item stays publicly absent through later source effects and switches`() {
+        val opponent = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3, maximumRecentEvents = 2)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, opponent))
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, opponent, "sitrusberry"))
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, opponent, "sitrusberry", currentlyHeld = false))
+        assertEquals("", observer.publicSnapshot().pokemon.single().knownHeldItemId)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, opponent, "sitrusberry", currentlyHeld = null))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, opponent.copy(activeSlot = null)))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, opponent))
+        val known = observer.publicSnapshot().pokemon.single()
+        assertEquals("", known.knownHeldItemId)
+        assertNull(known.canonicalKnownHeldItemId)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(4, opponent, "leftovers"))
+        assertEquals("leftovers", observer.publicSnapshot().pokemon.single().knownHeldItemId)
+    }
+
+    @Test
     fun `own copied request moves survive a locked request and assembler drops them after switch`() {
         val own = ownPokemon()
         val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)

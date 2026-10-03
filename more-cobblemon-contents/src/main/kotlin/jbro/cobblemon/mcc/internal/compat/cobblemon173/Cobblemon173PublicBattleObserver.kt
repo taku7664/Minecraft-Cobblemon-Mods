@@ -212,7 +212,12 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.HeldItemRevealed -> {
                 val actor = knownOrUpsert(observation.pokemon)
-                pokemon[actor.battlePokemonId] = actor.withKnownHeldItem(observation.itemId)
+                val item = when (observation.currentlyHeld) {
+                    true -> observation.itemId
+                    false -> ""
+                    null -> actor.knownHeldItemId ?: observation.itemId
+                }
+                pokemon[actor.battlePokemonId] = actor.withKnownHeldItem(item)
                 appendEvent(
                     observation.turn,
                     BattleObservedEventKind.HELD_ITEM_REVEALED,
@@ -837,6 +842,8 @@ internal sealed interface Cobblemon173PublicObservation {
         override val turn: Int,
         val pokemon: Cobblemon173PublicPokemonSnapshot,
         val itemId: String,
+        /** true: current holder; false: publicly removed; null: source-effect identity only. */
+        val currentlyHeld: Boolean? = true,
     ) : Cobblemon173PublicObservation {
         init {
             require(itemId.isNotBlank())

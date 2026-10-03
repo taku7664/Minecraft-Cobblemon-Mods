@@ -36,7 +36,7 @@ internal object LocalIdleUtilityMoveRules {
             in STAT_STAGE_RESET -> nobodyActiveIsBoosted(context)
             in SLEEP_DEPENDENT -> !isAsleep(actor)
             in PARTY_STATUS_CURES -> partyOf(context, actor.side).none { it.statusId != null }
-            in ITEM_SWAPS -> actor.knownHeldItemId == null
+            in ITEM_SWAPS -> actor.canonicalKnownHeldItemId == null
             in FORCED_ROTATIONS -> (context.state.remainingPokemonBySide[opposing(actor.side)] ?: 0) <= 1
             LEECH_SEED -> target != null && target.knownTypeIds.any { canonical(it) == "grass" }
             TAUNT -> target?.actionConstraints?.taunted == true
