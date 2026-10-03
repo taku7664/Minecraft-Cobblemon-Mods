@@ -32,22 +32,31 @@ internal object LocalOpponentResponseModel {
         val moveRate = blend(selected.move.estimatedRate, general?.move?.estimatedRate, reliability)
         val switchRate = blend(selected.switch.estimatedRate, general?.switch?.estimatedRate, reliability)
 
-        val grouped = actions.groupBy(::responseKind).filterKeys { it != BattlePredictedResponse.OTHER }
-        if (grouped.size < 2) return null
-        val categoryRates = mapOf(
+        val rates = mapOf(
             BattlePredictedResponse.MOVE to moveRate,
             BattlePredictedResponse.SWITCH to switchRate,
-        ).filterKeys(grouped::containsKey)
-        val totalRate = categoryRates.values.sum()
-        if (totalRate <= 0.0 || !totalRate.isFinite()) return null
-
-        val weights = linkedMapOf<BattleActionCandidate, Double>()
-        categoryRates.forEach { (response, rate) ->
-            val category = grouped.getValue(response)
-            val perAction = rate / totalRate / category.size
-            category.forEach { action -> weights[action] = perAction }
+        )
+        val partsByAction = actions.associateWith(::choiceParts)
+        val categoriesBySlot = partsByAction.values.flatten().groupBy { it.actorSlot }.mapValues { (_, parts) ->
+            parts.distinctBy { it.actionId }.groupBy(::responseKind).filterKeys(rates::containsKey)
         }
-        actions.filterNot(weights::containsKey).forEach { action -> weights[action] = 0.0 }
+        if (categoriesBySlot.values.none { it.size > 1 }) return null
+        val weightsBySlot = categoriesBySlot.mapValues { (_, categories) ->
+            val totalRate = categories.keys.sumOf { rates.getValue(it) }
+            if (totalRate <= 0.0 || !totalRate.isFinite()) return null
+            categories.flatMap { (kind, parts) ->
+                parts.map { it.actionId to rates.getValue(kind) / totalRate / parts.size }
+            }.toMap()
+        }
+        val raw = partsByAction.mapValues { (_, parts) ->
+            // A forced pass consumes no behavioural choice. Unrelated OTHER actions keep zero mass.
+            if (parts.isEmpty()) 0.0 else parts.fold(1.0) { weight, part ->
+                weight * (weightsBySlot[part.actorSlot]?.get(part.actionId) ?: 0.0)
+            }
+        }
+        val total = raw.values.sum()
+        if (total <= 0.0 || !total.isFinite()) return null
+        val weights = raw.mapValues { (_, weight) -> weight / total }
 
         val evidence = (selected.effectiveWeight / EVIDENCE_SATURATION_WEIGHT).coerceIn(0.0, 1.0)
         val separation = abs(moveRate - switchRate).coerceIn(0.0, 1.0)
@@ -64,8 +73,19 @@ internal object LocalOpponentResponseModel {
 
     fun responseKind(action: BattleActionCandidate): BattlePredictedResponse = when (action.kind) {
         BattleActionKind.SWITCH -> BattlePredictedResponse.SWITCH
-        BattleActionKind.USE_MOVE, BattleActionKind.COMPOSITE -> BattlePredictedResponse.MOVE
+        BattleActionKind.USE_MOVE -> BattlePredictedResponse.MOVE
+        BattleActionKind.COMPOSITE -> responsePattern(action).distinct().singleOrNull() ?: BattlePredictedResponse.OTHER
         BattleActionKind.WAIT, BattleActionKind.FORFEIT -> BattlePredictedResponse.OTHER
+    }
+
+    /** Ordered slot categories preserve MOVE+SWITCH separately from SWITCH+MOVE. */
+    fun responsePattern(action: BattleActionCandidate): List<BattlePredictedResponse> =
+        choiceParts(action).sortedBy { it.actorSlot }.map(::responseKind)
+
+    private fun choiceParts(action: BattleActionCandidate): List<BattleActionCandidate> = when (action.kind) {
+        BattleActionKind.COMPOSITE -> action.componentActions.flatMap(::choiceParts)
+        BattleActionKind.WAIT -> emptyList()
+        else -> listOf(action)
     }
 
     private fun tendencyPair(

@@ -3,11 +3,48 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseModel
+import jbro.cobblemon.mcc.betterai.search.LocalSearchResponseObjective
+import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseValue
+import jbro.cobblemon.mcc.betterai.search.LocalResponseValue
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class LocalOpponentResponseModelTest {
+    @Test
+    fun `public move switch tendencies weight both component slots of a double response`() {
+        val turns = jointResponses()
+        val distribution = requireNotNull(LocalOpponentResponseModel.distribution(turns, memory(8, 0.2, 0.8)))
+        assertEquals(listOf(0.04, 0.16, 0.16, 0.64), turns.map { distribution.weights.getValue(it) }.map {
+            kotlin.math.round(it * 100.0) / 100.0
+        })
+        assertEquals(BattlePredictedResponse.SWITCH, LocalOpponentResponseModel.responseKind(turns.last()))
+        assertEquals(BattlePredictedResponse.OTHER, LocalOpponentResponseModel.responseKind(turns[1]))
+    }
+
+    @Test
+    fun `a forced pass does not dilute the active partners observed switch tendency`() {
+        val pass = BattleActionCandidate("pass", BattleActionKind.WAIT, actorSlot = 1)
+        val turns = actions().map { joint(it, pass) }
+        val distribution = requireNotNull(LocalOpponentResponseModel.distribution(turns, memory(8, 0.2, 0.8)))
+        assertEquals(0.8, distribution.weights.getValue(turns.last()), 1e-9)
+        assertEquals(0.2, turns.take(2).sumOf { distribution.weights.getValue(it) }, 1e-9)
+    }
+
+    @Test
+    fun `the product response objective applies learned double switch behavior`() {
+        val values = jointResponses().mapIndexed { index, action ->
+            LocalOpponentResponseValue(action, LocalResponseValue(if (index == 3) 1.0 else -1.0, 1.0, 1.0))
+        }
+        val profile = BattleTrainerProfile.boss()
+        val baseline = requireNotNull(LocalSearchResponseObjective.aggregate(values, BattleTacticalMemoryView.empty(),
+            profile, setOf(BattleSituation.GENERAL)))
+        val learned = requireNotNull(LocalSearchResponseObjective.aggregate(values, memory(8, 0.2, 0.8),
+            profile, setOf(BattleSituation.GENERAL)))
+        assertTrue(learned.value > baseline.value, "A learned two-switch response must affect product weighting")
+    }
+
     @Test
     fun `fewer than three public samples cannot steer the response model`() {
         val memory = memory(samples = 2, moveRate = 0.2, switchRate = 0.8)
@@ -107,6 +144,19 @@ class LocalOpponentResponseModelTest {
 
         assertTrue(switchMass in 0.1..0.5)
     }
+
+    private fun jointResponses(): List<BattleActionCandidate> {
+        val first = actions().filter { it.actionId != "move:b" }
+        val second = listOf(
+            BattleActionCandidate("move:partner", BattleActionKind.USE_MOVE, actorSlot = 1, moveSlot = 0, moveId = "a"),
+            BattleActionCandidate("switch:partner", BattleActionKind.SWITCH, actorSlot = 1, switchPokemonId = UUID(0, 302)),
+        )
+        return first.flatMap { a -> second.map { b -> joint(a, b) } }
+    }
+
+    private fun joint(a: BattleActionCandidate, b: BattleActionCandidate) = BattleActionCandidate(
+        "${a.actionId}+${b.actionId}", BattleActionKind.COMPOSITE,
+        componentActionIds = listOf(a.actionId, b.actionId), componentActions = listOf(a, b))
 
     private fun actions(): List<BattleActionCandidate> = listOf(
         BattleActionCandidate("move:a", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "a"),

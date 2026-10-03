@@ -46,8 +46,10 @@ internal object LocalSearchResponseObjective {
             information = profile.personality.information,
             situations = situations,
         ) ?: return robust
-        val categories = values.groupBy { LocalOpponentResponseModel.responseKind(it.action) }
-            .filterKeys { it == BattlePredictedResponse.MOVE || it == BattlePredictedResponse.SWITCH }
+        val categories = values.groupBy { LocalOpponentResponseModel.responsePattern(it.action) }
+            .filterKeys { pattern -> pattern.isNotEmpty() && pattern.all {
+                it == BattlePredictedResponse.MOVE || it == BattlePredictedResponse.SWITCH
+            } }
         val weightedCategories = categories.mapNotNull { (_, responses) ->
             val mass = responses.sumOf { learned.weights[it.action] ?: 0.0 }
             if (mass <= 0.0 || !mass.isFinite()) null else mass to robust(

@@ -8,8 +8,9 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
  * The chance of each opponent response the root search examined, from [OpponentIntent]s: the product of
- * each slot's chance of its part, normalised over the responses there are. A part the prediction does not
- * name (a guessed move, a reserve branch) takes [UNNAMED]. Null when no response is named at all.
+ * each slot's chance of its part, normalised over the responses there are. Complete public doubles
+ * attack pairs may condition the focus/split share of that prior. A part the prediction does not name
+ * (a guessed move, a reserve branch) takes [UNNAMED]. Null when no response is named at all.
  */
 internal object LocalOpponentIntentWeights {
     fun probabilities(actions: List<BattleActionCandidate>, intents: List<OpponentIntent>, state: BattleStateView): List<Double>? {
@@ -25,7 +26,7 @@ internal object LocalOpponentIntentWeights {
         }
         val total = raw.sum()
         if (!named || total <= 0.0 || !total.isFinite()) return null
-        return raw.map { it / total }
+        return LocalPublicJointIntentPrior.condition(actions, intents, state, raw.map { it / total })
     }
 
     private fun part(part: BattleActionCandidate, intents: List<OpponentIntent>, state: BattleStateView): Double? {
