@@ -26,7 +26,7 @@ public final class ClientSetupClient implements ClientModInitializer {
         if (!FabricLoader.getInstance().isModLoaded("xaerominimap")) return;
         KeyBindingHelper.registerKeyBinding(QUICK_WAYPOINT);
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player != null && client.player.tickCount % 20 == 0) {
+            if (client.player != null) {
                 try {
                     XaeroWaypointBridge.disableTeleportForCurrentWorld();
                     teleportErrorLogged = false;

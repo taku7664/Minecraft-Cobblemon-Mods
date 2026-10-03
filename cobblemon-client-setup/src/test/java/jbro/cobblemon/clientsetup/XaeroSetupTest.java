@@ -101,6 +101,28 @@ final class XaeroSetupTest {
             Files.readString(config().resolve("xaerohud.txt")));
     }
 
+    @Test void startupDisablesTeleportInExistingXaeroWorldsWithoutChangingOtherRootSettings() throws Exception {
+        Path first = game.resolve("xaero/minimap/Multiplayer_one/config.txt");
+        Path second = game.resolve("xaero/minimap/Singleplayer_two/config.txt");
+        write(first, "// preserved\r\nteleportationEnabled:true\r\nusingDefaultTeleportCommand:true\r\n");
+        write(second, "teleportationEnabled:false\ncustom:keep\n");
+        XaeroSetup.apply(game, config(), Set.of("xaerominimap"));
+        assertEquals("// preserved\r\nteleportationEnabled:false\r\nusingDefaultTeleportCommand:true\r\n", Files.readString(first));
+        assertEquals("teleportationEnabled:false\ncustom:keep\n", Files.readString(second));
+    }
+
+    @Test void onceModeReappliesNewWaypointPolicyAfterOldPresetWasMarkedDone() throws Exception {
+        XaeroSetup.saveMode(config(), ClientSetup.ApplyMode.ONCE);
+        Path state = config().resolve("cobblemon-client-setup/applied-defaults.properties");
+        write(state, "xaero-xaerominimap-v1=true\nxaero-xaeroworldmap-v1=true\n");
+        assertEquals(2, XaeroSetup.apply(game, config(), MAPS));
+        assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
+        assertTrue(Files.readString(worldmap()).contains("map_teleport_allowed = false"));
+        assertTrue(Files.readString(state).contains("xaero-xaerominimap-v2=true"));
+        assertTrue(Files.readString(state).contains("xaero-xaeroworldmap-v2=true"));
+        assertEquals(0, XaeroSetup.apply(game, config(), MAPS));
+    }
+
     @Test void malformedRadarLeavesOptionsProfilesAndCompletionUntouchedThenRetries() throws Exception {
         XaeroSetup.saveMode(config(), ClientSetup.ApplyMode.ONCE);
         write(radar(), "{broken");

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.LinkOption;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,17 @@ public final class XaeroSetup {
             writes.put(file, setting(cfg, "display_radar", "true"));
             Path hud = configDirectory.resolve("xaerohud.txt");
             writes.put(hud, topRightLayout(read(hud)));
+            Path minimapWorlds = gameDirectory.resolve("xaero/minimap");
+            if (Files.isDirectory(minimapWorlds, LinkOption.NOFOLLOW_LINKS)) {
+                List<Path> roots;
+                try (var children = Files.list(minimapWorlds)) { roots = children.toList(); }
+                for (Path root : roots) {
+                    if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) continue;
+                    Path rootConfig = root.resolve("config.txt");
+                    if (Files.isRegularFile(rootConfig, LinkOption.NOFOLLOW_LINKS))
+                        writes.put(rootConfig, disableRootTeleport(read(rootConfig)));
+                }
+            }
             Path radar = configDirectory.resolve("xaero/minimap/default_radar_categories_client.json");
             writes.put(radar, radarDefaults(radar));
         }
@@ -95,7 +107,7 @@ public final class XaeroSetup {
         SetupFiles.saveModes(configDirectory, Map.of(MODE, mode));
     }
 
-    private static String marker(String modId) { return "xaero-" + modId + "-v1"; }
+    private static String marker(String modId) { return "xaero-" + modId + "-v2"; }
     private static String read(Path file) throws IOException { return Files.exists(file) ? Files.readString(file) : ""; }
     private static String profile(Path file) throws IOException {
         String original = read(file);
@@ -107,6 +119,15 @@ public final class XaeroSetup {
         if (!matcher.find()) return append(original, key + " = " + value);
         return matcher.replaceAll(match -> Matcher.quoteReplacement(match.group(2).trim().equals(value) ? match.group()
             : match.group(1) + value + (match.group(3) == null ? "" : " " + match.group(3))));
+    }
+
+    private static String disableRootTeleport(String original) throws IOException {
+        var matcher = Pattern.compile("(?m)^teleportationEnabled:([^\\r\\n]*)").matcher(original);
+        if (!matcher.find()) return append(original, "teleportationEnabled:false");
+        String value = matcher.group(1).trim();
+        if (!value.equals("true") && !value.equals("false"))
+            throw new IOException("Invalid Xaero world teleportationEnabled value");
+        return matcher.replaceAll(match -> Matcher.quoteReplacement("teleportationEnabled:false"));
     }
 
     private static String option(String original, String key, String value) {

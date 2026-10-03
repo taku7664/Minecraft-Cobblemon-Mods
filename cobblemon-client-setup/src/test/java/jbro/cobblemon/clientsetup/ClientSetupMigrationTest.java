@@ -33,9 +33,13 @@ final class ClientSetupMigrationTest {
         assertEquals("keep this file", Files.readString(current().resolve("personal-note.txt")));
         assertEquals(ClientSetup.Result.ALREADY_APPLIED, ClientSetup.apply(config(), true));
         assertEquals(0, KeybindingSetup.apply(game, config(), Set.of("voicechat")));
-        assertEquals(0, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
-        assertEquals(options, Files.readString(game.resolve("options.txt")));
-        assertEquals(state, Files.readString(current().resolve("applied-defaults.properties")));
+        assertEquals(1, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
+        assertTrue(Files.readString(game.resolve("options.txt")).startsWith(options));
+        assertTrue(Files.readString(config().resolve("xaero/minimap/profiles/default.cfg"))
+            .contains("waypoints_in_world = true"));
+        String upgradedState = Files.readString(current().resolve("applied-defaults.properties"));
+        assertTrue(upgradedState.contains("xaero-xaerominimap-v1=true"));
+        assertTrue(upgradedState.contains("xaero-xaerominimap-v2=true"));
     }
 
     @Test void freshInstallationDoesNotCreateLegacyOrEmptySettingsDirectory() throws Exception {
