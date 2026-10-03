@@ -75,13 +75,14 @@ internal object LocalTacticalScorer {
             BattleActionKind.SWITCH -> LocalTacticalScore(scoreSwitch(candidate, moveContext, strategy, profile, tuning))
             BattleActionKind.COMPOSITE -> {
                 val components = candidate.componentActions.map { scoreBreakdown(it, moveContext, strategy, profile, tuning) }
+                val items = LocalRootItemEffectEvaluator.compositeCorrection(candidate, moveContext, tuning)
                 LocalTacticalScore(
-                    total = components.sumOf(LocalTacticalScore::total) +
+                    total = components.sumOf(LocalTacticalScore::total) + items.total +
                         LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, moveContext) +
                         partnerActionCollateralRefund(candidate, moveContext, tuning) -
                         duplicateCertainKnockoutCredit(candidate, moveContext, tuning),
-                    statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
-                    itemUtility = components.sumOf(LocalTacticalScore::itemUtility),
+                    statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility) + items.statStageUtility,
+                    itemUtility = components.sumOf(LocalTacticalScore::itemUtility) + items.itemUtility,
                 )
             }
             BattleActionKind.WAIT -> LocalTacticalScore(-100.0)
