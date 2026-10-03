@@ -8,7 +8,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_youngster",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -31,7 +31,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_lass",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -55,7 +55,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_bug_catcher",
       "bucket": "uncommon",
-      "weight": 1.68,
+      "weight": 16.84,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -77,7 +77,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_bug_maniac",
       "bucket": "uncommon",
-      "weight": 1.81,
+      "weight": 18.11,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -100,7 +100,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_picnicker",
       "bucket": "uncommon",
-      "weight": 0.86,
+      "weight": 8.65,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -124,7 +124,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_camper",
       "bucket": "uncommon",
-      "weight": 0.91,
+      "weight": 9.08,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -148,7 +148,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_school_kid",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -171,7 +171,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_poke_kid",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -194,7 +194,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_pokefan",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -218,7 +218,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_trainer",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -238,7 +238,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_twins",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -262,7 +262,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_young_couple",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -286,7 +286,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_breeder",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -309,7 +309,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_cyclist",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -332,7 +332,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_jogger",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -355,7 +355,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_triathlete",
       "bucket": "uncommon",
-      "weight": 0.9,
+      "weight": 9.01,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -379,7 +379,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_hiker",
       "bucket": "uncommon",
-      "weight": 1.63,
+      "weight": 16.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -403,7 +403,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_backpacker",
       "bucket": "uncommon",
-      "weight": 1.43,
+      "weight": 14.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -426,7 +426,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_mountain_guide",
       "bucket": "uncommon",
-      "weight": 1.64,
+      "weight": 16.41,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -450,7 +450,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_miner",
       "bucket": "uncommon",
-      "weight": 1.3,
+      "weight": 12.97,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -472,7 +472,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_worker",
       "bucket": "uncommon",
-      "weight": 0.91,
+      "weight": 9.09,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -497,7 +497,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_engineer",
       "bucket": "uncommon",
-      "weight": 1.3,
+      "weight": 12.97,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -520,7 +520,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_blacksmith",
       "bucket": "uncommon",
-      "weight": 1.68,
+      "weight": 16.84,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -543,7 +543,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_climber",
       "bucket": "uncommon",
-      "weight": 2.67,
+      "weight": 26.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -569,7 +569,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_gatekeeper",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -592,7 +592,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_black_belt",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -615,7 +615,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_battle_girl",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -639,7 +639,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_crush_girl",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -663,7 +663,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_cue_ball",
       "bucket": "uncommon",
-      "weight": 1.3,
+      "weight": 12.97,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -686,7 +686,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_monk",
       "bucket": "uncommon",
-      "weight": 1.48,
+      "weight": 14.77,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -708,7 +708,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_bird_keeper",
       "bucket": "uncommon",
-      "weight": 0.91,
+      "weight": 9.09,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -733,7 +733,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_sky_watcher",
       "bucket": "uncommon",
-      "weight": 1.64,
+      "weight": 16.41,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -756,7 +756,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_swimmer",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -778,7 +778,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_swimmer_girl",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -800,7 +800,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_tuber",
       "bucket": "uncommon",
-      "weight": 2.13,
+      "weight": 21.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -824,7 +824,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_surfer",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -846,7 +846,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_diver",
       "bucket": "uncommon",
-      "weight": 1.88,
+      "weight": 18.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -868,7 +868,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fisherman",
       "bucket": "uncommon",
-      "weight": 2.13,
+      "weight": 21.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -892,7 +892,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_angler",
       "bucket": "uncommon",
-      "weight": 2.74,
+      "weight": 27.43,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -915,7 +915,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_sailor",
       "bucket": "uncommon",
-      "weight": 1.88,
+      "weight": 18.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -937,7 +937,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_captain",
       "bucket": "uncommon",
-      "weight": 1.88,
+      "weight": 18.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -959,7 +959,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_lighthouse_keeper",
       "bucket": "uncommon",
-      "weight": 1.88,
+      "weight": 18.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -982,7 +982,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_parasol_lady",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1004,7 +1004,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_aroma_lady",
       "bucket": "uncommon",
-      "weight": 1.14,
+      "weight": 11.43,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1027,7 +1027,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_florist",
       "bucket": "uncommon",
-      "weight": 1.1,
+      "weight": 11.03,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1049,7 +1049,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_gardener",
       "bucket": "uncommon",
-      "weight": 0.86,
+      "weight": 8.6,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1074,7 +1074,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_farmer",
       "bucket": "uncommon",
-      "weight": 0.63,
+      "weight": 6.27,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1096,7 +1096,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_beekeeper",
       "bucket": "uncommon",
-      "weight": 1.14,
+      "weight": 11.43,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1119,7 +1119,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_lumberjack",
       "bucket": "uncommon",
-      "weight": 1.64,
+      "weight": 16.41,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1141,7 +1141,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_mushroom_picker",
       "bucket": "uncommon",
-      "weight": 1.96,
+      "weight": 19.59,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1163,7 +1163,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_kindler",
       "bucket": "uncommon",
-      "weight": 2.06,
+      "weight": 20.65,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1186,7 +1186,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fire_breather",
       "bucket": "uncommon",
-      "weight": 2.29,
+      "weight": 22.86,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1209,7 +1209,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_rocker",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1232,7 +1232,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_guitarist",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1255,7 +1255,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_musician",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1278,7 +1278,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_super_nerd",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1302,7 +1302,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_scientist",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1323,7 +1323,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_astronomer",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1344,7 +1344,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_weather_researcher",
       "bucket": "uncommon",
-      "weight": 1.55,
+      "weight": 15.48,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1373,7 +1373,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_psychic",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1394,7 +1394,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_channeler",
       "bucket": "uncommon",
-      "weight": 2.59,
+      "weight": 25.95,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1417,7 +1417,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_hex_maniac",
       "bucket": "uncommon",
-      "weight": 2.67,
+      "weight": 26.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1439,7 +1439,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_shrine_maiden",
       "bucket": "uncommon",
-      "weight": 1.39,
+      "weight": 13.91,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1461,7 +1461,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fortune_teller",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1482,7 +1482,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_biker",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1505,7 +1505,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_roughneck",
       "bucket": "uncommon",
-      "weight": 1.3,
+      "weight": 12.97,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1528,7 +1528,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_gambler",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1551,7 +1551,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ninja_boy",
       "bucket": "uncommon",
-      "weight": 1.96,
+      "weight": 19.59,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1574,7 +1574,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_swamp_explorer",
       "bucket": "uncommon",
-      "weight": 2.13,
+      "weight": 21.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1594,7 +1594,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_gentleman",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1617,7 +1617,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_madame",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1641,7 +1641,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_socialite",
       "bucket": "uncommon",
-      "weight": 1.1,
+      "weight": 11.03,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1663,7 +1663,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_lady",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1687,7 +1687,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_beauty",
       "bucket": "uncommon",
-      "weight": 0.96,
+      "weight": 9.6,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1713,7 +1713,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_rich_boy",
       "bucket": "uncommon",
-      "weight": 0.75,
+      "weight": 7.5,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1736,7 +1736,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_waitress",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1760,7 +1760,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_baker",
       "bucket": "uncommon",
-      "weight": 0.63,
+      "weight": 6.27,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1782,7 +1782,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_police_officer",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1805,7 +1805,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_artist",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1829,7 +1829,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_painter",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1853,7 +1853,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_dancer",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1876,7 +1876,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_juggler",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1898,7 +1898,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_clown",
       "bucket": "uncommon",
-      "weight": 0.8,
+      "weight": 8.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1922,7 +1922,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_collector",
       "bucket": "uncommon",
-      "weight": 1.95,
+      "weight": 19.49,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1942,7 +1942,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_pokemaniac",
       "bucket": "uncommon",
-      "weight": 1.39,
+      "weight": 13.91,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1965,7 +1965,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_rancher",
       "bucket": "uncommon",
-      "weight": 0.79,
+      "weight": 7.87,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -1988,7 +1988,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_cowgirl",
       "bucket": "uncommon",
-      "weight": 2.0,
+      "weight": 20.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2012,7 +2012,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_tamer",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2034,7 +2034,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_safari_guide",
       "bucket": "uncommon",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2055,7 +2055,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_pokemon_ranger",
       "bucket": "uncommon",
-      "weight": 1.8,
+      "weight": 18.03,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2078,7 +2078,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ranger",
       "bucket": "uncommon",
-      "weight": 2.26,
+      "weight": 22.63,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2104,7 +2104,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_jungle_explorer",
       "bucket": "uncommon",
-      "weight": 3.2,
+      "weight": 32.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2126,7 +2126,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_desert_wanderer",
       "bucket": "uncommon",
-      "weight": 2.67,
+      "weight": 26.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2147,7 +2147,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ruin_maniac",
       "bucket": "uncommon",
-      "weight": 2.18,
+      "weight": 21.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2169,7 +2169,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_archaeologist",
       "bucket": "uncommon",
-      "weight": 2.18,
+      "weight": 21.82,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2192,7 +2192,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_skier",
       "bucket": "uncommon",
-      "weight": 2.67,
+      "weight": 26.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2216,7 +2216,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_boarder",
       "bucket": "uncommon",
-      "weight": 2.67,
+      "weight": 26.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2243,7 +2243,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_shepherd",
       "bucket": "uncommon",
-      "weight": 0.82,
+      "weight": 8.21,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2267,7 +2267,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_naturalist",
       "bucket": "uncommon",
-      "weight": 1.14,
+      "weight": 11.43,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2290,7 +2290,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_island_kid",
       "bucket": "uncommon",
-      "weight": 2.21,
+      "weight": 22.07,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2314,7 +2314,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_moor_walker",
       "bucket": "uncommon",
-      "weight": 1.08,
+      "weight": 10.85,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2337,7 +2337,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_bamboo_hermit",
       "bucket": "uncommon",
-      "weight": 2.91,
+      "weight": 29.09,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2357,7 +2357,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_mage",
       "bucket": "uncommon",
-      "weight": 1.45,
+      "weight": 14.55,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2380,7 +2380,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_hot_spring_keeper",
       "bucket": "uncommon",
-      "weight": 1.68,
+      "weight": 16.84,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2403,7 +2403,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ace_trainer",
       "bucket": "rare",
-      "weight": 1.71,
+      "weight": 17.07,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2423,7 +2423,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_veteran",
       "bucket": "rare",
-      "weight": 1.71,
+      "weight": 17.07,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2443,7 +2443,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_dragon_tamer",
       "bucket": "rare",
-      "weight": 1.33,
+      "weight": 13.33,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2466,7 +2466,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_normal_ace",
       "bucket": "rare",
-      "weight": 1.43,
+      "weight": 14.29,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2487,7 +2487,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fire_ace",
       "bucket": "rare",
-      "weight": 1.67,
+      "weight": 16.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2510,7 +2510,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_water_ace",
       "bucket": "rare",
-      "weight": 2.0,
+      "weight": 20.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2533,7 +2533,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_grass_ace",
       "bucket": "rare",
-      "weight": 1.6,
+      "weight": 16.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2556,7 +2556,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_electric_ace",
       "bucket": "rare",
-      "weight": 1.5,
+      "weight": 15.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2578,7 +2578,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ice_ace",
       "bucket": "rare",
-      "weight": 2.0,
+      "weight": 20.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2602,7 +2602,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fighting_ace",
       "bucket": "rare",
-      "weight": 1.11,
+      "weight": 11.11,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2623,7 +2623,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_poison_ace",
       "bucket": "rare",
-      "weight": 1.54,
+      "weight": 15.38,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2644,7 +2644,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ground_ace",
       "bucket": "rare",
-      "weight": 1.67,
+      "weight": 16.67,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2666,7 +2666,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_flying_ace",
       "bucket": "rare",
-      "weight": 1.36,
+      "weight": 13.64,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2691,7 +2691,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_psychic_ace",
       "bucket": "rare",
-      "weight": 1.71,
+      "weight": 17.07,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2712,7 +2712,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_bug_ace",
       "bucket": "rare",
-      "weight": 1.54,
+      "weight": 15.38,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2733,7 +2733,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_rock_ace",
       "bucket": "rare",
-      "weight": 1.15,
+      "weight": 11.54,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2755,7 +2755,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_ghost_ace",
       "bucket": "rare",
-      "weight": 1.82,
+      "weight": 18.18,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2777,7 +2777,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_dark_ace",
       "bucket": "rare",
-      "weight": 1.71,
+      "weight": 17.07,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2798,7 +2798,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_steel_ace",
       "bucket": "rare",
-      "weight": 1.15,
+      "weight": 11.54,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [
@@ -2820,7 +2820,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:wild_fairy_ace",
       "bucket": "rare",
-      "weight": 1.76,
+      "weight": 17.65,
       "spawnablePositionType": "grounded",
       "condition": {
         "biomes": [

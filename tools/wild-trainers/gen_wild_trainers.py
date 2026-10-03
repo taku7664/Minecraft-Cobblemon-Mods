@@ -29,8 +29,9 @@ BLOCKED_SKINS = re.compile(r"^(leader|gym_leader|sinnoh_leader|elite_four|champi
                            r"rocket_admin|shadow_admin|light_of_ruin|professor|prof|player|pokemon_trainer|expert|sucessor|game_freaks|"
                            r"dumbass|terror|friendly|pi|interviewers|reporter|cameraman|idol|team_rocket|team_galactic|shadow_grunt|"
                            r"burglar|double_team|black_emboar|black_ferrothorn)(_[a-z0-9_]+)?")
-# The world spawn weight shared by every trainer kind that can appear in one biome, per bucket.
-BIOME_WEIGHT = {"uncommon": 32.0, "rare": 10.0}
+# The world spawn weight shared by every trainer kind that can appear in one biome, per bucket. A biome's uncommon
+# Pokemon weigh well over a thousand together, so at 32 a trainer turned up once in thousands of spawns.
+BIOME_WEIGHT = {"uncommon": 320.0, "rare": 100.0}
 
 
 def png_alpha(data, x, y):
