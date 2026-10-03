@@ -13,7 +13,6 @@
     "PokeSnackBlockDropMixin",
     "PokeSnackLegendFilterMixin",
     "ServerGamePacketListenerChatRankMixin",
-    "ServerLevelVanillaAnimalMixin",
     "SpawnPokemonHiddenAbilityMixin"
   ],
   "injectors": {
