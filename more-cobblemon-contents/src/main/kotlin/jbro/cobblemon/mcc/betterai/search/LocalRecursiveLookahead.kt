@@ -995,11 +995,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                             immediateValue + FUTURE_DELTA_DISCOUNT * (continuationValue - immediateValue)
                         }
                     }
-                    val uncertaintyReserve = if (opponentAction.isUnknownPublicResponse()) {
-                        UNKNOWN_RESPONSE_RESERVE
-                    } else {
-                        0.0
-                    }
+                    val uncertaintyReserve = LocalExpectedMoveResponseConfidence.reserveFor(
+                        opponentAction, UNKNOWN_RESPONSE_RESERVE,
+                    )
                     val switchTempo = if (rootTurn) {
                         LocalRecursiveSwitchTempo.adjustment(
                             allySwitch = false,
@@ -1421,7 +1419,6 @@ internal object LocalRecursiveLookaheadEvaluator {
     private const val DEADLINE_MARGIN_MILLIS = 20L
     private const val FUTURE_DELTA_DISCOUNT = 0.90
     private const val UNKNOWN_RESPONSE_RESERVE = 0.20
-    private const val UNKNOWN_PUBLIC_RESPONSE_TAG = "unknown_public_response"
     private const val EXPECTED_OPPONENT_MOVE_TAG = "expected_opponent_move"
     private const val STANDARD_MOVE_SLOTS = 4.0
 
@@ -1436,8 +1433,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         return count
     }
 
-    private fun BattleActionCandidate.isUnknownPublicResponse(): Boolean =
-        UNKNOWN_PUBLIC_RESPONSE_TAG in tags || componentActions.any { it.isUnknownPublicResponse() }
 }
 
 /** True when every move in the action is a status move (a doubles turn counts all its slots). */

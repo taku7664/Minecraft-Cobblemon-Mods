@@ -26,7 +26,9 @@ internal object LocalExpectedMoveResponseConfidence {
             .minOfOrNull { it.value.value }
             ?: return values
         val reserve = values.singleOrNull { it.action.isPureUnknownResponse() }
-            ?.let { pure -> noResponseBaseline?.let { (it - pure.value.value).coerceAtLeast(0.0) } }
+            ?.let { pure -> noResponseBaseline?.let {
+                (it - pure.value.value).coerceAtLeast(0.0) / unknownSlots(pure.action)
+            } }
             ?: unknownReserve
         return values.map { response ->
             if (!response.action.containsTag(EXPECTED_TAG) || response.value.value <= best + bestTieTolerance) {
@@ -43,7 +45,18 @@ internal object LocalExpectedMoveResponseConfidence {
     }
 
     fun noResponseBaseline(values: List<LocalOpponentResponseValue>, reserve: Double): Double? =
-        values.singleOrNull { it.action.isPureUnknownResponse() }?.value?.value?.plus(reserve)
+        values.singleOrNull { it.action.isPureUnknownResponse() }?.let {
+            it.value.value + reserveFor(it.action, reserve)
+        }
+
+    /** Only uncertain submitted slots cost reserve; a known action or forced pass costs none. */
+    fun reserveFor(action: BattleActionCandidate, perSlot: Double): Double = unknownSlots(action) * perSlot
+
+    private fun unknownSlots(action: BattleActionCandidate): Int = when (action.kind) {
+        BattleActionKind.COMPOSITE -> action.componentActions.sumOf(::unknownSlots)
+        BattleActionKind.WAIT -> if (UNKNOWN_TAG in action.tags) 1 else 0
+        else -> 0
+    }
 
     private fun matchingNoResponseBaseline(
         expectedAction: BattleActionCandidate,
@@ -54,7 +67,7 @@ internal object LocalExpectedMoveResponseConfidence {
         return values.singleOrNull { response ->
             response.action.baselineKey(replaceExpected = false) == desired
         }?.let { response ->
-            response.value.value + if (response.action.isUnknownResponse()) reserve else 0.0
+            response.value.value + reserveFor(response.action, reserve)
         }
     }
 

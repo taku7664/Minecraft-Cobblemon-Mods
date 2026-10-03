@@ -9,6 +9,29 @@ import org.junit.jupiter.api.Test
 
 class LocalExpectedMoveResponseConfidenceTest {
     @Test
+    fun `the no response baseline restores both unknown slots' reserves`() {
+        val first = response("unknown0", 0.0, setOf("unknown_public_response")).action
+        val second = response("unknown1", 0.0, setOf("unknown_public_response")).action
+        val values = listOf(compositeResponse("both", -0.4, first, second))
+        assertEquals(0.0, LocalExpectedMoveResponseConfidence.noResponseBaseline(values, 0.2)!!, 1e-9)
+    }
+
+    @Test
+    fun `a mixed baseline restores its one reserve even when the pure baseline contains two`() {
+        val unknown0 = response("unknown0", 0.0, setOf("unknown_public_response")).action
+        val unknown1 = response("unknown1", 0.0, setOf("unknown_public_response")).action
+        val expected0 = response("expected0", 0.0, setOf("expected_opponent_move")).action
+        val confirmed0 = response("confirmed0", 0.0, setOf("confirmed_opponent_move")).action
+        val confirmed1 = response("confirmed1", 0.0, setOf("confirmed_opponent_move")).action
+        val values = listOf(compositeResponse("both_unknown", -0.4, unknown0, unknown1),
+            compositeResponse("mixed_baseline", -0.2, unknown0, confirmed1),
+            compositeResponse("expected", -0.3, expected0, confirmed1),
+            compositeResponse("best", -1.0, confirmed0, confirmed1))
+        val adjusted = LocalExpectedMoveResponseConfidence.adjust(values, 0.0, 0.8, 1e-9, 0.2)
+        assertEquals(-0.24, adjusted.single { it.action.actionId == "expected" }.value.value, 1e-9)
+    }
+
+    @Test
     fun `best expected response is unpenalized and lower responses blend their effect`() {
         val values = listOf(
             response("unknown", -10.0, setOf("unknown_public_response")),
