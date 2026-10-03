@@ -29,7 +29,8 @@ import org.lwjgl.glfw.GLFW
 /**
  * Short, acknowledged battle narration drawn over the command area, in the games' message-box manner: text is
  * written out quickly, the confirm key first finishes the line and then moves on, and a bobbing arrow shows when
- * the line is complete.
+ * the line is complete. Spectators cannot hold the battle up, so for them the box follows the latest lines on its
+ * own.
  */
 object BattleDialogue {
     private val queue = BattleDialogueQueue<Component>()
@@ -42,18 +43,45 @@ object BattleDialogue {
     private const val BAND_CHIP = 0x33FFFFFF
     private const val BAND_TEXT = 0xFFFFFFFF.toInt()
     private const val BAND_SHADOW = 0xFF000000.toInt()
+    // How long a spectator's finished line stays before the next one.
+    private const val SPECTATOR_DWELL_NANOS = 1_200_000_000L
 
     private var revealing: Any? = null
     private var revealNanos = 0L
     private var revealHeld = false
     // Paced like a keyboard's own repeat: a pause long enough for a single tap, then a quick run.
     private val hold = HoldRepeat(400_000_000L, 70_000_000L)
+    private var completeNanos = 0L
 
     fun enqueue(messages: List<Component>) {
-        queue.enqueue(messages.filter { message ->
+        val shown = messages.filter { message ->
             message.string.isNotBlank() &&
                 (message.contents as? TranslatableContents)?.key != TranslationKeys.TURN_KEY
-        })
+        }
+        if (shown.isEmpty()) return
+        // A spectator is never waited for, so lines still unread give way to the newest ones.
+        if (isSpectating()) queue.replace(shown) else queue.enqueue(shown)
+    }
+
+    private fun isSpectating(): Boolean {
+        val battle = CobblemonClient.battle ?: return false
+        val player = Minecraft.getInstance().player?.uuid ?: return false
+        return battle.side1.actors.none { it.uuid == player } && battle.side2.actors.none { it.uuid == player }
+    }
+
+    /** A spectator's line moves on by itself once it has been written out and read for a moment. */
+    private fun tickSpectator() {
+        if (!isSpectating()) return
+        val current = queue.current() ?: return
+        if (revealed(current) < current.string.length) {
+            completeNanos = 0L
+            return
+        }
+        val now = System.nanoTime()
+        if (completeNanos == 0L) completeNanos = now
+        if (now - completeNanos < SPECTATOR_DWELL_NANOS) return
+        completeNanos = 0L
+        queue.advance()
     }
 
     fun hasPending(): Boolean = queue.hasPending()
@@ -138,6 +166,7 @@ object BattleDialogue {
         queue.clear()
         revealing = null
         revealHeld = false
+        completeNanos = 0L
         hold.release()
     }
 
@@ -148,6 +177,7 @@ object BattleDialogue {
         if (battle.minimised || client.options.hideGui || BattleInfoPanel.isExpanded ||
             jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.isOpen) return
         tickHold()
+        tickSpectator()
         renderMessage(context, queue.current() ?: return)
     }
 

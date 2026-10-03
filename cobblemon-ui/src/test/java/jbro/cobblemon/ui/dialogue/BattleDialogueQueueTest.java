@@ -40,4 +40,21 @@ final class BattleDialogueQueueTest {
         assertTrue(queue.pressConfirm());
         assertNull(queue.current());
     }
+
+    @Test
+    void spectatorBatchesReplaceUnreadLinesAndAdvanceWithoutTheKey() {
+        BattleDialogueQueue<String> queue = new BattleDialogueQueue<>();
+        queue.enqueue(List.of("Old", "Older"));
+        assertTrue(queue.pressConfirm());
+
+        queue.replace(List.of("New", "Newer"));
+        assertEquals("New", queue.current());
+        assertTrue(queue.isConfirmHeld());
+
+        queue.releaseConfirm();
+        assertTrue(queue.advance());
+        assertTrue(queue.advance());
+        assertNull(queue.current());
+        assertFalse(queue.advance());
+    }
 }

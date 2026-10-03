@@ -12,6 +12,12 @@ public final class BattleDialogueQueue<T> {
         messages.addAll(incoming);
     }
 
+    /** Drops the lines not yet read and queues {@code incoming} in their place; a held key stays held. */
+    public synchronized void replace(List<T> incoming) {
+        messages.clear();
+        messages.addAll(incoming);
+    }
+
     public synchronized T current() {
         return messages.peekFirst();
     }
@@ -34,6 +40,13 @@ public final class BattleDialogueQueue<T> {
     /** A key-repeat step while confirm stays held: moves on without waiting for a release. */
     public synchronized boolean repeatConfirm() {
         if (!confirmHeld || messages.isEmpty()) return false;
+        messages.removeFirst();
+        return true;
+    }
+
+    /** Moves on without a key press, as spectators' narration does on its own. */
+    public synchronized boolean advance() {
+        if (messages.isEmpty()) return false;
         messages.removeFirst();
         return true;
     }
