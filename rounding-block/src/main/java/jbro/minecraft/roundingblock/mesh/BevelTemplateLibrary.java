@@ -17,6 +17,8 @@ final class BevelTemplateLibrary {
     static final double DEFAULT_RADIUS = 3.0 / 32.0;
     static final int DEFAULT_SEGMENTS = 3;
     private static final double ISO_LEVEL = 0.5001;
+    private static final double EDGE_COUPLING = 1.0;
+    private static final double VERTEX_MARGIN = 0.05;
     private static final double EPSILON = 1.0e-9;
     private static final double MINIMUM_EDGE = 1.0e-8;
     private static final int[][] CUBE_EDGES = {
@@ -30,19 +32,10 @@ final class BevelTemplateLibrary {
         {0, 2, 6, 4}, {1, 3, 7, 5}
     };
 
-    private final List<MeshPrimitive>[] templates;
-    private final List<RegionPrimitive>[] partitionedTemplates;
+    private final List<MeshPrimitive>[][] ownedTemplates;
     private final double[] cellSizes;
     private final double radius;
     private final int segments;
-
-    BevelTemplateLibrary() {
-        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, 1.0, 1.0);
-    }
-
-    BevelTemplateLibrary(double cellHeight) {
-        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, cellHeight, 1.0);
-    }
 
     @SuppressWarnings("unchecked")
     BevelTemplateLibrary(
@@ -66,54 +59,110 @@ final class BevelTemplateLibrary {
                 throw new IllegalArgumentException("Cell extent must be wider than the bevel diameter");
             }
         }
-        this.templates = (List<MeshPrimitive>[]) new List<?>[256];
-        this.partitionedTemplates = (List<RegionPrimitive>[]) new List<?>[256];
+        this.ownedTemplates = (List<MeshPrimitive>[][]) new List<?>[256][8];
         for (int mask = 0; mask <= 255; mask++) {
-            templates[mask] = mask == 0 || mask == 255 ? List.of() : generate(mask);
-        }
-        for (int mask = 0; mask <= 255; mask++) {
-            partitionedTemplates[mask] = partition(mask, templates[mask]);
+            List<MeshPrimitive> generated = mask == 0 || mask == 255 ? List.of() : generate(mask);
+            indexOwners(mask, partition(mask, generated));
         }
     }
 
-    List<MeshPrimitive> template(int mask) {
-        if (mask < 0 || mask > 255) {
-            throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
+    List<MeshPrimitive> ownedTemplate(int mask, int owner) {
+        if (mask < 0 || mask > 255 || owner < 0 || owner > 7) {
+            throw new IllegalArgumentException("Invalid bevel template mask=" + mask + " owner=" + owner);
         }
-        if (mask == 0 || mask == 255) {
+        return ownedTemplates[mask][owner];
+    }
+
+    private void indexOwners(int mask, List<RegionPrimitive> regions) {
+        @SuppressWarnings("unchecked")
+        List<MeshPrimitive>[] byOwner = (List<MeshPrimitive>[]) new List<?>[8];
+        for (int owner = 0; owner < byOwner.length; owner++) {
+            byOwner[owner] = new ArrayList<>();
+        }
+        for (RegionPrimitive region : regions) {
+            MeshPrimitive primitive = region.primitive();
+            boolean solidRegion = (mask & (1 << region.octant())) != 0;
+            int owner = solidRegion
+                ? region.octant()
+                : concaveOwner(mask, region.octant(), primitive.materialFace());
+            byOwner[owner].add(solidRegion
+                ? primitive
+                : new MeshPrimitive(PrimitiveKind.CONCAVE, primitive.materialFace(), primitive.vertices()));
+        }
+        for (int owner = 0; owner < byOwner.length; owner++) {
+            List<MeshPrimitive> compacted = new MeshPlan(byOwner[owner]).compactLinearStrips().primitives();
+            ownedTemplates[mask][owner] = localizeToOwnerCell(owner, compacted);
+        }
+    }
+
+    private List<MeshPrimitive> localizeToOwnerCell(int owner, List<MeshPrimitive> primitives) {
+        if (primitives.isEmpty()) {
             return List.of();
         }
-        return templates[mask];
-    }
-
-    List<RegionPrimitive> partitionedTemplate(int mask) {
-        if (mask < 0 || mask > 255) {
-            throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
+        Vec3 translation = new Vec3(
+            (1 - (owner & 1)) * cellSizes[0],
+            (1 - ((owner >> 1) & 1)) * cellSizes[1],
+            (1 - ((owner >> 2) & 1)) * cellSizes[2]
+        );
+        if (translation.x() == 0.0 && translation.y() == 0.0 && translation.z() == 0.0) {
+            return List.copyOf(primitives);
         }
-        return partitionedTemplates[mask];
-    }
-
-    boolean isFullyPrepared() {
-        for (int mask = 0; mask <= 255; mask++) {
-            if (templates[mask] == null || partitionedTemplates[mask] == null) {
-                return false;
+        List<MeshPrimitive> localized = new ArrayList<>(primitives.size());
+        for (MeshPrimitive primitive : primitives) {
+            List<MeshVertex> vertices = new ArrayList<>(primitive.vertices().size());
+            for (MeshVertex vertex : primitive.vertices()) {
+                vertices.add(new MeshVertex(vertex.position().add(translation), vertex.normal()));
             }
+            localized.add(new MeshPrimitive(primitive.kind(), primitive.materialFace(), vertices));
         }
-        return true;
+        return List.copyOf(localized);
     }
 
     private static List<RegionPrimitive> partition(int mask, List<MeshPrimitive> primitives) {
-        List<RegionPrimitive> result = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        List<MeshPrimitive>[] byRegion = (List<MeshPrimitive>[]) new List<?>[8];
+        for (int octant = 0; octant < byRegion.length; octant++) {
+            byRegion[octant] = new ArrayList<>();
+        }
         for (MeshPrimitive primitive : primitives) {
             for (int octant = 0; octant < 8; octant++) {
                 for (MeshPrimitive clipped : clipToOctant(primitive, octant)) {
                     if (canonicalRegion(mask, clipped) == octant) {
-                        result.add(new RegionPrimitive(octant, clipped));
+                        byRegion[octant].add(clipped);
                     }
                 }
             }
         }
+        List<RegionPrimitive> result = new ArrayList<>();
+        for (int octant = 0; octant < byRegion.length; octant++) {
+            for (MeshPrimitive primitive : byRegion[octant]) {
+                result.add(new RegionPrimitive(octant, primitive));
+            }
+        }
         return List.copyOf(result);
+    }
+
+    private static int concaveOwner(int mask, int surfaceOctant, CubeFace materialFace) {
+        int inwardBit = materialFace.sign() > 0 ? 0 : 1;
+        int bestOctant = -1;
+        int bestScore = Integer.MAX_VALUE;
+        for (int candidate = 0; candidate < 8; candidate++) {
+            if ((mask & (1 << candidate)) == 0) {
+                continue;
+            }
+            int candidateAxisBit = (candidate >> materialFace.axis()) & 1;
+            int axisPenalty = candidateAxisBit == inwardBit ? 0 : 1;
+            int distance = Integer.bitCount(candidate ^ surfaceOctant);
+            int score = axisPenalty * 100 + distance * 10 + candidate;
+            if (score < bestScore) {
+                bestScore = score;
+                bestOctant = candidate;
+            }
+        }
+        if (bestOctant < 0) {
+            throw new IllegalStateException("Concave surface has no solid owner for mask " + mask);
+        }
+        return bestOctant;
     }
 
     static List<MeshPrimitive> clipToOctant(MeshPrimitive primitive, int octant) {
@@ -173,6 +222,8 @@ final class BevelTemplateLibrary {
     }
 
     private List<MeshPrimitive> generate(int mask) {
+        DiagonalTopology diagonalTopology = diagonalTopology(mask);
+        double[] diagonalBridge = new double[4];
         double[][] coordinates = {axisCoordinates(0), axisCoordinates(1), axisCoordinates(2)};
         int sampleCount = coordinates[0].length;
         int cellCount = sampleCount - 1;
@@ -180,7 +231,7 @@ final class BevelTemplateLibrary {
         for (int x = 0; x < sampleCount; x++) {
             for (int y = 0; y < sampleCount; y++) {
                 for (int z = 0; z < sampleCount; z++) {
-                    samples[x][y][z] = sample(mask, new Vec3(
+                    samples[x][y][z] = sample(mask, diagonalTopology, diagonalBridge, new Vec3(
                         coordinates[0][x], coordinates[1][y], coordinates[2][z]
                     ));
                 }
@@ -191,7 +242,9 @@ final class BevelTemplateLibrary {
         for (int x = 0; x < cellCount; x++) {
             for (int y = 0; y < cellCount; y++) {
                 for (int z = 0; z < cellCount; z++) {
-                    cellSurfaces[x][y][z] = cellSurface(mask, samples, x, y, z);
+                    cellSurfaces[x][y][z] = cellSurface(
+                        mask, diagonalTopology, diagonalBridge, samples, x, y, z
+                    );
                 }
             }
         }
@@ -215,12 +268,27 @@ final class BevelTemplateLibrary {
         for (int index = 0; index <= 2 * segments; index++) {
             result[index + 2] = -radius + 2.0 * radius * index / (2.0 * segments);
         }
+        if (segments > 1) {
+            // Keep the shared grid size unchanged while resolving the narrow
+            // diagonal neck on both sides of every template boundary.
+            double nearCenter = radius / (4.0 * segments);
+            result[segments + 1] = -nearCenter;
+            result[segments + 3] = nearCenter;
+        }
         result[result.length - 2] = halfExtent;
         result[result.length - 1] = halfExtent + radius;
         return result;
     }
 
-    private CellSurface cellSurface(int mask, Sample[][][] samples, int x, int y, int z) {
+    private CellSurface cellSurface(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Sample[][][] samples,
+        int x,
+        int y,
+        int z
+    ) {
         Sample[] corners = new Sample[8];
         boolean inside = false;
         boolean outside = false;
@@ -301,7 +369,7 @@ final class BevelTemplateLibrary {
                 }
             }
             Vec3 position = positionSum.multiply(1.0 / crossingCount);
-            Vec3 normal = sample(mask, position).outward();
+            Vec3 normal = sample(mask, diagonalTopology, diagonalBridge, position).outward();
             if (normal.length() <= EPSILON) {
                 normal = normalSum.length() > EPSILON ? normalSum : fallbackNormal;
             }
@@ -514,11 +582,21 @@ final class BevelTemplateLibrary {
         output.add(new MeshPrimitive(flat ? PrimitiveKind.FACE : PrimitiveKind.EDGE, material, oriented));
     }
 
-    private Sample sample(int mask, Vec3 position) {
-        return smoothSample(mask, position);
+    private Sample sample(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Vec3 position
+    ) {
+        return smoothSample(mask, diagonalTopology, diagonalBridge, position);
     }
 
-    private Sample smoothSample(int mask, Vec3 position) {
+    private Sample smoothSample(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Vec3 position
+    ) {
         AxisWeight x = weight(position.x());
         AxisWeight y = weight(position.y());
         AxisWeight z = weight(position.z());
@@ -541,7 +619,185 @@ final class BevelTemplateLibrary {
             gradientY += wx * y.derivative(positiveY) * wz;
             gradientZ += wx * wy * z.derivative(positiveZ);
         }
+        if (!diagonalTopology.connections().isEmpty()) {
+            diagonalBridge(diagonalTopology, x, y, z, diagonalBridge);
+            density += diagonalBridge[0];
+            gradientX += diagonalBridge[1];
+            gradientY += diagonalBridge[2];
+            gradientZ += diagonalBridge[3];
+        }
         return new Sample(position, density, new Vec3(-gradientX, -gradientY, -gradientZ));
+    }
+
+    private static void diagonalBridge(
+        DiagonalTopology topology,
+        AxisWeight x,
+        AxisWeight y,
+        AxisWeight z,
+        double[] result
+    ) {
+        double density = 0.0;
+        double gradientX = 0.0;
+        double gradientY = 0.0;
+        double gradientZ = 0.0;
+        double vertexDensity = 0.0;
+        double vertexGradientX = 0.0;
+        double vertexGradientY = 0.0;
+        double vertexGradientZ = 0.0;
+        if (topology.hasVertex()) {
+            double bx = 4.0 * x.positive() * (1.0 - x.positive());
+            double by = 4.0 * y.positive() * (1.0 - y.positive());
+            double bz = 4.0 * z.positive() * (1.0 - z.positive());
+            double bumpDerivativeX = 4.0 * x.positiveDerivative() * (1.0 - 2.0 * x.positive());
+            double bumpDerivativeY = 4.0 * y.positiveDerivative() * (1.0 - 2.0 * y.positive());
+            double bumpDerivativeZ = 4.0 * z.positiveDerivative() * (1.0 - 2.0 * z.positive());
+            vertexDensity = topology.vertexNeed() * bx * by * bz;
+            vertexGradientX = topology.vertexNeed() * bumpDerivativeX * by * bz;
+            vertexGradientY = topology.vertexNeed() * bx * bumpDerivativeY * bz;
+            vertexGradientZ = topology.vertexNeed() * bx * by * bumpDerivativeZ;
+        }
+        for (DiagonalConnection connection : topology.connections()) {
+            int sharedAxis = connection.sharedAxis();
+            if (sharedAxis < 0) {
+                density += vertexDensity;
+                gradientX += vertexGradientX;
+                gradientY += vertexGradientY;
+                gradientZ += vertexGradientZ;
+                continue;
+            }
+            int first = connection.first();
+            int second = connection.second();
+            boolean positiveSide = connection.positiveSide();
+            AxisWeight sharedWeight = sharedAxis == 0 ? x : sharedAxis == 1 ? y : z;
+            double side = sharedWeight.value(positiveSide);
+            if (side <= 0.5) {
+                continue;
+            }
+
+            double amount = 2.0 * side - 1.0;
+            double gate = amount * amount * (3.0 - 2.0 * amount);
+            double gateDerivative = 12.0 * amount * (1.0 - amount)
+                * sharedWeight.derivative(positiveSide);
+
+            double firstX = x.value((first & 1) != 0);
+            double firstY = y.value((first & 2) != 0);
+            double firstZ = z.value((first & 4) != 0);
+            double firstDensity = firstX * firstY * firstZ;
+            double firstGradientX = x.derivative((first & 1) != 0) * firstY * firstZ;
+            double firstGradientY = firstX * y.derivative((first & 2) != 0) * firstZ;
+            double firstGradientZ = firstX * firstY * z.derivative((first & 4) != 0);
+
+            double secondX = x.value((second & 1) != 0);
+            double secondY = y.value((second & 2) != 0);
+            double secondZ = z.value((second & 4) != 0);
+            double secondDensity = secondX * secondY * secondZ;
+            double secondGradientX = x.derivative((second & 1) != 0) * secondY * secondZ;
+            double secondGradientY = secondX * y.derivative((second & 2) != 0) * secondZ;
+            double secondGradientZ = secondX * secondY * z.derivative((second & 4) != 0);
+
+            double sum = firstDensity + secondDensity;
+            if (sum <= EPSILON) {
+                continue;
+            }
+            double harmonic = 2.0 * firstDensity * secondDensity / sum;
+            double denominator = sum * sum;
+            double firstScale = 2.0 * secondDensity * secondDensity / denominator;
+            double secondScale = 2.0 * firstDensity * firstDensity / denominator;
+            double candidateDensity = EDGE_COUPLING * harmonic * gate;
+            double candidateGradientX = EDGE_COUPLING * gate
+                * (firstGradientX * firstScale + secondGradientX * secondScale);
+            double candidateGradientY = EDGE_COUPLING * gate
+                * (firstGradientY * firstScale + secondGradientY * secondScale);
+            double candidateGradientZ = EDGE_COUPLING * gate
+                * (firstGradientZ * firstScale + secondGradientZ * secondScale);
+            if (sharedAxis == 0) {
+                candidateGradientX += EDGE_COUPLING * harmonic * gateDerivative;
+            } else if (sharedAxis == 1) {
+                candidateGradientY += EDGE_COUPLING * harmonic * gateDerivative;
+            } else {
+                candidateGradientZ += EDGE_COUPLING * harmonic * gateDerivative;
+            }
+            density += candidateDensity;
+            gradientX += candidateGradientX;
+            gradientY += candidateGradientY;
+            gradientZ += candidateGradientZ;
+        }
+
+        result[0] = density;
+        result[1] = gradientX;
+        result[2] = gradientY;
+        result[3] = gradientZ;
+    }
+
+    private static DiagonalTopology diagonalTopology(int mask) {
+        List<DiagonalConnection> connections = new ArrayList<>();
+        boolean hasVertex = false;
+        for (int first = 0; first < 8; first++) {
+            if ((mask & (1 << first)) == 0) {
+                continue;
+            }
+            for (int second = first + 1; second < 8; second++) {
+                if ((mask & (1 << second)) == 0) {
+                    continue;
+                }
+                int changedAxes = first ^ second;
+                int distance = Integer.bitCount(changedAxes);
+                if (distance == 2) {
+                    int sharedAxis = Integer.numberOfTrailingZeros(~changedAxes & 0b111);
+                    // This predicate is local to the physical edge. Using the
+                    // whole mask here makes adjacent templates disagree when
+                    // one has an unrelated face-connected route.
+                    if (isDiagonalSlice(mask, first, second, sharedAxis)) {
+                        connections.add(new DiagonalConnection(
+                            first,
+                            second,
+                            sharedAxis,
+                            (first & (1 << sharedAxis)) != 0
+                        ));
+                    }
+                } else if (distance == 3 && !faceConnected(mask, first, second)) {
+                    connections.add(new DiagonalConnection(first, second, -1, false));
+                    hasVertex = true;
+                }
+            }
+        }
+        double vertexNeed = Math.max(
+            0.0,
+            ISO_LEVEL + VERTEX_MARGIN - Integer.bitCount(mask) / 8.0
+        ) * 1.05;
+        return new DiagonalTopology(List.copyOf(connections), hasVertex, vertexNeed);
+    }
+
+    private static boolean isDiagonalSlice(int mask, int first, int second, int sharedAxis) {
+        boolean positiveSide = (first & (1 << sharedAxis)) != 0;
+        int sliceMask = 0;
+        for (int octant = 0; octant < 8; octant++) {
+            if (((octant & (1 << sharedAxis)) != 0) == positiveSide) {
+                sliceMask |= 1 << octant;
+            }
+        }
+        return (mask & sliceMask) == ((1 << first) | (1 << second));
+    }
+
+    private static boolean faceConnected(int mask, int first, int target) {
+        int visited = 1 << first;
+        int frontier = visited;
+        while (frontier != 0) {
+            int octant = Integer.numberOfTrailingZeros(frontier);
+            frontier &= ~(1 << octant);
+            if (octant == target) {
+                return true;
+            }
+            for (int axis = 0; axis < 3; axis++) {
+                int neighbor = octant ^ (1 << axis);
+                int neighborBit = 1 << neighbor;
+                if ((mask & neighborBit) != 0 && (visited & neighborBit) == 0) {
+                    visited |= neighborBit;
+                    frontier |= neighborBit;
+                }
+            }
+        }
+        return false;
     }
 
     private AxisWeight weight(double coordinate) {
@@ -583,6 +839,16 @@ final class BevelTemplateLibrary {
         private double derivative(boolean positiveSide) {
             return positiveSide ? positiveDerivative : -positiveDerivative;
         }
+    }
+
+    private record DiagonalConnection(int first, int second, int sharedAxis, boolean positiveSide) {
+    }
+
+    private record DiagonalTopology(
+        List<DiagonalConnection> connections,
+        boolean hasVertex,
+        double vertexNeed
+    ) {
     }
 
     private record Sample(Vec3 position, double density, Vec3 outward) {

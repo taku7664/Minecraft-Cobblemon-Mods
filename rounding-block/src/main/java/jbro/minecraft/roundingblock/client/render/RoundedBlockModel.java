@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongFunction;
 import java.util.function.Supplier;
 
 import jbro.minecraft.roundingblock.client.settings.RoundingBlockConfig;
@@ -56,6 +57,8 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
     private static final AtomicBoolean PLANAR_ORIGINAL_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean ROUNDED_OUTPUT_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean ROUNDED_PARTIAL_LOGGED = new AtomicBoolean();
+    private static final ThreadLocal<NeighborhoodScratch> NEIGHBORHOOD_SCRATCH =
+        ThreadLocal.withInitial(NeighborhoodScratch::new);
 
     private final BakedModel delegate;
     private final RuntimeResources runtime;
@@ -211,13 +214,10 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             return runtime.complexShapePlans.get(micro, runtime.mesher::mesh);
         }
         if (topology instanceof VerticalVoxelNeighborhood vertical) {
-            return runtime.slabPlans.get(vertical.bits(), ignored -> runtime.mesher.mesh(vertical));
+            return runtime.slabPlans.get(vertical.bits(), runtime.slabPlanLoader);
         }
         VoxelNeighborhood full = (VoxelNeighborhood) topology;
-        return runtime.fullBlockPlans.get(
-            full.bits(),
-            ignored -> runtime.mesher.mesh(full).withoutPlanarFaces(full.planarFaceBits())
-        );
+        return runtime.fullBlockPlans.get(full.bits(), runtime.fullBlockPlanLoader);
     }
 
     private static void resetDiagnostics() {
@@ -283,15 +283,24 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             emitOriginal(blockView, state, pos, randomSupplier, context);
             return;
         }
-        NeighborhoodSnapshot snapshot = neighborhood(blockView, state, pos);
-        int exposureBits = snapshot.exposureBits();
-        if (!snapshot.hasPartialShape() && exposureBits == 0) {
+        NeighborhoodScratch snapshot = NEIGHBORHOOD_SCRATCH.get();
+        snapshot.scan(runtime, blockView, state, pos);
+        int blockBits = snapshot.blockBits;
+        int exposureBits = snapshot.exposureBits;
+        boolean hasPartialShape = snapshot.hasPartialShape;
+        boolean hasComplexShape = snapshot.hasComplexShape;
+        if (!hasPartialShape && exposureBits == 0) {
             return;
         }
-        if ((!snapshot.hasPartialShape() && snapshot.blocks().isAxisAlignedLayered())
-            || (snapshot.hasPartialShape()
-                && !snapshot.hasComplexShape()
-                && snapshot.vertical().isHorizontallyLayered())) {
+        VerticalVoxelNeighborhood vertical = VerticalVoxelNeighborhood.EMPTY;
+        MicroVoxelNeighborhood micro = MicroVoxelNeighborhood.EMPTY;
+        if (hasComplexShape) {
+            micro = microNeighborhood(blockView, state, pos);
+        } else if (hasPartialShape) {
+            vertical = verticalNeighborhood(blockView, state, pos);
+        }
+        if ((!hasPartialShape && VoxelNeighborhood.isAxisAlignedLayered(blockBits))
+            || (hasPartialShape && !hasComplexShape && vertical.isHorizontallyLayered())) {
             if (runtime.diagnosticLogging
                 && !LAYERED_ORIGINAL_LOGGED.get()
                 && LAYERED_ORIGINAL_LOGGED.compareAndSet(false, true)) {
@@ -323,12 +332,12 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             return;
         }
 
-        int planarFaceBits = snapshot.hasPartialShape() ? 0 : snapshot.blocks().planarFaceBits();
-        MeshPlan plan = snapshot.hasComplexShape()
-            ? cachedPlan(snapshot.micro())
-            : snapshot.hasPartialShape()
-                ? cachedPlan(snapshot.vertical())
-                : cachedPlan(snapshot.blocks());
+        int planarFaceBits = hasPartialShape ? 0 : VoxelNeighborhood.planarFaceBits(blockBits);
+        MeshPlan plan = hasComplexShape
+            ? cachedPlan(micro)
+            : hasPartialShape
+                ? cachedPlan(vertical)
+                : cachedPlan(blockBits);
         if (planarFaceBits != 0) {
             if (runtime.diagnosticLogging
                 && !PLANAR_ORIGINAL_LOGGED.get()
@@ -390,46 +399,6 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
 
     private static boolean isSupportedRenderType(RenderType renderType) {
         return renderType == RenderType.solid() || renderType == RenderType.cutoutMipped();
-    }
-
-    private NeighborhoodSnapshot neighborhood(BlockAndTintGetter blockView, BlockState state, BlockPos pos) {
-        VoxelNeighborhood.Builder blocks = VoxelNeighborhood.builder();
-        boolean hasPartialShape = false;
-        boolean hasComplexShape = false;
-        int exposureBits = 0;
-        BlockPos.MutableBlockPos neighborPos = new BlockPos.MutableBlockPos();
-        int originX = pos.getX();
-        int originY = pos.getY();
-        int originZ = pos.getZ();
-        for (int z = -1; z <= 1; z++) {
-            for (int y = -1; y <= 1; y++) {
-                for (int x = -1; x <= 1; x++) {
-                    neighborPos.set(originX + x, originY + y, originZ + z);
-                    BlockState neighborState = blockView.getBlockState(neighborPos);
-                    Direction direction = directionForNeighborOffset(x, y, z);
-                    if (direction != null
-                        && Block.shouldRenderFace(state, blockView, pos, direction, neighborPos)) {
-                        exposureBits |= 1 << FaceAppearance.toCubeFace(direction).ordinal();
-                    }
-                    MicroBlockShape neighborShape = runtime.roundedShapes.get(neighborState);
-                    if (neighborShape != null && connectsForMeshing(state, neighborState, neighborShape)) {
-                        blocks.occupy(x, y, z);
-                        hasPartialShape |= neighborShape.isPartial();
-                        hasComplexShape |= neighborShape.isComplex();
-                    }
-                }
-            }
-        }
-        VerticalVoxelNeighborhood vertical = VerticalVoxelNeighborhood.EMPTY;
-        MicroVoxelNeighborhood micro = MicroVoxelNeighborhood.EMPTY;
-        if (hasComplexShape) {
-            micro = microNeighborhood(blockView, state, pos);
-        } else if (hasPartialShape) {
-            vertical = verticalNeighborhood(blockView, state, pos);
-        }
-        return new NeighborhoodSnapshot(
-            blocks.build(), vertical, micro, hasPartialShape, hasComplexShape, exposureBits
-        );
     }
 
     static Direction directionForNeighborOffset(int x, int y, int z) {
@@ -529,15 +498,12 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
         return state.getBlock() instanceof LeavesBlock || state.is(BlockTags.LEAVES);
     }
 
-    private MeshPlan cachedPlan(VoxelNeighborhood neighborhood) {
-        return runtime.fullBlockPlans.get(
-            neighborhood.bits(),
-            ignored -> runtime.mesher.mesh(neighborhood).withoutPlanarFaces(neighborhood.planarFaceBits())
-        );
+    private MeshPlan cachedPlan(int neighborhoodBits) {
+        return runtime.fullBlockPlans.get(neighborhoodBits, runtime.fullBlockPlanLoader);
     }
 
     private MeshPlan cachedPlan(VerticalVoxelNeighborhood neighborhood) {
-        return runtime.slabPlans.get(neighborhood.bits(), ignored -> runtime.mesher.mesh(neighborhood));
+        return runtime.slabPlans.get(neighborhood.bits(), runtime.slabPlanLoader);
     }
 
     private MeshPlan cachedPlan(MicroVoxelNeighborhood neighborhood) {
@@ -699,22 +665,54 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
         return delegate.getOverrides();
     }
 
-    private record NeighborhoodSnapshot(
-        VoxelNeighborhood blocks,
-        VerticalVoxelNeighborhood vertical,
-        MicroVoxelNeighborhood micro,
-        boolean hasPartialShape,
-        boolean hasComplexShape,
-        int exposureBits
-    ) {
-    }
-
     private record FluidContactPlanKey(
         Object topology,
         CubeFace contactFace,
         int firstHeightBits,
         int secondHeightBits
     ) {
+    }
+
+    private static final class NeighborhoodScratch {
+        private final BlockPos.MutableBlockPos neighborPos = new BlockPos.MutableBlockPos();
+        private int blockBits;
+        private int exposureBits;
+        private boolean hasPartialShape;
+        private boolean hasComplexShape;
+
+        private void scan(
+            RuntimeResources runtime,
+            BlockAndTintGetter blockView,
+            BlockState state,
+            BlockPos pos
+        ) {
+            blockBits = 0;
+            exposureBits = 0;
+            hasPartialShape = false;
+            hasComplexShape = false;
+            int originX = pos.getX();
+            int originY = pos.getY();
+            int originZ = pos.getZ();
+            for (int z = -1; z <= 1; z++) {
+                for (int y = -1; y <= 1; y++) {
+                    for (int x = -1; x <= 1; x++) {
+                        neighborPos.set(originX + x, originY + y, originZ + z);
+                        BlockState neighborState = blockView.getBlockState(neighborPos);
+                        Direction direction = directionForNeighborOffset(x, y, z);
+                        if (direction != null
+                            && Block.shouldRenderFace(state, blockView, pos, direction, neighborPos)) {
+                            exposureBits |= 1 << FaceAppearance.toCubeFace(direction).ordinal();
+                        }
+                        MicroBlockShape neighborShape = runtime.roundedShapes.get(neighborState);
+                        if (neighborShape != null && connectsForMeshing(state, neighborState, neighborShape)) {
+                            blockBits |= 1 << ((x + 1) + 3 * (y + 1) + 9 * (z + 1));
+                            hasPartialShape |= neighborShape.isPartial();
+                            hasComplexShape |= neighborShape.isComplex();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static final class RuntimeResources {
@@ -726,6 +724,8 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
         private final BoundedLoadingCache<MicroVoxelNeighborhood, MeshPlan> complexShapePlans;
         private final FluidContactPatchMesher fluidContactMesher;
         private final BoundedLoadingCache<FluidContactPlanKey, MeshPlan> fluidContactPlans;
+        private final LongFunction<MeshPlan> fullBlockPlanLoader;
+        private final LongFunction<MeshPlan> slabPlanLoader;
         private final int appearanceVariantCacheLimit;
         private final boolean diagnosticLogging;
 
@@ -757,6 +757,11 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             this.complexShapePlans = complexShapePlans;
             this.fluidContactMesher = fluidContactMesher;
             this.fluidContactPlans = fluidContactPlans;
+            this.fullBlockPlanLoader = bits -> {
+                VoxelNeighborhood neighborhood = new VoxelNeighborhood((int) bits);
+                return mesher.mesh(neighborhood).withoutPlanarFaces(neighborhood.planarFaceBits());
+            };
+            this.slabPlanLoader = bits -> mesher.mesh(new VerticalVoxelNeighborhood(bits));
             this.appearanceVariantCacheLimit = config.cache().weightedModelVariants();
             this.diagnosticLogging = config.debug().diagnosticLogging();
         }

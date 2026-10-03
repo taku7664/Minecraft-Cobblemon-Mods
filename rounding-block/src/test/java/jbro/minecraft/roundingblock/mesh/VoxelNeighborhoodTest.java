@@ -16,6 +16,16 @@ class VoxelNeighborhoodTest {
                 neighborhood.isAxisAlignedLayered(),
                 () -> "bits=" + neighborhood.bits()
             );
+            assertEquals(
+                neighborhood.isAxisAlignedLayered(),
+                VoxelNeighborhood.isAxisAlignedLayered(neighborhood.bits()),
+                () -> "static layered bits=" + neighborhood.bits()
+            );
+            assertEquals(
+                neighborhood.planarFaceBits(),
+                VoxelNeighborhood.planarFaceBits(neighborhood.bits()),
+                () -> "static planar bits=" + neighborhood.bits()
+            );
         }
     }
 

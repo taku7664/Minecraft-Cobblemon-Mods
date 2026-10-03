@@ -34,6 +34,8 @@ record FaceAppearance(
 ) {
     private static final double POSITION_EPSILON = 1.0e-5;
     private static final Direction[] DIRECTIONS = Direction.values();
+    private static final ThreadLocal<List<BakedQuad>[]> SELECTED_QUADS =
+        ThreadLocal.withInitial(FaceAppearance::newSelectionArray);
 
     static Map<CubeFace, List<FaceAppearance>> analyze(
         BakedModel model,
@@ -42,9 +44,12 @@ record FaceAppearance(
         Supplier<RandomSource> randomSupplier,
         Map<BakedQuad, Optional<FaceAppearance>> appearanceCache
     ) {
-        return analyzeSelected(
-            selectedQuads(model, state, randomSupplier), shape, appearanceCache
-        );
+        List<BakedQuad>[] selected = selectedQuads(model, state, randomSupplier);
+        try {
+            return analyzeSelected(selected, shape, appearanceCache);
+        } finally {
+            clearSelection(selected);
+        }
     }
 
     static Map<CubeFace, List<FaceAppearance>> analyzeDynamic(
@@ -57,14 +62,18 @@ record FaceAppearance(
         IdentitySelectionCache<BakedQuad, Map<CubeFace, List<FaceAppearance>>> selectionCache
     ) {
         List<BakedQuad>[] selected = selectedQuads(model, state, randomSupplier);
-        Map<CubeFace, List<FaceAppearance>> cached = selectionCache.find(selected);
-        if (cached != null) {
-            return cached;
+        try {
+            Map<CubeFace, List<FaceAppearance>> cached = selectionCache.find(selected);
+            if (cached != null) {
+                return cached;
+            }
+            Map<CubeFace, List<FaceAppearance>> analyzed = complex
+                ? analyzeComplexSelected(selected, appearanceCache)
+                : analyzeSelected(selected, shape, appearanceCache);
+            return selectionCache.putIfAbsent(selected, analyzed);
+        } finally {
+            clearSelection(selected);
         }
-        Map<CubeFace, List<FaceAppearance>> analyzed = complex
-            ? analyzeComplexSelected(selected, appearanceCache)
-            : analyzeSelected(selected, shape, appearanceCache);
-        return selectionCache.putIfAbsent(selected, analyzed);
     }
 
     private static Map<CubeFace, List<FaceAppearance>> analyzeSelected(
@@ -96,7 +105,12 @@ record FaceAppearance(
         Supplier<RandomSource> randomSupplier,
         Map<BakedQuad, Optional<FaceAppearance>> appearanceCache
     ) {
-        return analyzeComplexSelected(selectedQuads(model, state, randomSupplier), appearanceCache);
+        List<BakedQuad>[] selected = selectedQuads(model, state, randomSupplier);
+        try {
+            return analyzeComplexSelected(selected, appearanceCache);
+        } finally {
+            clearSelection(selected);
+        }
     }
 
     static Map<CubeFace, List<FaceAppearance>> analyzeComplexSelected(
@@ -121,18 +135,31 @@ record FaceAppearance(
         return Map.copyOf(result);
     }
 
-    @SuppressWarnings("unchecked")
     private static List<BakedQuad>[] selectedQuads(
         BakedModel model,
         BlockState state,
         Supplier<RandomSource> randomSupplier
     ) {
-        List<BakedQuad>[] selected = (List<BakedQuad>[]) new List<?>[DIRECTIONS.length + 1];
-        selected[0] = model.getQuads(state, null, randomSupplier.get());
-        for (int index = 0; index < DIRECTIONS.length; index++) {
-            selected[index + 1] = model.getQuads(state, DIRECTIONS[index], randomSupplier.get());
+        List<BakedQuad>[] selected = SELECTED_QUADS.get();
+        try {
+            selected[0] = model.getQuads(state, null, randomSupplier.get());
+            for (int index = 0; index < DIRECTIONS.length; index++) {
+                selected[index + 1] = model.getQuads(state, DIRECTIONS[index], randomSupplier.get());
+            }
+            return selected;
+        } catch (RuntimeException | Error exception) {
+            clearSelection(selected);
+            throw exception;
         }
-        return selected;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<BakedQuad>[] newSelectionArray() {
+        return (List<BakedQuad>[]) new List<?>[DIRECTIONS.length + 1];
+    }
+
+    private static void clearSelection(List<BakedQuad>[] selected) {
+        java.util.Arrays.fill(selected, null);
     }
 
     private static boolean collectComplex(

@@ -1,7 +1,9 @@
 package jbro.minecraft.roundingblock.mesh;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public record MeshPlan(List<MeshPrimitive> primitives) {
     private static final double MERGE_EPSILON = 1.0e-8;
@@ -25,10 +27,8 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
     }
 
     /**
-     * Joins adjacent axis-aligned flat rectangles while leaving every curved
-     * or concave primitive untouched. This preserves the sampled round surface
-     * but avoids uploading a grid of redundant quads for the flat center of a
-     * face.
+     * Coalesces adjacent axis-aligned face rectangles after world-space assembly.
+     * Curved template strips use {@link #compactLinearStrips()} during preparation instead.
      */
     public MeshPlan compactCoplanarFaces() {
         List<MeshPrimitive> untouched = new ArrayList<>();
@@ -41,7 +41,6 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
                 rectangles.add(rectangle);
             }
         }
-
         boolean changed = false;
         boolean merged;
         do {
@@ -61,7 +60,6 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
                 }
             }
         } while (merged);
-
         if (!changed) {
             return this;
         }
@@ -71,6 +69,67 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
             compacted.add(rectangle.toPrimitive());
         }
         return new MeshPlan(compacted);
+    }
+
+    /** Joins sampled quads only when removing their shared edge preserves position and normal interpolation. */
+    MeshPlan compactLinearStrips() {
+        boolean changed = false;
+        List<MeshPrimitive> compacted = primitives;
+        do {
+            MergePass pass = mergeLinearQuadPairs(compacted);
+            if (!pass.changed()) {
+                break;
+            }
+            compacted = pass.primitives();
+            changed = true;
+        } while (true);
+        return changed ? new MeshPlan(compacted) : this;
+    }
+
+    private static MergePass mergeLinearQuadPairs(List<MeshPrimitive> input) {
+        Map<EdgeKey, PrimitiveEdge> openEdges = new HashMap<>();
+        MeshPrimitive[] replacements = new MeshPrimitive[input.size()];
+        boolean[] removed = new boolean[input.size()];
+        boolean[] paired = new boolean[input.size()];
+        boolean changed = false;
+        for (int primitiveIndex = 0; primitiveIndex < input.size(); primitiveIndex++) {
+            MeshPrimitive primitive = input.get(primitiveIndex);
+            if (primitive.vertices().size() != 4) {
+                continue;
+            }
+            for (int edgeIndex = 0; edgeIndex < 4; edgeIndex++) {
+                Vec3 first = primitive.vertices().get(edgeIndex).position();
+                Vec3 second = primitive.vertices().get((edgeIndex + 1) & 3).position();
+                EdgeKey key = new EdgeKey(first, second);
+                PrimitiveEdge candidate = openEdges.get(key);
+                if (candidate == null || paired[candidate.primitiveIndex()]) {
+                    openEdges.put(key, new PrimitiveEdge(primitiveIndex, edgeIndex));
+                    continue;
+                }
+                MeshPrimitive merged = mergeLinearStrip(
+                    input.get(candidate.primitiveIndex()), candidate.edgeIndex(), primitive, edgeIndex
+                );
+                if (merged == null) {
+                    continue;
+                }
+                replacements[candidate.primitiveIndex()] = merged;
+                removed[primitiveIndex] = true;
+                paired[candidate.primitiveIndex()] = true;
+                paired[primitiveIndex] = true;
+                changed = true;
+                break;
+            }
+        }
+        if (!changed) {
+            return new MergePass(input, false);
+        }
+        List<MeshPrimitive> output = new ArrayList<>(input.size());
+        for (int index = 0; index < input.size(); index++) {
+            if (!removed[index]) {
+                output.add(replacements[index] == null ? input.get(index) : replacements[index]);
+            }
+        }
+        return new MergePass(output, true);
     }
 
     private static boolean occupiesPlanarFaceHalf(MeshPrimitive primitive, int planarFaceBits) {
@@ -89,6 +148,92 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
             }
         }
         return false;
+    }
+
+    private static MeshPrimitive mergeLinearStrip(
+        MeshPrimitive first,
+        int firstEdge,
+        MeshPrimitive second,
+        int secondEdge
+    ) {
+        if (first.kind() != second.kind() || first.materialFace() != second.materialFace()) {
+            return null;
+        }
+        List<MeshVertex> a = first.vertices();
+        List<MeshVertex> b = second.vertices();
+        MeshVertex sharedA0 = a.get(firstEdge);
+        MeshVertex sharedA1 = a.get((firstEdge + 1) & 3);
+        MeshVertex sharedB0 = b.get(secondEdge);
+        MeshVertex sharedB1 = b.get((secondEdge + 1) & 3);
+        if (!sameVertex(sharedA0, sharedB1) || !sameVertex(sharedA1, sharedB0)) {
+            return null;
+        }
+        MeshVertex outerA1 = a.get((firstEdge + 2) & 3);
+        MeshVertex outerA0 = a.get((firstEdge + 3) & 3);
+        MeshVertex outerB0 = b.get((secondEdge + 2) & 3);
+        MeshVertex outerB1 = b.get((secondEdge + 3) & 3);
+        if (!isLinearSample(outerA0, outerB0, sharedA0)
+            || !isLinearSample(outerA1, outerB1, sharedA1)
+            || !coplanar(outerA1.position(), outerA0.position(), outerB0.position(), outerB1.position())) {
+            return null;
+        }
+        return new MeshPrimitive(
+            first.kind(), first.materialFace(), List.of(outerA1, outerA0, outerB0, outerB1)
+        );
+    }
+
+    private static boolean sameVertex(MeshVertex first, MeshVertex second) {
+        return first.position().equals(second.position()) && first.normal().equals(second.normal());
+    }
+
+    private static boolean isLinearSample(MeshVertex first, MeshVertex second, MeshVertex sample) {
+        double edgeX = second.position().x() - first.position().x();
+        double edgeY = second.position().y() - first.position().y();
+        double edgeZ = second.position().z() - first.position().z();
+        double lengthSquared = edgeX * edgeX + edgeY * edgeY + edgeZ * edgeZ;
+        if (lengthSquared <= MERGE_EPSILON * MERGE_EPSILON) {
+            return false;
+        }
+        double sampleX = sample.position().x() - first.position().x();
+        double sampleY = sample.position().y() - first.position().y();
+        double sampleZ = sample.position().z() - first.position().z();
+        double parameter = (sampleX * edgeX + sampleY * edgeY + sampleZ * edgeZ) / lengthSquared;
+        if (parameter <= MERGE_EPSILON || parameter >= 1.0 - MERGE_EPSILON) {
+            return false;
+        }
+        double inverse = 1.0 - parameter;
+        return nearInterpolated(first.position().x(), second.position().x(), sample.position().x(), inverse, parameter)
+            && nearInterpolated(first.position().y(), second.position().y(), sample.position().y(), inverse, parameter)
+            && nearInterpolated(first.position().z(), second.position().z(), sample.position().z(), inverse, parameter)
+            && nearInterpolated(first.normal().x(), second.normal().x(), sample.normal().x(), inverse, parameter)
+            && nearInterpolated(first.normal().y(), second.normal().y(), sample.normal().y(), inverse, parameter)
+            && nearInterpolated(first.normal().z(), second.normal().z(), sample.normal().z(), inverse, parameter);
+    }
+
+    private static boolean coplanar(Vec3 first, Vec3 second, Vec3 third, Vec3 fourth) {
+        double abX = second.x() - first.x();
+        double abY = second.y() - first.y();
+        double abZ = second.z() - first.z();
+        double acX = third.x() - first.x();
+        double acY = third.y() - first.y();
+        double acZ = third.z() - first.z();
+        double adX = fourth.x() - first.x();
+        double adY = fourth.y() - first.y();
+        double adZ = fourth.z() - first.z();
+        double normalX = abY * acZ - abZ * acY;
+        double normalY = abZ * acX - abX * acZ;
+        double normalZ = abX * acY - abY * acX;
+        return Math.abs(normalX * adX + normalY * adY + normalZ * adZ) <= MERGE_EPSILON;
+    }
+
+    private static boolean nearInterpolated(
+        double first,
+        double second,
+        double sample,
+        double firstWeight,
+        double secondWeight
+    ) {
+        return Math.abs(first * firstWeight + second * secondWeight - sample) <= MERGE_EPSILON;
     }
 
     private record FaceRectangle(
@@ -129,10 +274,8 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
             }
             int corners = 0;
             for (MeshVertex vertex : primitive.vertices()) {
-                double u = vertex.position().component(uAxis);
-                double v = vertex.position().component(vAxis);
-                int uSide = side(u, uMin, uMax);
-                int vSide = side(v, vMin, vMax);
+                int uSide = side(vertex.position().component(uAxis), uMin, uMax);
+                int vSide = side(vertex.position().component(vAxis), vMin, vMax);
                 if (uSide < 0 || vSide < 0) {
                     return null;
                 }
@@ -145,19 +288,17 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
             if (face != other.face || !near(plane, other.plane)) {
                 return null;
             }
-            if (near(vMin, other.vMin) && near(vMax, other.vMax)) {
-                if (near(uMax, other.uMin) || near(other.uMax, uMin)) {
-                    return new FaceRectangle(
-                        face, plane, Math.min(uMin, other.uMin), Math.max(uMax, other.uMax), vMin, vMax
-                    );
-                }
+            if (near(vMin, other.vMin) && near(vMax, other.vMax)
+                && (near(uMax, other.uMin) || near(other.uMax, uMin))) {
+                return new FaceRectangle(
+                    face, plane, Math.min(uMin, other.uMin), Math.max(uMax, other.uMax), vMin, vMax
+                );
             }
-            if (near(uMin, other.uMin) && near(uMax, other.uMax)) {
-                if (near(vMax, other.vMin) || near(other.vMax, vMin)) {
-                    return new FaceRectangle(
-                        face, plane, uMin, uMax, Math.min(vMin, other.vMin), Math.max(vMax, other.vMax)
-                    );
-                }
+            if (near(uMin, other.uMin) && near(uMax, other.uMax)
+                && (near(vMax, other.vMin) || near(other.vMax, vMin))) {
+                return new FaceRectangle(
+                    face, plane, uMin, uMax, Math.min(vMin, other.vMin), Math.max(vMax, other.vMax)
+                );
             }
             return null;
         }
@@ -193,6 +334,26 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
 
         private static boolean near(double first, double second) {
             return Math.abs(first - second) <= MERGE_EPSILON;
+        }
+    }
+
+    private record MergePass(List<MeshPrimitive> primitives, boolean changed) {
+    }
+
+    private record PrimitiveEdge(int primitiveIndex, int edgeIndex) {
+    }
+
+    private record EdgeKey(Vec3 first, Vec3 second) {
+        @Override
+        public int hashCode() {
+            return first.hashCode() + second.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof EdgeKey edge
+                && (first.equals(edge.first) && second.equals(edge.second)
+                    || first.equals(edge.second) && second.equals(edge.first));
         }
     }
 }
