@@ -105,7 +105,9 @@ final class CatalogJson {
         if (!SPECIES.matcher(value).matches()) {
             throw error(path, "must be a lowercase species or species#form ID");
         }
-        return value;
+        // Battle samples use fully qualified IDs. Match legacy config parsing and
+        // normalize before duplicate checks so "lugia" and "cobblemon:lugia" agree.
+        return value.indexOf(':') < 0 ? "cobblemon:" + value : value;
     }
 
     static String legacyOggPath(String value, String path) {

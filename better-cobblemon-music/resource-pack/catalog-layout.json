@@ -51,6 +51,43 @@
         "cobleserver:battle/legendary/oras_regirock_regice_registeel_battle",
         "cobleserver:battle/legendary/rse_regirock_regice_registeel_battle"
       ]
+    },
+    "cobleserver:battle_raikou": {
+      "tracks": ["cobleserver:battle/legendary/hgss_raikou_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    },
+    "cobleserver:battle_entei": {
+      "tracks": ["cobleserver:battle/legendary/hgss_entei_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    },
+    "cobleserver:battle_suicune": {
+      "tracks": ["cobleserver:battle/legendary/hgss_suicune_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    },
+    "cobleserver:battle_celebi": {
+      "tracks": ["cobleserver:battle/wild/gs_johto_wild_pokemon_battle", "cobleserver:battle/wild/johto_wild_pokemon_battle"]
+    },
+    "cobleserver:battle_deoxys": {
+      "tracks": ["cobleserver:battle/legendary/frlg_deoxys_battle_music", "cobleserver:battle/legendary/oras_deoxys_battle"]
+    },
+    "cobleserver:battle_dialga_palkia": {
+      "tracks": ["cobleserver:battle/legendary/dppt_dialga_palkia_battle", "cobleserver:battle/legendary/bdsp_dialga_palkia_battle"]
+    },
+    "cobleserver:battle_lake_trio": {
+      "tracks": ["cobleserver:battle/legendary/dppt_azelf_mesprit_uxie_battle", "cobleserver:battle/legendary/bdsp_azelf_mesprit_uxie_battle"]
+    },
+    "cobleserver:battle_giratina": {
+      "tracks": ["cobleserver:battle/legendary/dppt_giratina_battle", "cobleserver:battle/legendary/bdsp_giratina_battle"]
+    },
+    "cobleserver:battle_arceus": {
+      "tracks": ["cobleserver:battle/legendary/dppt_arceus_battle", "cobleserver:battle/legendary/bdsp_arceus_battle"]
+    },
+    "cobleserver:battle_sinnoh_legendary": {
+      "tracks": ["cobleserver:battle/legendary/dppt_legendary_pokemon_battle", "cobleserver:battle/legendary/bdsp_legendary_pokemon_battle"]
+    },
+    "cobleserver:battle_area_zero": {
+      "tracks": ["cobleserver:battle/legendary/sv_area_zero_battle_1", "cobleserver:battle/legendary/sv_area_zero_battle_2"]
+    },
+    "cobleserver:battle_terapagos": {
+      "selection": "random",
+      "tracks": ["cobleserver:battle/legendary/sv_terapagos_battle", "cobleserver:battle/legendary/sv_stellar_terapagos_battle"]
     }
   },
   "mappings": {
@@ -90,7 +127,7 @@
       "underground": "cobleserver:track/field/cave/johto_dark_cave"
     },
     "battle": {
-      "wild": "cobleserver:track/battle/wild/johto_wild_pokemon_battle",
+      "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",
       "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
       "pvp": "cobleserver:battle_pvp",
       "content": {
@@ -108,39 +145,54 @@
       "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",
       "pokemon": [
         {
+          "species": ["articuno", "zapdos", "moltres", "mew"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/frlg_legendary_pokemon_battle"
+        },
+        {
+          "species": ["mewtwo"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/xy_mewtwo_battle"
+        },
+        {
           "species": ["arceus"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/dppt_arceus_battle"
+          "playlist": "cobleserver:battle_arceus"
         },
         {
           "species": ["uxie", "mesprit", "azelf"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/dppt_azelf_mesprit_uxie_battle"
+          "playlist": "cobleserver:battle_lake_trio"
         },
         {
           "species": ["dialga", "palkia"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/oras_dialga_palkia_battle"
+          "playlist": "cobleserver:battle_dialga_palkia"
         },
         {
           "species": ["giratina"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/dppt_giratina_battle"
+          "playlist": "cobleserver:battle_giratina"
         },
         {
           "species": ["deoxys"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/frlg_deoxys_battle_music"
+          "playlist": "cobleserver:battle_deoxys"
+        },
+        {
+          "species": ["raikou"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_raikou"
         },
         {
           "species": ["entei"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/hgss_entei_battle"
+          "playlist": "cobleserver:battle_entei"
         },
         {
           "species": ["suicune"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/hgss_suicune_battle"
+          "playlist": "cobleserver:battle_suicune"
         },
         {
           "species": ["lugia"],
@@ -153,7 +205,12 @@
           "playlist": "cobleserver:track/battle/legendary/hgss_ho-oh_battle"
         },
         {
-          "species": ["groudon", "kyogre"],
+          "species": ["celebi"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_celebi"
+        },
+        {
+          "species": ["groudon", "kyogre", "rayquaza"],
           "only": ["wild"],
           "playlist": "cobleserver:battle_groudon_kyogre"
         },
@@ -163,14 +220,124 @@
           "playlist": "cobleserver:battle_regi_trio"
         },
         {
-          "species": ["reshiram", "zekrom"],
+          "species": ["latias", "latios", "jirachi"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/oras_reshiram_zekrom_battle"
+          "playlist": "cobleserver:track/battle/wild/hoenn_wild_pokemon_battle"
         },
         {
-          "species": ["darkrai"],
+          "species": ["heatran", "regigigas", "darkrai", "shaymin", "cresselia"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/za_darkrai_battle"
+          "playlist": "cobleserver:battle_sinnoh_legendary"
+        },
+        {
+          "species": ["phione", "manaphy"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle"
+        },
+        {
+          "species": ["reshiram", "zekrom"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/bw_reshiram_zekrom_battle"
+        },
+        {
+          "species": ["kyurem"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/bw_kyurem_battle"
+        },
+        {
+          "species": ["cobalion", "terrakion", "virizion", "keldeo", "tornadus", "thundurus", "landorus", "genesect", "enamorus"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/bw_legendary_pokemon_battle"
+        },
+        {
+          "species": ["victini", "meloetta"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/wild/bw_strong_wild_pokemon_battle"
+        },
+        {
+          "species": ["xerneas", "yveltal", "zygarde"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/xy_xerneas_yveltal_zygarde_battle"
+        },
+        {
+          "species": ["diancie", "hoopa", "volcanion"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/wild/xy_wild_pokemon_battle"
+        },
+        {
+          "species": ["solgaleo", "lunala", "necrozma", "cosmog", "cosmoem"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sm_solgaleo_lunala_battle"
+        },
+        {
+          "species": ["tapukoko", "tapulele", "tapubulu", "tapufini"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sm_tapu_battle"
+        },
+        {
+          "species": ["nihilego", "buzzwole", "pheromosa", "xurkitree", "celesteela", "kartana", "guzzlord", "poipole", "naganadel", "stakataka", "blacephalon"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle"
+        },
+        {
+          "species": ["magearna", "marshadow", "zeraora", "meltan", "melmetal", "typenull", "silvally"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/wild/sm_wild_pokemon_battle"
+        },
+        {
+          "species": ["zacian", "zamazenta"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/swsh_zacian_zamazenta_battle"
+        },
+        {
+          "species": ["eternatus"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/swsh_eternatus_battle"
+        },
+        {
+          "species": ["calyrex"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/swsh_calyrex_battle"
+        },
+        {
+          "species": ["glastrier", "spectrier"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/swsh_glastrier_spectrier_battle"
+        },
+        {
+          "species": ["zarude", "kubfu", "urshifu"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/wild/swsh_wild_pokemon_battle"
+        },
+        {
+          "species": ["greattusk", "screamtail", "brutebonnet", "fluttermane", "slitherwing", "sandyshocks", "roaringmoon", "irontreads", "ironbundle", "ironhands", "ironjugulis", "ironmoth", "ironthorns", "ironvaliant", "walkingwake", "ironleaves", "gougingfire", "ragingbolt", "ironboulder", "ironcrown", "koraidon", "miraidon"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_area_zero"
+        },
+        {
+          "species": ["wochien", "chienpao", "tinglu", "chiyu"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sv_treasures_of_ruin_battle"
+        },
+        {
+          "species": ["okidogi", "munkidori", "fezandipiti"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sv_loyal_three_battle"
+        },
+        {
+          "species": ["ogerpon"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sv_ogerpon_battle"
+        },
+        {
+          "species": ["terapagos"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_terapagos"
+        },
+        {
+          "species": ["pecharunt"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/sv_pecharunt_battle"
         }
       ]
     }
