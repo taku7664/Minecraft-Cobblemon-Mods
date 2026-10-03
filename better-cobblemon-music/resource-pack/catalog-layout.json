@@ -13,10 +13,36 @@
   "playlists": {
     "cobleserver:field_plaza": {
       "tracks": [
-        "cobleserver:field/plaza/sinnoh_oreburgh_city_midday",
-        "cobleserver:field/plaza/goldenrod_city",
-        "cobleserver:field/plaza/jubilife_city"
+        "cobleserver:field/plaza/route_1"
       ]
+    },
+    "cobleserver:screen_title": {
+      "selection": "random",
+      "tracks": ["cobleserver:screen/title/sinnoh_introduction", "cobleserver:screen/title/sinnoh_league_night"]
+    },
+    "cobleserver:field_deep_dark": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/deep_dark/sinnoh_old_chateau", "cobleserver:field/deep_dark/union_cave"]
+    },
+    "cobleserver:field_cave": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/cave/sinnoh_oreburgh_mine", "cobleserver:field/cave/sinnoh_lake_caverns"]
+    },
+    "cobleserver:field_river": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/river/sinnoh_lake_theme", "cobleserver:field/river/sealed_chamber"]
+    },
+    "cobleserver:field_ocean": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/ocean/route_47", "cobleserver:field/ocean/underground_ruins"]
+    },
+    "cobleserver:field_mountain": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/mountain/sinnoh_route_205_day", "cobleserver:field/mountain/route_3"]
+    },
+    "cobleserver:field_forest": {
+      "selection": "random",
+      "tracks": ["cobleserver:field/forest/sinnoh_route_203_day", "cobleserver:field/forest/viridian_forest"]
     },
     "cobleserver:battle_pvp": {
       "tracks": [
@@ -41,9 +67,7 @@
     },
     "cobleserver:battle_gym_leader": {
       "tracks": [
-        "cobleserver:battle/gym/oras_gym_leader_battle",
-        "cobleserver:battle/gym/unova_gym_leader_battle",
-        "cobleserver:battle/gym/galar_gym_leader_battle"
+        "cobleserver:battle/gym/sinnoh_gym_leader_battle"
       ]
     },
     "cobleserver:battle_regi_trio": {
@@ -94,40 +118,54 @@
     }
   },
   "mappings": {
+    "screens": {
+      "minecraft:title": "cobleserver:screen_title",
+      "more_cobblemon_contents:hub": "cobleserver:track/screen/mcc/boutique",
+      "more_cobblemon_contents:hub/shop": "cobleserver:track/screen/mcc/poke_mart"
+    },
     "field": {
-      "default": "cobleserver:track/field/plains/sinnoh_route_201_day",
+      "default": "cobleserver:track/field/plains/sinnoh_route_201_night",
       "dimensions": {
+        "jbro_policy:plaza": "cobleserver:field_plaza",
         "cobblemon_policy:plaza": "cobleserver:field_plaza",
         "minecraft:the_nether": "cobleserver:track/field/nether/sinnoh_stark_mountain",
         "minecraft:the_end": "cobleserver:track/field/end/distortion_world"
       },
+      "dayDimensions": {
+        "jbro_policy:plaza": "cobleserver:field_plaza",
+        "cobblemon_policy:plaza": "cobleserver:field_plaza"
+      },
+      "nightDimensions": {
+        "jbro_policy:plaza": "cobleserver:track/field/plaza/pallet_town",
+        "cobblemon_policy:plaza": "cobleserver:track/field/plaza/pallet_town"
+      },
       "biomes": {
-        "minecraft:deep_dark": "cobleserver:track/field/deep_dark/johto_ilex_forest",
-        "minecraft:lush_caves": "cobleserver:track/field/cave/johto_dark_cave",
-        "minecraft:dripstone_caves": "cobleserver:track/field/cave/johto_dark_cave",
+        "minecraft:deep_dark": "cobleserver:field_deep_dark",
+        "minecraft:lush_caves": "cobleserver:field_cave",
+        "minecraft:dripstone_caves": "cobleserver:field_cave",
         "minecraft:stony_shore": "cobleserver:track/field/beach/pmd_beach_at_dusk",
-        "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_216_day",
-        "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_216_day",
-        "minecraft:cherry_grove": "cobleserver:track/field/forest/viridian_forest"
+        "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_205_night",
+        "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_205_night",
+        "minecraft:cherry_grove": "cobleserver:field_forest"
       },
       "biomePathContains": {
-        "river": "cobleserver:track/field/river/sinnoh_lake_theme",
+        "river": "cobleserver:field_river",
         "beach": "cobleserver:track/field/beach/pmd_beach_at_dusk",
-        "ocean": "cobleserver:track/field/ocean/dive",
-        "badlands": "cobleserver:track/field/desert/route_111",
+        "ocean": "cobleserver:field_ocean",
+        "badlands": "cobleserver:track/field/badlands/abandoned_ship",
         "desert": "cobleserver:track/field/desert/route_111",
-        "swamp": "cobleserver:track/field/swamp/route_120",
-        "jungle": "cobleserver:track/field/jungle_swamp/alola_lush_jungle",
-        "snow": "cobleserver:track/field/snow/sinnoh_route_216_day",
-        "frozen": "cobleserver:track/field/snow/sinnoh_route_216_day",
-        "peak": "cobleserver:track/field/mountain/unova_route_4",
-        "slope": "cobleserver:track/field/mountain/unova_route_4",
-        "windswept": "cobleserver:track/field/mountain/unova_route_4",
-        "forest": "cobleserver:track/field/forest/viridian_forest",
-        "birch": "cobleserver:track/field/forest/viridian_forest",
-        "taiga": "cobleserver:track/field/forest/viridian_forest"
+        "swamp": "cobleserver:track/field/swamp/road_to_reversal_mountain",
+        "jungle": "cobleserver:track/field/jungle/route_210",
+        "snow": "cobleserver:track/field/snow/sinnoh_route_205_night",
+        "frozen": "cobleserver:track/field/snow/sinnoh_route_205_night",
+        "peak": "cobleserver:field_mountain",
+        "slope": "cobleserver:field_mountain",
+        "windswept": "cobleserver:field_mountain",
+        "forest": "cobleserver:field_forest",
+        "birch": "cobleserver:field_forest",
+        "taiga": "cobleserver:field_forest"
       },
-      "underground": "cobleserver:track/field/cave/johto_dark_cave"
+      "underground": "cobleserver:field_cave"
     },
     "battle": {
       "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",
@@ -137,10 +175,14 @@
         "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:pvp": "cobleserver:battle_pvp",
+        "more_cobblemon_contents:league_challenge/wild_trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:league_challenge/wild_trainer_ace": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/gym": "cobleserver:battle_gym_leader",
         "more_cobblemon_contents:league_challenge/hard_gym": "cobleserver:battle_gym_leader",
-        "more_cobblemon_contents:league_challenge/elite_four": "cobleserver:track/battle/elite/unova_elite_four_battle",
-        "more_cobblemon_contents:league_challenge/hard_elite_four": "cobleserver:track/battle/elite/unova_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/hard_elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/champion/cynthia": "cobleserver:track/battle/champion/sinnoh_cynthia_battle",
+        "more_cobblemon_contents:league_challenge/hard_champion/cynthia_hard": "cobleserver:track/battle/champion/sinnoh_cynthia_battle",
         "more_cobblemon_contents:league_challenge/champion": "cobleserver:track/battle/champion/oras_champion_battle",
         "more_cobblemon_contents:league_challenge/hard_champion": "cobleserver:track/battle/champion/oras_champion_battle"
       },

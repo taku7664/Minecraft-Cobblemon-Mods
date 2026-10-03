@@ -68,13 +68,15 @@ Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소�
 
 ## 선곡 순서
 
-공식 전투 음악의 현재 선곡은 [2026-10-03 라인업](MUSIC_LINEUP_2026-10-03.md)을 따릅니다. 일반 야생은 DP 음악이며, 루기아 음원만 이후 제공받은 `75 - Battle! (Lugia).flac`로 [교체](LUGIA_REPLACEMENT_2026-10-03.md)했습니다. 루기아의 기존 매핑 ID는 유지합니다.
+공식 전투 음악의 기반 선곡은 [2026-10-03 라인업](MUSIC_LINEUP_2026-10-03.md)을 따릅니다. 이후 제공받은 `pokemusic/readme.txt`의 메인 화면·MCC·트레이너·리그·필드·광장 선곡은 [1.3.5 적용 기록](POKEMUSIC_IMPORT_2026-10-03.md)이 갱신합니다. 일반 야생은 DP 음악이며, 루기아는 `75 - Battle! (Lugia).flac`로 [교체](LUGIA_REPLACEMENT_2026-10-03.md)한 음원과 기존 매핑 ID를 유지합니다.
 
-- 재생 우선순위: 전투 → 열린 화면 → 필드. 화면 음악은 화면이 열리는 즉시 바뀌고, 매핑이 없는 화면에서는 필드 음악이 이어집니다.
-- 필드: 차원 → 정확한 바이옴 → 지하 → 바이옴 경로 포함 → 기본곡
+- 재생 우선순위: 전투 → 열린 화면 → 필드. 화면 음악은 다음 공용 상황 검사에서 바뀌고, 매핑이 없는 화면에서는 필드 음악이 이어집니다. 월드 밖 메인 화면은 `minecraft:title` 화면 키를 사용합니다.
+- 필드: 해당 시간의 차원 → 공통 차원 → 정확한 바이옴 → 지하 → 바이옴 태그 → 바이옴 경로 포함 → 기본곡
 - 전투: 포켓몬 규칙 → 콘텐츠 키(구체적인 키부터) → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
 
 - 화면: 화면 키(구체적인 키부터)
+
+`field.dayDimensions`와 `field.nightDimensions`로 차원별 시간 매핑을 지정할 수 있고 설정 화면에도 낮·밤 항목이 표시됩니다. 밤은 게임 시간 13,000 이상 23,000 미만이며 날씨와 실제 시계는 사용하지 않습니다. 광장은 낮 Route 1 / 밤 Pallet Town으로 전환하고, 기존 필드 전환 대기와 페이드를 따릅니다. 두 곡을 지정한 `pokemusic` 항목은 명시적 `random`입니다. 첫 곡은 무작위로 고르고 이후 직전 곡을 피하므로 두 곡이면 교대로 이어집니다.
 
 야생 특수 분류는 알파 → 울트라비스트 → 전설 순입니다. [알파 음악](ALPHA_MUSIC_2026-10-03.md)은 서버가 전투에 전달한 `alpha` 표시로 판단하며, 포켓몬 전용곡이 있으면 전용곡을 유지합니다. 전용곡이 없는 야생 알파는 보스 2곡을 사용합니다. Mod Menu의 전투 매핑에서 `알파 포켓몬 전투` 음악을 변경할 수 있습니다.
 
@@ -134,7 +136,7 @@ More Cobblemon Contents(MCC)가 설치돼 있으면 위 API로 내장 연동을 
 
 예를 들어 신오 챔피언전은 `more_cobblemon_contents:league_challenge/champion/cynthia`, `.../league_challenge/champion`, `.../league_challenge` 순서로 찾습니다. 야생 트레이너도 리그 챌린지 콘텐츠이므로 `more_cobblemon_contents:league_challenge` 자체에 곡을 걸면 야생 트레이너에게도 적용됩니다. 공식 팩은 리그 단계에만 체육관·사천왕·챔피언 곡을 걸어 두어, 야생 트레이너는 일반 트레이너 곡을 씁니다.
 
-배틀 허브가 열려 있으면 `more_cobblemon_contents:hub/<탭>` → `more_cobblemon_contents:hub` 순으로 화면 키를 찾습니다. 탭은 `dashboard`, `shop`, `league_challenge`, `battle_tower`, `battle_factory`, `pvp`입니다. 공식 팩에는 허브 매핑이 없어 기본적으로 필드 음악이 이어집니다.
+배틀 허브가 열려 있으면 `more_cobblemon_contents:hub/<탭>` → `more_cobblemon_contents:hub` 순으로 화면 키를 찾습니다. 탭은 `dashboard`, `shop`, `league_challenge`, `battle_tower`, `battle_factory`, `pvp`입니다. 1.3.5 공식 팩의 기본 허브는 Boutique, 상점은 Poké Mart이며, 전투가 시작하면 전투 음악이 우선합니다.
 
 ## 빌드
 
