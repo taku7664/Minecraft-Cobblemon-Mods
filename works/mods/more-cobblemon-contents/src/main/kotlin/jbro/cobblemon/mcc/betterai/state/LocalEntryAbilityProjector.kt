@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
 
 /** Applies deterministic, publicly known ability effects caused by entering battle. */
 internal object LocalEntryAbilityProjector {
@@ -13,6 +14,15 @@ internal object LocalEntryAbilityProjector {
             it.battlePokemonId == incomingPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return state
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, incoming)
+        if (ability == "trace") {
+            val copiedAbility = resolvedTraceAbility(state, incoming) ?: return state
+            val copied = state.copyState(pokemon = state.pokemon.map {
+                if (it.battlePokemonId == incomingPokemonId) it.copyState(knownAbilityId = copiedAbility,
+                    knownBaseAbilityId = it.knownBaseAbilityId ?: it.knownAbilityId) else it
+            })
+            // Setting the copied ability runs its entry callback (weather, Intimidate, Download).
+            return project(copied, incomingPokemonId)
+        }
         val fieldState = projectField(state, incoming, ability)
         entryBoost(fieldState, incoming, ability)?.let { boost ->
             return jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.apply(fieldState, incoming.battlePokemonId, null, boost)
@@ -49,6 +59,25 @@ internal object LocalEntryAbilityProjector {
             }
         }
         return copyState(fieldState, next)
+    }
+
+    /** Resolve Trace only when public knowledge rules out every alternative copied ability. */
+    private fun resolvedTraceAbility(state: BattleStateView, incoming: BattlePokemonStateView): String? {
+        if (LocalPublicItemState.activeItemId(state, incoming) == "abilityshield") return null
+        val foes = state.pokemon.filter {
+            it.side != incoming.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }
+        if (foes.isEmpty()) return null
+        // Trace copies getAbility(), including an ability temporarily suppressed by Gastro Acid.
+        // An unrevealed foe could be another valid target, so do not select the revealed one by default.
+        val known = foes.map { canonical(it.knownAbilityId)?.takeIf(String::isNotEmpty) ?: return null }
+        if ("noability" in known) return null // Showdown's onStart gives up in this case.
+        val dex = EngineRuntimeDex.current().second
+        val copyable = known.mapNotNull { id ->
+            val definition = dex.abilityOrNull(id) ?: return null
+            id.takeUnless { definition.flag("notrace") }
+        }.distinct()
+        return copyable.singleOrNull()
     }
 
     /**
@@ -122,6 +151,7 @@ internal object LocalEntryAbilityProjector {
             knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
             knownTeraTypeId = pokemon.knownTeraTypeId,
             knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
+            knownBaseAbilityId = pokemon.knownBaseAbilityId,
         )
     }
 

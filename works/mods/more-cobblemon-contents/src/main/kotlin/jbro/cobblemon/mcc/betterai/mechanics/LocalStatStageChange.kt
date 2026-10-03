@@ -19,6 +19,8 @@ internal object LocalStatStageChange {
         stages: Map<String, Int>,
         /** Mold Breaker and its kind ignore the target's Contrary, Simple and drop-stopping abilities. */
         ignoreTargetAbility: Boolean = false,
+        /** An ability such as Cotton Down applies boosts directly rather than hitting the Substitute. */
+        bypassesSubstitute: Boolean = false,
     ): BattleStateView {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
@@ -39,7 +41,7 @@ internal object LocalStatStageChange {
             val drops = change.filterValues { it < 0 }
             val stopped = ability in DROP_STOPPING_ABILITIES ||
                 LocalPublicStatusImmunity.flowerVeiled(state, target) ||
-                target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
+                !bypassesSubstitute && target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
                 LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
                 source != null && source.side != target.side && mistActive(state, target)
             when {

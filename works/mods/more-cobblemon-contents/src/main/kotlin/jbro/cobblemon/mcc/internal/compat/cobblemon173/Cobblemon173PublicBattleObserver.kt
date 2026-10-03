@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 import jbro.cobblemon.mcc.internal.ai.PublicBattleInferenceEngine
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesInferenceKnowledge
 
 /**
@@ -200,7 +201,7 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.AbilityRevealed -> {
                 val actor = knownOrUpsert(observation.pokemon)
-                pokemon[actor.battlePokemonId] = actor.withKnownAbility(observation.abilityId)
+                pokemon[actor.battlePokemonId] = actor.withKnownAbility(observation.abilityId, observation.baseAbilityId)
                 if (observation.abilityId == "neutralizinggas") endedGas.remove(actor.battlePokemonId)
                 appendEvent(
                     observation.turn,
@@ -498,6 +499,7 @@ internal class Cobblemon173PublicBattleObserver(
                     val restoredTypes = publicTypes.clear(id)
                     current.copyView(
                         knownMoveIds = restoredMoves ?: current.knownMoveIds,
+                        knownAbilityId = current.knownBaseAbilityId ?: current.knownAbilityId,
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
                         knownVolatileEffectIds = emptySet(),
@@ -542,7 +544,23 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun observeActivePresence(snapshot: Cobblemon173PublicPokemonSnapshot) {
         if (snapshot.activeSlot == null) return
-        upsert(snapshot, refreshPublicIdentity = pokemon[snapshot.battlePokemonId] == null)
+        val current = upsert(snapshot, refreshPublicIdentity = pokemon[snapshot.battlePokemonId] == null)
+        val megaForm = snapshot.formId?.takeIf { PublicIds.canonical(it).startsWith("mega") }
+            ?.let { snapshot.knownFormStates[it] } ?: return
+        val permanentAbility = megaForm.abilityId ?: return
+        if (current.formId == snapshot.formId && current.knownBaseAbilityId == permanentAbility) return
+        // A visible Mega form has one public permanent ability. Preserve an already observed
+        // Trace copy of that same ability origin, and retain in-place volatile effects/constraints.
+        pokemon[current.battlePokemonId] = current.copyView(
+            formId = snapshot.formId,
+            knownAbilityId = if (current.knownBaseAbilityId == permanentAbility)
+                current.knownAbilityId ?: permanentAbility else permanentAbility,
+            knownBaseAbilityId = permanentAbility,
+            knownTypeIds = if (current.knownTeraTypeId == null) snapshot.knownTypeIds else current.knownTypeIds,
+            knownBaseStabTypeIds = snapshot.knownBaseStabTypeIds,
+            combatStats = snapshot.combatStats,
+            knownFormStates = snapshot.knownFormStates,
+        )
     }
 
     private fun knownOrUpsert(snapshot: Cobblemon173PublicPokemonSnapshot): BattlePokemonStateView =
@@ -729,6 +747,7 @@ internal data class Cobblemon173PublicPokemonSnapshot(
         statStages = statStages,
         knownMoveIds = previous?.knownMoveIds.orEmpty(),
         knownAbilityId = previous?.knownAbilityId,
+        knownBaseAbilityId = previous?.knownBaseAbilityId,
         knownHeldItemId = previous?.knownHeldItemId,
         fainted = fainted,
         knownTypeIds = if (previous != null && !refreshPublicIdentity) previous.knownTypeIds else knownTypeIds,
@@ -823,10 +842,12 @@ internal sealed interface Cobblemon173PublicObservation {
         }
     }
 
-    data class AbilityRevealed(
+    data class AbilityRevealed @JvmOverloads constructor(
         override val turn: Int,
         val pokemon: Cobblemon173PublicPokemonSnapshot,
         val abilityId: String,
+        /** A publicly announced origin, such as `[from] ability: Trace`; never a hidden build lookup. */
+        val baseAbilityId: String? = null,
     ) : Cobblemon173PublicObservation {
         init {
             require(abilityId.isNotBlank())
@@ -940,11 +961,16 @@ internal object Cobblemon173BattleStateAssembler {
         require(ownPokemon.all { it.side == BattleSide.ALLY })
         val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
         val allies = ownPokemon.map { own ->
+            val publicTrace = publicById[own.battlePokemonId]?.takeIf {
+                own.knownBaseAbilityId == null && it.knownBaseAbilityId == "trace"
+            }
             // Typing a move or ability gave ends when the Pokemon leaves the field, Tera does not: a benched ally
             // that has Terastallized keeps its Tera types. Read from its species instead, a Togekiss that had gone
             // Flying still looked Fairy on the bench and kept being switched in to take Dragon moves.
             val keepsPublicTypes = own.activeSlot != null || own.battlePokemonId in publicSnapshot.teraTypes
             own.copyView(
+                knownAbilityId = publicTrace?.knownAbilityId ?: own.knownAbilityId,
+                knownBaseAbilityId = publicTrace?.knownBaseAbilityId ?: own.knownBaseAbilityId,
                 knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
                     publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
@@ -1001,7 +1027,8 @@ internal object Cobblemon173BattleStateAssembler {
 
 private fun BattlePokemonStateView.withKnownMove(moveId: String) = copyView(knownMoveIds = knownMoveIds + moveId)
 
-private fun BattlePokemonStateView.withKnownAbility(abilityId: String) = copyView(knownAbilityId = abilityId)
+private fun BattlePokemonStateView.withKnownAbility(abilityId: String, baseAbilityId: String? = null) =
+    copyView(knownAbilityId = abilityId, knownBaseAbilityId = knownBaseAbilityId ?: baseAbilityId)
 
 private fun BattlePokemonStateView.withKnownHeldItem(itemId: String) = copyView(knownHeldItemId = itemId)
 
@@ -1009,8 +1036,12 @@ private fun BattlePokemonStateView.withActiveSlot(slot: Int?) = copyView(activeS
 
 private fun BattlePokemonStateView.copyView(
     activeSlot: Int? = this.activeSlot,
+    formId: String? = this.formId,
+    combatStats: BattleCombatStatRangesView? = this.combatStats,
+    knownFormStates: Map<String, BattlePokemonFormStateView> = this.knownFormStates,
     knownMoveIds: Set<String> = this.knownMoveIds,
     knownAbilityId: String? = this.knownAbilityId,
+    knownBaseAbilityId: String? = this.knownBaseAbilityId,
     knownHeldItemId: String? = this.knownHeldItemId,
     actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
     knownTypeIds: Set<String> = this.knownTypeIds,
@@ -1030,6 +1061,7 @@ private fun BattlePokemonStateView.copyView(
     statStages = statStages,
     knownMoveIds = knownMoveIds,
     knownAbilityId = knownAbilityId,
+    knownBaseAbilityId = knownBaseAbilityId,
     knownHeldItemId = knownHeldItemId,
     fainted = fainted,
     knownTypeIds = knownTypeIds,

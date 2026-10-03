@@ -141,7 +141,37 @@ class BattlePokemonStateView(
     knownBaseStabTypeIds: Set<String> = knownTypeIds,
     val knownTeraTypeId: String? = null,
     knownStellarBoostedTypeIds: Set<String>? = null,
+    /** Publicly known permanent ability restored on switch-out; null when its identity is unknown. */
+    val knownBaseAbilityId: String? = null,
 ) {
+    /** Preserve the pre-base-ability JVM constructor and its Kotlin default-argument bridge. */
+    constructor(
+        battlePokemonId: UUID,
+        side: BattleSide,
+        activeSlot: Int?,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        hpFraction: Double,
+        statusId: String?,
+        statStages: Map<String, Int>,
+        knownMoveIds: Set<String>,
+        knownAbilityId: String?,
+        knownHeldItemId: String?,
+        fainted: Boolean,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
+        knownVolatileEffectIds: Set<String>,
+        knownBaseStabTypeIds: Set<String> = knownTypeIds,
+        knownTeraTypeId: String? = null,
+        knownStellarBoostedTypeIds: Set<String>? = null,
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownBaseStabTypeIds,
+        knownTeraTypeId, knownStellarBoostedTypeIds, null)
+
     /** Preserve the original JVM constructor and Kotlin default-argument constructor. */
     constructor(
         battlePokemonId: UUID,

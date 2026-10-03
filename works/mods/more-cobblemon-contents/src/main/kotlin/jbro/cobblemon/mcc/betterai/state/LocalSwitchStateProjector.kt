@@ -28,6 +28,8 @@ internal object LocalSwitchStateProjector {
                         // Natural Cure heals its status on the way out.
                         statusId = if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "naturalcure") null
                             else pokemon.statusId,
+                        // The copied ability resolves its switch-out effects before the permanent ability returns.
+                        knownAbilityId = pokemon.knownBaseAbilityId ?: pokemon.knownAbilityId,
                     )
                 pokemon.battlePokemonId == incomingId -> {
                     val hp = (incoming.hpFraction - (action.facts?.switchEntryHpLossFraction ?: 0.0)).coerceAtLeast(0.0)
@@ -79,6 +81,7 @@ internal object LocalSwitchStateProjector {
         fainted: Boolean = this.fainted,
         formState: BattlePokemonFormStateView? = null,
         statusId: String? = this.statusId,
+        knownAbilityId: String? = this.knownAbilityId,
     ) = BattlePokemonStateView(
         battlePokemonId = battlePokemonId,
         side = side,
@@ -101,5 +104,6 @@ internal object LocalSwitchStateProjector {
         knownBaseStabTypeIds = formState?.knownTypeIds ?: knownBaseStabTypeIds,
         knownTeraTypeId = knownTeraTypeId,
         knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
+        knownBaseAbilityId = knownBaseAbilityId,
     )
 }

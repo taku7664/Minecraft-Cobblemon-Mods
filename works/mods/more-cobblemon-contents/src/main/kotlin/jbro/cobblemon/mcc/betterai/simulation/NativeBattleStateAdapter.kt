@@ -77,6 +77,7 @@ internal object NativeBattleStateAdapter {
             knownBaseStabTypeIds = native.baseStabTypes.mapTo(linkedSetOf(), ::nativeId),
             knownTeraTypeId = native.terastallizedType.takeIf(String::isNotBlank)?.let(::nativeId),
             knownStellarBoostedTypeIds = native.stellarBoostedTypes.mapTo(linkedSetOf(), ::nativeId),
+            knownBaseAbilityId = source.knownBaseAbilityId,
         )
     }
 

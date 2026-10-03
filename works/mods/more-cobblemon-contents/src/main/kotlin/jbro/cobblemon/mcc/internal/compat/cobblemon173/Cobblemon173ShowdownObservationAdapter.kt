@@ -297,7 +297,8 @@ class Cobblemon173ShowdownObservationAdapter(
         val id = effectId(message.argumentAt(1)).takeIf(String::isNotBlank) ?: return
         when (kind) {
             ResourceKind.ABILITY -> observer.observe(
-                Cobblemon173PublicObservation.AbilityRevealed(observedTurn, pokemon, id),
+                Cobblemon173PublicObservation.AbilityRevealed(observedTurn, pokemon, id,
+                    baseAbilityId = "trace".takeIf { message.effect("from")?.id == "trace" }),
             )
 
             ResourceKind.ITEM -> observer.observe(
@@ -320,6 +321,9 @@ class Cobblemon173ShowdownObservationAdapter(
 
     private fun revealOptionalSource(activeBattle: PokemonBattle, message: BattleMessage) {
         val effect = message.effect("from") ?: return
+        // Trace's copied ability and its public origin were recorded together in revealResource.
+        // `[of]` identifies the foe copied from, not a second Trace holder.
+        if (effect.type == Effect.Type.ABILITY && effect.id == "trace") return
         val kind = when (effect.type) {
             Effect.Type.ABILITY -> ResourceKind.ABILITY
             Effect.Type.ITEM -> ResourceKind.ITEM
@@ -377,6 +381,7 @@ class Cobblemon173ShowdownObservationAdapter(
     private fun BattlePokemon.toOwnState(owner: BattleActor): BattlePokemonStateView {
         val pokemon = effectedPokemon
         val heldItem = pokemon.heldItem()
+        val (ability, baseAbility) = ownAbilityState(owner.request, uuid, pokemon.ability.name)
         return BattlePokemonStateView(
             battlePokemonId = uuid,
             side = BattleSide.ALLY,
@@ -388,7 +393,8 @@ class Cobblemon173ShowdownObservationAdapter(
             statusId = pokemon.status?.status?.name?.toString(),
             statStages = statChanges.mapKeys { it.key.identifier.toString() },
             knownMoveIds = moveSet.getMoves().mapTo(linkedSetOf()) { it.name },
-            knownAbilityId = pokemon.ability.name,
+            knownAbilityId = ability,
+            knownBaseAbilityId = baseAbility,
             knownHeldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
             fainted = health <= 0,
             knownTypeIds = pokemon.form.types.mapTo(linkedSetOf()) { it.name },
@@ -401,6 +407,7 @@ class Cobblemon173ShowdownObservationAdapter(
                 speed = pokemon.speed,
             ),
             knownFormStates = Cobblemon173KnownFormStates.exactOwn(pokemon),
+            knownVolatileEffectIds = emptySet(),
         )
     }
 
@@ -423,6 +430,18 @@ class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        /** The deciding actor's request supplies current and permanent abilities, including Mega and Trace. */
+        fun ownAbilityState(
+            request: com.cobblemon.mod.common.battles.ShowdownActionRequest?,
+            pokemonId: UUID,
+            fallbackAbility: String,
+        ): Pair<String, String?> {
+            val requested = request?.side?.pokemon?.firstOrNull { it.uuid == pokemonId }
+                ?: return fallbackAbility to null
+            return (requested.ability.takeIf(String::isNotBlank) ?: fallbackAbility) to
+                requested.baseAbility.takeIf(String::isNotBlank)
+        }
+
         fun ppPreparingMove(message: BattleMessage, moveId: String): Boolean =
             message.id == "move" && message.hasOptionalArgument("still") &&
                 Cobblemon173ActionCandidateAdapter.publicMoveEffects(moveId)?.mechanicFlags?.contains("charge") == true
