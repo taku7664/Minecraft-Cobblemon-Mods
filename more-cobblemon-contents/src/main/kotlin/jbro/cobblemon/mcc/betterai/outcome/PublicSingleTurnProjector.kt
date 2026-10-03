@@ -1,5 +1,8 @@
 package jbro.cobblemon.mcc.betterai.outcome
 
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
+
 import java.util.IdentityHashMap
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.state.LocalDirectDamageLedger
@@ -784,22 +787,22 @@ internal object PublicSingleTurnProjector {
                     ),
                 )
             }
-            return faintedAllies.map { fainted ->
+            val reviveChoices = faintedAllies.map { fainted ->
+                BattleActionCandidate("revive:${fainted.battlePokemonId}", BattleActionKind.SWITCH,
+                    actorSlot = actor.activeSlot, switchPokemonId = fainted.battlePokemonId, tags = setOf("revival_blessing"))
+            }
+            val chosen = reviveChoices.maxBy { choice ->
+                LocalRevivalBlessing.score(choice,
+                    sourceContext.copy(state = projectedFormState), LocalDecisionTuning.CURRENT, side)
+            }
+            return listOf(
                 WeightedState(
-                    state = projectedFormState.copyState(
-                        pokemon = projectedFormState.pokemon.map { pokemon ->
-                            if (pokemon.battlePokemonId == fainted.battlePokemonId) {
-                                pokemon.copyState(hpFraction = 0.5, fainted = false)
-                            } else {
-                                pokemon
-                            }
-                        },
-                    ),
-                    probability = 1.0 / faintedAllies.size,
+                    state = LocalSwitchStateProjector.project(projectedFormState, side, chosen),
+                    probability = 1.0,
                     executedSides = setOf(side),
                     executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
                 )
-            }
+            )
         }
         val chargingContinuation = history.chargingMoveByPokemon[actor.battlePokemonId]
             ?.let { canonicalId(it) == canonicalId(moveId) } == true
