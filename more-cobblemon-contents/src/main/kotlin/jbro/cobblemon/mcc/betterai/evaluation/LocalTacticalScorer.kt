@@ -49,6 +49,8 @@ internal data class LocalTacticalScore(
     val total: Double,
     /** Root value re-derived from projected stat stages and therefore replaceable by search. */
     val statStageUtility: Double = 0.0,
+    /** Item value already priced by immediate projection, withdrawn once when search takes over. */
+    val itemUtility: Double = 0.0,
 )
 
 internal object LocalTacticalScorer {
@@ -79,6 +81,7 @@ internal object LocalTacticalScorer {
                         partnerActionCollateralRefund(candidate, moveContext, tuning) -
                         duplicateCertainKnockoutCredit(candidate, moveContext, tuning),
                     statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
+                    itemUtility = components.sumOf(LocalTacticalScore::itemUtility),
                 )
             }
             BattleActionKind.WAIT -> LocalTacticalScore(-100.0)
@@ -233,6 +236,7 @@ internal object LocalTacticalScorer {
         } else {
             LocalStatStageMarginalEvaluator.candidateScore(candidate, context, accuracy, tuning = tuning) ?: 0.0
         }
+        val itemScore = if (nonDamagingScore != null) null else LocalRootItemEffectEvaluator.damagingScore(candidate, context, accuracy, tuning)
         val pressure = if (nonDamagingScore != null) {
             nonDamagingScore.total
         } else if (damageRange != null) {
@@ -281,7 +285,7 @@ internal object LocalTacticalScorer {
         } else {
             0.0
         }
-        val total = pressure + priorityBonus + knockoutBonus + spreadBonus -
+        val total = pressure + (itemScore?.total ?: 0.0) + priorityBonus + knockoutBonus + spreadBonus -
             recoilPenalty -
             (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
                 UNCERTAIN_ABILITY_IMMUNITY_PENALTY
@@ -305,7 +309,8 @@ internal object LocalTacticalScorer {
             strategyMoveAdjustment(candidate, context, strategy)
         return LocalTacticalScore(
             total = total,
-            statStageUtility = nonDamagingScore?.statStageUtility ?: damagingStageUtility,
+            statStageUtility = nonDamagingScore?.statStageUtility ?: (damagingStageUtility + (itemScore?.statStageUtility ?: 0.0)),
+            itemUtility = nonDamagingScore?.itemUtility ?: itemScore?.itemUtility ?: 0.0,
         )
     }
 

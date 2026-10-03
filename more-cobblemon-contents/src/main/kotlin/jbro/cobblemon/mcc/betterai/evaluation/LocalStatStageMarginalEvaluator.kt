@@ -95,8 +95,7 @@ internal object LocalStatStageMarginalEvaluator {
                 it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
             }?.battlePokemonId
             val applied = targetIds.fold(state) { current, id ->
-                val target = current.pokemon.firstOrNull { it.battlePokemonId == id } ?: return@fold current
-                applyStages(current, setOf(id), LocalStatStageChange.reshape(current, target, actorId, effect.statStages))
+                LocalStatStageChange.apply(current, id, actorId, effect.statStages)
             }
             appliedAny = true
             val resolvedScore = scoreWithUnknownFallback(

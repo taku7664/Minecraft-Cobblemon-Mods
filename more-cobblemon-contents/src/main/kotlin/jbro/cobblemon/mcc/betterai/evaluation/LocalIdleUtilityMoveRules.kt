@@ -5,6 +5,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemTransferRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules
 
 /**
  * Utility moves that cannot accomplish anything in the position they are being considered from.
@@ -36,7 +40,11 @@ internal object LocalIdleUtilityMoveRules {
             in STAT_STAGE_RESET -> nobodyActiveIsBoosted(context)
             in SLEEP_DEPENDENT -> !isAsleep(actor)
             in PARTY_STATUS_CURES -> partyOf(context, actor.side).none { it.statusId != null }
-            in ITEM_SWAPS -> actor.canonicalKnownHeldItemId == null
+            in ITEM_SWAPS -> LocalPublicMoveTargets.resolve(candidate, context, actor.side).singleOrNull()?.let {
+                !LocalPublicItemTransferRules.canSwap(context.state, actor, it,
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, it, context.state),
+                    LocalSubstituteRules.bypasses(candidate, actor, context.state))
+            } ?: true
             in FORCED_ROTATIONS -> (context.state.remainingPokemonBySide[opposing(actor.side)] ?: 0) <= 1
             LEECH_SEED -> target != null && target.knownTypeIds.any { canonical(it) == "grass" }
             TAUNT -> target?.actionConstraints?.taunted == true

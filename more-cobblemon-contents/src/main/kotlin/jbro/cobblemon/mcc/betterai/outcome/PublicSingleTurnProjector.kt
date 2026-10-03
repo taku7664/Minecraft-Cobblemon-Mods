@@ -26,6 +26,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemTransferRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
@@ -2225,7 +2226,9 @@ internal object PublicSingleTurnProjector {
         val slot = ordered.action.targets.singleOrNull() ?: return after
         val target = after.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted } ?: return after
         if (target.battlePokemonId in branch.protectedPokemonIds) return after
-        if (target.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return after
+        if (target.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE } &&
+            !jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.bypasses(ordered.action,
+                after.pokemon.first { it.battlePokemonId == userId }, after)) return after
         val user = after.pokemon.first { it.battlePokemonId == userId }
         return if (id == "painsplit") {
             val average = (user.hpFraction + target.hpFraction) / 2.0
@@ -2233,15 +2236,10 @@ internal object PublicSingleTurnProjector {
                 if (it.battlePokemonId == userId || it.battlePokemonId == target.battlePokemonId) it.copyState(hpFraction = average) else it
             })
         } else {
-            if (LocalPublicAbilityState.effectiveKnownAbility(after, target) == "stickyhold") return after
-            if (user.canonicalKnownHeldItemId == null && target.canonicalKnownHeldItemId == null) return after
-            after.copyState(pokemon = after.pokemon.map {
-                when (it.battlePokemonId) {
-                    userId -> it.copyState(knownHeldItemId = target.knownHeldItemId)
-                    target.battlePokemonId -> it.copyState(knownHeldItemId = user.knownHeldItemId)
-                    else -> it
-                }
-            })
+            if (!LocalPublicItemTransferRules.canSwap(after, user, target,
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(ordered.action, user, target, after),
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalSubstituteRules.bypasses(ordered.action, user, after))) return after
+            LocalPublicItemTransferRules.swap(after, user, target)
         }
     }
 

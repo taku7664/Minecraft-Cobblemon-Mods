@@ -57,6 +57,8 @@ internal data class LocalBattleActionOutcome(
     /** Stat-stage value already present in [tacticalUtility] and replaceable by projected value. */
     val statStageUtility: Double = 0.0,
     val componentOutcomes: List<LocalBattleActionOutcome> = emptyList(),
+    /** Item-owned immediate value that the complete turn re-prices; public item attack pressure stays at root. */
+    val itemUtility: Double = 0.0,
 )
 
 internal data class LocalBattleActionRank(
@@ -309,6 +311,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             effectiveAccuracyProbability = accuracy,
             knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning, context),
             statStageUtility = tactical.statStageUtility,
+            itemUtility = tactical.itemUtility,
         )
     }
 
@@ -389,6 +392,7 @@ internal object LocalBattleActionOutcomeEvaluator {
                 LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning),
             statStageUtility = components.sumOf(LocalBattleActionOutcome::statStageUtility),
             componentOutcomes = components,
+            itemUtility = components.sumOf(LocalBattleActionOutcome::itemUtility),
         )
     }
 

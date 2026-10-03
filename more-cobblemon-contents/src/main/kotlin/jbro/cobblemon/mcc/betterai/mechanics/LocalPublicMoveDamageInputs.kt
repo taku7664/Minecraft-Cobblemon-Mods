@@ -243,7 +243,7 @@ internal object LocalPublicMoveDamageInputs {
     /** Showdown boosts Knock Off when the target holds an item it can lose (not a mask, Mega Stone or the like). */
     private fun knockOffBoosts(target: BattlePokemonStateView): Boolean {
         val item = canonical(target.knownHeldItemId).takeIf { it.isNotEmpty() } ?: return false
-        return item !in UNREMOVABLE_ITEMS && !item.endsWith("mask") && !MEGA_STONE.matches(item)
+        return LocalPublicItemTransferRules.allowsTake(item, target, target)
     }
 
     /** True when the public model knows the template value is not the move's resolved damage input. */
@@ -478,12 +478,6 @@ internal object LocalPublicMoveDamageInputs {
         "pixieplate" to "fairy",
     )
     private val IVY_CUDGEL_FORMS = mapOf("wellspring" to "water", "hearthflame" to "fire", "cornerstone" to "rock")
-    /** Items whose `onTakeItem` refuses removal for their usual holder, so Knock Off gets no boost. */
-    private val UNREMOVABLE_ITEMS = setOf(
-        "blueorb", "redorb", "griseouscore", "adamantcrystal", "lustrousglobe", "rustedsword", "rustedshield",
-    )
-    private val MEGA_STONE = Regex("(?!eviolite).+ite[xyz]?")
-
     private val SPEED_RATIO_MOVES = setOf("electroball", "gyroball")
     private val HP_DEPENDENT_MOVES = setOf(
         "eruption", "waterspout", "dragonenergy", "flail", "reversal",

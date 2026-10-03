@@ -1,8 +1,11 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
+import jbro.cobblemon.mcc.betterai.engine.Js
+import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.PublicIds
@@ -37,8 +40,8 @@ internal object LocalAfterHitReactions {
             val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target)
             if (alive) {
                 if (item == AIR_BALLOON) state = setItem(state, target.battlePokemonId, "")
-                val chart = StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds, false)
-                if (item == WEAKNESS_POLICY && target.knownTypeIds.isNotEmpty() && chart > 1.0) {
+                if (weaknessPolicyActivates(state, target, action,
+                        before.pokemon.firstOrNull { it.battlePokemonId == actorId })) {
                     state = LocalStatStageChange.apply(state, target.battlePokemonId, null, mapOf("attack" to 2, "special_attack" to 2))
                     state = setItem(state, target.battlePokemonId, "")
                 }
@@ -52,8 +55,11 @@ internal object LocalAfterHitReactions {
                 })
             }
             // Knock Off removes an item it can take, whether or not the holder survives.
-            if (moveId == KNOCK_OFF && target.canonicalKnownHeldItemId != null && removable(target) && ability != STICKY_HOLD) {
-                state = setItem(state, target.battlePokemonId, "")
+            val currentTarget = state.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+            val actorBefore = before.pokemon.firstOrNull { it.battlePokemonId == actorId }
+            if (moveId == KNOCK_OFF && LocalPublicItemTransferRules.canRemove(state, currentTarget,
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(action, actorBefore, currentTarget, state))) {
+                state = setItem(state, currentTarget.battlePokemonId, "")
             }
         }
         if (!userEffects) return state
@@ -75,6 +81,27 @@ internal object LocalAfterHitReactions {
             })
         }
         return state
+    }
+
+    /** Weakness Policy excludes fixed damage and damage callbacks even on a super-effective body hit. */
+    fun weaknessPolicyActivates(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        action: BattleActionCandidate,
+        actor: BattlePokemonStateView?,
+    ): Boolean {
+        if (LocalPublicItemState.activeItemId(state, target) != WEAKNESS_POLICY) return false
+        val details = action.moveDetails ?: return false
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS || details.effects?.effects.orEmpty().any {
+                it.kind == BattleMoveEffectKind.FIXED_DAMAGE_LEVEL || it.kind == BattleMoveEffectKind.FIXED_DAMAGE_VALUE
+            }) return false
+        val move = runCatching { EngineRuntimeDex.current().second.move(canonical(action.moveId)) }.getOrNull()
+        if (move != null && (Js.truthy(move.data("damage")) || move.declares("damageCallback"))) return false
+        val type = actor?.let { LocalPublicMoveDamageInputs.resolvedTypeId(action, it, state) } ?: details.typeId
+        val chart = action.facts?.typeChartMultiplier ?: target.knownTypeIds.takeIf { it.isNotEmpty() }?.let {
+            StandardTypeEffectiveness.multiplier(type, it, false)
+        }
+        return chart != null && chart > 1.0
     }
 
     private fun reactiveBoost(
@@ -119,15 +146,6 @@ internal object LocalAfterHitReactions {
         ).maxByOrNull { it.second }?.first
     }
 
-    private fun removable(target: BattlePokemonStateView): Boolean {
-        val item = canonical(target.knownHeldItemId)
-        if (item.isEmpty()) return false
-        if (item == EVIOLITE) return true
-        val megaStone = item.endsWith("ite") || item.endsWith("itex") || item.endsWith("itey")
-        return item !in UNREMOVABLE_ITEMS && !megaStone && !item.endsWith("mask") && !item.endsWith("memory") &&
-            !item.endsWith("plate")
-    }
-
     private fun setItem(state: BattleStateView, pokemonId: UUID, item: String?): BattleStateView =
         state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId == pokemonId) it.copyState(knownHeldItemId = item) else it
@@ -145,9 +163,4 @@ internal object LocalAfterHitReactions {
     private const val WEAKNESS_POLICY = "weaknesspolicy"
     private const val LIFE_ORB = "lifeorb"
     private const val KNOCK_OFF = "knockoff"
-    private const val STICKY_HOLD = "stickyhold"
-    private const val EVIOLITE = "eviolite"
-    private val UNREMOVABLE_ITEMS = setOf(
-        "blueorb", "redorb", "griseouscore", "adamantcrystal", "lustrousglobe", "rustedsword", "rustedshield",
-    )
 }

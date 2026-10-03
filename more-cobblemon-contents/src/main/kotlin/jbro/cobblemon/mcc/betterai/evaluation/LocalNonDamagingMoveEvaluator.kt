@@ -23,6 +23,7 @@ internal object LocalNonDamagingMoveEvaluator {
         val total: Double,
         /** The part of [total] owned by the stat-stage evaluator and replaceable by lookahead. */
         val statStageUtility: Double,
+        val itemUtility: Double = 0.0,
     )
 
     fun pressure(
@@ -39,6 +40,9 @@ internal object LocalNonDamagingMoveEvaluator {
         /** How far the trainer matches the status to the target; see [LocalStatusTargetFit]. */
         statusFitScale: Double = 0.0,
     ): Score {
+        LocalRootItemEffectEvaluator.swapScore(candidate, context, accuracy, tuning)?.let {
+            return Score(it.total, 0.0, it.itemUtility)
+        }
         val actor = actor(candidate, context)
         val missingHp = (1.0 - (actor?.hpFraction ?: 1.0)).coerceIn(0.0, 1.0)
         val recovery = candidate.facts?.selfHealingFractionRange?.let { range ->
