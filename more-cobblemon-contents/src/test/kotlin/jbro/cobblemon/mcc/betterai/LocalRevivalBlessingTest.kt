@@ -57,6 +57,7 @@ class LocalRevivalBlessingTest {
                         1.0, valueId = "revivalblessing")), scriptedBehavior = false)))
         val branches = jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector.project(
             state, action, BattleActionCandidate("wait", BattleActionKind.WAIT), context(state, action))
+        assertTrue(LocalTacticalScorer.score(action, context(state, action)) > 200.0)
         assertTrue(branches.isNotEmpty())
         branches.forEach { branch ->
             assertFalse(branch.stateBeforeResidual.pokemon.single { it.battlePokemonId == water.battlePokemonId }.fainted)
