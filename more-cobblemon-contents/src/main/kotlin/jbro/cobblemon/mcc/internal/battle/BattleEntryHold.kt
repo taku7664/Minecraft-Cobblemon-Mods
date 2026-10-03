@@ -27,8 +27,8 @@ import net.minecraft.server.MinecraftServer
  * transition start at once. A client that never answers is waited for [TIMEOUT_TICKS] at most.
  */
 internal object BattleEntryHold {
-    /** About two and a half times the longest cover, for a slow or stalled client. */
-    const val TIMEOUT_TICKS = 80
+    /** About twice the longest transition (five seconds to the start), for a slow or stalled client. */
+    const val TIMEOUT_TICKS = 200
 
     private class Held(val battle: PokemonBattle, val playerId: UUID, val dueTick: Int, val heldAt: Long = net.minecraft.Util.getMillis())
 

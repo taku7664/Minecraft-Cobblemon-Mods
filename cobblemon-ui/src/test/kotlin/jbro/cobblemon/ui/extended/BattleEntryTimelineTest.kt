@@ -43,6 +43,21 @@ class BattleEntryTimelineTest {
     }
 
     @Test
+    fun `each transition runs about five seconds, holding the covered screen with a pulse`() {
+        for (kind in BattleEntryKind.entries) {
+            val total = BattleEntryTimeline.readyAt(kind) + (kind.revealMillis * BattleEntryTimeline.WHITE_RISE).toLong() +
+                kind.fadeMillis
+            assertTrue(total in 4500L..5500L, "${kind.id} runs $total ms")
+            assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
+            assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))
+            assertEquals(0f, BattleEntryTimeline.pulse(kind, BattleEntryTimeline.coverEnd(kind) - 1))
+            val hold = (BattleEntryTimeline.coverEnd(kind)..BattleEntryTimeline.readyAt(kind) step 10)
+                .map { BattleEntryTimeline.pulse(kind, it) }
+            assertTrue(hold.max() > .6f, "${kind.id} pulses up to ${hold.max()}")
+        }
+    }
+
+    @Test
     fun `the reveal turns the screen white then fades it slowly`() {
         for (kind in BattleEntryKind.entries) {
             val rise = (kind.revealMillis * BattleEntryTimeline.WHITE_RISE).toLong()

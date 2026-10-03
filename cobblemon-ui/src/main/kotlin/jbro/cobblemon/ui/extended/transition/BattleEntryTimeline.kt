@@ -1,22 +1,25 @@
 package jbro.cobblemon.ui.extended.transition
 
+import kotlin.math.abs
+
 /**
  * What kind of battle is starting, which sets the entry transition's beats: when it flashes, how long the pattern
- * takes to cover the screen, how fast the pattern clears and how slowly the white fades into the battle. A legendary
- * first darkens the world, flashes three times faster and faster with a shockwave on each, and shakes as its pattern
- * closes in.
+ * takes to cover the screen, how long the covered screen pulses before the battle may start, how fast the white rises
+ * and how slowly it fades into the battle. Each kind runs about five seconds. A legendary first darkens the world,
+ * flashes three times faster and faster with a shockwave on each, and shakes as its pattern closes in.
  */
 enum class BattleEntryKind(
     val id: String,
     val flashStarts: List<Long>,
     val flashMillis: Long,
     val coverMillis: Long,
+    val holdMillis: Long,
     val revealMillis: Long,
     val fadeMillis: Long,
 ) {
-    LEGENDARY("legendary", listOf(260L, 470L, 620L), 110, 600, 320, 900),
-    WILD("wild", listOf(0L), 140, 400, 280, 520),
-    TRAINER("trainer", listOf(0L), 140, 440, 300, 560);
+    LEGENDARY("legendary", listOf(600L, 1050L, 1380L), 130, 1700, 750, 400, 1100),
+    WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 1500, 400, 1000),
+    TRAINER("trainer", listOf(0L, 300L), 160, 1700, 1600, 400, 1000);
 
     companion object {
         fun fromId(id: String?): BattleEntryKind? = entries.firstOrNull { it.id == id }
@@ -30,7 +33,7 @@ enum class BattleEntryKind(
 object BattleEntryTimeline {
     /** How far behind the first piece the last one starts, as a share of the cover. */
     const val SPREAD = 1.1f
-    /** A hold with no battle in sight ends on its own, so a lost battle never leaves the screen covered. */
+    /** A hold with no battle in sight past [readyAt] ends on its own, so a lost battle never leaves the screen covered. */
     const val HOLD_TIMEOUT_MILLIS = 6000L
     /** How long a legendary's shockwave takes to reach past the screen's corners. */
     const val RING_MILLIS = 450L
@@ -41,13 +44,35 @@ object BattleEntryTimeline {
 
     fun coverEnd(kind: BattleEntryKind): Long = flashEnd(kind) + kind.coverMillis
 
+    /** When the covered screen has pulsed long enough for the battle to start. */
+    fun readyAt(kind: BattleEntryKind): Long = coverEnd(kind) + kind.holdMillis
+
+    fun ready(kind: BattleEntryKind, elapsed: Long): Boolean = elapsed >= readyAt(kind)
+
+    /**
+     * The covered screen's breathing, 0 to 1, while it waits for the battle: a slow swell for wild and trainer battles,
+     * a double heartbeat for a legendary. It eases in from the moment the cover closes.
+     */
+    fun pulse(kind: BattleEntryKind, elapsed: Long): Float {
+        val since = elapsed - coverEnd(kind)
+        if (since < 0) return 0f
+        val ease = (since / 250f).coerceAtMost(1f)
+        val wave = if (kind == BattleEntryKind.LEGENDARY) {
+            val beat = (since % 700L) / 700f
+            maxOf(1f - abs(beat - .12f) / .1f, .7f * (1f - abs(beat - .34f) / .1f), 0f)
+        } else {
+            .5f - .5f * kotlin.math.cos(since / 650f * Math.PI.toFloat())
+        }
+        return ease * wave
+    }
+
     /** The white flash's strength, 0 to 1, rising and falling within each flash. */
     fun flash(kind: BattleEntryKind, elapsed: Long): Float {
         val start = kind.flashStarts.lastOrNull { it <= elapsed } ?: return 0f
         val within = elapsed - start
         if (within >= kind.flashMillis) return 0f
         val half = kind.flashMillis / 2f
-        return 1f - kotlin.math.abs(within - half) / half
+        return 1f - abs(within - half) / half
     }
 
     /** How far the pattern has covered the screen, 0 to 1. */

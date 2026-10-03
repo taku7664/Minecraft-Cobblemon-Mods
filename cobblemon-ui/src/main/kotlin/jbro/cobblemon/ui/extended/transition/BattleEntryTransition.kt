@@ -48,9 +48,9 @@ object BattleEntryTransition {
     /** Whether a transition is on screen. */
     val active: Boolean get() = run != null
 
-    /** Whether the screen is fully covered and waiting for the battle. */
+    /** Whether the screen is covered and has pulsed long enough for the battle to start. */
     val covered: Boolean
-        get() = run?.let { it.revealAt == null && BattleEntryTimeline.covered(it.kind, Util.getMillis() - it.startedAt) }
+        get() = run?.let { it.revealAt == null && BattleEntryTimeline.ready(it.kind, Util.getMillis() - it.startedAt) }
             ?: false
 
     /** The legendary, mythical and Ultra Beast species get the legendary transition. */
@@ -110,11 +110,11 @@ object BattleEntryTransition {
     fun reveal() {
         val current = run ?: return
         if (current.revealAt != null) return
-        // A reveal asked for mid-cover waits for the cover to finish, so the pattern never jumps.
+        // A reveal asked for early waits for the cover and its pulse to finish, so the transition always plays out.
         val elapsed = Util.getMillis() - current.startedAt
-        current.revealAt = current.startedAt + maxOf(elapsed, BattleEntryTimeline.coverEnd(current.kind))
-        jbro.cobblemon.ui.extended.CobblemonUi.LOGGER.info("Battle entry {} reveals after {} ms (covered at {} ms)",
-            current.kind.id, elapsed, BattleEntryTimeline.coverEnd(current.kind))
+        current.revealAt = current.startedAt + maxOf(elapsed, BattleEntryTimeline.readyAt(current.kind))
+        jbro.cobblemon.ui.extended.CobblemonUi.LOGGER.info("Battle entry {} reveals after {} ms (ready at {} ms)",
+            current.kind.id, elapsed, BattleEntryTimeline.readyAt(current.kind))
         closeInputScreen()
     }
 
@@ -143,8 +143,8 @@ object BattleEntryTransition {
     private fun check() {
         val current = run ?: return
         val elapsed = Util.getMillis() - current.startedAt
-        if (!current.reported && BattleEntryTimeline.covered(current.kind, elapsed)) report(current)
-        if (current.revealAt == null && elapsed > BattleEntryTimeline.coverEnd(current.kind) + BattleEntryTimeline.HOLD_TIMEOUT_MILLIS) {
+        if (!current.reported && BattleEntryTimeline.ready(current.kind, elapsed)) report(current)
+        if (current.revealAt == null && elapsed > BattleEntryTimeline.readyAt(current.kind) + BattleEntryTimeline.HOLD_TIMEOUT_MILLIS) {
             reveal()
         }
     }
@@ -197,9 +197,10 @@ object BattleEntryTransition {
             pose.translate(sin(elapsed * .09f) * amplitude, cos(elapsed * .123f) * amplitude * .7f, 0f)
         }
         BattleEntryTimeline.rings(kind, elapsed).forEach { ring(context, width, height, current.accent, it) }
+        val pulse = if (sinceReveal == null) BattleEntryTimeline.pulse(kind, elapsed) else 0f
         when (BattleUiTheme.palette.entryPattern) {
-            BattleEntryPattern.CELLS -> drawCells(context, width, height, kind, current.accent, cover, reveal)
-            BattleEntryPattern.STRIPES -> drawStripes(context, width, height, current.accent, cover, reveal)
+            BattleEntryPattern.CELLS -> drawCells(context, width, height, kind, current.accent, cover, reveal, pulse)
+            BattleEntryPattern.STRIPES -> drawStripes(context, width, height, current.accent, cover, reveal, pulse)
         }
         pose.popPose()
 
@@ -224,10 +225,12 @@ object BattleEntryTransition {
      * from the top left, a legendary's are larger.
      */
     private fun drawCells(context: GuiGraphics, width: Int, height: Int, kind: BattleEntryKind, accent: Int,
-                          cover: Float, reveal: Float) {
+                          cover: Float, reveal: Float, pulse: Float) {
         val base = BattleUiTheme.palette.entryBase
-        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(accent, base, .58f),
-            BattleSurfaceRenderer.interpolate(accent, base, .70f))
+        // The covered screen breathes: both tones lean toward the accent with the pulse.
+        val lift = pulse * if (kind == BattleEntryKind.LEGENDARY) .32f else .18f
+        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(accent, base, .58f - lift),
+            BattleSurfaceRenderer.interpolate(accent, base, .70f - lift))
         val cell = if (kind == BattleEntryKind.LEGENDARY) LEGENDARY_CELL else CELL
         val columns = ceil(width / cell.toFloat()).toInt() + 1
         val rows = ceil(height / cell.toFloat()).toInt() + 1
@@ -250,9 +253,12 @@ object BattleEntryTransition {
     }
 
     /** Slanted bands, dark and coloured in turn, that widen from their middles outward from the screen's center. */
-    private fun drawStripes(context: GuiGraphics, width: Int, height: Int, accent: Int, cover: Float, reveal: Float) {
+    private fun drawStripes(context: GuiGraphics, width: Int, height: Int, accent: Int, cover: Float, reveal: Float,
+                            pulse: Float) {
         val base = BattleUiTheme.palette.entryBase
-        val colors = intArrayOf(base, BattleSurfaceRenderer.interpolate(accent, base, .2f))
+        // The covered screen breathes: the dark bands warm and the coloured ones brighten with the pulse.
+        val colors = intArrayOf(BattleSurfaceRenderer.interpolate(base, accent, pulse * .18f),
+            BattleSurfaceRenderer.interpolate(accent, base, .2f - pulse * .15f))
         val shift = height * SLOPE / 2f
         val reach = ceil((width / 2f + shift) / BAND).toInt() + 1
         quads(context) { buffer, matrix ->
