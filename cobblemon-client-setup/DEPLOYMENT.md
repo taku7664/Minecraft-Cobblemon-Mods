@@ -153,3 +153,25 @@ Mod Menu에서 Xaero 항목도 최초 한 번 또는 매 실행 적용을 선택
 업그레이드 시 이전 설정 폴더가 있으면 preLaunch에서 같은 이동을 수행합니다.
 이전 폴더와 새 폴더가 모두 있으면 덮어쓰지 않고 해당 실행의 프리셋 적용을 건너뜁니다.
 Minecraft는 실행하지 않았으며 서버 파일은 변경하지 않았습니다.
+
+## 0.1.6 — 웨이포인트 허용과 즉시 생성
+
+- 소스 커밋: `50c1f14b`
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
+- 파일: `mods/cobblemon-client-setup-0.1.6.jar`
+- SHA-256: `A56116B94CE7DF48D39868042485C2D97D9B8B30B1AC77F52E5F4CB14D76200E`
+- 이전 JAR 백업: `codex-deploy-backups/20261003-232614851/cobblemon_client_setup/cobblemon-client-setup-0.1.5.jar`
+- 설정 백업: `F:\AI\Temp\codex-xaero-waypoint-20261003\before`
+- 검증: Gradle build와 테스트 58개, JDK JAR 검증 통과. 설치 JAR의 mod ID·버전·두 진입점과 주요 클래스 확인.
+
+Xaero 적용 코드를 종료된 개발 프로필에 직접 실행해 미니맵과 전체 지도에서 웨이포인트
+생성·표시를 켰습니다. 사망 지점과 전체 지도 텔레포트는 꺼진 상태입니다. 원형·우측 상단
+배치는 유지했습니다. 기존 접속 세계의 Xaero `config.txt`에서는
+`teleportationEnabled:true`를 `false`로 바꿨고, 새 클라이언트 진입점도 접속 세계의 같은
+설정을 확인해 끄도록 구현했습니다. 적용 전후 `options.txt`와 HUD 배치 파일은 바이트
+단위로 동일합니다.
+
+새 B 단축키와 `/waypoint [이름]`은 Xaero의 현재 세계·웨이포인트 세트에 영구 표식을
+만들도록 구현했습니다. 이름이 없으면 `Waypoint`입니다. 실제 게임에서 단축키·명령 입력,
+웨이포인트 표시·저장, 텔레포트 버튼 동작은 아직 확인하지 않았습니다. 서버 프로필과
+기존 금지 효과 제거는 서버 저장소에서 별도로 배포했습니다.
