@@ -60,7 +60,7 @@ final class KeybindingDefaultsTest {
         assertFalse(Files.exists(optionsFile()));
         assertFalse(Files.exists(stateFile()));
         assertEquals(1, KeybindingDefaults.apply(gameDirectory, configDirectory(), Set.of("voicechat")));
-        assertEquals("key_key.hide_icons:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\n", Files.readString(optionsFile()));
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingDefaults.apply(gameDirectory, configDirectory(), Set.of("voicechat", "zoomify")));
         assertEquals("key_key.hide_icons:key.keyboard.j\nkey_zoomify.key.zoom.secondary:key.keyboard.unknown\n", Files.readString(optionsFile()));
@@ -70,7 +70,8 @@ final class KeybindingDefaultsTest {
     @Test void freshProfileSeedsBindingsBeforeMinecraftLoadsOptions() throws Exception {
         KeybindingDefaults.apply(gameDirectory, configDirectory(), MODS);
         String options = Files.readString(optionsFile());
-        assertEquals(6, options.lines().count());
+        assertEquals(7, options.lines().count());
+        assertTrue(options.startsWith("version:3955\n"));
         for (String key : KEYS) assertTrue(options.contains(key + ":key.keyboard.unknown\n"));
     }
 
