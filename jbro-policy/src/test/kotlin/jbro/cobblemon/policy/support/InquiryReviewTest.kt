@@ -137,6 +137,43 @@ class InquiryReviewTest {
     }
 
     @Test
+    fun `suggested commands come out one line each, starting with a slash and free of backticks`() {
+        val answer = JsonParser.parseString("""{"suggestedCommands":[
+            {"command":"bp add Park_JH <양>\n배틀 타워","why":"BP 지급"},
+            {"command":"/legends mewtwo `Park_JH`","why":""},
+            "/bp get Park_JH",
+            {"command":" ","why":"빈 명령"}]}""").asJsonObject
+        val commands = InquiryReviewer.commands(answer.get("suggestedCommands"))
+        assertEquals(listOf("/bp add Park_JH <양> 배틀 타워", "/legends mewtwo Park_JH", "/bp get Park_JH"), commands.map { it.command })
+        assertEquals("BP 지급", commands[0].why)
+        assertTrue(InquiryReviewer.commands(null).isEmpty())
+    }
+
+    @Test
+    fun `the prompt lists the commands at the prompt's own indent and the schema stays ASCII`() {
+        val prompt = InquiryReviewer.prompt(inquiry, InquiryLogWindow.Window("", 0, false), 30, 5)
+        assertTrue(prompt.lines().any { it.startsWith("  - /bp get <플레이어>") })
+        assertTrue(prompt.lines().any { it.startsWith("- suggestedCommands:") })
+        assertTrue(InquiryReviewer.SCHEMA.all { it.code < 128 })
+        assertTrue("suggestedCommands" in InquiryReviewer.SCHEMA)
+    }
+
+    @Test
+    fun `the presser's own view puts each command in its own code block`() {
+        val text = InquiryReview.actionsText("0a1b2c3d", listOf("BP 내역 확인"),
+            listOf(InquiryVerdict.SuggestedCommand("/bp history Park_JH 10", "최근 BP 내역")))
+        assertTrue(text.startsWith("**문의 0a1b2c3d 권장 조치**"))
+        assertTrue("• BP 내역 확인" in text)
+        assertTrue("최근 BP 내역\n```\n/bp history Park_JH 10\n```" in text)
+        assertTrue("제안할 명령어가 없어요." in InquiryReview.actionsText("0a1b2c3d", emptyList(), emptyList()))
+        val many = List(40) { InquiryVerdict.SuggestedCommand("/give Park_JH minecraft:stone ${"9".repeat(40)}", "돌") }
+        assertTrue(InquiryReview.actionsText("0a1b2c3d", emptyList(), many).length <= 2000)
+        assertTrue(InquiryReview.handles(InquiryReview.ACTIONS_PREFIX + "0a1b2c3d"))
+        assertTrue(InquiryReview.handles(InquiryReview.BUTTON_PREFIX + "0a1b2c3d"))
+        assertFalse(InquiryReview.handles("other:0a1b2c3d"))
+    }
+
+    @Test
     fun `settings stay off until enabled`() {
         assertFalse(InquiryReviewSettings().enabled)
         val parsed = InquiryReviewSettings.parse("""{"enabled": true, "minutesBefore": 60}""")

@@ -89,14 +89,16 @@ data class InquiryReviewSettings(
 /**
  * Reviews each inquiry against the server log once its card is up, with the Antigravity CLI. The player gets a short
  * summary as an operator whisper and as a reply under their card; the operators get the details, the evidence and
- * suggested actions in the admin channel, with a "처리 완료" button that deletes the review's conversation. Nothing
- * the review suggests is ever carried out by itself.
+ * suggested actions in the admin channel, with a "처리 완료" button that deletes the review's conversation and a
+ * "조치·명령어 보기" button that shows the presser alone the suggested commands to copy. Nothing the review suggests is
+ * ever carried out by itself.
  *
  * Needs the bot, the inquiry channel and the admin channel. Open inquiries live in `jbro-policy/inquiries/`, so a
  * review cut short by a restart runs again and the button still works after one.
  */
 internal object InquiryReview {
     const val BUTTON_PREFIX = "inquiry_resolve:"
+    const val ACTIONS_PREFIX = "inquiry_actions:"
     const val RESOLVE_PERMISSION = "resolve"
     private const val COLOR_MATCH = 0x57F287
     private const val COLOR_MISMATCH = 0xED4245
@@ -130,9 +132,15 @@ internal object InquiryReview {
         val reviewed: Boolean = false,
         /** The inquiry's private thread; null for cards posted straight in the inquiry channel. */
         val cardChannelId: String? = null,
+        /** What the review suggested, for the "조치·명령어 보기" button; null in records from before it. */
+        val suggestedActions: List<String>? = null,
+        val suggestedCommands: List<InquiryVerdict.SuggestedCommand>? = null,
     ) {
         fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason, Inquiries.Via.valueOf(via), at, id)
     }
+
+    /** Whether [customId] names one of the inquiry reviews' buttons. */
+    fun handles(customId: String) = customId.startsWith(BUTTON_PREFIX) || customId.startsWith(ACTIONS_PREFIX)
 
     fun register(discord: DiscordSettings, settings: InquiryReviewSettings, gameDir: Path) {
         if (!settings.enabled) return
@@ -186,12 +194,13 @@ internal object InquiryReview {
             save(record.copy(reviewed = true))
             return
         }
-        save(record.copy(conversationId = answer.conversationId, reviewed = true))
         val verdict = answer.verdict
+        save(record.copy(conversationId = answer.conversationId, reviewed = true,
+            suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))
         JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}", record.id, record.accountName, verdict.verdict)
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, verdict.playerSummary, inquiry.reason) }
         post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, verdict.playerSummary))
-        post(discord.adminChannelId, DiscordRest.message(embed = reviewEmbed(inquiry, verdict)).withButton(record.id))
+        post(discord.adminChannelId, DiscordRest.message(embed = reviewEmbed(inquiry, verdict)).withButton(record.id, actions = true))
     }
 
     /**
@@ -199,6 +208,7 @@ internal object InquiryReview {
      * to the presser alone.
      */
     fun press(customId: String, caller: DiscordCaller, message: JsonObject?): JsonObject {
+        if (customId.startsWith(ACTIONS_PREFIX)) return showActions(customId.removePrefix(ACTIONS_PREFIX), caller)
         val id = customId.removePrefix(BUTTON_PREFIX)
         val refusal = DiscordAdminAccess.check(discord, caller, RESOLVE_PERMISSION) as? DiscordAdminAccess.Verdict.Refused
         JbroPolicy.LOGGER.info("Discord {} closing inquiry {} by {}", if (refusal == null) "ran" else "refused", id, caller)
@@ -215,6 +225,32 @@ internal object InquiryReview {
                 add("components", JsonArray())
             })
         }
+    }
+
+    /** The suggested actions and commands of inquiry [id], seen by the presser alone so they can copy the commands. */
+    private fun showActions(id: String, caller: DiscordCaller): JsonObject {
+        val refusal = DiscordAdminAccess.check(discord, caller, RESOLVE_PERMISSION) as? DiscordAdminAccess.Verdict.Refused
+        if (refusal != null) return ephemeral(refusal.reason)
+        val record = (if (ID.matches(id) && ::records.isInitialized) load(records.resolve("$id.json")) else null)
+            ?: return ephemeral("이미 처리했거나 찾을 수 없는 문의예요.")
+        return ephemeral(actionsText(id, record.suggestedActions.orEmpty(), record.suggestedCommands.orEmpty()))
+    }
+
+    /** Actions as bullets, then each command in its own code block, under Discord's 2000 characters. */
+    internal fun actionsText(id: String, actions: List<String>, commands: List<InquiryVerdict.SuggestedCommand>): String {
+        val text = StringBuilder("**문의 $id 권장 조치** · 나에게만 보여요\n")
+        text.append(if (actions.isEmpty()) "-\n" else actions.joinToString("\n", postfix = "\n") { "• $it" })
+        if (commands.isEmpty()) {
+            text.append("\n제안할 명령어가 없어요.")
+        } else {
+            text.append("\n**명령어** · 꺾쇠(<>) 자리는 채워서 쓰세요. 자동으로 실행되지 않아요.\n")
+            for (command in commands) {
+                val block = (if (command.why.isBlank()) "" else "${command.why}\n") + "```\n${command.command}\n```\n"
+                if (text.length + block.length > 1990) break
+                text.append(block)
+            }
+        }
+        return text.toString().take(2000)
     }
 
     /** Forgets inquiry [id]: its record and the conversation its review left in agy. */
@@ -259,20 +295,23 @@ internal object InquiryReview {
         getAsJsonObject("allowed_mentions").addProperty("replied_user", false)
     }
 
-    private fun JsonObject.withButton(id: String) = apply {
+    private fun JsonObject.withButton(id: String, actions: Boolean = false) = apply {
         add("components", JsonArray().apply {
             add(JsonObject().apply {
                 addProperty("type", 1)
                 add("components", JsonArray().apply {
-                    add(JsonObject().apply {
-                        addProperty("type", 2)
-                        addProperty("style", 3)
-                        addProperty("label", "처리 완료")
-                        addProperty("custom_id", BUTTON_PREFIX + id)
-                    })
+                    add(button(3, "처리 완료", BUTTON_PREFIX + id))
+                    if (actions) add(button(2, "조치·명령어 보기", ACTIONS_PREFIX + id))
                 })
             })
         })
+    }
+
+    private fun button(style: Int, label: String, customId: String) = JsonObject().apply {
+        addProperty("type", 2)
+        addProperty("style", style)
+        addProperty("label", label)
+        addProperty("custom_id", customId)
     }
 
     internal fun reviewEmbed(inquiry: Inquiry, verdict: InquiryVerdict) = JsonObject().apply {

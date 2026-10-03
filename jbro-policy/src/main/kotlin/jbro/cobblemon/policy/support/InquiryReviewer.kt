@@ -16,7 +16,11 @@ data class InquiryVerdict(
     val operatorDetail: String,
     val suggestedActions: List<String>,
     val playerSummary: String,
+    /** Commands an operator may copy and run; none is ever run by itself. */
+    val suggestedCommands: List<SuggestedCommand> = emptyList(),
 ) {
+    data class SuggestedCommand(val command: String, val why: String)
+
     enum class Verdict(val label: String) {
         MATCH("✅ 로그와 일치해요"),
         MISMATCH("⚠️ 로그와 어긋나요"),
@@ -36,7 +40,8 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
 
     fun review(prompt: String): Answer {
         Files.createDirectories(workDir)
-        if (!Files.exists(schemaFile)) Files.writeString(schemaFile, SCHEMA)
+        // Rewritten when an update changed the schema, not only when missing.
+        if (!Files.exists(schemaFile) || Files.readString(schemaFile) != SCHEMA) Files.writeString(schemaFile, SCHEMA)
         val command = buildList {
             add(settings.executable())
             addAll(listOf("--input-format", "stream-json", "--output-format", "stream-json", "--json-schema", schemaFile.toString()))
@@ -79,6 +84,20 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
 
     companion object {
         const val CLOSING = "운영자에게 세부 사항을 전달했어요."
+        private const val MAX_COMMAND_LENGTH = 256
+
+        /** The operator commands the reviewer may suggest, as the server's mods define them. */
+        private val COMMANDS = listOf(
+            "/bp get <플레이어>: BP 잔액 확인 (접속 중일 때)",
+            "/bp history <플레이어> <개수>: 최근 BP 내역 확인 (접속 중일 때)",
+            "/bp add|remove <플레이어> <양> <사유>, /bp set <플레이어> <양> <사유>: BP 지급·회수·설정 (접속 중일 때)",
+            "/legends <전설 포켓몬> <플레이어>: 그 전설을 잡았는지 확인",
+            "/legends reset <전설 포켓몬> <플레이어>: 그 전설의 포획 기록 초기화",
+            "/spawnpokemonfor <플레이어> <포켓몬>: 그 플레이어 앞에 그의 소유로 포켓몬 소환",
+            "/give <플레이어> <아이템> [개수], /tp, /gamemode 등 마인크래프트 기본 명령",
+        // Indented like the prompt's own lines, which trimIndent then strips together.
+        ).joinToString("\n              ") { "- $it" }
+
         private val UUID_PATTERN = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
         /** Kept ASCII: agy reads the file in the system code page. */
@@ -88,8 +107,10 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
               "evidence":{"type":"array","items":{"type":"string"}},
               "operatorDetail":{"type":"string"},
               "suggestedActions":{"type":"array","items":{"type":"string"}},
-              "playerSummary":{"type":"string"}},
-             "required":["verdict","evidence","operatorDetail","suggestedActions","playerSummary"]}
+              "playerSummary":{"type":"string"},
+              "suggestedCommands":{"type":"array","items":{"type":"object","properties":{
+                "command":{"type":"string"},"why":{"type":"string"}},"required":["command","why"]}}},
+             "required":["verdict","evidence","operatorDetail","suggestedActions","playerSummary","suggestedCommands"]}
         """.trimIndent()
 
         fun input(prompt: String): String = JsonObject().apply {
@@ -111,6 +132,8 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             - evidence: 판단의 근거가 된 로그 줄을 고치지 말고 그대로 옮겨라. 근거가 없으면 빈 배열로 둬라.
             - operatorDetail: 운영자에게 보낼 설명. 무슨 일이 있었는지와 원인 후보를 쓰고, 로그로 확인한 것과 추측을 나눠서 써라.
             - suggestedActions: 운영자가 할 만한 조치. 운영자가 직접 판단해서 실행하니, 이미 실행했다고 쓰지 마라.
+            - suggestedCommands: suggestedActions 중 명령어로 할 수 있는 것. command에는 운영자가 복사해서 채팅창에 그대로 붙일 수 있는 "/"로 시작하는 한 줄을, why에는 그 명령이 무엇을 하는지 한 줄로 쓴다. 아래 목록의 명령과 마인크래프트 기본 명령만 쓰고, 목록에 없는 명령을 지어내지 마라. 플레이어 자리에는 플레이어 아이디(${inquiry.accountName})를 그대로 넣어라. 로그로 확인하지 못한 수치(지급할 BP 양 등)는 짐작해서 넣지 말고 <양>처럼 꺾쇠로 비워 둬라. 맞는 명령이 없으면 빈 배열로 둬라.
+              $COMMANDS
             - playerSummary: 플레이어에게 보낼 답. 해요체로 세 문장 이내로 쓴다. 로그에서 확인한 내용을 쉽게 요약하고, 마지막 문장은 정확히 "$CLOSING"로 끝내라. 다른 플레이어의 이름, IP, 서버 내부 경로나 명령어는 쓰지 말고, 보상이나 처리 결과를 약속하지 마라.
 
             결과는 지정한 JSON 형식 하나로만 답해라.
@@ -155,7 +178,20 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
                 else -> InquiryVerdict.Verdict.UNKNOWN
             }
             return InquiryVerdict(kind, list(answer.get("evidence")), text(answer.get("operatorDetail")).trim(),
-                list(answer.get("suggestedActions")), playerSummary(text(answer.get("playerSummary"))))
+                list(answer.get("suggestedActions")), playerSummary(text(answer.get("playerSummary"))), commands(answer.get("suggestedCommands")))
+        }
+
+        /** Each command on one line starting with "/", kept from breaking out of the code block it is shown in. */
+        fun commands(element: JsonElement?): List<InquiryVerdict.SuggestedCommand> {
+            val items = element as? JsonArray ?: return emptyList()
+            return items.mapNotNull { item ->
+                val entry = item as? JsonObject
+                val raw = if (entry != null) text(entry.get("command")) else text(item)
+                val command = raw.replace(Regex("\\s+"), " ").replace("`", "").trim().take(MAX_COMMAND_LENGTH)
+                if (command.length < 2) return@mapNotNull null
+                val why = entry?.let { text(it.get("why")) }.orEmpty().replace(Regex("\\s+"), " ").trim().take(200)
+                InquiryVerdict.SuggestedCommand(if (command.startsWith("/")) command else "/$command", why)
+            }.take(10)
         }
 
         /** At most 600 characters, always ending with [CLOSING]. */

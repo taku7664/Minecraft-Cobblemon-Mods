@@ -359,10 +359,10 @@ internal object DiscordBot {
             DiscordRest.message("답을 만들지 못했어요. 운영진에게 알려 주세요."), authorized = false)
     }
 
-    /** Answers a button press; the only buttons are the inquiry reviews' "처리 완료". */
+    /** Answers a button press; the only buttons are the inquiry reviews' "처리 완료" and "조치·명령어 보기". */
     private fun press(client: DiscordRest, interaction: JsonObject, id: String, interactionToken: String) {
         val customId = interaction.getAsJsonObject("data")?.get("custom_id")?.asString.orEmpty()
-        if (!customId.startsWith(InquiryReview.BUTTON_PREFIX)) return
+        if (!InquiryReview.handles(customId)) return
         val answer = InquiryReview.press(customId, caller(interaction), interaction.getAsJsonObject("message"))
         val response = client.request("POST", "/interactions/$id/$interactionToken/callback", answer, authorized = false)
         if (!response.ok) JbroPolicy.LOGGER.warn("Discord refused a button answer ({}): {}", response.status, response.body.take(300))
