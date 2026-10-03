@@ -35,6 +35,8 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
             EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.ENCLOSING_TRIANGLES, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
         )),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
@@ -43,6 +45,8 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SLICES, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
             EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
             EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.ENCLOSING_TRIANGLES, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
         ));
 
     companion object {

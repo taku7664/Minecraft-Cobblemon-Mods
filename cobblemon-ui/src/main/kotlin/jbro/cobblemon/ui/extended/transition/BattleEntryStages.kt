@@ -184,6 +184,24 @@ enum class EntryCover {
         override fun draw(frame: EntryFrame) = EntryDraw.iris(frame)
     },
 
+    /** Turning spiral arms that widen until they meet, as the main series' spinning spiral. */
+    SPINNING_SPIRAL {
+        override fun draw(frame: EntryFrame) = EntryDraw.spinningSpiral(frame)
+    },
+
+    /**
+     * A Poké Ball's outline over the screen while darkness sweeps clockwise round it, the outline last of all, as the
+     * main series' Poké Ball arena transition.
+     */
+    POKE_ARENA {
+        override fun draw(frame: EntryFrame) = EntryDraw.pokeArena(frame)
+    },
+
+    /** Four triangles, one on each edge, closing on the center in a slight pinwheel turn. */
+    ENCLOSING_TRIANGLES {
+        override fun draw(frame: EntryFrame) = EntryDraw.enclosingTriangles(frame)
+    },
+
     /**
      * Two near-black plates tinted in the accent slide in from either side of a diagonal and close on it, under focus
      * lines in the accent that stab in from the edges toward the center, flickering.
@@ -286,6 +304,8 @@ internal object EntryDraw {
     /** How much larger each zoom copy grows than the one before it. */
     private const val ZOOM_STEP = .055f
     private const val TAU = (Math.PI * 2).toFloat()
+    /** How many times the spinning spiral winds from the center to the corners. */
+    private const val SPIRAL_TURNS = 2.2f
 
     /** The theme's pattern: square cells in two tones for Theme 1, slanted bands for Theme 2. */
     fun themePattern(frame: EntryFrame, sweep: Boolean) {
@@ -411,6 +431,135 @@ internal object EntryDraw {
                 buffer.addVertex(matrix, frame.centerX + cos(a1) * radius, frame.centerY + sin(a1) * radius, 0f).setColor(color)
                 buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(color)
             }
+        }
+    }
+
+    /**
+     * Spiral arms, turning slowly, that widen until they meet: a point is covered once its place along the spiral
+     * falls below the cover. Drawn on a polar grid of small cells.
+     */
+    fun spinningSpiral(frame: EntryFrame) {
+        if (frame.cover <= 0f) return
+        val base = BattleUiTheme.palette.entryBase
+        val tones = intArrayOf(BattleSurfaceRenderer.interpolate(frame.accent, base, .55f),
+            BattleSurfaceRenderer.interpolate(frame.accent, base, .75f))
+        val radius = frame.far * 1.12f
+        val angular = 144
+        val radial = 40
+        val turn = frame.elapsed / 1000f * .35f
+        val arms = 2
+        quads(frame.context) { buffer, matrix ->
+            for (ring in 0 until radial) {
+                val r0 = radius * ring / radial
+                val r1 = radius * (ring + 1) / radial
+                val along = (ring + .5f) / radial * SPIRAL_TURNS
+                for (step in 0 until angular) {
+                    val share = (step + .5f) / angular
+                    val place = ((share * arms + along - turn) % 1f + 1f) % 1f
+                    if (place >= frame.cover) continue
+                    val a0 = step * TAU / angular - TAU / 4f
+                    val a1 = (step + 1) * TAU / angular - TAU / 4f
+                    val color = tones[((share * arms + along - turn).toInt() and 1)]
+                    buffer.addVertex(matrix, frame.centerX + cos(a0) * r1, frame.centerY + sin(a0) * r1, 0f).setColor(color)
+                    buffer.addVertex(matrix, frame.centerX + cos(a0) * r0, frame.centerY + sin(a0) * r0, 0f).setColor(color)
+                    buffer.addVertex(matrix, frame.centerX + cos(a1) * r0, frame.centerY + sin(a1) * r0, 0f).setColor(color)
+                    buffer.addVertex(matrix, frame.centerX + cos(a1) * r1, frame.centerY + sin(a1) * r1, 0f).setColor(color)
+                }
+            }
+        }
+    }
+
+    /**
+     * Darkness sweeping clockwise from twelve o'clock round a Poké Ball's outline (its rim, band and button), and a
+     * second sweep after it taking the outline too.
+     */
+    fun pokeArena(frame: EntryFrame) {
+        if (frame.cover <= 0f) return
+        val dark = BattleSurfaceRenderer.interpolate(frame.accent, BattleUiTheme.palette.entryBase, .85f)
+        val line = BattleSurfaceRenderer.interpolate(frame.accent, 0xFFFFFFFF.toInt(), .55f)
+        val sweep = (frame.cover * 1.25f).coerceAtMost(1f) * TAU
+        val taken = ((frame.cover - .2f) / .8f).coerceIn(0f, 1f) * TAU
+        val appear = (frame.cover / .08f).coerceAtMost(1f)
+        val stroke = BattleSurfaceRenderer.withOpacity(line, appear)
+        val radius = minOf(frame.width, frame.height) * .42f
+        val reach = frame.far * 1.1f
+        // The clockwise angle from twelve o'clock of a point relative to the center, 0 to a full turn.
+        fun clock(x: Float, y: Float): Float {
+            val angle = kotlin.math.atan2(y - frame.centerY, x - frame.centerX) + TAU / 4f
+            return ((angle % TAU) + TAU) % TAU
+        }
+        quads(frame.context) { buffer, matrix ->
+            val segments = 120
+            for (segment in 0 until segments) {
+                val from = segment * TAU / segments
+                if (from >= sweep) break
+                val to = minOf((segment + 1) * TAU / segments, sweep)
+                val a0 = from - TAU / 4f
+                val a1 = to - TAU / 4f
+                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(dark)
+                buffer.addVertex(matrix, frame.centerX + cos(a0) * reach, frame.centerY + sin(a0) * reach, 0f).setColor(dark)
+                buffer.addVertex(matrix, frame.centerX + cos(a1) * reach, frame.centerY + sin(a1) * reach, 0f).setColor(dark)
+                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(dark)
+            }
+            // The outline, in pieces, each kept until the second sweep passes it.
+            fun arc(r: Float, width: Float) {
+                for (segment in 0 until segments) {
+                    val a0 = segment * TAU / segments
+                    val a1 = (segment + 1) * TAU / segments
+                    if ((a0 + a1) / 2f < taken) continue
+                    val s0 = a0 - TAU / 4f
+                    val s1 = a1 - TAU / 4f
+                    val outer = r + width / 2f
+                    val inner = r - width / 2f
+                    buffer.addVertex(matrix, frame.centerX + cos(s0) * outer, frame.centerY + sin(s0) * outer, 0f).setColor(stroke)
+                    buffer.addVertex(matrix, frame.centerX + cos(s0) * inner, frame.centerY + sin(s0) * inner, 0f).setColor(stroke)
+                    buffer.addVertex(matrix, frame.centerX + cos(s1) * inner, frame.centerY + sin(s1) * inner, 0f).setColor(stroke)
+                    buffer.addVertex(matrix, frame.centerX + cos(s1) * outer, frame.centerY + sin(s1) * outer, 0f).setColor(stroke)
+                }
+            }
+            arc(radius, 6f)
+            arc(radius * .24f, 5f)
+            arc(radius * .1f, radius * .2f)
+            // The band across the middle, broken by the button.
+            val pieces = 40
+            for (piece in 0 until pieces) {
+                val x0 = frame.centerX - radius + 2f * radius * piece / pieces
+                val x1 = frame.centerX - radius + 2f * radius * (piece + 1) / pieces
+                val middle = (x0 + x1) / 2f
+                if (abs(middle - frame.centerX) < radius * .26f) continue
+                if (clock(middle, frame.centerY) < taken) continue
+                quad(buffer, matrix, x0, frame.centerY - 3f, x1, frame.centerY + 3f, stroke)
+            }
+        }
+    }
+
+    /** Triangles on each edge whose tips run to the center, turning slightly on the way so they meet in a pinwheel. */
+    fun enclosingTriangles(frame: EntryFrame) {
+        if (frame.cover <= 0f) return
+        val base = BattleUiTheme.palette.entryBase
+        val tones = floatArrayOf(.45f, .6f, .75f, .9f).map { BattleSurfaceRenderer.interpolate(frame.accent, base, it) }
+        val closing = BattleEntryTimeline.smooth(frame.cover)
+        val w = frame.width.toFloat()
+        val h = frame.height.toFloat()
+        // The tips start at each edge's middle and end at the center, leaning sideways in between.
+        val lean = sin(closing * Math.PI.toFloat()) * minOf(w, h) * .18f
+        fun tip(edgeX: Float, edgeY: Float, sideX: Float, sideY: Float): Pair<Float, Float> =
+            edgeX + (frame.centerX - edgeX) * closing + sideX * lean to edgeY + (frame.centerY - edgeY) * closing + sideY * lean
+        val left = tip(0f, frame.centerY, 0f, -1f)
+        val top = tip(frame.centerX, 0f, 1f, 0f)
+        val right = tip(w, frame.centerY, 0f, 1f)
+        val bottom = tip(frame.centerX, h, -1f, 0f)
+        quads(frame.context) { buffer, matrix ->
+            fun triangle(ax: Float, ay: Float, bx: Float, by: Float, apex: Pair<Float, Float>, color: Int) {
+                buffer.addVertex(matrix, ax, ay, 0f).setColor(color)
+                buffer.addVertex(matrix, bx, by, 0f).setColor(color)
+                buffer.addVertex(matrix, apex.first, apex.second, 0f).setColor(color)
+                buffer.addVertex(matrix, apex.first, apex.second, 0f).setColor(color)
+            }
+            triangle(0f, 0f, 0f, h, left, tones[0])
+            triangle(0f, 0f, w, 0f, top, tones[1])
+            triangle(w, 0f, w, h, right, tones[2])
+            triangle(0f, h, w, h, bottom, tones[3])
         }
     }
 
