@@ -373,7 +373,7 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `a doubles burn counts what it does for the partner and a special target still wastes it`() {
+    fun `a doubles burn reduces physical pressure and a special target retains only residual damage credit`() {
         val action = BattleActionCandidate("wisp", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = "willowisp",
             targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)), moveDetails = wisp().details)
         val partnerAttack = BattleActionCandidate("partner", BattleActionKind.USE_MOVE, actorSlot = 1, moveSlot = 0, moveId = "probe")
@@ -389,8 +389,9 @@ class LocalMatchupScoreTest {
         assertTrue(physical.partnerGain > 0.0) { physical.toString() }
         assertFalse(physicalWasted)
         val (special, specialWasted) = judged(BattleMoveDamageCategory.SPECIAL)
-        assertEquals(0.0, special.partnerGain, 1e-9)
-        assertTrue(specialWasted) { special.toString() }
+        assertTrue(special.partnerGain > 0.0, "burn now applies its real residual damage against a special attacker")
+        assertTrue(special.partnerGain < physical.partnerGain)
+        assertTrue(specialWasted) { "its small real residual benefit still does not pay for the setup turn: $special" }
     }
 
     @Test

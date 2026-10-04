@@ -3,10 +3,12 @@ package jbro.cobblemon.mcc.betterai.matchup
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
-import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusBerry
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -185,6 +187,9 @@ internal object LocalTurnCostScoreCalculator {
                 effect.kind == BattleMoveEffectKind.STATUS && effect.target == BattleMoveEffectTarget.SELECTED_TARGET &&
                     effect.valueId?.let(PublicIds::canonical) in PLAYED_OUT_STATUSES && target.statusId == null -> {
                     val status = PublicIds.canonical(effect.valueId!!)
+                    val subject = next.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+                    val source = next.pokemon.firstOrNull { it.battlePokemonId == userId }
+                    if (LocalPublicStatusImmunity.blocked(next, subject, status, source)) continue
                     next = next.copyState(pokemon = next.pokemon.map {
                         if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = status) else it
                     })
@@ -193,16 +198,16 @@ internal object LocalTurnCostScoreCalculator {
                 effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.statStages.isNotEmpty() &&
                     (effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.USER) -> {
                     val subject = if (effect.target == BattleMoveEffectTarget.USER) userId else target.battlePokemonId
-                    next = LocalStatStageMarginalEvaluator.applyStages(next, setOf(subject), effect.statStages)
+                    next = LocalStatStageChange.apply(next, subject, userId, effect.statStages)
                     applied = true
                 }
             }
         }
-        return next.takeIf { applied }
+        return LocalPublicStatusBerry.afterUpdate(next).takeIf { applied }
     }
 
     /** Statuses whose effect the exchange reads: a burn halves physical damage, paralysis halves Speed. */
-    private val PLAYED_OUT_STATUSES = setOf("brn", "par")
+    private val PLAYED_OUT_STATUSES = setOf("brn", "par", "slp", "frz", "psn", "tox")
     private const val MINIMUM_STANDING_HP = 0.01
     private const val SOLE_ANSWER = 0.5
 }

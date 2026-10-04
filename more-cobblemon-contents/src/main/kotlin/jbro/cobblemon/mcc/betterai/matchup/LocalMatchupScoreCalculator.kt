@@ -302,8 +302,9 @@ internal object LocalMatchupScoreCalculator {
                     PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side)
                 } ?: return@mapNotNull null
                 val accuracy = LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
-                ScoredMove(moveScore(userId, PublicIds.canonical(candidate.moveId ?: action.actionId), targetId,
-                    rolls, accuracy, target.hpFraction), original)
+                val moveId = PublicIds.canonical(candidate.moveId ?: action.actionId)
+                val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
+                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile), original)
             }
             .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
             .sortedWith(BEST_FIRST)
@@ -321,8 +322,9 @@ internal object LocalMatchupScoreCalculator {
         rolls: List<Double>,
         accuracy: Double,
         targetHp: Double,
+        projectedProfile: LocalKnockoutProfile? = null,
     ): MoveMatchupScore {
-        val profile = LocalKnockoutProfile.of(rolls, accuracy, targetHp, MAXIMUM_USES)
+        val profile = projectedProfile ?: LocalKnockoutProfile.of(rolls, accuracy, targetHp, MAXIMUM_USES)
         return MoveMatchupScore(
             userId = userId,
             moveId = moveId,
@@ -363,8 +365,8 @@ internal object LocalMatchupScoreCalculator {
             LocalPublicTurnOrder.actsFirstProbability(state, subject.side, subjectMove.action, opponent.side, opponentMove.action)
         } else null
         val subjectFirst = (first ?: LocalPublicTurnOrder.speedOrderProbability(state, subject, opponent) ?: 0.5).coerceIn(0.0, 1.0)
-        var mine = subjectMove?.score
-        var theirs = opponentMove?.score
+        var mine = LocalFlinchAvailability.profile(position, opponentMove, subjectMove, 1.0 - subjectFirst)
+        var theirs = LocalFlinchAvailability.profile(position, subjectMove, opponentMove, subjectFirst)
         // Which side cannot get through the other's healing, and how often the healer still attacks.
         var subjectWalled = false
         var opponentWalled = false
