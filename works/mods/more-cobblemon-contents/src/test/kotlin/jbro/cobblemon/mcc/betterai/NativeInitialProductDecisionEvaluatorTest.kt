@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
+import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchResult
@@ -162,6 +163,35 @@ class NativeInitialProductDecisionEvaluatorTest {
         )
 
         assertTrue(excludesFutureSwitches)
+    }
+
+    @Test
+    fun `native opening and continuation resolve only one turn in doubles`() {
+        BattleFormat.entries.filter { it == BattleFormat.SINGLE || it == BattleFormat.DOUBLE }.forEach { format ->
+            val depths = mutableListOf<Int>()
+            val current = context(turn = 2, format = format)
+            val prior = sessionState(context(format = format), frame("prior"), pending = ACTIONS.first())
+            val reconciled = sessionState(current, frame("reconciled"), pending = null)
+            val evaluator = NativeInitialProductDecisionEvaluator(
+                planWorlds = { supplied, _ -> plan(supplied) },
+                searchWorlds = { request ->
+                    depths += request.maxDepth
+                    NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
+                },
+                reconcileSession = { _, _, _ ->
+                    NativeProductSessionReconciliation(NativeProductSessionReconcileStatus.AVAILABLE, reconciled)
+                },
+                nowEpochMillis = { 1_000L },
+                nanoTime = { 5_000_000L },
+                leafEvaluator = { _, _, _, _ -> 0.1 },
+            )
+            val profile = BattleTrainerProfile.boss()
+            val budget = LocalLookaheadBudgetPolicy.forFormat(LocalLookaheadBudget(250L, 100, 1), format)
+            evaluator.evaluate(context(format = format), profile, LocalDecisionTuning.CURRENT, budget)
+            evaluator.evaluate(current, profile, LocalDecisionTuning.CURRENT, budget, prior)
+            val depth = if (format == BattleFormat.DOUBLE) 1 else profile.difficulty.lookaheadPlies
+            assertEquals(listOf(depth, depth), depths)
+        }
     }
 
     @Test
@@ -617,10 +647,10 @@ class NativeInitialProductDecisionEvaluatorTest {
         issues = emptyList(),
     )
 
-    private fun context(turn: Int = 1): BattleDecisionContext {
+    private fun context(turn: Int = 1, format: BattleFormat = BattleFormat.SINGLE): BattleDecisionContext {
         val state = BattleStateView(
             battleId = BATTLE,
-            format = BattleFormat.SINGLE,
+            format = format,
             turn = turn,
             pokemon = listOf(
                 pokemon(ALLY, BattleSide.ALLY),

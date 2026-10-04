@@ -86,7 +86,9 @@ internal object LocalRecursiveLookaheadEvaluator {
         strategy: BattleStrategyBrief? = null,
         // Overridable so the cost of a budget can be measured against the decisions it buys, rather
         // than argued about. Production always takes the tier default.
-        budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier),
+        budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forFormat(
+            LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier), context.state.format,
+        ),
         /** Experimental exact pre-weight pool, recomputed after every root adjustment. */
         rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)? = null,
         /** The actual production decision represented by a completed depth, for conservative convergence stops. */

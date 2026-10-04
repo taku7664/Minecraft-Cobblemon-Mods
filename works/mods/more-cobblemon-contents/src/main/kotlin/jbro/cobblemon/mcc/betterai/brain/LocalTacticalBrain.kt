@@ -296,7 +296,9 @@ internal class LocalTacticalBrain(
         val decisionTrace = AiTestDecisionTrace.forTestPersona(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
         )
-        val configuredBudget = lookaheadBudget(profile.difficulty.tier)
+        val configuredBudget = LocalLookaheadBudgetPolicy.forFormat(
+            lookaheadBudget(profile.difficulty.tier), calculatedContext.state.format,
+        )
         // The legacy search only: native nodes are full Showdown turns and keep their own bound.
         val phaseBudget = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS) {
             LocalLookaheadBudgetPolicy.forPosition(configuredBudget, calculatedContext.state)
@@ -364,7 +366,8 @@ internal class LocalTacticalBrain(
                                 "choice_pool_${selection.shortlistSize}",
                                 "choice_seed_${selection.seed.toULong().toString(16)}",
                                 "difficulty_${profile.difficulty.tier.name.lowercase()}",
-                                "lookahead_requested_${profile.difficulty.lookaheadPlies}",
+                                "lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+                                    else profile.difficulty.lookaheadPlies}",
                                 "lookahead_turns_${nativeInitial.depthCompleted}",
                                 "lookahead_nodes_${nativeInitial.nodesVisited}",
                                 "native_search_${nativeSearchStatus.name.lowercase(Locale.ROOT)}",
