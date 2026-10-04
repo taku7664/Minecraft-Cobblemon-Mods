@@ -29,6 +29,7 @@
 | 모드 | 이유 |
 |---|---|
 | Simple MyRoom (`simple-myroom`) | `[안내]` 목록이 `/room` 명령을 소개한다. 서버 전용이라 클라이언트에는 넣지 않아도 된다. |
+| CustomNPCs Unofficial (`customnpcs`, `CustomNPCs-Unofficial-Fabric-1.21.1.20260521.jar`) | NPC 명령으로 MCC 터미널을 연다. **서버와 클라이언트에 같은 버전을 넣어야 한다.** 엔티티 생성 패킷에 자기 데이터를 덧붙이기 때문에, 한쪽에만 있으면 포켓몬이 나타나는 순간 클라이언트가 `Failed to decode packet 'clientbound/minecraft:custom_payload'`로 끊긴다. |
 
 ## 설치할 프로그램
 
