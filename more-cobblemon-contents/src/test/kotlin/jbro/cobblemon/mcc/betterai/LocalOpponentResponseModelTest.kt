@@ -4,10 +4,28 @@ import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseModel
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class LocalOpponentResponseModelTest {
+    @Test
+    fun `joint switches retain their learned response category`() {
+        val singles = actions()
+        fun joint(id: String, parts: List<BattleActionCandidate>) = BattleActionCandidate(
+            id, BattleActionKind.COMPOSITE,
+            componentActionIds = parts.map { it.actionId }, componentActions = parts,
+        )
+        val jointMove = joint("joint-move", singles.take(2))
+        val jointSwitch = joint("joint-switch", listOf(singles[0], singles[2]))
+        val distribution = requireNotNull(LocalOpponentResponseModel.distribution(
+            listOf(jointMove, jointSwitch), memory(8, 0.2, 0.8),
+        ))
+        assertEquals(BattlePredictedResponse.SWITCH, LocalOpponentResponseModel.responseKind(jointSwitch))
+        assertEquals(0.8, distribution.weights.getValue(jointSwitch), 1e-12)
+        assertEquals(0.2, distribution.weights.getValue(jointMove), 1e-12)
+    }
+
     @Test
     fun `fewer than three public samples cannot steer the response model`() {
         val memory = memory(samples = 2, moveRate = 0.2, switchRate = 0.8)

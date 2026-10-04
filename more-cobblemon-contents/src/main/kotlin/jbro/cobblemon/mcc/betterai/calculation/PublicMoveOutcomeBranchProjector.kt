@@ -6,6 +6,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.mcc.betterai.mechanics.LocalCriticalHitRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
@@ -18,6 +20,9 @@ internal data class PublicMoveOutcomeBranch(
     val probability: Double,
     val hit: Boolean,
     val damageFraction: Double,
+    val critical: Boolean = false,
+    val hitCount: Int? = null,
+    val rollPercentile: Double? = null,
 )
 
 internal data class PublicDamageRollSummary(
@@ -63,25 +68,26 @@ internal object PublicMoveOutcomeBranchProjector {
             actingSide,
         )
         val rolls = calculatedRolls ?: fallbackDamageOutcomes(candidate, actingSide)
-        val defaultTargetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
-        val explicitTarget = candidate.targets.singleOrNull()
-        val targetHp = if (explicitTarget != null) {
-            context.state.pokemon.firstOrNull {
-                it.side == explicitTarget.side && it.activeSlot == explicitTarget.slot && !it.fainted && it.hpFraction > 0.0
-            }?.hpFraction
-        } else {
-            context.state.pokemon.singleOrNull {
-                it.side == defaultTargetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
-            }?.hpFraction
-        }
-        // Always-critical moves are already projected as critical hits, so they take no extra crit branch.
+        val resolvedTargets = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
+        val targetHp = resolvedTargets.singleOrNull()?.hpFraction
+        val actor = context.state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot }
+        val target = resolvedTargets.firstOrNull()
+        val guaranteed = LocalCriticalHitRules.confirmed(candidate, actor, target, context.state)
+        // Guaranteed critical hits are already calculated, so they take no extra crit branch.
         val criticalHits = if (candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
-            candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
+            !guaranteed && candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
         ) criticalChance(candidate, context, actingSide) else 0.0
+        val criticalRolls = if (criticalHits > 0.0) {
+            PublicBattleTacticalCalculator.conservativeDamageRollFractions(
+                LocalCriticalHitRules.asCritical(candidate), context, actingSide,
+            ) ?: rolls.map { it * CRITICAL_HIT_MULTIPLIER }
+        } else emptyList()
+        // An actual critical hit can also change the state without a knockout (Anger Point).
+        val criticalReaction = target != null && LocalPublicAbilityState.effectiveKnownAbility(context.state, target) == "angerpoint"
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
-            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits)
+            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits, criticalRolls, guaranteed, criticalReaction)
         }
-        val hitBranches = damageBranches(rolls, targetHp, accuracy, criticalHits)
+        val hitBranches = damageBranches(rolls, targetHp, accuracy, criticalHits, criticalRolls, guaranteed, criticalReaction)
         val miss = if (accuracy < 1.0) {
             listOf(PublicMoveOutcomeBranch(1.0 - accuracy, hit = false, damageFraction = 0.0))
         } else {
@@ -96,14 +102,19 @@ internal object PublicMoveOutcomeBranchProjector {
         damageRolls: List<Double>,
         targetHp: Double?,
         criticalHits: Double,
+        criticalRolls: List<Double>,
+        guaranteed: Boolean,
+        criticalReaction: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         val maximum = LocalDeclaredMultiHit.maximumCount(candidate)
         val branches = mutableListOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0))
         for (hits in 1 until maximum) {
             val probability = accuracy.pow(hits) * (1.0 - accuracy)
-            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability, criticalHits)
+            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability, criticalHits,
+                criticalRolls.map { it * hits }, guaranteed, criticalReaction).map { it.copy(hitCount = hits) }
         }
-        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum), criticalHits)
+        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum), criticalHits,
+            criticalRolls.map { it * maximum }, guaranteed, criticalReaction).map { it.copy(hitCount = maximum) }
         return branches.filter { it.probability > 0.0 }
     }
 
@@ -118,14 +129,29 @@ internal object PublicMoveOutcomeBranchProjector {
         targetHp: Double?,
         probability: Double,
         criticalHits: Double,
+        criticalRolls: List<Double>,
+        guaranteed: Boolean,
+        criticalReaction: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
-        if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, criticalHits)
+        val usesCritical = criticalHits > 0.0 && criticalRolls.isNotEmpty() && (criticalHits >= 1.0 || criticalReaction ||
+            chanceModel.get() == LocalChanceModel.HIGH_ROLL && targetHp != null && criticalRolls.any { it + DAMAGE_EPSILON >= targetHp })
+        if (usesCritical) {
+            return (damageBranches(rolls, targetHp, probability * (1.0 - criticalHits), 0.0, emptyList(), false, false) +
+                damageBranches(criticalRolls, targetHp, probability * criticalHits, 0.0, emptyList(), true, false))
+                .filter { it.probability > 0.0 }
+        }
+        if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, guaranteed)
+        val sorted = rolls.sorted()
         return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
+            val orderedGroup = group.sorted()
+            val rank = sorted.indexOf(orderedGroup.first()) + (orderedGroup.size - 1) / 2
             PublicMoveOutcomeBranch(
                 probability * group.size / rolls.size,
                 true,
                 summarizeDamageRolls(group, targetHp).damageFraction,
+                guaranteed,
+                rollPercentile = rank.toDouble() / (sorted.size - 1).coerceAtLeast(1),
             )
         }
     }
@@ -139,23 +165,29 @@ internal object PublicMoveOutcomeBranchProjector {
         rolls: List<Double>,
         targetHp: Double?,
         probability: Double,
-        criticalHits: Double,
+        critical: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         val sorted = rolls.sorted()
         val fixed = highRoll(sorted)
-        if (targetHp == null || targetHp <= 0.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed))
-        val critical = criticalHits
+        val fixedRank = ((sorted.size - 1) * FIXED_ROLL_PERCENTILE).roundToInt()
+        val fixedPercentile = fixedRank.toDouble() / (sorted.size - 1).coerceAtLeast(1)
+        if (targetHp == null || targetHp <= 0.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed, critical,
+            rollPercentile = fixedPercentile))
         val knockouts = sorted.count { it + DAMAGE_EPSILON >= targetHp }
-        val criticalKnockouts = sorted.count { it * CRITICAL_HIT_MULTIPLIER + DAMAGE_EPSILON >= targetHp }
-        val knockoutShare = (1.0 - critical) * knockouts / sorted.size + critical * criticalKnockouts / sorted.size
-        if (knockoutShare <= 0.0 || knockoutShare >= 1.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed))
+        val knockoutShare = knockouts.toDouble() / sorted.size
+        if (knockoutShare <= 0.0 || knockoutShare >= 1.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed, critical,
+            rollPercentile = fixedPercentile))
         val knockoutRoll = if (fixed + DAMAGE_EPSILON >= targetHp) fixed
-            else sorted.firstOrNull { it + DAMAGE_EPSILON >= targetHp }
-                ?: sorted.first { it * CRITICAL_HIT_MULTIPLIER + DAMAGE_EPSILON >= targetHp } * CRITICAL_HIT_MULTIPLIER
-        val survivalRoll = highRoll(sorted.filter { it + DAMAGE_EPSILON < targetHp })
+            else sorted.first { it + DAMAGE_EPSILON >= targetHp }
+        val survivors = sorted.filter { it + DAMAGE_EPSILON < targetHp }
+        val survivalRank = ((survivors.size - 1) * FIXED_ROLL_PERCENTILE).roundToInt()
+        val survivalRoll = survivors[survivalRank]
+        val knockoutRank = if (fixed + DAMAGE_EPSILON >= targetHp) fixedRank else sorted.indexOfFirst { it + DAMAGE_EPSILON >= targetHp }
         return listOf(
-            PublicMoveOutcomeBranch(probability * knockoutShare, true, knockoutRoll),
-            PublicMoveOutcomeBranch(probability * (1.0 - knockoutShare), true, survivalRoll),
+            PublicMoveOutcomeBranch(probability * knockoutShare, true, knockoutRoll, critical,
+                rollPercentile = knockoutRank.toDouble() / (sorted.size - 1).coerceAtLeast(1)),
+            PublicMoveOutcomeBranch(probability * (1.0 - knockoutShare), true, survivalRoll, critical,
+                rollPercentile = survivalRank.toDouble() / (sorted.size - 1).coerceAtLeast(1)),
         )
     }
 
@@ -195,11 +227,9 @@ internal object PublicMoveOutcomeBranchProjector {
      */
     private fun criticalChance(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): Double {
         val state = context.state
-        val target = candidate.targets.singleOrNull()?.let { slot ->
-            state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
-        }
-        if (target != null && LocalPublicAbilityState.effectiveKnownAbility(state, target) in CRIT_IMMUNE_ABILITIES) return 0.0
+        val target = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()
         val actor = state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted }
+        if (LocalCriticalHitRules.blocked(candidate, actor, target, state)) return 0.0
         var stage = 0
         if (PublicIds.canonical(candidate.moveId.orEmpty()) in HIGH_CRIT_MOVES) stage++
         if (actor != null) {
@@ -216,7 +246,6 @@ internal object PublicMoveOutcomeBranchProjector {
         }
     }
 
-    private val CRIT_IMMUNE_ABILITIES = setOf("battlearmor", "shellarmor")
     private val CRIT_ITEMS = setOf("scopelens", "razorclaw")
     private val FOCUS_VOLATILES = setOf("focusenergy", "dragoncheer")
     private val HIGH_CRIT_MOVES = setOf(

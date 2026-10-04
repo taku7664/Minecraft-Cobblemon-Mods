@@ -127,7 +127,10 @@ internal object NativeShowdownRequestActionFactory {
                         effectiveMove.takeIf { it !== move }?.get("move")?.asString ?: moveId,
                         targetSlots.singleOrNull()?.side?.let {
                             if (it == side) BattleSide.ALLY else BattleSide.OPPONENT
-                        }, targetId in setOf("normal", "any"), category)
+                        }, targetId in setOf("normal", "any"), category,
+                        targetSlots.singleOrNull()?.takeIf { it.side == side }?.let { target ->
+                            activeTeam(side, frame).firstOrNull { it.activeSlot == target.slot }?.ability
+                        })
                 }.map { targetSlots ->
                     BattleActionCandidate(
                         actionId = nativeActionId(

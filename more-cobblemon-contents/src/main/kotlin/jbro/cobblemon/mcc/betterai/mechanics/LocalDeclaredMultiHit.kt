@@ -30,6 +30,7 @@ internal object LocalDeclaredMultiHit {
         actor: BattlePokemonStateView?,
         state: BattleStateView? = null,
     ): Int {
+        if ("better_ai:single_hit" in candidate.tags) return 1
         val range = candidate.moveDetails?.effects?.effects.orEmpty()
             .firstOrNull { it.kind == BattleMoveEffectKind.MULTI_HIT }
             ?.amountRange

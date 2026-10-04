@@ -54,6 +54,10 @@ class Cobblemon173RequestSlotRulesTest {
             MoveTarget.normal, BattleMoveDamageCategory.PHYSICAL))
         assertFalse(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed("beatup", BattleSide.ALLY,
             MoveTarget.normal, BattleMoveDamageCategory.PHYSICAL))
+        assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed("beatup", BattleSide.ALLY,
+            MoveTarget.normal, BattleMoveDamageCategory.PHYSICAL, "justified"))
+        assertFalse(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed("beatup", BattleSide.ALLY,
+            MoveTarget.normal, BattleMoveDamageCategory.PHYSICAL, "pressure"))
         assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed("pollenpuff", BattleSide.ALLY,
             MoveTarget.normal, BattleMoveDamageCategory.SPECIAL))
         assertTrue(Cobblemon173ActionCandidateAdapter.isMoveTargetAllowed("skillswap", BattleSide.ALLY,

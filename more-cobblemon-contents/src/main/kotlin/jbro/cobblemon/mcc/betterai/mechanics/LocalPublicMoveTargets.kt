@@ -14,7 +14,7 @@ internal object LocalPublicMoveTargets {
             val declared = context.state.pokemon.firstOrNull {
                 it.side == explicit.side && it.activeSlot == explicit.slot && !it.fainted
             }
-            return listOfNotNull(declared?.let { redirectedAwayFrom(it, candidate, context) ?: it })
+            return listOfNotNull(declared?.let { redirectedAwayFrom(it, candidate, context, actingSide) ?: it })
         }
         val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
         val activeOpponents = context.state.pokemon
@@ -66,16 +66,35 @@ internal object LocalPublicMoveTargets {
     const val SPREAD_HIT_TAG = "spread-hit"
     private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
 
-    private fun redirectedAwayFrom(declared: BattlePokemonStateView, candidate: BattleActionCandidate,
-        context: BattleDecisionContext): BattlePokemonStateView? {
-        if (context.state.format != BattleFormat.DOUBLE) return null
-        if (candidate.moveDetails?.targetPattern !in REDIRECTABLE_PATTERNS) return null
-        val type = canonical(candidate.moveDetails?.typeId) ?: return null
-        return context.state.pokemon.firstOrNull { other ->
-            other.side == declared.side && other.activeSlot != null &&
-                other.battlePokemonId != declared.battlePokemonId && !other.fainted && other.hpFraction > 0.0 &&
-                redirectsPublicly(other, context, type)
+    /** All publicly possible first redirectors. Equal Speed keeps its genuine tie alternatives. */
+    fun redirectOutcomes(candidate: BattleActionCandidate, context: BattleDecisionContext,
+                         actingSide: BattleSide): List<Pair<BattleActionCandidate, Double>> {
+        if (context.state.format != BattleFormat.DOUBLE || "resolved_ability_target" in candidate.tags || "turn_redirected" in candidate.tags ||
+            candidate.moveDetails?.targetPattern !in REDIRECTABLE_PATTERNS) return listOf(candidate to 1.0)
+        val declared = candidate.targets.singleOrNull() ?: return listOf(candidate to 1.0)
+        val user = context.state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot } ?: return listOf(candidate to 1.0)
+        val type = canonical(LocalPublicMoveDamageInputs.resolvedTypeId(candidate, user, context.state))
+            ?: return listOf(candidate to 1.0)
+        val possible = context.state.pokemon.filter { other -> other.activeSlot != null && !other.fainted && other.hpFraction > 0.0 &&
+            other.battlePokemonId != user.battlePokemonId && redirectsPublicly(other, context, type) &&
+            !LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, user, other, context.state) }
+        if (possible.isEmpty()) return listOf(candidate to 1.0)
+        fun speed(pokemon: BattlePokemonStateView) = LocalPublicTurnOrder.effectiveSpeed(context.state, pokemon)
+        val leaders = possible.filter { other -> possible.all { rival ->
+            rival.battlePokemonId == other.battlePokemonId || (speed(other)?.second ?: Int.MAX_VALUE) >= (speed(rival)?.first ?: 0)
+        } }
+        return leaders.map { redirector ->
+            BattleActionCandidate(candidate.actionId, candidate.kind, actorSlot = candidate.actorSlot, moveSlot = candidate.moveSlot,
+                moveId = candidate.moveId, targets = listOf(BattleTargetSlot(redirector.side, requireNotNull(redirector.activeSlot))),
+                mechanic = candidate.mechanic, moveDetails = candidate.moveDetails, tags = candidate.tags + "resolved_ability_target") to 1.0 / leaders.size
         }
+    }
+
+    private fun redirectedAwayFrom(declared: BattlePokemonStateView, candidate: BattleActionCandidate,
+        context: BattleDecisionContext, actingSide: BattleSide): BattlePokemonStateView? {
+        val outcomes = redirectOutcomes(candidate, context, actingSide)
+        val slot = outcomes.singleOrNull()?.first?.targets?.singleOrNull() ?: return null
+        return context.state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot }
     }
 
     private fun redirectsPublicly(pokemon: BattlePokemonStateView, context: BattleDecisionContext,

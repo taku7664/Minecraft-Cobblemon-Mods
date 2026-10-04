@@ -4,6 +4,7 @@ import java.util.IdentityHashMap
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffectKind
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveDelayedStrike
@@ -38,6 +39,8 @@ internal data class RecursiveActionHistory(
     val partiallyTrappedPokemonIds: Set<UUID> = emptySet(),
     /** Slots a Wish heals at the end of the coming turn. */
     val pendingWishSlots: Set<Pair<BattleSide, Int>> = emptySet(),
+    val wishHealingFractionsBySlot: Map<Pair<BattleSide, Int>, Double> = emptyMap(),
+    val wishSourceMaxHpBySlot: Map<Pair<BattleSide, Int>, Double> = emptyMap(),
     /** Made drowsy by Yawn: asleep at the end of the coming turn. */
     val drowsyPokemonIds: Set<UUID> = emptySet(),
     /** Confused: a third of their moves become a hit on themselves (about three turns, until they switch). */
@@ -90,20 +93,28 @@ internal object RecursiveSnapshotActionConstraints {
                 .takeIf { it > 0 }
                 ?.let { pokemon.battlePokemonId to it }
         }.toMap()
+        val publicSlotEffects = LocalPublicPendingSlotEffects.seed(state)
         return RecursiveActionHistory(
+            pendingWishSlots = publicSlotEffects.first,
+            wishHealingFractionsBySlot = LocalPublicPendingSlotEffects.wishHealingFractionsBySlot(state),
+            wishSourceMaxHpBySlot = LocalPublicPendingSlotEffects.wishSourceMaxHpBySlot(state),
+            delayedStrikes = publicSlotEffects.second,
             allySwitchedLastTurn = allySwitchedLastTurn,
             rechargingPokemonIds = active.filter { it.actionConstraints.mustRecharge }
                 .mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId),
             tauntTurnsByPokemon = active.filter { it.actionConstraints.taunted }
                 .associate { it.battlePokemonId to MAXIMUM_SNAPSHOT_CONTROL_TURNS },
             encoreByPokemon = active.mapNotNull { pokemon ->
-                pokemon.actionConstraints.encoreMoveId?.let { moveId ->
+                LocalPersistentMoveState.rampageMoveId(pokemon)?.let { moveId ->
+                    pokemon.battlePokemonId to RecursiveEncoreLock(moveId,
+                        LocalPersistentMoveState.rampageLock(pokemon)?.turns ?: 1)
+                } ?: pokemon.actionConstraints.encoreMoveId?.let { moveId ->
                     pokemon.battlePokemonId to RecursiveEncoreLock(moveId, MAXIMUM_SNAPSHOT_CONTROL_TURNS)
                 }
             }.toMap(),
             trappedByPokemon = active.mapNotNull { pokemon ->
-                if (!pokemon.actionConstraints.trapped) return@mapNotNull null
-                val source = activeBySide.getValue(
+                if (!pokemon.actionConstraints.trapped && !pokemon.hasVolatile("partiallytrapped")) return@mapNotNull null
+                val source = publicSource(pokemon, "partiallytrappedsource:")?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } } ?: activeBySide.getValue(
                     if (pokemon.side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY,
                 ).firstOrNull() ?: return@mapNotNull null
                 pokemon.battlePokemonId to RecursiveTrapLock(source.battlePokemonId, MAXIMUM_SNAPSHOT_TRAP_TURNS)
@@ -114,7 +125,7 @@ internal object RecursiveSnapshotActionConstraints {
             moveStreakByPokemon = publicMoveStreaks,
             // Volatiles the battle has shown: a seed drains to the Pokemon facing it, the rest act on their holder.
             leechSeedSourceByPokemon = active.filter { it.hasVolatile("leechseed") }.mapNotNull { pokemon ->
-                activeBySide.getValue(if (pokemon.side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY)
+                publicSource(pokemon, "leechseedsource:")?.let { id -> pokemon.battlePokemonId to id } ?: activeBySide.getValue(if (pokemon.side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY)
                     .firstOrNull()?.let { pokemon.battlePokemonId to it.battlePokemonId }
             }.toMap(),
             ghostCursedPokemonIds = active.filter { it.hasVolatile("curse") }.mapTo(linkedSetOf()) { it.battlePokemonId },
@@ -135,6 +146,9 @@ internal object RecursiveSnapshotActionConstraints {
 
     private fun BattlePokemonStateView.hasVolatile(id: String): Boolean =
         knownVolatileEffectIds.any { jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(it) == id }
+
+    private fun publicSource(pokemon: BattlePokemonStateView, prefix: String): UUID? = pokemon.knownVolatileEffectIds
+        .firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
 
     private fun consecutiveSuccessfulAllySwitches(state: BattleStateView, pokemonId: UUID): Int {
         var consecutive = 0
@@ -293,12 +307,7 @@ internal object RecursiveHistoryProjector {
                 RecursiveControlEffectKind.FLINCH, RecursiveControlEffectKind.DESTINY_BOND, RecursiveControlEffectKind.ENDURE -> Unit
                 RecursiveControlEffectKind.YAWN -> drowsy += effect.targetPokemonId
                 RecursiveControlEffectKind.CONFUSION -> confused += effect.targetPokemonId
-                RecursiveControlEffectKind.LOCKED_MOVE -> outcome.executedMoveIdsByPokemon[effect.targetPokemonId]?.let { moveId ->
-                    // Already locked from last turn: the rampage ends after this one.
-                    if (previous.encoreByPokemon[effect.targetPokemonId]?.moveId != moveId) {
-                        encore[effect.targetPokemonId] = RecursiveEncoreLock(moveId, LOCKED_MOVE_TURNS)
-                    }
-                }
+                RecursiveControlEffectKind.LOCKED_MOVE -> Unit // The branch retains the actual duration.
                 RecursiveControlEffectKind.WISH -> effect.valueId?.toIntOrNull()?.let { wishes += effect.sourceSide to it }
                 RecursiveControlEffectKind.PARTIAL_TRAP -> {
                     partiallyTrapped += effect.targetPokemonId
@@ -324,6 +333,15 @@ internal object RecursiveHistoryProjector {
                 }
             }
         }
+
+        // Locks and confusion are actual projected state, so a cure or a switch cannot leave a stale history lock.
+        outcome.state.pokemon.forEach { pokemon ->
+            LocalPersistentMoveState.rampageLock(pokemon)?.let { lock ->
+                encore[pokemon.battlePokemonId] = RecursiveEncoreLock(lock.moveId, lock.turns)
+            }
+            if ("confusion" in pokemon.knownVolatileEffectIds) confused += pokemon.battlePokemonId
+        }
+        confused.retainAll(outcome.state.pokemon.filter { "confusion" in it.knownVolatileEffectIds }.map { it.battlePokemonId }.toSet())
 
         // An Update after residuals can eat Lum and remove confusion. Do not carry the cured state
         // from the previous history or this turn's control effects into the next turn.
@@ -390,6 +408,19 @@ internal object RecursiveHistoryProjector {
             ghostCursedPokemonIds = ghostCursed,
             partiallyTrappedPokemonIds = partiallyTrapped,
             pendingWishSlots = wishes,
+            wishSourceMaxHpBySlot = wishes.mapNotNull { (side, slot) ->
+                val source = outcome.controlEffects.firstOrNull { it.kind == RecursiveControlEffectKind.WISH && it.sourceSide == side && it.valueId == slot.toString() }
+                    ?.sourcePokemonId?.let { id -> outcome.stateBeforeResidual.pokemon.firstOrNull { it.battlePokemonId == id } }
+                source?.combatStats?.maxHp?.let { (side to slot) to (it.minimum.toDouble() + it.maximum) / 2.0 }
+            }.toMap(),
+            wishHealingFractionsBySlot = wishes.associateWith { (side, slot) ->
+                val source = outcome.controlEffects.firstOrNull { it.kind == RecursiveControlEffectKind.WISH && it.sourceSide == side && it.valueId == slot.toString() }
+                    ?.sourcePokemonId?.let { id -> outcome.stateBeforeResidual.pokemon.firstOrNull { it.battlePokemonId == id } }
+                val recipient = outcome.state.pokemon.firstOrNull { it.side == side && it.activeSlot == slot }
+                val sourceMax = source?.combatStats?.maxHp?.let { (it.minimum.toDouble() + it.maximum) / 2.0 }
+                val targetMax = recipient?.combatStats?.maxHp?.let { (it.minimum.toDouble() + it.maximum) / 2.0 }
+                if (sourceMax != null && targetMax != null) kotlin.math.floor(sourceMax / 2.0).coerceAtLeast(1.0) / targetMax else 0.5
+            },
             drowsyPokemonIds = drowsy.filterTo(linkedSetOf()) { it in activeIds },
             confusedPokemonIds = confused.filterTo(linkedSetOf()) { it in activeIds },
             protectionChainByPokemon = protectionChains,

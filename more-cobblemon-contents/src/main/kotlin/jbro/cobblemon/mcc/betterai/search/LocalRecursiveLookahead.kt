@@ -31,6 +31,7 @@ import jbro.cobblemon.mcc.betterai.state.RecursiveSnapshotActionConstraints
 import jbro.cobblemon.mcc.betterai.state.LocalBranchMoveInputs
 import jbro.cobblemon.mcc.betterai.state.LocalBranchMoveInputKey
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveHypotheses
+import jbro.cobblemon.mcc.betterai.state.LocalSimultaneousReplacementProjector
 
 internal data class LocalLookaheadCoverage(val immediate: Double, val future: Double)
 
@@ -261,7 +262,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val immediate = search.rootActionValue(context.state, rank.outcome.candidate, 1)
                         ?: return rank
                     singlePlyGain[id] = (immediate.value - baseline) * BOARD_TO_SCORE
-                    singlePlyCoverage[id] = search.publicResponseCoverage
+                    singlePlyCoverage[id] = immediate.responseCoverage
                     singlePlyThreat[id] = immediate.threatDelta
                     singlePlyKnockouts[id] = immediate.opponentKnockouts
                 }
@@ -279,13 +280,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val searchBoardGain = (evaluation.value - baseline) * BOARD_TO_SCORE
                     val actionId = rank.outcome.candidate.actionId
                     if (depth == 1) singlePlyGain[actionId] = searchBoardGain
-                    if (depth == 1) singlePlyCoverage[actionId] = search.publicResponseCoverage
+                    if (depth == 1) singlePlyCoverage[actionId] = evaluation.responseCoverage
                     if (depth == 1) singlePlyThreat[actionId] = evaluation.threatDelta
                     if (depth == 1) singlePlyKnockouts[actionId] = evaluation.opponentKnockouts
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val coverage = LocalLookaheadCoverage(
-                        singlePlyCoverage[actionId] ?: search.publicResponseCoverage,
-                        search.publicResponseCoverage,
+                        singlePlyCoverage[actionId] ?: evaluation.responseCoverage,
+                        evaluation.responseCoverage,
                     )
                     evaluatedCoverage[actionId] = coverage
                     val rootSecureKoBaselineCorrection = if (tuning.legacyRawPowerFallback) {
@@ -691,6 +692,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     responses = if (tuning.simultaneousResponseWeight > 0.0) {
                         calibratedResponses.associate { it.action.actionId to it.value.value }
                     } else emptyMap(),
+                    responseCoverage = publicResponseCoverage,
                 )
             }
         }
@@ -802,33 +804,37 @@ internal object LocalRecursiveLookaheadEvaluator {
             val opponentMissing = needsReplacement(BattleSide.OPPONENT, state)
             if (!allyMissing && !opponentMissing) return null
 
-            val allyResolution = if (allyMissing) {
-                LocalForcedReplacementResolver.resolve(state, BattleSide.ALLY,
-                    LocalBranchMoveInputs.context(context, state, history, spendPp = true))
-            } else {
-                LocalForcedReplacementResolution(listOf(state), 1.0)
-            }
-            recordReplacementCoverage(allyResolution)
-            val allyOptions = allyResolution.states
+            val allyResolution = LocalForcedReplacementResolver.plans(state, BattleSide.ALLY)
+            val opponentResolution = LocalForcedReplacementResolver.plans(state, BattleSide.OPPONENT)
+            recordReplacementCoverage(LocalForcedReplacementResolution(emptyList(), allyResolution.publiclyKnownFraction))
+            recordReplacementCoverage(LocalForcedReplacementResolution(emptyList(), opponentResolution.publiclyKnownFraction))
+            val allyOptions = if (allyMissing) allyResolution.choices else listOf(emptyList())
+            val opponentOptions = if (opponentMissing) opponentResolution.choices else listOf(emptyList())
             if (allyOptions.isEmpty()) {
                 return leaf(state, history)
             }
-            val allyValues = allyOptions.map { allyState ->
-                val opponentResolution = if (opponentMissing) {
-                    LocalForcedReplacementResolver.resolve(allyState, BattleSide.OPPONENT,
-                        LocalBranchMoveInputs.context(context, allyState, history, spendPp = true))
-                } else {
-                    LocalForcedReplacementResolution(listOf(allyState), 1.0)
-                }
-                recordReplacementCoverage(opponentResolution)
-                val opponentOptions = opponentResolution.states
+            val source = LocalBranchMoveInputs.context(context, state, history, spendPp = true)
+            val allyValues = allyOptions.map { allyChoice ->
                 if (opponentOptions.isEmpty()) {
-                    leaf(allyState, history)
+                    val branches = LocalSimultaneousReplacementProjector.project(state, allyChoice, emptyList(), source)
+                    averageContinuations(branches.map { it.probability to leaf(it.state, history) })
                 } else {
-                    opponentOptions.map { replacementState -> searchState(replacementState, depth, history) }.minBy { it.value }
+                    opponentOptions.map { opponentChoice ->
+                        val branches = LocalSimultaneousReplacementProjector.project(state, allyChoice, opponentChoice, source)
+                        averageContinuations(branches.map { it.probability to searchState(it.state, depth, history) })
+                    }.minBy { it.value }
                 }
             }
             return if (allyMissing) allyValues.maxByOrNull { it.value } else allyValues.single()
+        }
+
+        private fun averageContinuations(branches: List<Pair<Double, Continuation>>): Continuation {
+            val mass = branches.sumOf { it.first }
+            return Continuation(
+                branches.sumOf { (probability, continuation) -> probability * continuation.value } / mass,
+                branches.sumOf { (probability, continuation) -> probability * continuation.start } / mass,
+                branches.sumOf { (probability, continuation) -> probability * continuation.startMaterial } / mass,
+            )
         }
 
         private fun recordReplacementCoverage(resolution: LocalForcedReplacementResolution) {
@@ -1263,6 +1269,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         val opponentKnockouts: Double = 0.0,
         /** Each reply's value, keyed by the reply's action id. */
         val responses: Map<String, Double> = emptyMap(),
+        /** The coverage measured while this candidate's replies were searched. */
+        val responseCoverage: Double = 1.0,
     ) {
         /** [weight] of the value moved to the expected value against the opponent's [mix]. */
         fun againstMix(mix: Map<String, Double>, weight: Double): RootActionEvaluation {

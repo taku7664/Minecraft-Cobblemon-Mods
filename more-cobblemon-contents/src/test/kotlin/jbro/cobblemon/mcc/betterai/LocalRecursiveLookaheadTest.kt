@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolver
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
@@ -1372,7 +1373,7 @@ class LocalRecursiveLookaheadTest {
         val result = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(knockout)),
             context(initial, listOf(knockout), catalog),
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD.copy(lookaheadPlies = 2)),
         )
 
         assertEquals(2, result.depthCompleted)
@@ -1453,12 +1454,12 @@ class LocalRecursiveLookaheadTest {
         val forward = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(knockout), rank(chip)),
             source,
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD.copy(lookaheadPlies = 2)),
         )
         val reversed = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(chip), rank(knockout)),
             source,
-            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD),
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD.copy(lookaheadPlies = 2)),
         )
         val forwardScores = forward.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
         val reversedScores = reversed.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
@@ -1469,6 +1470,21 @@ class LocalRecursiveLookaheadTest {
         forwardScores.forEach { (actionId, score) ->
             assertEquals(score, reversedScores.getValue(actionId), 1e-9, actionId)
         }
+        // Reweighting cached roots must use that root's own incomplete replacement coverage.
+        val simultaneous = LocalDecisionTuning.CURRENT.copy(simultaneousResponseWeight = 0.5)
+        val mixedForward = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(knockout), rank(chip)), source,
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD.copy(lookaheadPlies = 2)), tuning = simultaneous,
+        )
+        val mixedReversed = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(chip), rank(knockout)), source,
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.STANDARD.copy(lookaheadPlies = 2)), tuning = simultaneous,
+        )
+        val mixedReversedScores = mixedReversed.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+        mixedForward.ranked.forEach { rank ->
+            assertEquals(rank.comparisonValue, mixedReversedScores.getValue(rank.outcome.candidate.actionId), 1e-9)
+        }
+        assertEquals(mixedForward.responseCoverageByAction, mixedReversed.responseCoverageByAction)
     }
 
     @Test

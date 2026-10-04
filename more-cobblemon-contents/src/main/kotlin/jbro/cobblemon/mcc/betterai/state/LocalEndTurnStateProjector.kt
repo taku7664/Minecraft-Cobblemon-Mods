@@ -8,6 +8,8 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusBerry
+import jbro.cobblemon.mcc.betterai.mechanics.LocalBerryMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -26,6 +28,11 @@ internal object LocalEndTurnStateProjector {
         yawnPokemonIds: Set<java.util.UUID> = emptySet(),
         /** Cured at the end of this turn (Shed Skin's roll came up). */
         curedPokemonIds: Set<java.util.UUID> = emptySet(),
+        /** Wish heals half the source's max HP, expressed in the current slot occupant's units. */
+        wishHealingFractionsBySlot: Map<Pair<BattleSide, Int>, Double> = emptyMap(),
+        /** The complete turn projector runs Update after its later volatile residual callbacks. */
+        deferBerryUpdate: Boolean = false,
+        wishSourceMaxHpBySlot: Map<Pair<BattleSide, Int>, Double> = emptyMap(),
     ): BattleStateView {
         // Weather expires before its residual callback. Unknown durations retain the existing estimate.
         val nextField = decrementField(state.field)
@@ -75,7 +82,8 @@ internal object LocalEndTurnStateProjector {
             val poisonHeal = ability == "poisonheal" && status in POISON_IDS
             var hp = pokemon.hpFraction
             fun apply(change: Double) {
-                if (hp > 0.0) hp = LocalHpArithmetic.change(pokemon, hp, change).coerceIn(0.0, 1.0)
+                val blockedHeal = change > 0.0 && pokemon.knownVolatileEffectIds.any { canonical(it) == "healblock" }
+                if (hp > 0.0 && !blockedHeal) hp = LocalHpArithmetic.change(pokemon, hp, change).coerceIn(0.0, 1.0)
             }
             // Native event order: weather (1), weather abilities (2), terrain and item healing (5), Leech Seed (8),
             // poison/burn (9/10), Curse (12), binding and Salt Cure (13).
@@ -91,7 +99,15 @@ internal object LocalEndTurnStateProjector {
                 sun && ability == "solarpower" && !magicGuard -> apply(-hpFractionTick(pokemon, 8))
             }
             if (snow && ability == "icebody") apply(hpFractionTick(pokemon, 16))
-            if ((pokemon.side to pokemon.activeSlot) in wishSlots) apply(0.5)
+            if ((pokemon.side to pokemon.activeSlot) in wishSlots) {
+                val key = pokemon.side to pokemon.activeSlot
+                val sourceMax = wishSourceMaxHpBySlot[key]
+                val targetMax = pokemon.combatStats?.maxHp?.let { (it.minimum.toDouble() + it.maximum) / 2.0 }
+                val fraction = if (sourceMax != null && targetMax != null && targetMax > 0.0)
+                    kotlin.math.floor(sourceMax / 2.0).coerceAtLeast(1.0) / targetMax
+                    else wishHealingFractionsBySlot[key] ?: .5
+                apply(fraction)
+            }
             val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf()) { canonical(it) }
             if ("aquaring" in volatiles) apply(hpFractionTick(pokemon, 16))
             if ("ingrain" in volatiles) apply(hpFractionTick(pokemon, 16))
@@ -156,7 +172,7 @@ internal object LocalEndTurnStateProjector {
         )
         // Update uses the post-residual field and living foes: Magic Room may have expired,
         // or Unnerve may have fainted. Curing here does not refund earlier poison/burn damage.
-        return LocalPublicStatusBerry.afterUpdate(projected)
+        return if (deferBerryUpdate) projected else LocalPublicStatusBerry.afterUpdate(projected)
     }
 
     private fun hpFractionTick(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
@@ -180,23 +196,17 @@ internal object LocalEndTurnStateProjector {
     private fun decrement(effect: BattleTimedEffectView): BattleTimedEffectView? {
         effect.remainingTurns?.let { remaining ->
             if (remaining <= 1) return null
-            return BattleTimedEffectView(
-                effectId = effect.effectId,
-                remainingTurns = remaining - 1,
-                stacks = effect.stacks,
-            )
+            return effect.copy(remainingTurns = remaining - 1)
         }
         val range = effect.remainingTurnsRange ?: return effect
         if (range.maximum <= 1) return null
         val nextMinimum = (range.minimum - 1).coerceAtLeast(1)
         val nextMaximum = range.maximum - 1
         return if (nextMinimum == nextMaximum) {
-            BattleTimedEffectView(effect.effectId, nextMinimum, effect.stacks)
+            effect.copy(remainingTurns = nextMinimum, remainingTurnsRange = null)
         } else {
-            BattleTimedEffectView(
-                effectId = effect.effectId,
+            effect.copy(
                 remainingTurns = null,
-                stacks = effect.stacks,
                 remainingTurnsRange = BattleIntegerRange(nextMinimum, nextMaximum),
             )
         }
@@ -228,8 +238,18 @@ internal object LocalEndTurnStateProjector {
         actionConstraints = pokemon.actionConstraints,
         // Endure lasts the turn it was used.
         // Endure and Glaive Rush's check last the turn; Throat Chop's two turns are read as one search turn.
-        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds
-            .filterNot { canonical(it) in TURN_VOLATILES }.toSet(),
+        knownVolatileEffectIds = pokemon.knownVolatileEffectIds.mapNotNull { effect ->
+            when {
+                fainted -> effect.takeIf { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
+                effect in setOf(LocalReactiveAbilityState.ENTERED_THIS_TURN, LocalReactiveAbilityState.CUSTAP_CHECKED,
+                    LocalReactiveAbilityState.CUSTAP_PRIORITY) || canonical(effect) in TURN_VOLATILES -> null
+                effect.startsWith(LocalReactiveAbilityState.SLOW_START_TURNS) -> {
+                    val turns = (effect.substringAfter(LocalReactiveAbilityState.SLOW_START_TURNS).toIntOrNull() ?: 0) - 1
+                    (LocalReactiveAbilityState.SLOW_START_TURNS + turns).takeIf { turns > 0 }
+                }
+                else -> effect
+            }
+        }.toSet(),
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,

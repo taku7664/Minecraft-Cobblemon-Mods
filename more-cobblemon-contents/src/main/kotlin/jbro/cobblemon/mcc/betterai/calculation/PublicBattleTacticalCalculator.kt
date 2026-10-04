@@ -4,6 +4,8 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
 import jbro.cobblemon.mcc.internal.ai.BattleInferenceView
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.mcc.betterai.mechanics.LocalCriticalHitRules
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicFormResolution
@@ -84,8 +86,14 @@ internal object PublicBattleTacticalCalculator {
             LocalDeclaredMultiHit.representativeCount(resolvedCandidate, actor, context.state)
         }
         return rolls.map { damage ->
-            (damage.toDouble() / denominator * hitCount * mechanics.knownDamageMultiplier)
-                .coerceAtMost(target.hpFraction)
+            val raw = damage.toDouble() / denominator * hitCount * mechanics.knownDamageMultiplier
+            val decoy = target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" } &&
+                "sound" !in details.effects?.mechanicFlags.orEmpty() && LocalPublicAbilityState.effectiveKnownAbility(context.state, actor) != "infiltrator"
+            // The aggregate must include hits after a decoy breaks; the hit sequence applies the actual HP cap.
+            if (decoy && hitCount > 1) raw.coerceAtLeast(0.0) else raw
+                .coerceAtMost(if (decoy) {
+                    maxOf(target.hpFraction, LocalPersistentMoveState.substituteFraction(target) ?: 0.25)
+                } else target.hpFraction)
                 .coerceIn(0.0, 1.0)
         }
     }
@@ -463,7 +471,7 @@ internal object PublicBattleTacticalCalculator {
             else -> return null
         }
         val effects = details.effects?.effects.orEmpty()
-        val guaranteedCritical = effects.any { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
+        val guaranteedCritical = LocalCriticalHitRules.confirmed(candidate, actor, target, state)
         val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val attackStage = moveInputs.offensiveStage
         val defenceStage = moveInputs.defensiveStage

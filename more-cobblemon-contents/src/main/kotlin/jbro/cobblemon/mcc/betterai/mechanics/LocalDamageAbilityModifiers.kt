@@ -69,13 +69,18 @@ internal object LocalDamageAbilityModifiers {
             "orichalcumpulse" -> if (physical && weather in SUN) 4.0 / 3.0 else 1.0
             // Pixilate and its kind: the Normal move they turned into their type is 20% stronger.
             "pixilate", "refrigerate", "aerilate", "galvanize", "normalize" -> if (printedType(candidate) == "normal") 1.2 else 1.0
-            "sniper", "analytic", "stakeout" -> 1.0
+            "sniper" -> if (LocalCriticalHitRules.confirmed(candidate, actor, target, state)) 1.5 else 1.0
+            "analytic" -> if (LocalReactiveAbilityState.ANALYTIC_ACTIVE in candidate.tags) 1.3 else 1.0
+            "stakeout" -> if (LocalReactiveAbilityState.ENTERED_THIS_TURN in target.knownVolatileEffectIds) 2.0 else 1.0
+            "slowstart" -> if (physical && LocalReactiveAbilityState.slowStartActive(actor)) .5 else 1.0
+            "flashfire" -> if (type == "fire" && actor.knownVolatileEffectIds.any { canonical(it) == "flashfire" }) 1.5 else 1.0
             "protean", "libero" -> if (stab) 1.0 else 1.5
             "hadronengine" -> if (special && terrain == "electricterrain") 4.0 / 3.0 else 1.0
             "protosynthesis" -> paradox(actor, item, weather in SUN, physical, special, offence = true)
             "quarkdrive" -> paradox(actor, item, terrain == "electricterrain", physical, special, offence = true)
             else -> 1.0
         }
+        if (type == "electric" && actor.knownVolatileEffectIds.any { canonical(it) == "charge" }) multiplier *= 2.0
         // Steely Spirit and the auras reach every Pokemon on the field.
         if (type == "steel" && activeWith(state, "steelyspirit", actor.side)) multiplier *= 1.5
         if (type == "fairy" && activeWith(state, "fairyaura", null)) multiplier *= auraFactor(state)

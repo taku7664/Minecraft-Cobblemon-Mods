@@ -205,9 +205,7 @@ internal object LocalPublicMechanicsKernel {
             target = target,
             context = context,
         )
-        val screenMultiplier = if (details.effects?.effects.orEmpty().any {
-            it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL
-        }) 1.0 else screenDamageMultiplier(
+        val screenMultiplier = if (LocalCriticalHitRules.confirmed(candidate, actor, target, context.state)) 1.0 else screenDamageMultiplier(
             category = details.damageCategory,
             actorAbility = actorAbility,
             moveId = canonicalOrNull(candidate.moveId),

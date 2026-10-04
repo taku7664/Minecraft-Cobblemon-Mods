@@ -32,6 +32,13 @@ internal object LocalObservedActionOrder {
     ): Boolean? {
         if (!speedContextUnchanged(observedState, projectedState, firstPokemonId)) return null
         if (!speedContextUnchanged(observedState, projectedState, secondPokemonId)) return null
+        val first = projectedState.pokemon.firstOrNull { it.battlePokemonId == firstPokemonId } ?: return null
+        val second = projectedState.pokemon.firstOrNull { it.battlePokemonId == secondPokemonId } ?: return null
+        val firstSpeed = LocalPublicTurnOrder.effectiveSpeed(projectedState, first)
+        val secondSpeed = LocalPublicTurnOrder.effectiveSpeed(projectedState, second)
+        // An observed coin flip provides no evidence against the opposite result on the next turn.
+        if (firstSpeed != null && secondSpeed != null && firstSpeed.first == firstSpeed.second &&
+            secondSpeed.first == secondSpeed.second && firstSpeed.first == secondSpeed.first) return null
         val relations = observedState.inferences.asSequence()
             .filter { inference ->
                 normalize(inference.categoryId) == OBSERVED_ACTION_ORDER &&
@@ -63,7 +70,8 @@ internal object LocalObservedActionOrder {
      * Trick Room is deliberately absent: the projector resolves it before it ever asks for an
      * observation, so a room that appears or expires mid-search never reaches this comparison.
      */
-    private data class SpeedContext(val stage: Int, val paralysed: Boolean, val tailwind: Boolean)
+    private data class SpeedContext(val stage: Int, val paralysed: Boolean, val tailwind: Boolean,
+        val effectiveSpeed: Pair<Int, Int>?)
 
     private fun speedContextUnchanged(
         observedState: BattleStateView,
@@ -82,6 +90,7 @@ internal object LocalObservedActionOrder {
                 ?.value?.coerceIn(-6, 6) ?: 0,
             paralysed = normalize(pokemon.statusId) in PARALYSIS_IDS,
             tailwind = tailwind(state, pokemon.side),
+            effectiveSpeed = LocalPublicTurnOrder.effectiveSpeed(state, pokemon),
         )
     }
 

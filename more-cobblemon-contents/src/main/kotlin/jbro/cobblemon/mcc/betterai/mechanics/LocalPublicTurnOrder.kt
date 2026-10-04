@@ -52,10 +52,15 @@ internal object LocalPublicTurnOrder {
         action: BattleActionCandidate,
     ): Double {
         val actor = active(state, side, action.actorSlot) ?: return 0.0
+        if (LocalReactiveAbilityState.CUSTAP_PRIORITY in actor.knownVolatileEffectIds) return 1.0
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
         val myceliumStatus = ability == MYCELIUM_MIGHT &&
             action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS
         val chances = buildList {
+            if (LocalReactiveAbilityState.CUSTAP_CHECKED !in actor.knownVolatileEffectIds &&
+                LocalPublicItemState.activeItemId(state, actor) == "custapberry" &&
+                actor.hpFraction <= (if (ability == "gluttony") .5 else .25) && LocalBerryMechanics.canEat(state, actor)
+            ) add(1.0)
             if (ability == QUICK_DRAW &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
             ) add(QUICK_DRAW_CHANCE)

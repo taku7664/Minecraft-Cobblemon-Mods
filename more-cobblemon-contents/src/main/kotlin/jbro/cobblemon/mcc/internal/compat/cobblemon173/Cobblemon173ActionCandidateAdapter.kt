@@ -241,7 +241,9 @@ internal object Cobblemon173ActionCandidateAdapter {
     ) {
         if (!isMoveChoiceAvailable(move, gimmick, transformed)) return
         val targetPnx = target?.getPNX()
-        val response = MoveActionResponse(move.id, targetPnx, gimmick?.id)
+        val response = if (gimmick == null && transformed != null) {
+            Cobblemon173ActiveMaxMoveActionResponse(move.id, targetPnx)
+        } else MoveActionResponse(move.id, targetPnx, gimmick?.id)
         if (!response.isValid(active, moveset, forceSwitch)) return
         val targetView = target?.let {
             BattleTargetSlot(
@@ -251,7 +253,10 @@ internal object Cobblemon173ActionCandidateAdapter {
         }
         val details = moveDetails(move, transformed, targetType)
         if (!isMoveTargetAllowed(transformed?.move ?: move.id, targetView?.side,
-                targetType, details?.damageCategory)) return
+                targetType, details?.damageCategory,
+                target?.takeIf { targetView?.side == BattleSide.ALLY }?.battlePokemon?.uuid?.let { targetId ->
+                    active.actor.request?.side?.pokemon?.firstOrNull { it.uuid == targetId }?.ability
+                })) return
         val variantId = gimmick?.id ?: "base"
         add(
             Cobblemon173ActionChoice(
@@ -485,8 +490,9 @@ internal object Cobblemon173ActionCandidateAdapter {
         targetSide: BattleSide?,
         targetType: MoveTarget,
         damageCategory: BattleMoveDamageCategory?,
+        targetKnownAbilityId: String? = null,
     ): Boolean = BattleProductAllyTargetPolicy.permits(
-        moveId, targetSide, targetType == MoveTarget.normal || targetType == MoveTarget.any, damageCategory)
+        moveId, targetSide, targetType == MoveTarget.normal || targetType == MoveTarget.any, damageCategory, targetKnownAbilityId)
 }
 
 data class Cobblemon173MechanicPolicy(

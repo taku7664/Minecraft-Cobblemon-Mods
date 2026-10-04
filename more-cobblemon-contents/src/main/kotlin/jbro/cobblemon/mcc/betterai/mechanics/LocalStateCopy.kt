@@ -66,7 +66,8 @@ internal fun BattlePokemonStateView.copyState(
     combatStats = combatStats,
     knownFormStates = knownFormStates,
     actionConstraints = actionConstraints,
-    knownVolatileEffectIds = if (fainted || activeSlot == null) emptySet() else knownVolatileEffectIds,
+    knownVolatileEffectIds = if (fainted || activeSlot == null)
+        knownVolatileEffectIds.filter { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }.toSet() else knownVolatileEffectIds,
     knownBaseStabTypeIds = knownBaseStabTypeIds,
     knownTeraTypeId = knownTeraTypeId,
     knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
