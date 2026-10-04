@@ -1,0 +1,369 @@
+{
+  "gain": 1.3,
+  "filter": "asetpts=N/SR/TB,alimiter=level_in=1.3:limit=0.85:attack=5:release=50:level=false:latency=true",
+  "codec": "Ogg Vorbis",
+  "quality": 4,
+  "sampleRate": 44100,
+  "tracks": [
+    {
+      "target": "bdsp_arceus_battle.ogg",
+      "source": "original",
+      "beforeSha256": "3a564b10da90f215a879640d54348b4ba97da7cf63f1867effbec36ab4ef9ad4",
+      "afterSha256": "40e63c973450ea4c3b24e44d37dcf433e17a65417f012b6ae74254977f9f77be",
+      "decodedPeakDb": -0.438,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bdsp_azelf_mesprit_uxie_battle.ogg",
+      "source": "original",
+      "beforeSha256": "3886336f14e02a43f57e074828df593c87e27b2c20e01ce35e89fde769befc1a",
+      "afterSha256": "ef2c2353963f45cdebdb4fe947de789762550d88f6fcac26f471607a02f0b8ad",
+      "decodedPeakDb": -0.392,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bdsp_dialga_palkia_battle.ogg",
+      "source": "original",
+      "beforeSha256": "61db088ec85090cb8efb83e2eb903d2b8df1fe1c29a473e71a11e4e38e1c830f",
+      "afterSha256": "592a69aeb23646bb8f6974add8f70e7a26a79f24840fef42e54d8c13962229a3",
+      "decodedPeakDb": -0.336,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bdsp_giratina_battle.ogg",
+      "source": "original",
+      "beforeSha256": "6c02e4e9558df99ea71d8f8efcc418187237c141c1d7a0a7bb0a18b085057d97",
+      "afterSha256": "f03862e38abbf45dfcdfb251040f7f600d9ea2a614df07e8bdf6ffe8d09aa06c",
+      "decodedPeakDb": -0.146,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bdsp_legendary_pokemon_battle.ogg",
+      "source": "original",
+      "beforeSha256": "d73b56dc00e885ff8a5b5eb8ed7c1c5be02872d250e7f52ae64993d1930306d2",
+      "afterSha256": "471bb0f20a6754f49d2c2b78cbb34bdffe80f2752378afaf852ae4a5d6312c6c",
+      "decodedPeakDb": -0.544,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bw_kyurem_battle.ogg",
+      "source": "original",
+      "beforeSha256": "5ce04c14dafae42e31290a634953bda3751c952d1cad2483e957998572b4c614",
+      "afterSha256": "e911a89fff911e355ec363c3b8033fd14d5f091389eea6ab7eac61752bcf1a1f",
+      "decodedPeakDb": -0.442,
+      "limiterOutputGain": 0.93253287
+    },
+    {
+      "target": "bw_legendary_pokemon_battle.ogg",
+      "source": "original",
+      "beforeSha256": "77fb6f0cbe675c61edc236a6b10bf861de29140ce3501929df3cb61b49320eff",
+      "afterSha256": "a68a71785ddcbbd759cf0c53b46b892c3dc04285156cbde5c930efaa22f69664",
+      "decodedPeakDb": -0.155,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "bw_reshiram_zekrom_battle.ogg",
+      "source": "original",
+      "beforeSha256": "275a4759071b050cdab98e8266718cc183a56b6386fce5fd1a6bf2f9756a7b01",
+      "afterSha256": "dd00e0bbbf6064a7aab6c0d3b4821f7c59c399752e5f48b742aa26d088223baa",
+      "decodedPeakDb": -0.175,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "dppt_arceus_battle.ogg",
+      "source": "original",
+      "beforeSha256": "5e17224b4f5fa0c552345574a561a4490ae35bb013f4f4a5a78d06ea0d612a2e",
+      "afterSha256": "66bede67adb71e6884efb423bd596a9b5ca939e550be5affc8ffe1edbd624edd",
+      "decodedPeakDb": -0.804,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "dppt_azelf_mesprit_uxie_battle.ogg",
+      "source": "original",
+      "beforeSha256": "cf8d202725a9c872f7c8c33a8a3e5d38638105d31c30c2e7a5816ceef14f8d31",
+      "afterSha256": "14f8c76c6f2e1f96b3d8cbcb25fe69f5c0438ee3d32b33ea6b2b4d401d7cbd8c",
+      "decodedPeakDb": -0.657,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "dppt_dialga_palkia_battle.ogg",
+      "source": "original",
+      "beforeSha256": "d6cfccab4033a5cf17386db895b7f3e8b7ebafd9378c750bc3334237011d02b5",
+      "afterSha256": "815ca2eca89f6b406281edc3d1bdadec1454270498cd756fa0473fec98756087",
+      "decodedPeakDb": -0.302,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "dppt_giratina_battle.ogg",
+      "source": "original",
+      "beforeSha256": "95af766035d28bdbd1c6bcbe765e77d53b9ebb428309808e46edf08090320ffd",
+      "afterSha256": "53619f31004ef73f1cea0e6615101a0121fc4f15e9d7d35f5ebc047b529562e9",
+      "decodedPeakDb": -0.364,
+      "limiterOutputGain": 0.87475503
+    },
+    {
+      "target": "dppt_legendary_pokemon_battle.ogg",
+      "source": "original",
+      "beforeSha256": "1f81754846862662780f24731b6b44e82be66469cbd2fcd1bc42267a8c367a47",
+      "afterSha256": "4cb0853215392eb2dc101553c3d50ea27485c1fa873233f67bb6d1cc16e1f273",
+      "decodedPeakDb": -0.469,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "frlg_deoxys_battle_music.ogg",
+      "source": "original",
+      "beforeSha256": "3600d8f5f1ee1ab5dfcbd20e2bf8e401d4139100f6b56a1a0065348cdaeb309a",
+      "afterSha256": "8db51a2667a2a2f725e668bd69bf0a922d73e92cfb064b76a03888ea760cc0eb",
+      "decodedPeakDb": -1.27,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "frlg_legendary_pokemon_battle.ogg",
+      "source": "original",
+      "beforeSha256": "8c5624066ede547a357a1303b918853f70694a2ebbfd15b1fe473029d2906562",
+      "afterSha256": "004a3e0c6e93137fc4e673134ee2cc84e9ce90c997ffea428076dea8e1df163b",
+      "decodedPeakDb": -1.41,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "gs_beasts_battle.ogg",
+      "source": "original",
+      "beforeSha256": "55ecf1546af8ad4792d1d35de1926cd84031dc24b54676450a597339d1034fd1",
+      "afterSha256": "c0f8b6d80197cfcb5c9ff3b0bdd7eb49121879250bd1c24ae48e07dac743f1be",
+      "decodedPeakDb": -1.519,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "hgss_entei_battle.ogg",
+      "source": "original",
+      "beforeSha256": "6a3e1cb9531aaa4bc3943abc06ef523ebf59eb581853f985cc792af4c6b68e56",
+      "afterSha256": "eb3501c94d852d8914896df0ba9d33bfbf3ae72d42989cb6a171551e1ed3cbad",
+      "decodedPeakDb": -0.46,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "hgss_ho-oh_battle.ogg",
+      "source": "original",
+      "beforeSha256": "c098775d96c52d89a9992179ffedf691b7c05c1cbca5fa446e0037b28d6171d1",
+      "afterSha256": "63dea3cd8e14065e27801ea10708847d42130c98cb8ad4fe702aa63728c35cbd",
+      "decodedPeakDb": -0.212,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "hgss_lugia_battle.ogg",
+      "source": "original",
+      "beforeSha256": "b1e82d1430c823f9b195a4f1b3c4f835865f530de621a0a296ab3b699b8de278",
+      "afterSha256": "3655515e64aaaccb5e74580b1f9ddf29e9be66d8117734bd7174dc8a1a3d48bb",
+      "decodedPeakDb": -0.461,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "hgss_raikou_battle.ogg",
+      "source": "original",
+      "beforeSha256": "9b399a66d2b32d7585bad80365faa604f90ed3ec2a3d303d6d38a1d2c26026e9",
+      "afterSha256": "cdba428d84c9f605454223407739f2a53e877a33b367237483502d511a140383",
+      "decodedPeakDb": -0.282,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "hgss_suicune_battle.ogg",
+      "source": "original",
+      "beforeSha256": "3f9b870deeab918b1d7c6820fd7ff84a7fb4d1c3a8c229d591451913639ce2a3",
+      "afterSha256": "fc3cc64b3da05741f5f4b2cff0baeac33aac8c8757c672e3de8febda14def2c9",
+      "decodedPeakDb": -0.93,
+      "limiterOutputGain": 0.91939132
+    },
+    {
+      "target": "oras_deoxys_battle.ogg",
+      "source": "original",
+      "beforeSha256": "f7e225caed223c7684776f72b0b6aaf5d30c0f7985ee1f289ace2ef83403debe",
+      "afterSha256": "33f93f10083628564fab1f30966d4c85ca3f89d313338a0e94310949b840f10e",
+      "decodedPeakDb": -0.546,
+      "limiterOutputGain": 0.94741902
+    },
+    {
+      "target": "oras_dialga_palkia_battle.ogg",
+      "source": "existing-ogg",
+      "beforeSha256": "8f3f8cd44dc4913156a74e6d051d901fb5a17570987eee032c450c0dd59d514c",
+      "afterSha256": "514329d57ecf9027a837fe2fb44b10c02848b20b2f8af80801e226b1b45c4f88",
+      "decodedPeakDb": -0.712,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "oras_groudon_kyogre_battle.ogg",
+      "source": "original",
+      "beforeSha256": "791b32a9a16abc7713a179d2295585cb581a68db2bb31864233cddf07d0914db",
+      "afterSha256": "ef6e9e657f315e4456c587c0ba1f581bc4f2caf50b34293e4844e1c87cacad9d",
+      "decodedPeakDb": -0.564,
+      "limiterOutputGain": 0.95263909
+    },
+    {
+      "target": "oras_regirock_regice_registeel_battle.ogg",
+      "source": "original",
+      "beforeSha256": "64840253070917bed0fdaeb5de44e3a00b037fd7385294708c9477b1abceba89",
+      "afterSha256": "90a945a6f0323a9dfa710178f952cb81e3874591050b6d9674ebb500e4baaead",
+      "decodedPeakDb": -0.432,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "oras_reshiram_zekrom_battle.ogg",
+      "source": "existing-ogg",
+      "beforeSha256": "683354915da5400e2fbed278887424ca1aadddac6a6d01c7f9407bb6ce630c55",
+      "afterSha256": "e359430522c59da5580e007be51e59669a924f63c5f1c18da3a4b4817230f3a5",
+      "decodedPeakDb": -0.314,
+      "limiterOutputGain": 0.94697824
+    },
+    {
+      "target": "rse_groudon_kyogre_battle.ogg",
+      "source": "original",
+      "beforeSha256": "02071c4084a8e26013be6b11ed197ccfba4a373387c040f082b1bf63a8cbff24",
+      "afterSha256": "1ba7fdb55cb43990022764e5f6e5da9b434f18ab311246c4febcf92825784150",
+      "decodedPeakDb": -3.246,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "rse_regirock_regice_registeel_battle.ogg",
+      "source": "original",
+      "beforeSha256": "dadd285ac745387c957cb4d51dee42188fc236fe5c4ae177832790b09c2b4b4d",
+      "afterSha256": "c434f0ad727c4ff0ebf6241e4c5ec96d7b13ec193d66bca9bb867d6aba506ec6",
+      "decodedPeakDb": -5.299,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "sm_solgaleo_lunala_battle.ogg",
+      "source": "original",
+      "beforeSha256": "429d2e01d9783779055c69bb19f7bc7468c2f696d7ade8dc90165b603d54f821",
+      "afterSha256": "ed1d800096d7dc97c1de4e849ab9e7ab65eb7ab92fed6a4a02ed7bf38395ce84",
+      "decodedPeakDb": -0.596,
+      "limiterOutputGain": 0.88898944
+    },
+    {
+      "target": "sm_tapu_battle.ogg",
+      "source": "original",
+      "beforeSha256": "cad40d6c032a4188f554efc06fe37a054b889fe1429f9400ef7c94f7ab64e5a2",
+      "afterSha256": "2359baa77b1c49520023f135357820a013c8ec505c54e3402be9cb3ad6f3784f",
+      "decodedPeakDb": -0.229,
+      "limiterOutputGain": 0.90129456
+    },
+    {
+      "target": "sv_area_zero_battle_1.ogg",
+      "source": "original",
+      "beforeSha256": "997ade68343dc9a612463b8e1c01cda30284e4654073c5e9d77d8db9a062b935",
+      "afterSha256": "b2b936ad7e03d6519572ade2e404f2e3ef543c60f7e677694ff790c76e57a7c7",
+      "decodedPeakDb": -0.512,
+      "limiterOutputGain": 0.91060336
+    },
+    {
+      "target": "sv_area_zero_battle_2.ogg",
+      "source": "original",
+      "beforeSha256": "4daebc19b617852402fb43818bc42b4e66c4a3d782543a13683e64de768dbbac",
+      "afterSha256": "9b5b3116a7cb105481615a40311afd5b504d5abbc34fc95faf4d568df48c8133",
+      "decodedPeakDb": -0.72,
+      "limiterOutputGain": 0.90189639
+    },
+    {
+      "target": "sv_loyal_three_battle.ogg",
+      "source": "original",
+      "beforeSha256": "5e41de9b3d77afae83dcc43ee8bf0ab484b20f5735c0612ce7caf106fc38c380",
+      "afterSha256": "50dd413ccf27b01fc6431526fdd38f4a879cac80c4b8d5204801254d90c95262",
+      "decodedPeakDb": -1.105,
+      "limiterOutputGain": 0.82949477
+    },
+    {
+      "target": "sv_ogerpon_battle.ogg",
+      "source": "original",
+      "beforeSha256": "57436001b9d614942a3bb65673a597a703a6d154f572472dae72cbb061d29e7a",
+      "afterSha256": "200765f0115ba7e0a4052422fee2dad474e3ff8fd29eacae92c6f09660297c5a",
+      "decodedPeakDb": -0.462,
+      "limiterOutputGain": 0.91750956
+    },
+    {
+      "target": "sv_pecharunt_battle.ogg",
+      "source": "original",
+      "beforeSha256": "1d17da93c3ac7236db8eab0cc3c1d27b44bdb5e8a7bc1f48af7eded2c4f32c79",
+      "afterSha256": "a5d76a627cc9eb95bd4d4563a7f19b244afd9b9272dc9b6ebe453bdc82cf378d",
+      "decodedPeakDb": -0.255,
+      "limiterOutputGain": 0.8670033
+    },
+    {
+      "target": "sv_stellar_terapagos_battle.ogg",
+      "source": "original",
+      "beforeSha256": "fd6b29fa65a01ca59b1a65d949fec5ef398dd81b6b6295a74d42a413b5287d4f",
+      "afterSha256": "f7ed4251b86f75b613a1a542a102b41510e23fae70eff91bf687046e39a10297",
+      "decodedPeakDb": -0.42,
+      "limiterOutputGain": 0.88598394
+    },
+    {
+      "target": "sv_terapagos_battle.ogg",
+      "source": "original",
+      "beforeSha256": "eee292e22fe6ffc1702a9b2c41028cab60682d988fa5036485bd8eea78ad61c3",
+      "afterSha256": "0b7467346eb3528da970bd0b218f4ba6d144a6347b2da7a013d00c137ec6b2c7",
+      "decodedPeakDb": -0.289,
+      "limiterOutputGain": 0.87105434
+    },
+    {
+      "target": "sv_treasures_of_ruin_battle.ogg",
+      "source": "original",
+      "beforeSha256": "db29768ac65c6661d67ec7789679bae7aa302defd131b402f55c39a57245773f",
+      "afterSha256": "b1a8b66f4e6e23b4942ea23ed728b0c62f4b4327ceb380c9b8aefafe8f8014d4",
+      "decodedPeakDb": -0.937,
+      "limiterOutputGain": 0.79077412
+    },
+    {
+      "target": "swsh_calyrex_battle.ogg",
+      "source": "original",
+      "beforeSha256": "94a0821759b20fef975ea12e08ca3f4c08322069a711fb2c91a1131017e26a2b",
+      "afterSha256": "89b00b61d6e43885874cb76004bbcc502c9d3da2cfc6d8ac488923e5de455216",
+      "decodedPeakDb": -0.563,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "swsh_eternatus_battle.ogg",
+      "source": "original",
+      "beforeSha256": "59aa647b4803440f3dcd8c5a3f01231c53603319bc3385149b31734870de66b4",
+      "afterSha256": "d498c5b927dbeff96d433d4a08521c5604a9147bee73590c2d3224ca435f4eca",
+      "decodedPeakDb": -0.509,
+      "limiterOutputGain": 0.88241951
+    },
+    {
+      "target": "swsh_glastrier_spectrier_battle.ogg",
+      "source": "original",
+      "beforeSha256": "f06b397085cba247e3d47a7be8b23613c66461374c08f47d58e25530bad3a94f",
+      "afterSha256": "e899b2ddf775dbf5f6a6455bee8ea2ceb6f704fdf6e378dbd40977d69001dbbc",
+      "decodedPeakDb": -0.19,
+      "limiterOutputGain": 1.0
+    },
+    {
+      "target": "swsh_zacian_zamazenta_battle.ogg",
+      "source": "original",
+      "beforeSha256": "4de6c3cbb43ae939bae4737b060178f51811e891c611e0540051242cd3ae3eae",
+      "afterSha256": "77ad23bf030da457fd570228103775d1dfc986dbd130cec78708da0e5f1c2275",
+      "decodedPeakDb": -0.239,
+      "limiterOutputGain": 0.91503362
+    },
+    {
+      "target": "xy_mewtwo_battle.ogg",
+      "source": "original",
+      "beforeSha256": "790314756f0cb6b2f058462e496b4625efea15397dc3e30e21ea3ed37949b58f",
+      "afterSha256": "08f87470d0d62048d77e51a46872162e26c464a142342139c00126a68d8b0b23",
+      "decodedPeakDb": -0.448,
+      "limiterOutputGain": 0.92370161
+    },
+    {
+      "target": "xy_xerneas_yveltal_zygarde_battle.ogg",
+      "source": "original",
+      "beforeSha256": "144b5a0c4b5f4a805038f04e3a7aec62fd3e2a0318d08cd337e91ba728255ec7",
+      "afterSha256": "d9e6b94340a2df18da6976ef7606c4a209f9c169eda5689fcfde3f2660b3683f",
+      "decodedPeakDb": -0.461,
+      "limiterOutputGain": 0.89777819
+    },
+    {
+      "target": "za_darkrai_battle.ogg",
+      "source": "existing-ogg",
+      "beforeSha256": "95b9fac0d04da32b20475374782edd42866ba912b28f4d4a3f3d8ecd324cb4b6",
+      "afterSha256": "f4a89cfbc55f722aa450a10bab24e508ccba4aa32246c4234436104f215f8ba1",
+      "decodedPeakDb": -0.81,
+      "limiterOutputGain": 1.0
+    }
+  ]
+}

@@ -42,9 +42,9 @@ final class OfficialPokemusicMappingTest {
         module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("better-cobblemon-music");
         pack = directory.resolve("pack");
         MusicResourcePackBuildTool.build(module.resolve("resource-pack/src"), module.resolve("resource-pack/catalog-layout.json"), pack);
-        try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"))) {
-            compiled = MusicCatalogCompiler.compile("cobleserver:official", List.of(MusicCatalogParser.parse(reader)),
-                MusicCatalogSettings.defaults("cobleserver:official"), MusicMappingOverrides.empty());
+        try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"))) {
+            compiled = MusicCatalogCompiler.compile("better_cobblemon_music:official", List.of(MusicCatalogParser.parse(reader)),
+                MusicCatalogSettings.defaults("better_cobblemon_music:official"), MusicMappingOverrides.empty());
         }
         assertTrue(compiled.inactiveOverrides().isEmpty());
         field = new FieldPlaylistResolver(compiled.snapshot().field());
@@ -57,7 +57,7 @@ final class OfficialPokemusicMappingTest {
             assertEquals(30, files.size());
             for (var element : files) {
                 var report = element.getAsJsonObject();
-                Path audio = pack.resolve("assets/cobleserver/sounds/music/" + report.get("target").getAsString());
+                Path audio = pack.resolve("assets/better_cobblemon_music/sounds/music/" + report.get("target").getAsString());
                 assertEquals(report.get("outputSha256").getAsString(), sha256(audio), audio.toString());
                 assertEquals(report.get("output_bytes").getAsLong(), Files.size(audio));
                 assertEquals(1, report.get("logical_streams").getAsInt());
@@ -66,13 +66,13 @@ final class OfficialPokemusicMappingTest {
             }
         }
         assertEquals("3a0b977babf57f6ea5d3da04f0da85596d1fa2d50fe69f7f1c1064a91aa5666b",
-            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/normal.ogg")));
+            sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/normal.ogg")));
         assertEquals("d4dbddb4c776544feb6d83e83dd1f89a27c7c1261b0cb5cb9477f0a6b9ad44bd",
-            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/not_very_effective.ogg")));
+            sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/not_very_effective.ogg")));
         assertEquals("ac569053487563e8f037e4e984f29f5ad1b34fd5b78cf8339e0a2313a43e5b8b",
-            sha256(pack.resolve("assets/cobleserver/sounds/battle/hit/super_effective.ogg")));
+            sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg")));
         assertEquals("b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad",
-            sha256(pack.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg")));
+            sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg")));
         assertEquals(88, compiled.trackEvents().size());
     }
 
@@ -91,14 +91,14 @@ final class OfficialPokemusicMappingTest {
         try (var reader = Files.newBufferedReader(module.resolve("resource-pack/import-myroom-2026-10-03.json"))) {
             var report = JsonParser.parseReader(reader).getAsJsonObject();
             assertEquals(report.get("outputSha256").getAsString(), sha256(pack.resolve(
-                "assets/cobleserver/sounds/music/field/myroom/eterna_forest.ogg")));
+                "assets/better_cobblemon_music/sounds/music/field/myroom/eterna_forest.ogg")));
         }
     }
 
     @Test
     void everyTwoSongReadmeGroupUsesExplicitRandomSelectionRatherThanTheGlobalDefault() {
         for (String group : List.of("screen_title", "field_deep_dark", "field_cave", "field_river", "field_ocean", "field_mountain", "field_forest")) {
-            var playlist = compiled.playlists().get("cobleserver:" + group);
+            var playlist = compiled.playlists().get("better_cobblemon_music:" + group);
             assertEquals(2, playlist.tracks().size(), group);
             assertEquals(PlaylistDefinition.Selection.RANDOM, playlist.selection(), group);
         }
@@ -155,12 +155,12 @@ final class OfficialPokemusicMappingTest {
     @Test
     void personalPlaylistRemappingDoesNotChangeThePacksFieldPriority() throws Exception {
         var overrides = jbro.cobblemon.bettermusic.catalog.MusicMappingOverridesParser.parse(new StringReader("""
-            {"schemaVersion":1,"field":{"underground":"cobleserver:track/field/myroom/eterna_forest",
-              "biomes":{"minecraft:cherry_grove":"cobleserver:track/field/desert/route_111"}}}
+            {"schemaVersion":1,"field":{"underground":"better_cobblemon_music:track/field/myroom/eterna_forest",
+              "biomes":{"minecraft:cherry_grove":"better_cobblemon_music:track/field/desert/route_111"}}}
             """));
-        try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"))) {
-            var custom = MusicCatalogCompiler.compile("cobleserver:official", List.of(MusicCatalogParser.parse(reader)),
-                MusicCatalogSettings.defaults("cobleserver:official"), overrides);
+        try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"))) {
+            var custom = MusicCatalogCompiler.compile("better_cobblemon_music:official", List.of(MusicCatalogParser.parse(reader)),
+                MusicCatalogSettings.defaults("better_cobblemon_music:official"), overrides);
             var resolver = new FieldPlaylistResolver(custom.snapshot().field());
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
                 Set.of(), true)).playlist(), "field/myroom/eterna_forest");
@@ -234,7 +234,7 @@ final class OfficialPokemusicMappingTest {
     }
 
     private static void expectTracks(PlaylistDefinition playlist, String... paths) {
-        assertEquals(Arrays.stream(paths).map(path -> "cobleserver:" + path).toList(), playlist.tracks());
+        assertEquals(Arrays.stream(paths).map(path -> "better_cobblemon_music:" + path).toList(), playlist.tracks());
     }
 
     private static String sha256(Path file) throws Exception {

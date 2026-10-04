@@ -31,13 +31,19 @@ public final class MusicCatalogConfigStore {
     private final Path settingsFile;
     private final Path overridesFile;
     private final Path legacyFile;
+    private final boolean migrateOfficialIds;
 
     public MusicCatalogConfigStore(Path configDirectory) {
+        this(configDirectory, false);
+    }
+
+    public MusicCatalogConfigStore(Path configDirectory, boolean migrateOfficialIds) {
         this.configDirectory = Objects.requireNonNull(configDirectory, "configDirectory")
             .toAbsolutePath().normalize();
         this.settingsFile = this.configDirectory.resolve(SETTINGS_FILE_NAME);
         this.overridesFile = this.configDirectory.resolve(OVERRIDES_FILE_NAME);
         this.legacyFile = this.configDirectory.resolve(LEGACY_FILE_NAME);
+        this.migrateOfficialIds = migrateOfficialIds;
     }
 
     public MusicCatalogSettings initializeSettings(String defaultBasePackId) throws IOException {
@@ -58,7 +64,14 @@ public final class MusicCatalogConfigStore {
     }
 
     public MusicCatalogSettings loadSettings() throws IOException {
-        return parseSettings(Files.readString(settingsFile, StandardCharsets.UTF_8));
+        MusicCatalogSettings settings = parseSettings(Files.readString(settingsFile, StandardCharsets.UTF_8));
+        if (!migrateOfficialIds || !OfficialMusicIds.OLD_PACK_ID.equals(settings.basePackId())) {
+            return settings;
+        }
+        return new MusicCatalogSettings(
+            OfficialMusicIds.PACK_ID, settings.playback(), settings.selection(), settings.volume(),
+            settings.audioEffects(), settings.nowPlayingEnabled()
+        );
     }
 
     public void saveSettings(MusicCatalogSettings settings) throws IOException {
@@ -69,7 +82,11 @@ public final class MusicCatalogConfigStore {
         if (!Files.isRegularFile(overridesFile)) {
             return MusicMappingOverrides.empty();
         }
-        return MusicMappingOverridesParser.parse(Files.newBufferedReader(overridesFile, StandardCharsets.UTF_8));
+        try (var reader = Files.newBufferedReader(overridesFile, StandardCharsets.UTF_8)) {
+            MusicMappingOverrides overrides = MusicMappingOverridesParser.parse(reader);
+            return migrateOfficialIds && OfficialMusicIds.PACK_ID.equals(loadSettings().basePackId())
+                ? OfficialMusicIds.current(overrides) : overrides;
+        }
     }
 
     public boolean saveOverridesIfMissing(MusicMappingOverrides overrides) throws IOException {

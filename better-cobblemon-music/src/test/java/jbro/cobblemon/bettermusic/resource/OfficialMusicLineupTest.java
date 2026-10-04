@@ -3,6 +3,7 @@ package jbro.cobblemon.bettermusic.resource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -36,10 +37,10 @@ final class OfficialMusicLineupTest {
         MusicResourcePackBuildTool.build(module.resolve("resource-pack/src"),
             module.resolve("resource-pack/catalog-layout.json"), temporaryDirectory.resolve("pack"));
         try (var reader = Files.newBufferedReader(temporaryDirectory.resolve(
-            "pack/assets/better_cobblemon_music/catalogs/base/cobleserver.json"))) {
+            "pack/assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"))) {
             var catalog = MusicCatalogParser.parse(reader);
-            var compiled = MusicCatalogCompiler.compile("cobleserver:official", List.of(catalog),
-                MusicCatalogSettings.defaults("cobleserver:official"), MusicMappingOverrides.empty());
+            var compiled = MusicCatalogCompiler.compile("better_cobblemon_music:official", List.of(catalog),
+                MusicCatalogSettings.defaults("better_cobblemon_music:official"), MusicMappingOverrides.empty());
             assertTrue(compiled.inactiveOverrides().isEmpty());
             battle = compiled.snapshot().battle();
             resolver = new BattlePlaylistResolver(battle);
@@ -91,33 +92,48 @@ final class OfficialMusicLineupTest {
         var ordinaryAlpha = resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.WILD,
             Set.of("cobblemon:snorlax"), alpha));
         assertEquals("battle.alpha", ordinaryAlpha.id());
-        assertEquals(List.of("cobleserver:battle/boss/pla_boss_battle", "cobleserver:battle/boss/sv_leader_pokemon_battle"),
+        assertEquals(List.of("better_cobblemon_music:battle/boss/pla_boss_battle", "better_cobblemon_music:battle/boss/sv_leader_pokemon_battle"),
             ordinaryAlpha.playlist().tracks());
         var lugiaAlpha = resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.WILD,
             Set.of("cobblemon:lugia"), alpha));
-        assertEquals(List.of("cobleserver:battle/legendary/hgss_lugia_battle"), lugiaAlpha.playlist().tracks());
+        assertEquals(List.of("better_cobblemon_music:battle/legendary/hgss_lugia_battle"), lugiaAlpha.playlist().tracks());
     }
 
     @Test
     void ordinaryWildUsesDiamondPearlAndLugiaKeepsItsStableTrackId() {
-        assertEquals(List.of("cobleserver:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
+        assertEquals(List.of("better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");
-        assertEquals(List.of("cobleserver:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
-        assertEquals(List.of("cobleserver:battle/pvp/pokemon_champions_arena_battle"), battle.pvp().tracks());
+        assertEquals(List.of("better_cobblemon_music:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
+        assertEquals(List.of("better_cobblemon_music:battle/pvp/pokemon_champions_arena_battle"), battle.pvp().tracks());
     }
 
     @Test
-    void lugiaResourceContainsTheApprovedFlacReplacement() throws Exception {
-        byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
-            "pack/assets/cobleserver/sounds/music/battle/legendary/hgss_lugia_battle.ogg"));
-        assertEquals("b1e82d1430c823f9b195a4f1b3c4f835865f530de621a0a296ab3b699b8de278",
-            HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
+    void legendaryGainReportMatchesEveryPackagedTrackAndPreservesTheApprovedLugiaSource() throws Exception {
+        Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("better-cobblemon-music");
+        var report = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/legendary-gain-2026-10-04.json"))).getAsJsonObject();
+        assertEquals(1.3, report.get("gain").getAsDouble());
+        var tracks = report.getAsJsonArray("tracks");
+        assertEquals(45, tracks.size());
+        for (var element : tracks) {
+            var track = element.getAsJsonObject();
+            String name = track.get("target").getAsString();
+            byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
+                "pack/assets/better_cobblemon_music/sounds/music/battle/legendary/" + name));
+            assertEquals(track.get("afterSha256").getAsString(),
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)), name);
+            if (name.equals("hgss_lugia_battle.ogg")) {
+                assertEquals("original", track.get("source").getAsString());
+                assertEquals("b1e82d1430c823f9b195a4f1b3c4f835865f530de621a0a296ab3b699b8de278",
+                    track.get("beforeSha256").getAsString());
+            }
+        }
     }
 
     @Test
     void pvpResourceRestoresOnlyTheOriginalChampionsAudio() throws Exception {
         byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
-            "pack/assets/cobleserver/sounds/music/battle/pvp/pokemon_champions_arena_battle.ogg"));
+            "pack/assets/better_cobblemon_music/sounds/music/battle/pvp/pokemon_champions_arena_battle.ogg"));
         assertEquals("88702ffa56a2a05e7c152232c0cd03724b713b278263ca5bd7c4076900f9fc50",
             HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
     }
@@ -178,7 +194,7 @@ final class OfficialMusicLineupTest {
     }
 
     private static String title(String path) {
-        return eventTitles.get(trackEvents.get("cobleserver:" + path));
+        return eventTitles.get(trackEvents.get("better_cobblemon_music:" + path));
     }
 
     private static void assertTitle(String path, String expected) {
@@ -186,7 +202,7 @@ final class OfficialMusicLineupTest {
     }
 
     private static void expect(String speciesList, String... paths) {
-        List<String> tracks = java.util.Arrays.stream(paths).map(path -> "cobleserver:battle/" + path).toList();
+        List<String> tracks = java.util.Arrays.stream(paths).map(path -> "better_cobblemon_music:battle/" + path).toList();
         for (String species : speciesList.split(" ")) {
             var selection = resolver.select(new BattleMusicContext(BattleMusicConfig.BattleType.WILD,
                 Set.of("cobblemon:" + species), Set.of()));

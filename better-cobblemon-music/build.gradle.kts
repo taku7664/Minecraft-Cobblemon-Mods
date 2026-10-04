@@ -83,7 +83,7 @@ val musicResourcePackZip by tasks.registering(Zip::class) {
     description = "Packages the validated official Better Cobblemon Music resource pack."
     dependsOn(generateMusicResourcePack)
     from(generatedMusicResourcePack)
-    archiveFileName.set("cobleserver-music-resourcepack-${modVersion}.zip")
+    archiveFileName.set("better-cobblemon-music-resourcepack-${modVersion}.zip")
     destinationDirectory.set(layout.buildDirectory.dir("libs"))
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true

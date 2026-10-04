@@ -1,257 +1,257 @@
 {
   "schemaVersion": 1,
-  "packId": "cobleserver:official",
+  "packId": "better_cobblemon_music:official",
   "kind": "base",
   "legacyAliases": {
-    "cobleserver:battle/legendary/frlg_deoxys_battle_music": [
+    "better_cobblemon_music:battle/legendary/frlg_deoxys_battle_music": [
       "battle/legendary/frlg_deoxys_battle.ogg"
     ]
   },
   "trackTitles": {
-    "cobleserver:battle/boss/pla_boss_battle": "승부: 우두머리 포켓몬 (PLA)",
-    "cobleserver:battle/boss/sv_leader_pokemon_battle": "전투! 주인 포켓몬 (S·V)",
-    "cobleserver:battle/champion/sinnoh_cynthia_battle": "전투! 챔피언 (D·P)",
-    "cobleserver:battle/elite/sinnoh_elite_four_battle": "전투! 사천왕 (D·P)",
-    "cobleserver:battle/gym/sinnoh_gym_leader_battle": "전투! 체육관 관장 (D·P)",
-    "cobleserver:battle/legendary/bdsp_arceus_battle": "전투! 아르세우스 (BD·SP)",
-    "cobleserver:battle/legendary/bdsp_azelf_mesprit_uxie_battle": "전투! 유크시·엠라이트·아그놈 (BD·SP)",
-    "cobleserver:battle/legendary/bdsp_dialga_palkia_battle": "전투! 디아루가·펄기아 (BD·SP)",
-    "cobleserver:battle/legendary/bdsp_giratina_battle": "전투! 기라티나 (BD·SP)",
-    "cobleserver:battle/legendary/bdsp_legendary_pokemon_battle": "전투! 전설의 포켓몬 (BD·SP)",
-    "cobleserver:battle/legendary/bw_kyurem_battle": "전투! 큐레무 (B·W)",
-    "cobleserver:battle/legendary/bw_legendary_pokemon_battle": "전투! 전설의 포켓몬 (B·W)",
-    "cobleserver:battle/legendary/bw_reshiram_zekrom_battle": "전투! 레시라무·제크로무 (B·W)",
-    "cobleserver:battle/legendary/dppt_arceus_battle": "전투! 아르세우스 (D·P)",
-    "cobleserver:battle/legendary/dppt_azelf_mesprit_uxie_battle": "전투! 유크시·엠라이트·아그놈 (D·P)",
-    "cobleserver:battle/legendary/dppt_dialga_palkia_battle": "전투! 디아루가·펄기아 (D·P)",
-    "cobleserver:battle/legendary/dppt_giratina_battle": "전투! 기라티나 (Pt)",
-    "cobleserver:battle/legendary/dppt_legendary_pokemon_battle": "전투! 전설의 포켓몬 (D·P)",
-    "cobleserver:battle/legendary/frlg_deoxys_battle_music": "전투! 테오키스 (FR·LG)",
-    "cobleserver:battle/legendary/frlg_legendary_pokemon_battle": "전투! 전설의 포켓몬 (FR·LG)",
-    "cobleserver:battle/legendary/gs_beasts_battle": "전투! 라이코·앤테이·스이쿤 (C)",
-    "cobleserver:battle/legendary/hgss_entei_battle": "전투! 앤테이 (HG·SS)",
-    "cobleserver:battle/legendary/hgss_ho-oh_battle": "전투! 칠색조 (HG·SS)",
-    "cobleserver:battle/legendary/hgss_lugia_battle": "전투! 루기아 (HG·SS)",
-    "cobleserver:battle/legendary/hgss_raikou_battle": "전투! 라이코 (HG·SS)",
-    "cobleserver:battle/legendary/hgss_suicune_battle": "전투! 스이쿤 (HG·SS)",
-    "cobleserver:battle/legendary/oras_deoxys_battle": "전투! 테오키스 (OR·AS)",
-    "cobleserver:battle/legendary/oras_dialga_palkia_battle": "디아루가·펄기아 전투 (OR·AS)",
-    "cobleserver:battle/legendary/oras_groudon_kyogre_battle": "전투! 초고대 포켓몬 (OR·AS)",
-    "cobleserver:battle/legendary/oras_regirock_regice_registeel_battle": "전투! 레지락·레지아이스·레지스틸 (OR·AS)",
-    "cobleserver:battle/legendary/oras_reshiram_zekrom_battle": "레시라무·제크로무 전투 (OR·AS)",
-    "cobleserver:battle/legendary/rse_groudon_kyogre_battle": "전투! 초고대 포켓몬 (R·S)",
-    "cobleserver:battle/legendary/rse_regirock_regice_registeel_battle": "전투! 레지락·레지아이스·레지스틸 (R·S)",
-    "cobleserver:battle/legendary/sm_solgaleo_lunala_battle": "전투! 솔가레오·루나아라 (S·M)",
-    "cobleserver:battle/legendary/sm_tapu_battle": "전투! 카푸 (S·M)",
-    "cobleserver:battle/legendary/sv_area_zero_battle_1": "전투! 에리어 제로 야생 포켓몬 (S·V)",
-    "cobleserver:battle/legendary/sv_area_zero_battle_2": "전투! 에리어 제로 야생 포켓몬 2 (S·V)",
-    "cobleserver:battle/legendary/sv_loyal_three_battle": "전투! 세벗님 (S·V)",
-    "cobleserver:battle/legendary/sv_ogerpon_battle": "전투! 오거폰 (S·V)",
-    "cobleserver:battle/legendary/sv_pecharunt_battle": "전투! 복숭악동 (S·V)",
-    "cobleserver:battle/legendary/sv_stellar_terapagos_battle": "전투! 제로의 비보 테라파고스 (S·V)",
-    "cobleserver:battle/legendary/sv_terapagos_battle": "전투! 테라파고스 (S·V)",
-    "cobleserver:battle/legendary/sv_treasures_of_ruin_battle": "전투! 재앙의 보물 (S·V)",
-    "cobleserver:battle/legendary/swsh_calyrex_battle": "전투! 버드렉스 (Sw·Sh)",
-    "cobleserver:battle/legendary/swsh_eternatus_battle": "전투! 무한다이노 (Sw·Sh)",
-    "cobleserver:battle/legendary/swsh_glastrier_spectrier_battle": "전투! 블리자포스·레이스포스 (Sw·Sh)",
-    "cobleserver:battle/legendary/swsh_zacian_zamazenta_battle": "전투! 자시안·자마젠타 (Sw·Sh)",
-    "cobleserver:battle/legendary/xy_mewtwo_battle": "전투! 뮤츠 (X·Y)",
-    "cobleserver:battle/legendary/xy_xerneas_yveltal_zygarde_battle": "전투! 제르네아스·이벨타르·지가르데 (X·Y)",
-    "cobleserver:battle/legendary/za_darkrai_battle": "다크라이 전투 (PLZA)",
-    "cobleserver:battle/pvp/pokemon_champions_arena_battle": "아레나 배틀 (PC)",
-    "cobleserver:battle/trainer/sinnoh_trainer_battle": "전투! 트레이너 (D·P)",
-    "cobleserver:battle/ultra_beast/alola_ultra_beast_battle": "전투! 울트라비스트 (S·M)",
-    "cobleserver:battle/wild/bw_strong_wild_pokemon_battle": "전투! 강한 야생 포켓몬 (B·W)",
-    "cobleserver:battle/wild/gs_johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도·낮, G·S)",
-    "cobleserver:battle/wild/hoenn_wild_pokemon_battle": "전투! 야생 포켓몬 (R·S)",
-    "cobleserver:battle/wild/johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도, HG·SS)",
-    "cobleserver:battle/wild/sinnoh_wild_pokemon_battle": "전투! 야생 포켓몬 (D·P)",
-    "cobleserver:battle/wild/sm_wild_pokemon_battle": "전투! 야생 포켓몬 (S·M)",
-    "cobleserver:battle/wild/swsh_wild_pokemon_battle": "전투! 야생 포켓몬 (Sw·Sh)",
-    "cobleserver:battle/wild/xy_wild_pokemon_battle": "전투! 야생 포켓몬 (X·Y)",
-    "cobleserver:field/badlands/abandoned_ship": "버려진배",
-    "cobleserver:field/cave/sinnoh_lake_caverns": "호수의 공동",
-    "cobleserver:field/cave/sinnoh_oreburgh_mine": "무쇠탄갱",
-    "cobleserver:field/deep_dark/sinnoh_old_chateau": "숲의 양옥집",
-    "cobleserver:field/deep_dark/union_cave": "연결동굴",
-    "cobleserver:field/desert/route_111": "111번도로",
-    "cobleserver:field/end/distortion_world": "깨어진세계",
-    "cobleserver:field/forest/sinnoh_route_203_day": "203번도로 (낮)",
-    "cobleserver:field/forest/viridian_forest": "상록숲",
-    "cobleserver:field/jungle/route_210": "210번도로 (낮)",
-    "cobleserver:field/mountain/route_3": "3번도로",
-    "cobleserver:field/mountain/sinnoh_route_205_day": "205번도로 (낮)",
-    "cobleserver:field/myroom/eterna_forest": "영원의숲",
-    "cobleserver:field/nether/sinnoh_stark_mountain": "하드마운틴",
-    "cobleserver:field/ocean/route_47": "47번도로",
-    "cobleserver:field/ocean/underground_ruins": "땅밑유적",
-    "cobleserver:field/plains/sinnoh_route_201_night": "201번도로 (밤)",
-    "cobleserver:field/plaza/pallet_town": "태초마을",
-    "cobleserver:field/plaza/route_1": "1번도로",
-    "cobleserver:field/river/sealed_chamber": "고시의 석실",
-    "cobleserver:field/river/sinnoh_lake_theme": "호수",
-    "cobleserver:field/snow/sinnoh_route_205_night": "205번도로 (밤)",
-    "cobleserver:field/swamp/road_to_reversal_mountain": "리버스마운틴으로 가는 길",
-    "cobleserver:screen/mcc/boutique": "부티크",
-    "cobleserver:screen/mcc/poke_mart": "프렌들리숍",
-    "cobleserver:screen/title/sinnoh_introduction": "인트로",
-    "cobleserver:screen/title/sinnoh_league_night": "포켓몬리그 (밤)"
+    "better_cobblemon_music:battle/boss/pla_boss_battle": "승부: 우두머리 포켓몬 (PLA)",
+    "better_cobblemon_music:battle/boss/sv_leader_pokemon_battle": "전투! 주인 포켓몬 (S·V)",
+    "better_cobblemon_music:battle/champion/sinnoh_cynthia_battle": "전투! 챔피언 (D·P)",
+    "better_cobblemon_music:battle/elite/sinnoh_elite_four_battle": "전투! 사천왕 (D·P)",
+    "better_cobblemon_music:battle/gym/sinnoh_gym_leader_battle": "전투! 체육관 관장 (D·P)",
+    "better_cobblemon_music:battle/legendary/bdsp_arceus_battle": "전투! 아르세우스 (BD·SP)",
+    "better_cobblemon_music:battle/legendary/bdsp_azelf_mesprit_uxie_battle": "전투! 유크시·엠라이트·아그놈 (BD·SP)",
+    "better_cobblemon_music:battle/legendary/bdsp_dialga_palkia_battle": "전투! 디아루가·펄기아 (BD·SP)",
+    "better_cobblemon_music:battle/legendary/bdsp_giratina_battle": "전투! 기라티나 (BD·SP)",
+    "better_cobblemon_music:battle/legendary/bdsp_legendary_pokemon_battle": "전투! 전설의 포켓몬 (BD·SP)",
+    "better_cobblemon_music:battle/legendary/bw_kyurem_battle": "전투! 큐레무 (B·W)",
+    "better_cobblemon_music:battle/legendary/bw_legendary_pokemon_battle": "전투! 전설의 포켓몬 (B·W)",
+    "better_cobblemon_music:battle/legendary/bw_reshiram_zekrom_battle": "전투! 레시라무·제크로무 (B·W)",
+    "better_cobblemon_music:battle/legendary/dppt_arceus_battle": "전투! 아르세우스 (D·P)",
+    "better_cobblemon_music:battle/legendary/dppt_azelf_mesprit_uxie_battle": "전투! 유크시·엠라이트·아그놈 (D·P)",
+    "better_cobblemon_music:battle/legendary/dppt_dialga_palkia_battle": "전투! 디아루가·펄기아 (D·P)",
+    "better_cobblemon_music:battle/legendary/dppt_giratina_battle": "전투! 기라티나 (Pt)",
+    "better_cobblemon_music:battle/legendary/dppt_legendary_pokemon_battle": "전투! 전설의 포켓몬 (D·P)",
+    "better_cobblemon_music:battle/legendary/frlg_deoxys_battle_music": "전투! 테오키스 (FR·LG)",
+    "better_cobblemon_music:battle/legendary/frlg_legendary_pokemon_battle": "전투! 전설의 포켓몬 (FR·LG)",
+    "better_cobblemon_music:battle/legendary/gs_beasts_battle": "전투! 라이코·앤테이·스이쿤 (C)",
+    "better_cobblemon_music:battle/legendary/hgss_entei_battle": "전투! 앤테이 (HG·SS)",
+    "better_cobblemon_music:battle/legendary/hgss_ho-oh_battle": "전투! 칠색조 (HG·SS)",
+    "better_cobblemon_music:battle/legendary/hgss_lugia_battle": "전투! 루기아 (HG·SS)",
+    "better_cobblemon_music:battle/legendary/hgss_raikou_battle": "전투! 라이코 (HG·SS)",
+    "better_cobblemon_music:battle/legendary/hgss_suicune_battle": "전투! 스이쿤 (HG·SS)",
+    "better_cobblemon_music:battle/legendary/oras_deoxys_battle": "전투! 테오키스 (OR·AS)",
+    "better_cobblemon_music:battle/legendary/oras_dialga_palkia_battle": "디아루가·펄기아 전투 (OR·AS)",
+    "better_cobblemon_music:battle/legendary/oras_groudon_kyogre_battle": "전투! 초고대 포켓몬 (OR·AS)",
+    "better_cobblemon_music:battle/legendary/oras_regirock_regice_registeel_battle": "전투! 레지락·레지아이스·레지스틸 (OR·AS)",
+    "better_cobblemon_music:battle/legendary/oras_reshiram_zekrom_battle": "레시라무·제크로무 전투 (OR·AS)",
+    "better_cobblemon_music:battle/legendary/rse_groudon_kyogre_battle": "전투! 초고대 포켓몬 (R·S)",
+    "better_cobblemon_music:battle/legendary/rse_regirock_regice_registeel_battle": "전투! 레지락·레지아이스·레지스틸 (R·S)",
+    "better_cobblemon_music:battle/legendary/sm_solgaleo_lunala_battle": "전투! 솔가레오·루나아라 (S·M)",
+    "better_cobblemon_music:battle/legendary/sm_tapu_battle": "전투! 카푸 (S·M)",
+    "better_cobblemon_music:battle/legendary/sv_area_zero_battle_1": "전투! 에리어 제로 야생 포켓몬 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_area_zero_battle_2": "전투! 에리어 제로 야생 포켓몬 2 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_loyal_three_battle": "전투! 세벗님 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_ogerpon_battle": "전투! 오거폰 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_pecharunt_battle": "전투! 복숭악동 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_stellar_terapagos_battle": "전투! 제로의 비보 테라파고스 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_terapagos_battle": "전투! 테라파고스 (S·V)",
+    "better_cobblemon_music:battle/legendary/sv_treasures_of_ruin_battle": "전투! 재앙의 보물 (S·V)",
+    "better_cobblemon_music:battle/legendary/swsh_calyrex_battle": "전투! 버드렉스 (Sw·Sh)",
+    "better_cobblemon_music:battle/legendary/swsh_eternatus_battle": "전투! 무한다이노 (Sw·Sh)",
+    "better_cobblemon_music:battle/legendary/swsh_glastrier_spectrier_battle": "전투! 블리자포스·레이스포스 (Sw·Sh)",
+    "better_cobblemon_music:battle/legendary/swsh_zacian_zamazenta_battle": "전투! 자시안·자마젠타 (Sw·Sh)",
+    "better_cobblemon_music:battle/legendary/xy_mewtwo_battle": "전투! 뮤츠 (X·Y)",
+    "better_cobblemon_music:battle/legendary/xy_xerneas_yveltal_zygarde_battle": "전투! 제르네아스·이벨타르·지가르데 (X·Y)",
+    "better_cobblemon_music:battle/legendary/za_darkrai_battle": "다크라이 전투 (PLZA)",
+    "better_cobblemon_music:battle/pvp/pokemon_champions_arena_battle": "아레나 배틀 (PC)",
+    "better_cobblemon_music:battle/trainer/sinnoh_trainer_battle": "전투! 트레이너 (D·P)",
+    "better_cobblemon_music:battle/ultra_beast/alola_ultra_beast_battle": "전투! 울트라비스트 (S·M)",
+    "better_cobblemon_music:battle/wild/bw_strong_wild_pokemon_battle": "전투! 강한 야생 포켓몬 (B·W)",
+    "better_cobblemon_music:battle/wild/gs_johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도·낮, G·S)",
+    "better_cobblemon_music:battle/wild/hoenn_wild_pokemon_battle": "전투! 야생 포켓몬 (R·S)",
+    "better_cobblemon_music:battle/wild/johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도, HG·SS)",
+    "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle": "전투! 야생 포켓몬 (D·P)",
+    "better_cobblemon_music:battle/wild/sm_wild_pokemon_battle": "전투! 야생 포켓몬 (S·M)",
+    "better_cobblemon_music:battle/wild/swsh_wild_pokemon_battle": "전투! 야생 포켓몬 (Sw·Sh)",
+    "better_cobblemon_music:battle/wild/xy_wild_pokemon_battle": "전투! 야생 포켓몬 (X·Y)",
+    "better_cobblemon_music:field/badlands/abandoned_ship": "버려진배",
+    "better_cobblemon_music:field/cave/sinnoh_lake_caverns": "호수의 공동",
+    "better_cobblemon_music:field/cave/sinnoh_oreburgh_mine": "무쇠탄갱",
+    "better_cobblemon_music:field/deep_dark/sinnoh_old_chateau": "숲의 양옥집",
+    "better_cobblemon_music:field/deep_dark/union_cave": "연결동굴",
+    "better_cobblemon_music:field/desert/route_111": "111번도로",
+    "better_cobblemon_music:field/end/distortion_world": "깨어진세계",
+    "better_cobblemon_music:field/forest/sinnoh_route_203_day": "203번도로 (낮)",
+    "better_cobblemon_music:field/forest/viridian_forest": "상록숲",
+    "better_cobblemon_music:field/jungle/route_210": "210번도로 (낮)",
+    "better_cobblemon_music:field/mountain/route_3": "3번도로",
+    "better_cobblemon_music:field/mountain/sinnoh_route_205_day": "205번도로 (낮)",
+    "better_cobblemon_music:field/myroom/eterna_forest": "영원의숲",
+    "better_cobblemon_music:field/nether/sinnoh_stark_mountain": "하드마운틴",
+    "better_cobblemon_music:field/ocean/route_47": "47번도로",
+    "better_cobblemon_music:field/ocean/underground_ruins": "땅밑유적",
+    "better_cobblemon_music:field/plains/sinnoh_route_201_night": "201번도로 (밤)",
+    "better_cobblemon_music:field/plaza/pallet_town": "태초마을",
+    "better_cobblemon_music:field/plaza/route_1": "1번도로",
+    "better_cobblemon_music:field/river/sealed_chamber": "고시의 석실",
+    "better_cobblemon_music:field/river/sinnoh_lake_theme": "호수",
+    "better_cobblemon_music:field/snow/sinnoh_route_205_night": "205번도로 (밤)",
+    "better_cobblemon_music:field/swamp/road_to_reversal_mountain": "리버스마운틴으로 가는 길",
+    "better_cobblemon_music:screen/mcc/boutique": "부티크",
+    "better_cobblemon_music:screen/mcc/poke_mart": "프렌들리숍",
+    "better_cobblemon_music:screen/title/sinnoh_introduction": "인트로",
+    "better_cobblemon_music:screen/title/sinnoh_league_night": "포켓몬리그 (밤)"
   },
   "playlists": {
-    "cobleserver:field_plaza": {
+    "better_cobblemon_music:field_plaza": {
       "tracks": [
-        "cobleserver:field/plaza/route_1"
+        "better_cobblemon_music:field/plaza/route_1"
       ]
     },
-    "cobleserver:screen_title": {
+    "better_cobblemon_music:screen_title": {
       "selection": "random",
-      "tracks": ["cobleserver:screen/title/sinnoh_introduction", "cobleserver:screen/title/sinnoh_league_night"]
+      "tracks": ["better_cobblemon_music:screen/title/sinnoh_introduction", "better_cobblemon_music:screen/title/sinnoh_league_night"]
     },
-    "cobleserver:field_deep_dark": {
+    "better_cobblemon_music:field_deep_dark": {
       "selection": "random",
-      "tracks": ["cobleserver:field/deep_dark/sinnoh_old_chateau", "cobleserver:field/deep_dark/union_cave"]
+      "tracks": ["better_cobblemon_music:field/deep_dark/sinnoh_old_chateau", "better_cobblemon_music:field/deep_dark/union_cave"]
     },
-    "cobleserver:field_cave": {
+    "better_cobblemon_music:field_cave": {
       "selection": "random",
-      "tracks": ["cobleserver:field/cave/sinnoh_oreburgh_mine", "cobleserver:field/cave/sinnoh_lake_caverns"]
+      "tracks": ["better_cobblemon_music:field/cave/sinnoh_oreburgh_mine", "better_cobblemon_music:field/cave/sinnoh_lake_caverns"]
     },
-    "cobleserver:field_river": {
+    "better_cobblemon_music:field_river": {
       "selection": "random",
-      "tracks": ["cobleserver:field/river/sinnoh_lake_theme", "cobleserver:field/river/sealed_chamber"]
+      "tracks": ["better_cobblemon_music:field/river/sinnoh_lake_theme", "better_cobblemon_music:field/river/sealed_chamber"]
     },
-    "cobleserver:field_ocean": {
+    "better_cobblemon_music:field_ocean": {
       "selection": "random",
-      "tracks": ["cobleserver:field/ocean/route_47", "cobleserver:field/ocean/underground_ruins"]
+      "tracks": ["better_cobblemon_music:field/ocean/route_47", "better_cobblemon_music:field/ocean/underground_ruins"]
     },
-    "cobleserver:field_mountain": {
+    "better_cobblemon_music:field_mountain": {
       "selection": "random",
-      "tracks": ["cobleserver:field/mountain/sinnoh_route_205_day", "cobleserver:field/mountain/route_3"]
+      "tracks": ["better_cobblemon_music:field/mountain/sinnoh_route_205_day", "better_cobblemon_music:field/mountain/route_3"]
     },
-    "cobleserver:field_forest": {
+    "better_cobblemon_music:field_forest": {
       "selection": "random",
-      "tracks": ["cobleserver:field/forest/sinnoh_route_203_day", "cobleserver:field/forest/viridian_forest"]
+      "tracks": ["better_cobblemon_music:field/forest/sinnoh_route_203_day", "better_cobblemon_music:field/forest/viridian_forest"]
     },
-    "cobleserver:battle_legendary_generic": {
+    "better_cobblemon_music:battle_legendary_generic": {
       "tracks": [
-        "cobleserver:battle/legendary/oras_dialga_palkia_battle",
-        "cobleserver:battle/legendary/oras_reshiram_zekrom_battle",
-        "cobleserver:battle/legendary/za_darkrai_battle"
+        "better_cobblemon_music:battle/legendary/oras_dialga_palkia_battle",
+        "better_cobblemon_music:battle/legendary/oras_reshiram_zekrom_battle",
+        "better_cobblemon_music:battle/legendary/za_darkrai_battle"
       ]
     },
-    "cobleserver:battle_groudon_kyogre": {
+    "better_cobblemon_music:battle_groudon_kyogre": {
       "tracks": [
-        "cobleserver:battle/legendary/oras_groudon_kyogre_battle",
-        "cobleserver:battle/legendary/rse_groudon_kyogre_battle"
+        "better_cobblemon_music:battle/legendary/oras_groudon_kyogre_battle",
+        "better_cobblemon_music:battle/legendary/rse_groudon_kyogre_battle"
       ]
     },
-    "cobleserver:battle_gym_leader": {
+    "better_cobblemon_music:battle_gym_leader": {
       "tracks": [
-        "cobleserver:battle/gym/sinnoh_gym_leader_battle"
+        "better_cobblemon_music:battle/gym/sinnoh_gym_leader_battle"
       ]
     },
-    "cobleserver:battle_regi_trio": {
+    "better_cobblemon_music:battle_regi_trio": {
       "tracks": [
-        "cobleserver:battle/legendary/oras_regirock_regice_registeel_battle",
-        "cobleserver:battle/legendary/rse_regirock_regice_registeel_battle"
+        "better_cobblemon_music:battle/legendary/oras_regirock_regice_registeel_battle",
+        "better_cobblemon_music:battle/legendary/rse_regirock_regice_registeel_battle"
       ]
     },
-    "cobleserver:battle_raikou": {
-      "tracks": ["cobleserver:battle/legendary/hgss_raikou_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    "better_cobblemon_music:battle_raikou": {
+      "tracks": ["better_cobblemon_music:battle/legendary/hgss_raikou_battle", "better_cobblemon_music:battle/legendary/gs_beasts_battle"]
     },
-    "cobleserver:battle_entei": {
-      "tracks": ["cobleserver:battle/legendary/hgss_entei_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    "better_cobblemon_music:battle_entei": {
+      "tracks": ["better_cobblemon_music:battle/legendary/hgss_entei_battle", "better_cobblemon_music:battle/legendary/gs_beasts_battle"]
     },
-    "cobleserver:battle_suicune": {
-      "tracks": ["cobleserver:battle/legendary/hgss_suicune_battle", "cobleserver:battle/legendary/gs_beasts_battle"]
+    "better_cobblemon_music:battle_suicune": {
+      "tracks": ["better_cobblemon_music:battle/legendary/hgss_suicune_battle", "better_cobblemon_music:battle/legendary/gs_beasts_battle"]
     },
-    "cobleserver:battle_celebi": {
-      "tracks": ["cobleserver:battle/wild/gs_johto_wild_pokemon_battle", "cobleserver:battle/wild/johto_wild_pokemon_battle"]
+    "better_cobblemon_music:battle_celebi": {
+      "tracks": ["better_cobblemon_music:battle/wild/gs_johto_wild_pokemon_battle", "better_cobblemon_music:battle/wild/johto_wild_pokemon_battle"]
     },
-    "cobleserver:battle_deoxys": {
-      "tracks": ["cobleserver:battle/legendary/frlg_deoxys_battle_music", "cobleserver:battle/legendary/oras_deoxys_battle"]
+    "better_cobblemon_music:battle_deoxys": {
+      "tracks": ["better_cobblemon_music:battle/legendary/frlg_deoxys_battle_music", "better_cobblemon_music:battle/legendary/oras_deoxys_battle"]
     },
-    "cobleserver:battle_dialga_palkia": {
-      "tracks": ["cobleserver:battle/legendary/dppt_dialga_palkia_battle", "cobleserver:battle/legendary/bdsp_dialga_palkia_battle"]
+    "better_cobblemon_music:battle_dialga_palkia": {
+      "tracks": ["better_cobblemon_music:battle/legendary/dppt_dialga_palkia_battle", "better_cobblemon_music:battle/legendary/bdsp_dialga_palkia_battle"]
     },
-    "cobleserver:battle_lake_trio": {
-      "tracks": ["cobleserver:battle/legendary/dppt_azelf_mesprit_uxie_battle", "cobleserver:battle/legendary/bdsp_azelf_mesprit_uxie_battle"]
+    "better_cobblemon_music:battle_lake_trio": {
+      "tracks": ["better_cobblemon_music:battle/legendary/dppt_azelf_mesprit_uxie_battle", "better_cobblemon_music:battle/legendary/bdsp_azelf_mesprit_uxie_battle"]
     },
-    "cobleserver:battle_giratina": {
-      "tracks": ["cobleserver:battle/legendary/dppt_giratina_battle", "cobleserver:battle/legendary/bdsp_giratina_battle"]
+    "better_cobblemon_music:battle_giratina": {
+      "tracks": ["better_cobblemon_music:battle/legendary/dppt_giratina_battle", "better_cobblemon_music:battle/legendary/bdsp_giratina_battle"]
     },
-    "cobleserver:battle_arceus": {
-      "tracks": ["cobleserver:battle/legendary/dppt_arceus_battle", "cobleserver:battle/legendary/bdsp_arceus_battle"]
+    "better_cobblemon_music:battle_arceus": {
+      "tracks": ["better_cobblemon_music:battle/legendary/dppt_arceus_battle", "better_cobblemon_music:battle/legendary/bdsp_arceus_battle"]
     },
-    "cobleserver:battle_sinnoh_legendary": {
-      "tracks": ["cobleserver:battle/legendary/dppt_legendary_pokemon_battle", "cobleserver:battle/legendary/bdsp_legendary_pokemon_battle"]
+    "better_cobblemon_music:battle_sinnoh_legendary": {
+      "tracks": ["better_cobblemon_music:battle/legendary/dppt_legendary_pokemon_battle", "better_cobblemon_music:battle/legendary/bdsp_legendary_pokemon_battle"]
     },
-    "cobleserver:battle_area_zero": {
-      "tracks": ["cobleserver:battle/legendary/sv_area_zero_battle_1", "cobleserver:battle/legendary/sv_area_zero_battle_2"]
+    "better_cobblemon_music:battle_area_zero": {
+      "tracks": ["better_cobblemon_music:battle/legendary/sv_area_zero_battle_1", "better_cobblemon_music:battle/legendary/sv_area_zero_battle_2"]
     },
-    "cobleserver:battle_terapagos": {
+    "better_cobblemon_music:battle_terapagos": {
       "selection": "random",
-      "tracks": ["cobleserver:battle/legendary/sv_terapagos_battle", "cobleserver:battle/legendary/sv_stellar_terapagos_battle"]
+      "tracks": ["better_cobblemon_music:battle/legendary/sv_terapagos_battle", "better_cobblemon_music:battle/legendary/sv_stellar_terapagos_battle"]
     },
-    "cobleserver:battle_alpha": {
-      "tracks": ["cobleserver:battle/boss/pla_boss_battle", "cobleserver:battle/boss/sv_leader_pokemon_battle"]
+    "better_cobblemon_music:battle_alpha": {
+      "tracks": ["better_cobblemon_music:battle/boss/pla_boss_battle", "better_cobblemon_music:battle/boss/sv_leader_pokemon_battle"]
     }
   },
   "mappings": {
     "screens": {
-      "minecraft:title": "cobleserver:screen_title",
-      "more_cobblemon_contents:hub": "cobleserver:track/screen/mcc/boutique",
-      "more_cobblemon_contents:hub/shop": "cobleserver:track/screen/mcc/poke_mart"
+      "minecraft:title": "better_cobblemon_music:screen_title",
+      "more_cobblemon_contents:hub": "better_cobblemon_music:track/screen/mcc/boutique",
+      "more_cobblemon_contents:hub/shop": "better_cobblemon_music:track/screen/mcc/poke_mart"
     },
     "field": {
-      "default": "cobleserver:track/field/plains/sinnoh_route_201_night",
+      "default": "better_cobblemon_music:track/field/plains/sinnoh_route_201_night",
       "dimensions": {
-        "myroom:rooms": "cobleserver:track/field/myroom/eterna_forest",
-        "jbro_policy:plaza": "cobleserver:field_plaza",
-        "cobblemon_policy:plaza": "cobleserver:field_plaza",
-        "minecraft:the_nether": "cobleserver:track/field/nether/sinnoh_stark_mountain",
-        "minecraft:the_end": "cobleserver:track/field/end/distortion_world"
+        "myroom:rooms": "better_cobblemon_music:track/field/myroom/eterna_forest",
+        "jbro_policy:plaza": "better_cobblemon_music:field_plaza",
+        "cobblemon_policy:plaza": "better_cobblemon_music:field_plaza",
+        "minecraft:the_nether": "better_cobblemon_music:track/field/nether/sinnoh_stark_mountain",
+        "minecraft:the_end": "better_cobblemon_music:track/field/end/distortion_world"
       },
       "dayDimensions": {
-        "jbro_policy:plaza": "cobleserver:field_plaza",
-        "cobblemon_policy:plaza": "cobleserver:field_plaza"
+        "jbro_policy:plaza": "better_cobblemon_music:field_plaza",
+        "cobblemon_policy:plaza": "better_cobblemon_music:field_plaza"
       },
       "nightDimensions": {
-        "jbro_policy:plaza": "cobleserver:track/field/plaza/pallet_town",
-        "cobblemon_policy:plaza": "cobleserver:track/field/plaza/pallet_town"
+        "jbro_policy:plaza": "better_cobblemon_music:track/field/plaza/pallet_town",
+        "cobblemon_policy:plaza": "better_cobblemon_music:track/field/plaza/pallet_town"
       },
       "biomes": {
-        "minecraft:deep_dark": "cobleserver:field_deep_dark",
-        "minecraft:lush_caves": "cobleserver:field_cave",
-        "minecraft:dripstone_caves": "cobleserver:field_cave",
-        "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_205_night",
-        "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_205_night",
-        "minecraft:cherry_grove": "cobleserver:field_forest",
-        "#minecraft:is_river": "cobleserver:field_river",
-        "#minecraft:is_ocean": "cobleserver:field_ocean",
-        "#minecraft:is_jungle": "cobleserver:track/field/jungle/route_210",
-        "#minecraft:is_mountain": "cobleserver:field_mountain",
-        "#minecraft:is_forest": "cobleserver:field_forest"
+        "minecraft:deep_dark": "better_cobblemon_music:field_deep_dark",
+        "minecraft:lush_caves": "better_cobblemon_music:field_cave",
+        "minecraft:dripstone_caves": "better_cobblemon_music:field_cave",
+        "minecraft:ice_spikes": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "minecraft:grove": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "minecraft:cherry_grove": "better_cobblemon_music:field_forest",
+        "#minecraft:is_river": "better_cobblemon_music:field_river",
+        "#minecraft:is_ocean": "better_cobblemon_music:field_ocean",
+        "#minecraft:is_jungle": "better_cobblemon_music:track/field/jungle/route_210",
+        "#minecraft:is_mountain": "better_cobblemon_music:field_mountain",
+        "#minecraft:is_forest": "better_cobblemon_music:field_forest"
       },
       "biomePathContains": {
-        "deep_dark": "cobleserver:field_deep_dark",
-        "cave": "cobleserver:field_cave",
-        "river": "cobleserver:field_river",
-        "ocean": "cobleserver:field_ocean",
-        "badlands": "cobleserver:track/field/badlands/abandoned_ship",
-        "desert": "cobleserver:track/field/desert/route_111",
-        "swamp": "cobleserver:track/field/swamp/road_to_reversal_mountain",
-        "jungle": "cobleserver:track/field/jungle/route_210",
-        "snow": "cobleserver:track/field/snow/sinnoh_route_205_night",
-        "frozen": "cobleserver:track/field/snow/sinnoh_route_205_night",
-        "peak": "cobleserver:field_mountain",
-        "slope": "cobleserver:field_mountain",
-        "windswept": "cobleserver:field_mountain",
-        "forest": "cobleserver:field_forest",
-        "birch": "cobleserver:field_forest",
-        "taiga": "cobleserver:field_forest",
-        "plains": "cobleserver:track/field/plains/sinnoh_route_201_night"
+        "deep_dark": "better_cobblemon_music:field_deep_dark",
+        "cave": "better_cobblemon_music:field_cave",
+        "river": "better_cobblemon_music:field_river",
+        "ocean": "better_cobblemon_music:field_ocean",
+        "badlands": "better_cobblemon_music:track/field/badlands/abandoned_ship",
+        "desert": "better_cobblemon_music:track/field/desert/route_111",
+        "swamp": "better_cobblemon_music:track/field/swamp/road_to_reversal_mountain",
+        "jungle": "better_cobblemon_music:track/field/jungle/route_210",
+        "snow": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "frozen": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "peak": "better_cobblemon_music:field_mountain",
+        "slope": "better_cobblemon_music:field_mountain",
+        "windswept": "better_cobblemon_music:field_mountain",
+        "forest": "better_cobblemon_music:field_forest",
+        "birch": "better_cobblemon_music:field_forest",
+        "taiga": "better_cobblemon_music:field_forest",
+        "plains": "better_cobblemon_music:track/field/plains/sinnoh_route_201_night"
       },
-      "underground": "cobleserver:field_cave",
+      "underground": "better_cobblemon_music:field_cave",
       "ruleOrder": [
         "biome:minecraft:deep_dark", "path:deep_dark",
         "biome:minecraft:lush_caves", "biome:minecraft:dripstone_caves", "path:cave", "underground",
@@ -268,228 +268,228 @@
       ]
     },
     "battle": {
-      "wild": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle",
-      "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-      "pvp": "cobleserver:track/battle/pvp/pokemon_champions_arena_battle",
+      "wild": "better_cobblemon_music:track/battle/wild/sinnoh_wild_pokemon_battle",
+      "trainer": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+      "pvp": "better_cobblemon_music:track/battle/pvp/pokemon_champions_arena_battle",
       "content": {
-        "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:pvp": "cobleserver:track/battle/pvp/pokemon_champions_arena_battle",
-        "more_cobblemon_contents:league_challenge/wild_trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:league_challenge/wild_trainer_ace": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:league_challenge/gym": "cobleserver:battle_gym_leader",
-        "more_cobblemon_contents:league_challenge/hard_gym": "cobleserver:battle_gym_leader",
-        "more_cobblemon_contents:league_challenge/elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
-        "more_cobblemon_contents:league_challenge/hard_elite_four": "cobleserver:track/battle/elite/sinnoh_elite_four_battle",
-        "more_cobblemon_contents:league_challenge/champion/cynthia": "cobleserver:track/battle/champion/sinnoh_cynthia_battle",
-        "more_cobblemon_contents:league_challenge/hard_champion/cynthia_hard": "cobleserver:track/battle/champion/sinnoh_cynthia_battle"
+        "more_cobblemon_contents:battle_tower": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:battle_factory": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:pvp": "better_cobblemon_music:track/battle/pvp/pokemon_champions_arena_battle",
+        "more_cobblemon_contents:league_challenge/wild_trainer": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:league_challenge/wild_trainer_ace": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:league_challenge/gym": "better_cobblemon_music:battle_gym_leader",
+        "more_cobblemon_contents:league_challenge/hard_gym": "better_cobblemon_music:battle_gym_leader",
+        "more_cobblemon_contents:league_challenge/elite_four": "better_cobblemon_music:track/battle/elite/sinnoh_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/hard_elite_four": "better_cobblemon_music:track/battle/elite/sinnoh_elite_four_battle",
+        "more_cobblemon_contents:league_challenge/champion/cynthia": "better_cobblemon_music:track/battle/champion/sinnoh_cynthia_battle",
+        "more_cobblemon_contents:league_challenge/hard_champion/cynthia_hard": "better_cobblemon_music:track/battle/champion/sinnoh_cynthia_battle"
       },
-      "legendary": "cobleserver:battle_legendary_generic",
-      "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",
-      "alpha": "cobleserver:battle_alpha",
+      "legendary": "better_cobblemon_music:battle_legendary_generic",
+      "ultraBeast": "better_cobblemon_music:track/battle/ultra_beast/alola_ultra_beast_battle",
+      "alpha": "better_cobblemon_music:battle_alpha",
       "pokemon": [
         {
           "species": ["articuno", "zapdos", "moltres", "mew"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/frlg_legendary_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/frlg_legendary_pokemon_battle"
         },
         {
           "species": ["mewtwo"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/xy_mewtwo_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/xy_mewtwo_battle"
         },
         {
           "species": ["arceus"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_arceus"
+          "playlist": "better_cobblemon_music:battle_arceus"
         },
         {
           "species": ["uxie", "mesprit", "azelf"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_lake_trio"
+          "playlist": "better_cobblemon_music:battle_lake_trio"
         },
         {
           "species": ["dialga", "palkia"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_dialga_palkia"
+          "playlist": "better_cobblemon_music:battle_dialga_palkia"
         },
         {
           "species": ["giratina"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_giratina"
+          "playlist": "better_cobblemon_music:battle_giratina"
         },
         {
           "species": ["deoxys"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_deoxys"
+          "playlist": "better_cobblemon_music:battle_deoxys"
         },
         {
           "species": ["raikou"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_raikou"
+          "playlist": "better_cobblemon_music:battle_raikou"
         },
         {
           "species": ["entei"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_entei"
+          "playlist": "better_cobblemon_music:battle_entei"
         },
         {
           "species": ["suicune"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_suicune"
+          "playlist": "better_cobblemon_music:battle_suicune"
         },
         {
           "species": ["lugia"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/hgss_lugia_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/hgss_lugia_battle"
         },
         {
           "species": ["hooh"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/hgss_ho-oh_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/hgss_ho-oh_battle"
         },
         {
           "species": ["celebi"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_celebi"
+          "playlist": "better_cobblemon_music:battle_celebi"
         },
         {
           "species": ["groudon", "kyogre", "rayquaza"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_groudon_kyogre"
+          "playlist": "better_cobblemon_music:battle_groudon_kyogre"
         },
         {
           "species": ["regirock", "regice", "registeel"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_regi_trio"
+          "playlist": "better_cobblemon_music:battle_regi_trio"
         },
         {
           "species": ["latias", "latios", "jirachi"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/hoenn_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/hoenn_wild_pokemon_battle"
         },
         {
           "species": ["heatran", "regigigas", "darkrai", "shaymin", "cresselia"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_sinnoh_legendary"
+          "playlist": "better_cobblemon_music:battle_sinnoh_legendary"
         },
         {
           "species": ["phione", "manaphy"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/sinnoh_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/sinnoh_wild_pokemon_battle"
         },
         {
           "species": ["reshiram", "zekrom"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/bw_reshiram_zekrom_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/bw_reshiram_zekrom_battle"
         },
         {
           "species": ["kyurem"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/bw_kyurem_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/bw_kyurem_battle"
         },
         {
           "species": ["cobalion", "terrakion", "virizion", "keldeo", "tornadus", "thundurus", "landorus", "genesect", "enamorus"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/bw_legendary_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/bw_legendary_pokemon_battle"
         },
         {
           "species": ["victini", "meloetta"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/bw_strong_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/bw_strong_wild_pokemon_battle"
         },
         {
           "species": ["xerneas", "yveltal", "zygarde"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/xy_xerneas_yveltal_zygarde_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/xy_xerneas_yveltal_zygarde_battle"
         },
         {
           "species": ["diancie", "hoopa", "volcanion"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/xy_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/xy_wild_pokemon_battle"
         },
         {
           "species": ["solgaleo", "lunala", "necrozma", "cosmog", "cosmoem"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sm_solgaleo_lunala_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sm_solgaleo_lunala_battle"
         },
         {
           "species": ["tapukoko", "tapulele", "tapubulu", "tapufini"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sm_tapu_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sm_tapu_battle"
         },
         {
           "species": ["nihilego", "buzzwole", "pheromosa", "xurkitree", "celesteela", "kartana", "guzzlord", "poipole", "naganadel", "stakataka", "blacephalon"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle"
+          "playlist": "better_cobblemon_music:track/battle/ultra_beast/alola_ultra_beast_battle"
         },
         {
           "species": ["magearna", "marshadow", "zeraora", "meltan", "melmetal", "typenull", "silvally"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/sm_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/sm_wild_pokemon_battle"
         },
         {
           "species": ["zacian", "zamazenta"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/swsh_zacian_zamazenta_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/swsh_zacian_zamazenta_battle"
         },
         {
           "species": ["eternatus"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/swsh_eternatus_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/swsh_eternatus_battle"
         },
         {
           "species": ["calyrex"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/swsh_calyrex_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/swsh_calyrex_battle"
         },
         {
           "species": ["glastrier", "spectrier"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/swsh_glastrier_spectrier_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/swsh_glastrier_spectrier_battle"
         },
         {
           "species": ["zarude", "kubfu", "urshifu"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/wild/swsh_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/swsh_wild_pokemon_battle"
         },
         {
           "species": ["greattusk", "screamtail", "brutebonnet", "fluttermane", "slitherwing", "sandyshocks", "roaringmoon", "irontreads", "ironbundle", "ironhands", "ironjugulis", "ironmoth", "ironthorns", "ironvaliant", "walkingwake", "ironleaves", "gougingfire", "ragingbolt", "ironboulder", "ironcrown", "koraidon", "miraidon"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_area_zero"
+          "playlist": "better_cobblemon_music:battle_area_zero"
         },
         {
           "species": ["wochien", "chienpao", "tinglu", "chiyu"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sv_treasures_of_ruin_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sv_treasures_of_ruin_battle"
         },
         {
           "species": ["okidogi", "munkidori", "fezandipiti"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sv_loyal_three_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sv_loyal_three_battle"
         },
         {
           "species": ["ogerpon"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sv_ogerpon_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sv_ogerpon_battle"
         },
         {
           "species": ["terapagos"],
           "only": ["wild"],
-          "playlist": "cobleserver:battle_terapagos"
+          "playlist": "better_cobblemon_music:battle_terapagos"
         },
         {
           "species": ["pecharunt"],
           "only": ["wild"],
-          "playlist": "cobleserver:track/battle/legendary/sv_pecharunt_battle"
+          "playlist": "better_cobblemon_music:track/battle/legendary/sv_pecharunt_battle"
         }
       ]
     }
   },
   "audioEvents": {
-    "hitNormal": "cobleserver:battle.hit.normal",
-    "hitSuperEffective": "cobleserver:battle.hit.super_effective",
-    "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
-    "lowHpAlert": "cobleserver:battle.low_hp.alert"
+    "hitNormal": "better_cobblemon_music:battle.hit.normal",
+    "hitSuperEffective": "better_cobblemon_music:battle.hit.super_effective",
+    "hitNotVeryEffective": "better_cobblemon_music:battle.hit.not_very_effective",
+    "lowHpAlert": "better_cobblemon_music:battle.low_hp.alert"
   }
 }

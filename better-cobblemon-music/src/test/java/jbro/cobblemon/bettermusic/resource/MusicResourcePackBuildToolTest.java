@@ -23,35 +23,35 @@ final class MusicResourcePackBuildToolTest {
         Path source = temporaryDirectory.resolve("source");
         Path output = temporaryDirectory.resolve("output");
         write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
-        writeOgg(source.resolve("assets/cobleserver/sounds/music/field/plains/theme.ogg"));
-        writeOgg(source.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg"));
-        writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/normal.ogg"));
-        writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/super_effective.ogg"));
-        writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/not_very_effective.ogg"));
+        writeOgg(source.resolve("assets/better_cobblemon_music/sounds/music/field/plains/theme.ogg"));
+        writeOgg(source.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg"));
+        writeOgg(source.resolve("assets/better_cobblemon_music/sounds/battle/hit/normal.ogg"));
+        writeOgg(source.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg"));
+        writeOgg(source.resolve("assets/better_cobblemon_music/sounds/battle/hit/not_very_effective.ogg"));
         Path layout = temporaryDirectory.resolve("catalog-layout.json");
         write(layout, layoutJson());
 
         MusicResourcePackBuildTool.build(source, layout, output);
 
         var sounds = JsonParser.parseString(Files.readString(
-            output.resolve("assets/cobleserver/sounds.json"), StandardCharsets.UTF_8
+            output.resolve("assets/better_cobblemon_music/sounds.json"), StandardCharsets.UTF_8
         )).getAsJsonObject();
         assertEquals(5, sounds.size());
         assertEquals(1, sounds.getAsJsonObject("music.track.field.plains.theme").getAsJsonArray("sounds").size());
         String catalogJson = Files.readString(
-            output.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"),
+            output.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"),
             StandardCharsets.UTF_8
         );
         var catalog = MusicCatalogParser.parse(new StringReader(catalogJson));
         assertEquals(
-            "cobleserver:music.track.field.plains.theme",
-            catalog.tracks().get("cobleserver:field/plains/theme").eventId()
+            "better_cobblemon_music:music.track.field.plains.theme",
+            catalog.tracks().get("better_cobblemon_music:field/plains/theme").eventId()
         );
         assertEquals(
             java.util.List.of("field/plains/theme.ogg"),
-            catalog.tracks().get("cobleserver:field/plains/theme").legacyPaths()
+            catalog.tracks().get("better_cobblemon_music:field/plains/theme").legacyPaths()
         );
-        assertTrue(catalog.playlists().containsKey("cobleserver:track/field/plains/theme"));
+        assertTrue(catalog.playlists().containsKey("better_cobblemon_music:track/field/plains/theme"));
     }
 
     @Test
@@ -61,27 +61,27 @@ final class MusicResourcePackBuildToolTest {
         write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
         for (String file : java.util.List.of("music/field/plains/theme.ogg", "battle/low_hp/alert.ogg",
             "battle/hit/normal.ogg", "battle/hit/super_effective.ogg", "battle/hit/not_very_effective.ogg")) {
-            writeOgg(source.resolve("assets/cobleserver/sounds/" + file));
+            writeOgg(source.resolve("assets/better_cobblemon_music/sounds/" + file));
         }
         Path layout = temporaryDirectory.resolve("titles-layout.json");
         var root = JsonParser.parseString(layoutJson()).getAsJsonObject();
         var titles = new com.google.gson.JsonObject();
-        titles.addProperty("cobleserver:field/plains/theme", "한글 곡명 \"Forest\"");
+        titles.addProperty("better_cobblemon_music:field/plains/theme", "한글 곡명 \"Forest\"");
         root.add("trackTitles", titles);
         write(layout, root.toString());
         MusicResourcePackBuildTool.build(source, layout, output);
-        Path catalog = output.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json");
+        Path catalog = output.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json");
         String good = Files.readString(catalog);
         assertEquals("한글 곡명 \"Forest\"", MusicCatalogParser.parse(new StringReader(good)).tracks()
-            .get("cobleserver:field/plains/theme").title());
+            .get("better_cobblemon_music:field/plains/theme").title());
         for (var invalid : java.util.List.of(JsonParser.parseString("42"), JsonParser.parseString("\"  \""))) {
-            titles.add("cobleserver:field/plains/theme", invalid);
+            titles.add("better_cobblemon_music:field/plains/theme", invalid);
             write(layout, root.toString());
             assertThrows(IOException.class, () -> MusicResourcePackBuildTool.build(source, layout, output));
             assertEquals(good, Files.readString(catalog));
         }
-        titles.remove("cobleserver:field/plains/theme");
-        titles.addProperty("cobleserver:missing", "Unknown");
+        titles.remove("better_cobblemon_music:field/plains/theme");
+        titles.addProperty("better_cobblemon_music:missing", "Unknown");
         write(layout, root.toString());
         assertThrows(IOException.class, () -> MusicResourcePackBuildTool.build(source, layout, output));
         assertEquals(good, Files.readString(catalog));
@@ -92,10 +92,10 @@ final class MusicResourcePackBuildToolTest {
         Path source = temporaryDirectory.resolve("bad-source");
         Path output = temporaryDirectory.resolve("bad-output");
         write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
-        Files.createDirectories(source.resolve("assets/cobleserver/sounds/music"));
-        Files.write(source.resolve("assets/cobleserver/sounds/music/bad.ogg"), new byte[] {1, 2, 3, 4});
+        Files.createDirectories(source.resolve("assets/better_cobblemon_music/sounds/music"));
+        Files.write(source.resolve("assets/better_cobblemon_music/sounds/music/bad.ogg"), new byte[] {1, 2, 3, 4});
         Path layout = temporaryDirectory.resolve("bad-layout.json");
-        write(layout, layoutJson().replace("cobleserver:field/plains/theme", "cobleserver:bad"));
+        write(layout, layoutJson().replace("better_cobblemon_music:field/plains/theme", "better_cobblemon_music:bad"));
 
         IOException exception = assertThrows(
             IOException.class,
@@ -110,29 +110,29 @@ final class MusicResourcePackBuildToolTest {
         return """
             {
               "schemaVersion": 1,
-              "packId": "cobleserver:official",
+              "packId": "better_cobblemon_music:official",
               "kind": "base",
               "playlists": {},
               "mappings": {
                 "field": {
-                  "default": "cobleserver:track/field/plains/theme",
+                  "default": "better_cobblemon_music:track/field/plains/theme",
                   "dimensions": {},
                   "biomes": {},
                   "biomePathContains": {}
                 },
                 "battle": {
-                  "wild": "cobleserver:track/field/plains/theme",
-                  "trainer": "cobleserver:track/field/plains/theme",
-                  "pvp": "cobleserver:track/field/plains/theme",
+                  "wild": "better_cobblemon_music:track/field/plains/theme",
+                  "trainer": "better_cobblemon_music:track/field/plains/theme",
+                  "pvp": "better_cobblemon_music:track/field/plains/theme",
                   "content": {},
                   "pokemon": []
                 }
               },
               "audioEvents": {
-                "hitNormal": "cobleserver:battle.hit.normal",
-                "hitSuperEffective": "cobleserver:battle.hit.super_effective",
-                "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
-                "lowHpAlert": "cobleserver:battle.low_hp.alert"
+                "hitNormal": "better_cobblemon_music:battle.hit.normal",
+                "hitSuperEffective": "better_cobblemon_music:battle.hit.super_effective",
+                "hitNotVeryEffective": "better_cobblemon_music:battle.hit.not_very_effective",
+                "lowHpAlert": "better_cobblemon_music:battle.low_hp.alert"
               }
             }
             """;
