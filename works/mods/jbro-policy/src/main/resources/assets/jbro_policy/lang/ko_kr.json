@@ -191,6 +191,9 @@
   "message.jbro_policy.test.level_all": "파티 포켓몬 %s마리를 Lv.%s로 맞췄습니다.",
   "message.jbro_policy.test.level_one": "파티 %s번 %s을(를) Lv.%s로 맞췄습니다.",
 
+  "message.jbro_policy.discord_status.open": "🟢 서버가 열렸어요!",
+  "message.jbro_policy.discord_status.closed": "🔴 서버가 닫혔어요.",
+
   "key.categories.jbro_policy": "jbro 정책",
   "key.jbro_policy.quick_waypoint": "현재 위치에 웨이포인트 생성",
   "message.jbro_policy.waypoint_created": "웨이포인트 생성: %s",
