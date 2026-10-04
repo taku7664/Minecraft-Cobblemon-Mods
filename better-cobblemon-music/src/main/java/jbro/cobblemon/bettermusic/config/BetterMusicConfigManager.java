@@ -22,9 +22,10 @@ import jbro.cobblemon.bettermusic.catalog.MusicCatalogConfigStore;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogParser;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogSettings;
 import jbro.cobblemon.bettermusic.catalog.MusicMappingOverrides;
+import jbro.cobblemon.bettermusic.catalog.OfficialMusicIds;
 
 public final class BetterMusicConfigManager {
-    public static final String DEFAULT_BASE_PACK_ID = "cobleserver:official";
+    public static final String DEFAULT_BASE_PACK_ID = OfficialMusicIds.PACK_ID;
     private static final String LEGACY_DEFAULT_RESOURCE =
         "/assets/better_cobblemon_music/legacy_defaults/music.json";
 
@@ -37,7 +38,7 @@ public final class BetterMusicConfigManager {
     private long revision;
 
     public BetterMusicConfigManager(Path configDirectory) {
-        this.store = new MusicCatalogConfigStore(configDirectory);
+        this.store = new MusicCatalogConfigStore(configDirectory, true);
     }
 
     public synchronized ReloadResult initialize() {

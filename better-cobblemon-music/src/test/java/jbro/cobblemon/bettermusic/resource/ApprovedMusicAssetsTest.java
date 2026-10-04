@@ -22,7 +22,7 @@ final class ApprovedMusicAssetsTest {
         Path pack = directory.resolve("pack");
         MusicResourcePackBuildTool.build(module.resolve("resource-pack/src"),
             module.resolve("resource-pack/catalog-layout.json"), pack);
-        JsonObject catalog = read(pack.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"));
+        JsonObject catalog = read(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"));
         JsonObject playlists = catalog.getAsJsonObject("playlists");
         JsonObject battle = catalog.getAsJsonObject("mappings").getAsJsonObject("battle");
 
@@ -45,9 +45,9 @@ final class ApprovedMusicAssetsTest {
         assertEquals(approved, mapped, "Every packaged BGM must have an active default mapping");
 
         Set<String> expectedAudio = new HashSet<>();
-        approved.forEach(id -> expectedAudio.add("assets/cobleserver/sounds/music/" + id.substring("cobleserver:".length()) + ".ogg"));
+        approved.forEach(id -> expectedAudio.add("assets/better_cobblemon_music/sounds/music/" + id.substring("better_cobblemon_music:".length()) + ".ogg"));
         for (String effect : Set.of("hit/normal", "hit/super_effective", "hit/not_very_effective", "low_hp/alert")) {
-            expectedAudio.add("assets/cobleserver/sounds/battle/" + effect + ".ogg");
+            expectedAudio.add("assets/better_cobblemon_music/sounds/battle/" + effect + ".ogg");
         }
         try (var files = Files.walk(pack)) {
             Set<String> actualAudio = new HashSet<>();
@@ -55,10 +55,10 @@ final class ApprovedMusicAssetsTest {
                 .forEach(path -> actualAudio.add(pack.relativize(path).toString().replace('\\', '/')));
             assertEquals(expectedAudio, actualAudio, "Removed music must not survive as orphaned audio");
         }
-        JsonObject sounds = read(pack.resolve("assets/cobleserver/sounds.json"));
+        JsonObject sounds = read(pack.resolve("assets/better_cobblemon_music/sounds.json"));
         Set<String> expectedEvents = new HashSet<>();
         catalog.getAsJsonObject("tracks").entrySet().forEach(entry -> expectedEvents.add(
-            entry.getValue().getAsJsonObject().get("event").getAsString().substring("cobleserver:".length())));
+            entry.getValue().getAsJsonObject().get("event").getAsString().substring("better_cobblemon_music:".length())));
         expectedEvents.addAll(Set.of("battle.hit.normal", "battle.hit.super_effective", "battle.hit.not_very_effective", "battle.low_hp.alert"));
         assertEquals(expectedEvents, sounds.keySet(), "Removed music events must not remain selectable");
     }
@@ -70,7 +70,7 @@ final class ApprovedMusicAssetsTest {
     }
 
     private static String trackId(String ogg) {
-        return "cobleserver:" + ogg.substring(0, ogg.length() - ".ogg".length());
+        return "better_cobblemon_music:" + ogg.substring(0, ogg.length() - ".ogg".length());
     }
 
     private static void addPlaylistTracks(JsonObject playlists, String id, Set<String> tracks) {

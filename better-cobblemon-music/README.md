@@ -18,7 +18,7 @@ Cobblemon의 필드·전투 상황에 맞춰 리소스팩 음악을 재생하는
 ├─ mods/
 │  └─ better-cobblemon-music-<version>.jar
 ├─ resourcepacks/
-│  └─ cobleserver-music-resourcepack-<version>.zip
+│  └─ better_cobblemon_music-music-resourcepack-<version>.zip
 └─ config/better_cobblemon_music/
    ├─ settings.json
    └─ overrides.json
@@ -35,7 +35,7 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
 ```json
 {
   "schemaVersion": 1,
-  "basePackId": "cobleserver:official",
+  "basePackId": "better_cobblemon_music:official",
   "scanIntervalSeconds": 1.0,
   "fieldChangeDelaySeconds": 4.0,
   "betweenTracksSeconds": 0.0,
@@ -60,11 +60,11 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
   "schemaVersion": 1,
   "battle": {
     "content": {
-      "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/gym/sinnoh_gym_leader_battle"
+      "more_cobblemon_contents:battle_tower": "better_cobblemon_music:track/battle/gym/sinnoh_gym_leader_battle"
     }
   },
   "screens": {
-    "more_cobblemon_contents:hub": "cobleserver:field_plaza"
+    "more_cobblemon_contents:hub": "better_cobblemon_music:field_plaza"
   }
 }
 ```
@@ -72,6 +72,10 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
 Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬·화면 매핑을 선택할 수 있습니다. 연동한 모드가 알려 준 콘텐츠 키와 화면 키도 매핑이 없더라도 목록에 나옵니다. 저장할 때 각 파일을 임시 파일에서 원자 교체하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
 
 1.3.16에서는 설정 음량을 바꾸지 않고 리소스팩의 타격음 원본 3개를 0.5배, 빨피 경고음 원본을 0.7배로 낮췄습니다. 물속 효과는 기본 강도 0.35에서도 더 분명하게 들리도록 필터·잔향 곡선을 조정했습니다. 실제 청감은 게임에서 확인해야 합니다.
+
+1.3.17부터 공식 ZIP 파일명과 내부 소리·카탈로그 ID의 `cobleserver`를 모드 ID인 `better_cobblemon_music`으로 통일합니다. 이전 `settings.json`의 `cobleserver:official`과 공식곡을 가리키는 `overrides.json`의 옛 ID는 읽을 때만 새 ID로 해석하며, 기존 파일을 자동으로 고치지 않습니다. 개인 확장팩의 카탈로그가 옛 공식 ID를 직접 참조한다면 해당 확장팩도 새 ID로 바꿔야 합니다. JAR과 ZIP은 같은 버전으로 교체해야 합니다.
+
+전설 전투곡 45개는 입력 이득을 1.3배로 올리고, 인코딩 뒤 피크가 0dB를 넘지 않도록 곡별 출력 한도를 적용했습니다. 42곡은 원본 음원에서 다시 만들고, 원본을 찾지 못한 3곡은 기존 OGG에서 변환했습니다. 처리 방법과 파일 해시는 `resource-pack/legendary-gain-2026-10-04.json`에 기록합니다. 개인 음량 설정은 바꾸지 않습니다.
 
 기존 `music.json`이 있고 `overrides.json`이 없으면 첫 카탈로그 로드 때 사용자 변경분만 변환합니다. 기존 `music.json`과 `music/`은 롤백을 위해 삭제하거나 덮어쓰지 않습니다.
 

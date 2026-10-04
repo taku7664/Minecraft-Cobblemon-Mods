@@ -35,12 +35,12 @@ final class BetterMusicConfigManagerTest {
         var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
         manager.initialize();
 
-        var result = manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+        var result = manager.reloadCatalogs(List.of(document(validCatalog("better_cobblemon_music:music.one"))));
 
         assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
         assertEquals(1, result.revision());
         var active = manager.activeConfiguration().orElseThrow();
-        assertEquals("cobleserver:music.one", active.trackEvents().get("cobleserver:one"));
+        assertEquals("better_cobblemon_music:music.one", active.trackEvents().get("better_cobblemon_music:one"));
         assertSame(active.snapshot(), manager.activeSnapshot().orElseThrow());
     }
 
@@ -48,7 +48,7 @@ final class BetterMusicConfigManagerTest {
     void failedResourceReloadKeepsTheExactLastGoodConfiguration() throws Exception {
         var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
         manager.initialize();
-        manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+        manager.reloadCatalogs(List.of(document(validCatalog("better_cobblemon_music:music.one"))));
         var before = manager.activeConfiguration().orElseThrow();
 
         var result = manager.reloadCatalogs(List.of(new BetterMusicConfigManager.CatalogDocument(
@@ -66,7 +66,7 @@ final class BetterMusicConfigManagerTest {
         Path configDirectory = temporaryDirectory.resolve("config");
         var manager = new BetterMusicConfigManager(configDirectory);
         manager.initialize();
-        var catalogs = List.of(document(validCatalog("cobleserver:music.one")));
+        var catalogs = List.of(document(validCatalog("better_cobblemon_music:music.one")));
         manager.reloadCatalogs(catalogs);
         String settings = Files.readString(configDirectory.resolve("settings.json"));
         Files.writeString(
@@ -79,7 +79,7 @@ final class BetterMusicConfigManagerTest {
 
         assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
         assertEquals(2, result.revision());
-        assertEquals(0.4, manager.activeConfiguration().orElseThrow().playlists().get("cobleserver:one").volume());
+        assertEquals(0.4, manager.activeConfiguration().orElseThrow().playlists().get("better_cobblemon_music:one").volume());
     }
 
     @Test
@@ -90,14 +90,14 @@ final class BetterMusicConfigManagerTest {
         String settings = Files.readString(configDirectory.resolve("settings.json"));
         Files.writeString(
             configDirectory.resolve("settings.json"),
-            settings.replace("cobleserver:official", "missing:selected"),
+            settings.replace("better_cobblemon_music:official", "missing:selected"),
             StandardCharsets.UTF_8
         );
 
-        var result = manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+        var result = manager.reloadCatalogs(List.of(document(validCatalog("better_cobblemon_music:music.one"))));
 
         assertEquals(BetterMusicConfigManager.Outcome.NO_VALID_CONFIG, result.outcome());
-        assertEquals(java.util.Set.of("cobleserver:official"), manager.availableBasePackIds());
+        assertEquals(java.util.Set.of("better_cobblemon_music:official"), manager.availableBasePackIds());
     }
 
     private static BetterMusicConfigManager.CatalogDocument document(String json) {
@@ -108,27 +108,27 @@ final class BetterMusicConfigManagerTest {
         return """
             {
               "schemaVersion": 1,
-              "packId": "cobleserver:official",
+              "packId": "better_cobblemon_music:official",
               "kind": "base",
               "tracks": {
-                "cobleserver:one": {"event": "%s", "title": "One", "legacyPaths": ["one.ogg"]}
+                "better_cobblemon_music:one": {"event": "%s", "title": "One", "legacyPaths": ["one.ogg"]}
               },
               "playlists": {
-                "cobleserver:one": {"tracks": ["cobleserver:one"]}
+                "better_cobblemon_music:one": {"tracks": ["better_cobblemon_music:one"]}
               },
               "mappings": {
-                "field": {"default": "cobleserver:one"},
+                "field": {"default": "better_cobblemon_music:one"},
                 "battle": {
-                  "wild": "cobleserver:one",
-                  "trainer": "cobleserver:one",
-                  "pvp": "cobleserver:one"
+                  "wild": "better_cobblemon_music:one",
+                  "trainer": "better_cobblemon_music:one",
+                  "pvp": "better_cobblemon_music:one"
                 }
               },
               "audioEvents": {
-                "hitNormal": "cobleserver:hit.normal",
-                "hitSuperEffective": "cobleserver:hit.super",
-                "hitNotVeryEffective": "cobleserver:hit.weak",
-                "heartbeat": "cobleserver:heartbeat"
+                "hitNormal": "better_cobblemon_music:hit.normal",
+                "hitSuperEffective": "better_cobblemon_music:hit.super",
+                "hitNotVeryEffective": "better_cobblemon_music:hit.weak",
+                "heartbeat": "better_cobblemon_music:heartbeat"
               }
             }
             """.formatted(event);

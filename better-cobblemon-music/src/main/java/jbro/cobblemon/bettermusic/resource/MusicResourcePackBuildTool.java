@@ -20,10 +20,12 @@ import jbro.cobblemon.bettermusic.catalog.MusicCatalogCompiler;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogParser;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogSettings;
 import jbro.cobblemon.bettermusic.catalog.MusicMappingOverrides;
+import jbro.cobblemon.bettermusic.catalog.OfficialMusicIds;
 
 public final class MusicResourcePackBuildTool {
-    private static final String NAMESPACE = "cobleserver";
-    private static final String MUSIC_PREFIX = "assets/cobleserver/sounds/music/";
+    private static final String NAMESPACE = OfficialMusicIds.NAMESPACE;
+    private static final String SOUND_PREFIX = "assets/" + NAMESPACE + "/sounds/";
+    private static final String MUSIC_PREFIX = SOUND_PREFIX + "music/";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private MusicResourcePackBuildTool() {
@@ -68,7 +70,7 @@ public final class MusicResourcePackBuildTool {
         }
         Files.copy(metadata, staging.resolve("pack.mcmeta"));
 
-        Path soundRoot = sourceDirectory.resolve("assets/cobleserver/sounds");
+        Path soundRoot = sourceDirectory.resolve(SOUND_PREFIX);
         List<Path> oggFiles;
         try (var files = Files.walk(soundRoot)) {
             oggFiles = files
@@ -105,7 +107,7 @@ public final class MusicResourcePackBuildTool {
         for (Path source : oggFiles) {
             String relative = sourceDirectory.relativize(source).toString().replace('\\', '/');
             if (relative.startsWith(MUSIC_PREFIX)) {
-                String soundPath = relative.substring("assets/cobleserver/sounds/".length(), relative.length() - 4);
+                String soundPath = relative.substring(SOUND_PREFIX.length(), relative.length() - 4);
                 String trackPath = soundPath.substring("music/".length());
                 String trackId = NAMESPACE + ":" + trackPath;
                 String eventPath = "music.track." + trackPath.replace('/', '.');
@@ -166,27 +168,27 @@ public final class MusicResourcePackBuildTool {
             MusicMappingOverrides.empty()
         );
 
-        writeUtf8(staging.resolve("assets/cobleserver/sounds.json"), GSON.toJson(sounds) + System.lineSeparator());
+        writeUtf8(staging.resolve("assets/" + NAMESPACE + "/sounds.json"), GSON.toJson(sounds) + System.lineSeparator());
         writeUtf8(
-            staging.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"),
+            staging.resolve("assets/" + NAMESPACE + "/catalogs/base/" + NAMESPACE + ".json"),
             catalogJson
         );
     }
 
     private static void addHitSound(JsonObject sounds, Path sourceDirectory, String name) throws IOException {
-        Path source = sourceDirectory.resolve("assets/cobleserver/sounds/battle/hit/" + name + ".ogg");
+        Path source = sourceDirectory.resolve(SOUND_PREFIX + "battle/hit/" + name + ".ogg");
         if (!Files.isRegularFile(source)) {
             throw new IOException("Missing hit sound: " + source);
         }
-        sounds.add("battle.hit." + name, soundDefinition("cobleserver:battle/hit/" + name, false));
+        sounds.add("battle.hit." + name, soundDefinition(NAMESPACE + ":battle/hit/" + name, false));
     }
 
     private static void addLowHpAlert(JsonObject sounds, Path sourceDirectory) throws IOException {
-        Path source = sourceDirectory.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg");
+        Path source = sourceDirectory.resolve(SOUND_PREFIX + "battle/low_hp/alert.ogg");
         if (!Files.isRegularFile(source)) {
             throw new IOException("Missing low-HP alert sound: " + source);
         }
-        sounds.add("battle.low_hp.alert", soundDefinition("cobleserver:battle/low_hp/alert", false));
+        sounds.add("battle.low_hp.alert", soundDefinition(NAMESPACE + ":battle/low_hp/alert", false));
     }
 
     private static JsonObject soundDefinition(String name, boolean stream) {

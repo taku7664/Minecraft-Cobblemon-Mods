@@ -18,6 +18,28 @@ final class MusicCatalogConfigStoreTest {
     Path temporaryDirectory;
 
     @Test
+    void readsOldOfficialIdsAsRenamedIdsWithoutRewritingUserFiles() throws Exception {
+        var store = new MusicCatalogConfigStore(temporaryDirectory, true);
+        store.initializeSettings("cobleserver:official");
+        String oldSettings = Files.readString(store.settingsFile());
+        String oldOverrides = """
+            {"schemaVersion":1,"field":{"default":"cobleserver:field_forest"},
+             "battle":{"pvp":"cobleserver:track/battle/pvp/pokemon_champions_arena_battle",
+                       "pokemon":[{"species":["lugia"],"playlist":"mymusic:lugia"}]}}
+            """;
+        Files.writeString(store.overridesFile(), oldOverrides);
+
+        assertEquals("better_cobblemon_music:official", store.loadSettings().basePackId());
+        var overrides = store.loadOverrides();
+        assertEquals("better_cobblemon_music:field_forest", overrides.field().defaultPlaylistId().orElseThrow());
+        assertEquals("better_cobblemon_music:track/battle/pvp/pokemon_champions_arena_battle",
+            overrides.battle().pvpPlaylistId().orElseThrow());
+        assertEquals("mymusic:lugia", overrides.battle().pokemon().getFirst().playlistId());
+        assertEquals(oldSettings, Files.readString(store.settingsFile()));
+        assertEquals(oldOverrides, Files.readString(store.overridesFile()));
+    }
+
+    @Test
     void createsSettingsButLeavesOverridesForCatalogAwareMigration() throws Exception {
         MusicCatalogConfigStore store = new MusicCatalogConfigStore(temporaryDirectory);
 
