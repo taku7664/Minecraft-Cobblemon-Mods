@@ -296,8 +296,8 @@ enum class EntryFadeIn {
     },
 
     /**
-     * The white holds, then draws in to a blinding point over darkness, waits a breath, and bursts: rays and a flash
-     * thrown out from the center, the battle opening behind a bright edge.
+     * The white holds, then draws in to a blinding point over darkness, waits a breath, and swells open: a soft flash,
+     * the battle opening from the center behind a bright edge.
      */
     LIGHT_BURST {
         override val holdMillis: Long get() = BattleEntryTimeline.BURST_HOLD_MILLIS
@@ -329,9 +329,6 @@ internal object EntryDraw {
     private const val SHARD_ROWS = 7
     /** The burst of cracks: its spikes, the jagged pieces each spike breaks into, its hairlines and its chips. */
     private const val SPIKES = 26
-    /** The lines a light burst draws in, and the rays it throws out. */
-    private const val BURST_STREAKS = 48
-    private const val BURST_RAYS = 22
     private const val SPIKE_PIECES = 3
     private const val HAIRLINES = 16
     private const val CHIPS = 40
@@ -661,23 +658,13 @@ internal object EntryDraw {
                 ring(buffer, matrix, frame, radius, radius + soft, white, dark)
                 ring(buffer, matrix, frame, 0f, radius, white, white)
             }
-            // Light streaming inward through the dark, and the point kindling as the white closes on it.
+            // The point kindling as the white closes on it.
             glow(frame) { buffer, matrix ->
-                for (line in 0 until BURST_STREAKS) {
-                    val seed = line * 6007 + 13
-                    val angle = hash(seed) * TAU
-                    val flow = (hash(seed + 1) + frame.elapsed / 420f) % 1f
-                    val outer = radius + soft + (frame.far * 1.2f - radius) * (1f - flow)
-                    val inner = radius + soft + (outer - radius - soft) * .45f
-                    val color = BattleSurfaceRenderer.withOpacity(light, .45f * collapse * (1f - flow))
-                    softRay(buffer, matrix, frame.centerX + cos(angle) * inner, frame.centerY + sin(angle) * inner,
-                        angle, outer - inner, 1.2f + 1.5f * hash(seed + 2), color)
-                }
                 flare(buffer, matrix, frame, point, ((collapse - .6f) / .4f).coerceIn(0f, 1f), light)
             }
             return
         }
-        // The burst: the dark opening from the center on a soft edge, light thrown out over it, and a flash.
+        // The burst: the point swelling into a glow as the dark opens from the center on a soft edge, and a flash.
         val open = 1f - (1f - burst) * (1f - burst) * (1f - burst)
         val fade = 1f - burst
         val hole = frame.far * 1.3f * open
@@ -692,78 +679,25 @@ internal object EntryDraw {
             val clear = BattleSurfaceRenderer.withOpacity(light, 0f)
             ring(buffer, matrix, frame, (hole - soft).coerceAtLeast(0f), hole + soft * .3f, clear, rim)
             ring(buffer, matrix, frame, hole + soft * .3f, hole + soft, rim, clear)
-            // Rays of a few lengths and widths, turning a little as they spread and fade.
-            for (ray in 0 until BURST_RAYS) {
-                val seed = ray * 3571 + 29
-                val angle = (ray + hash(seed) * .6f) / BURST_RAYS * TAU + .12f * open * (if (ray % 2 == 0) 1f else -1f)
-                val length = frame.far * (.45f + 1.1f * hash(seed + 1) * hash(seed + 1)) * (.3f + .7f * open)
-                val half = frame.far * (.006f + .03f * hash(seed + 2) * hash(seed + 2)) * (.6f + .8f * open)
-                // Each ray starts out past the flare's core, so none of them overlap at the center.
-                val start = point * (1f + 5f * open) * 1.6f
-                softRay(buffer, matrix, frame.centerX + cos(angle) * start, frame.centerY + sin(angle) * start, angle, length, half,
-                    BattleSurfaceRenderer.withOpacity(light, (.35f + .4f * hash(seed + 3)) * fade * fade))
-            }
             flare(buffer, matrix, frame, point * (1f + 5f * open), fade, light)
         }
         // The flash as it bursts.
-        val flash = (1f - burst / .3f).coerceIn(0f, 1f)
-        if (flash > 0f) frame.context.fill(0, 0, frame.width, frame.height, BattleSurfaceRenderer.withOpacity(white, .9f * flash))
+        val flash = 1f - BattleEntryTimeline.smooth((burst / .35f).coerceIn(0f, 1f))
+        if (flash > 0f) frame.context.fill(0, 0, frame.width, frame.height, BattleSurfaceRenderer.withOpacity(white, .7f * flash))
     }
 
     /**
      * A blinding point at the center, [size] across, at [strength] (0 to 1): a glow falling off steeply from a white
-     * core, a long level streak through it and shorter glints across it, every edge soft.
+     * core.
      */
     private fun flare(buffer: VertexConsumer, matrix: Matrix4f, frame: EntryFrame, size: Float, strength: Float, light: Int) {
         if (strength <= 0f) return
-        val core = BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), strength)
         val falloff = floatArrayOf(0f, 1f, 2.5f, 6f, 14f)
         val alphas = floatArrayOf(1f, .75f, .35f, .12f, 0f)
         for (band in 0 until falloff.size - 1) {
             ring(buffer, matrix, frame, size * falloff[band], size * falloff[band + 1],
                 BattleSurfaceRenderer.withOpacity(if (band == 0) 0xFFFFFFFF.toInt() else light, alphas[band] * strength),
                 BattleSurfaceRenderer.withOpacity(light, alphas[band + 1] * strength))
-        }
-        val shimmer = 1f + .12f * sin(frame.elapsed / 45f)
-        val glints = floatArrayOf(0f, 40f, TAU / 4f, 13f, TAU / 8f, 7f, TAU * 3f / 8f, 7f)
-        // The glints start at the edge of the white core rather than its middle, so where they cross the core alone
-        // shows, with no brighter overlap.
-        for (index in glints.indices step 2) {
-            for (direction in 0 until 2) {
-                val angle = glints[index] + direction * TAU / 2f
-                softRay(buffer, matrix, frame.centerX + cos(angle) * size, frame.centerY + sin(angle) * size, angle,
-                    size * glints[index + 1] * shimmer, size * .7f, core)
-            }
-        }
-    }
-
-    /**
-     * A soft ray from (x, y) at [angle], [length] long and [half] wide on each side at its widest: bright along its
-     * spine at the start, fading to nothing toward its tip and its sides.
-     */
-    private fun softRay(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, angle: Float, length: Float,
-                        half: Float, color: Int) {
-        val clear = BattleSurfaceRenderer.withOpacity(color, 0f)
-        val middle = BattleSurfaceRenderer.withOpacity(color, (color ushr 24) / 255f * .45f)
-        val dirX = cos(angle)
-        val dirY = sin(angle)
-        val sideX = -dirY * half
-        val sideY = dirX * half
-        val midX = x + dirX * length * .35f
-        val midY = y + dirY * length * .35f
-        val tipX = x + dirX * length
-        val tipY = y + dirY * length
-        for (side in listOf(1f, -1f)) {
-            val edgeX = midX + sideX * side * .6f
-            val edgeY = midY + sideY * side * .6f
-            buffer.addVertex(matrix, x, y, 0f).setColor(color)
-            buffer.addVertex(matrix, midX, midY, 0f).setColor(middle)
-            buffer.addVertex(matrix, edgeX, edgeY, 0f).setColor(clear)
-            buffer.addVertex(matrix, x, y, 0f).setColor(color)
-            buffer.addVertex(matrix, midX, midY, 0f).setColor(middle)
-            buffer.addVertex(matrix, tipX, tipY, 0f).setColor(clear)
-            buffer.addVertex(matrix, tipX + sideX * side, tipY + sideY * side, 0f).setColor(clear)
-            buffer.addVertex(matrix, edgeX, edgeY, 0f).setColor(clear)
         }
     }
 
