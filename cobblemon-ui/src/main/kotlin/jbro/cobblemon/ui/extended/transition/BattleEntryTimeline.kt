@@ -40,8 +40,6 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
         )),
     // A trainer battle is always covered by the Poké Ball arena.
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
