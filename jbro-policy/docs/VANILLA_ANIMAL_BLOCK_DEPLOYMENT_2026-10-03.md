@@ -2,8 +2,10 @@
 
 2026-10-03. `doMobSpawning=false`와 별개로 새로 추가되는 기본 동물을 전용 서버의 Jbro Policy에서 차단한다.
 
+> 2026-10-04 경로 변경: 현재 서버는 저장소의 `develop-product/server` 하나다. 아래의 옛 서버 경로와 백업은 당시 적용 기록이며, 현재 점검·배포 대상이 아니다. 현재 설정 기준은 [서버 오픈 체크리스트](SERVER_OPEN_CHECKLIST.md)를 따른다.
+
 - 소스 커밋: `58fe2cc9`.
-- 대상: `C:\Users\박주형\Documents\GitHub\Cobblemon-Mods\dev-server`.
+- 당시 대상: `C:\Users\박주형\Documents\GitHub\Cobblemon-Mods\dev-server`.
 - 교체한 파일: `mods/jbro-policy-0.1.0.jar`. 빌드 결과와 배포 파일의 SHA-256은 모두 `9BCBED78D0BDA88ABF18B6139D511622CCCF7BED0DF055A6C3683586FFF393D0`이다.
 - 이전 JAR 백업: `deployment-backups/20261003-vanilla-animal-block/jbro-policy-0.1.0.jar.before`.
 - `:jbro-policy:remapJar --offline` 성공. 교체 후 개발 서버가 정상 기동했다.

@@ -1,11 +1,11 @@
 # 서버 오픈 체크리스트
 
-새 운영 서버를 열거나 서버를 옮길 때 모드 설치와 별도로 맞춰야 하는 **서버 설정**을 모은 문서다. 설정 파일은 저장소에 들어가지 않으므로(`dev-server/`는 무시 대상), 여기 적힌 값을 새 서버의 `config/`에 직접 반영한다. 값을 바꾸면 이 문서도 함께 고친다.
+사용 중인 서버를 구성할 때 모드 설치와 별도로 맞춰야 하는 **서버 설정**을 모은 문서다. 서버 대상은 저장소의 `develop-product/server` 하나이며, 이 폴더는 Git에서 무시한다. 여기 적힌 값은 해당 서버의 `config/`에 반영한다. 값을 바꾸면 이 문서도 함께 고친다.
 
 | 항목 | 값 |
 |---|---|
-| Last reviewed | 2026-10-03 |
-| 기준 서버 | 저장소의 `dev-server` |
+| Last reviewed | 2026-10-04 |
+| 기준 서버 | 저장소의 `develop-product/server` |
 
 ## 필수 설정
 
@@ -16,7 +16,7 @@
 | `config/more-cobblemon-contents/hub_tabs.json` | `command_permission_level` | `0` | 모든 플레이어가 `/mcc`로 허브(대시보드·상점·PvP)를 연다. `/mcc` 아래 관리 명령은 이 값과 관계없이 OP 전용이다. `[안내]`의 상점·PvP 안내가 `/mcc`를 소개한다. |
 | `config/styled-nicknames.json` | `nicknameFormat` | `"${nickname}"` | 기본값 `"#${nickname}"`이면 채팅 이름 앞에 `#`이 붙는다. `#`은 닉네임과 본래 이름을 구분하는 표시라서, 빼면 다른 사람 이름을 흉내 낸 닉네임을 구분하기 어려워진다. |
 | `config/jbro-policy.json` | `tips`, `tipIntervalSeconds` | 코드 기본 안내 목록, `60` | 기본 1분마다 나오는 `[안내]` 목록이다. 파일이 없으면 코드 기본값으로 만들어진다. 기존 파일도 초기 설정 시 간격을 60초로 맞추며, 이후 운영자가 목록과 간격을 바꿀 수 있다. |
-| `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `newsChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의·상태·소식 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널의 카드를 열림·닫힘으로 고친다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 문의 채널과 웹훅이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |
+| `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `newsChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의·상태·소식 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널에 시작·정상 종료 때마다 새 채팅 메시지를 보낸다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 문의 채널과 웹훅이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |
 | `config/jbro-policy-discord.json` | `verifiedRoleId`, `syncNickname` | 마크 인증을 마친 사람에게 줄 역할 ID, `true` | 비어 있으면 `/디코인증`과 `/verify`가 꺼진다. `@everyone`은 `#인증` 채널만 보고, 인증 역할이 나머지 채널을 보게 디스코드 권한을 맞춘다. 봇 역할은 인증 역할보다 위에 두고 역할 관리·별명 관리 권한을 준다. 문의 채널에서는 봇에게 비공개 스레드 만들기·스레드에서 메시지 보내기·스레드 관리를 준다. |
 | `config/jbro-policy-discord.json` | `commandChannelId` | 플레이어용 봇 명령 채널 ID | 비어 있으면 봇 명령을 어느 채널에서나 받는다. 다른 채널은 `@everyone`의 "애플리케이션 명령 사용"을 꺼서 명령 목록을 숨긴다(인증·관리자 채널은 제외). |
 | `config/jbro-policy-discord.json` | `rankRoleIds` | 리그 등급(`POKE_BALL`~`CHAMPION`)별 디스코드 역할 ID | 비어 있으면 등급 역할을 맞추지 않는다. 디스코드 역할 목록에서 봇 역할을 맨 위로 올려 둔다. 봇은 자기 역할보다 아래 역할만 주고 뗄 수 있다. |
@@ -45,6 +45,6 @@
 |---|---|---|---|
 | `config/cobbled_level_control/server.toml` | `restrictBattles`, `restrictCatching`, `restrictLeveling` | `true` | 리그 챌린지의 레벨캡이 레벨업·포획·배틀에 적용되는 전제다. 안내 메시지의 레벨캡 설명도 이 값을 기준으로 쓴다. |
 
-## 예전 서버와의 차이
+## 서버 경로와 설정 이력
 
-예전 운영 서버(`Mincraft-Cobblemon-Server`)의 `pokemontoitem` 두 명령은 2026-10-03 실행 훅으로 권한 0에 맞췄으며, 시작할 때마다 다시 적용한다. 신규 MCC·Jbro Policy·CLC 등 아직 설치되지 않은 모드는 실행 전 검사에서 경고한다. 안내 60초의 코드 변경과 개발 서버 배포는 [적용 기록](TIP_INTERVAL_DEPLOYMENT_2026-10-03.md)을 참고한다.
+2026-10-04부터 서버는 `develop-product/server`로 이동했다. 예전 외부 서버 저장소는 사용하지 않으며 점검·배포 대상에서도 제외한다. 날짜가 붙은 예전 적용 기록의 경로와 백업 위치는 당시 작업을 설명하는 자료다. 안내 60초의 코드 변경과 당시 배포 검증은 [적용 기록](TIP_INTERVAL_DEPLOYMENT_2026-10-03.md)을 참고한다.

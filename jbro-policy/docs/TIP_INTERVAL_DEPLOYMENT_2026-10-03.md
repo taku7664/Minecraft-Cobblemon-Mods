@@ -2,10 +2,12 @@
 
 2026-10-03. 안내 기본 간격을 30초에서 60초로 변경했다.
 
+> 2026-10-04 경로 변경: 현재 서버는 저장소의 `develop-product/server` 하나다. 아래의 옛 개발 서버·외부 운영 서버 경로와 백업은 당시 적용 기록이며, 현재 점검·배포 대상이 아니다. 현재 설정 기준은 [서버 오픈 체크리스트](SERVER_OPEN_CHECKLIST.md)를 따른다.
+
 - 소스 커밋: `dd98933524eb5f99eed4db45598b75f97a721ef5`.
 - 코드 기본값과 키가 없는 JSON의 기본값 모두 60초다. 기존 안내 목록은 그대로다.
 - Windows / Java 21에서 `:jbro-policy:unitTest :jbro-policy:build` 성공. 테스트 73개 통과.
-- 대상 개발 서버: `C:\Users\박주형\Documents\GitHub\Cobblemon-Mods\dev-server`.
+- 당시 대상 개발 서버: `C:\Users\박주형\Documents\GitHub\Cobblemon-Mods\dev-server`.
 - 해당 서버의 `config/jbro-policy.json`에서 간격만 60초로 변경했다. 안내 20개와 다른 설정은 보존했다.
 - `mods/jbro-policy-0.1.0.jar`를 빌드 결과로 교체했다. 이전 JAR과 비교한 바이트코드 변경은
   `PolicyConfig.class` 한 개이며, JSON·mcmeta 리소스의 바이트 차이는 줄바꿈 형식 차이였다.
