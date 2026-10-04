@@ -15,7 +15,7 @@ final class KeybindingSetupTest {
     private static final Set<String> MODS = Set.of("cobbled_level_control", "talkingheads", "voicechat", "zoomify", "craftingtweaks");
     private static final List<String> KEYS = List.of(
         "key_key.cobbled_level_control.toggle_hud", "key_talkingheads.keybinding.modToggle",
-        "key_key.hide_icons", "key_zoomify.key.zoom.secondary",
+        "key_key.hide_icons", "key_key.mute_microphone", "key_zoomify.key.zoom.secondary",
         "key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack");
     @TempDir Path gameDirectory;
 
@@ -57,7 +57,7 @@ final class KeybindingSetupTest {
 
     @Test void newlyAddedBadgeKeyClearsOnceWithoutChangingPolicyBKeyOrOldCompletedKeys() throws Exception {
         Files.createDirectories(stateFile().getParent());
-        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\n");
+        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n");
         Files.writeString(optionsFile(), "key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
             + "key_key.pokebadges.open_badgebox:key.keyboard.b\n"
             + "key_key.hide_icons:key.keyboard.j\n");
@@ -73,12 +73,29 @@ final class KeybindingSetupTest {
         assertEquals("key_key.pokebadges.open_badgebox:key.keyboard.m\n", Files.readString(optionsFile()));
     }
 
+    @Test void newVoiceMuteAndPvpRoomBindingsApplyDespiteOldVoiceCompletion() throws Exception {
+        Files.createDirectories(stateFile().getParent());
+        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\n");
+        Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n"
+            + "key_key.mute_microphone:key.keyboard.m\n"
+            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.o\n");
+
+        assertEquals(2, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "more_cobblemon_contents_pvp")));
+        assertEquals("key_key.hide_icons:key.keyboard.j\n"
+            + "key_key.mute_microphone:key.keyboard.unknown\n"
+            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.tab\n", Files.readString(optionsFile()));
+        String state = Files.readString(stateFile());
+        assertTrue(state.contains("keybindings-voicechat-microphone-v1=true"));
+        assertTrue(state.contains("keybindings-more_cobblemon_contents_pvp-room-open-v1=true"));
+        assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "more_cobblemon_contents_pvp")));
+    }
+
     @Test void absentModsAreSkippedAndLaterInstallationHasItsOwnOnceRecord() throws Exception {
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of()));
         assertFalse(Files.exists(optionsFile()));
         assertFalse(Files.exists(stateFile()));
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat")));
-        assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "zoomify")));
         assertEquals("key_key.hide_icons:key.keyboard.j\nkey_zoomify.key.zoom.secondary:key.keyboard.unknown\n", Files.readString(optionsFile()));
@@ -88,7 +105,7 @@ final class KeybindingSetupTest {
     @Test void freshProfileSeedsBindingsBeforeMinecraftLoadsOptions() throws Exception {
         KeybindingSetup.apply(gameDirectory, configDirectory(), MODS);
         String options = Files.readString(optionsFile());
-        assertEquals(7, options.lines().count());
+        assertEquals(8, options.lines().count());
         assertTrue(options.startsWith("version:3955\n"));
         for (String key : KEYS) assertTrue(options.contains(key + ":key.keyboard.unknown\n"));
     }
@@ -96,13 +113,13 @@ final class KeybindingSetupTest {
     @Test void duplicatesAreAllClearedWithoutMatchingLongerKeys() throws Exception {
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.h\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.j");
         KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat"));
-        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.unknown", Files.readString(optionsFile()));
+        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
     }
 
     @Test void appendingMissingKeysRespectsExistingNewlinesAndMissingFinalNewline() throws Exception {
         Files.writeString(optionsFile(), "fullscreen:false\r\nkey_key.other:key.keyboard.k");
         KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat"));
-        assertEquals("fullscreen:false\r\nkey_key.other:key.keyboard.k\r\nkey_key.hide_icons:key.keyboard.unknown\r\n", Files.readString(optionsFile()));
+        assertEquals("fullscreen:false\r\nkey_key.other:key.keyboard.k\r\nkey_key.hide_icons:key.keyboard.unknown\r\nkey_key.mute_microphone:key.keyboard.unknown\r\n", Files.readString(optionsFile()));
     }
 
     @Test void craftingButtonsRetainOtherValuesAndComments() throws Exception {
@@ -139,7 +156,7 @@ final class KeybindingSetupTest {
         KeybindingSetup.saveMode(configDirectory(), ClientSetup.ApplyMode.ALWAYS);
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat")));
-        assertEquals("key_key.hide_icons:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
     }
 
     @Test void clcAlwaysAndKeybindingOnceDoNotOverwriteEachOthersState() throws Exception {
