@@ -1,0 +1,33 @@
+{
+  "speaker": "타워 안내원",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "안녕 {player},",
+        "오늘은 포켓몬 잘 잡았어?",
+        "배틀 타워 도전하러 온 거야?"
+      ],
+      "choices": [
+        { "text": "응, 도전할래!", "next": "check" },
+        { "text": "아니, 그냥 둘러보는 중이야.", "next": "bye" }
+      ]
+    },
+    "check": {
+      "branches": [
+        { "if": "tag:tower_qualified", "next": "open" }
+      ],
+      "next": "not_yet"
+    },
+    "not_yet": {
+      "lines": [ "너는 아직 자격이 안 되는 것 같네..." ]
+    },
+    "open": {
+      "lines": [ "좋아, 타워 터미널을 열어 줄게!" ],
+      "commands": [ "/mcc terminal tower" ]
+    },
+    "bye": {
+      "lines": [ "그래, 준비되면 언제든 와!" ]
+    }
+  }
+}

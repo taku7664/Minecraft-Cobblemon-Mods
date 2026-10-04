@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_npc",
+  "version": "${version}",
+  "name": "Cobblemon NPC",
+  "description": "NPCs that talk in the Cobblemon UI dialogue box, branch on conditions and run commands as the talk goes on. Operators place and edit them with a wand.",
+  "authors": [
+    "jbro"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.npc.CobblemonNpc"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.npc.client.CobblemonNpcClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0"
+  }
+}
