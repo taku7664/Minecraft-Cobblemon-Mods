@@ -63,7 +63,7 @@ class LocalRemainingTraitMechanicsTest {
         val user = mon(BattleSide.ALLY, item = "sitrusberry", hp = .2)
         val result = LocalPublicStatusBerry.afterUpdate(state(user, mon(BattleSide.OPPONENT))).pokemon.first()
         assertEquals(.45, result.hpFraction, 1e-9)
-        assertNull(result.knownHeldItemId)
+        assertEquals("", result.knownHeldItemId)
     }
     @Test fun `Ripen doubles actual Sitrus healing and Cheek Pouch adds its heal`() {
         val ripen = mon(BattleSide.ALLY, item = "sitrusberry", ability = "ripen", hp = .25)
@@ -129,7 +129,7 @@ class LocalRemainingTraitMechanicsTest {
         val result = LocalTraitResidualBranches.project(sunny).single()
         assertEquals(1.0, result.probability, 1e-9)
         assertEquals(.45, result.state.pokemon.first().hpFraction, 1e-9)
-        assertNull(result.state.pokemon.first().knownHeldItemId)
+        assertEquals("", result.state.pokemon.first().knownHeldItemId)
     }
     @Test fun `Harvest cannot recreate an unobserved consumed item`() {
         val user = mon(BattleSide.ALLY, ability = "harvest")
@@ -204,13 +204,13 @@ class LocalRemainingTraitMechanicsTest {
         val before = state(user, mon(BattleSide.OPPONENT))
         val results = LocalReactiveAbilityState.beforeAction(before, BattleSide.ALLY, attack())
         assertEquals(listOf(.3, .7), results.map { it.probability })
-        assertEquals(listOf("custapberry", null), results.map { it.state.pokemon.first().knownHeldItemId })
+        assertEquals(listOf("custapberry", ""), results.map { it.state.pokemon.first().knownHeldItemId })
         assertEquals(1.0, LocalPublicTurnOrder.fractionalPriorityChance(before, BattleSide.ALLY, attack()), 1e-9)
     }
     @Test fun `queue consumption preserves Custap priority after its item is gone`() {
         val user = mon(BattleSide.ALLY, item = "custapberry", hp = .25)
         val prepared = LocalReactiveAbilityState.beforeAction(state(user, mon(BattleSide.OPPONENT)), BattleSide.ALLY, attack()).single().state
-        assertNull(prepared.pokemon.first().knownHeldItemId)
+        assertEquals("", prepared.pokemon.first().knownHeldItemId)
         assertEquals(1.0, LocalPublicTurnOrder.fractionalPriorityChance(prepared, BattleSide.ALLY, attack()), 1e-9)
     }
     @Test fun `Custap checked above threshold cannot start fractional priority after later damage`() {
@@ -241,12 +241,13 @@ class LocalRemainingTraitMechanicsTest {
         assertFalse("charge" in LocalReactiveAbilityState.afterAction(before, before, user.battlePokemonId, attack()).pokemon.first().knownVolatileEffectIds)
         assertTrue("charge" in LocalReactiveAbilityState.afterAction(before, before, user.battlePokemonId, BattleActionCandidate("skip", BattleActionKind.WAIT)).pokemon.first().knownVolatileEffectIds)
     }
-    @Test fun `Heal Block prevents berry and residual heals while the berry is still eaten`() {
+    @Test fun `Heal Block prevents berry and residual heals and keeps the HP berry uneaten`() {
+        // Showdown's HP berries ask TryHeal in TryEatItem, which Heal Block refuses, so the berry stays held.
         val user = mon(BattleSide.ALLY, ability = "cheekpouch", item = "sitrusberry", hp = .25, volatiles = setOf("healblock"))
         val before = state(user, mon(BattleSide.OPPONENT))
         val after = LocalBerryMechanics.afterUpdate(before)
         assertEquals(.25, after.pokemon.first().hpFraction, 1e-9)
-        assertNull(after.pokemon.first().knownHeldItemId)
+        assertEquals("sitrusberry", after.pokemon.first().knownHeldItemId)
         val leftover = user.copyState(knownHeldItemId = "leftovers")
         assertEquals(.25, LocalEndTurnStateProjector.project(state(leftover, mon(BattleSide.OPPONENT))).pokemon.first().hpFraction, 1e-9)
     }

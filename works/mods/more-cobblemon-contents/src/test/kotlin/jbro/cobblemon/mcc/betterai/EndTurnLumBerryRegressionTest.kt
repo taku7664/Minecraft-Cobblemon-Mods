@@ -19,7 +19,7 @@ class EndTurnLumBerryRegressionTest {
         val holder = mon(BattleSide.ALLY, 0, item = "lumberry")
         val after = yawn(holder, mon(BattleSide.OPPONENT, 0))
         assertNull(after.statusId)
-        assertNull(after.knownHeldItemId)
+        assertEquals("", after.knownHeldItemId)
         assertEquals(1.0, after.hpFraction, 1e-9)
     }
 
@@ -29,7 +29,7 @@ class EndTurnLumBerryRegressionTest {
         val after = LocalEndTurnStateProjector.project(state(holder, mon(BattleSide.OPPONENT, 0), magicRoomTurns = 1))
         val cured = pokemon(after, holder)
         assertNull(cured.statusId)
-        assertNull(cured.knownHeldItemId)
+        assertEquals("", cured.knownHeldItemId)
         assertEquals(0.875, cured.hpFraction, 1e-9)
         assertTrue(after.field.roomEffects.none { it.effectId == "magicroom" })
     }
@@ -39,7 +39,7 @@ class EndTurnLumBerryRegressionTest {
         val holder = mon(BattleSide.ALLY, 0, item = "lumberry")
         val after = yawn(holder, mon(BattleSide.OPPONENT, 0), magicRoomTurns = 1)
         assertNull(after.statusId)
-        assertNull(after.knownHeldItemId)
+        assertEquals("", after.knownHeldItemId)
     }
 
     @Test
@@ -50,7 +50,7 @@ class EndTurnLumBerryRegressionTest {
         val after = LocalEndTurnStateProjector.project(state(holder, unnerve, mon(BattleSide.OPPONENT, 1)))
         val cured = pokemon(after, holder)
         assertNull(cured.statusId)
-        assertNull(cured.knownHeldItemId)
+        assertEquals("", cured.knownHeldItemId)
         assertEquals(0.875, cured.hpFraction, 1e-9)
         assertTrue(pokemon(after, unnerve).fainted)
         assertEquals(0.0, pokemon(after, unnerve).hpFraction, 1e-9)
@@ -99,7 +99,7 @@ class EndTurnLumBerryRegressionTest {
         val before = state(holder, mon(BattleSide.ALLY, 1, ability = "unnerve"), mon(BattleSide.OPPONENT, 0))
         val after = LocalEndTurnStateProjector.project(before, yawnPokemonIds = setOf(holder.battlePokemonId))
         assertNull(pokemon(after, holder).statusId)
-        assertNull(pokemon(after, holder).knownHeldItemId)
+        assertEquals("", pokemon(after, holder).knownHeldItemId)
     }
 
     @Test
@@ -110,7 +110,7 @@ class EndTurnLumBerryRegressionTest {
             val before = state(holder, inactive, mon(BattleSide.OPPONENT, 0))
             val after = LocalEndTurnStateProjector.project(before, yawnPokemonIds = setOf(holder.battlePokemonId))
             assertNull(pokemon(after, holder).statusId)
-            assertNull(pokemon(after, holder).knownHeldItemId)
+            assertEquals("", pokemon(after, holder).knownHeldItemId)
         }
     }
 
@@ -121,7 +121,7 @@ class EndTurnLumBerryRegressionTest {
             mon(BattleSide.OPPONENT, 0, ability = "unnerve"))
         val after = LocalEndTurnStateProjector.project(before, yawnPokemonIds = setOf(holder.battlePokemonId))
         assertNull(pokemon(after, holder).statusId)
-        assertNull(pokemon(after, holder).knownHeldItemId)
+        assertEquals("", pokemon(after, holder).knownHeldItemId)
     }
 
     @Test
@@ -172,7 +172,7 @@ class EndTurnLumBerryRegressionTest {
         val outcomes = PublicSingleTurnProjector.project(state, wait, wait, context, previous)
         assertTrue(outcomes.isNotEmpty())
         outcomes.forEach { outcome ->
-            assertNull(pokemon(outcome.state, holder).knownHeldItemId)
+            assertEquals("", pokemon(outcome.state, holder).knownHeldItemId)
             val next = RecursiveHistoryProjector.project(previous, state, outcome, wait, wait)
             assertFalse(holder.battlePokemonId in next.confusedPokemonIds)
         }

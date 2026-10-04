@@ -158,7 +158,7 @@ class LocalCallbackMoveEffectsTest {
         outcomes.forEach { outcome ->
             val after = outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }
             assertEquals(1, stage(after, "spa"))
-            assertNull(after.knownHeldItemId)
+            assertEquals("", after.knownHeldItemId)
             assertTrue(outcome.controlEffects.none { it.kind == RecursiveControlEffectKind.CHARGE })
         }
         assertTrue(outcomes.any { it.stateBeforeResidual.pokemon.single { mon -> mon.side == BattleSide.OPPONENT }.hpFraction < 1.0 })

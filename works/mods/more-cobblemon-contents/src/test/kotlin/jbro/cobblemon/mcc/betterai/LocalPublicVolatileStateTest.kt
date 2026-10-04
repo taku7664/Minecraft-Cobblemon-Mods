@@ -51,7 +51,10 @@ class LocalPublicVolatileStateTest {
         val incoming = context.state.pokemon.first { it.side == BattleSide.OPPONENT && it.activeSlot == null && !it.fainted }
         val switched = LocalSwitchStateProjector.project(context.state, BattleSide.OPPONENT,
             BattleActionCandidate("switch", BattleActionKind.SWITCH, actorSlot = 0, switchPokemonId = incoming.battlePokemonId))
-        assertTrue(switched.pokemon.filter { it.side == BattleSide.OPPONENT }.all { it.knownVolatileEffectIds.isEmpty() })
+        // The search's own entry marker (better_ai:entered_this_turn) is not an observed effect.
+        assertTrue(switched.pokemon.filter { it.side == BattleSide.OPPONENT }.all { pokemon ->
+            pokemon.knownVolatileEffectIds.none { !it.startsWith("better_ai:") }
+        })
     }
 
     @Test

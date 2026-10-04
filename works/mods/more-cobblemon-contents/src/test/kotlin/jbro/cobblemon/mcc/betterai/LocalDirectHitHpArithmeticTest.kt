@@ -32,7 +32,7 @@ class LocalDirectHitHpArithmeticTest {
                 assertEquals(if (survives) 1.0 / 300 else 0.0, target.hpFraction)
                 assertEquals(!survives, target.fainted)
                 assertEquals(if (survives) 1 else 0, result.remainingPokemonBySide.getValue(BattleSide.OPPONENT))
-                assertEquals(if (ability == "sturdy" || !survives) "focussash" else null, target.knownHeldItemId)
+                assertEquals(if (ability == "sturdy" || !survives) "focussash" else "", target.knownHeldItemId)
             }
         }
     }

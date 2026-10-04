@@ -154,7 +154,7 @@ class LocalRemainingMoveMechanicsTest {
         val foe = mon(BattleSide.OPPONENT, 0, hp = 0.55).copyState(knownHeldItemId = "sitrusberry")
         turns(listOf(user, foe), move("bugbite", physical = true, power = 60.0)).forEach {
             assertEquals(0.65, it.stateBeforeResidual.pokemon.first().hpFraction, 1e-9)
-            assertNull(it.stateBeforeResidual.pokemon.last().knownHeldItemId)
+            assertEquals("", it.stateBeforeResidual.pokemon.last().knownHeldItemId)
             assertTrue(it.stateBeforeResidual.pokemon.last().hpFraction < 0.55)
         }
     }

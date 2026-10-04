@@ -58,6 +58,7 @@ class LocalBranchMoveInputsTest {
         cached(source.publicActionCatalog)
         cached(projected.publicActionCatalog)
         cached(BattlePublicActionCatalogView(projected.publicActionCatalog.entries))
-        assertEquals(2, calculations)
+        // The rebuilt catalog drops the candidate pools, which the calculation reads, so it is a separate entry.
+        assertEquals(3, calculations)
     }
 }
