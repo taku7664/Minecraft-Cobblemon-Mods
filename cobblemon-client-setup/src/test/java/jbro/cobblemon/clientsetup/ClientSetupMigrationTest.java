@@ -18,7 +18,7 @@ final class ClientSetupMigrationTest {
     @Test void migrationMovesSettingsAndCompletionRecordsWithoutChangingBytes() throws Exception {
         Files.createDirectories(legacy());
         String settings = "# personal modes\r\n[clc_hud]\r\nmode = \"ONCE\"\r\n[keybindings]\r\nmode = \"ONCE\"\r\n[xaero]\r\nmode = \"ONCE\"\r\n";
-        String state = "clc-hud-v1=true\nkeybindings-voicechat-v1=true\nxaero-xaerominimap-v1=true\n";
+        String state = "clc-hud-v1=true\nkeybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\nxaero-xaerominimap-v1=true\n";
         Files.writeString(legacy().resolve("client.toml"), settings);
         Files.writeString(legacy().resolve("applied-defaults.properties"), state);
         Files.writeString(legacy().resolve("personal-note.txt"), "keep this file");

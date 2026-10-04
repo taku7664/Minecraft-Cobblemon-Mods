@@ -74,7 +74,7 @@ final class MinecraftOptionsCompatibilityTest {
         Files.writeString(gameDirectory.resolve("options.txt"), original);
         KeybindingSetup.apply(gameDirectory, gameDirectory.resolve("config"), Set.of("voicechat"));
         String updated = Files.readString(gameDirectory.resolve("options.txt"));
-        assertEquals("version:3954\r\nfullscreen:true\r\nkey_key.hide_icons:key.keyboard.unknown\r\n", updated);
+        assertEquals("version:3954\r\nfullscreen:true\r\nkey_key.hide_icons:key.keyboard.unknown\r\nkey_key.mute_microphone:key.keyboard.unknown\r\n", updated);
         assertEquals("key.keyboard.unknown", readWithMinecraftMigration(updated).getString("key_key.hide_icons"));
     }
 }

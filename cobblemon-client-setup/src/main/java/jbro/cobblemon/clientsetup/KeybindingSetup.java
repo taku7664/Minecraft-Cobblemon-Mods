@@ -17,14 +17,20 @@ public final class KeybindingSetup {
         new Rule("cobbled_level_control", List.of("key_key.cobbled_level_control.toggle_hud")),
         new Rule("talkingheads", List.of("key_talkingheads.keybinding.modToggle")),
         new Rule("voicechat", List.of("key_key.hide_icons")),
+        new Rule("voicechat", List.of("key_key.mute_microphone"),
+            "keybindings-voicechat-microphone-v1", "key.keyboard.unknown"),
         new Rule("zoomify", List.of("key_zoomify.key.zoom.secondary")),
         new Rule("pokebadges", List.of("key_key.pokebadges.open_badgebox")),
+        new Rule("more_cobblemon_contents_pvp", List.of("key_key.more_cobblemon_contents.pvp.room_hud.open"),
+            "keybindings-more_cobblemon_contents_pvp-room-open-v1", "key.keyboard.tab"),
         new Rule("craftingtweaks", List.of("key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack")));
 
     private KeybindingSetup() {}
 
-    private record Rule(String modId, List<String> keys) {
-        String marker() { return "keybindings-" + modId + "-v1"; }
+    private record Rule(String modId, List<String> keys, String marker, String mappedKey) {
+        Rule(String modId, List<String> keys) {
+            this(modId, keys, "keybindings-" + modId + "-v1", "key.keyboard.unknown");
+        }
     }
 
     /** Returns the number of mod presets applied; absent mods never receive completion records. */
@@ -39,7 +45,7 @@ public final class KeybindingSetup {
 
         Path optionsFile = gameDirectory.resolve("options.txt");
         String original = Files.exists(optionsFile) ? Files.readString(optionsFile) : "";
-        String updated = clearKeys(SetupFiles.seedOptions(original), pending);
+        String updated = setKeys(SetupFiles.seedOptions(original), pending);
         Path craftingFile = configDirectory.resolve("craftingtweaks-common.toml");
         // Validate every pending file before changing options, so invalid TOML cannot partially clear keys.
         CommentedConfig crafting = pending.stream().anyMatch(rule -> rule.modId().equals("craftingtweaks"))
@@ -49,7 +55,7 @@ public final class KeybindingSetup {
         if (mode == ClientSetup.ApplyMode.ONCE) {
             SetupFiles.markApplied(configDirectory, state, pending.stream().map(Rule::marker).toList());
         }
-        return pending.size();
+        return (int) pending.stream().map(Rule::modId).distinct().count();
     }
 
     public static ClientSetup.ApplyMode mode(Path configDirectory) throws IOException {
@@ -61,18 +67,18 @@ public final class KeybindingSetup {
         SetupFiles.saveModes(configDirectory, Map.of(MODE, mode));
     }
 
-    private static String clearKeys(String original, List<Rule> pending) {
+    private static String setKeys(String original, List<Rule> pending) {
         String newline = original.contains("\r\n") ? "\r\n" : "\n";
         String updated = original;
         for (Rule rule : pending) {
             for (String key : rule.keys()) {
                 var matcher = Pattern.compile("(?m)^" + Pattern.quote(key) + ":[^\\r\\n]*").matcher(updated);
-                String cleared = key + ":key.keyboard.unknown";
+                String binding = key + ":" + rule.mappedKey();
                 if (matcher.find()) {
-                    updated = matcher.replaceAll(cleared);
+                    updated = matcher.replaceAll(binding);
                 } else {
                     if (!updated.isEmpty() && !updated.endsWith("\n") && !updated.endsWith("\r")) updated += newline;
-                    updated += cleared + newline;
+                    updated += binding + newline;
                 }
             }
         }

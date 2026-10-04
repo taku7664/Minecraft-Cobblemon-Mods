@@ -24,21 +24,25 @@ CLC가 설치되어 있으면
 
 CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 
-단축키 정리는 설치된 모드의 다음 7개 키만 `options.txt`에서 `key.keyboard.unknown`으로
+단축키 정리는 설치된 모드의 다음 9개 키를 `options.txt`에서 지정한 값으로
 변경합니다. 다른 키, 옵션과 줄바꿈은 유지하며, 항목이나 파일이 없으면 추가합니다.
 `options.txt`가 없거나 완전히 비어 있으면 Minecraft 1.21.1의 설정 데이터 버전
 `version:3955`도 먼저 기록합니다. 버전 없는 최신 키 문자열을 오래된 숫자 키 형식으로
 변환하려다 옵션 로딩이 실패하는 것을 방지합니다. 기존 파일의 버전은 변경하지 않습니다.
 
-| 모드 | 해제하는 키 | 기존 기본 키 |
+| 모드 | 키 | 적용 값 |
 | --- | --- | --- |
-| Cobbled Level Control | `key_key.cobbled_level_control.toggle_hud` | H |
-| Talking Heads | `key_talkingheads.keybinding.modToggle` | H |
-| Simple Voice Chat | `key_key.hide_icons` | H |
-| Zoomify | `key_zoomify.key.zoom.secondary` | F6 |
-| PokeBadges | `key_key.pokebadges.open_badgebox` | B |
-| Crafting Tweaks | `key_key.craftingtweaks.compress_stack` | K |
-| Crafting Tweaks | `key_key.craftingtweaks.refill_last_stack` | Tab |
+| Cobbled Level Control | `key_key.cobbled_level_control.toggle_hud` | 미지정 |
+| Talking Heads | `key_talkingheads.keybinding.modToggle` | 미지정 |
+| Simple Voice Chat | `key_key.hide_icons` | 미지정 |
+| Simple Voice Chat | `key_key.mute_microphone` | 미지정 |
+| Zoomify | `key_zoomify.key.zoom.secondary` | 미지정 |
+| PokeBadges | `key_key.pokebadges.open_badgebox` | 미지정 |
+| More Cobblemon Contents: PvP | `key_key.more_cobblemon_contents.pvp.room_hud.open` | Tab |
+| Crafting Tweaks | `key_key.craftingtweaks.compress_stack` | 미지정 |
+| Crafting Tweaks | `key_key.craftingtweaks.refill_last_stack` | 미지정 |
+
+전투 정보 창의 Tab 단축키도 유지합니다. PvP룸 GUI와 전투 정보 창에 Tab이 중복 배정됩니다.
 
 Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTTONS"`로
 설정하여 버튼을 유지하고 단축키를 끕니다. 이 설정 역시 단축키 정리 적용 방식을 따릅니다.
@@ -100,6 +104,9 @@ mode = "ALWAYS"
 단축키 정리는 `keybindings-<mod ID>-v1=true`로 모드별 성공을 기록합니다. 설치되지 않은
 모드는 기록하지 않으므로 나중에 추가했을 때 해당 모드의 키만 정리합니다. `ALWAYS`를
 선택하면 기록을 무시하고 해당 모드들의 키와 Crafting Tweaks 버튼 모드를 매번 적용합니다.
+기존 음성 채팅 아이콘 키의 완료 기록이 있어도 마이크 음소거 키는
+`keybindings-voicechat-microphone-v1=true`로 따로 한 번 적용합니다. PvP룸 GUI 키도
+`keybindings-more_cobblemon_contents_pvp-room-open-v1=true`로 따로 기록합니다.
 
 대상 모드가 없으면 해당 규칙의 설정 파일이나 완료 기록을 새로 만들지 않고, 나중에 설치했을 때 적용합니다.
 잘못된 TOML, 지원하지 않는 적용 방식 또는 파일 접근 오류는 로그에 남기고 게임 시작을
