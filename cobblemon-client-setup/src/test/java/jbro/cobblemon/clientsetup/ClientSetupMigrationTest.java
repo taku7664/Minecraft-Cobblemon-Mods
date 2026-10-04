@@ -39,7 +39,7 @@ final class ClientSetupMigrationTest {
             .contains("waypoints_in_world = true"));
         String upgradedState = Files.readString(current().resolve("applied-defaults.properties"));
         assertTrue(upgradedState.contains("xaero-xaerominimap-v1=true"));
-        assertTrue(upgradedState.contains("xaero-xaerominimap-v2=true"));
+        assertTrue(upgradedState.contains("xaero-xaerominimap-v3=true"));
     }
 
     @Test void freshInstallationDoesNotCreateLegacyOrEmptySettingsDirectory() throws Exception {

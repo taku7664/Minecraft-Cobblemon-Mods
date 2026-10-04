@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.LinkOption;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,10 @@ public final class XaeroSetup {
             cfg = setting(cfg, "waypoints_on_minimap", "true");
             cfg = setting(cfg, "deathpoints", "false");
             cfg = setting(cfg, "minimap_shape", "1");
+            cfg = setting(cfg, "info_display_config", "This option's value is saved to sub-folder \"info_display_config\".");
             writes.put(file, setting(cfg, "display_radar", "true"));
+            Path infoDisplay = configDirectory.resolve("xaero/minimap/profiles/info_display_config/default.cfg.txt");
+            writes.put(infoDisplay, biomeInfoDisplay(read(infoDisplay)));
             Path hud = configDirectory.resolve("xaerohud.txt");
             writes.put(hud, topRightLayout(read(hud)));
             Path minimapWorlds = gameDirectory.resolve("xaero/minimap");
@@ -107,7 +111,9 @@ public final class XaeroSetup {
         SetupFiles.saveModes(configDirectory, Map.of(MODE, mode));
     }
 
-    private static String marker(String modId) { return "xaero-" + modId + "-v2"; }
+    private static String marker(String modId) {
+        return "xaero-" + modId + (modId.equals("xaerominimap") ? "-v3" : "-v2");
+    }
     private static String read(Path file) throws IOException { return Files.exists(file) ? Files.readString(file) : ""; }
     private static String profile(Path file) throws IOException {
         String original = read(file);
@@ -138,6 +144,38 @@ public final class XaeroSetup {
     private static String append(String original, String line) {
         String newline = original.contains("\r\n") ? "\r\n" : "\n";
         return original + (!original.isEmpty() && !original.endsWith("\n") && !original.endsWith("\r") ? newline : "") + line + newline;
+    }
+
+    /** Xaero stores the ordered HUD information in a companion file beside default.cfg. */
+    private static String biomeInfoDisplay(String original) throws IOException {
+        var orderLine = Pattern.compile("(?m)^infoDisplayOrder(?::[^\r\n]*)?").matcher(original);
+        var order = new ArrayList<String>();
+        if (orderLine.find()) {
+            String[] parts = orderLine.group().split(":", -1);
+            for (int index = 1; index < parts.length; index++) {
+                if (parts[index].isBlank() || order.contains(parts[index]))
+                    throw new IOException("Invalid Xaero info display order");
+                order.add(parts[index]);
+            }
+            if (orderLine.find()) throw new IOException("Duplicate Xaero info display order");
+        }
+        order.remove("biome");
+        if (!order.contains("coords")) order.add(0, "coords");
+        order.add(order.indexOf("coords") + 1, "biome");
+        String updated = orderLine.find(0) ? orderLine.replaceFirst(Matcher.quoteReplacement("infoDisplayOrder:" + String.join(":", order)))
+            : append(original, "infoDisplayOrder:" + String.join(":", order));
+
+        var biomeLine = Pattern.compile("(?m)^infoDisplay:biome(?::[^\r\n]*)?").matcher(updated);
+        if (!biomeLine.find()) {
+            if (original.isEmpty()) updated = append(updated, "infoDisplay:coords:true:-:-");
+            return append(updated, "infoDisplay:biome:true:-:-");
+        }
+        String[] parts = biomeLine.group().split(":", -1);
+        if (biomeLine.find()) throw new IOException("Duplicate Xaero biome info display");
+        if (parts.length != 5 || (!parts[2].equals("true") && !parts[2].equals("false")))
+            throw new IOException("Invalid Xaero biome info display");
+        parts[2] = "true";
+        return biomeLine.replaceFirst(Matcher.quoteReplacement(String.join(":", parts)));
     }
 
     private static String topRightLayout(String original) {

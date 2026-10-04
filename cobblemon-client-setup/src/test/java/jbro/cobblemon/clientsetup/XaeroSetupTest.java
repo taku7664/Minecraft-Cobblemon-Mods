@@ -15,6 +15,7 @@ final class XaeroSetupTest {
     @TempDir Path game;
     private Path config() { return game.resolve("config"); }
     private Path minimap() { return config().resolve("xaero/minimap/profiles/default.cfg"); }
+    private Path infoDisplay() { return config().resolve("xaero/minimap/profiles/info_display_config/default.cfg.txt"); }
     private Path worldmap() { return config().resolve("xaero/world-map/profiles/default.cfg"); }
     private Path radar() { return config().resolve("xaero/minimap/default_radar_categories_client.json"); }
     private Path options() { return game.resolve("options.txt"); }
@@ -34,6 +35,9 @@ final class XaeroSetupTest {
         assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
         assertTrue(Files.readString(minimap()).contains("waypoints_on_minimap = true"));
         assertTrue(Files.readString(minimap()).contains("deathpoints = false"));
+        assertTrue(Files.readString(minimap()).contains("info_display_config = "));
+        assertEquals("infoDisplayOrder:coords:biome\ninfoDisplay:coords:true:-:-\ninfoDisplay:biome:true:-:-\n",
+            Files.readString(infoDisplay()));
         assertTrue(Files.readString(worldmap()).contains("waypoints = true"));
         assertTrue(Files.readString(worldmap()).contains("render_waypoints = true"));
         assertTrue(Files.readString(worldmap()).contains("map_teleport_allowed = false"));
@@ -73,6 +77,35 @@ final class XaeroSetupTest {
         assertEquals(1, XaeroSetup.apply(game, config(), MAPS));
         assertEquals("waypoints_in_world = false\n", Files.readString(minimap()));
         assertTrue(Files.readString(worldmap()).contains("waypoints = true"));
+    }
+
+    @Test void biomeFollowsCoordinatesWithoutLosingOtherInfoDisplayChoices() throws Exception {
+        write(infoDisplay(), "infoDisplayOrder:weather:biome:coords:time\r\n"
+            + "infoDisplay:weather:true:7:8\r\ninfoDisplay:biome:false:3:4\r\n"
+            + "infoDisplay:coords:true:-:-\r\ninfoDisplay:time:true:-:-\r\ncustom:keep\r\n");
+        XaeroSetup.apply(game, config(), Set.of("xaerominimap"));
+        assertEquals("infoDisplayOrder:weather:coords:biome:time\r\n"
+            + "infoDisplay:weather:true:7:8\r\ninfoDisplay:biome:true:3:4\r\n"
+            + "infoDisplay:coords:true:-:-\r\ninfoDisplay:time:true:-:-\r\ncustom:keep\r\n",
+            Files.readString(infoDisplay()));
+    }
+
+    @Test void duplicateBiomeEntryDoesNotRewriteOtherXaeroSettings() throws Exception {
+        write(infoDisplay(), "infoDisplayOrder:coords:biome\ninfoDisplay:biome:false:-:-\ninfoDisplay:biome:false:-:-\n");
+        assertThrows(IOException.class, () -> XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
+        assertFalse(Files.exists(minimap()));
+        assertEquals("infoDisplayOrder:coords:biome\ninfoDisplay:biome:false:-:-\ninfoDisplay:biome:false:-:-\n",
+            Files.readString(infoDisplay()));
+    }
+
+    @Test void onceModeReappliesBiomeAfterEarlierXaeroPreset() throws Exception {
+        XaeroSetup.saveMode(config(), ClientSetup.ApplyMode.ONCE);
+        Path state = config().resolve("cobblemon-client-setup/applied-defaults.properties");
+        write(state, "xaero-xaerominimap-v2=true\n");
+        assertEquals(1, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
+        assertTrue(Files.readString(infoDisplay()).contains("infoDisplay:biome:true:-:-"));
+        assertTrue(Files.readString(state).contains("xaero-xaerominimap-v3=true"));
+        assertEquals(0, XaeroSetup.apply(game, config(), Set.of("xaerominimap")));
     }
 
     @Test void absentMapsLeaveEveryFileUntouched() throws Exception {
@@ -118,7 +151,7 @@ final class XaeroSetupTest {
         assertEquals(2, XaeroSetup.apply(game, config(), MAPS));
         assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
         assertTrue(Files.readString(worldmap()).contains("map_teleport_allowed = false"));
-        assertTrue(Files.readString(state).contains("xaero-xaerominimap-v2=true"));
+        assertTrue(Files.readString(state).contains("xaero-xaerominimap-v3=true"));
         assertTrue(Files.readString(state).contains("xaero-xaeroworldmap-v2=true"));
         assertEquals(0, XaeroSetup.apply(game, config(), MAPS));
     }
@@ -139,9 +172,9 @@ final class XaeroSetupTest {
     @Test void alreadyCorrectDefaultsAreNotRewritten() throws Exception {
         XaeroSetup.apply(game, config(), MAPS);
         var time = java.nio.file.attribute.FileTime.fromMillis(1000);
-        for (Path file : new Path[] {minimap(), worldmap(), radar(), options()}) Files.setLastModifiedTime(file, time);
+        for (Path file : new Path[] {minimap(), infoDisplay(), worldmap(), radar(), options()}) Files.setLastModifiedTime(file, time);
         XaeroSetup.apply(game, config(), MAPS);
-        for (Path file : new Path[] {minimap(), worldmap(), radar(), options()}) assertEquals(time, Files.getLastModifiedTime(file));
+        for (Path file : new Path[] {minimap(), infoDisplay(), worldmap(), radar(), options()}) assertEquals(time, Files.getLastModifiedTime(file));
     }
 
     @Test void worldMapOnlyDoesNotCreateMinimapFilesOrKeys() throws Exception {

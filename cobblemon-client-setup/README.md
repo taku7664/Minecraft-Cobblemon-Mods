@@ -53,6 +53,7 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - World Map `config/xaero/world-map/profiles/default.cfg`: `waypoints`, `render_waypoints`, `display_minimap_radar`를 `true`, `map_teleport_allowed`를 `false`로 설정합니다.
 - 두 기본 프로필의 `ignore_enforcement_if_edit_permission`을 `false`로 설정합니다.
 - 미니맵 기본 프로필의 `minimap_shape = 1`로 원형을 선택합니다. `config/xaerohud.txt`에서 미니맵 모듈만 `x=0`, `y=0`, `centered=false`, `fromRight=true`, `fromBottom=false`로 변경하여 우측 상단에 둡니다. 다른 HUD 모듈과 무관한 속성은 유지합니다.
+- 미니맵 기본 프로필의 정보 표시 파일(`profiles/info_display_config/default.cfg.txt`)에서 현재 바이옴을 켜고 좌표 바로 다음에 둡니다. 다른 정보 항목의 표시 상태·색·상대 순서는 유지합니다.
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
 - 전체 지도는 J, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다.
 - 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 접속 중 새로 생성된 월드는 `jbro-policy`가 처리합니다.
@@ -60,7 +61,7 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
 
 Xaero의 기본 적용 방식은 `ALWAYS`입니다. Mod Menu에서 `ONCE`로 바꾸면 각 지도 모드의
-성공 기록을 `xaero-<mod ID>-v2=true`로 남기며, 나중에 다른 지도 모드를 설치하면 그 모드만 처리합니다.
+성공 기록은 미니맵 `xaero-xaerominimap-v3=true`, 전체 지도 `xaero-xaeroworldmap-v2=true`로 남깁니다. 기존 미니맵 `v2` 기록이 있어도 바이옴 표시를 한 번 적용하며, 나중에 다른 지도 모드를 설치하면 그 모드만 처리합니다.
 기존 CFG의 무관한 설정·주석·줄바꿈과 다른 리소스팩의 상대 순서는 유지합니다.
 레이더 JSON의 값을 바꾸면 들여쓰기를 다시 정리할 수 있습니다.
 
