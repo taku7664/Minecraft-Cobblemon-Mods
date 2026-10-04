@@ -644,8 +644,8 @@ internal object EntryDraw {
         val collapse = BattleEntryTimeline.collapse(frame.kind, frame.elapsed, frame.revealAt)
         val burst = BattleEntryTimeline.burst(frame.kind, frame.elapsed, frame.revealAt)
         val white = 0xFFFFFFFF.toInt()
-        val clear = BattleSurfaceRenderer.withOpacity(white, 0f)
         val dark = 0xFF000000.toInt()
+        val clearDark = BattleSurfaceRenderer.withOpacity(dark, 0f)
         val light = BattleSurfaceRenderer.interpolate(frame.accent, white, .55f)
         val point = minOf(frame.width, frame.height) * .012f
         if (burst <= 0f) {
@@ -653,81 +653,132 @@ internal object EntryDraw {
                 frame.context.fill(0, 0, frame.width, frame.height, white)
                 return
             }
-            // The white drawn in toward the center, the dark closing behind it, lines streaming inward through it.
+            // The white drawn in toward the center, shading softly into the dark closing behind it.
             val radius = frame.far * 1.15f * (1f - collapse) + point * collapse
+            val soft = 6f + frame.far * .08f * (1f - collapse)
             quads(frame.context) { buffer, matrix ->
-                ring(buffer, matrix, frame, radius, frame.far * 1.6f, dark, dark)
+                ring(buffer, matrix, frame, radius + soft, frame.far * 1.6f, dark, dark)
+                ring(buffer, matrix, frame, radius, radius + soft, white, dark)
+                ring(buffer, matrix, frame, 0f, radius, white, white)
+            }
+            // Light streaming inward through the dark, and the point kindling as the white closes on it.
+            glow(frame) { buffer, matrix ->
                 for (line in 0 until BURST_STREAKS) {
                     val seed = line * 6007 + 13
                     val angle = hash(seed) * TAU
-                    val flow = ((hash(seed + 1) + frame.elapsed / 420f) % 1f)
-                    val outer = radius + (frame.far * 1.2f - radius) * (1f - flow)
-                    val inner = radius + (outer - radius) * .55f
-                    val color = BattleSurfaceRenderer.withOpacity(light, .7f * collapse * (1f - flow))
-                    buffer.addVertex(matrix, frame.centerX + cos(angle) * outer, frame.centerY + sin(angle) * outer, 0f).setColor(clear)
-                    buffer.addVertex(matrix, frame.centerX + cos(angle + .006f) * inner, frame.centerY + sin(angle + .006f) * inner, 0f).setColor(color)
-                    buffer.addVertex(matrix, frame.centerX + cos(angle - .006f) * inner, frame.centerY + sin(angle - .006f) * inner, 0f).setColor(color)
-                    buffer.addVertex(matrix, frame.centerX + cos(angle) * outer, frame.centerY + sin(angle) * outer, 0f).setColor(clear)
+                    val flow = (hash(seed + 1) + frame.elapsed / 420f) % 1f
+                    val outer = radius + soft + (frame.far * 1.2f - radius) * (1f - flow)
+                    val inner = radius + soft + (outer - radius - soft) * .45f
+                    val color = BattleSurfaceRenderer.withOpacity(light, .45f * collapse * (1f - flow))
+                    softRay(buffer, matrix, frame.centerX + cos(angle) * inner, frame.centerY + sin(angle) * inner,
+                        angle, outer - inner, 1.2f + 1.5f * hash(seed + 2), color)
                 }
-                ring(buffer, matrix, frame, 0f, radius, white, white)
-                ring(buffer, matrix, frame, radius, radius + 4f + 14f * collapse, light, BattleSurfaceRenderer.withOpacity(light, 0f))
-                if (collapse >= 1f) flare(buffer, matrix, frame, point, 1f, light)
+                flare(buffer, matrix, frame, point, ((collapse - .6f) / .4f).coerceIn(0f, 1f), light)
             }
             return
         }
-        // The burst: the dark opening from the center behind a bright edge, rays and a flash thrown out over it.
+        // The burst: the dark opening from the center on a soft edge, light thrown out over it, and a flash.
         val open = 1f - (1f - burst) * (1f - burst) * (1f - burst)
-        val hole = frame.far * 1.3f * open
         val fade = 1f - burst
+        val hole = frame.far * 1.3f * open
+        val soft = frame.far * (.05f + .1f * open)
         quads(frame.context) { buffer, matrix ->
-            ring(buffer, matrix, frame, hole, frame.far * 1.6f, dark, dark)
-            val edge = (6f + 26f * fade) * open.coerceAtLeast(.2f)
-            ring(buffer, matrix, frame, (hole - edge).coerceAtLeast(0f), hole,
-                BattleSurfaceRenderer.withOpacity(light, 0f), BattleSurfaceRenderer.withOpacity(white, fade))
+            ring(buffer, matrix, frame, hole + soft, frame.far * 1.8f, dark, dark)
+            ring(buffer, matrix, frame, hole, hole + soft, clearDark, dark)
+        }
+        glow(frame) { buffer, matrix ->
+            // The opening's rim, brightest where the dark begins.
+            val rim = BattleSurfaceRenderer.withOpacity(light, .8f * fade)
+            val clear = BattleSurfaceRenderer.withOpacity(light, 0f)
+            ring(buffer, matrix, frame, (hole - soft).coerceAtLeast(0f), hole + soft * .3f, clear, rim)
+            ring(buffer, matrix, frame, hole + soft * .3f, hole + soft, rim, clear)
+            // Rays of a few lengths and widths, turning a little as they spread and fade.
             for (ray in 0 until BURST_RAYS) {
                 val seed = ray * 3571 + 29
-                val angle = (ray + hash(seed) * .6f) / BURST_RAYS * TAU
-                val length = frame.far * (.5f + .9f * hash(seed + 1)) * (.35f + .65f * open)
-                val half = frame.far * (.012f + .02f * hash(seed + 2))
-                val color = BattleSurfaceRenderer.withOpacity(light, .8f * fade * fade)
-                val tipX = frame.centerX + cos(angle) * length
-                val tipY = frame.centerY + sin(angle) * length
-                val sideX = -sin(angle) * half
-                val sideY = cos(angle) * half
-                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(color)
-                buffer.addVertex(matrix, tipX + sideX, tipY + sideY, 0f).setColor(BattleSurfaceRenderer.withOpacity(light, 0f))
-                buffer.addVertex(matrix, tipX - sideX, tipY - sideY, 0f).setColor(BattleSurfaceRenderer.withOpacity(light, 0f))
-                buffer.addVertex(matrix, frame.centerX, frame.centerY, 0f).setColor(color)
+                val angle = (ray + hash(seed) * .6f) / BURST_RAYS * TAU + .12f * open * (if (ray % 2 == 0) 1f else -1f)
+                val length = frame.far * (.45f + 1.1f * hash(seed + 1) * hash(seed + 1)) * (.3f + .7f * open)
+                val half = frame.far * (.006f + .03f * hash(seed + 2) * hash(seed + 2)) * (.6f + .8f * open)
+                softRay(buffer, matrix, frame.centerX, frame.centerY, angle, length, half,
+                    BattleSurfaceRenderer.withOpacity(light, (.35f + .4f * hash(seed + 3)) * fade * fade))
             }
-            flare(buffer, matrix, frame, point * (1f + 6f * open), fade, light)
+            flare(buffer, matrix, frame, point * (1f + 5f * open), fade, light)
         }
         // The flash as it bursts.
         val flash = (1f - burst / .3f).coerceIn(0f, 1f)
         if (flash > 0f) frame.context.fill(0, 0, frame.width, frame.height, BattleSurfaceRenderer.withOpacity(white, .9f * flash))
     }
 
-    /** A blinding point at the center, [size] across, with long thin glints crossing it, at [strength] (0 to 1). */
+    /**
+     * A blinding point at the center, [size] across, at [strength] (0 to 1): a glow falling off steeply from a white
+     * core, a long level streak through it and shorter glints across it, every edge soft.
+     */
     private fun flare(buffer: VertexConsumer, matrix: Matrix4f, frame: EntryFrame, size: Float, strength: Float, light: Int) {
         if (strength <= 0f) return
         val core = BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), strength)
-        val glow = BattleSurfaceRenderer.withOpacity(light, 0f)
-        ring(buffer, matrix, frame, 0f, size * 3f, core, glow)
-        val shimmer = 1f + .15f * sin(frame.elapsed / 40f)
-        for (glint in 0 until 4) {
-            val angle = glint * TAU / 4f + TAU / 8f * (glint % 2)
-            val length = size * (if (glint % 2 == 0) 22f else 9f) * shimmer
-            val half = size * .35f
-            val sideX = -sin(angle) * half
-            val sideY = cos(angle) * half
-            for (direction in listOf(1f, -1f)) {
-                val tipX = frame.centerX + cos(angle) * length * direction
-                val tipY = frame.centerY + sin(angle) * length * direction
-                buffer.addVertex(matrix, frame.centerX + sideX, frame.centerY + sideY, 0f).setColor(core)
-                buffer.addVertex(matrix, frame.centerX - sideX, frame.centerY - sideY, 0f).setColor(core)
-                buffer.addVertex(matrix, tipX, tipY, 0f).setColor(glow)
-                buffer.addVertex(matrix, tipX, tipY, 0f).setColor(glow)
+        val falloff = floatArrayOf(0f, 1f, 2.5f, 6f, 14f)
+        val alphas = floatArrayOf(1f, .75f, .35f, .12f, 0f)
+        for (band in 0 until falloff.size - 1) {
+            ring(buffer, matrix, frame, size * falloff[band], size * falloff[band + 1],
+                BattleSurfaceRenderer.withOpacity(if (band == 0) 0xFFFFFFFF.toInt() else light, alphas[band] * strength),
+                BattleSurfaceRenderer.withOpacity(light, alphas[band + 1] * strength))
+        }
+        val shimmer = 1f + .12f * sin(frame.elapsed / 45f)
+        val glints = floatArrayOf(0f, 40f, TAU / 4f, 13f, TAU / 8f, 7f, TAU * 3f / 8f, 7f)
+        for (index in glints.indices step 2) {
+            for (direction in 0 until 2) {
+                softRay(buffer, matrix, frame.centerX, frame.centerY, glints[index] + direction * TAU / 2f,
+                    size * glints[index + 1] * shimmer, size * .7f, core)
             }
         }
+    }
+
+    /**
+     * A soft ray from (x, y) at [angle], [length] long and [half] wide on each side at its widest: bright along its
+     * spine at the start, fading to nothing toward its tip and its sides.
+     */
+    private fun softRay(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, angle: Float, length: Float,
+                        half: Float, color: Int) {
+        val clear = BattleSurfaceRenderer.withOpacity(color, 0f)
+        val middle = BattleSurfaceRenderer.withOpacity(color, (color ushr 24) / 255f * .45f)
+        val dirX = cos(angle)
+        val dirY = sin(angle)
+        val sideX = -dirY * half
+        val sideY = dirX * half
+        val midX = x + dirX * length * .35f
+        val midY = y + dirY * length * .35f
+        val tipX = x + dirX * length
+        val tipY = y + dirY * length
+        for (side in listOf(1f, -1f)) {
+            val edgeX = midX + sideX * side * .6f
+            val edgeY = midY + sideY * side * .6f
+            buffer.addVertex(matrix, x, y, 0f).setColor(color)
+            buffer.addVertex(matrix, midX, midY, 0f).setColor(middle)
+            buffer.addVertex(matrix, edgeX, edgeY, 0f).setColor(clear)
+            buffer.addVertex(matrix, x, y, 0f).setColor(color)
+            buffer.addVertex(matrix, midX, midY, 0f).setColor(middle)
+            buffer.addVertex(matrix, tipX, tipY, 0f).setColor(clear)
+            buffer.addVertex(matrix, tipX + sideX * side, tipY + sideY * side, 0f).setColor(clear)
+            buffer.addVertex(matrix, edgeX, edgeY, 0f).setColor(clear)
+        }
+    }
+
+    /**
+     * Draws light: quads whose colours add to what is under them rather than covering it, so where light overlaps it
+     * only grows brighter.
+     */
+    private inline fun glow(frame: EntryFrame, draw: (VertexConsumer, Matrix4f) -> Unit) {
+        frame.context.flush()
+        RenderSystem.setShader(GameRenderer::getPositionColorShader)
+        RenderSystem.enableBlend()
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+        RenderSystem.disableDepthTest()
+        RenderSystem.disableCull()
+        val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR)
+        draw(buffer, frame.context.pose().last().pose())
+        buffer.build()?.let { BufferUploader.drawWithShader(it) }
+        RenderSystem.enableCull()
+        RenderSystem.enableDepthTest()
+        RenderSystem.defaultBlendFunc()
     }
 
     /** A ring around the screen's center from [inner] to [outer], each edge in its own colour. */
@@ -886,7 +937,6 @@ internal object EntryDraw {
         val shatter = BattleEntryTimeline.shatter(frame.kind, frame.elapsed, frame.revealAt)
         val crack = BattleEntryTimeline.crack(frame.kind, frame.elapsed, frame.revealAt)
         val second = BattleEntryTimeline.secondCrack(frame.kind, frame.elapsed, frame.revealAt)
-        val glow = BattleEntryTimeline.glow(frame.kind, frame.elapsed, frame.revealAt)
         if (shatter <= 0f) {
             // Each jolt of the cracks knocks the white aside a little; it is drawn past the edges so none shows.
             val (shakeX, shakeY) = crackShake(frame)
@@ -894,7 +944,7 @@ internal object EntryDraw {
             pose.pushPose()
             pose.translate(shakeX, shakeY, 0f)
             frame.context.fill(-8, -8, frame.width + 8, frame.height + 8, 0xFFFFFFFF.toInt())
-            cracks(frame, impactX, impactY, crack, second, glow, 1f)
+            cracks(frame, impactX, impactY, crack, second, 1f)
             pose.popPose()
             return
         }
@@ -920,7 +970,7 @@ internal object EntryDraw {
             }
         }
         // The cracks stay on the shards for a moment as they part.
-        cracks(frame, impactX, impactY, crack, second, glow, 1f - shatter * 3f)
+        cracks(frame, impactX, impactY, crack, second, 1f - shatter * 3f)
     }
 
     /** One shard: from the center outward each in turn bursts a little away, tumbles and falls, fading as it goes. */
@@ -963,17 +1013,12 @@ internal object EntryDraw {
      * chips. The first round ([first], 0 to 1) runs the spikes halfway in jolts, so they crackle out rather than glide;
      * the second ([second]) snaps them the rest of the way at once and brings the hairlines, rings and chips with it.
      */
-    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, glow: Float,
-                       opacity: Float) {
+    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, opacity: Float) {
         if (first <= 0f || opacity <= 0f) return
         val shade = opacity.coerceAtMost(1f)
         val ink = BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .8f)
         val dark = BattleSurfaceRenderer.withOpacity(ink, .9f * shade)
         val faint = BattleSurfaceRenderer.withOpacity(ink, .5f * shade)
-        // The light welling up through the cracks: the accent, brightened, in a soft band round each crack.
-        val light = BattleSurfaceRenderer.interpolate(frame.accent, 0xFFFFFFFF.toInt(), .25f)
-        val halo = BattleSurfaceRenderer.withOpacity(light, .55f * glow * shade)
-        val haloFaint = BattleSurfaceRenderer.withOpacity(light, .3f * glow * shade)
         /** How far one spike has jolted through the first round at [share] of it, 0 to 1. */
         fun jolts(share: Float, seed: Int): Float {
             var reach = 0f
@@ -986,20 +1031,6 @@ internal object EntryDraw {
         val hole = frame.far * .05f
         fun spikeAngle(spike: Int): Float = (spike + hash(spike * 4099 + 7) * .8f) / SPIKES * TAU
         quads(frame.context) { buffer, matrix ->
-            // The hole fills with light first: a disc bright at the impact, fading out at twice the hole's size.
-            if (glow > 0f) {
-                val core = BattleSurfaceRenderer.withOpacity(light, .85f * glow * shade)
-                val edge = BattleSurfaceRenderer.withOpacity(light, 0f)
-                val radius = hole * (1.2f + .9f * glow)
-                for (step in 0 until 32) {
-                    val a0 = step * TAU / 32
-                    val a1 = (step + 1) * TAU / 32
-                    buffer.addVertex(matrix, impactX, impactY, 0f).setColor(core)
-                    buffer.addVertex(matrix, impactX + cos(a0) * radius, impactY + sin(a0) * radius, 0f).setColor(edge)
-                    buffer.addVertex(matrix, impactX + cos(a1) * radius, impactY + sin(a1) * radius, 0f).setColor(edge)
-                    buffer.addVertex(matrix, impactX, impactY, 0f).setColor(core)
-                }
-            }
             /** A straight piece from (x, y) to (nx, ny), [from] wide on each side at its start and [to] at its end. */
             fun taper(x: Float, y: Float, nx: Float, ny: Float, from: Float, to: Float, color: Int) {
                 val dx = nx - x
@@ -1037,7 +1068,6 @@ internal object EntryDraw {
                     val ny = y + sin(angle) * length
                     val from = base * (1f - along / drawn)
                     val to = base * (1f - (along + length) / drawn)
-                    if (glow > 0f) taper(x, y, nx, ny, from + 3.5f * glow, to + 1.5f * glow, halo)
                     taper(x, y, nx, ny, from, to, dark)
                     along += length
                     x = nx
@@ -1055,7 +1085,6 @@ internal object EntryDraw {
                 val sy = impactY + sin(angle) * start
                 val ex = impactX + cos(angle) * (start + length)
                 val ey = impactY + sin(angle) * (start + length)
-                if (glow > 0f) taper(sx, sy, ex, ey, 1.6f * glow, .4f * glow, haloFaint)
                 taper(sx, sy, ex, ey, .35f, .15f, faint)
             }
             // The rings: broken arcs between neighbouring spikes, close round the hole.

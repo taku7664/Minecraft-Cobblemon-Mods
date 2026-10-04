@@ -181,16 +181,6 @@ object BattleEntryTimeline {
         return 1f - (1f - share) * (1f - share)
     }
 
-    /**
-     * How far light has welled up through a legendary's cracks, 0 to 1: over the stillness after the second round,
-     * then full while the white comes apart.
-     */
-    fun glow(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
-        val start = crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS + SECOND_CRACK_MILLIS }
-            ?: return 0f
-        return smooth(((elapsed - start).toFloat() / STILL_MILLIS).coerceIn(0f, 1f))
-    }
-
     /** When a legendary's cracked white comes apart, after both rounds of cracks have run and it has stayed still. */
     fun shatterStart(kind: BattleEntryKind, revealAt: Long?): Long? =
         crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS + SECOND_CRACK_MILLIS + STILL_MILLIS }
