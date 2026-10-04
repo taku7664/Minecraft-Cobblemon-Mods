@@ -22,7 +22,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
  * whatever outspeeds the team, Toxic for what stays in and heals. Public stats, revealed moves and
  * revealed abilities are enough to tell these apart.
  *
- * The fit runs 0.6..1.4, and 0 when a revealed ability turns the status against the AI. It is scaled
+ * The fit runs 0.3..1.4 (Burn on a pure special attacker is the low end), and 0 when a revealed ability turns the status against the AI. It is scaled
  * toward 1.0 by tier: an Introductory trainer does not look, Standard half, Advanced and Boss fully.
  * The native search simulates the real effect inside its horizon and does not use this.
  */
@@ -46,7 +46,9 @@ internal object LocalStatusTargetFit {
 
     private fun rawFit(status: String, target: BattlePokemonStateView, context: BattleDecisionContext): Double? {
         val base = when (status) {
-            BURN -> 0.6 + 0.8 * physicalShare(target, context)
+            // Against a special attacker Burn is only its 1/16 a turn, half of Poison's chip; the
+            // attack halving is the rest of its value.
+            BURN -> BURN_CHIP_FIT + (MAXIMUM_FIT - BURN_CHIP_FIT) * physicalShare(target, context)
             PARALYSIS -> 0.7 + 0.7 * outspeedShare(target, context)
             TOXIC -> staying(target, context)
             POISON -> 1.0 + (staying(target, context) - 1.0) * 0.5
@@ -135,6 +137,7 @@ internal object LocalStatusTargetFit {
     private const val SLEEP = "slp"
     private const val FREEZE = "frz"
     private const val SLEEP_FIT = 1.2
+    private const val BURN_CHIP_FIT = 0.3
     private const val MINIMUM_FIT = 0.6
     private const val MAXIMUM_FIT = 1.4
     private val RESIDUAL_HEALING_ITEMS = setOf("leftovers", "blacksludge")
