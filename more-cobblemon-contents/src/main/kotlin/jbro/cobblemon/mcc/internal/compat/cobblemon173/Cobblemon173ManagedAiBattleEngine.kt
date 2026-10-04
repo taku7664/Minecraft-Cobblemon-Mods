@@ -24,7 +24,6 @@ import jbro.cobblemon.mcc.internal.ai.BrainCapability
 import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.mcc.internal.presentation.BattleArenaHologramNetworking
-import jbro.cobblemon.mcc.internal.shadow.ShadowTrainerProjectionNetworking
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
@@ -308,8 +307,6 @@ class Cobblemon173ManagedAiBattleEngine(
             } else {
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
-                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos, prepared.appearance,
-                    prepared.trainerDisplayNameKey)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
 
                 attachReplayableCompletionHandler(
@@ -333,7 +330,6 @@ class Cobblemon173ManagedAiBattleEngine(
                             )
                         },
                         { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
-                        { ShadowTrainerProjectionNetworking.hide(player, ended.battleId) },
                         { BattleArenaHologramNetworking.hide(player, ended.battleId) },
                         {
                             trainerActor.closeBrains(

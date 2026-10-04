@@ -58,7 +58,6 @@ class MccClientSessionResetTest {
         val initializer = Files.readString(root.resolve("MoreCobblemonContentsClient.kt"))
         val consumers = listOf(
             "ShadowTerrainHologramRenderer.kt",
-            "ShadowTrainerProjectionRenderer.kt",
             "ManagedBattleMechanicVisibility.kt",
             "BattleHubClientNetworking.kt",
             "ShopPlayClientNetworking.kt",

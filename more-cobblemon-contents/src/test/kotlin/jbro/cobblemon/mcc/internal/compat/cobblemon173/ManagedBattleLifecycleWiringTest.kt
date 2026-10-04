@@ -14,7 +14,6 @@ class ManagedBattleLifecycleWiringTest {
         assertTrue(engine.contains("Cobblemon173ManagedBattleLifecycles.battleEnded("))
         assertTrue(engine.contains("Cobblemon173ManagedBattleLifecycles.abortAndForceRelease("))
         assertTrue(engine.contains("unboundedDecisionTime = prepared.unboundedBrainDecision"))
-        assertTrue(engine.contains("prepared.appearance"))
     }
 
     @Test

@@ -18,10 +18,7 @@
   ],
   "client": [
     "client.BattleMoveSelectionMixin",
-    "client.LevelRendererLateHologramMixin",
-    "client.RenderTypeCompositeAccessor",
-    "client.RenderTypeCompositeStateAccessor",
-    "client.RenderTextureStateAccessor"
+    "client.LevelRendererLateHologramMixin"
   ],
   "injectors": {
     "defaultRequire": 1

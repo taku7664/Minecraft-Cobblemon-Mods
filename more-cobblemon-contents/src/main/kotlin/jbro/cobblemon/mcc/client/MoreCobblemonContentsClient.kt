@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component
 object MoreCobblemonContentsClient : ClientModInitializer {
     override fun onInitializeClient() {
         MccClientSessionReset.registerEvents()
-        ShadowHologramShader.register()
         ShadowTerrainHologramShader.register()
         ShadowTerrainHologramRenderer.register()
         HoloTerminalClientContent.register()
@@ -26,7 +25,6 @@ object MoreCobblemonContentsClient : ClientModInitializer {
             icon = MccHubTabs.itemIcon("cobblemon:relic_coin")))
         MccHubCaptureHarness.installFromEnvironment()
         ShopPlayClientNetworking.register()
-        ShadowTrainerProjectionRenderer.register()
         ManagedBattleMechanicVisibilityClient.register()
         ManagedBattleContentClientNetworking.register()
         BattleEntryClientNetworking.register()

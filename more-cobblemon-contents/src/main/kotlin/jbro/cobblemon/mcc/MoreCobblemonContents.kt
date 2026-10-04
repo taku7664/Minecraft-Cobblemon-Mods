@@ -16,7 +16,6 @@ import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.mcc.internal.hub.BattleHubIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile
-import jbro.cobblemon.mcc.internal.shadow.ShadowTrainerProjectionNetworking
 import jbro.cobblemon.mcc.internal.presentation.BattleArenaHologramNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
@@ -42,7 +41,6 @@ object MoreCobblemonContents : ModInitializer {
         BattlePointShopCatalogResources.register()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()
-        ShadowTrainerProjectionNetworking.registerServer()
         BattleArenaHologramNetworking.registerServer()
         ManagedBattleMechanicVisibilityNetworking.registerServer()
         jbro.cobblemon.mcc.internal.battle.GimmickLockedBattles.register()

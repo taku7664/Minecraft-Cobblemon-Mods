@@ -8,22 +8,6 @@ import org.junit.jupiter.api.Test
 
 class ShadowHologramRenderIsolationTest {
     @Test
-    fun `optional trainer projection networking cannot escape into battle lifecycle`() {
-        val networking = Files.readString(
-            Path.of(
-                "src/main/kotlin/jbro/cobblemon/mcc/internal/shadow/" +
-                    "ShadowTrainerProjection.kt",
-            ),
-        )
-        val objectBody = networking.substringAfter("internal object ShadowTrainerProjectionNetworking")
-
-        assertTrue(objectBody.substringAfter("fun show").substringBefore("fun hide").contains("runOptionalProjectionSend"))
-        assertTrue(objectBody.substringAfter("fun hide").contains("runOptionalProjectionSend"))
-        assertTrue(objectBody.contains("continuing without the optional effect"))
-        assertTrue(objectBody.contains("core battle cleanup will continue"))
-    }
-
-    @Test
     fun `managed battle holograms never replace the Pokemon renderer`() {
         val mixins = Files.readString(Path.of("src/main/resources/more_cobblemon_contents.mixins.json"))
         val clientInitializer = Files.readString(
@@ -122,61 +106,13 @@ class ShadowHologramRenderIsolationTest {
     }
 
     @Test
-    fun `shader pack model uses the original core shader after external finalization`() {
-        val projectionRenderer = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/mcc/client/ShadowTrainerProjectionRenderer.kt"),
-        )
-        val lateMixin = Files.readString(
-            Path.of(
-                "src/main/java/jbro/cobblemon/mcc/internal/mixin/client/" +
-                    "LevelRendererLateHologramMixin.java",
-            ),
-        )
-
-        assertTrue(projectionRenderer.contains("WorldRenderEvents.LAST.register(::prepareShaderPackRender)"))
-        // Only the hologram waits for the late pass; a trainer with its own skin renders with the other entities.
-        assertTrue(projectionRenderer.contains("if (projection.isHologram && ExternalShaderPackState.isInUse()) return"))
-        assertTrue(projectionRenderer.contains("fun renderAfterExternalShaderPack()"))
-        assertTrue(projectionRenderer.contains("client.renderBuffers().bufferSource()"))
-        assertTrue(projectionRenderer.contains("buffers.endBatch()"))
-        assertTrue(projectionRenderer.contains("ShadowHologramShader.buffer"))
-        assertFalse(projectionRenderer.contains("useCoreShader = !shaderPackActive"))
-        assertTrue(lateMixin.contains("ShadowTerrainHologramRenderer.compositeAfterExternalShaderPack()"))
-        assertTrue(lateMixin.contains("ShadowTrainerProjectionRenderer.renderAfterExternalShaderPack()"))
-    }
-
-    @Test
-    fun `shader pack model snapshots camera matrices instead of retaining the mutable render context`() {
-        val projectionRenderer = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/mcc/client/ShadowTrainerProjectionRenderer.kt"),
-        )
+    fun `shader pack terrain snapshots camera matrices instead of retaining the mutable render context`() {
         val terrainRenderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/mcc/client/ShadowTerrainHologramRenderer.kt"),
         )
 
-        assertFalse(projectionRenderer.contains("pendingShaderPackContext: WorldRenderContext?"))
-        assertTrue(projectionRenderer.contains("pendingShaderPackFrame: TrainerHologramRenderFrame?"))
-        assertTrue(projectionRenderer.contains("TrainerHologramRenderFrame.capture(context)"))
-        assertTrue(projectionRenderer.contains("Matrix4f(source.last().pose())"))
-        assertTrue(projectionRenderer.contains("Matrix3f(source.last().normal())"))
-        assertTrue(projectionRenderer.contains("Matrix4f(RenderSystem.getModelViewMatrix())"))
-        assertTrue(projectionRenderer.contains("Matrix4f(RenderSystem.getProjectionMatrix())"))
-        assertTrue(projectionRenderer.contains("frame.withCapturedRenderSystemState"))
-        assertFalse(projectionRenderer.contains("poseStack.translate(x, y, z)"))
-        assertFalse(projectionRenderer.contains("poseStack.translate(-x, -y, -z)"))
-        assertTrue(projectionRenderer.contains("HOLOGRAM_ARMOR_SLOTS.forEach"))
-        assertFalse(projectionRenderer.contains("EquipmentSlot.entries.forEach"))
         assertFalse(terrainRenderer.contains("pendingShaderPackContext: WorldRenderContext?"))
         assertTrue(terrainRenderer.contains("pendingShaderPackFrame: TerrainHologramRenderFrame?"))
         assertTrue(terrainRenderer.contains("TerrainHologramRenderFrame.capture(context)"))
-    }
-
-    @Test
-    fun `floor glow writes depth so the late shader compositor preserves it`() {
-        val floorRenderer = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/mcc/client/ShadowHologramFloorRenderer.kt"),
-        )
-
-        assertTrue(floorRenderer.contains("setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)"))
     }
 }

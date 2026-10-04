@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.internal.mixin.client;
 
 import jbro.cobblemon.mcc.client.ShadowTerrainHologramRenderer;
-import jbro.cobblemon.mcc.client.ShadowTrainerProjectionRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -28,6 +27,5 @@ public abstract class LevelRendererLateHologramMixin {
         CallbackInfo callbackInfo
     ) {
         ShadowTerrainHologramRenderer.compositeAfterExternalShaderPack();
-        ShadowTrainerProjectionRenderer.renderAfterExternalShaderPack();
     }
 }
