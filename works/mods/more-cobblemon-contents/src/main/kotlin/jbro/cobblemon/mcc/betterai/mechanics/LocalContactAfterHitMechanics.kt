@@ -168,7 +168,9 @@ internal object LocalContactAfterHitMechanics {
         combatStats = pokemon.combatStats,
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
-        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
+        knownVolatileEffectIds = if (fainted) pokemon.knownVolatileEffectIds.filter {
+            it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM)
+        }.toSet() else pokemon.knownVolatileEffectIds,
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,

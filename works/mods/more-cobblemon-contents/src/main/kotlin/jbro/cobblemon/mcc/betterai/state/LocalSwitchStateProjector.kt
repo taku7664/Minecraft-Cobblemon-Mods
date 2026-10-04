@@ -2,6 +2,8 @@ package jbro.cobblemon.mcc.betterai.state
 
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /** Applies the public, event-free part of a single switch for scoring and recursive projection. */
 internal object LocalSwitchStateProjector {
@@ -11,8 +13,11 @@ internal object LocalSwitchStateProjector {
         action: BattleActionCandidate,
         /** Off when other Pokemon switch in on the same turn: abilities wait until every one is in. */
         entryAbility: Boolean = true,
+        passSource: BattlePokemonStateView? = null,
+        shedTail: Boolean = false,
     ): BattleStateView {
         val incomingId = action.switchPokemonId ?: return state
+        if ("revival_blessing" in action.tags) return LocalPersistentMoveState.revive(state, side, incomingId)
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingId && it.side == side && !it.fainted
         } ?: return state
@@ -32,7 +37,7 @@ internal object LocalSwitchStateProjector {
                         knownAbilityId = pokemon.knownBaseAbilityId ?: pokemon.knownAbilityId,
                     )
                 pokemon.battlePokemonId == incomingId -> {
-                    val hp = (incoming.hpFraction - (action.facts?.switchEntryHpLossFraction ?: 0.0)).coerceAtLeast(0.0)
+                    val hp = incoming.hpFraction
                     pokemon.copyForSwitch(
                         activeSlot = slot,
                         hpFraction = hp,
@@ -56,7 +61,16 @@ internal object LocalSwitchStateProjector {
                     .coerceAtLeast(0)
             },
         )
-        val afterHazards = LocalSwitchEntryEffectProjector.project(switched, incomingId)
+        val transferred = if (passSource != null) LocalPersistentMoveState.pass(switched, passSource, incomingId, shedTail) else switched
+        val afterWish = LocalPersistentMoveState.afterSwitch(transferred, incomingId)
+        val hpLoss = action.facts?.switchEntryHpLossFraction ?: 0.0
+        val damaged = afterWish.copyState(pokemon = afterWish.pokemon.map { pokemon ->
+            if (pokemon.battlePokemonId != incomingId) pokemon else {
+                val hp = (pokemon.hpFraction - hpLoss).coerceAtLeast(0.0)
+                pokemon.copyState(hpFraction = hp, fainted = hp <= 0.0)
+            }
+        })
+        val afterHazards = LocalSwitchEntryEffectProjector.project(damaged, incomingId)
         return if (entryAbility) LocalEntryAbilityProjector.project(afterHazards, incomingId) else afterHazards
     }
 
@@ -100,7 +114,7 @@ internal object LocalSwitchStateProjector {
         combatStats = formState?.combatStats ?: combatStats,
         knownFormStates = knownFormStates,
         actionConstraints = BattlePokemonActionConstraintView.empty(),
-        knownVolatileEffectIds = emptySet(),
+        knownVolatileEffectIds = knownVolatileEffectIds.filterTo(linkedSetOf()) { it.startsWith("better_ai:last_consumed_item=") },
         knownBaseStabTypeIds = formState?.knownTypeIds ?: knownBaseStabTypeIds,
         knownTeraTypeId = knownTeraTypeId,
         knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,

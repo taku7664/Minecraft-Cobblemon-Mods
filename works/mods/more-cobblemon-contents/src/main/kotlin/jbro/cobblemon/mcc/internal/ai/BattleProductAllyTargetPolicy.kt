@@ -7,6 +7,8 @@ internal object BattleProductAllyTargetPolicy {
         targetSide: BattleSide?,
         ordinarilyFoeAimed: Boolean,
         damageCategory: BattleMoveDamageCategory?,
+        targetKnownAbilityId: String? = null,
     ): Boolean = targetSide != BattleSide.ALLY || !ordinarilyFoeAimed ||
-        damageCategory == BattleMoveDamageCategory.STATUS || PublicIds.canonical(moveId) == "pollenpuff"
+        damageCategory == BattleMoveDamageCategory.STATUS || PublicIds.canonical(moveId) == "pollenpuff" ||
+        PublicIds.canonical(moveId) == "beatup" && targetKnownAbilityId?.let(PublicIds::canonical) == "justified"
 }

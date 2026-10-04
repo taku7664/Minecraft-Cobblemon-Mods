@@ -95,10 +95,14 @@ internal object LocalPublicMoveDamageInputs {
             }
             // The escalating hits average to the middle one; per-hit accuracy is applied by the multi-hit rules.
             // Beat Up: one hit per healthy party member, each 5 + its base Attack / 10, read here as their sum.
-            "beatup" -> state.pokemon.filter { it.side == actor.side && !it.fainted && it.hpFraction > 0.0 && it.statusId == null }
+            "beatup" -> state.pokemon.filter { it.side == actor.side && !it.fainted && it.hpFraction > 0.0 && it.statusId == null &&
+                candidate.tags.firstOrNull { tag -> tag.startsWith("better_ai:beatup_member=") }?.substringAfter('=')
+                    ?.let { selected -> selected == it.battlePokemonId.toString() } != false }
                 .sumOf { (LocalPublicSpeciesData.species(it)?.baseStats?.get("atk") ?: 0) / 10 + 5 }.takeIf { it > 0 }
-            "tripleaxel" -> 40
-            "triplekick" -> 20
+            "tripleaxel" -> candidate.tags.firstOrNull { it.startsWith("better_ai:hit_index=") }
+                ?.substringAfter('=')?.toIntOrNull()?.takeIf { it in 1..3 }?.times(20) ?: 40
+            "triplekick" -> candidate.tags.firstOrNull { it.startsWith("better_ai:hit_index=") }
+                ?.substringAfter('=')?.toIntOrNull()?.takeIf { it in 1..3 }?.times(10) ?: 20
             // Showdown halves Solar Beam and Solar Blade in rain, sand and snow.
             "solarbeam", "solarblade" -> wholePower?.let {
                 if (LocalPublicFieldMechanics.effectiveWeatherId(state) in SOLAR_WEAK_WEATHER) it / 2 else it

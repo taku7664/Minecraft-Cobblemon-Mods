@@ -21,6 +21,8 @@ internal object LocalDirectHitMechanics {
         ignoreTargetAbility: Boolean,
         /** A sound move or an Infiltrator reaches past a Substitute. */
         bypassesSubstitute: Boolean = false,
+        /** Move execution defers Update until its onHit and DamagingHit callbacks finish. */
+        updateItems: Boolean = true,
     ): LocalAppliedDirectHit {
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
         val targetResolution = target?.let {
@@ -33,6 +35,7 @@ internal object LocalDirectHitMechanics {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
         }.sumOf { midpoint(requireNotNull(it.fractionRange)) * (it.probability ?: 1.0) }
+        val healBlocked = actor?.knownVolatileEffectIds?.any { canonical(it) == "healblock" } == true
         val drainHealing = effects.filter {
             it.kind == BattleMoveEffectKind.DRAIN_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
@@ -58,7 +61,7 @@ internal object LocalDirectHitMechanics {
             when (pokemon.battlePokemonId) {
                 actorId -> {
                     val hp = if (selfDestructs) 0.0 else {
-                        (pokemon.hpFraction + fixedHealing + drainHealing - damageRecoil - maxHpRecoil)
+                        (pokemon.hpFraction + (if (healBlocked) 0.0 else fixedHealing + drainHealing) - damageRecoil - maxHpRecoil)
                             .coerceIn(0.0, 1.0)
                     }
                     val stages = stolenStages.entries.fold(pokemon.statStages) { current, (stat, amount) ->
@@ -87,12 +90,13 @@ internal object LocalDirectHitMechanics {
                 .coerceIn(0.0, 1.0)
             beforeRecoil - afterRecoil
         } ?: 0.0
-        return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage, actualRecoil)
+        val raw = copyState(state, nextPokemon)
+        return LocalAppliedDirectHit(if (updateItems) LocalBerryMechanics.afterUpdate(raw) else raw, directDamage, actualRecoil)
     }
 
     /**
-     * A Substitute takes the hit instead of its user. Its own HP is not public to track, so it is read as taking one
-     * hit and breaking, the common case against anything that threatens a knockout.
+     * Newly created decoys retain their actual remaining HP across attacks in this branch.
+     * An older observed decoy does not expose its remaining HP.
      */
     private fun substituteAbsorbs(
         target: BattlePokemonStateView,
@@ -103,7 +107,7 @@ internal object LocalDirectHitMechanics {
         if (bypassed || incomingDamage <= 0.0 || target.battlePokemonId == actorId) return null
         if (target.knownVolatileEffectIds.none { canonical(it) == SUBSTITUTE }) return null
         return TargetResolution(
-            pokemon = target.copyState(knownVolatileEffectIds = target.knownVolatileEffectIds.filterNot { canonical(it) == SUBSTITUTE }.toSet()),
+            pokemon = LocalPersistentMoveState.damageSubstitute(target, incomingDamage),
             directDamageFraction = 0.0,
         )
     }
@@ -160,66 +164,11 @@ internal object LocalDirectHitMechanics {
         // on a survivor - but it moves the health a second attack has to get through, and 394 of the
         // battle tower's sets carry one. The AI holds them itself, where the item is never hidden, so
         // this is mostly the trainer learning that it can afford the turn it was refusing to take.
-        val berryHealing = pinchBerryHealing(state, target, hp)
-        if (berryHealing > 0.0) {
-            val healed = LocalHpArithmetic.change(target, hp, berryHealing).coerceAtMost(1.0)
-            return TargetResolution(
-                pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = null, fainted = false),
-                directDamageFraction = incomingDamage,
-            )
-        }
         return TargetResolution(
             pokemon = copyPokemon(target, hpFraction = hp, fainted = hp <= 0.0),
             directDamageFraction = incomingDamage,
         )
     }
-
-    /**
-     * What a revealed pinch berry restores, given the health the hit left behind.
-     *
-     * Nothing is restored to a fainted Pokemon, and nothing to one still above the threshold: the berry
-     * is a reaction to being brought low, not a passive heal. Only a revealed item counts, which for
-     * the opponent means one that has already been seen to fire.
-     */
-    private fun pinchBerryHealing(
-        state: BattleStateView,
-        target: BattlePokemonStateView,
-        healthAfterHit: Double,
-    ): Double {
-        if (healthAfterHit <= 0.0) return 0.0
-        val item = LocalPublicItemState.activeItemId(state, target)
-        val fraction = if (item == "oranberry") {
-            // Oran heals ten absolute HP, not ten percent. Missing public HP units cannot
-            // establish the resulting fraction; a public range uses the existing midpoint model.
-            val maxHp = target.combatStats?.maxHp ?: return 0.0
-            10.0 / ((maxHp.minimum.toDouble() + maxHp.maximum) / 2.0)
-        } else PINCH_BERRY_HEALING[item] ?: return 0.0
-        val threshold = if (item == "oranberry" || item == "sitrusberry" ||
-            LocalPublicAbilityState.effectiveKnownAbility(state, target) == "gluttony"
-        ) {
-            HALF_HP_BERRY_THRESHOLD
-        } else QUARTER_HP_BERRY_THRESHOLD
-        if (target.hpFraction <= threshold) return 0.0
-        if (healthAfterHit > threshold) return 0.0
-        val maxHp = target.combatStats?.maxHp
-        if (item != "oranberry" && maxHp != null && maxHp.minimum == maxHp.maximum) {
-            // Native heal truncates fractional HP, with a minimum of one for positive healing.
-            return kotlin.math.floor(maxHp.minimum * fraction).coerceAtLeast(1.0) / maxHp.minimum
-        }
-        return fraction
-    }
-
-    /** Fractional recovery amounts; activation thresholds are separate from the amount healed. */
-    private val PINCH_BERRY_HEALING = mapOf(
-        "sitrusberry" to 0.25,
-        "figyberry" to 1.0 / 3.0,
-        "wikiberry" to 1.0 / 3.0,
-        "magoberry" to 1.0 / 3.0,
-        "aguavberry" to 1.0 / 3.0,
-        "iapapaberry" to 1.0 / 3.0,
-    )
-    private const val HALF_HP_BERRY_THRESHOLD = 0.5
-    private const val QUARTER_HP_BERRY_THRESHOLD = 0.25
 
     private fun oneHpFraction(target: BattlePokemonStateView): Double {
         val maxHp = target.combatStats?.maxHp?.maximum?.coerceAtLeast(1) ?: return DEFAULT_ONE_HP_FRACTION
@@ -267,7 +216,7 @@ internal object LocalDirectHitMechanics {
         combatStats = pokemon.combatStats,
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
-        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
+        knownVolatileEffectIds = if (fainted) pokemon.knownVolatileEffectIds.filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) } else pokemon.knownVolatileEffectIds,
         knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
         knownTeraTypeId = pokemon.knownTeraTypeId,
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,

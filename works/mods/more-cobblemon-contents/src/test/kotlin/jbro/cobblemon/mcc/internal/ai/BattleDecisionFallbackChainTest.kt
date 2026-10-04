@@ -121,6 +121,25 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
+    fun `primary consuming the shared timeout still selects the already finished local result`() {
+        val now = 1_000L
+        val context = context(now + 20_000L)
+        val localStarted = CountDownLatch(1)
+        val coordinator = BattleBrainDecisionCoordinator(scheduler, brainExecutor,
+            maximumDecisionMillis = 100L, nowEpochMillis = { now })
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = endpoint { CompletableFuture() },
+            local = endpoint { localStarted.countDown(); CompletableFuture.completedFuture(decision(context, "move:1")) },
+            context = context,
+        ).toCompletableFuture()
+        assertTrue(localStarted.await(1, TimeUnit.SECONDS))
+        val resolution = result.get(1, TimeUnit.SECONDS)
+        assertEquals(BattleDecisionSource.LOCAL_BRAIN, resolution.source)
+        assertEquals(BattleDecisionFailureReason.TIMEOUT, resolution.failures.single().reason)
+        assertEquals("move:1", resolution.decision?.actionId)
+    }
+
+    @Test
     fun `primary keeps public context while local receives normalized inference slots`() {
         val now = 1_000L
         val publicContext = context(now + 5_000L)

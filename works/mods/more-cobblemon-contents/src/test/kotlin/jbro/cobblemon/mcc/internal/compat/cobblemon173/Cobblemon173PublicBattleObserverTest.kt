@@ -28,6 +28,233 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `Perish Song public countdown replaces the previous number`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        for (count in listOf(3, 2, 1)) {
+            val parsed = Cobblemon173ShowdownObservationAdapter.volatileChange(
+                BattleMessage("|-start|p2a: test|perish$count"))!!
+            assertEquals("perishsong:$count" to true, parsed)
+            observer.observe(Cobblemon173PublicObservation.VolatileChanged(4 - count, actor, parsed.first, parsed.second))
+        }
+        assertEquals(setOf("perishsong", "perishsong:1"), observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `observed Heal Block carries its public remaining duration and ends`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "healblock", true))
+        assertTrue("healblockturns:5" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.advanceTurn(2)
+        assertTrue("healblockturns:4" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(2, actor, "healblock", false))
+        assertFalse(observer.publicSnapshot().pokemon.single().knownVolatileEffectIds.any { it.startsWith("healblock") })
+    }
+
+    @Test
+    fun `Psychic Noise gives the public Heal Block its actual two turn duration`() {
+        val source = publicPokemon(BattleSide.ALLY, 0)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, "psychicnoise", listOf(target)))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, target, "healblock", true))
+        observer.advanceTurn(2)
+        assertTrue("healblockturns:1" in observer.publicSnapshot().pokemon.single { it.side == BattleSide.OPPONENT }.knownVolatileEffectIds)
+        observer.advanceTurn(3)
+        assertFalse(observer.publicSnapshot().pokemon.single { it.side == BattleSide.OPPONENT }.knownVolatileEffectIds.any { it.startsWith("healblock") })
+    }
+
+    @Test
+    fun `public Flash Fire and Charge messages preserve the active trait inputs`() {
+        assertEquals("flashfire", Cobblemon173ShowdownObservationAdapter.directlyRevealedAbility(
+            BattleMessage("|-start|p2a: test|ability: Flash Fire")))
+        assertEquals("slowstart", Cobblemon173ShowdownObservationAdapter.directlyRevealedAbility(
+            BattleMessage("|-start|p2a: test|ability: Slow Start")))
+        assertEquals("flashfire" to true, Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-start|p2a: test|ability: Flash Fire")))
+        assertEquals("charge" to true, Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-start|p2a: test|Charge|Thunderbolt|[from] ability: Electromorphosis")))
+        assertEquals("charge" to false, Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-end|p2a: test|Charge")))
+    }
+
+    @Test
+    fun `Laser Focus public start remains for the next turn only`() {
+        val message = BattleMessage("|-start|p2a: test|move: Laser Focus")
+        assertEquals("laserfocus" to true, Cobblemon173ShowdownObservationAdapter.volatileChange(message))
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "laserfocus", true))
+        observer.advanceTurn(2)
+        assertTrue("laserfocusturns:1" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.advanceTurn(3)
+        assertFalse("laserfocus" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `Destiny Bond public single move ends when its holder attempts another move`() {
+        assertEquals("destinybond" to true, Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-singlemove|p2a: test|Destiny Bond")))
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "destinybond", true))
+        observer.advanceTurn(2)
+        assertTrue("destinybond" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", emptyList()))
+        assertFalse("destinybond" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `Endure public single turn expires when the next turn starts`() {
+        assertEquals("endure" to true, Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-singleturn|p2a: test|move: Endure")))
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "endure", true))
+        observer.advanceTurn(2)
+        assertFalse("endure" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `Disable preserves the specific publicly disabled move`() {
+        val parsed = Cobblemon173ShowdownObservationAdapter.volatileChange(
+            BattleMessage("|-start|p2a: test|Disable|Thunderbolt"))!!
+        assertEquals("disablemove:thunderbolt" to true, parsed)
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, parsed.first, parsed.second))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", emptyList()))
+        assertTrue("disablemove:thunderbolt" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `Leech Seed and binding preserve the public caster in the second opposing slot`() {
+        for ((move, effect, prefix) in listOf(Triple("leechseed", "leechseed", "leechseedsource:"),
+            Triple("firespin", "partiallytrapped", "partiallytrappedsource:"))) {
+            val source = publicPokemon(BattleSide.OPPONENT, 1)
+            val target = publicPokemon(BattleSide.ALLY, 0)
+            val observer = Cobblemon173PublicBattleObserver(3)
+            observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, move, listOf(target)))
+            observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, target, effect, true))
+            assertTrue(prefix + source.battlePokemonId in observer.publicSnapshot().pokemon
+                .single { it.battlePokemonId == target.battlePokemonId }.knownVolatileEffectIds, move)
+        }
+    }
+
+    @Test
+    fun `Healing Wish stays on its public slot until its heal is observed`() {
+        val source = publicPokemon(BattleSide.ALLY, 1)
+        val incoming = publicPokemon(BattleSide.ALLY, 1)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, "healingwish", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.Fainted(1, source))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, incoming))
+        assertEquals("healingwishslot:1", observer.publicSnapshot().field.sideConditions.getValue(BattleSide.ALLY).single().effectId)
+        observer.observe(Cobblemon173PublicObservation.HpChanged(2, incoming, publicSourceEffectId = "healingwish"))
+        assertTrue(observer.publicSnapshot().field.sideConditions.getValue(BattleSide.ALLY).isEmpty())
+    }
+
+    @Test
+    fun `public rampage continuation records uses without inventing its hidden duration`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "outrage", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "outrage", emptyList(), ppLockedContinuation = true))
+        assertEquals(setOf("rampagepublic:outrage:2"), observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(2, actor, "confusion", true))
+        assertFalse(observer.publicSnapshot().pokemon.single().knownVolatileEffectIds.any { it.startsWith("rampagepublic:") })
+    }
+
+    @Test
+    fun `consumed item is absent and its public history survives switching`() {
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val replacement = publicPokemon(BattleSide.ALLY, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry",
+            removed = true, consumed = true, ownAbilityAtRemoval = "unburden"))
+        val consumed = observer.publicSnapshot().pokemon.single()
+        assertNull(consumed.knownHeldItemId)
+        assertTrue("unburden" in consumed.knownVolatileEffectIds)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, replacement))
+        val benched = observer.publicSnapshot().pokemon.single { it.battlePokemonId == actor.battlePokemonId }
+        assertTrue("better_ai:last_consumed_item=sitrusberry" in benched.knownVolatileEffectIds)
+        assertFalse("unburden" in benched.knownVolatileEffectIds)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, actor))
+        assertTrue("better_ai:last_consumed_item=sitrusberry" in observer.publicSnapshot().pokemon
+            .single { it.battlePokemonId == actor.battlePokemonId }.knownVolatileEffectIds)
+    }
+
+    @Test
+    fun `knocked off item can activate Unburden but cannot become a harvested berry`() {
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry",
+            removed = true, consumed = false, ownAbilityAtRemoval = "unburden"))
+        val holder = observer.publicSnapshot().pokemon.single()
+        assertNull(holder.knownHeldItemId)
+        assertTrue("unburden" in holder.knownVolatileEffectIds)
+        assertFalse(holder.knownVolatileEffectIds.any { it.startsWith("better_ai:last_consumed_item=") })
+        assertFalse(Cobblemon173ShowdownObservationAdapter.itemWasConsumed(
+            BattleMessage("|-enditem|p1a: test|Sitrus Berry|[from] move: Knock Off")))
+        assertTrue(Cobblemon173ShowdownObservationAdapter.itemWasConsumed(
+            BattleMessage("|-enditem|p1a: test|Sitrus Berry|[eat]")))
+    }
+
+    @Test
+    fun `public Slow Start elapsed turns expire and entry evidence lasts only its turn`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, actor))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, actor, "slowstart", true))
+        assertTrue("better_ai:entered_this_turn" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.advanceTurn(2)
+        assertTrue("better_ai:slow_start_turns=4" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        assertFalse("better_ai:entered_this_turn" in observer.publicSnapshot().pokemon.single().knownVolatileEffectIds)
+        observer.advanceTurn(6)
+        assertFalse(observer.publicSnapshot().pokemon.single().knownVolatileEffectIds.any { it.contains("slowstart") || it.contains("slow_start_turns") })
+    }
+
+    @Test
+    fun `public Wish follows its slot across a switch and expires after its due turn`() {
+        val source = publicPokemon(BattleSide.ALLY, 1)
+        val replacement = publicPokemon(BattleSide.ALLY, 1)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, "wish", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, replacement))
+        val effect = observer.publicSnapshot().field.sideConditions.getValue(BattleSide.ALLY)
+            .single { it.effectId == "wishslot1" }
+        assertEquals(1, effect.remainingTurns)
+        observer.advanceTurn(3)
+        assertTrue(observer.publicSnapshot().field.sideConditions.getValue(BattleSide.ALLY).isEmpty())
+    }
+
+    @Test
+    fun `Future Sight preserves the targeted opponent slot and a failed cast creates no effect`() {
+        val source = publicPokemon(BattleSide.ALLY, 0)
+        val target = publicPokemon(BattleSide.OPPONENT, 1)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, "futuresight", listOf(target)))
+        assertEquals(3, observer.publicSnapshot().field.sideConditions.getValue(BattleSide.OPPONENT)
+            .single { it.effectId == "futuresightslot1" }.remainingTurns)
+        observer.observe(Cobblemon173PublicObservation.MoveOutcome(1,
+            BattleMoveOutcomeView(BattleMoveOutcomeKind.FAILED, moveId = "futuresight"), source))
+        assertTrue(observer.publicSnapshot().field.sideConditions.getValue(BattleSide.OPPONENT).isEmpty())
+    }
+
+    @Test
+    fun `a failed repeat Wish keeps the already pending Wish`() {
+        val source = publicPokemon(BattleSide.ALLY, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, source, "wish", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, source, "wish", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.MoveOutcome(2,
+            BattleMoveOutcomeView(BattleMoveOutcomeKind.FAILED, moveId = "wish"), source))
+        assertEquals(1, observer.publicSnapshot().field.sideConditions.getValue(BattleSide.ALLY)
+            .single { it.effectId == "wishslot0" }.remainingTurns)
+    }
+
+    @Test
     fun `a visible Mega Trace form keeps its already publicly copied ability`() {
         val actor = publicPokemon(BattleSide.OPPONENT, 0)
         val observer = Cobblemon173PublicBattleObserver(1)
@@ -325,6 +552,7 @@ class Cobblemon173PublicBattleObserverTest {
         observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, other, true))
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, second, transfersSubstitute = true))
         fun effects(id: UUID) = observer.publicSnapshot().pokemon.single { it.battlePokemonId == id }.knownVolatileEffectIds
+            .filterNot { it.startsWith("better_ai:") }.toSet()
         assertEquals(emptySet<String>(), effects(first.battlePokemonId))
         assertEquals(setOf("substitute"), effects(second.battlePokemonId))
         assertEquals(setOf("substitute"), effects(other.battlePokemonId))
@@ -336,6 +564,71 @@ class Cobblemon173PublicBattleObserverTest {
         assertTrue(effects(first.battlePokemonId).isEmpty())
         observer.observe(Cobblemon173PublicObservation.Fainted(3, other))
         assertTrue(effects(other.battlePokemonId).isEmpty())
+    }
+
+    @Test
+    fun `Baton Pass observation copies only public boosts passable effects and their metadata`() {
+        val outgoing = publicPokemon(BattleSide.ALLY, 0).copy(statStages = mapOf("atk" to 2, "spe" to 1))
+        val incoming = publicPokemon(BattleSide.ALLY, 0)
+        val otherSlot = publicPokemon(BattleSide.ALLY, 1).copy(statStages = mapOf("def" to 4))
+        val seedCaster = publicPokemon(BattleSide.OPPONENT, 1)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        listOf(outgoing, otherSlot, seedCaster).forEach {
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, it))
+        }
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, seedCaster, "leechseed", listOf(outgoing)))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, outgoing, "leechseed", true))
+        for (effect in listOf("focusenergy", "laserfocus", "perishsong:2", "healblock", "endure", "destinybond", "slowstart"))
+            observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, outgoing, effect, true))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, outgoing, true))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, otherSlot, "confusion", true))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, outgoing, "batonpass", emptyList()))
+        // The real adapter closes the action window before dispatching the public switch event.
+        observer.closeActionWindow()
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, incoming, transfersSubstitute = true,
+            publicTransferMoveId = Cobblemon173ShowdownObservationAdapter.publicSwitchTransferMove(
+                BattleMessage("|switch|p1a: next|Pikachu|100/100|[from] Baton Pass"))))
+        val arrived = observer.publicSnapshot().pokemon.single { it.battlePokemonId == incoming.battlePokemonId }
+        assertEquals(outgoing.statStages, arrived.statStages)
+        val effects = arrived.knownVolatileEffectIds
+        assertTrue(effects.containsAll(setOf("substitute", "leechseed", "leechseedsource:${seedCaster.battlePokemonId}",
+            "focusenergy", "laserfocus", "laserfocusturns:2", "perishsong", "perishsong:2", "healblock", "healblockturns:5")))
+        assertFalse(effects.any { it in setOf("confusion", "endure", "destinybond", "slowstart") || it.startsWith("better_ai:slow_start_turns=") })
+        assertFalse(effects.any { it.startsWith("substitutehp:") }, "The public log did not reveal the substitute HP")
+    }
+
+    @Test
+    fun `Shed Tail observation passes only its public substitute and no boosts or other effects`() {
+        val outgoing = publicPokemon(BattleSide.ALLY, 0).copy(statStages = mapOf("atk" to 3))
+        val incoming = publicPokemon(BattleSide.ALLY, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, outgoing))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, outgoing, "focusenergy", true))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, outgoing, true))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, outgoing, "shedtail", emptyList()))
+        observer.closeActionWindow()
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, incoming, transfersSubstitute = true,
+            publicTransferMoveId = Cobblemon173ShowdownObservationAdapter.publicSwitchTransferMove(
+                BattleMessage("|switch|p1a: next|Pikachu|100/100|[from] Shed Tail"))))
+        val arrived = observer.publicSnapshot().pokemon.single { it.battlePokemonId == incoming.battlePokemonId }
+        assertEquals(emptyMap<String, Int>(), arrived.statStages)
+        assertEquals(setOf("substitute"), arrived.knownVolatileEffectIds.filterNot { it.startsWith("better_ai:") }.toSet())
+    }
+
+    @Test
+    fun `ordinary switch after failed Baton Pass does not inherit without public switch transfer evidence`() {
+        val outgoing = publicPokemon(BattleSide.ALLY, 0).copy(statStages = mapOf("atk" to 2))
+        val incoming = publicPokemon(BattleSide.ALLY, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, outgoing))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(1, outgoing, "focusenergy", true))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, outgoing, "batonpass", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.MoveOutcome(1,
+            BattleMoveOutcomeView(BattleMoveOutcomeKind.FAILED, moveId = "batonpass"), source = outgoing))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, incoming))
+        val arrived = observer.publicSnapshot().pokemon.single { it.battlePokemonId == incoming.battlePokemonId }
+        assertEquals(emptyMap<String, Int>(), arrived.statStages)
+        assertFalse("focusenergy" in arrived.knownVolatileEffectIds)
     }
 
     @Test

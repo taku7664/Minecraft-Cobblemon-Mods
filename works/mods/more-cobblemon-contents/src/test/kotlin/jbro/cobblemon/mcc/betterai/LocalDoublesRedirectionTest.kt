@@ -23,6 +23,23 @@ import java.util.UUID
  */
 class LocalDoublesRedirectionTest {
     @Test
+    fun `rain Weather Ball redirects to the allied Storm Drain using its resolved Water type`() {
+        val actor = mon(BattleSide.ALLY, 0, null)
+        val partner = mon(BattleSide.ALLY, 1, "stormdrain")
+        val target = mon(BattleSide.OPPONENT, 0, null)
+        val move = BattleActionCandidate("weather", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "weatherball", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+            moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.SPECIAL, 50.0, 100.0, 0, 10,
+                BattleMoveTargetPattern.SELECTED_OPPONENT))
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 2, listOf(actor, partner, target),
+            BattleFieldStateView(BattleTimedEffectView("raindance", 3), null, emptyList(), emptyList(),
+                BattleSide.entries.associateWith { emptyList() }), BattleSide.entries.associateWith { 3 }, emptyList(), emptyList())
+        val context = BattleDecisionContext(UUID.randomUUID(), state, listOf(move), Long.MAX_VALUE)
+        val resolved = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets.redirectOutcomes(move, context, BattleSide.ALLY)
+        assertEquals(listOf(BattleTargetSlot(BattleSide.ALLY, 1)), resolved.single().first.targets)
+    }
+
+    @Test
     fun `a possible hidden ability does not guarantee redirection`() {
         val unresolved = facts(partnerAbility = null, partnerInferredOrdinary = listOf("lightningrod"),
             partnerInferredHidden = listOf("reckless"), partnerTypes = setOf("ground"))

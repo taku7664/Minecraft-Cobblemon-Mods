@@ -88,6 +88,7 @@ internal class LocalBattleStateFingerprint {
         append(effect.remainingTurns).append(':')
         append(effect.remainingTurnsRange?.minimum).append('-')
             .append(effect.remainingTurnsRange?.maximum).append(':')
-        append(effect.stacks).append(';')
+        append(effect.stacks).append(':').append(effect.sourcePokemonId).append(':')
+            .append(effect.targetSlot).append(':').append(effect.sourceMoveId).append(';')
     }
 }

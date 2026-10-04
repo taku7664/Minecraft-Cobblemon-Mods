@@ -116,6 +116,11 @@ class Cobblemon173ShowdownObservationAdapter(
     }
 
     private fun consumeMessage(activeBattle: PokemonBattle, message: BattleMessage) {
+        directlyRevealedAbility(message)?.let { ability ->
+            resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                observer.observe(Cobblemon173PublicObservation.AbilityRevealed(observedTurn, pokemon, ability))
+            }
+        }
         abilityPpEffect(message)?.let { (effect, active) ->
             resolvePokemon(activeBattle, message, 0)?.let { target ->
                 observer.observeAbilityPpEffect(target.battlePokemonId, effect, active)
@@ -140,6 +145,7 @@ class Cobblemon173ShowdownObservationAdapter(
                             observedTurn,
                             publicSwitchSnapshot(it, message.argumentAt(1)),
                             transfersSubstitute = transfersSubstitute(message),
+                            publicTransferMoveId = publicSwitchTransferMove(message),
                         ),
                     )
                 }
@@ -184,7 +190,7 @@ class Cobblemon173ShowdownObservationAdapter(
             }
 
             "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective", "-extremelyeffective",
-            "-resisted", "-mostlyineffective", "-immune", "-hitcount", "-activate", "-singleturn" -> {
+            "-resisted", "-mostlyineffective", "-immune", "-hitcount", "-activate", "-singleturn", "-singlemove" -> {
                 volatileChange(message)?.let { (effect, active) ->
                     resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
                         observer.observe(Cobblemon173PublicObservation.VolatileChanged(observedTurn, pokemon, effect, active))
@@ -302,7 +308,11 @@ class Cobblemon173ShowdownObservationAdapter(
             )
 
             ResourceKind.ITEM -> observer.observe(
-                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, id),
+                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, id,
+                    removed = message.id == "-enditem", consumed = itemWasConsumed(message),
+                    ownAbilityAtRemoval = if (pokemon.side == BattleSide.ALLY && message.id == "-enditem")
+                        compatibilityCallOrNull { message.battlePokemon(0, activeBattle)?.actor?.request?.side?.pokemon
+                            ?.firstOrNull { it.uuid == pokemon.battlePokemonId }?.ability } else null),
             )
         }
     }
@@ -489,6 +499,10 @@ class Cobblemon173ShowdownObservationAdapter(
          * Salt Cure, a binding move, Perish Song, Focus Energy and the move-locking ones, as `-start` and `-end` show.
          */
         fun volatileChange(message: BattleMessage): Pair<String, Boolean>? {
+            if (message.id == "-singlemove" && effectId(message.argumentAt(1)) == "destinybond")
+                return "destinybond" to true
+            if (message.id == "-singleturn" && effectId(message.argumentAt(1)) == "endure")
+                return "endure" to true
             // A binding move announces itself with -activate (Showdown's partiallytrapped onStart).
             if (message.id == "-activate") {
                 val bound = effectId(message.argumentAt(1))
@@ -496,6 +510,12 @@ class Cobblemon173ShowdownObservationAdapter(
             }
             if (message.id !in setOf("-start", "-end")) return null
             val raw = effectId(message.argumentAt(1))
+            if (message.id == "-start" && raw == "disable") {
+                val moveId = effectId(message.argumentAt(2))
+                if (moveId.isNotBlank()) return "disablemove:$moveId" to true
+            }
+            if (message.id == "-end" && raw in setOf("futuresight", "doomdesire")) return raw to false
+            if (raw.matches(Regex("perish[0-3]"))) return "perishsong:${raw.last()}" to (message.id == "-start")
             val id = when {
                 raw.startsWith("perish") -> "perishsong"
                 raw in PARTIAL_TRAPPING_MOVE_IDS -> "partiallytrapped"
@@ -504,13 +524,22 @@ class Cobblemon173ShowdownObservationAdapter(
             return if (id in TRACKED_VOLATILES) id to (message.id == "-start") else null
         }
 
+        internal fun directlyRevealedAbility(message: BattleMessage): String? =
+            message.argumentAt(1)?.takeIf { message.id in setOf("-start", "-activate") &&
+                it.trim().startsWith("ability:", ignoreCase = true) }?.let(::effectId)?.takeIf(String::isNotBlank)
+
+        internal fun itemWasConsumed(message: BattleMessage): Boolean = message.id == "-enditem" &&
+            (message.hasOptionalArgument("eat") || message.optionalArgument("from").isNullOrBlank())
+
         private val TRACKED_VOLATILES = setOf(
             "leechseed", "confusion", "yawn", "curse", "saltcure", "partiallytrapped", "perishsong", "focusenergy",
-            "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer", "throatchop",
+            "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer", "throatchop", "slowstart", "charge", "flashfire", "laserfocus", "destinybond", "endure",
         )
 
-        fun transfersSubstitute(message: BattleMessage): Boolean =
-            message.id == "switch" && message.effect("from")?.id in setOf("batonpass", "shedtail")
+        fun publicSwitchTransferMove(message: BattleMessage): String? =
+            message.effect("from")?.id?.takeIf { message.id == "switch" && it in setOf("batonpass", "shedtail") }
+
+        fun transfersSubstitute(message: BattleMessage): Boolean = publicSwitchTransferMove(message) != null
 
         private const val UNKNOWN_PUBLIC_SPECIES_ID = "showdown:unknown"
         private val ROOM_EFFECT_IDS = setOf("trickroom", "wonderroom", "magicroom")

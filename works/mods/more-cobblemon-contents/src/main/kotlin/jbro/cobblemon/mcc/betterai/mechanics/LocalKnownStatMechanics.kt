@@ -139,7 +139,14 @@ internal object LocalKnownStatMechanics {
             item in HALF_SPEED_ITEMS -> 0.5
             else -> 1.0
         }
-        return scale(value, multiplier)
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
+        val abilityMultiplier = when {
+            ability == "unburden" && pokemon.knownHeldItemId == null &&
+                pokemon.knownVolatileEffectIds.any { canonical(it) == "unburden" } -> 2.0
+            ability == "slowstart" && LocalReactiveAbilityState.slowStartActive(pokemon) -> .5
+            else -> 1.0
+        }
+        return scale(value, multiplier * abilityMultiplier)
     }
 
     private fun scale(value: BattleIntegerRange, multiplier: Double) = BattleIntegerRange(

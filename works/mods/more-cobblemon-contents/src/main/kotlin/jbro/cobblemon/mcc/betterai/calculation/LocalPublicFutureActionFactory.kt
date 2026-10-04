@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.calculation
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
@@ -100,12 +101,13 @@ internal object PublicFutureActionFactory {
         pokemonId: java.util.UUID,
         catalog: BattlePublicActionCatalogView,
         history: RecursiveActionHistory = RecursiveActionHistory(),
+        includeMoveHypotheses: Boolean = false,
     ): List<BattleActionCandidate> {
         val active = state.pokemon.singleOrNull {
             it.battlePokemonId == pokemonId && it.side == side && it.activeSlot != null &&
                 !it.fainted && it.hpFraction > 0.0
         } ?: return emptyList()
-        return primitiveActions(state, side, active, catalog, history, emptySet())
+        return primitiveActions(state, side, active, catalog, history, emptySet(), includeMoveHypotheses)
     }
 
     private fun limitPrimitiveActions(
@@ -313,7 +315,7 @@ internal object PublicFutureActionFactory {
             return listOf(wait(side, active, "forced_recharge"))
         }
         val chargingMoveId = history.chargingMoveByPokemon[active.battlePokemonId]
-        val encoreMoveId = active.actionConstraints.encoreMoveId ?: history.encoreByPokemon[active.battlePokemonId]
+        val encoreMoveId = LocalPersistentMoveState.rampageMoveId(active) ?: active.actionConstraints.encoreMoveId ?: history.encoreByPokemon[active.battlePokemonId]
             ?.takeIf { it.remainingTurns > 0 }
             ?.moveId
         val taunted = active.actionConstraints.taunted ||
@@ -329,7 +331,8 @@ internal object PublicFutureActionFactory {
         val volatiles = active.knownVolatileEffectIds.mapTo(hashSetOf()) { canonicalId(it) }
         val healBlocked = "healblock" in volatiles
         val tormentedMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf { "torment" in volatiles }
-        val disabledMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf { "disable" in volatiles }
+        val disabledMoveId = if ("disable" in volatiles) active.knownVolatileEffectIds
+            .firstOrNull { it.startsWith("disablemove:") }?.substringAfter(':') ?: history.lastMoveByPokemon[active.battlePokemonId] else null
         val throatChopped = "throatchop" in volatiles
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
         val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
@@ -361,7 +364,22 @@ internal object PublicFutureActionFactory {
                 (disabledMoveId == null || canonicalId(option.moveId) != canonicalId(disabledMoveId)) &&
                 (!throatChopped || option.details.effects?.mechanicFlags.orEmpty().none { canonicalId(it) == "sound" })
             if (!legal) return@flatMapIndexed emptyList()
-            moveTargetVariants(state, side, actorSlot, option.details.targetPattern).map { targets ->
+            val ordinarilyFoeAimed = option.details.targetPattern in setOf(
+                BattleMoveTargetPattern.SELECTED, BattleMoveTargetPattern.SELECTED_OPPONENT)
+            val targets = moveTargetVariants(state, side, actorSlot, option.details.targetPattern) +
+                if (ordinarilyFoeAimed && canonicalId(option.moveId) == "beatup") state.pokemon.filter {
+                    it.side == side && it.activeSlot != null && it.activeSlot != actorSlot && !it.fainted &&
+                        LocalPublicAbilityState.effectiveKnownAbility(state, it) == "justified"
+                }.map { listOf(BattleTargetSlot(side, requireNotNull(it.activeSlot))) } else emptyList()
+            targets.distinct().filter { slots ->
+                val target = slots.singleOrNull()
+                val targetPokemon = target?.let { slot -> state.pokemon.firstOrNull {
+                    it.side == slot.side && it.activeSlot == slot.slot && !it.fainted } }
+                BattleProductAllyTargetPolicy.permits(option.moveId,
+                    target?.side?.let { if (it == side) BattleSide.ALLY else BattleSide.OPPONENT },
+                    ordinarilyFoeAimed, option.details.damageCategory,
+                    targetPokemon?.let { LocalPublicAbilityState.effectiveKnownAbility(state, it) })
+            }.map { targets ->
                 BattleActionCandidate(
                     actionId = buildString {
                         append("lookahead:").append(side.name.lowercase()).append(':')
@@ -400,7 +418,7 @@ internal object PublicFutureActionFactory {
         val trapped = active.actionConstraints.trapped ||
             (history.trappedByPokemon[active.battlePokemonId]?.remainingTurns ?: 0) > 0 ||
             opposingActive.any { trappedByKnownAbility(state, active, it) }
-        val switches = if (trapped || chargingMoveId != null) emptyList() else state.pokemon.filter {
+        val switches = if (trapped || chargingMoveId != null || LocalPersistentMoveState.rampageMoveId(active) != null) emptyList() else state.pokemon.filter {
             it.side == side && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
         }.map { bench ->
             BattleActionCandidate(

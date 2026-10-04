@@ -8,6 +8,10 @@ data class BattleTimedEffectView @JvmOverloads constructor(
     val remainingTurns: Int?,
     val stacks: Int? = null,
     val remainingTurnsRange: BattleIntegerRange? = null,
+    /** Public slot effects (Wish/Future Sight) retain their source even when the recipient switches. */
+    val sourcePokemonId: UUID? = null,
+    val targetSlot: Int? = null,
+    val sourceMoveId: String? = null,
 ) {
     init {
         require(effectId.isNotBlank())
@@ -17,6 +21,8 @@ data class BattleTimedEffectView @JvmOverloads constructor(
         require(stacks == null || stacks > 0) {
             "Known effect stack count must be positive"
         }
+        require(targetSlot == null || targetSlot >= 0)
+        require(sourceMoveId == null || sourceMoveId.isNotBlank())
         require(remainingTurns == null || remainingTurnsRange == null) {
             "An effect duration must be exact or ranged, not both"
         }

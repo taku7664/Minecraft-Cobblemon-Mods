@@ -64,7 +64,12 @@ internal object LocalOpponentResponseModel {
 
     fun responseKind(action: BattleActionCandidate): BattlePredictedResponse = when (action.kind) {
         BattleActionKind.SWITCH -> BattlePredictedResponse.SWITCH
-        BattleActionKind.USE_MOVE, BattleActionKind.COMPOSITE -> BattlePredictedResponse.MOVE
+        BattleActionKind.USE_MOVE -> BattlePredictedResponse.MOVE
+        BattleActionKind.COMPOSITE -> when {
+            action.componentActions.any { it.kind == BattleActionKind.SWITCH } -> BattlePredictedResponse.SWITCH
+            action.componentActions.any { it.kind == BattleActionKind.USE_MOVE } -> BattlePredictedResponse.MOVE
+            else -> BattlePredictedResponse.OTHER
+        }
         BattleActionKind.WAIT, BattleActionKind.FORFEIT -> BattlePredictedResponse.OTHER
     }
 

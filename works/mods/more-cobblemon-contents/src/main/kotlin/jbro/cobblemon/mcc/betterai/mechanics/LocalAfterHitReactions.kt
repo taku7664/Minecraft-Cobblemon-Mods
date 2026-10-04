@@ -36,13 +36,27 @@ internal object LocalAfterHitReactions {
             val item = LocalPublicItemState.activeItemId(state, target)
             val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target)
             if (alive) {
+                if (ability == "angerpoint" && LocalCriticalHitRules.confirmed(action,
+                    before.pokemon.firstOrNull { it.battlePokemonId == actorId }, targetBefore, before))
+                    state = LocalStatStageChange.apply(state, target.battlePokemonId, target.battlePokemonId, mapOf("attack" to 12))
+                if (ability == "electromorphosis") state = state.copyState(pokemon = state.pokemon.map {
+                    if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + "charge") else it
+                })
+                if (ability == "illusion") state = state.copyState(pokemon = state.pokemon.map {
+                    if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds.filterNot {
+                        marker -> marker.startsWith(LocalReactiveAbilityState.ILLUSION_AS)
+                    }.toSet()) else it
+                })
                 if (item == AIR_BALLOON) state = setItem(state, target.battlePokemonId, null)
                 val chart = StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds, false)
                 if (item == WEAKNESS_POLICY && target.knownTypeIds.isNotEmpty() && chart > 1.0) {
                     state = LocalStatStageChange.apply(state, target.battlePokemonId, null, mapOf("attack" to 2, "special_attack" to 2))
                     state = setItem(state, target.battlePokemonId, null)
                 }
-                reactiveBoost(ability, moveType, details.damageCategory, targetBefore.hpFraction, target.hpFraction)
+                // Berry Update may already have healed the recipient. Half-HP crossing belongs to
+                // the damaging event before that heal, rather than the final recipient HP.
+                reactiveBoost(ability, moveType, details.damageCategory, targetBefore.hpFraction,
+                    (targetBefore.hpFraction - directDamage).coerceAtLeast(0.0))
                     ?.let { state = LocalStatStageChange.apply(state, target.battlePokemonId, null, it) }
             }
             // Cotton Down's DamagingHit callback precedes faint resolution and lowers every other

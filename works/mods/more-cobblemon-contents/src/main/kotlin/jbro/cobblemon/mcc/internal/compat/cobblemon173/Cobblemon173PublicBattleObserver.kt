@@ -22,6 +22,9 @@ import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 import jbro.cobblemon.mcc.internal.ai.PublicBattleInferenceEngine
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesInferenceKnowledge
+import jbro.cobblemon.mcc.betterai.mechanics.LocalBerryMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 
 /**
  * Stateful knowledge store that accepts only sanitized, publicly observable battle events.
@@ -50,6 +53,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val sideConditions = BattleSide.entries.associateWith {
         linkedMapOf<String, TrackedTimedEffect>()
     }
+    private val pendingSlotEffects = linkedMapOf<Triple<BattleSide, Int, String>, PublicPendingSlotEffect>()
     private var activeActionWindow: ActiveActionWindow? = null
 
     init {
@@ -62,8 +66,12 @@ internal class Cobblemon173PublicBattleObserver(
         advanceTurn(observation.turn)
         when (observation) {
             is Cobblemon173PublicObservation.PokemonPresented -> {
-                closeActionWindow()
                 val incoming = observation.pokemon
+                val outgoing = incoming.activeSlot?.let { slot -> pokemon.values.singleOrNull {
+                    it.side == incoming.side && it.activeSlot == slot && it.battlePokemonId != incoming.battlePokemonId
+                } }
+                val transferMove = observation.publicTransferMoveId
+                closeActionWindow()
                 finishTransformation(incoming.battlePokemonId)?.let { moves ->
                     pokemon[incoming.battlePokemonId]?.let { current ->
                         pokemon[incoming.battlePokemonId] = current.copyView(knownMoveIds = moves)
@@ -71,12 +79,18 @@ internal class Cobblemon173PublicBattleObserver(
                 }
                 gastroAcid.remove(incoming.battlePokemonId)
                 endedGas.remove(incoming.battlePokemonId)
-                val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
-                    pokemon.values.singleOrNull { it.side == incoming.side && it.activeSlot == incoming.activeSlot }
-                        ?.knownVolatileEffectIds.orEmpty().intersect(setOf("substitute"))
-                } else emptySet()
+                val inherited = when {
+                    transferMove != null -> LocalPersistentMoveState.passableEffects(outgoing?.knownVolatileEffectIds.orEmpty(),
+                        shedTail = transferMove == "shedtail")
+                    observation.transfersSubstitute -> outgoing?.knownVolatileEffectIds.orEmpty().intersect(setOf("substitute"))
+                    else -> emptySet()
+                }
+                val durable = pokemon[incoming.battlePokemonId]?.knownVolatileEffectIds.orEmpty()
+                    .filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
                 val presented = upsert(incoming, refreshPublicIdentity = true)
-                pokemon[presented.battlePokemonId] = presented.copyView(knownVolatileEffectIds = inherited)
+                pokemon[presented.battlePokemonId] = presented.copyView(
+                    statStages = if (transferMove == "batonpass" && outgoing != null) outgoing.statStages else presented.statStages,
+                    knownVolatileEffectIds = inherited + durable + LocalReactiveAbilityState.ENTERED_THIS_TURN)
                 appendEvent(
                     turn = observation.turn,
                     kind = BattleObservedEventKind.SWITCHED,
@@ -86,9 +100,12 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.MoveUsed -> {
                 val actor = upsert(observation.actor)
+                pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
+                    Cobblemon173PublicPersistentMoveState.afterMove(actor.knownVolatileEffectIds,
+                        observation.moveId, observation.ppLockedContinuation))
                 if (publicTypes.teraType(actor.battlePokemonId) == "stellar") {
                     publicTypes.invalidateStellarBoostedTypes(actor.battlePokemonId)
-                    pokemon[actor.battlePokemonId] = actor.copyView(knownStellarBoostedTypeIds = null)
+                    pokemon[actor.battlePokemonId] = pokemon.getValue(actor.battlePokemonId).copyView(knownStellarBoostedTypeIds = null)
                 }
                 val uses = moveUses.getOrPut(actor.battlePokemonId) { linkedMapOf() }
                 uses[observation.moveId] = ((uses[observation.moveId] ?: 0).toLong() + 1)
@@ -129,6 +146,7 @@ internal class Cobblemon173PublicBattleObserver(
                     moveId = observation.moveId,
                     targetPokemonIds = observation.targets.mapTo(linkedSetOf()) { it.battlePokemonId },
                 )
+                observePendingSlotMove(observation, actionSequence)
                 if (observation.missed) {
                     appendMoveOutcome(
                         Cobblemon173PublicObservation.MoveOutcome(
@@ -148,9 +166,14 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.VolatileChanged -> {
                 val actor = knownOrUpsert(observation.pokemon)
+                if (!observation.active && PublicIds.canonical(observation.effectId) in setOf("futuresight", "doomdesire")) {
+                    pendingSlotEffects.remove(Triple(actor.side, actor.activeSlot ?: -1, "futuremove"))
+                }
+                val window = activeActionWindow?.takeIf { it.turn == observation.turn }
                 pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
-                    if (observation.active) actor.knownVolatileEffectIds + observation.effectId
-                    else actor.knownVolatileEffectIds - observation.effectId)
+                    Cobblemon173PublicPersistentMoveState.afterVolatile(actor.knownVolatileEffectIds,
+                        observation.effectId, observation.active, window?.moveId,
+                        window?.actorPokemonId?.let { pokemon[it]?.knownAbilityId }, window?.actorPokemonId))
             }
 
             is Cobblemon173PublicObservation.SubstituteChanged -> {
@@ -213,7 +236,15 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.HeldItemRevealed -> {
                 val actor = knownOrUpsert(observation.pokemon)
-                pokemon[actor.battlePokemonId] = actor.withKnownHeldItem(observation.itemId)
+                var markers = actor.knownVolatileEffectIds
+                if (observation.removed && observation.consumed) markers = markers.filterNot {
+                    it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM)
+                }.toSet() + (LocalBerryMechanics.LAST_CONSUMED_ITEM + PublicIds.canonical(observation.itemId))
+                if (observation.removed && PublicIds.canonical((observation.ownAbilityAtRemoval ?: actor.knownAbilityId).orEmpty()) == "unburden")
+                    markers = markers + "unburden"
+                if (!observation.removed) markers = markers - "unburden"
+                pokemon[actor.battlePokemonId] = actor.copyView(knownHeldItemId = observation.itemId.takeUnless { observation.removed },
+                    knownVolatileEffectIds = markers)
                 appendEvent(
                     observation.turn,
                     BattleObservedEventKind.HELD_ITEM_REVEALED,
@@ -225,6 +256,10 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.HpChanged -> {
                 val previous = pokemon[observation.pokemon.battlePokemonId]
                 val current = upsert(observation.pokemon)
+                val healingEffect = PublicIds.canonical(observation.publicSourceEffectId.orEmpty())
+                if (healingEffect in setOf("wish", "healingwish")) {
+                    pendingSlotEffects.remove(Triple(current.side, current.activeSlot ?: -1, healingEffect))
+                }
                 val hpFractionDelta = previous?.let { current.hpFraction - it.hpFraction }
                 val precedingAction = activeActionWindow?.takeIf {
                     observation.allowPrecedingActionLink &&
@@ -246,6 +281,8 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.StatusChanged -> {
                 val current = upsert(observation.pokemon)
+                pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds =
+                    Cobblemon173PublicPersistentMoveState.afterSleep(current.knownVolatileEffectIds, current.statusId))
                 appendEvent(
                     observation.turn,
                     BattleObservedEventKind.STATUS_CHANGED,
@@ -256,7 +293,8 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.Fainted -> {
                 val current = upsert(observation.pokemon.copy(hpFraction = 0.0, fainted = true))
-                pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds = emptySet())
+                pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds =
+                    current.knownVolatileEffectIds.filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) })
                 if (current.side == BattleSide.OPPONENT) faintedOpponents += current.battlePokemonId
                 appendEvent(observation.turn, BattleObservedEventKind.FAINTED, current.battlePokemonId)
             }
@@ -325,7 +363,12 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun advanceTurn(turn: Int) {
         require(turn >= 0)
+        val elapsed = (turn - currentTurn).coerceAtLeast(0)
+        if (elapsed > 0) pokemon.replaceAll { _, holder ->
+            holder.copyView(knownVolatileEffectIds = Cobblemon173PublicPersistentMoveState.advance(holder.knownVolatileEffectIds, elapsed))
+        }
         currentTurn = maxOf(currentTurn, turn)
+        pendingSlotEffects.entries.removeIf { entry -> entry.value.duration?.let { currentTurn - entry.value.activationTurn >= it } == true }
     }
 
     private fun pressureLoss(actor: BattlePokemonStateView, move: Cobblemon173PublicObservation.MoveUsed): Int {
@@ -431,8 +474,10 @@ internal class Cobblemon173PublicBattleObserver(
             terrain = terrain?.toView(currentTurn),
             roomEffects = roomEffects.values.map { it.toView(currentTurn) },
             globalEffects = globalEffects.values.map { it.toView(currentTurn) },
-            sideConditions = sideConditions.mapValues { (_, effects) ->
-                effects.values.map { it.toView(currentTurn) }
+            sideConditions = sideConditions.mapValues { (side, effects) ->
+                effects.values.map { it.toView(currentTurn) } + pendingSlotEffects.entries
+                    .filter { it.key.first == side }
+                    .map { (_, effect) -> effect.toView(currentTurn) }
             },
         ),
         events = events.toList(),
@@ -464,6 +509,7 @@ internal class Cobblemon173PublicBattleObserver(
         roomEffects.clear()
         globalEffects.clear()
         sideConditions.values.forEach(MutableMap<String, TrackedTimedEffect>::clear)
+        pendingSlotEffects.clear()
         activeActionWindow = null
     }
 
@@ -502,7 +548,8 @@ internal class Cobblemon173PublicBattleObserver(
                         knownAbilityId = current.knownBaseAbilityId ?: current.knownAbilityId,
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
-                        knownVolatileEffectIds = emptySet(),
+                        knownVolatileEffectIds = current.knownVolatileEffectIds.filterTo(linkedSetOf()) {
+                            it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) },
                         knownTypeIds = restoredTypes ?: current.knownTypeIds,
                         knownBaseStabTypeIds = publicTypes.baseStabTypes(id) ?: restoredTypes
                             ?: current.knownBaseStabTypeIds,
@@ -608,6 +655,21 @@ internal class Cobblemon173PublicBattleObserver(
             previous.moveOutcome.hitCount == observation.outcome.hitCount &&
             (previous.moveOutcome.moveId == observation.outcome.moveId || observation.outcome.moveId == null)
         if (duplicateMiss) return
+        if (observation.outcome.kind == BattleMoveOutcomeKind.CANNOT_ACT && source != null) {
+            pokemon[source.battlePokemonId] = source.copyView(knownVolatileEffectIds =
+                Cobblemon173PublicPersistentMoveState.afterCannotAct(source.knownVolatileEffectIds))
+        }
+        if (observation.outcome.kind in setOf(BattleMoveOutcomeKind.FAILED, BattleMoveOutcomeKind.MISSED,
+                BattleMoveOutcomeKind.BLOCKED, BattleMoveOutcomeKind.NO_TARGET, BattleMoveOutcomeKind.CANNOT_ACT)) {
+            val window = activeActionWindow
+            if (window != null && window.turn == observation.turn &&
+                (source == null || source.battlePokemonId == window.actorPokemonId) &&
+                (observation.outcome.moveId == null || observation.outcome.moveId == window.moveId)) {
+                pendingSlotEffects.entries.removeIf { it.value.actionSequence == window.actionSequence }
+                pokemon[window.actorPokemonId]?.let { actor -> pokemon[window.actorPokemonId] = actor.copyView(
+                    knownVolatileEffectIds = Cobblemon173PublicPersistentMoveState.afterFailedMove(actor.knownVolatileEffectIds)) }
+            }
+        }
         appendEvent(
             turn = observation.turn,
             kind = BattleObservedEventKind.MOVE_OUTCOME,
@@ -664,6 +726,37 @@ internal class Cobblemon173PublicBattleObserver(
         val moveId: String,
         val targetPokemonIds: Set<UUID>,
     )
+
+    private data class PublicPendingSlotEffect(
+        val sourcePokemonId: UUID,
+        val targetSlot: Int,
+        val moveId: String,
+        val activationTurn: Int,
+        val duration: Int?,
+        val actionSequence: Long,
+    ) {
+        fun toView(turn: Int) = BattleTimedEffectView(
+            effectId = if (moveId == "healingwish") "healingwishslot:$targetSlot" else "${moveId}slot$targetSlot",
+            remainingTurns = duration?.let { (it - (turn - activationTurn).coerceAtLeast(0)).coerceAtLeast(1) },
+            sourcePokemonId = sourcePokemonId, targetSlot = targetSlot, sourceMoveId = moveId,
+        )
+    }
+
+    private fun observePendingSlotMove(move: Cobblemon173PublicObservation.MoveUsed, actionSequence: Long) {
+        val moveId = PublicIds.canonical(move.moveId)
+        val target = when (moveId) {
+            "wish", "healingwish" -> move.actor
+            "futuresight", "doomdesire" -> move.targets.singleOrNull()
+            else -> null
+        } ?: return
+        val slot = target.activeSlot ?: return
+        val key = Triple(target.side, slot, if (moveId in setOf("wish", "healingwish")) moveId else "futuremove")
+        // A repeated cast can fail because this slot already holds the first one; preserve that one.
+        val existing = pendingSlotEffects[key]
+        if (existing != null) return
+        pendingSlotEffects[key] = PublicPendingSlotEffect(move.actor.battlePokemonId, slot, moveId,
+            move.turn, when (moveId) { "wish" -> 2; "healingwish" -> null; else -> 3 }, actionSequence)
+    }
 
     private data class TrackedTimedEffect(
         val effectId: String,
@@ -768,7 +861,9 @@ internal data class Cobblemon173PublicPokemonSnapshot(
         },
         combatStats = if (previous != null && !refreshPublicIdentity) previous.combatStats else combatStats,
         knownFormStates = if (previous != null && !refreshPublicIdentity) previous.knownFormStates else knownFormStates,
-        knownVolatileEffectIds = if (refreshPublicIdentity || fainted) emptySet() else previous?.knownVolatileEffectIds.orEmpty(),
+        knownVolatileEffectIds = if (refreshPublicIdentity || fainted) previous?.knownVolatileEffectIds.orEmpty()
+            .filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
+            else previous?.knownVolatileEffectIds.orEmpty(),
         actionConstraints = if (refreshPublicIdentity && activeSlot != null) {
             BattlePokemonActionConstraintView.empty()
         } else {
@@ -780,9 +875,10 @@ internal data class Cobblemon173PublicPokemonSnapshot(
 internal sealed interface Cobblemon173PublicObservation {
     val turn: Int
 
-    data class PokemonPresented(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
-        val transfersSubstitute: Boolean = false) :
-        Cobblemon173PublicObservation
+    data class PokemonPresented @JvmOverloads constructor(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val transfersSubstitute: Boolean = false, val publicTransferMoveId: String? = null) : Cobblemon173PublicObservation {
+        init { require(publicTransferMoveId == null || publicTransferMoveId in setOf("batonpass", "shedtail")) }
+    }
 
     data class SubstituteChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
         val active: Boolean) : Cobblemon173PublicObservation
@@ -854,10 +950,14 @@ internal sealed interface Cobblemon173PublicObservation {
         }
     }
 
-    data class HeldItemRevealed(
+    data class HeldItemRevealed @JvmOverloads constructor(
         override val turn: Int,
         val pokemon: Cobblemon173PublicPokemonSnapshot,
         val itemId: String,
+        val removed: Boolean = false,
+        val consumed: Boolean = false,
+        /** The deciding actor's own request can identify an unannounced Unburden at item loss. */
+        val ownAbilityAtRemoval: String? = null,
     ) : Cobblemon173PublicObservation {
         init {
             require(itemId.isNotBlank())
@@ -974,7 +1074,8 @@ internal object Cobblemon173BattleStateAssembler {
                 knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
                     publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
-                knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) emptySet()
+                knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty()
+                    .filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
                     else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),
                 knownTypeIds = if (!keepsPublicTypes) own.knownTypeIds else
                     publicSnapshot.typeOverrides[own.battlePokemonId] ?: own.knownTypeIds,
@@ -1049,6 +1150,7 @@ private fun BattlePokemonStateView.copyView(
     knownTeraTypeId: String? = this.knownTeraTypeId,
     knownStellarBoostedTypeIds: Set<String>? = this.knownStellarBoostedTypeIds,
     knownVolatileEffectIds: Set<String> = this.knownVolatileEffectIds,
+    statStages: Map<String, Int> = this.statStages,
 ) = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,

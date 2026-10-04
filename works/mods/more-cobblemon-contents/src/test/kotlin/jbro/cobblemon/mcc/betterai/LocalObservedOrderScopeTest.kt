@@ -21,6 +21,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,6 +42,31 @@ import java.util.UUID
  * this path. This is the position that does: the drop narrows the gap without closing it.
  */
 class LocalObservedOrderScopeTest {
+    @Test
+    fun `one observed order cannot fix an exact speed tie`() {
+        val tied = state(0).derive(pokemon = listOf(
+            pokemon(ALLY_ID, BattleSide.ALLY, BattleIntegerRange(100, 100), 0),
+            pokemon(OPPONENT_ID, BattleSide.OPPONENT, BattleIntegerRange(100, 100), 0),
+        ))
+        assertEquals(
+            setOf(listOf(BattleSide.ALLY, BattleSide.OPPONENT), listOf(BattleSide.OPPONENT, BattleSide.ALLY)),
+            project(tied, tied),
+        )
+    }
+
+    @Test
+    fun `an ability speed modifier also invalidates the old observed order`() {
+        val observed = state(0)
+        val projected = observed.derive(pokemon = observed.pokemon.map { holder ->
+            if (holder.side == BattleSide.OPPONENT) holder.copyState(knownAbilityId = "slowstart",
+                knownVolatileEffectIds = setOf("better_ai:slow_start_turns=5")) else holder
+        })
+        assertEquals(
+            setOf(listOf(BattleSide.ALLY, BattleSide.OPPONENT), listOf(BattleSide.OPPONENT, BattleSide.ALLY)),
+            project(observed, projected),
+        )
+    }
+
     @Test
     fun `a projected speed drop is not bound by the order observed before it`() {
         // Ally Speed is exactly 100. The opponent is publicly 120-200 and was seen moving first, which
