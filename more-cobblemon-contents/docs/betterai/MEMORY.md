@@ -3,8 +3,43 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 계약·합격 조건은 [`README.md`](README.md)에 두고, 이 파일에는 경과·배포·검증·이슈만 쓴다.
 2026-09-27 이전 항목은 당시 커밋 시각과 기존 문서에서 옮겨 온 것이다.
+각 항목의 구현·보류·검증 상태는 해당 기록 시점에 한정한다. 현재 상태는 최신 항목과 `engine/LOCAL_GAPS.md`의 최신 해결 기록을 우선한다.
 
 ---
+
+## [2026-10-04 15:18] 전투 효과 구현 완료 범위·보류된 새 점수 설계·장판 할인 예외
+
+**빡대리님 지시:** 이전 미구현을 구현하되 기존 계산식을 바꾸거나 기존보다 훨씬 큰 새 수치를 넣지 않는다. 이후 장판 감점은 승인했으며 3대3 고정 가정을 쓰지 않는다. 아래는 이번 소스 묶음의 현재 상태다. 앞선 05:58 기록의 부분 미구현·디렉터리 변경 없음 설명은 당시 상태로 보존한다.
+
+| 논리 단위 | 커밋 | 범위 |
+|---|---|---|
+| 더블 예산 | `60d9fd21` | 더블만 노드 상한 제거·깊이 1 유지, 시간/요청 마감 유지 |
+| 상태·관측·요청 | `4e8836d4` | 실제 기술·특성·열매·지속/슬롯 상태와 공개 관측, 요청 어댑터 회귀 |
+| 반복 공격 입력 | `9838243d` | 같은 projector의 실제 상태를 기존 M 계산에 전달 |
+| 승인된 장판 할인 | `e9b9b731` | 참가 팀 규모와 살아 있는 벤치 비율로 기존 장판 값만 할인 |
+
+**계산식 경계:** 이번 묶음 직전 `d408fc4e` 대비 `evaluation/`, `matchup/`, `search/` 소스도 수정했다. 실제 전투 상태 입력·더블 예산·승인된 장판 감점에 연결한 변경이다. 장판 예외를 제외한 기존 점수식·상수·가중치는 유지했고 `LocalWeightedActionSelector.kt`·`LocalDecisionTuning.kt`·`LocalRiskAttitude.kt`는 변경 없다. 구현한 효과가 기존 계산식의 입력이 되므로 후보 점수·선택은 달라질 수 있다.
+
+**현재 구현 상태:** 실행 효과·공개 입력과 보류된 새 점수 설계를 [`LOCAL_GAPS.md`](engine/LOCAL_GAPS.md)에 분리해 갱신했다. 선택 부활 Q/S·반복 공격 M·공개 지속/슬롯 효과·더블 요청을 구현했으며, 부활·약점보험 등 별도 R 가점은 추가하지 않았다. 실제 Cobblemon 요청 객체를 구성한 어댑터 회귀 6개는 실행 중인 Minecraft 실전 검증과 구분한다.
+
+**승인된 장판 예외 `e9b9b731`:** 살아 있는 벤치 수를 참가 규모의 벤치 용량으로 나눈 0~1 비율로 기존 루트 장판 20점·projected/native 리프의 층당 0.10 크기만 할인한다. 상대 preview의 `selectionSize`, 없으면 공개 remaining+기절 수를 쓰며 싱글 active 1·더블 2를 반영한다. 3대3 싱글 분모 2, 6대6 싱글 5·더블 4이고 교체 여지가 없으면 0이다. 참가 규모 2~6·preview 없는 숨은 생존자·마지막 상대·벽 유지 회귀를 확인했다. 새 가점·선택기 veto는 없다.
+
+**보류·근사:** G-101/G-116/G-403/G-207의 별도 R 가치, G-308/G-409/G-502/G-503/G-507/G-508의 새 가격·모델은 보류했다. 실제 효과 미구현을 뜻하지 않는다. 공개 정보와 기존 반복 교환 근사는 `LOCAL_GAPS.md` 7장에 남겼다.
+
+
+**검증 기록:** 아래 실행은 테스트가 겹치므로 합산하지 않는다. 전부 선별 회귀이며 전체 AI suite 재실행 결과가 아니다.
+
+| 로그 (`F:/AI/Temp/`) | 결과 |
+|---|---|
+| `betterai-remaining-final-green.log` | 497 성공·0 실패, `remapJar`/BUILD SUCCESSFUL |
+| `betterai-final-observer-green-build.log` | 64 성공·0 실패, `remapJar`/BUILD SUCCESSFUL |
+| `betterai-hazard-format-green-build.log` | 246 성공·0 실패, `remapJar`/BUILD SUCCESSFUL |
+| `betterai-flinch-contact-red.log` | 수정 전 16개 중 6개 실패 재현 |
+| `betterai-flinch-contact-green-build.log` | 최신 183 성공·0 실패, `remapJar`/BUILD SUCCESSFUL |
+
+독립 검수는 중간 BLOCK, 마지막 추가 실행 코드 범위 PASS다.
+
+**최신 빌드:** `build/libs/more-cobblemon-contents-0.1.0.jar`, SHA-256 `80A898E9DB648324DA6455BF77488549E4F0B714438752F2BF1279568AE93C8E`. 필수 추가 클래스 6개와 Fabric ID `more_cobblemon_contents`·버전 `0.1.0`을 JAR에서 확인했다. 승률·성능 향상, 클라이언트/서버 배포, 실플레이는 검증하지 않았다. 현재 항목별 상태는 [`LOCAL_GAPS.md`](engine/LOCAL_GAPS.md)에 기록했다.
 
 ## [2026-10-04 05:58] 미구현 요청·콜백·특성의 후속 구현
 
