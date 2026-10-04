@@ -26,7 +26,7 @@ enum class BattleEntryKind(
     /** The stage sets a battle of this kind may play, one picked at random each time; [stages] is the first. */
     val variants: List<EntryStages> = listOf(stages),
 ) {
-    LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 2400,
+    LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 1600,
         EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER)),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
@@ -36,6 +36,7 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
+            EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
         )),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
@@ -66,12 +67,13 @@ object BattleEntryTimeline {
     const val SETTLE_MILLIS = 150L
     /** How long a legendary's screen stays white, counted from when it is full, before it cracks. */
     const val WHITE_HOLD_MILLIS = 1000L
-    /** How long a legendary's cracks take to run, and how long the cracked white then stays still. */
+    /** How long a legendary's first cracks take to run. */
     const val CRACK_MILLIS = 300L
-    const val STILL_MILLIS = 500L
-    /** The pause between a legendary's first cracks and the fine cracks that branch off them, and how long those run. */
-    const val CRACK_GAP_MILLIS = 250L
-    const val FINE_CRACK_MILLIS = 400L
+    /** The pause after a legendary's first cracks, before the fine cracks snap across in an instant. */
+    const val CRACK_GAP_MILLIS = 500L
+    const val FINE_CRACK_MILLIS = 80L
+    /** How long the finely cracked white stays still before it comes apart: the same pause as after the first cracks. */
+    const val STILL_MILLIS = CRACK_GAP_MILLIS
     /** How long a spinning zoom whirls. */
     const val SPIN_MILLIS = 1100L
 

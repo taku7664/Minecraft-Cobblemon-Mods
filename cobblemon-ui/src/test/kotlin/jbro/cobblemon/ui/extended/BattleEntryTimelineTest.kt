@@ -43,11 +43,11 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary runs about eight seconds and the others about four, holding the cover with a pulse`() {
+    fun `a legendary runs about seven and a half seconds and the others about four, holding the cover with a pulse`() {
         for (kind in BattleEntryKind.entries) {
             // A battle that opens the moment the screen is white.
             val total = BattleEntryTimeline.finishedAt(kind, BattleEntryTimeline.readyAt(kind))!!
-            val expected = if (kind == BattleEntryKind.LEGENDARY) 7900L..8900L else 3500L..4400L
+            val expected = if (kind == BattleEntryKind.LEGENDARY) 7200L..8000L else 3500L..4400L
             assertTrue(total in expected, "${kind.id} runs $total ms")
             assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
             assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))

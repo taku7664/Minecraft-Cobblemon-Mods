@@ -98,8 +98,10 @@ object BattleEntryTransition {
         // A reveal asked for early waits for the screen to turn white, so the transition always plays out.
         val elapsed = Util.getMillis() - current.startedAt
         current.revealAt = current.startedAt + maxOf(elapsed, BattleEntryTimeline.readyAt(current.kind))
-        jbro.cobblemon.ui.extended.CobblemonUi.LOGGER.info("Battle entry {} reveals after {} ms (ready at {} ms)",
-            current.kind.id, elapsed, BattleEntryTimeline.readyAt(current.kind))
+        val stages = current.stages
+        jbro.cobblemon.ui.extended.CobblemonUi.LOGGER.info("Battle entry {} [{} / {} / {} / {} / {}] reveals after {} ms (ready at {} ms)",
+            current.kind.id, stages.intro, stages.mood, stages.cover, stages.whiteout, stages.fadeIn, elapsed,
+            BattleEntryTimeline.readyAt(current.kind))
         closeInputScreen()
     }
 
