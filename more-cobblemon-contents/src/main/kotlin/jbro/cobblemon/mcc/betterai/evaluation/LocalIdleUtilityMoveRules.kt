@@ -42,7 +42,8 @@ internal object LocalIdleUtilityMoveRules {
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
-            in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
+            in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
+                LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
         }
     }

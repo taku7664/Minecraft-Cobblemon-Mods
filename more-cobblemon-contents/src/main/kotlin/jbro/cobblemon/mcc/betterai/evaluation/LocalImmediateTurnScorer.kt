@@ -54,8 +54,8 @@ internal object LocalImmediateTurnScorer {
         val beforeStatus = positionStatus(before)
         val afterStatus = positionStatus(after)
         val speedControlDelta = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(before, after, tuning)
-        val beforeField = positionField(before)
-        val afterField = positionField(after)
+        val beforeField = positionField(before, source)
+        val afterField = positionField(after, source)
         return LocalImmediateTurnScore(
             materialDelta = afterMaterial - beforeMaterial +
                 LocalTerminalOutcomeValue.evaluate(after) - LocalTerminalOutcomeValue.evaluate(before),
@@ -84,7 +84,8 @@ internal object LocalImmediateTurnScorer {
     ).total * probability.coerceIn(0.0, 1.0)
 
     /** Native search has no immediate-delta scorer, so retain durable public effects at its leaf. */
-    fun positionEffectValue(state: BattleStateView): Double = positionStatus(state) + positionField(state)
+    fun positionEffectValue(state: BattleStateView, source: BattleDecisionContext? = null): Double =
+        positionStatus(state) + positionField(state, source)
 
     private fun positionStatus(state: BattleStateView): Double =
         sideStatusBurden(state, BattleSide.OPPONENT) - sideStatusBurden(state, BattleSide.ALLY)
@@ -103,14 +104,15 @@ internal object LocalImmediateTurnScorer {
         else -> 0.15
     }
 
-    private fun positionField(state: BattleStateView): Double =
-        sideFieldValue(state, BattleSide.ALLY) - sideFieldValue(state, BattleSide.OPPONENT)
+    private fun positionField(state: BattleStateView, source: BattleDecisionContext?): Double =
+        sideFieldValue(state, BattleSide.ALLY, source) - sideFieldValue(state, BattleSide.OPPONENT, source)
 
-    private fun sideFieldValue(state: BattleStateView, side: BattleSide): Double =
+    private fun sideFieldValue(state: BattleStateView, side: BattleSide, source: BattleDecisionContext?): Double =
         state.field.sideConditions.getValue(side).sumOf { effect ->
             val stacks = effect.stacks ?: 1
             when (canonicalId(effect.effectId)) {
-                "stealthrock", "spikes", "toxicspikes", "stickyweb" -> -HAZARD_STACK_VALUE * stacks
+                "stealthrock", "spikes", "toxicspikes", "stickyweb" -> -HAZARD_STACK_VALUE * stacks *
+                    LocalHazardSwitchAvailability.fraction(state, side, source)
                 "reflect", "lightscreen", "auroraveil", "safeguard", "mist" -> BENEFICIAL_SIDE_EFFECT_VALUE
                 else -> 0.0
             }
