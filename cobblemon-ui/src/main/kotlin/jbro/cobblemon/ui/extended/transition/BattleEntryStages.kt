@@ -698,7 +698,9 @@ internal object EntryDraw {
                 val angle = (ray + hash(seed) * .6f) / BURST_RAYS * TAU + .12f * open * (if (ray % 2 == 0) 1f else -1f)
                 val length = frame.far * (.45f + 1.1f * hash(seed + 1) * hash(seed + 1)) * (.3f + .7f * open)
                 val half = frame.far * (.006f + .03f * hash(seed + 2) * hash(seed + 2)) * (.6f + .8f * open)
-                softRay(buffer, matrix, frame.centerX, frame.centerY, angle, length, half,
+                // Each ray starts out past the flare's core, so none of them overlap at the center.
+                val start = point * (1f + 5f * open) * 1.6f
+                softRay(buffer, matrix, frame.centerX + cos(angle) * start, frame.centerY + sin(angle) * start, angle, length, half,
                     BattleSurfaceRenderer.withOpacity(light, (.35f + .4f * hash(seed + 3)) * fade * fade))
             }
             flare(buffer, matrix, frame, point * (1f + 5f * open), fade, light)
@@ -724,9 +726,12 @@ internal object EntryDraw {
         }
         val shimmer = 1f + .12f * sin(frame.elapsed / 45f)
         val glints = floatArrayOf(0f, 40f, TAU / 4f, 13f, TAU / 8f, 7f, TAU * 3f / 8f, 7f)
+        // The glints start at the edge of the white core rather than its middle, so where they cross the core alone
+        // shows, with no brighter overlap.
         for (index in glints.indices step 2) {
             for (direction in 0 until 2) {
-                softRay(buffer, matrix, frame.centerX, frame.centerY, glints[index] + direction * TAU / 2f,
+                val angle = glints[index] + direction * TAU / 2f
+                softRay(buffer, matrix, frame.centerX + cos(angle) * size, frame.centerY + sin(angle) * size, angle,
                     size * glints[index + 1] * shimmer, size * .7f, core)
             }
         }
