@@ -56,7 +56,7 @@ internal object LocalStatStageChange {
         if (fromOther && change.values.any { it < 0 }) {
             val drops = change.filterValues { it < 0 }
             val stopped = ability in DROP_STOPPING_ABILITIES ||
-                LocalPublicStatusImmunity.flowerVeiled(state, target) ||
+                !ignoreTargetAbility && LocalPublicStatusImmunity.flowerVeiled(state, target) ||
                 !bypassesSubstitute && !mirrorReflection && target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
                 LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
                 source != null && source.side != target.side && mistActive(state, target)

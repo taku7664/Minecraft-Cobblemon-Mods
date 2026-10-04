@@ -1809,7 +1809,7 @@ internal object PublicSingleTurnProjector {
             branches = branches.flatMap { branch ->
                 val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide, branch.state,
                     bypassesDecoy, ignoresAbility)
-                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy)
+                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy, ignoresAbility)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
                         branch.copy(
@@ -1921,6 +1921,8 @@ internal object PublicSingleTurnProjector {
         effect: BattleMoveEffectView,
         executedSide: BattleSide,
         bypassesDecoy: Boolean = false,
+        /** Mold Breaker and its kind: a drop on another Pokemon gets past Clear Body, Contrary or Flower Veil. */
+        ignoresAbility: Boolean = false,
     ): BattleStateView {
         if (effect.kind in FIELD_EFFECT_KINDS) {
             return LocalFieldEffectProjector.apply(state, executedSide, effect, actorId)
@@ -1984,7 +1986,7 @@ internal object PublicSingleTurnProjector {
             }
             // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
             BattleMoveEffectKind.STAT_STAGE -> return LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages,
-                bypassesSubstitute = bypassesDecoy)
+                ignoreTargetAbility = ignoresAbility && affectedId != actorId, bypassesSubstitute = bypassesDecoy)
             else -> return state
         }
         return state.copyState(
