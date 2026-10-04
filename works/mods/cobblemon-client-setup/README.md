@@ -24,7 +24,7 @@ CLC가 설치되어 있으면
 
 CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 
-단축키 정리는 설치된 모드의 다음 6개 키만 `options.txt`에서 `key.keyboard.unknown`으로
+단축키 정리는 설치된 모드의 다음 7개 키만 `options.txt`에서 `key.keyboard.unknown`으로
 변경합니다. 다른 키, 옵션과 줄바꿈은 유지하며, 항목이나 파일이 없으면 추가합니다.
 `options.txt`가 없거나 완전히 비어 있으면 Minecraft 1.21.1의 설정 데이터 버전
 `version:3955`도 먼저 기록합니다. 버전 없는 최신 키 문자열을 오래된 숫자 키 형식으로
@@ -36,6 +36,7 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 | Talking Heads | `key_talkingheads.keybinding.modToggle` | H |
 | Simple Voice Chat | `key_key.hide_icons` | H |
 | Zoomify | `key_zoomify.key.zoom.secondary` | F6 |
+| PokeBadges | `key_key.pokebadges.open_badgebox` | B |
 | Crafting Tweaks | `key_key.craftingtweaks.compress_stack` | K |
 | Crafting Tweaks | `key_key.craftingtweaks.refill_last_stack` | Tab |
 
