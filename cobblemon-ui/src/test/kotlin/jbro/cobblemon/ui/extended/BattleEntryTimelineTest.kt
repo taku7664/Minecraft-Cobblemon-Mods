@@ -43,11 +43,11 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary runs about six seconds and the others about four, holding the cover with a pulse`() {
+    fun `a legendary runs about eight seconds and the others about four, holding the cover with a pulse`() {
         for (kind in BattleEntryKind.entries) {
             // A battle that opens the moment the screen is white.
             val total = BattleEntryTimeline.finishedAt(kind, BattleEntryTimeline.readyAt(kind))!!
-            val expected = if (kind == BattleEntryKind.LEGENDARY) 5700L..6400L else 3500L..4400L
+            val expected = if (kind == BattleEntryKind.LEGENDARY) 7900L..8900L else 3500L..4400L
             assertTrue(total in expected, "${kind.id} runs $total ms")
             assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
             assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))
@@ -74,8 +74,13 @@ class BattleEntryTimelineTest {
         val crackEnd = ready + hold + BattleEntryTimeline.CRACK_MILLIS
         assertEquals(0f, BattleEntryTimeline.crack(kind, ready + hold, ready))
         assertEquals(1f, BattleEntryTimeline.crack(kind, crackEnd, ready), 1e-3f)
-        assertEquals(0f, BattleEntryTimeline.shatter(kind, crackEnd + BattleEntryTimeline.STILL_MILLIS, ready))
-        assertEquals(1f, BattleEntryTimeline.shatter(kind, crackEnd + BattleEntryTimeline.STILL_MILLIS + kind.fadeMillis,
+        // Then, after a pause, the fine cracks; then the stillness and the shatter.
+        val fineStart = crackEnd + BattleEntryTimeline.CRACK_GAP_MILLIS
+        val fineEnd = fineStart + BattleEntryTimeline.FINE_CRACK_MILLIS
+        assertEquals(0f, BattleEntryTimeline.fineCrack(kind, fineStart, ready))
+        assertEquals(1f, BattleEntryTimeline.fineCrack(kind, fineEnd, ready), 1e-3f)
+        assertEquals(0f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS, ready))
+        assertEquals(1f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS + kind.fadeMillis,
             ready), 1e-3f)
         // A battle that opens late still gets its white to settle before the cracks.
         val late = ready + 2000
@@ -178,6 +183,10 @@ class BattleEntryTimelineTest {
             assertEquals(BattleEntryTimeline.finishedAt(kind, ready), BattleEntryTimeline.finishedAt(kind, ready, fadeIn))
         }
         assertEquals(0f, BattleEntryTimeline.mosaic(kind, 0))
-        assertEquals(1f, BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.flashEnd(kind)))
+        // The mosaic keeps coarsening under the cover until the white starts to rise.
+        assertTrue(BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.coverEnd(kind)) < 1f)
+        assertEquals(1f, BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.riseStart(kind)))
+        assertEquals(0f, BattleEntryTimeline.spin(kind, 0))
+        assertEquals(null, BattleEntryTimeline.spin(kind, BattleEntryTimeline.SPIN_MILLIS + 1))
     }
 }

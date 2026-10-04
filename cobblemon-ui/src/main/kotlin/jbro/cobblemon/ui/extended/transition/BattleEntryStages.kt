@@ -80,20 +80,22 @@ enum class EntryIntro {
 
         override fun draw(frame: EntryFrame, screen: Int?) {
             if (screen == null) return
-            EntryDraw.mosaic(frame, 1f + 15f * BattleEntryTimeline.mosaic(frame.kind, frame.elapsed))
+            EntryDraw.mosaic(frame, 1f + 23f * BattleEntryTimeline.mosaic(frame.kind, frame.elapsed))
         }
     },
 
-    /** At each beat the screen whirls outward in turning, growing copies of itself. */
+    /**
+     * The screen whirls outward in turning, growing copies of itself, laid over it half-transparent rather than added,
+     * so they show on a bright screen too.
+     */
     SPIN_ZOOM {
         override fun prepare(frame: EntryFrame): Int? =
-            if (BattleEntryTimeline.spins(frame.kind, frame.elapsed).isEmpty()) null else EntryDraw.captureScreen(frame.context)
+            if (BattleEntryTimeline.spin(frame.kind, frame.elapsed) == null) null else EntryDraw.captureScreen(frame.context)
 
         override fun draw(frame: EntryFrame, screen: Int?) {
             if (screen == null) return
-            BattleEntryTimeline.spins(frame.kind, frame.elapsed).forEachIndexed { index, progress ->
-                EntryDraw.zoom(frame, screen, progress, spin = if (index % 2 == 0) 1f else -1f)
-            }
+            val progress = BattleEntryTimeline.spin(frame.kind, frame.elapsed) ?: return
+            EntryDraw.zoom(frame, screen, progress, spin = 1f, additive = false)
         }
     },
 
@@ -197,11 +199,6 @@ enum class EntryCover {
         override fun draw(frame: EntryFrame) = EntryDraw.pokeArena(frame)
     },
 
-    /** Four triangles, one on each edge, closing on the center in a slight pinwheel turn. */
-    ENCLOSING_TRIANGLES {
-        override fun draw(frame: EntryFrame) = EntryDraw.enclosingTriangles(frame)
-    },
-
     /**
      * Two near-black plates tinted in the accent slide in from either side of a diagonal and close on it, under focus
      * lines in the accent that stab in from the edges toward the center, flickering.
@@ -298,6 +295,7 @@ internal object EntryDraw {
     private const val SHARD_ROWS = 7
     private const val CRACKS = 11
     private const val CRACK_SEGMENTS = 5
+    private const val FINE_SEGMENTS = 3
     /** The share of the shatter by which the farthest shard starts after the nearest. */
     private const val SHARD_SPREAD = .5f
     private const val ZOOM_COPIES = 5
@@ -533,36 +531,6 @@ internal object EntryDraw {
         }
     }
 
-    /** Triangles on each edge whose tips run to the center, turning slightly on the way so they meet in a pinwheel. */
-    fun enclosingTriangles(frame: EntryFrame) {
-        if (frame.cover <= 0f) return
-        val base = BattleUiTheme.palette.entryBase
-        val tones = floatArrayOf(.45f, .6f, .75f, .9f).map { BattleSurfaceRenderer.interpolate(frame.accent, base, it) }
-        val closing = BattleEntryTimeline.smooth(frame.cover)
-        val w = frame.width.toFloat()
-        val h = frame.height.toFloat()
-        // The tips start at each edge's middle and end at the center, leaning sideways in between.
-        val lean = sin(closing * Math.PI.toFloat()) * minOf(w, h) * .18f
-        fun tip(edgeX: Float, edgeY: Float, sideX: Float, sideY: Float): Pair<Float, Float> =
-            edgeX + (frame.centerX - edgeX) * closing + sideX * lean to edgeY + (frame.centerY - edgeY) * closing + sideY * lean
-        val left = tip(0f, frame.centerY, 0f, -1f)
-        val top = tip(frame.centerX, 0f, 1f, 0f)
-        val right = tip(w, frame.centerY, 0f, 1f)
-        val bottom = tip(frame.centerX, h, -1f, 0f)
-        quads(frame.context) { buffer, matrix ->
-            fun triangle(ax: Float, ay: Float, bx: Float, by: Float, apex: Pair<Float, Float>, color: Int) {
-                buffer.addVertex(matrix, ax, ay, 0f).setColor(color)
-                buffer.addVertex(matrix, bx, by, 0f).setColor(color)
-                buffer.addVertex(matrix, apex.first, apex.second, 0f).setColor(color)
-                buffer.addVertex(matrix, apex.first, apex.second, 0f).setColor(color)
-            }
-            triangle(0f, 0f, 0f, h, left, tones[0])
-            triangle(0f, 0f, w, 0f, top, tones[1])
-            triangle(w, 0f, w, h, right, tones[2])
-            triangle(0f, h, w, h, bottom, tones[3])
-        }
-    }
-
     /** A dark ring closing on the center with a bright accent rim. */
     fun iris(frame: EntryFrame) {
         if (frame.cover <= 0f) return
@@ -775,9 +743,10 @@ internal object EntryDraw {
         val impactY = frame.height * .46f
         val shatter = BattleEntryTimeline.shatter(frame.kind, frame.elapsed, frame.revealAt)
         val crack = BattleEntryTimeline.crack(frame.kind, frame.elapsed, frame.revealAt)
+        val fine = BattleEntryTimeline.fineCrack(frame.kind, frame.elapsed, frame.revealAt)
         if (shatter <= 0f) {
             frame.context.fill(0, 0, frame.width, frame.height, 0xFFFFFFFF.toInt())
-            cracks(frame, impactX, impactY, crack, 1f)
+            cracks(frame, impactX, impactY, crack, fine, 1f)
             return
         }
         // The white tiled in jittered triangles that together cover the screen exactly until they start to move.
@@ -802,7 +771,7 @@ internal object EntryDraw {
             }
         }
         // The cracks stay on the shards for a moment as they part.
-        cracks(frame, impactX, impactY, crack, 1f - shatter * 4f)
+        cracks(frame, impactX, impactY, crack, fine, 1f - shatter * 3f)
     }
 
     /** One shard: from the center outward each in turn drifts a little away at an even pace, turning slightly, fading. */
@@ -815,13 +784,14 @@ internal object EntryDraw {
         val distance = (hypot(dx, dy) / frame.far).coerceAtMost(1f)
         // Shards near the impact part first; the parting spreads outward across the screen.
         val t = ((shatter - distance * SHARD_SPREAD) / (1f - SHARD_SPREAD)).coerceIn(0f, 1f)
-        val alpha = 1f - t
+        // Quiet: each shard eases away and melts out rather than flying.
+        val alpha = 1f - BattleEntryTimeline.smooth(t)
         if (alpha <= 0f) return
         val norm = hypot(dx, dy).coerceAtLeast(1f)
-        val push = frame.far * (.04f + .05f * hash(seed + 1)) * t
+        val push = frame.far * (.02f + .03f * hash(seed + 1)) * t
         val moveX = dx / norm * push
         val moveY = dy / norm * push
-        val spin = (hash(seed + 2) - .5f) * .5f * t
+        val spin = (hash(seed + 2) - .5f) * .25f * t
         val scale = 1f - .08f * t
         val spinCos = cos(spin)
         val spinSin = sin(spin)
@@ -839,11 +809,56 @@ internal object EntryDraw {
     }
 
     /** Cracks running out from the impact across the white, each a jagged line of a few segments. */
-    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, growth: Float, opacity: Float) {
+    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, growth: Float, fine: Float, opacity: Float) {
         if (growth <= 0f || opacity <= 0f) return
         val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .45f),
             .7f * opacity.coerceAtMost(1f))
+        val faint = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .35f),
+            .45f * opacity.coerceAtMost(1f))
         quads(frame.context) { buffer, matrix ->
+            /** One straight piece of a crack from (x, y) to (nx, ny), [half] wide on each side. */
+            fun piece(x: Float, y: Float, nx: Float, ny: Float, half: Float, color: Int) {
+                val dx = nx - x
+                val dy = ny - y
+                val norm = hypot(dx, dy).coerceAtLeast(.001f)
+                val px = -dy / norm * half
+                val py = dx / norm * half
+                buffer.addVertex(matrix, x + px, y + py, 0f).setColor(color)
+                buffer.addVertex(matrix, x - px, y - py, 0f).setColor(color)
+                buffer.addVertex(matrix, nx - px, ny - py, 0f).setColor(color)
+                buffer.addVertex(matrix, nx + px, ny + py, 0f).setColor(color)
+            }
+            // The fine cracks: from each bend of a first crack, two thin branches of a few short, jagged pieces.
+            if (fine > 0f) for (crack in 0 until CRACKS) {
+                val seed = crack * 4099 + 7
+                var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
+                var x = impactX
+                var y = impactY
+                for (segment in 0 until CRACK_SEGMENTS) {
+                    angle += (hash(seed + segment * 13 + 1) - .5f) * .7f
+                    val length = frame.far * (.12f + .14f * hash(seed + segment * 13 + 2))
+                    x += cos(angle) * length
+                    y += sin(angle) * length
+                    for (branch in 0 until 2) {
+                        val branchSeed = seed * 31 + segment * 7 + branch
+                        var branchAngle = angle + (if (branch == 0) 1f else -1f) * (.6f + .8f * hash(branchSeed))
+                        var bx = x
+                        var by = y
+                        val pieces = FINE_SEGMENTS * fine
+                        for (step in 0 until FINE_SEGMENTS) {
+                            val share = (pieces - step).coerceIn(0f, 1f)
+                            if (share <= 0f) break
+                            branchAngle += (hash(branchSeed + step * 5 + 1) - .5f) * .9f
+                            val stepLength = frame.far * (.025f + .035f * hash(branchSeed + step * 5 + 2)) * share
+                            val nx = bx + cos(branchAngle) * stepLength
+                            val ny = by + sin(branchAngle) * stepLength
+                            piece(bx, by, nx, ny, .3f, faint)
+                            bx = nx
+                            by = ny
+                        }
+                    }
+                }
+            }
             for (crack in 0 until CRACKS) {
                 val seed = crack * 4099 + 7
                 var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
@@ -857,16 +872,7 @@ internal object EntryDraw {
                     val length = frame.far * (.12f + .14f * hash(seed + segment * 13 + 2)) * share
                     val nx = x + cos(angle) * length
                     val ny = y + sin(angle) * length
-                    val dx = nx - x
-                    val dy = ny - y
-                    val norm = hypot(dx, dy).coerceAtLeast(.001f)
-                    val half = .8f * (1f - segment / CRACK_SEGMENTS.toFloat()) + .35f
-                    val px = -dy / norm * half
-                    val py = dx / norm * half
-                    buffer.addVertex(matrix, x + px, y + py, 0f).setColor(color)
-                    buffer.addVertex(matrix, x - px, y - py, 0f).setColor(color)
-                    buffer.addVertex(matrix, nx - px, ny - py, 0f).setColor(color)
-                    buffer.addVertex(matrix, nx + px, ny + py, 0f).setColor(color)
+                    piece(x, y, nx, ny, .8f * (1f - segment / CRACK_SEGMENTS.toFloat()) + .35f, color)
                     x = nx
                     y = ny
                 }
@@ -918,26 +924,31 @@ internal object EntryDraw {
         }
     }
 
-    /** One zoom of the screen copy [texture] at [progress] (0 to 1), its copies turning by [spin] (a direction) as they grow. */
-    fun zoom(frame: EntryFrame, texture: Int, progress: Float, spin: Float = 0f) {
+    /**
+     * One zoom of the screen copy [texture] at [progress] (0 to 1), its copies turning by [spin] (a direction) as they
+     * grow. [additive] copies brighten the screen (they need a darkened one to show); others lie over it half-seen.
+     */
+    fun zoom(frame: EntryFrame, texture: Int, progress: Float, spin: Float = 0f, additive: Boolean = true) {
         val reach = 1f - (1f - progress) * (1f - progress)
-        val fade = (1f - progress) * (1f - progress)
+        val fade = if (additive) (1f - progress) * (1f - progress) else 1f - progress
         val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), frame.accent, .3f)
         val matrix = frame.context.pose().last().pose()
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader)
         RenderSystem.setShaderTexture(0, texture)
         RenderSystem.enableBlend()
-        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+        if (additive) RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+        else RenderSystem.defaultBlendFunc()
         RenderSystem.disableDepthTest()
         RenderSystem.disableCull()
         val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR)
+        val strength = if (additive) .24f else .38f
         for (copy in 1..ZOOM_COPIES) {
             val scale = 1f + ZOOM_STEP * copy * (.3f + .7f * reach)
-            val alpha = .24f * fade * (1f - .5f * (copy - 1) / ZOOM_COPIES)
+            val alpha = strength * fade * (1f - .5f * (copy - 1) / ZOOM_COPIES)
             val color = BattleSurfaceRenderer.withOpacity(tint, alpha)
             val halfW = frame.width / 2f * scale
             val halfH = frame.height / 2f * scale
-            val angle = spin * .09f * copy * reach
+            val angle = spin * (if (additive) .09f else .14f) * copy * reach
             val turnCos = cos(angle)
             val turnSin = sin(angle)
             fun corner(dx: Float, dy: Float, u: Float, v: Float) {

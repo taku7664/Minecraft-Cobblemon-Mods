@@ -11,7 +11,7 @@ import kotlin.math.abs
  * Wild and trainer battles run about four seconds. A legendary runs about six: it darkens the world, rushes outward in
  * fading copies of itself three times, two black plates close on a diagonal under
  * focus lines in its colour, the focus lines thicken and drive to the center until their light fills the screen,
- * which holds white for a second, cracks, stays still for half a second, and comes apart in shards that drift out
+ * which holds white for a second, cracks, cracks again finely, stays still for half a second, and comes apart in shards that drift out
  * from the center and fade.
  */
 enum class BattleEntryKind(
@@ -26,7 +26,7 @@ enum class BattleEntryKind(
     /** The stage sets a battle of this kind may play, one picked at random each time; [stages] is the first. */
     val variants: List<EntryStages> = listOf(stages),
 ) {
-    LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 800,
+    LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 2400,
         EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER)),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
@@ -35,7 +35,6 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
             EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.ENCLOSING_TRIANGLES, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
         )),
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
@@ -46,7 +45,6 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
             EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.ENCLOSING_TRIANGLES, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
         ));
 
     companion object {
@@ -71,6 +69,11 @@ object BattleEntryTimeline {
     /** How long a legendary's cracks take to run, and how long the cracked white then stays still. */
     const val CRACK_MILLIS = 300L
     const val STILL_MILLIS = 500L
+    /** The pause between a legendary's first cracks and the fine cracks that branch off them, and how long those run. */
+    const val CRACK_GAP_MILLIS = 250L
+    const val FINE_CRACK_MILLIS = 400L
+    /** How long a spinning zoom whirls. */
+    const val SPIN_MILLIS = 1100L
 
     fun flashEnd(kind: BattleEntryKind): Long = kind.flashStarts.last() + kind.flashMillis
 
@@ -152,9 +155,16 @@ object BattleEntryTimeline {
         return 1f - (1f - share) * (1f - share)
     }
 
-    /** When a legendary's cracked white comes apart, after its cracks have run and it has stayed still. */
+    /** How far the fine cracks branching off a legendary's first cracks have run, 0 to 1, after a short pause. */
+    fun fineCrack(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
+        val start = crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS } ?: return 0f
+        val share = ((elapsed - start).toFloat() / FINE_CRACK_MILLIS).coerceIn(0f, 1f)
+        return 1f - (1f - share) * (1f - share)
+    }
+
+    /** When a legendary's cracked white comes apart, after both rounds of cracks have run and it has stayed still. */
     fun shatterStart(kind: BattleEntryKind, revealAt: Long?): Long? =
-        crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + STILL_MILLIS }
+        crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS + FINE_CRACK_MILLIS + STILL_MILLIS }
 
     /** How far a legendary's white has come apart and faded away, 0 to 1. */
     fun shatter(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
@@ -179,16 +189,19 @@ object BattleEntryTimeline {
         return smooth(((elapsed - start).toFloat() / kind.fadeMillis).coerceIn(0f, 1f))
     }
 
-    /** How far a mosaic intro has coarsened the screen, 0 to 1, over the kind's beats. */
+    /**
+     * How far a mosaic intro has coarsened the screen, 0 to 1: from the first beat until the cover has closed and
+     * pulsed, so the screen under the cover never stops breaking up.
+     */
     fun mosaic(kind: BattleEntryKind, elapsed: Long): Float {
         val start = kind.flashStarts.first()
-        return ((elapsed - start).toFloat() / (flashEnd(kind) - start)).coerceIn(0f, 1f)
+        return ((elapsed - start).toFloat() / (riseStart(kind) - start)).coerceIn(0f, 1f)
     }
 
-    /** Each beat's spin of a spinning zoom in progress, 0 to 1, as [zooms] for a zoom intro. */
-    fun spins(kind: BattleEntryKind, elapsed: Long): List<Float> = kind.flashStarts.mapNotNull { start ->
-        val progress = (elapsed - start).toFloat() / kind.flashMillis.coerceAtLeast(320L)
-        progress.takeIf { it in 0f..1f }
+    /** How far a spinning zoom has whirled, 0 to 1, over [SPIN_MILLIS] from the first beat; null outside it. */
+    fun spin(kind: BattleEntryKind, elapsed: Long): Float? {
+        val progress = (elapsed - kind.flashStarts.first()).toFloat() / SPIN_MILLIS
+        return progress.takeIf { it in 0f..1f }
     }
 
     /** A legendary's darkening of the world before its pattern, 0 to 1, gone with the pattern. */
