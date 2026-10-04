@@ -104,7 +104,10 @@ internal object LocalNonDamagingMoveEvaluator {
                 .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
         }
         // A pure heal is its own value, the losing-loop penalty included; anything else takes the better reading.
-        val total = if (declaresPureRecovery) recovery else maxOf(recovery, status)
+        val usableStatus = if (LocalHazardSwitchAvailability.isHazardMove(candidate)) {
+            status * LocalHazardSwitchAvailability.fraction(context.state, BattleSide.OPPONENT, context)
+        } else status
+        val total = if (declaresPureRecovery) recovery else maxOf(recovery, usableStatus)
         return Score(
             total = total,
             statStageUtility = if (usesSetupPressure && status >= recovery) status else 0.0,

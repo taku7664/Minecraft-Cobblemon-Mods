@@ -58,7 +58,7 @@ internal object LocalLookaheadStateEvaluator {
         }
         return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages + duel + matchups +
             teamCoverage * tuning.leafTeamCoverageWeight +
-            if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state) else 0.0
+            if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state, source) else 0.0
     }
 
     /**
