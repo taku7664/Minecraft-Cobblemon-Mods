@@ -15,7 +15,8 @@
   "message.jbro_policy.plaza.fell": "You fell out of the plaza and were sent back to where you were.",
   "message.jbro_policy.plaza.fatal": "You took fatal damage and were sent back to where you were.",
   "message.jbro_policy.plaza.returned_to_spawn": "No return point was saved, so you were sent to your spawn point.",
-  "message.jbro_policy.plaza.return_dimension_missing": "Your original dimension is missing, so you were sent to your spawn point. Your return point was kept.",
+  "message.jbro_policy.plaza.return_dimension_missing": "Your original dimension is missing, so you were sent to your spawn point.",
+  "message.jbro_policy.plaza.return_blocked": "There was no room to stand near where you were, so you were sent to your spawn point.",
 
   "message.jbro_policy.welcome.greeting": "Welcome to the Cobblemon server!",
   "message.jbro_policy.welcome.starter": "Press M to choose your starter Pokemon.",

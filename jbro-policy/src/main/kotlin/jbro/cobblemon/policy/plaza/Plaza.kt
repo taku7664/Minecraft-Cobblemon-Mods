@@ -3,9 +3,12 @@ package jbro.cobblemon.policy.plaza
 import com.cobblemon.mod.common.battles.BattleRegistry
 import jbro.cobblemon.policy.JbroPolicy
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.Commands
 import net.minecraft.core.BlockPos
@@ -55,14 +58,27 @@ object Plaza {
             goHome(entity, "fatal")
             false
         }
+        // However a player left the hubs, that trip is over and its return point must not steer a later exit.
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register { player, _, _ -> clearIfStale(player) }
+        ServerPlayerEvents.AFTER_RESPAWN.register { _, player, _ -> clearIfStale(player) }
+        ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> clearIfStale(handler.player) }
+    }
+
+    private fun clearIfStale(player: ServerPlayer) {
+        if (HubReturnRule.isStale(player.level().dimension().location().toString(), JbroPolicy.config.plazaOtherHubDimensions)) {
+            PlazaReturnPoints.get(player.server).remove(player.uuid)
+        }
     }
 
     private fun enter(player: ServerPlayer): Int {
         if (isPlaza(player.level())) return fail(player, "already_here")
         if (inBattle(player)) return fail(player, "battle")
         val level = player.server.getLevel(DIMENSION) ?: return fail(player, "unavailable")
-        PlazaReturnPoints.get(player.server)[player.uuid] =
-            ReturnPoint(player.level().dimension(), player.x, player.y, player.z, player.yRot, player.xRot)
+        val points = PlazaReturnPoints.get(player.server)
+        val source = player.level().dimension()
+        if (HubReturnRule.shouldSaveOnEntry(source.location().toString(), points[player.uuid] != null, JbroPolicy.config.plazaOtherHubDimensions)) {
+            points[player.uuid] = ReturnPoint(source, player.x, SafeLanding.groundY(player.serverLevel(), player), player.z, player.yRot, player.xRot)
+        }
         val spawn = JbroPolicy.config.plaza
         player.teleportTo(level, spawn.x, spawn.y, spawn.z, spawn.yaw, spawn.pitch)
         player.sendSystemMessage(message("arrived").withStyle(ChatFormatting.GREEN))
@@ -76,23 +92,34 @@ object Plaza {
         return 1
     }
 
-    /** Back to the saved return point, or the player's spawn when it is missing or its dimension is gone. */
+    /**
+     * Back to the saved return point, to a free spot next to it when it is blocked, and otherwise to the player's
+     * spawn. The plaza is never a dead end: the last resort teleports even when no spot around the spawn looks safe.
+     */
     private fun goHome(player: ServerPlayer, reason: String) {
         val server = player.server
         val points = PlazaReturnPoints.get(server)
         val point = points[player.uuid]
         val level = point?.let { server.getLevel(it.dimension) }
-        if (point != null && level != null) {
-            player.teleportTo(level, point.x, point.y, point.z, point.yaw, point.pitch)
+        val landing = if (point != null && level != null) SafeLanding.find(level, player, point.x, point.y, point.z) else null
+        if (point != null && level != null && landing != null) {
+            player.teleportTo(level, landing.first, landing.second, landing.third, point.yaw, point.pitch)
             points.remove(player.uuid)
             player.sendSystemMessage(message(reason).withStyle(ChatFormatting.GREEN))
             return
         }
-        // Keep an unusable point: its dimension may come back after a data pack fix.
         val respawn = player.respawnPosition?.let { pos -> server.getLevel(player.respawnDimension)?.let { it to pos } }
         val (target, pos) = respawn ?: (server.overworld() to server.overworld().sharedSpawnPos)
-        player.teleportTo(target, pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5, player.yRot, player.xRot)
-        player.sendSystemMessage(message(if (point == null) "returned_to_spawn" else "return_dimension_missing").withStyle(ChatFormatting.YELLOW))
+        val (x, y, z) = SafeLanding.find(target, player, pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
+            ?: Triple(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
+        player.teleportTo(target, x, y, z, player.yRot, player.xRot)
+        points.remove(player.uuid)
+        val why = when {
+            point == null -> "returned_to_spawn"
+            level == null -> "return_dimension_missing"
+            else -> "return_blocked"
+        }
+        player.sendSystemMessage(message(why).withStyle(ChatFormatting.YELLOW))
     }
 
     /** A 9x9 stone brick floor under the landing spot, so a fresh plaza is not a drop into the void. */

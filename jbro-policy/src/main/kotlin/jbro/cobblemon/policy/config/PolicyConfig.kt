@@ -31,6 +31,11 @@ data class PolicyConfig(
     val tipIntervalSeconds: Int = 30,
     /** The tips, one picked at random each time. */
     val tips: List<String> = DEFAULT_TIPS,
+    /**
+     * Other hub dimensions players hop between, such as player rooms. Entering the plaza from one keeps the return
+     * point already saved, so `/plaza exit` still goes back to where the trip through the hubs began.
+     */
+    val plazaOtherHubDimensions: List<String> = DEFAULT_OTHER_HUBS,
 ) {
     init {
         require(tipIntervalSeconds >= 0) { "Tip interval cannot be negative" }
@@ -39,6 +44,7 @@ data class PolicyConfig(
     }
 
     companion object {
+        val DEFAULT_OTHER_HUBS = listOf("myroom:rooms")
         val DEFAULT_IV_RANGES = listOf(IvRange(0, 9, 20.0), IvRange(10, 19, 45.0), IvRange(20, 29, 25.0), IvRange(30, 31, 10.0))
         val DEFAULT_TIPS = listOf(
             "/plaza enter로 광장에 갈 수 있습니다. 돌아올 때는 /plaza exit를 입력하세요.",
@@ -83,6 +89,8 @@ data class PolicyConfig(
                 } ?: defaults.wildIvRanges,
                 root.get("tipIntervalSeconds")?.asInt ?: defaults.tipIntervalSeconds,
                 root.getAsJsonArray("tips")?.map { it.asString } ?: defaults.tips,
+                plazaOtherHubDimensions = root.getAsJsonObject("plaza")?.getAsJsonArray("otherHubDimensions")
+                    ?.map { it.asString.trim().lowercase() }?.filter { it.isNotEmpty() } ?: defaults.plazaOtherHubDimensions,
             )
         }
 
@@ -90,6 +98,7 @@ data class PolicyConfig(
             add("plaza", JsonObject().apply {
                 addProperty("x", config.plaza.x); addProperty("y", config.plaza.y); addProperty("z", config.plaza.z)
                 addProperty("yaw", config.plaza.yaw); addProperty("pitch", config.plaza.pitch)
+                add("otherHubDimensions", gson.toJsonTree(config.plazaOtherHubDimensions))
             })
             addProperty("wildHiddenAbilityRate", config.wildHiddenAbilityRate)
             add("wildIvDistribution", JsonObject().apply {
