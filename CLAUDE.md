@@ -11,6 +11,7 @@
 ## Project Rules
 
 - 개발 서버는 저장소 안 `develop-product/server` 하나뿐이다. 저장소 밖 서버(옛 `Mincraft-Cobblemon-Server`)나 옛 `dev-server/` 경로는 참조하지 않는다.
+- 개발 클라이언트는 저장소 안 `develop-product/client`(옛 `cobblemon-dev` 프로필)다. AppData의 `cobblemon-dev`는 Modrinth 실행용 정션일 뿐이니 저장소 경로를 쓴다. 게임이 켜져 있으면 JAR을 복사하지 않는다.
 - 릴리스 산출물은 `deploy-product/client`, `deploy-product/server`에 모은다. 완성된 JAR과 `VERSION.txt` 외에는 아무것도 두지 않는다(백업·임시파일·로그·소스 JAR 금지). 자세한 규칙은 `AGENTS.md`의 Product folders.
 - 임시파일과 중간 산출물은 `build/`나 세션 scratchpad에 두고, 제품 폴더나 저장소 루트에 남기지 않는다.
 <!-- 대화 중 발견된 프로젝트 규칙이 여기에 추가됩니다. -->

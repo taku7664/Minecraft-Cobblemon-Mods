@@ -14,7 +14,7 @@ POOL = POLICY / "resources/resourcepacks/legendary_spawns/data/jbro_policy/spawn
 CATALOG = POLICY / "kotlin/jbro/cobblemon/policy/legend/LegendCatalog.kt"
 POLICY_LANG = POLICY / "resources/assets/jbro_policy/lang/ko_kr.json"
 OUT = REPO / "server-wiki" / "assets" / "data" / "legends.js"
-DEFAULT_JAR = pathlib.Path.home() / "AppData/Roaming/ModrinthApp/profiles/cobblemon-dev/mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
+DEFAULT_JAR = REPO / "develop-product/client/mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
 LOOM_ASSETS = pathlib.Path.home() / ".gradle/caches/fabric-loom/assets"
 
 TIER = {"LEGENDARY": "일반 전설", "MYTHICAL": "환상", "RESTRICTED": "제한급", "PARADOX": "패러독스"}

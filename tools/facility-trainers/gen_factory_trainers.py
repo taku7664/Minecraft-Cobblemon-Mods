@@ -19,7 +19,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\RCT Trainers+ [1.7] v2.2.zip"))
+DEFAULT_PACK = ROOT / "develop-product/client/resourcepacks/RCT Trainers+ [1.7] v2.2.zip"
 FACTORY = ROOT / "more-cobblemon-contents-battle-factory/src/main/resources"
 TRAINERS = FACTORY / "data/more_cobblemon_contents/mcc-battle-factory/trainers"
 LANG = FACTORY / "assets/more_cobblemon_contents_battle_factory/lang"

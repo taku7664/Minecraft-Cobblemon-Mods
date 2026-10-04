@@ -12,7 +12,7 @@ from collections import Counter
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from kinds import ACE, NORMAL  # noqa: E402
 
-PROFILE = pathlib.Path.home() / "AppData/Roaming/ModrinthApp/profiles/cobblemon-dev"
+PROFILE = pathlib.Path(__file__).resolve().parents[2] / "develop-product/client"
 DEFAULT_JAR = PROFILE / "mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
 DEFAULT_PACK = PROFILE / "resourcepacks/RCT Trainers+ [1.7] v2.2.zip"
 RES = pathlib.Path(__file__).resolve().parents[2] / "more-cobblemon-contents-league-challenge/src/main/resources"

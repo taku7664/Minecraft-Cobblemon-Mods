@@ -16,7 +16,7 @@ from kinds import ACE, NORMAL  # noqa: E402
 NS = "more_cobblemon_contents_league_challenge"
 DEFINITIONS = REPO / "more-cobblemon-contents-league-challenge/src/main/resources/data" / NS / "league-challenge/wild_trainers"
 OUT = REPO / "server-wiki" / "assets" / "data" / "trainers.js"
-DEFAULT_JAR = pathlib.Path.home() / "AppData/Roaming/ModrinthApp/profiles/cobblemon-dev/mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
+DEFAULT_JAR = REPO / "develop-product/client/mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
 TIME = {"day": "낮", "night": "밤", None: "언제나"}
 
 

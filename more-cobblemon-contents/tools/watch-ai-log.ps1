@@ -1,5 +1,5 @@
 param(
-    [string]$LogPath = (Join-Path $env:APPDATA 'ModrinthApp\profiles\cobblemon-dev\logs\latest.log')
+    [string]$LogPath = (Join-Path $PSScriptRoot '..\..\develop-product\client\logs\latest.log')
 )
 
 $ErrorActionPreference = 'Stop'

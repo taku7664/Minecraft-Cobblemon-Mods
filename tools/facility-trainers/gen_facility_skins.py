@@ -19,7 +19,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\RCT Trainers+ [1.7] v2.2.zip"))
+DEFAULT_PACK = ROOT / "develop-product/client/resourcepacks/RCT Trainers+ [1.7] v2.2.zip"
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources"
 
 FEMALE_NAMES = {"Alice", "Amy", "Anna", "Bianca", "Claire", "Daphne", "Emily", "Fiona", "Hazel", "Jenna", "Julia", "Kate",

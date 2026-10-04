@@ -2,8 +2,9 @@
 
 - Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
   folder; there is no other server root. Do not refer to or deploy into any server outside this repository.
-- There is no development client profile. Client mods go to `deploy-product/client`; do not deploy into a Modrinth
-  or launcher profile.
+- Development client: `develop-product/client` in this repository (git-ignored), the former `cobblemon-dev` Modrinth
+  profile. `%APPDATA%\ModrinthApp\profiles\cobblemon-dev` is only a junction to it so the Modrinth App still launches
+  it; refer to the repository path, never the AppData one. Do not copy JARs into it while its game is running.
 - Keep source/build validation, client deployment, server deployment, and live gameplay verification as separate results.
 
 ## Product folders
@@ -14,8 +15,8 @@
   Replacing a JAR removes the old one; a previous build is recovered by rebuilding its commit.
 - `VERSION.txt` records, per version, what changed in that folder's set of mods. Releases are published on Modrinth;
   the record is how the changes are noticed and shared. Versions are `v0.x` until the first live release, `v1.0`.
-- `develop-product/server` is the running development server. Deploys there install JARs only; do not leave backups,
-  temporary copies or working files in it.
+- `develop-product/server` and `develop-product/client` are the running development server and client. Deploys there
+  install JARs only; do not leave backups, temporary copies or working files in them.
 - Intermediate and temporary files (downloads, decompiled sources, captures, logs, probes) belong in `build/` or a
   session scratch directory, never in either product folder or the repository root.
 

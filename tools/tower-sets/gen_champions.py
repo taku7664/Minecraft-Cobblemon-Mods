@@ -27,8 +27,8 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 TOWER = ROOT / "more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower"
-DEFAULT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\RCT Trainers+ [1.7] v2.2.zip"))
-DEFAULT_MRT_PACK = Path(os.path.expandvars(r"%APPDATA%\ModrinthApp\profiles\cobblemon-dev\resourcepacks\MoreRadicalTextures1.8.zip"))
+DEFAULT_PACK = ROOT / "develop-product/client/resourcepacks/RCT Trainers+ [1.7] v2.2.zip"
+DEFAULT_MRT_PACK = ROOT / "develop-product/client/resourcepacks/MoreRadicalTextures1.8.zip"
 CHAMPION_TIER = 9  # outside every pool: only a Champion's roster uses these sets
 STATS = ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
 SHORT = {"hp": "hp", "atk": "attack", "def": "defense", "spa": "special_attack", "spd": "special_defense", "spe": "speed"}
