@@ -297,7 +297,7 @@ enum class EntryFadeIn {
 
     /**
      * The white holds, then draws in to a blinding point over darkness, waits a breath, and swells open: a soft flash,
-     * the battle opening from the center behind a bright edge.
+     * the battle opening from the center on a soft edge.
      */
     LIGHT_BURST {
         override val holdMillis: Long get() = BattleEntryTimeline.BURST_HOLD_MILLIS
@@ -667,6 +667,7 @@ internal object EntryDraw {
             return
         }
         // The burst: the point swelling into a glow as the dark opens from the center on a soft edge, and a flash.
+        // Nothing but the point gives off light.
         val open = 1f - (1f - burst) * (1f - burst) * (1f - burst)
         val fade = 1f - burst
         val hole = frame.far * 1.3f * open
@@ -676,11 +677,6 @@ internal object EntryDraw {
             ring(buffer, matrix, frame, hole, hole + soft, clearDark, dark)
         }
         glow(frame) { buffer, matrix ->
-            // The opening's rim, brightest where the dark begins.
-            val rim = BattleSurfaceRenderer.withOpacity(light, .8f * fade)
-            val clear = BattleSurfaceRenderer.withOpacity(light, 0f)
-            ring(buffer, matrix, frame, (hole - soft).coerceAtLeast(0f), hole + soft * .3f, clear, rim)
-            ring(buffer, matrix, frame, hole + soft * .3f, hole + soft, rim, clear)
             flare(buffer, matrix, frame, point * (1f + 5f * open), fade, light)
         }
         // The flash as it bursts.
