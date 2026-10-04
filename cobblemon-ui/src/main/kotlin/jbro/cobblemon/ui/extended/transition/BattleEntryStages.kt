@@ -929,8 +929,9 @@ internal object EntryDraw {
      * grow. [additive] copies brighten the screen (they need a darkened one to show); others lie over it half-seen.
      */
     fun zoom(frame: EntryFrame, texture: Int, progress: Float, spin: Float = 0f, additive: Boolean = true) {
-        val reach = 1f - (1f - progress) * (1f - progress)
-        val fade = if (additive) (1f - progress) * (1f - progress) else 1f - progress
+        // Additive copies burst out and fade; the others spread slowly and evenly, fading in and staying until covered.
+        val reach = if (additive) 1f - (1f - progress) * (1f - progress) else progress
+        val fade = if (additive) (1f - progress) * (1f - progress) else (progress / .1f).coerceAtMost(1f)
         val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), frame.accent, .3f)
         val matrix = frame.context.pose().last().pose()
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader)

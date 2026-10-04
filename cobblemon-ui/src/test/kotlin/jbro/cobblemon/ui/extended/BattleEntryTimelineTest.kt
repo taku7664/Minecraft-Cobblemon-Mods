@@ -187,6 +187,6 @@ class BattleEntryTimelineTest {
         assertTrue(BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.coverEnd(kind)) < 1f)
         assertEquals(1f, BattleEntryTimeline.mosaic(kind, BattleEntryTimeline.riseStart(kind)))
         assertEquals(0f, BattleEntryTimeline.spin(kind, 0))
-        assertEquals(null, BattleEntryTimeline.spin(kind, BattleEntryTimeline.SPIN_MILLIS + 1))
+        assertEquals(null, BattleEntryTimeline.spin(kind, BattleEntryTimeline.coverEnd(kind) + 1))
     }
 }

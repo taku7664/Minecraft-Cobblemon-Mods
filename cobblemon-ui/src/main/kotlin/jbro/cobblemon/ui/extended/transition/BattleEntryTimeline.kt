@@ -74,8 +74,6 @@ object BattleEntryTimeline {
     const val FINE_CRACK_MILLIS = 80L
     /** How long the finely cracked white stays still before it comes apart: the same pause as after the first cracks. */
     const val STILL_MILLIS = CRACK_GAP_MILLIS
-    /** How long a spinning zoom whirls. */
-    const val SPIN_MILLIS = 1100L
 
     fun flashEnd(kind: BattleEntryKind): Long = kind.flashStarts.last() + kind.flashMillis
 
@@ -200,9 +198,13 @@ object BattleEntryTimeline {
         return ((elapsed - start).toFloat() / (riseStart(kind) - start)).coerceIn(0f, 1f)
     }
 
-    /** How far a spinning zoom has whirled, 0 to 1, over [SPIN_MILLIS] from the first beat; null outside it. */
+    /**
+     * How far a spinning zoom has whirled, 0 to 1, from the first beat until the cover has closed, so the screen never
+     * shows through still; null outside it.
+     */
     fun spin(kind: BattleEntryKind, elapsed: Long): Float? {
-        val progress = (elapsed - kind.flashStarts.first()).toFloat() / SPIN_MILLIS
+        val start = kind.flashStarts.first()
+        val progress = (elapsed - start).toFloat() / (coverEnd(kind) - start)
         return progress.takeIf { it in 0f..1f }
     }
 
