@@ -169,6 +169,20 @@ class BattleEntryTimelineTest {
     }
 
     @Test
+    fun `a light burst holds, draws its white in, waits, then bursts the battle open`() {
+        val kind = BattleEntryKind.LEGENDARY
+        val burst = jbro.cobblemon.ui.extended.transition.EntryFadeIn.LIGHT_BURST
+        val startAt = BattleEntryTimeline.startAt(kind, burst)
+        assertEquals(BattleEntryTimeline.readyAt(kind) + BattleEntryTimeline.BURST_HOLD_MILLIS, startAt)
+        val begins = BattleEntryTimeline.burstStart(kind, startAt)!!
+        assertEquals(0f, BattleEntryTimeline.collapse(kind, begins, startAt))
+        assertEquals(1f, BattleEntryTimeline.collapse(kind, begins + BattleEntryTimeline.COLLAPSE_MILLIS, startAt))
+        val bursts = begins + BattleEntryTimeline.COLLAPSE_MILLIS + BattleEntryTimeline.POINT_MILLIS
+        assertEquals(0f, BattleEntryTimeline.burst(kind, bursts, startAt))
+        assertEquals(bursts + BattleEntryTimeline.BURST_MILLIS, BattleEntryTimeline.finishedAt(kind, startAt, burst))
+    }
+
+    @Test
     fun `variants only swap stages whose timing the kind already keeps`() {
         for (kind in BattleEntryKind.entries) {
             assertEquals(kind.stages, kind.variants.first())
@@ -181,8 +195,9 @@ class BattleEntryTimelineTest {
                 if (variant.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM) {
                     assertEquals(kind.stages.intro, variant.intro)
                 }
-                assertEquals(kind.stages.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER,
-                    variant.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER)
+                if (variant.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER) {
+                    assertEquals(kind.stages.fadeIn, variant.fadeIn)
+                }
             }
         }
     }

@@ -31,6 +31,7 @@ enum class BattleEntryKind(
         listOf(
             EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER),
             EntryStages(EntryIntro.ZOOM_BLUR, EntryMood.CALM, EntryCover.NONE, EntryWhiteout.WHITE, EntryFadeIn.SHATTER),
+            EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.LIGHT_BURST),
         )),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
@@ -75,6 +76,14 @@ object BattleEntryTimeline {
     const val CRACK_MILLIS = 360L
     /** The pause after a legendary's first round of cracks, before the second round runs them the rest of the way. */
     const val CRACK_GAP_MILLIS = 500L
+    /**
+     * A light burst: how long it holds the white before the battle starts, how long the white takes to draw in to a
+     * point, how long the point waits, and how long the burst takes to throw the battle open.
+     */
+    const val BURST_HOLD_MILLIS = 500L
+    const val COLLAPSE_MILLIS = 550L
+    const val POINT_MILLIS = 220L
+    const val BURST_MILLIS = 900L
     /** How long the second round takes: it snaps across in an instant. */
     const val SECOND_CRACK_MILLIS = 60L
     /** How long the fully cracked white stays still before it comes apart: the same pause as between the rounds. */
@@ -193,9 +202,28 @@ object BattleEntryTimeline {
     }
 
     /** When nothing is left on screen, for a battle that opened at [revealAt]. */
-    fun finishedAt(kind: BattleEntryKind, revealAt: Long?, fadeIn: EntryFadeIn = kind.stages.fadeIn): Long? =
-        if (fadeIn == EntryFadeIn.SHATTER) shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
-        else fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
+    fun finishedAt(kind: BattleEntryKind, revealAt: Long?, fadeIn: EntryFadeIn = kind.stages.fadeIn): Long? = when (fadeIn) {
+        EntryFadeIn.SHATTER -> shatterStart(kind, revealAt)?.let { it + kind.fadeMillis }
+        EntryFadeIn.LIGHT_BURST -> burstStart(kind, revealAt)?.let { it + COLLAPSE_MILLIS + POINT_MILLIS + BURST_MILLIS }
+        else -> fadeStart(kind, revealAt)?.let { it + kind.fadeMillis }
+    }
+
+    /** When a light burst starts drawing its white in: once the battle has opened and settled, after its white hold. */
+    fun burstStart(kind: BattleEntryKind, revealAt: Long?): Long? =
+        revealAt?.let { maxOf(it, readyAt(kind) + BURST_HOLD_MILLIS) + SETTLE_MILLIS }
+
+    /** How far a light burst's white has drawn in to a point, 0 to 1, slow at first and rushing at the end. */
+    fun collapse(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
+        val start = burstStart(kind, revealAt) ?: return 0f
+        val share = ((elapsed - start).toFloat() / COLLAPSE_MILLIS).coerceIn(0f, 1f)
+        return share * share * share
+    }
+
+    /** How far a light burst has thrown the battle open, 0 to 1, after its point has waited. */
+    fun burst(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
+        val start = burstStart(kind, revealAt)?.let { it + COLLAPSE_MILLIS + POINT_MILLIS } ?: return 0f
+        return ((elapsed - start).toFloat() / BURST_MILLIS).coerceIn(0f, 1f)
+    }
 
     fun revealed(kind: BattleEntryKind, elapsed: Long, revealAt: Long?, fadeIn: EntryFadeIn = kind.stages.fadeIn): Boolean =
         finishedAt(kind, revealAt, fadeIn)?.let { elapsed >= it } ?: false
