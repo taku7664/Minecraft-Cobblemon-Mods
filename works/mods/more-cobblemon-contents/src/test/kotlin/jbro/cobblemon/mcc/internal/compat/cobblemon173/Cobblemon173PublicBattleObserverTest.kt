@@ -760,6 +760,11 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals("showdown:pikachu", publicSwitch.speciesId)
         assertNull(publicSwitch.formId)
         assertEquals(50, publicSwitch.level)
+        // Showdown omits the level of a level 100 Pokemon.
+        assertEquals(
+            100,
+            Cobblemon173ShowdownObservationAdapter.publicSwitchSnapshot(hiddenResolverResult, "Gholdengo, M").level,
+        )
     }
 
     @Test

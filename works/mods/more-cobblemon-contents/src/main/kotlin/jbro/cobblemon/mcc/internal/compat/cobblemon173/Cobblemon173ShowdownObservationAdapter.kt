@@ -508,6 +508,7 @@ class Cobblemon173ShowdownObservationAdapter(
             "wrap",
         )
         private val PUBLIC_LEVEL = Regex("(?:^|,\\s*)L(\\d+)(?:,|$)")
+        private const val SHOWDOWN_DEFAULT_LEVEL = 100
 
         fun publicSwitchSnapshot(
             resolved: Cobblemon173PublicPokemonSnapshot,
@@ -515,7 +516,9 @@ class Cobblemon173ShowdownObservationAdapter(
         ): Cobblemon173PublicPokemonSnapshot {
             val publicName = publicDetails.orEmpty().substringBefore(',').trim()
             val showdownSpeciesId = effectId(publicName).takeIf(String::isNotBlank)
+            // Showdown leaves the level out of the details for a level 100 Pokemon.
             val publicLevel = PUBLIC_LEVEL.find(publicDetails.orEmpty())?.groupValues?.get(1)?.toIntOrNull()
+                ?: SHOWDOWN_DEFAULT_LEVEL.takeIf { showdownSpeciesId != null }
             return resolved.copy(
                 speciesId = showdownSpeciesId?.let { "showdown:$it" } ?: UNKNOWN_PUBLIC_SPECIES_ID,
                 formId = null,
