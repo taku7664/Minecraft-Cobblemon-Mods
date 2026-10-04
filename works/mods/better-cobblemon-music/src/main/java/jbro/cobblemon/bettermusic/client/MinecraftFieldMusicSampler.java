@@ -9,6 +9,9 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 public final class MinecraftFieldMusicSampler {
     private static final String FALLBACK_BIOME_ID = "minecraft:plains";
+    // Vanilla computes this heightmap from the client chunk when it is not sent by the server.
+    // Unlike WORLD_SURFACE, jungle leaves do not count as a cave roof.
+    static final Heightmap.Types CAVE_COVER_HEIGHTMAP = Heightmap.Types.MOTION_BLOCKING_NO_LEAVES;
 
     public Optional<FieldMusicContext> sample(Minecraft client) {
         if (client.player == null || client.level == null) {
@@ -25,7 +28,7 @@ public final class MinecraftFieldMusicSampler {
             .map(tag -> tag.location().toString())
             .collect(Collectors.toUnmodifiableSet());
         int surfaceY = level.getHeight(
-            Heightmap.Types.WORLD_SURFACE,
+            CAVE_COVER_HEIGHTMAP,
             position.getX(),
             position.getZ()
         );
