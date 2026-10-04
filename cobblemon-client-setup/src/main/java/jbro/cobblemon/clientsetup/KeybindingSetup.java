@@ -18,6 +18,7 @@ public final class KeybindingSetup {
         new Rule("talkingheads", List.of("key_talkingheads.keybinding.modToggle")),
         new Rule("voicechat", List.of("key_key.hide_icons")),
         new Rule("zoomify", List.of("key_zoomify.key.zoom.secondary")),
+        new Rule("pokebadges", List.of("key_key.pokebadges.open_badgebox")),
         new Rule("craftingtweaks", List.of("key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack")));
 
     private KeybindingSetup() {}

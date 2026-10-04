@@ -55,6 +55,24 @@ final class KeybindingSetupTest {
         assertArrayEquals(state, Files.readAllBytes(stateFile()));
     }
 
+    @Test void newlyAddedBadgeKeyClearsOnceWithoutChangingPolicyBKeyOrOldCompletedKeys() throws Exception {
+        Files.createDirectories(stateFile().getParent());
+        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\n");
+        Files.writeString(optionsFile(), "key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
+            + "key_key.pokebadges.open_badgebox:key.keyboard.b\n"
+            + "key_key.hide_icons:key.keyboard.j\n");
+
+        assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("pokebadges", "voicechat")));
+        assertEquals("key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
+            + "key_key.pokebadges.open_badgebox:key.keyboard.unknown\n"
+            + "key_key.hide_icons:key.keyboard.j\n", Files.readString(optionsFile()));
+        assertTrue(Files.readString(stateFile()).contains("keybindings-pokebadges-v1=true"));
+
+        Files.writeString(optionsFile(), "key_key.pokebadges.open_badgebox:key.keyboard.m\n");
+        assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("pokebadges")));
+        assertEquals("key_key.pokebadges.open_badgebox:key.keyboard.m\n", Files.readString(optionsFile()));
+    }
+
     @Test void absentModsAreSkippedAndLaterInstallationHasItsOwnOnceRecord() throws Exception {
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of()));
         assertFalse(Files.exists(optionsFile()));
