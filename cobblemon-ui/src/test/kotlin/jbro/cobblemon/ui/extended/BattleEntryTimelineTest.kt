@@ -79,6 +79,9 @@ class BattleEntryTimelineTest {
         val fineEnd = secondStart + BattleEntryTimeline.SECOND_CRACK_MILLIS
         assertEquals(0f, BattleEntryTimeline.secondCrack(kind, secondStart, ready))
         assertEquals(1f, BattleEntryTimeline.secondCrack(kind, fineEnd, ready), 1e-3f)
+        // Light wells up along the cracks over the stillness, and is full by the time the white comes apart.
+        assertEquals(0f, BattleEntryTimeline.glow(kind, fineEnd, ready))
+        assertEquals(1f, BattleEntryTimeline.glow(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS, ready))
         assertEquals(0f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS, ready))
         assertEquals(1f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS + kind.fadeMillis,
             ready), 1e-3f)

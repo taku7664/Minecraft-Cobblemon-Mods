@@ -329,6 +329,8 @@ internal object EntryDraw {
     private const val SHARD_ROWS = 7
     /** The burst of cracks: its spikes, the jagged pieces each spike breaks into, its hairlines and its chips. */
     private const val SPIKES = 26
+    /** How far, in GUI pixels, the light along the cracks' edges spreads before it fades out. */
+    private const val FRINGE_SPREAD = 2.5f
     private const val SPIKE_PIECES = 3
     private const val HAIRLINES = 16
     private const val CHIPS = 40
@@ -876,6 +878,7 @@ internal object EntryDraw {
         val shatter = BattleEntryTimeline.shatter(frame.kind, frame.elapsed, frame.revealAt)
         val crack = BattleEntryTimeline.crack(frame.kind, frame.elapsed, frame.revealAt)
         val second = BattleEntryTimeline.secondCrack(frame.kind, frame.elapsed, frame.revealAt)
+        val glow = BattleEntryTimeline.glow(frame.kind, frame.elapsed, frame.revealAt)
         if (shatter <= 0f) {
             // Each jolt of the cracks knocks the white aside a little; it is drawn past the edges so none shows.
             val (shakeX, shakeY) = crackShake(frame)
@@ -883,7 +886,7 @@ internal object EntryDraw {
             pose.pushPose()
             pose.translate(shakeX, shakeY, 0f)
             frame.context.fill(-8, -8, frame.width + 8, frame.height + 8, 0xFFFFFFFF.toInt())
-            cracks(frame, impactX, impactY, crack, second, 1f)
+            cracks(frame, impactX, impactY, crack, second, glow, 1f)
             pose.popPose()
             return
         }
@@ -909,7 +912,7 @@ internal object EntryDraw {
             }
         }
         // The cracks stay on the shards for a moment as they part.
-        cracks(frame, impactX, impactY, crack, second, 1f - shatter * 3f)
+        cracks(frame, impactX, impactY, crack, second, glow, 1f - shatter * 3f)
     }
 
     /** One shard: from the center outward each in turn bursts a little away, tumbles and falls, fading as it goes. */
@@ -952,12 +955,17 @@ internal object EntryDraw {
      * chips. The first round ([first], 0 to 1) runs the spikes halfway in jolts, so they crackle out rather than glide;
      * the second ([second]) snaps them the rest of the way at once and brings the hairlines, rings and chips with it.
      */
-    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, opacity: Float) {
+    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, glow: Float,
+                       opacity: Float) {
         if (first <= 0f || opacity <= 0f) return
         val shade = opacity.coerceAtMost(1f)
         val ink = BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .8f)
         val dark = BattleSurfaceRenderer.withOpacity(ink, .9f * shade)
         val faint = BattleSurfaceRenderer.withOpacity(ink, .5f * shade)
+        // The light along the cracks' edges: the accent at its fullest, hugging each edge and fading within a few
+        // pixels. On white, light can only show as colour, so it is a fringe rather than a glow.
+        val fringe = BattleSurfaceRenderer.withOpacity(frame.accent, .6f * glow * shade)
+        val fringeOut = BattleSurfaceRenderer.withOpacity(frame.accent, 0f)
         /** How far one spike has jolted through the first round at [share] of it, 0 to 1. */
         fun jolts(share: Float, seed: Int): Float {
             var reach = 0f
@@ -1007,6 +1015,21 @@ internal object EntryDraw {
                     val ny = y + sin(angle) * length
                     val from = base * (1f - along / drawn)
                     val to = base * (1f - (along + length) / drawn)
+                    if (glow > 0f) {
+                        // On each side, from the crack's edge out to nothing.
+                        val dx = nx - x
+                        val dy = ny - y
+                        val norm = hypot(dx, dy).coerceAtLeast(.001f)
+                        val px = -dy / norm
+                        val py = dx / norm
+                        val spread = FRINGE_SPREAD * glow
+                        for (side in listOf(1f, -1f)) {
+                            buffer.addVertex(matrix, x + px * from * side, y + py * from * side, 0f).setColor(fringe)
+                            buffer.addVertex(matrix, x + px * (from + spread) * side, y + py * (from + spread) * side, 0f).setColor(fringeOut)
+                            buffer.addVertex(matrix, nx + px * (to + spread * .4f) * side, ny + py * (to + spread * .4f) * side, 0f).setColor(fringeOut)
+                            buffer.addVertex(matrix, nx + px * to * side, ny + py * to * side, 0f).setColor(fringe)
+                        }
+                    }
                     taper(x, y, nx, ny, from, to, dark)
                     along += length
                     x = nx
