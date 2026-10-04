@@ -18,7 +18,8 @@
       {
         "adapter": "kotlin",
         "value": "jbro.cobblemon.policy.client.JbroPolicyClient"
-      }
+      },
+      "jbro.cobblemon.policy.waypoint.ClientWaypoints"
     ]
   },
   "mixins": [

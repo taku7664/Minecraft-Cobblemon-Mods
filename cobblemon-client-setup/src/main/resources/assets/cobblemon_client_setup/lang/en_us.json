@@ -1,0 +1,18 @@
+{
+  "modmenu.nameTranslation.cobblemon_client_setup": "Cobblemon Client Setup",
+  "modmenu.descriptionTranslation.cobblemon_client_setup": "Applies client setup once or on every launch before the game initializes.",
+  "screen.cobblemon_client_setup.title": "Client Setup",
+  "screen.cobblemon_client_setup.description": "Setup: apply CLC HUD and Xaero settings every launch; clean up keys once. Saved modes take effect on the next launch.",
+  "screen.cobblemon_client_setup.clc_hud": "Disable CLC HUD: %s",
+  "screen.cobblemon_client_setup.keybindings": "Keybinding cleanup: %s",
+  "screen.cobblemon_client_setup.keybindings_help": "Unbinds the CLC HUD toggle, Talking Heads toggle, voice chat icon toggle, Zoomify secondary zoom, and Crafting Tweaks compress/refill keys. Crafting Tweaks uses buttons only. Once mode preserves later personal settings.",
+  "screen.cobblemon_client_setup.xaero": "Xaero map settings: %s",
+  "screen.cobblemon_client_setup.xaero_help": "Sets a round minimap in the top-right corner. Enables waypoints, keeps map teleport and deathpoints disabled, and shows icons. Map/settings use J/Y.",
+  "screen.cobblemon_client_setup.mode.once": "Once",
+  "screen.cobblemon_client_setup.mode.always": "Every launch",
+  "screen.cobblemon_client_setup.save": "Save",
+  "screen.cobblemon_client_setup.clc_missing": "Cobbled Level Control is not installed.",
+  "screen.cobblemon_client_setup.read_failed": "Could not read client setup. Check client.toml and the game log.",
+  "screen.cobblemon_client_setup.save_failed": "Could not save. Check the game log.",
+  "screen.cobblemon_client_setup.saved": "Saved. The selected mode takes effect on the next game launch."
+}

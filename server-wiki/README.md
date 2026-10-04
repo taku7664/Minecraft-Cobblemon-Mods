@@ -51,6 +51,17 @@ MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시�
 
 문서를 고치면 서버의 `wiki/` 폴더만 바꾸면 되고, 서버를 다시 켤 필요도 없습니다.
 
+서버 실행 훅용 정적 파일 묶음은 다음 명령으로 만들 수 있습니다.
+
+```powershell
+python tools/server-wiki/build_startup_bundle.py --output "서버경로/startup-assets/server-wiki.zip"
+```
+
+`index.html`, `pages/`, `assets/`와 폰트 라이선스를 넣고 출처 커밋·SHA-256을
+`server-wiki.bundle.json`에 기록합니다. 서버의 `startup-hooks.json`에도 새 압축 파일의
+`wiki_files.sha256`을 반영해야 합니다. 서버 훅은 설치된 MCC의 위키 폴더에 누락 파일만
+채웁니다. 이미 수정한 문서는 보존하므로 기존 문서를 갱신하려면 따로 백업·교체합니다.
+
 ## 플레이어 정보 쓰기
 
 `pages/me.html`이 대시보드를 그립니다. 다른 문서에서도 `<span data-me="bp"></span>`처럼 쓰면 값이 채워집니다.

@@ -68,7 +68,7 @@
   "message.jbro_policy.spawn_for.rank": "%1$s is below the %2$s League rank and cannot catch it.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
-  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no campfire pot stat candy L/XL",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no experience candy crafting",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: no Ability Patch recipe",
 
   "legend.jbro_policy.appeared.arceus": "%2$s appeared near %1$s!",
@@ -188,5 +188,10 @@
   "message.jbro_policy.test.slot_empty": "Party slot %s is empty.",
   "message.jbro_policy.test.no_cap": "Could not read your level cap: League Challenge is missing or no League is loaded.",
   "message.jbro_policy.test.level_all": "Set %s party Pokémon to Lv. %s.",
-  "message.jbro_policy.test.level_one": "Set party slot %s, %s, to Lv. %s."
+  "message.jbro_policy.test.level_one": "Set party slot %s, %s, to Lv. %s.",
+
+  "key.categories.jbro_policy": "jbro Policy",
+  "key.jbro_policy.quick_waypoint": "Create waypoint at current location",
+  "message.jbro_policy.waypoint_created": "Waypoint created: %s",
+  "message.jbro_policy.waypoint_failed": "Could not create waypoint. Check the game log."
 }

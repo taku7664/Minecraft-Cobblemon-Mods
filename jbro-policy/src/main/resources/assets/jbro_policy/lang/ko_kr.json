@@ -68,7 +68,7 @@
   "message.jbro_policy.spawn_for.rank": "%1$s은(는) 리그 등급이 %2$s보다 낮아서 포획할 수 없습니다.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
-  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 능력치 사탕 L/XL 캠프 냄비 레시피 차단",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 경험사탕 전체 제작 차단",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: 특성패치 제작 레시피 차단",
 
   "legend.jbro_policy.appeared.arceus": "하늘 저편에서 눈부신 빛이 쏟아집니다! 아르세우스가 %1$s 근처에 나타났습니다!",
@@ -188,5 +188,10 @@
   "message.jbro_policy.test.slot_empty": "파티 %s번 슬롯이 비어 있습니다.",
   "message.jbro_policy.test.no_cap": "레벨 캡을 읽지 못했습니다. League Challenge가 없거나 리그 데이터가 로드되지 않았습니다.",
   "message.jbro_policy.test.level_all": "파티 포켓몬 %s마리를 Lv.%s로 맞췄습니다.",
-  "message.jbro_policy.test.level_one": "파티 %s번 %s을(를) Lv.%s로 맞췄습니다."
+  "message.jbro_policy.test.level_one": "파티 %s번 %s을(를) Lv.%s로 맞췄습니다.",
+
+  "key.categories.jbro_policy": "jbro 정책",
+  "key.jbro_policy.quick_waypoint": "현재 위치에 웨이포인트 생성",
+  "message.jbro_policy.waypoint_created": "웨이포인트 생성: %s",
+  "message.jbro_policy.waypoint_failed": "웨이포인트를 만들지 못했습니다. 게임 로그를 확인하세요."
 }

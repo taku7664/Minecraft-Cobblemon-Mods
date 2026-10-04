@@ -9,6 +9,14 @@ jbro 포켓몬 서버에 적용하는 정책과 다듬기 기능을 하나로 �
 - 설정 파일: `config/jbro-policy.json`
 - 새 서버를 열 때 맞출 설정: [docs/SERVER_OPEN_CHECKLIST.md](docs/SERVER_OPEN_CHECKLIST.md)
 
+## Xaero 웨이포인트
+
+클라이언트에 Xaero's Minimap과 `jbro-policy`를 함께 설치하면 B 키 또는
+`/waypoint [이름]`으로 현재 위치에 영구 웨이포인트를 바로 저장합니다. 이름을 생략하면
+`Waypoint`입니다. 명령은 클라이언트에서 실행하며 이름의 줄바꿈·콜론은 허용하지 않습니다.
+접속 중 새로 생성된 Xaero 월드의 웨이포인트 텔레포트 설정은 끄고 저장합니다.
+기존 월드의 설정·기본 키를 게임 시작 전에 준비하는 코드는 `cobblemon-client-setup`에 있습니다.
+
 ## 광장
 
 `/plaza enter`로 광장 차원(`jbro_policy:plaza`)에 가고, `/plaza exit`로 들어오기 전 위치에 돌아옵니다.
@@ -202,17 +210,17 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 ## 안내
 
-접속자가 있으면 30초마다 `[안내] 내용`을 서버 전체에 보냅니다. `[안내]`는 노란색이고, 내용은 목록에서 무작위로 고르되 같은 안내가 연달아 나오지 않습니다.
+접속자가 있으면 기본 1분(60초)마다 `[안내] 내용`을 서버 전체에 보냅니다. `[안내]`는 노란색이고, 내용은 목록에서 무작위로 고르되 같은 안내가 연달아 나오지 않습니다.
 
 - **목록과 간격:** 설정 파일의 `tips`와 `tipIntervalSeconds`에서 바꿉니다. 간격을 0으로 하면 안내가 꺼집니다. 설정은 서버를 재시작해야 반영됩니다.
 - **API:** 다른 모드에서는 `jbro.cobblemon.policy.api.Tips.add(message)`로 목록에 안내를 더하고, `Tips.broadcast(server, message)`로 즉시 보냅니다.
 
 ## 내장 데이터팩
 
-아래 두 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
+아래 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
 
 - **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 울트라비스트는 빠져 있고, Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
-- **`jbro_policy:no_stat_candy_l_xl`:** 캠프 냄비의 능력치 사탕 L/XL 레시피 12개를 막습니다.
+- **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 XS·S·M·L·XL 제작을 모두 막습니다. 캠프 냄비 5개, 조합대 분할 4개, Create 연동 1개로 총 10개 레시피를 차단합니다. 기존 월드의 팩 활성화 설정을 유지하려고 팩 ID는 보존했습니다. 이전의 능력치 사탕 제작 제한은 해제합니다. 능력치 사탕에는 L·XL 크기가 없으며, 기존 레시피 이름의 L·XL은 재료인 경험사탕의 크기를 뜻했습니다.
 
 ## 설정
 
@@ -231,7 +239,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
       { "min": 30, "max": 31, "chance": 10.0 }
     ]
   },
-  "tipIntervalSeconds": 30,
+  "tipIntervalSeconds": 60,
   "tips": ["/plaza enter로 광장에 갈 수 있습니다. 돌아올 때는 /plaza exit를 입력하세요.", "..."]
 }
 ```

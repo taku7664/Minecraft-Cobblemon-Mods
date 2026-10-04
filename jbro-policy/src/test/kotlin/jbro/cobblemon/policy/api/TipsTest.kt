@@ -25,7 +25,8 @@ class TipsTest {
         val config = PolicyConfig.parse("""{"tipIntervalSeconds": 60, "tips": ["하나", "둘"]}""")
         assertEquals(60, config.tipIntervalSeconds)
         assertEquals(listOf("하나", "둘"), config.tips)
-        assertEquals(30, PolicyConfig().tipIntervalSeconds)
+        assertEquals(60, PolicyConfig().tipIntervalSeconds)
+        assertEquals(60, PolicyConfig.parse("{}").tipIntervalSeconds)
         assertTrue(PolicyConfig().tips.isNotEmpty())
         assertThrows<IllegalArgumentException> { PolicyConfig.parse("""{"tipIntervalSeconds": -1}""") }
     }
