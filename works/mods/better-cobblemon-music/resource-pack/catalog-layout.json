@@ -87,7 +87,7 @@
     "better_cobblemon_music:field/ocean/underground_ruins": "땅밑유적",
     "better_cobblemon_music:field/plains/sinnoh_route_201_night": "201번도로 (밤)",
     "better_cobblemon_music:field/plaza/pallet_town": "태초마을",
-    "better_cobblemon_music:field/plaza/route_1": "1번도로",
+    "better_cobblemon_music:field/plaza/jubilife_city_day": "축복시티 (낮)",
     "better_cobblemon_music:field/river/sealed_chamber": "고시의 석실",
     "better_cobblemon_music:field/river/sinnoh_lake_theme": "호수",
     "better_cobblemon_music:field/snow/sinnoh_route_205_night": "205번도로 (밤)",
@@ -100,7 +100,7 @@
   "playlists": {
     "better_cobblemon_music:field_plaza": {
       "tracks": [
-        "better_cobblemon_music:field/plaza/route_1"
+        "better_cobblemon_music:field/plaza/jubilife_city_day"
       ]
     },
     "better_cobblemon_music:screen_title": {

@@ -32,10 +32,11 @@
     ["2-02. Route 201 (Night).mp3", "field/plains/sinnoh_route_201_night.ogg"],
     ["48 - Route 111.flac", "field/desert/route_111.ogg"],
     ["40 - Abandoned Ship.flac", "field/badlands/abandoned_ship.ogg"],
-    ["24 - Route 1.flac", "field/plaza/route_1.ogg"],
+    ["23 - Jubilife City (Day).flac", "field/plaza/jubilife_city_day.ogg"],
     ["25 - Pallet Town.flac", "field/plaza/pallet_town.ogg"]
   ],
   "excludedOrUnassigned": [
+    ["24 - Route 1.flac", "Replaced as plaza daytime music on 2026-10-04"],
     ["52 - Battle Tower.flac", "README explicitly says not to apply"],
     ["14 - Santalune Forest.flac", "User confirmed desert is Route 111 only"],
     ["25 - Poké Mart.flac", "README chooses the supplied MP3 for the MCC shop"],
