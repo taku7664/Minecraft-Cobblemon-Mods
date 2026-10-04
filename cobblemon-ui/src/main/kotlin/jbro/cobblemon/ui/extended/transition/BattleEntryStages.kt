@@ -329,6 +329,8 @@ internal object EntryDraw {
     private val JOLT_TIMES = floatArrayOf(.03f, .42f, .78f)
     private val JOLT_SIZES = floatArrayOf(.45f, .3f, .25f)
     private const val JOLT_SNAP = .06f
+    /** How long the knock of a jolt takes to die out. */
+    private const val JOLT_KNOCK_MILLIS = 110f
     /** The share of the shatter by which the farthest shard starts after the nearest. */
     private const val SHARD_SPREAD = .5f
     private const val ZOOM_COPIES = 5
@@ -780,9 +782,16 @@ internal object EntryDraw {
         val shatter = BattleEntryTimeline.shatter(frame.kind, frame.elapsed, frame.revealAt)
         val crack = BattleEntryTimeline.crack(frame.kind, frame.elapsed, frame.revealAt)
         val second = BattleEntryTimeline.secondCrack(frame.kind, frame.elapsed, frame.revealAt)
+        val glow = BattleEntryTimeline.glow(frame.kind, frame.elapsed, frame.revealAt)
         if (shatter <= 0f) {
-            frame.context.fill(0, 0, frame.width, frame.height, 0xFFFFFFFF.toInt())
-            cracks(frame, impactX, impactY, crack, second, 1f)
+            // Each jolt of the cracks knocks the white aside a little; it is drawn past the edges so none shows.
+            val (shakeX, shakeY) = crackShake(frame)
+            val pose = frame.context.pose()
+            pose.pushPose()
+            pose.translate(shakeX, shakeY, 0f)
+            frame.context.fill(-8, -8, frame.width + 8, frame.height + 8, 0xFFFFFFFF.toInt())
+            cracks(frame, impactX, impactY, crack, second, glow, 1f)
+            pose.popPose()
             return
         }
         // The white tiled in jittered triangles that together cover the screen exactly until they start to move.
@@ -807,7 +816,7 @@ internal object EntryDraw {
             }
         }
         // The cracks stay on the shards for a moment as they part.
-        cracks(frame, impactX, impactY, crack, second, 1f - shatter * 3f)
+        cracks(frame, impactX, impactY, crack, second, glow, 1f - shatter * 3f)
     }
 
     /** One shard: from the center outward each in turn bursts a little away, tumbles and falls, fading as it goes. */
@@ -850,12 +859,17 @@ internal object EntryDraw {
      * chips. The first round ([first], 0 to 1) runs the spikes halfway in jolts, so they crackle out rather than glide;
      * the second ([second]) snaps them the rest of the way at once and brings the hairlines, rings and chips with it.
      */
-    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, opacity: Float) {
+    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, glow: Float,
+                       opacity: Float) {
         if (first <= 0f || opacity <= 0f) return
         val shade = opacity.coerceAtMost(1f)
         val ink = BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .8f)
         val dark = BattleSurfaceRenderer.withOpacity(ink, .9f * shade)
         val faint = BattleSurfaceRenderer.withOpacity(ink, .5f * shade)
+        // The light welling up through the cracks: the accent, brightened, in a soft band round each crack.
+        val light = BattleSurfaceRenderer.interpolate(frame.accent, 0xFFFFFFFF.toInt(), .25f)
+        val halo = BattleSurfaceRenderer.withOpacity(light, .55f * glow * shade)
+        val haloFaint = BattleSurfaceRenderer.withOpacity(light, .3f * glow * shade)
         /** How far one spike has jolted through the first round at [share] of it, 0 to 1. */
         fun jolts(share: Float, seed: Int): Float {
             var reach = 0f
@@ -868,6 +882,20 @@ internal object EntryDraw {
         val hole = frame.far * .05f
         fun spikeAngle(spike: Int): Float = (spike + hash(spike * 4099 + 7) * .8f) / SPIKES * TAU
         quads(frame.context) { buffer, matrix ->
+            // The hole fills with light first: a disc bright at the impact, fading out at twice the hole's size.
+            if (glow > 0f) {
+                val core = BattleSurfaceRenderer.withOpacity(light, .85f * glow * shade)
+                val edge = BattleSurfaceRenderer.withOpacity(light, 0f)
+                val radius = hole * (1.2f + .9f * glow)
+                for (step in 0 until 32) {
+                    val a0 = step * TAU / 32
+                    val a1 = (step + 1) * TAU / 32
+                    buffer.addVertex(matrix, impactX, impactY, 0f).setColor(core)
+                    buffer.addVertex(matrix, impactX + cos(a0) * radius, impactY + sin(a0) * radius, 0f).setColor(edge)
+                    buffer.addVertex(matrix, impactX + cos(a1) * radius, impactY + sin(a1) * radius, 0f).setColor(edge)
+                    buffer.addVertex(matrix, impactX, impactY, 0f).setColor(core)
+                }
+            }
             /** A straight piece from (x, y) to (nx, ny), [from] wide on each side at its start and [to] at its end. */
             fun taper(x: Float, y: Float, nx: Float, ny: Float, from: Float, to: Float, color: Int) {
                 val dx = nx - x
@@ -903,7 +931,10 @@ internal object EntryDraw {
                     val length = minOf(full / SPIKE_PIECES, drawn - along)
                     val nx = x + cos(angle) * length
                     val ny = y + sin(angle) * length
-                    taper(x, y, nx, ny, base * (1f - along / drawn), base * (1f - (along + length) / drawn), dark)
+                    val from = base * (1f - along / drawn)
+                    val to = base * (1f - (along + length) / drawn)
+                    if (glow > 0f) taper(x, y, nx, ny, from + 3.5f * glow, to + 1.5f * glow, halo)
+                    taper(x, y, nx, ny, from, to, dark)
                     along += length
                     x = nx
                     y = ny
@@ -916,8 +947,12 @@ internal object EntryDraw {
                 val angle = (line + hash(seed)) / HAIRLINES * TAU
                 val start = hole * (1f + hash(seed + 1))
                 val length = frame.far * (.35f + .6f * hash(seed + 2)) * second
-                taper(impactX + cos(angle) * start, impactY + sin(angle) * start,
-                    impactX + cos(angle) * (start + length), impactY + sin(angle) * (start + length), .35f, .15f, faint)
+                val sx = impactX + cos(angle) * start
+                val sy = impactY + sin(angle) * start
+                val ex = impactX + cos(angle) * (start + length)
+                val ey = impactY + sin(angle) * (start + length)
+                if (glow > 0f) taper(sx, sy, ex, ey, 1.6f * glow, .4f * glow, haloFaint)
+                taper(sx, sy, ex, ey, .35f, .15f, faint)
             }
             // The rings: broken arcs between neighbouring spikes, close round the hole.
             for (ring in 0 until 2) for (spike in 0 until SPIKES) {
@@ -948,6 +983,30 @@ internal object EntryDraw {
                     size * .45f, 0f, dark)
             }
         }
+    }
+
+    /**
+     * The knock each jolt of a legendary's cracks gives the white: a sharp shove, a few pixels in a direction of its
+     * own, dying out in a tenth of a second; the second round's snap knocks hardest.
+     */
+    private fun crackShake(frame: EntryFrame): Pair<Float, Float> {
+        val start = BattleEntryTimeline.crackStart(frame.kind, frame.revealAt) ?: return 0f to 0f
+        val since = frame.elapsed - start
+        val hits = JOLT_TIMES.map { it * BattleEntryTimeline.CRACK_MILLIS } +
+            (BattleEntryTimeline.CRACK_MILLIS + BattleEntryTimeline.CRACK_GAP_MILLIS).toFloat()
+        var x = 0f
+        var y = 0f
+        hits.forEachIndexed { index, at ->
+            val after = since - at
+            if (after < 0f || after > JOLT_KNOCK_MILLIS) return@forEachIndexed
+            val strength = (if (index == hits.lastIndex) 4f else 2.5f) * (1f - after / JOLT_KNOCK_MILLIS)
+            val direction = hash(index * 811 + 5) * TAU
+            // A quick rattle on top of the shove, so it reads as a knock rather than a slide.
+            val rattle = cos(after / 14f * Math.PI.toFloat())
+            x += cos(direction) * strength * rattle
+            y += sin(direction) * strength * rattle
+        }
+        return x to y
     }
 
     /** The screen's edges in the accent, fading toward the middle. */
