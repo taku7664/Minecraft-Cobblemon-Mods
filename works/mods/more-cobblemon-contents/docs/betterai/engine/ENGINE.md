@@ -63,7 +63,7 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 워크트리에는 개발 서버가 없으므로 경로를 직접 넘긴다.
 
 ```bash
-./gradlew :more-cobblemon-contents:unitTest -Pscope=engine -PshowdownRoot=<저장소>/dev-server/showdown
+./gradlew :more-cobblemon-contents:unitTest -Pscope=engine -PshowdownRoot=<저장소>/develop-product/server/showdown
 ```
 
 한 묶음만 빠르게 확인할 때는 `-PsweepOnly=<id 목록 파일>`을 붙인다. 결과는 `build/reports/ai-engine-sweep.md`(실패 항목과 첫 차이), `ai-engine-sweep-pass.txt`(통과 목록)에 남는다.
