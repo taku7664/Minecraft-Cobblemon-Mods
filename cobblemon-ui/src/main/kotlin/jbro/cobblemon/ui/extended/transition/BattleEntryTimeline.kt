@@ -33,24 +33,24 @@ enum class BattleEntryKind(
             EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.LIGHT_BURST),
             EntryStages(EntryIntro.ZOOM_BLUR, EntryMood.CALM, EntryCover.NONE, EntryWhiteout.WHITE, EntryFadeIn.LIGHT_BURST),
         )),
+    // A wild battle always opens with the flashes.
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
         listOf(
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.IRIS_OPEN),
-            EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.IRIS, EntryWhiteout.WHITE_BURST, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
-            EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
         )),
+    // A trainer battle is always covered by the Poké Ball arena.
     TRAINER("trainer", listOf(0L, 300L), 160, 1700, 500, 350, 1000,
-        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+        EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
         listOf(
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_SWEEP, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
-            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.SLICES, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
-            EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.CLOCK_WIPE, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
-            EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.SPIRAL, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
+            EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
             EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.SPLIT_OPEN),
+            EntryStages(EntryIntro.SPIN_ZOOM, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE_BURST, EntryFadeIn.IRIS_OPEN),
+            EntryStages(EntryIntro.MOSAIC, EntryMood.CALM, EntryCover.POKE_ARENA, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
         ));
 
     companion object {
