@@ -9,6 +9,8 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDamageHpTransfer
 import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalRecoilImmunity
 import jbro.cobblemon.mcc.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
@@ -101,7 +103,11 @@ internal object PublicActionOutcomeProjector {
         } else {
             null
         }
-        val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        val actorAbility = actor?.let { LocalPublicAbilityState.effectiveKnownAbility(context.state, it) }
+        val effects = candidate.moveDetails?.effects?.effects.orEmpty().filterNot {
+            it.kind == BattleMoveEffectKind.RECOIL_FRACTION && LocalRecoilImmunity.blocksDamageRecoil(actorAbility) ||
+                it.kind == BattleMoveEffectKind.MAX_HP_RECOIL && LocalRecoilImmunity.blocksMaxHpRecoil(it, actorAbility)
+        }
         fun transferBounds(kind: BattleMoveEffectKind, limit: Double): BattleFractionRange? {
             // A representative multi-hit count is not a bound on its full outcome distribution.
             val damage = adjustedDamage?.takeIf { hitCount == 1.0 } ?: return null

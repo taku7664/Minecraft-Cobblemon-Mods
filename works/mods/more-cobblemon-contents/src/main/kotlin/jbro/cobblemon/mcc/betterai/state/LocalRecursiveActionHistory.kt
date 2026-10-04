@@ -56,6 +56,11 @@ internal data class RecursiveActionHistory(
      * the real battle's count stands.
      */
     val losingHealStreakByPokemon: Map<UUID, Int> = emptyMap(),
+    /**
+     * Pokemon holding a known item when the search began. One of them seen without an item later in the line lost it
+     * there (Knock Off, a berry eaten), so Poltergeist fails on it.
+     */
+    val itemHoldersAtRoot: Set<UUID> = emptySet(),
 )
 
 internal data class RecursiveMoveUseKey(val pokemonId: UUID, val moveId: String)
@@ -134,6 +139,7 @@ internal object RecursiveSnapshotActionConstraints {
                 .mapTo(linkedSetOf()) { it.battlePokemonId },
             drowsyPokemonIds = active.filter { it.hasVolatile("yawn") }.mapTo(linkedSetOf()) { it.battlePokemonId },
             confusedPokemonIds = active.filter { it.hasVolatile("confusion") }.mapTo(linkedSetOf()) { it.battlePokemonId },
+            itemHoldersAtRoot = state.pokemon.filter { it.canonicalKnownHeldItemId != null }.mapTo(linkedSetOf()) { it.battlePokemonId },
             badPoisonTurnsByPokemon = LocalBadPoisonCounter.seed(state),
             protectionChainByPokemon = publicProtectionChains,
             allySwitchChainByPokemon = active.mapNotNull { pokemon ->
@@ -426,6 +432,7 @@ internal object RecursiveHistoryProjector {
             protectionChainByPokemon = protectionChains,
             allySwitchChainByPokemon = allySwitchChains,
             delayedStrikes = delayedStrikes,
+            itemHoldersAtRoot = previous.itemHoldersAtRoot,
         )
     }
 

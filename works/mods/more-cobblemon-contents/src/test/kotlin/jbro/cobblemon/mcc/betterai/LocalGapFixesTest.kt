@@ -4,6 +4,8 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.mechanics.LocalAfterHitReactions
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
@@ -250,6 +252,86 @@ class LocalGapFixesTest {
         assertTrue(powers != null && powers.single() > 10, "two healthy party members: $powers")
     }
 
+    @Test
+    fun `G-601 Rock Head and Magic Guard stop recoil but not an HP cost`() {
+        fun hpAfter(ability: String?, effect: BattleMoveEffectView): Double {
+            val user = mon(BattleSide.ALLY, 0, "rock", ability = ability)
+            val target = mon(BattleSide.OPPONENT, 0, "normal")
+            return LocalDirectHitMechanics.apply(state(listOf(user, target)), user.battlePokemonId, target.battlePokemonId, 0.5,
+                listOf(effect), ignoreTargetAbility = false).state.pokemon.single { it.battlePokemonId == user.battlePokemonId }.hpFraction
+        }
+        val recoil = BattleMoveEffectView(BattleMoveEffectKind.RECOIL_FRACTION, BattleMoveEffectTarget.USER, 1.0,
+            fractionRange = BattleFractionRange(0.5, 0.5))
+        val hpCost = BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, 1.0,
+            fractionRange = BattleFractionRange(0.5, 0.5))
+        val mindBlown = BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, 1.0,
+            valueId = BattleDeclarativeMoveEffects.MIND_BLOWN_RECOIL, fractionRange = BattleFractionRange(0.5, 0.5))
+        assertTrue(hpAfter(null, recoil) < 1.0)
+        assertEquals(1.0, hpAfter("rockhead", recoil), 1e-9)
+        assertEquals(1.0, hpAfter("magicguard", recoil), 1e-9)
+        assertEquals(1.0, hpAfter("magicguard", mindBlown), 1e-9)
+        assertTrue(hpAfter("magicguard", hpCost) < 1.0, "Belly Drum's cost is not recoil")
+    }
+
+    @Test
+    fun `G-602 Poltergeist fails on a Pokemon that lost its item in the line`() {
+        val user = mon(BattleSide.ALLY, 0, "ghost", speed = 150)
+        val target = mon(BattleSide.OPPONENT, 0, "psychic", speed = 50)
+        val state = state(listOf(user, target))
+        val poltergeist = attack("poltergeist", "ghost", power = 110.0,
+            requirements = listOf(BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_HELD_ITEM_PRESENT)))
+        val reply = attack("splash", "normal", power = 0.0, target = null)
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, poltergeist))
+        fun targetHp(history: RecursiveActionHistory) = PublicSingleTurnProjector.project(state, calculated.candidates.single(), reply, calculated, history)
+            .minOf { outcome -> outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == target.battlePokemonId }.hpFraction }
+        assertTrue(targetHp(RecursiveActionHistory()) < 1.0, "an unrevealed item may still be there")
+        assertEquals(1.0, targetHp(RecursiveActionHistory(itemHoldersAtRoot = setOf(target.battlePokemonId))), 1e-9)
+    }
+
+    @Test
+    fun `G-604 Defeatist halves at half HP and Grass Pelt guards on Grassy Terrain`() {
+        fun multiplier(attacker: BattlePokemonStateView, target: BattlePokemonStateView, terrain: String? = null): Double =
+            LocalPublicMechanicsKernel.projectMove(attack("tackle", "normal"), context(state(listOf(attacker, target), field(terrain = terrain)), null))
+                .knownDamageMultiplier
+        assertEquals(0.5, multiplier(mon(BattleSide.ALLY, 0, "rock", hp = 0.4, ability = "defeatist"), mon(BattleSide.OPPONENT, 0, "water")), 1e-9)
+        assertEquals(2.0 / 3.0, multiplier(mon(BattleSide.ALLY, 0, "rock"), mon(BattleSide.OPPONENT, 0, "water", ability = "grasspelt"), "grassyterrain"), 1e-9)
+    }
+
+    @Test
+    fun `G-605 Damp stops Explosion and Unnerve keeps a berry from working`() {
+        val user = mon(BattleSide.ALLY, 0, "normal")
+        val damp = mon(BattleSide.OPPONENT, 0, "water", ability = "damp")
+        val explosion = attack("explosion", "normal", power = 250.0)
+        assertTrue(LocalPublicMechanicsKernel.projectMove(explosion, context(state(listOf(user, damp)), null)).publiclyNullified)
+        val holder = mon(BattleSide.ALLY, 0, "normal", item = "sitrusberry")
+        assertEquals("sitrusberry", LocalPublicItemState.activeItemId(state(listOf(holder, mon(BattleSide.OPPONENT, 0, "normal"))), holder))
+        assertNull(LocalPublicItemState.activeItemId(state(listOf(holder, mon(BattleSide.OPPONENT, 0, "normal", ability = "unnerve"))), holder))
+    }
+
+    @Test
+    fun `G-606 Soul-Heart rises on a knockout and Magician takes the item it hit`() {
+        val attacker = mon(BattleSide.ALLY, 0, "psychic", ability = "magician")
+        val heart = mon(BattleSide.OPPONENT, 1, "fairy", ability = "soulheart")
+        val target = mon(BattleSide.OPPONENT, 0, "normal", item = "leftovers")
+        val pokemon = listOf(attacker, target, heart)
+        val before = BattleStateView(
+            battleId = UUID.randomUUID(), format = BattleFormat.DOUBLE, turn = 3, pokemon = pokemon, field = field(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { side -> pokemon.count { it.side == side } },
+            observedEvents = emptyList(), inferences = emptyList(),
+        )
+        val hit = before.derive(pokemon = before.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId) mon(BattleSide.OPPONENT, 0, "normal", item = "leftovers", hp = 0.5, id = target.battlePokemonId) else it
+        })
+        val after = LocalAfterHitReactions.apply(before, hit, attacker.battlePokemonId, target.battlePokemonId, attack("psychic", "psychic", special = true), 0.5)
+        assertEquals("leftovers", after.pokemon.single { it.battlePokemonId == attacker.battlePokemonId }.knownHeldItemId)
+        assertEquals("", after.pokemon.single { it.battlePokemonId == target.battlePokemonId }.knownHeldItemId, "a confirmed absence")
+        val knockedOut = before.derive(pokemon = before.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId) mon(BattleSide.OPPONENT, 0, "normal", hp = 0.0, id = target.battlePokemonId) else it
+        })
+        val afterKo = LocalAfterHitReactions.apply(before, knockedOut, attacker.battlePokemonId, target.battlePokemonId, attack("psychic", "psychic", special = true), 1.0)
+        assertEquals(1, afterKo.pokemon.single { it.battlePokemonId == heart.battlePokemonId }.statStages["special_attack"])
+    }
+
     private fun field(
         weather: String? = null,
         terrain: String? = null,
@@ -271,6 +353,7 @@ class LocalGapFixesTest {
         target: BattleTargetSlot? = BattleTargetSlot(BattleSide.OPPONENT, 0),
         effects: List<BattleMoveEffectView> = emptyList(),
         facts: BattleCandidateFactsView? = null,
+        requirements: List<BattleMoveRequirementView> = emptyList(),
     ) = BattleActionCandidate(
         actionId = id, kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "cobblemon:$id",
         targets = listOfNotNull(target), facts = facts,
@@ -279,9 +362,8 @@ class LocalGapFixesTest {
             damageCategory = if (special) BattleMoveDamageCategory.SPECIAL else BattleMoveDamageCategory.PHYSICAL,
             power = power, accuracy = 100.0, priority = priority, currentPp = 10,
             targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
-            effects = effects.takeIf { it.isNotEmpty() }?.let {
-                BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, it, scriptedBehavior = false)
-            },
+            effects = if (effects.isEmpty() && requirements.isEmpty()) null else
+                BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, effects, scriptedBehavior = false, requirements = requirements),
         ),
     )
 

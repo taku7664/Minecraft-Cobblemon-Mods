@@ -150,6 +150,7 @@ object BattleDeclarativeMoveEffects {
             effects += effect(
                 BattleMoveEffectKind.MAX_HP_RECOIL,
                 BattleMoveEffectTarget.USER,
+                valueId = MIND_BLOWN_RECOIL,
                 fraction = BattleFractionRange(0.5, 0.5),
             )
         }
@@ -440,6 +441,9 @@ object BattleDeclarativeMoveEffects {
         ),
         "filletaway" to listOf(hpCost(0.5)),
         "clangoroussoul" to listOf(hpCost(1.0 / 3.0)),
+        // Tri Attack and Dire Claw roll one status out of three in onHit; each is declared at its share of the chance.
+        "triattack" to randomStatus(0.2, "brn", "par", "frz"),
+        "direclaw" to randomStatus(0.5, "psn", "par", "slp"),
         "tidyup" to listOf(
             BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
                 statStages = mapOf("atk" to 1, "spe" to 1)),
@@ -453,8 +457,15 @@ object BattleDeclarativeMoveEffects {
     const val NON_GHOST_CURSE = "non_ghost_curse"
     const val MAXIMISE_STAGE = "maximise_stage"
 
+    /** Mind Blown and Steel Beam's half of maximum HP, which Magic Guard stops; an HP cost (Belly Drum) it does not. */
+    const val MIND_BLOWN_RECOIL = "mind_blown_recoil"
+
     private fun halfHeal(marker: String) = BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION,
         BattleMoveEffectTarget.USER, 1.0, valueId = marker, fractionRange = BattleFractionRange(0.5, 0.5))
+
+    private fun randomStatus(chance: Double, vararg statuses: String) = statuses.map {
+        BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, chance / statuses.size, valueId = it)
+    }
 
     private fun hpCost(fraction: Double) = BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL,
         BattleMoveEffectTarget.USER, 1.0, fractionRange = BattleFractionRange(fraction, fraction))

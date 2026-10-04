@@ -1002,7 +1002,16 @@ internal object PublicSingleTurnProjector {
         val requiresPendingDamagingMove = calculatedAction.moveDetails?.effects?.requirements.orEmpty().any {
             it.kind == BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE
         }
-        if (requiresPendingDamagingMove && target?.battlePokemonId !in pendingDamagingMovePokemonIds) {
+        // Poltergeist fails on a target known to hold nothing: a publicly confirmed absence (""), our own side's
+        // exact items, or a Pokemon that held a known item when the search began and holds none now.
+        val requiresTargetItem = calculatedAction.moveDetails?.effects?.requirements.orEmpty().any {
+            it.kind == BattleMoveRequirementKind.TARGET_HELD_ITEM_PRESENT
+        }
+        val targetKnownItemless = target != null && target.canonicalKnownHeldItemId == null &&
+            (target.knownHeldItemId != null || target.side == BattleSide.ALLY || target.battlePokemonId in history.itemHoldersAtRoot)
+        if (requiresPendingDamagingMove && target?.battlePokemonId !in pendingDamagingMovePokemonIds ||
+            requiresTargetItem && targetKnownItemless
+        ) {
             return listOf(
                 WeightedState(
                     state = projectedFormState,

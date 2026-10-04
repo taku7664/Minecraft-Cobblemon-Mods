@@ -544,6 +544,8 @@ internal object LocalTacticalSituationalEvaluator {
             BattleMoveRequirementKind.TARGET_HELD_ITEM_PRESENT -> when {
                 target?.canonicalKnownHeldItemId != null -> RequirementState.SATISFIED
                 target?.knownHeldItemId != null -> satisfied(false)
+                // Our own side's items are exact: nothing known is nothing held.
+                target?.side == BattleSide.ALLY -> RequirementState.UNSATISFIED
                 else -> RequirementState.UNKNOWN
             }
             BattleMoveRequirementKind.FAINTED_ALLY_PRESENT -> satisfied(

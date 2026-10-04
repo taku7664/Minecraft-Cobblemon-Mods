@@ -10,7 +10,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 /**
  * What a damaging hit sets off once it has landed, for the search's projection: the target's item and ability
  * reacting to it (Air Balloon, Weakness Policy, Justified, Weak Armor, Stamina and the rest), Knock Off taking the
- * item, the attacker's knockout abilities (Moxie, Beast Boost) and Life Orb's recoil. Without these, hitting a
+ * item, the attacker's knockout abilities (Moxie, Beast Boost), Soul-Heart, Magician and Life Orb's recoil. Without these, hitting a
  * Weakness Policy holder was pure gain and a Knock Off left the target its Leftovers.
  */
 internal object LocalAfterHitReactions {
@@ -71,6 +71,14 @@ internal object LocalAfterHitReactions {
                         mapOf("speed" to -1), bypassesSubstitute = true)
                 }
             }
+            // Sparkling Aria heals its target's burn.
+            if (alive && moveId == "sparklingaria" && canonical(target.statusId) in BURN_IDS &&
+                target.knownVolatileEffectIds.none { canonical(it) == "substitute" }
+            ) {
+                state = state.copyState(pokemon = state.pokemon.map {
+                    if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = null) else it
+                })
+            }
             // Clear Smog resets its target's stat stages.
             if (alive && moveId == "clearsmog" && target.knownVolatileEffectIds.none { canonical(it) == "substitute" }) {
                 state = state.copyState(pokemon = state.pokemon.map {
@@ -82,6 +90,15 @@ internal object LocalAfterHitReactions {
                 state = setItem(state, target.battlePokemonId, "")
             }
         }
+        // Soul-Heart raises its holder's Special Attack whenever any Pokemon faints.
+        if (targetBefore != null && !targetBefore.fainted && targetBefore.hpFraction > 0.0 &&
+            target != null && (target.fainted || target.hpFraction <= 0.0)
+        ) {
+            state.pokemon.filter {
+                it.battlePokemonId != target.battlePokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                    LocalPublicAbilityState.effectiveKnownAbility(state, it) == "soulheart"
+            }.forEach { state = LocalStatStageChange.apply(state, it.battlePokemonId, null, mapOf("special_attack" to 1)) }
+        }
         if (!userEffects) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId } ?: return state
         if (actor.fainted || actor.hpFraction <= 0.0) return state
@@ -90,6 +107,15 @@ internal object LocalAfterHitReactions {
             target != null && (target.fainted || target.hpFraction <= 0.0)
         if (knockedOut) {
             knockoutBoost(actorAbility, actor)?.let { state = LocalStatStageChange.apply(state, actorId, null, it) }
+        }
+        // Magician takes the item of a Pokemon it hit when its own hands are empty.
+        val hitTarget = targetId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } }
+        if (actorAbility == "magician" && directDamage > 0.0 && actor.canonicalKnownHeldItemId == null && hitTarget != null &&
+            hitTarget.side != actor.side && hitTarget.canonicalKnownHeldItemId != null && removable(hitTarget) &&
+            LocalPublicAbilityState.effectiveKnownAbility(state, hitTarget) != STICKY_HOLD
+        ) {
+            val item = hitTarget.knownHeldItemId
+            state = setItem(setItem(state, hitTarget.battlePokemonId, ""), actorId, item)
         }
         if (directDamage > 0.0 && LocalPublicItemState.activeItemId(state, actor) == LIFE_ORB &&
             actorAbility != "magicguard" && !(actorAbility == "sheerforce" && LocalDamageAbilityModifiers.hasSecondaryEffect(details))
@@ -173,6 +199,7 @@ internal object LocalAfterHitReactions {
     private const val KNOCK_OFF = "knockoff"
     private const val STICKY_HOLD = "stickyhold"
     private const val EVIOLITE = "eviolite"
+    private val BURN_IDS = setOf("brn", "burn", "burned", "burnt")
     private val UNREMOVABLE_ITEMS = setOf(
         "blueorb", "redorb", "griseouscore", "adamantcrystal", "lustrousglobe", "rustedsword", "rustedshield",
     )

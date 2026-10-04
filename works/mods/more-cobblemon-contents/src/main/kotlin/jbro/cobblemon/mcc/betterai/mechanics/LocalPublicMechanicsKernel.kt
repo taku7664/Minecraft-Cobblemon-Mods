@@ -240,6 +240,13 @@ internal object LocalPublicMechanicsKernel {
         val rawFlags = details.effects?.mechanicFlags.orEmpty()
         fun flagged(flag: String) = rawFlags.any { canonical(it) == flag }
         fun typed(type: String) = target.knownTypeIds.any { canonical(it) == type }
+        // Damp anywhere on the field stops the self-destructing moves before they run; Mold Breaker gets past it.
+        if (canonicalOrNull(candidate.moveId) in DAMP_BLOCKED_MOVES && actorAbility !in DAMP_IGNORING_ABILITIES &&
+            context.state.pokemon.any {
+                it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                    LocalPublicAbilityState.effectiveKnownAbility(context.state, it) == DAMP
+            }
+        ) return true
         val ability = publicAbility(target, context)
         if (!ignoresAbility && when (ability) {
                 WIND_RIDER -> flagged(WIND_FLAG)
@@ -501,6 +508,9 @@ internal object LocalPublicMechanicsKernel {
     private const val BULLET_FLAG = "bullet"
     private const val SOUND_FLAG = "sound"
     private const val WIND_RIDER = "windrider"
+    private const val DAMP = "damp"
+    private val DAMP_BLOCKED_MOVES = setOf("explosion", "selfdestruct", "mistyexplosion", "mindblown")
+    private val DAMP_IGNORING_ABILITIES = setOf("moldbreaker", "teravolt", "turboblaze")
     private const val BULLETPROOF = "bulletproof"
     private const val SOUNDPROOF = "soundproof"
     private const val TELEPATHY = "telepathy"

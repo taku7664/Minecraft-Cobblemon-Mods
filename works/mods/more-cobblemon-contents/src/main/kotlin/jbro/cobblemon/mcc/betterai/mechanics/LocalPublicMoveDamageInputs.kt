@@ -166,6 +166,8 @@ internal object LocalPublicMoveDamageInputs {
             val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
             if (ability == "normalize") return "normal"
             ATE_ABILITY_TYPES[ability]?.let { if (canonical(details.typeId) == "normal") return it }
+            // Liquid Voice turns sound moves Water.
+            if (ability == "liquidvoice" && details.effects?.mechanicFlags.orEmpty().any { canonical(it) == "sound" }) return "water"
         }
         return when (canonical(candidate.moveId)) {
             "weatherball" -> when (weatherBallWeather(actor, state)) {

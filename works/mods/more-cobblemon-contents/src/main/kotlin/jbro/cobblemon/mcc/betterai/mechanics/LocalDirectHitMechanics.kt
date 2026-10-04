@@ -40,12 +40,14 @@ internal object LocalDirectHitMechanics {
             it.kind == BattleMoveEffectKind.DRAIN_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
         }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
+        val actorAbility = actor?.let { LocalPublicAbilityState.effectiveKnownAbility(state, it) }
         val damageRecoil = effects.filter {
-            it.kind == BattleMoveEffectKind.RECOIL_FRACTION &&
+            it.kind == BattleMoveEffectKind.RECOIL_FRACTION && !LocalRecoilImmunity.blocksDamageRecoil(actorAbility) &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
         }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
         val maxHpRecoil = effects.filter {
-            it.kind == BattleMoveEffectKind.MAX_HP_RECOIL || it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
+            it.kind == BattleMoveEffectKind.MAX_HP_RECOIL && !LocalRecoilImmunity.blocksMaxHpRecoil(it, actorAbility) ||
+                it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
         }.sumOf { effect -> effect.fractionRange?.let(::midpoint)?.times(effect.probability ?: 1.0) ?: 0.0 }
         val selfDestructs = effects.any {
             it.kind == BattleMoveEffectKind.SELF_DESTRUCT && (it.probability ?: 1.0) == 1.0
@@ -239,4 +241,15 @@ internal object LocalDirectHitMechanics {
     private const val FULL_HP_EPSILON = 1.0 - 1e-9
     private const val DEFAULT_ONE_HP_FRACTION = 1e-6
     private const val SUBSTITUTE = "substitute"
+}
+
+/**
+ * Showdown's recoil exemptions: Rock Head and Magic Guard stop recoil from damage dealt, Magic Guard alone stops
+ * Mind Blown and Steel Beam's half of maximum HP, and nothing stops Struggle's or an HP cost like Belly Drum's.
+ */
+internal object LocalRecoilImmunity {
+    fun blocksDamageRecoil(ability: String?): Boolean = ability == "rockhead" || ability == "magicguard"
+
+    fun blocksMaxHpRecoil(effect: BattleMoveEffectView, ability: String?): Boolean =
+        ability == "magicguard" && effect.valueId == BattleDeclarativeMoveEffects.MIND_BLOWN_RECOIL
 }

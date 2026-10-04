@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import jbro.cobblemon.mcc.betterai.state.LocalFieldEffectProjector
 
 internal data class LocalMoveHitSequenceResult(val state: BattleStateView, val probability: Double,
     val directDamageFraction: Double, val recoilHpFraction: Double, val substituteInterceptedWholeMove: Boolean, val receivedHits: List<LocalReceivedMoveHit> = emptyList())
@@ -60,8 +61,9 @@ internal object LocalMoveHitSequence {
                     LocalPublicAbilityMechanics.ignoresTargetAbility(action, currentActor, target, previous.state),
                     bypassesSubstitute, updateItems = false)
                 val onHit = LocalPersistentMoveState.afterHit(direct.state, actorId, targetId, action, !hadDecoy)
-                val reacted = LocalAfterHitReactions.apply(previous.state, onHit, actorId, targetId, action,
-                    direct.directDamageFraction, userEffects = userEffects && index == count - 1)
+                val reacted = hitFieldReactions(LocalAfterHitReactions.apply(previous.state, onHit, actorId, targetId, action,
+                    direct.directDamageFraction, userEffects = userEffects && index == count - 1),
+                    targetId, action, direct.directDamageFraction, hadDecoy)
                 LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {
                     LocalMoveHitSequenceResult(LocalBerryMechanics.afterUpdate(it.state), previous.probability * it.probability,
                         previous.directDamageFraction + direct.directDamageFraction,
@@ -75,5 +77,32 @@ internal object LocalMoveHitSequence {
             }
         }
         return branches
+    }
+
+    /** Toxic Debris lays Toxic Spikes under a physical attacker and Seed Sower spreads Grassy Terrain, on each hit. */
+    private fun hitFieldReactions(
+        state: BattleStateView,
+        targetId: UUID?,
+        action: BattleActionCandidate,
+        directDamage: Double,
+        substituteTookHit: Boolean,
+    ): BattleStateView {
+        if (directDamage <= 0.0 || substituteTookHit) return state
+        val target = targetId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } } ?: return state
+        return when (LocalPublicAbilityState.effectiveKnownAbility(state, target)) {
+            "toxicdebris" -> if (action.moveDetails?.damageCategory == BattleMoveDamageCategory.PHYSICAL) {
+                LocalFieldEffectProjector.apply(
+                    state, target.side,
+                    BattleMoveEffectView(BattleMoveEffectKind.SIDE_CONDITION, BattleMoveEffectTarget.TARGET_SIDE, 1.0, "toxicspikes"),
+                    target.battlePokemonId,
+                )
+            } else state
+            "seedsower" -> LocalFieldEffectProjector.apply(
+                state, target.side,
+                BattleMoveEffectView(BattleMoveEffectKind.TERRAIN, BattleMoveEffectTarget.FIELD, 1.0, "grassyterrain"),
+                target.battlePokemonId,
+            )
+            else -> state
+        }
     }
 }

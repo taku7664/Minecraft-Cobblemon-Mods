@@ -76,11 +76,15 @@ internal object LocalDamageAbilityModifiers {
             "flashfire" -> if (type == "fire" && actor.knownVolatileEffectIds.any { canonical(it) == "flashfire" }) 1.5 else 1.0
             "protean", "libero" -> if (stab) 1.0 else 1.5
             "hadronengine" -> if (special && terrain == "electricterrain") 4.0 / 3.0 else 1.0
+            // Defeatist halves both attacking stats at half HP or less.
+            "defeatist" -> if (actor.hpFraction <= 0.5) 0.5 else 1.0
             "protosynthesis" -> paradox(actor, item, weather in SUN, physical, special, offence = true)
             "quarkdrive" -> paradox(actor, item, terrain == "electricterrain", physical, special, offence = true)
             else -> 1.0
         }
         if (type == "electric" && actor.knownVolatileEffectIds.any { canonical(it) == "charge" }) multiplier *= 2.0
+        // Power Spot on the user's partner strengthens its moves by 30%.
+        if (activeWith(state, "powerspot", actor.side, except = actor)) multiplier *= 1.3
         // Steely Spirit and the auras reach every Pokemon on the field.
         if (type == "steel" && activeWith(state, "steelyspirit", actor.side)) multiplier *= 1.5
         if (type == "fairy" && activeWith(state, "fairyaura", null)) multiplier *= auraFactor(state)
@@ -121,6 +125,7 @@ internal object LocalDamageAbilityModifiers {
             "fluffy" -> if ("contact" in flags) 0.5 else 1.0
             "punkrock" -> if ("sound" in flags) 0.5 else 1.0
             "marvelscale" -> if (physical && target.statusId != null) 2.0 / 3.0 else 1.0
+            "grasspelt" -> if (physical && terrain == "grassyterrain") 2.0 / 3.0 else 1.0
             "protosynthesis" -> paradox(target, LocalPublicItemState.activeItemId(state, target), weather in SUN, physical, special, offence = false)
             "quarkdrive" -> paradox(target, LocalPublicItemState.activeItemId(state, target), terrain == "electricterrain", physical, special, offence = false)
             else -> 1.0
