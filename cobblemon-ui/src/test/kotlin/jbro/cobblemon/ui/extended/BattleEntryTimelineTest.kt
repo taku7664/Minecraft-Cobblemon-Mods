@@ -43,11 +43,11 @@ class BattleEntryTimelineTest {
     }
 
     @Test
-    fun `a legendary runs about seven and a half seconds and the others about four, holding the cover with a pulse`() {
+    fun `a legendary runs about six seconds and the others about four, holding the cover with a pulse`() {
         for (kind in BattleEntryKind.entries) {
             // A battle that opens the moment the screen is white.
             val total = BattleEntryTimeline.finishedAt(kind, BattleEntryTimeline.readyAt(kind))!!
-            val expected = if (kind == BattleEntryKind.LEGENDARY) 7200L..8000L else 3500L..4400L
+            val expected = if (kind == BattleEntryKind.LEGENDARY) 5600L..6400L else 3500L..4400L
             assertTrue(total in expected, "${kind.id} runs $total ms")
             assertFalse(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind) - 1))
             assertTrue(BattleEntryTimeline.ready(kind, BattleEntryTimeline.readyAt(kind)))
@@ -162,7 +162,7 @@ class BattleEntryTimelineTest {
         val wild = BattleEntryKind.WILD
         assertEquals(BattleEntryTimeline.readyAt(wild), BattleEntryTimeline.startAt(wild))
         val legendary = BattleEntryKind.LEGENDARY
-        val startAt = BattleEntryTimeline.startAt(legendary)
+        val startAt = BattleEntryTimeline.startAt(legendary, jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER)
         assertEquals(BattleEntryTimeline.readyAt(legendary) + BattleEntryTimeline.WHITE_HOLD_MILLIS, startAt)
         // The battle opens no sooner than it starts, and the cracks wait for it.
         assertTrue(BattleEntryTimeline.crackStart(legendary, startAt)!! >= startAt)

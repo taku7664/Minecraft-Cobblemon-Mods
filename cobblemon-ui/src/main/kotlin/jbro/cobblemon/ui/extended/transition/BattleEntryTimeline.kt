@@ -27,11 +27,11 @@ enum class BattleEntryKind(
     val variants: List<EntryStages> = listOf(stages),
 ) {
     LEGENDARY("legendary", listOf(400L, 750L, 1050L), 450, 1000, 250, 900, 1600,
-        EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER),
+        EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.LIGHT_BURST),
+        // The shatter fade-in is kept but not played.
         listOf(
-            EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.SHATTER),
-            EntryStages(EntryIntro.ZOOM_BLUR, EntryMood.CALM, EntryCover.NONE, EntryWhiteout.WHITE, EntryFadeIn.SHATTER),
             EntryStages(EntryIntro.SCREEN_ZOOM, EntryMood.OMINOUS, EntryCover.PLATES, EntryWhiteout.FOCUS_FLOOD, EntryFadeIn.LIGHT_BURST),
+            EntryStages(EntryIntro.ZOOM_BLUR, EntryMood.CALM, EntryCover.NONE, EntryWhiteout.WHITE, EntryFadeIn.LIGHT_BURST),
         )),
     WILD("wild", listOf(0L, 300L, 600L), 160, 1500, 500, 350, 1000,
         EntryStages(EntryIntro.FLASHES, EntryMood.CALM, EntryCover.THEME_BLOOM, EntryWhiteout.WHITE, EntryFadeIn.WHITE_FADE),
