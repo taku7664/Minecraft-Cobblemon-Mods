@@ -5,6 +5,13 @@ import com.cobblemon.mod.common.api.pokemon.labels.CobblemonPokemonLabels
 import jbro.cobblemon.ui.extended.PanelConfig
 import jbro.cobblemon.ui.extended.UIUtils
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
+import com.cobblemon.mod.common.client.CobblemonClient
+import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.context.CommandContext
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -30,6 +37,15 @@ object BattleEntryTransition {
 
     @Volatile
     private var run: Run? = null
+
+    /** Each kind's variants still to play this round: every one plays once, in shuffled order, before any repeats. */
+    private val rounds = mutableMapOf<BattleEntryKind, ArrayDeque<EntryStages>>()
+
+    private fun nextStages(kind: BattleEntryKind): EntryStages {
+        val round = rounds.getOrPut(kind) { ArrayDeque() }
+        if (round.isEmpty()) round.addAll(kind.variants.shuffled())
+        return round.removeFirst()
+    }
 
     /** Whether a transition is on screen. */
     val active: Boolean get() = run != null
@@ -78,13 +94,16 @@ object BattleEntryTransition {
      */
     @JvmStatic
     @JvmOverloads
-    fun play(kind: BattleEntryKind, accent: Int? = null, blockInput: Boolean = true, onCovered: Runnable? = null): Boolean {
+    fun play(kind: BattleEntryKind, accent: Int? = null, blockInput: Boolean = true, onCovered: Runnable? = null): Boolean =
+        play(kind, accent, blockInput, onCovered, nextStages(kind))
+
+    private fun play(kind: BattleEntryKind, accent: Int?, blockInput: Boolean, onCovered: Runnable?, stages: EntryStages): Boolean {
         if (!PanelConfig.enableBattleEntryTransition) return false
         val palette = BattleUiTheme.palette
         val color = accent ?: if (kind == BattleEntryKind.TRAINER) palette.opponent else palette.ally
         // A transition this one replaces still owes its holder an answer.
         run?.takeIf { !it.reported }?.let { report(it) }
-        run = Run(kind, kind.variants.random(), color, Util.getMillis(), onCovered)
+        run = Run(kind, stages, color, Util.getMillis(), onCovered)
         val client = Minecraft.getInstance()
         if (blockInput && client.screen == null) client.setScreen(BattleEntryScreen())
         return true
@@ -125,6 +144,39 @@ object BattleEntryTransition {
         }
         // Checked on ticks as well as frames, so a minimised game still answers its holder.
         ClientTickEvents.END_CLIENT_TICK.register { _ -> check() }
+        ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+            val root = literal("battleentry")
+            for (kind in BattleEntryKind.entries) {
+                root.then(literal(kind.id)
+                    .executes { preview(it, kind, null) }
+                    .then(argument("variant", IntegerArgumentType.integer(1, kind.variants.size))
+                        .executes { preview(it, kind, IntegerArgumentType.getInteger(it, "variant")) }))
+            }
+            dispatcher.register(root)
+        }
+    }
+
+    /**
+     * `/battleentry <kind> [variant]`: plays [kind]'s numbered variant, or the next of its round, with no battle behind
+     * it, in the colour of the player's lead Pokémon, and lists the variants.
+     */
+    private fun preview(context: CommandContext<FabricClientCommandSource>, kind: BattleEntryKind, variant: Int?): Int {
+        val stages = variant?.let { kind.variants[it - 1] } ?: nextStages(kind)
+        val lead = CobblemonClient.storage.party.slots.firstOrNull { it != null }
+        val accent = lead?.let { UIUtils.getTypeColor(it.species.primaryType) }
+        val source = context.source
+        // Nothing holds the preview, so it opens as soon as the screen is white; the screen opens on the next frame,
+        // once the chat that ran the command has closed.
+        source.client.execute {
+            if (!play(kind, accent, false, Runnable { reveal() }, stages)) {
+                source.sendError(Component.literal("전투 진입 연출이 설정에서 꺼져 있어요."))
+            }
+        }
+        kind.variants.forEachIndexed { index, it ->
+            val mark = if (it == stages) "▶" else "  "
+            source.sendFeedback(Component.literal("$mark ${index + 1}. ${it.intro} / ${it.mood} / ${it.cover} / ${it.whiteout} / ${it.fadeIn}"))
+        }
+        return 1
     }
 
     private fun check() {
