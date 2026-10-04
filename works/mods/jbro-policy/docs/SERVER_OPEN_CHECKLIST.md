@@ -1,11 +1,11 @@
 # 서버 오픈 체크리스트
 
-새 운영 서버를 열거나 서버를 옮길 때 모드 설치와 별도로 맞춰야 하는 **서버 설정**을 모은 문서다. 설정 파일은 저장소에 들어가지 않으므로(`dev-server/`는 무시 대상), 여기 적힌 값을 새 서버의 `config/`에 직접 반영한다. 값을 바꾸면 이 문서도 함께 고친다.
+새 운영 서버를 열거나 서버를 옮길 때 모드 설치와 별도로 맞춰야 하는 **서버 설정**을 모은 문서다. 설정 파일은 저장소에 들어가지 않으므로(`develop-product/server/`는 무시 대상), 여기 적힌 값을 새 서버의 `config/`에 직접 반영한다. 값을 바꾸면 이 문서도 함께 고친다.
 
 | 항목 | 값 |
 |---|---|
-| Last reviewed | 2026-10-03 |
-| 기준 서버 | 저장소의 `dev-server` |
+| Last reviewed | 2026-10-04 |
+| 기준 서버 | 저장소의 `develop-product/server` |
 
 ## 필수 설정
 
@@ -29,7 +29,6 @@
 | 모드 | 이유 |
 |---|---|
 | Simple MyRoom (`simple-myroom`) | `[안내]` 목록이 `/room` 명령을 소개한다. 서버 전용이라 클라이언트에는 넣지 않아도 된다. |
-| CustomNPCs Unofficial (`customnpcs`, `CustomNPCs-Unofficial-Fabric-1.21.1.20260521.jar`) | NPC 명령으로 MCC 터미널을 연다. **서버와 클라이언트에 같은 버전을 넣어야 한다.** 엔티티 생성 패킷에 자기 데이터를 덧붙이기 때문에, 한쪽에만 있으면 포켓몬이 나타나는 순간 클라이언트가 `Failed to decode packet 'clientbound/minecraft:custom_payload'`로 끊긴다. |
 
 ## 설치할 프로그램
 
