@@ -317,11 +317,14 @@ internal object EntryDraw {
     private const val SEAM_Y = 1f
     private const val SHARD_COLUMNS = 11
     private const val SHARD_ROWS = 7
-    private const val CRACKS = 11
-    private const val CRACK_SEGMENTS = 5
+    /** The burst of cracks: its spikes, the jagged pieces each spike breaks into, its hairlines and its chips. */
+    private const val SPIKES = 26
+    private const val SPIKE_PIECES = 3
+    private const val HAIRLINES = 16
+    private const val CHIPS = 40
     /**
-     * When in a round of cracks each jolt lands (as a share of the round), how much of the round each covers, and how
-     * long a jolt takes to snap.
+     * When in the first round of cracks each jolt lands (as a share of the round), how much of the round each covers,
+     * and how long a jolt takes to snap.
      */
     private val JOLT_TIMES = floatArrayOf(.03f, .42f, .78f)
     private val JOLT_SIZES = floatArrayOf(.45f, .3f, .25f)
@@ -807,7 +810,7 @@ internal object EntryDraw {
         cracks(frame, impactX, impactY, crack, second, 1f - shatter * 3f)
     }
 
-    /** One shard: from the center outward each in turn drifts a little away at an even pace, turning slightly, fading. */
+    /** One shard: from the center outward each in turn bursts a little away, tumbles and falls, fading as it goes. */
     private fun shard(buffer: VertexConsumer, matrix: Matrix4f, frame: EntryFrame, points: List<Pair<Float, Float>>, seed: Int,
                       impactX: Float, impactY: Float, shatter: Float) {
         val cx = points.sumOf { it.first.toDouble() }.toFloat() / 3f
@@ -817,15 +820,15 @@ internal object EntryDraw {
         val distance = (hypot(dx, dy) / frame.far).coerceAtMost(1f)
         // Shards near the impact part first; the parting spreads outward across the screen.
         val t = ((shatter - distance * SHARD_SPREAD) / (1f - SHARD_SPREAD)).coerceIn(0f, 1f)
-        // Quiet: each shard eases away and melts out rather than flying.
-        val alpha = 1f - BattleEntryTimeline.smooth(t)
+        val alpha = 1f - BattleEntryTimeline.smooth(((t - .35f) / .65f).coerceIn(0f, 1f))
         if (alpha <= 0f) return
         val norm = hypot(dx, dy).coerceAtLeast(1f)
-        val push = frame.far * (.02f + .03f * hash(seed + 1)) * t
-        val moveX = dx / norm * push
-        val moveY = dy / norm * push
-        val spin = (hash(seed + 2) - .5f) * .25f * t
-        val scale = 1f - .08f * t
+        val burst = frame.far * (.05f + .08f * hash(seed + 1)) * t
+        val fall = frame.height * (.7f + .5f * hash(seed + 4)) * t * t
+        val moveX = dx / norm * burst
+        val moveY = dy / norm * burst + fall
+        val spin = (hash(seed + 2) - .5f) * 2.2f * t
+        val scale = 1f - .12f * t
         val spinCos = cos(spin)
         val spinSin = sin(spin)
         val tint = BattleSurfaceRenderer.interpolate(0xFFFFFFFF.toInt(), frame.accent, .06f + .14f * hash(seed + 3))
@@ -841,17 +844,19 @@ internal object EntryDraw {
         buffer.addVertex(matrix, placed[2].first, placed[2].second, 0f).setColor(color)
     }
 
-    /** Cracks running out from the impact across the white, each a jagged line of a few segments. */
     /**
-     * The cracks from the impact, run halfway by the first round ([first], 0 to 1) and the rest by the second
-     * ([second]). Each round goes in jolts: the cracks stand still, then all snap forward at once, a few times over,
-     * each crack a hair off the others, so they crackle out rather than glide.
+     * A shattered-glass burst from the impact, as a stone through a pane: a clear hole, tapering spikes of a few jagged
+     * pieces each, hairlines running straight out past them, broken rings between the spikes near the hole, and loose
+     * chips. The first round ([first], 0 to 1) runs the spikes halfway in jolts, so they crackle out rather than glide;
+     * the second ([second]) snaps them the rest of the way at once and brings the hairlines, rings and chips with it.
      */
     private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, opacity: Float) {
         if (first <= 0f || opacity <= 0f) return
-        val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .45f),
-            .7f * opacity.coerceAtMost(1f))
-        /** How far one crack has jolted through a round at [share] of it, 0 to 1. */
+        val shade = opacity.coerceAtMost(1f)
+        val ink = BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .8f)
+        val dark = BattleSurfaceRenderer.withOpacity(ink, .9f * shade)
+        val faint = BattleSurfaceRenderer.withOpacity(ink, .5f * shade)
+        /** How far one spike has jolted through the first round at [share] of it, 0 to 1. */
         fun jolts(share: Float, seed: Int): Float {
             var reach = 0f
             for (jolt in JOLT_TIMES.indices) {
@@ -860,37 +865,87 @@ internal object EntryDraw {
             }
             return reach
         }
+        val hole = frame.far * .05f
+        fun spikeAngle(spike: Int): Float = (spike + hash(spike * 4099 + 7) * .8f) / SPIKES * TAU
         quads(frame.context) { buffer, matrix ->
-            /** One straight piece of a crack from (x, y) to (nx, ny), [half] wide on each side. */
-            fun piece(x: Float, y: Float, nx: Float, ny: Float, half: Float, color: Int) {
+            /** A straight piece from (x, y) to (nx, ny), [from] wide on each side at its start and [to] at its end. */
+            fun taper(x: Float, y: Float, nx: Float, ny: Float, from: Float, to: Float, color: Int) {
                 val dx = nx - x
                 val dy = ny - y
                 val norm = hypot(dx, dy).coerceAtLeast(.001f)
-                val px = -dy / norm * half
-                val py = dx / norm * half
-                buffer.addVertex(matrix, x + px, y + py, 0f).setColor(color)
-                buffer.addVertex(matrix, x - px, y - py, 0f).setColor(color)
-                buffer.addVertex(matrix, nx - px, ny - py, 0f).setColor(color)
-                buffer.addVertex(matrix, nx + px, ny + py, 0f).setColor(color)
+                val px = -dy / norm
+                val py = dx / norm
+                buffer.addVertex(matrix, x + px * from, y + py * from, 0f).setColor(color)
+                buffer.addVertex(matrix, x - px * from, y - py * from, 0f).setColor(color)
+                buffer.addVertex(matrix, nx - px * to, ny - py * to, 0f).setColor(color)
+                buffer.addVertex(matrix, nx + px * to, ny + py * to, 0f).setColor(color)
             }
-            for (crack in 0 until CRACKS) {
-                val seed = crack * 4099 + 7
-                var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
-                var x = impactX
-                var y = impactY
-                val growth = .5f * jolts(first, seed) + .5f * jolts(second, seed + 503)
-                val segments = CRACK_SEGMENTS * growth
-                for (segment in 0 until CRACK_SEGMENTS) {
-                    val share = (segments - segment).coerceIn(0f, 1f)
-                    if (share <= 0f) break
-                    angle += (hash(seed + segment * 13 + 1) - .5f) * .7f
-                    val length = frame.far * (.12f + .14f * hash(seed + segment * 13 + 2)) * share
+            // The spikes: wide where they leave the hole, sharp at their tips, kinked and stepped where they break.
+            for (spike in 0 until SPIKES) {
+                val seed = spike * 4099 + 7
+                val reach = .5f * jolts(first, seed) + .5f * second
+                if (reach <= 0f) continue
+                var angle = spikeAngle(spike)
+                val full = frame.far * (.2f + .6f * hash(seed + 1) * hash(seed + 1))
+                val base = .8f + 3.2f * hash(seed + 2) * hash(seed + 2)
+                val drawn = full * reach
+                var x = impactX + cos(angle) * hole * (.7f + .6f * hash(seed + 3))
+                var y = impactY + sin(angle) * hole * (.7f + .6f * hash(seed + 3))
+                var along = 0f
+                for (piece in 0 until SPIKE_PIECES) {
+                    if (along >= drawn) break
+                    if (piece > 0) {
+                        angle += (hash(seed + piece * 13 + 4) - .5f) * .35f
+                        val step = (hash(seed + piece * 13 + 5) - .5f) * 2.5f
+                        x += -sin(angle) * step
+                        y += cos(angle) * step
+                    }
+                    val length = minOf(full / SPIKE_PIECES, drawn - along)
                     val nx = x + cos(angle) * length
                     val ny = y + sin(angle) * length
-                    piece(x, y, nx, ny, .8f * (1f - segment / CRACK_SEGMENTS.toFloat()) + .35f, color)
+                    taper(x, y, nx, ny, base * (1f - along / drawn), base * (1f - (along + length) / drawn), dark)
+                    along += length
                     x = nx
                     y = ny
                 }
+            }
+            if (second <= 0f) return@quads
+            // The hairlines: long, straight and thin, out past the spikes.
+            for (line in 0 until HAIRLINES) {
+                val seed = line * 7919 + 3
+                val angle = (line + hash(seed)) / HAIRLINES * TAU
+                val start = hole * (1f + hash(seed + 1))
+                val length = frame.far * (.35f + .6f * hash(seed + 2)) * second
+                taper(impactX + cos(angle) * start, impactY + sin(angle) * start,
+                    impactX + cos(angle) * (start + length), impactY + sin(angle) * (start + length), .35f, .15f, faint)
+            }
+            // The rings: broken arcs between neighbouring spikes, close round the hole.
+            for (ring in 0 until 2) for (spike in 0 until SPIKES) {
+                val seed = ring * 3301 + spike * 211 + 11
+                if (hash(seed) > .45f) continue
+                val from = spikeAngle(spike)
+                val to = spikeAngle(spike + 1) + if (spike + 1 == SPIKES) TAU else 0f
+                val radius = frame.far * (if (ring == 0) .09f else .16f) * (.85f + .3f * hash(seed + 1)) * second
+                val bend = radius * (1.05f + .1f * hash(seed + 2))
+                val middle = (from + to) / 2f
+                val ax = impactX + cos(from) * radius
+                val ay = impactY + sin(from) * radius
+                val mx = impactX + cos(middle) * bend
+                val my = impactY + sin(middle) * bend
+                taper(ax, ay, mx, my, .5f, .5f, dark)
+                taper(mx, my, impactX + cos(to) * radius, impactY + sin(to) * radius, .5f, .2f, dark)
+            }
+            // The chips: small loose splinters scattered through the burst.
+            for (chip in 0 until CHIPS) {
+                val seed = chip * 5381 + 17
+                val angle = hash(seed) * TAU
+                val distance = frame.far * (.07f + .5f * hash(seed + 1)) * second
+                val size = 1f + 2.5f * hash(seed + 2)
+                val turn = hash(seed + 3) * TAU
+                val cx = impactX + cos(angle) * distance
+                val cy = impactY + sin(angle) * distance
+                taper(cx - cos(turn) * size, cy - sin(turn) * size, cx + cos(turn) * size, cy + sin(turn) * size,
+                    size * .45f, 0f, dark)
             }
         }
     }
