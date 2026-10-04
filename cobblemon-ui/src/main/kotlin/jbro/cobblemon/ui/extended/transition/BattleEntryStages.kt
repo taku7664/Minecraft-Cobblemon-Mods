@@ -111,6 +111,20 @@ enum class EntryIntro {
             if (screen == null) return
             BattleEntryTimeline.zooms(frame.kind, frame.elapsed).forEach { EntryDraw.zoom(frame, screen, it) }
         }
+    },
+
+    /**
+     * The screen warms and brightens while ever larger copies of it pile up from the center, smearing it outward until
+     * it burns white, as the main series' legendary encounter. Needs no cover.
+     */
+    ZOOM_BLUR {
+        override fun prepare(frame: EntryFrame): Int? =
+            if (BattleEntryTimeline.zoomBlur(frame.kind, frame.elapsed) > 0f) EntryDraw.captureScreen(frame.context) else null
+
+        override fun draw(frame: EntryFrame, screen: Int?) {
+            EntryDraw.zoomBlur(frame, screen, BattleEntryTimeline.zoomBlur(frame.kind, frame.elapsed),
+                BattleEntryTimeline.warmth(frame.kind, frame.elapsed))
+        }
     };
 
     /** Anything the intro needs from the screen before the transition draws over it this frame. */
@@ -184,6 +198,11 @@ enum class EntryCover {
     /** A circle closing on the center, an accent rim at its edge. */
     IRIS {
         override fun draw(frame: EntryFrame) = EntryDraw.iris(frame)
+    },
+
+    /** No cover: for intros that carry the screen to white on their own. */
+    NONE {
+        override fun draw(frame: EntryFrame) = Unit
     },
 
     /** Turning spiral arms that widen until they meet, as the main series' spinning spiral. */
@@ -301,6 +320,9 @@ internal object EntryDraw {
     private const val ZOOM_COPIES = 5
     /** How much larger each zoom copy grows than the one before it. */
     private const val ZOOM_STEP = .055f
+    /** How many copies a zoom blur piles up, and how much larger than the screen the largest grows. */
+    private const val BLUR_COPIES = 8
+    private const val BLUR_REACH = 1.3f
     private const val TAU = (Math.PI * 2).toFloat()
     /** How many times the spinning spiral winds from the center to the corners. */
     private const val SPIRAL_TURNS = 2.2f
@@ -966,6 +988,49 @@ internal object EntryDraw {
         RenderSystem.enableCull()
         RenderSystem.enableDepthTest()
         RenderSystem.defaultBlendFunc()
+    }
+
+    /**
+     * The zoom blur at [progress] (0 to 1) over a screen [warmth] (0 to 1) of the way to burning white: the screen copy
+     * [texture] laid over itself in ever larger copies, up to [BLUR_REACH] times its size, then a warm light over it.
+     */
+    fun zoomBlur(frame: EntryFrame, texture: Int?, progress: Float, warmth: Float) {
+        if (texture != null && progress > 0f) {
+            val reach = BLUR_REACH * BattleEntryTimeline.smooth(progress)
+            val appear = (progress / .15f).coerceAtMost(1f)
+            val matrix = frame.context.pose().last().pose()
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader)
+            RenderSystem.setShaderTexture(0, texture)
+            RenderSystem.enableBlend()
+            RenderSystem.defaultBlendFunc()
+            RenderSystem.disableDepthTest()
+            RenderSystem.disableCull()
+            val buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR)
+            for (copy in 1..BLUR_COPIES) {
+                val scale = 1f + reach * copy / BLUR_COPIES
+                val color = BattleSurfaceRenderer.withOpacity(0xFFFFFFFF.toInt(), .3f * appear)
+                val halfW = frame.width / 2f * scale
+                val halfH = frame.height / 2f * scale
+                // The copy's texture is upside down: framebuffers start at the bottom.
+                buffer.addVertex(matrix, frame.centerX - halfW, frame.centerY - halfH, 0f).setUv(0f, 1f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX - halfW, frame.centerY + halfH, 0f).setUv(0f, 0f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX + halfW, frame.centerY + halfH, 0f).setUv(1f, 0f).setColor(color)
+                buffer.addVertex(matrix, frame.centerX + halfW, frame.centerY - halfH, 0f).setUv(1f, 1f).setColor(color)
+            }
+            BufferUploader.drawWithShader(buffer.buildOrThrow())
+            RenderSystem.enableCull()
+            RenderSystem.enableDepthTest()
+        }
+        if (warmth > 0f) {
+            // Warm amber at first, paling to white as it brightens.
+            val amber = BattleSurfaceRenderer.interpolate(0xFFFFC860.toInt(), frame.accent, .2f)
+            val light = BattleSurfaceRenderer.interpolate(amber, 0xFFFFFFFF.toInt(), warmth)
+            RenderSystem.enableBlend()
+            RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+            frame.context.fill(0, 0, frame.width, frame.height, BattleSurfaceRenderer.withOpacity(light, .55f * warmth))
+            frame.context.flush()
+            RenderSystem.defaultBlendFunc()
+        }
     }
 
     /** Draws quads in one batch, each turned to face the screen so the GUI's back-face culling keeps it. */

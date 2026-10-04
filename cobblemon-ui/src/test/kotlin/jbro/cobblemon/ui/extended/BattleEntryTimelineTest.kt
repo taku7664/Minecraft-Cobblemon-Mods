@@ -159,12 +159,16 @@ class BattleEntryTimelineTest {
         for (kind in BattleEntryKind.entries) {
             assertEquals(kind.stages, kind.variants.first())
             for (variant in kind.variants) {
-                // Moods, zooms and shatters read the kind's own stages for their timing, so variants keep them.
-                assertEquals(kind.stages.mood, variant.mood)
+                // The ominous mood and the screen zoom read the kind's own stages for their timing, so only a kind
+                // whose own stages have them may play them; a variant may leave them out. Shatters keep to their kind.
+                if (variant.mood == jbro.cobblemon.ui.extended.transition.EntryMood.OMINOUS) {
+                    assertEquals(kind.stages.mood, variant.mood)
+                }
+                if (variant.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM) {
+                    assertEquals(kind.stages.intro, variant.intro)
+                }
                 assertEquals(kind.stages.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER,
                     variant.fadeIn == jbro.cobblemon.ui.extended.transition.EntryFadeIn.SHATTER)
-                assertEquals(kind.stages.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM,
-                    variant.intro == jbro.cobblemon.ui.extended.transition.EntryIntro.SCREEN_ZOOM)
             }
         }
     }
