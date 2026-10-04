@@ -48,6 +48,7 @@ public final class SimpleMyRoomConfig {
         roomDefaults.trustedPlayers = normalizeNames(roomDefaults.trustedPlayers, List.of());
         roomDefaults.bannedPlayers = normalizeNames(roomDefaults.bannedPlayers, List.of());
         visitorInteractions.allowedBlockIds = normalizeNames(visitorInteractions.allowedBlockIds, VisitorInteractions.DEFAULT_BLOCK_IDS);
+        returnBehavior.otherHubDimensions = normalizeNames(returnBehavior.otherHubDimensions, List.of());
         layout.platformBlock = defaultString(layout.platformBlock, "minecraft:grass_block");
         layout.boundaryBlock = defaultString(layout.boundaryBlock, "minecraft:barrier");
     }
@@ -286,6 +287,15 @@ public final class SimpleMyRoomConfig {
         public int safeSearchVerticalRange = 4;
         public boolean requireSolidFloor = false;
         public boolean allowFluid = true;
+        /** Try a solid, dry spot first and fall back to the requirements above only when none is near. */
+        public boolean preferSolidFloor = true;
+        /** Save the ground under a player who enters while flying, falling or riding, not the point in the air. */
+        public boolean saveGroundPosition = true;
+        /**
+         * Other hub dimensions players hop between, such as a server plaza. Entering from one keeps the return point
+         * already saved, and leaving every hub clears it, so exits never bounce between two hubs.
+         */
+        public List<String> otherHubDimensions = List.of("jbro_policy:plaza");
     }
 
     public static final class WorldBehavior {

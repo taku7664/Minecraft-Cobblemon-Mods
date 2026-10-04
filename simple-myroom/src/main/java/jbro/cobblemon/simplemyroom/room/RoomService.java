@@ -16,8 +16,10 @@ import jbro.cobblemon.simplemyroom.SimpleMyRoom;
 import jbro.cobblemon.simplemyroom.config.ConfigManager;
 import jbro.cobblemon.simplemyroom.config.SimpleMyRoomMessages;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -62,6 +64,15 @@ public final class RoomService {
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> activeRoomService.stop());
         ServerPlayerEvents.AFTER_RESPAWN.register(this::handleRespawn);
+        // However a player left the hubs, the trip is over and its return point must not send a later exit there.
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> clearIfStale(player));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> clearIfStale(handler.player));
+    }
+
+    private void clearIfStale(ServerPlayer player) {
+        if (ReturnDimensionPolicy.isStale(player.level().dimension().location(), SimpleMyRoom.config().returnBehavior.otherHubDimensions)) {
+            RoomStorage.get(player.getServer()).removeReturnPoint(player.getUUID());
+        }
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -189,7 +200,7 @@ public final class RoomService {
         RoomArea area = layout.areaFor(room.index());
         RoomSpawnPoint destination = entryPoint(target, player, room, area);
         if (destination == null) return fail(player, SimpleMyRoom.messages().customSpawnUnsafe);
-        if (!RoomDimensions.isRoom(player.level())) saveReturnPoint(player, storage);
+        saveReturnPoint(player, storage);
         boolean teleported = player.teleportTo(
             target,
             destination.x(),
@@ -292,10 +303,13 @@ public final class RoomService {
 
     private void saveReturnPoint(ServerPlayer player, RoomStorage storage) {
         ResourceLocation sourceDimension = player.level().dimension().location();
-        if (!ReturnDimensionPolicy.shouldSave(sourceDimension)) return;
+        boolean hasPoint = storage.findReturnPoint(player.getUUID()).isPresent();
+        if (!ReturnDimensionPolicy.shouldSaveOnEntry(sourceDimension, hasPoint, SimpleMyRoom.config().returnBehavior.otherHubDimensions)) return;
         boolean exact = SimpleMyRoom.config().returnBehavior.saveExactPosition;
+        double ground = SimpleMyRoom.config().returnBehavior.saveGroundPosition
+            ? GroundedPosition.groundY(player.serverLevel(), player) : player.getY();
         double x = exact ? player.getX() : player.blockPosition().getX() + 0.5;
-        double y = exact ? player.getY() : player.blockPosition().getY();
+        double y = exact ? ground : Math.floor(ground);
         double z = exact ? player.getZ() : player.blockPosition().getZ() + 0.5;
         float yaw = SimpleMyRoom.config().returnBehavior.saveYaw ? player.getYRot() : 0.0f;
         float pitch = SimpleMyRoom.config().returnBehavior.savePitch ? player.getXRot() : 0.0f;
@@ -647,6 +661,13 @@ public final class RoomService {
     private Optional<RoomSpawnPoint> safeReturnPoint(ServerLevel target, ServerPlayer player, RoomSpawnPoint requested) {
         var config = SimpleMyRoom.config().returnBehavior;
         if (!config.findSafeReturnPosition) return Optional.of(requested);
+        if (config.preferSolidFloor) {
+            Optional<RoomSpawnPoint> solid = safeTeleportResolver.find(
+                target, player, requested, config.safeSearchHorizontalRadius, config.safeSearchVerticalRange,
+                true, false, point -> true
+            );
+            if (solid.isPresent()) return solid;
+        }
         return safeTeleportResolver.find(
             target, player, requested, config.safeSearchHorizontalRadius, config.safeSearchVerticalRange,
             config.requireSolidFloor, config.allowFluid, point -> true
@@ -667,7 +688,10 @@ public final class RoomService {
         ).map(room -> RoomAccess.canOccupy(room, newPlayer)).orElse(false);
         RoomRespawnPolicy.Decision decision = RoomRespawnPolicy.decide(diedInRoom, respawnedInRoom, targetRoomAllowsPlayer);
         RoomStorage storage = RoomStorage.get(newPlayer.getServer());
-        if (decision.clearReturnPoint() && SimpleMyRoom.config().returnBehavior.clearStalePointAfterRespawnOutsideRoom) {
+        boolean respawnedInOtherHub = !respawnedInRoom
+            && !ReturnDimensionPolicy.isStale(newPlayer.level().dimension().location(), SimpleMyRoom.config().returnBehavior.otherHubDimensions);
+        if (decision.clearReturnPoint() && !respawnedInOtherHub
+            && SimpleMyRoom.config().returnBehavior.clearStalePointAfterRespawnOutsideRoom) {
             storage.removeReturnPoint(newPlayer.getUUID());
         }
         if (decision.ejectToOverworld() && SimpleMyRoom.config().returnBehavior.ejectUnauthorizedRoomRespawn
