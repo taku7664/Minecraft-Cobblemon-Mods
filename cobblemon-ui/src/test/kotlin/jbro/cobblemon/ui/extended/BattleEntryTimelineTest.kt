@@ -155,6 +155,17 @@ class BattleEntryTimelineTest {
     }
 
     @Test
+    fun `the battle starts just before the screen shows again`() {
+        val wild = BattleEntryKind.WILD
+        assertEquals(BattleEntryTimeline.readyAt(wild), BattleEntryTimeline.startAt(wild))
+        val legendary = BattleEntryKind.LEGENDARY
+        val startAt = BattleEntryTimeline.startAt(legendary)
+        assertEquals(BattleEntryTimeline.readyAt(legendary) + BattleEntryTimeline.WHITE_HOLD_MILLIS, startAt)
+        // The battle opens no sooner than it starts, and the cracks wait for it.
+        assertTrue(BattleEntryTimeline.crackStart(legendary, startAt)!! >= startAt)
+    }
+
+    @Test
     fun `variants only swap stages whose timing the kind already keeps`() {
         for (kind in BattleEntryKind.entries) {
             assertEquals(kind.stages, kind.variants.first())

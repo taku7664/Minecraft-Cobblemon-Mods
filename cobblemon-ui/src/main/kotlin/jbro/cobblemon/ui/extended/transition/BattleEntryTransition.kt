@@ -24,8 +24,9 @@ import net.minecraft.resources.ResourceLocation
 
 /**
  * The screen transition into a battle. [play] runs the kind's [EntryStages]: an intro, the cover in its mood, then the
- * whiteout that turns the covered screen fully white, at which point it reports the screen covered so whoever holds
- * the battle starts it; once the battle opens ([reveal], or a timeout) the fade-in takes the white away to show it.
+ * whiteout that turns the covered screen fully white. Once the white has held as long as the fade-in asks, just before
+ * the screen would show again, it reports the screen covered so whoever holds the battle starts it; once the battle
+ * opens ([reveal], or a timeout) the fade-in takes the white away to show it.
  * It draws above every screen and the HUD.
  */
 object BattleEntryTransition {
@@ -50,9 +51,9 @@ object BattleEntryTransition {
     /** Whether a transition is on screen. */
     val active: Boolean get() = run != null
 
-    /** Whether the screen is fully white and the battle may start. */
+    /** Whether the screen is white, has held white as long as its fade-in asks, and the battle may start. */
     val covered: Boolean
-        get() = run?.let { it.revealAt == null && BattleEntryTimeline.ready(it.kind, Util.getMillis() - it.startedAt) }
+        get() = run?.let { it.revealAt == null && Util.getMillis() - it.startedAt >= BattleEntryTimeline.startAt(it.kind, it.stages.fadeIn) }
             ?: false
 
     /** The legendary, mythical and Ultra Beast species get the legendary transition. */
@@ -182,8 +183,9 @@ object BattleEntryTransition {
     private fun check() {
         val current = run ?: return
         val elapsed = Util.getMillis() - current.startedAt
-        if (!current.reported && BattleEntryTimeline.ready(current.kind, elapsed)) report(current)
-        if (current.revealAt == null && elapsed > BattleEntryTimeline.readyAt(current.kind) + BattleEntryTimeline.HOLD_TIMEOUT_MILLIS) {
+        val startAt = BattleEntryTimeline.startAt(current.kind, current.stages.fadeIn)
+        if (!current.reported && elapsed >= startAt) report(current)
+        if (current.revealAt == null && elapsed > startAt + BattleEntryTimeline.HOLD_TIMEOUT_MILLIS) {
             reveal()
         }
     }

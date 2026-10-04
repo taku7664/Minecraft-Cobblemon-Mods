@@ -290,8 +290,13 @@ enum class EntryFadeIn {
      * the center at an even pace and fade, nearest first.
      */
     SHATTER {
+        override val holdMillis: Long get() = BattleEntryTimeline.WHITE_HOLD_MILLIS
+
         override fun draw(frame: EntryFrame) = EntryDraw.shatter(frame)
     };
+
+    /** How long the screen stays white before this fade-in begins; the battle starts once it has. */
+    internal open val holdMillis: Long get() = 0L
 
     internal abstract fun draw(frame: EntryFrame)
 }

@@ -92,6 +92,12 @@ object BattleEntryTimeline {
     fun ready(kind: BattleEntryKind, elapsed: Long): Boolean = elapsed >= readyAt(kind)
 
     /**
+     * When the battle starts: once the screen is white and has stayed white as long as [fadeIn] holds it, just before
+     * the screen starts to show again.
+     */
+    fun startAt(kind: BattleEntryKind, fadeIn: EntryFadeIn = kind.stages.fadeIn): Long = readyAt(kind) + fadeIn.holdMillis
+
+    /**
      * The covered screen's breathing, 0 to 1, while it waits: a slow swell for wild and trainer battles, a double
      * heartbeat for a legendary. It eases in from the moment the cover closes.
      */
