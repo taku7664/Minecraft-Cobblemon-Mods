@@ -28,23 +28,23 @@ saves/
 world/
 mods/
 config/
-!cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/
-!cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
-!cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/
-!cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/**
-!simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/
-!simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/**
-!simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/
-!simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/**
-!better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/
-!better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/**
-!better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/
-!better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/**
+!works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/
+!works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
+!works/mods/cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/
+!works/mods/cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/**
+!works/mods/simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/
+!works/mods/simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/**
+!works/mods/simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/
+!works/mods/simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/**
+!works/mods/better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/
+!works/mods/better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/**
+!works/mods/better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/
+!works/mods/better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/**
 defaultconfigs/
 resourcepacks/
 # jbro-policy ships its built-in data packs from here.
-!jbro-policy/src/main/resources/resourcepacks/
-!jbro-policy/src/main/resources/resourcepacks/**
+!works/mods/jbro-policy/src/main/resources/resourcepacks/
+!works/mods/jbro-policy/src/main/resources/resourcepacks/**
 shaderpacks/
 screenshots/
 replay_recordings/
@@ -102,12 +102,12 @@ WIP-*.md
 *~
 
 # Local Better Cobblemon Music hand-off audio. Keep copyrighted media out of Git.
-better-cobblemon-music/music-input/**/*.ogg
-better-cobblemon-music/music-input/**/*.mp3
-better-cobblemon-music/music-input/**/*.wav
-better-cobblemon-music/music-input/**/*.flac
-better-cobblemon-music/music-input/**/*.m4a
-better-cobblemon-music/music-input/**/*.aac
+works/mods/better-cobblemon-music/music-input/**/*.ogg
+works/mods/better-cobblemon-music/music-input/**/*.mp3
+works/mods/better-cobblemon-music/music-input/**/*.wav
+works/mods/better-cobblemon-music/music-input/**/*.flac
+works/mods/better-cobblemon-music/music-input/**/*.m4a
+works/mods/better-cobblemon-music/music-input/**/*.aac
 
 # Keep the Gradle wrapper JAR tracked.
 !gradle/wrapper/gradle-wrapper.jar

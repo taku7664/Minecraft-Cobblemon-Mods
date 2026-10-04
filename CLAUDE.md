@@ -10,6 +10,7 @@
 
 ## Project Rules
 
+- 모드 소스는 `works/mods/<모드>`, 스크립트는 `works/tools/`, Gradle 루트(`gradlew`, `settings.gradle.kts`, `gradle/`)는 `works/`에 있다. Gradle은 `works/`에서 실행한다. 저장소 루트에는 규칙·문서·`server-wiki/`·제품 폴더만 둔다.
 - 개발 서버는 저장소 안 `develop-product/server` 하나뿐이다. 저장소 밖 서버(옛 `Mincraft-Cobblemon-Server`)나 옛 `dev-server/` 경로는 참조하지 않는다.
 - 개발 클라이언트는 저장소 안 `develop-product/client`로 다룬다. 이 경로는 Modrinth 프로필 `%APPDATA%\ModrinthApp\profiles\cobblemon-dev`를 가리키는 정션이다. Modrinth가 링크 뒤의 프로필을 거부해서 실제 파일은 AppData에 둔다. 게임이 켜져 있으면 JAR을 복사하지 않는다.
 - 릴리스 산출물은 `deploy-product/client`, `deploy-product/server`에 모은다. 완성된 JAR과 `VERSION.txt` 외에는 아무것도 두지 않는다(백업·임시파일·로그·소스 JAR 금지). 자세한 규칙은 `AGENTS.md`의 Product folders.

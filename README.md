@@ -34,7 +34,7 @@ OP 권한(레벨 2)이 필요합니다. NPC나 서버 콘솔에서는 `mcc termi
 배틀팩토리는 `mcc-battle-factory`, BP 상점은 `mcc-bp-shop`, 리그 챌린지는 `league-challenge`
 아래에서 종류별 폴더로 나뉩니다. 파일 하나라도 잘못됐거나 ID가 겹치면 일부만 적용하지 않고,
 이전에 정상적으로 읽은 전체 목록을 그대로 사용합니다. 모듈 구성은
-[`more-cobblemon-contents/README.md`](more-cobblemon-contents/README.md)에 적어 두었습니다.
+[`works/mods/more-cobblemon-contents/README.md`](works/mods/more-cobblemon-contents/README.md)에 적어 두었습니다.
 
 #### 야생 트레이너
 

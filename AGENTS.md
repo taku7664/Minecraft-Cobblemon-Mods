@@ -1,3 +1,11 @@
+# Repository layout
+
+- `works/` is the Gradle build: `gradlew`, `settings.gradle.kts`, `gradle.properties`, the wrapper in `gradle/`, every
+  mod under `works/mods/<mod>` (project names are the folder names, e.g. `:cobblemon-ui`), and the scripts in
+  `works/tools/`. Run Gradle from `works/` (`cd works; .\gradlew.bat :cobblemon-npc:build`).
+- The repository root holds only rules and docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/`), the server wiki
+  site (`server-wiki/`), and the product folders. A new mod goes in `works/mods/` and is added to `settings.gradle.kts`.
+
 # Workspace targets
 
 - Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
