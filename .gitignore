@@ -30,6 +30,10 @@ config/
 !cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
 !cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/
 !cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/**
+!simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/
+!simple-myroom/src/main/java/jbro/cobblemon/simplemyroom/config/**
+!simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/
+!simple-myroom/src/test/java/jbro/cobblemon/simplemyroom/config/**
 !better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/
 !better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/**
 !better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/
