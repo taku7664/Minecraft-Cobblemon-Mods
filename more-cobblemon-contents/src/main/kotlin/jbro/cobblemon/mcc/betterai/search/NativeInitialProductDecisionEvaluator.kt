@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.search
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
@@ -185,7 +186,8 @@ internal class NativeInitialProductDecisionEvaluator(
                     )
                 },
                 productActions = context.candidates,
-                maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                maxDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+                    else profile.difficulty.lookaheadPlies.coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
@@ -311,7 +313,8 @@ internal class NativeInitialProductDecisionEvaluator(
                     )
                 },
                 productActions = context.candidates,
-                maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                maxDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+                    else profile.difficulty.lookaheadPlies.coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&

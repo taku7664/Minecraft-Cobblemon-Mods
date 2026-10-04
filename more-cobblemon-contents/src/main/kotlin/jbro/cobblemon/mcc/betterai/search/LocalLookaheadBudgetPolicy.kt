@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 internal data class LocalLookaheadBudget(
@@ -55,6 +56,7 @@ internal object LocalLookaheadBudgetPolicy {
      * wall-clock ceiling stays [MAX_TIME_MILLIS].
      */
     fun forPosition(budget: LocalLookaheadBudget, state: BattleStateView): LocalLookaheadBudget {
+        if (budget.nodeLimit == Int.MAX_VALUE) return budget
         val remaining = state.remainingPokemonBySide.values.sum()
         val factor = when {
             remaining <= ENDGAME_REMAINING -> ENDGAME_NODE_FACTOR
@@ -63,6 +65,10 @@ internal object LocalLookaheadBudgetPolicy {
         }
         return if (factor == 1) budget else budget.copy(nodeLimit = budget.nodeLimit * factor)
     }
+
+    /** Doubles resolves one turn without a node ceiling; its existing clock ceiling still applies. */
+    fun forFormat(budget: LocalLookaheadBudget, format: BattleFormat): LocalLookaheadBudget =
+        if (format == BattleFormat.DOUBLE) budget.copy(nodeLimit = Int.MAX_VALUE) else budget
 
     /** Both sides' remaining Pokemon: 2 v 1 in doubles, 1 v 2 or 2 v 1 in singles. */
     const val ENDGAME_REMAINING = 3
