@@ -75,6 +75,7 @@ final class OfficialMusicLineupTest {
         assertTitle("field/river/sealed_chamber", "고시의 석실");
         assertTitle("field/swamp/road_to_reversal_mountain", "리버스마운틴으로 가는 길");
         assertTitle("field/plains/sinnoh_route_201_night", "201번도로 (밤)");
+        assertTitle("field/plaza/jubilife_city_day", "축복시티 (낮)");
         assertTitle("screen/mcc/poke_mart", "프렌들리숍");
         assertTitle("battle/boss/pla_boss_battle", "승부: 우두머리 포켓몬 (PLA)");
         assertTitle("battle/boss/sv_leader_pokemon_battle", "전투! 주인 포켓몬 (S·V)");

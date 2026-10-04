@@ -1,6 +1,7 @@
 package jbro.cobblemon.bettermusic.integration.mcc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
@@ -51,20 +52,30 @@ final class OfficialPokemusicMappingTest {
     }
 
     @Test
-    void allThirtyImportedAudioFilesReachTheBuiltPackWithApprovedEffectGains() throws Exception {
+    void preservedImportsAndTheNewPlazaSongReachTheBuiltPackWithApprovedEffectGains() throws Exception {
         try (var reader = Files.newBufferedReader(module.resolve("resource-pack/import-pokemusic-report-2026-10-03.json"))) {
             var files = JsonParser.parseReader(reader).getAsJsonObject().getAsJsonArray("files");
             assertEquals(30, files.size());
+            int preserved = 0;
             for (var element : files) {
                 var report = element.getAsJsonObject();
+                if (report.get("target").getAsString().equals("field/plaza/route_1.ogg")) {
+                    continue; // Historical import replaced by the new plaza daytime song.
+                }
                 Path audio = pack.resolve("assets/better_cobblemon_music/sounds/music/" + report.get("target").getAsString());
                 assertEquals(report.get("outputSha256").getAsString(), sha256(audio), audio.toString());
                 assertEquals(report.get("output_bytes").getAsLong(), Files.size(audio));
                 assertEquals(1, report.get("logical_streams").getAsInt());
                 assertEquals(2, report.get("channels").getAsInt());
                 assertEquals(44100, report.get("sample_rate").getAsInt());
+                preserved++;
             }
+            assertEquals(29, preserved);
         }
+        Path newPlazaSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/jubilife_city_day.ogg");
+        assertEquals("eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105", sha256(newPlazaSong));
+        assertEquals(1_577_176L, Files.size(newPlazaSong));
+        assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/route_1.ogg")));
         assertEquals("3a0b977babf57f6ea5d3da04f0da85596d1fa2d50fe69f7f1c1064a91aa5666b",
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/normal.ogg")));
         assertEquals("d4dbddb4c776544feb6d83e83dd1f89a27c7c1261b0cb5cb9477f0a6b9ad44bd",
@@ -178,7 +189,7 @@ final class OfficialPokemusicMappingTest {
         for (String dimension : List.of("jbro_policy:plaza", "cobblemon_policy:plaza")) {
             var day = field.select(context(dimension, FieldMusicContext.TimeOfDay.DAY));
             var night = field.select(context(dimension, FieldMusicContext.TimeOfDay.NIGHT));
-            expectTracks(day.playlist(), "field/plaza/route_1");
+            expectTracks(day.playlist(), "field/plaza/jubilife_city_day");
             expectTracks(night.playlist(), "field/plaza/pallet_town");
             assertTrue(!day.id().equals(night.id()));
         }
