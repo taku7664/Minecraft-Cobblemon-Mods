@@ -54,7 +54,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
         fields["speaker"] = field(speakerLeft, y, 110, dialogue.speaker.orEmpty(), Component.translatable("screen.cobblemon_npc.hint.speaker"), 64)
         label(skinLabel, speakerLeft + 120, y + 5)
         fields["skin"] = field(speakerLeft + 124 + font.width(skinLabel), y, 110, dialogue.skin.orEmpty(),
-            Component.translatable("screen.cobblemon_npc.hint.skin"), 64)
+            Component.translatable("screen.cobblemon_npc.hint.skin"), 128)
         y += 26
 
         val actionsY = bottom - 42

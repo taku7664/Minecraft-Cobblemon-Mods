@@ -9,7 +9,11 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
 ## For operators
 
 - `/npc wand` gives the NPC wand (permission level 2). Right-click a block to place an NPC; right-click an NPC with
-  the wand to set its name, skin (a player name) and dialogue, edit the dialogue, or remove it.
+  the wand to set its name, skin and dialogue, edit the dialogue, or remove it.
+- A skin is a player name (`Steve`), an RCT Trainers+ trainer (`rct:clerk`, short for
+  `rctmod:textures/trainers/single/clerk.png`; the **RCT ▶** button browses the enabled pack with a preview), or
+  any `namespace:path.png` skin texture. A texture skin's slim or wide model is read from the image; without the
+  pack the NPC wears a default skin.
 - NPCs do not move, take damage or despawn. `/kill` still removes one.
 - `/npc talk <players> <dialogue> [node]` opens a dialogue without an NPC (command blocks, other mods' scripts, or a
   dialogue's own `@server` command). `/npc end <players>` closes it. `/npc reload` reads the files again.

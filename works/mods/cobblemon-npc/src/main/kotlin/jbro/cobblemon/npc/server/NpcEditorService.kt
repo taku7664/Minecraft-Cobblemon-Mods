@@ -19,6 +19,7 @@ import net.minecraft.world.entity.Entity
 object NpcEditorService {
     private const val REACH = 16.0
     private const val NAME_LENGTH = 64
+    private const val SKIN_LENGTH = 128
 
     fun register() {
         ServerPlayNetworking.registerGlobalReceiver(NpcSavePayload.TYPE) { payload, context ->
@@ -64,7 +65,7 @@ object NpcEditorService {
         val name = payload.name.trim().take(NAME_LENGTH)
         npc.customName = if (name.isEmpty()) null else Component.literal(name)
         npc.isCustomNameVisible = name.isNotEmpty()
-        npc.skinName = payload.skin.trim().take(NAME_LENGTH)
+        npc.skinName = payload.skin.trim().take(SKIN_LENGTH)
         npc.dialogueId = dialogue
         result(player, true, "npc_saved")
     }

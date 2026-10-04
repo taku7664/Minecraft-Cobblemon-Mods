@@ -25,7 +25,7 @@
   "screen.cobblemon_npc.field.branches": "Branches (condition -> node)",
   "screen.cobblemon_npc.field.commands": "Commands on leaving (/cmd, @server /cmd)",
   "screen.cobblemon_npc.hint.name": "Shown above the NPC",
-  "screen.cobblemon_npc.hint.skin": "Player name",
+  "screen.cobblemon_npc.hint.skin": "Player name or rct:<file>",
   "screen.cobblemon_npc.hint.dialogue": "Dialogue id",
   "screen.cobblemon_npc.hint.speaker": "Without an NPC",
   "screen.cobblemon_npc.hint.next": "Empty ends the talk",
@@ -54,5 +54,11 @@
   "cobblemon_npc.problem.condition_empty": "Empty term in condition: %s",
   "cobblemon_npc.problem.condition_term": "Unknown condition: %s (use tag:, perm: or cmd:)",
   "cobblemon_npc.problem.condition_permission": "Permission levels are 0 to 4: %s",
-  "cobblemon_npc.problem.dialogue_id": "Dialogue ids use lower-case letters, digits, _, - and . only: %s"
+  "cobblemon_npc.problem.dialogue_id": "Dialogue ids use lower-case letters, digits, _, - and . only: %s",
+  "screen.cobblemon_npc.pick_rct": "RCT ▶",
+  "screen.cobblemon_npc.rct_picker": "RCT Trainer Skins",
+  "screen.cobblemon_npc.hint.search": "Search",
+  "screen.cobblemon_npc.pick": "Choose",
+  "screen.cobblemon_npc.rct_count": "%s skins",
+  "screen.cobblemon_npc.rct_missing": "No RCT Trainers+ skins found. Enable the resource pack first."
 }

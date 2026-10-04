@@ -109,10 +109,18 @@ class NpcSettingsScreen(private val settings: NpcSettingsPayload) :
         nameField = field(fieldLeft, y, fieldWidth, name, Component.translatable("screen.cobblemon_npc.hint.name"), 64)
         y += 26
         label(labelTexts[1], left + 14, y + 5)
-        skinField = field(fieldLeft, y, fieldWidth, skin, Component.translatable("screen.cobblemon_npc.hint.skin"), 64)
+        val pickWidth = 60
+        skinField = field(fieldLeft, y, fieldWidth - pickWidth - 4, skin, Component.translatable("screen.cobblemon_npc.hint.skin"), 128)
+        button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.pick_rct"), width = pickWidth) {
+            remember()
+            minecraft!!.setScreen(RctSkinPickerScreen(this, skin) { picked ->
+                // Coming back rebuilds the fields from what they hold, so the field takes the pick too.
+                skin = picked
+                skinField.value = picked
+            })
+        }
         y += 26
         label(labelTexts[2], left + 14, y + 5)
-        val pickWidth = 60
         dialogueField = field(fieldLeft, y, fieldWidth - pickWidth - 4, dialogue, Component.translatable("screen.cobblemon_npc.hint.dialogue"), 64)
         button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.next_dialogue"), width = pickWidth) {
             cycleDialogue()

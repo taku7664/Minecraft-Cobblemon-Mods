@@ -14,7 +14,6 @@ import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
-import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
@@ -172,14 +171,11 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         graphics.fill(box.right - inset - END_BAR, box.y + inset, box.right - inset, box.bottom - inset, theme.colors.borderBright)
 
         var textLeft = box.x + PADDING
-        val profile = NpcSkins.profile(show.skin)
         if (show.skin.isNotBlank()) {
             val portrait = UiRect(box.x + PADDING, box.y + 6, PORTRAIT, box.height - 12)
             UiSurfaceRenderer.draw(graphics, portrait.x, portrait.y, portrait.width, portrait.height, theme.surfaces.panelAlt)
-            val content = profile?.let { CobblemonUiRenderContent.PlayerProfile(it, UiModelFraming.PORTRAIT) }
-                ?: CobblemonUiRenderContent.Empty
             CobblemonUiRenderSlot.drawContent(graphics, UiRect(portrait.x + 2, portrait.y + 2, portrait.width - 4, portrait.height - 4),
-                content, partialTick)
+                NpcSkins.content(show.skin, UiModelFraming.PORTRAIT), partialTick)
             textLeft += PORTRAIT + 8
         }
 
