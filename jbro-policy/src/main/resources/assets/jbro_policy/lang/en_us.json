@@ -190,6 +190,9 @@
   "message.jbro_policy.test.level_all": "Set %s party Pokémon to Lv. %s.",
   "message.jbro_policy.test.level_one": "Set party slot %s, %s, to Lv. %s.",
 
+  "message.jbro_policy.discord_status.open": "🟢 The server is open!",
+  "message.jbro_policy.discord_status.closed": "🔴 The server is closed.",
+
   "key.categories.jbro_policy": "jbro Policy",
   "key.jbro_policy.quick_waypoint": "Create waypoint at current location",
   "message.jbro_policy.waypoint_created": "Waypoint created: %s",

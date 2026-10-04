@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import jbro.cobblemon.policy.JbroPolicy
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -117,21 +116,21 @@ internal class DiscordGatewaySession(private val token: String) {
 }
 
 /**
- * The server's Discord bot, online from server start to stop. It keeps the status channel's card current, posts
+ * The server's Discord bot, online from server start to stop. It announces each start and normal shutdown, posts
  * news, answers slash commands and posts inquiries when it has a channel for them. It reconnects by itself after a
  * dropped connection, waiting longer each time up to five minutes, and gives up only when Discord refuses the token.
  */
 internal object DiscordBot {
     const val USER_AGENT = "DiscordBot (https://github.com/taku7664/Minecraft-Cobblemon-Mods, 1.0)"
     private const val GATEWAY = "wss://gateway.discord.gg/?v=10&encoding=json"
-    private const val STATUS_DEBOUNCE_SECONDS = 15L
-    private const val STATUS_REFRESH_MINUTES = 5L
+    // Allows a ten-second REST request, one rate-limit wait and its retry to finish before shutdown.
+    private const val STATUS_TIMEOUT_SECONDS = 30L
     private const val COMMAND_TIMEOUT_SECONDS = 10L
 
     private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
     // Everything about the connection happens on this one thread, so sends never overlap.
     private val worker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord").apply { isDaemon = true } }
-    // REST calls (status card, news, commands) run here, so a slow request never holds up the gateway.
+    // REST calls (status notifications, news, commands) run here, so a slow request never holds up the gateway.
     private val restWorker = Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "jbro-policy-discord-rest").apply { isDaemon = true } }
 
     private var token = ""
@@ -139,7 +138,6 @@ internal object DiscordBot {
     private var rest: DiscordRest? = null
     @Volatile private var server: MinecraftServer? = null
     @Volatile private var running = false
-    @Volatile private var players = 0
     /** The Discord servers the bot is in, as of its last login. */
     @Volatile var guilds: List<String> = emptyList()
         private set
@@ -148,8 +146,6 @@ internal object DiscordBot {
     private var heartbeat: ScheduledFuture<*>? = null
     private var retryDelaySeconds = 0L
     private var status: DiscordStatusMessage? = null
-    private var statusRefresh: ScheduledFuture<*>? = null
-    private var statusPending: ScheduledFuture<*>? = null
 
     /** Runs [task] on the worker; a failure is logged, where a scheduled executor would otherwise drop it silently. */
     private fun onWorker(task: () -> Unit) = worker.execute(guarded(task))
@@ -166,12 +162,12 @@ internal object DiscordBot {
      * Starts the bot with the server when [settings] has a token. [withContents] adds the commands and news of More
      * Cobblemon Contents, and must be true only when it is installed.
      */
-    fun register(settings: DiscordSettings, statusFile: java.nio.file.Path, withContents: Boolean) {
+    fun register(settings: DiscordSettings, withContents: Boolean) {
         if (!settings.botConfigured) return
         token = settings.botToken
         this.settings = settings
         val client = DiscordRest(token).also { rest = it }
-        if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(token, settings.statusChannelId, statusFile)
+        if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(client, settings.statusChannelId)
         if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
         DiscordCommands.registerBuiltIns()
         if (withContents) MccDiscordCommands.register()
@@ -187,48 +183,35 @@ internal object DiscordBot {
             server = started
             // Reads every mod's Korean text now, off the server thread, rather than on the first command.
             restWorker.execute(guarded { KoreanText.entries() })
-            players = started.playerCount
             onWorker { start() }
             showStatus(open = true)
-            statusRefresh = restWorker.scheduleAtFixedRate(guarded { showStatus(open = true) },
-                STATUS_REFRESH_MINUTES, STATUS_REFRESH_MINUTES, TimeUnit.MINUTES)
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
-            statusRefresh?.cancel(false)
             // Waits for "closed" to land, since nothing can say it once the server is gone; a slow Discord only
             // delays the shutdown, never stops it.
             try {
-                showStatus(open = false).get(10, TimeUnit.SECONDS)
+                showStatus(open = false).get(STATUS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            } catch (failure: Exception) {
+                JbroPolicy.LOGGER.warn("Discord server shutdown notification did not finish: {}", failure.toString())
+            }
+            // Disconnect even when the notification failed or timed out.
+            try {
                 worker.submit { stop() }.get(5, TimeUnit.SECONDS)
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Discord bot did not finish closing: {}", failure.toString())
             }
             server = null
         }
-        // The player list changes after these events, so count on the next tick.
-        ServerPlayConnectionEvents.JOIN.register { _, _, joined -> recount(joined) }
-        ServerPlayConnectionEvents.DISCONNECT.register { _, left -> recount(left) }
     }
 
-    private fun recount(server: MinecraftServer) = server.execute {
-        players = server.playerCount
-        scheduleStatus()
-    }
-
-    /** Shows the server open or closed in the status channel, when there is one; failures are logged, not thrown. */
+    /** Posts one lifecycle notification in the status channel, when configured; failures are logged. */
     private fun showStatus(open: Boolean): java.util.concurrent.Future<*> = restWorker.submit {
         val message = status ?: return@submit
         try {
-            message.show(open, players)
+            message.show(open)
         } catch (failure: Exception) {
-            JbroPolicy.LOGGER.warn("Could not update the Discord status message: {}", failure.toString())
+            JbroPolicy.LOGGER.warn("Could not post a Discord server status notification: {}", failure.toString())
         }
-    }
-
-    /** At most one status edit per debounce window, so a rush of joins does not hit Discord's rate limit. */
-    private fun scheduleStatus() {
-        if (status == null || statusPending?.isDone == false) return
-        statusPending = restWorker.schedule(guarded { showStatus(open = true) }, STATUS_DEBOUNCE_SECONDS, TimeUnit.SECONDS)
     }
 
     private fun start() {
