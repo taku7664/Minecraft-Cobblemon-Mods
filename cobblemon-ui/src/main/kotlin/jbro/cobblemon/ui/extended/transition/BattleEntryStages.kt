@@ -319,7 +319,13 @@ internal object EntryDraw {
     private const val SHARD_ROWS = 7
     private const val CRACKS = 11
     private const val CRACK_SEGMENTS = 5
-    private const val FINE_SEGMENTS = 3
+    /**
+     * When in a round of cracks each jolt lands (as a share of the round), how much of the round each covers, and how
+     * long a jolt takes to snap.
+     */
+    private val JOLT_TIMES = floatArrayOf(.03f, .42f, .78f)
+    private val JOLT_SIZES = floatArrayOf(.45f, .3f, .25f)
+    private const val JOLT_SNAP = .06f
     /** The share of the shatter by which the farthest shard starts after the nearest. */
     private const val SHARD_SPREAD = .5f
     private const val ZOOM_COPIES = 5
@@ -770,10 +776,10 @@ internal object EntryDraw {
         val impactY = frame.height * .46f
         val shatter = BattleEntryTimeline.shatter(frame.kind, frame.elapsed, frame.revealAt)
         val crack = BattleEntryTimeline.crack(frame.kind, frame.elapsed, frame.revealAt)
-        val fine = BattleEntryTimeline.fineCrack(frame.kind, frame.elapsed, frame.revealAt)
+        val second = BattleEntryTimeline.secondCrack(frame.kind, frame.elapsed, frame.revealAt)
         if (shatter <= 0f) {
             frame.context.fill(0, 0, frame.width, frame.height, 0xFFFFFFFF.toInt())
-            cracks(frame, impactX, impactY, crack, fine, 1f)
+            cracks(frame, impactX, impactY, crack, second, 1f)
             return
         }
         // The white tiled in jittered triangles that together cover the screen exactly until they start to move.
@@ -798,7 +804,7 @@ internal object EntryDraw {
             }
         }
         // The cracks stay on the shards for a moment as they part.
-        cracks(frame, impactX, impactY, crack, fine, 1f - shatter * 3f)
+        cracks(frame, impactX, impactY, crack, second, 1f - shatter * 3f)
     }
 
     /** One shard: from the center outward each in turn drifts a little away at an even pace, turning slightly, fading. */
@@ -836,12 +842,24 @@ internal object EntryDraw {
     }
 
     /** Cracks running out from the impact across the white, each a jagged line of a few segments. */
-    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, growth: Float, fine: Float, opacity: Float) {
-        if (growth <= 0f || opacity <= 0f) return
+    /**
+     * The cracks from the impact, run halfway by the first round ([first], 0 to 1) and the rest by the second
+     * ([second]). Each round goes in jolts: the cracks stand still, then all snap forward at once, a few times over,
+     * each crack a hair off the others, so they crackle out rather than glide.
+     */
+    private fun cracks(frame: EntryFrame, impactX: Float, impactY: Float, first: Float, second: Float, opacity: Float) {
+        if (first <= 0f || opacity <= 0f) return
         val color = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .45f),
             .7f * opacity.coerceAtMost(1f))
-        val faint = BattleSurfaceRenderer.withOpacity(BattleSurfaceRenderer.interpolate(frame.accent, 0xFF000000.toInt(), .35f),
-            .45f * opacity.coerceAtMost(1f))
+        /** How far one crack has jolted through a round at [share] of it, 0 to 1. */
+        fun jolts(share: Float, seed: Int): Float {
+            var reach = 0f
+            for (jolt in JOLT_TIMES.indices) {
+                val at = JOLT_TIMES[jolt] + (hash(seed + jolt * 17) - .5f) * .06f
+                reach += JOLT_SIZES[jolt] * ((share - at) / JOLT_SNAP).coerceIn(0f, 1f)
+            }
+            return reach
+        }
         quads(frame.context) { buffer, matrix ->
             /** One straight piece of a crack from (x, y) to (nx, ny), [half] wide on each side. */
             fun piece(x: Float, y: Float, nx: Float, ny: Float, half: Float, color: Int) {
@@ -855,42 +873,12 @@ internal object EntryDraw {
                 buffer.addVertex(matrix, nx - px, ny - py, 0f).setColor(color)
                 buffer.addVertex(matrix, nx + px, ny + py, 0f).setColor(color)
             }
-            // The fine cracks: from each bend of a first crack, two thin branches of a few short, jagged pieces.
-            if (fine > 0f) for (crack in 0 until CRACKS) {
-                val seed = crack * 4099 + 7
-                var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
-                var x = impactX
-                var y = impactY
-                for (segment in 0 until CRACK_SEGMENTS) {
-                    angle += (hash(seed + segment * 13 + 1) - .5f) * .7f
-                    val length = frame.far * (.12f + .14f * hash(seed + segment * 13 + 2))
-                    x += cos(angle) * length
-                    y += sin(angle) * length
-                    for (branch in 0 until 2) {
-                        val branchSeed = seed * 31 + segment * 7 + branch
-                        var branchAngle = angle + (if (branch == 0) 1f else -1f) * (.6f + .8f * hash(branchSeed))
-                        var bx = x
-                        var by = y
-                        val pieces = FINE_SEGMENTS * fine
-                        for (step in 0 until FINE_SEGMENTS) {
-                            val share = (pieces - step).coerceIn(0f, 1f)
-                            if (share <= 0f) break
-                            branchAngle += (hash(branchSeed + step * 5 + 1) - .5f) * .9f
-                            val stepLength = frame.far * (.025f + .035f * hash(branchSeed + step * 5 + 2)) * share
-                            val nx = bx + cos(branchAngle) * stepLength
-                            val ny = by + sin(branchAngle) * stepLength
-                            piece(bx, by, nx, ny, .3f, faint)
-                            bx = nx
-                            by = ny
-                        }
-                    }
-                }
-            }
             for (crack in 0 until CRACKS) {
                 val seed = crack * 4099 + 7
                 var angle = (crack + hash(seed) * .7f) / CRACKS * TAU
                 var x = impactX
                 var y = impactY
+                val growth = .5f * jolts(first, seed) + .5f * jolts(second, seed + 503)
                 val segments = CRACK_SEGMENTS * growth
                 for (segment in 0 until CRACK_SEGMENTS) {
                     val share = (segments - segment).coerceIn(0f, 1f)

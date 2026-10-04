@@ -72,11 +72,10 @@ object BattleEntryTimeline {
     /** How long a legendary's screen stays white, counted from when it is full, before it cracks. */
     const val WHITE_HOLD_MILLIS = 1000L
     /** How long a legendary's first cracks take to run. */
-    const val CRACK_MILLIS = 300L
-    /** The pause after a legendary's first cracks, before the fine cracks snap across in an instant. */
+    const val CRACK_MILLIS = 360L
+    /** The pause after a legendary's first round of cracks, before the second round runs them the rest of the way. */
     const val CRACK_GAP_MILLIS = 500L
-    const val FINE_CRACK_MILLIS = 80L
-    /** How long the finely cracked white stays still before it comes apart: the same pause as after the first cracks. */
+    /** How long the fully cracked white stays still before it comes apart: the same pause as between the rounds. */
     const val STILL_MILLIS = CRACK_GAP_MILLIS
 
     fun flashEnd(kind: BattleEntryKind): Long = kind.flashStarts.last() + kind.flashMillis
@@ -161,20 +160,18 @@ object BattleEntryTimeline {
     /** How far a legendary's cracks have run across the white, 0 to 1. */
     fun crack(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
         val start = crackStart(kind, revealAt) ?: return 0f
-        val share = ((elapsed - start).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
-        return 1f - (1f - share) * (1f - share)
+        return ((elapsed - start).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
     }
 
-    /** How far the fine cracks branching off a legendary's first cracks have run, 0 to 1, after a short pause. */
-    fun fineCrack(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
+    /** How far a legendary's second round of cracks, running the cracks the rest of the way, has gone: 0 to 1. */
+    fun secondCrack(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {
         val start = crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS } ?: return 0f
-        val share = ((elapsed - start).toFloat() / FINE_CRACK_MILLIS).coerceIn(0f, 1f)
-        return 1f - (1f - share) * (1f - share)
+        return ((elapsed - start).toFloat() / CRACK_MILLIS).coerceIn(0f, 1f)
     }
 
     /** When a legendary's cracked white comes apart, after both rounds of cracks have run and it has stayed still. */
     fun shatterStart(kind: BattleEntryKind, revealAt: Long?): Long? =
-        crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS + FINE_CRACK_MILLIS + STILL_MILLIS }
+        crackStart(kind, revealAt)?.let { it + CRACK_MILLIS + CRACK_GAP_MILLIS + CRACK_MILLIS + STILL_MILLIS }
 
     /** How far a legendary's white has come apart and faded away, 0 to 1. */
     fun shatter(kind: BattleEntryKind, elapsed: Long, revealAt: Long?): Float {

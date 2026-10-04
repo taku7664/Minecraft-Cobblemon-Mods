@@ -74,11 +74,11 @@ class BattleEntryTimelineTest {
         val crackEnd = ready + hold + BattleEntryTimeline.CRACK_MILLIS
         assertEquals(0f, BattleEntryTimeline.crack(kind, ready + hold, ready))
         assertEquals(1f, BattleEntryTimeline.crack(kind, crackEnd, ready), 1e-3f)
-        // Then, after a pause, the fine cracks; then the stillness and the shatter.
-        val fineStart = crackEnd + BattleEntryTimeline.CRACK_GAP_MILLIS
-        val fineEnd = fineStart + BattleEntryTimeline.FINE_CRACK_MILLIS
-        assertEquals(0f, BattleEntryTimeline.fineCrack(kind, fineStart, ready))
-        assertEquals(1f, BattleEntryTimeline.fineCrack(kind, fineEnd, ready), 1e-3f)
+        // Then, after a pause, the second round of cracks; then the stillness and the shatter.
+        val secondStart = crackEnd + BattleEntryTimeline.CRACK_GAP_MILLIS
+        val fineEnd = secondStart + BattleEntryTimeline.CRACK_MILLIS
+        assertEquals(0f, BattleEntryTimeline.secondCrack(kind, secondStart, ready))
+        assertEquals(1f, BattleEntryTimeline.secondCrack(kind, fineEnd, ready), 1e-3f)
         assertEquals(0f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS, ready))
         assertEquals(1f, BattleEntryTimeline.shatter(kind, fineEnd + BattleEntryTimeline.STILL_MILLIS + kind.fadeMillis,
             ready), 1e-3f)
