@@ -1,9 +1,23 @@
 # Workspace targets
 
-- Client profile: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`
-- Server root: `C:\Users\박주형\Documents\GitHub\Mincraft-Cobblemon-Server`
-- Treat these as the authoritative client and server targets for inspection, compatibility work, and deployment unless the user explicitly names a different target.
+- Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
+  folder; there is no other server root. Do not refer to or deploy into any server outside this repository.
+- Development client: the Modrinth profile `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`, for
+  testing only.
 - Keep source/build validation, client deployment, server deployment, and live gameplay verification as separate results.
+
+## Product folders
+
+- `deploy-product/client` and `deploy-product/server` hold the release outputs: the finished mod JARs a player's client
+  or the live server needs, and each folder's `VERSION.txt`. A mod that runs on both sides goes in both folders.
+- Nothing else goes in `deploy-product`: no sources/dev JARs, backups, logs, reports, scratch files or notes.
+  Replacing a JAR removes the old one; a previous build is recovered by rebuilding its commit.
+- `VERSION.txt` records, per version, what changed in that folder's set of mods. Releases are published on Modrinth;
+  the record is how the changes are noticed and shared. Versions are `v0.x` until the first live release, `v1.0`.
+- `develop-product/server` is the running development server. Deploys there install JARs only; do not leave backups,
+  temporary copies or working files in it.
+- Intermediate and temporary files (downloads, decompiled sources, captures, logs, probes) belong in `build/` or a
+  session scratch directory, never in either product folder or the repository root.
 
 ## Version control
 

@@ -18,7 +18,11 @@ cobleserver-music-resourcepack-*.zip
 # Local Minecraft runtimes
 run/
 runs/
-/dev-server/
+/develop-product/
+# Release outputs: only VERSION.txt is tracked; the JARs are rebuilt from their commit.
+/deploy-product/**/*
+!/deploy-product/*/
+!/deploy-product/*/VERSION.txt
 /docs/
 logs/
 crash-reports/

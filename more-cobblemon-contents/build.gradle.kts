@@ -81,9 +81,9 @@ val unitTest by tasks.registering(JavaExec::class) {
         else -> throw GradleException("scope must be core, ai or engine")
     }
     // The engine's referee plays the same battles on the dev server's Showdown. A worktree has no dev server,
-    // so point it at one: -PshowdownRoot=<repo>/dev-server/showdown (the Mega Showdown jar is found next to it).
+    // so point it at one: -PshowdownRoot=<repo>/develop-product/server/showdown (the Mega Showdown jar is found next to it).
     val showdownRoot = (project.findProperty("showdownRoot") as String?)
-        ?: rootProject.file("dev-server/showdown").absolutePath
+        ?: rootProject.file("develop-product/server/showdown").absolutePath
     systemProperty("aiengine.showdown", showdownRoot)
     systemProperty("aiengine.tools", file("tools/ai-engine").absolutePath)
     systemProperty("aiengine.sweepOnly", (project.findProperty("sweepOnly") as String?) ?: "")
