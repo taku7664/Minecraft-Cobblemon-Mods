@@ -112,8 +112,9 @@ CLC, 단축키 정리와 Xaero의 오류는 각각 로그에 남기므로 한쪽
 
 ```powershell
 .\gradlew.bat :cobblemon-client-setup:build --configure-on-demand
-.\deploy-dev.cmd cobblemon-client-setup -SkipBuild
 ```
+
+릴리스 JAR은 `deploy-product/client`에 둡니다.
 
 빌드에는 매 실행 적용, 최초 한 번 적용, 기존 값·주석 보존, CLC 미설치,
 잘못된 설정 및 파일 접근 실패, 6개 키의 정확한 변경 범위, 나중에 설치한 모드,

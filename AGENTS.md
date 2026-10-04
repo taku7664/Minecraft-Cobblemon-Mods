@@ -2,8 +2,8 @@
 
 - Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
   folder; there is no other server root. Do not refer to or deploy into any server outside this repository.
-- Development client: the Modrinth profile `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`, for
-  testing only.
+- There is no development client profile. Client mods go to `deploy-product/client`; do not deploy into a Modrinth
+  or launcher profile.
 - Keep source/build validation, client deployment, server deployment, and live gameplay verification as separate results.
 
 ## Product folders
