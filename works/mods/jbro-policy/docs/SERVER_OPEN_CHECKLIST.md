@@ -14,6 +14,7 @@
 | `config/pokemontoitem/config.json` | `command.poketoitem`, `command.itemtopoke` | `0` | 기본값 2(OP 전용)면 일반 플레이어가 포켓몬을 아이템으로 바꿀 수 없다. `/pokefusion`은 이 아이템을 재료로 쓰므로 포켓퓨전도 함께 막힌다. 안내 메시지도 두 명령을 소개한다. |
 | `config/pokefusion.json` | `commandPermissionLevel` | `0` | 모든 플레이어가 `/pokefusion`을 쓴다. |
 | `config/more-cobblemon-contents/hub_tabs.json` | `command_permission_level` | `0` | 모든 플레이어가 `/mcc`로 허브(대시보드·상점·PvP)를 연다. `/mcc` 아래 관리 명령은 이 값과 관계없이 OP 전용이다. `[안내]`의 상점·PvP 안내가 `/mcc`를 소개한다. |
+| `config/more-cobblemon-contents/hub_tabs.json` | `terminals."more_cobblemon_contents:holo_battle_terminal"` | `["more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:pvp"]` | 본체 홀로 배틀 터미널은 `/mcc`처럼 대시보드·상점·PvP만 연다. 리그·배틀타워·배틀팩토리는 각자 터미널에서 연다. 2026-10-04 이전에 만들어진 파일에는 여섯 탭이 모두 저장돼 있으니 이 값으로 고친다. |
 | `config/styled-nicknames.json` | `nicknameFormat` | `"${nickname}"` | 기본값 `"#${nickname}"`이면 채팅 이름 앞에 `#`이 붙는다. `#`은 닉네임과 본래 이름을 구분하는 표시라서, 빼면 다른 사람 이름을 흉내 낸 닉네임을 구분하기 어려워진다. |
 | `config/jbro-policy.json` | `tips`, `tipIntervalSeconds` | 코드 기본 안내 목록, `60` | 기본 1분마다 나오는 `[안내]` 목록이다. 파일이 없으면 코드 기본값으로 만들어진다. 기존 파일도 초기 설정 시 간격을 60초로 맞추며, 이후 운영자가 목록과 간격을 바꿀 수 있다. |
 | `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `newsChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의·상태·소식 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널의 카드를 열림·닫힘으로 고친다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 문의 채널과 웹훅이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |

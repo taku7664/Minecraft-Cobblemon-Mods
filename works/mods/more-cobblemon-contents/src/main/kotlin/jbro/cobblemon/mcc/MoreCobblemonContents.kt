@@ -32,10 +32,9 @@ object MoreCobblemonContents : ModInitializer {
     override fun onInitialize() {
         jbro.cobblemon.mcc.api.access.BattleContentAccess.registerLifecycle()
         jbro.cobblemon.mcc.api.battle.ManagedPveBattles.registerLifecycle()
-        // The general battle terminal reaches every content; each content mod adds a terminal of its own.
+        // The MCC terminal shows what /mcc shows; the League, Tower and Factory each open from a terminal of their own.
         HoloTerminals.register(HoloBattleTerminalIds.id, listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP,
-            ManagedBattleContentIds.PVP, ManagedBattleContentIds.LEAGUE_CHALLENGE, ManagedBattleContentIds.BATTLE_TOWER,
-            ManagedBattleContentIds.BATTLE_FACTORY), HoloTerminalPalette.MCC)
+            ManagedBattleContentIds.PVP), HoloTerminalPalette.MCC)
         HoloTerminalInteractions.install(BattleHubNetworking::openTerminal)
         BattleHubTabConfigFile.register()
         BattlePointShopCatalogResources.register()
