@@ -26,7 +26,10 @@ internal object LocalBerryMechanics {
             val hpBerry = item in HEAL_BERRIES || item == "oranberry"
             val threshold = if (item in setOf("sitrusberry", "oranberry") ||
                 LocalPublicAbilityState.effectiveKnownAbility(current, holder) == "gluttony") .5 else .25
-            val heals = hpBerry && holder.hpFraction <= threshold && (item != "oranberry" || holder.combatStats?.maxHp != null)
+            // An HP berry's TryEatItem asks TryHeal first, so under Heal Block it stays uneaten.
+            val healBlocked = holder.knownVolatileEffectIds.any { canonical(it) == "healblock" }
+            val heals = hpBerry && !healBlocked && holder.hpFraction <= threshold &&
+                (item != "oranberry" || holder.combatStats?.maxHp != null)
             val boosts = item in STAT_BERRIES && holder.hpFraction <= threshold
             if (!curesStatus && !curesConfusion && !heals && !boosts) continue
             current = consume(current, holder.battlePokemonId, item)
