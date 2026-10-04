@@ -54,6 +54,8 @@ object CobblemonUiClient : ClientModInitializer {
         }
     }
 
+    private const val DIALOG_CATEGORY = "category.cobblemon_dialog_ui"
+
     private fun registerKeybindings() {
         toggleLogKey = KeyBindingHelper.registerKeyBinding(KeyMapping(
             "key.cobblemon_ui.toggle_log", InputConstants.Type.KEYSYM,
@@ -85,12 +87,13 @@ object CobblemonUiClient : ClientModInitializer {
             )
         )
 
+        // Confirm and cancel serve every dialogue box, battle narration and NPC talks alike, so they sit apart.
         selectActionKey = KeyBindingHelper.registerKeyBinding(
             KeyMapping(
                 "key.cobblemon_ui.select_action",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_Z,
-                "category.cobblemon_ui"
+                DIALOG_CATEGORY
             )
         )
         cancelActionKey = KeyBindingHelper.registerKeyBinding(
@@ -98,7 +101,7 @@ object CobblemonUiClient : ClientModInitializer {
                 "key.cobblemon_ui.cancel_action",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_X,
-                "category.cobblemon_ui"
+                DIALOG_CATEGORY
             )
         )
     }
