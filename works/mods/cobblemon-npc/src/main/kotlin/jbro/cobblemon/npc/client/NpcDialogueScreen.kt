@@ -3,6 +3,7 @@ package jbro.cobblemon.npc.client
 import jbro.cobblemon.npc.network.DialogueAnswerPayload
 import jbro.cobblemon.npc.network.DialogueLeavePayload
 import jbro.cobblemon.npc.network.DialogueShowPayload
+import jbro.cobblemon.ui.extended.CobblemonUiClient
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
@@ -29,7 +30,7 @@ import kotlin.math.sin
 
 /**
  * An NPC's message box in the shared UI kit look, at the bottom of the screen like the games' own: each line is
- * written out, a click or Space/Enter finishes it and then moves on, and the answers appear as buttons above the box
+ * written out, a click or the confirm key finishes it and then moves on, and the answers appear as buttons above the box
  * once the last line is read. The world keeps running behind it.
  */
 class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Component.literal(show.speaker)) {
@@ -101,7 +102,8 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
             }
             return super.keyPressed(keyCode, scanCode, modifiers)
         }
-        if (keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+        // The same confirm key the battle narration uses, set under the controls' Cobblemon Dialog UI.
+        if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) {
             advance()
             return true
         }
