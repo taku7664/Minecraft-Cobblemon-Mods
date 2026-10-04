@@ -2,6 +2,9 @@ package jbro.cobblemon.npc.client
 
 import jbro.cobblemon.npc.dialogue.DialogueCodec
 import jbro.cobblemon.npc.dialogue.DialogueEditorText
+import jbro.cobblemon.npc.dialogue.DialogueEditorText.BranchRow
+import jbro.cobblemon.npc.dialogue.DialogueEditorText.CommandRow
+import jbro.cobblemon.npc.dialogue.DialogueEditorText.ConditionKind
 import jbro.cobblemon.npc.dialogue.DialogueIds
 import jbro.cobblemon.npc.dialogue.DialogueNode
 import jbro.cobblemon.npc.dialogue.NpcDialogue
@@ -9,36 +12,59 @@ import jbro.cobblemon.npc.network.DialogueStorePayload
 import jbro.cobblemon.uikit.UiButtonVariant
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.CommandSuggestions
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.components.MultiLineEditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
 /**
- * The node editor: the dialogue's nodes on the left, the selected node's parts on the right, one entry per line.
- * Choices are written `answer -> node ? condition`, branches `condition -> node`, commands `/command` or
- * `@server /command`.
+ * The node editor: the dialogue's nodes on the left, the selected node's parts on the right. Lines and choices are
+ * written one per line (`answer -> node ? condition` for a choice). Branches and commands are rows; a command, and a
+ * branch whose condition is a command, completes as it is typed, the way a command block does.
  */
 class DialogueEditorScreen(private val id: String, json: String, private val parent: Screen?) :
     NpcEditorScreen(Component.translatable("screen.cobblemon_npc.dialogue_editor", id)) {
     private var dialogue: NpcDialogue
     private var selected: String
     private var listOffset = 0
+    private var branchOffset = 0
+    private var commandOffset = 0
     private val fields = mutableMapOf<String, EditBox>()
     private val boxes = mutableMapOf<String, MultiLineEditBox>()
+
+    // The selected node's rows; they outlive widget rebuilds and are written back by [commit].
+    private var branches = mutableListOf<BranchRow>()
+    private var commands = mutableListOf<CommandRow>()
+    private val suggestions = mutableMapOf<EditBox, CommandSuggestions>()
+    private var branchArea = Area(0, 0, 0)
+    private var commandArea = Area(0, 0, 0)
+
+    private data class Area(val top: Int, val bottom: Int, val left: Int)
 
     init {
         val decoded = DialogueCodec.decode(json)
         dialogue = decoded.dialogue?.takeIf { it.nodes.isNotEmpty() }
             ?: NpcDialogue("start", linkedMapOf("start" to DialogueNode(lines = listOf("..."))))
         selected = dialogue.start.takeIf { it in dialogue.nodes } ?: dialogue.nodes.keys.first()
+        loadRows()
         decoded.problems.firstOrNull()?.let { showResult(false, problemText(it.key, it.args)) }
+    }
+
+    private fun loadRows() {
+        val node = dialogue.nodes.getValue(selected)
+        branches = node.branches.map(BranchRow::of).toMutableList()
+        commands = node.commands.map(CommandRow::of).toMutableList()
+        branchOffset = 0
+        commandOffset = 0
     }
 
     override fun init() {
         super.init()
         fields.clear()
         boxes.clear()
+        suggestions.clear()
         val left = MARGIN
         val top = MARGIN
         val right = width - MARGIN
@@ -57,45 +83,42 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
             Component.translatable("screen.cobblemon_npc.hint.skin"), 128)
         y += 26
 
-        val actionsY = bottom - 42
+        val actionsY = bottom - 30
         nodeList(left + 10, y, actionsY - 6)
 
         val node = dialogue.nodes.getValue(selected)
         val areaLeft = left + 10 + LIST_WIDTH + 10
-        val areaWidth = right - 10 - areaLeft
-        val firstWidth = areaWidth * 3 / 5
-        val secondLeft = areaLeft + firstWidth + 8
-        val secondWidth = right - 10 - secondLeft
-        val rest = (actionsY - 6 - y) - (LABEL + FIELD_HEIGHT + GAP) - 2 * (LABEL + GAP)
+        val areaRight = right - 10
+        val half = (areaRight - areaLeft - 8) / 2
+        val secondLeft = areaLeft + half + 8
 
-        // First column: the node's name, its lines and its answers.
-        var columnY = y
-        label(Component.translatable("screen.cobblemon_npc.field.node"), areaLeft, columnY)
+        // The node's name and where it goes when no branch holds.
+        label(Component.translatable("screen.cobblemon_npc.field.node"), areaLeft, y)
         val startWidth = 70
-        fields["node"] = field(areaLeft, columnY + LABEL, firstWidth - startWidth - 4, selected, Component.empty(), 64)
-        button(areaLeft + firstWidth - startWidth, columnY + LABEL, Component.translatable(
+        fields["node"] = field(areaLeft, y + LABEL, half - startWidth - 4, selected, Component.empty(), 64)
+        button(areaLeft + half - startWidth, y + LABEL, Component.translatable(
             if (dialogue.start == selected) "screen.cobblemon_npc.is_start" else "screen.cobblemon_npc.make_start"), width = startWidth) {
             commit()
             dialogue = dialogue.copy(start = selected)
             rebuildWidgets()
         }.active = dialogue.start != selected
-        columnY += LABEL + FIELD_HEIGHT + GAP
-        boxes["lines"] = box(Component.translatable("screen.cobblemon_npc.field.lines"), areaLeft, columnY, firstWidth, rest * 3 / 5,
-            DialogueEditorText.ofLines(node.lines))
-        columnY += LABEL + rest * 3 / 5 + GAP
-        boxes["choices"] = box(Component.translatable("screen.cobblemon_npc.field.choices"), areaLeft, columnY, firstWidth, rest - rest * 3 / 5,
-            DialogueEditorText.ofChoices(node.choices))
+        label(Component.translatable("screen.cobblemon_npc.field.next"), secondLeft, y)
+        fields["next"] = field(secondLeft, y + LABEL, half, node.next.orEmpty(), Component.translatable("screen.cobblemon_npc.hint.next"), 64)
+        y += LABEL + FIELD_HEIGHT + GAP
 
-        // Second column: where the node goes by itself, and what it runs on leaving.
-        columnY = y
-        label(Component.translatable("screen.cobblemon_npc.field.next"), secondLeft, columnY)
-        fields["next"] = field(secondLeft, columnY + LABEL, secondWidth, node.next.orEmpty(), Component.translatable("screen.cobblemon_npc.hint.next"), 64)
-        columnY += LABEL + FIELD_HEIGHT + GAP
-        boxes["branches"] = box(Component.translatable("screen.cobblemon_npc.field.branches"), secondLeft, columnY, secondWidth, rest / 2,
-            DialogueEditorText.ofBranches(node.branches))
-        columnY += LABEL + rest / 2 + GAP
-        boxes["commands"] = box(Component.translatable("screen.cobblemon_npc.field.commands"), secondLeft, columnY, secondWidth, rest - rest / 2,
-            DialogueEditorText.ofLines(node.commands))
+        // Lines and answers above, branches and commands below, sharing what height there is.
+        val rest = actionsY - 6 - y
+        val textHeight = (rest - 2 * (LABEL + GAP)) / 2
+        boxes["lines"] = box(Component.translatable("screen.cobblemon_npc.field.lines"), areaLeft, y, half, textHeight,
+            DialogueEditorText.ofLines(node.lines))
+        boxes["choices"] = box(Component.translatable("screen.cobblemon_npc.field.choices"), secondLeft, y, half, textHeight,
+            DialogueEditorText.ofChoices(node.choices))
+        y += LABEL + textHeight.coerceAtLeast(FIELD_HEIGHT) + GAP
+
+        branchArea = Area(y, actionsY - 6, areaLeft)
+        commandArea = Area(y, actionsY - 6, secondLeft)
+        branchRows(areaLeft, y, half, actionsY - 6)
+        commandRows(secondLeft, y, half, actionsY - 6)
 
         val actions = listOf(
             Triple("screen.cobblemon_npc.save", UiButtonVariant.PRIMARY) { save(false) },
@@ -109,6 +132,111 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
             actionX += actionWidth + 6
         }
         label(Component.translatable("screen.cobblemon_npc.syntax"), left + 10, actionsY + 6)
+    }
+
+    private fun branchRows(x: Int, top: Int, width: Int, bottom: Int) {
+        sectionHeader(Component.translatable("screen.cobblemon_npc.field.branches"), x, top, width) {
+            branches += BranchRow(ConditionKind.TAG, false, "", "")
+            branchOffset = branches.size
+        }
+        val visible = ((bottom - top - HEADER) / ROW).coerceAtLeast(1)
+        branchOffset = branchOffset.coerceIn(0, (branches.size - visible).coerceAtLeast(0))
+        branches.withIndex().drop(branchOffset).take(visible).forEachIndexed { slot, (index, row) ->
+            val y = top + HEADER + slot * ROW
+            val kindWidth = 40
+            val notWidth = 16
+            val nextWidth = 64
+            button(x, y, Component.translatable("screen.cobblemon_npc.kind.${row.kind.name.lowercase()}"), width = kindWidth) {
+                row.kind = row.kind.next()
+                if (row.kind == ConditionKind.RAW) row.negated = false
+                rows()
+            }
+            val notButton = button(x + kindWidth + 2, y, Component.literal("!"),
+                if (row.negated) UiButtonVariant.DANGER else UiButtonVariant.GHOST, notWidth) {
+                row.negated = !row.negated
+                rows()
+            }
+            notButton.active = row.kind != ConditionKind.RAW
+            val valueLeft = x + kindWidth + notWidth + 4
+            val valueWidth = width - (valueLeft - x) - nextWidth - REMOVE - 16
+            val value = field(valueLeft, y + 1, valueWidth, row.value,
+                Component.translatable("screen.cobblemon_npc.hint.kind.${row.kind.name.lowercase()}"), 512)
+            value.setResponder { row.value = it; suggestions[value]?.updateCommandInfo() }
+            if (row.kind == ConditionKind.COMMAND) suggest(value)
+            label(Component.literal("→"), valueLeft + valueWidth + 3, y + 6)
+            val next = field(valueLeft + valueWidth + 12, y + 1, nextWidth, row.next, Component.translatable("screen.cobblemon_npc.hint.node"), 64)
+            next.setResponder { row.next = it }
+            removeButton(x + width - REMOVE, y) { branches.removeAt(index) }
+        }
+    }
+
+    private fun commandRows(x: Int, top: Int, width: Int, bottom: Int) {
+        sectionHeader(Component.translatable("screen.cobblemon_npc.field.commands"), x, top, width) {
+            commands += CommandRow(false, "")
+            commandOffset = commands.size
+        }
+        val visible = ((bottom - top - HEADER) / ROW).coerceAtLeast(1)
+        commandOffset = commandOffset.coerceIn(0, (commands.size - visible).coerceAtLeast(0))
+        commands.withIndex().drop(commandOffset).take(visible).forEachIndexed { slot, (index, row) ->
+            val y = top + HEADER + slot * ROW
+            val whoWidth = 40
+            button(x, y, Component.translatable(if (row.asServer) "screen.cobblemon_npc.as_server" else "screen.cobblemon_npc.as_player"),
+                if (row.asServer) UiButtonVariant.DANGER else UiButtonVariant.SECONDARY, whoWidth) {
+                row.asServer = !row.asServer
+                rows()
+            }
+            val value = field(x + whoWidth + 2, y + 1, width - whoWidth - REMOVE - 4, row.command,
+                Component.translatable("screen.cobblemon_npc.hint.command"), 512)
+            value.setResponder { row.command = it; suggestions[value]?.updateCommandInfo() }
+            suggest(value)
+            removeButton(x + width - REMOVE, y) { commands.removeAt(index) }
+        }
+    }
+
+    private fun sectionHeader(name: Component, x: Int, top: Int, width: Int, add: () -> Unit) {
+        label(name, x, top + 6)
+        button(x + width - 40, top, Component.translatable("screen.cobblemon_npc.add_row"), width = 40) {
+            add()
+            rows()
+        }
+    }
+
+    private fun removeButton(x: Int, y: Int, remove: () -> Unit) {
+        button(x, y, Component.literal("×"), UiButtonVariant.GHOST, REMOVE) {
+            remove()
+            rows()
+        }
+    }
+
+    /** Completes [box] as a command, against the commands the server sent this player. */
+    private fun suggest(box: EditBox) {
+        val completion = CommandSuggestions(minecraft!!, this, box, font, true, true, 0, 7, false, Int.MIN_VALUE)
+        completion.setAllowSuggestions(true)
+        completion.updateCommandInfo()
+        suggestions[box] = completion
+    }
+
+    private fun activeSuggestions(): CommandSuggestions? = (focused as? EditBox)?.let(suggestions::get)
+
+    /** Rebuilds after a row changed, keeping what the text boxes hold. */
+    private fun rows() {
+        commit()
+        rebuildWidgets()
+    }
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        super.render(graphics, mouseX, mouseY, partialTick)
+        activeSuggestions()?.render(graphics, mouseX, mouseY)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (activeSuggestions()?.keyPressed(keyCode, scanCode, modifiers) == true) return true
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (activeSuggestions()?.mouseClicked(mouseX, mouseY, button) == true) return true
+        return super.mouseClicked(mouseX, mouseY, button)
     }
 
     private fun nodeList(x: Int, top: Int, bottom: Int) {
@@ -135,15 +263,15 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
         return addRenderableWidget(box)
     }
 
-    /** Writes the fields back into [dialogue]; a renamed node takes its references along. */
+    /** Writes the fields and rows back into [dialogue]; a renamed node takes its references along. Empty rows stay in the editor only. */
     private fun commit() {
         val node = dialogue.nodes[selected] ?: return
         val edited = DialogueNode(
             lines = DialogueEditorText.lines(boxes["lines"]?.value ?: return),
             choices = DialogueEditorText.choices(boxes["choices"]!!.value),
-            branches = DialogueEditorText.branches(boxes["branches"]!!.value),
+            branches = branches.filter { it.value.isNotBlank() || it.next.isNotBlank() }.map(BranchRow::toBranch),
             next = fields["next"]!!.value.trim().ifEmpty { null },
-            commands = DialogueEditorText.lines(boxes["commands"]!!.value),
+            commands = commands.filterNot(CommandRow::blank).map(CommandRow::write),
         )
         dialogue = dialogue.copy(
             nodes = LinkedHashMap(dialogue.nodes).also { it[selected] = if (edited == node) node else edited },
@@ -157,6 +285,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
             renamed in dialogue.nodes -> showResult(false, Component.translatable("screen.cobblemon_npc.node_taken", renamed))
             else -> {
                 dialogue = DialogueEditorText.rename(dialogue, selected, renamed)
+                branches.forEach { if (it.next.trim() == selected) it.next = renamed }
                 selected = renamed
             }
         }
@@ -165,6 +294,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
     private fun select(nodeId: String) {
         commit()
         selected = nodeId
+        loadRows()
         rebuildWidgets()
     }
 
@@ -174,6 +304,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
         dialogue = dialogue.copy(nodes = LinkedHashMap(dialogue.nodes).also { it[nodeId] = DialogueNode(lines = listOf("...")) })
         selected = nodeId
         listOffset = dialogue.nodes.size
+        loadRows()
         rebuildWidgets()
     }
 
@@ -183,6 +314,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
         val nodes = LinkedHashMap(dialogue.nodes).also { it.remove(selected) }
         dialogue = dialogue.copy(nodes = nodes, start = dialogue.start.takeIf { it in nodes } ?: nodes.keys.first())
         selected = dialogue.start
+        loadRows()
         rebuildWidgets()
     }
 
@@ -198,13 +330,17 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
-        if (mouseX < MARGIN + 10 + LIST_WIDTH && scrollY != 0.0) {
-            commit()
-            listOffset -= scrollY.toInt().coerceIn(-1, 1)
-            rebuildWidgets()
-            return true
+        if (activeSuggestions()?.mouseScrolled(scrollY) == true) return true
+        if (scrollY == 0.0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
+        val step = scrollY.toInt().coerceIn(-1, 1)
+        when {
+            mouseX < MARGIN + 10 + LIST_WIDTH -> listOffset -= step
+            mouseY >= branchArea.top && mouseY < branchArea.bottom && mouseX < commandArea.left -> branchOffset -= step
+            mouseY >= commandArea.top && mouseY < commandArea.bottom && mouseX >= commandArea.left -> commandOffset -= step
+            else -> return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
+        rows()
+        return true
     }
 
     override fun resize(minecraft: Minecraft, width: Int, height: Int) {
@@ -225,5 +361,7 @@ class DialogueEditorScreen(private val id: String, json: String, private val par
         private const val ROW = 22
         private const val LABEL = 11
         private const val GAP = 5
+        private const val HEADER = 22
+        private const val REMOVE = 16
     }
 }

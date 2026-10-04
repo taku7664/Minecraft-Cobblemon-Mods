@@ -118,6 +118,25 @@ class DialogueTest {
     }
 
     @Test
+    fun `branch and command rows read and write the stored forms`() {
+        val negatedTag = DialogueEditorText.BranchRow.of(DialogueBranch("!tag:vip", "no"))
+        assertEquals(DialogueEditorText.BranchRow(DialogueEditorText.ConditionKind.TAG, true, "vip", "no"), negatedTag)
+        assertEquals(DialogueBranch("!tag:vip", "no"), negatedTag.toBranch())
+        val command = DialogueEditorText.BranchRow.of(DialogueBranch("cmd:execute if score @s wins matches 10..", "open"))
+        assertEquals(DialogueEditorText.ConditionKind.COMMAND, command.kind)
+        assertEquals("execute if score @s wins matches 10..", command.value)
+        // Several terms, or an unknown one, stay as written.
+        assertEquals(DialogueEditorText.ConditionKind.RAW, DialogueEditorText.BranchRow.of(DialogueBranch("tag:a && perm:2", "x")).kind)
+        assertEquals("weird", DialogueEditorText.BranchRow.of(DialogueBranch("weird", "x")).toBranch().condition)
+
+        val server = DialogueEditorText.CommandRow.of("@server /give {player} apple")
+        assertEquals(DialogueEditorText.CommandRow(true, "give {player} apple"), server)
+        assertEquals("@server /give {player} apple", server.write())
+        assertEquals("/mcc terminal tower", DialogueEditorText.CommandRow(false, "/mcc terminal tower").write())
+        assertEquals(DialogueCommand("mcc terminal tower", false), DialogueCommand.parse(DialogueEditorText.CommandRow.of("/mcc terminal tower").write()))
+    }
+
+    @Test
     fun `renaming a node carries every reference`() {
         val renamed = DialogueEditorText.rename(example(), "check", "자격확인")
         assertEquals("자격확인", renamed.nodes.getValue("greet").choices[0].next)

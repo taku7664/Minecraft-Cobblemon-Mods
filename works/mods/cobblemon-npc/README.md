@@ -20,7 +20,10 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
 
 ## Dialogue files
 
-`config/cobblemon_npc/dialogues/<id>.json`, written by the in-game editor or by hand. The first start writes the
+`config/cobblemon_npc/dialogues/<id>.json`, written by the in-game editor or by hand. In the editor, branches
+and commands are rows: a branch picks its condition kind (tag, permission, command or free text), and command
+rows and command conditions complete as they are typed, like a command block; a command row's **OP** switch is
+the `@server` prefix. The first start writes the
 example `tower_guide.json`.
 
 ```json
