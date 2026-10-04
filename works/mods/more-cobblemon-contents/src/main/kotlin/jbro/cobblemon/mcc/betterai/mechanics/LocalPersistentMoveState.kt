@@ -208,14 +208,6 @@ internal object LocalPersistentMoveState {
         return healed.derive(field = BattleFieldStateView(healed.field.weather, healed.field.terrain, healed.field.roomEffects, healed.field.globalEffects, sides))
     }
 
-    fun revive(state: BattleStateView, side: BattleSide, pokemonId: UUID?): BattleStateView = state.copyState(pokemon = state.pokemon.map {
-        if (it.battlePokemonId == pokemonId && it.side == side && it.fainted) {
-            val hp = it.combatStats?.maxHp?.takeIf { range -> range.minimum == range.maximum }
-                ?.let { range -> floor(range.minimum / 2.0) / range.minimum } ?: 0.5
-            it.copyState(hpFraction = hp, fainted = false, statusId = null)
-        } else it
-    })
-
     /** Baton Pass copies boosts and the volatile effects that Showdown does not mark noCopy. */
     fun pass(state: BattleStateView, outgoing: BattlePokemonStateView, incomingId: UUID, shedTail: Boolean): BattleStateView {
         val passed = passableEffects(outgoing.knownVolatileEffectIds, shedTail)

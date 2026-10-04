@@ -31,7 +31,6 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
-import jbro.cobblemon.mcc.betterai.mechanics.LocalRevivalBlessing
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
