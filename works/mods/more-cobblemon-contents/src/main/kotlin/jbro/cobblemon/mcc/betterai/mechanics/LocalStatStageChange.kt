@@ -98,6 +98,35 @@ internal object LocalStatStageChange {
         return if (reflected.isNotEmpty() && source != null) whiteHerb(next, source.battlePokemonId) else next
     }
 
+    /**
+     * The change [target] actually takes, in the caller's stat spelling, for readers that apply stages themselves:
+     * Contrary and Simple, and drops from another Pokemon stopped or turned into Defiant and Competitive.
+     */
+    fun reshape(state: BattleStateView, target: BattlePokemonStateView, sourceId: UUID?, stages: Map<String, Int>): Map<String, Int> {
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target)
+        var change = stages.mapValues { (_, amount) ->
+            when (ability) {
+                "contrary" -> -amount
+                "simple" -> amount * 2
+                else -> amount
+            }
+        }
+        if (sourceId != null && sourceId != target.battlePokemonId && change.values.any { it < 0 }) {
+            val source = state.pokemon.firstOrNull { it.battlePokemonId == sourceId }
+            val stopped = ability in DROP_STOPPING_ABILITIES || ability == MIRROR_ARMOR ||
+                LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
+                source != null && source.side != target.side && mistActive(state, target)
+            if (stopped) {
+                change = change.filterValues { it >= 0 }
+            } else if (ability == "defiant" || ability == "competitive") {
+                val stat = if (ability == "defiant") "attack" else "special_attack"
+                val key = change.keys.firstOrNull { normalise(it) == stat } ?: stat
+                change = change + (key to (change[key] ?: 0) + 2)
+            }
+        }
+        return change
+    }
+
     /** A White Herb restores lowered stats once, then is spent. */
     fun whiteHerb(state: BattleStateView, pokemonId: UUID): BattleStateView {
         val pokemon = state.pokemon.firstOrNull { it.battlePokemonId == pokemonId } ?: return state
