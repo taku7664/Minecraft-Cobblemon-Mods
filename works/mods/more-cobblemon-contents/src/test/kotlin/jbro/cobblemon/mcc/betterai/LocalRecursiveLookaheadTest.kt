@@ -407,8 +407,9 @@ class LocalRecursiveLookaheadTest {
             assertEquals(1, after.moveUses[jbro.cobblemon.mcc.betterai.state.RecursiveMoveUseKey(ALLY_ID, requireNotNull(chargeMove.moveId))])
             assertFalse(ALLY_ID in after.chargingMoveByPokemon)
             assertEquals(2, after.moveStreakByPokemon[ALLY_ID]?.count)
-            assertFalse(PublicFutureActionFactory.actions(outcome.state, BattleSide.ALLY, catalog, after)
-                .any { it.kind == BattleActionKind.USE_MOVE })
+            // Its only move is out of PP: Struggle is all that is left.
+            assertEquals(setOf("struggle"), PublicFutureActionFactory.actions(outcome.state, BattleSide.ALLY, catalog, after)
+                .filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.toSet())
         }
     }
 

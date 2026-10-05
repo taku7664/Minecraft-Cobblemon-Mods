@@ -434,7 +434,38 @@ internal object PublicFutureActionFactory {
                 tags = setOf("public_lookahead"),
             )
         }
-        return moves + unknown + switches
+        // With no move it can use (a Choice lock on a spent move, PP gone, everything disabled) Showdown offers
+        // Struggle. A Pokemon with no move seen at all is not one: nothing about its moves is known. Without it a doubles side with such a slot had no joint action at all.
+        val struggle = if (moves.isEmpty() && unknown.isEmpty() && chargingMoveId == null && (knownOptions + hypotheses).isNotEmpty()) moveTargetVariants(state, side, actorSlot, BattleMoveTargetPattern.SELECTED_OPPONENT)
+            .firstOrNull().let { listOf(struggle(side, active, it.orEmpty())) } else emptyList()
+        return moves + unknown + struggle + switches
+    }
+
+    private fun struggle(side: BattleSide, active: BattlePokemonStateView, targets: List<BattleTargetSlot>): BattleActionCandidate {
+        val slot = requireNotNull(active.activeSlot)
+        return BattleActionCandidate(
+            actionId = "lookahead:${side.name.lowercase()}:${active.battlePokemonId}:move:$STRUGGLE",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = slot,
+            moveSlot = 0,
+            moveId = STRUGGLE,
+            targets = targets,
+            moveDetails = BattleMoveCandidateView(
+                // Typeless: it hits Ghost types and gets no type bonus.
+                typeId = "typeless",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                power = 50.0,
+                accuracy = 100.0,
+                priority = 0,
+                currentPp = 1,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+                effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(
+                    BattleMoveEffectView(BattleMoveEffectKind.STRUGGLE_RECOIL, BattleMoveEffectTarget.USER, 1.0,
+                        fractionRange = BattleFractionRange(0.25, 0.25)),
+                ), scriptedBehavior = false, mechanicFlags = setOf("contact")),
+            ),
+            tags = setOf("public_lookahead"),
+        )
     }
 
     private data class FutureMoveOption(
@@ -525,6 +556,7 @@ internal object PublicFutureActionFactory {
         "inferred_opponent_move" in tags || "hypothetical_public_move" in tags
 
     private val CHOICE_ITEMS = setOf("choiceband", "choicespecs", "choicescarf")
+    private const val STRUGGLE = "struggle"
     private val FIRST_ENTRY_ONLY_MOVES = setOf("fakeout", "firstimpression", "matblock")
     /** Attacker abilities that hit through a type or ability immunity. */
     private val IMMUNITY_PIERCING_ABILITIES = setOf("scrappy", "mindseye", "moldbreaker", "teravolt", "turboblaze")

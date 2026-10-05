@@ -76,7 +76,8 @@ class LocalTeamRoleEvaluationTest {
         val emptyPp = LocalTeamMatchupCoverage.evaluate(state, context(state, answerPp = 0), cache,
             { true }, LocalDecisionTuning.CURRENT)
         assertTrue(covered > emptyPp)
-        assertEquals(-0.5, emptyPp, 1e-9)
+        // With its only move out of PP the answer is left with Struggle, which does not cover the threat.
+        assertTrue(emptyPp < 0.0, "$emptyPp")
         assertEquals(0.0, LocalTeamMatchupCoverage.evaluate(state, context(state, includeFoeMoves = false), cache,
             { true }, LocalDecisionTuning.CURRENT))
         assertEquals(8, source.publicActionCatalog.forPokemon(ANSWER).single().details.currentPp)

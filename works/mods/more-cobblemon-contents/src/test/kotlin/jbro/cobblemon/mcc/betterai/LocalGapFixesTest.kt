@@ -155,6 +155,23 @@ class LocalGapFixesTest {
     }
 
     @Test
+    fun `G-609 a Choice lock on a spent move leaves Struggle, not no action at all`() {
+        val specs = mon(BattleSide.OPPONENT, 0, "dragon", item = "choicespecs")
+        val state = state(listOf(mon(BattleSide.ALLY, 0, "normal"), specs))
+        val draco = attack("dracometeor", "dragon", special = true, power = 130.0)
+        val fire = attack("fireblast", "fire", special = true, power = 110.0)
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(specs.battlePokemonId, listOf(
+            BattlePublicMoveOptionView("cobblemon:dracometeor", draco.moveDetails!!, BattlePublicMoveKnowledge.PUBLICLY_REVEALED),
+            BattlePublicMoveOptionView("cobblemon:fireblast", fire.moveDetails!!, BattlePublicMoveKnowledge.PUBLICLY_REVEALED),
+        ), moveSetComplete = true)))
+        val history = RecursiveActionHistory(lastMoveByPokemon = mapOf(specs.battlePokemonId to "cobblemon:dracometeor"),
+            moveUses = mapOf(jbro.cobblemon.mcc.betterai.state.RecursiveMoveUseKey(specs.battlePokemonId, "cobblemon:dracometeor") to 10))
+        val actions = PublicFutureActionFactory.primitiveActionsForPokemon(state, BattleSide.OPPONENT, specs.battlePokemonId, catalog, history)
+        assertEquals(listOf("struggle"), actions.filter { it.kind == BattleActionKind.USE_MOVE }.map { it.moveId })
+        assertEquals(listOf(BattleTargetSlot(BattleSide.ALLY, 0)), actions.single().targets)
+    }
+
+    @Test
     fun `G-102 Fake Out makes a slower target lose its move`() {
         val fast = mon(BattleSide.ALLY, 0, "normal", speed = 150)
         val slow = mon(BattleSide.OPPONENT, 0, "normal", speed = 50)
