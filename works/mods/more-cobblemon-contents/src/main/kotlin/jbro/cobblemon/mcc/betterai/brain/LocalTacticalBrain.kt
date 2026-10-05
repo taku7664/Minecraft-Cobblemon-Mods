@@ -277,6 +277,7 @@ internal class LocalTacticalBrain(
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
                 ruleExclusions = if (authoritativeSimulationScores) emptyMap() else ruleExclusions(ranked),
+                sacrificeSwitchIds = if (authoritativeSimulationScores) emptySet() else switchJudgement.sacrifices,
                 tuning = tuning,
                 authoritativeSimulationScores = authoritativeSimulationScores,
             )

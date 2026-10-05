@@ -40,7 +40,12 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * Adjustments are in the ranking's score units and are added after the search; the search owns the rest.
  */
 internal object LocalSwitchRules {
-    data class Judgement(val exclusions: Map<String, String>, val adjustments: Map<String, Double>) {
+    data class Judgement(
+        val exclusions: Map<String, String>,
+        val adjustments: Map<String, Double>,
+        /** Switches that send a worthless Pokemon in to take the hit for a doomed, valuable one. */
+        val sacrifices: Set<String> = emptySet(),
+    ) {
         companion object {
             val NONE = Judgement(emptyMap(), emptyMap())
         }
@@ -55,6 +60,7 @@ internal object LocalSwitchRules {
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
+        val sacrifices = linkedSetOf<String>()
         // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
         val retreatCredits = HashMap<java.util.UUID, Double>()
         fun retreats(pokemon: BattlePokemonStateView): Double = retreatCredits.getOrPut(pokemon.battlePokemonId) {
@@ -87,6 +93,7 @@ internal object LocalSwitchRules {
                 }
                 val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
+                if (verdict.sacrifice) sacrifices += candidate.actionId
                 adjustment += verdict.adjustment
             }
             if (adjustment != 0.0) adjustments[candidate.actionId] = adjustment
@@ -100,10 +107,10 @@ internal object LocalSwitchRules {
                 adjustments.merge(candidate.actionId, values.sumOf { (it - mean) * SCORE_SCALE }, Double::plus)
             }
         }
-        return Judgement(exclusions, adjustments)
+        return Judgement(exclusions, adjustments, sacrifices)
     }
 
-    private class Verdict(val exclusion: String?, val adjustment: Double)
+    private class Verdict(val exclusion: String?, val adjustment: Double, val sacrifice: Boolean = false)
 
     private fun voluntary(
         incoming: BattlePokemonStateView,
@@ -136,7 +143,7 @@ internal object LocalSwitchRules {
             if (freeEntryGain >= FREE_ENTRY_MARGIN) adjustment -= freeEntryGain * SCORE_SCALE
         }
         val exclusion = if (survival < SURVIVAL_PASS && !sacrifice) SWITCH_IN_DIES else null
-        return Verdict(exclusion, adjustment)
+        return Verdict(exclusion, adjustment, sacrifice)
     }
 
     /**

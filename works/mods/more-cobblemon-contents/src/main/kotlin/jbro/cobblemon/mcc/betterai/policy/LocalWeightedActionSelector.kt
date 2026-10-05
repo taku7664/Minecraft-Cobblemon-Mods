@@ -47,6 +47,8 @@ internal data class LocalActionMixingContext(
      * ([jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage]).
      */
     val ruleExclusions: Map<String, String> = emptyMap(),
+    /** Switches taking a hit for a doomed partner on purpose: keeping the incoming Pokemon's HP is not their point. */
+    val sacrificeSwitchIds: Set<String> = emptySet(),
     val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     /** The deciding tier's `decisionRegretBand`, multiplied into the regret band. One is shipped. */
     val decisionRegretBand: Double = 1.0,
@@ -124,6 +126,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     rank === best,
                     credibleStayAlternativeExists,
                     stayRetention,
+                    rank.outcome.candidate.actionId in context.sacrificeSwitchIds,
                     context.memory,
                     context.riskBudget,
                     context.alreadyBoostedSetupActionIds,
@@ -302,6 +305,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
         stayRetention: StayRetention?,
+        sacrifice: Boolean,
         memory: BattleTacticalMemoryView,
         riskBudget: Double,
         alreadyBoostedSetupActionIds: Set<String>,
@@ -324,7 +328,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
         rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
         rank.outcome.candidate.actionId in ruleExclusions -> ruleExclusions.getValue(rank.outcome.candidate.actionId)
-        else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, stayRetention, riskBudget, memory)
+        else -> (if (sacrifice) null else switchExclusion(rank, bestRanked, credibleStayAlternativeExists, stayRetention, riskBudget, memory))
             ?: if (selfSetupHasFuture(
                     rank,
                     bestRanked,
