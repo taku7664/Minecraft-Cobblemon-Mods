@@ -168,9 +168,10 @@ internal data class LocalDecisionTuning(
     val onePlySwitchPosition: Boolean = false,
     /**
      * Doubles: knockout credit two components put on one opponent overlaps by their partial and spread chances too,
-     * read as independent (Codex 5c8b13c5); off, only duplicate certain credit is removed. Off until a duel measures it.
+     * read as independent (Codex 5c8b13c5); off, only duplicate certain credit is removed. Doubles duels 39 pairs about
+     * 0.56 for it, not yet significant; on by the user's decision (2026-10-05).
      */
-    val jointKnockoutCredit: Boolean = false,
+    val jointKnockoutCredit: Boolean = true,
     /**
      * Doubles replies by slot (Codex e7df6328, 39b668f6): each unknown reply slot carries the uncertainty reserve, and a
      * revealed slot keeps its attack pressure while its partner's options are unknown. Off until a duel measures it.

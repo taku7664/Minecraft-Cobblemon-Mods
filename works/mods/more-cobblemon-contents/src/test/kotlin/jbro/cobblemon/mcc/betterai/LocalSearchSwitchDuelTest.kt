@@ -145,7 +145,7 @@ class LocalSearchSwitchDuelTest {
             "simultaneous-half-singles" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.SINGLE),
             "oneply-switch-singles" to Duel(CURRENT.copy(id = "oneply-switch", onePlySwitchPosition = true), CURRENT, BattleFormat.SINGLE),
             "oneply-switch" to Duel(CURRENT.copy(id = "oneply-switch", onePlySwitchPosition = true), CURRENT, BattleFormat.DOUBLE),
-            "joint-knockout" to Duel(CURRENT.copy(id = "joint-knockout", jointKnockoutCredit = true), CURRENT, BattleFormat.DOUBLE),
+            "joint-knockout" to Duel(CURRENT, CURRENT.copy(id = "no-joint-knockout", jointKnockoutCredit = false), BattleFormat.DOUBLE),
             "slot-replies" to Duel(CURRENT.copy(id = "slot-replies", doublesSlotReplies = true), CURRENT, BattleFormat.DOUBLE),
             "evolving-matchups-singles" to Duel(CURRENT.copy(id = "evolving-matchups", evolvingMatchups = true), CURRENT, BattleFormat.SINGLE),
             "joint-responses" to Duel(CURRENT.copy(id = "joint-responses", doublesJointResponses = true), CURRENT, BattleFormat.DOUBLE),
