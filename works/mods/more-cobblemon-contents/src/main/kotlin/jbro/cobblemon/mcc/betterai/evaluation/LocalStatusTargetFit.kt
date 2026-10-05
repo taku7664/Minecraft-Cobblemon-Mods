@@ -61,9 +61,12 @@ internal object LocalStatusTargetFit {
 
     /** 0..1: how much of the target's offence is physical, from public stats and revealed moves. */
     private fun physicalShare(target: BattlePokemonStateView, context: BattleDecisionContext): Double {
+        // 공격과 특공을 그냥 비율로 나누면 공격 100, 특공 150인 가이오가도 40%는 물리로 봐서, 화상의 공격 반감
+        // 가치를 너무 많이 남겼다(난천전 기라티나가 가이오가에게 도깨비불). 더 높은 쪽 능력치로 공격하니
+        // 네제곱으로 차이를 키운다: 100 대 150이면 물리 14%, 같으면 50%.
         val statShare = target.combatStats?.let { stats ->
-            val attack = midpoint(stats.attack)
-            val special = midpoint(stats.specialAttack)
+            val attack = midpoint(stats.attack).let { it * it * it * it }
+            val special = midpoint(stats.specialAttack).let { it * it * it * it }
             if (attack + special > 0.0) attack / (attack + special) else null
         }
         val damaging = context.publicActionCatalog.forPokemon(target.battlePokemonId).filter {
