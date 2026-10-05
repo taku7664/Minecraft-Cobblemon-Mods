@@ -114,11 +114,11 @@ DIMENSIONS = {
 # Only the biome and the dimension change; League Challenge sets wild levels from the player's cap anyway.
 # Legendaries, Mythicals, Ultra Beasts and paradoxes never come along.
 BIOME_TAGS = {
-    "ultra_deep_sea": ["is_spooky", "is_deep_dark", "is_end"],
+    "ultra_deep_sea": ["is_spooky", "is_deep_dark", "is_end", "is_mushroom", "is_dripstone", "is_magical", "is_freezing"],
     "ultra_desert": ["is_desert", "is_arid", "is_badlands"],
-    "ultra_jungle": ["is_jungle", "is_lush", "is_floral", "is_tropical_island"],
+    "ultra_jungle": ["is_jungle", "is_floral"],
     "ultra_forest": ["is_forest", "is_taiga", "is_magical", "is_spooky"],
-    "ultra_crater": ["is_volcanic", "is_thermal", "is_mountain", "is_peak"],
+    "ultra_crater": ["is_volcanic", "is_thermal", "is_mountain", "is_peak", "is_hills"],
     "ultra_plant": ["is_plains", "is_grassland", "is_temperate", "is_sky"],
     "ancient_sea": ["is_ocean", "is_warm_ocean", "is_lukewarm_ocean", "is_deep_ocean", "is_coast", "is_beach", "is_tropical_island"],
     "ancient_jungle": ["is_jungle", "is_swamp", "is_lush", "is_bamboo", "is_forest", "is_tropical_island"],
