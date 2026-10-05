@@ -110,7 +110,7 @@ internal object Cobblemon173LeadChoice {
             level = pokemon.level,
             hpFraction = if (battlePokemon.maxHealth <= 0) 0.0 else
                 (battlePokemon.health.toDouble() / battlePokemon.maxHealth).coerceIn(0.0, 1.0),
-            statusId = pokemon.status?.status?.name?.toString(),
+            statusId = cobblemonStatusToShowdown(pokemon.status?.status?.name?.toString()),
             statStages = emptyMap(),
             knownMoveIds = battlePokemon.moveSet.getMoves().mapTo(linkedSetOf()) { it.name },
             knownAbilityId = pokemon.ability.name,
