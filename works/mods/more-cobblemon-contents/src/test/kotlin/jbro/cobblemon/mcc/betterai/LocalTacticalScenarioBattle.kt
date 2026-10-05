@@ -413,7 +413,13 @@ internal object LocalTacticalScenarioBattle {
             // but do not subtract the battle's historical uses a second time.
             val actions = PublicFutureActionFactory.actions(view, BattleSide.ALLY, catalog,
                 perspectiveHistory(side).copy(moveUses = emptyMap()))
-            require(actions.isNotEmpty()) { "No legal actions for $side on turn ${state.turn}" }
+            require(actions.isNotEmpty()) {
+                "No legal actions for $side on turn ${state.turn}: " + view.pokemon.filter { it.side == BattleSide.ALLY }.joinToString(" | ") {
+                    "${it.speciesId} slot=${it.activeSlot} hp=${"%.2f".format(it.hpFraction)} fainted=${it.fainted} status=${it.statusId} " +
+                        "volatiles=${it.knownVolatileEffectIds} constraints=${it.actionConstraints.let { c -> "taunt=${c.taunted} encore=${c.encoreMoveId} trapped=${c.trapped} recharge=${c.mustRecharge}" }} " +
+                        "pp=${catalog.forPokemon(it.battlePokemonId).map { o -> "${o.moveId}:${o.details.currentPp}" }}"
+                } + " history=" + perspectiveHistory(side)
+            }
             if (!terastallization || side in terastallized) return actions
             // As the live battle offers it: each move again with the mechanic, for the one in front with a Tera type.
             val teraTypes = view.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }

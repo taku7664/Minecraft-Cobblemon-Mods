@@ -62,12 +62,18 @@ class LocalSearchSwitchDuelTest {
             val challengerDifficulty = duel.challengerDifficulty ?: difficulty
             val defenderDifficulty = duel.defenderDifficulty ?: difficulty
             val policy = duel.defenderPolicy
-            val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender,
-                challengerDifficulty, defenderDifficulty, lookaheadBudget = UNLIMITED,
-                policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT to it) }.orEmpty())
-            val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger,
-                defenderDifficulty, challengerDifficulty, lookaheadBudget = UNLIMITED,
-                policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY to it) }.orEmpty())
+            // A battle the harness cannot continue is a finding, not the end of the duel: report it and skip the pair.
+            val (asCycle, asOffense) = try {
+                LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender,
+                    challengerDifficulty, defenderDifficulty, lookaheadBudget = budgetFor(duel.format),
+                    policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT to it) }.orEmpty()) to
+                LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger,
+                    defenderDifficulty, challengerDifficulty, lookaheadBudget = budgetFor(duel.format),
+                    policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY to it) }.orEmpty())
+            } catch (error: IllegalArgumentException) {
+                println("DUEL_ERROR $name ${definition.name}: ${error.message}")
+                continue
+            }
             // The challenger's HP lead at the end of each game.
             val leads = listOf(asCycle.cycleRemainingHp - asCycle.offenseRemainingHp,
                 asOffense.offenseRemainingHp - asOffense.cycleRemainingHp)
@@ -109,6 +115,16 @@ class LocalSearchSwitchDuelTest {
         val UNPREDICTED = CURRENT.copy(id = "unpredicted-switches", scoredSwitchIntent = false, predictedSwitchShare = 0.0)
         val LEAF_MATCHUPS = CURRENT.copy(id = "leaf-matchups", positionalTurnDeltas = true,
             leafMatchupTeamWeight = 1.0, leafMatchupFieldWeight = 0.5)
+        /**
+         * Doubles has no node ceiling in the product (LocalLookaheadBudgetPolicy.forFormat); only its clock ends a
+         * search, so a doubles duel keeps the shipped clock (aiengine.duelDoublesMillis moves it). Without one a
+         * doubles decision never finished and filled the heap.
+         */
+        fun budgetFor(format: BattleFormat): (BattleTrainerTier) -> LocalLookaheadBudget =
+            if (format != BattleFormat.DOUBLE) UNLIMITED else { tier ->
+                LocalLookaheadBudgetPolicy.forTier(tier).copy(timeMillis =
+                    System.getProperty("aiengine.duelDoublesMillis")?.toLongOrNull() ?: LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS)
+            }
         val UNLIMITED: (BattleTrainerTier) -> LocalLookaheadBudget = { tier ->
             // A doubles search with no node limit at all fills any heap with its memo, so the ceiling stays, far
             // above the shipped one; aiengine.duelNodes moves it.
