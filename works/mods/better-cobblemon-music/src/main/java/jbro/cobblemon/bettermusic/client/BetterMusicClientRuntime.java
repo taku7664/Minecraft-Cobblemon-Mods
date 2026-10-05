@@ -18,6 +18,7 @@ import jbro.cobblemon.bettermusic.playback.MusicPlaybackCoordinator;
 import jbro.cobblemon.bettermusic.playback.PlaylistNavigator;
 import jbro.cobblemon.bettermusic.playback.PlayablePlaylistResolver;
 import jbro.cobblemon.bettermusic.api.PendingBattleMusic;
+import jbro.cobblemon.bettermusic.battle.BattleMusicContext;
 import jbro.cobblemon.bettermusic.api.ScreenMusicProviders;
 import jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -54,6 +55,7 @@ public final class BetterMusicClientRuntime {
     private AudioEffectsSettings audioEffects = AudioEffectsSettings.defaults();
     private String lastDesiredPlaylistId;
     private java.util.UUID lastPendingBattleId;
+    private String lastLoggedBattleSelection;
 
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
         this.configManager = java.util.Objects.requireNonNull(configManager, "configManager");
@@ -168,7 +170,8 @@ public final class BetterMusicClientRuntime {
                 playlistsById.put(selection.id(), selection.playlist());
                 return selection.id();
             });
-        Optional<String> battleCue = battleSampler.sample(client)
+        Optional<BattleMusicContext> battleContext = battleSampler.sample(client);
+        Optional<String> battleCue = battleContext
             .map(battleResolver::select)
             .map(selection -> {
                 playlistsById.put(selection.id(), selection.playlist());
@@ -178,6 +181,7 @@ public final class BetterMusicClientRuntime {
                 });
                 return selection.id();
             });
+        logBattleSelection(battleContext, battleCue);
         Optional<String> screenCue = screenResolver.select(hasWorld
             ? ScreenMusicProviders.global().resolveKeys() : MinecraftMenuMusicProvider.keys(client))
             .map(selection -> {
@@ -197,6 +201,18 @@ public final class BetterMusicClientRuntime {
                 );
                 suppressOriginalMusic = true;
             });
+        }
+    }
+
+    // Which content keys a battle brought and what they chose, once per change, so a wrong track can be traced.
+    private void logBattleSelection(Optional<BattleMusicContext> context, Optional<String> cue) {
+        String line = context.map(value -> value.type() + " keys=" + value.contentKeys() + " -> " + cue.orElse("none"))
+            .orElse(null);
+        if (!java.util.Objects.equals(line, lastLoggedBattleSelection)) {
+            lastLoggedBattleSelection = line;
+            if (line != null) {
+                logger.info("Battle music: {}", line);
+            }
         }
     }
 
