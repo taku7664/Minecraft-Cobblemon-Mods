@@ -1,0 +1,687 @@
+{
+  "enabled": true,
+  "neededInstalledMods": [],
+  "neededUninstalledMods": [],
+  "spawns": [
+    {
+      "id": "cobblemon_dimensions-future-future_sea-chinchou",
+      "pokemon": "chinchou",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_sea-tynamo",
+      "pokemon": "tynamo",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_sea-lanturn",
+      "pokemon": "lanturn",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "uncommon",
+      "level": "40-50",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_sea-eelektrik",
+      "pokemon": "eelektrik",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-magnemite",
+      "pokemon": "magnemite",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-klink",
+      "pokemon": "klink",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-aron",
+      "pokemon": "aron",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-bronzor",
+      "pokemon": "bronzor",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-lairon",
+      "pokemon": "lairon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "40-48",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-magneton",
+      "pokemon": "magneton",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-klang",
+      "pokemon": "klang",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_steel_peaks-beldum",
+      "pokemon": "beldum",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "35-42",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-carbink",
+      "pokemon": "carbink",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-nosepass",
+      "pokemon": "nosepass",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-glimmet",
+      "pokemon": "glimmet",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-sableye",
+      "pokemon": "sableye",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-bronzong",
+      "pokemon": "bronzong",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "45-52",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-probopass",
+      "pokemon": "probopass",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "45-52",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_crystal-glimmora",
+      "pokemon": "glimmora",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "48-54",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-joltik",
+      "pokemon": "joltik",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-elgyem",
+      "pokemon": "elgyem",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-golett",
+      "pokemon": "golett",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-elekid",
+      "pokemon": "elekid",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-galvantula",
+      "pokemon": "galvantula",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-beheeyem",
+      "pokemon": "beheeyem",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_neon_forest-golurk",
+      "pokemon": "golurk",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "45-52",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-voltorb",
+      "pokemon": "voltorb",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-magnemite",
+      "pokemon": "magnemite",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-varoom",
+      "pokemon": "varoom",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-tinkatink",
+      "pokemon": "tinkatink",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-porygon",
+      "pokemon": "porygon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "38-46",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-electabuzz",
+      "pokemon": "electabuzz",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "42-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-porygon2",
+      "pokemon": "porygon2",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "45-52",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-future-future_flats-rotom",
+      "pokemon": "rotom",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "45-52",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    }
+  ]
+}

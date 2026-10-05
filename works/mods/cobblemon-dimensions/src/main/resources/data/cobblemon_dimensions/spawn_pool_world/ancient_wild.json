@@ -1,0 +1,727 @@
+{
+  "enabled": true,
+  "neededInstalledMods": [],
+  "neededUninstalledMods": [],
+  "spawns": [
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-omanyte",
+      "pokemon": "omanyte",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-kabuto",
+      "pokemon": "kabuto",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-tirtouga",
+      "pokemon": "tirtouga",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "surface",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-lileep",
+      "pokemon": "lileep",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-relicanth",
+      "pokemon": "relicanth",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "rare",
+      "level": "40-50",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-omastar",
+      "pokemon": "omastar",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "rare",
+      "level": "45-52",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_sea-kabutops",
+      "pokemon": "kabutops",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "submerged",
+      "bucket": "rare",
+      "level": "45-52",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-yanma",
+      "pokemon": "yanma",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-sewaddle",
+      "pokemon": "sewaddle",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-carnivine",
+      "pokemon": "carnivine",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-45",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-tropius",
+      "pokemon": "tropius",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-48",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-archen",
+      "pokemon": "archen",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "40-48",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-tyrunt",
+      "pokemon": "tyrunt",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "40-48",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_jungle-aerodactyl",
+      "pokemon": "aerodactyl",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "45-52",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-anorith",
+      "pokemon": "anorith",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-cubone",
+      "pokemon": "cubone",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-sandshrew",
+      "pokemon": "sandshrew",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-cranidos",
+      "pokemon": "cranidos",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-shieldon",
+      "pokemon": "shieldon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-armaldo",
+      "pokemon": "armaldo",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "45-52",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_desert-gible",
+      "pokemon": "gible",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "35-42",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-slugma",
+      "pokemon": "slugma",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-numel",
+      "pokemon": "numel",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "common",
+      "level": "35-45",
+      "weight": 10.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-heatmor",
+      "pokemon": "heatmor",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-48",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-torkoal",
+      "pokemon": "torkoal",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-48",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-larvitar",
+      "pokemon": "larvitar",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "35-42",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-larvesta",
+      "pokemon": "larvesta",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "38-45",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_volcano-aerodactyl",
+      "pokemon": "aerodactyl",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "45-52",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-cyndaquil",
+      "pokemon": "cyndaquil",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "35-42",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-archen",
+      "pokemon": "archen",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-tyrunt",
+      "pokemon": "tyrunt",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-amaura",
+      "pokemon": "amaura",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "uncommon",
+      "level": "38-46",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-cranidos",
+      "pokemon": "cranidos",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "40-48",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-shieldon",
+      "pokemon": "shieldon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "rare",
+      "level": "40-48",
+      "weight": 2.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-rampardos",
+      "pokemon": "rampardos",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "48-54",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-ancient-ancient_grassland-bastiodon",
+      "pokemon": "bastiodon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "48-54",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    }
+  ]
+}
