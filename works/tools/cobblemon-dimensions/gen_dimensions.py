@@ -139,6 +139,20 @@ ULTRA_BEASTS = [("nihilego", "ultra_deep_sea", 60), ("buzzwole", "ultra_jungle",
                 ("pheromosa", "ultra_desert", 60), ("guzzlord", "ultra_desert", 60), ("stakataka", "ultra_desert", 60),
                 ("xurkitree", "ultra_plant", 60), ("celesteela", "ultra_crater", 60), ("kartana", "ultra_forest", 60),
                 ("blacephalon", "ultra_forest", 60)]
+# The fourteen paradoxes that are not Legends: free to catch like any wild Pokemon (the server announces them), each in
+# one biome of its own dimension. Their weight is about a sixth of a typical ultra-rare spawn here (median 30).
+# Koraidon, Miraidon and the six Legend paradoxes spawn from jbro-policy's Legend pool instead.
+PARADOX_WEIGHT = 5.0
+PARADOXES = [
+    ("greattusk", "ancient", "ancient_desert", G, None), ("sandyshocks", "ancient", "ancient_desert", G, None),
+    ("brutebonnet", "ancient", "ancient_jungle", G, None), ("fluttermane", "ancient", "ancient_jungle", G, "night"),
+    ("screamtail", "ancient", "ancient_grassland", G, None), ("slitherwing", "ancient", "ancient_volcano", G, None),
+    ("roaringmoon", "ancient", "ancient_volcano", G, "night"),
+    ("irontreads", "future", "future_steel_peaks", G, None), ("ironthorns", "future", "future_steel_peaks", G, None),
+    ("ironbundle", "future", "future_sea", SURF, None), ("ironhands", "future", "future_flats", G, None),
+    ("ironmoth", "future", "future_crystal", G, None), ("ironjugulis", "future", "future_neon_forest", G, "night"),
+    ("ironvaliant", "future", "future_neon_forest", G, None),
+]
 BUCKET_KO = {"common": "흔함", "uncommon": "가끔", "rare": "드묾", "ultra-rare": "아주 드묾"}
 
 
@@ -269,6 +283,18 @@ def main():
         write(DATA / f"spawn_pool_world/{dim_name}_wild.json",
               {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": wild})
 
+    paradoxes = []
+    for species, dim_name, biome, position, time in PARADOXES:
+        entry = {"id": f"{NS}-paradox-{species}", "pokemon": species, "presets": ["water" if position == SURF else "natural"],
+                 "type": "pokemon", "spawnablePositionType": position, "bucket": "ultra-rare", "level": "50-60",
+                 "weight": PARADOX_WEIGHT,
+                 "condition": {"dimensions": [f"{NS}:{dim_name}"], "biomes": [f"{NS}:{biome}"]}}
+        if time:
+            entry["condition"]["timeRange"] = time
+        paradoxes.append(entry)
+    write(DATA / "spawn_pool_world/paradoxes.json",
+          {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": paradoxes})
+
     write(DATA / "spawn_pool_world/ultra_beasts.json", {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [],
           "spawns": [spawn(s, s, "ultra-rare", str(lv), G, "ultra_space", b) for s, b, lv in ULTRA_BEASTS]})
 
@@ -287,6 +313,14 @@ def main():
             lines += [f"| {biome_ko[f'biome.{NS}.{b}']} | {ko(s)} | 아주 드묾 |" for s, b, lv in ULTRA_BEASTS]
             lines += ["", "아고용은 베베놈 진화로만 얻습니다.", ""]
         order = list(BUCKET_KO)
+        if dim_name != "ultra_space":
+            lines += ["### 패러독스", "",
+                      "아주 드묾 등급 안에서도 일반 포켓몬의 약 6분의 1 확률입니다. 전설이 아니라서 몇 마리든 잡을 수 있고, 나타나면 서버에 알림이 뜹니다. "
+                      "코라이돈·미라이돈과 전설 패러독스 6종은 `jbro-policy`의 전설 스폰(`docs/LEGENDARY_SPAWNS.md`)을 따릅니다.", "",
+                      "| 바이옴 | 포켓몬 | 조건 |", "|---|---|---|"]
+            lines += [f"| {biome_ko[f'biome.{NS}.{b}']} | {ko(sp)} | {'밤' if t == 'night' else ('물 위' if pos == SURF else '')} |"
+                      for sp, d, b, pos, t in PARADOXES if d == dim_name]
+            lines.append("")
         for biome in dimension["biomes"]:
             tags = ", ".join(f"`{t}`" for t in BIOME_TAGS[biome])
             best = {}

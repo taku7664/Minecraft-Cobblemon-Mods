@@ -1,0 +1,290 @@
+{
+  "enabled": true,
+  "neededInstalledMods": [],
+  "neededUninstalledMods": [],
+  "spawns": [
+    {
+      "id": "cobblemon_dimensions-paradox-greattusk",
+      "pokemon": "greattusk",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-sandyshocks",
+      "pokemon": "sandyshocks",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-brutebonnet",
+      "pokemon": "brutebonnet",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-fluttermane",
+      "pokemon": "fluttermane",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_jungle"
+        ],
+        "timeRange": "night"
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-screamtail",
+      "pokemon": "screamtail",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_grassland"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-slitherwing",
+      "pokemon": "slitherwing",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-roaringmoon",
+      "pokemon": "roaringmoon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ancient"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ancient_volcano"
+        ],
+        "timeRange": "night"
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-irontreads",
+      "pokemon": "irontreads",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironthorns",
+      "pokemon": "ironthorns",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_steel_peaks"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironbundle",
+      "pokemon": "ironbundle",
+      "presets": [
+        "water"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "surface",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironhands",
+      "pokemon": "ironhands",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_flats"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironmoth",
+      "pokemon": "ironmoth",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_crystal"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironjugulis",
+      "pokemon": "ironjugulis",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ],
+        "timeRange": "night"
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-paradox-ironvaliant",
+      "pokemon": "ironvaliant",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "50-60",
+      "weight": 5.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:future"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:future_neon_forest"
+        ]
+      }
+    }
+  ]
+}
