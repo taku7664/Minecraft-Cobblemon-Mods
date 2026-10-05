@@ -13,9 +13,16 @@ class LegendCatalogTest {
         .getAsJsonArray("spawns").map { it.asJsonObject.get("id").asString.removePrefix("jbro-legendary-") }.toSet()
 
     @Test
-    fun `every Legend spawns in the wild except the paradoxes, which keep only their capture rank`() {
-        // Paradox spawns are off for now (2026-10-06); the catalog still gates catching one met another way.
-        assertEquals(spawned, LegendCatalog.byId.filterValues { it.tier != LegendTier.PARADOX }.keys)
+    fun `every Legend spawns in the wild`() {
+        assertEquals(spawned, LegendCatalog.byId.keys)
+    }
+
+    @Test
+    fun `Koraidon and Miraidon answer any paradox, and the Legend paradoxes need them`() {
+        for (species in listOf("koraidon", "miraidon")) assertEquals(LegendCatalog.PARADOXES, LegendCatalog[species]!!.entry)
+        assertEquals(20, LegendCatalog.PARADOXES.toSet().size)
+        assertEquals(listOf("koraidon"), LegendCatalog["walkingwake"]!!.entry)
+        assertEquals(listOf("miraidon"), LegendCatalog["ironcrown"]!!.entry)
     }
 
     @Test
@@ -29,16 +36,19 @@ class LegendCatalogTest {
     }
 
     @Test
-    fun `entry Pokemon can be met without the Legend that needs them`() {
-        for (legend in LegendCatalog.byId.values) {
-            val seen = mutableSetOf(legend.species)
-            val queue = ArrayDeque(legend.entry)
-            while (queue.isNotEmpty()) {
-                val next = queue.removeFirst()
-                assertFalse(next == legend.species) { "${legend.species} needs itself through its entry chain" }
-                if (seen.add(next)) LegendCatalog[next]?.let { queue.addAll(it.entry) }
+    fun `every Legend can be reached from Pokemon that are not Legends`() {
+        // A Pokemon outside the catalog is met freely; a Legend once one of its entry Pokemon (all, for entryAll) is.
+        // Entry loops are fine while some way round them is free: Koraidon takes any paradox, Walking Wake Koraidon.
+        val reached = mutableSetOf<String>()
+        fun met(species: String) = LegendCatalog[species] == null || species in reached
+        do {
+            val before = reached.size
+            for (legend in LegendCatalog.byId.values) {
+                val open = legend.entry.isEmpty() || if (legend.entryAll) legend.entry.all(::met) else legend.entry.any(::met)
+                if (open) reached += legend.id
             }
-        }
+        } while (reached.size > before)
+        assertEquals(LegendCatalog.byId.keys, reached)
     }
 
     @Test

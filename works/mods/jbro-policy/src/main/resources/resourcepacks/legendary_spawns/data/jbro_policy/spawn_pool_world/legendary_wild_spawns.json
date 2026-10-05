@@ -521,6 +521,26 @@
             }
         },
         {
+            "id": "jbro-legendary-gougingfire",
+            "pokemon": "gougingfire",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:ancient"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:ancient_volcano"
+                ]
+            }
+        },
+        {
             "id": "jbro-legendary-groudon",
             "pokemon": "groudon",
             "presets": [
@@ -604,6 +624,66 @@
             }
         },
         {
+            "id": "jbro-legendary-ironboulder",
+            "pokemon": "ironboulder",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:future"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:future_crystal"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ironcrown",
+            "pokemon": "ironcrown",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:future"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:future_steel_peaks"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-ironleaves",
+            "pokemon": "ironleaves",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:future"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:future_neon_forest"
+                ]
+            }
+        },
+        {
             "id": "jbro-legendary-jirachi",
             "pokemon": "jirachi",
             "presets": [
@@ -657,19 +737,12 @@
             "level": "68-72",
             "weight": 0.15,
             "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:ancient"
+                ],
                 "biomes": [
-                    "minecraft:badlands",
-                    "minecraft:eroded_badlands",
-                    "minecraft:savanna",
-                    "minecraft:savanna_plateau",
-                    "#cobblemon:is_savanna",
-                    "#cobblemon:is_plateau",
-                    "#cobblemon:is_mountain"
-                ]
-            },
-            "anticondition": {
-                "biomes": [
-                    "minecraft:meadow"
+                    "cobblemon_dimensions:ancient_grassland",
+                    "cobblemon_dimensions:ancient_desert"
                 ]
             }
         },
@@ -1058,10 +1131,12 @@
             "level": "68-72",
             "weight": 0.15,
             "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:future"
+                ],
                 "biomes": [
-                    "minecraft:windswept_gravelly_hills",
-                    "minecraft:deep_dark",
-                    "#cobblemon:is_deep_dark"
+                    "cobblemon_dimensions:future_flats",
+                    "cobblemon_dimensions:future_steel_peaks"
                 ]
             }
         },
@@ -1255,6 +1330,26 @@
                 ],
                 "canSeeSky": true,
                 "timeRange": "day"
+            }
+        },
+        {
+            "id": "jbro-legendary-ragingbolt",
+            "pokemon": "ragingbolt",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "grounded",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:ancient"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:ancient_grassland"
+                ]
             }
         },
         {
@@ -1906,6 +2001,26 @@
                 "biomes": [
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal"
+                ]
+            }
+        },
+        {
+            "id": "jbro-legendary-walkingwake",
+            "pokemon": "walkingwake",
+            "presets": [
+                "natural"
+            ],
+            "type": "pokemon",
+            "spawnablePositionType": "surface",
+            "bucket": "ultra-rare",
+            "level": "70-80",
+            "weight": 0.15,
+            "condition": {
+                "dimensions": [
+                    "cobblemon_dimensions:ancient"
+                ],
+                "biomes": [
+                    "cobblemon_dimensions:ancient_sea"
                 ]
             }
         },

@@ -4536,43 +4536,102 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드"
+   "고대 차원"
   ],
   "biomes": [
    {
-    "name": "악지",
+    "name": "고대 초원",
     "group": false
    },
    {
-    "name": "침식된 악지",
+    "name": "고대 사막",
     "group": false
-   },
-   {
-    "name": "사바나",
-    "group": false
-   },
-   {
-    "name": "사바나 고원",
-    "group": false
-   },
-   {
-    "name": "사바나",
-    "group": true
-   },
-   {
-    "name": "고원",
-    "group": true
-   },
-   {
-    "name": "산",
-    "group": true
    }
   ],
-  "except": [
-   "목초지"
-  ],
+  "except": [],
   "conditions": [],
-  "entry": [],
+  "entry": [
+   {
+    "id": "greattusk",
+    "name": "위대한엄니"
+   },
+   {
+    "id": "screamtail",
+    "name": "우렁찬꼬리"
+   },
+   {
+    "id": "brutebonnet",
+    "name": "사나운버섯"
+   },
+   {
+    "id": "fluttermane",
+    "name": "날개치는머리"
+   },
+   {
+    "id": "slitherwing",
+    "name": "땅을기는날개"
+   },
+   {
+    "id": "sandyshocks",
+    "name": "모래털가죽"
+   },
+   {
+    "id": "roaringmoon",
+    "name": "고동치는달"
+   },
+   {
+    "id": "walkingwake",
+    "name": "굽이치는물결"
+   },
+   {
+    "id": "gougingfire",
+    "name": "꿰뚫는화염"
+   },
+   {
+    "id": "ragingbolt",
+    "name": "날뛰는우레"
+   },
+   {
+    "id": "irontreads",
+    "name": "무쇠바퀴"
+   },
+   {
+    "id": "ironbundle",
+    "name": "무쇠보따리"
+   },
+   {
+    "id": "ironhands",
+    "name": "무쇠손"
+   },
+   {
+    "id": "ironjugulis",
+    "name": "무쇠머리"
+   },
+   {
+    "id": "ironmoth",
+    "name": "무쇠독나방"
+   },
+   {
+    "id": "ironthorns",
+    "name": "무쇠가시"
+   },
+   {
+    "id": "ironvaliant",
+    "name": "무쇠무인"
+   },
+   {
+    "id": "ironleaves",
+    "name": "무쇠잎새"
+   },
+   {
+    "id": "ironboulder",
+    "name": "무쇠암석"
+   },
+   {
+    "id": "ironcrown",
+    "name": "무쇠감투"
+   }
+  ],
   "entryAll": false,
   "line": "고대의 포효가 울려 퍼집니다! 코라이돈이 (플레이어) 근처에 나타났습니다!"
  },
@@ -4597,25 +4656,102 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드"
+   "미래 차원"
   ],
   "biomes": [
    {
-    "name": "바람이 세찬 자갈투성이 언덕",
+    "name": "미래 평원",
     "group": false
    },
    {
-    "name": "깊은 어둠",
+    "name": "강철 산맥",
     "group": false
-   },
-   {
-    "name": "딥 다크",
-    "group": true
    }
   ],
   "except": [],
   "conditions": [],
-  "entry": [],
+  "entry": [
+   {
+    "id": "greattusk",
+    "name": "위대한엄니"
+   },
+   {
+    "id": "screamtail",
+    "name": "우렁찬꼬리"
+   },
+   {
+    "id": "brutebonnet",
+    "name": "사나운버섯"
+   },
+   {
+    "id": "fluttermane",
+    "name": "날개치는머리"
+   },
+   {
+    "id": "slitherwing",
+    "name": "땅을기는날개"
+   },
+   {
+    "id": "sandyshocks",
+    "name": "모래털가죽"
+   },
+   {
+    "id": "roaringmoon",
+    "name": "고동치는달"
+   },
+   {
+    "id": "walkingwake",
+    "name": "굽이치는물결"
+   },
+   {
+    "id": "gougingfire",
+    "name": "꿰뚫는화염"
+   },
+   {
+    "id": "ragingbolt",
+    "name": "날뛰는우레"
+   },
+   {
+    "id": "irontreads",
+    "name": "무쇠바퀴"
+   },
+   {
+    "id": "ironbundle",
+    "name": "무쇠보따리"
+   },
+   {
+    "id": "ironhands",
+    "name": "무쇠손"
+   },
+   {
+    "id": "ironjugulis",
+    "name": "무쇠머리"
+   },
+   {
+    "id": "ironmoth",
+    "name": "무쇠독나방"
+   },
+   {
+    "id": "ironthorns",
+    "name": "무쇠가시"
+   },
+   {
+    "id": "ironvaliant",
+    "name": "무쇠무인"
+   },
+   {
+    "id": "ironleaves",
+    "name": "무쇠잎새"
+   },
+   {
+    "id": "ironboulder",
+    "name": "무쇠암석"
+   },
+   {
+    "id": "ironcrown",
+    "name": "무쇠감투"
+   }
+  ],
   "entryAll": false,
   "line": "미래의 전류가 번쩍입니다! 미라이돈이 (플레이어) 근처에 나타났습니다!"
  },
@@ -4640,16 +4776,12 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "물 위",
   "dimensions": [
-   "오버월드"
+   "고대 차원"
   ],
   "biomes": [
    {
-    "name": "강",
-    "group": true
-   },
-   {
-    "name": "깊은 바다",
-    "group": true
+    "name": "고대 바다",
+    "group": false
    }
   ],
   "except": [],
@@ -4684,16 +4816,12 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드"
+   "미래 차원"
   ],
   "biomes": [
    {
-    "name": "숲",
-    "group": true
-   },
-   {
-    "name": "벚나무 지형",
-    "group": true
+    "name": "네온 숲",
+    "group": false
    }
   ],
   "except": [],
@@ -4921,17 +5049,12 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드",
-   "네더"
+   "고대 차원"
   ],
   "biomes": [
    {
-    "name": "현무암 지형(네더)",
-    "group": true
-   },
-   {
-    "name": "화산",
-    "group": true
+    "name": "태고의 화산",
+    "group": false
    }
   ],
   "except": [],
@@ -4966,21 +5089,15 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드"
+   "고대 차원"
   ],
   "biomes": [
    {
-    "name": "평원",
-    "group": true
-   },
-   {
-    "name": "사바나",
-    "group": true
+    "name": "고대 초원",
+    "group": false
    }
   ],
-  "except": [
-   "목초지"
-  ],
+  "except": [],
   "conditions": [],
   "entry": [
    {
@@ -5012,17 +5129,12 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드",
-   "엔드"
+   "미래 차원"
   ],
   "biomes": [
    {
-    "name": "악지",
-    "group": true
-   },
-   {
-    "name": "엔드",
-    "group": true
+    "name": "수정 지대",
+    "group": false
    }
   ],
   "except": [],
@@ -5057,16 +5169,12 @@ window.WIKI_LEGENDS = [
   "weight": 0.15,
   "position": "땅 위",
   "dimensions": [
-   "오버월드"
+   "미래 차원"
   ],
   "biomes": [
    {
-    "name": "무성한 동굴",
+    "name": "강철 산맥",
     "group": false
-   },
-   {
-    "name": "딥 다크",
-    "group": true
    }
   ],
   "except": [],
@@ -5078,7 +5186,7 @@ window.WIKI_LEGENDS = [
    }
   ],
   "entryAll": false,
-  "line": "미래의 기계 왕관이 빛납니다! 무쇠머리가 (플레이어) 근처에 나타났습니다!"
+  "line": "미래의 기계 왕관이 빛납니다! 무쇠감투가 (플레이어) 근처에 나타났습니다!"
  },
  {
   "id": "terapagos",

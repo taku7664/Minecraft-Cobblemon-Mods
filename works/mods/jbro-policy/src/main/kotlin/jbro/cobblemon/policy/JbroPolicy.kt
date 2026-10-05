@@ -50,6 +50,7 @@ object JbroPolicy : ModInitializer {
         jbro.cobblemon.policy.support.PendingItems.register()
         jbro.cobblemon.policy.api.OperatorWhisper.register()
         LegendPolicy.register()
+        jbro.cobblemon.policy.legend.RareSpawnNotice.register()
         LegendCommand.register()
         SpawnForCommand.register()
         // More Cobblemon Contents serves the server wiki: /wiki hands out links, and the Legend guide reads each

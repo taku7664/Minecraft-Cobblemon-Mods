@@ -47,6 +47,8 @@
   "message.jbro_policy.legend.other_trainer": "This Legend appeared for another trainer. You cannot battle or catch it.",
   "message.jbro_policy.legend.already_caught": "You already caught this Legend. Each Legend can be caught once.",
   "message.jbro_policy.legend.rank_too_low": "You need the %s League rank to catch this Legend.",
+  "message.jbro_policy.rare_spawn.ultra_beast": "An Ultra Beast appeared near %1$s: %2$s",
+  "message.jbro_policy.rare_spawn.paradox": "A paradox Pokemon appeared near %1$s: %2$s",
   "message.jbro_policy.legend.rank_unknown": "Your League rank could not be read, so you cannot catch this Legend.",
   "message.jbro_policy.legends.caught": "[%2$s] %1$s: caught",
   "message.jbro_policy.legends.not_caught": "[%2$s] %1$s: not caught yet",

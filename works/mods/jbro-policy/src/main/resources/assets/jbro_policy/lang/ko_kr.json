@@ -47,6 +47,8 @@
   "message.jbro_policy.legend.other_trainer": "다른 트레이너 앞에 나타난 전설입니다. 배틀하거나 잡을 수 없습니다.",
   "message.jbro_policy.legend.already_caught": "이미 직접 잡은 전설입니다. 전설은 종마다 한 마리씩만 잡을 수 있습니다.",
   "message.jbro_policy.legend.rank_too_low": "리그 등급이 %s 이상이어야 잡을 수 있는 전설입니다.",
+  "message.jbro_policy.rare_spawn.ultra_beast": "%1$s 근처에 울트라비스트가 나타났습니다: %2$s",
+  "message.jbro_policy.rare_spawn.paradox": "%1$s 근처에 패러독스 포켓몬이 나타났습니다: %2$s",
   "message.jbro_policy.legend.rank_unknown": "리그 등급을 확인하지 못해 잡을 수 없습니다.",
   "message.jbro_policy.legends.caught": "[%2$s] %1$s: 직접 잡음",
   "message.jbro_policy.legends.not_caught": "[%2$s] %1$s: 아직 잡지 않음",

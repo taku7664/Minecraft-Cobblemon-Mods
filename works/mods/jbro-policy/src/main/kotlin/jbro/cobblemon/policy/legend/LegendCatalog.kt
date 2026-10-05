@@ -2,6 +2,17 @@ package jbro.cobblemon.policy.legend
 
 /** Generated from docs/LEGENDARY_SPAWNS.md; keep the two in step. */
 internal object LegendCatalog {
+    /**
+     * Every paradox, ancient or future alike: any one of them calls Koraidon or Miraidon. The fourteen that are not
+     * Legends spawn freely in cobblemon-dimensions' ancient and future dimensions.
+     */
+    val PARADOXES = listOf(
+        "greattusk", "screamtail", "brutebonnet", "fluttermane", "slitherwing", "sandyshocks", "roaringmoon",
+        "walkingwake", "gougingfire", "ragingbolt",
+        "irontreads", "ironbundle", "ironhands", "ironjugulis", "ironmoth", "ironthorns", "ironvaliant",
+        "ironleaves", "ironboulder", "ironcrown",
+    )
+
     private val entries = listOf(
         Legend("arceus", LegendTier.MYTHICAL, LegendRank.CHAMPION, listOf("dialga", "palkia", "giratina")),
         Legend("articuno", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
@@ -36,7 +47,7 @@ internal object LegendCatalog {
         Legend("ironleaves", LegendTier.PARADOX, LegendRank.CHAMPION, listOf("miraidon")),
         Legend("jirachi", LegendTier.MYTHICAL, LegendRank.MASTER_BALL),
         Legend("keldeo", LegendTier.MYTHICAL, LegendRank.MASTER_BALL, listOf("cobalion", "terrakion", "virizion")),
-        Legend("koraidon", LegendTier.RESTRICTED, LegendRank.CHAMPION),
+        Legend("koraidon", LegendTier.RESTRICTED, LegendRank.CHAMPION, PARADOXES),
         Legend("kubfu", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
         Legend("kyogre", LegendTier.RESTRICTED, LegendRank.CHAMPION),
         Legend("kyurem", LegendTier.RESTRICTED, LegendRank.CHAMPION, listOf("reshiram", "zekrom")),
@@ -54,7 +65,7 @@ internal object LegendCatalog {
         Legend("mesprit", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
         Legend("mew", LegendTier.MYTHICAL, LegendRank.MASTER_BALL),
         Legend("mewtwo", LegendTier.RESTRICTED, LegendRank.CHAMPION, listOf("mew")),
-        Legend("miraidon", LegendTier.RESTRICTED, LegendRank.CHAMPION),
+        Legend("miraidon", LegendTier.RESTRICTED, LegendRank.CHAMPION, PARADOXES),
         Legend("moltres", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
         Legend("moltres", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL, aspect = "galarian", id = "moltres-galar"),
         Legend("munkidori", LegendTier.LEGENDARY, LegendRank.ULTRA_BALL),
