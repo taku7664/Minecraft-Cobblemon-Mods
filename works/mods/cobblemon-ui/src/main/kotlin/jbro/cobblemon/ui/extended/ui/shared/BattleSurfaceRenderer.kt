@@ -4,6 +4,11 @@ import jbro.cobblemon.uikit.UiSmoothCorners
 import net.minecraft.client.gui.GuiGraphics
 import kotlin.math.roundToInt
 
+/**
+ * A surface here is many fills (a run per row, a pixel per corner pixel), and each unmanaged [GuiGraphics.fill] is its
+ * own draw call, so every surface is drawn managed: its fills go out together once it is done. They are all the same
+ * render type and keep their order, so the pixels do not change.
+ */
 object BattleSurfaceRenderer {
     /**
      * Straight edges and the inside are solid runs; each corner pixel is the mix of the border and fill covering it
@@ -13,6 +18,10 @@ object BattleSurfaceRenderer {
     @JvmStatic
     fun draw(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float = 1f) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
+        context.drawManaged { drawSurface(context, x, y, width, height, style, opacity) }
+    }
+
+    private fun drawSurface(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float) {
         val limit = if (style.rounded) minOf(width, height) / 2 else minOf((width - 1) / 2, (height - 1) / 2)
         val cuts = style.cornerCuts ?: BattleCornerCuts(
             if (style.corners and 1 != 0) style.cut else 0,
@@ -77,6 +86,10 @@ object BattleSurfaceRenderer {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
         val argb = withOpacity(color, opacity)
         if (argb ushr 24 == 0) return
+        context.drawManaged { drawCapsule(context, x, y, width, height, argb) }
+    }
+
+    private fun drawCapsule(context: GuiGraphics, x: Int, y: Int, width: Int, height: Int, argb: Int) {
         val vertical = height > width
         val long = if (vertical) height else width
         val short = if (vertical) width else height
