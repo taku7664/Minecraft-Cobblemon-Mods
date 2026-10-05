@@ -4,27 +4,25 @@ import jbro.cobblemon.npc.network.DialogueAnswerPayload
 import jbro.cobblemon.npc.network.DialogueLeavePayload
 import jbro.cobblemon.npc.network.DialogueShowPayload
 import jbro.cobblemon.ui.extended.CobblemonUiClient
+import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
-import jbro.cobblemon.uikit.UiModelFraming
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
-import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
-import net.minecraft.sounds.SoundEvents
 import org.lwjgl.glfw.GLFW
 import kotlin.math.sin
 
@@ -83,7 +81,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        drawBox(graphics, partialTick)
+        drawBox(graphics)
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
@@ -145,7 +143,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         labels.asReversed().forEachIndexed { reversed, label ->
             val index = labels.size - 1 - reversed
             val spec = UiButtonSpec(label, variant = UiButtonVariant.SECONDARY, width = UiWidthPolicy.Fixed(buttonWidth))
-            val button = CobblemonUiButton.create(box.right - buttonWidth, 0, buttonWidth, spec) { choose(index) }
+            val button = CobblemonUiButton.create(box.right - buttonWidth, 0, buttonWidth, spec, downSound = false) { choose(index) }
             bottom -= button.height
             button.y = bottom
             bottom -= 3
@@ -160,7 +158,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         return UiRect((this.width - width) / 2, (this.height - height - 6).coerceAtLeast(4), width, height)
     }
 
-    private fun drawBox(graphics: GuiGraphics, partialTick: Float) {
+    private fun drawBox(graphics: GuiGraphics) {
         val font = minecraft!!.font
         val theme = CobblemonUiThemes.registry.snapshot()
         val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
@@ -172,21 +170,18 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         graphics.fill(box.x + inset, box.y + inset, box.x + inset + END_BAR, box.bottom - inset, theme.colors.borderBright)
         graphics.fill(box.right - inset - END_BAR, box.y + inset, box.right - inset, box.bottom - inset, theme.colors.borderBright)
 
-        var textLeft = box.x + PADDING
-        if (show.skin.isNotBlank()) {
-            val portrait = UiRect(box.x + PADDING, box.y + 6, PORTRAIT, box.height - 12)
-            UiSurfaceRenderer.draw(graphics, portrait.x, portrait.y, portrait.width, portrait.height, theme.surfaces.panelAlt)
-            CobblemonUiRenderSlot.drawContent(graphics, UiRect(portrait.x + 2, portrait.y + 2, portrait.width - 4, portrait.height - 4),
-                NpcSkins.content(show.skin, UiModelFraming.PORTRAIT), partialTick)
-            textLeft += PORTRAIT + 8
-        }
-
-        if (show.speaker.isNotBlank()) {
+        val textLeft = box.x + PADDING
+        val hasFace = show.skin.isNotBlank()
+        if (show.speaker.isNotBlank() || hasFace) {
+            // The speaker's face sits in the name plate, in front of the name.
             val name = Component.literal(show.speaker)
-            val plateWidth = font.width(name) + 16
+            val faceWidth = if (hasFace) FACE + if (show.speaker.isNotBlank()) FACE_GAP else 0 else 0
+            val plateLeft = box.x + 8
+            val plateWidth = faceWidth + font.width(name) + 16
             val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
-            UiSurfaceRenderer.draw(graphics, box.x + 8, box.y - 14, plateWidth, 16, plate.surface)
-            UiTextRenderer.draw(graphics, font, name, box.x + 16, box.y - 10, plate.text, plate.textShadowColor)
+            UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, plate.surface)
+            if (hasFace) PlayerFaceRenderer.draw(graphics, NpcSkins.skin(show.skin), plateLeft + 8, box.y - 12, FACE)
+            UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, box.y - 10, plate.text, plate.textShadowColor)
         }
 
         val line = show.lines.getOrElse(page) { "" }
@@ -215,14 +210,16 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     private fun revealed() = revealedCharacters() >= show.lines.getOrElse(page) { "" }.length
 
     private fun click() {
-        minecraft?.soundManager?.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.4f, 0.35f))
+        // The battle message box's click, so a talk and a battle sound the same.
+        BattleUiSounds.click()
     }
 
     companion object {
         private const val CHARACTERS_PER_SECOND = 45.0
         private const val BOX_HEIGHT = 66
         private const val PADDING = 14
-        private const val PORTRAIT = 44
+        private const val FACE = 12
+        private const val FACE_GAP = 4
         private const val END_BAR = 4
         private const val LINE_HEIGHT = 12
     }
