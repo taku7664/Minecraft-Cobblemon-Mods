@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.client.sounds.SoundManager
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceLocation
@@ -24,6 +25,7 @@ class CobblemonUiButton private constructor(
     height: Int,
     val spec: UiButtonSpec,
     private val forcedState: UiWidgetState?,
+    private val downSound: Boolean,
     private val press: () -> Unit
 ) : AbstractButton(x, y, width, height, spec.title) {
     private var pressedUntil = 0L
@@ -36,6 +38,11 @@ class CobblemonUiButton private constructor(
         if (!active) return
         pressedUntil = Util.getMillis() + PRESSED_MILLIS
         press()
+    }
+
+    // A screen with its own click, like the dialogue box's battle click, turns the vanilla one off.
+    override fun playDownSound(soundManager: SoundManager) {
+        if (downSound) super.playDownSound(soundManager)
     }
 
     override fun createNarrationMessage(): MutableComponent {
@@ -157,6 +164,7 @@ class CobblemonUiButton private constructor(
             availableWidth: Int,
             spec: UiButtonSpec,
             forcedState: UiWidgetState? = null,
+            downSound: Boolean = true,
             press: () -> Unit = {}
         ): CobblemonUiButton {
             val theme = CobblemonUiThemes.registry.snapshot()
@@ -167,7 +175,7 @@ class CobblemonUiButton private constructor(
                 (font.width(it) * metrics.supportingScale).toInt()
             } ?: 0
             val width = spec.resolveWidth(max(titleWidth, supportingWidth), availableWidth, theme)
-            return CobblemonUiButton(x, y, width, spec.resolveHeight(theme), spec, forcedState, press)
+            return CobblemonUiButton(x, y, width, spec.resolveHeight(theme), spec, forcedState, downSound, press)
         }
 
         private fun drawScaledCentered(
