@@ -49,3 +49,25 @@ JAR 내부 `fabric.mod.json`의 Minecraft/Java/Loader 의존성과 Map Link의 �
 수정 후 서버에서 `BlueMap loaded!`, 8101의 `WebServer started.`를 확인했다. `http://localhost:8101/`은 HTTP 200과 BlueMap HTML을 반환했고, `settings.json`은 오버월드, 네더, 엔드, 광장, 배틀 라운지, MyRoom의 지도 6개를 반환했다. 기존 위키 `http://localhost:8100/`도 동시에 HTTP 200을 반환했다. 검증용 서버는 `stop`으로 정상 저장 후 종료하여 작업 전의 정지 상태로 돌린다. 다음 개발 서버 실행 후 지도 주소를 사용할 수 있다.
 
 게임 안 Map Link 로딩, 서버 접속과 마커 렌더링은 아직 확인하지 않았다. 장소 아이콘 마커 등록 및 위키 iframe 추가는 이 설치 요청에 포함하지 않았다. 지도 전체 렌더 완료와 성능 개선을 주장하지 않는다.
+
+## 후속 요청: 위키 삽입과 차원 제한
+
+같은 날 사용자의 후속 요청으로 위키 **참고 → 맵 보기**에 `pages/map.html`과 `assets/map.js`를 추가했다.
+위키가 클라이언트에서 제공될 경우에도 `MccWiki.api()`의 게임 서버 호스트를 사용하며, 지도 포트는 8101이다.
+서버와 클라이언트의 `config/more-cobblemon-contents/wiki/`에 새 페이지와 JS, 변경된 nav.js와 wiki.css를
+복사하고 원본과 해시 일치를 확인했다.
+
+BlueMap의 배틀 라운지 및 MyRoom `.conf`를 `config/bluemap/disabled-maps/`로 이동하고 나머지 지도 이름을
+오버월드·네더·엔드·광장으로 지정했다. 사용자가 실행 중인 서버에서 `/bluemap reload`를 실행한 뒤,
+8101의 `settings.json`에 `world`, `world_the_nether`, `world_the_end`, `world_jbro_policy_plaza`만 있는 것을
+확인했다. 기존 타일 데이터는 삭제하지 않았으므로 이 변경은 목록 제한이지 타일 URL의 접근 제어가 아니다.
+
+클라이언트 로그에는 Map Link 4.6.0 초기화가 확인됐지만 게임이 `127.0.0.1:25566`으로 접속하여 기존
+localhost 항목을 찾지 못한 기록이 있었다. 동일 서버의 `127.0.0.1:25566` 항목을 추가했고, 지도 URL은
+기존과 같은 `http://localhost:8101`이다. 실행 중인 Map Link의 설정 재로딩 및 마커 표시까지는 미확인이다.
+
+브라우저에서는 위키 메뉴·페이지·iframe URL과 지도 단독 화면의 지형 렌더를 확인했다. Codex 내장 브라우저의
+위키 iframe에는 '맵이 로드되지 않았습니다'가 표시됐다. 일반 브라우저 비교를 시도하는 도중 사용자가
+Computer Use를 중단하여 iframe의 일반 브라우저 정상 동작은 확인하지 못했다. 원인을 내장 브라우저 문제로
+단정하지 않는다. 서버는 작업 중 계속 실행한 상태를 유지했다. 서버 장소 마커의 파일·좌표·아이콘·reload
+절차는 `server-wiki/README.md`의 '서버 장소 마커 등록'에 기록했다.
