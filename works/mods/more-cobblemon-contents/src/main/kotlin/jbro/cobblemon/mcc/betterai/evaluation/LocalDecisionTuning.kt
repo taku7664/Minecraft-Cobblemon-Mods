@@ -183,6 +183,18 @@ internal data class LocalDecisionTuning(
      */
     val evolvingMatchups: Boolean = false,
     /**
+     * Doubles opponent responses (Codex 8d0328d5): learned move/switch tendencies apply to each slot's part of a joint
+     * response, and observed complete attack pairs condition how often both slots focus one target. Off until a duel
+     * measures it.
+     */
+    val doublesJointResponses: Boolean = false,
+    /**
+     * The root prices a known item transition through the modelled mechanics: Trick and Switcheroo, Knock Off, and the
+     * Air Balloon and Weakness Policy a hit sets off, once per doubles pair (Codex 5fac96da, d40573ab, 7ce6ffb8).
+     * Off until a duel measures it.
+     */
+    val itemTransitionValue: Boolean = false,
+    /**
      * Weight of a doubles Protect's credit for the hits it turns away (LocalProtectCredit): the opponents' predicted
      * knockout chance on the user in knockout material, and the HP they are expected to take. At 0.5: it fixes the
      * doubles Protect puzzle (played out, Protect -2.11 against Close Combat -3.76) and doubles duels at 1.0 were

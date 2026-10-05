@@ -25,7 +25,7 @@ internal object LocalOpponentIntentWeights {
         }
         val total = raw.sum()
         if (!named || total <= 0.0 || !total.isFinite()) return null
-        return raw.map { it / total }
+        return LocalPublicJointIntentPrior.condition(actions, intents, state, raw.map { it / total })
     }
 
     private fun part(part: BattleActionCandidate, intents: List<OpponentIntent>, state: BattleStateView): Double? {

@@ -14,6 +14,32 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * Weakness Policy holder was pure gain and a Knock Off left the target its Leftovers.
  */
 internal object LocalAfterHitReactions {
+    /**
+     * Whether a Weakness Policy goes off on this hit: a super-effective damaging move that is neither fixed damage nor
+     * a damage callback. Read by the item value (LocalPublicItemEffectProjector); the hit reaction keeps its own check.
+     */
+    fun weaknessPolicyActivates(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        action: BattleActionCandidate,
+        actor: BattlePokemonStateView?,
+    ): Boolean {
+        if (LocalPublicItemState.activeItemId(state, target) != "weaknesspolicy") return false
+        val details = action.moveDetails ?: return false
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS || details.effects?.effects.orEmpty().any {
+                it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.FIXED_DAMAGE_LEVEL ||
+                    it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.FIXED_DAMAGE_VALUE
+            }) return false
+        val move = runCatching { jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex.current().second
+            .move(PublicIds.canonical(action.moveId.orEmpty())) }.getOrNull()
+        if (move != null && (jbro.cobblemon.mcc.betterai.engine.Js.truthy(move.data("damage")) || move.declares("damageCallback"))) return false
+        val type = actor?.let { LocalPublicMoveDamageInputs.resolvedTypeId(action, it, state) } ?: details.typeId
+        val chart = action.facts?.typeChartMultiplier ?: target.knownTypeIds.takeIf { it.isNotEmpty() }?.let {
+            StandardTypeEffectiveness.multiplier(type, it, false)
+        }
+        return chart != null && chart > 1.0
+    }
+
     fun apply(
         before: BattleStateView,
         after: BattleStateView,

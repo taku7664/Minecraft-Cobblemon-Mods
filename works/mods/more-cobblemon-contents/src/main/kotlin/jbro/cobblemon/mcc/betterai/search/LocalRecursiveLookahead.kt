@@ -339,7 +339,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val withdrawnStageUtility = if (rank.outcome.candidate.isPureStatusMove()) rank.outcome.statStageUtility else 0.0
                     val immediateAdjustment = immediateGain -
                         rootSecureKoBaselineCorrection * (1.0 - authority) -
-                        withdrawnStageUtility * (1.0 - authority)
+                        withdrawnStageUtility * (1.0 - authority) -
+                        // Item residuals and reactions have their own owner, replaced once by the projected turn.
+                        rank.outcome.itemUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
                     val rawAdjustment = immediateAdjustment * coverage.immediate + foresightGain * coverage.future
                     val terminal = kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD

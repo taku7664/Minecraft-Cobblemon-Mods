@@ -57,6 +57,8 @@ internal data class LocalBattleActionOutcome(
     /** Stat-stage value already present in [tacticalUtility] and replaceable by projected value. */
     val statStageUtility: Double = 0.0,
     val componentOutcomes: List<LocalBattleActionOutcome> = emptyList(),
+    /** Item-owned immediate value that the complete turn re-prices; public item attack pressure stays at root. */
+    val itemUtility: Double = 0.0,
 )
 
 internal data class LocalBattleActionRank(
@@ -309,6 +311,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             effectiveAccuracyProbability = accuracy,
             knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning, context),
             statStageUtility = tactical.statStageUtility,
+            itemUtility = tactical.itemUtility,
         )
     }
 
@@ -370,7 +373,8 @@ internal object LocalBattleActionOutcomeEvaluator {
             .size
         // Keep each component's HP-clamped, mechanics-aware damage and recoil adjustment.
         // Re-running the raw composite scorer here used to discard that work.
-        val coordinatedUtility = components.sumOf(LocalBattleActionOutcome::tacticalUtility) +
+        val items = jbro.cobblemon.mcc.betterai.evaluation.LocalRootItemEffectEvaluator.compositeCorrection(candidate, context, tuning)
+        val coordinatedUtility = components.sumOf(LocalBattleActionOutcome::tacticalUtility) + items.total +
             LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
             LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning)
         return LocalBattleActionOutcome(
@@ -387,8 +391,9 @@ internal object LocalBattleActionOutcomeEvaluator {
             survivalPositionImprovement = null,
             knockoutUtility = components.sumOf(LocalBattleActionOutcome::knockoutUtility) -
                 LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning),
-            statStageUtility = components.sumOf(LocalBattleActionOutcome::statStageUtility),
+            statStageUtility = components.sumOf(LocalBattleActionOutcome::statStageUtility) + items.statStageUtility,
             componentOutcomes = components,
+            itemUtility = components.sumOf(LocalBattleActionOutcome::itemUtility) + items.itemUtility,
         )
     }
 
