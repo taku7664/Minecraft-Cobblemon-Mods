@@ -34,6 +34,19 @@ def surface(top, under, grass=False):
     return dict(top=top, under=under, grass=grass)
 
 
+# Particles drifting in the air of a biome: (vanilla particle, chance per block shown each tick). Basalt deltas use
+# white_ash at 0.118, warped forests warped_spore at 0.0143.
+PARTICLES = {
+    "ancient_volcano": ("minecraft:ash", 0.05),
+    "ancient_jungle": ("minecraft:spore_blossom_air", 0.006),
+    "ancient_desert": ("minecraft:white_ash", 0.006),
+    "future_neon_forest": ("minecraft:warped_spore", 0.012),
+    "future_crystal": ("minecraft:end_rod", 0.0015),
+    "future_steel_peaks": ("minecraft:electric_spark", 0.004),
+    "future_flats": ("minecraft:electric_spark", 0.002),
+}
+
+
 # Per dimension: biomes (name -> Terralith features, look, surface), name rules (first match wins) and the default.
 DIMENSIONS = {
     "ultra_space": dict(
@@ -232,10 +245,14 @@ def main():
 
         for name, (source, colors, _) in dimension["biomes"].items():
             terralith = sources[source]
+            effects = {"sky_color": colors["sky"], "fog_color": colors["fog"], "water_color": colors["water"],
+                       "water_fog_color": colors["fog"], "grass_color": colors["grass"], "foliage_color": colors["foliage"]}
+            if name in PARTICLES:
+                particle, probability = PARTICLES[name]
+                effects["particle"] = {"options": {"type": particle}, "probability": probability}
             write(DATA / f"worldgen/biome/{name}.json", {
                 "has_precipitation": False, "temperature": 0.8, "downfall": 0.4,
-                "effects": {"sky_color": colors["sky"], "fog_color": colors["fog"], "water_color": colors["water"],
-                            "water_fog_color": colors["fog"], "grass_color": colors["grass"], "foliage_color": colors["foliage"]},
+                "effects": effects,
                 "spawners": {}, "spawn_costs": {},  # vanilla mobs stay out; Pokemon come from Cobblemon's spawn pools
                 "carvers": terralith.get("carvers", {}), "features": terralith["features"]})
 

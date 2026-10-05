@@ -8,7 +8,13 @@
     "water_color": 3837038,
     "water_fog_color": 14193754,
     "grass_color": 5151274,
-    "foliage_color": 4098590
+    "foliage_color": 4098590,
+    "particle": {
+      "options": {
+        "type": "minecraft:spore_blossom_air"
+      },
+      "probability": 0.006
+    }
   },
   "spawners": {},
   "spawn_costs": {},

@@ -41,7 +41,7 @@ object DimensionCaptureHarness {
 
     /** One picture: where to stand, where to look, and what to set up first. */
     private data class Shot(val name: String, val dimension: ModDimension?, val x: Int, val z: Int, val height: Int,
-                            val yaw: Float, val pitch: Float, val setup: (ServerPlayer) -> Unit = {})
+                            val yaw: Float, val pitch: Float, val time: Long = 6000, val setup: (ServerPlayer) -> Unit = {})
 
     private val allShots = listOf(
         Shot("portals", null, 0, 0, 9, 0f, 45f) { player -> buildPortals(player) },
@@ -49,9 +49,12 @@ object DimensionCaptureHarness {
         Shot("ancient-1", ModDimension.ANCIENT, 1200, 900, 60, 30f, 30f),
         Shot("ancient-2", ModDimension.ANCIENT, 2400, -1600, 60, 200f, 30f),
         Shot("ancient-3", ModDimension.ANCIENT, -2800, -900, 60, 120f, 30f),
+        Shot("ancient-sun", ModDimension.ANCIENT, 1200, 900, 30, -90f, -12f, time = 600),
         Shot("future-1", ModDimension.FUTURE, 1200, 900, 60, 30f, 30f),
         Shot("future-2", ModDimension.FUTURE, -2000, 2600, 60, 120f, 30f),
         Shot("future-3", ModDimension.FUTURE, 3600, -2400, 60, 300f, 30f),
+        Shot("future-ring", ModDimension.FUTURE, 1200, 900, 30, 0f, -40f),
+        Shot("future-night", ModDimension.FUTURE, 1200, 900, 30, 30f, 10f, time = 18000),
         Shot("ultra-1", ModDimension.ULTRA_SPACE, 1500, 600, 12, 30f, 35f),
         Shot("ultra-2", ModDimension.ULTRA_SPACE, 3000, 3000, 12, 250f, 35f),
         Shot("ultra-3", ModDimension.ULTRA_SPACE, -2600, 1800, 12, 140f, 35f),
@@ -161,7 +164,7 @@ object DimensionCaptureHarness {
     }
 
     private fun place(player: ServerPlayer, shot: Shot) {
-        player.server.overworld().dayTime = 6000
+        player.server.overworld().dayTime = shot.time
         player.abilities.flying = true
         player.onUpdateAbilities()
         val level: ServerLevel = if (shot.dimension == null) {

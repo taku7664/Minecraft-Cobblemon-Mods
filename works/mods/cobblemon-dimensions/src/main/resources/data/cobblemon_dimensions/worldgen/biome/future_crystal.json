@@ -8,7 +8,13 @@
     "water_color": 8022760,
     "water_fog_color": 13150463,
     "grass_color": 12098280,
-    "foliage_color": 12098280
+    "foliage_color": 12098280,
+    "particle": {
+      "options": {
+        "type": "minecraft:end_rod"
+      },
+      "probability": 0.0015
+    }
   },
   "spawners": {},
   "spawn_costs": {},

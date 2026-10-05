@@ -21,4 +21,12 @@ abstract class ClientLevelSkyTintMixin {
             cir.setReturnValue(look.tintSky(cir.getReturnValue(), day));
         }
     }
+
+    /** Some skies keep their stars by day. */
+    @Inject(method = "getStarBrightness", at = @At("RETURN"), cancellable = true)
+    private void cobblemonDimensions$dayStars(float partialTick, CallbackInfoReturnable<Float> cir) {
+        if (((ClientLevel) (Object) this).effects() instanceof DimensionLook look && look.getDayStars() > cir.getReturnValueF()) {
+            cir.setReturnValue(look.getDayStars());
+        }
+    }
 }

@@ -8,7 +8,13 @@
     "water_color": 3848408,
     "water_fog_color": 7000288,
     "grass_color": 6998200,
-    "foliage_color": 6998200
+    "foliage_color": 6998200,
+    "particle": {
+      "options": {
+        "type": "minecraft:electric_spark"
+      },
+      "probability": 0.002
+    }
   },
   "spawners": {},
   "spawn_costs": {},

@@ -8,7 +8,13 @@
     "water_color": 2805984,
     "water_fog_color": 3853528,
     "grass_color": 3070152,
-    "foliage_color": 2015440
+    "foliage_color": 2015440,
+    "particle": {
+      "options": {
+        "type": "minecraft:warped_spore"
+      },
+      "probability": 0.012
+    }
   },
   "spawners": {},
   "spawn_costs": {},
