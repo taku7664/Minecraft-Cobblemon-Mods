@@ -8,6 +8,7 @@ import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.Locale
 import java.util.UUID
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
@@ -27,6 +28,7 @@ class Cobblemon173ShowdownObservationAdapter(
     private var consumedMessages = 0
     private var observedTurn = 0
     private val lastMoveByPokemon = linkedMapOf<UUID, String>()
+    private val statStages = Cobblemon173PublicStatStages()
 
     fun attach(value: PokemonBattle) {
         check(battle == null || battle === value) { "Observation adapter cannot be moved to another battle" }
@@ -54,13 +56,16 @@ class Cobblemon173ShowdownObservationAdapter(
             2 -> BattleFormat.DOUBLE
             else -> error("Unsupported Cobblemon battle format: ${activeBattle.format.battleType.pokemonPerSide}")
         }
-        return Cobblemon173BattleStateAssembler.assemble(
+        val assembled = Cobblemon173BattleStateAssembler.assemble(
             battleId = activeBattle.battleId,
             format = format,
             turn = activeBattle.turn,
             ownPokemon = actor.pokemonList.map { it.toOwnState(actor) },
             publicSnapshot = observer.publicSnapshot(),
         )
+        return assembled.copyState(pokemon = assembled.pokemon.map { pokemon ->
+            statStages.of(pokemon.battlePokemonId)?.let { pokemon.copyState(statStages = it) } ?: pokemon
+        })
     }
 
     /** Called after snapshot has consumed the public log for this decision. */
@@ -93,6 +98,7 @@ class Cobblemon173ShowdownObservationAdapter(
             observedTurn = 0
             observer.reset()
             lastMoveByPokemon.clear()
+            statStages.reset()
         }
         messages.subList(consumedMessages, messages.size).forEach { raw -> consume(activeBattle, raw) }
         consumedMessages = messages.size
@@ -109,6 +115,12 @@ class Cobblemon173ShowdownObservationAdapter(
                     return@forEach
                 }
                 if (message.id == "upkeep") observer.closeActionWindow()
+                statStages.observe(
+                    message.id,
+                    pokemon = { index -> compatibilityCallOrNull { message.battlePokemon(index, activeBattle)?.uuid } },
+                    argument = { index -> message.argumentAt(index) },
+                    batonPass = publicSwitchTransferMove(message) == "batonpass",
+                )
                 consumeMessage(activeBattle, message)
                 revealOptionalSource(activeBattle, message)
             }
