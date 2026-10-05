@@ -277,25 +277,27 @@ class BattlePokemonStateView(
     }
 
     // Canonical forms of the ids the public mechanics compare at every search node, worked out on first ask.
-    // A race only computes the same string twice.
-    private var canonicalAbility: Any? = UNSET
-    private var canonicalItem: Any? = UNSET
-    private var canonicalVolatiles: Set<String>? = null
+    // A race only computes the same string twice. Null means not worked out yet and [NONE] a worked-out
+    // null, so a copy that skipped the initialisers - Gson reading a decision snapshot back - recomputes
+    // instead of handing back a serialised sentinel; transient keeps the caches out of the snapshot.
+    @Transient private var canonicalAbility: Any? = null
+    @Transient private var canonicalItem: Any? = null
+    @Transient private var canonicalVolatiles: Set<String>? = null
 
     /** [knownAbilityId] in [PublicIds.canonical] form, null when unknown or blank. */
     val canonicalKnownAbilityId: String?
         get() {
             val cached = canonicalAbility
-            if (cached !== UNSET) return cached as String?
-            return knownAbilityId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalAbility = it }
+            if (cached != null) return if (cached === NONE) null else cached as String
+            return knownAbilityId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalAbility = it ?: NONE }
         }
 
     /** [knownHeldItemId] in [PublicIds.canonical] form, null when unknown or blank. */
     val canonicalKnownHeldItemId: String?
         get() {
             val cached = canonicalItem
-            if (cached !== UNSET) return cached as String?
-            return knownHeldItemId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalItem = it }
+            if (cached != null) return if (cached === NONE) null else cached as String
+            return knownHeldItemId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalItem = it ?: NONE }
         }
 
     /** [knownVolatileEffectIds] in [PublicIds.canonical] form. */
@@ -304,7 +306,7 @@ class BattlePokemonStateView(
             else knownVolatileEffectIds.mapTo(HashSet(), PublicIds::canonical)).also { canonicalVolatiles = it }
 
     private companion object {
-        val UNSET = Any()
+        val NONE = Any()
     }
 }
 

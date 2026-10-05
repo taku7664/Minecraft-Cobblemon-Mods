@@ -1090,6 +1090,10 @@ internal object Cobblemon173BattleStateAssembler {
                 knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
                     publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
+                // Cobblemon's server never touches the held item during a battle, so a burst Focus Sash, an
+                // eaten Sitrus Berry or a Life Orb lost to Knock Off still read as held. The log's item lines
+                // ("" once it is gone) are the battle's own record; the Pokemon's item is only the start.
+                knownHeldItemId = publicById[own.battlePokemonId]?.knownHeldItemId ?: own.knownHeldItemId,
                 knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty()
                     .filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
                     else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),

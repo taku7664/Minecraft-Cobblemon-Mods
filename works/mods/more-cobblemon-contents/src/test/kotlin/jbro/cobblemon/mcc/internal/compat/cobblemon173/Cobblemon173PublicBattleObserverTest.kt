@@ -329,6 +329,23 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `an own item the log removed or swapped is not read back from the Pokemon`() {
+        val own = ownPokemon()
+        val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        fun item() = Cobblemon173BattleStateAssembler.assemble(
+            UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(own), observer.publicSnapshot(),
+            inferenceKnowledge = { _, _ -> emptyList() },
+        ).pokemon.single().knownHeldItemId
+        assertEquals("leftovers", item())
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "leftovers", removed = true))
+        assertEquals("", item())
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "choicescarf"))
+        assertEquals("choicescarf", item())
+    }
+
+    @Test
     fun `a Mega permanent ability overrides an older public Trace copy in the brain input`() {
         val own = ownPokemon(formId = "mega").copyState(knownAbilityId = "pixilate", knownBaseAbilityId = "pixilate")
         val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
