@@ -69,6 +69,10 @@ internal object WikiServer {
 
     fun resetLinkFor(playerId: UUID): String? = tokens?.let { link(playerId, it.reset(playerId)) }
 
+    /** [playerId]'s own link at [sharedBase], for handing out away from the game (Discord); null while the wiki is off. */
+    fun sharedLinkFor(playerId: UUID): String? =
+        tokens?.takeIf { running }?.let { "${sharedBase()}/?t=${it.tokenFor(playerId)}" }
+
     /**
      * The player's own copy of the wiki on localhost when their client serves one, reading their data from this
      * server ([baseFor]) through `?s=`; else this server's pages.

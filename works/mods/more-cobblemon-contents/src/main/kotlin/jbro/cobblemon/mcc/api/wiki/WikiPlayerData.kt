@@ -60,4 +60,10 @@ object WikiApi {
 
     /** A new link for [playerId] that ends every link they had before, or null while the wiki is off. */
     fun resetLinkFor(playerId: UUID): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.resetLinkFor(playerId)
+
+    /**
+     * [playerId]'s own wiki link at the shared address ([publicUrl]) rather than the one they joined at or their
+     * client's local copy, for links opened away from the game such as on Discord. Null while the wiki is off.
+     */
+    fun sharedLinkFor(playerId: UUID): String? = jbro.cobblemon.mcc.internal.wiki.WikiServer.sharedLinkFor(playerId)
 }
