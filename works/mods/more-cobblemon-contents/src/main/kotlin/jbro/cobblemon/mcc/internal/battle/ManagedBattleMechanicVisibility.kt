@@ -5,6 +5,8 @@ import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.runManagedCleanupForEachSafely
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
+import com.cobblemon.mod.common.battles.BattleRegistry
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -168,6 +170,32 @@ object ManagedBattleContentNetworking {
     fun hideFrom(player: net.minecraft.server.level.ServerPlayer, battleId: UUID) {
         if (ServerPlayNetworking.canSend(player, HideManagedBattleContentPayload.TYPE)) {
             ServerPlayNetworking.send(player, HideManagedBattleContentPayload(battleId))
+        }
+    }
+
+    /** Before [viewer] starts watching [target]'s battle, from `SpectateBattleHandlerMixin`: the battle's tag, if any. */
+    fun showBeforeSpectating(target: net.minecraft.server.level.ServerPlayer, viewer: net.minecraft.server.level.ServerPlayer) {
+        spectatorTagSafely(viewer) {
+            val battle = BattleRegistry.getBattleByParticipatingPlayer(target) ?: return@spectatorTagSafely
+            if (BattleRegistry.getBattleByParticipatingPlayer(viewer) != null) return@spectatorTagSafely
+            MccBattleTags.of(battle.battleId)?.let { tag -> showTo(viewer, battle.battleId, tag) }
+        }
+    }
+
+    /** After the attempt: Cobblemon refused [viewer] (distance, config, already watching), so the tag goes back. */
+    fun withdrawUnlessSpectating(target: net.minecraft.server.level.ServerPlayer, viewer: net.minecraft.server.level.ServerPlayer) {
+        spectatorTagSafely(viewer) {
+            val battle = BattleRegistry.getBattleByParticipatingPlayer(target) ?: return@spectatorTagSafely
+            if (MccBattleTags.of(battle.battleId) != null && viewer.uuid !in battle.spectators) hideFrom(viewer, battle.battleId)
+        }
+    }
+
+    // A tag that fails to reach a spectator must not break Cobblemon's spectating.
+    private inline fun spectatorTagSafely(viewer: net.minecraft.server.level.ServerPlayer, action: () -> Unit) {
+        try {
+            action()
+        } catch (failure: RuntimeException) {
+            MoreCobblemonContents.LOGGER.error("Spectator battle tag failed for player {}", viewer.uuid, failure)
         }
     }
 

@@ -14,7 +14,8 @@
     "PokemonMixin",
     "ServerCommonPacketListenerImplAccessor",
     "ServerConnectionListenerChannelMixin",
-    "ServerHandshakePacketListenerImplMixin"
+    "ServerHandshakePacketListenerImplMixin",
+    "SpectateBattleHandlerMixin"
   ],
   "client": [
     "client.BattleMoveSelectionMixin",
