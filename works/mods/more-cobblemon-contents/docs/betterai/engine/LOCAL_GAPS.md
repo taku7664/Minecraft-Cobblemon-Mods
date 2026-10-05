@@ -35,13 +35,13 @@
 |---|---|
 | missing-mechanics `4771908b` `f63a1bf9` `061371ce` `69d45af7` `60d9fd21` `4e8836d4` | 병합. `4e8836d4`의 회복봉인 열매 버그는 `6adf71d0`으로 고침 |
 | missing-mechanics `e9b9b731` | 다른 세션이 `9b352c07`로 먼저 옮김 |
-| missing-mechanics `9838243d` | 튜닝 스위치 `evolvingMatchups`(기본 꺼짐) 뒤에 옮김(`7f2c3651`). 대결로 측정 중. 턴 비용의 상태이상 면역·열매 Update는 메커니즘이라 켜 둠 |
+| missing-mechanics `9838243d` | 튜닝 스위치 `evolvingMatchups`(기본 꺼짐) 뒤에 옮김(`7f2c3651`). 싱글 120쌍 0.498로 효과 없어 꺼 둠. 턴 비용의 상태이상 면역·열매 Update는 메커니즘이라 켜 둠 |
 | top-ranked `58ea72d0` `dc4d4d26` `5119a95b` `11c38e52` `b380ba07` `b94b238e` `ce5a8c0e` `bed227b6` `fa787733` `6fe9ce38` `58bf894c` `6f85dc02` `704cb682` | 병합: 메가진화 직후 평가, 속도 동점 확률, 부활의기원, 확정된 도구 없음(`""`), 부스트에너지 엔진 수정, 캐시 키, 위협·랭크 반응. 부활의기원은 한 구현(`LocalRevivalBlessing`)으로 통일(`8a34742e`), 빠진 `reshape` 복원(`78265fed`) |
 | top-ranked `226d12f8` `043ce7c0` | 라무·혼란 경로가 missing-mechanics와 겹쳐 건너뜀. 신비의부적·파스텔/스위트베일·공중 상태 지형 판정(`3c922009`)과 틀깨기 랭크다운(`e192e1e2`)만 옮김 |
 | top-ranked `b5d47095` `ec6bd2a6` `da1b4632` | missing-mechanics가 스나이퍼·분석·압정·대타 HP를 다른 방식으로 이미 구현해 건너뜀. 공개되지 않은 기존 대타의 남은 HP를 범위로 다루는 `ec6bd2a6`의 방식은 G-608(`28673caf`)로 옮김 |
 | top-ranked `41c6c00a` `29d2092c` `12412bdf` `278e9b41` | missing-mechanics·main에 같은 내용이 있어 건너뜀 |
 | top-ranked `4f7f7b16` `b4b59043` | 최상위 선택기를 넣었다가 되돌린 것이라 순효과 없음, 건너뜀 |
-| top-ranked 점수 변경 | 점수·휴리스틱·탐색 범위 변경이라 측정 전에는 켜지 않는다. 처리: `a4a89e00` `70f7a708`은 missing-mechanics `e9b9b731`(`9b352c07`)과 같은 내용이라 이미 반영. `84174027`의 응답 커버리지 버그는 main이 `responseCoverage`로 이미 고침. `cae90ff7` → `onePlySwitchPosition`, `5c8b13c5` → `jointKnockoutCredit`(합쳐야 나는 기절을 못 보는 한계 그대로), `e7df6328`+`39b668f6` → `doublesSlotReplies`로 스위치 뒤에 옮김(`7f2c3651`, 기본 꺼짐, 대결 측정 중). **남은 보류**: `5fac96da` `d40573ab` `7ce6ffb8`(도구 변화 가치. T의 대타 구조 `LocalSubstituteRules`에 기대고 서로 덮어써서 셋을 한 번에 다시 써야 함), `8d0328d5`(더블 상대 협공 성향), `e57478fe` `253b479a` `059ee9ec`(더블 선봉 쌍. 벤치가 선봉을 정의 순서대로 내서 측정 불가, 벤치에 선봉 선택을 넣어야 함), `b62f7351`(네이티브 탐색 재시작. 벤치는 로컬 두뇌라 측정 불가) |
+| top-ranked 점수 변경 | 점수·휴리스틱·탐색 범위 변경이라 측정 전에는 켜지 않는다. 처리: `a4a89e00` `70f7a708`은 missing-mechanics `e9b9b731`(`9b352c07`)과 같은 내용이라 이미 반영. `84174027`의 응답 커버리지 버그는 main이 `responseCoverage`로 이미 고침. `cae90ff7` → `onePlySwitchPosition`, `5c8b13c5` → `jointKnockoutCredit`(합쳐야 나는 기절을 못 보는 한계 그대로), `e7df6328`+`39b668f6` → `doublesSlotReplies`로 스위치 뒤에 옮김(`7f2c3651`, 기본 꺼짐). `5fac96da` `d40573ab` `7ce6ffb8` → `itemTransitionValue`, `8d0328d5` → `doublesJointResponses`(`f505f1d1`, 기본 꺼짐). 측정 결과는 [`MEMORY.md`](../MEMORY.md) 2026-10-05 17:00. **남은 보류**: `e57478fe` `253b479a` `059ee9ec`(더블 선봉 쌍. 벤치가 선봉을 정의 순서대로 내서 측정 불가, 벤치에 선봉 선택을 넣어야 함), `b62f7351`(네이티브 탐색 재시작. 벤치는 로컬 두뇌라 측정 불가) |
 
 ## 1. 명백한 버그 (고치면 바로 맞아지는 것)
 
