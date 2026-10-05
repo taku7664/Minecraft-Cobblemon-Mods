@@ -5,13 +5,14 @@
 
 ---
 
-## [2026-10-05 16:46] 상점 품목을 분류 탭으로 (단위 테스트 확인, 실게임 화면 미확인)
+## [2026-10-05 16:46] 상점 품목을 분류 탭으로 — `6de3f066` (단위 테스트·JAR 배포 확인, 실게임 화면 미확인)
 
 - **빡대리님 지시:** Hub 상점이 전 품목을 한 스크롤 목록에 띄우니 도구/소모/기타처럼 탭으로 나눈다.
 - **데이터:** 항목 JSON에 `category`(stable ID, 없으면 `misc`), 규칙 JSON에 탭 순서 `categories`. 규칙에 없는 분류는 처음 나온 순서로 뒤에 붙고, 항목이 없는 분류는 탭이 생기지 않는다. 분류는 보여 주기용이라 카탈로그 리비전(구매 검증)에 넣지 않았다.
 - **나눈 기준(Claude 임의):** 도구 `held_item` = 지닌 도구(구애·생명의구슬 등 22개), 소모 `consumable` = 경험사탕·이상한사탕·영양제·날개·개체값 사탕(29개), 기타 `misc` = 민트·특성캡슐·특성패치(23개). 번역 키 `screen.more_cobblemon_contents.shop.category.<id>`, 없으면 ID를 그대로 보인다.
 - **화면:** 분류가 둘 이상이면 품목 카드 본문 맨 위에 SMALL 버튼 탭 줄. 탭을 바꾸면 목록 스크롤이 처음으로 돌아가고, 장바구니는 분류와 상관없이 유지된다.
 - **프로토콜:** `ShopStatePayload`에 항목별 분류와 탭 순서가 추가돼 옛 클라이언트·서버와 섞어 쓸 수 없다. 양쪽 JAR을 같이 바꿔야 한다.
+- **배포:** 코어 JAR만 `develop-product/server/mods`와 `develop-product/client/mods`에 넣었다(백업 `develop-product/deployment-backups/20261005-164836-shop-category-tabs`). 서버는 꺼진 상태 그대로 두었다.
 - **검증:** core 단위 테스트 604개 중 602개 통과. 실패 2개(`Cobblemon173PublicBattleObserverTest`의 아이템 소모·탁쳐서떨구기)는 상점과 무관한 Better AI 관찰기 쪽이다. 실게임에서 탭 배치는 아직 보지 않았다.
 
 ## [2026-10-01 19:14] UI Kit과 Battle UI를 `cobblemon-ui` 하나로, 허브 테마를 UI로 이전 — `2a0a4ea2`, `a8e6e6d4` (단위 테스트·개발 클라이언트 캡처 확인, 실서버 미확인)
