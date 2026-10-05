@@ -174,7 +174,7 @@ class Cobblemon173PublicBattleObserverTest {
         observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry",
             removed = true, consumed = true, ownAbilityAtRemoval = "unburden"))
         val consumed = observer.publicSnapshot().pokemon.single()
-        assertNull(consumed.knownHeldItemId)
+        assertEquals("", consumed.knownHeldItemId, "a confirmed absence")
         assertTrue("unburden" in consumed.knownVolatileEffectIds)
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, replacement))
         val benched = observer.publicSnapshot().pokemon.single { it.battlePokemonId == actor.battlePokemonId }
@@ -192,7 +192,7 @@ class Cobblemon173PublicBattleObserverTest {
         observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry",
             removed = true, consumed = false, ownAbilityAtRemoval = "unburden"))
         val holder = observer.publicSnapshot().pokemon.single()
-        assertNull(holder.knownHeldItemId)
+        assertEquals("", holder.knownHeldItemId, "a confirmed absence")
         assertTrue("unburden" in holder.knownVolatileEffectIds)
         assertFalse(holder.knownVolatileEffectIds.any { it.startsWith("better_ai:last_consumed_item=") })
         assertFalse(Cobblemon173ShowdownObservationAdapter.itemWasConsumed(
