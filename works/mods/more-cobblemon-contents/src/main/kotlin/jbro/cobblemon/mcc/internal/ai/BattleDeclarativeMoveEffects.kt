@@ -349,7 +349,9 @@ object BattleDeclarativeMoveEffects {
     private val USER_SLEEP_PATTERN = Regex("""return\s+source\.status\s*===\s*[\"']slp[\"']""")
     private val TARGET_SLEEP_PATTERN = Regex("""return\s+target\.status\s*===\s*[\"']slp[\"']""")
     private val USER_STATUS_PRESENT_PATTERN = Regex("""if\s*\(\s*!source\.status\s*\)\s*return\s+false""")
-    private val TARGET_STATUS_ABSENT_PATTERN = Regex("""if\s*\(\s*target\.status\s*\|\|""")
+    // Yawn fails on a target that already has a status. Hex and Infernal Parade only double their power on one,
+    // so the pattern needs the sleep-immunity half: matching the bare `target.status ||` read them as failing.
+    private val TARGET_STATUS_ABSENT_PATTERN = Regex("""if\s*\(\s*target\.status\s*\|\|\s*!target\.runStatusImmunity""")
     private val USER_TYPE_PATTERN = Regex("""if\s*\(\s*(?:source|pokemon)\.hasType\([\"']([^\"']+)[\"']\)\s*\)\s*(?:\{\s*)?return\s*;""")
     private val USER_HP_DIVISOR_PATTERN = Regex("""(?:source|pokemon)\.hp\s*<=\s*(?:source|pokemon)\.maxhp\s*/\s*(\d+)""")
     private val USER_HP_CEIL_DIVISOR_PATTERN = Regex("""(?:source|pokemon)\.hp\s*<=\s*Math\.ceil\((?:source|pokemon)\.maxhp\s*/\s*(\d+)\)""")
