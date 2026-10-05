@@ -182,7 +182,6 @@ public final class BetterMusicClientRuntime {
                 return selection.id();
             });
         logBattleSelection(battleContext, battleCue);
-        player.setDistorted(battleContext.map(BetterMusicClientRuntime::isHardBattle).orElse(false));
         Optional<String> screenCue = screenResolver.select(hasWorld
             ? ScreenMusicProviders.global().resolveKeys() : MinecraftMenuMusicProvider.keys(client))
             .map(selection -> {
@@ -203,11 +202,6 @@ public final class BetterMusicClientRuntime {
                 suppressOriginalMusic = true;
             });
         }
-    }
-
-    /** A battle on a content's hard route, such as MCC's `league_challenge/hard_champion`. */
-    static boolean isHardBattle(BattleMusicContext context) {
-        return context.contentKeys().stream().anyMatch(key -> key.contains("/hard_"));
     }
 
     // Which content keys a battle brought and what they chose, once per change, so a wrong track can be traced.

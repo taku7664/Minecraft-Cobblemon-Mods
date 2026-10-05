@@ -16,8 +16,6 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     private final SoundManager soundManager;
     private final MusicLowPassFilter lowPassFilter;
     private final MusicReverbEffect reverbEffect;
-    private final MusicDistortionEffect distortionEffect;
-    private double distortionAmount;
     private final Set<SoundInstance> ownedSounds = Collections.newSetFromMap(
         new IdentityHashMap<>()
     );
@@ -29,7 +27,6 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
         this.soundManager = java.util.Objects.requireNonNull(soundManager, "soundManager");
         this.lowPassFilter = new MusicLowPassFilter(logger);
         this.reverbEffect = new MusicReverbEffect(logger);
-        this.distortionEffect = new MusicDistortionEffect(logger);
     }
 
     public boolean isSoundAvailable(String sound) {
@@ -55,7 +52,6 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     public void setEffects(double muffleAmount, double underwaterAmount) {
         double underwaterIntensity = underwaterIntensity(underwaterAmount);
         double lowPassAmount = Math.max(muffleAmount, underwaterIntensity);
-        double distortion = distortionAmount;
         var soundEngine = ((SoundManagerAccessor) soundManager)
             .betterCobblemonMusic$getSoundEngine();
         var channels = ((SoundEngineAccessor) soundEngine)
@@ -65,7 +61,7 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
             if (channel == null) {
                 continue;
             }
-            boolean shouldApply = lowPassAmount > 0.0 || underwaterIntensity > 0.0 || distortionAmount > 0.0;
+            boolean shouldApply = lowPassAmount > 0.0 || underwaterIntensity > 0.0;
             if (shouldApply) {
                 affectedSounds.add(sound);
             } else if (!affectedSounds.remove(sound)) {
@@ -75,17 +71,8 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
                 int source = ((ChannelAccessor) openAlChannel).betterCobblemonMusic$getSource();
                 lowPassFilter.apply(source, lowPassAmount);
                 reverbEffect.apply(source, underwaterIntensity);
-                distortionEffect.apply(source, distortion);
             });
         }
-    }
-
-    @Override
-    public void setDistortion(double amount) {
-        if (!Double.isFinite(amount) || amount < 0.0 || amount > 1.0) {
-            throw new IllegalArgumentException("distortion must be finite and between zero and one");
-        }
-        distortionAmount = amount;
     }
 
     static double underwaterIntensity(double strength) {
