@@ -6,7 +6,8 @@
       "item_id": "cobblemon:red_card",
       "item_count": 1,
       "price_bp": 250,
-      "sort_order": 580
+      "sort_order": 580,
+      "category": "held_item"
     }
   ]
 }

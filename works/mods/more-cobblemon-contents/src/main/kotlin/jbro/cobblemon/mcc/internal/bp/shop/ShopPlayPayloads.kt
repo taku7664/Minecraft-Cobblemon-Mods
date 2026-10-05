@@ -12,6 +12,7 @@ internal data class ShopEntryView(
     val itemId: String,
     val itemCount: Int,
     val priceBp: Long,
+    val category: String = BattlePointShopEntry.DEFAULT_CATEGORY,
 )
 
 internal data class HomeLeaderboardStatePayload(
@@ -97,6 +98,8 @@ internal data class ShopStatePayload(
     val entries: List<ShopEntryView>,
     val result: BattlePointShopPurchaseStatus?,
     val shopkeeper: List<BattlePointShopkeeperAppearance> = BattlePointShopkeeperAppearance.DEFAULT,
+    /** The category tabs in order, each holding at least one of [entries]. */
+    val categories: List<String> = entries.map(ShopEntryView::category).distinct(),
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<ShopStatePayload> = TYPE
 
@@ -116,6 +119,7 @@ internal data class ShopStatePayload(
                     buffer.writeShopString(entry.itemId)
                     buffer.writeVarInt(entry.itemCount)
                     buffer.writeVarLong(entry.priceBp)
+                    buffer.writeShopString(entry.category)
                 }
                 buffer.writeBoolean(payload.result != null)
                 payload.result?.let { buffer.writeShopString(it.name.lowercase()) }
@@ -135,6 +139,8 @@ internal data class ShopStatePayload(
                         }
                     }
                 }
+                buffer.writeVarInt(payload.categories.size)
+                payload.categories.forEach(buffer::writeShopString)
             },
             { buffer ->
                 val catalogId = buffer.readShopString()
@@ -153,6 +159,7 @@ internal data class ShopStatePayload(
                                 buffer.readShopString(),
                                 buffer.readVarInt().also { require(it > 0) { "Invalid shop item count" } },
                                 buffer.readVarLong().also { require(it > 0L) { "Invalid shop price" } },
+                                buffer.readShopString(),
                             ),
                         )
                     }
@@ -175,7 +182,13 @@ internal data class ShopStatePayload(
                         )
                     }
                 }
-                ShopStatePayload(catalogId, revision, balance, limits, entries, result, shopkeeper)
+                val categories = buildList {
+                    repeat(buffer.readBoundedShopCount(MAX_ENTRIES, "category")) { add(buffer.readShopString()) }
+                }
+                require(categories.toSet() == entries.mapTo(HashSet(), ShopEntryView::category) && categories.size == categories.toSet().size) {
+                    "Shop categories do not match the entries"
+                }
+                ShopStatePayload(catalogId, revision, balance, limits, entries, result, shopkeeper, categories)
             },
         )
     }

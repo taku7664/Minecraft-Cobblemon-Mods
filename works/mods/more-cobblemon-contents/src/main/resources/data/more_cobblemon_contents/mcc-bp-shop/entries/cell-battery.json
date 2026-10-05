@@ -6,7 +6,8 @@
       "item_id": "cobblemon:cell_battery",
       "item_count": 1,
       "price_bp": 150,
-      "sort_order": 740
+      "sort_order": 740,
+      "category": "held_item"
     }
   ]
 }

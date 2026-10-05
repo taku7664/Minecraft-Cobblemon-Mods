@@ -6,7 +6,8 @@
       "item_id": "cobblemon:protein",
       "item_count": 1,
       "price_bp": 2,
-      "sort_order": 70
+      "sort_order": 70,
+      "category": "consumable"
     }
   ]
 }

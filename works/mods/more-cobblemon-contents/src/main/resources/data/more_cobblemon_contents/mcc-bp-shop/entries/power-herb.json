@@ -6,7 +6,8 @@
       "item_id": "cobblemon:power_herb",
       "item_count": 1,
       "price_bp": 200,
-      "sort_order": 670
+      "sort_order": 670,
+      "category": "held_item"
     }
   ]
 }

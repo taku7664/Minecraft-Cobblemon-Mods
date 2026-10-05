@@ -88,6 +88,55 @@ class BattlePointShopCatalogLoaderTest {
     }
 
     @Test
+    fun `entries sort into categories ordered by the rules then by first appearance`() {
+        val rules = rulesWithCategories("""["held_item", "consumable", "unused"]""")
+        val loaded = BattlePointShopCatalogLoader.loadSeparated(
+            ruleFragments = listOf("example:mcc-bp-shop/rules/mcc-core.json" to StringReader(rules)),
+            entryFragments = listOf(
+                "example:a.json" to StringReader(validEntryJson("rare_candy", 10, "consumable")),
+                "example:b.json" to StringReader(validEntryJson("mint", 20, "nature")),
+                "example:c.json" to StringReader(validEntryJson("choice_band", 30, "held_item")),
+                "example:d.json" to StringReader(validEntryJson("life_orb", 40)),
+            ),
+            itemExists = { true },
+        )
+
+        val catalog = (loaded as BattlePointShopCatalogLoadResult.Loaded).catalog
+        assertEquals(listOf("held_item", "consumable", "nature", "misc"), catalog.categories)
+        assertEquals("misc", catalog.entry("life_orb")?.category)
+        val plain = (BattlePointShopCatalogLoader.loadSeparated(
+            ruleFragments = listOf("example:rules.json" to StringReader(validRulesJson())),
+            entryFragments = listOf(
+                "example:a.json" to StringReader(validEntryJson("rare_candy", 10, "consumable")),
+                "example:b.json" to StringReader(validEntryJson("mint", 20, "nature")),
+                "example:c.json" to StringReader(validEntryJson("choice_band", 30, "held_item")),
+                "example:d.json" to StringReader(validEntryJson("life_orb", 40)),
+            ),
+            itemExists = { true },
+        ) as BattlePointShopCatalogLoadResult.Loaded).catalog
+        assertEquals(catalog.revision, plain.revision, "categories only sort the catalog for viewers")
+    }
+
+    @Test
+    fun `rejects invalid or duplicate categories`() {
+        listOf("""["held_item", "held_item"]""", """["Not An Id"]""", """[1]""", "\"held_item\"").forEach { categories ->
+            val rules = rulesWithCategories(categories)
+            val result = BattlePointShopCatalogLoader.loadSeparated(
+                ruleFragments = listOf("example:rules.json" to StringReader(rules)),
+                entryFragments = listOf("example:a.json" to StringReader(validEntryJson("choice_band", 10))),
+                itemExists = existingItems::contains,
+            )
+            assertTrue(result is BattlePointShopCatalogLoadResult.Rejected, categories)
+        }
+        val badEntry = BattlePointShopCatalogLoader.loadSeparated(
+            ruleFragments = listOf("example:rules.json" to StringReader(validRulesJson())),
+            entryFragments = listOf("example:a.json" to StringReader(validEntryJson("choice_band", 10, "Held Item"))),
+            itemExists = existingItems::contains,
+        )
+        assertTrue(badEntry is BattlePointShopCatalogLoadResult.Rejected)
+    }
+
+    @Test
     fun `rules without a shopkeeper fall back to the nurse villager`() {
         assertEquals(BattlePointShopkeeperAppearance.DEFAULT, separated(validRulesJson()).shopkeeper)
     }
@@ -216,7 +265,7 @@ class BattlePointShopCatalogLoaderTest {
         }
         """.trimIndent()
 
-    private fun validEntryJson(entryId: String, sortOrder: Int) =
+    private fun validEntryJson(entryId: String, sortOrder: Int, category: String? = null) =
         """
         {
           "schema_version": 1,
@@ -226,9 +275,19 @@ class BattlePointShopCatalogLoaderTest {
               "item_id": "cobblemon:$entryId",
               "item_count": 1,
               "price_bp": 25,
-              "sort_order": $sortOrder
+              "sort_order": $sortOrder${category?.let { ", \"category\": \"$it\"" }.orEmpty()}
             }
           ]
+        }
+        """.trimIndent()
+
+    private fun rulesWithCategories(categories: String) =
+        """
+        {
+          "schema_version": 1,
+          "catalog_id": "mcc_core",
+          "limits": { "max_cart_lines": 16, "max_quantity_per_line": 64, "max_total_items": 64 },
+          "categories": $categories
         }
         """.trimIndent()
 }

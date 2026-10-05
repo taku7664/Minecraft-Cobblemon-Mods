@@ -6,7 +6,8 @@
       "item_id": "cobblemon:health_feather",
       "item_count": 1,
       "price_bp": 1,
-      "sort_order": 120
+      "sort_order": 120,
+      "category": "consumable"
     }
   ]
 }

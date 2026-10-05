@@ -6,7 +6,8 @@
       "item_id": "cobblemon:sickly_candy",
       "item_count": 1,
       "price_bp": 5,
-      "sort_order": 240
+      "sort_order": 240,
+      "category": "consumable"
     }
   ]
 }

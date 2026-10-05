@@ -6,7 +6,8 @@
       "item_id": "cobblemon:calcium",
       "item_count": 1,
       "price_bp": 2,
-      "sort_order": 90
+      "sort_order": 90,
+      "category": "consumable"
     }
   ]
 }

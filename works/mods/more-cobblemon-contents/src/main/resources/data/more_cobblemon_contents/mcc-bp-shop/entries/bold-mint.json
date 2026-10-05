@@ -6,7 +6,8 @@
       "item_id": "cobblemon:bold_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 340
+      "sort_order": 340,
+      "category": "misc"
     }
   ]
 }

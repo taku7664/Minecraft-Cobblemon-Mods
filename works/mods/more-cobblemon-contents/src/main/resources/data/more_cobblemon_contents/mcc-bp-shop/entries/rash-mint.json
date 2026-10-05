@@ -6,7 +6,8 @@
       "item_id": "cobblemon:rash_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 400
+      "sort_order": 400,
+      "category": "misc"
     }
   ]
 }

@@ -6,7 +6,8 @@
       "item_id": "cobblemon:iron",
       "item_count": 1,
       "price_bp": 2,
-      "sort_order": 80
+      "sort_order": 80,
+      "category": "consumable"
     }
   ]
 }

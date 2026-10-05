@@ -6,7 +6,8 @@
       "item_id": "cobblemon:exp_candy_xl",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 40
+      "sort_order": 40,
+      "category": "consumable"
     }
   ]
 }

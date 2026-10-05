@@ -6,7 +6,8 @@
       "item_id": "cobblemon:eject_pack",
       "item_count": 1,
       "price_bp": 250,
-      "sort_order": 600
+      "sort_order": 600,
+      "category": "held_item"
     }
   ]
 }

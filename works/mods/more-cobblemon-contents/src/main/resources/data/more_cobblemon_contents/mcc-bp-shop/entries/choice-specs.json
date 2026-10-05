@@ -6,7 +6,8 @@
       "item_id": "cobblemon:choice_specs",
       "item_count": 1,
       "price_bp": 400,
-      "sort_order": 540
+      "sort_order": 540,
+      "category": "held_item"
     }
   ]
 }

@@ -6,7 +6,8 @@
       "item_id": "cobblemon:adamant_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 310
+      "sort_order": 310,
+      "category": "misc"
     }
   ]
 }

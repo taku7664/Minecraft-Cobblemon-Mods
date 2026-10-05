@@ -6,7 +6,8 @@
       "item_id": "cobblemon:numb_candy",
       "item_count": 1,
       "price_bp": 5,
-      "sort_order": 270
+      "sort_order": 270,
+      "category": "consumable"
     }
   ]
 }

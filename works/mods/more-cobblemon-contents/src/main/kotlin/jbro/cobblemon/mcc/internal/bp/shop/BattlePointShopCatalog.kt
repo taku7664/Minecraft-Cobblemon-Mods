@@ -15,7 +15,13 @@ internal data class BattlePointShopEntry(
     val itemCount: Int,
     val priceBp: Long,
     val sortOrder: Int,
-)
+    /** The shop tab the entry is listed under; it only sorts the catalog for viewers and is not part of the revision. */
+    val category: String = DEFAULT_CATEGORY,
+) {
+    companion object {
+        const val DEFAULT_CATEGORY = "misc"
+    }
+}
 
 /**
  * How the shop's keeper may look, tried in order on each client: the first whose texture the client has wins, so
@@ -41,9 +47,15 @@ internal class BattlePointShopCatalog internal constructor(
     val limits: BattlePointShopLimits,
     entries: List<BattlePointShopEntry>,
     val shopkeeper: List<BattlePointShopkeeperAppearance> = BattlePointShopkeeperAppearance.DEFAULT,
+    categoryOrder: List<String> = emptyList(),
 ) {
     private val orderedEntries = Collections.unmodifiableList(entries.sortedBy(BattlePointShopEntry::sortOrder))
     private val entriesById = Collections.unmodifiableMap(orderedEntries.associateBy(BattlePointShopEntry::entryId))
+
+    /** The categories that hold entries: those [categoryOrder] names first, in its order, then the rest as they first appear. */
+    val categories: List<String> = orderedEntries.map(BattlePointShopEntry::category).distinct().let { present ->
+        Collections.unmodifiableList(categoryOrder.filter(present::contains) + present.filterNot(categoryOrder::contains))
+    }
 
     fun entries(): List<BattlePointShopEntry> = orderedEntries
 

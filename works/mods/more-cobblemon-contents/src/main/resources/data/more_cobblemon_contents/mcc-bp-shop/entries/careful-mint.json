@@ -6,7 +6,8 @@
       "item_id": "cobblemon:careful_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 440
+      "sort_order": 440,
+      "category": "misc"
     }
   ]
 }

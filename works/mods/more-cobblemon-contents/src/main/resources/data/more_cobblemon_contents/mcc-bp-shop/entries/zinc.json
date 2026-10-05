@@ -6,7 +6,8 @@
       "item_id": "cobblemon:zinc",
       "item_count": 1,
       "price_bp": 2,
-      "sort_order": 100
+      "sort_order": 100,
+      "category": "consumable"
     }
   ]
 }

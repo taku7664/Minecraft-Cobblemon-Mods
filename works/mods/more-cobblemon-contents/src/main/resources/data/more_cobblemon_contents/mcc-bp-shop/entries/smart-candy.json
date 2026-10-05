@@ -6,7 +6,8 @@
       "item_id": "cobblemon:smart_candy",
       "item_count": 1,
       "price_bp": 15,
-      "sort_order": 210
+      "sort_order": 210,
+      "category": "consumable"
     }
   ]
 }

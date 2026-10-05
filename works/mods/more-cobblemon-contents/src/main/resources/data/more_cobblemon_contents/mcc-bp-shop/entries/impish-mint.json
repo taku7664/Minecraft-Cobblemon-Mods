@@ -6,7 +6,8 @@
       "item_id": "cobblemon:impish_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 350
+      "sort_order": 350,
+      "category": "misc"
     }
   ]
 }

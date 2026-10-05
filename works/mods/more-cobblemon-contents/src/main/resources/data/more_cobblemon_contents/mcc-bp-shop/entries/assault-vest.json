@@ -6,7 +6,8 @@
       "item_id": "cobblemon:assault_vest",
       "item_count": 1,
       "price_bp": 400,
-      "sort_order": 560
+      "sort_order": 560,
+      "category": "held_item"
     }
   ]
 }

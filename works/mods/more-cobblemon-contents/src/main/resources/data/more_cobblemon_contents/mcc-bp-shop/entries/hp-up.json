@@ -6,7 +6,8 @@
       "item_id": "cobblemon:hp_up",
       "item_count": 1,
       "price_bp": 2,
-      "sort_order": 60
+      "sort_order": 60,
+      "category": "consumable"
     }
   ]
 }

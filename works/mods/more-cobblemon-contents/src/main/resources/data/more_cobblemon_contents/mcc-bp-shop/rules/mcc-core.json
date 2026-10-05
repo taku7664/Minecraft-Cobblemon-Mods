@@ -18,5 +18,10 @@
         }
       }
     ]
-  }
+  },
+  "categories": [
+    "held_item",
+    "consumable",
+    "misc"
+  ]
 }

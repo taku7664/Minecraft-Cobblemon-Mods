@@ -16,14 +16,16 @@ class ShopPlayPayloadsTest {
             balanceBp = 125L,
             limits = BattlePointShopLimits(16, 64, 64),
             entries = listOf(
-                ShopEntryView("choice_band", "cobblemon:choice_band", 1, 25L),
-                ShopEntryView("life_orb", "cobblemon:life_orb", 1, 25L),
+                ShopEntryView("choice_band", "cobblemon:choice_band", 1, 25L, "held_item"),
+                ShopEntryView("rare_candy", "cobblemon:rare_candy", 1, 3L, "consumable"),
+                ShopEntryView("life_orb", "cobblemon:life_orb", 1, 25L, "held_item"),
             ),
             result = BattlePointShopPurchaseStatus.APPLIED,
             shopkeeper = listOf(
                 BattlePointShopkeeperAppearance.Skin("rctmod:textures/trainers/single/clerk.png", true),
                 BattlePointShopkeeperAppearance.Villager("cobblemon:nurse_joy", "minecraft:plains"),
             ),
+            categories = listOf("consumable", "held_item"),
         )
         val purchase = ShopPurchasePayload(
             UUID(0, 10),

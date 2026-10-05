@@ -6,7 +6,8 @@
       "item_id": "cobblemon:rare_candy",
       "item_count": 1,
       "price_bp": 3,
-      "sort_order": 50
+      "sort_order": 50,
+      "category": "consumable"
     }
   ]
 }

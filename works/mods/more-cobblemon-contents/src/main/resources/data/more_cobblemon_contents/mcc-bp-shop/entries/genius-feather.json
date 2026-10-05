@@ -6,7 +6,8 @@
       "item_id": "cobblemon:genius_feather",
       "item_count": 1,
       "price_bp": 1,
-      "sort_order": 150
+      "sort_order": 150,
+      "category": "consumable"
     }
   ]
 }

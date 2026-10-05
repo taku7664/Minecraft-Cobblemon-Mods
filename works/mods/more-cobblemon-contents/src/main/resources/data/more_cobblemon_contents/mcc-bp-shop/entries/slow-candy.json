@@ -6,7 +6,8 @@
       "item_id": "cobblemon:slow_candy",
       "item_count": 1,
       "price_bp": 5,
-      "sort_order": 290
+      "sort_order": 290,
+      "category": "consumable"
     }
   ]
 }

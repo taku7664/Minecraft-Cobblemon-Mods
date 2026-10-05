@@ -47,6 +47,8 @@ internal object MccShopClient {
     val purchase = PendingClientRequest()
     var itemOffset = 0
     var cartPage = 0
+    /** The category tab the catalog shows; null or a category the shop no longer has means its first one. */
+    var category: String? = null
     private var openedByServer = false
 
     fun accept(next: ShopStatePayload) {
@@ -85,7 +87,11 @@ internal object MccShopClient {
         purchase.reset()
         itemOffset = 0
         cartPage = 0
+        category = null
     }
+
+    /** The category tab to show from [categories]. */
+    fun shownCategory(categories: List<String>): String? = category?.takeIf(categories::contains) ?: categories.firstOrNull()
 
     /** True once after the server opened the hub on the shop, whose fresh state the tab then uses. */
     fun takeOpenedByServer(): Boolean = openedByServer.also { openedByServer = false }
@@ -134,7 +140,12 @@ internal class MccShopTab : MccHubTabContent {
             MccHubKit.placeholder(host, body, shop("empty"))
             return
         }
-        catalog = MccHubKit.scrollList(host, body, state.entries.map { entry ->
+        val shown = MccShopClient.shownCategory(state.categories)
+        val tabsHeight = if (state.categories.size > 1) MccHubKit.controlHeight(UiControlSize.SMALL) else 0
+        val parts = MccShopLayout.catalogBody(body, tabsHeight)
+        parts.find("tabs")?.let { tabs -> addCategoryTabs(host, tabs, state.categories, shown) }
+        val entries = state.entries.filter { shown == null || it.category == shown }
+        catalog = MccHubKit.scrollList(host, parts["list"], entries.map { entry ->
             MccHubKit.ListEntry(
                 itemName(entry),
                 trailing = Component.literal(bp(entry.priceBp)),
@@ -145,6 +156,23 @@ internal class MccShopTab : MccHubTabContent {
                 if (MccShopClient.cart.add(entry, state.limits, state.entries)) host.rebuild()
             }
         }, MccShopClient.itemOffset) { MccShopClient.itemOffset = it }
+    }
+
+    /** One tab per category across [rect]; switching starts the catalog list from its top. */
+    private fun addCategoryTabs(host: MccHubContentHost, rect: UiRect, categories: List<String>, shown: String?) {
+        MccHubKit.equalParts(rect, categories.size).zip(categories).forEach { (part, category) ->
+            val selected = category == shown
+            val button = CobblemonUiButton.create(part.x, part.y, part.width,
+                UiButtonSpec(MccHubKit.fitted(categoryName(category), part.width - 8), variant = UiButtonVariant.SECONDARY,
+                    size = UiControlSize.SMALL, width = UiWidthPolicy.Fixed(part.width), selected = selected)) {
+                if (!selected) {
+                    MccShopClient.category = category
+                    MccShopClient.itemOffset = 0
+                    host.rebuild()
+                }
+            }
+            host.add(button)
+        }
     }
 
     private fun addCart(host: MccHubContentHost, layout: MccShopLayout, state: ShopStatePayload, icon: CobblemonUiRenderContent?) {
@@ -272,6 +300,12 @@ internal data class MccShopLayout(
             return MccShopLayout(layout.find("keeper"), layout["catalog"], layout["arrow"], layout["cart"], layout.find("viewer"))
         }
 
+        /** The catalog card's body: the category tabs when there are any ([tabsHeight] above 0), then the list. */
+        fun catalogBody(body: UiRect, tabsHeight: Int): UiLayoutResult = UiLayout.column(gap = 4) {
+            if (tabsHeight > 0) fixed(tabsHeight, "tabs")
+            weight("list", min = 1)
+        }.solve(body)
+
         /** The cart card's body: its lines, then the purchase summary and the buy button at the bottom. */
         fun cartBody(body: UiRect, summaryHeight: Int): UiLayoutResult = UiLayout.column(gap = 4) {
             weight("list", min = 1)
@@ -310,6 +344,10 @@ private fun itemName(entry: ShopEntryView): Component {
     val name = itemStack(entry).takeUnless(ItemStack::isEmpty)?.hoverName ?: Component.literal(entry.itemId)
     return if (entry.itemCount > 1) Component.empty().append(name).append(" ×${entry.itemCount}") else name
 }
+
+/** A category's tab label, its ID when no translation names it. */
+private fun categoryName(category: String): Component =
+    Component.translatableWithFallback("screen.${MoreCobblemonContents.MOD_ID}.shop.category.$category", category)
 
 private fun bp(amount: Long): String = "${NumberFormat.getIntegerInstance().format(amount)} BP"
 

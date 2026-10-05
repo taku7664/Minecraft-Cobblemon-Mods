@@ -31,9 +31,10 @@ internal object BattlePointShopCatalogLoader {
         if (entries.isEmpty()) reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$.entries", "entries must not be empty")
         rejectDuplicates(entries.map(BattlePointShopEntry::entryId), "$.entries", "entry ID")
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
+        val categories = parseCategories(root, "$")
 
         BattlePointShopCatalogLoadResult.Loaded(
-            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries),
+            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, categoryOrder = categories),
         )
     } catch (error: ShopCatalogDecodeException) {
         BattlePointShopCatalogLoadResult.Rejected(listOf(error.issue))
@@ -82,6 +83,7 @@ internal object BattlePointShopCatalogLoader {
         )
         val shopkeeper = rules.get("shopkeeper")?.let { parseShopkeeper(it.requireObject("$rulePath.shopkeeper"), "$rulePath.shopkeeper") }
             ?: BattlePointShopkeeperAppearance.DEFAULT
+        val categories = parseCategories(rules, rulePath)
         val entries = entryFragments.flatMap { (resourceId, reader) ->
             val path = "resource[$resourceId]"
             val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
@@ -103,7 +105,7 @@ internal object BattlePointShopCatalogLoader {
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
 
         BattlePointShopCatalogLoadResult.Loaded(
-            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper),
+            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper, categories),
         )
     } catch (error: ShopCatalogDecodeException) {
         BattlePointShopCatalogLoadResult.Rejected(listOf(error.issue))
@@ -111,6 +113,20 @@ internal object BattlePointShopCatalogLoader {
         malformed(error)
     } catch (error: IllegalStateException) {
         malformed(error)
+    }
+
+    /** The order of the shop's category tabs, which like the keeper's looks stays out of the catalog revision. */
+    private fun parseCategories(value: JsonObject, path: String): List<String> {
+        if (!value.has("categories")) return emptyList()
+        val categories = value.requiredArray(path, "categories").mapIndexed { index, element ->
+            val itemPath = "$path.categories[$index]"
+            if (!element.isJsonPrimitive || !element.asJsonPrimitive.isString || !IdentifierSyntax.isStableId(element.asString)) {
+                reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, itemPath, "A category must be a stable ID")
+            }
+            element.asString
+        }
+        rejectDuplicates(categories, "$path.categories", "category")
+        return categories
     }
 
     /** The keeper's looks only dress the shop, so they stay out of the catalog revision a purchase is checked against. */
@@ -170,6 +186,7 @@ internal object BattlePointShopCatalogLoader {
             itemCount = value.requiredPositiveInt(path, "item_count"),
             priceBp = value.requiredPositiveLong(path, "price_bp"),
             sortOrder = value.requiredInt(path, "sort_order"),
+            category = if (value.has("category")) value.requiredStableId(path, "category") else BattlePointShopEntry.DEFAULT_CATEGORY,
         )
     }
 
@@ -275,13 +292,13 @@ private fun rejectDuplicates(values: List<String>, path: String, label: String) 
     }
 }
 
-private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries")
-private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "shopkeeper")
+private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries", "categories")
+private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "shopkeeper", "categories")
 private val SHOPKEEPER_FIELDS = setOf("appearances")
 private val APPEARANCE_FIELDS = setOf("skin", "slim", "villager")
 private val VILLAGER_FIELDS = setOf("profession", "type")
 private val ENTRY_ROOT_FIELDS = setOf("schema_version", "entries")
 private val LIMIT_FIELDS = setOf("max_cart_lines", "max_quantity_per_line", "max_total_items")
-private val ENTRY_FIELDS = setOf("entry_id", "item_id", "item_count", "price_bp", "sort_order")
+private val ENTRY_FIELDS = setOf("entry_id", "item_id", "item_count", "price_bp", "sort_order", "category")
 private const val RULE_SCHEMA_VERSION = 1
 private const val ENTRY_SCHEMA_VERSION = 1

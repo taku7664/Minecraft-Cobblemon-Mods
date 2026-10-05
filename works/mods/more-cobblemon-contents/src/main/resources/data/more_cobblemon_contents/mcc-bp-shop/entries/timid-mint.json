@@ -6,7 +6,8 @@
       "item_id": "cobblemon:timid_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 460
+      "sort_order": 460,
+      "category": "misc"
     }
   ]
 }

@@ -6,7 +6,8 @@
       "item_id": "cobblemon:brittle_candy",
       "item_count": 1,
       "price_bp": 5,
-      "sort_order": 260
+      "sort_order": 260,
+      "category": "consumable"
     }
   ]
 }

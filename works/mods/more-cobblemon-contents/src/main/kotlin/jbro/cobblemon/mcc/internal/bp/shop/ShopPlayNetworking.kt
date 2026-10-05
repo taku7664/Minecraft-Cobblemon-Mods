@@ -195,8 +195,9 @@ internal fun shopStatePayload(
     balanceBp = balanceBp,
     limits = catalog?.limits ?: BattlePointShopLimits(1, 1, 1),
     entries = catalog?.entries()?.map { entry ->
-        ShopEntryView(entry.entryId, entry.itemId, entry.itemCount, entry.priceBp)
+        ShopEntryView(entry.entryId, entry.itemId, entry.itemCount, entry.priceBp, entry.category)
     }.orEmpty(),
     result = if (catalog == null) BattlePointShopPurchaseStatus.CATALOG_UNAVAILABLE else result,
     shopkeeper = catalog?.shopkeeper ?: BattlePointShopkeeperAppearance.DEFAULT,
+    categories = catalog?.categories.orEmpty(),
 )

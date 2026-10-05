@@ -6,7 +6,8 @@
       "item_id": "cobblemon:courage_candy",
       "item_count": 1,
       "price_bp": 15,
-      "sort_order": 220
+      "sort_order": 220,
+      "category": "consumable"
     }
   ]
 }

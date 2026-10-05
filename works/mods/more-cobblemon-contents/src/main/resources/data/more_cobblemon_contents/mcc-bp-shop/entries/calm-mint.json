@@ -6,7 +6,8 @@
       "item_id": "cobblemon:calm_mint",
       "item_count": 1,
       "price_bp": 20,
-      "sort_order": 420
+      "sort_order": 420,
+      "category": "misc"
     }
   ]
 }

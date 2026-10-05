@@ -6,7 +6,8 @@
       "item_id": "mega_showdown:adrenaline_orb",
       "item_count": 1,
       "price_bp": 150,
-      "sort_order": 720
+      "sort_order": 720,
+      "category": "held_item"
     }
   ]
 }

@@ -6,7 +6,8 @@
       "item_id": "cobblemon:health_candy",
       "item_count": 1,
       "price_bp": 15,
-      "sort_order": 180
+      "sort_order": 180,
+      "category": "consumable"
     }
   ]
 }
