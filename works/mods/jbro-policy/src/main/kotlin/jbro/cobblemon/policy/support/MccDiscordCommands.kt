@@ -21,9 +21,10 @@ import net.minecraft.server.MinecraftServer
 internal object MccDiscordCommands {
     private const val RANKING_SIZE = 10
     private const val COLOR = 0xF2B24B
-    // Discord's limits for an embed's title and field name, and for a field's value.
+    // Discord's limits for an embed's title and field name, a field's value and an embed's description.
     private const val TITLE_LIMIT = 256
     private const val VALUE_LIMIT = 1024
+    private const val DESCRIPTION_LIMIT = 4096
 
     fun register() {
         DiscordCommands.add(record)
@@ -60,36 +61,48 @@ internal object MccDiscordCommands {
         }
     }
 
+    /** The record categories `/전적` asks for, in the order Discord lists them, by label to content ID. */
+    private val recordKinds = listOf(
+        "리그챌린지" to ManagedBattleContentIds.LEAGUE_CHALLENGE,
+        "배틀팩토리" to ManagedBattleContentIds.BATTLE_FACTORY,
+        "배틀타워" to ManagedBattleContentIds.BATTLE_TOWER,
+        "PvP" to ManagedBattleContentIds.PVP,
+    )
+
+    /** One category of a trainer's records: the hub dashboard's card for that content alone. */
     private val record = object : DiscordCommand {
         override val name = "전적"
-        override val description = "트레이너의 리그·배틀타워·배틀팩토리·PvP 전적"
-        override val options = JsonArray().apply { add(DiscordCommands.stringOption("닉네임", "마인크래프트 닉네임")) }
+        override val description = "트레이너의 리그챌린지·배틀팩토리·배틀타워·PvP 전적"
+        override val options = JsonArray().apply {
+            add(DiscordCommands.stringOption("분류", "볼 전적", recordKinds))
+            add(DiscordCommands.stringOption("닉네임", "마인크래프트 닉네임"))
+        }
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject {
+            val contentId = options["분류"].orEmpty()
+            val kind = recordKinds.firstOrNull { it.second == contentId }?.first
+                ?: return DiscordRest.message("볼 전적 분류를 골라 주세요.")
             val asked = options["닉네임"].orEmpty().trim()
             val profile = server.playerList.getPlayerByName(asked)?.gameProfile
                 ?: server.profileCache?.get(asked)?.orElse(null)
                 ?: return DiscordRest.message("'$asked' 트레이너를 찾지 못했어요. 서버에 한 번이라도 접속한 닉네임인지 확인해 주세요.")
-            val cards = MccDashboard.cards(server, profile.id)
+            val cards = MccDashboard.cards(server, profile.id).filter { it.contentId == contentId }
             val embed = JsonObject().apply {
-                addProperty("title", "${profile.name}의 전적".take(TITLE_LIMIT))
+                addProperty("title", "${profile.name}의 $kind 전적".take(TITLE_LIMIT))
                 addProperty("color", COLOR)
-                if (cards.isEmpty()) addProperty("description", "아직 기록이 없어요.")
-                add("fields", JsonArray().apply { cards.take(25).forEach { add(field(it)) } })
+                addProperty("description", cards.joinToString("\n\n", transform = ::lines).ifBlank { "아직 기록이 없어요." }
+                    .take(DESCRIPTION_LIMIT))
             }
             return DiscordRest.message(embed = embed)
         }
 
-        private fun field(card: MccDashboardCard) = JsonObject().apply {
-            addProperty("name", KoreanText.render(card.title).ifBlank { card.contentId }.take(TITLE_LIMIT))
-            val lines = card.stats.map { "**${KoreanText.render(it.label)}** ${KoreanText.render(it.value)}" } +
+        /** A card's stats, rows and note, one per line; the title already names the card. */
+        private fun lines(card: MccDashboardCard): String =
+            (card.stats.map { "**${KoreanText.render(it.label)}** ${KoreanText.render(it.value)}" } +
                 card.rows.map { row ->
                     val detail = row.detail?.let { " · " + KoreanText.render(it) }.orEmpty()
                     "${KoreanText.render(row.title)}: ${KoreanText.render(row.value)}$detail"
-                } + listOfNotNull(card.note?.let { "_${KoreanText.render(it)}_" })
-            addProperty("value", lines.joinToString("\n").ifBlank { "-" }.take(VALUE_LIMIT))
-            addProperty("inline", false)
-        }
+                } + listOfNotNull(card.note?.let { "_${KoreanText.render(it)}_" })).joinToString("\n")
     }
 
     private val ranking = object : DiscordCommand {
@@ -127,12 +140,25 @@ internal object MccDiscordCommands {
         }
     }
 
+    /**
+     * The wiki's address, and to a member who linked their Minecraft account, their own link that also shows their
+     * data on the wiki. The link opens their data to whoever has it, so only the caller sees the reply.
+     */
     private val wiki = object : DiscordCommand {
         override val name = "위키"
-        override val description = "빡켓몬 위키 주소"
+        override val description = "빡켓몬 위키 주소 (계정을 연동했다면 내 정보가 보이는 링크)"
+        override val ephemeral = true
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject =
             DiscordRest.message(WikiApi.publicUrl()?.let { "빡켓몬 위키: $it" } ?: "지금은 위키가 꺼져 있어요.")
+
+        override fun reply(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject {
+            val base = WikiApi.publicUrl() ?: return DiscordRest.message("지금은 위키가 꺼져 있어요.")
+            val player = DiscordLinks.all().entries.firstOrNull { it.value == caller.userId }?.key
+                ?: return DiscordRest.message("빡켓몬 위키: $base\n게임에서 `/디코인증`으로 계정을 연동하면 내 정보까지 보이는 링크를 받을 수 있어요.")
+            val link = WikiApi.sharedLinkFor(player) ?: return DiscordRest.message("지금은 위키가 꺼져 있어요.")
+            return DiscordRest.message("내 정보가 보이는 위키 링크: $link\n이 링크를 받은 사람은 내 정보를 볼 수 있으니 다른 사람에게 보내지 마세요.")
+        }
     }
 
     private val pokedex = object : DiscordCommand {
