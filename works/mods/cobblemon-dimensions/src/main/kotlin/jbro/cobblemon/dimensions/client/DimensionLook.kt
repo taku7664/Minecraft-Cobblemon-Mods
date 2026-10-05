@@ -13,7 +13,7 @@ import net.minecraft.world.phys.Vec3
  * - [nightGlow]: how much of the tint stays on the sky and fog at night, so the horizon glows instead of going black.
  * - [sunTexture], [sunSize]: a different sun; the overworld's is 30.
  * - [dayStars]: stars stay at least this bright by day.
- * - [ring]: a ring arching across the sky, drawn by [SkyExtras].
+ * - [aurora]: aurora curtains over the northern sky, drawn by [SkyExtras].
  */
 class DimensionLook(
     cloudLevel: Float,
@@ -26,7 +26,7 @@ class DimensionLook(
     val sunTexture: ResourceLocation? = null,
     val sunSize: Float = 30f,
     val dayStars: Float = 0f,
-    val ring: Boolean = false,
+    val aurora: Boolean = false,
 ) : DimensionSpecialEffects(cloudLevel, true, SkyType.NORMAL, false, false) {
 
     /**
