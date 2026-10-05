@@ -53,7 +53,7 @@
 
 ### 픽셀몬 9.4.1 분석 (참고만, 값·코드·에셋 복사 금지)
 
-- jar: `develop-product/temp/pixelmon/` (git 무시 경로). 라이선스 All Rights Reserved.
+- jar는 분석 후 지웠다(2026-10-06). 다시 볼 때는 Modrinth `Pixelmon-1.21.1-9.4.1-universal.jar`. 라이선스 All Rights Reserved.
 - 울트라스페이스는 데이터팩 JSON 차원. 9.4.1의 `noise_settings`는 바닐라 오버월드 공식(큰 바이옴)을 거의 그대로 쓴다. 사용자가 기억하는 섬 지형은 예전 버전으로 보인다(미확인).
 - 바이옴 6개를 `multi_noise`로 배치하고 하늘·안개 색, 음악을 바이옴마다 다르게 줬다. 가시, 모노리스, 나무는 Java feature.
 - 저중력은 매 틱 Y 속도 +0.07, 낙하 거리 -5, 피해 0.5배. 우리는 1.21.1의 `generic.gravity`·`safe_fall_distance` 속성으로 대신할 계획.
