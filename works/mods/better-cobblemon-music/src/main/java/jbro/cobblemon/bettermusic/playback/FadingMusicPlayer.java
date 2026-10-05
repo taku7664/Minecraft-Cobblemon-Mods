@@ -21,6 +21,7 @@ public final class FadingMusicPlayer {
     private double underwaterAmount;
     private double underwaterTarget;
     private boolean muffled;
+    private boolean distorted;
 
     public FadingMusicPlayer(Backend backend) {
         this(backend, ignored -> { });
@@ -61,6 +62,7 @@ public final class FadingMusicPlayer {
     public void tick(double nowSeconds) {
         requireTime(nowSeconds);
         updateEffects(nowSeconds);
+        backend.setDistortion(distorted ? 1.0 : 0.0);
         backend.setEffects(muffleAmount, underwaterAmount);
         updateEnvelopes(nowSeconds);
 
@@ -96,6 +98,11 @@ public final class FadingMusicPlayer {
 
     public void setMuffled(boolean muffled) {
         this.muffled = muffled;
+    }
+
+    /** Hard-route battles play under a distortion. */
+    public void setDistorted(boolean distorted) {
+        this.distorted = distorted;
     }
 
     public void setUnderwater(double target) {
@@ -195,6 +202,10 @@ public final class FadingMusicPlayer {
         void setVolume(Handle handle, double volume);
 
         void setEffects(double muffleAmount, double underwaterAmount);
+
+        /** How much of a distorted copy plays over the music, from zero (none) to one. */
+        default void setDistortion(double amount) {
+        }
 
         void stop(Handle handle);
 
