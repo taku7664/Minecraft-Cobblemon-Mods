@@ -110,8 +110,9 @@ DIMENSIONS = {
 }
 
 # Wild spawns come from Cobblemon's own spawn data: each biome here stands in for some of Cobblemon's biome tags and takes
-# every spawn Cobblemon gives those tags, with Cobblemon's bucket, weight, position and conditions as they are. Only the
-# biome, the dimension and the level change. Legendaries, Mythicals, Ultra Beasts and paradoxes never come along.
+# every spawn Cobblemon gives those tags, with Cobblemon's bucket, weight, position, conditions and level as they are.
+# Only the biome and the dimension change; League Challenge sets wild levels from the player's cap anyway.
+# Legendaries, Mythicals, Ultra Beasts and paradoxes never come along.
 BIOME_TAGS = {
     "ultra_deep_sea": ["is_spooky", "is_deep_dark", "is_end"],
     "ultra_desert": ["is_desert", "is_arid", "is_badlands"],
@@ -130,8 +131,6 @@ BIOME_TAGS = {
     "future_neon_forest": ["is_forest", "is_taiga", "is_magical", "is_spooky", "is_mushroom", "is_snowy_forest"],
     "future_flats": ["is_plains", "is_grassland", "is_temperate", "is_tundra", "is_cherry_blossom", "is_floral"],
 }
-# Every wild spawn in a dimension takes its level band.
-LEVELS = {"ultra_space": "50-60", "ancient": "35-50", "future": "35-50"}
 EXCLUDED_LABELS = {"legendary", "mythical", "ultra_beast", "paradox"}
 WEIGHT = {"common": 10.0, "uncommon": 5.0, "rare": 2.0, "ultra-rare": 1.0}
 G, SUB, SURF = "grounded", "submerged", "surface"
@@ -173,7 +172,6 @@ def wild_spawns(by_tag, dim_name, biome):
             seen.add(entry["id"])
             copy = json.loads(json.dumps(entry))
             copy["id"] = f"{NS}-{dim_name}-{biome}-{entry['id']}"
-            copy["level"] = LEVELS[dim_name]
             copy["condition"] = dict(copy.get("condition", {}), dimensions=[f"{NS}:{dim_name}"], biomes=[f"{NS}:{biome}"])
             out.append(copy)
     return out
@@ -279,16 +277,15 @@ def main():
         return species_ko.get(f"cobblemon.species.{species}.name", species)
     lines = ["# 차원 스폰표", "",
              "`works/tools/cobblemon-dimensions/gen_dimensions.py`가 스폰 데이터와 함께 만드는 표입니다. 직접 고치지 말고 스크립트를 고친 뒤 다시 돌립니다.", "",
-             "야생 포켓몬은 Cobblemon 기본 스폰 데이터에서 가져옵니다. 바이옴마다 맡는 Cobblemon 바이옴 태그가 있고, 그 태그의 스폰을 등급·가중치·위치·조건(시간, 빛, 물속 등) 그대로 옮깁니다. 레벨만 차원 범위로 바꿉니다. 전설·환상·울트라비스트·패러독스는 빠집니다. 바닐라 몹은 나오지 않습니다.", "",
+             "야생 포켓몬은 Cobblemon 기본 스폰 데이터에서 가져옵니다. 바이옴마다 맡는 Cobblemon 바이옴 태그가 있고, 그 태그의 스폰을 등급·가중치·위치·조건(시간, 빛, 물속 등) 그대로 옮깁니다. 레벨은 리그 챌린지가 플레이어 레벨 캡에 맞춰 정합니다. 전설·환상·울트라비스트·패러독스는 빠집니다. 바닐라 몹은 나오지 않습니다.", "",
              "등급은 Cobblemon 스폰 버킷입니다(흔함·가끔·드묾·아주 드묾). 같은 포켓몬이 조건별로 여러 번 들어간 경우 가장 흔한 등급으로 적었습니다.", ""]
     titles = {"ultra_space": "울트라스페이스", "ancient": "고대", "future": "미래"}
     for dim_name, dimension in DIMENSIONS.items():
         lines += [f"## {titles[dim_name]}", ""]
         if dim_name == "ultra_space":
-            lines += ["### 울트라비스트", "", "| 바이옴 | 포켓몬 | 레벨 | 등급 |", "|---|---|---|---|"]
-            lines += [f"| {biome_ko[f'biome.{NS}.{b}']} | {ko(s)} | {lv} | 아주 드묾 |" for s, b, lv in ULTRA_BEASTS]
+            lines += ["### 울트라비스트", "", "| 바이옴 | 포켓몬 | 등급 |", "|---|---|---|"]
+            lines += [f"| {biome_ko[f'biome.{NS}.{b}']} | {ko(s)} | 아주 드묾 |" for s, b, lv in ULTRA_BEASTS]
             lines += ["", "아고용은 베베놈 진화로만 얻습니다.", ""]
-        lines += [f"야생 포켓몬 레벨: {LEVELS[dim_name]}", ""]
         order = list(BUCKET_KO)
         for biome in dimension["biomes"]:
             tags = ", ".join(f"`{t}`" for t in BIOME_TAGS[biome])
