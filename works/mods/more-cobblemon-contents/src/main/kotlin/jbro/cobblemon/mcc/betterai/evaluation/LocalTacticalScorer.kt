@@ -300,7 +300,8 @@ internal object LocalTacticalScorer {
             0.0
         }
         val itemScore = if (nonDamagingScore != null) null else LocalRootItemEffectEvaluator.damagingScore(candidate, context, accuracy, tuning)
-        val total = pressure + (itemScore?.total ?: 0.0) + priorityBonus + knockoutBonus + spreadBonus -
+        val flinchValue = LocalRootFlinchValue.score(candidate, context, accuracy, tuning)
+        val total = pressure + (itemScore?.total ?: 0.0) + priorityBonus + knockoutBonus + spreadBonus + flinchValue -
             recoilPenalty -
             (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
                 UNCERTAIN_ABILITY_IMMUNITY_PENALTY

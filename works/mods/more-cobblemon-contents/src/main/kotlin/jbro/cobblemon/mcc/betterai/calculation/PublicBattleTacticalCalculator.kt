@@ -36,10 +36,17 @@ internal object PublicBattleTacticalCalculator {
     fun calculate(
         context: BattleDecisionContext,
         actingSide: BattleSide = BattleSide.ALLY,
+        /**
+         * True only for the live board a decision is taken from. Its observed turn order then conditions
+         * [BattleCandidateFactsView.actsFirstProbability]; a projected board must not, because it carries
+         * the same inferences under a speed context they were not observed in.
+         */
+        observedBoard: Boolean = false,
     ): BattleDecisionContext {
         if (context.candidates.all(::fullyCalculated)) return context
+        val observed = context.state.takeIf { observedBoard }
         return context.copy(
-            candidates = context.candidates.map { calculateCandidate(it, context, actingSide) },
+            candidates = context.candidates.map { calculateCandidate(it, context, actingSide, observed) },
         )
     }
 
@@ -210,21 +217,23 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        observed: BattleStateView?,
     ): BattleActionCandidate {
         val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
         if (candidate.kind == BattleActionKind.COMPOSITE) {
-            val components = candidate.componentActions.map { calculateCandidate(it, moveContext, actingSide) }
+            val components = candidate.componentActions.map { calculateCandidate(it, moveContext, actingSide, observed) }
             return candidate.copyWith(componentActions = components)
         }
         if (candidate.facts != null) return candidate
         val resolvedCandidate = resolveDynamicMove(candidate, moveContext, actingSide)
-        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, moveContext, actingSide))
+        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, moveContext, actingSide, observed))
     }
 
     private fun facts(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        observed: BattleStateView? = null,
     ): BattleCandidateFactsView {
         val details = candidate.moveDetails
         if (candidate.kind == BattleActionKind.SWITCH) {
@@ -357,7 +366,9 @@ internal object PublicBattleTacticalCalculator {
                 actorSlot = candidate.actorSlot,
                 actorAction = candidate,
                 opponentPriority = 0,
-            ),
+            )?.let { prior ->
+                observed?.let { LocalPublicTurnOrder.observedOrderAgainstActiveOpponent(it, context.state, actingSide, candidate, prior) } ?: prior
+            },
             standardDamageModel = (projection ?: declaredRange)?.let { BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL },
             standardDamageFractionRange = projection?.damageFractionRange ?: declaredRange,
             standardDamageRollKoProbabilityRange = projection?.koProbabilityRange

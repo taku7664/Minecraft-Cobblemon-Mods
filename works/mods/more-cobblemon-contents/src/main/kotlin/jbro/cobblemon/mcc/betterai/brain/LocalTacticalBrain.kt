@@ -159,7 +159,7 @@ internal class LocalTacticalBrain(
             LocalOpponentMoveUsage.forFormat(context.state.format),
         ))
         val assumedContext = LocalOpponentStatAssumption.applyToPublicState(boundContext, profile.difficulty.tier)
-        val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext)
+        val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext, observedBoard = true)
             .forPlanOwner(jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.LOCAL_BRAIN)
         val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
             calculatedContext.withoutActivePlan()

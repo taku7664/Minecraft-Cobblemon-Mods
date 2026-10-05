@@ -150,6 +150,32 @@ internal object LocalPublicTurnOrder {
         return speedOrderProbability(state, actor, opponent)
     }
 
+    /**
+     * [prior] conditioned on the order already seen between [actorAction]'s user and the opposing active
+     * Pokemon, for the board that was observed. A Togekiss that moved before Corviknight last turn kept
+     * reading as a coin flip at the root because only the search consulted the observation. Only the live
+     * board may do this: a projected board carries the same inferences under a different speed context.
+     */
+    fun observedOrderAgainstActiveOpponent(
+        observed: BattleStateView,
+        board: BattleStateView,
+        actorSide: BattleSide,
+        actorAction: BattleActionCandidate,
+        prior: Double,
+    ): Double {
+        if (prior <= 0.0 || prior >= 1.0) return prior
+        if (LocalPublicFieldMechanics.trickRoomActive(board)) return prior
+        if (alwaysLastWithinPriority(board, actorSide, actorAction) ||
+            fractionalPriorityChance(board, actorSide, actorAction) > 0.0) return prior
+        val actor = active(board, actorSide, actorAction.actorSlot) ?: return prior
+        val opponent = board.pokemon.singleOrNull {
+            it.side != actorSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        } ?: return prior
+        // A Mega Evolution candidate is calculated on a board with a different form, so the observation
+        // is withheld there by [LocalObservedActionOrder]'s speed-context check.
+        return LocalObservedActionOrder.probability(observed, board, actor.battlePokemonId, opponent.battlePokemonId, prior)
+    }
+
     /** P(a > b) plus half of P(a == b), for two independent uniform integer ranges. */
     fun uniformGreaterProbability(a: Pair<Int, Int>, b: Pair<Int, Int>): Double {
         val aValues = (a.second - a.first + 1).toLong()
