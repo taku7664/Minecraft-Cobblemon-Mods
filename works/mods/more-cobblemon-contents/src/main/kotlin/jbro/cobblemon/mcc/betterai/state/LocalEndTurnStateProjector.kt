@@ -153,8 +153,12 @@ internal object LocalEndTurnStateProjector {
                 pokemon.battlePokemonId in yawnPokemonIds && status == null && hp > 0.0 &&
                     !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, pokemon, "slp")
             }
+            // Hunger Switch flips Morpeko between its two modes at the end of every turn, unless it terastallized.
+            val formId = if (ability == "hungerswitch" && canonical(pokemon.speciesId) == "morpeko" && pokemon.knownTeraTypeId == null && hp > 0.0) {
+                if (canonical(pokemon.formId).orEmpty().contains("hangry")) "Normal" else "Hangry"
+            } else pokemon.formId
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0,
-                statusId = yawnSleep ?: orbStatus ?: if (status == null) null else pokemon.statusId)
+                statusId = yawnSleep ?: orbStatus ?: if (status == null) null else pokemon.statusId, formId = formId)
         }
         val projected = state.derive(
             pokemon = next,
@@ -218,12 +222,13 @@ internal object LocalEndTurnStateProjector {
         statStages: Map<String, Int>,
         fainted: Boolean,
         statusId: String? = pokemon.statusId,
+        formId: String? = pokemon.formId,
     ) = BattlePokemonStateView(
         battlePokemonId = pokemon.battlePokemonId,
         side = pokemon.side,
         activeSlot = pokemon.activeSlot,
         speciesId = pokemon.speciesId,
-        formId = pokemon.formId,
+        formId = formId,
         level = pokemon.level,
         hpFraction = hpFraction,
         statusId = statusId,
@@ -242,7 +247,7 @@ internal object LocalEndTurnStateProjector {
             when {
                 fainted -> effect.takeIf { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
                 effect in setOf(LocalReactiveAbilityState.ENTERED_THIS_TURN, LocalReactiveAbilityState.CUSTAP_CHECKED,
-                    LocalReactiveAbilityState.CUSTAP_PRIORITY) || canonical(effect) in TURN_VOLATILES -> null
+                    LocalReactiveAbilityState.CUSTAP_PRIORITY, LocalReactiveAbilityState.BOOSTED_THIS_TURN) || canonical(effect) in TURN_VOLATILES -> null
                 effect.startsWith(LocalReactiveAbilityState.SLOW_START_TURNS) -> {
                     val turns = (effect.substringAfter(LocalReactiveAbilityState.SLOW_START_TURNS).toIntOrNull() ?: 0) - 1
                     (LocalReactiveAbilityState.SLOW_START_TURNS + turns).takeIf { turns > 0 }

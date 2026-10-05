@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
 import jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector
@@ -332,6 +333,102 @@ class LocalGapFixesTest {
         assertEquals(1, afterKo.pokemon.single { it.battlePokemonId == heart.battlePokemonId }.statStages["special_attack"])
     }
 
+    @Test
+    fun `G-607 Opportunist copies a foe's raise and both raises are marked for this turn`() {
+        val dancer = mon(BattleSide.ALLY, 0, "normal")
+        val copier = mon(BattleSide.OPPONENT, 0, "psychic", ability = "opportunist")
+        val mirror = mon(BattleSide.ALLY, 1, "normal", ability = "opportunist")
+        val after = LocalStatStageChange.apply(state(listOf(dancer, copier, mirror)), dancer.battlePokemonId, dancer.battlePokemonId, mapOf("attack" to 2))
+        val copied = after.pokemon.single { it.battlePokemonId == copier.battlePokemonId }
+        assertEquals(2, copied.statStages["attack"])
+        assertEquals(0, after.pokemon.single { it.battlePokemonId == mirror.battlePokemonId }.statStages["attack"] ?: 0,
+            "an Opportunist's own copy is not copied back")
+        assertTrue(LocalReactiveAbilityState.BOOSTED_THIS_TURN in copied.knownVolatileEffectIds)
+        val dropped = LocalStatStageChange.apply(state(listOf(dancer, copier)), dancer.battlePokemonId, dancer.battlePokemonId, mapOf("speed" to -1))
+        assertEquals(0, dropped.pokemon.single { it.battlePokemonId == copier.battlePokemonId }.statStages["speed"] ?: 0, "drops are not copied")
+    }
+
+    @Test
+    fun `G-607 Alluring Voice confuses a target that set up earlier in the turn`() {
+        val singer = mon(BattleSide.ALLY, 0, "fairy", speed = 50)
+        val dancer = mon(BattleSide.OPPONENT, 0, "normal", speed = 150)
+        val state = state(listOf(singer, dancer))
+        val voice = attack("alluringvoice", "fairy", special = true, power = 80.0)
+        val swordsDance = status("swordsdance", listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
+            statStages = mapOf("attack" to 2))))
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, voice))
+        fun confused(reply: BattleActionCandidate) = PublicSingleTurnProjector.project(state, calculated.candidates.single(), reply, calculated, RecursiveActionHistory())
+            .map { outcome -> "confusion" in outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == dancer.battlePokemonId }.knownVolatileEffectIds }
+        val afterSetup = confused(swordsDance)
+        assertTrue(afterSetup.isNotEmpty() && afterSetup.all { it }, "$afterSetup")
+        assertTrue(confused(status("splash", emptyList())).none { it })
+    }
+
+    @Test
+    fun `G-607 Poison Puppeteer confuses what Pecharunt poisons`() {
+        val pecharunt = mon(BattleSide.ALLY, 0, "poison", ability = "poisonpuppeteer", species = "cobblemon:pecharunt", speed = 150)
+        val target = mon(BattleSide.OPPONENT, 0, "normal", speed = 50)
+        val state = state(listOf(pecharunt, target))
+        val toxic = status("toxic", listOf(BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, 1.0, "tox")),
+            target = BattleTargetSlot(BattleSide.OPPONENT, 0))
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, toxic))
+        val struck = PublicSingleTurnProjector.project(state, calculated.candidates.single(), status("splash", emptyList()), calculated, RecursiveActionHistory())
+            .map { outcome -> outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == target.battlePokemonId } }
+        assertTrue(struck.isNotEmpty() && struck.all { it.statusId == "tox" && "confusion" in it.knownVolatileEffectIds },
+            "${struck.map { it.statusId to it.knownVolatileEffectIds }}")
+    }
+
+    @Test
+    fun `G-607 Steadfast speeds up when flinched and Truant loafs the turn after it moved`() {
+        val fakeOut = attack("fakeout", "normal", power = 40.0, priority = 3, effects = listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.VOLATILE_STATUS, BattleMoveEffectTarget.SELECTED_TARGET, 1.0, "flinch")))
+        val steadfast = mon(BattleSide.OPPONENT, 0, "fighting", ability = "steadfast")
+        val state = state(listOf(mon(BattleSide.ALLY, 0, "normal"), steadfast))
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, fakeOut))
+        val reply = attack("closecombat", "fighting", power = 120.0, target = BattleTargetSlot(BattleSide.ALLY, 0))
+        val flinched = PublicSingleTurnProjector.project(state, calculated.candidates.single(), reply, calculated, RecursiveActionHistory())
+            .map { outcome -> outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == steadfast.battlePokemonId } }
+        assertTrue(flinched.isNotEmpty() && flinched.all { it.statStages["speed"] == 1 }, "${flinched.map { it.statStages }}")
+
+        val user = mon(BattleSide.ALLY, 0, "normal", speed = 150)
+        fun slakingTurn(volatiles: Set<String>): List<Pair<Double, Set<String>>> {
+            val slaking = mon(BattleSide.OPPONENT, 0, "normal", ability = "truant", volatiles = volatiles)
+            val board = state(listOf(user, slaking))
+            val calc = PublicBattleTacticalCalculator.calculate(context(board, status("splash", emptyList())))
+            return PublicSingleTurnProjector.project(board, calc.candidates.single(), reply, calc, RecursiveActionHistory()).map { outcome ->
+                outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }.hpFraction to
+                    outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == slaking.battlePokemonId }.knownVolatileEffectIds
+            }
+        }
+        val acting = slakingTurn(emptySet())
+        assertTrue(acting.isNotEmpty() && acting.all { it.first < 1.0 && "truant" in it.second }, "it attacks, then owes a turn: $acting")
+        val loafing = slakingTurn(setOf("truant"))
+        assertTrue(loafing.isNotEmpty() && loafing.all { it.first == 1.0 && "truant" !in it.second }, "it loafs and is free next turn: $loafing")
+    }
+
+    @Test
+    fun `G-607 Plus and Minus, Flower Gift and Hunger Switch`() {
+        fun multiplier(pokemon: List<BattlePokemonStateView>, move: BattleActionCandidate, weather: String? = null): Double =
+            LocalPublicMechanicsKernel.projectMove(move, context(state(pokemon, field(weather = weather)), null)).knownDamageMultiplier
+        val thunderbolt = attack("thunderbolt", "electric", special = true)
+        val alone = multiplier(listOf(mon(BattleSide.ALLY, 0, "electric", ability = "plus"), mon(BattleSide.ALLY, 1, "electric"),
+            mon(BattleSide.OPPONENT, 0, "normal")), thunderbolt)
+        val paired = multiplier(listOf(mon(BattleSide.ALLY, 0, "electric", ability = "plus"), mon(BattleSide.ALLY, 1, "electric", ability = "minus"),
+            mon(BattleSide.OPPONENT, 0, "normal")), thunderbolt)
+        assertEquals(1.5, paired / alone, 1e-9)
+        val cherrim = mon(BattleSide.ALLY, 1, "grass", ability = "flowergift", species = "cobblemon:cherrim")
+        val sunny = multiplier(listOf(mon(BattleSide.ALLY, 0, "rock"), cherrim, mon(BattleSide.OPPONENT, 0, "normal")), attack("tackle", "normal"), "sunnyday")
+        val cloudy = multiplier(listOf(mon(BattleSide.ALLY, 0, "rock"), cherrim, mon(BattleSide.OPPONENT, 0, "normal")), attack("tackle", "normal"))
+        assertEquals(1.5, sunny / cloudy, 1e-9)
+
+        val morpeko = mon(BattleSide.ALLY, 0, "electric", ability = "hungerswitch", species = "cobblemon:morpeko")
+        val first = LocalEndTurnStateProjector.project(state(listOf(morpeko, mon(BattleSide.OPPONENT, 0, "normal"))))
+        val hangry = first.pokemon.single { it.battlePokemonId == morpeko.battlePokemonId }
+        assertEquals("Hangry", hangry.formId)
+        assertEquals("dark", LocalPublicMoveDamageInputs.resolvedTypeId(attack("aurawheel", "electric"), hangry, first))
+        assertEquals("Normal", LocalEndTurnStateProjector.project(first).pokemon.single { it.battlePokemonId == morpeko.battlePokemonId }.formId)
+    }
+
     private fun field(
         weather: String? = null,
         terrain: String? = null,
@@ -367,6 +464,16 @@ class LocalGapFixesTest {
         ),
     )
 
+    private fun status(id: String, effects: List<BattleMoveEffectView>, target: BattleTargetSlot? = null) = BattleActionCandidate(
+        actionId = id, kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "cobblemon:$id",
+        targets = listOfNotNull(target),
+        moveDetails = BattleMoveCandidateView(
+            typeId = "normal", damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 10,
+            targetPattern = if (target == null) BattleMoveTargetPattern.SELF else BattleMoveTargetPattern.SELECTED_OPPONENT,
+            effects = if (effects.isEmpty()) null else BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, effects, scriptedBehavior = false),
+        ),
+    )
+
     private fun context(state: BattleStateView, candidate: BattleActionCandidate?) = BattleDecisionContext(
         requestId = UUID.randomUUID(), state = state,
         candidates = listOf(candidate ?: BattleActionCandidate("wait", BattleActionKind.WAIT)),
@@ -375,7 +482,7 @@ class LocalGapFixesTest {
     )
 
     private fun state(pokemon: List<BattlePokemonStateView>, field: BattleFieldStateView = field()) = BattleStateView(
-        battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 3, pokemon = pokemon, field = field,
+        battleId = UUID.randomUUID(), format = if (pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null } > 1) BattleFormat.DOUBLE else BattleFormat.SINGLE, turn = 3, pokemon = pokemon, field = field,
         remainingPokemonBySide = BattleSide.entries.associateWith { side -> pokemon.count { it.side == side && !it.fainted } },
         observedEvents = emptyList(), inferences = emptyList(),
     )
@@ -383,7 +490,7 @@ class LocalGapFixesTest {
     private fun mon(
         side: BattleSide, slot: Int?, type: String, speed: Int = 100, hp: Double = 1.0,
         item: String? = null, ability: String? = null, tera: String? = null,
-        species: String = "showdown:probe", id: UUID = UUID.randomUUID(),
+        species: String = "showdown:probe", id: UUID = UUID.randomUUID(), volatiles: Set<String> = emptySet(),
     ) = BattlePokemonStateView(
         battlePokemonId = id, side = side, activeSlot = slot, speciesId = species, formId = null, level = 50,
         hpFraction = hp, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(), knownAbilityId = ability,
@@ -394,6 +501,6 @@ class LocalGapFixesTest {
             specialDefence = BattleIntegerRange(100, 100), speed = BattleIntegerRange(speed, speed),
             knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
         ),
-        knownVolatileEffectIds = emptySet(), knownBaseStabTypeIds = setOf(type), knownTeraTypeId = tera,
+        knownVolatileEffectIds = volatiles, knownBaseStabTypeIds = setOf(type), knownTeraTypeId = tera,
     )
 }

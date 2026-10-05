@@ -392,10 +392,25 @@ internal object PublicSingleTurnProjector {
                 it.kind == RecursiveControlEffectKind.DESTINY_BOND && it.targetPokemonId == bondedActor }), attempting,
                 pending, sourceContext, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue)
         }
-        // Flinched earlier this turn: the move does not happen.
+        // Truant (BeforeMove 9): a turn after it moved, its user loafs around instead and the next turn is free again.
+        val truantActor = ordered.actorPokemonId?.takeIf { id -> ordered.action.kind == BattleActionKind.USE_MOVE &&
+            branch.state.pokemon.firstOrNull { it.battlePokemonId == id }?.let {
+                LocalPublicAbilityState.effectiveKnownAbility(branch.state, it) == TRUANT } == true }
+        if (truantActor != null && branch.state.pokemon.any { it.battlePokemonId == truantActor && TRUANT in it.knownVolatileEffectIds }) {
+            return listOf(branch.copy(state = withVolatile(branch.state, truantActor, TRUANT, present = false)))
+        }
+        // Flinched earlier this turn (BeforeMove 8): the move does not happen. Steadfast gains Speed from it.
         if (ordered.action.kind == BattleActionKind.USE_MOVE && ordered.actorPokemonId != null && branch.controlEffects.any {
                 it.kind == RecursiveControlEffectKind.FLINCH && it.targetPokemonId == ordered.actorPokemonId
-            }) return listOf(branch)
+            }) {
+            val flinched = ordered.actorPokemonId
+            var state = if (truantActor != null) withVolatile(branch.state, truantActor, TRUANT, present = true) else branch.state
+            if (state.pokemon.firstOrNull { it.battlePokemonId == flinched }?.let {
+                    LocalPublicAbilityState.effectiveKnownAbility(state, it) == "steadfast" } == true) {
+                state = LocalStatStageChange.apply(state, flinched, flinched, mapOf("speed" to 1))
+            }
+            return listOf(branch.copy(state = state))
+        }
         // Glaive Rush's opening lasts until its user's next move.
         val glaiveState = ordered.actorPokemonId?.let { id ->
             branch.state.pokemon.firstOrNull { it.battlePokemonId == id }
@@ -456,10 +471,11 @@ internal object PublicSingleTurnProjector {
         val lastAction = if (pending.none { queued -> queued.action.kind == BattleActionKind.USE_MOVE && branch.state.pokemon.any {
             it.battlePokemonId == queued.actorPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } }) ordered.action.withAddedTag(LocalReactiveAbilityState.ANALYTIC_ACTIVE) else ordered.action
-        val drawnAction = drawnAsideBy(lastAction, branch.state, ordered.side, branch.redirectingPokemonIds)
-        return LocalPublicMoveTargets.redirectOutcomes(drawnAction, actionContext(branch.state, drawnAction, sourceContext), ordered.side)
+        val actingState = if (truantActor != null) withVolatile(branch.state, truantActor, TRUANT, present = true) else branch.state
+        val drawnAction = drawnAsideBy(lastAction, actingState, ordered.side, branch.redirectingPokemonIds)
+        return LocalPublicMoveTargets.redirectOutcomes(drawnAction, actionContext(actingState, drawnAction, sourceContext), ordered.side)
                 .flatMap { (redirectedAction, redirectChance) -> applyMove(
-            branch.state,
+            actingState,
             ordered.side,
             LocalReactiveMoveState.resolve(branch.state, ordered.side, redirectedAction, branch.receivedMoveHits),
             sourceContext,
@@ -1697,6 +1713,12 @@ internal object PublicSingleTurnProjector {
         history,
     ).firstOrNull { it.kind == BattleActionKind.USE_MOVE && it.moveId == moveId }
 
+    private fun withVolatile(state: BattleStateView, pokemonId: UUID, volatile: String, present: Boolean): BattleStateView =
+        state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId != pokemonId || (volatile in it.knownVolatileEffectIds) == present) it
+            else it.copyState(knownVolatileEffectIds = if (present) it.knownVolatileEffectIds + volatile else it.knownVolatileEffectIds - volatile)
+        })
+
     private fun applyStatStage(
         state: BattleStateView,
         pokemonId: UUID,
@@ -1991,7 +2013,15 @@ internal object PublicSingleTurnProjector {
             BattleMoveEffectKind.STATUS -> {
                 val inflicter = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
                 if (effect.valueId == null || LocalPublicStatusImmunity.blocked(state, affected, effect.valueId, inflicter)) return state
-                affected.copyState(statusId = effect.valueId)
+                // Pecharunt's Poison Puppeteer confuses whatever its moves poison.
+                val puppeteered = affectedId != actorId && canonicalId(effect.valueId) in setOf("psn", "tox") &&
+                    inflicter != null && canonicalId(inflicter.speciesId) == "pecharunt" &&
+                    LocalPublicAbilityState.effectiveKnownAbility(state, inflicter) == "poisonpuppeteer" &&
+                    affected.knownVolatileEffectIds.none { canonicalId(it) == "confusion" } &&
+                    LocalPublicAbilityState.effectiveKnownAbility(state, affected) != "owntempo" &&
+                    !(LocalPublicFieldMechanics.terrainId(state) == "mistyterrain" && LocalPublicTurnOrder.grounded(state, affected))
+                affected.copyState(statusId = effect.valueId, knownVolatileEffectIds =
+                    if (puppeteered) affected.knownVolatileEffectIds + "confusion" else affected.knownVolatileEffectIds)
             }
             // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
             BattleMoveEffectKind.STAT_STAGE -> return LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages,
@@ -2780,6 +2810,7 @@ internal object PublicSingleTurnProjector {
     private val MENTAL_EFFECTS = setOf("taunt", "encore", "torment", "disable", "attract", "healblock")
     private const val SUBSTITUTE_COST = 0.25
     private val FLINCH_IMMUNE_ABILITIES = setOf("innerfocus", "shielddust")
+    private const val TRUANT = "truant"
     private val DEFROST_MOVES = setOf(
         "scald", "flareblitz", "sacredfire", "flamewheel", "fusionflare", "pyroball", "scorchingsands",
         "steameruption", "burnup", "matchagotcha", "ragingfury",

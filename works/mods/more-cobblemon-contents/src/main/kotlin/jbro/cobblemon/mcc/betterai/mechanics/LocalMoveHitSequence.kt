@@ -63,7 +63,8 @@ internal object LocalMoveHitSequence {
                 val onHit = LocalPersistentMoveState.afterHit(direct.state, actorId, targetId, action, !hadDecoy)
                 val reacted = hitFieldReactions(LocalAfterHitReactions.apply(previous.state, onHit, actorId, targetId, action,
                     direct.directDamageFraction, userEffects = userEffects && index == count - 1),
-                    targetId, action, direct.directDamageFraction, hadDecoy)
+                    targetId, action, direct.directDamageFraction, hadDecoy).let {
+                        raisedThisTurnSecondary(it, actorId, targetId, action, direct.directDamageFraction, hadDecoy) }
                 LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {
                     LocalMoveHitSequenceResult(LocalBerryMechanics.afterUpdate(it.state), previous.probability * it.probability,
                         previous.directDamageFraction + direct.directDamageFraction,
@@ -77,6 +78,38 @@ internal object LocalMoveHitSequence {
             }
         }
         return branches
+    }
+
+    /**
+     * Alluring Voice confuses and Burning Jealousy burns a target whose stats rose this turn: a secondary effect, so a
+     * Substitute, Shield Dust, a Covert Cloak and the user's Sheer Force stop it.
+     */
+    private fun raisedThisTurnSecondary(
+        state: BattleStateView,
+        actorId: UUID,
+        targetId: UUID?,
+        action: BattleActionCandidate,
+        directDamage: Double,
+        substituteTookHit: Boolean,
+    ): BattleStateView {
+        val moveId = PublicIds.canonical(action.moveId.orEmpty())
+        if (moveId != "alluringvoice" && moveId != "burningjealousy" || directDamage <= 0.0 || substituteTookHit) return state
+        val target = targetId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } } ?: return state
+        val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
+        if (target.fainted || target.hpFraction <= 0.0 || LocalReactiveAbilityState.BOOSTED_THIS_TURN !in target.knownVolatileEffectIds) return state
+        if (actor != null && LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "sheerforce") return state
+        if (LocalPublicAbilityState.effectiveKnownAbility(state, target) == "shielddust" ||
+            LocalPublicItemState.activeItemId(state, target) == "covertcloak") return state
+        val updated = if (moveId == "alluringvoice") {
+            if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "confusion" } ||
+                LocalPublicAbilityState.effectiveKnownAbility(state, target) == "owntempo" ||
+                LocalPublicFieldMechanics.terrainId(state) == "mistyterrain" && LocalPublicTurnOrder.grounded(state, target)) return state
+            target.copyState(knownVolatileEffectIds = target.knownVolatileEffectIds + "confusion")
+        } else {
+            if (target.statusId != null || LocalPublicStatusImmunity.blocked(state, target, "brn", actor)) return state
+            target.copyState(statusId = "brn")
+        }
+        return state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == target.battlePokemonId) updated else it })
     }
 
     /** Toxic Debris lays Toxic Spikes under a physical attacker and Seed Sower spreads Grassy Terrain, on each hit. */

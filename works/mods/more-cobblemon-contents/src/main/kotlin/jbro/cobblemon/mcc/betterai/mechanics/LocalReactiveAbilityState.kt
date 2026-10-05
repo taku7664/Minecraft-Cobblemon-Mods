@@ -13,6 +13,8 @@ internal object LocalReactiveAbilityState {
     const val TRACE_GAVE_UP = "better_ai:trace_gave_up"
     const val CUSTAP_CHECKED = "better_ai:custap_checked"
     const val CUSTAP_PRIORITY = "better_ai:custap_priority"
+    /** Showdown's statsRaisedThisTurn: Alluring Voice and Burning Jealousy read it. */
+    const val BOOSTED_THIS_TURN = "better_ai:boosted_this_turn"
 
     fun prepareTurn(state: BattleStateView, actions: List<Pair<BattleSide, BattleActionCandidate>>): List<LocalTraitStateBranch> {
         var branches = listOf(LocalTraitStateBranch(state, 1.0))

@@ -83,6 +83,13 @@ internal object LocalDamageAbilityModifiers {
             else -> 1.0
         }
         if (type == "electric" && actor.knownVolatileEffectIds.any { canonical(it) == "charge" }) multiplier *= 2.0
+        // Plus and Minus raise Special Attack by half beside an active partner with either ability.
+        if (special && ability in PLUS_MINUS && state.pokemon.any {
+                it.side == actor.side && it.battlePokemonId != actor.battlePokemonId && it.activeSlot != null && !it.fainted &&
+                    it.hpFraction > 0.0 && LocalPublicAbilityState.effectiveKnownAbility(state, it) in PLUS_MINUS
+            }) multiplier *= 1.5
+        // Cherrim's Flower Gift raises its side's Attack by half in sun.
+        if (physical && weather in SUN && flowerGift(state, actor.side)) multiplier *= 1.5
         // Power Spot on the user's partner strengthens its moves by 30%.
         if (activeWith(state, "powerspot", actor.side, except = actor)) multiplier *= 1.3
         // Steely Spirit and the auras reach every Pokemon on the field.
@@ -130,6 +137,8 @@ internal object LocalDamageAbilityModifiers {
             "quarkdrive" -> paradox(target, LocalPublicItemState.activeItemId(state, target), terrain == "electricterrain", physical, special, offence = false)
             else -> 1.0
         }
+        // Cherrim's Flower Gift raises its side's Special Defence by half in sun.
+        if (special && weather in SUN && flowerGift(state, target.side)) multiplier /= 1.5
         // Glaive Rush leaves its user taking double damage until it moves again.
         if (target.knownVolatileEffectIds.any { canonical(it) == "glaiverush" }) multiplier *= 2.0
         // Delta Stream takes away a Flying type's weaknesses.
@@ -211,6 +220,13 @@ internal object LocalDamageAbilityModifiers {
             val chance = effect.probability ?: return@any false
             chance > 0.0 && chance < 1.0 && effect.kind in SECONDARY_KINDS
         }
+
+    private fun flowerGift(state: BattleStateView, side: BattleSide): Boolean = state.pokemon.any {
+        it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+            canonical(it.speciesId) == "cherrim" && LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowergift"
+    }
+
+    private val PLUS_MINUS = setOf("plus", "minus")
 
     private fun activeWith(
         state: BattleStateView,

@@ -44,6 +44,8 @@ internal class Cobblemon173PublicBattleObserver(
     private val gastroAcid = linkedSetOf<UUID>()
     private val endedGas = linkedSetOf<UUID>()
     private val faintedOpponents = linkedSetOf<UUID>()
+    /** The last turn a Truant holder moved in: it loafs on the next one. */
+    private val truantMovedTurn = linkedMapOf<UUID, Int>()
     private var sequence = 0L
     private var currentTurn = 0
     private var weather: TrackedTimedEffect? = null
@@ -79,6 +81,7 @@ internal class Cobblemon173PublicBattleObserver(
                 }
                 gastroAcid.remove(incoming.battlePokemonId)
                 endedGas.remove(incoming.battlePokemonId)
+                truantMovedTurn.remove(incoming.battlePokemonId)
                 val inherited = when {
                     transferMove != null -> LocalPersistentMoveState.passableEffects(outgoing?.knownVolatileEffectIds.orEmpty(),
                         shedTail = transferMove == "shedtail")
@@ -100,6 +103,7 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.MoveUsed -> {
                 val actor = upsert(observation.actor)
+                truantMovedTurn[actor.battlePokemonId] = observation.turn
                 pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
                     Cobblemon173PublicPersistentMoveState.afterMove(actor.knownVolatileEffectIds,
                         observation.moveId, observation.ppLockedContinuation))
@@ -469,7 +473,7 @@ internal class Cobblemon173PublicBattleObserver(
 
     @Synchronized
     fun publicSnapshot(): Cobblemon173PublicBattleSnapshot = Cobblemon173PublicBattleSnapshot(
-        pokemon = pokemon.values.sortedBy { it.battlePokemonId.toString() },
+        pokemon = pokemon.values.sortedBy { it.battlePokemonId.toString() }.map(::withTruantTurn),
         field = BattleFieldStateView(
             weather = weather?.toView(currentTurn),
             terrain = terrain?.toView(currentTurn),
@@ -491,8 +495,18 @@ internal class Cobblemon173PublicBattleObserver(
         transformedPokemon = copiedPpSpent.keys,
     )
 
+    /** Truant's volatile, which Showdown never announces: set after the turn its holder moved, gone after it loafs. */
+    private fun withTruantTurn(holder: BattlePokemonStateView): BattlePokemonStateView {
+        val moved = truantMovedTurn[holder.battlePokemonId] ?: return holder
+        val truant = holder.activeSlot != null && !holder.fainted && moved >= currentTurn - 1 &&
+            (PublicIds.canonical(holder.knownAbilityId.orEmpty()) == "truant" || PublicIds.canonical(holder.speciesId) in TRUANT_SPECIES)
+        return if (truant && "truant" !in holder.knownVolatileEffectIds)
+            holder.copyView(knownVolatileEffectIds = holder.knownVolatileEffectIds + "truant") else holder
+    }
+
     @Synchronized
     fun reset() {
+        truantMovedTurn.clear()
         pokemon.clear()
         publicTypes.reset()
         events.clear()
@@ -717,6 +731,7 @@ internal class Cobblemon173PublicBattleObserver(
 
     private companion object {
         const val DEFAULT_MAXIMUM_RECENT_EVENTS = 128
+        val TRUANT_SPECIES = setOf("slakoth", "slaking")
         val STACKABLE_SIDE_CONDITIONS = mapOf("spikes" to 3, "toxicspikes" to 2)
     }
 

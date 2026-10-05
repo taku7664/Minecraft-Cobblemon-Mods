@@ -35,6 +35,8 @@ internal object LocalStatStageChange {
         updateItems: Boolean,
         mirrorReflection: Boolean,
         bypassesSubstitute: Boolean = false,
+        /** Opportunist's own copy: Showdown does not let a foe's Opportunist copy it back. */
+        opportunistCopy: Boolean = false,
     ): BattleStateView {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
@@ -75,12 +77,17 @@ internal object LocalStatStageChange {
             next = applyBoost(next, source.battlePokemonId, targetId, mapOf(stat to amount),
                 ignoreTargetAbility = false, updateItems = false, mirrorReflection = true)
         }
+        val raised = linkedMapOf<String, Int>()
         for ((stat, amount) in change) {
             val current = next.pokemon.first { it.battlePokemonId == targetId }
             val before = current.statStages.entries.firstOrNull { normalise(it.key) == normalise(stat) }?.value ?: 0
             next = changeStages(next, current, mapOf(stat to amount))
             val after = next.pokemon.first { it.battlePokemonId == targetId }.statStages.entries
                 .firstOrNull { normalise(it.key) == normalise(stat) }?.value ?: 0
+            if (after > before) {
+                raised[stat] = after - before
+                next = markBoosted(next, targetId)
+            }
             // AfterEachBoost reacts to each actual decrease, with its own cap, before the next stat.
             if (after < before && source != null && source.side != target.side) {
                 val reactiveStat = when (ability) {
@@ -91,6 +98,17 @@ internal object LocalStatStageChange {
                 if (reactiveStat != null) next = applyBoost(next, targetId, targetId,
                     mapOf(reactiveStat to 2), ignoreTargetAbility = false, updateItems = false,
                     mirrorReflection = false)
+            }
+        }
+        // Opportunist copies a foe's actual raises as they happen (FoeAfterBoost), but not another Opportunist's copy.
+        if (raised.isNotEmpty() && !opportunistCopy) {
+            val boosted = next.pokemon.first { it.battlePokemonId == targetId }
+            next.pokemon.filter {
+                it.side != boosted.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                    LocalPublicAbilityState.effectiveKnownAbility(next, it) == OPPORTUNIST
+            }.forEach { foe ->
+                next = applyBoost(next, foe.battlePokemonId, foe.battlePokemonId, raised, ignoreTargetAbility = false,
+                    updateItems = false, mirrorReflection = false, opportunistCopy = true)
             }
         }
         if (!updateItems) return next
@@ -126,6 +144,11 @@ internal object LocalStatStageChange {
         }
         return change
     }
+
+    private fun markBoosted(state: BattleStateView, pokemonId: UUID): BattleStateView = state.copyState(pokemon = state.pokemon.map {
+        if (it.battlePokemonId == pokemonId && LocalReactiveAbilityState.BOOSTED_THIS_TURN !in it.knownVolatileEffectIds)
+            it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + LocalReactiveAbilityState.BOOSTED_THIS_TURN) else it
+    })
 
     /** A White Herb restores lowered stats once, then is spent. */
     fun whiteHerb(state: BattleStateView, pokemonId: UUID): BattleStateView {
@@ -172,6 +195,7 @@ internal object LocalStatStageChange {
 
     private val DROP_STOPPING_ABILITIES = setOf("clearbody", "whitesmoke", "fullmetalbody")
     private const val MIRROR_ARMOR = "mirrorarmor"
+    private const val OPPORTUNIST = "opportunist"
     private const val CLEAR_AMULET = "clearamulet"
     private const val WHITE_HERB = "whiteherb"
     private const val MIST = "mist"
