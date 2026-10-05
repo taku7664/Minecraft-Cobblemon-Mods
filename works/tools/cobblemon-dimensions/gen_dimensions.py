@@ -153,6 +153,9 @@ PARADOXES = [
     ("ironmoth", "future", "future_crystal", G, None), ("ironjugulis", "future", "future_neon_forest", G, "night"),
     ("ironvaliant", "future", "future_neon_forest", G, None),
 ]
+# Same as the paradoxes: about a sixth of a typical ultra-rare spawn. How rare that ends up differs by biome, since each
+# biome's other ultra-rare spawns add up differently.
+ULTRA_BEAST_WEIGHT = 5.0
 BUCKET_KO = {"common": "흔함", "uncommon": "가끔", "rare": "드묾", "ultra-rare": "아주 드묾"}
 
 
@@ -296,7 +299,8 @@ def main():
           {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": paradoxes})
 
     write(DATA / "spawn_pool_world/ultra_beasts.json", {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [],
-          "spawns": [spawn(s, s, "ultra-rare", str(lv), G, "ultra_space", b) for s, b, lv in ULTRA_BEASTS]})
+          "spawns": [dict(spawn(s, s, "ultra-rare", str(lv), G, "ultra_space", b), weight=ULTRA_BEAST_WEIGHT)
+                     for s, b, lv in ULTRA_BEASTS]})
 
     # The spawn table, from the same data.
     def ko(species):

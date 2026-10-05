@@ -13,7 +13,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -33,7 +33,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -53,7 +53,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "40",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -73,7 +73,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -93,7 +93,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -113,7 +113,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -133,7 +133,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -153,7 +153,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -173,7 +173,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
@@ -193,7 +193,7 @@
       "spawnablePositionType": "grounded",
       "bucket": "ultra-rare",
       "level": "60",
-      "weight": 1.0,
+      "weight": 5.0,
       "condition": {
         "dimensions": [
           "cobblemon_dimensions:ultra_space"
