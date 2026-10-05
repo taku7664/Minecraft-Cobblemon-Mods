@@ -29,6 +29,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.policy.LocalActionChoiceSeed
@@ -135,6 +136,11 @@ internal class LocalTacticalBrain(
         )
 
     override fun decide(
+        session: BattleBrainSession,
+        context: BattleDecisionContext,
+    ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) { decideWithTuning(session, context) }
+
+    private fun decideWithTuning(
         session: BattleBrainSession,
         context: BattleDecisionContext,
     ): CompletionStage<BattleDecision> {

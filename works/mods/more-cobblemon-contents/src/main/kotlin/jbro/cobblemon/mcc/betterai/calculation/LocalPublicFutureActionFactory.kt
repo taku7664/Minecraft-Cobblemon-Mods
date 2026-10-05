@@ -77,7 +77,12 @@ internal object PublicFutureActionFactory {
                 Int.MAX_VALUE, Int.MAX_VALUE, LocalHypothesisPriorityReservation.NONE, null,
             )
         }
-        if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
+        if (bySlot.any(List<BattleActionCandidate>::isEmpty)) {
+            // A revealed slot keeps its pressure while its partner's options are unknown (Codex 39b668f6, measured
+            // under LocalDecisionTuning.doublesSlotReplies); off, the unknown partner empties both.
+            return if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().doublesSlotReplies)
+                bySlot.flatten().distinctBy(BattleActionCandidate::actionId) else emptyList()
+        }
         if (state.format == BattleFormat.SINGLE || bySlot.size == 1) return bySlot.single().distinctBy(BattleActionCandidate::actionId)
         val seen = HashSet<String>()
         val out = ArrayList<BattleActionCandidate>()

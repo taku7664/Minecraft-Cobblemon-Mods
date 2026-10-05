@@ -22,7 +22,17 @@ internal class LocalKnockoutProfile private constructor(
     val expectedUses: Double,
 ) {
     companion object {
-        private const val GRID = 1000
+        const val MAXIMUM_CELLS = 1000
+        private const val GRID = MAXIMUM_CELLS
+
+        fun fromProjected(survival: List<Double>, damage: List<Double>, targetHp: Double, meanRoll: Double,
+            accuracy: Double, canContinue: Boolean): LocalKnockoutProfile {
+            val left = survival.last()
+            val tail = if (left <= 0.0) 0.0 else if (!canContinue || meanRoll * accuracy <= 0.0) Double.POSITIVE_INFINITY
+                else left * ((targetHp - damage.last()).coerceAtLeast(0.0) / (meanRoll * accuracy))
+            val expected = survival.dropLast(1).sum() + tail
+            return LocalKnockoutProfile(survival, damage, expected)
+        }
 
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
             val hit = accuracy.coerceIn(0.0, 1.0)

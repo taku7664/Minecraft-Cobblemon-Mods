@@ -186,8 +186,11 @@ internal object LocalTurnCostScoreCalculator {
             if ((effect.probability ?: 1.0) < 1.0) continue
             when {
                 effect.kind == BattleMoveEffectKind.STATUS && effect.target == BattleMoveEffectTarget.SELECTED_TARGET &&
-                    effect.valueId?.let(PublicIds::canonical) in PLAYED_OUT_STATUSES && target.statusId == null -> {
+                    effect.valueId?.let(PublicIds::canonical) in playedOutStatuses() && target.statusId == null -> {
                     val status = PublicIds.canonical(effect.valueId!!)
+                    val subject = next.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+                    val source = next.pokemon.firstOrNull { it.battlePokemonId == userId }
+                    if (jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(next, subject, status, source)) continue
                     next = next.copyState(pokemon = next.pokemon.map {
                         if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = status) else it
                     })
@@ -202,11 +205,15 @@ internal object LocalTurnCostScoreCalculator {
                 }
             }
         }
-        return next.takeIf { applied }
+        return jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusBerry.afterUpdate(next).takeIf { applied }
     }
 
     /** Statuses whose effect the exchange reads: a burn halves physical damage, paralysis halves Speed. */
     private val PLAYED_OUT_STATUSES = setOf("brn", "par")
+    /** Sleep, freeze and poison too when the repeated exchange plays its turns out (Codex 9838243d, under measurement). */
+    private fun playedOutStatuses(): Set<String> =
+        if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups) EVOLVED_STATUSES else PLAYED_OUT_STATUSES
+    private val EVOLVED_STATUSES = setOf("brn", "par", "slp", "frz", "psn", "tox")
     private const val MINIMUM_STANDING_HP = 0.01
     private const val SOLE_ANSWER = 0.5
 }

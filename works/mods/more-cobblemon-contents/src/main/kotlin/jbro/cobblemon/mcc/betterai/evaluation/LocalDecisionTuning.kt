@@ -162,6 +162,27 @@ internal data class LocalDecisionTuning(
      */
     val mechanicReserve: Boolean = true,
     /**
+     * A depth-one line credits the change in public attack choices a switch brings (LocalOnePlySwitchPositionValue,
+     * Codex cae90ff7), which no continuation leaf reads at that depth. Off until a duel measures it.
+     */
+    val onePlySwitchPosition: Boolean = false,
+    /**
+     * Doubles: knockout credit two components put on one opponent overlaps by their partial and spread chances too,
+     * read as independent (Codex 5c8b13c5); off, only duplicate certain credit is removed. Off until a duel measures it.
+     */
+    val jointKnockoutCredit: Boolean = false,
+    /**
+     * Doubles replies by slot (Codex e7df6328, 39b668f6): each unknown reply slot carries the uncertainty reserve, and a
+     * revealed slot keeps its attack pressure while its partner's options are unknown. Off until a duel measures it.
+     */
+    val doublesSlotReplies: Boolean = false,
+    /**
+     * The matchup exchange plays a repeated attack's turns out through the turn projector (status, items, abilities,
+     * flinches) instead of repeating its first roll, and counts sleep, freeze and poison (Codex 9838243d). Costly; off
+     * until a duel measures it.
+     */
+    val evolvingMatchups: Boolean = false,
+    /**
      * Weight of a doubles Protect's credit for the hits it turns away (LocalProtectCredit): the opponents' predicted
      * knockout chance on the user in knockout material, and the HP they are expected to take. At 0.5: it fixes the
      * doubles Protect puzzle (played out, Protect -2.11 against Close Combat -3.76) and doubles duels at 1.0 were

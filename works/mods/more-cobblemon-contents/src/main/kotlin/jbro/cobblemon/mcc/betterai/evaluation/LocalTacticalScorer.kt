@@ -113,6 +113,7 @@ internal object LocalTacticalScorer {
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double {
         if (tuning.legacyRawPowerFallback || tuning.knockoutMaterialScore <= 0.0) return 0.0
+        if (tuning.jointKnockoutCredit) return jointKnockoutOverlap(candidate, context, tuning)
         val fullCredits = candidate.componentActions.mapNotNull { action ->
             if (action.kind != BattleActionKind.USE_MOVE || action.mechanic != null ||
                 action.moveDetails?.targetPattern != BattleMoveTargetPattern.SELECTED_OPPONENT) return@mapNotNull null
@@ -125,6 +126,38 @@ internal object LocalTacticalScorer {
         }
         return fullCredits.groupingBy { it }.eachCount().values.sumOf { count ->
             (count - 1).coerceAtLeast(0) * tuning.knockoutMaterialScore
+        }
+    }
+
+    /**
+     * Codex 5c8b13c5: every component's knockout credit on the same opponent, partial and spread hits included, less
+     * the chance that any one of them knocks it out, read as independent. Under measurement ([LocalDecisionTuning.jointKnockoutCredit]).
+     */
+    private fun jointKnockoutOverlap(candidate: BattleActionCandidate, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double {
+        val credits = candidate.componentActions.flatMap { action ->
+            if (action.kind != BattleActionKind.USE_MOVE) return@flatMap emptyList()
+            val spread = action.facts?.spreadTargets.orEmpty()
+            val primary = spread.firstOrNull()?.let { jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(it.side, it.slot) }
+                ?: action.targets.singleOrNull()
+                ?: context.state.pokemon.singleOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+                    ?.let { jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(it.side, requireNotNull(it.activeSlot)) }
+            val accuracy = LocalPublicAccuracy.probability(action, context, BattleSide.ALLY)
+            buildList {
+                if (primary?.side == BattleSide.OPPONENT) add(primary to (knockoutUtility(action, tuning, context) / tuning.knockoutMaterialScore))
+                spread.drop(1).filter { it.side == BattleSide.OPPONENT }.forEach { extra ->
+                    val probability = when (extra.standardKnockoutAssessment) {
+                        jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment.GUARANTEED -> 1.0
+                        jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment.POSSIBLE -> extra.standardDamageRollKoProbabilityRange
+                            ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
+                        else -> 0.0
+                    }
+                    add(jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(extra.side, extra.slot) to probability * accuracy)
+                }
+            }
+        }
+        return credits.groupBy({ it.first }, { it.second.coerceIn(0.0, 1.0) }).values.sumOf { probabilities ->
+            val union = 1.0 - probabilities.fold(1.0) { survival, probability -> survival * (1.0 - probability) }
+            (probabilities.sum() - union).coerceAtLeast(0.0) * tuning.knockoutMaterialScore
         }
     }
 

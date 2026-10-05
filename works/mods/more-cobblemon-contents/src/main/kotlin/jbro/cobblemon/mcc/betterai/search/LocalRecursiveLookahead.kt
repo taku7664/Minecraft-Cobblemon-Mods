@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolver
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
+import jbro.cobblemon.mcc.betterai.evaluation.LocalOnePlySwitchPositionValue
 import jbro.cobblemon.mcc.betterai.evaluation.LocalRecoveryLoop
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial
@@ -929,7 +930,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                         LocalRecoveryLoop.streak(it, history.losingHealStreakByPokemon, context)
                     } * tuning.recoveryLoopPenalty
                     val immediateTurnDelta = immediateTurnScore.total + outcome.expectedScoreAdjustment - healLoop
-                    val immediateValue = turnStartValue + immediateTurnDelta
+                    // A depth-one line has no continuation leaf to read the public attack choices
+                    // brought by a switch. Keep that narrow value separate from immediate owners.
+                    val switchPositionDelta = if (depth <= 1 && !battleEnded(outcome.state)) {
+                        LocalOnePlySwitchPositionValue.delta(state, outcome.state, projectionContext,
+                            actionCalculationCache, tuning, ::projectedWorkAvailable)
+                    } else 0.0
+                    val immediateValue = turnStartValue + immediateTurnDelta + switchPositionDelta
                     val stopBranch = !battleEnded(outcome.state) &&
                         LocalTurnBranchPruner.shouldStopBranch(
                             immediateTurnDelta = immediateTurnDelta,
@@ -996,7 +1003,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                             immediateValue + FUTURE_DELTA_DISCOUNT * (continuationValue - immediateValue)
                         }
                     }
-                    val uncertaintyReserve = if (opponentAction.isUnknownPublicResponse()) {
+                    val uncertaintyReserve = if (tuning.doublesSlotReplies) {
+                        LocalExpectedMoveResponseConfidence.reserveFor(opponentAction, UNKNOWN_RESPONSE_RESERVE)
+                    } else if (opponentAction.isUnknownPublicResponse()) {
                         UNKNOWN_RESPONSE_RESERVE
                     } else {
                         0.0
