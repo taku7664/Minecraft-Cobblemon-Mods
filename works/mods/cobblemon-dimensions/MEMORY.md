@@ -12,6 +12,8 @@
 - 개발 실행: Terralith는 Lithostitched가 필요하다(서버에는 `lithostitched-1.8.0-fabric-21.1.jar`가 있음). `modLocalRuntime`으로 서버 mods 폴더의 두 jar와 Cobblemon을 넣었다. Terralith의 `data/minecraft/dimension/overworld.json`은 Lithostitched가 있으면 로드되지 않는 파일이지만, 우리는 배치표 데이터만 읽어 복사하므로 상관없다.
 - 캡처 하네스: `DimensionCaptureHarness`(`-Dcobblemon_dimensions.capture=true`, `runCapture`). 새 월드를 코드로 만들어 실험적 설정 경고를 피하고, 포탈·울트라홀·고대 3장·미래 3장·울트라 2장을 찍고 종료한다.
 - 캡처하면서 겪은 문제: (1) Terralith → Lithostitched → Apollib → json5가 jar 안의 jar로 들어 있어 개발 실행에서 못 찾음. 빌드 스크립트가 재귀로 꺼낸다. (2) 차원 이동이 서버 스레드에서 청크를 만드느라 오래 걸려, 이동 전에 찍혔다. 서버 쪽 도착 신호와 클라이언트 차원 일치를 기다린다. (3) 새 run 폴더 첫 실행의 접근성·언어 화면(사용자가 직접 눌러 줌)과 포커스를 잃었을 때의 일시정지로 멈췄다. 하네스가 둘 다 넘긴다. (4) 의존성 누락으로 실패한 Fabric 실행은 오류 창을 띄운 채 남아 로그 파일을 잡는다. 다시 띄우기 전에 끈다.
+- 캡처 결과(실게임과 같은 렌더링, 개발 클라이언트): 포탈 2개 점화, 울트라홀(무지갯빛 테두리·후광·소용돌이), 고대 3곳(원시 밀림·고대 초원·고대 바다·사막), 미래 3곳(네온 숲·강철 산맥·미래 바다), 울트라 3곳(뜬 섬·짙은 안개·스컬크 위 포켓몬) 확인. 울트라·고대 사진에 포켓몬이 스폰된 모습이 보여 일반 스폰이 도는 것으로 본다. 진입 자격 거절 메시지는 개발 실행에 리그 모듈이 없어 확인 못 함(배포된 리그 JAR에 `LeagueRanks.of`와 `CHAMPION`이 있는 것은 확인).
+- 빌드 성공, JAR 무결성 확인, 커밋 75c39947·fea7624a. 서버·클라이언트가 모두 꺼진 상태에서 두 곳에 배치. 서버는 켜지 않았다. `config/cobblemon-dimensions.json`은 서버를 처음 켤 때 생긴다.
 
 ## [2026-10-06 03:40] 하늘 섬을 낮추고 줄임
 
