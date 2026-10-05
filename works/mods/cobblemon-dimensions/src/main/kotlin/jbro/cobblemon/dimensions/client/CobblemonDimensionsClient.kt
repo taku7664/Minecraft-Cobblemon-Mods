@@ -2,14 +2,18 @@ package jbro.cobblemon.dimensions.client
 
 import jbro.cobblemon.dimensions.CobblemonDimensions
 import jbro.cobblemon.dimensions.portal.PortalBlocks
+import jbro.cobblemon.dimensions.wormhole.Wormholes
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.rendering.v1.DimensionRenderingRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers
 
 /** Registers each dimension's look; the dimension types name them in `effects`. */
 object CobblemonDimensionsClient : ClientModInitializer {
     override fun onInitializeClient() {
         BlockEntityRenderers.register(PortalBlocks.PORTAL_ENTITY, ::TintedPortalRenderer)
+        EntityRendererRegistry.register(Wormholes.TYPE, ::UltraWormholeRenderer)
+        DimensionCaptureHarness.installIfRequested()
         // Ultra Space: thick fog, no clouds; each Ultra biome brings its own sky and fog colors.
         DimensionRenderingRegistry.registerDimensionEffects(CobblemonDimensions.id("ultra_space"),
             DimensionLook(Float.NaN, foggy = true))

@@ -13,5 +13,19 @@
   "block.cobblemon_dimensions.ancient_portal": "Ancient Portal",
   "block.cobblemon_dimensions.future_portal": "Future Portal",
   "message.cobblemon_dimensions.no_sleep": "A mysterious force keeps you from sleeping.",
-  "message.cobblemon_dimensions.no_anchor": "A mysterious force keeps the respawn anchor still."
+  "message.cobblemon_dimensions.no_anchor": "A mysterious force keeps the respawn anchor still.",
+  "biome.cobblemon_dimensions.ancient_sea": "Ancient Sea",
+  "biome.cobblemon_dimensions.ancient_jungle": "Primeval Jungle",
+  "biome.cobblemon_dimensions.ancient_desert": "Ancient Desert",
+  "biome.cobblemon_dimensions.ancient_volcano": "Primeval Volcano",
+  "biome.cobblemon_dimensions.ancient_grassland": "Ancient Grassland",
+  "biome.cobblemon_dimensions.future_sea": "Future Sea",
+  "biome.cobblemon_dimensions.future_steel_peaks": "Steel Peaks",
+  "biome.cobblemon_dimensions.future_crystal": "Crystal Expanse",
+  "biome.cobblemon_dimensions.future_neon_forest": "Neon Forest",
+  "biome.cobblemon_dimensions.future_flats": "Future Flats",
+  "entity.cobblemon_dimensions.ultra_wormhole": "Ultra Wormhole",
+  "message.cobblemon_dimensions.not_worthy": "It seems you are not yet worthy of entering.",
+  "message.cobblemon_dimensions.great_wormhole": "A great Ultra Wormhole has opened somewhere in the sky!",
+  "command.cobblemon_dimensions.no_sky": "No open sky nearby for a wormhole."
 }

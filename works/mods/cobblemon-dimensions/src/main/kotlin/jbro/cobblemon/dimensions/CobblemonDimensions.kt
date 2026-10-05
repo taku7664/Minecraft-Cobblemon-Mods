@@ -1,6 +1,7 @@
 package jbro.cobblemon.dimensions
 
 import jbro.cobblemon.dimensions.portal.PortalBlocks
+import jbro.cobblemon.dimensions.wormhole.Wormholes
 import net.fabricmc.api.ModInitializer
 import net.minecraft.resources.ResourceLocation
 import org.slf4j.LoggerFactory
@@ -14,6 +15,7 @@ object CobblemonDimensions : ModInitializer {
         DimensionRules.register()
         DimensionCommand.register()
         PortalBlocks.register()
+        Wormholes.register()
     }
 
     fun id(path: String): ResourceLocation = ResourceLocation.fromNamespaceAndPath(MOD_ID, path)
