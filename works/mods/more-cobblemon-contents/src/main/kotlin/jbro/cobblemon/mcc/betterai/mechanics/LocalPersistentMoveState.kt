@@ -13,8 +13,54 @@ internal object LocalPersistentMoveState {
     private const val PERISH = "perishsong:"
     private const val HEALING_WISH = "healingwishslot:"
 
-    fun substituteFraction(pokemon: BattlePokemonStateView): Double? = pokemon.knownVolatileEffectIds
-        .firstOrNull { it.startsWith(SUBSTITUTE_HP) }?.removePrefix(SUBSTITUTE_HP)?.toDoubleOrNull()
+    /** The decoy's exact remaining HP, known only when this line made it or narrowed it to one value. */
+    fun substituteFraction(pokemon: BattlePokemonStateView): Double? =
+        substituteRange(pokemon)?.takeIf { it.start == it.endInclusive }?.start
+
+    /**
+     * The decoy's remaining HP as a fraction of its user's maximum HP. Showdown never shows it, so a decoy that was
+     * already up when the search began is anywhere from one HP to what it was made with; a hit that may or may not
+     * break it is split by [substituteHypotheses] rather than read as always breaking.
+     */
+    fun substituteRange(pokemon: BattlePokemonStateView): ClosedFloatingPointRange<Double>? {
+        if (pokemon.knownVolatileEffectIds.none { PublicIds.canonical(it) == "substitute" }) return null
+        val parts = pokemon.knownVolatileEffectIds.firstOrNull { it.startsWith(SUBSTITUTE_HP) }
+            ?.removePrefix(SUBSTITUTE_HP)?.split(':')?.mapNotNull(String::toDoubleOrNull)
+        return when (parts?.size) {
+            1 -> parts[0]..parts[0]
+            2 -> parts[0]..parts[1]
+            else -> substituteUnit(pokemon)..substituteCost(pokemon)
+        }
+    }
+
+    /** One HP of the decoy's user, the step its remaining HP moves in. */
+    fun substituteUnit(pokemon: BattlePokemonStateView): Double = 1.0 / (pokemon.combatStats?.maxHp?.maximum ?: 10_000)
+
+    /**
+     * The hypotheses a hit of [damage] on [targetId]'s decoy separates: each integer HP it may have left is equally
+     * likely, so the share at or under [damage] breaks it and the rest survives with that much more.
+     */
+    fun substituteHypotheses(state: BattleStateView, targetId: UUID?, damage: Double): List<Pair<BattleStateView, Double>> {
+        val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return listOf(state to 1.0)
+        val range = substituteRange(target) ?: return listOf(state to 1.0)
+        if (damage <= 0.0 || range.endInclusive <= damage + 1e-9 || range.start > damage + 1e-9) return listOf(state to 1.0)
+        val unit = substituteUnit(target)
+        val values = kotlin.math.round((range.endInclusive - range.start) / unit).toInt() + 1
+        val breaking = (floor((damage - range.start) / unit + 1e-7).toInt() + 1).coerceIn(1, values - 1)
+        fun narrowed(low: Double, high: Double) = state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId) withSubstituteRange(it, low, high) else it
+        })
+        return listOf(
+            narrowed(range.start, range.start + (breaking - 1) * unit) to breaking.toDouble() / values,
+            narrowed(range.start + breaking * unit, range.endInclusive) to (values - breaking).toDouble() / values,
+        )
+    }
+
+    private fun withSubstituteRange(pokemon: BattlePokemonStateView, low: Double, high: Double): BattlePokemonStateView =
+        if (high - low <= 1e-12) withSubstitute(pokemon, low) else pokemon.copyState(
+            knownVolatileEffectIds = pokemon.knownVolatileEffectIds.filterNot { it.startsWith(SUBSTITUTE_HP) }.toSet() +
+                setOf("substitute", "$SUBSTITUTE_HP$low:$high"),
+        )
 
     fun substituteCost(pokemon: BattlePokemonStateView): Double = pokemon.combatStats?.maxHp
         ?.takeIf { it.minimum == it.maximum }?.let { floor(it.minimum / 4.0) / it.minimum } ?: 0.25
@@ -28,9 +74,11 @@ internal object LocalPersistentMoveState {
     )
 
     fun damageSubstitute(pokemon: BattlePokemonStateView, damage: Double): BattlePokemonStateView {
-        // A newly created decoy has exact branch HP. An already observed decoy has no public remaining HP.
-        val remaining = substituteFraction(pokemon)?.minus(damage)
-        return if (remaining != null && remaining > 1e-9) withSubstitute(pokemon, remaining) else pokemon.copyState(
+        // A range the hit may or may not clear reads as broken; the hit sequence splits such a hit beforehand.
+        val range = substituteRange(pokemon)
+        val low = range?.start?.minus(damage)
+        val high = range?.endInclusive?.minus(damage)
+        return if (low != null && high != null && low > 1e-9) withSubstituteRange(pokemon, low, high) else pokemon.copyState(
             knownVolatileEffectIds = pokemon.knownVolatileEffectIds.filterNot {
                 PublicIds.canonical(it) == "substitute" || it.startsWith(SUBSTITUTE_HP)
             }.toSet(),

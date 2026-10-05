@@ -15,6 +15,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
@@ -118,14 +120,16 @@ internal object LocalTacticalSituationalEvaluator {
     ): Double {
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context)
         if (mechanics.publiclyNullified) return 0.0
-        if (mechanics.knownDamageMultiplier == 1.0) return declared
         val target = candidate.targets.singleOrNull()?.let { slot ->
             context.state.pokemon.firstOrNull {
                 it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
             }
         } ?: context.state.pokemon.singleOrNull {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
-        } ?: return declared
+        }
+        // A single hit on a Substitute ends at the decoy: it cannot knock its user out.
+        if (target != null && LocalDeclaredMultiHit.maximumCount(candidate) <= 1 && decoyStopsHit(candidate, target, context)) return 0.0
+        if (mechanics.knownDamageMultiplier == 1.0 || target == null) return declared
         val rolls = PublicBattleTacticalCalculator
             .conservativeDamageRollFractions(candidate, context, BattleSide.ALLY)
             ?.takeIf { it.isNotEmpty() }
@@ -133,6 +137,16 @@ internal object LocalTacticalSituationalEvaluator {
         // The roll fractions are capped at the target's remaining health, so a roll that reaches it
         // is exactly a roll that kills.
         return rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
+    }
+
+    /** [target]'s Substitute takes [candidate]'s hit: neither a sound move nor an Infiltrator user gets past it. */
+    private fun decoyStopsHit(candidate: BattleActionCandidate, target: BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+        if (target.knownVolatileEffectIds.none { PublicIds.canonical(it) == "substitute" }) return false
+        if (candidate.moveDetails?.effects?.mechanicFlags.orEmpty().any { PublicIds.canonical(it) in setOf("sound", "bypasssub") }) return false
+        val actor = context.state.pokemon.firstOrNull {
+            it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
+        }
+        return actor == null || LocalPublicAbilityState.effectiveKnownAbility(context.state, actor) != "infiltrator"
     }
 
     /**

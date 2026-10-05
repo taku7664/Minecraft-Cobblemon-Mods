@@ -102,7 +102,7 @@ internal object PublicBattleTacticalCalculator {
             // The aggregate must include hits after a decoy breaks; the hit sequence applies the actual HP cap.
             if (decoy && hitCount > 1) raw.coerceAtLeast(0.0) else raw
                 .coerceAtMost(if (decoy) {
-                    maxOf(target.hpFraction, LocalPersistentMoveState.substituteFraction(target) ?: 0.25)
+                    maxOf(target.hpFraction, LocalPersistentMoveState.substituteRange(target)?.endInclusive ?: 0.25)
                 } else target.hpFraction)
                 .coerceIn(0.0, 1.0)
         }

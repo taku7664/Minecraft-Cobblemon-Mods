@@ -53,27 +53,32 @@ internal object LocalMoveHitSequence {
                         it[((it.size - 1) * percentile.coerceIn(0.0, 1.0)).roundToInt()]
                     } ?: totalDamage / count
                 }
-                val hadDecoy = !bypassesSubstitute && target?.knownVolatileEffectIds?.contains("substitute") == true
-                val hitEffects = effects.filter { effect ->
-                    effect.kind !in setOf(BattleMoveEffectKind.SELF_DESTRUCT, BattleMoveEffectKind.HEAL_FRACTION) || index == count - 1
-                }
-                val direct = LocalDirectHitMechanics.apply(previous.state, actorId, targetId, damage, hitEffects,
-                    LocalPublicAbilityMechanics.ignoresTargetAbility(action, currentActor, target, previous.state),
-                    bypassesSubstitute, updateItems = false)
-                val onHit = LocalPersistentMoveState.afterHit(direct.state, actorId, targetId, action, !hadDecoy)
-                val reacted = hitFieldReactions(LocalAfterHitReactions.apply(previous.state, onHit, actorId, targetId, action,
-                    direct.directDamageFraction, userEffects = userEffects && index == count - 1),
-                    targetId, action, direct.directDamageFraction, hadDecoy).let {
-                        raisedThisTurnSecondary(it, actorId, targetId, action, direct.directDamageFraction, hadDecoy) }
-                LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {
-                    LocalMoveHitSequenceResult(LocalBerryMechanics.afterUpdate(it.state), previous.probability * it.probability,
-                        previous.directDamageFraction + direct.directDamageFraction,
-                        previous.recoilHpFraction + direct.recoilHpFraction,
-                        previous.substituteInterceptedWholeMove && hadDecoy,
-                        previous.receivedHits + if (targetId != null && direct.directDamageFraction > 0.0)
-                            listOf(LocalReceivedMoveHit(actorId, targetId, direct.directDamageFraction,
-                                action.moveDetails?.damageCategory ?: BattleMoveDamageCategory.STATUS,
-                                currentActor?.side, currentActor?.activeSlot)) else emptyList())
+                // A decoy whose remaining HP is not known may or may not survive this hit: one branch for each.
+                val hypotheses = if (bypassesSubstitute || targetId == actorId) listOf(previous.state to 1.0)
+                    else LocalPersistentMoveState.substituteHypotheses(previous.state, targetId, damage)
+                hypotheses.flatMap { (hitState, chance) ->
+                    val hadDecoy = !bypassesSubstitute && target?.knownVolatileEffectIds?.contains("substitute") == true
+                    val hitEffects = effects.filter { effect ->
+                        effect.kind !in setOf(BattleMoveEffectKind.SELF_DESTRUCT, BattleMoveEffectKind.HEAL_FRACTION) || index == count - 1
+                    }
+                    val direct = LocalDirectHitMechanics.apply(hitState, actorId, targetId, damage, hitEffects,
+                        LocalPublicAbilityMechanics.ignoresTargetAbility(action, currentActor, target, hitState),
+                        bypassesSubstitute, updateItems = false)
+                    val onHit = LocalPersistentMoveState.afterHit(direct.state, actorId, targetId, action, !hadDecoy)
+                    val reacted = hitFieldReactions(LocalAfterHitReactions.apply(hitState, onHit, actorId, targetId, action,
+                        direct.directDamageFraction, userEffects = userEffects && index == count - 1),
+                        targetId, action, direct.directDamageFraction, hadDecoy).let {
+                            raisedThisTurnSecondary(it, actorId, targetId, action, direct.directDamageFraction, hadDecoy) }
+                    LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {
+                        LocalMoveHitSequenceResult(LocalBerryMechanics.afterUpdate(it.state), previous.probability * chance * it.probability,
+                            previous.directDamageFraction + direct.directDamageFraction,
+                            previous.recoilHpFraction + direct.recoilHpFraction,
+                            previous.substituteInterceptedWholeMove && hadDecoy,
+                            previous.receivedHits + if (targetId != null && direct.directDamageFraction > 0.0)
+                                listOf(LocalReceivedMoveHit(actorId, targetId, direct.directDamageFraction,
+                                    action.moveDetails?.damageCategory ?: BattleMoveDamageCategory.STATUS,
+                                    currentActor?.side, currentActor?.activeSlot)) else emptyList())
+                    }
                 }
             }
         }

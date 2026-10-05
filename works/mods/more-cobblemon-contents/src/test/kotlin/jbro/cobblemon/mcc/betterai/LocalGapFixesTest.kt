@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
@@ -427,6 +428,28 @@ class LocalGapFixesTest {
         assertEquals("Hangry", hangry.formId)
         assertEquals("dark", LocalPublicMoveDamageInputs.resolvedTypeId(attack("aurawheel", "electric"), hangry, first))
         assertEquals("Normal", LocalEndTurnStateProjector.project(first).pokemon.single { it.battlePokemonId == morpeko.battlePokemonId }.formId)
+    }
+
+    @Test
+    fun `G-608 a decoy of unknown HP may survive a weak hit instead of always breaking`() {
+        val decoyed = mon(BattleSide.OPPONENT, 0, "normal", speed = 50, volatiles = setOf("substitute"))
+        val user = mon(BattleSide.ALLY, 0, "normal", speed = 150)
+        val state = state(listOf(user, decoyed))
+        val split = LocalPersistentMoveState.substituteHypotheses(state, decoyed.battlePokemonId, 20.0 / 160)
+        assertEquals(listOf(0.5, 0.5), split.map { it.second }, "1-40 HP decoy, 20 damage")
+        val survivor = split.last().first.pokemon.single { it.battlePokemonId == decoyed.battlePokemonId }
+        assertEquals(21.0 / 160, LocalPersistentMoveState.substituteRange(survivor)!!.start, 1e-9)
+        val hit = LocalPersistentMoveState.damageSubstitute(survivor, 20.0 / 160)
+        assertEquals(1.0 / 160, LocalPersistentMoveState.substituteRange(hit)!!.start, 1e-9)
+        assertEquals(20.0 / 160, LocalPersistentMoveState.substituteRange(hit)!!.endInclusive, 1e-9)
+
+        val tap = attack("tackle", "normal", power = 20.0)
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, tap))
+        val outcomes = PublicSingleTurnProjector.project(state, calculated.candidates.single(), status("splash", emptyList()), calculated, RecursiveActionHistory())
+            .map { outcome -> outcome.probability to outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == decoyed.battlePokemonId } }
+        assertTrue(outcomes.all { it.second.hpFraction == 1.0 }, "the body is untouched")
+        val standing = outcomes.filter { "substitute" in it.second.knownVolatileEffectIds }.sumOf { it.first }
+        assertTrue(standing > 0.05 && standing < 0.95, "both the broken and the standing decoy are kept: $standing")
     }
 
     private fun field(
