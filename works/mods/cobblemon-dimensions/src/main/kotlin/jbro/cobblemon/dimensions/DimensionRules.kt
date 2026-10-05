@@ -25,8 +25,8 @@ object DimensionRules {
             val block = level.getBlockState(hit.blockPos).block
             if ((block is BedBlock || block is RespawnAnchorBlock) && ModDimensions.isOurs(level)) {
                 if (player is ServerPlayer) {
-                    player.displayClientMessage(Component.translatable("message.cobblemon_dimensions.no_respawn_blocks")
-                        .withStyle(ChatFormatting.RED), true)
+                    val key = if (block is BedBlock) "message.cobblemon_dimensions.no_sleep" else "message.cobblemon_dimensions.no_anchor"
+                    player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.RED), false)
                 }
                 InteractionResult.FAIL
             } else {

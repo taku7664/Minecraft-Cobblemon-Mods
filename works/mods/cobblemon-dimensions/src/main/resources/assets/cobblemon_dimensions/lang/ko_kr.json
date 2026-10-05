@@ -8,9 +8,10 @@
   "dimension.cobblemon_dimensions.ultra_space": "울트라스페이스",
   "dimension.cobblemon_dimensions.ancient": "고대",
   "dimension.cobblemon_dimensions.future": "미래",
-  "message.cobblemon_dimensions.no_respawn_blocks": "이 차원에서는 침대와 리스폰 앵커를 쓸 수 없습니다.",
   "command.cobblemon_dimensions.unknown": "그런 차원은 없습니다.",
   "command.cobblemon_dimensions.no_landing": "내릴 땅을 찾지 못했습니다.",
   "block.cobblemon_dimensions.ancient_portal": "고대 포탈",
-  "block.cobblemon_dimensions.future_portal": "미래 포탈"
+  "block.cobblemon_dimensions.future_portal": "미래 포탈",
+  "message.cobblemon_dimensions.no_sleep": "불가사의한 힘으로 잘 수 없다.",
+  "message.cobblemon_dimensions.no_anchor": "불가사의한 힘으로 리스폰 앵커가 반응하지 않는다."
 }

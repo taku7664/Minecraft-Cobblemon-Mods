@@ -8,9 +8,10 @@
   "dimension.cobblemon_dimensions.ultra_space": "Ultra Space",
   "dimension.cobblemon_dimensions.ancient": "Ancient",
   "dimension.cobblemon_dimensions.future": "Future",
-  "message.cobblemon_dimensions.no_respawn_blocks": "Beds and respawn anchors don't work in this dimension.",
   "command.cobblemon_dimensions.unknown": "No such dimension.",
   "command.cobblemon_dimensions.no_landing": "Found no ground to land on.",
   "block.cobblemon_dimensions.ancient_portal": "Ancient Portal",
-  "block.cobblemon_dimensions.future_portal": "Future Portal"
+  "block.cobblemon_dimensions.future_portal": "Future Portal",
+  "message.cobblemon_dimensions.no_sleep": "A mysterious force keeps you from sleeping.",
+  "message.cobblemon_dimensions.no_anchor": "A mysterious force keeps the respawn anchor still."
 }
