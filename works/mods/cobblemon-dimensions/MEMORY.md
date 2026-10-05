@@ -11,6 +11,7 @@
 - 포탈: 엔드 포탈 규격(3x3 구멍, 틀 12개, 모서리 제외), 부싯돌과 부시로 점화. 틀 블록은 사용자가 나중에 바로 바꿀 수 있게 블록 태그로만 정한다(고대 `chiseled_deepslate`, 미래 깎은 구리 8종). 포탈 면은 엔드 포탈 렌더러 위에 `RenderType.lightning()` 색 막을 덧그린다(`TintedPortalRenderer.COLORS`). 차원 안에서 지은 포탈은 귀환용. 귀환 지점이 포탈 위면 x+4로 비켜 내린다.
 - 인벤세이브: 개발 서버 `level.dat`의 `keepInventory`가 이미 true라 차원 한정 코드는 넣지 않았다. 서버 게임룰이 바뀌면 차원 안에서도 인벤이 떨어진다.
 - 빌드: `:cobblemon-dimensions:build` 성공, JAR 무결성 확인, 믹스인 대상은 intermediary로 변환됨 확인. 테스트 코드 없음.
+- 배포: 커밋 06a3e75b의 JAR을 `develop-product/server/mods`, `develop-product/client/mods`에 새로 배치(새 모드라 백업 없음, SHA-256 앞자리 0698bf60). 서버·클라이언트 모두 꺼진 상태에서 배치했고 서버는 기동하지 않았다.
 - 실게임 검증: 안 함. 서버 기동 전이라 데이터팩 로드(지형 JSON 오류 여부)도 아직 모른다.
 
 ### 남은 일
