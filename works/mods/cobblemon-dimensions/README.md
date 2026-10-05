@@ -5,7 +5,7 @@
 - Mod ID: `cobblemon_dimensions`
 - 실행 환경: 서버와 클라이언트 모두 필요(포탈 블록, 울트라홀, 하늘·안개 연출)
 - 필요 모드: Fabric API, Fabric Language Kotlin, Cobblemon 1.8.1, Terralith
-- 선택 모드: More Cobblemon Contents: League Challenge(울트라홀 진입 자격)
+- 선택 모드: More Cobblemon Contents: League Challenge(울트라홀·포탈 진입 자격)
 - 설정 파일: `config/cobblemon-dimensions.json`(울트라홀 빈도·크기·유지 시간)
 - 차원 ID: `cobblemon_dimensions:ultra_space`, `cobblemon_dimensions:ancient`, `cobblemon_dimensions:future`
 - 스폰표: [docs/SPAWNS.md](docs/SPAWNS.md)
@@ -63,7 +63,8 @@ Terralith 지형을 섬 모양으로 잘라 공중에 띄운 차원입니다. �
 | 미래 | 깎은 구리(산화·밀랍 상태 상관없음) | 보라 |
 
 - 틀 블록은 `data/cobblemon_dimensions/tags/block/ancient_portal_frame.json`, `future_portal_frame.json` 블록 태그로 정합니다. 블록을 바꿀 때는 이 파일만 고치면 됩니다.
-- 차원 안에서 같은 포탈을 지어 들어가면 들어오기 전 위치로 돌아갑니다.
+- **진입 자격**: 울트라홀과 같습니다. 일반 리그에서 사천왕과 챔피언을 이긴 플레이어만 들어갈 수 있고, 자격이 없으면 채팅에 빨간 글씨로 "아직 들어갈 자격이 없는 것 같다."가 뜹니다. 포탈을 여는 건 누구나 할 수 있습니다.
+- 차원 안에서 같은 포탈을 지어 들어가면 들어오기 전 위치로 돌아갑니다. 돌아갈 때는 자격을 따지지 않습니다.
 - 틀이 하나라도 부서지면 포탈이 꺼집니다.
 
 ## 세 차원 공통

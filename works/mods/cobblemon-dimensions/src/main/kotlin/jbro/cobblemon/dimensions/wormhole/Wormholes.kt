@@ -1,7 +1,7 @@
 package jbro.cobblemon.dimensions.wormhole
 
-import java.util.UUID
 import jbro.cobblemon.dimensions.CobblemonDimensions
+import jbro.cobblemon.dimensions.DimensionAccess
 import jbro.cobblemon.dimensions.DimensionTravel
 import jbro.cobblemon.dimensions.ModDimension
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -29,9 +29,6 @@ object Wormholes {
     lateinit var settings: WormholeSettings
         private set
 
-    /** When each player was last told they may not enter, so standing in a hole does not flood their chat. */
-    private val refusedAt = mutableMapOf<UUID, Long>()
-
     fun register() {
         settings = WormholeSettings.load(FabricLoader.getInstance().configDir.resolve("cobblemon-dimensions.json"))
         ServerTickEvents.END_SERVER_TICK.register(::tick)
@@ -44,12 +41,8 @@ object Wormholes {
             player.server.execute { DimensionTravel.returnHome(player) }
             return
         }
-        if (!UltraSpaceAccess.allowed(player)) {
-            val now = player.server.tickCount.toLong()
-            if (now - (refusedAt[player.uuid] ?: Long.MIN_VALUE / 2) >= 100) {
-                refusedAt[player.uuid] = now
-                player.displayClientMessage(Component.translatable("message.cobblemon_dimensions.not_worthy").withStyle(ChatFormatting.RED), false)
-            }
+        if (!DimensionAccess.allowed(player)) {
+            DimensionAccess.refuse(player)
             return
         }
         player.setPortalCooldown()

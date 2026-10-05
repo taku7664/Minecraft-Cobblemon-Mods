@@ -1,6 +1,7 @@
 package jbro.cobblemon.dimensions.portal
 
 import com.mojang.serialization.MapCodec
+import jbro.cobblemon.dimensions.DimensionAccess
 import jbro.cobblemon.dimensions.DimensionTravel
 import jbro.cobblemon.dimensions.ModDimension
 import jbro.cobblemon.dimensions.ModDimensions
@@ -40,9 +41,14 @@ class ParadoxPortalBlock(val dimension: ModDimension, properties: Properties) : 
 
     override fun entityInside(state: BlockState, level: Level, pos: BlockPos, entity: Entity) {
         if (level.isClientSide || entity !is ServerPlayer || entity.isOnPortalCooldown) return
+        val inside = ModDimensions.isOurs(level)
+        // Going home is always open; going in needs the League's Champion.
+        if (!inside && !DimensionAccess.allowed(entity)) {
+            DimensionAccess.refuse(entity)
+            return
+        }
         entity.setPortalCooldown()
         // Teleport after this tick's collision pass, not in the middle of it.
-        val inside = ModDimensions.isOurs(level)
         entity.server.execute {
             if (inside) {
                 DimensionTravel.returnHome(entity)
