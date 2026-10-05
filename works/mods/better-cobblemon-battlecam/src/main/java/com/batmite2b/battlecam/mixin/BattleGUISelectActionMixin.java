@@ -1,16 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  com.cobblemon.mod.common.battles.MoveActionResponse
- *  com.cobblemon.mod.common.battles.ShowdownActionResponse
- *  com.cobblemon.mod.common.client.battle.SingleActionRequest
- *  com.cobblemon.mod.common.client.gui.battle.BattleGUI
- *  org.spongepowered.asm.mixin.Mixin
- *  org.spongepowered.asm.mixin.injection.At
- *  org.spongepowered.asm.mixin.injection.Inject
- *  org.spongepowered.asm.mixin.injection.callback.CallbackInfo
- */
 package com.batmite2b.battlecam.mixin;
 
 import com.batmite2b.battlecam.client.BattleCamClient;

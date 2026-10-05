@@ -1,12 +1,6 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.util.math.Vec3d
- */
 package com.batmite2b.battlecam.client;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
-public record CameraPose(Vec3d pos, float yaw, float pitch, float fov) {
+public record CameraPose(Vec3 pos, float yaw, float pitch, float fov) {
 }

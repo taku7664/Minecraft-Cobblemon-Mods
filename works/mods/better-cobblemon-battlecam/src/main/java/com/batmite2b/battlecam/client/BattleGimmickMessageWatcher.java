@@ -1,12 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.entity.Entity
- *  net.minecraft.text.Text
- *  net.minecraft.util.math.Box
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.BattleCamState;
@@ -20,21 +11,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Box;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 
 public final class BattleGimmickMessageWatcher {
     private static final long LOG_COOLDOWN_MS = 9000L;
     private final Map<String, Long> lastLogEventAt = new HashMap<String, Long>();
     private String trackedBattleId = "";
 
-    public void onBattleMessage(MinecraftClient client, BattleCamState state, String message) {
+    public void onBattleMessage(Minecraft client, BattleCamState state, String message) {
         String key;
         long last;
         String normalized;
-        if (!state.isBattleContextActive() || client.world == null || client.player == null || message == null) {
+        if (!state.isBattleContextActive() || client.level == null || client.player == null || message == null) {
             return;
         }
         String battleId = ReflectionUtil.normalizedValue(state.activeBattleId);
@@ -69,7 +60,7 @@ public final class BattleGimmickMessageWatcher {
         return message.contains("is reacting to the key stone") || message.contains("esta reaccionando ante la piedra activadora") || message.contains("transformed into its mega form") || message.contains("se ha transformado en su forma mega") || message.contains("is mega evolving") || message.contains("is mega-evolving") || message.contains("mega evolving") || message.contains("mega-evolving") || message.contains("megaevolving") || message.contains("esta megaevolucionando") || message.contains("esta mega evolucionando") || message.contains("megaevolucionando") || message.contains("mega evolucionando") || message.contains("reacting") && message.contains("mega");
     }
 
-    private Entity resolvePokemon(MinecraftClient client, String battleId, String pokemonName) {
+    private Entity resolvePokemon(Minecraft client, String battleId, String pokemonName) {
         List<Entity> entities = this.currentBattlePokemonEntities(client, battleId);
         if (entities.isEmpty()) {
             return null;
@@ -83,14 +74,14 @@ public final class BattleGimmickMessageWatcher {
         return entities.size() == 1 ? entities.get(0) : null;
     }
 
-    private List<Entity> currentBattlePokemonEntities(MinecraftClient client, String battleId) {
-        Box box = new Box(client.player.getX() - 96.0, client.player.getY() - 32.0, client.player.getZ() - 96.0, client.player.getX() + 96.0, client.player.getY() + 32.0, client.player.getZ() + 96.0);
-        return client.world.getOtherEntities(null, box, entity -> entity != null && !entity.isRemoved() && entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity") && ReflectionUtil.entityMatchesBattle(entity, battleId));
+    private List<Entity> currentBattlePokemonEntities(Minecraft client, String battleId) {
+        AABB box = new AABB(client.player.getX() - 96.0, client.player.getY() - 32.0, client.player.getZ() - 96.0, client.player.getX() + 96.0, client.player.getY() + 32.0, client.player.getZ() + 96.0);
+        return client.level.getEntities((Entity)null, box, entity -> entity != null && !entity.isRemoved() && entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity") && ReflectionUtil.entityMatchesBattle(entity, battleId));
     }
 
     private static UUID pokemonOrEntityUuid(Entity entity) {
         UUID uuid = ReflectionUtil.entityPokemonUuid(entity);
-        return uuid != null ? uuid : entity.getUuid();
+        return uuid != null ? uuid : entity.getUUID();
     }
 
     private static boolean entityNameMatches(Entity entity, String pokemonName) {
@@ -112,8 +103,8 @@ public final class BattleGimmickMessageWatcher {
         if (value == null) {
             return;
         }
-        if (value instanceof Text) {
-            Text text = (Text)value;
+        if (value instanceof Component) {
+            Component text = (Component)value;
             stringValue = text.getString();
         } else {
             Object reflected = ReflectionUtil.invokeNoArg(value, "getString");

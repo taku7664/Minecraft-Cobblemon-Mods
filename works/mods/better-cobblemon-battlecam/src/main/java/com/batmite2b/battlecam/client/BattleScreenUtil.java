@@ -1,12 +1,6 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.gui.screen.Screen
- */
 package com.batmite2b.battlecam.client;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 
 public final class BattleScreenUtil {
     private BattleScreenUtil() {

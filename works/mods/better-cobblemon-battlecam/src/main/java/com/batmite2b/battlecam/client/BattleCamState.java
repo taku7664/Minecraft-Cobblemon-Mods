@@ -1,13 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.client.network.AbstractClientPlayerEntity
- *  net.minecraft.entity.Entity
- *  net.minecraft.text.Text
- *  net.minecraft.util.math.Vec3d
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.BattleActionEvent;
@@ -28,11 +18,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import jbro.cobblemon.battlecam.BattlecamModePolicy;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 public final class BattleCamState {
     public BattleViewContext context = BattleViewContext.NONE;
@@ -42,8 +32,8 @@ public final class BattleCamState {
     public boolean showOwnBody;
     private boolean ownBattleUiSeen;
     private boolean ownBattleCameraPaused;
-    private Vec3d cinematicCameraPos;
-    private Vec3d cinematicFocusPos;
+    private Vec3 cinematicCameraPos;
+    private Vec3 cinematicFocusPos;
     private Set<UUID> cinematicFocusUuids;
     private boolean cinematicHideBattlePokemon;
     private boolean cinematicHideDynamaxPokemon;
@@ -146,7 +136,7 @@ public final class BattleCamState {
         );
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!this.isBattleContextActive() || this.mode == Mode.OFF || this.isCameraTemporarilyPaused()) {
             this.rig.active = false;
             return;
@@ -203,9 +193,9 @@ public final class BattleCamState {
             return;
         }
         this.showOwnBody = !this.showOwnBody;
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
-            client.player.sendMessage((Text)Text.literal((String)(this.showOwnBody ? "BattleCam body view: ON" : "BattleCam body view: OFF")), true);
+            client.player.displayClientMessage((Component)Component.literal((String)(this.showOwnBody ? "BattleCam body view: ON" : "BattleCam body view: OFF")), true);
         }
     }
 
@@ -369,23 +359,23 @@ public final class BattleCamState {
         return null;
     }
 
-    public void setCinematicFocus(Vec3d cameraPos, Vec3d focusPos, UUID focusUuid) {
+    public void setCinematicFocus(Vec3 cameraPos, Vec3 focusPos, UUID focusUuid) {
         this.setCinematicFocus(cameraPos, focusPos, focusUuid == null ? List.of() : List.of(focusUuid));
     }
 
-    public void setCinematicFocus(Vec3d cameraPos, Vec3d focusPos, List<UUID> focusUuids) {
+    public void setCinematicFocus(Vec3 cameraPos, Vec3 focusPos, List<UUID> focusUuids) {
         this.setCinematicFocus(cameraPos, focusPos, focusUuids, false);
     }
 
-    public void setCinematicFocus(Vec3d cameraPos, Vec3d focusPos, UUID focusUuid, boolean hideBattlePokemon) {
+    public void setCinematicFocus(Vec3 cameraPos, Vec3 focusPos, UUID focusUuid, boolean hideBattlePokemon) {
         this.setCinematicFocus(cameraPos, focusPos, focusUuid == null ? List.of() : List.of(focusUuid), hideBattlePokemon);
     }
 
-    public void setCinematicFocus(Vec3d cameraPos, Vec3d focusPos, List<UUID> focusUuids, boolean hideBattlePokemon) {
+    public void setCinematicFocus(Vec3 cameraPos, Vec3 focusPos, List<UUID> focusUuids, boolean hideBattlePokemon) {
         this.setCinematicFocus(cameraPos, focusPos, focusUuids, hideBattlePokemon, false);
     }
 
-    public void setCinematicFocus(Vec3d cameraPos, Vec3d focusPos, List<UUID> focusUuids, boolean hideBattlePokemon, boolean hideDynamaxPokemon) {
+    public void setCinematicFocus(Vec3 cameraPos, Vec3 focusPos, List<UUID> focusUuids, boolean hideBattlePokemon, boolean hideDynamaxPokemon) {
         this.cinematicCameraPos = cameraPos;
         this.cinematicFocusPos = focusPos;
         this.cinematicFocusUuids = focusUuids == null || focusUuids.isEmpty() ? Set.of() : new HashSet<UUID>(focusUuids);
@@ -411,7 +401,7 @@ public final class BattleCamState {
             return false;
         }
         boolean pokemon = entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity");
-        boolean player = entity instanceof AbstractClientPlayerEntity;
+        boolean player = entity instanceof AbstractClientPlayer;
         if (!pokemon && !player) {
             return false;
         }
@@ -424,19 +414,19 @@ public final class BattleCamState {
         if (this.cinematicHideDynamaxPokemon && pokemon && PokemonVisualSnapshot.from(entity).dynamaxLike()) {
             return true;
         }
-        Vec3d sight = this.cinematicFocusPos.subtract(this.cinematicCameraPos);
-        double sightLengthSquared = sight.lengthSquared();
+        Vec3 sight = this.cinematicFocusPos.subtract(this.cinematicCameraPos);
+        double sightLengthSquared = sight.lengthSqr();
         if (sightLengthSquared < 1.0E-4) {
             return false;
         }
-        Vec3d entityCenter = entity.getBoundingBox().getCenter();
-        double t = entityCenter.subtract(this.cinematicCameraPos).dotProduct(sight) / sightLengthSquared;
+        Vec3 entityCenter = entity.getBoundingBox().getCenter();
+        double t = entityCenter.subtract(this.cinematicCameraPos).dot(sight) / sightLengthSquared;
         if (t <= 0.08 || t >= 0.94) {
             return false;
         }
-        Vec3d closest = this.cinematicCameraPos.add(sight.multiply(t));
-        double distanceSquared = entityCenter.squaredDistanceTo(closest);
-        return distanceSquared <= (radius = Math.max(0.55, Math.max((double)entity.getWidth() * 0.75, (double)entity.getHeight() * 0.28))) * radius;
+        Vec3 closest = this.cinematicCameraPos.add(sight.scale(t));
+        double distanceSquared = entityCenter.distanceToSqr(closest);
+        return distanceSquared <= (radius = Math.max(0.55, Math.max((double)entity.getBbWidth() * 0.75, (double)entity.getBbHeight() * 0.28))) * radius;
     }
 
     public String getHudText() {

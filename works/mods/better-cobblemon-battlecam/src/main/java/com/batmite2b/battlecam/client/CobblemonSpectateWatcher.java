@@ -1,10 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  com.cobblemon.mod.common.client.CobblemonClient
- *  com.cobblemon.mod.common.client.battle.ClientBattle
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.SpectateEdge;

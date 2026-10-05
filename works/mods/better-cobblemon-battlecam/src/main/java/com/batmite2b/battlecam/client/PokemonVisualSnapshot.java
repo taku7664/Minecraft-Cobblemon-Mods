@@ -1,15 +1,9 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.entity.Entity
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.GimmickKind;
 import com.batmite2b.battlecam.client.ReflectionUtil;
 import java.util.UUID;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public record PokemonVisualSnapshot(UUID entityUuid, String speciesKey, String formKey, String aspectsKey, double height) {
     public static PokemonVisualSnapshot from(Entity entity) {
@@ -17,7 +11,7 @@ public record PokemonVisualSnapshot(UUID entityUuid, String speciesKey, String f
         Object species = ReflectionUtil.invokeNoArg(pokemon, "getSpecies");
         Object form = PokemonVisualSnapshot.firstNonNull(ReflectionUtil.invokeNoArg(pokemon, "getForm"), ReflectionUtil.invokeNoArg(pokemon, "getForme"));
         Object aspects = ReflectionUtil.invokeNoArg(pokemon, "getAspects");
-        return new PokemonVisualSnapshot(entity.getUuid(), ReflectionUtil.normalizedValue(species), ReflectionUtil.normalizedValue(form), ReflectionUtil.normalizedValue(aspects), entity.getHeight());
+        return new PokemonVisualSnapshot(entity.getUUID(), ReflectionUtil.normalizedValue(species), ReflectionUtil.normalizedValue(form), ReflectionUtil.normalizedValue(aspects), entity.getBbHeight());
     }
 
     public boolean visuallyChangedComparedTo(PokemonVisualSnapshot previous) {

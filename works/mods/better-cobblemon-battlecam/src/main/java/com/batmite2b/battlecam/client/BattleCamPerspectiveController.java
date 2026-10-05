@@ -1,26 +1,19 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.client.option.Perspective
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.BattleCamClient;
 import com.batmite2b.battlecam.client.BattleCamState;
 import com.batmite2b.battlecam.client.BattleViewContext;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.Perspective;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.Minecraft;
 
 public final class BattleCamPerspectiveController {
     private static boolean forced = false;
-    private static Perspective savedPerspective = Perspective.FIRST_PERSON;
+    private static CameraType savedPerspective = CameraType.FIRST_PERSON;
 
     private BattleCamPerspectiveController() {
     }
 
-    public static void update(MinecraftClient client) {
+    public static void update(Minecraft client) {
         boolean ownBattleActive;
         if (client == null || client.options == null) {
             return;
@@ -28,32 +21,32 @@ public final class BattleCamPerspectiveController {
         BattleCamState state = BattleCamClient.STATE;
         boolean bl = ownBattleActive = state.context == BattleViewContext.OWN_BATTLE && state.shouldOverrideCamera();
         if (ownBattleActive) {
-            Perspective desired;
-            Perspective perspective = desired = state.showOwnBody ? Perspective.THIRD_PERSON_BACK : Perspective.FIRST_PERSON;
+            CameraType desired;
+            CameraType perspective = desired = state.showOwnBody ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON;
             if (!forced) {
-                savedPerspective = client.options.getPerspective();
+                savedPerspective = client.options.getCameraType();
                 forced = true;
             }
-            if (client.options.getPerspective() != desired) {
-                client.options.setPerspective(desired);
+            if (client.options.getCameraType() != desired) {
+                client.options.setCameraType(desired);
             }
             return;
         }
         if (forced) {
-            if (client.options.getPerspective() != savedPerspective) {
-                client.options.setPerspective(savedPerspective);
+            if (client.options.getCameraType() != savedPerspective) {
+                client.options.setCameraType(savedPerspective);
             }
             forced = false;
         }
     }
 
-    public static void reset(MinecraftClient client) {
+    public static void reset(Minecraft client) {
         if (client == null || client.options == null) {
             forced = false;
             return;
         }
-        if (forced && client.options.getPerspective() != savedPerspective) {
-            client.options.setPerspective(savedPerspective);
+        if (forced && client.options.getCameraType() != savedPerspective) {
+            client.options.setCameraType(savedPerspective);
         }
         forced = false;
     }

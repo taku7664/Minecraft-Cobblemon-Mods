@@ -1,15 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.entity.Entity
- *  org.spongepowered.asm.mixin.Mixin
- *  org.spongepowered.asm.mixin.injection.At
- *  org.spongepowered.asm.mixin.injection.Coerce
- *  org.spongepowered.asm.mixin.injection.Inject
- *  org.spongepowered.asm.mixin.injection.callback.CallbackInfo
- */
 package com.batmite2b.battlecam.mixin;
 
 import com.batmite2b.battlecam.client.BattleActionEvent;
@@ -18,8 +6,8 @@ import com.batmite2b.battlecam.client.BattleCamClient;
 import com.batmite2b.battlecam.client.ReflectionUtil;
 import java.util.Locale;
 import java.util.Set;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -29,12 +17,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets={"com.cobblemon.mod.common.client.net.animation.PlayPosableAnimationHandler"}, remap=false)
 public abstract class PlayPosableAnimationHandlerMixin {
     @Inject(method={"handle"}, at={@At(value="HEAD")})
-    private void battlecam$queueMoveScene(@Coerce Object packet, MinecraftClient client, CallbackInfo ci) {
+    private void battlecam$queueMoveScene(@Coerce Object packet, Minecraft client, CallbackInfo ci) {
         Number entityId;
         Object animationValue;
         block8: {
             block7: {
-                if (!BattleCamClient.STATE.isBattleContextActive() || client.world == null) {
+                if (!BattleCamClient.STATE.isBattleContextActive() || client.level == null) {
                     return;
                 }
                 Object entityIdValue = ReflectionUtil.invokeNoArg(packet, "getEntityId");
@@ -46,17 +34,17 @@ public abstract class PlayPosableAnimationHandlerMixin {
             return;
         }
         Set<?> animations = (Set<?>)animationValue;
-        Entity entity = client.world.getEntityById(entityId.intValue());
+        Entity entity = client.level.getEntity(entityId.intValue());
         if (entity == null || entity.isRemoved() || !entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity") || !ReflectionUtil.entityMatchesBattle(entity, BattleCamClient.STATE.activeBattleId)) {
             return;
         }
         if (PlayPosableAnimationHandlerMixin.containsCryAnimation(animations)) {
-            BattleCamClient.STATE.notifyPokemonCry(entity.getUuid(), ReflectionUtil.entityPokemonUuid(entity));
+            BattleCamClient.STATE.notifyPokemonCry(entity.getUUID(), ReflectionUtil.entityPokemonUuid(entity));
         }
         if (PlayPosableAnimationHandlerMixin.isMinorAnimation(animations)) {
             return;
         }
-        BattleCamClient.STATE.enqueueActionEvent(new BattleActionEvent(entity.getUuid(), BattleActionKind.MOVE, System.currentTimeMillis(), PlayPosableAnimationHandlerMixin.estimateDurationMs(animations)));
+        BattleCamClient.STATE.enqueueActionEvent(new BattleActionEvent(entity.getUUID(), BattleActionKind.MOVE, System.currentTimeMillis(), PlayPosableAnimationHandlerMixin.estimateDurationMs(animations)));
     }
 
     private static long estimateDurationMs(Set<?> animations) {

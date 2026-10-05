@@ -1,19 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  com.cobblemon.mod.common.client.CobblemonClient
- *  com.cobblemon.mod.common.client.battle.ActiveClientBattlePokemon
- *  com.cobblemon.mod.common.client.battle.ClientBattle
- *  com.cobblemon.mod.common.client.battle.ClientBattlePokemon
- *  com.cobblemon.mod.common.net.messages.client.battle.BattleFaintPacket
- *  kotlin.Pair
- *  net.minecraft.client.MinecraftClient
- *  org.spongepowered.asm.mixin.Mixin
- *  org.spongepowered.asm.mixin.injection.At
- *  org.spongepowered.asm.mixin.injection.Inject
- *  org.spongepowered.asm.mixin.injection.callback.CallbackInfo
- */
 package com.batmite2b.battlecam.mixin;
 
 import com.batmite2b.battlecam.client.BattleActionEvent;
@@ -26,7 +10,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattle;
 import com.cobblemon.mod.common.client.battle.ClientBattlePokemon;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleFaintPacket;
 import kotlin.Pair;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -35,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets={"com.cobblemon.mod.common.client.net.battle.BattleFaintHandler"}, remap=false)
 public abstract class BattleFaintHandlerMixin {
     @Inject(method={"handle"}, at={@At(value="HEAD")})
-    private void battlecam$queueFaintScene(BattleFaintPacket packet, MinecraftClient client, CallbackInfo ci) {
+    private void battlecam$queueFaintScene(BattleFaintPacket packet, Minecraft client, CallbackInfo ci) {
         ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
         if (battle == null || !BattleCamClient.STATE.isBattleContextActive()) {
             return;

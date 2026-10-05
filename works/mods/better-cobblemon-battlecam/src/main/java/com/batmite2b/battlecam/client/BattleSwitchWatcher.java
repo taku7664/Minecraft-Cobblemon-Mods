@@ -1,11 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.entity.Entity
- *  net.minecraft.util.math.Box
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.BattleActionEvent;
@@ -20,9 +12,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Box;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 
 public final class BattleSwitchWatcher {
     private static final long SWITCH_LOG_COOLDOWN_MS = 1800L;
@@ -37,8 +29,8 @@ public final class BattleSwitchWatcher {
     private final Set<UUID> knownPokemon = new HashSet<UUID>();
     private final Map<UUID, Long> fallbackSwitchAtByUuid = new HashMap<UUID, Long>();
 
-    public void tick(MinecraftClient client, BattleCamState state) {
-        if (!state.isBattleContextActive() || client.world == null || client.player == null) {
+    public void tick(Minecraft client, BattleCamState state) {
+        if (!state.isBattleContextActive() || client.level == null || client.player == null) {
             this.resetFallbackTracking();
             return;
         }
@@ -94,8 +86,8 @@ public final class BattleSwitchWatcher {
         this.knownPokemon.addAll(currentPokemon);
     }
 
-    public void onBattleMessage(MinecraftClient client, BattleCamState state, String message) {
-        if (!state.isBattleContextActive() || client.world == null || client.player == null || message == null) {
+    public void onBattleMessage(Minecraft client, BattleCamState state, String message) {
+        if (!state.isBattleContextActive() || client.level == null || client.player == null || message == null) {
             return;
         }
         String normalized = BattleSwitchWatcher.normalize(message);
@@ -129,7 +121,7 @@ public final class BattleSwitchWatcher {
         this.lastSwitchAtMs = 0L;
     }
 
-    private Entity resolveReturningPokemon(MinecraftClient client, String battleId, String pokemonName) {
+    private Entity resolveReturningPokemon(Minecraft client, String battleId, String pokemonName) {
         List<Entity> entities = this.currentBattlePokemonEntities(client, battleId);
         if (entities.isEmpty()) {
             return null;
@@ -145,12 +137,12 @@ public final class BattleSwitchWatcher {
 
     private static UUID pokemonOrEntityUuid(Entity entity) {
         UUID uuid = ReflectionUtil.entityPokemonUuid(entity);
-        return uuid != null ? uuid : entity.getUuid();
+        return uuid != null ? uuid : entity.getUUID();
     }
 
-    private List<Entity> currentBattlePokemonEntities(MinecraftClient client, String battleId) {
-        Box box = new Box(client.player.getX() - 96.0, client.player.getY() - 32.0, client.player.getZ() - 96.0, client.player.getX() + 96.0, client.player.getY() + 32.0, client.player.getZ() + 96.0);
-        return client.world.getOtherEntities(null, box, entity -> entity != null && !entity.isRemoved() && entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity") && ReflectionUtil.entityMatchesBattle(entity, battleId));
+    private List<Entity> currentBattlePokemonEntities(Minecraft client, String battleId) {
+        AABB box = new AABB(client.player.getX() - 96.0, client.player.getY() - 32.0, client.player.getZ() - 96.0, client.player.getX() + 96.0, client.player.getY() + 32.0, client.player.getZ() + 96.0);
+        return client.level.getEntities((Entity)null, box, entity -> entity != null && !entity.isRemoved() && entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity") && ReflectionUtil.entityMatchesBattle(entity, battleId));
     }
 
     private static boolean entityNameMatches(Entity entity, String pokemonName) {

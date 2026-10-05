@@ -1,16 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.fabricmc.api.ClientModInitializer
- *  net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
- *  net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
- *  net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
- *  net.minecraft.client.MinecraftClient
- *  net.minecraft.text.Text
- *  org.slf4j.Logger
- *  org.slf4j.LoggerFactory
- */
 package com.batmite2b.battlecam.client;
 
 import com.batmite2b.battlecam.client.BattleCamConfig;
@@ -28,8 +15,8 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,14 +41,14 @@ implements ClientModInitializer {
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> BattleCamHud.render(drawContext));
     }
 
-    private void onClientTick(MinecraftClient client) {
+    private void onClientTick(Minecraft client) {
         if (this.pendingJoinHint && client.player != null) {
             this.pendingJoinHint = false;
-            client.player.sendMessage((Text)Text.translatable((String)"message.battlecam.join_hint"), false);
+            client.player.displayClientMessage((Component)Component.translatable((String)"message.battlecam.join_hint"), false);
         }
         BattleViewContext context = CobblemonBattleContextWatcher.poll();
         STATE.setContext(context, CobblemonBattleContextWatcher.currentBattleId());
-        STATE.updateOwnBattleUiPause(BattleScreenUtil.isCobblemonBattleScreenOpen(client.currentScreen));
+        STATE.updateOwnBattleUiPause(BattleScreenUtil.isCobblemonBattleScreenOpen(client.screen));
         BattleCamKeybinds.handleInput(STATE);
         MEGA_SHOWDOWN_COMPAT.tick(client, STATE);
         SWITCH_WATCHER.tick(client, STATE);

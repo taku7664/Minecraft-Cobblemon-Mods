@@ -1,9 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.entity.Entity
- */
 package com.batmite2b.battlecam.client;
 
 import java.lang.reflect.Method;
@@ -11,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.UUID;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public final class ReflectionUtil {
     private ReflectionUtil() {
@@ -66,7 +60,7 @@ public final class ReflectionUtil {
         if (entity == null || uuid == null) {
             return false;
         }
-        if (uuid.equals(entity.getUuid())) {
+        if (uuid.equals(entity.getUUID())) {
             return true;
         }
         return uuid.equals(ReflectionUtil.entityPokemonUuid(entity));

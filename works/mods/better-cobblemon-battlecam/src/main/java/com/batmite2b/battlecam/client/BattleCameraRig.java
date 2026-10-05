@@ -1,19 +1,13 @@
-/*
- * Decompiled with CFR 0.152.
- *
- * Could not load the following classes:
- *  net.minecraft.util.math.Vec3d
- */
 package com.batmite2b.battlecam.client;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
 public final class BattleCameraRig {
-    private Vec3d currentPos = Vec3d.ZERO;
+    private Vec3 currentPos = Vec3.ZERO;
     private float currentYaw = 0.0f;
     private float currentPitch = 0.0f;
     private float currentFov = 70.0f;
-    private Vec3d targetPos = Vec3d.ZERO;
+    private Vec3 targetPos = Vec3.ZERO;
     private float targetYaw = 0.0f;
     private float targetPitch = 0.0f;
     private float targetFov = 70.0f;
@@ -21,11 +15,11 @@ public final class BattleCameraRig {
     private boolean initialized = false;
 
     public void reset() {
-        this.currentPos = Vec3d.ZERO;
+        this.currentPos = Vec3.ZERO;
         this.currentYaw = 0.0f;
         this.currentPitch = 0.0f;
         this.currentFov = 70.0f;
-        this.targetPos = Vec3d.ZERO;
+        this.targetPos = Vec3.ZERO;
         this.targetYaw = 0.0f;
         this.targetPitch = 0.0f;
         this.targetFov = 70.0f;
@@ -33,11 +27,11 @@ public final class BattleCameraRig {
         this.initialized = false;
     }
 
-    public void setDesired(Vec3d pos, float yaw, float pitch, float fov) {
+    public void setDesired(Vec3 pos, float yaw, float pitch, float fov) {
         this.setDesired(pos, yaw, pitch, fov, false);
     }
 
-    public void setDesired(Vec3d pos, float yaw, float pitch, float fov, boolean cut) {
+    public void setDesired(Vec3 pos, float yaw, float pitch, float fov, boolean cut) {
         this.targetPos = pos;
         this.targetYaw = yaw;
         this.targetPitch = pitch;
@@ -65,7 +59,7 @@ public final class BattleCameraRig {
         this.currentFov = BattleCameraRig.lerp(this.currentFov, this.targetFov, fovAlpha);
     }
 
-    public Vec3d getRenderPos() {
+    public Vec3 getRenderPos() {
         return this.currentPos;
     }
 
