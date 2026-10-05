@@ -8,13 +8,13 @@ import net.minecraft.network.chat.Component
 
 /**
  * Operator commands for trying the dimensions before their wormholes and portals exist:
- * `/cdim go <dimension>` enters one near 0, 0 and `/cdim return` goes back to the entry point.
+ * `/cdim enter <dimension>` enters one near 0, 0 and `/cdim exit` goes back to the entry point, like `/plaza` and `/myroom`.
  */
 object DimensionCommand {
     fun register() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             dispatcher.register(Commands.literal("cdim").requires { it.hasPermission(2) }
-                .then(Commands.literal("go")
+                .then(Commands.literal("enter")
                     .then(Commands.argument("dimension", StringArgumentType.word())
                         .suggests { _, builder -> SharedSuggestionProvider.suggest(ModDimension.entries.map { it.path }, builder) }
                         .executes { context ->
@@ -32,7 +32,7 @@ object DimensionCommand {
                                 }
                             }
                         }))
-                .then(Commands.literal("return").executes { context ->
+                .then(Commands.literal("exit").executes { context ->
                     DimensionTravel.returnHome(context.source.playerOrException)
                     1
                 }))

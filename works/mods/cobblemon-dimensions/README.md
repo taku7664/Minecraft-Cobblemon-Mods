@@ -50,7 +50,7 @@ Terralith 오버월드 지형을 섬 모양으로 잘라 공중에 띄운 차원
 
 ## 관리자 명령어
 
-권한 레벨 2가 필요합니다. 울트라홀이 생기기 전까지 확인용으로 씁니다.
+권한 레벨 2가 필요합니다. 울트라홀이 생기기 전까지 확인용으로 씁니다. 광장·마이룸처럼 `enter`/`exit`을 씁니다.
 
-- `/cdim go <ultra_space|ancient|future>`: 0, 0 근처의 땅으로 들어갑니다.
-- `/cdim return`: 들어오기 전 위치로 돌아갑니다.
+- `/cdim enter <ultra_space|ancient|future>`: 0, 0 근처의 땅으로 들어갑니다.
+- `/cdim exit`: 들어오기 전 위치로 돌아갑니다.

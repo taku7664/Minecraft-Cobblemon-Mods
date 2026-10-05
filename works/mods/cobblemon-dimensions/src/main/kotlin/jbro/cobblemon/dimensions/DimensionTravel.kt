@@ -56,7 +56,7 @@ object DimensionTravel {
         val feet = BlockPos.containing(x, y, z)
         val free = level.getBlockState(feet).getCollisionShape(level, feet).isEmpty &&
             level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty
-        return if (free) y else level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, feet.x, feet.z).toDouble()
+        return if (free) y else surfaceY(level, feet.x, feet.z).toDouble()
     }
 
     /** Islands leave gaps of void, so landing searches outward in a spiral for a column with ground. */
@@ -67,11 +67,18 @@ object DimensionTravel {
                 if (maxOf(kotlin.math.abs(dx), kotlin.math.abs(dz)) != ring) continue
                 val cx = x + dx * step
                 val cz = z + dz * step
-                val top = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx, cz)
+                val top = surfaceY(level, cx, cz)
                 val ground = BlockPos(cx, top - 1, cz)
                 if (top > level.minBuildHeight + 1 && level.getFluidState(ground).isEmpty) return BlockPos(cx, top, cz)
             }
         }
         return null
     }
+
+    /**
+     * The first free block above the ground at [x], [z]. `Level.getHeight` reports the world's bottom for a chunk that
+     * is not loaded, and a new dimension has none, so this generates the chunk first.
+     */
+    private fun surfaceY(level: ServerLevel, x: Int, z: Int): Int =
+        level.getChunk(x shr 4, z shr 4).getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x and 15, z and 15) + 1
 }
