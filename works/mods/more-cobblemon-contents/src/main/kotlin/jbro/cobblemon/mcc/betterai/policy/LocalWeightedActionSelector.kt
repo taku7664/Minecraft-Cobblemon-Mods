@@ -99,9 +99,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
 
         val selectionUniverse = ranked
         val best = selectionUniverse.first()
-        val credibleStayAlternativeExists = selectionUniverse.any { rank ->
+        val credibleStays = selectionUniverse.filter { rank ->
             isCredibleDamagingStay(rank) &&
                 best.comparisonValue - rank.comparisonValue <= context.tuning.maximumReasonableScoreGap
+        }
+        val credibleStayAlternativeExists = credibleStays.isNotEmpty()
+        // The HP the best credible stay keeps: a switch that keeps more is never vetoed for keeping too little.
+        val stayRetention = credibleStays.takeIf { it.isNotEmpty() }?.let { stays ->
+            StayRetention(stays.maxOf { it.worstResponseHpRetention }, stays.maxOf { it.worstConfirmedResponseHpRetention })
         }
         val exclusions = linkedMapOf<String, String>()
         val eligible = selectionUniverse.filter { rank ->
@@ -118,6 +123,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     rank,
                     rank === best,
                     credibleStayAlternativeExists,
+                    stayRetention,
                     context.memory,
                     context.riskBudget,
                     context.alreadyBoostedSetupActionIds,
@@ -295,6 +301,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         rank: LocalBattleActionRank,
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
+        stayRetention: StayRetention?,
         memory: BattleTacticalMemoryView,
         riskBudget: Double,
         alreadyBoostedSetupActionIds: Set<String>,
@@ -317,7 +324,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
         rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
         rank.outcome.candidate.actionId in ruleExclusions -> ruleExclusions.getValue(rank.outcome.candidate.actionId)
-        else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory)
+        else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, stayRetention, riskBudget, memory)
             ?: if (selfSetupHasFuture(
                     rank,
                     bestRanked,
@@ -329,10 +336,13 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             ) null else "setup_without_future"
     }
 
+    private data class StayRetention(val worst: Double, val confirmed: Double)
+
     private fun switchExclusion(
         rank: LocalBattleActionRank,
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
+        stayRetention: StayRetention?,
         riskBudget: Double,
         memory: BattleTacticalMemoryView,
     ): String? {
@@ -345,12 +355,17 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             memory.turnsSinceLastSwitch?.let { it <= 1 } == true &&
             memory.switchPressure >= REPEATED_SWITCH_PRESSURE
         ) return "repeated_switch_pressure"
+        // The HP gates ask whether the switch-in keeps enough. Staying in that keeps less is no safer: a Roserade at
+        // 41% kept clicking a quartered Giga Drain into Ferrothorn and fainted because both switches kept "only" 44%
+        // and 56%.
         if (!bestRanked) {
             val required = exploratorySwitchHpRetention(riskBudget)
+            if (stayRetention != null && rank.worstResponseHpRetention > stayRetention.worst) return null
             return if (rank.worstResponseHpRetention >= required) null
             else "exploratory_switch_hp_retention_below_${format(required)}"
         }
         if (!credibleStayAlternativeExists) return null
+        if (stayRetention != null && rank.worstConfirmedResponseHpRetention > stayRetention.confirmed) return null
         // Overriding the ranking needs confirmed evidence. The full worst case counts expected move
         // slots at full strength and the score already priced them, so a speculative slot alone
         // must not veto the best action; live play showed a best switch far ahead of every stay
