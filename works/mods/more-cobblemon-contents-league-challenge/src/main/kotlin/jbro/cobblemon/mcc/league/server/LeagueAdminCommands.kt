@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.system.LeagueProgress
 import com.mojang.brigadier.arguments.StringArgumentType
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
+import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
@@ -209,7 +210,9 @@ object LeagueAdminCommands {
                 ManagedPveBattles.Format.valueOf(challenge.format),
                 challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = skill,
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
-                stage = engine.stage(challengeId))) { outcome ->
+                stage = engine.stage(challengeId),
+                // The brain logs under the AI test id; the clients still hear and see the league battle.
+                clientTag = MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, engine.stage(challengeId), challengeId))) { outcome ->
                 player.server.playerList.getPlayer(player.uuid)?.sendSystemMessage(
                     Component.translatable("$KEY.test.${outcome.name.lowercase()}", opponent, target))
             }

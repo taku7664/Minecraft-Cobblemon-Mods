@@ -33,6 +33,11 @@ object ManagedPveBattles {
         val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
         /** Where in the content this battle stands, for the clients' [MccBattleTag]; the trainer id is its opponent. */
         val stage: String? = null,
+        /**
+         * What the clients are told this battle is, when that differs from [contentId], [stage] and [trainerId]: an AI
+         * test runs under its own content id but should look and sound like the content battle it stands in for.
+         */
+        val clientTag: MccBattleTag? = null,
     )
     private data class Active(val playerId: UUID, val request: Request, val complete: (Outcome) -> Unit)
     private data class Completion(val active: Active, val outcome: Outcome)
@@ -94,7 +99,7 @@ object ManagedPveBattles {
                 }
             }, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
             appearance = request.appearance)
-        val tag = MccBattleTag(request.contentId, request.stage, request.trainerId)
+        val tag = request.clientTag ?: MccBattleTag(request.contentId, request.stage, request.trainerId)
         return when (val result = MccBattleTags.during(setOf(player.uuid), tag) { runtime.startManaged(prepared) }) {
             is PveLaunchResult.Started -> result.battleId.also {
                 if (!completed.get()) state.battles[it] = active
