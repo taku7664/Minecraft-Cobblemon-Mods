@@ -1,0 +1,16 @@
+{
+  "biome.cobblemon_dimensions.ultra_deep_sea": "Ultra Deep Sea",
+  "biome.cobblemon_dimensions.ultra_desert": "Ultra Desert",
+  "biome.cobblemon_dimensions.ultra_jungle": "Ultra Jungle",
+  "biome.cobblemon_dimensions.ultra_forest": "Ultra Forest",
+  "biome.cobblemon_dimensions.ultra_crater": "Ultra Crater",
+  "biome.cobblemon_dimensions.ultra_plant": "Ultra Plant",
+  "dimension.cobblemon_dimensions.ultra_space": "Ultra Space",
+  "dimension.cobblemon_dimensions.ancient": "Ancient",
+  "dimension.cobblemon_dimensions.future": "Future",
+  "message.cobblemon_dimensions.no_respawn_blocks": "Beds and respawn anchors don't work in this dimension.",
+  "command.cobblemon_dimensions.unknown": "No such dimension.",
+  "command.cobblemon_dimensions.no_landing": "Found no ground to land on.",
+  "block.cobblemon_dimensions.ancient_portal": "Ancient Portal",
+  "block.cobblemon_dimensions.future_portal": "Future Portal"
+}

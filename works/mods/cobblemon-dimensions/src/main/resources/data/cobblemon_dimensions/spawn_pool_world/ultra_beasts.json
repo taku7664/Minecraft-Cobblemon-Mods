@@ -1,0 +1,207 @@
+{
+  "enabled": true,
+  "neededInstalledMods": [],
+  "neededUninstalledMods": [],
+  "spawns": [
+    {
+      "id": "cobblemon_dimensions-nihilego",
+      "pokemon": "nihilego",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_deep_sea"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-buzzwole",
+      "pokemon": "buzzwole",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-poipole",
+      "pokemon": "poipole",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "40",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_jungle"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-pheromosa",
+      "pokemon": "pheromosa",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-guzzlord",
+      "pokemon": "guzzlord",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-stakataka",
+      "pokemon": "stakataka",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_desert"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-xurkitree",
+      "pokemon": "xurkitree",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_plant"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-celesteela",
+      "pokemon": "celesteela",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_crater"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-kartana",
+      "pokemon": "kartana",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_forest"
+        ]
+      }
+    },
+    {
+      "id": "cobblemon_dimensions-blacephalon",
+      "pokemon": "blacephalon",
+      "presets": [
+        "natural"
+      ],
+      "type": "pokemon",
+      "spawnablePositionType": "grounded",
+      "bucket": "ultra-rare",
+      "level": "60",
+      "weight": 1.0,
+      "condition": {
+        "dimensions": [
+          "cobblemon_dimensions:ultra_space"
+        ],
+        "biomes": [
+          "cobblemon_dimensions:ultra_forest"
+        ]
+      }
+    }
+  ]
+}

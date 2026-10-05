@@ -1,0 +1,16 @@
+{
+  "biome.cobblemon_dimensions.ultra_deep_sea": "울트라딥시",
+  "biome.cobblemon_dimensions.ultra_desert": "울트라데저트",
+  "biome.cobblemon_dimensions.ultra_jungle": "울트라정글",
+  "biome.cobblemon_dimensions.ultra_forest": "울트라포레스트",
+  "biome.cobblemon_dimensions.ultra_crater": "울트라크레이터",
+  "biome.cobblemon_dimensions.ultra_plant": "울트라플랜트",
+  "dimension.cobblemon_dimensions.ultra_space": "울트라스페이스",
+  "dimension.cobblemon_dimensions.ancient": "고대",
+  "dimension.cobblemon_dimensions.future": "미래",
+  "message.cobblemon_dimensions.no_respawn_blocks": "이 차원에서는 침대와 리스폰 앵커를 쓸 수 없습니다.",
+  "command.cobblemon_dimensions.unknown": "그런 차원은 없습니다.",
+  "command.cobblemon_dimensions.no_landing": "내릴 땅을 찾지 못했습니다.",
+  "block.cobblemon_dimensions.ancient_portal": "고대 포탈",
+  "block.cobblemon_dimensions.future_portal": "미래 포탈"
+}

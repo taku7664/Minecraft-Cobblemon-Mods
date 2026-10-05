@@ -15,6 +15,7 @@ include(
     "better-battle-presentation",
     "cobblemon-ui",
     "cobblemon-custom-species",
+    "cobblemon-dimensions",
     "cobblemon-npc",
     "cobblemon-client-setup",
     "font-glyph-race-fix",

@@ -1,0 +1,41 @@
+package jbro.cobblemon.dimensions
+
+import com.mojang.brigadier.arguments.StringArgumentType
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
+import net.minecraft.commands.Commands
+import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.network.chat.Component
+
+/**
+ * Operator commands for trying the dimensions before their wormholes and portals exist:
+ * `/cdim go <dimension>` enters one near 0, 0 and `/cdim return` goes back to the entry point.
+ */
+object DimensionCommand {
+    fun register() {
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+            dispatcher.register(Commands.literal("cdim").requires { it.hasPermission(2) }
+                .then(Commands.literal("go")
+                    .then(Commands.argument("dimension", StringArgumentType.word())
+                        .suggests { _, builder -> SharedSuggestionProvider.suggest(ModDimension.entries.map { it.path }, builder) }
+                        .executes { context ->
+                            val player = context.source.playerOrException
+                            val dimension = ModDimension.byPath(StringArgumentType.getString(context, "dimension"))
+                            when {
+                                dimension == null -> {
+                                    context.source.sendFailure(Component.translatable("command.cobblemon_dimensions.unknown"))
+                                    0
+                                }
+                                DimensionTravel.enter(player, dimension, 0, 0) -> 1
+                                else -> {
+                                    context.source.sendFailure(Component.translatable("command.cobblemon_dimensions.no_landing"))
+                                    0
+                                }
+                            }
+                        }))
+                .then(Commands.literal("return").executes { context ->
+                    DimensionTravel.returnHome(context.source.playerOrException)
+                    1
+                }))
+        }
+    }
+}

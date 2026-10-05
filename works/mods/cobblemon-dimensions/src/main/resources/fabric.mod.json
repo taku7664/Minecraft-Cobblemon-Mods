@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_dimensions",
+  "version": "${version}",
+  "name": "Cobblemon Dimensions",
+  "description": "Ultra Space, the ancient past and the far future as dimensions of their own for the jbro Cobblemon server.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.dimensions.CobblemonDimensions"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.dimensions.client.CobblemonDimensionsClient"
+      }
+    ]
+  },
+  "mixins": [
+    "cobblemon_dimensions.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "terralith": "*"
+  }
+}
