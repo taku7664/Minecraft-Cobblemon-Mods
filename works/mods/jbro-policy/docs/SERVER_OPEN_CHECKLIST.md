@@ -37,7 +37,7 @@
 
 | 데이터팩 | 이유 |
 |---|---|
-| `CCC_2.21-data.zip` (Complete Cobblemon Collection 2.21의 `data/`, 충돌 파일 제외) | CCC가 모델을 붙인 종을 구현된 종으로 표시하고, 패러독스·울트라비스트 등의 스폰을 더한다. 하드 충호의 땅을기는날개도 CCC 모델을 쓴다. 클라이언트에는 같은 버전의 CCC 리소스팩(`CCC_2.21.zip`)이 있어야 모델이 보인다. **원본 CCC를 그대로 넣지 않는다.** CCC는 `data/cobblemon/species/`의 9종(아르세우스·디아루가·기라티나·펄기아·볼트로스·비크티니·지가르데·실버디·오거폰)을 폼 없이 통째로 바꾸고 additions로 폼을 다시 붙인다. 그대로 넣으면 Cobblemon과 Mega Showdown의 폼 정의가 덮여서 하드 난천의 기라티나 오리진폼 같은 엔트리가 깨질 수 있다. 그래서 Cobblemon·Mega Showdown과 경로가 겹치는 파일 23개(위 9종, Mega Showdown 스폰 14개)와 그 9종을 대상으로 하는 `species_additions` 58개를 빼고 만든다. CCC를 올릴 때도 같은 기준으로 다시 만든다. |
+| `CCC_2.21-data.zip` (Complete Cobblemon Collection 2.21의 `data/`, 충돌 파일 제외) | CCC가 모델을 붙인 종을 구현된 종으로 표시하고, 패러독스·울트라비스트 등의 스폰을 더한다. 하드 충호의 땅을기는날개도 CCC 모델을 쓴다. 클라이언트에는 같은 버전의 CCC 리소스팩(`CCC_2.21.zip`)이 있어야 모델이 보인다. **원본 CCC를 그대로 넣지 않는다.** CCC는 `data/cobblemon/species/`의 9종(아르세우스·디아루가·기라티나·펄기아·볼트로스·비크티니·지가르데·실버디·오거폰)을 폼 없이 통째로 바꾸고 additions로 폼을 다시 붙인다. 그대로 넣으면 Cobblemon과 Mega Showdown의 폼 정의가 덮여서 하드 난천의 기라티나 오리진폼 같은 엔트리가 깨질 수 있다. 그래서 Cobblemon·Mega Showdown과 경로가 겹치는 파일 23개(위 9종, Mega Showdown 스폰 14개)와 그 9종을 대상으로 하는 `species_additions` 58개를 빼고 만든다. 또 운영 결정(2026-10-06)으로 울트라비스트 11종과 패러독스 20종의 스폰을 모두 빼서, 그 종만 담긴 스폰 파일 31개(`ub_spawns_ccc`, `paradox_spawns_ccc` 전부 포함)를 넣지 않는다. CCC를 올릴 때도 같은 기준으로 다시 만든다. |
 
 ## 설치할 프로그램
 

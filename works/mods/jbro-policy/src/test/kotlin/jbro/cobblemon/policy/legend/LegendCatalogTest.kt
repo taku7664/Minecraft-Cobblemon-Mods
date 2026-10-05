@@ -13,8 +13,9 @@ class LegendCatalogTest {
         .getAsJsonArray("spawns").map { it.asJsonObject.get("id").asString.removePrefix("jbro-legendary-") }.toSet()
 
     @Test
-    fun `every spawned Legend is in the catalog and nothing else`() {
-        assertEquals(spawned, LegendCatalog.byId.keys)
+    fun `every Legend spawns in the wild except the paradoxes, which keep only their capture rank`() {
+        // Paradox spawns are off for now (2026-10-06); the catalog still gates catching one met another way.
+        assertEquals(spawned, LegendCatalog.byId.filterValues { it.tier != LegendTier.PARADOX }.keys)
     }
 
     @Test

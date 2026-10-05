@@ -13,7 +13,7 @@ class PolicyDataTest {
     @Test
     fun `legendary spawns use the Cobblemon 1_8 position key`() {
         val spawns = json("/resourcepacks/legendary_spawns/data/jbro_policy/spawn_pool_world/legendary_wild_spawns.json").getAsJsonArray("spawns")
-        assertEquals(103, spawns.size())
+        assertEquals(97, spawns.size())
         for (spawn in spawns.map { it.asJsonObject }) {
             val id = spawn.get("id").asString
             assertTrue(id.startsWith("jbro-legendary-")) { id }

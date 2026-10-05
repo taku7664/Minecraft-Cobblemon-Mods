@@ -521,24 +521,6 @@
             }
         },
         {
-            "id": "jbro-legendary-gougingfire",
-            "pokemon": "gougingfire",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "#cobblemon:nether/is_basalt",
-                    "#cobblemon:is_volcanic"
-                ]
-            }
-        },
-        {
             "id": "jbro-legendary-groudon",
             "pokemon": "groudon",
             "presets": [
@@ -618,60 +600,6 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
-                ]
-            }
-        },
-        {
-            "id": "jbro-legendary-ironboulder",
-            "pokemon": "ironboulder",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "#cobblemon:is_badlands",
-                    "#cobblemon:is_end"
-                ]
-            }
-        },
-        {
-            "id": "jbro-legendary-ironcrown",
-            "pokemon": "ironcrown",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "minecraft:lush_caves",
-                    "#cobblemon:is_deep_dark"
-                ]
-            }
-        },
-        {
-            "id": "jbro-legendary-ironleaves",
-            "pokemon": "ironleaves",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "#cobblemon:is_forest",
-                    "#cobblemon:is_cherry_blossom"
                 ]
             }
         },
@@ -1330,29 +1258,6 @@
             }
         },
         {
-            "id": "jbro-legendary-ragingbolt",
-            "pokemon": "ragingbolt",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "#cobblemon:is_plains",
-                    "#cobblemon:is_savanna"
-                ]
-            },
-            "anticondition": {
-                "biomes": [
-                    "minecraft:meadow"
-                ]
-            }
-        },
-        {
             "id": "jbro-legendary-raikou",
             "pokemon": "raikou",
             "presets": [
@@ -2001,24 +1906,6 @@
                 "biomes": [
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal"
-                ]
-            }
-        },
-        {
-            "id": "jbro-legendary-walkingwake",
-            "pokemon": "walkingwake",
-            "presets": [
-                "natural"
-            ],
-            "type": "pokemon",
-            "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
-            "level": "70-80",
-            "weight": 0.15,
-            "condition": {
-                "biomes": [
-                    "#cobblemon:is_river",
-                    "#cobblemon:is_deep_ocean"
                 ]
             }
         },
