@@ -1,11 +1,11 @@
-package jbro.cobblemon.mcc.internal.mixin;
+package jbro.cobblemon.mcc.internal.battle;
 
-/** Preserves the primary turn failure while exhausting independent recovery steps. */
-final class ManagedTurnFailureRecovery {
+/** Preserves the primary turn failure while exhausting independent recovery steps. Outside the mixin package, which mixins may not load classes from. */
+public final class ManagedTurnFailureRecovery {
     private ManagedTurnFailureRecovery() {
     }
 
-    static void recover(
+    public static void recover(
         Throwable primaryFailure,
         boolean canRestoreResponses,
         Runnable rollbackReservation,
@@ -19,7 +19,7 @@ final class ManagedTurnFailureRecovery {
         attempt(primaryFailure, abortBattle);
     }
 
-    static void releaseReservation(Throwable primaryFailure, Runnable rollbackReservation) {
+    public static void releaseReservation(Throwable primaryFailure, Runnable rollbackReservation) {
         attempt(primaryFailure, rollbackReservation);
     }
 

@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-06 10:05] 개발 클라이언트로 트레이너 몸·종료 연출 확인, 턴 실패 복구 클래스 이동 (`ManagedTurnFailureRecovery`)
+
+- **검증 방법:** 리그 개발 실행(`:more-cobblemon-contents-league-challenge:runClient`)에 `TrainerSceneCaptureHarness`(리그 `MEMORY.md`)를 붙여 일회용 월드 `scene-capture`에서 난천 스킨 관리 전투 → 승리 → 종료 연출 → 두 번째 전투를 자동으로 돌리고 캡처했다. 개발 실행에는 RCT Trainers+ 팩을 `run/resourcepacks`에 넣어 켰고, 배틀캠은 리그 개발 런타임(`runtimeOnly`)에 넣었다.
+- **확인됨(캡처·로그):** 앵커 자리에 난천 스킨 NPC가 선다. 승리 뒤 배틀이 열린 채로 연출이 시작되고(`battle still open while the scene plays: true`), 카메라가 난천 얼굴로 다가가며 이름 탭 붙은 대화창이 뜬다. 연출 초반 프레임에 `lose` 모션(고개 숙이고 손으로 얼굴 가림)이 보인다. 대사가 끝나면 배틀이 닫히고 1인칭으로 돌아오며, 난천은 남아 있다. 두 번째 전투 중 서버에 선 트레이너는 1명.
+- **확인 못 함:** `send_out` 모션은 배틀캠 와이드 구도에서 트레이너가 작게 잡혀 스틸로 판별하지 못했다. 다른 플레이어 시점은 보지 않았다.
+- **발견한 기존 버그와 수정:** 관리 전투에서 플레이어 선택이 턴 처리 중 실패하면 `BattleActorMixin`이 `ManagedTurnFailureRecovery`를 부르는데, 이 클래스가 믹스인 패키지(`internal.mixin`)에 있어서 `IllegalClassLoadError`가 나고 원래 실패 원인도 묻혔다(첫 하네스 실행에서 재현, 하네스가 미래예지를 대상 없이 골랐을 때). 클래스를 `internal.battle`로 옮기고 public으로 바꿨다. 믹스인 패키지에 남은 일반 클래스는 없다(설정 파일과 대조).
+- **기타 관찰:** 개발 실행에서 Cobblemon `ko_kr.json`이 JSON 오류로 건너뛰어진다(maven 아티팩트 쪽, 우리 파일과 Modrinth JAR은 정상). 연출 중 플레이어 머리 위 이름표가 화면 구석에 보인다.
+
 ## [2026-10-06 09:44] 관리 전투 상대 트레이너를 실제로 세운다 — `Cobblemon173TrainerBody` (빌드·core 단위 테스트 609개 확인, 실게임 미확인)
 
 - **빡대리님 지시:** 연출에서 난천 같은 관리 전투 상대를 비춰야 한다. 밀어서 두 명이 보이면 안 되고, 모션도 제대로 나와야 한다.

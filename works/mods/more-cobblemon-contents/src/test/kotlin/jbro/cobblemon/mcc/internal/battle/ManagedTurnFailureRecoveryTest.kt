@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.mixin
+package jbro.cobblemon.mcc.internal.battle
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows

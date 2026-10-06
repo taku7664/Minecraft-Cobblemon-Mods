@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.battles.ShowdownActionResponse;
 import com.cobblemon.mod.common.exception.IllegalActionChoiceException;
 import java.util.ArrayList;
 import java.util.List;
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnFailureRecovery;
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks;
 import jbro.cobblemon.mcc.internal.battle.ManagedTurnCapture;
 import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors;
