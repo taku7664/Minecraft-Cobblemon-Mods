@@ -31,7 +31,9 @@ object BattleHudRenderer {
         // Keep native slide animation, but settle every row flush against the screen edge.
         val x = (if (reversed) nativeX + nativeWidth + BattleOverlay.HORIZONTAL_INSET -
             BattleHudCardRenderer.WIDTH + indent else nativeX - BattleOverlay.HORIZONTAL_INSET - indent).toInt()
-        val y = nativeY.toInt() + 13 - compression
+        // Below the cinematic letterbox's top bar while a scene plays.
+        val letterbox = jbro.cobblemon.ui.extended.CinematicLetterbox.topInset(context.guiHeight())
+        val y = nativeY.toInt() + 13 - compression + letterbox
         val ratio = (if (flatHealth) health / maxHealth.coerceAtLeast(1) else health).coerceIn(0f, 1f)
         val pokemonId = BattleHudContext.pokemonId
         val card = BattleHudCardRenderer.Card(

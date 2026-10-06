@@ -29,7 +29,10 @@
     "BattleSwitchTileScaleMixin",
     "BattleSwitchTileAccessor",
     "BattleSwitchSelectionMixin",
-    "BattleTargetSelectionMixin"
+    "BattleTargetSelectionMixin",
+    "CinematicGuiMixin",
+    "CinematicToastMixin",
+    "CinematicNameTagMixin"
   ],
   "injectors": {
     "defaultRequire": 1

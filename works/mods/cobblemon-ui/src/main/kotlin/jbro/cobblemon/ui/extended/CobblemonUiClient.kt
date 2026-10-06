@@ -28,6 +28,8 @@ object CobblemonUiClient : ClientModInitializer {
         BattleInfoPanel.initialize()
         registerKeybindings()
         registerHudRenderer()
+        // The bars first, so the scene's caption draws over them.
+        CinematicLetterbox.register()
         SceneDialogue.register()
         jbro.cobblemon.ui.extended.transition.BattleEntryTransition.install()
         verifyBattleUiMixinTargets()
