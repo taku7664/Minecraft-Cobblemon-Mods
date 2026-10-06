@@ -20,6 +20,8 @@
 
 - `deploy-product/client` and `deploy-product/server` hold the release outputs: the finished mod JARs a player's client
   or the live server needs, and each folder's `VERSION.txt`. A mod that runs on both sides goes in both folders.
+- Put JARs in `deploy-product` or edit its `VERSION.txt` only when the user explicitly asks for a release; a plain
+  "deploy" (배포) means `develop-product`.
 - Nothing else goes in `deploy-product`: no sources/dev JARs, backups, logs, reports, scratch files or notes.
   Replacing a JAR removes the old one; a previous build is recovered by rebuilding its commit.
 - `VERSION.txt` records, per version, what changed in that folder's set of mods. Releases are published on Modrinth;
