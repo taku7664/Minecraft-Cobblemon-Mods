@@ -1,0 +1,18 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents:managed_trainer",
+  "names": [
+    "npc.more_cobblemon_contents.managed_trainer"
+  ],
+  "hitbox": "player",
+  "canDespawn": false,
+  "isMovable": false,
+  "isInvulnerable": true,
+  "isLeashable": false,
+  "allowProjectileHits": false,
+  "hideNameTag": true,
+  "ai": [],
+  "battleConfiguration": {
+    "canChallenge": false
+  },
+  "skill": 0
+}

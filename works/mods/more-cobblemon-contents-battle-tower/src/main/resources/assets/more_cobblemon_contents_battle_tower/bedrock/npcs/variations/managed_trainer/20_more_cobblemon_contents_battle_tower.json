@@ -1,0 +1,447 @@
+{
+ "name": "more_cobblemon_contents:managed_trainer",
+ "order": 20,
+ "variations": [
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_ace_trainer_abel_04a5_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ace_trainer_abel_04a5.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_aroma_lady_alison_0480_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/aroma_lady_alison_0480.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_battle_girl_helen_0308_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/battle_girl_helen_0308.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_beauty_bridget_0109_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_bridget_0109.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_biker_alex_00c6_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_alex_00c6.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_black_belt_aaron_0140_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/black_belt_aaron_0140.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_breeder_alize_0208_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_alize_0208.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_cynthia_03a5_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_cynthia_03a5.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_lance_0027_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_lance_0027.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_terry_01b6_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_terry_01b6.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_channeler_amanda_01ce_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/channeler_amanda_01ce.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_collector_brady_03ab_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_brady_03ab.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_cowgirl_shelley_0312_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cowgirl_shelley_0312.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_crush_girl_cyndy_024f_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_cyndy_024f.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_cue_ball_camron_00fb_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_camron_00fb.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_cyclist_axel_02fb_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_axel_02fb.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_cyclist_kayla_0301_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_kayla_0301.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_dragon_tamer_andre_0388_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/dragon_tamer_andre_0388.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_engineer_baily_00dc_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/engineer_baily_00dc.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_fisher_alec_036a_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/fisher_alec_036a.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gambler_darian_0105_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_darian_0105.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gentleman_arthur_01a6_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_arthur_01a6.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_hiker_alan_00b9_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/hiker_alan_00b9.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_hoennchampion_steven_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/hoennchampion_steven.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_hoennleader_wallace_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/hoennleader_wallace.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_juggler_dalton_011e_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_dalton_011e.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_kaloschampion_diantha_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/kaloschampion_diantha.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_lady_gillian_0234_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/lady_gillian_0234.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_madame_rebecca_0488_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/madame_rebecca_0488.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_mega_trainer_aloysius_05cc_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_aloysius_05cc.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_painter_celina_0232_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_celina_0232.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_paldeachampion_geeta_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/paldeachampion_geeta.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_parasol_lady_alexa_03e1_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_alexa_03e1.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_plasma_n_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/plasma_n.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_pokemon_ranger_kyler_0547_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_ranger_kyler_0547.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_police_officer_alex_0330_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_alex_0330.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_psychic_abigail_0345_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/psychic_abigail_0345.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_rancher_marco_03be_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rancher_marco_03be.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_ranger_beth_0255_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ranger_beth_0255.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_rival_nemona_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rival_nemona.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_rocker_luca_011d_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rocker_luca_011d.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_sailor_damian_03eb_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/sailor_damian_03eb.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_skier_andrea_0352_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/skier_andrea_0352.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_super_nerd_aavery_00b2_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_aavery_00b2.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_unovachampion_alder_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/unovachampion_alder.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_unovachampion_iris_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/unovachampion_iris.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_veteran_armando_03fb_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_armando_03fb.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_waitress_kati_03fc_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/waitress_kati_03fc.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_worker_braden_0460_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_braden_0460.png"
+  }
+ ]
+}

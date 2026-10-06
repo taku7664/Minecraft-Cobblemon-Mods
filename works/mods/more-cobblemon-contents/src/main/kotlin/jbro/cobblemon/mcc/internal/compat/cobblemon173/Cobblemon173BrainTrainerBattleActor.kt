@@ -2,6 +2,8 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.battles.model.ai.BattleAI
 import com.cobblemon.mod.common.api.battles.model.actor.EntityBackedBattleActor
+import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
+import com.cobblemon.mod.common.entity.PosableEntity
 import com.cobblemon.mod.common.battles.ShowdownActionRequest
 import com.cobblemon.mod.common.battles.ShowdownActionResponse
 import com.cobblemon.mod.common.battles.actor.TrainerBattleActor
@@ -43,13 +45,13 @@ import jbro.cobblemon.mcc.internal.ai.attemptBattleDecisionCompletion
 import jbro.cobblemon.mcc.internal.ai.attemptBattleDecisionSetup
 import jbro.cobblemon.mcc.internal.ai.prepareBattleDecisionFallback
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.phys.Vec3
 
 /** Owns one combined asynchronous Brain decision for each Cobblemon 1.7.3 trainer request. */
 internal class Cobblemon173BrainTrainerBattleActor(
     private val server: MinecraftServer,
-    private val trainerEntity: ArmorStand,
+    private val trainerEntity: LivingEntity,
     trainerName: String,
     actorId: UUID,
     pokemonList: List<BattlePokemon>,
@@ -68,8 +70,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val opponentTeamPreview: BattleOpponentTeamPreviewView? = null,
     private val exactOwnTeam: BattleExactOwnTeamView = Cobblemon173ExactOwnTeamView.from(pokemonList),
     private val unboundedDecisionTime: Boolean = false,
-) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<ArmorStand> {
-    override val entity: ArmorStand = trainerEntity
+) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<LivingEntity> {
+    override val entity: LivingEntity = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
 
     private val localBrain = localBrain?.takeUnless { it === primaryBrain }
@@ -87,6 +89,17 @@ internal class Cobblemon173BrainTrainerBattleActor(
     )
     private val tacticalMemory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         BattleTacticalMemoryLedger(openContext())
+    }
+
+    // A visible trainer (Cobblemon's NPC) takes the result as Cobblemon's own NPC trainers do.
+    override fun win(winners: List<BattleActor>, losers: List<BattleActor>) {
+        super.win(winners, losers)
+        (trainerEntity as? PosableEntity)?.playAnimation("win", emptyList())
+    }
+
+    override fun lose(winners: List<BattleActor>, losers: List<BattleActor>) {
+        super.lose(winners, losers)
+        (trainerEntity as? PosableEntity)?.playAnimation("lose", emptyList())
     }
 
     override fun onChoiceRequested() {

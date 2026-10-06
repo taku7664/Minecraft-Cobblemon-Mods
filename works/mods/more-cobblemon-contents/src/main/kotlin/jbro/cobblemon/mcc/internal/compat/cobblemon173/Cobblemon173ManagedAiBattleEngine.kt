@@ -24,6 +24,7 @@ import jbro.cobblemon.mcc.internal.ai.BrainCapability
 import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.mcc.internal.presentation.BattleArenaHologramNetworking
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
@@ -70,6 +71,15 @@ class Cobblemon173ManagedAiBattleEngine(
         prepared: Cobblemon173ManagedAiBattle,
         onBattleStarted: (PokemonBattle, UUID) -> Unit = { _, _ -> },
         onEnded: (Cobblemon173ManagedAiBattleEnd) -> Unit,
+    ): PveLaunchResult = startBattle(prepared, onBattleStarted, onEnded).also { result ->
+        // A battle that never started takes its visible trainer with it.
+        if (result !is PveLaunchResult.Started) Cobblemon173TrainerBody.dismiss(prepared.playerId)
+    }
+
+    private fun startBattle(
+        prepared: Cobblemon173ManagedAiBattle,
+        onBattleStarted: (PokemonBattle, UUID) -> Unit,
+        onEnded: (Cobblemon173ManagedAiBattleEnd) -> Unit,
     ): PveLaunchResult {
         val player = playerResolver(prepared.playerId) ?: run {
             MoreCobblemonContents.LOGGER.error(
@@ -93,7 +103,9 @@ class Cobblemon173ManagedAiBattleEngine(
         val playerParticipant = Cobblemon173ManagedPlayerBattleParticipants.prepare(player.uuid, prepared.playerTeam)
         Cobblemon173BattlePokemonAppearance.hideHeldItems(prepared.playerTeam, prepared.opponentTeam)
         val playerActor = playerParticipant.actor
-        val trainerEntity = Cobblemon173VirtualTrainerAnchor.create(player)
+        val anchor = Cobblemon173VirtualTrainerAnchor.create(player)
+        val trainerEntity: LivingEntity = Cobblemon173TrainerBody.spawn(
+            player, anchor, prepared.appearance, prepared.trainerDisplayNameKey) ?: anchor
         val trainerActorId = trainerEntity.uuid
         val brainCapability = prepared.format.toBrainCapability()
         val primaryBrain = Cobblemon173BrainProviderResolver.create(
@@ -305,6 +317,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 Cobblemon173ManagedBattleTermination.end(battle.battleId)
                 PveLaunchResult.Unavailable
             } else {
+                Cobblemon173TrainerBody.battleStarted(player.uuid, battle.battleId)
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
@@ -331,6 +344,7 @@ class Cobblemon173ManagedAiBattleEngine(
                         },
                         { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
                         { BattleArenaHologramNetworking.hide(player, ended.battleId) },
+                        { Cobblemon173TrainerBody.battleEnded(player.uuid, ended.battleId, player.server) },
                         {
                             trainerActor.closeBrains(
                                 BattleBrainCloseResult(

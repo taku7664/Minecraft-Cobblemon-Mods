@@ -1,0 +1,132 @@
+{
+ "name": "more_cobblemon_contents:managed_trainer",
+ "order": 10,
+ "variations": [
+  {
+   "aspects": [
+    "mcc_skin_minecraft_textures_entity_player_wide_steve_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "minecraft:textures/entity/player/wide/steve.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_cynthia_03a5_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_cynthia_03a5.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_elite_four_aaron_039f_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/elite_four_aaron_039f.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_elite_four_bertha_03a0_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/elite_four_bertha_03a0.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_elite_four_flint_03a1_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/elite_four_flint_03a1.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_elite_four_lucian_03a2_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/elite_four_lucian_03a2.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_byron_0399_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_byron_0399.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_candice_03da_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_candice_03da.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_fantina_03d9_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_fantina_03d9.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_gardenia_03d6_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_gardenia_03d6.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_maylene_03d8_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_maylene_03d8.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_roark_0395_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_roark_0395.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_volkner_03db_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_volkner_03db.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_gym_leader_wake_03d7_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gym_leader_wake_03d7.png"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "name": "more_cobblemon_contents:managed_trainer",
+ "order": 0,
+ "variations": [
+  {
+   "aspects": [],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "minecraft:textures/entity/player/wide/steve.png"
+  }
+ ]
+}

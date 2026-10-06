@@ -1,4 +1,5 @@
 {
+  "npc.more_cobblemon_contents.managed_trainer": "Trainer",
   "screen.more_cobblemon_contents.access.provider_failed": "This content is locked because its access provider is unavailable.",
   "command.more_cobblemon_contents.open": "Available battle content: %s",
   "command.more_cobblemon_contents.terminal.unavailable": "Terminal %s is unavailable. Install its content mod on the server.",

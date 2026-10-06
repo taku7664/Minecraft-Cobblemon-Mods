@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-06 10:10] 관리 전투 상대 트레이너를 실제로 세운다 — `Cobblemon173TrainerBody` (빌드·core 단위 테스트 609개 확인, 실게임 미확인)
+
+- **빡대리님 지시:** 연출에서 난천 같은 관리 전투 상대를 비춰야 한다. 밀어서 두 명이 보이면 안 되고, 모션도 제대로 나와야 한다.
+- **전에는:** 상대는 `Cobblemon173VirtualTrainerAnchor`의 투명 아머스탠드였고 월드에 추가하지도 않았다. `appearance`(스킨)는 엔진까지 넘어왔지만 읽는 코드가 없었다.
+- **지금:** 엔진이 앵커 자리에 Cobblemon NPC(`more_cobblemon_contents:managed_trainer`, `data/.../npcs/managed_trainer.json`)를 세우고 액터 엔티티로 쓴다(`EntityBackedBattleActor<LivingEntity>`). `NPCEntity`가 `PokemonSender`라서 Cobblemon이 `send_out`/`recall`을 틀고, 액터의 `win`/`lose`가 `NPCBattleActor`처럼 `win`/`lose` 모션을 튼다. 전투 시작 때 `BATTLE_IDS`에 전투 ID를 넣어 기본 포저의 전투 자세(`idle_battle`)가 나온다(Cobblemon `BattleBuilder.pvn`과 같은 방식). NPC를 세우지 못하면 전처럼 투명 앵커로 진행한다.
+- **두 명 방지:** 플레이어당 하나만 둔다. 새 관리 전투를 시작하거나 접속을 끊으면 이전 트레이너를 바로 치운다(타워 연전). 전투가 끝나면 300틱(연출 시간) 뒤에 치운다. 시작에 실패해도 치운다. `mcc_managed_trainer` 태그가 붙은 엔티티가 로드되면(크래시 잔재) 지운다. NPC 클래스에서 `isMovable=false`, `isInvulnerable`, `allowProjectileHits=false`, `canChallenge=false`, `ai=[]`, `hideNameTag`.
+- **스킨:** `TrainerResourceSkin.aspect`(`mcc_skin_` + 텍스처를 `[a-z0-9_]`로 바꾼 것 + 슬림이면 `_slim`)를 NPC `variationAspects`에 넣는다. aspect→텍스처 변형 파일은 모듈마다 `assets/<ns>/bedrock/npcs/variations/managed_trainer/<order>_<module>.json`이고, `works/tools/generate_managed_trainer_variations.py`가 콘텐츠 데이터의 `skin`/`slim`(`model: slim`)에서 만든다(코어 0: 기본 스티브, 리그 10: 14개, 타워 20: 49개, 팩토리 30: 81개). **트레이너 스킨을 추가·변경하면 스크립트를 다시 돌린다**(`--check`로 확인). 목록에 없는 스킨은 기본 스티브로 보인다. 슬림은 `cobblemon:alex.geo`, 아니면 `steve.geo`, 포저 `cobblemon:standard`.
+- **검증:** core 609개 통과(aspect 규칙 테스트 포함), 리그 89개 통과, 타워·팩토리 JAR 빌드 성공. 타워·팩토리 `unitTest`는 테스트 컴파일이 깨져 있다(테스트가 같은 모듈 main 클래스를 못 찾음, 이번 변경 전부터).
+- **미확인:** 실게임에서 트레이너가 서 있는지, 스킨·모션·전투 자세, 포켓몬을 내보내는 위치가 달라지지 않는지, 근처 다른 플레이어에게 보이는 모습.
+
 ## [2026-10-06 09:05] 전투 연출 API `BattleScenes` — 대사가 끝난 뒤 배틀을 닫는다 (빌드·core 단위 테스트 608개 확인, 실게임 미확인)
 
 - **빡대리님 지시:** 전투에서 이기거나 졌을 때, 또는 특정 상황에서 코드가 배틀캠으로 엔티티를 비추고 대화창을 띄운다. 대화창이 끝날 때까지 카메라를 유지하고 그다음 배틀을 끝낸다. 배틀 종료는 연출만 보면 클라이언트에서 처리하면 된다(서버 배틀은 평소대로 즉시 끝난다).
