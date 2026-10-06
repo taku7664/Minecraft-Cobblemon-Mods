@@ -48,6 +48,8 @@ public final class BattleCameraDirector {
     private final Map<UUID, Long> recentPokemonCryAt = new HashMap<UUID, Long>();
     private String activeBattleId = "";
     private boolean cutNextPose = false;
+    private BattleCamState.SceneFocus sceneFrontFor = null;
+    private Vec3 sceneFront = new Vec3(1.0, 0.0, 0.0);
 
     public void reset() {
         this.index = 0;
@@ -291,7 +293,12 @@ public final class BattleCameraDirector {
         // Sized for a player; a large Pokemon pushes the camera back as far as it is big.
         double scale = Math.max(0.6, Math.min(4.0, Math.max(entity.getBbWidth() / 0.6, entity.getBbHeight() / 1.8)));
         Vec3 face = entity.getEyePosition();
-        Vec3 front = BattleCameraDirector.sceneFront(client, entity);
+        // Fixed when the scene starts, so a speaker glancing around does not swing the camera with its head.
+        if (this.sceneFrontFor != scene) {
+            this.sceneFrontFor = scene;
+            this.sceneFront = BattleCameraDirector.sceneFront(client, entity);
+        }
+        Vec3 front = this.sceneFront;
         // Straight in front of the face: the speaker looks into the camera, as in the games' talk scenes.
         double distance = BattleCameraDirector.lerp(3.4, 2.6, eased) * scale;
         double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
