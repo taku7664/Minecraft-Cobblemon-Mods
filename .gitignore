@@ -27,6 +27,8 @@ crash-reports/
 saves/
 world/
 mods/
+# `mods/` is meant for game folders; it must not swallow new sources under works/mods.
+!works/mods/
 config/
 !works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/
 !works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
