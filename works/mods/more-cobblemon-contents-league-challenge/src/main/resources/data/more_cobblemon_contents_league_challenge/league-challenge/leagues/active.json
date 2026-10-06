@@ -6,7 +6,7 @@
   "wild_level": {
     "below_cap": 10,
     "spread": 7,
-    "region_chunks": 4,
+    "region_chunks": 8,
     "floor_level": 10
   },
   "gyms": [
