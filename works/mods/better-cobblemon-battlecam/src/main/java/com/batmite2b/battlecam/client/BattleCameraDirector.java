@@ -304,20 +304,21 @@ public final class BattleCameraDirector {
         double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
         Vec3 cameraPos = face.add(front.scale(distance)).add(0.0, height, 0.0);
         Vec3 lookAt = face.add(0.0, -0.12 * scale, 0.0);
-        CameraPose pose = this.adjustCinematicPoseForObstructions(client,
+        // A wall in the way moves the camera up or closer on the same line, never round to the side, so the speaker
+        // keeps facing it.
+        CameraPose pose = this.adjustFrontalCinematicPoseForObstructions(client,
             this.buildPose(cameraPos, lookAt, (float)BattleCameraDirector.lerp(52.0, 46.0, eased)), lookAt);
         state.setCinematicFocus(pose.pos(), lookAt, entity.getUUID());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
         return true;
     }
 
-    /** The way [entity]'s head faces, flat; toward the player when it has no facing of its own. */
+    /**
+     * Which way the camera stands from the speaker, flat. A speaker other than the player talks to the player and turns
+     * to them, so the camera stands on the line between the two and the speaker looks into it; the player themselves
+     * is filmed from the way their head faces.
+     */
     private static Vec3 sceneFront(Minecraft client, Entity entity) {
-        double yaw = Math.toRadians(entity.getYHeadRot());
-        Vec3 facing = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
-        if (facing.lengthSqr() > 1.0E-4) {
-            return facing.normalize();
-        }
         if (client.player != null && client.player != entity) {
             Vec3 toPlayer = client.player.position().subtract(entity.position());
             Vec3 flat = new Vec3(toPlayer.x, 0.0, toPlayer.z);
@@ -325,7 +326,8 @@ public final class BattleCameraDirector {
                 return flat.normalize();
             }
         }
-        return new Vec3(1.0, 0.0, 0.0);
+        double yaw = Math.toRadians(entity.getYHeadRot());
+        return new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).normalize();
     }
 
     private CameraPose adjustCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus) {
