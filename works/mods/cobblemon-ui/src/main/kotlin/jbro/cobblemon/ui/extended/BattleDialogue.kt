@@ -15,6 +15,7 @@ import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
@@ -209,9 +210,10 @@ object BattleDialogue {
 
     /**
      * The message box in the shared look ([CobblemonUiSharedTheme]), the window the MCC hub's cards use: its frame,
-     * its panel text and that text's shadow, so narration reads like the hub around it.
+     * its panel text and that text's shadow, so narration reads like the hub around it. [shown] characters are written
+     * out; the box's rectangle is returned so a caller can set things against it.
      */
-    internal fun renderMessage(context: GuiGraphics, message: Component) {
+    internal fun renderMessage(context: GuiGraphics, message: Component, shown: Int = revealed(message)): UiRect {
         val client = Minecraft.getInstance()
         val font = client.font
         val theme = CobblemonUiSharedTheme.snapshot()
@@ -245,14 +247,15 @@ object BattleDialogue {
             context.fill(left + inset, top + inset, left + inset + END_BAR, top + height - inset, theme.colors.borderBright)
             context.fill(left + width - inset - END_BAR, top + inset, left + width - inset, top + height - inset, theme.colors.borderBright)
         }
-        var budget = revealed(message)
+        val box = UiRect(left, top, width, height)
+        var budget = shown
         lines.forEachIndexed { index, line ->
             if (budget <= 0) return@forEachIndexed
             val shown = if (budget >= line.length) line else line.substring(0, budget)
             budget -= line.length
             UiTextRenderer.draw(context, font, Component.literal(shown), left + padding, top + 12 + index * lineHeight, textInk, textShadow)
         }
-        if (budget < 0) return
+        if (budget < 0) return box
         // The line is complete: the key to press, and the arrow that says there is more.
         val key = theme.style(UiButtonVariant.SECONDARY, UiWidgetState.NORMAL)
         val keyName = CobblemonUiClient.selectActionKey.translatedKeyMessage
@@ -273,5 +276,6 @@ object BattleDialogue {
         for (row in 0 until 4) {
             context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, arrow)
         }
+        return box
     }
 }
