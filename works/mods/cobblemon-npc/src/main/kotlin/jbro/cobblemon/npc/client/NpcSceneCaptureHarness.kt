@@ -64,7 +64,13 @@ internal object NpcSceneCaptureHarness {
                         val level = serverPlayer.serverLevel()
                         val look = serverPlayer.lookAngle.multiply(1.0, 0.0, 1.0).normalize()
                         val npc = CobblemonNpc.NPC.create(level)!!
-                        npc.moveTo(serverPlayer.x + look.x * 3.0, serverPlayer.y, serverPlayer.z + look.z * 3.0,
+                        // A flat stage around the player, so the terrain does not get between camera and NPC.
+                        val floor = serverPlayer.blockPosition().below()
+                        for (dx in -6..6) for (dz in -6..6) {
+                            level.setBlockAndUpdate(floor.offset(dx, 0, dz), net.minecraft.world.level.block.Blocks.SMOOTH_STONE.defaultBlockState())
+                            for (dy in 1..4) level.setBlockAndUpdate(floor.offset(dx, dy, dz), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState())
+                        }
+                        npc.moveTo(serverPlayer.x + look.x * 3.0, floor.y + 1.0, serverPlayer.z + look.z * 3.0,
                             serverPlayer.yRot + 180f, 0f)
                         npc.yHeadRot = serverPlayer.yRot + 180f
                         npc.skinName = "rct:champion_cynthia_03a5"

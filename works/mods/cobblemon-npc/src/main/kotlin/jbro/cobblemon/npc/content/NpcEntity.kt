@@ -65,6 +65,12 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
         return InteractionResult.CONSUME
     }
 
+    // While talking it watches its listener, over any glance around, so a camera on its face sees it look back.
+    override fun customServerAiStep() {
+        super.customServerAiStep()
+        DialogueSessions.listener(level(), id)?.let { lookControl.setLookAt(it, 30f, 30f) }
+    }
+
     fun displayName(): String = customName?.string.orEmpty()
 
     // Only /kill and the void remove an NPC; an operator's creative hit does not.

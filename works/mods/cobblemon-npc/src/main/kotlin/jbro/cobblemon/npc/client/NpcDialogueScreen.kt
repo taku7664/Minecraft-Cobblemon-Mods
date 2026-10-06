@@ -3,35 +3,31 @@ package jbro.cobblemon.npc.client
 import jbro.cobblemon.npc.network.DialogueAnswerPayload
 import jbro.cobblemon.npc.network.DialogueLeavePayload
 import jbro.cobblemon.npc.network.DialogueShowPayload
+import jbro.cobblemon.ui.extended.CinematicLetterbox
+import jbro.cobblemon.ui.extended.CinematicScreen
 import jbro.cobblemon.ui.extended.CobblemonUiClient
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
-import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
-import jbro.cobblemon.uikit.client.UiSurfaceRenderer
-import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.Style
 import org.lwjgl.glfw.GLFW
-import kotlin.math.sin
 
 /**
  * An NPC's message box in the shared UI kit look, at the bottom of the screen like the games' own: each line is
  * written out, a click or the confirm key finishes it and then moves on, and the answers appear as buttons above the box
  * once the last line is read. The world keeps running behind it.
  */
-class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Component.literal(show.speaker)) {
+class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Component.literal(show.speaker)), CinematicScreen {
     private var restoreTheme: (() -> Unit)? = null
     private var page = 0
     private var revealStart = System.nanoTime()
@@ -60,6 +56,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     override fun init() {
         if (restoreTheme == null) {
             restoreTheme = CobblemonUiSharedTheme.install()
+            CinematicLetterbox.show(LETTERBOX_OWNER)
             // Once per opening (init also runs on resize): the battle camera looks at the speaker while the box is up.
             if (show.npcEntityId != DialogueShowPayload.NO_NPC) NpcDialogueCamera.focus(show.npcEntityId)
         }
@@ -70,6 +67,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         restoreTheme?.invoke()
         restoreTheme = null
         NpcDialogueCamera.release()
+        CinematicLetterbox.hide(LETTERBOX_OWNER)
         if (!closedByServer) ClientPlayNetworking.send(DialogueLeavePayload(show.session))
     }
 
@@ -86,7 +84,14 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        drawBox(graphics)
+        // A talk plays as a scene: the letterbox, and the line read in its bottom bar beside the speaker's plate.
+        CinematicLetterbox.renderBars(graphics)
+        val hasFace = show.skin.isNotBlank()
+        CinematicLetterbox.renderCaption(graphics,
+            show.speaker.takeIf { it.isNotBlank() }?.let(Component::literal),
+            if (hasFace) { g, x, y -> PlayerFaceRenderer.draw(g, NpcSkins.skin(show.skin), x, y, FACE) } else null,
+            show.lines.getOrElse(page) { "" }, revealedCharacters(),
+            more = !waiting && !(lastPage() && show.choices.isNotEmpty()))
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
@@ -139,7 +144,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
 
     private fun addChoices() {
         val font = minecraft!!.font
-        val box = boxRect()
+        val box = answerColumn()
         val theme = CobblemonUiThemes.registry.snapshot()
         val padding = theme.metrics(UiControlSize.MEDIUM).horizontalPadding
         val labels = show.choices.mapIndexed { index, text -> Component.literal("${index + 1}. $text") }
@@ -157,54 +162,11 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         children().firstOrNull()?.let(::setInitialFocus)
     }
 
-    private fun boxRect(): UiRect {
-        val width = (this.width * 0.73f).toInt().coerceIn(minOf(280, this.width - 24), 440)
-        val height = BOX_HEIGHT.coerceAtMost(this.height - 8)
-        return UiRect((this.width - width) / 2, (this.height - height - 6).coerceAtLeast(4), width, height)
-    }
-
-    private fun drawBox(graphics: GuiGraphics) {
-        val font = minecraft!!.font
-        val theme = CobblemonUiThemes.registry.snapshot()
-        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
-        val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
-        val box = boxRect()
-        UiSurfaceRenderer.draw(graphics, box.x, box.y, box.width, box.height, theme.surfaces.panel)
-        val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
-        // The message window's bars at both ends, as the battle dialogue box draws them.
-        graphics.fill(box.x + inset, box.y + inset, box.x + inset + END_BAR, box.bottom - inset, theme.colors.borderBright)
-        graphics.fill(box.right - inset - END_BAR, box.y + inset, box.right - inset, box.bottom - inset, theme.colors.borderBright)
-
-        val textLeft = box.x + PADDING
-        val hasFace = show.skin.isNotBlank()
-        if (show.speaker.isNotBlank() || hasFace) {
-            // The speaker's face sits in the name plate, in front of the name.
-            val name = Component.literal(show.speaker)
-            val faceWidth = if (hasFace) FACE + if (show.speaker.isNotBlank()) FACE_GAP else 0 else 0
-            val plateLeft = box.x + 8
-            val plateWidth = faceWidth + font.width(name) + 16
-            val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
-            UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, plate.surface)
-            if (hasFace) PlayerFaceRenderer.draw(graphics, NpcSkins.skin(show.skin), plateLeft + 8, box.y - 12, FACE)
-            UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, box.y - 10, plate.text, plate.textShadowColor)
-        }
-
-        val line = show.lines.getOrElse(page) { "" }
-        val wrapped = font.splitter.splitLines(line, box.right - PADDING - 12 - textLeft, Style.EMPTY).map { it.string }
-        var budget = revealedCharacters()
-        wrapped.forEachIndexed { index, text ->
-            if (budget <= 0) return@forEachIndexed
-            val shown = if (budget >= text.length) text else text.substring(0, budget)
-            budget -= text.length
-            UiTextRenderer.draw(graphics, font, Component.literal(shown), textLeft, box.y + 12 + index * LINE_HEIGHT, ink, shadow)
-        }
-        if (!revealed() || waiting || (lastPage() && show.choices.isNotEmpty())) return
-        // The line is complete: a bobbing arrow says there is more to read.
-        val arrowX = box.right - 20
-        val baseY = box.bottom - 14 + (sin(System.nanoTime() / 180_000_000.0) * 1.5).toInt()
-        for (row in 0 until 4) {
-            graphics.fill(arrowX + row, baseY + row, arrowX + 7 - row, baseY + row + 1, theme.colors.accentPrimary)
-        }
+    /** The caption's column, ending above the letterbox's bottom bar: answers stack up from its right end. */
+    private fun answerColumn(): UiRect {
+        val width = (this.width * 0.78f).toInt().coerceIn(minOf(280, this.width - 24), 480)
+        val bar = CinematicLetterbox.bottomBar(this.height)
+        return UiRect((this.width - width) / 2, this.height - bar, width, bar)
     }
 
     private fun lastPage() = page >= show.lines.size - 1
@@ -220,12 +182,9 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     }
 
     companion object {
+        private const val LETTERBOX_OWNER = "npc_dialogue"
         private const val CHARACTERS_PER_SECOND = 45.0
-        private const val BOX_HEIGHT = 66
-        private const val PADDING = 14
-        private const val FACE = 12
-        private const val FACE_GAP = 4
-        private const val END_BAR = 4
-        private const val LINE_HEIGHT = 12
+        // The caption's plate leaves 10 GUI pixels for a face.
+        private const val FACE = 10
     }
 }

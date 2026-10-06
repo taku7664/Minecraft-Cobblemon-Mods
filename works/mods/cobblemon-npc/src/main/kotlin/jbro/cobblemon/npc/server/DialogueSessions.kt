@@ -60,6 +60,12 @@ object DialogueSessions {
         return true
     }
 
+    /** The player talking with the NPC [npcEntityId] in [level], if one is; the NPC keeps its eyes on them. */
+    fun listener(level: net.minecraft.world.level.Level, npcEntityId: Int): ServerPlayer? {
+        val playerId = sessions.entries.firstOrNull { it.value.npcEntityId == npcEntityId }?.key ?: return null
+        return (level.getPlayerByUUID(playerId) as? ServerPlayer)?.takeIf { it.level() === level }
+    }
+
     /** Closes [player]'s dialogue box, if one is open. */
     fun end(player: ServerPlayer) {
         val session = sessions.remove(player.uuid) ?: return
