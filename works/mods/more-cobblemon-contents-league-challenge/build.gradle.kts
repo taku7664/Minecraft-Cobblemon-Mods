@@ -20,6 +20,8 @@ dependencies {
     compileOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     testImplementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    // Development runs only: the battle camera that closing scenes turn.
+    runtimeOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")

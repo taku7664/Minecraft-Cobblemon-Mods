@@ -40,5 +40,6 @@ object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
         }
 
         LeagueLiveCaptureHarness.installFromEnvironment()
+        TrainerSceneCaptureHarness.installFromEnvironment()
     }
 }
