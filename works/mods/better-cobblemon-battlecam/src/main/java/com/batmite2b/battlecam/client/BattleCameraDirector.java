@@ -269,6 +269,59 @@ public final class BattleCameraDirector {
         return true;
     }
 
+    public void cutNext() {
+        this.cutNextPose = true;
+    }
+
+    /**
+     * Holds the camera on a scene's entity, in front of its face and closing in over the first seconds. Returns false
+     * once the entity is gone, which ends the scene.
+     */
+    public boolean updateScene(Minecraft client, BattleCamState state, BattleCameraRig rig, BattleCamState.SceneFocus scene) {
+        if (client.level == null) {
+            return false;
+        }
+        Entity entity = client.level.getEntity(scene.entityId());
+        if (entity == null || entity.isRemoved()) {
+            return false;
+        }
+        boolean cut = this.cutNextPose;
+        this.cutNextPose = false;
+        float eased = BattleCameraDirector.easeOut(BattleCameraDirector.clamp01((float)(System.currentTimeMillis() - scene.startMs()) / 4000.0f));
+        // Sized for a player; a large Pokemon pushes the camera back as far as it is big.
+        double scale = Math.max(0.6, Math.min(4.0, Math.max(entity.getBbWidth() / 0.6, entity.getBbHeight() / 1.8)));
+        Vec3 face = entity.getEyePosition();
+        Vec3 front = BattleCameraDirector.sceneFront(client, entity);
+        Vec3 side = new Vec3(-front.z, 0.0, front.x);
+        double distance = BattleCameraDirector.lerp(3.4, 2.6, eased) * scale;
+        double sideOffset = BattleCameraDirector.lerp(1.1, 0.7, eased) * scale;
+        double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
+        Vec3 cameraPos = face.add(front.scale(distance)).add(side.scale(sideOffset)).add(0.0, height, 0.0);
+        Vec3 lookAt = face.add(0.0, -0.12 * scale, 0.0);
+        CameraPose pose = this.adjustCinematicPoseForObstructions(client,
+            this.buildPose(cameraPos, lookAt, (float)BattleCameraDirector.lerp(52.0, 46.0, eased)), lookAt);
+        state.setCinematicFocus(pose.pos(), lookAt, entity.getUUID());
+        rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
+        return true;
+    }
+
+    /** The way [entity]'s head faces, flat; toward the player when it has no facing of its own. */
+    private static Vec3 sceneFront(Minecraft client, Entity entity) {
+        double yaw = Math.toRadians(entity.getYHeadRot());
+        Vec3 facing = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
+        if (facing.lengthSqr() > 1.0E-4) {
+            return facing.normalize();
+        }
+        if (client.player != null && client.player != entity) {
+            Vec3 toPlayer = client.player.position().subtract(entity.position());
+            Vec3 flat = new Vec3(toPlayer.x, 0.0, toPlayer.z);
+            if (flat.lengthSqr() > 1.0E-4) {
+                return flat.normalize();
+            }
+        }
+        return new Vec3(1.0, 0.0, 0.0);
+    }
+
     private CameraPose adjustCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus) {
         if (client.level == null || this.hasClearSight(client, pose.pos(), focus)) {
             return pose;

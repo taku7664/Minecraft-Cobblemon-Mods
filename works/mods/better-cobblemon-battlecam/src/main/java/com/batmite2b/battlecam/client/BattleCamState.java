@@ -50,9 +50,14 @@ public final class BattleCamState {
     private long lastQueuedActionAt;
     public final BattleCameraRig rig;
     private final BattleCameraDirector director;
+    // A focus other code asked for (a battle's closing words); it outlives the battle it follows.
+    private SceneFocus sceneFocus;
+    // The mode of the battle that just ended, so a scene after it honours a camera the player turned off.
+    private Mode lastBattleMode;
 
     public BattleCamState() {
         this.mode = BattleCamClient.CONFIG.defaultMode;
+        this.lastBattleMode = this.mode;
         this.activeShotId = "establish_wide";
         this.showOwnBody = true;
         this.ownBattleUiSeen = false;
@@ -85,6 +90,9 @@ public final class BattleCamState {
         String normalizedBattleId = ReflectionUtil.normalizedValue(newBattleId);
         if (this.context == newContext && this.activeBattleId.equals(normalizedBattleId)) {
             return;
+        }
+        if (this.context != BattleViewContext.NONE) {
+            this.lastBattleMode = this.mode;
         }
         this.context = newContext;
         this.activeBattleId = newContext == BattleViewContext.NONE ? "" : normalizedBattleId;
@@ -137,6 +145,13 @@ public final class BattleCamState {
     }
 
     public void tick(Minecraft client) {
+        if (this.sceneFocus != null) {
+            if (System.currentTimeMillis() < this.sceneFocus.untilMs()
+                    && this.director.updateScene(client, this, this.rig, this.sceneFocus)) {
+                return;
+            }
+            this.endScene();
+        }
         if (!this.isBattleContextActive() || this.mode == Mode.OFF || this.isCameraTemporarilyPaused()) {
             this.rig.active = false;
             return;
@@ -168,6 +183,9 @@ public final class BattleCamState {
     }
 
     public boolean shouldOverrideCamera() {
+        if (this.isSceneActive()) {
+            return this.rig.active;
+        }
         return this.isBattleContextActive() && this.mode != Mode.OFF && !this.isCameraTemporarilyPaused() && this.rig.active;
     }
 
@@ -176,7 +194,41 @@ public final class BattleCamState {
     }
 
     public boolean shouldHideOwnBody() {
-        return this.context == BattleViewContext.OWN_BATTLE && this.shouldOverrideCamera() && !this.showOwnBody;
+        return this.context == BattleViewContext.OWN_BATTLE && !this.isSceneActive() && this.shouldOverrideCamera() && !this.showOwnBody;
+    }
+
+    /**
+     * Looks at the entity [entityId] for up to [durationMs], over any battle shot and after the battle has ended.
+     * Nothing happens when the player has the camera off for this battle (or the one just finished).
+     */
+    public boolean startScene(int entityId, long durationMs) {
+        Mode governing = this.context != BattleViewContext.NONE ? this.mode : this.lastBattleMode;
+        if (governing == Mode.OFF || durationMs <= 0L) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        this.sceneFocus = new SceneFocus(entityId, now, now + durationMs);
+        this.director.cutNext();
+        return true;
+    }
+
+    public void endScene() {
+        if (this.sceneFocus == null) {
+            return;
+        }
+        this.sceneFocus = null;
+        this.clearCinematicFocus();
+        this.director.cutNext();
+        if (!this.isBattleContextActive() || this.mode == Mode.OFF || this.isCameraTemporarilyPaused()) {
+            this.rig.active = false;
+        }
+    }
+
+    public boolean isSceneActive() {
+        return this.sceneFocus != null;
+    }
+
+    public record SceneFocus(int entityId, long startMs, long untilMs) {
     }
 
     public void cycleMode() {

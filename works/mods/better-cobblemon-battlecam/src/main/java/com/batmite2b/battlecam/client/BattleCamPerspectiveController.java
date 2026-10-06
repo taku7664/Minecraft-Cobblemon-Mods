@@ -19,10 +19,12 @@ public final class BattleCamPerspectiveController {
             return;
         }
         BattleCamState state = BattleCamClient.STATE;
-        boolean bl = ownBattleActive = state.context == BattleViewContext.OWN_BATTLE && state.shouldOverrideCamera();
+        boolean scene = state.isSceneActive() && state.shouldOverrideCamera();
+        boolean bl = ownBattleActive = scene || state.context == BattleViewContext.OWN_BATTLE && state.shouldOverrideCamera();
         if (ownBattleActive) {
             CameraType desired;
-            CameraType perspective = desired = state.showOwnBody ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON;
+            // A scene may look at the player, whose body only draws outside first person.
+            CameraType perspective = desired = scene || state.showOwnBody ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON;
             if (!forced) {
                 savedPerspective = client.options.getCameraType();
                 forced = true;
