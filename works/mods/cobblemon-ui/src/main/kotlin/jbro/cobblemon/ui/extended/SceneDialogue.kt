@@ -1,6 +1,11 @@
 package jbro.cobblemon.ui.extended
 
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
+import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiWidgetState
+import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -10,8 +15,8 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
 
 /**
- * A few lines someone says over the world, outside any battle screen: a trainer's words after a battle, read as a
- * caption in the cinematic letterbox ([CinematicLetterbox]) with the speaker's name plate beside it. Lines are written out like battle narration; the confirm key
+ * A few lines someone says over the world, outside any battle screen: a trainer's words after a battle, drawn in the
+ * battle message box with the speaker's name above it, floating over the cinematic letterbox ([CinematicLetterbox]). Lines are written out like battle narration; the confirm key
  * finishes a line and then moves on, and a finished line also moves on by itself so nobody is held up.
  */
 object SceneDialogue {
@@ -127,11 +132,24 @@ object SceneDialogue {
 
     private fun render(context: GuiGraphics) {
         val current = scene ?: return
-        if (Minecraft.getInstance().options.hideGui) return
-        val line = current.lines[index].string
-        // Read in the letterbox's bottom bar, the way a cutscene subtitles its speaker.
-        CinematicLetterbox.renderCaption(context, current.speaker, null, line,
-            shownCharacters(System.currentTimeMillis()), more = true)
+        val client = Minecraft.getInstance()
+        if (client.options.hideGui) return
+        // The battle message box, floating over the letterbox's bars.
+        context.pose().pushPose()
+        context.pose().translate(0f, 0f, CinematicLetterbox.OVER_BARS_Z)
+        val box = BattleDialogue.renderMessage(context, current.lines[index], shownCharacters(System.currentTimeMillis()))
+        current.speaker?.let { speaker ->
+            // The speaker's name on a tab over the box's left edge.
+            val font = client.font
+            val plate = CobblemonUiSharedTheme.snapshot().style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
+            val width = font.width(speaker) + 16
+            val height = font.lineHeight + 8
+            val left = box.x + 10
+            val top = box.y - height + 2
+            UiSurfaceRenderer.draw(context, left, top, width, height, plate.surface)
+            UiTextRenderer.draw(context, font, speaker, left + 8, top + 5, plate.text, plate.textShadowColor)
+        }
+        context.pose().popPose()
     }
 
     private const val LETTERBOX_OWNER = "scene_dialogue"
