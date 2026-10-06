@@ -30,8 +30,10 @@ def look(sky, fog, water, grass, foliage=None):
     return dict(sky=sky, fog=fog, water=water, grass=grass, foliage=foliage or grass)
 
 
-def surface(top, under, grass=False):
-    return dict(top=top, under=under, grass=grass)
+def surface(top, under, grass=False, patch=None):
+    """A biome's top and under blocks. [patch] lays another top block in patches by the surface noise. Every top block
+    must be in Cobblemon's #cobblemon:natural block tag, or most wild Pokemon will not spawn on it."""
+    return dict(top=top, under=under, grass=grass, patch=patch)
 
 
 # Particles drifting in the air of a biome: (vanilla particle, chance per block shown each tick). Basalt deltas use
@@ -90,11 +92,11 @@ DIMENSIONS = {
     ),
     "future": dict(
         biomes={
-            "future_sea": ("minecraft:deep_frozen_ocean", look(0x8A7CFF, 0x5AD8E0, 0x2AB8D8, 0x5AC8C8), surface("minecraft:prismarine", "minecraft:dark_prismarine")),
-            "future_steel_peaks": ("terralith:stony_spires", look(0x7C6CE8, 0x8AA8C8, 0x3A9AC8, 0x7A9AAA), surface("minecraft:polished_andesite", "minecraft:andesite")),
+            "future_sea": ("minecraft:deep_frozen_ocean", look(0x8A7CFF, 0x5AD8E0, 0x2AB8D8, 0x5AC8C8), surface("minecraft:calcite", "minecraft:prismarine")),
+            "future_steel_peaks": ("terralith:stony_spires", look(0x7C6CE8, 0x8AA8C8, 0x3A9AC8, 0x7A9AAA), surface("minecraft:andesite", "minecraft:tuff")),
             "future_crystal": ("terralith:amethyst_canyon", look(0xA07CFF, 0xC8A8FF, 0x7A6AE8, 0xB89AE8), surface("minecraft:calcite", "minecraft:diorite")),
             "future_neon_forest": ("terralith:moonlight_grove", look(0x6A5CF0, 0x3ACCD8, 0x2AD0E0, 0x2ED8C8, 0x1EC0D0), surface("minecraft:grass_block", "minecraft:dirt", grass=True)),
-            "future_flats": ("terralith:shield", look(0x8C7CF8, 0x6AD0E0, 0x3AB8D8, 0x6AC8B8), surface("minecraft:smooth_stone", "minecraft:stone")),
+            "future_flats": ("terralith:shield", look(0x8C7CF8, 0x6AD0E0, 0x3AB8D8, 0x6AC8B8), surface("minecraft:grass_block", "minecraft:dirt", grass=True, patch="minecraft:light_gray_terracotta")),
         },
         rules=[
             ("future_sea", OCEAN),
@@ -216,6 +218,11 @@ def surface_rule(biomes):
             top = {"type": "minecraft:sequence", "sequence": [
                 {"type": "minecraft:condition", "if_true": {"type": "minecraft:water", "offset": -1, "surface_depth_multiplier": 0,
                                                              "add_stone_depth": False}, "then_run": top}, under]}
+        if s["patch"]:
+            top = {"type": "minecraft:sequence", "sequence": [
+                {"type": "minecraft:condition", "if_true": {"type": "minecraft:noise_threshold", "noise": "minecraft:surface",
+                                                             "min_threshold": 0.35, "max_threshold": 1.0},
+                 "then_run": {"type": "minecraft:block", "result_state": {"Name": s["patch"]}}}, top]}
         floor = lambda add: {"type": "minecraft:stone_depth", "offset": 0, "surface_type": "floor", "add_surface_depth": add,
                              "secondary_depth_range": 0}
         rules.append({"type": "minecraft:condition", "if_true": {"type": "minecraft:biome", "biome_is": [f"{NS}:{name}"]},
