@@ -304,21 +304,30 @@ public final class BattleCameraDirector {
         }
         Vec3 front = this.sceneFront;
         // Straight in front of the face: the speaker looks into the camera, as in the games' talk scenes.
-        double distance = BattleCameraDirector.lerp(3.4, 2.6, eased) * scale;
+        double framedDistance = BattleCameraDirector.lerp(3.4, 2.6, eased) * scale;
+        double framedFov = BattleCameraDirector.lerp(52.0, 46.0, eased);
+        double distance = framedDistance;
         // Never behind the player the speaker talks to, whose own body would fill the picture.
         if (client.player != null && client.player != entity) {
             Vec3 between = client.player.position().subtract(entity.position());
             double gap = Math.sqrt(between.x * between.x + between.z * between.z);
             distance = Math.min(distance, Math.max(1.4, gap - 0.7));
         }
+        // Pulled in close (a player standing next to an NPC), a wider lens keeps the speaker the size it would be
+        // from the framed distance, instead of a head filling the screen.
+        double halfHeight = framedDistance * Math.tan(Math.toRadians(framedFov / 2.0));
+        double fov = Math.min(80.0, Math.toDegrees(2.0 * Math.atan(halfHeight / distance)));
         double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
         Vec3 cameraPos = face.add(front.scale(distance)).add(0.0, height, 0.0);
-        // Aimed below the face, so the face sits in the upper part of the picture, clear of the dialogue box.
-        Vec3 lookAt = face.add(0.0, -0.45 * scale, 0.0);
+        // Aimed so the face sits 40% of the way from the middle to the top of the picture whatever the distance and
+        // lens: below the top bar and clear of the dialogue box over the bottom one.
+        double faceAbove = Math.atan(0.4 * Math.tan(Math.toRadians(fov / 2.0)));
+        double aimDown = Math.atan2(-height, distance) - faceAbove;
+        Vec3 lookAt = new Vec3(face.x, cameraPos.y + distance * Math.tan(aimDown), face.z);
         // A wall in the way moves the camera up or closer on the same line, never round to the side, so the speaker
         // keeps facing it.
         CameraPose pose = this.adjustFrontalCinematicPoseForObstructions(client,
-            this.buildPose(cameraPos, lookAt, (float)BattleCameraDirector.lerp(52.0, 46.0, eased)), lookAt);
+            this.buildPose(cameraPos, lookAt, (float)fov), lookAt);
         state.setCinematicFocus(pose.pos(), lookAt, entity.getUUID());
         BattlecamSeeThrough.look(face, entity.getBoundingBox().getCenter());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
