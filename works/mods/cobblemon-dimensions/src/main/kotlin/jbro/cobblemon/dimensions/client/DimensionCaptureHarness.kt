@@ -41,7 +41,8 @@ object DimensionCaptureHarness {
 
     /** One picture: where to stand, where to look, and what to set up first. */
     private data class Shot(val name: String, val dimension: ModDimension?, val x: Int, val z: Int, val height: Int,
-                            val yaw: Float, val pitch: Float, val time: Long = 6000, val setup: (ServerPlayer) -> Unit = {})
+                            val yaw: Float, val pitch: Float, val time: Long = 6000, val biome: String? = null,
+                            val setup: (ServerPlayer) -> Unit = {})
 
     private val allShots = listOf(
         Shot("portals", null, 0, 0, 9, 0f, 45f) { player -> buildPortals(player) },
@@ -55,6 +56,10 @@ object DimensionCaptureHarness {
         Shot("future-3", ModDimension.FUTURE, 3600, -2400, 60, 300f, 30f),
         Shot("future-aurora", ModDimension.FUTURE, 1200, 900, 30, 180f, -25f),
         Shot("future-night", ModDimension.FUTURE, 1200, 900, 30, 180f, -20f, time = 18000),
+        // The nearest spot of one biome, for checking how it looks; x and z are where the search starts.
+        Shot("future-flats", ModDimension.FUTURE, 0, 0, 20, 30f, 25f, biome = "future_flats"),
+        Shot("future-steel", ModDimension.FUTURE, 0, 0, 20, 30f, 25f, biome = "future_steel_peaks"),
+        Shot("future-sea", ModDimension.FUTURE, 0, 0, 20, 30f, 25f, biome = "future_sea"),
         Shot("ultra-1", ModDimension.ULTRA_SPACE, 1500, 600, 12, 30f, 35f),
         Shot("ultra-2", ModDimension.ULTRA_SPACE, 3000, 3000, 12, 250f, 35f),
         Shot("ultra-3", ModDimension.ULTRA_SPACE, -2600, 1800, 12, 140f, 35f),
@@ -170,7 +175,8 @@ object DimensionCaptureHarness {
         val level: ServerLevel = if (shot.dimension == null) {
             player.server.overworld()
         } else {
-            DimensionTravel.enter(player, shot.dimension, shot.x, shot.z)
+            val (x, z) = shot.biome?.let { biomeSpot(player, shot) } ?: (shot.x to shot.z)
+            DimensionTravel.enter(player, shot.dimension, x, z)
             player.serverLevel()
         }
         val x = if (shot.dimension == null) shot.x else player.blockX
@@ -178,6 +184,18 @@ object DimensionCaptureHarness {
         val ground = level.getChunk(x shr 4, z shr 4).getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x and 15, z and 15) + 1
         player.teleportTo(level, x + 0.5, (ground + shot.height).toDouble(), z + 0.5, shot.yaw, shot.pitch)
         shot.setup(player)
+    }
+
+    /** Where the nearest [Shot.biome] lies in the shot's dimension, searching out from its x and z. */
+    private fun biomeSpot(player: ServerPlayer, shot: Shot): Pair<Int, Int>? {
+        val level = player.server.getLevel(shot.dimension!!.key) ?: return null
+        val id = jbro.cobblemon.dimensions.CobblemonDimensions.id(shot.biome!!)
+        val found = level.findClosestBiome3d({ it.`is`(id) }, BlockPos(shot.x, 64, shot.z), 6400, 32, 64) ?: run {
+            logger.warn("No {} within reach for {}", id, shot.name)
+            return null
+        }
+        logger.info("Capture {}: {} at {}", shot.name, id, found.first)
+        return found.first.x to found.first.z
     }
 
     /** An ancient and a future portal side by side on the ground below the player, lit. */

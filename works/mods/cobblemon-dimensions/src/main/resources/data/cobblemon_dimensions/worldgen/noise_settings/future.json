@@ -131,7 +131,7 @@
               "then_run": {
                 "type": "minecraft:block",
                 "result_state": {
-                  "Name": "minecraft:prismarine"
+                  "Name": "minecraft:calcite"
                 }
               }
             },
@@ -147,7 +147,7 @@
               "then_run": {
                 "type": "minecraft:block",
                 "result_state": {
-                  "Name": "minecraft:dark_prismarine"
+                  "Name": "minecraft:prismarine"
                 }
               }
             }
@@ -177,7 +177,7 @@
               "then_run": {
                 "type": "minecraft:block",
                 "result_state": {
-                  "Name": "minecraft:polished_andesite"
+                  "Name": "minecraft:andesite"
                 }
               }
             },
@@ -193,7 +193,7 @@
               "then_run": {
                 "type": "minecraft:block",
                 "result_state": {
-                  "Name": "minecraft:andesite"
+                  "Name": "minecraft:tuff"
                 }
               }
             }
@@ -333,10 +333,50 @@
                 "secondary_depth_range": 0
               },
               "then_run": {
-                "type": "minecraft:block",
-                "result_state": {
-                  "Name": "minecraft:smooth_stone"
-                }
+                "type": "minecraft:sequence",
+                "sequence": [
+                  {
+                    "type": "minecraft:condition",
+                    "if_true": {
+                      "type": "minecraft:noise_threshold",
+                      "noise": "minecraft:surface",
+                      "min_threshold": 0.35,
+                      "max_threshold": 1.0
+                    },
+                    "then_run": {
+                      "type": "minecraft:block",
+                      "result_state": {
+                        "Name": "minecraft:light_gray_terracotta"
+                      }
+                    }
+                  },
+                  {
+                    "type": "minecraft:sequence",
+                    "sequence": [
+                      {
+                        "type": "minecraft:condition",
+                        "if_true": {
+                          "type": "minecraft:water",
+                          "offset": -1,
+                          "surface_depth_multiplier": 0,
+                          "add_stone_depth": false
+                        },
+                        "then_run": {
+                          "type": "minecraft:block",
+                          "result_state": {
+                            "Name": "minecraft:grass_block"
+                          }
+                        }
+                      },
+                      {
+                        "type": "minecraft:block",
+                        "result_state": {
+                          "Name": "minecraft:dirt"
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             },
             {
@@ -351,7 +391,7 @@
               "then_run": {
                 "type": "minecraft:block",
                 "result_state": {
-                  "Name": "minecraft:stone"
+                  "Name": "minecraft:dirt"
                 }
               }
             }
