@@ -1,5 +1,10 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-06 19:30] 하네스 나뭇잎 벽 옵션 (LumaVale 투시 확인용)
+
+- `MCC_SCENE_CAPTURE_LEAVES=1`이면 첫 전투 전에 플레이어→트레이너 선 양옆 4블록에 높이 5, 길이 11의 나뭇잎 벽을 세우고, 배틀캠 구도가 바뀌는 시점(2·10·19초)에 `2-through-*` 캡처를 남긴다. 이때 전투 시작 대사는 기다리는 동안 지나가서 `scenes played`가 2로 찍힌다(실제로는 3장면 모두 나옴).
+- 셰이더 확인은 개발 실행 폴더 `run/mods`에 Sodium·Iris JAR, `run/shaderpacks`에 LumaVale, `run/config/iris.properties`에 팩 지정으로 한다(빌드 스크립트는 그대로).
+
 ## [2026-10-06 10:22] 트레이너 JSON `scenes`, 난천 대사
 
 - 트레이너 JSON의 선택 필드 `scenes`: 순간(`battle_start`, `last_pokemon`, `player_won`, `player_lost`) → 대사 번역 키 1~8줄. `LeagueCatalogParser`가 순간 이름과 줄 수를 검사하고, `Challenge.scenes` → `trainerScenes()` → `ManagedPveBattles.Request.scenes`로 넘긴다(일반 도전과 `/mcc league test` 모두). 동작은 MCC `MEMORY.md`의 `TrainerScenes`.

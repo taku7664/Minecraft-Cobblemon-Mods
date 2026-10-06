@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory
 internal object TrainerSceneCaptureHarness {
     private const val WORLD = "scene-capture"
     private const val TAG = "mcc_managed_trainer"
+    /** `MCC_SCENE_CAPTURE_LEAVES=1` walls the battle in with leaves, to see the shader pack's see-through. */
+    private val LEAVES = System.getenv("MCC_SCENE_CAPTURE_LEAVES") == "1"
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -101,7 +103,13 @@ internal object TrainerSceneCaptureHarness {
                 1 -> if (CobblemonClient.battle != null && since(10)) {
                     countBodies()
                     shot("1-start")
-                    next(3)
+                    next(if (LEAVES) 2 else 3)
+                }
+                // With the leaf wall up: the battle camera's shots through it, one per shot change (8.5 s apart).
+                2 -> {
+                    val waited = ticks - phaseTick
+                    if (waited in listOf(40, 210, 380)) shot("2-through-${waited / 20}s")
+                    if (waited > 390) next(3)
                 }
                 3 -> {
                     // Each scene the trainer plays (battle start, last Pokemon, the win) is captured once it has settled.
@@ -162,7 +170,26 @@ internal object TrainerSceneCaptureHarness {
 
     private var captured = false
 
+    /**
+     * Two walls of leaves along the battle, four blocks to either side of the line from the player to where the
+     * trainer stands (eight blocks ahead), so the side shots look through them.
+     */
+    private fun wallInWithLeaves(player: ServerPlayer) {
+        val level = player.serverLevel()
+        val yaw = Math.toRadians(player.yRot.toDouble())
+        val forward = net.minecraft.world.phys.Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw))
+        val side = net.minecraft.world.phys.Vec3(-forward.z, 0.0, forward.x)
+        val leaves = net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState()
+            .setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true)
+        for (step in -1..9) for (sign in listOf(-4.0, 4.0)) for (rise in 0..4) {
+            val at = player.position().add(forward.scale(step.toDouble())).add(side.scale(sign))
+            val pos = net.minecraft.core.BlockPos.containing(at.x, player.y + rise, at.z)
+            if (level.getBlockState(pos).isAir) level.setBlockAndUpdate(pos, leaves)
+        }
+    }
+
     private fun startBattle(player: ServerPlayer, logger: org.slf4j.Logger, playScene: Boolean) {
+        if (LEAVES && playScene) wallInWithLeaves(player)
         val party = Cobblemon.storage.getParty(player)
         party.clearParty()
         party.add(PokemonProperties.parse("mewtwo level=100").create().also { mewtwo ->
