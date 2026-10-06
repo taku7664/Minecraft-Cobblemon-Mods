@@ -25,6 +25,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.BattleResultNotices
+import jbro.cobblemon.mcc.api.presentation.BattleScenes
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
 import jbro.cobblemon.mcc.api.terminal.HoloTerminals
@@ -64,7 +65,9 @@ object WildTrainers {
     const val RECORD_FORMAT = "wild_trainer"
     private const val KEY = "message.${Mod.MOD_ID}.wild_trainer"
     private const val COOLDOWN_TICKS = 6_000L
-    private const val DEFEATED_DESPAWN_TICKS = 60L
+    // Long enough for the trainer's closing words, which the camera looks at, to be said before it leaves.
+    private const val DEFEATED_DESPAWN_TICKS = 300L
+    private const val SCENE_LINE_VARIANTS = 3
     private const val NEARBY_LIMIT = 2
     private const val NEARBY_RADIUS = 64.0
     private const val TERMINAL_CHUNK_RADIUS = 2
@@ -291,6 +294,10 @@ object WildTrainers {
         cooldowns[player.uuid to fight.npcId] = now + COOLDOWN_TICKS
         cooldowns.entries.removeIf { it.value <= now }
         record(server, player.uuid, won)
+        if (npc != null) {
+            val line = Component.translatable("$KEY.scene.${if (won) "player_won" else "player_lost"}.${Random.nextInt(SCENE_LINE_VARIANTS)}")
+            BattleScenes.play(player, npc, opponent, listOf(line))
+        }
         if (!won) {
             BattleResultNotices.defeat(player, opponent)
             return
