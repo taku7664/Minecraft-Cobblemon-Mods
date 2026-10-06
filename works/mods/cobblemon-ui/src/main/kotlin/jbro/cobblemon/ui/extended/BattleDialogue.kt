@@ -230,7 +230,8 @@ object BattleDialogue {
         // Room for three lines at least, as the games' message box has.
         val height = (maxOf(3, lines.size) * lineHeight + 22).coerceAtMost(screenHeight - 8)
         // At the bottom of the screen like the games' message box; it may cover the hotbar while it speaks.
-        val top = (screenHeight - height - 6).coerceAtLeast(4)
+        // Above the cinematic letterbox's bottom bar while a scene plays, never on it.
+        val top = (screenHeight - height - 6 - CinematicLetterbox.bottomInset(screenHeight)).coerceAtLeast(4)
 
         val band = BattleUiTheme.palette.dialogue == BattleDialogueStyle.DARK_BAND
         val textInk = if (band) BAND_TEXT else ink

@@ -16,7 +16,8 @@ interface CinematicScreen
  * ([topInset]) and chat, toasts and name tags step aside.
  */
 object CinematicLetterbox {
-    private const val SLIDE_NANOS = 250_000_000L
+    // Long enough to read as a slide: the bars sweep in fast and settle.
+    private const val SLIDE_NANOS = 450_000_000L
     private const val BAR = 0xFF000000.toInt()
     private const val BARS_Z = 400f
     /** The depth a dialogue box drawn over the bars translates to. */
@@ -63,7 +64,8 @@ object CinematicLetterbox {
         lastNanos = now
         val target = if (owners.isEmpty()) 0f else 1f
         progress = if (progress < target) minOf(target, progress + step) else maxOf(target, progress - step)
-        return progress * progress * (3f - 2f * progress)
+        val rest = 1f - progress
+        return 1f - rest * rest * rest
     }
 
     /** Over a screen's own drawing by default; a [CinematicScreen] draws them under its dialogue box at its own depth. */
