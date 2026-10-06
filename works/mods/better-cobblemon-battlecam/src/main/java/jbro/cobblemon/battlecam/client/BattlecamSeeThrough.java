@@ -17,6 +17,7 @@ public final class BattlecamSeeThrough {
     private static Vec3 targetB = Vec3.ZERO;
     private static float strength = 0f;
     private static long lastNanos = 0L;
+    private static boolean readByShaderPack = false;
 
     private BattlecamSeeThrough() {
     }
@@ -29,6 +30,11 @@ public final class BattlecamSeeThrough {
 
     /** 0 to 1, eased toward whether the battle camera is in control; read once a frame. */
     public static float strength() {
+        if (!readByShaderPack) {
+            // Once, so a log shows the uniform reached a shader pack that reads it.
+            readByShaderPack = true;
+            jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient.LOGGER.info("See-through uniforms are read by the shader pack");
+        }
         long now = System.nanoTime();
         float step = lastNanos == 0L ? 0f : (float) (now - lastNanos) / FADE_NANOS;
         lastNanos = now;
