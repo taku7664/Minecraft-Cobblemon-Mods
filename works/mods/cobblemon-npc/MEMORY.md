@@ -1,5 +1,9 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-06 12:42] NPC 대화창을 박스로 되돌리고 레터박스 위에 띄운다
+
+- 10:55의 자막 방식은 철회(cobblemon-ui `MEMORY.md`). `NpcDialogueScreen`은 원래 박스·이름표·얼굴·선택지 배치를 그대로 쓰고, 그리기 전에 레터박스 띠를 먼저 깐다(`renderBars(graphics, 0f)`). 레터박스 소유와 카메라 포커스, NPC 시선 처리는 그대로.
+
 ## [2026-10-06 10:55] 대화를 레터박스 연출로, 대화 중 NPC가 플레이어를 본다 (빌드·개발 클라이언트 캡처 확인)
 
 - **레터박스:** `NpcDialogueScreen`이 `CinematicScreen`이 되어 열릴 때 레터박스를 띄우고, 박스 대신 아래 띠 안의 자막(이름표+얼굴+대사)으로 그린다(cobblemon-ui `MEMORY.md`). 선택지 버튼은 아래 띠 바로 위, 자막 열 오른쪽 끝에서 위로 쌓인다. 전에 쓰던 박스 그리기(`drawBox`/`boxRect`)는 지웠다.
