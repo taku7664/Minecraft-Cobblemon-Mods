@@ -24,6 +24,8 @@ dependencies {
     implementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     include(project(":cobblemon-ui")) { isTransitive = false }
+    // Optional: battle scenes move its camera only when a player has it installed.
+    compileOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
     // Cobblemon supplies GraalJS at runtime. Better AI compiles only against its public context API
     // so MCC does not package a second JavaScript engine into its own JAR.
     compileOnly("org.graalvm.sdk:graal-sdk:22.3.0")

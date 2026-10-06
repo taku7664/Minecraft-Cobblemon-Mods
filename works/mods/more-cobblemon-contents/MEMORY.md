@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-06 09:05] 전투 연출 API `BattleScenes` — 대사가 끝난 뒤 배틀을 닫는다 (빌드·core 단위 테스트 608개 확인, 실게임 미확인)
+
+- **빡대리님 지시:** 전투에서 이기거나 졌을 때, 또는 특정 상황에서 코드가 배틀캠으로 엔티티를 비추고 대화창을 띄운다. 대화창이 끝날 때까지 카메라를 유지하고 그다음 배틀을 끝낸다. 배틀 종료는 연출만 보면 클라이언트에서 처리하면 된다(서버 배틀은 평소대로 즉시 끝난다).
+- **서버 API:** `api.presentation.BattleScenes.play(player, focus, speaker, lines)` → S2C `BattleScenePayload`(엔티티 네트워크 ID, 화자, 대사 1~8줄). 클라이언트가 채널을 모르면 채팅으로 대신 보낸다.
+- **순서 문제(Cobblemon 바이트코드로 확인):** `WinInstruction`이 `battle.end()`(=`BattleEndPacket`)를 먼저 부르고 그다음 `BATTLE_VICTORY`를 발행한다. 승패 이벤트에서 보낸 연출은 배틀 종료 *뒤에* 도착하고, 클라이언트는 `BattleEndPacket`을 받는 즉시 `CobblemonClient.endBattle()`로 배틀을 지운다.
+- **클라이언트 처리(`BattleSceneClient`, `BattleEndHandlerSceneMixin`):** `BattleEndHandler.handle`을 HEAD에서 막고(priority 500, 다른 모드 훅보다 먼저) 0.5초 동안 연출이 오는지 본다. 안 오면 그대로 끝낸다. 오면 남은 전투 메시지(`BattleDialogue`)를 먼저 읽게 하고(최대 8초), `SceneDialogue`(cobblemon-ui)로 대사를 띄우며 배틀캠으로 대상을 비춘다. 대사가 끝나면 카메라를 놓고 붙잡아 둔 종료를 실행한다. 붙잡는 시간은 최대 90초. 결과적으로 **모든 배틀 종료가 최대 0.5초 늦게 닫힌다.**
+- **배틀캠:** `compileOnly(:better-cobblemon-battlecam)`. 설치돼 있을 때만 `BattlecamScenes`를 부른다(`FabricLoader.isModLoaded`).
+- **시험 명령:** `/mcc scene test` — 16블록 안 가장 가까운 생물(없으면 본인)을 비추며 시험 대사 두 줄.
+- **프로토콜:** 새 S2C 채널만 추가해서 옛 클라이언트와도 섞어 쓸 수 있다(채팅으로 대신 받는다). 리그 JAR은 `BattleScenes`를 쓰므로 새 MCC와 같이 배포한다.
+- **미확인:** 실게임에서 종료를 붙잡는 동안 배틀 화면이 어떻게 보이는지(HP 카드 등이 남는지), 믹스인이 실제로 붙는지, 카메라 구도. 관리 PvE(리그·타워·팩토리)는 상대가 가상 엔티티라 아직 연결하지 않았다.
+
 ## [2026-10-05 23:15] 관전자도 전투 태그를 받는다, `Request.clientTag` (`da6d9cfe`, `43f5ec45`) — JAR 배포 확인, 실게임 미확인
 
 - **관전 브금:** 태그는 참가자와 MCC 원격 관전(`complete`에서 시작 *후*에) 쪽에만 갔다. 상호작용 휠이나 Cobblemon 명령으로 관전하면 태그가 없어서 리그 챔피언·타워 보스도 일반 트레이너 곡이 나왔다. `SpectateBattleHandlerMixin`이 `spectateBattle` HEAD에서 태그를 먼저 보내고, RETURN에서 관전이 거부됐으면 회수한다. 원격 관전의 `complete` showTo는 중복이지만 같은 태그라서 그대로 두었다.

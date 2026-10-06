@@ -18,6 +18,7 @@
     "SpectateBattleHandlerMixin"
   ],
   "client": [
+    "client.BattleEndHandlerSceneMixin",
     "client.BattleMoveSelectionMixin",
     "client.LevelRendererLateHologramMixin"
   ],

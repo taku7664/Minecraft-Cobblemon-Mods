@@ -35,7 +35,23 @@ internal object MccAdminCommands {
         MccCommandContributors.register { status() }
         MccCommandContributors.register { records() }
         MccCommandContributors.register { battle() }
+        MccCommandContributors.register { scene() }
     }
+
+    /** `/mcc scene test`: plays a battle scene on the nearest living entity (or the caller) to check the look. */
+    fun scene(): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("scene")
+        .requires(BattleProgressCommands::isAdmin)
+        .then(Commands.literal("test").executes { command ->
+            val player = command.source.playerOrException
+            val focus = player.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity::class.java,
+                player.boundingBox.inflate(SCENE_TEST_RADIUS)) { it !== player && it.isAlive }
+                .minByOrNull { it.distanceToSqr(player) } ?: player
+            jbro.cobblemon.mcc.api.presentation.BattleScenes.play(player, focus, focus.displayName,
+                listOf(Component.translatable("$KEY.scene.test.0"), Component.translatable("$KEY.scene.test.1")))
+            1
+        })
+
+    private const val SCENE_TEST_RADIUS = 16.0
 
     fun status(): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("status")
         .requires(BattleProgressCommands::isAdmin)

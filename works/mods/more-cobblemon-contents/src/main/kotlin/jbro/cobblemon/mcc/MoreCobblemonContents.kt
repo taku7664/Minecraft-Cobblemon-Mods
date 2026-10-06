@@ -45,6 +45,7 @@ object MoreCobblemonContents : ModInitializer {
         jbro.cobblemon.mcc.internal.battle.GimmickLockedBattles.register()
         ManagedBattleContentNetworking.registerServer()
         jbro.cobblemon.mcc.internal.battle.BattleEntryNetworking.registerServer()
+        jbro.cobblemon.mcc.internal.presentation.BattleSceneNetworking.registerServer()
         jbro.cobblemon.mcc.internal.battle.BattleEntryHold.registerServer()
         ManagedBattleLifecycleEvents.registerServer()
         jbro.cobblemon.mcc.internal.command.MccAdminCommands.register()

@@ -28,6 +28,7 @@ object MoreCobblemonContentsClient : ClientModInitializer {
         ManagedBattleMechanicVisibilityClient.register()
         ManagedBattleContentClientNetworking.register()
         BattleEntryClientNetworking.register()
+        BattleSceneClient.register()
         MccClientContextTracker.register()
         jbro.cobblemon.mcc.client.wiki.LocalWikiServer.register()
     }

@@ -131,6 +131,8 @@
   "command.more_cobblemon_contents.admin.pending.drop": "Dropped %s results without saving them (target: %s).",
   "command.more_cobblemon_contents.admin.one_player": "Name exactly one player.",
   "command.more_cobblemon_contents.admin.source_failed": "Reading this content's state failed. See the server log.",
+  "command.more_cobblemon_contents.admin.scene.test.0": "This is how a battle scene looks. The camera turns to whoever speaks.",
+  "command.more_cobblemon_contents.admin.scene.test.1": "Press the confirm key to move on, or wait and it moves on by itself.",
   "message.more_cobblemon_contents.battle_result.victory_bp": "▶ You beat %s! %s",
   "message.more_cobblemon_contents.battle_result.victory": "▶ You beat %s!",
   "message.more_cobblemon_contents.battle_result.defeat": "▶ You lost to %s.",
