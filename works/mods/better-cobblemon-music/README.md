@@ -11,6 +11,8 @@ Cobblemon의 필드·전투 상황에 맞춰 리소스팩 음악을 재생하는
 
 ## 설치 단위
 
+울트라스페이스·고대·미래 차원(`cobblemon_dimensions:ultra_space`, `ancient`, `future`)의 필드 음악은 제공된 `22 - Ultra Desert.flac`의 변환 음원으로 통일합니다. 바이옴·지하 여부·낮과 밤에 관계없이 차원 전체에 적용하며, Mod Menu의 차원 음악 매핑에서 변경할 수 있습니다.
+
 모드 JAR과 공식 음악 리소스팩 ZIP을 함께 설치해야 합니다.
 
 ```text

@@ -8,6 +8,7 @@
     ]
   },
   "trackTitles": {
+    "better_cobblemon_music:field/ultra_space/ultra_desert": "울트라데저트",
     "better_cobblemon_music:battle/boss/pla_boss_battle": "승부: 우두머리 포켓몬 (PLA)",
     "better_cobblemon_music:battle/boss/sv_leader_pokemon_battle": "전투! 주인 포켓몬 (S·V)",
     "better_cobblemon_music:battle/champion/sinnoh_cynthia_battle": "전투! 챔피언 (D·P)",
@@ -205,6 +206,9 @@
     "field": {
       "default": "better_cobblemon_music:track/field/plains/sinnoh_route_201_night",
       "dimensions": {
+        "cobblemon_dimensions:ultra_space": "better_cobblemon_music:track/field/ultra_space/ultra_desert",
+        "cobblemon_dimensions:ancient": "better_cobblemon_music:track/field/ultra_space/ultra_desert",
+        "cobblemon_dimensions:future": "better_cobblemon_music:track/field/ultra_space/ultra_desert",
         "myroom:rooms": "better_cobblemon_music:track/field/myroom/eterna_forest",
         "jbro_policy:plaza": "better_cobblemon_music:field_plaza",
         "cobblemon_policy:plaza": "better_cobblemon_music:field_plaza",

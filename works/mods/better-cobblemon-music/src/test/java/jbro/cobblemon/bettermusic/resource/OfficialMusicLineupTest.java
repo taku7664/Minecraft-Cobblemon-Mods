@@ -18,6 +18,8 @@ import jbro.cobblemon.bettermusic.catalog.MusicCatalogParser;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogSettings;
 import jbro.cobblemon.bettermusic.catalog.MusicMappingOverrides;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
+import jbro.cobblemon.bettermusic.field.FieldMusicContext;
+import jbro.cobblemon.bettermusic.field.FieldPlaylistResolver;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,6 +30,7 @@ final class OfficialMusicLineupTest {
     static Path temporaryDirectory;
     static BattleMusicConfig battle;
     static BattlePlaylistResolver resolver;
+    static FieldPlaylistResolver fieldResolver;
     static Map<String, String> eventTitles;
     static Map<String, String> trackEvents;
 
@@ -44,14 +47,34 @@ final class OfficialMusicLineupTest {
             assertTrue(compiled.inactiveOverrides().isEmpty());
             battle = compiled.snapshot().battle();
             resolver = new BattlePlaylistResolver(battle);
+            fieldResolver = new FieldPlaylistResolver(compiled.snapshot().field());
             eventTitles = compiled.eventTitles();
             trackEvents = compiled.trackEvents();
         }
     }
 
     @Test
+    void ultraAndParadoxDimensionsIgnoreBiomeUndergroundAndTimeOfDay() {
+        for (String dimension : List.of("ultra_space", "ancient", "future")) {
+            for (String biome : List.of("minecraft:deep_dark", "minecraft:forest", "minecraft:river",
+                "cobblemon_dimensions:ultra_desert", "minecraft:plains")) {
+                for (boolean underground : List.of(false, true)) {
+                    for (var time : FieldMusicContext.TimeOfDay.values()) {
+                        String id = "cobblemon_dimensions:" + dimension;
+                        var selection = fieldResolver.select(new FieldMusicContext(
+                            id, biome, Set.of("minecraft:is_forest", "minecraft:is_river"), underground, time));
+                        assertEquals("field.dimension:" + id, selection.id());
+                        assertEquals(List.of("better_cobblemon_music:field/ultra_space/ultra_desert"),
+                            selection.playlist().tracks());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(88, eventTitles.size());
+        assertEquals(89, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));

@@ -31,6 +31,7 @@ final class ApprovedMusicAssetsTest {
             approved.add(trackId(file.getAsJsonArray().get(1).getAsString()));
         }
         approved.add(trackId(read(module.resolve("resource-pack/import-myroom-2026-10-03.json")).get("target").getAsString()));
+        approved.add(trackId(read(module.resolve("resource-pack/import-ultra-desert-2026-10-07.json")).get("target").getAsString()));
         approved.add(trackId("battle/pvp/pokemon_champions_arena_battle.ogg"));
         for (String key : Set.of("wild", "alpha", "legendary", "ultraBeast")) {
             addPlaylistTracks(playlists, battle.get(key).getAsString(), approved);

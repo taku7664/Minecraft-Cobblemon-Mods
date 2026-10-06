@@ -1,0 +1,15 @@
+{
+  "channels": 2,
+  "sample_rate": 32728,
+  "logical_streams": 1,
+  "duration_seconds": 160.9121547298949,
+  "input_bytes": 14917822,
+  "output_bytes": 2569537,
+  "quality": 4,
+  "mode": "music",
+  "sourceFile": "22 - Ultra Desert.flac",
+  "target": "field/ultra_space/ultra_desert.ogg",
+  "sourceSha256": "f16d932284e9e57fe8f3cbbce7b32f281c94f9622242235544311355a0b5a678",
+  "outputSha256": "63ae8d4590db29884562a2534ee9fe8a3c04b58c943dfd2f20552ecc7d01a569",
+  "gain": "unchanged"
+}
