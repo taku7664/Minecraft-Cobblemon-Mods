@@ -27,22 +27,27 @@ private fun FriendlyByteBuf.readStrings(): List<String> {
 private fun <T : CustomPacketPayload> codec(write: (RegistryFriendlyByteBuf, T) -> Unit, read: (RegistryFriendlyByteBuf) -> T):
     StreamCodec<RegistryFriendlyByteBuf, T> = StreamCodec.of(write, read)
 
-/** A node to show: who speaks, the pages to read and the answers to pick from. */
+/**
+ * A node to show: who speaks, the pages to read and the answers to pick from. [npcEntityId] is the speaking NPC's
+ * network id, which the client's battle camera turns to ([NO_NPC] for a talk opened without one).
+ */
 data class DialogueShowPayload(
     val session: Int,
     val speaker: String,
     val skin: String,
     val lines: List<String>,
     val choices: List<String>,
+    val npcEntityId: Int = NO_NPC,
 ) : CustomPacketPayload {
     override fun type() = TYPE
 
     companion object {
+        const val NO_NPC = -1
         val TYPE = type<DialogueShowPayload>("dialogue_show")
         val CODEC = codec<DialogueShowPayload>({ b, p ->
             b.writeVarInt(p.session); b.writeUtf(p.speaker, TEXT); b.writeUtf(p.skin, TEXT)
-            b.writeStrings(p.lines); b.writeStrings(p.choices)
-        }, { b -> DialogueShowPayload(b.readVarInt(), b.readUtf(TEXT), b.readUtf(TEXT), b.readStrings(), b.readStrings()) })
+            b.writeStrings(p.lines); b.writeStrings(p.choices); b.writeVarInt(p.npcEntityId)
+        }, { b -> DialogueShowPayload(b.readVarInt(), b.readUtf(TEXT), b.readUtf(TEXT), b.readStrings(), b.readStrings(), b.readVarInt()) })
     }
 }
 

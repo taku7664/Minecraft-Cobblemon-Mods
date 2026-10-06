@@ -31,6 +31,7 @@ object CobblemonNpcClient : ClientModInitializer {
     override fun onInitializeClient() {
         EntityRendererRegistry.register(CobblemonNpc.NPC, ::NpcEntityRenderer)
         NpcSkins.register()
+        NpcSceneCaptureHarness.installFromEnvironment()
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> NpcClientState.clear() }
 
         ClientPlayNetworking.registerGlobalReceiver(DialogueShowPayload.TYPE) { payload, context ->

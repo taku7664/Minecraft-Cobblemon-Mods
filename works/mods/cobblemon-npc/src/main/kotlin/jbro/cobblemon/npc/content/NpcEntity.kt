@@ -61,7 +61,7 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
         }
         if (dialogueId.isBlank()) return InteractionResult.PASS
         lookAt(player, 180f, 180f)
-        DialogueSessions.start(serverPlayer, dialogueId, speaker = displayName(), skin = skinName)
+        DialogueSessions.start(serverPlayer, dialogueId, speaker = displayName(), skin = skinName, npc = this)
         return InteractionResult.CONSUME
     }
 

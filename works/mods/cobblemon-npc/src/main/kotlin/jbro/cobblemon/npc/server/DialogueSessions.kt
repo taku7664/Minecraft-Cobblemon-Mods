@@ -26,6 +26,7 @@ object DialogueSessions {
         val skin: String,
         var nodeId: String,
         var choices: List<Int>,
+        val npcEntityId: Int = DialogueShowPayload.NO_NPC,
     )
 
     private val sessions = mutableMapOf<UUID, Session>()
@@ -44,13 +45,16 @@ object DialogueSessions {
 
     /**
      * Opens dialogue [dialogueId] for [player] at [node] (the start node when null). [speaker] and [skin] are the
-     * NPC's; blank ones fall back to the dialogue's own. False when there is no such dialogue.
+     * NPC's; blank ones fall back to the dialogue's own. [npc] is the one speaking, which the client's camera turns
+     * to. False when there is no such dialogue.
      */
-    fun start(player: ServerPlayer, dialogueId: String, node: String? = null, speaker: String = "", skin: String = ""): Boolean {
+    fun start(player: ServerPlayer, dialogueId: String, node: String? = null, speaker: String = "", skin: String = "",
+              npc: net.minecraft.world.entity.Entity? = null): Boolean {
         val dialogue = DialogueStore[dialogueId] ?: return false
         if (node != null && node !in dialogue.nodes) return false
         val session = Session(nextId++, dialogue, speaker.ifBlank { dialogue.speaker.orEmpty() },
-            skin.ifBlank { dialogue.skin.orEmpty() }, dialogue.start, emptyList())
+            skin.ifBlank { dialogue.skin.orEmpty() }, dialogue.start, emptyList(),
+            npc?.takeIf { it.level() === player.level() }?.id ?: DialogueShowPayload.NO_NPC)
         sessions[player.uuid] = session
         follow(player, session, walker(player, session).enter(node))
         return true
@@ -92,6 +96,7 @@ object DialogueSessions {
                     session.skin,
                     step.node.lines.map { fill(player, session, it) },
                     step.choices.map { fill(player, session, step.node.choices[it].text) },
+                    session.npcEntityId,
                 ))
             }
             DialogueWalker.Step.End -> {

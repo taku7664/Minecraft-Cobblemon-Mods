@@ -22,6 +22,9 @@ dependencies {
     implementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     include(project(":cobblemon-ui")) { isTransitive = false }
+    // Optional: a dialogue turns its camera when a player has it; development runs include it.
+    compileOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

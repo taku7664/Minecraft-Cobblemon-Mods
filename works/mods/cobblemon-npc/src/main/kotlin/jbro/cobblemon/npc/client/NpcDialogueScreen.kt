@@ -58,13 +58,18 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     }
 
     override fun init() {
-        if (restoreTheme == null) restoreTheme = CobblemonUiSharedTheme.install()
+        if (restoreTheme == null) {
+            restoreTheme = CobblemonUiSharedTheme.install()
+            // Once per opening (init also runs on resize): the battle camera looks at the speaker while the box is up.
+            if (show.npcEntityId != DialogueShowPayload.NO_NPC) NpcDialogueCamera.focus(show.npcEntityId)
+        }
         if (choicesShown) addChoices()
     }
 
     override fun removed() {
         restoreTheme?.invoke()
         restoreTheme = null
+        NpcDialogueCamera.release()
         if (!closedByServer) ClientPlayNetworking.send(DialogueLeavePayload(show.session))
     }
 
