@@ -301,6 +301,12 @@ public final class BattleCameraDirector {
         Vec3 front = this.sceneFront;
         // Straight in front of the face: the speaker looks into the camera, as in the games' talk scenes.
         double distance = BattleCameraDirector.lerp(3.4, 2.6, eased) * scale;
+        // Never behind the player the speaker talks to, whose own body would fill the picture.
+        if (client.player != null && client.player != entity) {
+            Vec3 between = client.player.position().subtract(entity.position());
+            double gap = Math.sqrt(between.x * between.x + between.z * between.z);
+            distance = Math.min(distance, Math.max(1.4, gap - 0.7));
+        }
         double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
         Vec3 cameraPos = face.add(front.scale(distance)).add(0.0, height, 0.0);
         Vec3 lookAt = face.add(0.0, -0.12 * scale, 0.0);
