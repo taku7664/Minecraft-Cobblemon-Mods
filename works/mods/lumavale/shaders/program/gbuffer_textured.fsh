@@ -6,6 +6,10 @@ in vec2 lightcoord;
 in vec4 vertexColor;
 in vec3 worldNormal;
 
+#ifdef SEE_THROUGH
+#include "/program/see_through.glsl"
+#endif
+
 /* DRAWBUFFERS:012 */
 
 void main() {
@@ -13,6 +17,11 @@ void main() {
     if (albedo.a < alphaTestRef) {
         discard;
     }
+#ifdef SEE_THROUGH
+    if (seeThroughDiscard()) {
+        discard;
+    }
+#endif
 
 #ifdef EMISSIVE_PASS
     vec2 storedLight = vec2(1.0);

@@ -12,6 +12,7 @@ LumaVale는 선을 두르거나 화면을 만화처럼 평면화하지 않고, �
 - 렌더 거리 끝의 청크 경계를 하늘색으로 완전히 감추는 경계 안개
 - 바닐라 하늘의 수평 경계선을 부드러운 색 그라데이션으로 감추는 수평선 안개
 - 외곽선, 셀 셰이딩, 과한 반사 효과는 사용하지 않음
+- Better Cobblemon Battlecam 전투 중, 카메라와 포켓몬 사이를 가리는 나무·블록을 반투명하게(디더링) 비움
 
 ## 실행 환경
 
@@ -28,4 +29,4 @@ Rounding-Block과는 독립된 쉐이더팩입니다. Rounding-Block이 없어�
 .\lumavale\build.ps1
 ```
 
-산출물은 `lumavale/dist/LumaVale-0.1.2.zip`입니다.
+산출물은 `lumavale/dist/LumaVale-0.1.3.zip`입니다.
