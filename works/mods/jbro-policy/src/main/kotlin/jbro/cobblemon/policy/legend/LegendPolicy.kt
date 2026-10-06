@@ -21,8 +21,9 @@ import net.minecraft.server.level.ServerPlayer
 /**
  * Wild Legends belong to the player whose spawner made them, or who placed the Poke Snack that drew them: only that
  * player may battle or catch them. A Legend
- * appears only for players who have not caught it yet and who carry its entry Pokemon; since Cobblenav lists spawns
- * through the same spawner check, the Pokenav's spawn list follows along. Catching also needs the Legend's League rank.
+ * appears only for players who have not caught it yet, hold its League rank and carry its entry Pokemon; since
+ * Cobblenav lists spawns through the same spawner check, the Pokenav's spawn list follows along. The rank is checked
+ * again on capture, in case it changed after the spawn.
  */
 object LegendPolicy {
     private const val OWNER_KEY = "jbro_policy_legend_owner"
@@ -81,9 +82,13 @@ object LegendPolicy {
         }
     }
 
-    /** Whether [legend] may spawn around [player]: not caught by them yet, and its entry Pokemon is in their party. */
+    /**
+     * Whether [legend] may spawn around [player]: not caught by them yet, their League rank is high enough to catch
+     * it, and its entry Pokemon is in their party.
+     */
     internal fun mayMeet(player: ServerPlayer, legend: Legend): Boolean {
         if (LegendRecords.get(player.server).has(player.uuid, legend.id)) return false
+        if (LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) return false
         if (legend.entry.isEmpty()) return true
         return legend.entryMet(Cobblemon.storage.getParty(player).mapTo(mutableSetOf()) { it.species.resourceIdentifier.path })
     }

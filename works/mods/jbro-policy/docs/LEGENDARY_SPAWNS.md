@@ -210,9 +210,9 @@ Cobblemon 기본 디스폰이 전설에도 그대로 적용됩니다. `develop-p
 코드는 `jbro-policy`의 `legend` 패키지에 있습니다.
 
 - **목록:** `LegendCatalog`는 이 문서의 표에서 생성했습니다. 종을 바꾸거나 엔트리 조건을 고치면 두 곳을 함께 맞춰야 합니다. `LegendCatalogTest`가 스폰 데이터와의 일치, 엔트리 사슬의 순환과 등급 역전, 등장 대사 누락을 검사합니다.
-- **스폰 판정:** `PlayerSpawnerFactory.influenceBuilders`에 플레이어별 `SpawningInfluence`를 등록합니다. 이미 잡은 전설과 엔트리 조건을 채우지 못한 전설을 `affectSpawnable`에서 거릅니다. Cobblenav도 플레이어 스포너로 같은 판정을 거치므로 포켓내비에 따로 손대지 않았습니다.
+- **스폰 판정:** `PlayerSpawnerFactory.influenceBuilders`에 플레이어별 `SpawningInfluence`를 등록합니다. 이미 잡은 전설, 리그 등급이 모자란 전설, 엔트리 조건을 채우지 못한 전설을 `affectSpawnable`에서 거릅니다. Cobblenav도 플레이어 스포너로 같은 판정을 거치므로 포켓내비에 따로 손대지 않았습니다.
 - **주인:** 스폰될 때 불러낸 플레이어의 UUID를 포켓몬의 `persistentData`에 저장합니다. 서버를 재시작해도 남습니다. 배틀 시작(`BATTLE_STARTED_PRE`)과 볼 명중(`THROWN_POKEBALL_HIT`)에서 주인이 아니면 취소합니다.
 - **기록:** 야생 포획(`POKEMON_CAPTURED`)만 월드 데이터 `jbro_policy_legends`에 남깁니다.
-- **등급:** League Challenge의 `LeagueRanks` API로 읽습니다. League Challenge가 없으면 등급 제한이 꺼지고, 있는데 등급을 읽지 못하면 포획을 막습니다.
+- **등급:** League Challenge의 `LeagueRanks` API로 읽습니다. 스폰 판정과 포획에서 모두 봅니다. 등급이 모자라면 스폰도 포켓내비 목록도 없고, 스폰 뒤 등급이 바뀐 경우를 위해 포획 때 다시 확인합니다. League Challenge가 없으면 등급 제한이 꺼지고, 있는데 등급을 읽지 못하면 스폰과 포획을 막습니다.
 - **폼:** 전설은 `Legend.id`로 구분합니다. 보통은 종 이름이고, 가라르 새 3종은 `articuno-galar`처럼 따로입니다. 포켓몬은 `aspects`(`galarian`)로, 스폰 데이터와 명령의 포켓몬 속성은 `galarian` 표기와 `form=galar`로 어느 전설인지 정합니다(`LegendPolicy.legendOf`). 기록, 스폰 id(`jbro-legendary-<id>`), 등장 대사 키가 모두 이 id를 씁니다. 폼 전설의 이름은 `legend.jbro_policy.name.<id>` 번역입니다.
 - **포케스낵:** 포케스낵 스포너는 플레이어 스포너가 아니므로 `PokeSnackLegendFilterMixin`이 설치자(`placedBy`) 기준으로 후보를 거르고, `POKE_SNACK_SPAWN_POKEMON_POST`에서 설치자를 주인으로 기록합니다. 파티를 읽어야 해서 설치자가 접속해 있을 때만 전설 후보가 됩니다.
