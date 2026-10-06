@@ -15,6 +15,8 @@ data class Challenge(
     val skin: String?,
     val slim: Boolean,
     val skill: Int = 3,
+    /** The trainer's lines by moment (`battle_start`, `last_pokemon`, `player_won`, `player_lost`), as translation keys. */
+    val scenes: Map<String, List<String>> = emptyMap(),
 )
 
 data class LeagueCatalog(

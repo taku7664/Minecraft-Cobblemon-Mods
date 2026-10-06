@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-06 10:22] 트레이너 JSON `scenes`, 난천 대사
+
+- 트레이너 JSON의 선택 필드 `scenes`: 순간(`battle_start`, `last_pokemon`, `player_won`, `player_lost`) → 대사 번역 키 1~8줄. `LeagueCatalogParser`가 순간 이름과 줄 수를 검사하고, `Challenge.scenes` → `trainerScenes()` → `ManagedPveBattles.Request.scenes`로 넘긴다(일반 도전과 `/mcc league test` 모두). 동작은 MCC `MEMORY.md`의 `TrainerScenes`.
+- 난천(`cynthia`, `cynthia_hard`)에 네 순간 대사를 넣었다. 키는 `trainer.more_cobblemon_contents_league_challenge.cynthia.scene.<순간>.<n>`, 문구는 Claude가 썼다. 다른 트레이너는 같은 방식으로 `scenes`와 lang 키만 추가하면 된다.
+- `TrainerSceneCaptureHarness`는 이제 난천 대사 데이터와 두 마리 팀으로 세 장면을 차례로 캡처한다.
+
 ## [2026-10-06 10:02] 트레이너 연출 캡처 하네스 `TrainerSceneCaptureHarness` (개발 전용)
 
 - `MCC_SCENE_CAPTURE=1`과 `--quickPlaySingleplayer scene-capture`로 리그 개발 클라이언트를 띄우면, 난천 스킨 관리 전투(뮤츠 Lv100 사이코브레이크 vs 잉어킹 Lv5)를 시작하고 기술을 자동으로 고르고, 이기면 난천에게 종료 연출을 걸고, 두 번째 전투로 트레이너 수를 센다. 캡처는 `run/screenshots/trainer-scene-*.png`, 판정은 로그 `SCENE CHECK`. `scene-capture` 월드(`mcc-hub-capture` 복사본)가 아니면 멈춘다.

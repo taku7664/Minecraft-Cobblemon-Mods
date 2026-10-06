@@ -12,7 +12,7 @@ import com.cobblemon.mod.common.entity.npc.NPCEntity
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
-import jbro.cobblemon.mcc.api.presentation.BattleScenes
+import jbro.cobblemon.mcc.api.presentation.TrainerScenes
 import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
 import jbro.cobblemon.ui.extended.BattleDialogue
 import jbro.cobblemon.ui.extended.SceneDialogue
@@ -30,14 +30,21 @@ import org.slf4j.LoggerFactory
 /**
  * Development-only check of a managed battle's visible trainer and closing scene. Set `MCC_SCENE_CAPTURE=1` and
  * launch with `--quickPlaySingleplayer scene-capture` (a disposable copy of a capture world): it fights a managed
- * battle against a trainer in Cynthia's skin, picks the first move, plays a closing scene on the trainer when the
- * player wins, then starts a second battle to count the trainers standing. Screenshots land in `screenshots/` as
+ * battle against Cynthia (two Pokemon) with her bundled scene lines, picks moves, captures each scene (battle start,
+ * last Pokemon, the win), then starts a second battle to count the trainers standing. Screenshots land in `screenshots/` as
  * `trainer-scene-<step>.png`; the log reports each check as `SCENE CHECK`.
  */
 internal object TrainerSceneCaptureHarness {
     private const val WORLD = "scene-capture"
     private const val TAG = "mcc_managed_trainer"
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
+    private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
+    // The bundled Cynthia lines, the way the league catalog hands them over.
+    private val CYNTHIA_SCENES = TrainerScenes(mapOf(
+        TrainerScenes.Moment.BATTLE_START to listOf("$CYNTHIA.battle_start.0"),
+        TrainerScenes.Moment.LAST_POKEMON to listOf("$CYNTHIA.last_pokemon.0", "$CYNTHIA.last_pokemon.1"),
+        TrainerScenes.Moment.PLAYER_WON to listOf("$CYNTHIA.player_won.0", "$CYNTHIA.player_won.1"),
+    ))
 
     fun installFromEnvironment() {
         if (System.getenv("MCC_SCENE_CAPTURE") != "1" || !FabricLoader.getInstance().isDevelopmentEnvironment) return
@@ -46,7 +53,9 @@ internal object TrainerSceneCaptureHarness {
         var ticks = 0
         var phaseTick = 0
         val bodies = AtomicInteger(-1)
-        var sceneSeen = false
+        var sceneTracked = false
+        var sceneStart = 0
+        var scenes = 0
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             ticks++
             if (ticks == 1) client.options.pauseOnLostFocus = false
@@ -89,29 +98,28 @@ internal object TrainerSceneCaptureHarness {
                     server.execute { startBattle(server.playerList.getPlayer(player.uuid)!!, logger, playScene = true) }
                     next(1)
                 }
-                // Frames in quick succession catch the trainer's send-out motion.
-                1 -> if (CobblemonClient.battle != null && (ticks - phaseTick) % 4 == 0) {
-                    val frame = (ticks - phaseTick) / 4
-                    if (frame == 1) countBodies()
-                    shot("1-start-$frame")
-                    if (frame >= 8) next(2)
-                }
-                2 -> if (since(40) && pickMove(client, logger)) {
+                1 -> if (CobblemonClient.battle != null && since(10)) {
+                    countBodies()
+                    shot("1-start")
                     next(3)
                 }
                 3 -> {
-                    // Every turn until the battle ends, should one hit not be enough.
-                    pickMove(client, logger)
-                    if (SceneDialogue.isActive() && !sceneSeen) {
-                        sceneSeen = true
-                        phaseTick = ticks
-                    }
-                    if (sceneSeen && (ticks - phaseTick) in listOf(4, 12, 20, 30)) shot("3-scene-${ticks - phaseTick}")
-                    if (sceneSeen && since(45)) {
-                        countBodies()
-                        logger.info("SCENE CHECK battle still open while the scene plays: {}", CobblemonClient.battle != null)
-                        shot("3-scene")
-                        next(4)
+                    // Each scene the trainer plays (battle start, last Pokemon, the win) is captured once it has settled.
+                    if (SceneDialogue.isActive()) {
+                        if (!sceneTracked) {
+                            sceneTracked = true
+                            sceneStart = ticks
+                            scenes++
+                            logger.info("SCENE CHECK scene {} started (battle open: {})", scenes, CobblemonClient.battle != null)
+                        }
+                        if (ticks - sceneStart == 24) shot("3-scene-$scenes")
+                    } else {
+                        sceneTracked = false
+                        pickMove(client, logger)
+                        if (CobblemonClient.battle == null && scenes > 0) {
+                            logger.info("SCENE CHECK scenes played: {} (expected 3)", scenes)
+                            next(4)
+                        }
                     }
                 }
                 4 -> if (!SceneDialogue.isActive() && CobblemonClient.battle == null) next(5)
@@ -166,24 +174,13 @@ internal object TrainerSceneCaptureHarness {
             transactionId = UUID.randomUUID(),
             contentId = "more_cobblemon_contents_league_challenge:scene_capture",
             trainerId = "more_cobblemon_contents_league_challenge:scene_capture",
-            trainerNameKey = "npc.more_cobblemon_contents.managed_trainer",
+            trainerNameKey = "trainer.more_cobblemon_contents_league_challenge.cynthia",
             lockedParty = ManagedPveBattles.snapshotParty(player, 100),
-            opponentProperties = listOf("magikarp level=5 moves=splash"),
+            opponentProperties = listOf("magikarp level=5 moves=splash", "magikarp level=5 moves=splash"),
             appearance = SKIN,
+            scenes = if (playScene) CYNTHIA_SCENES else TrainerScenes.NONE,
         )
-        val id = ManagedPveBattles.start(player, request) { outcome ->
-            logger.info("SCENE CHECK battle outcome {}", outcome)
-            if (!playScene || outcome != ManagedPveBattles.Outcome.WIN) return@start
-            val online = player.server.playerList.getPlayer(player.uuid) ?: return@start
-            val trainer = online.serverLevel().getEntitiesOfClass(NPCEntity::class.java, online.boundingBox.inflate(64.0)) {
-                TAG in it.tags
-            }.firstOrNull()
-            logger.info("SCENE CHECK closing scene focuses {}", trainer?.uuid)
-            BattleScenes.play(online, trainer, Component.literal("난천"), listOf(
-                Component.literal("훌륭해. 너와 포켓몬의 유대가 느껴졌어."),
-                Component.literal("오늘의 승부는 오래 기억할 것 같아."),
-            ))
-        }
+        val id = ManagedPveBattles.start(player, request) { outcome -> logger.info("SCENE CHECK battle outcome {}", outcome) }
         logger.info("SCENE CHECK managed battle started: {}", id)
     }
 }

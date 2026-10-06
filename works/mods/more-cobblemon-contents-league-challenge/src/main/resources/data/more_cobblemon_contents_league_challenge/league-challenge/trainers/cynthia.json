@@ -3,5 +3,21 @@
   "ai_skill": 5,
   "name_key": "trainer.more_cobblemon_contents_league_challenge.cynthia",
   "team": "more_cobblemon_contents_league_challenge:cynthia",
-  "appearance": "more_cobblemon_contents_league_challenge:cynthia"
+  "appearance": "more_cobblemon_contents_league_challenge:cynthia",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.battle_start.0"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.last_pokemon.0",
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.last_pokemon.1"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.player_won.0",
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.player_won.1"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.cynthia.scene.player_lost.0"
+    ]
+  }
 }

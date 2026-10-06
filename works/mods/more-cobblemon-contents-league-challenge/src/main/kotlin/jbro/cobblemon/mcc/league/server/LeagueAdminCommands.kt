@@ -212,7 +212,7 @@ object LeagueAdminCommands {
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
                 stage = engine.stage(challengeId),
                 // The brain logs under the AI test id; the clients still hear and see the league battle.
-                clientTag = MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, engine.stage(challengeId), challengeId))) { outcome ->
+                clientTag = MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, engine.stage(challengeId), challengeId), scenes = trainerScenes(challenge))) { outcome ->
                 player.server.playerList.getPlayer(player.uuid)?.sendSystemMessage(
                     Component.translatable("$KEY.test.${outcome.name.lowercase()}", opponent, target))
             }

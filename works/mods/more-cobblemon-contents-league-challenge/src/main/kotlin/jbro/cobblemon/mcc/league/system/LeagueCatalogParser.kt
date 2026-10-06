@@ -32,10 +32,23 @@ object LeagueCatalogParser {
                 reward.number("unlock_cap").toInt(), reward.number("first_bp"), reward.number("repeat_bp"),
                 source.string("mechanic"), source.string("format"), appearance?.optionalString("skin"),
                 appearance?.string("model")?.also { require(it in setOf("default", "slim")) } == "slim",
-                trainer.number("ai_skill").toInt())
+                trainer.number("ai_skill").toInt(), trainer.scenes())
         }
         return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
             wildLevel(league), hardGyms, hardFinals)
+    }
+}
+
+/** The moments a trainer's `scenes` may name; the same ids as MCC's `TrainerScenes.Moment`. */
+internal val SCENE_MOMENTS = setOf("battle_start", "last_pokemon", "player_won", "player_lost")
+
+/** A trainer's optional `scenes` object: moment id to its lines' translation keys (1 to 8 each). */
+private fun JsonObject.scenes(): Map<String, List<String>> {
+    if (!has("scenes") || get("scenes").isJsonNull) return emptyMap()
+    val scenes = get("scenes").also { require(it.isJsonObject) { "Expected object: scenes" } }.asJsonObject
+    return scenes.keySet().associateWith { moment ->
+        require(moment in SCENE_MOMENTS) { "Unknown scene moment: $moment" }
+        scenes.strings(moment).also { require(it.size in 1..8) { "Scene $moment has 1 to 8 lines" } }
     }
 }
 

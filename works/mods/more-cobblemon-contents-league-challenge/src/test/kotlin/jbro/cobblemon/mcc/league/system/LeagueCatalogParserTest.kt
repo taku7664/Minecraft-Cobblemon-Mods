@@ -51,6 +51,24 @@ class LeagueCatalogParserTest {
         assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
     }
 
+    @Test fun `Cynthia speaks at every scene moment in both difficulties`() {
+        val catalog = LeagueCatalogParser.parse(resources(), "$ns:active")
+        listOf("cynthia", "cynthia_hard").forEach { id ->
+            assertEquals(SCENE_MOMENTS, catalog.challenges.getValue("$ns:$id").scenes.keys, id)
+        }
+        assertEquals(emptyMap<String, List<String>>(), catalog.challenges.getValue("$ns:roark").scenes)
+    }
+
+    @Test fun `an unknown scene moment or an empty one rejects the catalog`() {
+        listOf("{\"after_lunch\":[\"some.key\"]}", "{\"player_won\":[]}").forEach { scenes ->
+            val resources = resources()
+            val trainer = JsonParser.parseString(resources.getValue("trainers").getValue("$ns:roark")).asJsonObject
+            trainer.add("scenes", JsonParser.parseString(scenes))
+            resources["trainers"] = resources.getValue("trainers") + ("$ns:roark" to trainer.toString())
+            assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
+        }
+    }
+
     @Test fun `missing team rejects whole catalog`() {
         val resources = resources()
         resources["teams"] = resources.getValue("teams") - "$ns:cynthia"
