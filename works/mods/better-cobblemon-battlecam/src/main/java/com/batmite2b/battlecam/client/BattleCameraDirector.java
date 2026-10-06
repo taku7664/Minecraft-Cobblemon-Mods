@@ -15,6 +15,7 @@ import com.batmite2b.battlecam.client.GimmickScene;
 import com.batmite2b.battlecam.client.PokemonVisualSnapshot;
 import com.batmite2b.battlecam.client.ReflectionUtil;
 import com.batmite2b.battlecam.client.TrainerTargetResolver;
+import jbro.cobblemon.battlecam.client.BattlecamSeeThrough;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -174,6 +175,7 @@ public final class BattleCameraDirector {
         String shotId = this.getCurrentShotId();
         BattleFlags flags = this.resolveBattleFlags(client, state.activeBattleId);
         CameraPose pose = targets.singleRemaining() ? this.computeSingleRemainingPose(shotId, targets, progress) : (targets.doubles() ? this.computeDoublePose(shotId, targets, progress, flags) : this.computeSinglePose(shotId, targets, progress, flags));
+        BattlecamSeeThrough.look(targets.doubles() ? targets.teamACenter() : targets.left(), targets.doubles() ? targets.teamBCenter() : targets.right());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cutThisPose);
     }
 
@@ -243,6 +245,7 @@ public final class BattleCameraDirector {
         CameraPose pose = this.computeGimmickPose(scene.kind(), gimmickFocus, scene.progress(now), scene.postCryProgress(now));
         pose = scene.kind() == GimmickKind.MEGA ? this.adjustFrontalCinematicPoseForObstructions(client, pose, gimmickFocus.face()) : this.adjustCinematicPoseForObstructions(client, pose, gimmickFocus.face());
         BattleCamClient.STATE.setCinematicFocus(pose.pos(), gimmickFocus.face(), scene.entityUuid(), scene.kind() == GimmickKind.MEGA);
+        BattlecamSeeThrough.look(gimmickFocus.face(), gimmickFocus.body());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
         return true;
     }
@@ -267,6 +270,7 @@ public final class BattleCameraDirector {
         pose = this.adjustCinematicPoseForObstructions(client, pose, focus);
         boolean hideDynamaxPokemon = scene.kind() == BattleActionKind.MOVE || scene.kind() == BattleActionKind.DAMAGE || scene.kind() == BattleActionKind.FAINT || scene.kind() == BattleActionKind.SWITCH;
         BattleCamClient.STATE.setCinematicFocus(pose.pos(), focus, scene.entityUuids(), false, hideDynamaxPokemon);
+        BattlecamSeeThrough.look(focus, focus);
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
         return true;
     }
@@ -316,6 +320,7 @@ public final class BattleCameraDirector {
         CameraPose pose = this.adjustFrontalCinematicPoseForObstructions(client,
             this.buildPose(cameraPos, lookAt, (float)BattleCameraDirector.lerp(52.0, 46.0, eased)), lookAt);
         state.setCinematicFocus(pose.pos(), lookAt, entity.getUUID());
+        BattlecamSeeThrough.look(face, entity.getBoundingBox().getCenter());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
         return true;
     }

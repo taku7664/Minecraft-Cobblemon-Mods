@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "package": "jbro.cobblemon.battlecam.iris",
+  "plugin": "jbro.cobblemon.battlecam.iris.IrisMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "IrisSeeThroughUniformsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

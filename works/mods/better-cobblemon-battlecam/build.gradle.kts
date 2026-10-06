@@ -19,6 +19,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
+    // Optional: see-through uniforms for shader packs that read them (LumaVale); only loaded with Iris present.
+    modCompileOnly("maven.modrinth:iris:1.8.8+1.21.1-fabric")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

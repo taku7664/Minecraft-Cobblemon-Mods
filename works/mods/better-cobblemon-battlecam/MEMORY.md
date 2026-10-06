@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-06 19:30] Iris 셰이더팩에 투시 값을 넘긴다 (LumaVale 0.1.3 전용 효과, 개발 클라이언트 캡처 확인)
+
+- **빡대리님 지시:** 배틀캠이 포켓몬을 볼 때 나무가 가리면 반투명하게, LumaVale 전용으로.
+- **값:** `BattlecamSeeThrough`가 감독이 잡는 구도마다 대상 두 곳을 받는다(일반 구도: 싱글은 양쪽 포켓몬, 더블은 양 팀 중심 / 액션 연출: 초점 / 기믹: 얼굴과 몸 / 대사 연출: 얼굴과 몸 중심). 강도는 배틀캠이 카메라를 잡고 있으면 0.4초 동안 1로, 놓으면 0으로.
+- **Iris 통로:** Iris 공개 API에는 유니폼을 넘길 방법이 없어 내부 `HardcodedCustomUniforms.addHardcodedCustomUniforms` TAIL에 믹스인(`IrisSeeThroughUniformsMixin`)으로 `mcc_seeThrough`, `mcc_seeThroughA/B`를 등록한다. 별도 믹스인 설정(`battlecam.iris.mixins.json`, `required: false`)과 플러그인(`IrisMixinPlugin`)이 Iris가 있을 때만 적용한다. 컴파일은 `modCompileOnly("maven.modrinth:iris:1.8.8+1.21.1-fabric")`. Iris 버전이 바뀌면 이 내부 메서드를 다시 확인한다.
+- **개발 실행 주의:** Iris·Sodium을 Gradle 의존성(`modLocalRuntime`)으로 넣으면 클래스패스가 길어져 Gradle이 매니페스트 JAR 하나로 묶고, Fabric Loader가 그 안을 못 봐서 "Minecraft game provider couldn't locate the game"으로 시작조차 안 된다. 개발 실행 폴더 `run/mods`에 프로덕션 JAR을 넣으면 된다(Loader가 런타임에 이름을 바꾼다).
+
 ## [2026-10-06 12:55] 연출 카메라가 플레이어 뒤에서 시작하지 않게
 
 - 대화창이 아래 띠 위로 올라와 얼굴 아래쪽을 가려서, 조준점을 얼굴 아래 0.12→0.45(크기 비례)로 내려 얼굴이 화면 위쪽에 오게 했다. 전투 연출은 얼굴이 박스 위로 다 보인다. NPC 대화는 거리가 2.3블록으로 줄어 머리 끝이 위 띠에 살짝 닿는다(캡처 확인).

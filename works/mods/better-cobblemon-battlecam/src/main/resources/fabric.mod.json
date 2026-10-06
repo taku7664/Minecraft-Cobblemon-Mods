@@ -16,7 +16,7 @@
     "client": ["jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient"],
     "modmenu": ["jbro.cobblemon.battlecam.client.BattlecamModMenu"]
   },
-  "mixins": ["battlecam.mixins.json"],
+  "mixins": ["battlecam.mixins.json", "battlecam.iris.mixins.json"],
   "depends": {
     "fabricloader": ">=0.19.5",
     "fabric-api": "*",
