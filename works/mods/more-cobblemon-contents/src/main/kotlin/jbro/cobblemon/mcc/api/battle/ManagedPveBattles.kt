@@ -38,6 +38,8 @@ object ManagedPveBattles {
          * test runs under its own content id but should look and sound like the content battle it stands in for.
          */
         val clientTag: MccBattleTag? = null,
+        /** What the trainer says at set moments of the battle, with the camera on it. */
+        val scenes: jbro.cobblemon.mcc.api.presentation.TrainerScenes = jbro.cobblemon.mcc.api.presentation.TrainerScenes.NONE,
     )
     private data class Active(val playerId: UUID, val request: Request, val complete: (Outcome) -> Unit)
     private data class Completion(val active: Active, val outcome: Outcome)
@@ -98,7 +100,7 @@ object ManagedPveBattles {
                     protectManagedOpponent(it)
                 }
             }, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
-            appearance = request.appearance)
+            appearance = request.appearance, scenes = request.scenes)
         val tag = request.clientTag ?: MccBattleTag(request.contentId, request.stage, request.trainerId)
         return when (val result = MccBattleTags.during(setOf(player.uuid), tag) { runtime.startManaged(prepared) }) {
             is PveLaunchResult.Started -> result.battleId.also {

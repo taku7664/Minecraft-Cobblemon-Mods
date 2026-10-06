@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-10-06 10:20] 트레이너 대사 연출 `TrainerScenes` — 데이터로 넣는 순간별 대사, 남은 계획
+
+- **빡대리님 지시:** 난천이 한 마리 남았을 때 같은 커스텀 대사를, 그 트레이너를 비추며 띄운다.
+- **API:** `api.presentation.TrainerScenes(lines: Map<Moment, List<번역 키>>)`. 순간은 `battle_start`(전투 시작), `last_pokemon`(마지막 포켓몬이 나오기 전, 처음부터 한 마리였던 팀은 제외), `player_won`, `player_lost`. 순간마다 1~8줄, 한 전투에 한 번씩. `ManagedPveBattles.Request.scenes` → `ManagedPvePrepared` → `Cobblemon173ManagedAiBattle.scenes`로 넘어가고, 엔진의 `Cobblemon173TrainerSceneDirector`가 화자(트레이너 이름 키)와 포커스(트레이너 몸)로 `BattleScenes.play`를 부른다. `last_pokemon`은 트레이너 액터가 선택을 요청받는 순간(`onChoiceRequested` 훅) 살아 있는 포켓몬이 한 마리면 튼다. 승패 대사는 엔진 종료 처리에서 보내고, 클라이언트가 배틀 종료를 붙잡아 대사 뒤에 닫는다.
+- **리그 데이터:** 트레이너 JSON의 선택 필드 `scenes`(`{"last_pokemon": ["키", ...]}`), 파서가 순간 이름과 줄 수를 검사한다. 난천(일반·하드)에 네 순간 대사를 넣었다(문구는 Claude가 씀, 게임 대사 인용 아님). 타워·팩토리는 엔진이 같아서 `scenes`만 넘기면 된다(아직 데이터 없음).
+- **검증:** core 609·리그 91개 단위 테스트 통과(파서 테스트 2개 추가). 개발 클라이언트 하네스에서 난천(두 마리) 전투로 `battle_start` → `last_pokemon`(전투 중) → `player_won`(배틀 종료 전) 세 장면이 차례로 뜨고, 매번 배틀이 열린 채 카메라가 난천 얼굴을 비추며 대사가 나오는 것을 캡처로 확인했다. 두 번째 전투 중 트레이너 1명.
+- **프로토콜·배포:** `Request`/엔진 입력 data class에 기본값 있는 필드를 끝에 추가했다. 이진 호환이 깨지므로 리그·타워·팩토리 JAR을 코어와 같이 배포한다.
+- **남은 계획(순서대로):**
+  1. ~~관리 전투 트레이너 몸~~(완료) / 2. ~~`scenes` 데이터와 트리거~~(이 항목)
+  3. `cobblemon-npc` 대화 중 배틀캠이 그 NPC를 비추고, 대화창이 닫히면 카메라를 돌려준다.
+  4. **cobblemon-ui 연출용 상하 레터박스.** 연출(`SceneDialogue`, 배틀캠 포커스) 동안 위아래 검은 띠를 띄운다. UI 레이아웃은 레터박스에 맞춰 다시 짠다: **대화창은 반드시** 레터박스 안쪽(아래 띠 위 또는 띠 안)에 맞추고, 나머지 UI(전투 HUD 카드, 명령 메뉴, 토스트 등)는 **권고**로 맞춘다.
+
 ## [2026-10-06 10:02] 개발 클라이언트로 트레이너 몸·종료 연출 확인, 턴 실패 복구 클래스 이동 (`ManagedTurnFailureRecovery`)
 
 - **검증 방법:** 리그 개발 실행(`:more-cobblemon-contents-league-challenge:runClient`)에 `TrainerSceneCaptureHarness`(리그 `MEMORY.md`)를 붙여 일회용 월드 `scene-capture`에서 난천 스킨 관리 전투 → 승리 → 종료 연출 → 두 번째 전투를 자동으로 돌리고 캡처했다. 개발 실행에는 RCT Trainers+ 팩을 `run/resourcepacks`에 넣어 켰고, 배틀캠은 리그 개발 런타임(`runtimeOnly`)에 넣었다.

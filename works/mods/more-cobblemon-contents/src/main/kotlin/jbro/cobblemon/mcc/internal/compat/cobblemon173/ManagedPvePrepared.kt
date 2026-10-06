@@ -19,6 +19,7 @@ internal data class ManagedPvePrepared(
     val learningScopeId: UUID,
     val preview: BattleOpponentTeamPreviewView? = null,
     val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
+    val scenes: jbro.cobblemon.mcc.api.presentation.TrainerScenes = jbro.cobblemon.mcc.api.presentation.TrainerScenes.NONE,
 )
 
 internal enum class PveFormat { SINGLE, DOUBLE }

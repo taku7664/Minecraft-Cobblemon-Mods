@@ -70,6 +70,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val opponentTeamPreview: BattleOpponentTeamPreviewView? = null,
     private val exactOwnTeam: BattleExactOwnTeamView = Cobblemon173ExactOwnTeamView.from(pokemonList),
     private val unboundedDecisionTime: Boolean = false,
+    /** Runs as each choice is asked for, before the brain answers it (a trainer's lines at its last Pokemon). */
+    private val onChoiceRequestedHook: () -> Unit = {},
 ) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<LivingEntity> {
     override val entity: LivingEntity = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
@@ -103,6 +105,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     }
 
     override fun onChoiceRequested() {
+        onChoiceRequestedHook()
         val currentRequest = request ?: return
         if (!pendingRequest.compareAndSet(null, currentRequest)) return
 

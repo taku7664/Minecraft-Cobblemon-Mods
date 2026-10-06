@@ -48,6 +48,7 @@ data class Cobblemon173ManagedAiBattle(
     val unboundedBrainDecision: Boolean = false,
     val appearance: TrainerResourceSkin? = null,
     val strategyBrief: BattleStrategyBrief? = null,
+    val scenes: jbro.cobblemon.mcc.api.presentation.TrainerScenes = jbro.cobblemon.mcc.api.presentation.TrainerScenes.NONE,
 )
 
 /** How a started battle ended for the player; a null outcome means it ended without a winner. */
@@ -131,6 +132,8 @@ class Cobblemon173ManagedAiBattleEngine(
             brains = listOf(primaryBrain, localBrain),
             diagnosticsLabel = prepared.diagnosticsLabel,
         )
+        val sceneDirector = Cobblemon173TrainerSceneDirector(player, prepared.scenes, prepared.trainerDisplayNameKey,
+            prepared.opponentTeam.size)
         lateinit var trainerActor: Cobblemon173BrainTrainerBattleActor
         trainerActor = Cobblemon173BrainTrainerBattleActor(
             server = player.server,
@@ -150,6 +153,7 @@ class Cobblemon173ManagedAiBattleEngine(
             localBrain = localBrain,
             opponentTeamPreview = prepared.opponentTeamPreview?.let(Cobblemon173PublicTeamPreviewKnowledge::enrich),
             unboundedDecisionTime = prepared.unboundedBrainDecision,
+            onChoiceRequestedHook = { sceneDirector.choiceRequested(trainerActor.pokemonList) },
             mechanicPolicy = {
                 requireNotNull(
                     Cobblemon173BattleRuleHooks.mechanicPolicy(
@@ -318,6 +322,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 PveLaunchResult.Unavailable
             } else {
                 Cobblemon173TrainerBody.battleStarted(player.uuid, battle.battleId)
+                sceneDirector.battleStarted()
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
@@ -345,6 +350,7 @@ class Cobblemon173ManagedAiBattleEngine(
                         { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
                         { BattleArenaHologramNetworking.hide(player, ended.battleId) },
                         { Cobblemon173TrainerBody.battleEnded(player.uuid, ended.battleId, player.server) },
+                        { sceneDirector.ended(outcome) },
                         {
                             trainerActor.closeBrains(
                                 BattleBrainCloseResult(

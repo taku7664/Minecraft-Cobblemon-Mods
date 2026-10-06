@@ -32,6 +32,7 @@ internal class ManagedPveBattleRuntime(
             contentId = prepared.contentId,
             diagnosticsLabel = "Managed PvE",
             appearance = prepared.appearance,
+            scenes = prepared.scenes,
         ),
     ) { end ->
         val outcome = end.outcome

@@ -102,6 +102,9 @@ internal object Cobblemon173TrainerBody {
         body.leaveAtTick = server.tickCount + LINGER_TICKS
     }
 
+    /** The trainer standing in [playerId]'s battle, if one is. */
+    fun of(playerId: UUID): NPCEntity? = bodies[playerId]?.npc
+
     /** Sends [playerId]'s trainer away at once. */
     fun dismiss(playerId: UUID) {
         bodies.remove(playerId)?.npc?.discard()
