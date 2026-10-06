@@ -1,6 +1,6 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-06 10:05] 트레이너 연출 캡처 하네스 `TrainerSceneCaptureHarness` (개발 전용)
+## [2026-10-06 10:02] 트레이너 연출 캡처 하네스 `TrainerSceneCaptureHarness` (개발 전용)
 
 - `MCC_SCENE_CAPTURE=1`과 `--quickPlaySingleplayer scene-capture`로 리그 개발 클라이언트를 띄우면, 난천 스킨 관리 전투(뮤츠 Lv100 사이코브레이크 vs 잉어킹 Lv5)를 시작하고 기술을 자동으로 고르고, 이기면 난천에게 종료 연출을 걸고, 두 번째 전투로 트레이너 수를 센다. 캡처는 `run/screenshots/trainer-scene-*.png`, 판정은 로그 `SCENE CHECK`. `scene-capture` 월드(`mcc-hub-capture` 복사본)가 아니면 멈춘다.
 - 개발 런타임에 배틀캠을 넣으려고 `runtimeOnly(:better-cobblemon-battlecam)`를 추가했다(JAR에는 들어가지 않는다). 결과는 MCC `MEMORY.md`.
