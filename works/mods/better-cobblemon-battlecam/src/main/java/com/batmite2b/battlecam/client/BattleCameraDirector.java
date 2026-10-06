@@ -309,7 +309,8 @@ public final class BattleCameraDirector {
         }
         double height = BattleCameraDirector.lerp(0.35, 0.1, eased) * scale;
         Vec3 cameraPos = face.add(front.scale(distance)).add(0.0, height, 0.0);
-        Vec3 lookAt = face.add(0.0, -0.12 * scale, 0.0);
+        // Aimed below the face, so the face sits in the upper part of the picture, clear of the dialogue box.
+        Vec3 lookAt = face.add(0.0, -0.45 * scale, 0.0);
         // A wall in the way moves the camera up or closer on the same line, never round to the side, so the speaker
         // keeps facing it.
         CameraPose pose = this.adjustFrontalCinematicPoseForObstructions(client,
