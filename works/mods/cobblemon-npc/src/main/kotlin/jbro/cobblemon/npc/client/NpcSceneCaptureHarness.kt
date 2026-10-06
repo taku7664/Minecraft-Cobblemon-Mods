@@ -91,9 +91,14 @@ internal object NpcSceneCaptureHarness {
                     }
                     next(2)
                 }
-                2 -> if (client.screen is NpcDialogueScreen && since(30)) {
-                    shot("1-talk")
-                    next(3)
+                // Frames every other tick while the letterbox slides in, then the settled talk.
+                2 -> if (client.screen is NpcDialogueScreen) {
+                    val opened = ticks - phaseTick
+                    if (opened % 2 == 0 && opened <= 12) shot("1-slide-${opened / 2}")
+                    if (opened >= 30) {
+                        shot("1-talk")
+                        next(3)
+                    }
                 }
                 3 -> if (since(60)) {
                     shot("2-talk-later")

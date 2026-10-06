@@ -166,7 +166,9 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     private fun boxRect(): UiRect {
         val width = (this.width * 0.73f).toInt().coerceIn(minOf(280, this.width - 24), 440)
         val height = BOX_HEIGHT.coerceAtMost(this.height - 8)
-        return UiRect((this.width - width) / 2, (this.height - height - 6).coerceAtLeast(4), width, height)
+        // Above the letterbox's bottom bar, never on it.
+        val top = this.height - height - 6 - CinematicLetterbox.bottomInset(this.height)
+        return UiRect((this.width - width) / 2, top.coerceAtLeast(4), width, height)
     }
 
     private fun drawBox(graphics: GuiGraphics) {
