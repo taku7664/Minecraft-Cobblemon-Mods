@@ -4,6 +4,7 @@
 
 - **빡대리님 지적:** "레터박스 위에 대화창 UI가 떠야 한다." 10:55 항목에서 대화창을 아래 띠 안의 자막으로 바꾼 것은 Claude가 지시를 잘못 읽은 것이다. "레터박스에 맞게 재구성"은 박스의 위치를 맞추라는 뜻이지 형태를 바꾸라는 뜻이 아니다.
 - **지금:** `SceneDialogue`는 전투 메시지 박스(`BattleDialogue.renderMessage`)와 이름표를 그대로 그리되, 띠(깊이 400) 위 깊이 450(`CinematicLetterbox.OVER_BARS_Z`)에 그린다. 아래 띠는 위 띠와 같은 높이로 고정(화면 11%, 20~48px)이고, 박스는 화면 아래쪽에서 띠를 덮으며 떠 있다. `renderCaption`, 자막 줄 수로 띠를 늘리던 처리는 지웠다. 띠 그리기는 `renderBars(context, z)`로 깊이를 받는다(`CinematicScreen`은 0에 그리고 그 위에 자기 박스를 그린다).
+- **배포 [2026-10-06 12:44]:** cobblemon-ui(클라이언트), 내장 사본을 맞춘 MCC·cobblemon-npc(클라이언트·서버). 해시·무결성 확인, 백업 `develop-product/deployment-backups/2026-10-06_1244-dialogue-box-over-letterbox`. 서버는 꺼진 그대로.
 - **그대로 둔 것:** HUD 카드를 위 띠 아래로 내리기, 연출 중 채팅·액션바·토스트·이름표 숨기기.
 
 ## [2026-10-06 10:55] 연출용 상하 레터박스 `CinematicLetterbox` (빌드·단위 테스트 275개·개발 클라이언트 캡처 확인)
