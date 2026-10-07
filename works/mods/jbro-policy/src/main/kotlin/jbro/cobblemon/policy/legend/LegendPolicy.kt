@@ -11,6 +11,8 @@ import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
 import com.cobblemon.mod.common.api.spawning.position.SpawnablePosition
 import com.cobblemon.mod.common.api.spawning.spawner.PlayerSpawnerFactory
 import com.cobblemon.mod.common.block.entity.PokeSnackBlockEntity
+import com.cobblemon.mod.common.entity.pokeball.EmptyPokeBallEntity
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import java.util.UUID
 import jbro.cobblemon.policy.JbroPolicy
@@ -23,7 +25,7 @@ import net.minecraft.server.level.ServerPlayer
  * player may battle or catch them. A Legend
  * appears only for players who have not caught it yet, hold its League rank and carry its entry Pokemon; since
  * Cobblenav lists spawns through the same spawner check, the Pokenav's spawn list follows along. The rank is checked
- * again on capture, in case it changed after the spawn.
+ * again when a ball hits, in case it changed after the spawn.
  */
 object LegendPolicy {
     private const val OWNER_KEY = "jbro_policy_legend_owner"
@@ -55,18 +57,24 @@ object LegendPolicy {
                 battle.players.forEach { deny(it, Component.translatable(KEY + "other_trainer")) }
             }
         }
-        CobblemonEvents.THROWN_POKEBALL_HIT.subscribe { event ->
-            val thrower = event.pokeBall.owner as? ServerPlayer ?: return@subscribe
-            val pokemon = event.pokemon.pokemon
-            val reason = captureDenial(thrower, pokemon) ?: return@subscribe
-            event.cancel()
-            deny(thrower, reason)
-        }
         CobblemonEvents.POKEMON_CAPTURED.subscribe { event ->
             val legend = legendOf(event.pokemon) ?: return@subscribe
             event.pokemon.persistentData.remove(OWNER_KEY)
             LegendRecords.get(event.player.server).add(event.player.uuid, legend.id)
         }
+    }
+
+    /**
+     * For the Poke Ball mixin, before Cobblemon's own battle handling: whether [ball] must not catch [target]. The
+     * thrower is told why; Cobblemon's checks still answer for Pokemon that are not wild.
+     */
+    @JvmStatic
+    fun refuseCapture(ball: EmptyPokeBallEntity, target: PokemonEntity): Boolean {
+        val thrower = ball.owner as? ServerPlayer ?: return false
+        if (!target.pokemon.isWild()) return false
+        val reason = captureDenial(thrower, target.pokemon) ?: return false
+        deny(thrower, reason)
+        return true
     }
 
     /** Why [player] may not catch [pokemon], or null when they may. */

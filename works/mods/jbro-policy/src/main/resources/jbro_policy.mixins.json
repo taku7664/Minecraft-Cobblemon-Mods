@@ -4,6 +4,7 @@
   "package": "jbro.cobblemon.policy.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "EmptyPokeBallLegendMixin",
     "ExplosionPlazaMixin",
     "FireBlockPlazaMixin",
     "FlowingFluidPlazaMixin",
