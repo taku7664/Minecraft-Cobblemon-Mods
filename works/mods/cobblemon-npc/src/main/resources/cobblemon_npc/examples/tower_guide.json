@@ -4,30 +4,47 @@
   "nodes": {
     "greet": {
       "lines": [
-        "안녕 {player},",
-        "오늘은 포켓몬 잘 잡았어?",
-        "배틀 타워 도전하러 온 거야?"
+        "안녕, {player}!",
+        "배틀타워에 도전하러 왔어?"
       ],
       "choices": [
-        { "text": "응, 도전할래!", "next": "check" },
-        { "text": "아니, 그냥 둘러보는 중이야.", "next": "bye" }
+        {
+          "text": "응, 도전할래!",
+          "next": "check"
+        },
+        {
+          "text": "아니, 그냥 둘러보는 중이야.",
+          "next": "bye"
+        }
       ]
     },
     "check": {
       "branches": [
-        { "if": "cmd:mcc tower access", "next": "open" }
+        {
+          "if": "cmd:mcc tower access",
+          "next": "open"
+        }
       ],
       "next": "not_yet"
     },
     "not_yet": {
-      "lines": [ "너는 아직 자격이 안 되는 것 같네..." ]
+      "lines": [
+        "아직 리그 챔피언이 아니구나.",
+        "배틀타워는 챔피언만 도전할 수 있어. 챔피언이 되면 다시 와!"
+      ]
     },
     "open": {
-      "lines": [ "좋아, 연승 많이 쌓고 와!" ],
-      "commands": [ "@server /mcc terminal tower" ]
+      "lines": [
+        "좋아, 연승 많이 쌓고 와!"
+      ],
+      "commands": [
+        "@server /mcc terminal tower"
+      ]
     },
     "bye": {
-      "lines": [ "그래, 준비되면 언제든 와!" ]
+      "lines": [
+        "그래, 준비되면 언제든 와!"
+      ]
     }
   }
 }

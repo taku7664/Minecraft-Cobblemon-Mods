@@ -3,16 +3,33 @@
   "start": "greet",
   "nodes": {
     "greet": {
-      "lines": [ "안녕, {player}! 포켓몬 리그에 온 걸 환영해." ],
+      "lines": [
+        "안녕, {player}! 포켓몬 리그에 온 걸 환영해."
+      ],
       "next": "progress"
     },
     "progress": {
       "branches": [
-        { "if": "cmd:mcc league check hard", "next": "hard_champion" },
-        { "if": "cmd:mcc league check champion", "next": "champion" },
-        { "if": "cmd:mcc league check badges 8", "next": "elite" },
-        { "if": "cmd:mcc league check badges 4", "next": "halfway" },
-        { "if": "cmd:mcc league check badges 1", "next": "started" }
+        {
+          "if": "cmd:mcc league check hard",
+          "next": "hard_champion"
+        },
+        {
+          "if": "cmd:mcc league check champion",
+          "next": "champion"
+        },
+        {
+          "if": "cmd:mcc league check badges 8",
+          "next": "elite"
+        },
+        {
+          "if": "cmd:mcc league check badges 4",
+          "next": "halfway"
+        },
+        {
+          "if": "cmd:mcc league check badges 1",
+          "next": "started"
+        }
       ],
       "next": "newcomer"
     },
@@ -33,7 +50,7 @@
     },
     "halfway": {
       "lines": [
-        "배지를 절반 넘게 모았구나!",
+        "배지를 벌써 절반이나 모았구나!",
         "뒤로 갈수록 관장들이 세지니 팀을 잘 다듬어 둬."
       ],
       "next": "menu"
@@ -60,18 +77,32 @@
       "next": "menu"
     },
     "menu": {
-      "lines": [ "지금 리그에 도전할래?" ],
+      "lines": [
+        "지금 리그에 도전할래?"
+      ],
       "choices": [
-        { "text": "응, 도전할래!", "next": "open" },
-        { "text": "다음에 할게.", "next": "bye" }
+        {
+          "text": "응, 도전할래!",
+          "next": "open"
+        },
+        {
+          "text": "다음에 할게.",
+          "next": "bye"
+        }
       ]
     },
     "open": {
-      "lines": [ "좋아, 행운을 빌게!" ],
-      "commands": [ "@server /mcc terminal league" ]
+      "lines": [
+        "좋아, 행운을 빌게!"
+      ],
+      "commands": [
+        "@server /mcc terminal league"
+      ]
     },
     "bye": {
-      "lines": [ "그래, 힘내!" ]
+      "lines": [
+        "그래, 힘내!"
+      ]
     }
   }
 }
