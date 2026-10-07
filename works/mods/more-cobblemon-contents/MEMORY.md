@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-08 08:50] `/mcc terminal`을 관리자 전용으로 (구현·커밋만, 빌드·배치 안 함)
+
+- **사용자 결정:** `/mcc terminal all|league|tower|factory`는 관리자 명령이어야 한다. 위키는 리그·타워·팩토리를 광장 터미널 8블록 안에서만 연다고 안내하는데, 본인 화면 열기는 `command_permission_level`(기본 0)을 따라 누구나 칠 수 있었다.
+- **구현:** `TerminalCommands`의 `terminal` 노드에 `isAdmin`(권한 2)을 걸었다. `BattleContentCommandsTest`를 플레이어 거부·운영자 허용으로 고쳤고, 루트 `README.md`도 바꿨다. NPC 대화는 `@server /mcc terminal ...`으로 연다(cobblemon-npc `MEMORY.md`).
+- **미확인:** 이 시점 작업 트리에 다른 세션의 Better AI 변경(`NativeBattleRootValidator.kt`의 `isBetterAiMarker` 미해결)이 있어 MCC 컴파일이 안 됐다. 테스트·빌드·배치 모두 못 했다. 그 작업이 정리되면 `-Ptests=BattleContentCommandsTest`로 확인하고 MCC JAR을 배치해야 한다. 그 전까지 개발 서버의 MCC는 예전대로 플레이어도 `/mcc terminal`을 칠 수 있다.
+
 ## [2026-10-08 07:50] 네이티브 재조정 실패 원인 추가 조사·수정, 남은 핵심 과제는 중간 재계획
 
 리그 26팀 감사로 전투마다 턴별 네이티브 상태를 펼쳐 보니, 거의 모든 전투가 1~3턴 재조정(`RECONCILIATION_FAILED`)에서 세션을 한 번 잃고 그 뒤 끝까지 `NOT_APPLICABLE`(레거시 탐색)이었다. 재조정이 왜 실패하는지 로그에 안 남아서 진단부터 넣었다.

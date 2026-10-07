@@ -2,7 +2,7 @@
 
 NPCs that talk in the Cobblemon UI dialogue box (`cobblemon_npc`). A talk is a set of nodes: lines to read, answers
 to pick, branches on conditions, and commands run as the talk moves on, so a line and a command follow each other
-naturally ("Here to take on the Battle Tower?" → `/mcc terminal tower`). The server runs every step; the client only
+naturally ("Here to take on the Battle Tower?" → `@server /mcc terminal tower`). The server runs every step; the client only
 shows pages and reports the answer. The mod bundles the UI kit (`cobblemon-ui`) the way More Cobblemon Contents does
 and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:unitTest`.
 
@@ -37,7 +37,7 @@ example `tower_guide.json`.
     },
     "check": { "branches": [{ "if": "cmd:mcc tower access", "next": "open" }], "next": "not_yet" },
     "not_yet": { "lines": ["You don't seem ready yet..."] },
-    "open": { "lines": ["Opening the terminal!"], "commands": ["/mcc terminal tower"] }
+    "open": { "lines": ["Opening the terminal!"], "commands": ["@server /mcc terminal tower"] }
   }
 }
 ```

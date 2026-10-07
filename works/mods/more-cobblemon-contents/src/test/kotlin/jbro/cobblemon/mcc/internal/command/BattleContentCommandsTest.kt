@@ -55,7 +55,7 @@ class BattleContentCommandsTest {
     }
 
     @Test
-    fun `players open their own terminals and operators may target players`() {
+    fun `only operators open terminals by command`() {
         val dir = java.nio.file.Files.createTempDirectory("mcc-command")
         val admin = listOf(MccAdminCommands::status, MccAdminCommands::records, MccAdminCommands::battle).map { make ->
             object : MccCommandContributor {
@@ -65,13 +65,13 @@ class BattleContentCommandsTest {
         fun root() = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = admin).build()
 
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
-        assertEquals(setOf("mcc", "mcc bp", "mcc bp history", "mcc bp history <count>") +
-            listOf("all", "league", "tower", "factory").map { "mcc terminal $it" }, runnable(root(), source(0)))
+        assertEquals(setOf("mcc", "mcc bp", "mcc bp history", "mcc bp history <count>"), runnable(root(), source(0)))
         val everything = runnable(root(), source(2))
         listOf("mcc status", "mcc records reset <player>", "mcc battle list", "mcc bp add <player> <amount>").forEach {
             assertTrue(it in everything, it)
         }
         listOf("all", "league", "tower", "factory").forEach {
+            assertTrue("mcc terminal $it" in everything)
             assertTrue("mcc terminal $it <player>" in everything)
         }
 
@@ -84,7 +84,7 @@ class BattleContentCommandsTest {
     }
 
     @Test
-    fun `each terminal command routes to its block id and rejects non operator targets`() {
+    fun `each terminal command routes to its block id and rejects players`() {
         val dispatcher = com.mojang.brigadier.CommandDispatcher<CommandSourceStack>()
         val calls = mutableListOf<Pair<String, Boolean>>()
         dispatcher.register(net.minecraft.commands.Commands.literal("mcc").then(TerminalCommands.build { _, id, targeted ->
@@ -98,11 +98,14 @@ class BattleContentCommandsTest {
             "factory" to "more_cobblemon_contents_battle_factory:battle_factory_terminal",
         )
         expected.forEach { (alias, id) ->
-            assertEquals(1, dispatcher.execute("mcc terminal $alias", source(0)))
-            assertEquals(id to false, calls.last())
+            org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
+                dispatcher.execute("mcc terminal $alias", source(0))
+            }
             org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
                 dispatcher.execute("mcc terminal $alias Alex", source(0))
             }
+            assertEquals(1, dispatcher.execute("mcc terminal $alias", source(2)))
+            assertEquals(id to false, calls.last())
             assertEquals(1, dispatcher.execute("mcc terminal $alias Alex", source(2)))
             assertEquals(id to true, calls.last())
         }
@@ -114,7 +117,7 @@ class BattleContentCommandsTest {
         val dispatcher = com.mojang.brigadier.CommandDispatcher<CommandSourceStack>()
         dispatcher.register(net.minecraft.commands.Commands.literal("mcc").then(TerminalCommands.build()))
         val failure = org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
-            dispatcher.execute("mcc terminal league", source(0))
+            dispatcher.execute("mcc terminal league", source(2))
         }
         assertTrue(failure.rawMessage.string.contains("command.more_cobblemon_contents.terminal.unavailable"))
     }

@@ -11,7 +11,10 @@ import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
-/** Opens the same configured tabs as a terminal, without requiring a physical block. */
+/**
+ * Opens the same configured tabs as a terminal, without requiring a physical block. Operators only: players open these
+ * at the plaza terminals, and an NPC opens one for a player through a dialogue command run as the server.
+ */
 internal object TerminalCommands {
     private const val KEY = "command.${MoreCobblemonContents.MOD_ID}.terminal"
     private val terminals = linkedMapOf(
@@ -23,13 +26,12 @@ internal object TerminalCommands {
 
     fun build(
         open: (CommandContext<CommandSourceStack>, ResourceLocation, Boolean) -> Int = ::open,
-    ) = Commands.literal("terminal").also { root ->
+    ) = Commands.literal("terminal").requires(BattleProgressCommands::isAdmin).also { root ->
         terminals.forEach { (name, identifier) ->
             val id = ResourceLocation.parse(identifier)
             root.then(Commands.literal(name)
                 .executes { open(it, id, false) }
                 .then(Commands.argument("player", EntityArgument.player())
-                    .requires(BattleProgressCommands::isAdmin)
                     .executes { open(it, id, true) }))
         }
     }

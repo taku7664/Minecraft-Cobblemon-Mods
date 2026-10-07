@@ -24,7 +24,7 @@
     },
     "open": {
       "lines": [ "좋아, 타워 터미널을 열어 줄게!" ],
-      "commands": [ "/mcc terminal tower" ]
+      "commands": [ "@server /mcc terminal tower" ]
     },
     "bye": {
       "lines": [ "그래, 준비되면 언제든 와!" ]
