@@ -222,3 +222,19 @@ Xaero 적용 코드를 종료된 개발 프로필에 직접 실행해 미니맵�
 기존 음성 채팅 아이콘 키의 `ONCE` 완료 기록은 마이크 음소거 새 규칙을 막지 않습니다.
 PvP룸 GUI 규칙도 자체 완료 기록을 사용합니다. 현재 개발 클라이언트의 두 새 완료 기록과
 뱃지 완료 기록은 다음 게임 시작 시 훅이 남깁니다.
+
+## 0.1.12 — 2026-10-07 단축키 프리셋 갱신
+
+- 개발 클라이언트: `develop-product/client/mods/cobblemon-client-setup-0.1.12.jar`. 게임 종료를 확인하고 0.1.11 JAR을 제거했습니다.
+- SHA-256: `4FEB43BFCA4DC864BBADD45188F00C70DD6C7731F0BCD6E44B79E0AF3189BDEB` (빌드본과 설치본 일치).
+- 웨이포인트 생성, 볼 비교, 탑승 자유 시점, 배낭 1·2번 기능 슬롯 키를 미지정으로 준비합니다. 패널 글자 작게는 =, 크게는 -, 별도 PvP 모드의 룸 GUI는 J, Zoomify 줌은 왼쪽 Alt, 월드맵은 N입니다.
+- PvP룸과 월드맵 완료 기록을 갱신하고 Zoomify 기본 줌에 독립 기록을 추가해 기존 ONCE 적용 기록이 있어도 새 프리셋을 적용합니다.
+- 검증: 64개 단위 테스트, Gradle build, JDK JAR 검증, 한·영 번역 키 일치 확인 통과.
+- 설치 후 게임을 재실행하지 않았습니다. 실제 preLaunch 실행과 게임 내 단축키 동작은 미확인입니다. 다음 실행에서 적용됩니다.
+
+## 0.1.13 — 2026-10-08 Accessories 화면 키 해제
+
+- 개발 클라이언트: `develop-product/client/mods/cobblemon-client-setup-0.1.13.jar`. 실행 중인 개발 클라이언트가 없는 것을 확인하고 0.1.12를 교체했습니다.
+- SHA-256: `626E6AE09BBE09B4A2D5BB68B20A39F72A87D1E88A45B39B48DD9D77FC2C2F74` (빌드본·설치본 일치).
+- Accessories의 실제 키 `key_accessories.key.open_accessories_screen`을 미지정으로 준비합니다. 새 `keybindings-accessories-v1` 기록을 사용하므로 기존 초기화가 끝난 프로필에서도 다음 실행에 한 번 적용합니다.
+- 검증: 64개 테스트와 Gradle build, JDK JAR 검증 통과. Accessories 1.1.0-beta.53의 번역 키와 개발 클라이언트 options.txt의 H 바인딩을 대조했습니다. 적용 후 실게임 입력은 미확인입니다.

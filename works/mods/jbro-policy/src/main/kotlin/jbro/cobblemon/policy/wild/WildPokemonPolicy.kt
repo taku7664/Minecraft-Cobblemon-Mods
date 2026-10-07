@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.pokemon.properties.HiddenAbilityProperty
 import java.util.concurrent.ThreadLocalRandom
 import jbro.cobblemon.policy.config.IvRange
 import jbro.cobblemon.policy.config.PolicyConfig
+import kotlin.random.Random
 
 /**
  * Wild Pokemon roll their IVs from the server's bands instead of uniformly, and any new Pokemon — wild, revived
@@ -21,6 +22,13 @@ object WildPokemonPolicy {
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe { event ->
             val pokemon = event.entity.pokemon
             if (config.wildIvEnabled) rollIvs(pokemon, config.wildIvRanges)
+            if (pokemon.isAlpha) {
+                val ivs = PERMANENT_STATS.map { pokemon.ivs[it] ?: 0 }
+                val guaranteed = WildRolls.alphaIvs(ivs, Random.Default)
+                PERMANENT_STATS.forEachIndexed { index, stat ->
+                    if (guaranteed[index] != ivs[index]) pokemon.setIV(stat, guaranteed[index])
+                }
+            }
             applyHiddenAbilityChance(pokemon)
         }
         CobblemonEvents.FOSSIL_REVIVED.subscribe { event -> applyHiddenAbilityChance(event.pokemon) }

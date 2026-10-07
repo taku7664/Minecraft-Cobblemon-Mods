@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-08 00:34] Accessories 화면 열기 기본 단축키 해제
+
+- **구현:** 커밋 `f1e4fc3b`, 셋업 0.1.13. `accessories` 모드가 있을 때 `key_accessories.key.open_accessories_screen`을 `unknown`으로 준비한다. 독립적인 `keybindings-accessories-v1` 기록을 사용하므로 기존 단축키 적용 기록과 별개로 한 번 적용된다. 한국어·영어 도움말도 갱신했다.
+- **확인·빌드:** 실제 설치된 Accessories `1.1.0-beta.53`의 메타데이터·번역과 options의 H 설정을 확인했다. 셋업 빌드, 테스트 64개, JAR 검증 통과.
+- **개발 클라이언트 배포:** 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods`의 `develop-product/client/mods`에만 0.1.13을 설치하고 0.1.12를 제거했다. SHA-256은 `626E6AE09BBE09B4A2D5BB68B20A39F72A87D1E88A45B39B48DD9D77FC2C2F74`다.
+- **적용·검증 경계:** 다음 클라이언트 시작에서 훅이 적용된다. 실제 게임 입력은 확인하지 않았다. 소스 커밋은 `codex/alpha-two-perfect-ivs`에 push했고 원격 동기화를 확인했다.
+
 ## [2026-10-04 17:15] Xaero 현재 바이옴을 좌표 아래에 기본 표시
 
 - **빡대리 지시:** Xaero 미니맵의 현재 바이옴 이름을 좌표 아래에 기본 표시하고 클라이언트 시작 훅에도 반영한다.

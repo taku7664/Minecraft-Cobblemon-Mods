@@ -20,9 +20,21 @@ public final class KeybindingSetup {
         new Rule("voicechat", List.of("key_key.mute_microphone"),
             "keybindings-voicechat-microphone-v1", "key.keyboard.unknown"),
         new Rule("zoomify", List.of("key_zoomify.key.zoom.secondary")),
+        new Rule("zoomify", List.of("key_zoomify.key.zoom"),
+            "keybindings-zoomify-primary-v1", "key.keyboard.left.alt"),
         new Rule("pokebadges", List.of("key_key.pokebadges.open_badgebox")),
+        new Rule("accessories", List.of("key_accessories.key.open_accessories_screen")),
         new Rule("more_cobblemon_contents_pvp", List.of("key_key.more_cobblemon_contents.pvp.room_hud.open"),
-            "keybindings-more_cobblemon_contents_pvp-room-open-v1", "key.keyboard.tab"),
+            "keybindings-more_cobblemon_contents_pvp-room-open-v2", "key.keyboard.j"),
+        new Rule("jbro_policy", List.of("key_key.jbro_policy.quick_waypoint")),
+        new Rule("catchrate-display", List.of("key_key.catchrate.show_comparison")),
+        new Rule("cobblemon_ui", List.of("key_key.cobblemon_ui.decrease_font"),
+            "keybindings-cobblemon_ui-decrease-font-v1", "key.keyboard.equal"),
+        new Rule("cobblemon_ui", List.of("key_key.cobblemon_ui.increase_font"),
+            "keybindings-cobblemon_ui-increase-font-v1", "key.keyboard.minus"),
+        new Rule("cobblemon", List.of("key_key.cobblemon.ridingfreelook")),
+        new Rule("sophisticatedbackpacks", List.of("key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
+            "key_keybind.sophisticatedbackpacks.toggle_upgrade_2")),
         new Rule("craftingtweaks", List.of("key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack")));
 
     private KeybindingSetup() {}
