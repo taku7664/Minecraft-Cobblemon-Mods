@@ -217,8 +217,9 @@ internal class PvpHubTab : MccHubTabContent {
         MccHubKit.strip(host, layout.strip, room("title"), room("browser.summary", rooms.size))
         var body = MccHubKit.card(host, layout.body, room("browser.title"), MccHubKit.CardTone.FEATURE)
         PvpHubClient.listFeedbackKey?.let { key ->
-            val (line, rest) = MccHubKit.lineAbove(body)
-            MccHubKit.text(host, line, Component.translatable(key, *PvpHubClient.listFeedbackArgs.toTypedArray())) { it.colors.accentDanger }
+            val feedback = Component.translatable(key, *PvpHubClient.listFeedbackArgs.toTypedArray())
+            val (line, rest) = MccHubKit.lineAbove(body, feedbackHeight(feedback, body.width))
+            MccHubKit.text(host, line, feedback) { it.colors.accentDanger }
             body = rest
         }
         MccHubKit.pagedList(host, body, rooms.map { summary ->
@@ -283,11 +284,11 @@ internal class PvpHubTab : MccHubTabContent {
         if (MccHubKit.choiceMode(settingsArea.width, settingsArea.height, rows) == MccHubKit.ChoiceMode.COMPACT) {
             // A short card toggles visibility and format side by side, and lists one mechanic per row below them,
             // all with small controls so the four mechanics fit without scrolling where they can.
-            val feedback = controller.feedbackKey
+            val feedback = roomFeedback(controller)
             val parts = UiLayout.column(gap = MccHubKit.GAP) {
                 fixed(MccHubKit.controlHeight(UiControlSize.SMALL), "toggles")
                 weight("list", min = 1)
-                if (feedback != null) fixed(10, "feedback")
+                if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
             }.solve(body)
             val toggles = parts["toggles"]
             val visibility = state.settings.visibility
@@ -300,9 +301,7 @@ internal class PvpHubTab : MccHubTabContent {
                     updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries[(format.ordinal + 1) % PvpBattleFormat.entries.size]))
                 },
             ), UiControlSize.SMALL)
-            feedback?.let { key ->
-                MccHubKit.text(host, parts["feedback"], Component.translatable(key, *controller.feedbackArgs.toTypedArray())) { it.colors.accentDanger }
-            }
+            feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
             scrollable = MccHubKit.scrollList(host, parts["list"],
                 PvpBattleMechanic.entries.map { mechanic ->
                     val enabled = mechanic in mechanics
@@ -310,14 +309,12 @@ internal class PvpHubTab : MccHubTabContent {
                         selected = enabled, enabled = editable, tooltip = room("group.mechanics")) { toggleMechanic(mechanic) }
                 }, PvpHubClient.mechanicsOffset, UiControlSize.SMALL) { PvpHubClient.mechanicsOffset = it }
         } else {
-            val feedback = controller.feedbackKey
+            val feedback = roomFeedback(controller)
             val parts = UiLayout.column(gap = MccHubKit.GAP) {
-                if (feedback != null) fixed(10, "feedback")
+                if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
                 weight("spectators")
             }.solve(MccHubKit.below(body, MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2))
-            feedback?.let { key ->
-                MccHubKit.text(host, parts["feedback"], Component.translatable(key, *controller.feedbackArgs.toTypedArray())) { it.colors.accentDanger }
-            }
+            feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
             val spectators = parts["spectators"]
             if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
         }
@@ -596,6 +593,17 @@ internal data class PvpHubLayout(val strip: UiRect, val body: UiRect, val footer
             return PvpHubLayout(layout["strip"], layout["body"], layout["footer"])
         }
     }
+}
+
+private const val MAX_FEEDBACK_LINES = 3
+
+private fun roomFeedback(controller: PvpRoomScreenController): Component? =
+    controller.feedbackKey?.let { Component.translatable(it, *controller.feedbackArgs.toTypedArray()) }
+
+/** Room for [text] wrapped to [width], so a long rejection reads in full instead of losing its end. */
+private fun feedbackHeight(text: Component, width: Int): Int {
+    val font = Minecraft.getInstance().font
+    return font.split(text, width.coerceAtLeast(1)).size.coerceIn(1, MAX_FEEDBACK_LINES) * (font.lineHeight + 1)
 }
 
 private fun room(key: String, vararg args: Any): Component = Component.translatable("screen.more_cobblemon_contents.pvp.room.$key", *args)
