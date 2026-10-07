@@ -1,0 +1,18 @@
+PokemonFusion (Fabric)
+Author listed in fabric.mod.json: Park_JH
+
+This module's code, documentation and newly generated local icon concept are
+provided under CC0-1.0 to the extent the contributors hold the relevant rights.
+See LICENSE (LICENSE_pokefusion in distributed JARs) for the unmodified text.
+The module-specific CC0 declaration is separate from the repository root's
+MIT license. It does not relicense other modules or dependencies.
+
+Minecraft, Fabric, Cobblemon and PokemonToItem are separate projects and
+remain subject to their respective licenses. Dependency JARs are not bundled
+by this module's build configuration. Names and trademarks remain with their
+respective owners. CC0 does not grant trademark or patent rights.
+This is an unofficial addon.
+
+Icon provenance: generated with the built-in ImageGen tool on 2026-10-07,
+without reference images or imported game artwork. This concept is not an
+upload-ready Modrinth project icon. See ICON.md for the prompt and limitations.

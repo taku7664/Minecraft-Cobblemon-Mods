@@ -3,9 +3,14 @@
   "id": "pokefusion",
   "version": "${version}",
   "name": "PokemonFusion (Fabric)",
-  "description": "Fuses IVs from up to nine PokemonToItem Pokemon.",
+  "description": "Improve a base Pokemon's IVs using up to nine PokemonToItem materials from its evolution family. Preview the result before consuming the materials.",
   "authors": ["Park_JH"],
   "license": "CC0-1.0",
+  "icon": "assets/pokefusion/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/pokefusion",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
   "environment": "*",
   "entrypoints": {
     "main": [

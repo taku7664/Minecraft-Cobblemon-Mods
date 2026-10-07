@@ -32,6 +32,11 @@ tasks.processResources {
     filesMatching("fabric.mod.json") { expand("version" to modVersion) }
 }
 
+tasks.jar {
+    from("LICENSE") { rename { "LICENSE_pokefusion" } }
+    from("NOTICE") { rename { "NOTICE_pokefusion" } }
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
 }
@@ -39,6 +44,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     withSourcesJar()
+}
+
+tasks.named<Jar>("sourcesJar") {
+    from("LICENSE") { rename { "LICENSE_pokefusion" } }
+    from("NOTICE") { rename { "NOTICE_pokefusion" } }
 }
 
 val unitTest by tasks.registering(JavaExec::class) {
