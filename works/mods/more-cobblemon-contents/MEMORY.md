@@ -10,7 +10,7 @@
 - **빡대리님 신고:** 트레이너 전투가 끝나고 대화창이 뜨면 같은 노래가 다시 재생된다.
 - **원인(클라이언트 로그로 확인):** 전투가 끝나는 순간 음악 선택이 `battle.content:...league_challenge/wild_trainer`에서 `battle.trainer`로 바뀌었다(00:57:22, 01:00:19). 서버가 전투를 끝내며 `HideManagedBattleContentPayload`를 보내면 클라이언트가 태그를 바로 지웠는데, `BattleSceneClient`가 마무리 대사 동안 `BattleEndHandler`를 붙잡아 클라이언트 전투(`CobblemonClient.battle`)는 아직 살아 있었다. Better Cobblemon Music이 콘텐츠 키를 잃고 일반 트레이너 곡을 새로 골라 처음부터 틀었다.
 - **수정:** `ManagedBattleContentClientNetworking`이 지금 보이는 전투의 숨김 요청은 `endingBattles`에 미뤄 두고, 클라이언트 전투가 바뀌거나 사라지면 그때 지운다. 같은 전투를 다시 보여 주면 미룬 숨김을 취소한다.
-- **빌드·배포·검증:** 01:06 빌드한 JAR(SHA-256 앞자리 284c7eef, 수정 클래스 포함 확인)이 다른 세션의 01:14 배포(10f29f6f 항목)로 서버·클라이언트에 이미 들어갔다. 그 빌드의 Better AI 테스트는 기록 시점에 아직 돌고 있었다. 실게임 미확인.
+- **빌드·배포·검증:** 01:06 빌드한 JAR(SHA-256 앞자리 284c7eef, 수정 클래스 포함 확인)이 다른 세션의 01:14 배포(10f29f6f 항목)로 서버·클라이언트에 이미 들어갔다. 그 빌드(`:more-cobblemon-contents:build`)는 테스트 2188개 중 12개가 실패했다. 모두 Better AI 쪽(LocalForesight*, LocalMaterialOwnership, Native*ProductBrainIntegration, EngineReplayMock 3개 등)으로 이 수정과 겹치는 코드가 없다. 원인은 따로 보지 않았다. 실게임 미확인.
 
 ## [2026-10-08 01:20] 리그 전투에서 네이티브 탐색이 안 돌던 원인: 상대 팀 프리뷰 누락
 
