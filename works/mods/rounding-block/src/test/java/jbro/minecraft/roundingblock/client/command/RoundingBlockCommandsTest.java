@@ -15,6 +15,7 @@ class RoundingBlockCommandsTest {
         var root = dispatcher.getRoot().getChild("roundingblock");
 
         assertNotNull(root.getChild("show"));
+        assertNotNull(root.getChild("config"));
         assertNotNull(root.getChild("reload"));
         assertNotNull(root.getChild("enabled").getChild("value"));
         assertNotNull(root.getChild("quality").getChild("radius").getChild("value"));

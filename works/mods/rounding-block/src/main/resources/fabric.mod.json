@@ -4,7 +4,9 @@
   "version": "${version}",
   "name": "Rounding-Block",
   "description": "Rounds exposed block edges and fills water contacts while preserving Minecraft's block grid.",
-  "authors": ["jbro"],
+  "authors": [
+    "jbro"
+  ],
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
@@ -22,7 +24,6 @@
     "java": ">=21"
   },
   "suggests": {
-    "modmenu": "*",
-    "cloth-config": "*"
+    "modmenu": "*"
   }
 }

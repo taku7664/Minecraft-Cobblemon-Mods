@@ -18,6 +18,7 @@ import java.util.function.UnaryOperator;
 import jbro.minecraft.roundingblock.client.render.RoundedBlockModel;
 import jbro.minecraft.roundingblock.client.render.fluid.RoundedWaterRenderHandler;
 import jbro.minecraft.roundingblock.client.settings.RoundingBlockConfig;
+import jbro.minecraft.roundingblock.client.settings.RoundingBlockConfigScreen;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
@@ -42,6 +43,11 @@ public final class RoundingBlockCommands {
 
     static LiteralArgumentBuilder<FabricClientCommandSource> build(Path configPath) {
         return literal("roundingblock")
+                .then(literal("config").executes(context -> {
+                    Minecraft client = Minecraft.getInstance();
+                    client.execute(() -> client.setScreen(new RoundingBlockConfigScreen(client.screen)));
+                    return 1;
+                }))
                 .then(literal("show").executes(context -> show(context.getSource())))
                 .then(literal("reload").executes(context -> reloadFromDisk(context.getSource(), configPath)))
                 .then(literal("enabled")

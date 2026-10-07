@@ -21,7 +21,7 @@ class RoundingBlockModuleContractTest {
                 json.contains("jbro.minecraft.roundingblock.client.settings.RoundingBlockModMenu"),
                 "Mod Menu entrypoint must name the Rounding-Block config screen factory"
             );
-            assertTrue(json.contains("\"cloth-config\": \"*\""), "Cloth Config must be declared as optional");
+            assertFalse(json.contains("cloth-config"), "The native settings screen must not depend on Cloth Config");
             assertFalse(json.toLowerCase().contains("iris"));
             assertFalse(json.toLowerCase().contains("sodium"));
         }

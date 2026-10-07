@@ -4,7 +4,6 @@ plugins {
 
 repositories {
     maven("https://maven.terraformersmc.com/releases/")
-    maven("https://maven.shedaniel.me/")
 }
 
 version = property("rounding_block_version")!!
@@ -19,7 +18,6 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
 
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
-    modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-console-standalone:1.11.4")
