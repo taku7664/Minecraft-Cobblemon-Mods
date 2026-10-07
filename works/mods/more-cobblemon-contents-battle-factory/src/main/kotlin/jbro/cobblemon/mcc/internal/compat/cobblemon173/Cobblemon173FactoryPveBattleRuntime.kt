@@ -9,6 +9,8 @@ import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
 import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleLaunchResult
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleFormat
@@ -49,7 +51,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                 trainerAiSkill = prepared.request.aiSkill,
                 trainerProfile = prepared.trainerProfile,
                 learningScopeId = null,
-                opponentTeamPreview = null,
+                opponentTeamPreview = playerTeamPreview(prepared.playerTeam),
                 mechanic = null,
                 format = prepared.request.playerTeam.format.toBrainFormat(),
                 brainSelectionContext = prepared.brainSelectionContext,
@@ -84,6 +86,21 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             PveLaunchResult.Unavailable -> FactoryBattleLaunchResult.Unavailable
         }
     }
+
+    // The trainer's native search starts only from a known opponent roster. The chosen
+    // rentals all enter the battle, so the preview is that team in battle order.
+    private fun playerTeamPreview(team: List<BattlePokemon>) = BattleOpponentTeamPreviewView(
+        selectionSize = team.size,
+        pokemon = team.mapIndexed { slot, battlePokemon ->
+            val pokemon = battlePokemon.effectedPokemon
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = slot,
+                speciesId = pokemon.species.resourceIdentifier.toString(),
+                formId = pokemon.form.name.takeUnless { pokemon.form == pokemon.species.standardForm },
+                level = pokemon.level,
+            )
+        },
+    )
 
     /** `regular`, or `factory_head` for the Factory Head's battles. */
     private fun tag(prepared: FactoryPreparedPveBattle<BattlePokemon>) = MccBattleTag(
