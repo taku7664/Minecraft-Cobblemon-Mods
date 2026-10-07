@@ -163,7 +163,12 @@ internal object EmbeddedTeamInput {
                         val resource = id(source).takeIf(String::isNotEmpty)
                         if (resource != null) when {
                             source.startsWith("item: ") -> owner.item = resource
-                            source.startsWith("ability: ") -> owner.ability = resource
+                            source.startsWith("ability: ") -> {
+                                owner.ability = resource
+                                events += BattleObservedEventView(index.toLong() * 2, eventTurn,
+                                    BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
+                                    actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
+                            }
                         }
                     }
                 }
@@ -171,7 +176,11 @@ internal object EmbeddedTeamInput {
                 "move" -> current?.let { it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3])) }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
-                "-ability" -> current?.let { it.ability = id(p[3]); it.abilityEnded = false }
+                // The game's observer records every ability reveal as an event; the native opening pins it to the set.
+                "-ability" -> current?.let {
+                    it.ability = id(p[3]); it.abilityEnded = false
+                    event(BattleObservedEventKind.ABILITY_REVEALED, id(p[3]))
+                }
                 "-endability" -> current?.let { it.abilityEnded = true }
                 "-item" -> current?.let { it.item = id(p[3]) }
                 "-enditem" -> current?.let { it.item = null }
