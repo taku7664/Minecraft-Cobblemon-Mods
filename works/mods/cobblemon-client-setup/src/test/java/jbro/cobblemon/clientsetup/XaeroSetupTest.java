@@ -29,7 +29,7 @@ final class XaeroSetupTest {
         assertEquals(ClientSetup.ApplyMode.ALWAYS, XaeroSetup.mode(config()));
         String keys = Files.readString(options());
         assertTrue(keys.startsWith("version:3955\n"));
-        assertTrue(keys.contains("key_gui.xaero_open_map:key.keyboard.j\n"));
+        assertTrue(keys.contains("key_gui.xaero_open_map:key.keyboard.n\n"));
         assertTrue(keys.contains("key_gui.xaero_minimap_settings:key.keyboard.y\n"));
         assertTrue(keys.contains("key_gui.xaero_instant_waypoint:key.keyboard.unknown\n"));
         assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
@@ -147,12 +147,13 @@ final class XaeroSetupTest {
     @Test void onceModeReappliesNewWaypointPolicyAfterOldPresetWasMarkedDone() throws Exception {
         XaeroSetup.saveMode(config(), ClientSetup.ApplyMode.ONCE);
         Path state = config().resolve("cobblemon-client-setup/applied-defaults.properties");
-        write(state, "xaero-xaerominimap-v1=true\nxaero-xaeroworldmap-v1=true\n");
+        write(state, "xaero-xaerominimap-v1=true\nxaero-xaeroworldmap-v2=true\n");
         assertEquals(2, XaeroSetup.apply(game, config(), MAPS));
         assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
         assertTrue(Files.readString(worldmap()).contains("map_teleport_allowed = false"));
         assertTrue(Files.readString(state).contains("xaero-xaerominimap-v3=true"));
-        assertTrue(Files.readString(state).contains("xaero-xaeroworldmap-v2=true"));
+        assertTrue(Files.readString(state).contains("xaero-xaeroworldmap-v3=true"));
+        assertTrue(Files.readString(options()).contains("key_gui.xaero_open_map:key.keyboard.n\n"));
         assertEquals(0, XaeroSetup.apply(game, config(), MAPS));
     }
 

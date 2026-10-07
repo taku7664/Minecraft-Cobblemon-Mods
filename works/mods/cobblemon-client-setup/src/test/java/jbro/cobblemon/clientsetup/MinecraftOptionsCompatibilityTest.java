@@ -48,7 +48,7 @@ final class MinecraftOptionsCompatibilityTest {
     @Test void freshXaeroOnlyOptionsPassMinecraftMigration() throws Exception {
         XaeroSetup.apply(gameDirectory, gameDirectory.resolve("config"), Set.of("xaerominimap", "xaeroworldmap"));
         CompoundTag migrated = readWithMinecraftMigration(Files.readString(gameDirectory.resolve("options.txt")));
-        assertEquals("key.keyboard.j", migrated.getString("key_gui.xaero_open_map"));
+        assertEquals("key.keyboard.n", migrated.getString("key_gui.xaero_open_map"));
         assertEquals("key.keyboard.unknown", migrated.getString("key_gui.xaero_instant_waypoint"));
     }
 

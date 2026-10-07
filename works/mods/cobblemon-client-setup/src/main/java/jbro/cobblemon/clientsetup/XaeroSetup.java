@@ -82,7 +82,7 @@ public final class XaeroSetup {
         String options = SetupFiles.seedOptions(read(optionsFile));
         boolean removeJourneyMap = !installedMods.contains("journeymap");
         if (removeJourneyMap) options = options.replaceAll("(?m)^key_key\\.journeymap\\.[^\\r\\n]*(?:\\r?\\n|\\r|$)", "");
-        if (worldmap) options = option(options, "key_gui.xaero_open_map", "key.keyboard.j");
+        if (worldmap) options = option(options, "key_gui.xaero_open_map", "key.keyboard.n");
         if (minimap) {
             options = option(options, "key_gui.xaero_minimap_settings", "key.keyboard.y");
             for (String key : List.of("new_waypoint", "waypoints_key", "instant_waypoint", "toggle_waypoints", "toggle_map_waypoints", "switch_waypoint_set", "display_all_sets"))
@@ -112,7 +112,7 @@ public final class XaeroSetup {
     }
 
     private static String marker(String modId) {
-        return "xaero-" + modId + (modId.equals("xaerominimap") ? "-v3" : "-v2");
+        return "xaero-" + modId + "-v3";
     }
     private static String read(Path file) throws IOException { return Files.exists(file) ? Files.readString(file) : ""; }
     private static String profile(Path file) throws IOException {

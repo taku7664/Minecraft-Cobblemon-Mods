@@ -31,7 +31,7 @@ final class KeybindingSetupTest {
     @Test void clearsOnlyApprovedKeysAndKeepsOtherOptionsByteForByte() throws Exception {
         String other = "\uFEFFversion:3955\r\nkey_key.accessories.open:key.keyboard.h\r\n"
             + "key_key.more_cobblemon_contents.battle_info:key.keyboard.tab\r\n"
-            + "key_zoomify.key.zoom:key.keyboard.c\r\nresourcePacks:[\"vanilla\"]\r\n";
+            + "key_zoomify.key.zoom:key.keyboard.left.alt\r\nresourcePacks:[\"vanilla\"]\r\n";
         String original = other;
         for (String key : KEYS) original += key + ":key.keyboard.h\r\n";
         Files.writeString(optionsFile(), original);
@@ -83,11 +83,47 @@ final class KeybindingSetupTest {
         assertEquals(2, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "more_cobblemon_contents_pvp")));
         assertEquals("key_key.hide_icons:key.keyboard.j\n"
             + "key_key.mute_microphone:key.keyboard.unknown\n"
-            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.tab\n", Files.readString(optionsFile()));
+            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.j\n", Files.readString(optionsFile()));
         String state = Files.readString(stateFile());
         assertTrue(state.contains("keybindings-voicechat-microphone-v1=true"));
-        assertTrue(state.contains("keybindings-more_cobblemon_contents_pvp-room-open-v1=true"));
+        assertTrue(state.contains("keybindings-more_cobblemon_contents_pvp-room-open-v2=true"));
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "more_cobblemon_contents_pvp")));
+    }
+
+    @Test void revisedPresetsApplyOnceDespitePreviousCompletionAndPreserveOtherKeys() throws Exception {
+        Files.createDirectories(stateFile().getParent());
+        Files.writeString(stateFile(), "keybindings-zoomify-v1=true\nkeybindings-more_cobblemon_contents_pvp-room-open-v1=true\n");
+        String untouched = "key_key.more_cobblemon_contents.pvp.room_hud.toggle:key.keyboard.h\n"
+            + "key_key.cobblemon_ui.select_action:key.keyboard.z\n"
+            + "key_key.cobblemon_ui.cancel_action:key.keyboard.x\n"
+            + "key_keybind.sophisticatedbackpacks.open_backpack:key.keyboard.b\n";
+        Files.writeString(optionsFile(), untouched
+            + "key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
+            + "key_key.catchrate.show_comparison:key.keyboard.g\n"
+            + "key_key.cobblemon_ui.decrease_font:key.keyboard.left.bracket\n"
+            + "key_key.cobblemon_ui.increase_font:key.keyboard.right.bracket\n"
+            + "key_key.cobblemon.ridingfreelook:key.keyboard.left.alt\n"
+            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.tab\n"
+            + "key_zoomify.key.zoom:key.keyboard.c\n"
+            + "key_keybind.sophisticatedbackpacks.toggle_upgrade_1:key.keyboard.z\n"
+            + "key_keybind.sophisticatedbackpacks.toggle_upgrade_2:key.keyboard.x\n");
+        Set<String> mods = Set.of("jbro_policy", "catchrate-display", "cobblemon_ui", "cobblemon",
+            "more_cobblemon_contents_pvp", "zoomify", "sophisticatedbackpacks");
+        assertEquals(7, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
+        String updated = Files.readString(optionsFile());
+        assertTrue(updated.startsWith(untouched));
+        for (String key : List.of("key_key.jbro_policy.quick_waypoint", "key_key.catchrate.show_comparison",
+            "key_key.cobblemon.ridingfreelook", "key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
+            "key_keybind.sophisticatedbackpacks.toggle_upgrade_2")) {
+            assertTrue(updated.contains(key + ":key.keyboard.unknown\n"));
+        }
+        assertTrue(updated.contains("key_key.cobblemon_ui.decrease_font:key.keyboard.equal\n"));
+        assertTrue(updated.contains("key_key.cobblemon_ui.increase_font:key.keyboard.minus\n"));
+        assertTrue(updated.contains("key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.j\n"));
+        assertTrue(updated.contains("key_zoomify.key.zoom:key.keyboard.left.alt\n"));
+        Files.writeString(optionsFile(), untouched);
+        assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
+        assertEquals(untouched, Files.readString(optionsFile()));
     }
 
     @Test void absentModsAreSkippedAndLaterInstallationHasItsOwnOnceRecord() throws Exception {
@@ -98,14 +134,14 @@ final class KeybindingSetupTest {
         assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "zoomify")));
-        assertEquals("key_key.hide_icons:key.keyboard.j\nkey_zoomify.key.zoom.secondary:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("key_key.hide_icons:key.keyboard.j\nkey_zoomify.key.zoom.secondary:key.keyboard.unknown\nkey_zoomify.key.zoom:key.keyboard.left.alt\n", Files.readString(optionsFile()));
         assertFalse(Files.exists(craftingFile()));
     }
 
     @Test void freshProfileSeedsBindingsBeforeMinecraftLoadsOptions() throws Exception {
         KeybindingSetup.apply(gameDirectory, configDirectory(), MODS);
         String options = Files.readString(optionsFile());
-        assertEquals(8, options.lines().count());
+        assertEquals(9, options.lines().count());
         assertTrue(options.startsWith("version:3955\n"));
         for (String key : KEYS) assertTrue(options.contains(key + ":key.keyboard.unknown\n"));
     }
