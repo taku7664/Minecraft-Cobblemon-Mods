@@ -7,10 +7,10 @@
 
 ## [2026-10-08 01:20] 리그 전투에서 네이티브 탐색이 안 돌던 원인: 상대 팀 프리뷰 누락
 
-- **원인(코드로 확인):** 리그가 쓰는 `ManagedPveBattles.start`가 `ManagedPvePrepared`에 `preview`를 넘기지 않아 `opponentTeamPreview`가 늘 `null`이었다. `isOpeningCandidate`가 프리뷰를 요구해서 0~1턴에도 `NOT_APPLICABLE`로 끝났다. 같은 이유로 보스·고급 난이도의 상대 개체값 읽기(`actualOpponentStatSpreadsByPreviewSlot`)도 빈 값이었다. 타워는 자기 런타임에서 프리뷰를 넘겨서 해당이 없다. 팩토리는 `opponentTeamPreview = null`이라 같은 문제가 남아 있다(미수정).
+- **원인(코드로 확인):** 리그가 쓰는 `ManagedPveBattles.start`가 `ManagedPvePrepared`에 `preview`를 넘기지 않아 `opponentTeamPreview`가 늘 `null`이었다. `isOpeningCandidate`가 프리뷰를 요구해서 0~1턴에도 `NOT_APPLICABLE`로 끝났다. 같은 이유로 보스·고급 난이도의 상대 개체값 읽기(`actualOpponentStatSpreadsByPreviewSlot`)도 빈 값이었다. 타워는 자기 런타임에서 프리뷰를 넘겨서 해당이 없다. 팩토리도 `opponentTeamPreview = null`이라 같은 문제였다. 고른 대여 포켓몬으로 프리뷰를 넘기게 고쳤다(커밋 `567ca1bb`).
 - **구현:** 잠긴 파티 전원을 종·폼·레벨로 프리뷰에 넣는다(`selectionSize` = 파티 수, 형식은 타워와 같음). 커밋 `3f02d262`. API 시그니처는 그대로라 애드온 재빌드는 필요 없다.
 - **빌드:** `:more-cobblemon-contents:assemble` 성공, JAR 무결성 확인.
-- **JAR 배치:** 안 함. 개발 서버와 클라이언트가 켜져 있었다.
+- **JAR 배치:** MCC와 팩토리 JAR을 개발 서버·클라이언트에 교체(둘 다 꺼진 것 확인). 배치한 JAR에 `playerTeamPreview`가 들어간 것 확인. 기존 JAR은 `develop-product/deployment-backups/20261008-native-preview`. 서버는 켜지 않았다.
 - **미확인:** 프리뷰가 들어간 뒤 계획 단계(`planWorlds`)를 통과하는지. 실패하면 로그에 `status=PLANNING_FAILED`와 상세 코드가 남고 레거시 탐색으로 넘어간다.
 
 ## [2026-10-08 00:52] 보스 판단 6초 상한 배치, 네이티브 탐색이 실전에서 한 번도 안 돈 문제 발견
