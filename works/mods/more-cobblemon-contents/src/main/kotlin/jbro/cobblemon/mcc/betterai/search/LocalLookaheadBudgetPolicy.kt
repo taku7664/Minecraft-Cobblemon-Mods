@@ -23,9 +23,10 @@ internal object LocalLookaheadBudgetPolicy {
     /**
      * One wall-clock ceiling for every tier; the node and chance-branch limits make the tiers differ. At
      * 1.5 s a Boss doubles search stopped before finishing a single turn in 20 of 22 decisions of a real
-     * battle, so the clock, not the tier, decided how far it saw.
+     * battle, so the clock, not the tier, decided how far it saw. Once level 100 teams stopped skipping the
+     * search, 10 s made a Boss turn feel stalled; 6 s is the player's wait the whole decision may take.
      */
-    const val MAX_TIME_MILLIS = 10_000L
+    const val MAX_TIME_MILLIS = 6_000L
 
     fun forTier(tier: BattleTrainerTier): LocalLookaheadBudget = when (tier) {
         BattleTrainerTier.INTRODUCTORY -> LocalLookaheadBudget(

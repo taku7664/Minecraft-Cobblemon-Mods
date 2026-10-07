@@ -57,17 +57,4 @@ class BattleDecisionDiagnosticsTest {
             ),
         )
     }
-
-    @Test
-    fun `AI test only unbounded time tag survives the operational whitelist`() {
-        val summary = BattleDecisionDiagnostics.summary(
-            source = BattleDecisionSource.LOCAL_BRAIN,
-            candidateCount = 2,
-            elapsedMillis = 1500L,
-            diagnosticTags = setOf("lookahead_time_unbounded_test"),
-            failures = emptyList(),
-        )
-
-        assertTrue(summary.contains("diagnostics=lookahead_time_unbounded_test"))
-    }
 }

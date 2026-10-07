@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
+import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.mcc.betterai.search.NativeProductRankAdapter
 import jbro.cobblemon.mcc.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconcileStatus
@@ -31,14 +32,16 @@ import org.junit.jupiter.api.Test
 
 class NativeInitialProductBrainIntegrationTest {
     @Test
-    fun `AI test persona keeps a bounded native clock while the legacy clock is lifted`() {
+    fun `AI test persona searches on the real battle clock`() {
         val context = contestedContext()
         val base = LocalLookaheadBudget(timeMillis = 17L, nodeLimit = 123, chanceBranchesPerMove = 7)
         val observed = mutableListOf<LocalLookaheadBudget>()
+        val deadlines = mutableListOf<Long>()
         val brain = LocalTacticalBrain(
             lookaheadBudget = { base },
-            nativeInitialDecision = { _, _, _, budget, _ ->
+            nativeInitialDecision = { decisionContext, _, _, budget, _ ->
                 observed += budget
+                deadlines += decisionContext.deadlineEpochMillis
                 NativeInitialProductDecisionEvaluation(
                     status = NativeInitialProductDecisionStatus.PLANNING_FAILED,
                     planIssues = listOf(NativeInitialProductWorldPlanIssue(
@@ -59,14 +62,17 @@ class NativeInitialProductBrainIntegrationTest {
             assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
         }
 
+        val startedAt = System.currentTimeMillis()
         invoke(null)
         invoke("${BattleBrainContentIds.AI_TEST_PERSONA_PREFIX}boss")
+        val finishedAt = System.currentTimeMillis()
 
         assertEquals(base, observed[0])
-        // A native node is a full Showdown turn; an unbounded clock froze the first live test battle.
-        assertEquals(10_000L, observed[1].timeMillis)
-        assertEquals(base.nodeLimit, observed[1].nodeLimit)
-        assertEquals(base.chanceBranchesPerMove, observed[1].chanceBranchesPerMove)
+        assertEquals(base, observed[1])
+        // The whole decision shares one clock, however far the caller's own deadline lies.
+        deadlines.forEach { deadline ->
+            assertTrue(deadline in startedAt..finishedAt + LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS)
+        }
     }
 
     @Test

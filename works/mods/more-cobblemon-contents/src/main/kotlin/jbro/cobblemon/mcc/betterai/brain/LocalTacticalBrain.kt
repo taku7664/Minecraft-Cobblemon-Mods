@@ -66,7 +66,6 @@ import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
-private const val NATIVE_TEST_TIME_LIMIT_MILLIS = 10_000L
 private const val THREAT_TIME_LIMIT_NANOS = 300_000_000L
 /** Matchup scores for the choosing rules; an unfinished table rules nothing out. */
 private const val RULE_SCORES_TIME_LIMIT_NANOS = 1_000_000_000L
@@ -150,6 +149,13 @@ internal class LocalTacticalBrain(
         val strategy = active?.strategy.takeUnless {
             profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY
         }
+        // One clock for the whole decision: the native search, a legacy fallback after it and the
+        // preparation before both share it, so a failed native search cannot hand the legacy one a fresh window.
+        val context = context.copy(deadlineEpochMillis = LocalLookaheadBudgetPolicy.deadline(
+            startMillis = System.currentTimeMillis(),
+            externalDeadlineMillis = context.deadlineEpochMillis,
+            budgetMillis = lookaheadBudget(profile.difficulty.tier).timeMillis,
+        ))
         // Name the opponent status moves this tier believes in before anything reads the catalog, so
         // the legacy search, the native worlds and the session reconciliation all see the same slots.
         val boundContext = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(
@@ -286,9 +292,9 @@ internal class LocalTacticalBrain(
             .filter { it.side == BattleSide.ALLY }
             .map { it.battlePokemonId }
             .toList()
-        val unboundedTestDecision = active?.trainerPersonaId
+        val aiTestDecision = active?.trainerPersonaId
             ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
-        if (unboundedTestDecision) {
+        if (aiTestDecision) {
             AiTestDecisionSnapshot.write(AiTestDecisionSnapshot(
                 battleId = battleId,
                 turn = context.state.turn,
@@ -310,16 +316,9 @@ internal class LocalTacticalBrain(
         val phaseBudget = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS) {
             LocalLookaheadBudgetPolicy.forPosition(configuredBudget, calculatedContext.state)
         } else configuredBudget
-        val budget = if (unboundedTestDecision) phaseBudget.copy(timeMillis = Long.MAX_VALUE) else phaseBudget
-        // Native nodes are full Showdown turns, orders of magnitude costlier than legacy projections,
-        // so the node limit alone never stops them in time. AI test battles lift the wall clock for
-        // the legacy search only; the native search keeps a bounded clock and falls back when it
-        // completes no depth, exactly as it would in a real battle.
-        val nativeBudget = if (unboundedTestDecision) {
-            configuredBudget.copy(timeMillis = NATIVE_TEST_TIME_LIMIT_MILLIS)
-        } else {
-            configuredBudget
-        }
+        // AI test battles play on the same clock as real ones; they only add the snapshot and the trace.
+        val budget = phaseBudget
+        val nativeBudget = configuredBudget
         val continuingNative = active?.nativeProductState != null
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
@@ -384,7 +383,6 @@ internal class LocalTacticalBrain(
                             } else {
                                 "native_showdown_initial"
                             })
-                            if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                             if (nativeInitial.truncated) add("lookahead_truncated")
                             addAll(decisionDiagnostics(calculatedContext, selected))
                         },
@@ -591,7 +589,6 @@ internal class LocalTacticalBrain(
                     if (lookahead.truncated) add("lookahead_truncated")
                     nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
                     if (retainedNativeState != null) add("native_session_retained")
-                    if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]
