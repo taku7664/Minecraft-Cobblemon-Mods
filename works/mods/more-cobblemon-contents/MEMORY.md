@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-08 00:52] 보스 판단 6초 상한 배치, 네이티브 탐색이 실전에서 한 번도 안 돈 문제 발견
+
+- **구현:** `LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS = 6000`(커밋 `3d751060`).
+- **빌드:** C 드라이브가 0GB여서 빌드가 매번 다른 곳에서 실패했다(Gradle 데몬 `registry.bin` 0바이트, Loom 매핑 실패). 사용자 허락을 받아 `works/build`, `works/mods/*/build`를 지우고 깨진 `registry.bin`을 지운 뒤 빌드 성공. JAR 무결성과 상수 `6000` 확인.
+- **JAR 배치:** 개발 클라이언트·서버 `mods`에 교체. 기존 JAR은 `develop-product/deployment-backups/20261008-boss-6s`. 서버는 사용자가 끈 뒤 교체했고 다시 켜지 않았다.
+- **미확인:** 실게임에서 보스 판단이 6초 안에 끝나는지.
+- **발견:** 서버 로그 전체의 네이티브 탐색 기록 208건이 모두 `status=NOT_APPLICABLE`였다. 실전 보스 판단은 전부 레거시(수제) 탐색이 했고, 옮겨 온 엔진은 쓰이지 않았다. 시작 조건(`isOpeningCandidate`: 0~1턴, `opponentTeamPreview`, `exactOwnTeam`, `acceptsObservations`) 중 어디서 걸리는지는 로그에 안 남아 아직 모른다.
+
 ## [2026-10-06 21:57] 타워·팩토리 JAR이 깨진 채 배포돼 개발 클라이언트가 켜지지 않던 문제
 
 - **증상:** 실행하면 `ClassNotFoundException: jbro.cobblemon.mcc.internal.tower.BattleTowerContent`(팩토리는 `BattleFactoryContent`)로 크래시. 개발 클라이언트·서버 `mods`에 있던 11:01 빌드 JAR에 패키지 폴더는 있는데 엔트리포인트 클래스가 빠져 있었다(타워 664개, 팩토리 650개 항목).
