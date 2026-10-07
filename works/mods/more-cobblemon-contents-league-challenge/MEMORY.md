@@ -1,11 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-07 21:14] PokeBadges 버전 범위 해제 (`e4099c3d`, 빌드만 확인, 미배포)
+## [2026-10-07 21:14] PokeBadges 버전 범위 해제 (`e4099c3d`, 빌드만 확인, 서버만 배포)
 
 - **빡대리님 지시:** 클라이언트에 PokeBadges 2.0.0을 넣자 `>=1.6.1 <1.7.0` 범위 때문에 에러가 났다. `depends.pokebadges`를 `*`로 풀었다.
 - 2.0.0의 `PokeBadgesApi`·`BadgeOperationResult`는 1.6.1과 같고 `openBadgeBox`만 추가됐다(javap 비교). 컴파일은 여전히 1.6.1(`A93HZDyB`)에 대고 한다.
 - 지시에 따라 테스트 없이 빌드만 했다(`-x test -x unitTest`). 계약 테스트 기대값은 `*`로 고쳤지만 돌려 보지 않았다.
-- 개발 서버와 클라이언트가 켜져 있어서 JAR은 배포하지 않았다. 개발 서버 mods에는 아직 PokeBadges 1.6.1이 있다.
+- 개발 서버에는 서버가 꺼진 뒤 배포했다(백업 `20261007-211420-league-pokebadges-any`). 클라이언트는 게임이 켜져 있어서 아직 배포하지 않았다. 서버 mods의 PokeBadges는 1.6.1, 클라이언트는 2.0.0이다.
 
 ## [2026-10-07 00:37] 야생 레벨 쏠림 격자 4 → 8청크
 
