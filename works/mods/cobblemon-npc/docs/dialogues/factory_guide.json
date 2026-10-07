@@ -1,0 +1,48 @@
+{
+  "speaker": "팩토리 안내원",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "어서 와, {player}.",
+        "여긴 배틀팩토리야. 내 포켓몬 대신 렌탈 포켓몬으로 싸우는 곳이지.",
+        "한번 해 볼래?"
+      ],
+      "choices": [
+        { "text": "응, 해 볼래!", "next": "check" },
+        { "text": "어떤 곳이야?", "next": "explain" },
+        { "text": "다음에 할게.", "next": "bye" }
+      ]
+    },
+    "explain": {
+      "lines": [
+        "렌탈 포켓몬 중에서 골라 팀을 짜고 연속으로 이기면 층이 올라가.",
+        "이기면 상대 렌탈 포켓몬과 한 마리씩 바꿀 수도 있어.",
+        "리그 챔피언만 들어올 수 있으니 그건 기억해 둬."
+      ],
+      "choices": [
+        { "text": "해 볼래!", "next": "check" },
+        { "text": "알겠어, 다음에 올게.", "next": "bye" }
+      ]
+    },
+    "check": {
+      "branches": [
+        { "if": "cmd:mcc factory access", "next": "open" }
+      ],
+      "next": "not_yet"
+    },
+    "not_yet": {
+      "lines": [
+        "아직 리그 챔피언이 아니구나.",
+        "챔피언을 쓰러뜨리고 다시 와!"
+      ]
+    },
+    "open": {
+      "lines": [ "좋아, 팩토리 터미널을 열어 줄게!" ],
+      "commands": [ "@server /mcc terminal factory" ]
+    },
+    "bye": {
+      "lines": [ "그래, 언제든 와." ]
+    }
+  }
+}

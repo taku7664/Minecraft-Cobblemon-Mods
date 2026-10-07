@@ -1,0 +1,34 @@
+{
+  "speaker": "도련님 태오",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "후훗, 내 포켓몬은 메가진화를 할 수 있다고!"
+      ],
+      "next": "check"
+    },
+    "check": {
+      "branches": [
+        {
+          "if": "cmd:mcc league check champion",
+          "next": "champ"
+        }
+      ],
+      "next": "locked"
+    },
+    "locked": {
+      "lines": [
+        "…라고 말하고 싶지만, 챔피언이 되기 전엔 야생이나 NPC 배틀에서 못 써.",
+        "메가진화, 다이맥스, 테라스탈, Z기술 전부 잠겨 있다니까.",
+        "플레이어끼리 하는 배틀에서는 쓸 수 있으니까, 나랑 PvP 하자고!"
+      ]
+    },
+    "champ": {
+      "lines": [
+        "너, 챔피언이구나? 그럼 이미 기믹 잠금이 풀렸겠네.",
+        "흥, 나도 곧 따라잡을 거야!"
+      ]
+    }
+  }
+}

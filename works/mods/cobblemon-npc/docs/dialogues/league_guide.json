@@ -1,0 +1,77 @@
+{
+  "speaker": "리그 안내원",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [ "안녕, {player}! 포켓몬 리그에 온 걸 환영해." ],
+      "next": "progress"
+    },
+    "progress": {
+      "branches": [
+        { "if": "cmd:mcc league check hard", "next": "hard_champion" },
+        { "if": "cmd:mcc league check champion", "next": "champion" },
+        { "if": "cmd:mcc league check badges 8", "next": "elite" },
+        { "if": "cmd:mcc league check badges 4", "next": "halfway" },
+        { "if": "cmd:mcc league check badges 1", "next": "started" }
+      ],
+      "next": "newcomer"
+    },
+    "newcomer": {
+      "lines": [
+        "아직 배지가 하나도 없구나.",
+        "체육관을 하나씩 깨면 배지를 받고, 그때마다 레벨캡이 올라가.",
+        "첫 체육관부터 도전해 봐!"
+      ],
+      "next": "menu"
+    },
+    "started": {
+      "lines": [
+        "벌써 배지를 모으기 시작했네.",
+        "체육관을 깰 때마다 레벨캡이 올라가니까 포켓몬도 같이 키워 둬."
+      ],
+      "next": "menu"
+    },
+    "halfway": {
+      "lines": [
+        "배지를 절반 넘게 모았구나!",
+        "뒤로 갈수록 관장들이 세지니 팀을 잘 다듬어 둬."
+      ],
+      "next": "menu"
+    },
+    "elite": {
+      "lines": [
+        "배지 8개를 다 모았구나!",
+        "이제 사천왕과 챔피언이 기다리고 있어. 준비되면 도전해 봐."
+      ],
+      "next": "menu"
+    },
+    "champion": {
+      "lines": [
+        "챔피언님이시네! 대단해.",
+        "이제 배틀타워와 배틀팩토리에도 들어갈 수 있고, 하드 리그도 열렸어."
+      ],
+      "next": "menu"
+    },
+    "hard_champion": {
+      "lines": [
+        "하드 리그까지 정복하다니… 더 가르쳐 줄 게 없네.",
+        "배틀타워와 배틀팩토리에서 기록을 노려 봐."
+      ],
+      "next": "menu"
+    },
+    "menu": {
+      "lines": [ "리그 터미널을 열어 줄까?" ],
+      "choices": [
+        { "text": "응, 열어 줘!", "next": "open" },
+        { "text": "괜찮아.", "next": "bye" }
+      ]
+    },
+    "open": {
+      "lines": [ "좋아, 리그 터미널을 열어 줄게!" ],
+      "commands": [ "@server /mcc terminal league" ]
+    },
+    "bye": {
+      "lines": [ "그래, 힘내!" ]
+    }
+  }
+}

@@ -30,6 +30,21 @@ class DialogueTest {
     }
 
     @Test
+    fun `the server dialogues in docs all read without problems`() {
+        val files = java.io.File("docs/dialogues").listFiles { file -> file.extension == "json" }!!.sortedBy { it.name }
+        assertTrue(files.size >= 20, "found ${files.size}")
+        files.forEach { file ->
+            assertTrue(DialogueIds.isDialogueId(file.nameWithoutExtension), file.name)
+            val decoded = DialogueCodec.decode(file.readText())
+            assertEquals(emptyList<DialogueProblem>(), decoded.problems, file.name)
+            // A terminal opens only for operators; a dialogue opens it as the server.
+            decoded.valid!!.nodes.values.flatMap { it.commands }.filter { "mcc terminal" in it }.forEach {
+                assertEquals(true, DialogueCommand.parse(it)?.asServer, "${file.name}: $it")
+            }
+        }
+    }
+
+    @Test
     fun `a qualified player is taken to the terminal and the command runs as the box closes`() {
         val walker = DialogueWalker(example(), Player(passing = setOf("mcc tower access")))
         val greet = walker.enter().step as DialogueWalker.Step.Show
@@ -39,7 +54,7 @@ class DialogueTest {
         assertEquals(emptyList<String>(), open.commands)
         val end = walker.read("open")
         assertEquals(DialogueWalker.Step.End, end.step)
-        assertEquals(listOf("/mcc terminal tower"), end.commands)
+        assertEquals(listOf("@server /mcc terminal tower"), end.commands)
     }
 
     @Test

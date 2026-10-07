@@ -1,0 +1,63 @@
+{
+  "speaker": "수집가 영호",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "후후, 내 꿈은 전설의 포켓몬을 전부 모으는 거지."
+      ],
+      "next": "check"
+    },
+    "check": {
+      "branches": [
+        {
+          "if": "cmd:mcc league check champion",
+          "next": "champ"
+        },
+        {
+          "if": "cmd:mcc league check badges 8",
+          "next": "master"
+        },
+        {
+          "if": "cmd:mcc league check badges 5",
+          "next": "hyper"
+        }
+      ],
+      "next": "low"
+    },
+    "low": {
+      "lines": [
+        "자네는 아직 배지가 5개가 안 되는군.",
+        "전설은 나타나도 리그 등급이 모자라면 잡을 수가 없다네.",
+        "배지 5개, 하이퍼볼 등급부터 일반 전설을 잡을 수 있으니 우선 체육관부터 깨게."
+      ],
+      "next": "legends"
+    },
+    "hyper": {
+      "lines": [
+        "하이퍼볼 등급이로군. 일반 전설은 잡을 수 있겠어.",
+        "배지 8개를 모으면 마스터볼 등급이 되어 환상의 포켓몬까지 노릴 수 있지."
+      ],
+      "next": "legends"
+    },
+    "master": {
+      "lines": [
+        "마스터볼 등급이라니, 환상의 포켓몬도 잡을 수 있겠군!",
+        "챔피언이 되면 제한급과 패러독스, 아르세우스까지 열린다네."
+      ],
+      "next": "legends"
+    },
+    "champ": {
+      "lines": [
+        "챔피언이시군! 이제 잡지 못할 전설은 없겠어. 부럽구먼."
+      ],
+      "next": "legends"
+    },
+    "legends": {
+      "lines": [
+        "/legends 뒤에 포켓몬 영어 이름을 쓰면 잡았는지, 무슨 조건이 필요한지 볼 수 있다네.",
+        "예를 들면 /legends mewtwo 처럼 말이야."
+      ]
+    }
+  }
+}

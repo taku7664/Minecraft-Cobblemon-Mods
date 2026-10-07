@@ -1,5 +1,13 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 08:50] 서버 대화 원본을 `docs/dialogues/`로, 엑스트라 트레이너 24명 추가
+
+- **사용자 지시:** 기능 안내원만이 아니라 위키를 보고 엑스트라 트레이너 대사를 최소 20개 만든다.
+- **위치:** 개발 서버 `config/`는 git에 없어서 원본을 `docs/dialogues/`에 두고 서버로 복사한다(안내원 3개 + `extra_*` 24개). `DialogueTest`가 이 폴더의 모든 파일을 코덱으로 읽고, `mcc terminal` 명령은 반드시 `@server`로 실행하는지 확인한다.
+- **내용:** 위키(`server-wiki/pages`)의 레벨캡·야생 레벨·개체값·합성·숨겨진 특성·노력치·성격·야생 트레이너·전설·BP 상점·경험치·타워·팩토리·PvP·마이룸·사천왕·기믹 잠금·이모트·렉·디스코드를 캐릭터별로 나눴다. 일부는 `cmd:mcc league check ...`, `cmd:mcc tower access`, `cmd:mcc factory access`로 플레이어 진행도에 따라 대사가 갈린다.
+- **터미널 명령:** `/mcc terminal`이 관리자 전용이 되어(MCC `MEMORY.md`) 안내원·예제의 명령을 `@server /mcc terminal ...`으로 바꿨다. 서버 권한으로 실행해도 열리는 화면은 말을 건 플레이어 것이다.
+- **검증:** NPC 테스트 14개 통과. NPC를 실제로 세우고 말을 걸어 보지는 않았다. 엑스트라 트레이너는 아직 어떤 NPC에도 연결하지 않았다(완드로 대화 ID를 지정해야 한다).
+
 ## [2026-10-08 08:20] 팩토리·리그 안내원 대화 추가
 
 - 개발 서버 `config/cobblemon_npc/dialogues/`에 `factory_guide`(`cmd:mcc factory access` → `/mcc terminal factory`), `league_guide`(`cmd:mcc league check ...`로 진행도별 대사 → `/mcc terminal league`)를 만들었다. 대사 속 설명(렌탈 교환, 하드 리그)은 각 애드온 언어 파일로 확인했다. 노드 연결 검사만 했고 실게임은 안 했다.

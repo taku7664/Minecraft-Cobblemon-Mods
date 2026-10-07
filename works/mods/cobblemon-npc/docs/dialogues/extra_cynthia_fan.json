@@ -1,0 +1,43 @@
+{
+  "speaker": "난천 팬클럽 회장 유나",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "난천 님은 정말 최고야! 너도 그렇게 생각하지?"
+      ],
+      "next": "check"
+    },
+    "check": {
+      "branches": [
+        {
+          "if": "cmd:mcc league check hard",
+          "next": "hard"
+        },
+        {
+          "if": "cmd:mcc league check champion",
+          "next": "beat"
+        }
+      ],
+      "next": "dream"
+    },
+    "dream": {
+      "lines": [
+        "난천 님은 58에서 62레벨 포켓몬 6마리를 데리고 나와.",
+        "언젠가 너도 난천 님 앞에 서게 되겠지? 그때 꼭 얘기해 줘!"
+      ]
+    },
+    "beat": {
+      "lines": [
+        "뭐?! 난천 님을 이겼다고?! …분하지만 인정할게.",
+        "하드 리그의 난천 님은 메가한카리아스를 데리고 나온대. 그건 쉽지 않을걸?"
+      ]
+    },
+    "hard": {
+      "lines": [
+        "하드 리그의 난천 님까지 이겼다고…?",
+        "…사인 좀 해 줄래? 우리 팬클럽 명예회원으로 모실게!"
+      ]
+    }
+  }
+}
