@@ -136,7 +136,12 @@ internal object NativeBattleRootValidator {
             val actual = adaptedById[public.battlePokemonId] ?: return@forEach
             val id = public.battlePokemonId
             if (actual.side != public.side) issue(issues, NativeBattleRootIssueCode.SIDE_MISMATCH, id)
-            if (actual.activeSlot != public.activeSlot) issue(issues, NativeBattleRootIssueCode.ACTIVE_SLOT_MISMATCH, id)
+            // A fainted Pokemon keeps its slot in the game until replaced and has no Cobblemon status, while the native
+            // adapter drops it from the slot with Showdown's "fnt": both describe the same faint, checked with the HP.
+            val bothFainted = actual.fainted && public.fainted
+            if (!bothFainted && actual.activeSlot != public.activeSlot) {
+                issue(issues, NativeBattleRootIssueCode.ACTIVE_SLOT_MISMATCH, id)
+            }
             if (actual.level != public.level) issue(issues, NativeBattleRootIssueCode.LEVEL_MISMATCH, id)
             val exactHpMatches = abs(actual.hpFraction - public.hpFraction) <= FRACTION_EPSILON
             val publicOpponentHpMatches = public.side == BattleSide.OPPONENT &&
@@ -147,7 +152,7 @@ internal object NativeBattleRootValidator {
             if ((!exactHpMatches && !publicOpponentHpMatches) || actual.fainted != public.fainted) {
                 issue(issues, NativeBattleRootIssueCode.HP_MISMATCH, id)
             }
-            if (statusId(actual.statusId) != statusId(public.statusId)) {
+            if (!bothFainted && statusId(actual.statusId) != statusId(public.statusId)) {
                 issue(issues, NativeBattleRootIssueCode.STATUS_MISMATCH, id)
             }
             if (normalizedStages(actual.statStages) != normalizedStages(public.statStages)) {
