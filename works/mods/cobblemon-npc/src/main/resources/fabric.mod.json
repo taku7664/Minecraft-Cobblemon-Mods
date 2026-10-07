@@ -36,8 +36,8 @@
   },
   "icon": "assets/cobblemon_npc/icon.png",
   "contact": {
-    "sources": "https://github.com/taku7664/Cobblemon-Mods/tree/main/works/mods/cobblemon-npc",
-    "issues": "https://github.com/taku7664/Cobblemon-Mods/issues"
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/cobblemon-npc",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
   },
   "suggests": {
     "modmenu": "*",
