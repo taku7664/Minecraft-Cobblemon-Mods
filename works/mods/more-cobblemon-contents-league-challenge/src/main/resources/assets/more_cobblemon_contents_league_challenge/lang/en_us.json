@@ -306,5 +306,7 @@
   "command.more_cobblemon_contents_league_challenge.admin.test.busy": "%s is already in a battle or settling one.",
   "command.more_cobblemon_contents_league_challenge.admin.test.win": "You won the test battle against %1$s (%2$s).",
   "command.more_cobblemon_contents_league_challenge.admin.test.loss": "You lost the test battle against %1$s (%2$s).",
-  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "The test battle against %1$s (%2$s) ended."
+  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "The test battle against %1$s (%2$s) ended.",
+  "modmenu.nameTranslation.more_cobblemon_contents_league_challenge": "More Cobblemon Contents: League Challenge",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_league_challenge": "Progress through gyms, badges, ranks, the Elite Four and Champion battles. This MCC addon uses a dedicated terminal and GUI, with league rules defined by server data packs and level-cap integration."
 }

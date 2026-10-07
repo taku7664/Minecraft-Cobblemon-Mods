@@ -3,12 +3,16 @@
   "id": "more_cobblemon_contents_league_challenge",
   "version": "${version}",
   "name": "More Cobblemon Contents: League Challenge",
-  "description": "Gym, badge, rank, Elite Four, and Champion progression for More Cobblemon Contents.",
-  "authors": ["jbro"],
+  "description": "Progress through gyms, badges, ranks, the Elite Four and Champion battles. This MCC addon uses a dedicated terminal and GUI, with league rules defined by server data packs and level-cap integration.",
+  "authors": [
+    "jbro"
+  ],
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "modmenu": ["jbro.cobblemon.mcc.league.client.LeagueModMenu"],
+    "modmenu": [
+      "jbro.cobblemon.mcc.league.client.LeagueModMenu"
+    ],
     "main": [
       {
         "adapter": "kotlin",
@@ -32,5 +36,13 @@
     "more_cobblemon_contents": ">=0.1.0 <1.0.0",
     "pokebadges": "*",
     "cobbled_level_control": ">=1.2.0 <1.3.0"
+  },
+  "icon": "assets/more_cobblemon_contents_league_challenge/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents-league-challenge",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

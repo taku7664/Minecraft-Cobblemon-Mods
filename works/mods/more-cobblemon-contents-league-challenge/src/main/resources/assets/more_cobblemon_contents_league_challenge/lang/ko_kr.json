@@ -306,5 +306,7 @@
   "command.more_cobblemon_contents_league_challenge.admin.test.busy": "%s님은 이미 배틀 중이거나 결과를 정리하는 중입니다.",
   "command.more_cobblemon_contents_league_challenge.admin.test.win": "테스트 배틀에서 %1$s(%2$s)에게 이겼습니다.",
   "command.more_cobblemon_contents_league_challenge.admin.test.loss": "테스트 배틀에서 %1$s(%2$s)에게 졌습니다.",
-  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "%1$s(%2$s)와의 테스트 배틀이 끝났습니다."
+  "command.more_cobblemon_contents_league_challenge.admin.test.cancelled": "%1$s(%2$s)와의 테스트 배틀이 끝났습니다.",
+  "modmenu.nameTranslation.more_cobblemon_contents_league_challenge": "More Cobblemon Contents: League Challenge",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_league_challenge": "체육관·배지·계급·사천왕·챔피언 진행을 추가하는 MCC 리그 챌린지 애드온입니다. 독립 터미널과 GUI로 도전하며 서버 데이터팩과 레벨캡 모드로 규칙을 관리합니다."
 }
