@@ -3,7 +3,7 @@
   "id": "more_cobblemon_contents_battle_tower",
   "version": "${version}",
   "name": "More Cobblemon Contents: Battle Tower",
-  "description": "Battle Tower streak battles and the Cynthia AI test for More Cobblemon Contents.",
+  "description": "Challenge consecutive battles with your own Pokémon team. This MCC addon adds Battle Tower opponents, streak progression and records, with rewards and battle management provided through the MCC core.",
   "authors": [
     "jbro"
   ],
@@ -31,5 +31,13 @@
     "java": ">=21",
     "cobblemon": ">=1.8.1 <1.9.0",
     "more_cobblemon_contents": ">=0.1.0 <1.0.0"
+  },
+  "icon": "assets/more_cobblemon_contents_battle_tower/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents-battle-tower",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -238,5 +238,7 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.single_normal": "싱글 · 일반",
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.double_normal": "더블 · 일반",
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.single": "싱글 · 무한",
-  "screen.more_cobblemon_contents_battle_tower.dashboard.track.double": "더블 · 무한"
+  "screen.more_cobblemon_contents_battle_tower.dashboard.track.double": "더블 · 무한",
+  "modmenu.nameTranslation.more_cobblemon_contents_battle_tower": "More Cobblemon Contents: Battle Tower",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_battle_tower": "자신의 포켓몬 팀으로 연승에 도전하는 MCC 배틀타워 애드온입니다. 전투 진행, 상대 대진, 연승 기록과 보상은 MCC 본체와 연동합니다."
 }

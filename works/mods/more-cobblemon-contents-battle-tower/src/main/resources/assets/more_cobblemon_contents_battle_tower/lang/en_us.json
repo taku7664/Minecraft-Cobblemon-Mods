@@ -238,5 +238,7 @@
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.single_normal": "Single · Normal",
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.double_normal": "Double · Normal",
   "screen.more_cobblemon_contents_battle_tower.dashboard.track.single": "Single · Endless",
-  "screen.more_cobblemon_contents_battle_tower.dashboard.track.double": "Double · Endless"
+  "screen.more_cobblemon_contents_battle_tower.dashboard.track.double": "Double · Endless",
+  "modmenu.nameTranslation.more_cobblemon_contents_battle_tower": "More Cobblemon Contents: Battle Tower",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_battle_tower": "Challenge consecutive battles with your own Pokémon team. This MCC addon adds Battle Tower opponents, streak progression and records, with rewards and battle management provided through the MCC core."
 }
