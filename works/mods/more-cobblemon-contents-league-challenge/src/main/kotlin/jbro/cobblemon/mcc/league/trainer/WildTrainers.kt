@@ -67,6 +67,11 @@ object WildTrainers {
     private const val COOLDOWN_TICKS = 6_000L
     // Long enough for the trainer's closing words, which the camera looks at, to be said before it leaves.
     private const val DEFEATED_DESPAWN_TICKS = 300L
+    /**
+     * Saved with a defeated trainer, so it still leaves when the server stops or its chunk unloads before
+     * [DEFEATED_DESPAWN_TICKS] are up: the next time it loads it goes on the next tick.
+     */
+    private const val DEFEATED_TAG = "mcc_wild_trainer_defeated"
     private const val SCENE_LINE_VARIANTS = 3
     private const val NEARBY_LIMIT = 2
     private const val NEARBY_RADIUS = 64.0
@@ -127,6 +132,10 @@ object WildTrainers {
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             val npc = entity as? NPCEntity ?: return@register
             if (definitionOf(npc) == null) return@register
+            if (DEFEATED_TAG in npc.tags) {
+                despawns.putIfAbsent(npc.uuid, npc.level().server?.overworld()?.gameTime ?: 0L)
+                return@register
+            }
             if (npc.customName == null) name(npc)
             // The skin, and with it the personal name, can land after the trainer joins the world.
             if (!hasPersonalName(npc)) renames[npc.uuid] = (npc.level().server?.overworld()?.gameTime ?: 0L) + RENAME_DELAY_TICKS
@@ -143,6 +152,7 @@ object WildTrainers {
             val now = server.overworld().gameTime
             despawns.entries.filter { it.value <= now }.map { it.key }.forEach { id ->
                 despawns.remove(id)
+                // One still in a battle keeps its tag and leaves the next time it loads.
                 server.allLevels.firstNotNullOfOrNull { it.getEntity(id) as? NPCEntity }?.takeIf { !it.isInBattle() }?.discard()
             }
         }
@@ -302,6 +312,7 @@ object WildTrainers {
             BattleResultNotices.defeat(player, opponent)
             return
         }
+        npc?.addTag(DEFEATED_TAG)
         despawns[fight.npcId] = now + DEFEATED_DESPAWN_TICKS
         val bp = fight.definition.bp
         val paid = if (bp <= 0) 0L else {
