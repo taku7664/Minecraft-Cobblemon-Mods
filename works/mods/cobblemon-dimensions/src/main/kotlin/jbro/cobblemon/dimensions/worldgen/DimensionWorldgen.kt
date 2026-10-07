@@ -61,12 +61,16 @@ object DimensionWorldgen {
         return out
     }
 
-    /** The first rule whose fragment appears in [biome]'s name decides; otherwise the dimension's default. */
+    /**
+     * The first rule that names [biome] exactly (`names`) or whose fragment appears in its name (`fragments`) decides;
+     * otherwise the dimension's default. Exact names come first in the spec, to even out how much ground each biome gets.
+     */
     fun biomeFor(dimension: JsonObject, biome: String): String {
         val name = biome.substringAfter(':')
         for (rule in dimension.getAsJsonArray("rules")) {
             val r = rule.asJsonObject
-            if (r.getAsJsonArray("fragments").any { it.asString in name }) return r.get("biome").asString
+            val named = r.getAsJsonArray("names")?.any { it.asString == name } == true
+            if (named || r.getAsJsonArray("fragments")?.any { it.asString in name } == true) return r.get("biome").asString
         }
         return dimension.get("default").asString
     }

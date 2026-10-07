@@ -59,6 +59,18 @@ class DimensionWorldgenTest {
     }
 
     @Test
+    fun `with Terralith no land biome takes much more of the layout than the others`() {
+        for ((dimension, value) in spec.getAsJsonObject("dimensions").entrySet()) {
+            val entries = built.getValue("dimension/$dimension.json").asJsonObject.getAsJsonObject("generator")
+                .getAsJsonObject("biome_source").getAsJsonArray("biomes").map { it.asJsonObject.get("biome").asString.substringAfter(':') }
+            val sea = value.asJsonObject.getAsJsonArray("rules")[0].asJsonObject.get("biome").asString
+            val land = entries.filter { it != sea }.groupingBy { it }.eachCount()
+            val share = land.values.max().toDouble() / land.values.sum()
+            assertTrue(share < 1.5 / land.size) { "$dimension: $land" }
+        }
+    }
+
+    @Test
     fun `without Terralith nothing points at Terralith`() {
         for ((path, json) in vanilla) {
             val text = json.toString()

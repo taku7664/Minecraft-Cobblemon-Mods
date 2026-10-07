@@ -103,6 +103,41 @@
         },
         {
           "biome": "ultra_crater",
+          "names": [
+            "snowy_slopes",
+            "grove",
+            "alpine_grove",
+            "alpine_highlands"
+          ]
+        },
+        {
+          "biome": "ultra_jungle",
+          "names": [
+            "dark_forest",
+            "sakura_grove",
+            "cherry_grove",
+            "snowy_cherry_grove",
+            "lavender_forest",
+            "flower_forest",
+            "wintry_forest",
+            "forest"
+          ]
+        },
+        {
+          "biome": "ultra_desert",
+          "names": [
+            "savanna_plateau"
+          ]
+        },
+        {
+          "biome": "ultra_forest",
+          "names": [
+            "snowy_plains",
+            "snowy_shield"
+          ]
+        },
+        {
+          "biome": "ultra_crater",
           "fragments": [
             "volcanic",
             "caldera",
@@ -295,6 +330,38 @@
         },
         {
           "biome": "ancient_volcano",
+          "names": [
+            "grove",
+            "alpine_grove",
+            "alpine_highlands",
+            "highlands",
+            "windswept_hills",
+            "windswept_gravelly_hills",
+            "ice_spikes",
+            "snowy_plains",
+            "snowy_shield",
+            "siberian_grove"
+          ]
+        },
+        {
+          "biome": "ancient_jungle",
+          "names": [
+            "sakura_grove",
+            "moonlight_grove"
+          ]
+        },
+        {
+          "biome": "ancient_desert",
+          "names": [
+            "savanna_plateau",
+            "savanna",
+            "windswept_savanna",
+            "fractured_savanna",
+            "brushland"
+          ]
+        },
+        {
+          "biome": "ancient_volcano",
           "fragments": [
             "volcanic",
             "caldera",
@@ -468,6 +535,36 @@
             "mirage_isles",
             "alpha_islands",
             "ice_marsh"
+          ]
+        },
+        {
+          "biome": "future_crystal",
+          "names": [
+            "hot_shrubland",
+            "savanna_plateau",
+            "savanna",
+            "windswept_savanna",
+            "fractured_savanna",
+            "ashen_savanna",
+            "sakura_grove"
+          ]
+        },
+        {
+          "biome": "future_steel_peaks",
+          "names": [
+            "grove",
+            "alpine_grove"
+          ]
+        },
+        {
+          "biome": "future_flats",
+          "names": [
+            "siberian_taiga",
+            "wintry_lowlands",
+            "snowy_maple_forest",
+            "old_growth_pine_taiga",
+            "old_growth_spruce_taiga",
+            "birch_taiga"
           ]
         },
         {
