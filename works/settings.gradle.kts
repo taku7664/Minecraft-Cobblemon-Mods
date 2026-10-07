@@ -27,7 +27,6 @@ include(
     "more-cobblemon-contents-league-challenge",
     "player-popup-emotes",
     "pokefusion",
-    "rounding-block",
     "simple-myroom"
 )
 
