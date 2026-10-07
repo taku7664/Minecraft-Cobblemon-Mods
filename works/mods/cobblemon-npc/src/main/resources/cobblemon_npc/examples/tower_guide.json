@@ -23,7 +23,7 @@
       "lines": [ "너는 아직 자격이 안 되는 것 같네..." ]
     },
     "open": {
-      "lines": [ "좋아, 타워 터미널을 열어 줄게!" ],
+      "lines": [ "좋아, 연승 많이 쌓고 와!" ],
       "commands": [ "@server /mcc terminal tower" ]
     },
     "bye": {

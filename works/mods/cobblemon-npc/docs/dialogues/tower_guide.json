@@ -35,7 +35,7 @@
     },
     "open": {
       "lines": [
-        "좋아, 타워 터미널을 열어 줄게!"
+        "좋아, 연승 많이 쌓고 와!"
       ],
       "commands": [
         "@server /mcc terminal tower"

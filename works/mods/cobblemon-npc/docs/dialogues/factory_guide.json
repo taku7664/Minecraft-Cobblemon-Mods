@@ -38,7 +38,7 @@
       ]
     },
     "open": {
-      "lines": [ "좋아, 팩토리 터미널을 열어 줄게!" ],
+      "lines": [ "좋아, 좋은 렌탈 만나길 바랄게!" ],
       "commands": [ "@server /mcc terminal factory" ]
     },
     "bye": {

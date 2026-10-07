@@ -60,14 +60,14 @@
       "next": "menu"
     },
     "menu": {
-      "lines": [ "리그 터미널을 열어 줄까?" ],
+      "lines": [ "지금 리그에 도전할래?" ],
       "choices": [
-        { "text": "응, 열어 줘!", "next": "open" },
-        { "text": "괜찮아.", "next": "bye" }
+        { "text": "응, 도전할래!", "next": "open" },
+        { "text": "다음에 할게.", "next": "bye" }
       ]
     },
     "open": {
-      "lines": [ "좋아, 리그 터미널을 열어 줄게!" ],
+      "lines": [ "좋아, 행운을 빌게!" ],
       "commands": [ "@server /mcc terminal league" ]
     },
     "bye": {
