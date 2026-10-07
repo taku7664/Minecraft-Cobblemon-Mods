@@ -3,7 +3,7 @@
   "id": "more_cobblemon_contents_battle_factory",
   "version": "${version}",
   "name": "More Cobblemon Contents: Battle Factory",
-  "description": "Battle Factory rental battles for More Cobblemon Contents.",
+  "description": "Build a rental team and challenge the Battle Factory. This MCC addon provides rental Pokémon selection, team swaps and battle progression, integrated with the MCC core's rewards and records.",
   "authors": [
     "jbro"
   ],
@@ -31,5 +31,13 @@
     "java": ">=21",
     "cobblemon": ">=1.8.1 <1.9.0",
     "more_cobblemon_contents": ">=0.1.0 <1.0.0"
+  },
+  "icon": "assets/more_cobblemon_contents_battle_factory/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents-battle-factory",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

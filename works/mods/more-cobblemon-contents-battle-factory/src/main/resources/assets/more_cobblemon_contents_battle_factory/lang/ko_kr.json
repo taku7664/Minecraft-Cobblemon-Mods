@@ -242,5 +242,7 @@
   "trainer.more_cobblemon_contents.factory_trainer_159": "양채은",
   "trainer.more_cobblemon_contents.factory_trainer_160": "손소윤",
   "trainer.more_cobblemon_contents.factory_trainer_161": "배유진",
-  "trainer.more_cobblemon_contents.factory_trainer_162": "백혜원"
+  "trainer.more_cobblemon_contents.factory_trainer_162": "백혜원",
+  "modmenu.nameTranslation.more_cobblemon_contents_battle_factory": "More Cobblemon Contents: Battle Factory",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_battle_factory": "대여 포켓몬으로 도전하는 MCC 배틀팩토리 애드온입니다. 대여 팀 선택과 교환, 도전 진행, 기록 및 보상을 MCC 본체와 연동합니다."
 }

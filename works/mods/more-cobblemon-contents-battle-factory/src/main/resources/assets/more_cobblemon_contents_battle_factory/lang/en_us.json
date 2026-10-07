@@ -242,5 +242,7 @@
   "trainer.more_cobblemon_contents.factory_trainer_159": "Maya Gray",
   "trainer.more_cobblemon_contents.factory_trainer_160": "Leah Hall",
   "trainer.more_cobblemon_contents.factory_trainer_161": "Hazel Hill",
-  "trainer.more_cobblemon_contents.factory_trainer_162": "Fiona Hughes"
+  "trainer.more_cobblemon_contents.factory_trainer_162": "Fiona Hughes",
+  "modmenu.nameTranslation.more_cobblemon_contents_battle_factory": "More Cobblemon Contents: Battle Factory",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_battle_factory": "Build a rental team and challenge the Battle Factory. This MCC addon provides rental Pokémon selection, team swaps and battle progression, integrated with the MCC core's rewards and records."
 }
