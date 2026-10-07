@@ -264,8 +264,13 @@ internal class NativeInitialProductDecisionEvaluator(
                 status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
                 reconciliationStatus = reconciliation.status,
                 failedWorldId = reconciliation.failedWorldId,
-                failedRunDetail = (reconciliation.observedActionIssues.map { "${it.code.name}@event${it.eventSequence}" } +
+                failedRunDetail = (reconciliation.observedActionIssues.takeIf { reconciliation.inconsistencies.isEmpty() }
+                    .orEmpty().map {
+                        "${it.code.name}@event${it.eventSequence}" + (it.detail?.let { detail -> " $detail" } ?: "")
+                    } +
                     reconciliation.rootIssues.map { it.code.name } +
+                    reconciliation.inconsistencies.entries.sortedByDescending { it.value }.take(3)
+                        .map { (reason, worlds) -> "$reason x$worlds" } +
                     listOfNotNull(reconciliation.failure?.let { "${it.javaClass.simpleName}:${it.message?.take(200)}" }))
                     .joinToString(",").ifEmpty { null },
             )

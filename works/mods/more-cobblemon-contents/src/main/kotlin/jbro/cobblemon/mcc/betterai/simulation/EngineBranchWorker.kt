@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.betterai.engine.sim.EffectState
 import jbro.cobblemon.mcc.betterai.engine.sim.MoveSlot
 import jbro.cobblemon.mcc.betterai.engine.sim.Pokemon
 import jbro.cobblemon.mcc.betterai.engine.sim.PokemonSet
+import jbro.cobblemon.mcc.betterai.engine.sim.Prng
 import jbro.cobblemon.mcc.betterai.engine.sim.Side
 import jbro.cobblemon.mcc.betterai.engine.sim.activeMove
 import jbro.cobblemon.mcc.betterai.engine.sim.fork
@@ -72,6 +73,21 @@ internal class EngineBranchWorker(
         val token = extend(snapshotJson, JsonArray().apply { add("rename"); add(gson.toJsonTree(renames)) })
         remember(token, battle)
         return frame(token, battle, emptyList(), null)
+    }
+
+    override val canReseed: Boolean get() = true
+
+    override fun reseed(snapshotJson: String, salt: Int): NativeBattleFrame {
+        val battle = resolve(snapshotJson).fork()
+        reseed(battle, salt)
+        val token = extend(snapshotJson, JsonArray().apply { add("reseed"); add(salt) })
+        remember(token, battle)
+        return frame(token, battle, emptyList(), null)
+    }
+
+    private fun reseed(battle: Battle, salt: Int) {
+        val mixer = java.util.Random(battle.prng.seed.fold(salt.toLong()) { hash, part -> hash * 31 + part })
+        battle.prng = Prng(IntArray(4) { mixer.nextInt(65536) })
     }
 
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame =
@@ -246,6 +262,7 @@ internal class EngineBranchWorker(
                     step[3].asJsonArray.associate { it.asJsonArray[0].asInt to it.asJsonArray[1].asInt })
                 "rebind" -> rebind(battle, gson.fromJson(step[1], Array<NativeMoveSetRebinding>::class.java).toList())
                 "rename" -> rename(battle, step[1].asJsonObject.entrySet().associate { it.key to it.value.asString })
+                "reseed" -> reseed(battle, step[1].asInt)
                 else -> error("Unknown engine snapshot step ${step[0]}")
             }
         }

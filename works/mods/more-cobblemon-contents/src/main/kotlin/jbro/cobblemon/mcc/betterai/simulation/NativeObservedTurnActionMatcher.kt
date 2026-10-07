@@ -21,6 +21,8 @@ internal enum class NativeObservedTurnActionIssueCode {
 internal data class NativeObservedTurnActionIssue(
     val code: NativeObservedTurnActionIssueCode,
     val eventSequence: Long? = null,
+    /** What was observed against what the native request offered, for logs. */
+    val detail: String? = null,
 )
 
 internal data class NativeObservedTurnActionMatch(
@@ -103,7 +105,8 @@ internal object NativeObservedTurnActionMatcher {
             }
         }
         return if (matching.isEmpty()) {
-            failure(NativeObservedTurnActionIssueCode.NO_MATCHING_NATIVE_ACTION)
+            failure(NativeObservedTurnActionIssueCode.NO_MATCHING_NATIVE_ACTION,
+                detail = describe(sideTeam, evidenceBySlot, nativeActions))
         } else {
             NativeObservedTurnActionMatch(matching, emptyList())
         }
@@ -138,6 +141,24 @@ internal object NativeObservedTurnActionMatcher {
             return action.kind == BattleActionKind.SWITCH && action.switchPokemonId in evidence.incomingPokemonIds
         }
         return true
+    }
+
+    private fun describe(
+        team: List<NativePokemonFrame>,
+        evidenceBySlot: Map<Int, SlotEvidence>,
+        nativeActions: List<BattleActionCandidate>,
+    ): String {
+        val species = team.associate { UUID.fromString(it.uuid) to it.species }
+        val observed = evidenceBySlot.entries.joinToString(";") { (slot, evidence) ->
+            "s$slot:" + (evidence.moveIds + evidence.incomingPokemonIds.map { "switch-" + (species[it] ?: it) } +
+                listOfNotNull("tera".takeIf { evidence.teraRevealed })).joinToString("/")
+        }
+        val offered = nativeActions.asSequence().flatMap { components(it).asSequence() }.map { action ->
+            action.moveId?.let { move -> nativeId(move) + (action.mechanic?.let { "+" + canonicalMechanic(it.mechanicId) } ?: "") }
+                ?: action.switchPokemonId?.let { "switch-" + (species[it] ?: it) }
+                ?: nativeId(action.kind.name)
+        }.distinct().joinToString("/")
+        return "seen[$observed] native[$offered]"
     }
 
     private fun components(action: BattleActionCandidate): List<BattleActionCandidate> =
@@ -195,8 +216,8 @@ internal object NativeObservedTurnActionMatcher {
 
     private fun nativeId(value: String): String = PublicIds.canonical(value)
 
-    private fun failure(code: NativeObservedTurnActionIssueCode, sequence: Long? = null) =
-        NativeObservedTurnActionMatch(emptyList(), listOf(NativeObservedTurnActionIssue(code, sequence)))
+    private fun failure(code: NativeObservedTurnActionIssueCode, sequence: Long? = null, detail: String? = null) =
+        NativeObservedTurnActionMatch(emptyList(), listOf(NativeObservedTurnActionIssue(code, sequence, detail)))
 
     private data class SlotEvidence(
         val moveIds: Set<String>,

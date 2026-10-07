@@ -67,6 +67,8 @@ internal data class NativeIntermediateReplayResult(
     val frames: List<NativeIntermediateReplayFrame> = emptyList(),
     val rootIssues: List<NativeBattleRootIssue> = emptyList(),
     val observedActionIssues: List<NativeObservedTurnActionIssue> = emptyList(),
+    /** Why no frame survived, for logs: the first contradiction this replay met. */
+    val inconsistency: String? = null,
 ) {
     init {
         require((status == NativeIntermediateReplayStatus.AVAILABLE) == frames.isNotEmpty())
@@ -125,9 +127,10 @@ internal class NativeIntermediateRequestReplayer(
         val p2Choice = NativeShowdownChoiceEncoder.encode(submittedOpponentAction, BattleSide.OPPONENT, before)
         val damageBranches = conditionDamageBranches(worker, before, after, p1Choice, p2Choice,
             events, deadlineNanos) ?: return deadlineExhausted()
-        if (damageBranches.isEmpty()) return noConsistentWorld()
+        if (damageBranches.isEmpty()) return noConsistentWorld("DAMAGE_CONTRADICTED")
         val compatible = linkedMapOf<ReplayIdentity, NativeIntermediateReplayFrame>()
         var firstMismatch: NativeIntermediateReplayResult? = null
+        var firstInconsistency: String? = null
         for (damage in damageBranches) {
             if (deadlineReached(deadlineNanos)) return deadlineExhausted()
             val eventsAfterDamage = events.filterNot { it.sequence in damage.explainedEventSequences }
@@ -169,13 +172,14 @@ internal class NativeIntermediateRequestReplayer(
                 NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH -> {
                     if (firstMismatch == null) firstMismatch = advanced
                 }
-                NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD -> Unit
+                NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD ->
+                    if (firstInconsistency == null) firstInconsistency = advanced.inconsistency
             }
         }
         return if (compatible.isNotEmpty()) {
             NativeIntermediateReplayResult(NativeIntermediateReplayStatus.AVAILABLE, compatible.values.toList())
         } else {
-            firstMismatch ?: noConsistentWorld()
+            firstMismatch ?: noConsistentWorld(firstInconsistency)
         }
     }
 
@@ -211,12 +215,13 @@ internal class NativeIntermediateRequestReplayer(
                 )),
             )
         }
-        if (intermediateDepth >= MAX_INTERMEDIATE_REQUESTS) return noConsistentWorld()
+        val rootMismatch = describe(definition, rootIssues)
+        if (intermediateDepth >= MAX_INTERMEDIATE_REQUESTS) return noConsistentWorld("INTERMEDIATE_LIMIT:$rootMismatch")
 
         val allyActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, state.frame)
-        if (!allyActions.isWholeSideWait()) return noConsistentWorld()
+        if (!allyActions.isWholeSideWait()) return noConsistentWorld(rootMismatch)
         val opponentActions = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, state.frame)
-        if (opponentActions.isEmpty() || opponentActions.isWholeSideWait()) return noConsistentWorld()
+        if (opponentActions.isEmpty() || opponentActions.isWholeSideWait()) return noConsistentWorld(rootMismatch)
         val observed = NativeObservedTurnActionMatcher.match(
             format,
             BattleSide.OPPONENT,
@@ -229,6 +234,7 @@ internal class NativeIntermediateRequestReplayer(
         val allyWait = allyActions.single()
         val compatibleByAction = mutableListOf<List<NativeIntermediateReplayFrame>>()
         var firstMismatch: NativeIntermediateReplayResult? = null
+        var firstInconsistency: String? = null
         for (opponentAction in observed.actions) {
             if (deadlineReached(deadlineNanos)) return deadlineExhausted()
             val p1Choice = NativeShowdownChoiceEncoder.encode(allyWait, BattleSide.ALLY, state.frame)
@@ -247,6 +253,7 @@ internal class NativeIntermediateRequestReplayer(
                 conditioned.remainingEvents,
                 deadlineNanos,
             ) ?: return deadlineExhausted()
+            if (damageBranches.isEmpty() && firstInconsistency == null) firstInconsistency = "DAMAGE_CONTRADICTED"
             val actionFrames = linkedMapOf<ReplayIdentity, NativeIntermediateReplayFrame>()
             for (damage in damageBranches) {
                 if (deadlineReached(deadlineNanos)) return deadlineExhausted()
@@ -290,7 +297,8 @@ internal class NativeIntermediateRequestReplayer(
                     NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH -> {
                         if (firstMismatch == null) firstMismatch = advanced
                     }
-                    NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD -> Unit
+                    NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD ->
+                        if (firstInconsistency == null) firstInconsistency = advanced.inconsistency
                 }
             }
             if (actionFrames.isNotEmpty()) compatibleByAction += actionFrames.values.toList()
@@ -309,7 +317,14 @@ internal class NativeIntermediateRequestReplayer(
                 frames = compatible.values.toList(),
             )
         } else {
-            firstMismatch ?: noConsistentWorld()
+            firstMismatch ?: noConsistentWorld(firstInconsistency)
+        }
+    }
+
+    private fun describe(definition: NativeBattleDefinition, issues: List<NativeBattleRootIssue>): String {
+        val species = (definition.p1Team + definition.p2Team).associate { it.uuid to it.species }
+        return issues.joinToString("+") { issue ->
+            issue.code.name + (issue.battlePokemonId?.let { "@" + (species[it.toString()] ?: it.toString().take(8)) } ?: "")
         }
     }
 
@@ -487,8 +502,9 @@ internal class NativeIntermediateRequestReplayer(
         status = NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED,
     )
 
-    private fun noConsistentWorld() = NativeIntermediateReplayResult(
+    private fun noConsistentWorld(inconsistency: String? = null) = NativeIntermediateReplayResult(
         status = NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD,
+        inconsistency = inconsistency,
     )
 
     private data class ReplayState(

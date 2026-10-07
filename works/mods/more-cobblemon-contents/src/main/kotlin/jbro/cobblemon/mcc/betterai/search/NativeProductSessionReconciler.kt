@@ -47,6 +47,8 @@ internal data class NativeProductSessionReconciliation(
     val rootIssues: List<NativeBattleRootIssue> = emptyList(),
     val observedActionIssues: List<NativeObservedTurnActionIssue> = emptyList(),
     val failure: Throwable? = null,
+    /** When no world survived: why worlds died, with how many died that way. */
+    val inconsistencies: Map<String, Int> = emptyMap(),
 ) {
     init {
         require((status == NativeProductSessionReconcileStatus.AVAILABLE) == (sessionState != null))
@@ -101,221 +103,253 @@ internal class NativeProductSessionReconciler(
                 }
                 val descendants = mutableListOf<Descendant>()
                 var firstObservedMismatch: Pair<String, List<NativeObservedTurnActionIssue>>? = null
+                val inconsistencies = sortedMapOf<String, Int>()
                 val currentPublicPokemonIds = currentContext.state.pokemon.mapTo(linkedSetOf()) {
                     it.battlePokemonId
                 }
-                for (world in session.worlds.sortedWith(WORLD_ORDER)) {
-                    if (deadlineReached(deadlineNanos)) {
-                        return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
-                    }
-                    var root = world.rootSnapshot.frame
-                    val publicTurnOffset = world.rootSnapshot.publicTurnOffset
-                    val nativeEventWindow = if (publicTurnOffset == 0) eventWindow else
-                        eventWindow.map { it.withNativeTurnOffset(publicTurnOffset) }
-                    var definition = world.definition
-                    var catalog = world.publicContext.publicActionCatalog
-                    // An opponent sent out for the first time takes over its synthetic stand-in's ID.
-                    val renames = NativeRevealedPokemonBinder.bind(
-                        definition,
-                        currentContext.state,
-                        currentContext.opponentTeamPreview ?: world.publicContext.opponentTeamPreview,
-                        eventWindow,
-                        currentPublicPokemonIds,
-                    )
-                    if (renames == null) {
-                        if (firstObservedMismatch == null) {
-                            firstObservedMismatch = world.key.hypothesisId to listOf(NativeObservedTurnActionIssue(
-                                NativeObservedTurnActionIssueCode.REVEALED_POKEMON_NOT_IN_WORLD))
-                        }
-                        continue
-                    }
-                    if (renames.isNotEmpty()) {
-                        root = worker.renamePokemon(root.snapshotJson,
-                            renames.entries.associate { (from, to) -> from.toString() to to.toString() })
-                        definition = NativeRevealedPokemonBinder.rename(definition, renames)
-                        catalog = NativeRevealedPokemonBinder.rename(catalog, renames)
-                    }
-                    // The world keeps every unrevealed team member under its synthetic stand-in; the public battle
-                    // only lists the revealed ones. Native frames are checked against the public state plus them.
-                    val definitionIds = (definition.p1Team + definition.p2Team).mapTo(hashSetOf()) { UUID.fromString(it.uuid) }
-                    val standIns = world.publicContext.state.pokemon.filter {
-                        it.battlePokemonId in definitionIds && it.battlePokemonId !in currentPublicPokemonIds
-                    }
-                    val worldState = if (standIns.isEmpty()) currentContext.state
-                        else currentContext.state.derive(pokemon = currentContext.state.pokemon + standIns)
-                    val deferred = intermediateReplayer.conditionDeferred(
-                        session.format,
-                        root,
-                        NativeDeferredCommandState(
-                            allyAction = world.deferredAllyAction,
-                            opponentAction = world.deferredOpponentAction,
-                        ),
-                        nativeEventWindow,
-                    )
-                    if (deferred.issues.isNotEmpty()) {
-                        if (firstObservedMismatch == null) {
-                            firstObservedMismatch = world.key.hypothesisId to deferred.issues
-                        }
-                        continue
-                    }
-                    val currentEvents = deferred.remainingEvents
-                    val revealedMoves = currentEvents.asSequence()
-                        .filter { it.kind == BattleObservedEventKind.MOVE_USED }
-                        .filter { it.actorPokemonId != null && it.publicValueId != null }
-                        .groupBy { requireNotNull(it.actorPokemonId) }
-                        .mapValues { (_, events) -> events.mapTo(linkedSetOf()) { requireNotNull(it.publicValueId) } }
-                    val preReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
-                        definition = definition,
-                        previousCatalog = catalog,
-                        currentCatalog = currentContext.publicActionCatalog,
-                        currentPublicPokemonIds = currentPublicPokemonIds,
-                        revealedMoveIdsByPokemon = revealedMoves,
-                    )
-                    if (preReplayPlan.rebindings.isNotEmpty()) {
-                        root = worker.rebindMoves(root.snapshotJson, preReplayPlan.rebindings)
-                    }
-                    definition = preReplayPlan.definition
-                    catalog = preReplayPlan.catalog
-                    val ownNativeActions = NativeShowdownRequestActionFactory.actions(
-                        BattleSide.ALLY, root, allowedMechanics = session.allowedMechanics)
-                    val ownMapping = NativeRootActionMatcher.match(
-                        session.format,
-                        listOf(pendingOwnAction),
-                        ownNativeActions,
-                    )
-                    val ownNativeAction = ownMapping.productToNative[pendingOwnAction.actionId]
-                    if (ownNativeAction == null ||
-                        pendingOwnAction.actionId in ownMapping.ambiguousProductActionIds
-                    ) {
-                        return@lease failure(
-                            NativeProductSessionReconcileStatus.ROOT_ACTION_MISMATCH,
-                            failedWorldId = world.key.hypothesisId,
-                        )
-                    }
-
-                    val opponentNativeActions = NativeShowdownRequestActionFactory.actions(
-                        BattleSide.OPPONENT, root, allowedMechanics = session.allowedMechanics)
-                    val observed = NativeObservedTurnActionMatcher.match(
-                        session.format,
-                        BattleSide.OPPONENT,
-                        root,
-                        opponentNativeActions,
-                        currentEvents,
-                    )
-                    if (observed.issues.isNotEmpty()) {
-                        if (firstObservedMismatch == null) {
-                            firstObservedMismatch = world.key.hypothesisId to observed.issues
-                        }
-                        continue
-                    }
-
-                    val ownChoice = NativeShowdownChoiceEncoder.encode(ownNativeAction, BattleSide.ALLY, root)
-                    val compatibleByAction = mutableListOf<List<CompatibleFrame>>()
-                    for (opponentAction in observed.actions) {
+                // Each world first replays the turn with its own random stream. When no world survives, the turn may
+                // hinge on a chance outcome (a critical hit, a miss, a secondary effect) that stream did not draw, so
+                // the worlds replay it again with other streams before the session is given up.
+                val passes = if (worker.canReseed) 2 else 1
+                passes@ for (pass in 0 until passes) {
+                    if (pass > 0 && descendants.isNotEmpty()) break
+                    val salts: List<Int?> = if (pass == 0) listOf(null) else (1..CHANCE_RESAMPLES).toList()
+                    for (world in session.worlds.sortedWith(WORLD_ORDER)) {
                         if (deadlineReached(deadlineNanos)) {
+                            if (pass > 0) break@passes
                             return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                         }
-                        val opponentChoice = NativeShowdownChoiceEncoder.encode(
-                            opponentAction,
+                        var root = world.rootSnapshot.frame
+                        val publicTurnOffset = world.rootSnapshot.publicTurnOffset
+                        val nativeEventWindow = if (publicTurnOffset == 0) eventWindow else
+                            eventWindow.map { it.withNativeTurnOffset(publicTurnOffset) }
+                        var definition = world.definition
+                        var catalog = world.publicContext.publicActionCatalog
+                        // An opponent sent out for the first time takes over its synthetic stand-in's ID.
+                        val renames = NativeRevealedPokemonBinder.bind(
+                            definition,
+                            currentContext.state,
+                            currentContext.opponentTeamPreview ?: world.publicContext.opponentTeamPreview,
+                            eventWindow,
+                            currentPublicPokemonIds,
+                        )
+                        if (renames == null) {
+                            if (pass == 0) inconsistencies.merge("REVEALED_POKEMON_NOT_IN_WORLD", 1, Int::plus)
+                            if (firstObservedMismatch == null) {
+                                firstObservedMismatch = world.key.hypothesisId to listOf(NativeObservedTurnActionIssue(
+                                    NativeObservedTurnActionIssueCode.REVEALED_POKEMON_NOT_IN_WORLD))
+                            }
+                            continue
+                        }
+                        if (renames.isNotEmpty()) {
+                            root = worker.renamePokemon(root.snapshotJson,
+                                renames.entries.associate { (from, to) -> from.toString() to to.toString() })
+                            definition = NativeRevealedPokemonBinder.rename(definition, renames)
+                            catalog = NativeRevealedPokemonBinder.rename(catalog, renames)
+                        }
+                        // The world keeps every unrevealed team member under its synthetic stand-in; the public battle
+                        // only lists the revealed ones. Native frames are checked against the public state plus them.
+                        val definitionIds = (definition.p1Team + definition.p2Team).mapTo(hashSetOf()) { UUID.fromString(it.uuid) }
+                        val standIns = world.publicContext.state.pokemon.filter {
+                            it.battlePokemonId in definitionIds && it.battlePokemonId !in currentPublicPokemonIds
+                        }
+                        val worldState = if (standIns.isEmpty()) currentContext.state
+                            else currentContext.state.derive(pokemon = currentContext.state.pokemon + standIns)
+                        val deferred = intermediateReplayer.conditionDeferred(
+                            session.format,
+                            root,
+                            NativeDeferredCommandState(
+                                allyAction = world.deferredAllyAction,
+                                opponentAction = world.deferredOpponentAction,
+                            ),
+                            nativeEventWindow,
+                        )
+                        if (deferred.issues.isNotEmpty()) {
+                            if (pass == 0) inconsistencies.merge(observedReason("deferred", deferred.issues), 1, Int::plus)
+                            if (firstObservedMismatch == null) {
+                                firstObservedMismatch = world.key.hypothesisId to deferred.issues
+                            }
+                            continue
+                        }
+                        val currentEvents = deferred.remainingEvents
+                        val revealedMoves = currentEvents.asSequence()
+                            .filter { it.kind == BattleObservedEventKind.MOVE_USED }
+                            .filter { it.actorPokemonId != null && it.publicValueId != null }
+                            .groupBy { requireNotNull(it.actorPokemonId) }
+                            .mapValues { (_, events) -> events.mapTo(linkedSetOf()) { requireNotNull(it.publicValueId) } }
+                        val preReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
+                            definition = definition,
+                            previousCatalog = catalog,
+                            currentCatalog = currentContext.publicActionCatalog,
+                            currentPublicPokemonIds = currentPublicPokemonIds,
+                            revealedMoveIdsByPokemon = revealedMoves,
+                        )
+                        if (preReplayPlan.rebindings.isNotEmpty()) {
+                            root = worker.rebindMoves(root.snapshotJson, preReplayPlan.rebindings)
+                        }
+                        definition = preReplayPlan.definition
+                        catalog = preReplayPlan.catalog
+                        val ownNativeActions = NativeShowdownRequestActionFactory.actions(
+                            BattleSide.ALLY, root, allowedMechanics = session.allowedMechanics)
+                        val ownMapping = NativeRootActionMatcher.match(
+                            session.format,
+                            listOf(pendingOwnAction),
+                            ownNativeActions,
+                        )
+                        val ownNativeAction = ownMapping.productToNative[pendingOwnAction.actionId]
+                        if (ownNativeAction == null ||
+                            pendingOwnAction.actionId in ownMapping.ambiguousProductActionIds
+                        ) {
+                            return@lease failure(
+                                NativeProductSessionReconcileStatus.ROOT_ACTION_MISMATCH,
+                                failedWorldId = world.key.hypothesisId,
+                            )
+                        }
+
+                        val opponentNativeActions = NativeShowdownRequestActionFactory.actions(
+                            BattleSide.OPPONENT, root, allowedMechanics = session.allowedMechanics)
+                        val observed = NativeObservedTurnActionMatcher.match(
+                            session.format,
                             BattleSide.OPPONENT,
                             root,
+                            opponentNativeActions,
+                            currentEvents,
                         )
-                        val next = worker.branchWithDamageEvidence(root.snapshotJson, ownChoice, opponentChoice)
-                        val replayed = intermediateReplayer.replayAfterChoice(
-                            worker = worker,
-                            definition = definition,
-                            format = session.format,
-                            before = root,
-                            after = next,
-                            existingDeferred = deferred.commands,
-                            submittedAllyAction = ownNativeAction,
-                            submittedOpponentAction = opponentAction,
-                            events = currentEvents,
-                            publicState = worldState,
-                            deadlineNanos = deadlineNanos,
-                            publicTurnOffset = publicTurnOffset,
-                        )
-                        val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
-                        when (replayed.status) {
-                            NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
-                                val order = NativeObservedActionOrderConditioner.evaluate(
-                                    session.trainerTier,
-                                    worldState,
-                                    frame.frame,
-                                    publicTurnOffset,
-                                )
-                                if (order.status == NativeObservedActionOrderStatus.CONTRADICTED) {
-                                    return@forEach
-                                }
-                                val postReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
-                                    definition = definition,
-                                    previousCatalog = catalog,
-                                    currentCatalog = currentContext.publicActionCatalog,
-                                    currentPublicPokemonIds = currentPublicPokemonIds,
-                                )
-                                val updatedFrame = if (postReplayPlan.rebindings.isEmpty()) {
-                                    frame.frame
-                                } else {
-                                    worker.rebindMoves(frame.frame.snapshotJson, postReplayPlan.rebindings)
-                                }
-                                val compatible = CompatibleFrame(
-                                    frame = updatedFrame,
-                                    definition = postReplayPlan.definition,
-                                    catalog = postReplayPlan.catalog,
-                                    observationLikelihood = frame.observationLikelihood,
-                                    deferredAllyAction = frame.deferredCommands.allyAction,
-                                    deferredOpponentAction = frame.deferredCommands.opponentAction,
-                                )
-                                val previous = actionFrames[compatible.identity]
-                                actionFrames[compatible.identity] = if (previous == null) compatible else {
-                                    compatible.copy(observationLikelihood =
-                                        previous.observationLikelihood + compatible.observationLikelihood)
-                                }
+                        if (observed.issues.isNotEmpty()) {
+                            if (pass == 0) inconsistencies.merge(observedReason("root", observed.issues), 1, Int::plus)
+                            if (firstObservedMismatch == null) {
+                                firstObservedMismatch = world.key.hypothesisId to observed.issues
                             }
-                            NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED -> return@lease failure(
-                                NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED,
-                            )
-                            NativeIntermediateReplayStatus.ROOT_STATE_INCONSISTENT -> return@lease failure(
-                                NativeProductSessionReconcileStatus.ROOT_STATE_INCONSISTENT,
-                                failedWorldId = world.key.hypothesisId,
-                                rootIssues = replayed.rootIssues,
-                            )
-                            NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH -> {
-                                if (firstObservedMismatch == null) {
-                                    firstObservedMismatch = world.key.hypothesisId to replayed.observedActionIssues
-                                }
-                            }
-                            NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD -> Unit
+                            continue
                         }
-                        if (actionFrames.isNotEmpty()) compatibleByAction += actionFrames.values.toList()
-                    }
-                    if (compatibleByAction.isEmpty()) continue
 
-                    // No public action evidence distinguishes these descendants. Until a versioned
-                    // opponent-policy likelihood exists, divide the prior across all publicly possible
-                    // commands. Incompatible commands carry zero evidence likelihood; dividing only
-                    // by survivors would erase that evidence against this build world.
-                    // A single command may produce several exact HP states under one public percent;
-                    // those states carry their native damage-roll likelihood, not another uniform split.
-                    val probability = world.probability / observed.actions.size.toDouble()
-                    val weightedFrames = linkedMapOf<DescendantIdentity, Pair<CompatibleFrame, Double>>()
-                    compatibleByAction.forEach { frames -> frames.forEach { compatible ->
-                        val mass = probability * compatible.observationLikelihood
-                        val previous = weightedFrames[compatible.identity]
-                        weightedFrames[compatible.identity] = compatible to (mass + (previous?.second ?: 0.0))
-                    } }
-                    weightedFrames.values.forEach { (compatible, mass) ->
-                        descendants += Descendant(
-                            world = world,
-                            publicState = worldState,
-                            frame = compatible.frame,
-                            definition = compatible.definition,
-                            catalog = compatible.catalog,
-                            probability = mass,
-                            split = weightedFrames.size > 1,
-                            deferredAllyAction = compatible.deferredAllyAction,
-                            deferredOpponentAction = compatible.deferredOpponentAction,
-                        )
+                        val compatibleByAction = mutableListOf<List<CompatibleFrame>>()
+                        var worldInconsistency: String? = null
+                        for (opponentAction in observed.actions) {
+                            val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
+                            for (salt in salts) {
+                                if (deadlineReached(deadlineNanos)) {
+                                    if (pass > 0) break@passes
+                                    return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
+                                }
+                                val start = salt?.let { worker.reseed(root.snapshotJson, it) } ?: root
+                                val ownChoice = NativeShowdownChoiceEncoder.encode(ownNativeAction, BattleSide.ALLY, start)
+                                val opponentChoice = NativeShowdownChoiceEncoder.encode(
+                                    opponentAction,
+                                    BattleSide.OPPONENT,
+                                    start,
+                                )
+                                val next = worker.branchWithDamageEvidence(start.snapshotJson, ownChoice, opponentChoice)
+                                val replayed = intermediateReplayer.replayAfterChoice(
+                                    worker = worker,
+                                    definition = definition,
+                                    format = session.format,
+                                    before = start,
+                                    after = next,
+                                    existingDeferred = deferred.commands,
+                                    submittedAllyAction = ownNativeAction,
+                                    submittedOpponentAction = opponentAction,
+                                    events = currentEvents,
+                                    publicState = worldState,
+                                    deadlineNanos = deadlineNanos,
+                                    publicTurnOffset = publicTurnOffset,
+                                )
+                                when (replayed.status) {
+                                    NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
+                                        val order = NativeObservedActionOrderConditioner.evaluate(
+                                            session.trainerTier,
+                                            worldState,
+                                            frame.frame,
+                                            publicTurnOffset,
+                                        )
+                                        if (order.status == NativeObservedActionOrderStatus.CONTRADICTED) {
+                                            return@forEach
+                                        }
+                                        val postReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
+                                            definition = definition,
+                                            previousCatalog = catalog,
+                                            currentCatalog = currentContext.publicActionCatalog,
+                                            currentPublicPokemonIds = currentPublicPokemonIds,
+                                        )
+                                        val updatedFrame = if (postReplayPlan.rebindings.isEmpty()) {
+                                            frame.frame
+                                        } else {
+                                            worker.rebindMoves(frame.frame.snapshotJson, postReplayPlan.rebindings)
+                                        }
+                                        val compatible = CompatibleFrame(
+                                            frame = updatedFrame,
+                                            definition = postReplayPlan.definition,
+                                            catalog = postReplayPlan.catalog,
+                                            observationLikelihood = frame.observationLikelihood,
+                                            deferredAllyAction = frame.deferredCommands.allyAction,
+                                            deferredOpponentAction = frame.deferredCommands.opponentAction,
+                                        )
+                                        val previous = actionFrames[compatible.identity]
+                                        actionFrames[compatible.identity] = if (previous == null) compatible else {
+                                            compatible.copy(observationLikelihood =
+                                                previous.observationLikelihood + compatible.observationLikelihood)
+                                        }
+                                    }
+                                    NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED -> {
+                                        if (pass > 0) break@passes
+                                        return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
+                                    }
+                                    NativeIntermediateReplayStatus.ROOT_STATE_INCONSISTENT -> return@lease failure(
+                                        NativeProductSessionReconcileStatus.ROOT_STATE_INCONSISTENT,
+                                        failedWorldId = world.key.hypothesisId,
+                                        rootIssues = replayed.rootIssues,
+                                    )
+                                    NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH -> {
+                                        if (firstObservedMismatch == null) {
+                                            firstObservedMismatch = world.key.hypothesisId to replayed.observedActionIssues
+                                        }
+                                        if (worldInconsistency == null) {
+                                            worldInconsistency = observedReason("replay", replayed.observedActionIssues)
+                                        }
+                                    }
+                                    NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD ->
+                                        if (worldInconsistency == null) worldInconsistency = replayed.inconsistency ?: "UNKNOWN"
+                                }
+                                if (actionFrames.isEmpty() && replayed.status == NativeIntermediateReplayStatus.AVAILABLE &&
+                                    worldInconsistency == null
+                                ) {
+                                    worldInconsistency = "ACTION_ORDER_CONTRADICTED"
+                                }
+                                if (actionFrames.isNotEmpty()) break
+                            }
+                            if (actionFrames.isNotEmpty()) compatibleByAction += actionFrames.values.toList()
+                        }
+                        if (compatibleByAction.isEmpty()) {
+                            if (pass == 0) worldInconsistency?.let { inconsistencies.merge(it, 1, Int::plus) }
+                            continue
+                        }
+
+                        // No public action evidence distinguishes these descendants. Until a versioned
+                        // opponent-policy likelihood exists, divide the prior across all publicly possible
+                        // commands. Incompatible commands carry zero evidence likelihood; dividing only
+                        // by survivors would erase that evidence against this build world.
+                        // A single command may produce several exact HP states under one public percent;
+                        // those states carry their native damage-roll likelihood, not another uniform split.
+                        val probability = world.probability / observed.actions.size.toDouble()
+                        val weightedFrames = linkedMapOf<DescendantIdentity, Pair<CompatibleFrame, Double>>()
+                        compatibleByAction.forEach { frames -> frames.forEach { compatible ->
+                            val mass = probability * compatible.observationLikelihood
+                            val previous = weightedFrames[compatible.identity]
+                            weightedFrames[compatible.identity] = compatible to (mass + (previous?.second ?: 0.0))
+                        } }
+                        weightedFrames.values.forEach { (compatible, mass) ->
+                            descendants += Descendant(
+                                world = world,
+                                publicState = worldState,
+                                frame = compatible.frame,
+                                definition = compatible.definition,
+                                catalog = compatible.catalog,
+                                probability = mass,
+                                split = weightedFrames.size > 1,
+                                deferredAllyAction = compatible.deferredAllyAction,
+                                deferredOpponentAction = compatible.deferredOpponentAction,
+                            )
+                        }
                     }
                 }
                 if (descendants.isEmpty()) {
@@ -325,9 +359,10 @@ internal class NativeProductSessionReconciler(
                             NativeProductSessionReconcileStatus.OBSERVED_ACTION_MISMATCH,
                             failedWorldId = observedMismatch.first,
                             observedActionIssues = observedMismatch.second,
+                            inconsistencies = inconsistencies,
                         )
                     } else {
-                        failure(NativeProductSessionReconcileStatus.NO_CONSISTENT_WORLD)
+                        failure(NativeProductSessionReconcileStatus.NO_CONSISTENT_WORLD, inconsistencies = inconsistencies)
                     }
                 }
 
@@ -409,6 +444,9 @@ internal class NativeProductSessionReconciler(
 
     private fun deadlineReached(deadlineNanos: Long): Boolean = nanoTime() - deadlineNanos >= 0L
 
+    private fun observedReason(stage: String, issues: List<NativeObservedTurnActionIssue>): String =
+        "$stage:" + issues.joinToString("+") { it.code.name + (it.detail?.let { detail -> " $detail" } ?: "") }
+
     private fun BattleObservedEventView.withNativeTurnOffset(offset: Int) = BattleObservedEventView(
         sequence = sequence,
         turn = turn + offset,
@@ -432,12 +470,14 @@ internal class NativeProductSessionReconciler(
         rootIssues: List<NativeBattleRootIssue> = emptyList(),
         observedActionIssues: List<NativeObservedTurnActionIssue> = emptyList(),
         failure: Throwable? = null,
+        inconsistencies: Map<String, Int> = emptyMap(),
     ) = NativeProductSessionReconciliation(
         status = status,
         failedWorldId = failedWorldId,
         rootIssues = rootIssues,
         observedActionIssues = observedActionIssues,
         failure = failure,
+        inconsistencies = inconsistencies,
     )
 
     private data class Descendant(
@@ -486,6 +526,9 @@ internal class NativeProductSessionReconciler(
     )
 
     private companion object {
+        /** Other random streams each world tries when no world explains the observed turn with its own. */
+        const val CHANCE_RESAMPLES = 8
+
         val WORLD_ORDER = compareBy<NativeProductSessionWorld> { it.key.hypothesisId }
             .thenBy { it.key.randomSampleIndex }
             .thenBy { it.key.lineage }

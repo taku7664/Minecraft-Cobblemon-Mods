@@ -62,6 +62,16 @@ internal interface NativeBranchWorker : AutoCloseable {
     ): NativeBattleFrame {
         throw UnsupportedOperationException("This native worker cannot force observed damage rolls")
     }
+
+    /** Whether [reseed] works: a worker that cannot draw other chance outcomes keeps the single sample. */
+    val canReseed: Boolean get() = false
+
+    /**
+     * The same position with another random stream, so the next turn draws other chance outcomes (critical hits,
+     * misses, secondary effects). [salt] picks the stream deterministically.
+     */
+    fun reseed(snapshotJson: String, salt: Int): NativeBattleFrame =
+        throw UnsupportedOperationException("This native worker cannot reseed its random stream")
 }
 
 internal class NativeShowdownBranchEngine private constructor(
