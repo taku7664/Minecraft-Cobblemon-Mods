@@ -23,6 +23,7 @@ public final class KeybindingSetup {
         new Rule("zoomify", List.of("key_zoomify.key.zoom"),
             "keybindings-zoomify-primary-v1", "key.keyboard.left.alt"),
         new Rule("pokebadges", List.of("key_key.pokebadges.open_badgebox")),
+        new Rule("accessories", List.of("key_accessories.key.open_accessories_screen")),
         new Rule("more_cobblemon_contents_pvp", List.of("key_key.more_cobblemon_contents.pvp.room_hud.open"),
             "keybindings-more_cobblemon_contents_pvp-room-open-v2", "key.keyboard.j"),
         new Rule("jbro_policy", List.of("key_key.jbro_policy.quick_waypoint")),
