@@ -31,14 +31,14 @@ object ClothConfigScreenBuilder {
         theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.uiStyle"),
             styles.toTypedArray(), PanelConfig.uiStyle)
             .setDefaultValue(UiThemeStyle.DS_WINDOW.id)
-            .setNameProvider { Component.translatable("cobblemon_ui.config.uiStyle.option", styles.indexOf(it) + 1) }
+            .setNameProvider { Component.translatable("cobblemon_ui.config.uiStyle.$it") }
             .setTooltip(Component.translatable("cobblemon_ui.config.uiStyle.tooltip"))
             .setSaveConsumer(PanelConfig::setUiStyle).build())
         val palettes = UiPalettePreset.entries.map { it.id }
         theme.addEntry(entries.startSelector(Component.translatable("cobblemon_ui.config.uiPalette"),
             palettes.toTypedArray(), PanelConfig.uiPalette)
             .setDefaultValue(UiPalettePreset.TOWER_LOBBY.id)
-            .setNameProvider { Component.translatable("cobblemon_ui.config.uiPalette.option", palettes.indexOf(it) + 1) }
+            .setNameProvider { Component.translatable("cobblemon_ui.config.uiPalette.$it") }
             .setTooltip(Component.translatable("cobblemon_ui.config.uiPalette.tooltip"))
             .setSaveConsumer(PanelConfig::setUiPalette).build())
 
@@ -60,6 +60,8 @@ object ClothConfigScreenBuilder {
         ).setDefaultValue(true)
             .setTooltip(Component.translatable("cobblemon_ui.config.enableMoveTooltips.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
+        features.addEntry(toggle(entries, "enableBattleLogDamagePercentages",
+            PanelConfig.enableBattleLogDamagePercentages, true, PanelConfig::setEnableBattleLogDamagePercentages))
 
         val sizing = builder.getOrCreateCategory(Component.translatable("cobblemon_ui.config.category.sizing"))
         sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))
