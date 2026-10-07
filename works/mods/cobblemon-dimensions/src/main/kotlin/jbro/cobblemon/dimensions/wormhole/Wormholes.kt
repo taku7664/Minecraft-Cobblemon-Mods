@@ -47,7 +47,9 @@ object Wormholes {
         }
         player.setPortalCooldown()
         player.server.execute {
-            if (DimensionTravel.enter(player, ModDimension.ULTRA_SPACE, player.blockX, player.blockZ)) {
+            // The hole hangs in the sky: coming back should land on the ground below it, not inside it again.
+            val entry = DimensionTravel.groundBelow(player.serverLevel(), player.x, player.z)
+            if (DimensionTravel.enter(player, ModDimension.ULTRA_SPACE, player.blockX, player.blockZ, entry)) {
                 player.level().playSound(null, player.blockPosition(), SoundEvents.PORTAL_TRAVEL, SoundSource.PLAYERS, 0.4f, 1.6f)
             }
         }
