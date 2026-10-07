@@ -8,7 +8,10 @@ import kotlin.math.ceil
 import kotlin.math.floor
 
 /** Port of `sim/pokemon.js` (gen 9 paths, with the Cobblemon and Mega Showdown changes the server runs). */
-class Pokemon(val set: PokemonSet, val side: Side) {
+class Pokemon(set: PokemonSet, val side: Side) {
+    /** Replaced only when a native world rebinds a hypothesized move set. */
+    var set: PokemonSet = set
+
     val battle: Battle = side.battle
 
     var baseSpecies: Species = battle.dex.species(set.species.ifEmpty { set.name })
@@ -19,7 +22,8 @@ class Pokemon(val set: PokemonSet, val side: Side) {
     val fullname: String
     val level: Int
     var gender: String
-    val uuid: String
+    /** Renamed only when a native world binds a synthetic opponent to the real Pokemon it revealed. */
+    var uuid: String
     var baseMoveSlots: MutableList<MoveSlot> = ArrayList()
     var moveSlots: MutableList<MoveSlot> = ArrayList()
     var position: Int = 0

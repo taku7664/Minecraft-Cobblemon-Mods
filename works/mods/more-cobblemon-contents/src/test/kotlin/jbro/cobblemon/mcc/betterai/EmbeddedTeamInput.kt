@@ -110,7 +110,9 @@ internal object EmbeddedTeamInput {
             pp.observe(element.asString, pressureLoss, ::maximumPp)
             fun event(eventKind: BattleObservedEventKind, value: String? = null) {
                 events += BattleObservedEventView(index.toLong() * 2, eventTurn, eventKind,
-                    actorPokemonId = current?.let { uuid(it.ident) }, publicValueId = value)
+                    actorPokemonId = current?.let { uuid(it.ident) }, publicValueId = value,
+                    // The game's observer records the actor's active slot; the native session matches by it.
+                    actorSlot = if (nativeInputs && current != null) activeSlot(actor) else null)
             }
             when (kind) {
                 "turn" -> eventTurn = actor.toInt()
@@ -144,7 +146,8 @@ internal object EmbeddedTeamInput {
                         entry.originalMoves = it.originalMoves; entry.tera = it.tera; entry.types = types(entry) }
                     entry.volatileEffects += inherited
                     seen[key] = entry
-                    events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
+                    events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor),
+                        actorSlot = if (nativeInputs) activeSlot(actor) else null)
                 }
                 "-damage", "-heal" -> {
                     current?.let { val hp = condition(p[3]); it.hp = hp.first; it.status = hp.second }

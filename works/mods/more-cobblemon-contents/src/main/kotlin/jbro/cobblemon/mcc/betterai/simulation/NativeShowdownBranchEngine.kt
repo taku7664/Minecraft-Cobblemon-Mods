@@ -36,6 +36,10 @@ internal interface NativeBranchWorker : AutoCloseable {
 
     fun rebindMoves(snapshotJson: String, rebindings: List<NativeMoveSetRebinding>): NativeBattleFrame
 
+    /** Gives synthetic team members the real IDs the public battle revealed them under (old → new). */
+    fun renamePokemon(snapshotJson: String, renames: Map<String, String>): NativeBattleFrame =
+        throw UnsupportedOperationException("This native worker cannot rename revealed Pokemon")
+
     fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
 
     /**

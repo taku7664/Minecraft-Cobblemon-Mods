@@ -75,7 +75,14 @@ class PokemonSet(
     var status: String? = null,
     var statusDuration: Int? = null,
     var pokeball: String? = null,
-)
+) {
+    /** Sets are shared between forked battles, so a changed move list is a new set, never an edit. */
+    fun withMoves(replacement: List<String>): PokemonSet = PokemonSet(
+        species, name, level, gender, ability, item, nature, LinkedHashMap(evs), LinkedHashMap(ivs), replacement,
+        null, teraType, uuid, shiny, happiness, dynamaxLevel, gigantamax, hpType, currentHealth, status,
+        statusDuration, pokeball,
+    )
+}
 
 class MoveHitData {
     var crit: Boolean = false

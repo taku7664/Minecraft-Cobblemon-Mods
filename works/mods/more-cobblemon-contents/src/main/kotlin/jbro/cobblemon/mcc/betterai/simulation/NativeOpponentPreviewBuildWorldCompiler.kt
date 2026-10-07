@@ -49,6 +49,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         tier: BattleTrainerTier,
         usage: LocalOpponentBuildUsageLookup,
         exactStatSpreadsBySlot: Map<Int, BattleLocalOpponentStatSpreadView> = emptyMap(),
+        /** Abilities the opening already revealed (Intimidate, Drought): those slots hold only that ability. */
+        revealedAbilitiesBySlot: Map<Int, String> = emptyMap(),
     ): NativeOpponentBuildWorldCompilation {
         val selectedSlots = selectedPreviewSlotIds.distinct().sorted()
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
@@ -79,11 +81,13 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 return@forEach
             }
             val observedUsage = usage.forPokemon(pokemon.speciesId, pokemon.formId)
-            val source = observedUsage ?: NativeMissingBuildUsageFallback.forPokemon(pokemon)
-            if (source == null) {
+            val usageSource = observedUsage ?: NativeMissingBuildUsageFallback.forPokemon(pokemon)
+            if (usageSource == null) {
                 issues += NativeOpponentBuildWorldIssue(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING, slot)
                 return@forEach
             }
+            val source = revealedAbilitiesBySlot[slot]?.let { usageSource.copy(abilityRates = mapOf(it to 1.0)) }
+                ?: usageSource
             val legalAbilities = buildPool.abilities.mapTo(linkedSetOf()) {
                 canonical(it.abilityId)
             }

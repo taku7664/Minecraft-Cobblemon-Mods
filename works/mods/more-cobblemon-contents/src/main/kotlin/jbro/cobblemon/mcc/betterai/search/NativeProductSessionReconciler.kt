@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
+import java.util.UUID
+
 import java.security.MessageDigest
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -11,6 +13,8 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleRootIssue
 import jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.NativeObservedTurnActionIssue
+import jbro.cobblemon.mcc.betterai.simulation.NativeObservedTurnActionIssueCode
+import jbro.cobblemon.mcc.betterai.simulation.NativeRevealedPokemonBinder
 import jbro.cobblemon.mcc.betterai.simulation.NativeObservedTurnActionMatcher
 import jbro.cobblemon.mcc.betterai.simulation.NativeObservedActionOrderConditioner
 import jbro.cobblemon.mcc.betterai.simulation.NativeObservedActionOrderStatus
@@ -110,6 +114,35 @@ internal class NativeProductSessionReconciler(
                         eventWindow.map { it.withNativeTurnOffset(publicTurnOffset) }
                     var definition = world.definition
                     var catalog = world.publicContext.publicActionCatalog
+                    // An opponent sent out for the first time takes over its synthetic stand-in's ID.
+                    val renames = NativeRevealedPokemonBinder.bind(
+                        definition,
+                        currentContext.state,
+                        currentContext.opponentTeamPreview ?: world.publicContext.opponentTeamPreview,
+                        eventWindow,
+                        currentPublicPokemonIds,
+                    )
+                    if (renames == null) {
+                        if (firstObservedMismatch == null) {
+                            firstObservedMismatch = world.key.hypothesisId to listOf(NativeObservedTurnActionIssue(
+                                NativeObservedTurnActionIssueCode.REVEALED_POKEMON_NOT_IN_WORLD))
+                        }
+                        continue
+                    }
+                    if (renames.isNotEmpty()) {
+                        root = worker.renamePokemon(root.snapshotJson,
+                            renames.entries.associate { (from, to) -> from.toString() to to.toString() })
+                        definition = NativeRevealedPokemonBinder.rename(definition, renames)
+                        catalog = NativeRevealedPokemonBinder.rename(catalog, renames)
+                    }
+                    // The world keeps every unrevealed team member under its synthetic stand-in; the public battle
+                    // only lists the revealed ones. Native frames are checked against the public state plus them.
+                    val definitionIds = (definition.p1Team + definition.p2Team).mapTo(hashSetOf()) { UUID.fromString(it.uuid) }
+                    val standIns = world.publicContext.state.pokemon.filter {
+                        it.battlePokemonId in definitionIds && it.battlePokemonId !in currentPublicPokemonIds
+                    }
+                    val worldState = if (standIns.isEmpty()) currentContext.state
+                        else currentContext.state.derive(pokemon = currentContext.state.pokemon + standIns)
                     val deferred = intermediateReplayer.conditionDeferred(
                         session.format,
                         root,
@@ -198,7 +231,7 @@ internal class NativeProductSessionReconciler(
                             submittedAllyAction = ownNativeAction,
                             submittedOpponentAction = opponentAction,
                             events = currentEvents,
-                            publicState = currentContext.state,
+                            publicState = worldState,
                             deadlineNanos = deadlineNanos,
                             publicTurnOffset = publicTurnOffset,
                         )
@@ -207,7 +240,7 @@ internal class NativeProductSessionReconciler(
                             NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
                                 val order = NativeObservedActionOrderConditioner.evaluate(
                                     session.trainerTier,
-                                    currentContext.state,
+                                    worldState,
                                     frame.frame,
                                     publicTurnOffset,
                                 )
@@ -274,6 +307,7 @@ internal class NativeProductSessionReconciler(
                     weightedFrames.values.forEach { (compatible, mass) ->
                         descendants += Descendant(
                             world = world,
+                            publicState = worldState,
                             frame = compatible.frame,
                             definition = compatible.definition,
                             catalog = compatible.catalog,
@@ -315,6 +349,7 @@ internal class NativeProductSessionReconciler(
                         rootSnapshot = NativeProductRootSnapshot(
                             session.rulesFingerprint, descendant.frame, previous.rootSnapshot.publicTurnOffset),
                         publicContext = currentContext.copy(
+                            state = descendant.publicState,
                             publicActionCatalog = descendant.catalog,
                             opponentTeamPreview = currentContext.opponentTeamPreview
                                 ?: previous.publicContext.opponentTeamPreview,
@@ -407,6 +442,7 @@ internal class NativeProductSessionReconciler(
 
     private data class Descendant(
         val world: NativeProductSessionWorld,
+        val publicState: jbro.cobblemon.mcc.internal.ai.BattleStateView,
         val frame: NativeBattleFrame,
         val definition: NativeBattleDefinition,
         val catalog: jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView,

@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
@@ -142,12 +143,23 @@ internal class NativeInitialProductWorldPlanner(
                     issue.code.name + "@" + speciesOf(roster.state, issue.battlePokemonId)
                 },
             )
+            // A switch-in ability the opening revealed fixes that slot's ability; a world with another one would
+            // contradict the native opening frame and fail the whole search. Copied abilities (Trace) are not the set's.
+            val revealedAbilitiesBySlot = context.state.observedEvents.asSequence()
+                .filter { it.kind == BattleObservedEventKind.ABILITY_REVEALED && it.publicSourceEffectId == null }
+                .mapNotNull { event ->
+                    val slot = event.actorPokemonId?.let(roster.opponentPreviewSlotByPokemonId::get)
+                    val ability = event.publicValueId?.let(PublicIds::canonical)
+                    if (slot == null || ability.isNullOrEmpty()) null else slot to ability
+                }
+                .toMap()
             val buildCompilation = NativeOpponentPreviewBuildWorldCompiler.compile(
                 preview,
                 rosterHypothesis.selectedPreviewSlotIds,
                 tier,
                 buildUsageForFormat(context.state.format),
                 context.localOpponentStatSpreads,
+                revealedAbilitiesBySlot,
             )
             if (buildCompilation.issues.isNotEmpty()) {
                 return failure(

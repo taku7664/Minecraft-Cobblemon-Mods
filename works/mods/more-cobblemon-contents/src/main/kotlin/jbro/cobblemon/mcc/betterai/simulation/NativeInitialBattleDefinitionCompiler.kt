@@ -270,19 +270,15 @@ internal object NativeInitialBattleDefinitionCompiler {
         .mapNotNull { it.publicValueId }
         .toList()
 
+    // Weather, terrain, field effects, stat stages and volatiles at the opening come from the leads' switch-in
+    // abilities (Drought, Sand Stream, Electric Surge, Intimidate), which the native opening replays itself; the
+    // root validator checks them against the public state. Only what a switch-in cannot cause makes it non-initial.
     private fun isInitialState(state: BattleStateView): Boolean =
         state.turn in 0..1 &&
             NativeOpeningStateRules.acceptsObservations(state) &&
-            state.field.weather == null &&
-            state.field.terrain == null &&
-            state.field.roomEffects.isEmpty() &&
-            state.field.globalEffects.isEmpty() &&
-            state.field.sideConditions.values.all(List<*>::isEmpty) &&
             state.pokemon.all { pokemon ->
                 pokemon.hpFraction == 1.0 &&
                     pokemon.statusId == null &&
-                    pokemon.statStages.isEmpty() &&
-                    pokemon.knownVolatileEffectIds.isEmpty() &&
                     pokemon.actionConstraints == BattlePokemonActionConstraintView.empty() &&
                     !pokemon.fainted &&
                     (pokemon.side != BattleSide.ALLY ||

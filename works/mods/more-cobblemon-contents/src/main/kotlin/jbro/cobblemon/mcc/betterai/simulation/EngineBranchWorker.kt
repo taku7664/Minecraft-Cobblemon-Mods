@@ -65,6 +65,15 @@ internal class EngineBranchWorker(
         return frame(token, battle, emptyList(), null)
     }
 
+    override fun renamePokemon(snapshotJson: String, renames: Map<String, String>): NativeBattleFrame {
+        require(renames.isNotEmpty()) { "At least one native Pokemon rename is required" }
+        val battle = resolve(snapshotJson).fork()
+        rename(battle, renames)
+        val token = extend(snapshotJson, JsonArray().apply { add("rename"); add(gson.toJsonTree(renames)) })
+        remember(token, battle)
+        return frame(token, battle, emptyList(), null)
+    }
+
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame =
         play(snapshotJson, p1Choice, p2Choice, captureDamageRolls = false, forced = emptyList())
 
@@ -170,6 +179,16 @@ internal class EngineBranchWorker(
                 actual.loss, possible, actual.callIndex)
         }
 
+    private fun rename(battle: Battle, renames: Map<String, String>) {
+        val team = battle.sides.flatMap { it.pokemon }
+        require(renames.values.none { to -> team.any { it.uuid == to } }) { "A native rename target is already in the battle" }
+        for ((from, to) in renames) {
+            val matches = team.filter { it.uuid == from }
+            require(matches.size == 1) { "Native rename names unknown or duplicate Pokemon $from" }
+            matches[0].uuid = to
+        }
+    }
+
     private fun rebind(battle: Battle, rebindings: List<NativeMoveSetRebinding>) {
         for (rebinding in rebindings) {
             val matches = battle.sides.flatMap { it.pokemon }.filter { it.uuid == rebinding.pokemonUuid }
@@ -193,6 +212,8 @@ internal class EngineBranchWorker(
             }
             pokemon.baseMoveSlots = rebound.toMutableList()
             pokemon.moveSlots = rebound.toMutableList()
+            // The set is what the frame reports as the source set; leaving it stale contradicted the definition.
+            pokemon.set = pokemon.set.withMoves(replacement)
             if (pokemon.isActive && battle.requestState == "move") {
                 pokemon.maybeDisabled = false
                 for (slot in pokemon.moveSlots) {
@@ -224,6 +245,7 @@ internal class EngineBranchWorker(
                 "branch" -> step(battle, step[1].asString, step[2].asString,
                     step[3].asJsonArray.associate { it.asJsonArray[0].asInt to it.asJsonArray[1].asInt })
                 "rebind" -> rebind(battle, gson.fromJson(step[1], Array<NativeMoveSetRebinding>::class.java).toList())
+                "rename" -> rename(battle, step[1].asJsonObject.entrySet().associate { it.key to it.value.asString })
                 else -> error("Unknown engine snapshot step ${step[0]}")
             }
         }

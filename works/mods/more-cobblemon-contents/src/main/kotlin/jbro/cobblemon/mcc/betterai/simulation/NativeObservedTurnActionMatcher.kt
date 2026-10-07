@@ -14,6 +14,8 @@ internal enum class NativeObservedTurnActionIssueCode {
     UNKNOWN_OBSERVED_ACTOR,
     OBSERVED_ACTION_SLOT_MISSING,
     NO_MATCHING_NATIVE_ACTION,
+    /** The opponent revealed a Pokemon this world did not select. */
+    REVEALED_POKEMON_NOT_IN_WORLD,
 }
 
 internal data class NativeObservedTurnActionIssue(
