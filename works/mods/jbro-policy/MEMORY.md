@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-07 23:55] 전투 중 전설 포획 거절 시 전투가 멈추던 문제 (빌드·테스트 확인, 서버 배치·실게임 미확인)
+
+- **빡대리님 신고:** 이미 잡은 아르세우스와 전투 중 마스터볼을 던지면 "던졌습니다" 로그만 남고 아무것도 못 한다. HUD 카드가 코블몬 기본 타일(볼 아이콘)로 풀린다.
+- **원인:** 코블몬 1.8.1 `EmptyPokeBallEntity.onHitEntity`는 전투 안에서 `BattleCaptureAction`을 걸고, 던짐을 알리고, 던진 사람 턴을 넘긴 *다음에* `THROWN_POKEBALL_HIT`을 부른다. 우리가 그 이벤트를 취소하면 볼만 `drop()`되고 `captureFuture`가 끝나지 않아 전투가 영원히 기다렸다. HUD가 기본 타일로 바뀐 것은 cobblemon-ui가 볼 표시 중에는 일부러 코블몬 타일을 쓰기 때문(`BattleOverlayHudMixin`)이고, 볼 상태가 안 풀려 그대로 남은 것.
+- **수정:** 거절 검사를 `EmptyPokeBallLegendMixin`(`onHitEntity` HEAD)으로 옮기고 `LegendPolicy.refuseCapture`로 판정한다. 거절되면 이유를 알리고 볼을 돌려준 뒤 코블몬 처리를 건너뛴다(턴도 안 넘어감). 야생이 아닌 포켓몬은 코블몬 메시지에 맡긴다. `THROWN_POKEBALL_HIT` 구독은 지웠다.
+- **검증:** `:jbro-policy:build` 테스트 85개 통과, JAR 안에서 `onHitEntity`가 `method_7454`로 매핑된 것 확인. 커밋 c31bb117. 클라이언트에 배치(SHA-256 앞자리 a4c62ca6, 백업 `develop-product/deployment-backups/20261007-legend-ball-battle-hang/`). 서버가 켜져 있어 서버 JAR은 아직 안 바꿨다. 실게임 미확인.
+
 ## [2026-10-07 13:00] 등급이 모자란 전설은 스폰·포켓내비 목록에서 뺌
 
 - **빡대리님 결정:** 리그 등급으로 못 잡는 전설은 포켓내비 목록에도 안 뜨게 한다(엔트리 조건과 같은 취급). 전에는 등급이 포획만 막아서, 스폰되고 서버 알림까지 나간 뒤 볼이 거부됐다.
