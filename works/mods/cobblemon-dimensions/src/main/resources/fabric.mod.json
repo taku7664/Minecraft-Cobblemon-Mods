@@ -6,6 +6,10 @@
   "description": "Ultra Space, the ancient past and the far future as dimensions of their own for the jbro Cobblemon server.",
   "authors": ["jbro"],
   "license": "MIT",
+  "icon": "assets/cobblemon_dimensions/icon.png",
+  "contact": {
+    "sources": "https://github.com/JBRO129/Minecraft-Cobblemon-Mods"
+  },
   "environment": "*",
   "entrypoints": {
     "main": [

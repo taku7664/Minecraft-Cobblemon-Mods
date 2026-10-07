@@ -86,3 +86,12 @@ Terralith 지형을 섬 모양으로 잘라 공중에 띄운 차원입니다. �
 ## 개발용 캡처
 
 `works`에서 `gradlew :cobblemon-dimensions:runCapture`를 실행하면, 새 월드를 만들어 포탈·울트라홀·각 차원을 찍은 뒤 스스로 꺼집니다. 사진은 `run/screenshots/cdim-*.png`에 남습니다.
+
+## 라이선스와 출처
+
+- 이 모드의 코드와 직접 만든 리소스(아이콘, 고대 태양 텍스처, 포탈·울트라홀 연출)는 MIT 라이선스입니다. [LICENSE](LICENSE)를 보세요.
+- 모드 아이콘 원본(512px, Modrinth 등 등록용)은 [docs/icon-512.png](docs/icon-512.png)에 있습니다. 게임 안 아이콘은 128px로 줄인 `assets/cobblemon_dimensions/icon.png`입니다.
+- 지형과 바이옴 배치는 [Terralith](https://github.com/Stardust-Labs-MC/Terralith)(Stardust Labs)를 바탕으로 합니다. Terralith는 MIT가 아니라 Stardust Labs 자체 라이선스를 따르며, 이 모드를 쓰려면 Terralith를 따로 설치해야 합니다.
+- 울트라비스트 스폰 위치와 레벨은 Pixelmon의 스폰 정보를 참고했습니다. Pixelmon의 파일이나 리소스는 들어 있지 않습니다.
+- 포켓몬과 관련 이름의 권리는 Nintendo, Game Freak, The Pokémon Company에 있습니다. 이 모드는 그들과 관련이 없습니다.
+
