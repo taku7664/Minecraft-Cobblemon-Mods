@@ -1,184 +1,106 @@
 # Better Cobblemon Music
 
-Cobblemon의 필드·전투 상황에 맞춰 리소스팩 음악을 재생하는 Fabric 클라이언트 모드입니다. 타격음과 마지막 포켓몬 HP 효과도 제공합니다.
+<img src="src/main/resources/assets/better_cobblemon_music/icon.png" alt="Better Cobblemon Music icon" width="128">
 
-공식 팩의 BGM 표시명은 한국어이며, 게임 구분은 `전투! 루기아 (HG·SS)`처럼 영문 약자로 표시합니다. [한국어 곡명 대조와 미확정 항목](KOREAN_TRACK_TITLES_2026-10-03.md)을 참고하세요.
+**Cobblemon의 탐험과 전투에 상황별 음악을 더하는 Fabric 클라이언트 모드입니다.**
 
-- Mod ID: `better_cobblemon_music`
-- 실행 환경: 클라이언트 전용
-- 필요 모드: Fabric API, Cobblemon 1.8.1
-- 설정 화면: Mod Menu + Cloth Config
+바이옴과 차원에 맞는 필드 음악, 상대에 맞는 전투 음악, 메뉴 음악을 연결하고 자연스럽게 전환합니다. 전투 타격음, 저체력 경고음, 물속에서 음악이 먹먹해지는 효과도 제공합니다.
 
-## 설치 단위
+음악은 활성화한 호환 리소스팩에서 읽습니다. 모드 JAR 자체에는 음악·효과음 파일이 들어 있지 않습니다.
 
-모드 JAR과 공식 음악 리소스팩 ZIP을 함께 설치해야 합니다.
+## 설치
 
-```text
-.minecraft/
-├─ mods/
-│  └─ better-cobblemon-music-<version>.jar
-├─ resourcepacks/
-│  └─ better_cobblemon_music-music-resourcepack-<version>.zip
-└─ config/better_cobblemon_music/
-   ├─ settings.json
-   └─ overrides.json
-```
+| 항목 | 요구 사항 |
+|---|---|
+| Minecraft | Java Edition 1.21.1 |
+| 모드 로더 | Fabric Loader 0.19.3 이상 |
+| Java | 21 이상 |
+| 필수 모드 | Fabric API, Cobblemon 1.8.1 이상 / 1.9.0 미만 |
+| 설정 화면 | Mod Menu + Cloth Config — 선택 설치 |
+| 음악 재생 | Better Cobblemon Music 카탈로그를 제공하는 호환 음악 리소스팩 |
 
-JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, 트랙·플레이리스트 카탈로그와 기본 매핑을 함께 소유합니다. 공식 음원을 `config`에 복사하거나 임시 리소스팩으로 다시 만드는 과정은 없습니다.
+1. 클라이언트의 `mods` 폴더에 모드 JAR과 필수 모드를 넣습니다.
+2. 호환 음악 리소스팩을 `resourcepacks` 폴더에 넣고 게임의 리소스팩 메뉴에서 활성화합니다.
+3. 설정 화면을 사용하려면 Mod Menu와 Cloth Config를 함께 설치합니다.
+4. Mod Menu → **Better Cobblemon Music → 설정**에서 기본 음악팩을 선택합니다.
 
-공식 음악팩 ZIP과 복사한 배포용 JAR, `deployment-backups/`는 Git 커밋 대상에서 제외합니다. 현재 클라이언트와 빌드 출력에는 최신 버전만 유지하며, 이전 Music 버전·Music 배포 백업은 2026-10-03 요청에 따라 삭제했습니다. 제작용 OGG·카탈로그·매핑 소스는 유지합니다.
+서버에는 설치하지 않습니다. More Cobblemon Contents(MCC)는 선택 연동이며, 설치하지 않아도 기본 필드·전투 음악 기능을 사용할 수 있습니다.
+
+## 주요 기능
+
+- **필드 음악:** 차원, 낮·밤, 바이옴, 지하 여부에 따라 선곡합니다. 밤은 게임 시간 13,000 이상 23,000 미만입니다.
+- **전투 음악:** 야생·트레이너·PvP와 전설·울트라비스트·알파 전투를 구분합니다. 포켓몬별 전용곡과 콘텐츠별 음악도 연결할 수 있습니다.
+- **화면 음악:** 메인 화면과 연동 모드가 제공하는 화면에 음악을 지정합니다.
+- **부드러운 전환:** 필드 전환 대기, 페이드 인·아웃, 곡 사이 간격을 조절합니다.
+- **곡명 알림:** 실제 BGM이 바뀔 때 좌측 상단에 곡명을 약 3초간 표시합니다.
+- **전투 음향 효과:** 기술로 체력이 감소할 때 효과별 타격음을 재생합니다. 내 전투 중 포켓몬의 HP가 20% 이하이면 경고음을 반복합니다.
+- **HP·물속 효과:** 마지막 전투 가능 포켓몬이 반피 이하이면 BGM이 먹먹해집니다. 눈이 물에 잠기면 약한 먹먹함과 잔향을 적용합니다. 두 효과는 이 모드가 재생하는 BGM에만 적용됩니다.
+
+음악의 우선순위는 **전투 → 매핑된 화면 → 필드**입니다. 전투에서는 포켓몬 전용 규칙을 먼저 확인하고, 콘텐츠 매핑, 야생 특수 분류, 일반 전투 매핑 순으로 찾습니다. 음악 목록과 기본 매핑은 리소스팩이 정의합니다.
 
 ## 설정
 
-`settings.json`은 재생과 효과 동작만 저장합니다.
+설정 화면은 한국어와 영어를 지원합니다. 화면에서 재생 설정, 음향 효과, 필드·전투·포켓몬·콘텐츠·화면별 플레이리스트를 바꿀 수 있습니다. 저장하면 설정을 기록하고 리소스를 다시 불러옵니다.
 
-```json
-{
-  "schemaVersion": 1,
-  "basePackId": "better_cobblemon_music:official",
-  "scanIntervalSeconds": 1.0,
-  "fieldChangeDelaySeconds": 4.0,
-  "betweenTracksSeconds": 0.0,
-  "fadeInSeconds": 1.0,
-  "fadeOutSeconds": 1.0,
-  "selection": "shuffle",
-  "volume": 1.0,
-  "hitSoundsEnabled": true,
-  "hitSoundVolume": 1.0,
-  "lastPokemonHpEffectsEnabled": true,
-  "lastPokemonHpEffectVolume": 1.0,
-  "underwaterEffectsEnabled": true,
-  "underwaterEffectStrength": 0.35,
-  "nowPlayingEnabled": true
-}
-```
+| 설정 | 기본값 | 화면에서 조절 가능한 범위 |
+|---|---|---|
+| 상황 검사 간격 | 1초 | 0.25–60초 |
+| 필드 음악 전환 대기 | 4초 | 0–60초 |
+| 곡 사이 간격 | 0초 | 0–600초 |
+| 페이드 인 / 아웃 | 각각 1초 | 각각 0–30초 |
+| 기본 선곡 방식 | 전체 섞기 | 전체 섞기 / 직전 곡을 피해 무작위 / 적힌 순서대로 |
+| 기본 음악 음량 | 1.0 | 0–4.0 |
+| 타격음 / 전투 중 HP 효과 | 각각 켜짐 | 각각 켜기 / 끄기 |
+| 타격음 / 저체력 경고음 음량 | 각각 1.0 | 각각 0–2.0 |
+| 물속 BGM 효과 | 켜짐, 강도 0.35 | 켜기 / 끄기, 강도 0–1.0 |
+| BGM 곡명 알림 | 켜짐 | 켜기 / 끄기 |
 
-`overrides.json`은 리소스팩 기본 매핑과 다른 값만 안정적인 플레이리스트 ID로 저장합니다.
+음악 음량과 선곡 방식은 플레이리스트에 별도 값이 없을 때 사용하는 기본값입니다. HP 효과를 끄면 경고음과 마지막 포켓몬의 먹먹함이 함께 꺼집니다. 경고음 음량만 0으로 설정하면 먹먹함은 유지할 수 있습니다.
 
-```json
-{
-  "schemaVersion": 1,
-  "battle": {
-    "content": {
-      "more_cobblemon_contents:battle_tower": "better_cobblemon_music:track/battle/gym/sinnoh_gym_leader_battle"
-    }
-  },
-  "screens": {
-    "more_cobblemon_contents:hub": "better_cobblemon_music:field_plaza"
-  }
-}
-```
-
-Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬·화면 매핑을 선택할 수 있습니다. 연동한 모드가 알려 준 콘텐츠 키와 화면 키도 매핑이 없더라도 목록에 나옵니다. 저장할 때 각 파일을 임시 파일에서 원자 교체하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
-
-1.3.16에서는 설정 음량을 바꾸지 않고 리소스팩의 타격음 원본 3개를 0.5배, 빨피 경고음 원본을 0.7배로 낮췄습니다. 물속 효과는 기본 강도 0.35에서도 더 분명하게 들리도록 필터·잔향 곡선을 조정했습니다. 실제 청감은 게임에서 확인해야 합니다.
-
-1.3.17부터 공식 ZIP 파일명과 내부 소리·카탈로그 ID의 `cobleserver`를 모드 ID인 `better_cobblemon_music`으로 통일합니다. 이전 `settings.json`의 `cobleserver:official`과 공식곡을 가리키는 `overrides.json`의 옛 ID는 읽을 때만 새 ID로 해석하며, 기존 파일을 자동으로 고치지 않습니다. 개인 확장팩의 카탈로그가 옛 공식 ID를 직접 참조한다면 해당 확장팩도 새 ID로 바꿔야 합니다. JAR과 ZIP은 같은 버전으로 교체해야 합니다.
-
-전설 전투곡 45개는 입력 이득을 1.3배로 올리고, 인코딩 뒤 피크가 0dB를 넘지 않도록 곡별 출력 한도를 적용했습니다. 42곡은 원본 음원에서 다시 만들고, 원본을 찾지 못한 3곡은 기존 OGG에서 변환했습니다. 처리 방법과 파일 해시는 `resource-pack/legendary-gain-2026-10-04.json`에 기록합니다. 개인 음량 설정은 바꾸지 않습니다.
-
-기존 `music.json`이 있고 `overrides.json`이 없으면 첫 카탈로그 로드 때 사용자 변경분만 변환합니다. 기존 `music.json`과 `music/`은 롤백을 위해 삭제하거나 덮어쓰지 않습니다.
-
-## 선곡 순서
-
-공식 전투 음악의 기반 선곡은 [2026-10-03 라인업](MUSIC_LINEUP_2026-10-03.md)을 따릅니다. 이후 제공받은 `pokemusic/readme.txt`의 메인 화면·MCC·트레이너·리그·필드·광장 선곡은 [1.3.5 적용 기록](POKEMUSIC_IMPORT_2026-10-03.md)이 갱신합니다. 일반 야생은 DP 음악이며, 루기아는 `75 - Battle! (Lugia).flac`로 [교체](LUGIA_REPLACEMENT_2026-10-03.md)한 음원과 기존 매핑 ID를 유지합니다.
-
-- 재생 우선순위: 전투 → 열린 화면 → 필드. 화면 음악은 다음 공용 상황 검사에서 바뀌고, 매핑이 없는 화면에서는 필드 음악이 이어집니다. 월드 밖 메인 화면은 `minecraft:title` 화면 키를 사용합니다.
-- 필드: 해당 시간의 차원 → 공통 차원 → 팩의 `ruleOrder` 순서 → 미지정 개인 규칙/기본곡. 공식 바이옴 순서는 고대 도시 → 동굴 → 강 → 바다 → 늪지 → 정글 → 설원 → 산 → 숲 → 평원 → 사막 → 악지입니다. [겹침 판정 및 호환성](FIELD_PRIORITY_2026-10-03.md)을 참고하세요.
-- 전투: 포켓몬 규칙 → 콘텐츠 키(구체적인 키부터) → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
-
-- 화면: 화면 키(구체적인 키부터)
-
-`field.dayDimensions`와 `field.nightDimensions`로 차원별 시간 매핑을 지정할 수 있고 설정 화면에도 낮·밤 항목이 표시됩니다. 밤은 게임 시간 13,000 이상 23,000 미만이며 날씨와 실제 시계는 사용하지 않습니다. 광장은 낮 축복시티 (낮) / 밤 태초마을로 전환하고, 기존 필드 전환 대기와 페이드를 따릅니다. 두 곡을 지정한 `pokemusic` 항목은 명시적 `random`입니다. 첫 곡은 무작위로 고르고 이후 직전 곡을 피하므로 두 곡이면 교대로 이어집니다.
-
-1.3.18에서는 광장 낮 음원을 새로 제공받은 `23 - Jubilife City (Day).flac`로 교체하고, 이전 `24 - Route 1.flac` 음원은 공식 팩에서 제거합니다. 한국어 지명 `축복시티`는 [포켓몬 공식 사이트](https://pokemonkorea.co.kr/legends_arceus/menu140?mode=view&number=2289)의 DP 설명과 대조했습니다. 같은 버전에서 동굴 여부를 계산할 때 바닐라의 잎 제외 높이맵을 사용해 정글 나무 그늘을 동굴로 오인하는 경우를 줄입니다.
-
-페이드인은 음량 0에서 시작하도록 게임 엔진에 명시합니다. 첫 무작위 곡이 무음이라는 이유로 버려져 곧바로 다른 곡으로 넘어가지 않게 합니다. 2곡 이상인 목록에서는 곡이 자연 종료된 뒤 직전 곡을 제외하고 다음 곡을 재생합니다.
-
-1.3.6부터 마이룸 차원 `myroom:rooms`는 제공받은 `43 - Eterna Forest.flac`의 [변환 음원](MYROOM_MUSIC_2026-10-03.md)을 사용합니다. 낮·밤·바이옴·지하 여부와 무관하며, Mod Menu의 차원 음악 매핑에서 변경할 수 있습니다. 전투 음악과 매핑된 화면 음악의 우선순위는 유지합니다.
-
-1.3.7은 실제 BGM 곡이 바뀔 때 좌측 상단에 [곡명 텍스트](NOW_PLAYING_TEXT_2026-10-03.md)를 약 3초간 슬라이드·페이드 표시합니다. 패널이나 배경은 없습니다. Mod Menu → 재생 → `BGM 곡명 알림 표시`에서 ON/OFF를 바꿉니다(기본 ON). [리소스팩 곡명 입력](TRACK_TITLES_2026-10-03.md)에서 알림 이름을 편집할 수 있습니다. 타격음·HP 경고음·같은 곡 반복은 알림을 띄우지 않습니다.
-
-1.3.8은 표시명을 한국어로 바꾸고 게임명을 `HG·SS` 등 영문 약자로 줄였습니다. [배포 검증 기록](RELEASE_1_3_8_2026-10-03.md)에 음원·매핑·개인 설정 보존 결과를 정리했습니다.
-
-1.3.9부터 곡명 알림은 `[Music] 전투! 루기아 (HG·SS)`처럼 표시합니다. `[Music]`은 알림 표시 단계에서만 붙이며, 리소스팩의 곡명·음원·매핑은 변경하지 않습니다. [클라이언트 교체 검증 기록](RELEASE_1_3_9_2026-10-03.md)을 참고하세요.
-
-1.3.10은 README 지정곡과 별도로 요청한 전포·야생·알파 곡만 남깁니다. 미지정·미사용 BGM 25곡과 해당 매핑·곡명·이벤트를 제거해 BGM 87곡과 기존 효과음 4개만 포함합니다. 해변·돌해안 전용 매핑과 일반 챔피언 전용 매핑은 삭제하여 기존 필드·트레이너 기본곡으로 돌아갑니다. PvP도 지정된 트레이너 기본곡을 사용합니다. 수중 전용곡이나 새 판정 기능은 추가하지 않습니다. [정리 기준 및 검증](MUSIC_ASSET_PRUNING_2026-10-03.md)을 참고하세요.
-
-야생 특수 분류는 알파 → 울트라비스트 → 전설 순입니다. [알파 음악](ALPHA_MUSIC_2026-10-03.md)은 서버가 전투에 전달한 `alpha` 표시로 판단하며, 포켓몬 전용곡이 있으면 전용곡을 유지합니다. 전용곡이 없는 야생 알파는 보스 2곡을 사용합니다. Mod Menu의 전투 매핑에서 `알파 포켓몬 전투` 음악을 변경할 수 있습니다.
-
-RCT NPC는 NPC 여부만 사용합니다. 역할·사천왕·챔피언 같은 분류는 조회하지 않습니다.
-
-마지막 전투 가능 포켓몬이 한 마리이고 HP가 절반 이하이면 Better Cobblemon Music이 재생한 곡에만 먹먹한 효과를 적용합니다. 내 전투 중 포켓몬이 빨간 HP 구간(20% 이하)이면 제공받은 `low-health-critical-health-pokemon.mp3`를 변환한 경고음 하나를 반복 재생합니다. 경고음을 계속 새로 겹쳐 재생하지 않으며, 조건 해제·기절·전투 종료 시 해당 경고음을 멈춥니다. 원본 음량과 사용자의 경고음 음량 설정은 유지합니다. 변환·재생 방식은 [빨피 경고음 교체 기록](LOW_HP_ALERT_2026-10-03.md)을 참고하세요.
-
-1.3.12는 경고음의 숨은 0.1 배율을 제거해 설정 음량을 그대로 전달합니다. 설정 0.2가 0.02로 줄어들지 않습니다. 원본 OGG·개인 설정값·막포 조건·빨피 20% 기준·단일 루프 구조는 유지합니다. [첫 곡 건너뛰기 및 경고음 수정 기록](PLAYBACK_FIXES_1_3_12_2026-10-03.md)을 참고하세요.
-
-1.3.13부터는 내 전투 중 포켓몬이 빨피(HP 20% 이하)이면 남은 전투 가능 포켓몬 수와 무관하게 경고음을 재생합니다. 먹먹함은 막포·반피 이하 조건을 유지하며 필터가 고음을 덜 깎도록 보정합니다. [HP 효과 변경 기록](HP_EFFECT_UPDATE_1_3_13_2026-10-03.md)을 참고하세요.
-
-1.3.14부터는 앞서 제거한 `아레나 배틀 (PC)` 음원 한 곡만 복원해 일반 PvP와 MCC PvP의 기본곡으로 사용합니다. 다른 옛 PvP 곡과 배틀타워·팩토리 매핑은 복원하지 않습니다. [PvP 곡 복원 기록](PVP_CHAMPIONS_RESTORE_1_3_14_2026-10-04.md)을 참고하세요.
-
-1.3.15부터는 플레이어의 눈이 물에 잠기면 Music 모드가 재생한 BGM에 약한 로우패스와 OpenAL EFX 리버브를 적용합니다. 별도 물방울·노이즈 음원은 넣지 않습니다. Mod Menu → 음향 효과에서 ON/OFF와 강도(기본 0.35)를 조절할 수 있습니다. 기존 HP 먹먹함과 겹치면 더 강한 로우패스를 사용하며, 물 밖에서는 원래 음색으로 돌아갑니다. 기존 개인 `settings.json`은 키가 없어도 기본값으로 읽고 자동으로 덮어쓰지 않습니다. [물속 효과 계약 및 검증](UNDERWATER_AUDIO_EFFECTS_1_3_15_2026-10-04.md)을 참고하세요.
-
-## 다시 불러오기
-
-`/music`은 클라이언트 명령어로 현재 Music 모드가 실제 재생 중인 BGM 곡명을 채팅에 표시합니다. 예: `[Music] 현재 BGM: 47번도로`. 좌측 상단 곡명 알림의 ON/OFF와 무관하게 사용합니다. 곡 사이 무음 구간·정지·미재생 상태에서는 BGM이 없다고 표시합니다. 전환 중 새 곡이 재생 중이면 새 곡을, 이전 곡만 페이드 아웃 중이면 이전 곡을 표시합니다. 바닐라나 다른 모드의 음악을 조회하지 않으며 서버 명령어·OP 권한은 필요하지 않습니다.
+Mod Menu나 Cloth Config가 없어도 설정 파일을 직접 편집할 수 있습니다.
 
 ```text
-/bcm reload
+config/better_cobblemon_music/
+├─ settings.json     # 기본 음악팩, 재생·음향 효과 설정
+└─ overrides.json    # 리소스팩 기본값 대신 사용할 음악 매핑
 ```
 
-활성 리소스팩의 기본·확장 카탈로그, `settings.json`, `overrides.json`을 다시 읽습니다. 후보 전체가 유효할 때만 실행 스냅샷을 교체하며, 실패하면 직전 정상 구성을 유지합니다.
+새 바이옴 키나 콘텐츠 ID처럼 화면에 없는 매핑 규칙을 추가할 때는 `overrides.json`을 편집합니다. 이전 `cobleserver:official` ID는 읽을 때 현재 ID로 해석합니다. 기존 `music.json`의 사용자 매핑은 필요한 경우 이관하며, 이전 파일을 자동 삭제하지 않습니다.
 
-## 개인 음악 확장팩
+## 명령어
 
-공식 카탈로그를 복제하지 않고 확장 리소스팩으로 트랙과 플레이리스트를 추가할 수 있습니다.
-
-```text
-user-music-extension.zip
-├─ pack.mcmeta
-└─ assets/
-   ├─ username/
-   │  ├─ sounds.json
-   │  └─ sounds/music/my_song.ogg
-   └─ better_cobblemon_music/
-      └─ catalogs/extensions/username.json
-```
-
-확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
-
-[`extension-template/my-music-pack`](extension-template/my-music-pack)은 바로 쓸 수 있는 빈 확장팩입니다. `assets/mymusic/sounds/music`에 OGG를 넣고 `update-music.bat`을 실행하면 `sounds.json`과 카탈로그가 만들어지며, 곡마다(`mymusic:track/<경로>`), 폴더마다(`mymusic:folder/<폴더>`), 전체(`mymusic:all`) 플레이리스트가 생깁니다. 자세한 사용법은 팩 안의 `사용법.txt`에 있습니다.
-
-## 다른 모드 연동 API
-
-콘텐츠 모드는 `jbro.cobblemon.bettermusic.api`에 공급자를 등록해 자기 전투와 화면에 음악을 붙일 수 있습니다. 키는 소문자 네임스페이스 ID이고, 구체적인 키부터 차례로 찾아 처음 매핑된 키의 곡을 재생합니다.
-
-- `BattleMusicContentProviders.global().register(id, provider)`: `contentKeys(battleId)`가 `battle.content` 키 목록을 돌려줍니다. 예: `example:league/champion`, `example:league`.
-- `ScreenMusicProviders.global().register(id, provider)`: `screenKeys()`가 열린 화면의 `screens` 키 목록을, 닫혀 있으면 빈 목록을 돌려줍니다.
-- `knownContentKeys()`·`knownScreenKeys()`로 알려 준 키는 설정 화면에 미리 표시됩니다.
-
-공급자가 예외를 던지거나 잘못된 키를 돌려주면 한 번만 로그를 남기고 다음 공급자로 넘어갑니다.
-
-## More Cobblemon Contents 연동
-
-More Cobblemon Contents(MCC)가 설치돼 있으면 위 API로 내장 연동을 등록합니다. MCC는 선택 의존성이라, 없거나 연동 API가 없는 옛 버전이면 일반 매핑으로 동작합니다. MCC 클래스는 `integration/mcc`의 `MccMusicProviders`에서만 쓰고, MCC가 로드됐을 때만 이 클래스를 불러옵니다.
-
-전투 키는 `<콘텐츠>/<단계>/<상대>` → `<콘텐츠>/<단계>` → `<콘텐츠>` 순으로 찾습니다. 상대는 ID의 경로 부분만 씁니다.
-
-| 콘텐츠 | 단계 |
+| 명령어 | 기능 |
 |---|---|
-| `more_cobblemon_contents:league_challenge` | `gym`, `elite_four`, `champion`, `hard_gym`, `hard_elite_four`, `hard_champion`, `wild_trainer`, `wild_trainer_ace` |
-| `more_cobblemon_contents:battle_tower` | `regular`, `tier_boss`, `master_ball_boss` |
-| `more_cobblemon_contents:battle_factory` | `regular`, `factory_head` |
-| `more_cobblemon_contents:pvp` | `single`, `double` |
+| `/music` | 이 모드가 현재 재생 중인 BGM 곡명을 채팅에 표시 |
+| `/bcm reload` | 활성 음악 카탈로그와 설정을 다시 불러오기 |
 
-예를 들어 신오 챔피언전은 `more_cobblemon_contents:league_challenge/champion/cynthia`, `.../league_challenge/champion`, `.../league_challenge` 순서로 찾습니다. 야생 트레이너도 리그 챌린지 콘텐츠이므로 `more_cobblemon_contents:league_challenge` 자체에 곡을 걸면 야생 트레이너에게도 적용됩니다. 공식 팩은 리그 단계에만 체육관·사천왕·챔피언 곡을 걸어 두어, 야생 트레이너는 일반 트레이너 곡을 씁니다.
+두 명령어는 클라이언트에서 실행하며 서버 OP 권한이 필요하지 않습니다. 새 구성이 유효하지 않으면 직전 정상 실행 구성을 유지하고 오류를 알립니다. 파일을 고친 뒤 다시 불러오세요.
 
-배틀 허브가 열려 있으면 `more_cobblemon_contents:hub/<탭>` → `more_cobblemon_contents:hub` 순으로 화면 키를 찾습니다. 탭은 `dashboard`, `shop`, `league_challenge`, `battle_tower`, `battle_factory`, `pvp`입니다. 1.3.5 공식 팩의 기본 허브는 Boutique, 상점은 Poké Mart이며, 전투가 시작하면 전투 음악이 우선합니다.
+## 음악이 나오지 않을 때
 
-## 빌드
+- 호환 음악팩이 활성화되어 있고, 설정의 **기본 음악팩**이 해당 팩을 가리키는지 확인하세요. OGG 파일만 담은 일반 리소스팩에는 이 모드가 읽을 카탈로그와 매핑이 없을 수 있습니다.
+- Minecraft의 음악 음량과 모드의 음악 음량을 확인하세요. 상황에 연결한 플레이리스트에 실제 재생 가능한 곡이 있어야 합니다.
+- 설정 화면이 열리지 않으면 Mod Menu와 Cloth Config가 모두 설치되어 있는지 확인하세요.
+- 직접 설정을 편집했다면 `/bcm reload`를 실행하고, 오류가 있으면 클라이언트 로그와 설정 파일을 확인하세요.
+
+## 개인 음악과 모드 연동
+
+개인 음악을 추가하는 확장팩 템플릿은 [`extension-template/my-music-pack`](extension-template/my-music-pack)에 있습니다. 확장팩을 활성화한 뒤 설정 화면에서 새 플레이리스트를 상황에 연결합니다.
+
+MCC가 설치돼 있으면 리그 챌린지·배틀타워·배틀팩토리·PvP 전투와 허브 화면 키를 등록합니다. 콘텐츠 모드 개발자는 `jbro.cobblemon.bettermusic.api`의 `BattleMusicContentProviders`와 `ScreenMusicProviders`로 자기 전투·화면 키를 제공할 수 있습니다. 카탈로그와 매핑 구조는 [설계 문서](../../../docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md)를 참고하세요.
+
+## 라이선스와 배포 설명
+
+모드 코드와 이 모드용 아이콘은 [MIT License](LICENSE)로 제공합니다. 배포 JAR에는 저작권·허가문을 포함합니다. 외부 음악 리소스팩과 사용자가 추가하는 음원은 각자의 라이선스를 따릅니다.
+
+공개 배포 페이지에 사용할 영문 설명은 [MODRINTH.md](MODRINTH.md)에 있습니다. 소스와 이슈는 [GitHub 저장소](https://github.com/taku7664/Minecraft-Cobblemon-Mods)에서 확인할 수 있습니다.
+
+## 개발자 빌드
+
+저장소의 `works` 폴더에서 실행합니다. 음악팩을 만들지 않고 모드와 테스트만 검증하려면:
 
 ```powershell
-.\gradlew.bat :better-cobblemon-music:build
+.\gradlew.bat :better-cobblemon-music:remapJar :better-cobblemon-music:remapSourcesJar :better-cobblemon-music:unitTest
 ```
 
-`better-cobblemon-music/build/libs/`에 모드 JAR과 재현 가능한 공식 리소스팩 ZIP이 생성됩니다. 상세 계약과 이행 근거는 [`../docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md`](../docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md)를 따릅니다.
+결과 JAR은 `works/mods/better-cobblemon-music/build/libs/`에 생성됩니다. 이 모듈의 일반 `test` 작업은 비활성화되어 있으므로 테스트는 `unitTest`로 실행합니다.

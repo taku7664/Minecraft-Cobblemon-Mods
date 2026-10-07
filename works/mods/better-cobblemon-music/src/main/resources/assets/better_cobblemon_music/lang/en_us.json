@@ -1,4 +1,6 @@
 {
+  "modmenu.nameTranslation.better_cobblemon_music": "Better Cobblemon Music",
+  "modmenu.descriptionTranslation.better_cobblemon_music": "Contextual field, battle and menu music for Cobblemon, with battle hit sounds, low-HP alerts and underwater audio effects. Customize playback and music mappings through Mod Menu. Client-side only; a compatible music resource pack is required for audio.",
   "better_cobblemon_music.command.now_playing": "[Music] Current BGM: %s",
   "better_cobblemon_music.command.no_music": "[Music] The Music mod is not currently playing any BGM.",
   "better_cobblemon_music.command.reload.success": "Better Cobblemon Music configuration reloaded.",

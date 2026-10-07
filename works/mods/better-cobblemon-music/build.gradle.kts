@@ -41,6 +41,16 @@ java {
     withSourcesJar()
 }
 
+// Keep the permission notice in both the playable JAR and the sources JAR.
+// Loom remap tasks inherit these contents; adding the notice there too duplicates it.
+tasks.withType<org.gradle.jvm.tasks.Jar>().matching {
+    it.name == "jar" || it.name == "sourcesJar"
+}.configureEach {
+    from(layout.projectDirectory.file("LICENSE")) {
+        rename { "LICENSE_better_cobblemon_music" }
+    }
+}
+
 tasks.test { enabled = false }
 
 val unitTest by tasks.registering(JavaExec::class) {

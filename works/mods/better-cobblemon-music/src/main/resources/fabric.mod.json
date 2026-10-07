@@ -3,9 +3,14 @@
   "id": "better_cobblemon_music",
   "version": "${version}",
   "name": "Better Cobblemon Music",
-  "description": "Data-driven field and battle music with battle hit audio for Cobblemon.",
+  "description": "Contextual field, battle and menu music for Cobblemon, with battle hit sounds, low-HP alerts and underwater audio effects. Customize playback and music mappings through Mod Menu. Client-side only; a compatible music resource pack is required for audio.",
   "authors": ["jbro"],
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/better-cobblemon-music",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
   "license": "MIT",
+  "icon": "assets/better_cobblemon_music/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [

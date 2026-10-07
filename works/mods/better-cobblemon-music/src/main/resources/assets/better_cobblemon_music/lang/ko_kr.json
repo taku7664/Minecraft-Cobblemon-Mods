@@ -1,4 +1,6 @@
 {
+  "modmenu.nameTranslation.better_cobblemon_music": "Better Cobblemon Music",
+  "modmenu.descriptionTranslation.better_cobblemon_music": "Cobblemon의 필드·전투·메뉴 상황에 맞춰 음악을 재생합니다. 타격음, 저체력 경고음, 물속 음향 효과를 제공하며 Mod Menu에서 재생과 음악 매핑을 설정할 수 있습니다. 클라이언트 전용이며, 소리를 재생하려면 호환 음악 리소스팩이 필요합니다.",
   "better_cobblemon_music.command.now_playing": "[Music] 현재 BGM: %s",
   "better_cobblemon_music.command.no_music": "[Music] 현재 Music 모드가 재생 중인 BGM이 없습니다.",
   "better_cobblemon_music.command.reload.success": "Better Cobblemon Music 설정을 다시 불러왔습니다.",
