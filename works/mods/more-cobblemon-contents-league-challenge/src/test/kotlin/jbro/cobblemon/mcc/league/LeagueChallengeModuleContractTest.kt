@@ -35,7 +35,7 @@ class LeagueChallengeModuleContractTest {
 
         assertEquals(">=0.1.0 <1.0.0", dependencies["more_cobblemon_contents"].asString)
         assertEquals(">=1.8.1 <1.9.0", dependencies["cobblemon"].asString)
-        assertEquals(">=1.6.1 <1.7.0", dependencies["pokebadges"].asString)
+        assertEquals("*", dependencies["pokebadges"].asString)
         assertEquals(">=1.2.0 <1.3.0", dependencies["cobbled_level_control"].asString)
     }
 
