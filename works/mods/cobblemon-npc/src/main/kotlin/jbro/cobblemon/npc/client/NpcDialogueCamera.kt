@@ -14,7 +14,7 @@ internal object NpcDialogueCamera {
     private var focused = false
 
     fun focus(entityId: Int) {
-        if (!installed) return
+        if (!installed || !NpcClientConfig.dialogueCamera) return
         focused = guarded(false) { BattlecamScenes.focus(entityId, LIMIT_MILLIS) }
     }
 

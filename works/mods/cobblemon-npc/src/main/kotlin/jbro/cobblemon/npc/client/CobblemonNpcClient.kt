@@ -29,6 +29,7 @@ object NpcClientState {
 
 object CobblemonNpcClient : ClientModInitializer {
     override fun onInitializeClient() {
+        NpcClientConfig.load()
         EntityRendererRegistry.register(CobblemonNpc.NPC, ::NpcEntityRenderer)
         NpcSkins.register()
         NpcSceneCaptureHarness.installFromEnvironment()

@@ -8,6 +8,8 @@ group = "jbro.cobblemon"
 
 base { archivesName.set("cobblemon-npc") }
 
+repositories { maven("https://maven.terraformersmc.com/releases/") }
+
 dependencies {
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
@@ -17,6 +19,7 @@ dependencies {
     // The UI kit needs Cobblemon on the client; the NPCs themselves do not touch it.
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     implementation("com.google.code.gson:gson:2.11.0")
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     // Bundled like More Cobblemon Contents does: the dialogue box and editors draw with the UI kit, and a dedicated
     // server skips the client-only kit.
     implementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
@@ -48,6 +51,13 @@ java {
 }
 
 tasks.test { enabled = false }
+
+listOf("jar", "sourcesJar").forEach { taskName ->
+    tasks.named<org.gradle.jvm.tasks.Jar>(taskName) {
+        from("LICENSE") { rename { "LICENSE_cobblemon_npc" } }
+        from("NOTICE.md")
+    }
+}
 
 val unitTest by tasks.registering(JavaExec::class) {
     group = "verification"

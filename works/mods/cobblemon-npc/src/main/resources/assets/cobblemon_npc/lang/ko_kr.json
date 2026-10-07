@@ -73,5 +73,10 @@
   "screen.cobblemon_npc.hint.command": "mcc terminal tower",
   "screen.cobblemon_npc.as_player": "본인",
   "screen.cobblemon_npc.as_server": "OP",
-  "screen.cobblemon_npc.add_row": "+ 추가"
+  "screen.cobblemon_npc.add_row": "+ 추가",
+  "screen.cobblemon_npc.client_settings": "Cobblemon NPC 설정",
+  "config.cobblemon_npc.camera": "대화 카메라: %s",
+  "config.cobblemon_npc.camera_hint": "Better Cobblemon Battlecam이 필요합니다.",
+  "config.cobblemon_npc.content_hint": "NPC 편집: /npc wand (운영자 권한)",
+  "config.cobblemon_npc.save_failed": "설정 저장 실패. 로그를 확인해 주세요."
 }

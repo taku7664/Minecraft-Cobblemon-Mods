@@ -73,5 +73,10 @@
   "screen.cobblemon_npc.hint.command": "mcc terminal tower",
   "screen.cobblemon_npc.as_player": "Self",
   "screen.cobblemon_npc.as_server": "OP",
-  "screen.cobblemon_npc.add_row": "+ Add"
+  "screen.cobblemon_npc.add_row": "+ Add",
+  "screen.cobblemon_npc.client_settings": "Cobblemon NPC settings",
+  "config.cobblemon_npc.camera": "Dialogue camera: %s",
+  "config.cobblemon_npc.camera_hint": "Requires Better Cobblemon Battlecam.",
+  "config.cobblemon_npc.content_hint": "Edit NPC content with /npc wand (OP).",
+  "config.cobblemon_npc.save_failed": "Could not save settings. Check the log."
 }
