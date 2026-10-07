@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import com.cobblemon.mod.common.battles.ShowdownMoveset
+import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.battle.HideManagedBattleMechanicsPayload
@@ -9,6 +10,7 @@ import jbro.cobblemon.mcc.internal.battle.ShowManagedBattleMechanicsPayload
 import jbro.cobblemon.mcc.internal.battle.ShowManagedBattleContentPayload
 import jbro.cobblemon.mcc.internal.battle.HideManagedBattleContentPayload
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentClient
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 
 internal class ManagedBattleMechanicVisibilityState {
@@ -71,14 +73,36 @@ object ManagedBattleMechanicVisibilityClient {
 }
 
 object ManagedBattleContentClientNetworking {
+    /**
+     * Battles the server has finished while this client still shows them: a closing scene holds the battle's end, and
+     * the tag (and with it the battle's own music) stays until the battle is really gone.
+     */
+    private val endingBattles = mutableSetOf<UUID>()
+
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(ShowManagedBattleContentPayload.TYPE) { payload, context ->
-            context.client().execute { ManagedBattleContentClient.show(payload.battleId, payload.tag) }
+            context.client().execute {
+                endingBattles.remove(payload.battleId)
+                ManagedBattleContentClient.show(payload.battleId, payload.tag)
+            }
         }
         ClientPlayNetworking.registerGlobalReceiver(HideManagedBattleContentPayload.TYPE) { payload, context ->
-            context.client().execute { ManagedBattleContentClient.hide(payload.battleId) }
+            context.client().execute {
+                if (CobblemonClient.battle?.battleId == payload.battleId) endingBattles.add(payload.battleId)
+                else ManagedBattleContentClient.hide(payload.battleId)
+            }
         }
-        MccClientSessionReset.onReset("managed battle content", ManagedBattleContentClient::clear)
+        ClientTickEvents.END_CLIENT_TICK.register { _ ->
+            if (endingBattles.isEmpty()) return@register
+            val shown = CobblemonClient.battle?.battleId
+            endingBattles.removeIf { battleId ->
+                (battleId != shown).also { gone -> if (gone) ManagedBattleContentClient.hide(battleId) }
+            }
+        }
+        MccClientSessionReset.onReset("managed battle content") {
+            endingBattles.clear()
+            ManagedBattleContentClient.clear()
+        }
     }
 }
 
