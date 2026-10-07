@@ -3,11 +3,14 @@
   "id": "rounding_block",
   "version": "${version}",
   "name": "Rounding-Block",
-  "description": "Rounds exposed block edges and fills water contacts while preserving Minecraft's block grid.",
-  "authors": [
-    "jbro"
-  ],
+  "description": "Softens exposed edges of blocks, slabs and stairs, and fills gaps where water meets rounded blocks. Client-side visuals with unchanged collision and world data.",
+  "authors": ["jbro"],
   "license": "MIT",
+  "icon": "assets/rounding_block/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/rounding-block",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
   "environment": "client",
   "entrypoints": {
     "client": [

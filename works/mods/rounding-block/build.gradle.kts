@@ -35,6 +35,14 @@ java {
     withSourcesJar()
 }
 
+tasks.jar {
+    from("LICENSE") { rename { "LICENSE_rounding-block" } }
+}
+
+tasks.named<Jar>("sourcesJar") {
+    from("LICENSE") { rename { "LICENSE_rounding-block" } }
+}
+
 tasks.test { enabled = false }
 
 val unitTest by tasks.registering(JavaExec::class) {

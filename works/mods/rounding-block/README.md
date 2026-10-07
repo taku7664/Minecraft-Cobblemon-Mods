@@ -1,90 +1,74 @@
 # Rounding-Block
 
-Minecraft의 블록 격자는 그대로 유지하면서, 바깥으로 드러난 블록·반블록·계단의 엣지와 꼭짓점만 둥글게 그리는 Fabric 클라이언트 모드입니다.
+<img src="src/main/resources/assets/rounding_block/icon.png" alt="Rounding-Block icon" width="128">
 
-## 현재 범위
+Minecraft의 블록·반블록·계단에서 드러난 모서리를 둥글게 그리는 Fabric 클라이언트 모드입니다. 블록이 연결된 곳은 이웃 형상에 맞춰 처리하고, 물과 둥근 블록 사이에 생기는 빈 공간에는 수면을 이어 그립니다.
 
-- Minecraft 1.21.1 / Fabric
-- 기본 반경 `3/32` 블록, 곡면 3분할과 연속 법선 보간
-- 충돌 판정과 월드 저장 데이터 변경 없음
-- Fabric 기본 렌더러 Indigo 지원
-- Fabric 공식 유체 렌더 API를 사용해 바닐라와 Sodium/Iris의 기본 물 렌더러를 그대로 위임
-- 넓은 물 표면은 건드리지 않고 실제 라운딩 블록과 맞닿아 생기는 곡면 빈 공간에만 수면 패치를 생성
-- 흐르는 물의 네 모서리 높이, 바이옴 색상, 흐름 UV, 광량과 양면 수면을 원래 유체 렌더러에 맞춰 유지
-- 바닐라·모드 블록을 구분하지 않고 전체 블록·표준 반블록·계단을 지원하며, 그 밖의 해석할 수 없는 렌더 윤곽은 원래 모델로 자동 복귀
-- 바닐라와 표준 `slab_type` 상태를 쓰는 모드 반블록의 상단·하단·이중 상태 지원
-- 바닐라와 `stairs` 태그를 쓰는 모드 계단의 방향·상하·직선·안쪽·바깥쪽 상태 지원
-- 계단이 포함된 접점은 블록마다 실제 윤곽을 `2×2×2` 반칸 점유로 읽어 전체 블록·반블록과 같은 격자에서 연결
-- 반블록이 포함된 접점만 세로 1/2칸 점유 메시를 사용하고, 일반 전체 블록 지형은 기존 빠른 경로 유지
-- 진흙처럼 충돌 높이만 낮고 화면에는 완전한 큐브로 그려지는 블록도 라운딩하며 충돌 판정은 바꾸지 않음
-- 모래처럼 회전 모델을 무작위 선택하는 전체 큐브는 블록별 seed에 맞춰 UV 방향을 보존
-- 잔디처럼 한 면에 기본층과 색상 오버레이가 함께 있는 전체 큐브도 두 레이어를 보존
-- 월드 격자 꼭짓점마다 주변 8블록을 하나의 점유 상태로 읽어 바닥·벽·안쪽 코너를 한 곡면으로 연결
-- 빈 공간 쪽으로 이어지는 안쪽 곡면도 가장 가까운 고체 블록 하나가 맡아 중복 면과 끝마개 없이 출력
-- 256개 꼭짓점 점유 조합을 동일한 연속 밀도 함수로 처리하며 평평한 블록 면은 그대로 유지
-- 완전히 가려진 블록은 곡면·UV 계산 전에 건너뛰고, 가중치 모델의 UV 해석 결과를 재사용
-- 256개 꼭짓점 템플릿의 옥탄트 분할 결과를 모델 준비 중에 미리 만들고, 최근 이웃 형상은 제한된 캐시에 보관해 월드 렌더 중 같은 형상을 다시 자르지 않음
-- 일반 전체 블록만 있는 지형은 27칸 점유만 읽고, 반블록·계단이 실제로 가까이 있을 때만 세부 점유 격자를 추가로 구성
-- 실제로 보이는 면의 같은 층 3×3이 차 있고 바깥층 3×3이 비어 있으면 그 방향의 바닐라 쿼드만 합성하고, 이웃 코너를 대신 소유한 곡면 조각은 항상 유지
+블록 격자, 충돌 판정, 월드 저장 데이터는 바꾸지 않습니다. 서버 설치나 Cobblemon은 필요하지 않습니다.
+
+## 설치
+
+- Minecraft **1.21.1**, Fabric Loader **0.19.3 이상**, Java **21 이상**
+- 필수 모드: **Fabric API**
+- `rounding-block-<버전>.jar`를 클라이언트의 `mods` 폴더에 넣습니다.
+- 설정 모드는 필요하지 않습니다. Mod Menu가 이미 있다면 모드 목록에서도 설정 화면을 열 수 있습니다.
+
+## 기능과 범위
+
+- 전체 큐브, 표준 반블록, 계단의 바깥 모서리와 안쪽 접점을 라운딩합니다.
+- 원래 모델의 텍스처 방향, 색상 레이어와 무작위 모델 선택을 가능한 범위에서 유지합니다.
+- 넓은 물 표면은 기존 렌더러에 맡기고, 실제 라운딩된 블록과 닿는 물에만 접촉면을 추가합니다.
+- 해석할 수 없는 모델은 원래 모델로 그립니다. 모든 모드 블록이나 리소스팩에 같은 결과를 보장하지 않습니다.
+- Fabric Rendering API를 사용합니다. Sodium/Iris 조합별 화면과 성능은 실제 게임에서 별도로 확인해야 합니다.
+
+아이콘은 모드를 소개하기 위한 그림이며 게임 화면 캡처가 아닙니다.
 
 ## 설정
 
-첫 실행 시 Minecraft 프로필의 `config/rounding-block.json`이 생성됩니다.
+월드에서 `/roundingblock config`를 입력하면 Minecraft 기본 설정 화면이 열립니다. **외형 / 캐시 / 진단** 탭에서 편집한 뒤 **저장 및 적용**을 누릅니다. 설정 저장 후 리소스를 다시 불러오므로 잠시 기다려 주세요. **전체 초기화**는 모든 탭의 값을 기본값으로 바꾸며, 저장 전에는 파일에 반영하지 않습니다.
 
-```json
-{
-  "enabled": true,
-  "quality": {
-    "radius": 0.09375,
-    "segments": 3
-  },
-  "cache": {
-    "fullBlockPlans": 256,
-    "slabPlans": 256,
-    "complexShapePlans": 256,
-    "fluidContactPlans": 256,
-    "weightedModelVariants": 32
-  },
-  "debug": {
-    "diagnosticLogging": true
-  }
-}
-```
+첫 실행 시 `config/rounding-block.json`이 생성됩니다. 직접 편집한 값은 `/roundingblock reload`로 적용하고, 현재 적용값은 `/roundingblock show`로 확인합니다.
 
-- `enabled`: `false`면 모델 수정 자체를 등록하지 않고 원래 물 핸들러도 복원해 바닐라/Sodium 기본 렌더 경로만 사용합니다.
-- `radius`: 라운딩 반경입니다. `0.015625`~`0.21875` 범위에서 설정합니다.
-- `segments`: 곡면 분할 수입니다. `1`~`8`이며 높을수록 부드럽지만 청크 메시와 VRAM 사용량이 늘어납니다.
-- `fullBlockPlans`, `slabPlans`, `complexShapePlans`: 형상별 메시 캐시 항목 수입니다. 각각 `16`~`4096`입니다.
-- `fluidContactPlans`: 물과 라운딩 블록이 맞닿는 수면 패치 캐시 항목 수입니다. `16`~`4096`입니다.
-- `weightedModelVariants`: 모래처럼 가중 모델을 쓰는 블록의 UV 분석 캐시 수입니다. `1`~`256`입니다.
-- `diagnosticLogging`: 최초 렌더 경로 진단 로그를 출력할지 정합니다.
+| 항목 | 기본값 | 허용 범위 / 의미 |
+| --- | --- | --- |
+| `enabled` | `true` | 둥근 블록과 물 접촉면 렌더링 사용 여부 |
+| `quality.radius` | `0.09375` | `0.015625`–`0.21875` 블록. 모서리를 둥글게 만드는 폭 |
+| `quality.segments` | `3` | `1`–`8`. 곡면 분할 수 |
+| `cache.fullBlockPlans` | `256` | `16`–`4096`. 전체 블록 메시 캐시 항목 수 |
+| `cache.slabPlans` | `256` | `16`–`4096`. 반블록 메시 캐시 항목 수 |
+| `cache.complexShapePlans` | `256` | `16`–`4096`. 계단 등 복합 형상 메시 캐시 항목 수 |
+| `cache.fluidContactPlans` | `256` | `16`–`4096`. 물 접촉면 캐시 항목 수 |
+| `cache.weightedModelVariants` | `32` | `1`–`256`. 무작위 모델 외형 분석 캐시 항목 수 |
+| `debug.diagnosticLogging` | `true` | 렌더 경로 진단 로그 출력 여부 |
 
-범위를 벗어나거나 자료형이 잘못된 항목은 기본값으로 복구합니다. JSON 문법이 깨진 파일은 모드가 임의로 덮어쓰지 않습니다. 직접 편집한 값은 `/roundingblock reload`로 재시작 없이 적용할 수 있습니다.
+분할 수를 올리면 곡면이 부드러워지는 대신 그려야 할 면이 늘어납니다. 캐시 크기는 저장하는 계산 결과의 개수이며 FPS 목표나 메모리 용량(MB)이 아닙니다.
 
-## 명령어
+JSON에서 잘못된 값은 항목별 기본값을 사용합니다. JSON 문법이 깨진 파일은 자동으로 덮어쓰지 않습니다. 화면에서는 잘못된 숫자를 저장할 수 없고, 적용 실패 시 이전 활성 설정과 저장값을 복원합니다. 파일 저장이나 복원 오류의 상세 내용은 로그에서 확인합니다.
 
-모든 명령은 서버 권한이 필요 없는 클라이언트 명령입니다. 값을 바꾸는 명령은 JSON 저장과 모델 재적용을 함께 수행합니다.
+명령으로도 개별 값을 저장하고 적용할 수 있습니다. 모든 명령은 클라이언트에서 실행되며 서버 권한이 필요하지 않습니다.
 
 ```text
-/roundingblock show
-/roundingblock reload
 /roundingblock enabled <true|false>
-/roundingblock quality radius <0.015625~0.21875>
-/roundingblock quality segments <1~8>
-/roundingblock cache fullBlockPlans <16~4096>
-/roundingblock cache slabPlans <16~4096>
-/roundingblock cache complexShapePlans <16~4096>
-/roundingblock cache fluidContactPlans <16~4096>
-/roundingblock cache weightedModelVariants <1~256>
+/roundingblock quality radius <값>
+/roundingblock quality segments <값>
+/roundingblock cache fullBlockPlans <값>
+/roundingblock cache slabPlans <값>
+/roundingblock cache complexShapePlans <값>
+/roundingblock cache fluidContactPlans <값>
+/roundingblock cache weightedModelVariants <값>
 /roundingblock debug diagnosticLogging <true|false>
 ```
 
-`enabled false`나 JSON의 `"enabled": false`를 재적용하면 모델을 다시 불러온 뒤 라운딩 래퍼가 사라집니다. 다시 `true`로 바꾸면 같은 리로드 과정으로 라운딩 모델을 새로 만듭니다.
+## 배포 설명과 라이선스
 
-## 빌드와 확인
+영문·국문 소개 문구는 [MODRINTH.md](MODRINTH.md)에 있습니다. 모듈에는 저장소와 같은 [MIT 라이선스](LICENSE)를 적용하며, 일반 JAR와 소스 JAR에 `LICENSE_rounding-block`을 포함합니다. 검토 범위와 아이콘 생성 기록은 [RELEASE_REVIEW.md](RELEASE_REVIEW.md)에 정리했습니다.
+
+## 개발
+
+저장소의 `works/`에서 실행합니다.
 
 ```powershell
-.\gradlew.bat :rounding-block:unitTest :rounding-block:build --no-daemon
+.\gradlew.bat :rounding-block:build --no-daemon
 ```
 
-산출물은 `rounding-block/build/libs/rounding-block-1.5.0.jar`입니다.
+빌드의 `check`가 `unitTest`를 실행합니다. 결과는 `works/mods/rounding-block/build/libs/`에 생성됩니다. 자동 테스트와 빌드 통과는 게임 내 외형·설정 화면·FPS 검증과 별개입니다.
