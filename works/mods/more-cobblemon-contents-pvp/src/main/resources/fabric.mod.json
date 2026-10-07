@@ -3,7 +3,7 @@
   "id": "more_cobblemon_contents_pvp",
   "version": "${version}",
   "name": "More Cobblemon Contents: PvP",
-  "description": "Player versus player rooms and lounge battles for More Cobblemon Contents.",
+  "description": "Create player battle rooms and meet in the battle lounge. This MCC addon integrates PvP room management, player battles and match history with the MCC hub and shared battle system.",
   "authors": [
     "jbro"
   ],
@@ -34,5 +34,13 @@
     "java": ">=21",
     "cobblemon": ">=1.8.1 <1.9.0",
     "more_cobblemon_contents": ">=0.1.0 <1.0.0"
+  },
+  "icon": "assets/more_cobblemon_contents_pvp/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents-pvp",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -136,5 +136,7 @@
   "command.more_cobblemon_contents.pvp.admin.lounge.not_in_lounge": "%s님은 배틀 라운지에 있지 않습니다.",
   "command.more_cobblemon_contents.pvp.admin.lounge.failed": "%s님을 라운지에서 꺼내지 못했습니다. 서버 로그를 확인하세요.",
   "screen.more_cobblemon_contents_pvp.dashboard.recent_win": "승 · vs %s",
-  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "패 · vs %s"
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "패 · vs %s",
+  "modmenu.nameTranslation.more_cobblemon_contents_pvp": "More Cobblemon Contents: PvP",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_pvp": "MCC에 플레이어 대전방과 배틀 라운지를 추가합니다. 방 관리, 플레이어 대전 및 대전 기록을 MCC 허브와 공통 전투 시스템에 연결합니다."
 }

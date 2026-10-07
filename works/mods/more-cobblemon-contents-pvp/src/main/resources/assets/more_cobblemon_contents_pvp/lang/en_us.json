@@ -136,5 +136,7 @@
   "command.more_cobblemon_contents.pvp.admin.lounge.not_in_lounge": "%s is not in the battle lounge.",
   "command.more_cobblemon_contents.pvp.admin.lounge.failed": "Could not move %s out of the lounge. See the server log.",
   "screen.more_cobblemon_contents_pvp.dashboard.recent_win": "Won · vs %s",
-  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "Lost · vs %s"
+  "screen.more_cobblemon_contents_pvp.dashboard.recent_loss": "Lost · vs %s",
+  "modmenu.nameTranslation.more_cobblemon_contents_pvp": "More Cobblemon Contents: PvP",
+  "modmenu.descriptionTranslation.more_cobblemon_contents_pvp": "Create player battle rooms and meet in the battle lounge. This MCC addon integrates PvP room management, player battles and match history with the MCC hub and shared battle system."
 }

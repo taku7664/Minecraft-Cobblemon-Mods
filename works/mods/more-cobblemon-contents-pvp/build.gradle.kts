@@ -51,6 +51,15 @@ java {
     withSourcesJar()
 }
 
+// The remap tasks inherit these notices from the original and sources JARs.
+tasks.withType<org.gradle.jvm.tasks.Jar>().matching {
+    it.name == "jar" || it.name == "sourcesJar"
+}.configureEach {
+    from(layout.projectDirectory.file("LICENSE")) {
+        rename { "LICENSE_more_cobblemon_contents_pvp" }
+    }
+    from(layout.projectDirectory.file("THIRD_PARTY_NOTICES.md")) { rename { "THIRD_PARTY_NOTICES_more_cobblemon_contents_pvp.md" } }
+}
 tasks.test { enabled = false }
 
 val unitTest by tasks.registering(JavaExec::class) {
