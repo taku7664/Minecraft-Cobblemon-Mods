@@ -58,6 +58,7 @@ internal object PvpHubClient {
     var view = View.LIST
         private set
     var listFeedbackKey: String? = null
+    var listFeedbackArgs: List<String> = emptyList()
         private set
     var room: PvpRoomScreenController? = null
         private set
@@ -93,19 +94,21 @@ internal object PvpHubClient {
         show()
     }
 
-    fun rejectRoom(requestId: UUID, messageKey: String) {
+    fun rejectRoom(requestId: UUID, messageKey: String, messageArgs: List<String> = emptyList()) {
         PvpRoomClientState.pendingOpenRequests.remove(requestId)
         val current = room
         when {
             current != null && (view == View.ROOM || view == View.PICKER) && MccHubScreen.showing(CONTENT) -> {
-                current.applyRejected(requestId, messageKey)
+                current.applyRejected(requestId, messageKey, messageArgs)
                 MccHubScreen.refresh(CONTENT)
             }
             view == View.LIST && MccHubScreen.showing(CONTENT) -> {
                 listFeedbackKey = messageKey
+                listFeedbackArgs = messageArgs
                 MccHubScreen.refresh(CONTENT)
             }
-            else -> Minecraft.getInstance().player?.displayClientMessage(Component.translatable(messageKey), false)
+            else -> Minecraft.getInstance().player?.displayClientMessage(
+                Component.translatable(messageKey, *messageArgs.toTypedArray()), false)
         }
     }
 
@@ -215,7 +218,7 @@ internal class PvpHubTab : MccHubTabContent {
         var body = MccHubKit.card(host, layout.body, room("browser.title"), MccHubKit.CardTone.FEATURE)
         PvpHubClient.listFeedbackKey?.let { key ->
             val (line, rest) = MccHubKit.lineAbove(body)
-            MccHubKit.text(host, line, Component.translatable(key)) { it.colors.accentDanger }
+            MccHubKit.text(host, line, Component.translatable(key, *PvpHubClient.listFeedbackArgs.toTypedArray())) { it.colors.accentDanger }
             body = rest
         }
         MccHubKit.pagedList(host, body, rooms.map { summary ->
@@ -298,7 +301,7 @@ internal class PvpHubTab : MccHubTabContent {
                 },
             ), UiControlSize.SMALL)
             feedback?.let { key ->
-                MccHubKit.text(host, parts["feedback"], Component.translatable(key)) { it.colors.accentDanger }
+                MccHubKit.text(host, parts["feedback"], Component.translatable(key, *controller.feedbackArgs.toTypedArray())) { it.colors.accentDanger }
             }
             scrollable = MccHubKit.scrollList(host, parts["list"],
                 PvpBattleMechanic.entries.map { mechanic ->
@@ -313,7 +316,7 @@ internal class PvpHubTab : MccHubTabContent {
                 weight("spectators")
             }.solve(MccHubKit.below(body, MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2))
             feedback?.let { key ->
-                MccHubKit.text(host, parts["feedback"], Component.translatable(key)) { it.colors.accentDanger }
+                MccHubKit.text(host, parts["feedback"], Component.translatable(key, *controller.feedbackArgs.toTypedArray())) { it.colors.accentDanger }
             }
             val spectators = parts["spectators"]
             if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))

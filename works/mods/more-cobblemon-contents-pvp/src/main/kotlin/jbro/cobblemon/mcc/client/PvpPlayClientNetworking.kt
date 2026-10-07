@@ -96,7 +96,7 @@ internal object PvpPlayClientNetworking {
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomRejectedPayload.TYPE) { payload, context ->
-            context.client().execute { PvpHubClient.rejectRoom(payload.requestId, payload.messageKey) }
+            context.client().execute { PvpHubClient.rejectRoom(payload.requestId, payload.messageKey, payload.messageArgs) }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionStatePayload.TYPE) { payload, context ->
             context.client().execute { PvpHubClient.acceptSelection(payload.requestId, payload.state) }

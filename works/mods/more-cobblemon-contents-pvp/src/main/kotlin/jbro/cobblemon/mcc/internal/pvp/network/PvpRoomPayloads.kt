@@ -114,7 +114,16 @@ internal data class PvpRoomIntentPayload(val intent: PvpRoomIntent) : CustomPack
     }
 }
 
-internal data class PvpRoomRejectedPayload(val requestId: UUID, val messageKey: String) : CustomPacketPayload {
+internal data class PvpRoomRejectedPayload(
+    val requestId: UUID,
+    val messageKey: String,
+    /** Plain-text arguments for [messageKey], such as the player whose party broke a rule. */
+    val messageArgs: List<String> = emptyList(),
+) : CustomPacketPayload {
+    init {
+        require(messageArgs.size <= MAX_MESSAGE_ARGS) { "Too many PvP room rejection arguments" }
+    }
+
     override fun type(): CustomPacketPayload.Type<PvpRoomRejectedPayload> = TYPE
 
     companion object {
@@ -123,8 +132,16 @@ internal data class PvpRoomRejectedPayload(val requestId: UUID, val messageKey: 
             { buffer, payload ->
                 buffer.writeUUID(payload.requestId)
                 buffer.writeRoomString(payload.messageKey)
+                buffer.writeVarInt(payload.messageArgs.size)
+                payload.messageArgs.forEach(buffer::writeRoomString)
             },
-            { buffer -> PvpRoomRejectedPayload(buffer.readUUID(), buffer.readRoomString()) },
+            { buffer ->
+                PvpRoomRejectedPayload(
+                    buffer.readUUID(),
+                    buffer.readRoomString(),
+                    List(buffer.readBoundedCount(MAX_MESSAGE_ARGS, "rejection argument")) { buffer.readRoomString() },
+                )
+            },
         )
     }
 }
@@ -330,3 +347,4 @@ private fun roomId(path: String): ResourceLocation =
 private const val MAX_ROOMS = 256
 private const val MAX_MEMBERS = 128
 private const val MAX_STRING_LENGTH = 160
+private const val MAX_MESSAGE_ARGS = 4

@@ -50,6 +50,7 @@ import jbro.cobblemon.mcc.internal.pvp.leaveRequestError
 import jbro.cobblemon.mcc.internal.pvp.PvpSelectionMutation
 import jbro.cobblemon.mcc.internal.pvp.PvpSessionService
 import jbro.cobblemon.mcc.internal.pvp.PvpTeamRegistrationResult
+import jbro.cobblemon.mcc.internal.pvp.PvpTeamIssue
 import jbro.cobblemon.mcc.internal.pvp.PvpTurnCapture
 import jbro.cobblemon.mcc.internal.pvp.ui.PvpSelectionIntent
 import jbro.cobblemon.mcc.internal.pvp.ui.PvpSelectionOpponentSlot
@@ -775,12 +776,15 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         val leftTeam = Cobblemon173PvpTeamFactory.register(left, room.settings.format)
         val rightTeam = Cobblemon173PvpTeamFactory.register(right, room.settings.format)
         if (leftTeam !is PvpTeamRegistrationResult.Accepted || rightTeam !is PvpTeamRegistrationResult.Accepted) {
+            // Name the seat and the broken rule, so the players know whose party to fix.
+            val (offender, rejected) = if (leftTeam is PvpTeamRegistrationResult.Rejected) {
+                left to leftTeam
+            } else {
+                right to rightTeam as PvpTeamRegistrationResult.Rejected
+            }
             ServerPlayNetworking.send(
                 player,
-                PvpRoomRejectedPayload(
-                    intent.requestId,
-                    "screen.${MoreCobblemonContents.MOD_ID}.pvp.room.error.team_invalid",
-                ),
+                teamInvalidRejection(intent.requestId, offender.scoreboardName, room.settings.format, rejected.issues),
             )
             return
         }
@@ -1061,6 +1065,25 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         playerId,
         onlinePlayers[playerId]?.scoreboardName ?: playerId.toString(),
     )
+
+    private fun teamInvalidRejection(
+        requestId: UUID,
+        playerName: String,
+        format: PvpBattleFormat,
+        issues: Set<PvpTeamIssue>,
+    ): PvpRoomRejectedPayload {
+        val prefix = "screen.${MoreCobblemonContents.MOD_ID}.pvp.room.error.team_invalid"
+        return when {
+            PvpTeamIssue.WRONG_TEAM_SIZE in issues -> PvpRoomRejectedPayload(
+                requestId,
+                "$prefix.team_size",
+                listOf(playerName, format.registrationRange.first.toString(), format.registrationRange.last.toString()),
+            )
+            PvpTeamIssue.DUPLICATE_SPECIES in issues -> PvpRoomRejectedPayload(requestId, "$prefix.duplicate_species", listOf(playerName))
+            PvpTeamIssue.DUPLICATE_HELD_ITEM in issues -> PvpRoomRejectedPayload(requestId, "$prefix.duplicate_held_item", listOf(playerName))
+            else -> PvpRoomRejectedPayload(requestId, "$prefix.player", listOf(playerName))
+        }
+    }
 
     private fun rejectRoom(player: ServerPlayer, requestId: UUID, error: PvpRoomError) {
         ServerPlayNetworking.send(

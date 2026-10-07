@@ -12,6 +12,8 @@ internal class PvpRoomScreenController(
         private set
     var feedbackKey: String? = null
         private set
+    var feedbackArgs: List<String> = emptyList()
+        private set
     private var pendingRequestId: UUID? = null
 
     val isPending: Boolean
@@ -38,9 +40,10 @@ internal class PvpRoomScreenController(
         }
     }
 
-    fun applyRejected(requestId: UUID, messageKey: String) {
+    fun applyRejected(requestId: UUID, messageKey: String, messageArgs: List<String> = emptyList()) {
         if (requestId != pendingRequestId) return
         pendingRequestId = null
         feedbackKey = messageKey
+        feedbackArgs = messageArgs
     }
 }

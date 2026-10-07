@@ -61,9 +61,10 @@ class PvpRoomScreenControllerTest {
         assertTrue(controller.isPending)
         assertEquals(null, controller.feedbackKey)
 
-        controller.applyRejected(requestId, "rejected")
+        controller.applyRejected(requestId, "rejected", listOf("Park_JH"))
         assertFalse(controller.isPending)
         assertEquals("rejected", controller.feedbackKey)
+        assertEquals(listOf("Park_JH"), controller.feedbackArgs)
     }
 
     @Test
