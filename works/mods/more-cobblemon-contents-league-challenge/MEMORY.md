@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-07 21:14] PokeBadges 버전 범위 해제 (`e4099c3d`, 빌드만 확인, 미배포)
+
+- **빡대리님 지시:** 클라이언트에 PokeBadges 2.0.0을 넣자 `>=1.6.1 <1.7.0` 범위 때문에 에러가 났다. `depends.pokebadges`를 `*`로 풀었다.
+- 2.0.0의 `PokeBadgesApi`·`BadgeOperationResult`는 1.6.1과 같고 `openBadgeBox`만 추가됐다(javap 비교). 컴파일은 여전히 1.6.1(`A93HZDyB`)에 대고 한다.
+- 지시에 따라 테스트 없이 빌드만 했다(`-x test -x unitTest`). 계약 테스트 기대값은 `*`로 고쳤지만 돌려 보지 않았다.
+- 개발 서버와 클라이언트가 켜져 있어서 JAR은 배포하지 않았다. 개발 서버 mods에는 아직 PokeBadges 1.6.1이 있다.
+
 ## [2026-10-07 00:37] 야생 레벨 쏠림 격자 4 → 8청크
 
 - **빡대리님 요청:** 청크마다 쏠림이 너무 빨리 바뀐다고 해서 덜 바뀌게 했다. `active.json`의 `wild_level.region_chunks`를 4에서 8로 올렸다(격자 한 칸 128 × 128블록, 옆 청크로 넘어갈 때 쏠림 변화 최대 0.5 → 0.25). 코드 기본값(`WildLevelRule.regionChunks = 4`)은 그대로 두었다.
