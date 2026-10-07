@@ -1,144 +1,67 @@
-# More Cobblemon Contents (MCC)
+# More Cobblemon Contents Core
 
-A core mod and content mods for Cobblemon battle facilities.
+<img src="src/main/resources/assets/more_cobblemon_contents/icon.png" alt="More Cobblemon Contents Core icon" width="128">
 
-| Module | Mod ID | Contents |
-|---|---|---|
-| `more-cobblemon-contents` | `more_cobblemon_contents` | Core: managed battle engine, built-in Better AI, Battle Points and shop, records, battle hub, presentation, holo terminal, `/mcc` |
-| `more-cobblemon-contents-battle-tower` | `more_cobblemon_contents_battle_tower` | Battle Tower |
-| `more-cobblemon-contents-battle-factory` | `more_cobblemon_contents_battle_factory` | Battle Factory |
-| `more-cobblemon-contents-pvp` | `more_cobblemon_contents_pvp` | PvP rooms and the battle lounge |
-| `more-cobblemon-contents-league-challenge` | `more_cobblemon_contents_league_challenge` | League Challenge: gyms, the Pokemon League and level caps |
+Cobblemon에 전투 시설을 추가하는 MCC의 공통 기반 모드입니다. 실제 도전 콘텐츠는 원하는 애드온을 선택해 설치합니다.
 
-## Terminals and hub tabs
+## 주요 기능
 
-Each content mod registers a hologram terminal through `HoloTerminals.register` (`api.terminal`): an ID, its
-default tabs and a colour palette. Like `/mcc`, a terminal opens the hub on the dashboard when it is listed. The server reads which tabs each way into the hub shows
-from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults on first start and read again on
-`/reload`:
+- 전투 진행과 결과 처리를 공유하는 관리 전투 기반 및 내장 전술 AI
+- Battle Points(BP), 보상 상점, 플레이어 전투 기록
+- 배틀 허브와 홀로그램 터미널, 콘텐츠별 대시보드
+- 애드온과 음악·연출 모드를 위한 공개 연동 API
 
-```json
-{
-  "command": ["more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:pvp"],
-  "command_permission_level": 0,
-  "terminals": {
-    "more_cobblemon_contents_league_challenge:league_terminal": [
-      "more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:league_challenge"
-    ]
-  }
-}
-```
+## 애드온
 
-`command` is `/mcc`; `command_permission_level` is the level `/mcc` needs to open the hub (0, the default, lets
-every player; 2 only operators). Under it players have only `/mcc bp` and `/mcc bp history [count]` for their own
-BP; every other command needs level 2. `terminals` is keyed by
-terminal block ID. A missing entry takes its default, and a broken one
-falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
-with, so a tab left out cannot be reached by a modified client either.
-
-## Dashboard cards
-
-The hub dashboard shows one card per content. A content registers a section for its own content ID on the server
-and builds its card for the player whose hub is opening; the core draws every card the same way, taking the icon
-and order from that content's hub tab:
-
-```kotlin
-MccDashboardSections.register(ManagedBattleContentIds.BATTLE_TOWER) { context ->
-    val records = context.records(ManagedBattleContentIds.BATTLE_TOWER)
-    MccDashboardCard(contentId, title, stats = listOf(MccDashboardStat(label, value)), rows = MccDashboardCards.recordRows(records))
-}
-```
-
-A card has up to four stats, up to sixteen rows (title, value, optional detail) and an optional note. A content
-the player cannot open yet gets its access denial as the note. Contents with records but no section get a plain
-card from `MccDashboardCards.records`, and a section that fails falls back to that card too.
-
-## Client context for music and other client mods
-
-A client mod can learn where the player is in MCC without touching its internals. `MccClientContext.current()`
-returns the hub tab while the hub is open (`hubTab`, null otherwise) and the battle on screen (`battle`, with its
-`MccBattleTag`). `MccClientContext.listen { previous, current -> }` is told once per change, checked every client tick:
-hub opened or closed, tab switched, battle started, tagged or ended.
-
-A battle's tag names the content that runs it, its stage and, where there is one, the opponent:
-
-| Content | `contentId` | `stage` | `opponentId` |
-|---|---|---|---|
-| League Challenge | `more_cobblemon_contents:league_challenge` | `gym`, `elite_four`, `champion`, and `hard_gym`, `hard_elite_four`, `hard_champion` on the hard route | challenge id, e.g. `more_cobblemon_contents_league_challenge:cynthia` |
-| Wild trainers | `more_cobblemon_contents:league_challenge` | `wild_trainer`, `wild_trainer_ace` | NPC class |
-| Battle Tower | `more_cobblemon_contents:battle_tower` | `regular`, `tier_boss`, `master_ball_boss` | trainer profile id |
-| Battle Factory | `more_cobblemon_contents:battle_factory` | `regular`, `factory_head` | none |
-| PvP | `more_cobblemon_contents:pvp` | `single`, `double` | none |
-
-Hub tab ids are the content ids above, plus `more_cobblemon_contents:dashboard` and `more_cobblemon_contents:shop`.
-Battles no content tagged (wild Pokémon, plain challenges between players) have a null tag.
-
-On the server, MCC tags the battles it runs. A content tags any other battle it starts by starting it inside
-`MccBattleTags.during`; the tag reaches the clients before Cobblemon's first battle packet:
-
-```kotlin
-MccBattleTags.during(setOf(player.uuid), MccBattleTag(CONTENT_ID, "wild_trainer", trainerId)) {
-    BattleBuilder.pvn(player, npc, leadId, BattleFormat.GEN_9_SINGLES, false, false, party)
-}
-```
-
-`ManagedPveBattles.Request` takes the stage directly (`stage = "gym"`) and uses its trainer id as the opponent.
-
-## Operator commands
-
-These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and
-`/mcc bp history [count]` for their own BP. Player arguments that read or edit saved data take offline
-players too.
-
-| Command | What it does |
+| 애드온 | 콘텐츠 |
 |---|---|
-| `/mcc` | Opens the hub with the tabs `hub_tabs.json` gives the command |
-| `/mcc status` | Storage health, the shop and every content's catalog, sessions, battles and waiting results |
-| `/mcc records reset <player> [content] [format]` | Deletes records; refused while the player has a run, battle or waiting result |
-| `/mcc battle list` | MCC battles in progress |
-| `/mcc battle end <player> forfeit\|void` | Forfeit (a loss; in PvP the other player wins) or end without a result |
-| `/mcc battle pending [list\|retry\|drop] [player]` | Results every content is still retrying to save |
-| `/mcc bp …` | Balances and history, add, remove, set |
-| `/mcc tower streak …`, `/mcc tower session <player>`, `/mcc tower abandon <player> [force]` | Streaks, a session, ending it (force drops a session whose battle is gone) |
-| `/mcc factory floor …`, `/mcc factory session <player>`, `/mcc factory abandon <player> [force]` | The same for Battle Factory runs |
-| `/mcc pvp rooms`, `room close\|kick <player>`, `challenge cancel <player>`, `arena list\|release <index>`, `lounge rescue <player>` | Rooms, challenges, arena slots and the lounge |
-| `/mcc league inspect\|rewards list\|rewards retry\|rewards drop\|run cancel <player>` | Progress, undelivered rewards (drop marks them delivered without awarding) and runs |
-| `/mcc league cap sync <player>`, `validate`, `catalog`, `import-badges <player>` | Level cap, setup check, catalog state, badge migration |
-| `/mcc league trainer spawn [kind\|random] [count] [pos]`, `despawn [radius]`, `list [radius]`, `cooldown reset <player>` | Wild trainers |
+| [Battle Tower](../more-cobblemon-contents-battle-tower/README.md) | 자신의 팀으로 도전하는 연승전 |
+| [Battle Factory](../more-cobblemon-contents-battle-factory/README.md) | 대여 포켓몬을 활용하는 도전 |
+| [PvP](../more-cobblemon-contents-pvp/README.md) | 플레이어 대전방과 배틀 라운지 |
+| [League Challenge](../more-cobblemon-contents-league-challenge/README.md) | 체육관·배지·사천왕·챔피언 진행 |
 
-Contents take part in `status`, `battle pending` and the record reset check through `MccAdminSources`.
+## 개발자 참고
 
-## Server wiki
+허브 탭, 대시보드, 음악 연동 API와 운영 명령의 세부 사용법은 [DEVELOPER.md](DEVELOPER.md)에 있습니다.
 
-With `enabled` set in `config/more-cobblemon-contents/wiki.json`, the server serves the wiki (the repository's
-`server-wiki/`, copied into `directory`) over HTTP while it runs, and `/api/me` answers with the asking player's
-BP, records and content sections, read fresh on every request:
+## 설치
 
-```json
-{ "enabled": true, "bind": "0.0.0.0", "port": 8100, "public_url": "http://play.example.com:8100",
-  "directory": "config/more-cobblemon-contents/wiki" }
-```
+**클라이언트와 서버 양쪽에 설치합니다.** 싱글플레이에서도 같은 클라이언트 모드를 사용합니다.
 
-It is off by default, since it opens a port. `public_url` is the address players' browsers reach; without it links
-point at `http://localhost:<port>`. A player's link carries their token, which the wiki keeps in the browser and
-sends with each `/api/me` request. The core has no command for links: the server's own mod hands them out with
-`WikiApi.linkFor(playerId)`, and `WikiApi.resetLinkFor(playerId)` issues a new token that ends the old links (on
-this server, jbro-policy's `/wiki`). Tokens live in the world's `data/mcc_wiki_tokens.json`.
-Contents add their own data to `/api/me` with `WikiPlayerData.register(key) { server, playerId -> json }`.
-They add endpoints of their own with `WikiApi.register("pvp/matches") { request -> json }`, answered on the wiki's HTTP
-threads under `/api/<name>`; `request.viewer` is the player whose token came with the request, if any.
+| 항목 | 요구 사항 |
+|---|---|
+| Minecraft / Java | Java Edition 1.21.1 / Java 21 이상 |
+| 로더 | Fabric Loader 0.19.5 이상 |
+| 공통 필수 모드 | Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20 이상, Cobblemon 1.8.1 이상 / 1.9.0 미만 |
+| 본체 필수 모드 | Mega Showdown `1.2.0+1.8.1+1.21.1-release` |
+| 선택 연동 | MCC 콘텐츠 애드온, Better Cobblemon Battlecam, Better Cobblemon Music |
 
-All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
-(`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).
+1. 서버와 접속할 클라이언트의 `mods` 폴더에 모드 JAR과 필수 모드를 넣습니다. 필요한 지원 라이브러리는 각 의존 모드의 설치 안내를 따릅니다.
+2. 본체와 사용하려는 애드온을 같은 구성으로 설치합니다. 애드온은 본체 없이 사용할 수 없습니다.
+3. 플레이어는 `/mcc` 또는 콘텐츠의 홀로그램 터미널로 배틀 허브를 엽니다. 서버에서 해당 탭을 허용해야 접근할 수 있습니다.
 
-## Build and test
+UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 복제해 설치할 필요는 없습니다.
 
-```bash
-./gradlew :more-cobblemon-contents:unitTest
-./gradlew :more-cobblemon-contents:remapJar
-```
+## 설정과 콘텐츠 편집
 
-`tasks.test` is disabled; run tests with `unitTest`. In the core, `-Pscope=core` or `-Pscope=ai` runs one
-half of the suite. Build the module jars one `remapJar` at a time.
+본체 설정은 서버가 관리합니다. 현재 본체에는 별도 Mod Menu 설정 화면이 없습니다. 플레이어는 `/mcc` 또는 콘텐츠 터미널로 허브를 엽니다.
 
-Work history, decisions and open issues are recorded in [`MEMORY.md`](MEMORY.md).
+- `config/more-cobblemon-contents/hub_tabs.json`: `/mcc`와 각 터미널에 표시할 탭, 허브 명령어 권한.
+- `config/more-cobblemon-contents/wiki.json`: 서버 위키 연동 설정.
+- 데이터팩의 `mcc-bp-shop/`: BP 상점 콘텐츠.
+
+서버 설정과 데이터팩을 수정한 뒤 관리자 권한으로 `/reload`를 사용합니다. `/mcc`의 기본 허브 접근 권한은 0이며, 운영 명령은 권한 2를 요구합니다. `/mcc bp`와 `/mcc bp history [count]`로 자신의 BP를 조회할 수 있습니다.
+
+## 문제 해결
+
+- 모드가 로드되지 않으면 클라이언트·서버의 모드 구성과 필수 의존성을 확인하세요.
+- 허브에 콘텐츠가 보이지 않으면 해당 애드온 설치 여부와 본체의 `hub_tabs.json` 설정을 확인하세요.
+- 데이터팩을 수정한 뒤 문제가 생기면 서버 로그에서 잘못된 콘텐츠 정의를 확인하세요. 모드 JAR을 직접 수정하는 대신 서버 데이터팩을 사용합니다.
+
+## 라이선스와 배포 설명
+
+이 모드의 자체 코드와 아이콘은 [MIT License](LICENSE)로 제공합니다. 의존 모드와 내장 라이브러리는 각각의 라이선스를 따릅니다.
+
+내장 `cobblemon-ui`는 별도 저작권·라이선스 고지를 유지합니다. 원본 Cobblemon Extended Battle UI의 MIT 고지는 내장 UI JAR의 `THIRD_PARTY_LICENSE_CobblemonExtendedBattleUI`에 포함돼 있습니다. 자세한 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다.
+
+공개 배포 페이지용 영문 설명은 [MODRINTH.md](MODRINTH.md)에 있습니다. [소스](https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents) · [문제 신고](https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues)

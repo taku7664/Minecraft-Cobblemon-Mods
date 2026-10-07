@@ -145,5 +145,7 @@
   "screen.more_cobblemon_contents.ranking.highest_floor": "최고 층",
   "screen.more_cobblemon_contents.ranking.wins": "승리",
   "screen.more_cobblemon_contents.dashboard.format.single_normal": "싱글 · 일반",
-  "screen.more_cobblemon_contents.dashboard.format.double_normal": "더블 · 일반"
+  "screen.more_cobblemon_contents.dashboard.format.double_normal": "더블 · 일반",
+  "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
+  "modmenu.descriptionTranslation.more_cobblemon_contents": "Cobblemon 전투 콘텐츠의 공통 기반 모드입니다. 관리 전투, 내장 전술 AI, BP·상점·기록, 배틀 허브와 홀로그램 터미널을 제공하며 콘텐츠는 별도 애드온으로 추가합니다."
 }

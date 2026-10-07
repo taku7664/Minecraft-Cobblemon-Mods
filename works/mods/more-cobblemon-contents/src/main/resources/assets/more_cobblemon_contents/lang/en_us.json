@@ -145,5 +145,7 @@
   "screen.more_cobblemon_contents.ranking.highest_floor": "Highest floor",
   "screen.more_cobblemon_contents.ranking.wins": "Wins",
   "screen.more_cobblemon_contents.dashboard.format.single_normal": "Single · Normal",
-  "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal"
+  "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal",
+  "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
+  "modmenu.descriptionTranslation.more_cobblemon_contents": "The shared foundation for Cobblemon battle facilities: managed battles, tactical AI, Battle Points, a reward shop, records, the battle hub and hologram terminals. Add content with MCC addons."
 }
