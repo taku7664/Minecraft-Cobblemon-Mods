@@ -4,6 +4,14 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
+import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
+import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
+import jbro.cobblemon.mcc.betterai.search.NativeProductSearchRunner
+import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciler
+import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchAggregator
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
+import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceLedger
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryLedger
@@ -41,7 +49,32 @@ internal object EmbeddedTeamBattle {
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
         val profiles = mapOf("p1" to p1TrainerProfile, "p2" to p2TrainerProfile)
-        val brains = tunings.mapValues { (_, tuning) -> LocalTacticalBrain(tuning = tuning) }
+        // The last native evaluation per side, so the trace shows whether native search ran and why it did not.
+        val nativeEvaluations = java.util.concurrent.ConcurrentHashMap<String, NativeInitialProductDecisionEvaluation>()
+        val nativeWorkers = mutableListOf<EngineBranchWorker>()
+        val brains = tunings.mapValues { (side, tuning) ->
+            // The game leases a worker from the server's native runtime; a test has none, so each side owns one.
+            val worker = EngineBranchWorker().also(nativeWorkers::add)
+            val evaluator = NativeInitialProductDecisionEvaluator(
+                searchWorlds = NativeProductWorldSearchAggregator(
+                    runWorld = NativeProductSearchRunner(lease = { _, action -> action(worker) })::run)::search,
+                reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) })::reconcile,
+            )
+            LocalTacticalBrain(tuning = tuning, nativeInitialDecision = { context, profile, localTuning, budget, sessionState ->
+                evaluator.evaluate(context, profile, localTuning, budget, sessionState).also { evaluation ->
+                    nativeEvaluations[side] = evaluation
+                    // A failed native decision is kept whole, so the planner can be replayed on it.
+                    if (evaluation.status != NativeInitialProductDecisionStatus.AVAILABLE &&
+                        evaluation.status != NativeInitialProductDecisionStatus.NOT_APPLICABLE) {
+                        Files.writeString(directory.resolve("native-$side-turn${context.state.turn}-${context.requestId.toString().take(8)}.json"),
+                            AiTestDecisionSnapshot.toJson(AiTestDecisionSnapshot(battleId = battleId, turn = context.state.turn,
+                                trainerPersonaId = null, trainerProfile = profile, strategy = null,
+                                nativeContinuation = sessionState != null, capturedAtEpochMillis = System.currentTimeMillis(),
+                                context = context)))
+                    }
+                }
+            })
+        }
         val openContexts = brains.keys.associateWith { side ->
             BattleBrainOpenContext(battleId, format, trainerProfile = profiles.getValue(side))
         }
@@ -99,7 +132,12 @@ internal object EmbeddedTeamBattle {
                                 baseContext.deadlineEpochMillis,
                                 baseContext.memory,
                                 baseContext.publicActionCatalog.withOpponentMoveInferences(inferences),
-                            )
+                            ).let { built ->
+                                EmbeddedTeamInput.nativeInputs(input)?.let { (preview, own) ->
+                                    built.copy(opponentTeamPreview = preview, exactOwnTeam = own)
+                                } ?: built
+                            }
+                            nativeEvaluations.remove(side)
                             val effects = context.candidates.asSequence().flatMap { candidate ->
                                 if (candidate.kind == BattleActionKind.COMPOSITE) {
                                     candidate.componentActions.asSequence()
@@ -124,6 +162,7 @@ internal object EmbeddedTeamBattle {
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))
                                 add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
+                                nativeEvaluations[side]?.let { add("native", nativeTrace(it)) }
                             }.toString()).appendLine()
                             trace.flush()
                         }
@@ -133,6 +172,7 @@ internal object EmbeddedTeamBattle {
                 }
             }
         } finally {
+            nativeWorkers.forEach { runCatching { it.close() } }
             brains.forEach { (side, brain) ->
                 val winner = final?.get("winner")?.takeUnless { it.isJsonNull }?.asString
                 val outcome = when {
@@ -144,6 +184,18 @@ internal object EmbeddedTeamBattle {
                 brain.closeSession(sessions.getValue(side), BattleBrainCloseResult(outcome, counts.getValue(side)))
             }
         }
+    }
+
+    private fun nativeTrace(evaluation: NativeInitialProductDecisionEvaluation) = JsonObject().apply {
+        addProperty("status", evaluation.status.name)
+        addProperty("depth", evaluation.depthCompleted)
+        addProperty("nodes", evaluation.nodesVisited)
+        addProperty("planIssues", evaluation.planIssues.joinToString(",") { it.code.name + (it.detailCode?.let { code -> "/$code" } ?: "") })
+        evaluation.reconciliationStatus?.let { addProperty("reconciliation", it.name) }
+        evaluation.searchStatus?.let { addProperty("search", it.name) }
+        evaluation.failedRunStatus?.let { addProperty("failedRun", it.name) }
+        evaluation.failedRunDetail?.let { addProperty("detail", it) }
+        evaluation.failedWorldId?.let { addProperty("failedWorld", it) }
     }
 
     private fun registerMoveDetails(

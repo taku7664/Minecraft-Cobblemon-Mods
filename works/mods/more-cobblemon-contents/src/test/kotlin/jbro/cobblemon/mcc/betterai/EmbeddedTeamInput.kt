@@ -63,6 +63,7 @@ internal object EmbeddedTeamInput {
         memory: (BattleStateView) -> BattleTacticalMemoryView = { BattleTacticalMemoryView.empty() },
     ): BattleDecisionContext {
         val format = battleFormat(input)
+        val nativeInputs = input.has("ownBuilds")
         val ownSide = input["side"].asString
         fun side(ident: String) = if (ident.startsWith(ownSide)) BattleSide.ALLY else BattleSide.OPPONENT
         val speciesData = input.getAsJsonObject("species")
@@ -260,24 +261,8 @@ internal object EmbeddedTeamInput {
                 actionConstraints = constraints.forPokemon(pokemon.ident),
                 knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) pokemon.volatileEffects else emptySet())
         }
-        fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView {
-            val move = requireNotNull(ruleMoves.getAsJsonObject(moveId)) { "Missing public move metadata $moveId" }
-            val target = when (move["target"].asString) {
-                "self" -> BattleMoveTargetPattern.SELF
-                "all" -> BattleMoveTargetPattern.ALL_ACTIVE
-                "allAdjacent" -> BattleMoveTargetPattern.ALL_ADJACENT
-                "allAdjacentFoes" -> BattleMoveTargetPattern.ALL_OPPONENTS
-                "allySide", "foeSide" -> BattleMoveTargetPattern.SIDE
-                "allyTeam" -> BattleMoveTargetPattern.ALL_ALLIES
-                "randomNormal" -> BattleMoveTargetPattern.RANDOM_OPPONENT
-                "adjacentAlly" -> BattleMoveTargetPattern.SELECTED_ALLY
-                "adjacentAllyOrSelf" -> BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF
-                else -> BattleMoveTargetPattern.SELECTED_OPPONENT
-            }
-            return BattleMoveCandidateView(move["type"].asString, BattleMoveDamageCategory.valueOf(move["category"].asString.uppercase()),
-                move["power"].asDouble, move["accuracy"].asDouble, move["priority"].asInt, pp, target,
-                effects = declarativeEffects[moveId])
-        }
+        fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView =
+            publicMoveDetails(requireNotNull(ruleMoves.getAsJsonObject(moveId)) { "Missing public move metadata $moveId" }, moveId, pp)
         fun targets(
             details: BattleMoveCandidateView,
             actorSlot: Int,
@@ -361,7 +346,9 @@ internal object EmbeddedTeamInput {
             BattlePokemonActionCatalogView(creature.battlePokemonId, creature.knownMoveIds.filter { ruleMoves.has(it) }.map {
                 BattlePublicMoveOptionView(it, moveDetails(it, remaining(creature, it)),
                     if (creature.side == BattleSide.ALLY) BattlePublicMoveKnowledge.EXACT_OWN else BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
-            }, moveSetComplete = false) // PP/Transform/temporary move availability is not a complete future catalog.
+            }, // PP/Transform/temporary move availability is not a complete future catalog. With the game's native
+                // inputs the adapter marks the trainer's own sets complete, as the game's public catalog does.
+                moveSetComplete = nativeInputs && creature.side == BattleSide.ALLY)
         }, candidatePools = opponents.filterNot { it.fainted || pp.isTransformed(identById.getValue(it.battlePokemonId)) }
             .mapNotNull { creature -> publicLearnsets.getAsJsonObject(creature.speciesId)?.let { pool ->
                 require(pool["coverage"].asString == "PARTIAL")
@@ -389,9 +376,112 @@ internal object EmbeddedTeamInput {
         val state = BattleStateView(battleId, format, turn, pokemon, field,
             mapOf(BattleSide.ALLY to allies.count { !it.fainted }, BattleSide.OPPONENT to
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
-            observedEvents = events.takeLast(64), inferences = emptyList())
+            observedEvents = if (nativeInputs) gameNumbered(events).takeLast(128) else events.takeLast(64),
+            inferences = emptyList())
         return BattleDecisionContext(UUID.nameUUIDFromBytes("$battleId:$ownSide:$requestNumber".toByteArray()), state,
             candidates, System.currentTimeMillis() + 20000, memory = memory(state), publicActionCatalog = catalog)
+    }
+
+    /** The game's observer numbers public events 1, 2, 3 and keeps the last 128; the native session needs that. */
+    private fun gameNumbered(events: List<BattleObservedEventView>) = events.mapIndexed { index, event ->
+        BattleObservedEventView(
+            sequence = index + 1L,
+            turn = event.turn,
+            kind = event.kind,
+            actorPokemonId = event.actorPokemonId,
+            targetPokemonIds = event.targetPokemonIds,
+            publicValueId = event.publicValueId,
+            hpFractionDelta = event.hpFractionDelta,
+            baseMovePriority = event.baseMovePriority,
+            precedingActionSequence = event.precedingActionSequence,
+            precedingActionActorPokemonId = event.precedingActionActorPokemonId,
+            precedingActionMoveId = event.precedingActionMoveId,
+            publicSourceEffectId = event.publicSourceEffectId,
+            moveOutcome = event.moveOutcome,
+            actorSlot = event.actorSlot,
+        )
+    }
+
+    internal fun publicMoveDetails(move: JsonObject, moveId: String, pp: Int): BattleMoveCandidateView {
+        val target = when (move["target"].asString) {
+            "self" -> BattleMoveTargetPattern.SELF
+            "all" -> BattleMoveTargetPattern.ALL_ACTIVE
+            "allAdjacent" -> BattleMoveTargetPattern.ALL_ADJACENT
+            "allAdjacentFoes" -> BattleMoveTargetPattern.ALL_OPPONENTS
+            "allySide", "foeSide" -> BattleMoveTargetPattern.SIDE
+            "allyTeam" -> BattleMoveTargetPattern.ALL_ALLIES
+            "randomNormal" -> BattleMoveTargetPattern.RANDOM_OPPONENT
+            "adjacentAlly" -> BattleMoveTargetPattern.SELECTED_ALLY
+            "adjacentAllyOrSelf" -> BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF
+            else -> BattleMoveTargetPattern.SELECTED_OPPONENT
+        }
+        return BattleMoveCandidateView(move["type"].asString, BattleMoveDamageCategory.valueOf(move["category"].asString.uppercase()),
+            move["power"].asDouble, move["accuracy"].asDouble, move["priority"].asInt, pp, target,
+            effects = declarativeEffects[moveId])
+    }
+
+    /**
+     * The game's native search inputs: the opposing team preview as Cobblemon's FormData enriches it
+     * (types, public stat ranges, abilities, gender ratio, learnset) and the trainer's own exact sets.
+     * Present only when the bridge ran with `teamPreview`.
+     */
+    internal fun nativeInputs(input: JsonObject): Pair<BattleOpponentTeamPreviewView, BattleExactOwnTeamView>? {
+        val foe = input.getAsJsonArray("foePreview") ?: return null
+        val own = input.getAsJsonArray("ownBuilds") ?: return null
+        val stats = listOf("hp", "atk", "def", "spa", "spd", "spe")
+        val preview = BattleOpponentTeamPreviewView(foe.size(), foe.map { value ->
+            val entry = value.asJsonObject
+            val species = entry["species"].asString
+            val level = entry["level"].asInt
+            val base = entry.getAsJsonObject("baseStats")
+            fun stat(name: String) = base[name].asInt
+            val learnset = entry.getAsJsonObject("learnset")
+            val gender = entry["gender"]?.takeUnless { it.isJsonNull }?.asString
+            val ratio = entry["genderRatio"]?.takeUnless { it.isJsonNull }?.asJsonObject
+            val genderRates = when {
+                gender != null -> mapOf(gender to 1.0)
+                ratio != null -> linkedMapOf("M" to ratio["M"].asDouble, "F" to ratio["F"].asDouble)
+                else -> linkedMapOf("M" to 0.5, "F" to 0.5)
+            }.filterValues { it > 0.0 }
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = entry["slot"].asInt,
+                speciesId = species,
+                formId = null,
+                level = level,
+                knownTypeIds = entry.getAsJsonArray("types").map { it.asString }.toSet(),
+                combatStats = BattlePublicStatRanges.fromBaseStats(level, stat("hp"), stat("atk"), stat("def"),
+                    stat("spa"), stat("spd"), stat("spe")),
+                moveCandidatePool = BattleOpponentPreviewMovePoolView(species, null, learnset.keySet(),
+                    "embedded:cobblemon/gen9_move_pool",
+                    learnset.keySet().associateWith { id ->
+                        val move = learnset.getAsJsonObject(id)
+                        publicMoveDetails(move, id, move["maxPp"].asInt)
+                    }),
+                buildCandidatePool = BattleOpponentPreviewBuildPoolView(species, null,
+                    entry.getAsJsonArray("abilities").map { it.asJsonObject }.distinctBy { it["id"].asString }.map {
+                        BattleOpponentPreviewAbilityView(it["id"].asString,
+                            if (it["hidden"].asBoolean) BattleAbilityAvailability.HIDDEN else BattleAbilityAvailability.REGULAR)
+                    }, genderRates, "embedded:showdown/species_abilities_and_gender", stats.associateWith(::stat)),
+                showdownSpeciesId = species,
+            )
+        })
+        fun spread(value: JsonObject) = stats.associateWith { value[it].asInt }
+        val team = BattleExactOwnTeamView(own.map { value ->
+            val build = value.asJsonObject
+            // The same Cobblemon-shaped IDs the game hands over (namespaced item and nature).
+            BattleExactPokemonBuildView(
+                battlePokemonId = uuid(build["ident"].asString),
+                abilityId = build["ability"].asString,
+                heldItemId = build["item"].asString.takeIf(String::isNotEmpty)?.let { "cobblemon:$it" },
+                natureId = "cobblemon:" + build["nature"].asString,
+                gender = build["gender"].asString,
+                evs = spread(build.getAsJsonObject("evs")),
+                ivs = spread(build.getAsJsonObject("ivs")),
+                teraTypeId = build["teraType"]?.takeUnless { it.isJsonNull }?.asString,
+                showdownSpeciesId = build["species"].asString,
+            )
+        })
+        return preview to team
     }
 
     internal fun battleFormat(input: JsonObject): BattleFormat {

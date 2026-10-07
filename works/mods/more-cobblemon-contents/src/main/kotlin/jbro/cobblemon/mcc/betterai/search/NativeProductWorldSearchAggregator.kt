@@ -36,6 +36,8 @@ internal data class NativeProductWorldSearchRequest(
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
+    /** The clock [deadlineNanos] is measured on. */
+    val nanoTime: () -> Long = System::nanoTime,
 ) {
     init {
         require(worlds.isNotEmpty())
@@ -91,10 +93,16 @@ internal data class NativeProductWorldSearchResult(
 }
 
 /**
- * Aggregates only the deepest iteration completed by every posterior world.
+ * Aggregates the posterior worlds' root values at one common depth.
  *
- * A missing world, a failed native root, or a mismatched action set invalidates the whole result;
- * the remaining probability mass is never silently renormalized around an execution failure.
+ * The clock, not the posterior, decides how many worlds a decision can afford: a 6v6 opening holds dozens
+ * of sampled worlds, and searching them one after another to full depth spent the whole budget on the
+ * first. So the search runs in two passes. The first completes depth one for as many worlds as the clock
+ * allows, one sample of every hypothesis before any second sample and likelier worlds first; the second
+ * deepens the completed worlds, splitting the remaining time between them. A world the clock never reached
+ * or could not finish at depth one is left out and the others are renormalized. An execution failure, a
+ * failed native root or a mismatched action set still invalidates the whole result: the remaining
+ * probability mass is never renormalized around a broken world.
  */
 internal class NativeProductWorldSearchAggregator(
     private val runWorld: (NativeProductSearchRequest) -> NativeProductSearchRun =
@@ -102,75 +110,99 @@ internal class NativeProductWorldSearchAggregator(
 ) {
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val orderedWorlds = request.worlds.sortedWith(
-            compareBy<NativeProductWorldSearchInput> { it.key.hypothesisId }
-                .thenBy { it.key.randomSampleIndex }
+            compareBy<NativeProductWorldSearchInput> { it.key.randomSampleIndex }
+                .thenByDescending { it.probability }
+                .thenBy { it.key.hypothesisId }
                 .thenBy { it.key.lineage },
         )
         var remainingNodeBudget = request.nodeLimit
         var nodesVisited = 0
         val completed = mutableListOf<CompletedWorld>()
+        var skipped = false
+        var firstSkipped: Pair<NativeProductWorldSearchInput, NativeProductSearchRun?>? = null
 
-        orderedWorlds.forEachIndexed { index, world ->
-            val remainingWorlds = orderedWorlds.size - index
-            val worldNodeLimit = (remainingNodeBudget / remainingWorlds).coerceAtLeast(1)
-            val run = runWorld(
-                NativeProductSearchRequest(
-                    definition = world.definition,
-                    publicState = world.publicState,
-                    publicActionCatalog = world.publicActionCatalog,
-                    rootSnapshot = world.rootSnapshot,
-                    productActions = request.productActions,
-                    world = world.key,
-                    maxDepth = request.maxDepth,
-                    responseMemory = request.responseMemory,
-                    responseInformation = request.responseInformation,
-                    allowSetupAttackExtension = request.allowSetupAttackExtension,
-                    excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
-                    allowedMechanics = request.allowedMechanics,
-                    opponentThreatWeights = request.opponentThreatWeights,
-                    nodeLimit = worldNodeLimit,
-                    deadlineNanos = request.deadlineNanos,
-                    evaluate = world.evaluate,
-                ),
-            )
+        fun run(world: NativeProductWorldSearchInput, maxDepth: Int, nodeLimit: Int, deadlineNanos: Long) = runWorld(
+            NativeProductSearchRequest(
+                definition = world.definition,
+                publicState = world.publicState,
+                publicActionCatalog = world.publicActionCatalog,
+                rootSnapshot = world.rootSnapshot,
+                productActions = request.productActions,
+                world = world.key,
+                maxDepth = maxDepth,
+                responseMemory = request.responseMemory,
+                responseInformation = request.responseInformation,
+                allowSetupAttackExtension = request.allowSetupAttackExtension,
+                excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
+                allowedMechanics = request.allowedMechanics,
+                opponentThreatWeights = request.opponentThreatWeights,
+                nodeLimit = nodeLimit,
+                deadlineNanos = deadlineNanos,
+                evaluate = world.evaluate,
+            ),
+        )
+
+        // Pass 1: depth one for as many worlds as the clock allows.
+        for ((index, world) in orderedWorlds.withIndex()) {
+            if (timeUp(request)) {
+                skipped = true
+                if (firstSkipped == null) firstSkipped = world to null
+                break
+            }
+            val worldNodeLimit = (remainingNodeBudget / (orderedWorlds.size - index)).coerceAtLeast(1)
+            val run = run(world, minOf(1, request.maxDepth), worldNodeLimit, request.deadlineNanos)
             val result = run.result
             val visited = result?.nodesVisited ?: 0
             nodesVisited += visited
             remainingNodeBudget = (remainingNodeBudget - visited).coerceAtLeast(0)
-
             if (run.status != NativeProductSearchRunStatus.COMPLETED &&
                 run.status != NativeProductSearchRunStatus.DEADLINE_EXHAUSTED
             ) {
-                return failure(
-                    NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
-                    world,
-                    nodesVisited,
-                    run,
-                )
+                return failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, world, nodesVisited, run)
             }
             if (result == null || result.depthCompleted == 0) {
-                return failure(
-                    NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
-                    world,
-                    nodesVisited,
-                    run,
-                )
+                // Out of time before depth one: this world and every later one are left out.
+                skipped = true
+                if (firstSkipped == null) firstSkipped = world to run
+                break
             }
-            val rootSnapshot = run.rootSnapshot ?: return failure(
-                NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
-                world,
-                nodesVisited,
-                run,
-            )
+            val rootSnapshot = run.rootSnapshot
+                ?: return failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, world, nodesVisited, run)
             if (visited > worldNodeLimit) {
-                return failure(
-                    NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
-                    world,
-                    nodesVisited,
-                    run,
-                )
+                return failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, world, nodesVisited, run)
             }
             completed += CompletedWorld(world, result, rootSnapshot)
+        }
+        if (completed.isEmpty()) {
+            val (world, run) = firstSkipped ?: (orderedWorlds.first() to null)
+            return failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, world, nodesVisited, run)
+        }
+
+        // Pass 2: deepen the completed worlds, each with an equal share of the time and nodes left.
+        if (request.maxDepth > 1) {
+            for (index in completed.indices) {
+                if (timeUp(request)) break
+                val current = completed[index]
+                if (current.result.depthCompleted >= request.maxDepth) continue
+                val remainingWorlds = completed.size - index
+                val now = request.nanoTime()
+                val sliceDeadline = now + (request.deadlineNanos - now) / remainingWorlds
+                val worldNodeLimit = (remainingNodeBudget / remainingWorlds).coerceAtLeast(1)
+                val run = run(current.input, request.maxDepth, worldNodeLimit, sliceDeadline)
+                val result = run.result
+                val visited = result?.nodesVisited ?: 0
+                nodesVisited += visited
+                remainingNodeBudget = (remainingNodeBudget - visited).coerceAtLeast(0)
+                if (run.status != NativeProductSearchRunStatus.COMPLETED &&
+                    run.status != NativeProductSearchRunStatus.DEADLINE_EXHAUSTED
+                ) {
+                    return failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, current.input, nodesVisited, run)
+                }
+                val rootSnapshot = run.rootSnapshot
+                if (result != null && rootSnapshot != null && result.depthCompleted > current.result.depthCompleted) {
+                    completed[index] = CompletedWorld(current.input, result, rootSnapshot)
+                }
+            }
         }
 
         val firstRulesFingerprint = completed.first().rootSnapshot.rulesFingerprint
@@ -182,9 +214,17 @@ internal class NativeProductWorldSearchAggregator(
                 null,
             )
         }
-        val commonDepth = completed.minOf { it.result.depthCompleted }
+        // The deepest depth reached by worlds holding at least half the completed mass. Worlds short of it
+        // are left out rather than mixing depths in one sum.
+        val completedMass = completed.sumOf { it.input.probability }
+        val commonDepth = (request.maxDepth downTo 1).firstOrNull { depth ->
+            completed.filter { it.result.depthCompleted >= depth }.sumOf { it.input.probability } >=
+                completedMass * MIN_DEEPENED_MASS_SHARE - MASS_EPSILON
+        } ?: 1
+        val included = completed.filter { it.result.depthCompleted >= commonDepth }
+        val includedMass = included.sumOf { it.input.probability }
         val expectedActionIds = request.productActions.map(BattleActionCandidate::actionId)
-        val valuesByWorld = completed.map { completedWorld ->
+        val valuesByWorld = included.map { completedWorld ->
             val world = completedWorld.input
             val result = completedWorld.result
             val iteration = result.completedIterations.single { it.depth == commonDepth }
@@ -203,14 +243,15 @@ internal class NativeProductWorldSearchAggregator(
             NativeRootActionValue(
                 action = action,
                 value = valuesByWorld.sumOf { (world, values) ->
-                    world.probability * values.getValue(action.actionId).value
+                    world.probability / includedMass * values.getValue(action.actionId).value
                 },
             )
         }
-        val fullyCompleted = commonDepth == request.maxDepth && completed.all { completedWorld ->
-            !completedWorld.result.truncated &&
-                completedWorld.result.terminationReason == NativeSearchTerminationReason.COMPLETED
-        }
+        val fullyCompleted = !skipped && included.size == completed.size && commonDepth == request.maxDepth &&
+            included.all { completedWorld ->
+                !completedWorld.result.truncated &&
+                    completedWorld.result.terminationReason == NativeSearchTerminationReason.COMPLETED
+            }
         return NativeProductWorldSearchResult(
             status = if (fullyCompleted) {
                 NativeProductWorldSearchStatus.COMPLETED
@@ -220,9 +261,12 @@ internal class NativeProductWorldSearchAggregator(
             rootValues = aggregated,
             depthCompleted = commonDepth,
             nodesVisited = nodesVisited,
-            rootSnapshots = completed.associate { it.input.key to it.rootSnapshot },
+            rootSnapshots = included.associate { it.input.key to it.rootSnapshot },
         )
     }
+
+    private fun timeUp(request: NativeProductWorldSearchRequest): Boolean =
+        request.nanoTime() - request.deadlineNanos >= 0L
 
     private fun failure(
         status: NativeProductWorldSearchStatus,
@@ -265,3 +309,5 @@ internal class NativeProductWorldSearchAggregator(
 }
 
 private const val ID_SAMPLE_LIMIT = 6
+private const val MIN_DEEPENED_MASS_SHARE = 0.5
+private const val MASS_EPSILON = 1e-9

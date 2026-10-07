@@ -87,6 +87,27 @@ const targetLocations = (target, actorSlot, opposingSlots, alliedSlots) => {
 };
 const combine = choicesBySlot => choicesBySlot.reduce(
   (combinations, choices) => combinations.flatMap(prefix => choices.map(choice => [...prefix, choice])), [[]]);
+const toId = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+// The product hands every trainer the opposing team preview (species, form, level) and its own exact sets.
+// The preview is enriched from public species data only, as Cobblemon's FormData enriches it in the game.
+const previewSlot = pokemon => Number(pokemon.set.uuid.slice(-12)) % 100 - 1;
+function teamPreviewInputs(side) {
+  const foePreview = [...side.foe.pokemon].sort((a, b) => previewSlot(a) - previewSlot(b)).map(pokemon => {
+    const species = dex.species.get(pokemon.set.species);
+    return { slot: previewSlot(pokemon), species: species.id, level: pokemon.level,
+      types: species.types.map(type => type.toLowerCase()), baseStats: species.baseStats,
+      abilities: Object.entries(species.abilities).map(([key, name]) => ({ id: toId(name), hidden: key === 'H' })),
+      gender: species.gender || null, genderRatio: species.genderRatio || null,
+      // Cobblemon learnsets span every generation (FormData all legal moves), unlike the Gen 9 pool.
+      learnset: Object.fromEntries([...dex.species.getMovePool(species.id, true)].sort().map(id => [id, moveInfo(id)])) };
+  });
+  const ownBuilds = side.pokemon.map(pokemon => ({ ident: `${side.id}: ${pokemon.uuid}`,
+    ability: pokemon.baseAbility, item: pokemon.set.item ? dex.items.get(pokemon.set.item).id : '',
+    nature: dex.natures.get(pokemon.set.nature || 'serious').id || 'serious', gender: pokemon.gender || 'N',
+    evs: pokemon.set.evs, ivs: pokemon.set.ivs, teraType: pokemon.teraType ? toId(pokemon.teraType) : null,
+    species: pokemon.baseSpecies.id }));
+  return { foePreview, ownBuilds };
+}
 function snapshot() {
   const log = publicLog();
   if (battle.ended || battle.turn > input.maxTurns) {
@@ -202,8 +223,9 @@ function snapshot() {
       }
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
+    const nativeInputs = input.teamPreview ? teamPreviewInputs(side) : {};
     requests.push({ format: battleFormat, side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
-      publicLog: log, species, moves, publicLearnsets, ownCurrentPp, ownActiveSlots });
+      publicLog: log, species, moves, publicLearnsets, ownCurrentPp, ownActiveSlots, ...nativeInputs });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');
   pending = requests;

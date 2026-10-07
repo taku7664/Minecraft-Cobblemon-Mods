@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsage
@@ -137,7 +138,9 @@ internal class NativeInitialProductWorldPlanner(
             if (moveMaterialization.issues.isNotEmpty()) return failure(
                 NativeInitialProductWorldPlanIssueCode.MOVE_CATALOG_MATERIALIZATION_FAILED,
                 rosterHypothesis.hypothesisId,
-                moveMaterialization.issues.map { it.code.name },
+                moveMaterialization.issues.map { issue ->
+                    issue.code.name + "@" + speciesOf(roster.state, issue.battlePokemonId)
+                },
             )
             val buildCompilation = NativeOpponentPreviewBuildWorldCompiler.compile(
                 preview,
@@ -220,7 +223,9 @@ internal class NativeInitialProductWorldPlanner(
             val definition = compilation.definition ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.BATTLE_DEFINITION_COMPILATION_FAILED,
                 prepared.hypothesisId,
-                compilation.issues.map { it.code.name },
+                compilation.issues.map { issue ->
+                    issue.code.name + (issue.battlePokemonId?.let { "@" + speciesOf(roster.state, it) } ?: "")
+                },
             )
             NativeInitialProductWorld(
                 hypothesisId = prepared.hypothesisId,
@@ -294,6 +299,11 @@ internal class NativeInitialProductWorldPlanner(
             null
         }
     }
+
+    /** Names the Pokemon behind a detail code, so a server log says which one stopped the plan. */
+    private fun speciesOf(state: BattleStateView, pokemonId: java.util.UUID): String =
+        state.pokemon.firstOrNull { it.battlePokemonId == pokemonId }
+            ?.let { "${it.side.name.lowercase()}:${PublicIds.canonical(it.speciesId)}" } ?: "unknown"
 
     private fun failure(
         code: NativeInitialProductWorldPlanIssueCode,

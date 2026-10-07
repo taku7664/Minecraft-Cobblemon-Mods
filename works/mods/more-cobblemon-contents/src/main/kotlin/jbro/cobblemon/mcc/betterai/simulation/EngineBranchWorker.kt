@@ -343,6 +343,10 @@ internal class EngineBranchWorker(
                         })
                         if (data.trapped) addProperty("trapped", true)
                         if (data.maybeTrapped) addProperty("maybeTrapped", true)
+                        // Showdown hides a trap the player cannot see yet (Magnet Pull, Shadow Tag) as maybeTrapped
+                        // and rejects the switch only when it is chosen. The search plays every side with full
+                        // knowledge of its world, so it must not offer a switch the engine will refuse.
+                        if (!data.trapped && Js.truthy(pokemon.trapped)) addProperty("trappedHidden", true)
                         if (!locked) {
                             if (pokemon.canMegaEvo != null) addProperty("canMegaEvo", true)
                             if (data.canDynamax) addProperty("canDynamax", true)

@@ -61,7 +61,8 @@ class NativeProductWorldSearchAggregatorTest {
         val result = aggregator.search(request())
 
         assertEquals(NativeProductWorldSearchStatus.COMPLETED, result.status)
-        assertEquals(listOf("world-a", "world-b"), calls)
+        // Likelier worlds first, so the clock leaves out the least likely ones.
+        assertEquals(listOf("world-b", "world-a"), calls)
         assertEquals(1, result.depthCompleted)
         assertEquals(mapOf("action-a" to 2.5, "action-b" to 6.0), result.rootValues.associate {
             it.action.actionId to it.value
@@ -97,7 +98,7 @@ class NativeProductWorldSearchAggregatorTest {
     }
 
     @Test
-    fun `one world without a complete depth fails the whole posterior`() {
+    fun `the likeliest world running out of time before depth one fails the search`() {
         val aggregator = NativeProductWorldSearchAggregator { request ->
             if (request.world.hypothesisId == "world-a") {
                 completed(request.productActions, 1, 10.0, 0.0)
@@ -114,6 +115,57 @@ class NativeProductWorldSearchAggregatorTest {
         assertEquals(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, result.status)
         assertTrue(result.rootValues.isEmpty())
         assertEquals("world-b", result.failedWorldId)
+    }
+
+    @Test
+    fun `a world the clock could not finish at depth one is left out and the rest renormalized`() {
+        val aggregator = NativeProductWorldSearchAggregator { request ->
+            if (request.world.hypothesisId == "world-b") {
+                completed(request.productActions, 1, 0.0, 8.0)
+            } else {
+                NativeProductSearchRun(
+                    status = NativeProductSearchRunStatus.DEADLINE_EXHAUSTED,
+                    result = result(request.productActions, emptyList(), 0, true, NativeSearchTerminationReason.DEADLINE),
+                )
+            }
+        }
+
+        val result = aggregator.search(request())
+
+        assertEquals(NativeProductWorldSearchStatus.PARTIAL_DEPTH, result.status)
+        assertEquals(mapOf("action-a" to 0.0, "action-b" to 8.0), result.rootValues.associate {
+            it.action.actionId to it.value
+        })
+        assertEquals(setOf(NativeSearchWorldKey("world-b", 0)), result.rootSnapshots.keys)
+    }
+
+    @Test
+    fun `deepened worlds holding most of the mass decide the depth`() {
+        val depths = mutableListOf<Pair<String, Int>>()
+        val aggregator = NativeProductWorldSearchAggregator { request ->
+            depths += request.world.hypothesisId to request.maxDepth
+            when (request.world.hypothesisId) {
+                "world-b" -> completed(
+                    request.productActions,
+                    depth = request.maxDepth,
+                    depthOne = 10.0 to 0.0,
+                    final = 0.0 to 4.0,
+                )
+                "world-a" -> partial(request.productActions, 10.0, 0.0)
+                else -> error("unexpected world")
+            }
+        }
+
+        val result = aggregator.search(request(maxDepth = 2))
+
+        // Depth one for every world first, then each deepened.
+        assertEquals(listOf("world-b" to 1, "world-a" to 1, "world-b" to 2, "world-a" to 2), depths)
+        assertEquals(NativeProductWorldSearchStatus.PARTIAL_DEPTH, result.status)
+        assertEquals(2, result.depthCompleted)
+        assertEquals(mapOf("action-a" to 0.0, "action-b" to 4.0), result.rootValues.associate {
+            it.action.actionId to it.value
+        })
+        assertEquals(setOf(NativeSearchWorldKey("world-b", 0)), result.rootSnapshots.keys)
     }
 
     @Test

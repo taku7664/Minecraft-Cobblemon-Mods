@@ -71,7 +71,7 @@ internal object NativeShowdownRequestActionFactory {
             } else {
                 val activeRequest = element.asJsonObject
                 moveActions(side, slot, activeRequest, frame, allowedMechanics, active.size() > 1) +
-                    if (activeRequest.boolean("trapped") || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
+                    if (activeRequest.trapped() || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
                         switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
         }
@@ -216,7 +216,7 @@ internal object NativeShowdownRequestActionFactory {
         val reserved = mutableSetOf<String>()
         return active.mapIndexedNotNull { slot, element ->
             val request = element.takeIf { it.isJsonObject }?.asJsonObject
-            if (request == null || request.boolean("trapped") || bench.isEmpty()) return@mapIndexedNotNull null
+            if (request == null || request.trapped() || bench.isEmpty()) return@mapIndexedNotNull null
             // Distinct first choices preserve at least one legal simultaneous double switch.
             val first = bench.firstOrNull { it.uuid !in reserved } ?: bench.first()
             reserved += first.uuid
@@ -329,6 +329,9 @@ internal object NativeShowdownRequestActionFactory {
         "native:${side.name.lowercase(Locale.ROOT)}:$suffix"
 
     private fun nativeId(value: String): String = value.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+
+    /** Trapped as the request shows it, or by a trap the worker knows the player cannot see yet. */
+    private fun JsonObject.trapped(): Boolean = boolean("trapped") || boolean("trappedHidden")
 
     private fun JsonObject.boolean(name: String): Boolean = get(name)?.let { element ->
         element.isJsonPrimitive && element.asJsonPrimitive.isBoolean && element.asBoolean

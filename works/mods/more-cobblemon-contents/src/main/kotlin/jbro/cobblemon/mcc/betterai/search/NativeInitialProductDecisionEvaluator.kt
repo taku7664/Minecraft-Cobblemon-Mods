@@ -197,6 +197,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
+                nanoTime = nanoTime,
             ),
         )
         if (search.status != NativeProductWorldSearchStatus.COMPLETED &&
@@ -223,16 +224,19 @@ internal class NativeInitialProductDecisionEvaluator(
                 battleId = context.state.battleId,
                 format = context.state.format,
                 rulesFingerprint = search.rootSnapshots.values.first().rulesFingerprint,
-                worlds = sampledWorlds.map { (world, sampleIndex) ->
+                // Only the worlds the clock let the search finish carry on, renormalized.
+                worlds = sampledWorlds.mapNotNull { (world, sampleIndex) ->
                     val key = NativeSearchWorldKey(world.hypothesisId, sampleIndex)
-                    NativeProductSessionWorld(
-                        key = key,
-                        probability = world.probability,
-                        definition = world.definition,
-                        rootSnapshot = search.rootSnapshots.getValue(key),
-                        publicContext = world.publicContext,
-                    )
-                },
+                    search.rootSnapshots[key]?.let { rootSnapshot ->
+                        NativeProductSessionWorld(
+                            key = key,
+                            probability = world.probability,
+                            definition = world.definition,
+                            rootSnapshot = rootSnapshot,
+                            publicContext = world.publicContext,
+                        )
+                    }
+                }.renormalized(),
                 publicTurn = context.state.turn,
                 lastObservedEventSequence = context.state.observedEvents.lastOrNull()?.sequence,
                 trainerTier = profile.difficulty.tier,
@@ -260,6 +264,10 @@ internal class NativeInitialProductDecisionEvaluator(
                 status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
                 reconciliationStatus = reconciliation.status,
                 failedWorldId = reconciliation.failedWorldId,
+                failedRunDetail = (reconciliation.observedActionIssues.map { "${it.code.name}@event${it.eventSequence}" } +
+                    reconciliation.rootIssues.map { it.code.name } +
+                    listOfNotNull(reconciliation.failure?.let { "${it.javaClass.simpleName}:${it.message?.take(200)}" }))
+                    .joinToString(",").ifEmpty { null },
             )
         }
         val reconciled = requireNotNull(reconciliation.sessionState) {
@@ -324,6 +332,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
+                nanoTime = nanoTime,
             ),
         )
         if (search.status != NativeProductWorldSearchStatus.COMPLETED &&
@@ -341,7 +350,7 @@ internal class NativeInitialProductDecisionEvaluator(
             )
         }
         val expectedWorldKeys = reconciled.worlds.mapTo(linkedSetOf()) { it.key }
-        if (search.rootSnapshots.keys != expectedWorldKeys) {
+        if (!expectedWorldKeys.containsAll(search.rootSnapshots.keys)) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                 depthCompleted = search.depthCompleted,
@@ -350,9 +359,9 @@ internal class NativeInitialProductDecisionEvaluator(
                 retainedSessionState = retained,
             )
         }
-        val searchedWorlds = reconciled.worlds.map { world ->
-            world.copy(rootSnapshot = search.rootSnapshots.getValue(world.key))
-        }
+        val searchedWorlds = reconciled.worlds.mapNotNull { world ->
+            search.rootSnapshots[world.key]?.let { world.copy(rootSnapshot = it) }
+        }.renormalized()
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
             ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context, profile),
@@ -362,6 +371,11 @@ internal class NativeInitialProductDecisionEvaluator(
             searchStatus = search.status,
             sessionState = retained.copy(worlds = searchedWorlds),
         )
+    }
+
+    private fun List<NativeProductSessionWorld>.renormalized(): List<NativeProductSessionWorld> {
+        val mass = sumOf(NativeProductSessionWorld::probability)
+        return map { it.copy(probability = it.probability / mass) }
     }
 
     /** Computed from the real decision context, so weights key the real battle Pokemon IDs. */
