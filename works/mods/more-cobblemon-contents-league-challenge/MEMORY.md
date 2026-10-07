@@ -6,6 +6,7 @@
 - 2.0.0의 `PokeBadgesApi`·`BadgeOperationResult`는 1.6.1과 같고 `openBadgeBox`만 추가됐다(javap 비교). 컴파일은 여전히 1.6.1(`A93HZDyB`)에 대고 한다.
 - 지시에 따라 테스트 없이 빌드만 했다(`-x test -x unitTest`). 계약 테스트 기대값은 `*`로 고쳤지만 돌려 보지 않았다.
 - 개발 서버에는 서버가 꺼진 뒤 배포했다(백업 `20261007-211420-league-pokebadges-any`). 클라이언트는 게임을 끈 뒤 같은 백업 폴더에 백업하고 배포했다. 이어서 개발 서버의 PokeBadges도 1.6.1에서 2.0.0으로 바꿨다(1.6.1은 `deployment-backups/20261007-211531-pokebadges-2.0.0/server`로 옮김). 이제 서버·클라이언트 모두 2.0.0이다.
+- 서버 `run.bat`의 시작 훅(`develop-product/server/startup-hooks.json`, 저장소 밖 파일)도 리그챌린지에 `pokebadges >=1.6.1 <1.7.0`을 따로 요구하고 있어서 서버가 뜨지 않았다. 버전 조건을 빼서 `{ "mod": "pokebadges" }`로 바꿨다(버전이 없으면 스크립트가 `*`로 본다). JAR의 `depends`를 바꿀 때는 이 파일도 같이 고쳐야 한다.
 
 ## [2026-10-07 00:37] 야생 레벨 쏠림 격자 4 → 8청크
 
