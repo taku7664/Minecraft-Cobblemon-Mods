@@ -13,6 +13,7 @@ import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.system.LeagueCatalog
 import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.system.LeagueProgress
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
@@ -31,7 +32,8 @@ import net.minecraft.server.MinecraftServer
 
 /**
  * `/mcc league` for operators: a player's full progress, their undelivered rewards and run, their level cap, the
- * League's setup checks and catalog, and the badge import.
+ * League's setup checks and catalog, and the badge import. `check champion|hard|badges <min> [player]` answers 1 or 0,
+ * so an NPC dialogue (`cmd:mcc league check badges 4`) or a command block can branch on League progress.
  */
 object LeagueAdminCommands {
     private const val KEY = "command.${Mod.MOD_ID}.admin"
@@ -44,6 +46,7 @@ object LeagueAdminCommands {
 
     fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal("league")
         .requires(BattleProgressCommands::isAdmin)
+        .then(check())
         .then(literal("inspect").then(profileArgument().executes { withProgress(it) { catalog, id, name, state -> inspect(it.source, catalog, name, state) } }))
         .then(literal("rewards")
             .then(literal("list").then(profileArgument().executes { withProgress(it) { _, _, name, state -> listRewards(it.source, name, state) } }))
@@ -264,6 +267,42 @@ object LeagueAdminCommands {
         }
 
         override fun busy(server: MinecraftServer, playerId: UUID): Boolean = false
+    }
+
+    private fun check() = literal("check")
+        .then(checkTarget(literal("champion")) { _, state -> state.champion })
+        .then(checkTarget(literal("hard")) { _, state -> state.hardChampion })
+        .then(literal("badges").then(checkTarget(argument("min", IntegerArgumentType.integer(0, 8))) { context, state ->
+            LeagueEngine(LeagueCatalogResources.current ?: return@checkTarget false).badgeCount(state) >=
+                IntegerArgumentType.getInteger(context, "min")
+        }))
+
+    /** [node] run on the source player, or with a `player` argument after it; 1 when [holds], 0 when not. */
+    private fun <T : com.mojang.brigadier.builder.ArgumentBuilder<CommandSourceStack, T>> checkTarget(
+        node: T,
+        holds: (CommandContext<CommandSourceStack>, LeagueProgress) -> Boolean,
+    ): T = node
+        .executes { context -> check(context, context.source.playerOrException, holds) }
+        .then(argument("player", EntityArgument.player())
+            .executes { context -> check(context, EntityArgument.getPlayer(context, "player"), holds) })
+
+    private fun check(
+        context: CommandContext<CommandSourceStack>,
+        player: net.minecraft.server.level.ServerPlayer,
+        holds: (CommandContext<CommandSourceStack>, LeagueProgress) -> Boolean,
+    ): Int {
+        val catalog = catalog(context.source) ?: return 0
+        val state = try {
+            LeagueSavedData.get(context.source.server).read(catalog.id, player.uuid)
+        } catch (failure: RuntimeException) {
+            context.source.sendFailure(Component.translatable("$KEY.storage_unavailable"))
+            return 0
+        }
+        val passed = holds(context, state)
+        val report = Component.translatable("$KEY.check.${if (passed) "passed" else "failed"}", player.name,
+            LeagueEngine(catalog).badgeCount(state), state.champion.toString(), state.hardChampion.toString())
+        if (passed) context.source.sendSuccess({ report }, false) else context.source.sendFailure(report)
+        return if (passed) 1 else 0
     }
 
     private fun profileArgument() = argument("player", GameProfileArgument.gameProfile())

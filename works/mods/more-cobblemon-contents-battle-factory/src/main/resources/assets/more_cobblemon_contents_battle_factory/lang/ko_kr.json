@@ -3,6 +3,8 @@
   "command.more_cobblemon_contents.factory.floor.changed": "%s님의 배틀팩토리 %s/%s 현재 층을 %s로 설정했습니다. 최고 층: %s",
   "command.more_cobblemon_contents.factory.floor.queried": "%s님의 배틀팩토리 %s/%s 현재 층: %s, 최고 층: %s",
   "command.more_cobblemon_contents.factory.floor.reset": "%s님의 배틀팩토리 %s/%s 층 기록을 초기화했습니다(범위: %s). 현재 층: %s, 최고 층: %s",
+  "command.more_cobblemon_contents.factory.access.allowed": "%s님은 배틀팩토리에 들어갈 수 있습니다.",
+  "command.more_cobblemon_contents.factory.access.denied": "%s님은 배틀팩토리에 들어갈 수 없습니다: %s",
   "screen.more_cobblemon_contents.factory.title": "배틀팩토리",
   "screen.more_cobblemon_contents.factory.new_run": "새 렌탈 도전",
   "screen.more_cobblemon_contents.factory.summary": "%s · %s · %s승 · 렌탈/교환 횟수 %s",

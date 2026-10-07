@@ -3,6 +3,8 @@
   "command.more_cobblemon_contents.factory.floor.changed": "Set %s's Battle Factory %s/%s current floor to %s. Highest floor: %s",
   "command.more_cobblemon_contents.factory.floor.queried": "%s's Battle Factory %s/%s current floor: %s, highest floor: %s",
   "command.more_cobblemon_contents.factory.floor.reset": "Reset %s's Battle Factory %s/%s floor (scope: %s). Current floor: %s, highest floor: %s",
+  "command.more_cobblemon_contents.factory.access.allowed": "%s may enter the Battle Factory.",
+  "command.more_cobblemon_contents.factory.access.denied": "%s may not enter the Battle Factory: %s",
   "screen.more_cobblemon_contents.factory.title": "Battle Factory",
   "screen.more_cobblemon_contents.factory.new_run": "New rental challenge",
   "screen.more_cobblemon_contents.factory.summary": "%s · %s · %s wins · rental/trade count %s",

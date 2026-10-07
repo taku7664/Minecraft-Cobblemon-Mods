@@ -1,5 +1,10 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 08:20] 팩토리·리그 안내원 대화 추가
+
+- 개발 서버 `config/cobblemon_npc/dialogues/`에 `factory_guide`(`cmd:mcc factory access` → `/mcc terminal factory`), `league_guide`(`cmd:mcc league check ...`로 진행도별 대사 → `/mcc terminal league`)를 만들었다. 대사 속 설명(렌탈 교환, 하드 리그)은 각 애드온 언어 파일로 확인했다. 노드 연결 검사만 했고 실게임은 안 했다.
+- 조건 명령 목록: `mcc tower access`, `mcc factory access`, `mcc league check champion|hard|badges <n>`. 모두 관리자 명령이지만 대화 조건은 권한 2로 돌아서 쓸 수 있다.
+
 ## [2026-10-08 07:55] 타워 안내원이 챔피언에게도 거절하던 문제
 
 - **증상:** 조건이 맞는 플레이어도 "응, 도전할래!" 뒤에 "아직 자격이 안 되는 것 같네"로 빠졌다.

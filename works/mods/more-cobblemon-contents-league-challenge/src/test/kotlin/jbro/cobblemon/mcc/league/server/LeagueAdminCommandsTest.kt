@@ -8,7 +8,9 @@ class LeagueAdminCommandsTest {
     fun `league operator commands keep their argument trees`() {
         val league = LeagueAdminCommands.build().build()
         assertEquals("league", league.name)
-        assertEquals(setOf("inspect", "rewards", "run", "progress", "test", "cap", "validate", "catalog", "import-badges", "trainer"), league.children.map { it.name }.toSet())
+        assertEquals(setOf("check", "inspect", "rewards", "run", "progress", "test", "cap", "validate", "catalog", "import-badges", "trainer"), league.children.map { it.name }.toSet())
+        assertEquals(setOf("champion", "hard", "badges"), league.getChild("check").children.map { it.name }.toSet())
+        assertEquals(setOf("min"), league.getChild("check").getChild("badges").children.map { it.name }.toSet())
         assertEquals(setOf("list", "retry", "drop"), league.getChild("rewards").children.map { it.name }.toSet())
         assertEquals(setOf("cancel"), league.getChild("run").children.map { it.name }.toSet())
         assertEquals(setOf("set", "reset"), league.getChild("progress").children.map { it.name }.toSet())

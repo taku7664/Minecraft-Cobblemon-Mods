@@ -111,6 +111,8 @@
   "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "Mega Evolution, Dynamax, Terastallization and Z-Moves open once you become the League Champion. Battles between players allow them.",
   "command.more_cobblemon_contents_league_challenge.admin.label": "League Challenge",
   "command.more_cobblemon_contents_league_challenge.admin.storage_unavailable": "League progress storage cannot be read. See the server log.",
+  "command.more_cobblemon_contents_league_challenge.admin.check.passed": "%s meets the condition. Badges %s, champion %s, hard champion %s",
+  "command.more_cobblemon_contents_league_challenge.admin.check.failed": "%s does not meet the condition. Badges %s, champion %s, hard champion %s",
   "command.more_cobblemon_contents_league_challenge.admin.inspect.header": "%s's League progress (%s)",
   "command.more_cobblemon_contents_league_challenge.admin.inspect.summary": "%s/8 badges, level cap %s, normal Champion %s, hard Champion %s, revision %s",
   "command.more_cobblemon_contents_league_challenge.admin.inspect.cleared": "cleared: %s",

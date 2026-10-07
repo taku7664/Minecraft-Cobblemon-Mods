@@ -3,6 +3,10 @@ package jbro.cobblemon.mcc.internal.factory
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.api.access.ContentAccessAction
+import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.command.BattleProgressAdminAction
 import jbro.cobblemon.mcc.internal.command.BattleProgressCommands
 import jbro.cobblemon.mcc.internal.command.BattleProgressResetScope
@@ -12,6 +16,7 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.arguments.EntityArgument
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 internal interface FactoryProgressCommandBackend {
@@ -60,7 +65,11 @@ private object LiveFactoryProgressCommandBackend : FactoryProgressCommandBackend
     )
 }
 
-/** `/mcc factory floor get|set|reset` for operators. */
+/**
+ * `/mcc factory floor get|set|reset` and `/mcc factory access [player]` for operators. `access` answers 1 when the
+ * player may enter the factory and 0 when not, so an NPC dialogue (`cmd:mcc factory access`) or a command block can
+ * ask the same rule the terminal enforces.
+ */
 internal object FactoryProgressCommands {
     fun build(
         backend: FactoryProgressCommandBackend = LiveFactoryProgressCommandBackend,
@@ -74,6 +83,30 @@ internal object FactoryProgressCommands {
         )
         .then(FactoryAdminCommands.session())
         .then(FactoryAdminCommands.abandon())
+        .then(access())
+
+    private const val ACCESS_KEY = "command.more_cobblemon_contents.factory.access"
+
+    private fun access() = Commands.literal("access")
+        .requires(BattleProgressCommands::isAdmin)
+        .executes { command -> access(command.source, command.source.playerOrException) }
+        .then(
+            Commands.argument("player", EntityArgument.player())
+                .executes { command -> access(command.source, EntityArgument.getPlayer(command, "player")) },
+        )
+
+    private fun access(source: CommandSourceStack, player: ServerPlayer): Int =
+        when (val decision = BattleContentAccess.check(player, ManagedBattleContentIds.BATTLE_FACTORY, ContentAccessAction.OPEN)) {
+            ContentAccessDecision.Allowed -> {
+                source.sendSuccess({ Component.translatable("$ACCESS_KEY.allowed", player.name) }, false)
+                1
+            }
+            is ContentAccessDecision.Denied -> {
+                source.sendFailure(Component.translatable("$ACCESS_KEY.denied", player.name,
+                    Component.translatable(decision.reasonKey, *decision.arguments.toTypedArray())))
+                0
+            }
+        }
 
     private fun get(backend: FactoryProgressCommandBackend) = Commands.literal("get")
         .requires(BattleProgressCommands::isAdmin)

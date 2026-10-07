@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 08:20] `/mcc league check champion|hard|badges <min> [player]` 추가 (빌드·테스트 91개, 서버·클라이언트 배포, 실게임 미확인)
+
+- **이유:** NPC 대화가 리그 진행도로 갈라질 방법이 없었다. 리그 안내원 대화(`develop-product/server/config/cobblemon_npc/dialogues/league_guide.json`)가 `cmd:mcc league check ...`로 배지 수·챔피언·하드 챔피언에 따라 대사를 바꾼다.
+- **동작:** 조건을 만족하면 1, 아니면 0. 배지는 `LeagueEngine.badgeCount`(노말 체육관 기준), 하드는 `hardChampion`. `/mcc league` 아래라 관리자용이고 대화 조건(권한 2)에서 쓸 수 있다.
+- **테스트:** `LeagueAdminCommandsTest`의 명령 트리 목록에 `check`를 넣었다.
+- **배치:** 백업 `develop-product/deployment-backups/20261008-tower-access`.
+
 ## [2026-10-08 01:30] 쓰러진 야생 트레이너가 서버 종료 뒤에도 남던 문제 (`aa6b5517`, 빌드·테스트 91개 확인, 서버·클라이언트 배포, 실게임 미확인)
 
 - **빡대리님 신고:** 대화창이 끝난 뒤 NPC를 늦게 없애는데, 그 사이 서버를 끄면 NPC가 계속 남는다.
