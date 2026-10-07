@@ -6,7 +6,7 @@
 - 구현: `PvpRoomRejectedPayload`에 `messageArgs`(최대 4개 문자열) 추가. 서버는 왼쪽 자리부터 검사해 처음 걸린 플레이어 한 명과 사유 하나만 보냄(우선순위: 파티 수 → 같은 종족 → 같은 도구 → 그 밖). 옛 키 `room.error.team_invalid`는 `.team_size`/`.duplicate_species`/`.duplicate_held_item`/`.player`로 바꿈.
 - 주의: 페이로드 형식이 바뀌어 서버·클라 PvP JAR 버전이 다르면 룸 거절 패킷을 읽다가 연결이 끊길 수 있음. 둘을 같이 배치할 것.
 - 빌드: `:more-cobblemon-contents-pvp:build` 성공, 테스트 통과.
-- 배치: 서버(`develop-product/server/mods`)만 교체. 클라이언트는 실행 중이라 아직 못 바꿈. 이전 서버 JAR은 `deployment-backups/20261008-pvp-team-invalid-reason/server/`.
+- 배치: 서버·클라 모두 교체(같은 JAR, 바이트 일치 확인). 이전 JAR은 `deployment-backups/20261008-pvp-team-invalid-reason/{server,client}/`.
 - 미확인: 실게임 확인 안 함.
 
 ## [2026-10-07 23:55] 룸 입장 시 클라이언트 크래시 — 옛 UI kit 시그니처로 빌드된 JAR
