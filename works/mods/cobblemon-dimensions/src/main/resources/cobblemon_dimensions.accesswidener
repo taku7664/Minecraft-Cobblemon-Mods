@@ -1,0 +1,3 @@
+accessWidener v2 named
+# Vanilla's overworld biome layout lives in code; the dimensions copy it when Terralith is not installed.
+accessible method net/minecraft/world/level/biome/OverworldBiomeBuilder addBiomes (Ljava/util/function/Consumer;)V

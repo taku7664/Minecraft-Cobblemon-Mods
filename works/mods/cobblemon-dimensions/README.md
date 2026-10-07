@@ -4,13 +4,18 @@
 
 - Mod ID: `cobblemon_dimensions`
 - 실행 환경: 서버와 클라이언트 모두 필요(포탈 블록, 울트라홀, 하늘·안개 연출)
-- 필요 모드: Fabric API, Fabric Language Kotlin, Cobblemon 1.8.1, Terralith
+- 필요 모드: Fabric API, Fabric Language Kotlin, Cobblemon 1.8.1
+- 권장 모드: Terralith(있으면 Terralith 지형, 없으면 바닐라 지형)
 - 선택 모드: More Cobblemon Contents: League Challenge(울트라홀·포탈 진입 자격)
 - 설정 파일: `config/cobblemon-dimensions.json`(울트라홀 빈도·크기·유지 시간)
 - 차원 ID: `cobblemon_dimensions:ultra_space`, `cobblemon_dimensions:ancient`, `cobblemon_dimensions:future`
 - 스폰표: [docs/SPAWNS.md](docs/SPAWNS.md)
 
-세 차원 모두 Terralith 오버월드 지형 함수를 씁니다. 다만 지형 시드를 차원마다 따로 만들어서(월드 시드와 차원 이름을 섞음), 같은 좌표라도 오버월드와 지형이 다릅니다. 이 시드는 서버를 연 뒤에 바꾸면 이미 만들어진 청크와 새 청크 사이에 경계가 생깁니다. Terralith 바이옴 배치표를 통째로 가져와서 바이옴 이름만 이 모드의 바이옴으로 바꾸기 때문에, 사막 협곡 자리는 협곡 모양 그대로 울트라데저트나 고대 사막이 됩니다. 바이옴, 배치표, 스폰 데이터, 스폰표는 `works/tools/cobblemon-dimensions/gen_dimensions.py`가 만듭니다. 바꿀 때는 스크립트를 고치고 다시 돌립니다.
+세 차원 모두 오버월드 지형을 바탕으로 합니다. Terralith가 설치돼 있으면 Terralith 지형을, 없으면 바닐라 지형을 씁니다. 오버월드의 바이옴 배치표를 통째로 가져와서 바이옴 이름만 이 모드의 바이옴으로 바꾸기 때문에, 사막 협곡 자리는 협곡 모양 그대로 울트라데저트나 고대 사막이 됩니다. 지형 시드는 차원마다 따로 만들어서(월드 시드와 차원 이름을 섞음), 같은 좌표라도 오버월드와 지형이 다릅니다.
+
+- 차원, 지형 설정, 바이옴 파일은 jar에 들어 있지 않습니다. 게임이 켜질 때 `cobblemon_dimensions/worldgen.json`(바이옴 목록, 색, 표면 블록, 파티클, 배치 규칙)과 설치된 Terralith 또는 바닐라 데이터로 만들어서, 항상 켜져 있는 내장 데이터팩(`cobblemon_dimensions:worldgen`)으로 넣습니다. Terralith 라이선스상 Terralith 데이터를 모드에 담아 배포할 수 없어서 이렇게 합니다.
+- 서버를 연 뒤에는 지형 시드를 바꾸거나 Terralith를 넣고 빼지 않습니다. 이미 생성된 청크와 새 청크 사이에 경계가 생깁니다.
+- 스폰 데이터와 스폰표는 `works/tools/cobblemon-dimensions/gen_dimensions.py`가 만듭니다.
 
 ## 울트라스페이스
 
@@ -91,7 +96,7 @@ Terralith 지형을 섬 모양으로 잘라 공중에 띄운 차원입니다. �
 
 - 이 모드의 코드와 직접 만든 리소스(아이콘, 고대 태양 텍스처, 포탈·울트라홀 연출)는 MIT 라이선스입니다. [LICENSE](LICENSE)를 보세요.
 - 모드 아이콘 원본(512px, Modrinth 등 등록용)은 [docs/icon-512.png](docs/icon-512.png)에 있습니다. 게임 안 아이콘은 128px로 줄인 `assets/cobblemon_dimensions/icon.png`입니다.
-- 지형과 바이옴 배치는 [Terralith](https://github.com/Stardust-Labs-MC/Terralith)(Stardust Labs)를 바탕으로 합니다. Terralith는 MIT가 아니라 Stardust Labs 자체 라이선스를 따르며, 이 모드를 쓰려면 Terralith를 따로 설치해야 합니다.
+- Terralith가 설치돼 있으면 [Terralith](https://github.com/Stardust-Labs-MC/Terralith)(Stardust Labs)의 지형과 바이옴 배치를 게임 안에서 읽어 씁니다. Terralith 파일은 이 모드에 들어 있지 않습니다. Terralith는 Stardust Labs 자체 라이선스를 따릅니다.
 - 울트라비스트 스폰 위치와 레벨은 Pixelmon의 스폰 정보를 참고했습니다. Pixelmon의 파일이나 리소스는 들어 있지 않습니다.
 - 포켓몬과 관련 이름의 권리는 Nintendo, Game Freak, The Pokémon Company에 있습니다. 이 모드는 그들과 관련이 없습니다.
 

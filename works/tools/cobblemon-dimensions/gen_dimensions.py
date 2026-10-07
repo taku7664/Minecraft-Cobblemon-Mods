@@ -1,17 +1,13 @@
-"""Generates the biomes, biome layouts, wild spawns and the spawn table of cobblemon-dimensions.
+"""Generates the wild spawns and the spawn table of cobblemon-dimensions.
 
-Every dimension keeps Terralith's overworld terrain: it takes Terralith's whole overworld biome layout (every climate
-entry) and only renames each entry's biome to one of its own, so a desert canyon stays a canyon and becomes, say, Ultra
-Desert. Each biome borrows the features of one Terralith biome by reference, so the mod needs Terralith installed.
+The dimensions and their biomes are in `src/main/resources/cobblemon_dimensions/worldgen.json`; the mod builds the
+biome layouts, terrain settings and biomes from it at startup (from Terralith when installed, vanilla Minecraft when
+not), so nothing here touches worldgen. This script reads the biome list from that file.
 
-- Ultra Space floats that terrain as islands; its noise settings and island density functions are kept by hand in
-  `worldgen/noise_settings/ultra_space.json` and `worldgen/density_function/ultra_space/`.
-- Ancient and future are overworld-shaped: their noise settings are Terralith's overworld ones with this mod's surface.
+Outputs: `spawn_pool_world/*.json` and `docs/SPAWNS.md` (the spawn table). Rerun after changing anything here or the
+biome list.
 
-Outputs: `dimension/*.json`, `worldgen/biome/*.json`, `worldgen/noise_settings/{ancient,future}.json`,
-`spawn_pool_world/*_wild.json`, and `docs/SPAWNS.md` (the spawn table). Rerun after changing anything here.
-
-    python tools/cobblemon-dimensions/gen_dimensions.py [--terralith JAR] [--cobblemon JAR]
+    python tools/cobblemon-dimensions/gen_dimensions.py [--cobblemon JAR]
 """
 import argparse, json, pathlib, zipfile
 
@@ -22,94 +18,9 @@ LANG = MOD / "src/main/resources/assets/cobblemon_dimensions/lang"
 SERVER_MODS = REPO.parent / "develop-product/server/mods"
 NS = "cobblemon_dimensions"
 
-UNDERGROUND = ["cave", "deep_dark", "lush_caves", "dripstone"]
-OCEAN = ["ocean", "beach", "shore", "river", "mirage_isles", "alpha_islands", "ice_marsh"]
+SPEC = json.loads((MOD / "src/main/resources/cobblemon_dimensions/worldgen.json").read_text(encoding="utf-8"))
+DIMENSIONS = SPEC["dimensions"]
 
-
-def look(sky, fog, water, grass, foliage=None):
-    return dict(sky=sky, fog=fog, water=water, grass=grass, foliage=foliage or grass)
-
-
-def surface(top, under, grass=False, patch=None):
-    """A biome's top and under blocks. [patch] lays another top block in patches by the surface noise. Every top block
-    must be in Cobblemon's #cobblemon:natural block tag, or most wild Pokemon will not spawn on it."""
-    return dict(top=top, under=under, grass=grass, patch=patch)
-
-
-# Particles drifting in the air of a biome: (vanilla particle, chance per block shown each tick). Basalt deltas use
-# white_ash at 0.118, warped forests warped_spore at 0.0143.
-PARTICLES = {
-    "ancient_volcano": ("minecraft:ash", 0.05),
-    "ancient_jungle": ("minecraft:spore_blossom_air", 0.006),
-    "ancient_desert": ("minecraft:white_ash", 0.006),
-    "future_neon_forest": ("minecraft:warped_spore", 0.012),
-    "future_crystal": ("minecraft:end_rod", 0.0015),
-    "future_steel_peaks": ("minecraft:electric_spark", 0.004),
-    "future_flats": ("minecraft:electric_spark", 0.002),
-}
-
-
-# Per dimension: biomes (name -> Terralith features, look, surface), name rules (first match wins) and the default.
-DIMENSIONS = {
-    "ultra_space": dict(
-        biomes={
-            "ultra_deep_sea": ("terralith:basalt_cliffs", look(0x0B0B26, 0x141436, 0x1A1A4A, 0x2B2050), None),
-            "ultra_desert": ("terralith:desert_spires", look(0xA8DCFF, 0xD2EEFF, 0x7FC8FF, 0x9ED6E8, 0xBFE8F0), None),
-            "ultra_jungle": ("terralith:amethyst_rainforest", look(0xE58AB8, 0xCC6FA0, 0xB45C9A, 0xD46AA8, 0xC2559A), None),
-            "ultra_forest": ("terralith:moonlight_grove", look(0x6E52B0, 0x40306E, 0x5A46A0, 0x5B3F9E, 0x4A3290), None),
-            "ultra_crater": ("terralith:yellowstone", look(0xFFB347, 0xF2953A, 0xE0802A, 0xC88A3A, 0xB8742E), None),
-            "ultra_plant": ("terralith:amethyst_canyon", look(0x14305E, 0x2E86D6, 0x2E86D6, 0x1E6FB8), None),
-        },
-        rules=[
-            ("ultra_deep_sea", OCEAN),
-            ("ultra_crater", ["volcanic", "caldera", "basalt", "yellowstone", "ashen", "scarlet", "haze", "peaks", "stony_spires",
-                              "windswept_spires", "rocky_mountains", "granite_cliffs", "frozen_cliffs", "glacial_chasm"]),
-            ("ultra_desert", ["desert", "badlands", "mesa", "sands", "canyon", "bryce", "painted", "oasis", "arid", "sandstone",
-                              "hot_shrubland", "fractured_savanna", "white_cliffs"]),
-            ("ultra_jungle", ["jungle", "rainforest", "swamp", "cloud_forest", "mangrove"]),
-            ("ultra_plant", ["plains", "meadow", "shrubland", "brushland", "steppe", "savanna", "shield", "highlands", "valley",
-                             "clearing", "blooming", "emerald", "yosemite", "lowlands"]),
-        ],
-        default="ultra_forest",
-    ),
-    "ancient": dict(
-        biomes={
-            "ancient_sea": ("terralith:deep_warm_ocean", look(0xF2B27A, 0xE8A06A, 0x2E9C8A, 0x6E9A3A), surface("minecraft:sand", "minecraft:sandstone")),
-            "ancient_jungle": ("terralith:tropical_jungle", look(0xF0B070, 0xD8945A, 0x3A8C6E, 0x4E9A2A, 0x3E8A1E), surface("minecraft:grass_block", "minecraft:dirt", grass=True)),
-            "ancient_desert": ("terralith:ancient_sands", look(0xF6C68A, 0xF0B070, 0x4AA08A, 0xC2A04A), surface("minecraft:sand", "minecraft:sandstone")),
-            "ancient_volcano": ("terralith:volcanic_peaks", look(0xD86A3A, 0xA8462A, 0x8A4A3A, 0x6A5A3A), surface("minecraft:smooth_basalt", "minecraft:blackstone")),
-            "ancient_grassland": ("terralith:steppe", look(0xF4BC80, 0xE6A468, 0x3E9A7A, 0x9AAE3E), surface("minecraft:grass_block", "minecraft:coarse_dirt", grass=True)),
-        },
-        rules=[
-            ("ancient_sea", OCEAN),
-            ("ancient_volcano", ["volcanic", "caldera", "basalt", "yellowstone", "ashen", "scarlet", "haze", "peaks", "spires",
-                                 "rocky_mountains", "cliffs", "glacial_chasm", "slopes"]),
-            ("ancient_desert", ["desert", "badlands", "mesa", "sands", "canyon", "bryce", "painted", "oasis", "arid", "sandstone",
-                                "hot_shrubland"]),
-            ("ancient_jungle", ["jungle", "rainforest", "swamp", "cloud_forest", "mangrove", "dark_forest", "forest", "birch"]),
-        ],
-        default="ancient_grassland",
-    ),
-    "future": dict(
-        biomes={
-            "future_sea": ("minecraft:deep_frozen_ocean", look(0x8A7CFF, 0x5AD8E0, 0x2AB8D8, 0x5AC8C8), surface("minecraft:calcite", "minecraft:prismarine")),
-            "future_steel_peaks": ("terralith:stony_spires", look(0x7C6CE8, 0x8AA8C8, 0x3A9AC8, 0x7A9AAA), surface("minecraft:andesite", "minecraft:tuff")),
-            "future_crystal": ("terralith:amethyst_canyon", look(0xA07CFF, 0xC8A8FF, 0x7A6AE8, 0xB89AE8), surface("minecraft:calcite", "minecraft:diorite")),
-            "future_neon_forest": ("terralith:moonlight_grove", look(0x6A5CF0, 0x3ACCD8, 0x2AD0E0, 0x2ED8C8, 0x1EC0D0), surface("minecraft:grass_block", "minecraft:dirt", grass=True)),
-            "future_flats": ("terralith:shield", look(0x8C7CF8, 0x6AD0E0, 0x3AB8D8, 0x6AC8B8), surface("minecraft:grass_block", "minecraft:dirt", grass=True, patch="minecraft:light_gray_terracotta")),
-        },
-        rules=[
-            ("future_sea", OCEAN),
-            ("future_steel_peaks", ["peaks", "cliffs", "spires", "mountains", "slopes", "glacial", "volcanic", "caldera", "basalt",
-                                    "highlands", "haze", "scarlet", "yellowstone"]),
-            ("future_crystal", ["desert", "badlands", "mesa", "canyon", "sands", "oasis", "painted", "bryce", "arid", "sandstone",
-                                "amethyst"]),
-            ("future_neon_forest", ["forest", "jungle", "taiga", "grove", "birch", "sakura", "lavender", "moonlight", "rainforest",
-                                    "swamp", "mangrove", "wintry", "siberian", "maple"]),
-        ],
-        default="future_flats",
-    ),
-}
 
 # Wild spawns come from Cobblemon's own spawn data: each biome here stands in for some of Cobblemon's biome tags and takes
 # every spawn Cobblemon gives those tags, with Cobblemon's bucket, weight, position, conditions and level as they are.
@@ -196,45 +107,6 @@ def wild_spawns(by_tag, dim_name, biome):
     return out
 
 
-def biome_for(dimension, biome):
-    name = biome.split(":", 1)[1]
-    for target, fragments in dimension["rules"]:
-        if any(f in name for f in fragments):
-            return target
-    return dimension["default"]
-
-
-def surface_rule(biomes):
-    """Bedrock floor and deepslate depths like the overworld, then each biome's top and under blocks."""
-    rules = [
-        {"type": "minecraft:condition", "if_true": {"type": "minecraft:vertical_gradient", "random_name": "minecraft:bedrock_floor",
-                                                     "true_at_and_below": {"above_bottom": 0}, "false_at_and_above": {"above_bottom": 5}},
-         "then_run": {"type": "minecraft:block", "result_state": {"Name": "minecraft:bedrock"}}},
-    ]
-    for name, (_, _, s) in biomes.items():
-        top = {"type": "minecraft:block", "result_state": {"Name": s["top"]}}
-        under = {"type": "minecraft:block", "result_state": {"Name": s["under"]}}
-        if s["grass"]:  # grass only where no water stands on it
-            top = {"type": "minecraft:sequence", "sequence": [
-                {"type": "minecraft:condition", "if_true": {"type": "minecraft:water", "offset": -1, "surface_depth_multiplier": 0,
-                                                             "add_stone_depth": False}, "then_run": top}, under]}
-        if s["patch"]:
-            top = {"type": "minecraft:sequence", "sequence": [
-                {"type": "minecraft:condition", "if_true": {"type": "minecraft:noise_threshold", "noise": "minecraft:surface",
-                                                             "min_threshold": 0.35, "max_threshold": 1.0},
-                 "then_run": {"type": "minecraft:block", "result_state": {"Name": s["patch"]}}}, top]}
-        floor = lambda add: {"type": "minecraft:stone_depth", "offset": 0, "surface_type": "floor", "add_surface_depth": add,
-                             "secondary_depth_range": 0}
-        rules.append({"type": "minecraft:condition", "if_true": {"type": "minecraft:biome", "biome_is": [f"{NS}:{name}"]},
-                      "then_run": {"type": "minecraft:sequence", "sequence": [
-                          {"type": "minecraft:condition", "if_true": floor(False), "then_run": top},
-                          {"type": "minecraft:condition", "if_true": floor(True), "then_run": under}]}})
-    rules.append({"type": "minecraft:condition", "if_true": {"type": "minecraft:vertical_gradient", "random_name": "minecraft:deepslate",
-                                                              "true_at_and_below": {"absolute": 0}, "false_at_and_above": {"absolute": 8}},
-                  "then_run": {"type": "minecraft:block", "result_state": {"Name": "minecraft:deepslate", "Properties": {"axis": "y"}}}})
-    return {"type": "minecraft:sequence", "sequence": rules}
-
-
 def spawn(id_, species, bucket, level, position, dimension, biome):
     return {"id": f"{NS}-{id_}", "pokemon": species, "presets": ["natural"], "type": "pokemon",
             "spawnablePositionType": position, "bucket": bucket, "level": level, "weight": WEIGHT[bucket],
@@ -243,17 +115,8 @@ def spawn(id_, species, bucket, level, position, dimension, biome):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--terralith", default=str(next(SERVER_MODS.glob("Terralith_*.jar"))))
     parser.add_argument("--cobblemon", default=str(next(SERVER_MODS.glob("Cobblemon-fabric-*.jar"))))
     args = parser.parse_args()
-    with zipfile.ZipFile(args.terralith) as jar:
-        layout = json.loads(jar.read("data/minecraft/dimension/overworld.json"))["generator"]["biome_source"]["biomes"]
-        overworld_settings = json.loads(jar.read("data/minecraft/worldgen/noise_settings/overworld.json"))
-        sources = {}
-        for dimension in DIMENSIONS.values():
-            for source, _, _ in dimension["biomes"].values():
-                ns, name = source.split(":")
-                sources[source] = json.loads(jar.read(f"data/{ns}/worldgen/biome/{name}.json"))
     with zipfile.ZipFile(args.cobblemon) as jar:
         species_ko = json.loads(jar.read("assets/cobblemon/lang/ko_kr.json"))
         by_tag = cobblemon_spawns(jar)
@@ -261,33 +124,6 @@ def main():
 
     wilds = {}
     for dim_name, dimension in DIMENSIONS.items():
-        entries, counts = [], {}
-        for entry in layout:
-            if any(f in entry["biome"] for f in UNDERGROUND):
-                continue  # underground biomes would scatter through the ground; it takes the surface biome above
-            target = biome_for(dimension, entry["biome"])
-            counts[target] = counts.get(target, 0) + 1
-            entries.append({"biome": f"{NS}:{target}", "parameters": entry["parameters"]})
-        settings = f"{NS}:{dim_name}"
-        write(DATA / f"dimension/{dim_name}.json", {"type": f"{NS}:{dim_name}", "generator": {
-            "type": "minecraft:noise", "settings": settings, "biome_source": {"type": "minecraft:multi_noise", "biomes": entries}}})
-        if dim_name != "ultra_space":
-            write(DATA / f"worldgen/noise_settings/{dim_name}.json", dict(overworld_settings, surface_rule=surface_rule(dimension["biomes"])))
-        print(f"{dim_name}: {len(entries)} entries,", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
-
-        for name, (source, colors, _) in dimension["biomes"].items():
-            terralith = sources[source]
-            effects = {"sky_color": colors["sky"], "fog_color": colors["fog"], "water_color": colors["water"],
-                       "water_fog_color": colors["fog"], "grass_color": colors["grass"], "foliage_color": colors["foliage"]}
-            if name in PARTICLES:
-                particle, probability = PARTICLES[name]
-                effects["particle"] = {"options": {"type": particle}, "probability": probability}
-            write(DATA / f"worldgen/biome/{name}.json", {
-                "has_precipitation": False, "temperature": 0.8, "downfall": 0.4,
-                "effects": effects,
-                "spawners": {}, "spawn_costs": {},  # vanilla mobs stay out; Pokemon come from Cobblemon's spawn pools
-                "carvers": terralith.get("carvers", {}), "features": terralith["features"]})
-
         wild = [entry for biome in dimension["biomes"] for entry in wild_spawns(by_tag, dim_name, biome)]
         wilds[dim_name] = wild
         write(DATA / f"spawn_pool_world/{dim_name}_wild.json",

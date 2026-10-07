@@ -20,13 +20,18 @@ dependencies {
     // server with Lithostitched, which nests Apollib, which nests json5; development runs do not unpack nested jars,
     // so they are unpacked here, mods to the mod runtime and plain libraries to the classpath.
     val serverMods = rootProject.file("../develop-product/server/mods")
-    val worldgenMods = serverMods.listFiles { file -> file.name.startsWith("Terralith_") || file.name.startsWith("lithostitched-") }.orEmpty().toList()
+    // `-PnoTerralith` leaves it out, to see the dimensions built from vanilla terrain.
+    val worldgenMods = if (project.hasProperty("noTerralith")) emptyList()
+        else serverMods.listFiles { file -> file.name.startsWith("Terralith_") || file.name.startsWith("lithostitched-") }.orEmpty().toList()
     modLocalRuntime(files(worldgenMods))
     fun nested(jar: File): List<File> = zipTree(jar).matching { include("META-INF/jars/*.jar") }.files.flatMap { listOf(it) + nested(it) }
     worldgenMods.flatMap(::nested).forEach { jar ->
         if (zipTree(jar).matching { include("fabric.mod.json") }.isEmpty) localRuntime(files(jar)) else modLocalRuntime(files(jar))
     }
     modLocalRuntime("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-console-standalone:1.11.4")
 }
 
 val modVersion = version.toString()
@@ -46,6 +51,7 @@ java {
 }
 
 loom {
+    accessWidenerPath.set(file("src/main/resources/cobblemon_dimensions.accesswidener"))
     runs {
         // `runCapture`: makes a fresh world, photographs the portals, a wormhole and each dimension, then quits.
         register("capture") {
@@ -56,3 +62,22 @@ loom {
         }
     }
 }
+
+tasks.test { enabled = false }
+
+// The worldgen tests read Terralith from the dev server's mods folder.
+val unitTest by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Runs JUnit tests without Gradle's broken Windows test worker path."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("org.junit.platform.console.ConsoleLauncher")
+    systemProperty("cobblemon_dimensions.server_mods", rootProject.file("../develop-product/server/mods").absolutePath)
+    args("execute")
+    sourceSets.test.get().output.classesDirs.files.forEach {
+        args("--scan-class-path=${it.absolutePath}")
+    }
+    args("--fail-if-no-tests", "--details=summary")
+}
+
+tasks.check { dependsOn(unitTest) }

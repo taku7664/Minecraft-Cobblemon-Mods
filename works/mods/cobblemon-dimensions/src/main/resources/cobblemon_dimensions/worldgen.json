@@ -1,0 +1,530 @@
+{
+  "_comment": "Dimensions and biomes of cobblemon-dimensions. The mod builds its biome layouts, terrain settings and biomes from this at startup, out of Terralith when it is installed and vanilla Minecraft when not; works/tools/cobblemon-dimensions/gen_dimensions.py reads it for the spawn pools and the spawn table.",
+  "underground": [
+    "cave",
+    "deep_dark",
+    "lush_caves",
+    "dripstone"
+  ],
+  "dimensions": {
+    "ultra_space": {
+      "biomes": {
+        "ultra_deep_sea": {
+          "features": {
+            "terralith": "terralith:basalt_cliffs",
+            "vanilla": "minecraft:deep_dark"
+          },
+          "colors": {
+            "sky": 723750,
+            "fog": 1315894,
+            "water": 1710666,
+            "grass": 2826320,
+            "foliage": 2826320
+          }
+        },
+        "ultra_desert": {
+          "features": {
+            "terralith": "terralith:desert_spires",
+            "vanilla": "minecraft:desert"
+          },
+          "colors": {
+            "sky": 11066623,
+            "fog": 13823743,
+            "water": 8374527,
+            "grass": 10409704,
+            "foliage": 12577008
+          }
+        },
+        "ultra_jungle": {
+          "features": {
+            "terralith": "terralith:amethyst_rainforest",
+            "vanilla": "minecraft:jungle"
+          },
+          "colors": {
+            "sky": 15043256,
+            "fog": 13397920,
+            "water": 11820186,
+            "grass": 13920936,
+            "foliage": 12735898
+          }
+        },
+        "ultra_forest": {
+          "features": {
+            "terralith": "terralith:moonlight_grove",
+            "vanilla": "minecraft:dark_forest"
+          },
+          "colors": {
+            "sky": 7230128,
+            "fog": 4206702,
+            "water": 5916320,
+            "grass": 5980062,
+            "foliage": 4862608
+          }
+        },
+        "ultra_crater": {
+          "features": {
+            "terralith": "terralith:yellowstone",
+            "vanilla": "minecraft:badlands"
+          },
+          "colors": {
+            "sky": 16757575,
+            "fog": 15897914,
+            "water": 14712874,
+            "grass": 13142586,
+            "foliage": 12088366
+          }
+        },
+        "ultra_plant": {
+          "features": {
+            "terralith": "terralith:amethyst_canyon",
+            "vanilla": "minecraft:plains"
+          },
+          "colors": {
+            "sky": 1323102,
+            "fog": 3049174,
+            "water": 3049174,
+            "grass": 1994680,
+            "foliage": 1994680
+          }
+        }
+      },
+      "rules": [
+        {
+          "biome": "ultra_deep_sea",
+          "fragments": [
+            "ocean",
+            "beach",
+            "shore",
+            "river",
+            "mirage_isles",
+            "alpha_islands",
+            "ice_marsh"
+          ]
+        },
+        {
+          "biome": "ultra_crater",
+          "fragments": [
+            "volcanic",
+            "caldera",
+            "basalt",
+            "yellowstone",
+            "ashen",
+            "scarlet",
+            "haze",
+            "peaks",
+            "stony_spires",
+            "windswept_spires",
+            "rocky_mountains",
+            "granite_cliffs",
+            "frozen_cliffs",
+            "glacial_chasm"
+          ]
+        },
+        {
+          "biome": "ultra_desert",
+          "fragments": [
+            "desert",
+            "badlands",
+            "mesa",
+            "sands",
+            "canyon",
+            "bryce",
+            "painted",
+            "oasis",
+            "arid",
+            "sandstone",
+            "hot_shrubland",
+            "fractured_savanna",
+            "white_cliffs"
+          ]
+        },
+        {
+          "biome": "ultra_jungle",
+          "fragments": [
+            "jungle",
+            "rainforest",
+            "swamp",
+            "cloud_forest",
+            "mangrove"
+          ]
+        },
+        {
+          "biome": "ultra_plant",
+          "fragments": [
+            "plains",
+            "meadow",
+            "shrubland",
+            "brushland",
+            "steppe",
+            "savanna",
+            "shield",
+            "highlands",
+            "valley",
+            "clearing",
+            "blooming",
+            "emerald",
+            "yosemite",
+            "lowlands"
+          ]
+        }
+      ],
+      "default": "ultra_forest"
+    },
+    "ancient": {
+      "biomes": {
+        "ancient_sea": {
+          "features": {
+            "terralith": "terralith:deep_warm_ocean",
+            "vanilla": "minecraft:warm_ocean"
+          },
+          "colors": {
+            "sky": 15905402,
+            "fog": 15245418,
+            "water": 3054730,
+            "grass": 7248442,
+            "foliage": 7248442
+          },
+          "surface": {
+            "top": "minecraft:sand",
+            "under": "minecraft:sandstone",
+            "grass": false,
+            "patch": null
+          }
+        },
+        "ancient_jungle": {
+          "features": {
+            "terralith": "terralith:tropical_jungle",
+            "vanilla": "minecraft:jungle"
+          },
+          "colors": {
+            "sky": 15773808,
+            "fog": 14193754,
+            "water": 3837038,
+            "grass": 5151274,
+            "foliage": 4098590
+          },
+          "surface": {
+            "top": "minecraft:grass_block",
+            "under": "minecraft:dirt",
+            "grass": true,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:spore_blossom_air",
+            "probability": 0.006
+          }
+        },
+        "ancient_desert": {
+          "features": {
+            "terralith": "terralith:ancient_sands",
+            "vanilla": "minecraft:desert"
+          },
+          "colors": {
+            "sky": 16172682,
+            "fog": 15773808,
+            "water": 4890762,
+            "grass": 12755018,
+            "foliage": 12755018
+          },
+          "surface": {
+            "top": "minecraft:sand",
+            "under": "minecraft:sandstone",
+            "grass": false,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:white_ash",
+            "probability": 0.006
+          }
+        },
+        "ancient_volcano": {
+          "features": {
+            "terralith": "terralith:volcanic_peaks",
+            "vanilla": "minecraft:stony_peaks"
+          },
+          "colors": {
+            "sky": 14182970,
+            "fog": 11028010,
+            "water": 9062970,
+            "grass": 6969914,
+            "foliage": 6969914
+          },
+          "surface": {
+            "top": "minecraft:smooth_basalt",
+            "under": "minecraft:blackstone",
+            "grass": false,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:ash",
+            "probability": 0.05
+          }
+        },
+        "ancient_grassland": {
+          "features": {
+            "terralith": "terralith:steppe",
+            "vanilla": "minecraft:savanna"
+          },
+          "colors": {
+            "sky": 16039040,
+            "fog": 15115368,
+            "water": 4102778,
+            "grass": 10137150,
+            "foliage": 10137150
+          },
+          "surface": {
+            "top": "minecraft:grass_block",
+            "under": "minecraft:coarse_dirt",
+            "grass": true,
+            "patch": null
+          }
+        }
+      },
+      "rules": [
+        {
+          "biome": "ancient_sea",
+          "fragments": [
+            "ocean",
+            "beach",
+            "shore",
+            "river",
+            "mirage_isles",
+            "alpha_islands",
+            "ice_marsh"
+          ]
+        },
+        {
+          "biome": "ancient_volcano",
+          "fragments": [
+            "volcanic",
+            "caldera",
+            "basalt",
+            "yellowstone",
+            "ashen",
+            "scarlet",
+            "haze",
+            "peaks",
+            "spires",
+            "rocky_mountains",
+            "cliffs",
+            "glacial_chasm",
+            "slopes"
+          ]
+        },
+        {
+          "biome": "ancient_desert",
+          "fragments": [
+            "desert",
+            "badlands",
+            "mesa",
+            "sands",
+            "canyon",
+            "bryce",
+            "painted",
+            "oasis",
+            "arid",
+            "sandstone",
+            "hot_shrubland"
+          ]
+        },
+        {
+          "biome": "ancient_jungle",
+          "fragments": [
+            "jungle",
+            "rainforest",
+            "swamp",
+            "cloud_forest",
+            "mangrove",
+            "dark_forest",
+            "forest",
+            "birch"
+          ]
+        }
+      ],
+      "default": "ancient_grassland"
+    },
+    "future": {
+      "biomes": {
+        "future_sea": {
+          "features": {
+            "terralith": "minecraft:deep_frozen_ocean",
+            "vanilla": "minecraft:deep_frozen_ocean"
+          },
+          "colors": {
+            "sky": 9075967,
+            "fog": 5953760,
+            "water": 2799832,
+            "grass": 5949640,
+            "foliage": 5949640
+          },
+          "surface": {
+            "top": "minecraft:calcite",
+            "under": "minecraft:prismarine",
+            "grass": false,
+            "patch": null
+          }
+        },
+        "future_steel_peaks": {
+          "features": {
+            "terralith": "terralith:stony_spires",
+            "vanilla": "minecraft:stony_peaks"
+          },
+          "colors": {
+            "sky": 8154344,
+            "fog": 9087176,
+            "water": 3840712,
+            "grass": 8034986,
+            "foliage": 8034986
+          },
+          "surface": {
+            "top": "minecraft:andesite",
+            "under": "minecraft:tuff",
+            "grass": false,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:electric_spark",
+            "probability": 0.004
+          }
+        },
+        "future_crystal": {
+          "features": {
+            "terralith": "terralith:amethyst_canyon",
+            "vanilla": "minecraft:badlands"
+          },
+          "colors": {
+            "sky": 10517759,
+            "fog": 13150463,
+            "water": 8022760,
+            "grass": 12098280,
+            "foliage": 12098280
+          },
+          "surface": {
+            "top": "minecraft:calcite",
+            "under": "minecraft:diorite",
+            "grass": false,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:end_rod",
+            "probability": 0.0015
+          }
+        },
+        "future_neon_forest": {
+          "features": {
+            "terralith": "terralith:moonlight_grove",
+            "vanilla": "minecraft:taiga"
+          },
+          "colors": {
+            "sky": 6970608,
+            "fog": 3853528,
+            "water": 2805984,
+            "grass": 3070152,
+            "foliage": 2015440
+          },
+          "surface": {
+            "top": "minecraft:grass_block",
+            "under": "minecraft:dirt",
+            "grass": true,
+            "patch": null
+          },
+          "particle": {
+            "type": "minecraft:warped_spore",
+            "probability": 0.012
+          }
+        },
+        "future_flats": {
+          "features": {
+            "terralith": "terralith:shield",
+            "vanilla": "minecraft:plains"
+          },
+          "colors": {
+            "sky": 9207032,
+            "fog": 7000288,
+            "water": 3848408,
+            "grass": 6998200,
+            "foliage": 6998200
+          },
+          "surface": {
+            "top": "minecraft:grass_block",
+            "under": "minecraft:dirt",
+            "grass": true,
+            "patch": "minecraft:light_gray_terracotta"
+          },
+          "particle": {
+            "type": "minecraft:electric_spark",
+            "probability": 0.002
+          }
+        }
+      },
+      "rules": [
+        {
+          "biome": "future_sea",
+          "fragments": [
+            "ocean",
+            "beach",
+            "shore",
+            "river",
+            "mirage_isles",
+            "alpha_islands",
+            "ice_marsh"
+          ]
+        },
+        {
+          "biome": "future_steel_peaks",
+          "fragments": [
+            "peaks",
+            "cliffs",
+            "spires",
+            "mountains",
+            "slopes",
+            "glacial",
+            "volcanic",
+            "caldera",
+            "basalt",
+            "highlands",
+            "haze",
+            "scarlet",
+            "yellowstone"
+          ]
+        },
+        {
+          "biome": "future_crystal",
+          "fragments": [
+            "desert",
+            "badlands",
+            "mesa",
+            "canyon",
+            "sands",
+            "oasis",
+            "painted",
+            "bryce",
+            "arid",
+            "sandstone",
+            "amethyst"
+          ]
+        },
+        {
+          "biome": "future_neon_forest",
+          "fragments": [
+            "forest",
+            "jungle",
+            "taiga",
+            "grove",
+            "birch",
+            "sakura",
+            "lavender",
+            "moonlight",
+            "rainforest",
+            "swamp",
+            "mangrove",
+            "wintry",
+            "siberian",
+            "maple"
+          ]
+        }
+      ],
+      "default": "future_flats"
+    }
+  }
+}

@@ -25,6 +25,7 @@
       }
     ]
   },
+  "accessWidener": "cobblemon_dimensions.accesswidener",
   "mixins": [
     "cobblemon_dimensions.mixins.json"
   ],
@@ -34,7 +35,9 @@
     "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
     "minecraft": "~1.21.1",
     "java": ">=21",
-    "cobblemon": ">=1.8.1 <1.9.0",
+    "cobblemon": ">=1.8.1 <1.9.0"
+  },
+  "recommends": {
     "terralith": "*"
   },
   "suggests": {

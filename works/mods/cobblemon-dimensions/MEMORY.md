@@ -1,5 +1,16 @@
 # cobblemon-dimensions 작업 기록
 
+## [2026-10-07 18:30] Terralith 데이터를 jar에서 빼고 게임 시작 때 생성 (Terralith 없으면 바닐라)
+
+- 발견: Terralith `license.txt`(Stardust Labs 라이선스)는 Terralith 코드 일부를 다른 모드에 넣는 것과 수정본 배포를 허락 없이 금지한다. 이 모드가 담고 있던 바이옴 배치표(1,699줄), 오버월드 지형 설정, 바이옴 장식 목록이 여기에 걸린다. 서버 사용은 허용, 공개 배포는 불가. 라이선스의 AI 사용 금지 조항도 사용자에게 알렸다.
+- 사용자 결정: 3번, Terralith가 있으면 Terralith 지형, 없으면 바닐라 지형.
+- 구현: jar에서 `dimension/*`, `worldgen/biome/*`, `worldgen/noise_settings/*`, `density_function/ultra_space/island_mask.json`을 지웠다. `worldgen/DimensionWorldgen`이 `cobblemon_dimensions/worldgen.json`(바이옴 목록·색·표면·파티클·규칙, Terralith/바닐라 장식 원본)과 `WorldgenSource`(Terralith 모드 컨테이너 파일, 없으면 마인크래프트 컨테이너 파일, 바닐라 배치표는 `OverworldBiomeBuilder.addBiomes`를 액세스 와이드너로 열어 코드에서 뽑음)로 파일을 만들고, `WorldgenPack`이 항상 켜진 내장 데이터팩(`cobblemon_dimensions:worldgen`, required)으로 넣는다. `ServerPacksSourceMixin`이 `createPackRepository(Path, DirectoryValidator)` 반환값에 `PackRepositoryAccessor`로 소스를 더한다(월드 불러오기·새 월드 모두 이 경로). 울트라 표면 규칙은 `cobblemon_dimensions/ultra_space_surface.json`. `fabric.mod.json`의 terralith는 depends → recommends.
+- 파이썬 생성기는 이제 스폰 풀과 스폰표만 만들고, 바이옴 목록은 `worldgen.json`에서 읽는다.
+- 검증: 단위 테스트(`:cobblemon-dimensions:unitTest`)에서 Terralith 모드 결과가 예전에 jar에 있던 파일과 JSON 단위로 완전히 같음을 확인했다(울트라 `noise.size_vertical` 2와 빈 `spawn_target`은 예전 손 파일 값이라 생성기에 넣음). 바닐라 모드는 차원 3·지형 설정 3·바이옴 16개가 모두 만들어지고 Terralith 참조가 없으며 모든 바이옴이 배치표에 쓰인다.
+- 미검증: 내장 데이터팩이 실제 게임에 들어가는지. Fabric GameTest 헤드리스 서버로 확인하려 했으나, 개발 서버 실행 환경에서 Cobblemon Showdown이 `com/ibm/icu/text/DateFormat`을 못 찾아 `ShowdownThread.launch`의 래치에서 서버 시작이 멈췄다(icu4j를 localRuntime에 넣어도, 클래스패스 격리를 꺼도 같음). 사용자가 확인 없이 커밋·배치하라고 했다. 실게임에서 차원이 안 보이면 이 부분부터 본다(로그 "Built the dimensions from ... terrain").
+- `-PnoTerralith`로 개발 실행에서 Terralith를 뺄 수 있다(바닐라 지형 확인용).
+- 그 사이 C 드라이브가 1GB 근처까지 차서 이 모듈 `build`(gametest 월드 포함 122MB)를 지웠다. 다른 세션 빌드와 겹쳐 loom 리맵이 한 번 실패했다.
+
 ## [2026-10-07 00:40] 미래 평원·강철 산맥·미래 바다 바닥 블록 교체
 
 - 사용자 발견(실게임): 미래 평원에 아무것도 없고 스폰도 없다.
