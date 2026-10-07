@@ -25,7 +25,6 @@ include(
     "more-cobblemon-contents-pvp",
     "more-cobblemon-contents-battle-factory",
     "more-cobblemon-contents-league-challenge",
-    "player-popup-emotes",
     "pokefusion",
     "simple-myroom"
 )
