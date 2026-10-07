@@ -204,7 +204,7 @@ class NativeSuckerPunchProductBrainIntegrationTest {
             )
             val evaluation = evaluator.evaluate(
                 context = context,
-                profile = BattleTrainerProfile.balanced(2),
+                profile = BattleTrainerProfile.balanced(3),
                 tuning = LocalDecisionTuning.CURRENT,
                 budget = LocalLookaheadBudget(timeMillis = 2_000L, nodeLimit = 4_096, chanceBranchesPerMove = 1),
                 sessionState = sessionState,
@@ -213,7 +213,8 @@ class NativeSuckerPunchProductBrainIntegrationTest {
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status,
                 "Native Sucker Punch product evaluation failed: $evaluation")
             assertEquals(NativeProductWorldSearchStatus.COMPLETED, evaluation.searchStatus)
-            assertEquals(2, evaluation.depthCompleted)
+            // Only Advanced and Boss see two turns (STANDARD searches one since 36cb2641).
+        assertEquals(2, evaluation.depthCompleted)
             assertEquals(
                 expectedOpponentChoices,
                 recording.choicesAt(prepared.snapshotJson, suckerChoice),
@@ -257,7 +258,7 @@ class NativeSuckerPunchProductBrainIntegrationTest {
             val brainSession = brain.openSession(BattleBrainOpenContext(
                 battleId = context.state.battleId,
                 format = BattleFormat.SINGLE,
-                trainerProfile = BattleTrainerProfile.balanced(2),
+                trainerProfile = BattleTrainerProfile.balanced(3),
             ))
 
             val decision = brain.decide(brainSession, context).toCompletableFuture().get()

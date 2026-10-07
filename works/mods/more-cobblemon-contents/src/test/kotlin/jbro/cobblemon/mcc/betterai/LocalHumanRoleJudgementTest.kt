@@ -99,7 +99,7 @@ class LocalHumanRoleJudgementTest {
 
         assertTrue(fit("brn", physical, context) > 1.0 && fit("brn", special, context) < 1.0)
         assertTrue(fit("par", fast, context) > fit("par", slow, context))
-        assertTrue(listOf(physical, special, fast, slow).all { fit("brn", it, context) in 0.6..1.4 })
+        assertTrue(listOf(physical, special, fast, slow).all { fit("brn", it, context) in 0.3..1.4 }) // A special attacker's burn floor is 0.3 since 4c88de81.
     }
 
     @Test

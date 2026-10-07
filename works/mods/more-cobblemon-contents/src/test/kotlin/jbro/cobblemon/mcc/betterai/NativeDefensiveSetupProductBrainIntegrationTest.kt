@@ -103,14 +103,15 @@ class NativeDefensiveSetupProductBrainIntegrationTest {
             )
             val evaluation = evaluator.evaluate(
                 context = context,
-                profile = BattleTrainerProfile.balanced(2),
+                profile = BattleTrainerProfile.balanced(3),
                 tuning = LocalDecisionTuning.CURRENT,
                 budget = LocalLookaheadBudget(timeMillis = 2_000L, nodeLimit = 1_024, chanceBranchesPerMove = 1),
                 sessionState = sessionState,
             )
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status)
             assertEquals(NativeProductWorldSearchStatus.COMPLETED, evaluation.searchStatus)
-            assertEquals(2, evaluation.depthCompleted)
+            // Only Advanced and Boss see two turns (STANDARD searches one since 36cb2641).
+        assertEquals(2, evaluation.depthCompleted)
             val ranks = evaluation.ranked
             assertEquals("irondefense", ranks.first().outcome.candidate.moveId)
             val brain = LocalTacticalBrain(
@@ -127,7 +128,7 @@ class NativeDefensiveSetupProductBrainIntegrationTest {
             val brainSession = brain.openSession(BattleBrainOpenContext(
                 battleId = context.state.battleId,
                 format = BattleFormat.SINGLE,
-                trainerProfile = BattleTrainerProfile.balanced(2),
+                trainerProfile = BattleTrainerProfile.balanced(3),
             ))
 
             val decision = brain.decide(brainSession, context).toCompletableFuture().get()

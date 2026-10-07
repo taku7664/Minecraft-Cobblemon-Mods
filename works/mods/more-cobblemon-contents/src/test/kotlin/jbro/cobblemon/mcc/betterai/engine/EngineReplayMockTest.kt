@@ -63,7 +63,11 @@ class EngineReplayMockTest {
     }
 
     private fun parse(id: String, format: String): Replay {
-        val raw = requireNotNull(javaClass.getResourceAsStream("/ai-engine/replays/$id.log")).reader().use { it.readText() }.lines()
+        // The replay logs are gitignored (*.log) and were never committed; without one there is nothing to replay.
+        val stream = javaClass.getResourceAsStream("/ai-engine/replays/$id.log")
+        Assumptions.assumeTrue(stream != null,
+            "replay log $id.log is missing; fetch https://replay.pokemonshowdown.com/$id.log into src/test/resources/ai-engine/replays/")
+        val raw = stream!!.reader().use { it.readText() }.lines()
         val usage = JsonParser.parseString(requireNotNull(javaClass.getResourceAsStream(
             "/data/more_cobblemon_contents/opponent_build_usage/$format-2025-12-1500.json")).reader().use { it.readText() })
             .asJsonObject.getAsJsonObject("species")

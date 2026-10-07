@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -25,8 +26,12 @@ class LocalMaterialOwnershipTest {
             state(listOf(pokemon(1, BattleSide.ALLY, 0.5)), 0, 0) to 2.5,
         )
         cases.forEachIndexed { index, (board, expected) ->
-            assertEquals(expected, LocalImmediateTurnScorer.score(empty, board).materialDelta, "immediate case $index")
-            assertEquals(expected, LocalLookaheadStateEvaluator.evaluate(board, context(board)), "leaf case $index")
+            // A board where one side has none left is a finished battle and carries the terminal value (5de727d3);
+            // this test owns only the material part.
+            val terminal = LocalTerminalOutcomeValue.evaluate(board) - LocalTerminalOutcomeValue.evaluate(empty)
+            assertEquals(expected, LocalImmediateTurnScorer.score(empty, board).materialDelta - terminal, "immediate case $index")
+            assertEquals(expected, LocalLookaheadStateEvaluator.evaluate(board, context(board)) -
+                LocalTerminalOutcomeValue.evaluate(board), "leaf case $index")
         }
     }
 
@@ -39,10 +44,11 @@ class LocalMaterialOwnershipTest {
                 val after = state(listOf(pokemon(1, victim, 0.0, fainted = true)), 0, 0)
                 val attacker = if (victim == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
                 val sign = if (attacker == BattleSide.ALLY) 1 else -1
-                val removal = LocalImmediateTurnScorer.score(before, after).materialDelta - sign * hp
+                val terminal = LocalTerminalOutcomeValue.evaluate(after) - LocalTerminalOutcomeValue.evaluate(before)
+                val removal = LocalImmediateTurnScorer.score(before, after).materialDelta - terminal - sign * hp
                 assertEquals(sign * 2.0, removal)
                 assertEquals(removal, LocalLookaheadStateEvaluator.evaluate(after, context(after)) -
-                    LocalLookaheadStateEvaluator.evaluate(before, context(before)) - sign * hp, 1e-9)
+                    LocalLookaheadStateEvaluator.evaluate(before, context(before)) - terminal - sign * hp, 1e-9)
             }
         }
     }

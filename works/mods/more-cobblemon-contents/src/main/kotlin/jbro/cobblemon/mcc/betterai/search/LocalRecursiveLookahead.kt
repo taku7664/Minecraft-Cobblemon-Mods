@@ -344,7 +344,11 @@ internal object LocalRecursiveLookaheadEvaluator {
                         rank.outcome.itemUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
                     val rawAdjustment = immediateAdjustment * coverage.immediate + foresightGain * coverage.future
-                    val terminal = kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD
+                    // The root turn is terminal by its one-ply value; a deeper terminal counts only as far as
+                    // foresight is weighed, or a zero future weight would still leak the deeper result.
+                    val terminal = kotlin.math.abs(immediateGain) >= TERMINAL_SCORE_THRESHOLD ||
+                        profile.difficulty.foresightWeight > 0.0 &&
+                        kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD
                     val adjustment = if (terminal || tuning.sharedAdjustmentBound) {
                         rawAdjustment
                     } else {

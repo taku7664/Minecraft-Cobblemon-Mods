@@ -288,22 +288,19 @@ class LocalForesightScenarioTest {
             personality = BattleTrainerProfile.champion().personality,
             difficulty = BattleDifficultyProfiles.BOSS,
         )
-        val withSearch = LocalDecisionTuning.CURRENT
-        // Nothing the search finds can reach the ranking; the immediate heuristic decides alone.
-        val withoutSearch = LocalDecisionTuning.CURRENT.copy(
-            id = "no_search", maximumLookaheadAdjustment = 0.0,
-        )
-
-        fun solve(tuning: LocalDecisionTuning) = positions.count { position ->
+        // Off, the search's contribution is subtracted and the immediate heuristic decides alone. A zero adjustment
+        // bound no longer turns it off: a terminal verdict is taken whole, and every position here is one on one.
+        fun solve(searchOn: Boolean) = positions.count { position ->
             LocalDecisionInstrumentation.inspect(
                 context = PublicBattleTacticalCalculator.calculate(position.context),
                 profile = profile,
-                tuning = tuning,
-            ).candidates.maxByOrNull { it.comparisonValue }?.actionId == position.patientAction
+                tuning = LocalDecisionTuning.CURRENT,
+            ).candidates.maxByOrNull { if (searchOn) it.comparisonValue else it.heuristicOnlyValue }
+                ?.actionId == position.patientAction
         }
 
-        val on = solve(withSearch)
-        val off = solve(withoutSearch)
+        val on = solve(searchOn = true)
+        val off = solve(searchOn = false)
 
         val report = buildString {
             appendLine("=".repeat(96))

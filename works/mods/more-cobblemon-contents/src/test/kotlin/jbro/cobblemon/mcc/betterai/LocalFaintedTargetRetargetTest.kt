@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector
 import org.junit.jupiter.api.Assertions.*
@@ -128,8 +129,14 @@ class LocalFaintedTargetRetargetTest {
                 }
             }
             if (accuracy < 100.0) {
-                context.candidates.forEach { assertEquals(0.0,
-                    LocalTacticalScorer.duplicateCertainKnockoutCredit(it, context), 1e-9) }
+                // The certain-only model gives an uncertain second hit no duplicate credit; the joint model (on since
+                // 6f6c17d5) takes back only the expected overlap, never the whole duplicate knockout.
+                val certainOnly = LocalDecisionTuning.CURRENT.copy(jointKnockoutCredit = false)
+                context.candidates.forEach {
+                    assertEquals(0.0, LocalTacticalScorer.duplicateCertainKnockoutCredit(it, context, certainOnly), 1e-9)
+                    assertTrue(LocalTacticalScorer.duplicateCertainKnockoutCredit(it, context) <
+                        LocalDecisionTuning.CURRENT.knockoutMaterialScore)
+                }
             }
         }
     }

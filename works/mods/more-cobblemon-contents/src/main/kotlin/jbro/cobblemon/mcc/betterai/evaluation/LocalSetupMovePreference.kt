@@ -26,6 +26,11 @@ internal object LocalSetupMovePreference {
         val actor = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
         } ?: return 0.0
+        // Without public combat stats a setup's worth cannot be calculated; only the conservative stage fallback
+        // of LocalStatStageMarginalEvaluator remains.
+        if (actor.combatStats == null || context.state.pokemon.none {
+                it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.combatStats != null
+            }) return 0.0
         if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return 0.0
         val stages = actor.statStages.mapKeys { canonical(it.key) }
         val canRaise = effects.any { effect ->
