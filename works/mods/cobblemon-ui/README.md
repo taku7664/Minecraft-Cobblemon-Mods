@@ -1,87 +1,67 @@
 # Cobblemon UI
 
-Cobblemon's client interfaces in one client-only mod (`cobblemon_ui`):
+**A clearer, customizable battle interface for Cobblemon.**
 
-- **UI kit** (`jbro.cobblemon.uikit`): widgets, layout, surfaces and themes. `CobblemonUiSharedTheme` is the look the
-  Cobblemon screens share: the MCC hub, HUD buttons over the world and the battle dialogue.
-- **Battle screens** (`jbro.cobblemon.ui`): Cobblemon's battle commands, information window, log, dialogue and
-  target, switch and forfeit screens, replaced through mixins.
+Cobblemon UI replaces battle menus, health displays, information screens, and battle narration with a coordinated interface. Choose a battle theme, navigate with the keyboard or mouse, and review the battle history without leaving the battle screen.
 
-The mod is built with Mojang names. More Cobblemon Contents bundles it (`include`) without declaring it a dependency,
-so dedicated servers never need a client mod. Unit tests: `gradlew :cobblemon-ui:unitTest`.
+## Features
 
-## UI kit
+- Redesigned battle commands, move selection, switching, target selection, and forfeit confirmation.
+- A battle information screen with team previews, weather, terrain, side effects, stat changes, and revealed Pokémon information.
+- Move tooltips with power, accuracy, PP, type effectiveness, and critical-hit information.
+- Battle dialogue and a scrollable, turn-organized history with Pokémon portraits.
+- Champions and Galar battle themes, optional battle entry effects, and shared window styles and color palettes.
+- English and Korean interface translations.
 
-## Development gallery
+This is a client mod. Install it on your own client for singleplayer or multiplayer; the dedicated server does not need it. Vanilla inventory, crafting, and general Minecraft menus are outside its scope. It also supplies UI components to other mods; those mods' screens are only available when those mods are installed.
 
-Enter a development world and run:
+## Installation
 
-```text
-/cobblemon-ui-gallery
-```
+| Requirement | Version |
+| --- | --- |
+| Minecraft Java Edition | 1.21.1 |
+| Mod loader | Fabric Loader 0.19.5 or newer |
+| Cobblemon | 1.8.1 |
+| Java | 21 or newer |
+| Fabric API | Required |
+| Fabric Language Kotlin | 1.12.0 or newer |
+| Mod Menu + Cloth Config | Optional; install both for the in-game settings screen |
 
-For a quick-play world that opens the gallery and leaves it under manual control:
+Place the mod JAR and required dependencies in your client's `mods` folder. Other Cobblemon versions and NeoForge are not declared compatible. If a modpack already bundles Cobblemon UI, check its installed mod list before adding a standalone copy. Avoid combining multiple mods that replace the same battle screens; compatibility with other replacements has not been verified.
 
-```powershell
-$env:COBBLEMON_UI_KIT_MANUAL_GALLERY='1'
-.\gradlew.bat :cobblemon-ui:runClient --no-daemon --configure-on-demand
-```
+## Controls
 
-Create or enter any world. The gallery opens after the player joins and remains under manual control.
+| Default key | Action |
+| --- | --- |
+| Arrow keys / W, A, S, D | Navigate battle choices |
+| Z | Confirm a choice or advance dialogue |
+| X | Cancel or go back |
+| Tab | Open or close battle information |
+| Left Shift | Open or close battle history |
 
-Choose one of the built-in theme presets before starting the client:
+History supports the mouse wheel, Up/Down, Page Up/Down, and Home/End. X or Escape closes it. Opening history does not advance dialogue or submit a battle action. Rebind the mod's registered keys in Minecraft's Controls menu.
 
-```powershell
-$env:COBBLEMON_UI_KIT_THEME='galar_stadium'
-```
+## Settings
 
-Supported IDs are `league_neon`, `pixel_league`, `galar_stadium`, `paldea_portal`, `hoenn_pixel`, `johto_touch`, `unova_pixel`, `tower_lobby`, `tower_elevator`, `tower_sunburst`, `factory_showroom`, `factory_night`, and `factory_terminal`. `pixel_league` is the actual sprite-backed pixel UI candidate; the three generation-named presets remain palette studies.
+Open **Mods → Cobblemon UI → Configure** with Mod Menu and Cloth Config installed. Settings are saved to `config/cobblemon_ui.json` in the active Minecraft profile. Without Cloth Config, the mod still runs and its settings button explains the missing dependency. Close the game before editing the file manually. When the current file is absent, the older `cobblemon_battle_ui.json` file is read as a migration source.
 
-## Styles and palettes
+| Category | Options and defaults |
+| --- | --- |
+| Theme | Champions battle theme; battle entry transition on; rounded shared windows; Tower lobby colors |
+| Features | Team preview, battle information, move tooltips, and damage/healing percentages on |
+| UI Size | History, Pokémon tooltip, and move tooltip text scales: 1.0; accepted range 0.5–2.0 |
+| Tooltip Options | Known Tera type off; own stat values on; estimated opponent Speed range on; base critical-hit rate off |
 
-A theme can also be composed from a style and a palette, so one set of colours can be drawn in different shapes:
+Galar is the second battle theme. Shared windows also offer pixel frames and six Tower/Factory palettes. Shared style and palette affect dialogue and screens provided by mods using this UI library; they do not add those mods' features.
 
-```kotlin
-val theme = CobblemonUiThemeComposer.compose(UiThemeStyle.DS_WINDOW, UiPalettePreset.TOWER_LOBBY)
-CobblemonUiThemes.registry.install(theme) // id "ds_window.tower_lobby"
-```
+Opponent Speed ranges are estimates. Unrevealed battle information and uncertain effect durations should not be treated as exact values. Legacy log visibility, size/position, and team-indicator placement fields remain in the saved format for compatibility; the current history and information screens use their own layouts. The old `enableBattleLog` flag does not turn off the current narration/history.
 
-`UiPalettePreset` holds six `UiThemePalette`s taken from the Generation IV Battle Tower (`tower_lobby`, `tower_elevator`, `tower_sunburst`) and Battle Factory (`factory_showroom`, `factory_night`, `factory_terminal`). `UiThemeStyle.PIXEL_FRAME` draws a palette in Pixel League's square pixel frames; the `tower_*` and `factory_*` presets above are exactly that pairing. `UiThemeStyle.DS_WINDOW` draws it like a Generation IV DS menu:
+## License and credits
 
-- windows are rounded rectangles with a `UiBorder.WindowFrame` (an outline, a coloured band and an inner line);
-- a choice is marked by `UiSelectionIndicator.Outline`, a cursor frame over an unchanged fill, instead of a repainted button;
-- text carries a pale one-pixel drop shadow from `UiButtonStyle.textShadowColor` (not Minecraft's black shadow);
-- panel titles sit over a rule (`UiPanelTitleStyle.RULE`) and list rows are unframed lines (`UiThemeSnapshot.listRowStyle`).
+Project-authored code and accompanying project files are distributed under the [MIT License](LICENSE), consistent with this repository's existing license. The current battle interface has been independently redesigned. Some internal battle-state tracking code remains from the early work based on [Cobblemon Extended Battle UI by sveniik](https://github.com/sveniik/CobblemonExtendedBattleUI); its original [MIT notice](THIRD_PARTY_LICENSE_CobblemonExtendedBattleUI) is retained and packaged with the JAR. See [NOTICE.md](NOTICE.md) for scope and asset-review limits.
 
-Every composed theme keeps Pixel League's control sizes (small 20, medium 26, large 36; full-size text at every size, since pixel Hangul breaks apart when scaled down), so a screen laid out for one fits all of them.
+Cobblemon UI is an independent add-on. It is not an official Pokémon, Mojang, Microsoft, Nintendo, Game Freak, or The Pokémon Company product.
 
-Rounded and chamfered surfaces are drawn with anti-aliased corners (`UiSmoothCorners`): each corner pixel mixes the frame layers by how much of it they cover, like the in-between pixels of Cobblemon's own GUI sprites. Pixel frames, circles, capsules and diamonds keep stepped edges.
+## Development
 
-A screen that draws a control's surface itself must also call `UiSurfaceRenderer.drawSelection` with the style's `selectionIndicator`, or a DS window selection is invisible. `CobblemonUiListRows` draws a list row (icon, title, supporting line, trailing text and small actions) the way `CobblemonUiListItem` does, for screens that own the row widget. `CobblemonUiPanel` draws a title in the theme's `UiPanelTitleStyle` (text, band or rule), takes `UiPanelSpec.featured` for the emphasised colour and an optional render-slot icon; `UiTextRenderer` draws text with a theme's coloured shadow.
-
-`COBBLEMON_UI_KIT_CAPTURE_WORLD=1` is reserved for automated capture. It deliberately exercises focus, scrolling, close, and then stops the client; do not use it for manual review. Add `COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES=1` to capture the top and scrolled state of all six presets in one joined world. For repeatable local capture, pass an existing development world through Minecraft's quick-play argument:
-
-```powershell
-$env:COBBLEMON_UI_KIT_CAPTURE_WORLD='1'
-$env:COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES='1'
-$env:COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING='1'
-.\gradlew.bat :cobblemon-ui:runClient --no-daemon --configure-on-demand --args="--quickPlaySingleplayer ui-kit-clean"
-```
-
-`COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING=1` is an explicit development-only opt-in. When a Cobblemon snapshot build presents its startup warning, the harness chooses **Yes** for that run without selecting “don't show again”. Stable Cobblemon builds do not exercise this branch.
-
-The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, square/circle/diamond icon-only buttons, rectangle/chamfer/rounded/capsule/circle/diamond surfaces, tabs, badges, toggles, list items, progress bars, checkbox and radio choices, combo boxes, cards, stat rows, wrapped text, panels, persistent callouts, step tracks, ordered selection, player/item/texture render slots, tooltips, modal dialogs, toast notifications, reusable layout and scroll primitives, theme switching, and composable fill, border, opacity, and shadow styles in English and Korean.
-
-Reusable contracts live in `UiButtonContract.kt`, `UiSurfaceContract.kt`, `UiWidgetContract.kt`, `UiLayoutContract.kt`, `UiOverlayContract.kt`, `UiAdvancedWidgetContract.kt`, and `UiContentContract.kt`. Client widgets are exposed through the `CobblemonUi*` classes, including buttons, selection controls, data widgets, content primitives, render slots, layouts, overlays, and the scroll viewport.
-
-Layouts are trees of `UiLayoutNode`s built with `UiLayout` (`row`, `column`, `grid`, `flow`, `inset`, `align`, `layers`, `responsive`) and solved against a rectangle into named rectangles, without Minecraft client classes. Children claim room by `UiLength`: `Fixed`, `Content` (their measured size, or a grid track's widest cell, which lines up the controls after a label column), `Percent` of the container with bounds, or a `Weight` share with a minimum and a reserve that sized siblings give way to. `Responsive` nodes rebuild from the size they get, so a screen changes shape at breakpoints. Rounding is explicit (`UiRemainder`) and everything lands on whole GUI pixels; `CobblemonUiLayout` moves vanilla widgets to the results. The kit does not use owo-lib. `CobblemonUiScrollViewport` supports wheel input, Page Up/Down, Home/End, scrollbar dragging, and focus reveal. Overlays keep different input ownership explicit: a tooltip is informational, a persistent callout remains in layout flow, a dialog is a separate blocking `Screen`, and a toast is queued non-blocking feedback. The UI Kit owns presentation and local interaction state only; consumers remain responsible for domain state and server authority.
-
-`CobblemonUiDialogScreen` accepts an optional `themeOverride` for consumers with a screen-local theme. It installs that snapshot while the dialog is open and restores the previous one on removal.
-
-`CobblemonUiRenderSlot` currently renders a generic texture, an item stack, or a built-in player model using a supplied skin (`PlayerSkin`) or a player's own skin resolved from their `GameProfile` (`PlayerProfile`), or just a player's face (`PlayerFace`). `Villager` draws a villager with vanilla-style type and profession overlays, such as Cobblemon's `cobblemon:nurse_joy`. A player model is framed either as a `PORTRAIT` pinned to the top of the slot or as a centered `FULL_BODY`; `UiModelPlacement` computes both without client classes. The player model is static: it carries no equipment, cape, or animation. `Pokemon` draws a Cobblemon profile portrait of a species and its aspects, and `PartyPokemon` draws one of the viewer's own party Pokemon from the live party; both keep their idle animation per `stateKey` across rebuilds. `CobblemonUiRenderSlot.drawContent` draws any of these without the slot surface, so cards and buttons can frame a model themselves. It does not provide a generic Bedrock-model renderer. `CobblemonUiPanel` draws a themed section background and title; it does not own, lay out, or clip child widgets.
-
-Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.
-
-`UiBorder.PixelFrame` keeps its hard shadow close to the widget with a default logical offset of `1`. Themes may override `shadowOffset`; `pixel_league` uses `2` for the outer shell and `1` for cards and controls so the screen hierarchy remains visible without making each widget look detached.
-
-This module does not replace vanilla inventory, crafting, chat, or other general Minecraft screens. Its final distribution form remains undecided until both League Challenge and Cobblemon Battle UI consume the runtime contract.
+See [the UI library and development gallery guide](docs/UI_KIT.md). From `works/`, run `./gradlew :cobblemon-ui:build`; the module's `check` task runs its `unitTest` task. Release outputs are written to `mods/cobblemon-ui/build/libs/`.

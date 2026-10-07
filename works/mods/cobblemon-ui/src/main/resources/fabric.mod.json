@@ -3,15 +3,17 @@
   "id": "cobblemon_ui",
   "version": "${version}",
   "name": "Cobblemon UI",
-  "description": "Cobblemon's client interfaces in one mod: the UI kit's widgets, layout and themes, and the battle commands, information, logs and dialogue drawn with them.",
+  "description": "Redesigned Cobblemon battle screens with keyboard controls, team and field information, move tooltips, dialogue, a scrollable battle history, and customizable themes.",
+  "icon": "assets/cobblemon_ui/icon.png",
   "authors": [
     "jbro"
   ],
   "contributors": [
-    "sveniik (original Extended Battle UI)"
+    "sveniik (retained code from early Extended Battle UI work)"
   ],
   "contact": {
-    "sources": "https://github.com/JBRO129/Minecraft-Cobblemon-Mods"
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/cobblemon-ui",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
   },
   "license": "MIT",
   "environment": "client",

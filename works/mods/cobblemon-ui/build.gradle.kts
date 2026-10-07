@@ -41,9 +41,6 @@ tasks.processResources {
     filesMatching("fabric.mod.json") { expand("version" to project.version) }
 }
 
-tasks.jar {
-    from("THIRD_PARTY_LICENSE_CobblemonExtendedBattleUI")
-}
 
 loom {
     accessWidenerPath.set(file("src/main/resources/cobblemon_ui.accesswidener"))
@@ -52,6 +49,15 @@ loom {
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     withSourcesJar()
+}
+
+// Add notices to the inputs once; Loom carries them into the remapped outputs.
+listOf("jar", "sourcesJar").forEach { taskName ->
+    tasks.named<org.gradle.jvm.tasks.Jar>(taskName) {
+        from("LICENSE") { rename { "LICENSE_cobblemon_ui" } }
+        from("NOTICE.md")
+        from("THIRD_PARTY_LICENSE_CobblemonExtendedBattleUI")
+    }
 }
 
 kotlin {
