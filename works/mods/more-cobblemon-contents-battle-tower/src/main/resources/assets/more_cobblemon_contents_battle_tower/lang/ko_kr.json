@@ -3,6 +3,8 @@
   "command.more_cobblemon_contents.tower.streak.changed": "%s님의 배틀타워 %s 현재 연승을 %s로 설정했습니다. 최고 연승: %s",
   "command.more_cobblemon_contents.tower.streak.queried": "%s님의 배틀타워 %s 현재 연승: %s, 최고 연승: %s",
   "command.more_cobblemon_contents.tower.streak.reset": "%s님의 배틀타워 %s 연승 기록을 초기화했습니다(범위: %s). 현재 연승: %s, 최고 연승: %s",
+  "command.more_cobblemon_contents.tower.access.allowed": "%s님은 배틀타워에 들어갈 수 있습니다.",
+  "command.more_cobblemon_contents.tower.access.denied": "%s님은 배틀타워에 들어갈 수 없습니다: %s",
   "screen.more_cobblemon_contents.tower.title": "배틀타워",
   "screen.more_cobblemon_contents.tower.brand": "MORE COBBLEMON CONTENTS · 배틀타워",
   "screen.more_cobblemon_contents.tower.phase.selecting": "팀 선출",

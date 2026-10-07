@@ -3,6 +3,10 @@ package jbro.cobblemon.mcc.internal.tower
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.api.access.ContentAccessAction
+import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.command.BattleProgressAdminAction
 import jbro.cobblemon.mcc.internal.command.BattleProgressCommands
 import jbro.cobblemon.mcc.internal.command.BattleProgressResetScope
@@ -12,6 +16,7 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.commands.arguments.EntityArgument
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 internal interface TowerProgressCommandBackend {
@@ -41,7 +46,11 @@ private object LiveTowerProgressCommandBackend : TowerProgressCommandBackend {
     )
 }
 
-/** `/mcc tower streak get|set|reset` for operators. */
+/**
+ * `/mcc tower streak get|set|reset` and `/mcc tower access [player]` for operators. `access` answers 1 when the player
+ * may enter the tower and 0 when not, so an NPC dialogue (`cmd:mcc tower access`) or a command block can ask the same
+ * rule the terminal enforces.
+ */
 internal object TowerProgressCommands {
     fun build(
         backend: TowerProgressCommandBackend = LiveTowerProgressCommandBackend,
@@ -55,6 +64,28 @@ internal object TowerProgressCommands {
         )
         .then(TowerAdminCommands.session())
         .then(TowerAdminCommands.abandon())
+        .then(access())
+
+    private fun access() = Commands.literal("access")
+        .requires(BattleProgressCommands::isAdmin)
+        .executes { command -> access(command.source, command.source.playerOrException) }
+        .then(
+            Commands.argument("player", EntityArgument.player())
+                .executes { command -> access(command.source, EntityArgument.getPlayer(command, "player")) },
+        )
+
+    private fun access(source: CommandSourceStack, player: ServerPlayer): Int =
+        when (val decision = BattleContentAccess.check(player, ManagedBattleContentIds.BATTLE_TOWER, ContentAccessAction.OPEN)) {
+            ContentAccessDecision.Allowed -> {
+                source.sendSuccess({ Component.translatable("$ACCESS_KEY.allowed", player.name) }, false)
+                1
+            }
+            is ContentAccessDecision.Denied -> {
+                source.sendFailure(Component.translatable("$ACCESS_KEY.denied", player.name,
+                    Component.translatable(decision.reasonKey, *decision.arguments.toTypedArray())))
+                0
+            }
+        }
 
     private fun get(backend: TowerProgressCommandBackend) = Commands.literal("get")
         .requires(BattleProgressCommands::isAdmin)
@@ -105,6 +136,8 @@ internal object TowerProgressCommands {
                 ),
             ),
         )
+
+    private const val ACCESS_KEY = "command.more_cobblemon_contents.tower.access"
 
     private fun formatArgument() = Commands.argument("format", StringArgumentType.word())
         .suggests { _, builder -> SharedSuggestionProvider.suggest(TowerTrack.entries.map { it.recordId }, builder) }

@@ -15,7 +15,7 @@
     },
     "check": {
       "branches": [
-        { "if": "tag:tower_qualified", "next": "open" }
+        { "if": "cmd:mcc tower access", "next": "open" }
       ],
       "next": "not_yet"
     },

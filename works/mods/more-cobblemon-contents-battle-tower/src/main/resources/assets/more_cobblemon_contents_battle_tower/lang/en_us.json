@@ -3,6 +3,8 @@
   "command.more_cobblemon_contents.tower.streak.changed": "Set %s's Battle Tower %s current streak to %s. Best streak: %s",
   "command.more_cobblemon_contents.tower.streak.queried": "%s's Battle Tower %s current streak: %s, best streak: %s",
   "command.more_cobblemon_contents.tower.streak.reset": "Reset %s's Battle Tower %s streak (scope: %s). Current streak: %s, best streak: %s",
+  "command.more_cobblemon_contents.tower.access.allowed": "%s may enter the Battle Tower.",
+  "command.more_cobblemon_contents.tower.access.denied": "%s may not enter the Battle Tower: %s",
   "screen.more_cobblemon_contents.tower.title": "Battle Tower",
   "screen.more_cobblemon_contents.tower.brand": "MORE COBBLEMON CONTENTS · BATTLE TOWER",
   "screen.more_cobblemon_contents.tower.phase.selecting": "TEAM SELECT",

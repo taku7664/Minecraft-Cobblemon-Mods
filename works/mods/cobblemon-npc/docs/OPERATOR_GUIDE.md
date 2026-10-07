@@ -35,7 +35,7 @@ example `tower_guide.json`.
       "lines": ["Hi {player},", "Here to take on the Battle Tower?"],
       "choices": [{ "text": "Yes!", "next": "check" }, { "text": "No", "next": null }]
     },
-    "check": { "branches": [{ "if": "tag:tower_qualified", "next": "open" }], "next": "not_yet" },
+    "check": { "branches": [{ "if": "cmd:mcc tower access", "next": "open" }], "next": "not_yet" },
     "not_yet": { "lines": ["You don't seem ready yet..."] },
     "open": { "lines": ["Opening the terminal!"], "commands": ["/mcc terminal tower"] }
   }

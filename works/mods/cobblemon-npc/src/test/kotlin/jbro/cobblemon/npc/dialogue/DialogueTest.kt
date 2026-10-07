@@ -31,7 +31,7 @@ class DialogueTest {
 
     @Test
     fun `a qualified player is taken to the terminal and the command runs as the box closes`() {
-        val walker = DialogueWalker(example(), Player(tags = setOf("tower_qualified")))
+        val walker = DialogueWalker(example(), Player(passing = setOf("mcc tower access")))
         val greet = walker.enter().step as DialogueWalker.Step.Show
         assertEquals(listOf(0, 1), greet.choices)
         val open = walker.choose("greet", 0)!!
