@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-08 01:30] 트레이너 전투 끝 대화창에서 같은 전투 곡이 처음부터 다시 나오던 문제 (`52b26ef2`)
+
+- **빡대리님 신고:** 트레이너 전투가 끝나고 대화창이 뜨면 같은 노래가 다시 재생된다.
+- **원인(클라이언트 로그로 확인):** 전투가 끝나는 순간 음악 선택이 `battle.content:...league_challenge/wild_trainer`에서 `battle.trainer`로 바뀌었다(00:57:22, 01:00:19). 서버가 전투를 끝내며 `HideManagedBattleContentPayload`를 보내면 클라이언트가 태그를 바로 지웠는데, `BattleSceneClient`가 마무리 대사 동안 `BattleEndHandler`를 붙잡아 클라이언트 전투(`CobblemonClient.battle`)는 아직 살아 있었다. Better Cobblemon Music이 콘텐츠 키를 잃고 일반 트레이너 곡을 새로 골라 처음부터 틀었다.
+- **수정:** `ManagedBattleContentClientNetworking`이 지금 보이는 전투의 숨김 요청은 `endingBattles`에 미뤄 두고, 클라이언트 전투가 바뀌거나 사라지면 그때 지운다. 같은 전투를 다시 보여 주면 미룬 숨김을 취소한다.
+- **빌드·배포·검증:** 아래 배포 줄에 적는다. 실게임 미확인.
+
 ## [2026-10-08 01:20] 리그 전투에서 네이티브 탐색이 안 돌던 원인: 상대 팀 프리뷰 누락
 
 - **원인(코드로 확인):** 리그가 쓰는 `ManagedPveBattles.start`가 `ManagedPvePrepared`에 `preview`를 넘기지 않아 `opponentTeamPreview`가 늘 `null`이었다. `isOpeningCandidate`가 프리뷰를 요구해서 0~1턴에도 `NOT_APPLICABLE`로 끝났다. 같은 이유로 보스·고급 난이도의 상대 개체값 읽기(`actualOpponentStatSpreadsByPreviewSlot`)도 빈 값이었다. 타워는 자기 런타임에서 프리뷰를 넘겨서 해당이 없다. 팩토리도 `opponentTeamPreview = null`이라 같은 문제였다. 고른 대여 포켓몬으로 프리뷰를 넘기게 고쳤다(커밋 `567ca1bb`).

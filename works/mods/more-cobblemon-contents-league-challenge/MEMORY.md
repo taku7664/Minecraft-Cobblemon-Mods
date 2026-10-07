@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 01:30] 쓰러진 야생 트레이너가 서버 종료 뒤에도 남던 문제 (`aa6b5517`, 빌드·테스트 91개 확인, 서버·클라이언트 배포, 실게임 미확인)
+
+- **빡대리님 신고:** 대화창이 끝난 뒤 NPC를 늦게 없애는데, 그 사이 서버를 끄면 NPC가 계속 남는다.
+- **원인:** 이긴 트레이너는 마무리 대사를 위해 300틱 뒤 지우는데, 그 예약(`despawns`)이 메모리에만 있었다. 서버 종료(`SERVER_STOPPED`가 비움)나 청크 언로드(`getEntity`가 null이라 예약만 빠짐)가 끼면 NPC가 영영 남았다.
+- **수정:** 지울 트레이너에 엔티티 태그 `mcc_wild_trainer_defeated`(NBT에 저장됨)를 붙인다. 태그가 있는 트레이너가 로드되면 `despawns`에 지금 시각으로 넣어 다음 틱에 지운다(로드 콜백 안에서 바로 지우지 않음). 이미 남아 있던 트레이너에는 태그가 없어서 이번 수정으로는 사라지지 않는다. 필요하면 `/mcc league trainer despawn`으로 지운다.
+- **배포 [2026-10-08 01:30]:** 서버·게임이 꺼진 상태에서 `develop-product/{server,client}/mods`에 교체, 백업 `develop-product/deployment-backups/20261008-ball-music-trainer-fixes`. 서버는 켜지 않았다.
+
 ## [2026-10-07 21:14] PokeBadges 버전 범위 해제 (`e4099c3d`, 빌드만 확인, 서버·클라이언트 배포)
 
 - **빡대리님 지시:** 클라이언트에 PokeBadges 2.0.0을 넣자 `>=1.6.1 <1.7.0` 범위 때문에 에러가 났다. `depends.pokebadges`를 `*`로 풀었다.
