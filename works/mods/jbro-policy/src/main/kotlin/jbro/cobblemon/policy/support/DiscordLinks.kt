@@ -62,7 +62,10 @@ internal object DiscordLinks {
                                 .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, KoreanText.message(KEY + "copy")))
                         }, CODE_MINUTES).withStyle(ChatFormatting.GREEN))
                     1
-                })
+                }.then(Commands.literal("linked")
+                    // 1 when the player has linked Discord, 0 when not; an NPC dialogue asks it (`cmd:디코인증 linked`).
+                    .requires { it.hasPermission(2) }
+                    .executes { context -> if (byPlayer.containsKey(context.source.playerOrException.uuid)) 1 else 0 }))
             }
         }
         DiscordCommands.add(verify(settings))
