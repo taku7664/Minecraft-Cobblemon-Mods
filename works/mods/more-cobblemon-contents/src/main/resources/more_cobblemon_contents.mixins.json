@@ -8,6 +8,7 @@
     "BattleLangMixin",
     "BattleRegistryInvoker",
     "BattleRegistryMixin",
+    "CantInstructionMixin",
     "EntityManagedBattlePersistenceMixin",
     "PlayerBattleActorMixin",
     "PokemonBattleMixin",

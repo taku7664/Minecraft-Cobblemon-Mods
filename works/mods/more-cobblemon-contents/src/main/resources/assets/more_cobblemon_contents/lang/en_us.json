@@ -1,4 +1,5 @@
 {
+  "cobblemon.battle.cant.blocked_by_ability": "%1$s can't use %2$s because of %3$s's %4$s!",
   "npc.more_cobblemon_contents.managed_trainer": "Trainer",
   "screen.more_cobblemon_contents.access.provider_failed": "This content is locked because its access provider is unavailable.",
   "command.more_cobblemon_contents.open": "Available battle content: %s",
