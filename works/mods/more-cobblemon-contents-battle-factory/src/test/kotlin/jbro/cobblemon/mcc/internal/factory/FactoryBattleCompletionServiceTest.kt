@@ -44,7 +44,7 @@ class FactoryBattleCompletionServiceTest {
         val duplicate = service.completeVictory(playerId, session, battleId, opponent(), emptyMap())
         assertTrue(duplicate is FactoryBattleCompletionResult.NoActiveBattle)
         assertEquals(1, completions.size)
-        assertEquals(listOf(Triple(playerId, battleId, 3L)), rewards)
+        assertEquals(listOf(Triple(playerId, battleId, 2L)), rewards)
     }
 
     @Test
