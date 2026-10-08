@@ -27,12 +27,12 @@ class BattleContentCommandsTest {
 
         val terminal = root.getChild("terminal")
         assertEquals(setOf("all", "league", "tower", "factory"), terminal.children.map { it.name }.toSet())
+        // The whole terminal branch is for operators; what is under it needs nothing more.
+        assertFalse(terminal.requirement.test(source(0)))
+        assertTrue(terminal.requirement.test(source(2)))
         terminal.children.forEach { kind ->
             assertNotNull(kind.command)
             assertNotNull(kind.getChild("player").command)
-            assertTrue(kind.requirement.test(source(0)))
-            assertFalse(kind.getChild("player").requirement.test(source(0)))
-            assertTrue(kind.getChild("player").requirement.test(source(2)))
         }
 
         val bp = root.getChild("bp")
