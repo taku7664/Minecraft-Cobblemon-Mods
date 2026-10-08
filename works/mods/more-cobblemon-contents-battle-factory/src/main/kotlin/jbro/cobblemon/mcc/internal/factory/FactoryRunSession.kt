@@ -12,8 +12,8 @@ internal object FactoryProgression {
     }
 
     /**
-     * BP for the [win]th win of a run: 3 a win in the first round, 4 in the second and 5 from the third, 5 more for
-     * a round's last battle and 10 more for a Factory Head.
+     * BP for the [win]th win of a run: 4 a win in the first round, 5 in the second and 6 from the third, 10 more for
+     * a round's last battle and 15 more for a Factory Head.
      */
     fun victoryRewardBp(win: Int, format: FactoryBattleFormat): Long {
         val base = (VICTORY_BASE_BP + roundForBattle(win)).coerceAtMost(VICTORY_MAX_BASE_BP)
@@ -74,10 +74,10 @@ internal object FactoryProgression {
         format == FactoryBattleFormat.SINGLE && battleNumber in FACTORY_HEAD_BATTLES
 
     const val BATTLES_PER_ROUND = 7
-    private const val VICTORY_BASE_BP = 2
-    private const val VICTORY_MAX_BASE_BP = 5
-    private const val ROUND_END_BONUS_BP = 5
-    private const val FACTORY_HEAD_BONUS_BP = 10
+    private const val VICTORY_BASE_BP = 3
+    private const val VICTORY_MAX_BASE_BP = 6
+    private const val ROUND_END_BONUS_BP = 10
+    private const val FACTORY_HEAD_BONUS_BP = 15
     private const val TRADES_PER_ELEVATION = 7
     private const val MAX_STRONGER_OFFERS = 5
     private val ALL_VARIANTS = setOf(1, 2, 3, 4)
