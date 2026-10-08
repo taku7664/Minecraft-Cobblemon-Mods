@@ -1,5 +1,10 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 17:30] 생성기가 역할 NPC를 지키게 함
+
+- `works/tools/wild-trainers/gen_wild_trainers.py`가 정의 파일의 `role`이 battle이 아닌 NPC(지금 돌보미·교환꾼·퀴즈 마니아·여행자)를 찾아 NPC·정의 파일, 스폰 풀 항목, 언어 파일의 직업명, RCT 스킨 변형을 그대로 남긴다. 역할 NPC는 kinds.py가 아니라 손으로 관리한다.
+- **확인:** 고친 생성기를 돌리니 모든 파일 내용이 커밋본과 같았다(언어·스폰 파일은 줄바꿈만 CRLF로 달라 되돌림). 출력 `normal 104, ace 20, roles kept 4, skins 1089`.
+
 ## [2026-10-08 17:10] 1~6단계 개발 클라이언트 확인과 이름 버그 수정
 
 - **실행:** `WildNpcRoleCheckHarness`에 퀴즈(정답→오답→재방문)와 여행자(선물→재방문) 순서를 더해 세 번 돌렸다(`-x :more-cobblemon-contents:compileKotlin -x ...compileJava`, 컴파일 통과). 클라이언트는 매번 스스로 닫혔다.
@@ -30,7 +35,7 @@
 - **연결:** 모드가 직접 싣는 스킨은 `textures/npcs/wild/<이름>.png` + aspect `mcc_skin_<이름>`. 변형은 생성기가 덮어쓰는 `0_wild_trainer.json`이 아니라 같은 이름의 `10_wild_npc.json`에 둔다(Cobblemon이 같은 `name` 파일을 order 순으로 합친다). 슬림 팔이라 `cobblemon:alex.geo`. 대화창 이름표는 `WildTrainers.skinRef`가 이 aspect를 텍스처 경로로 바꾼다.
 - `wild_caretaker`는 이제 간호순 스킨 두 장(`nurse_joy` = `build/skin-search/nurse-joy.png`, `nurse_joy_2` = `hamster.png`, 둘 다 슬림)을 무작위로 쓴다(사용자: "섞어서 나오게"). RCT 이름이 없어 이름표는 "포켓몬 돌보미"만 나온다.
 - `WildTrainerDataTest`가 변형 폴더의 모든 파일을 읽게 고쳤다(실행 안 함).
-- **주의:** `works/tools/wild-trainers/gen_wild_trainers.py`는 `npcs/wild_*.json`을 전부 지우고 다시 만든다. 손으로 만든 `wild_caretaker.json`·`wild_trader.json`도 지워지니 생성기를 다시 돌리면 되살려야 한다.
+- **주의(해결됨, 아래 17:30 항목):** 생성기가 손으로 만든 역할 NPC 파일을 지우던 문제는 고쳤다.
 
 ## [2026-10-08 15:20] 1~4단계 컴파일과 개발 클라이언트 확인 (`WildNpcRoleCheckHarness`)
 

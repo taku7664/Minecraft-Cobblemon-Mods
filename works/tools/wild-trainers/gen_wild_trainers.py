@@ -2,7 +2,8 @@
 
 Only skin file names and arm shapes are read from the pack; no image is copied. Writes, under the League module:
 NPC classes, trainer definitions, the world spawn pool, the skin variation, the skin list and the class names in
-both lang files. Files of kinds no longer listed are removed.
+both lang files. Files of kinds no longer listed are removed. Wild NPCs that do not battle (a definition with a
+role other than battle) are made by hand: their files, spawn entries, class names and RCT skins are kept.
 
     python tools/wild-trainers/gen_wild_trainers.py [--cobblemon JAR] [--pack ZIP]
 """
@@ -193,12 +194,29 @@ def write_json(path, data, indent=2):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=indent) + "\n", encoding="utf-8")
 
 
-def update_lang(path, names):
-    """Replaces the trainer class names in a lang file, keeping every other key where it is."""
+def role_npcs(npc_dir, def_dir):
+    """The hand-made wild NPCs that do not battle (a definition whose role is not battle), by NPC class path.
+
+    The generator keeps their files, spawns, names and RCT skins: they are not in kinds.py.
+    """
+    roles = {}
+    for path in def_dir.glob("*.json"):
+        definition = json.loads(path.read_text(encoding="utf-8"))
+        if definition.get("role", "battle") == "battle":
+            continue
+        npc_class = definition["npc_class"]
+        npc = json.loads((npc_dir / f"{npc_class.split(':', 1)[1]}.json").read_text(encoding="utf-8"))
+        roles[npc_class] = {"definition": path.name, "npc": f"{npc_class.split(':', 1)[1]}.json",
+                            "names": npc["names"], "skins": npc["variation"]["skin"]}
+    return roles
+
+
+def update_lang(path, names, keep=()):
+    """Replaces the trainer class names in a lang file, keeping every other key, and the [keep] names, where they are."""
     lang = json.loads(path.read_text(encoding="utf-8"))
     out, placed = {}, False
     for key, value in lang.items():
-        if key.startswith(NAME_KEY):
+        if key.startswith(NAME_KEY) and key not in keep:
             if not placed:
                 out.update(names); placed = True
             continue
@@ -222,10 +240,20 @@ def main():
 
     npc_dir = RES / "data" / NS / "npcs"
     def_dir = RES / "data" / NS / "league-challenge" / "wild_trainers"
+    roles = role_npcs(npc_dir, def_dir)
+    kept = {r["definition"] for r in roles.values()} | {r["npc"] for r in roles.values()}
     for stale in list(npc_dir.glob("wild_*.json")) + list(def_dir.glob("*.json")):
-        stale.unlink()
+        if stale.name not in kept:
+            stale.unlink()
 
     used, spawns, ko, en = {}, [], {}, {}
+    # The RCT skins role NPCs wear stay in the variation even when no battling kind wears that class.
+    by_file = {s["file"]: s for worn in skins.values() for s in worn}
+    for role in roles.values():
+        for aspect in role["skins"]:
+            if aspect.startswith("rct_"):
+                assert aspect[4:] in by_file, f"{aspect} is not in the pack"
+                used[aspect[4:]] = by_file[aspect[4:]]
     for kind in kinds:
         worn = []
         for skin_class in kind["skins"]:
@@ -266,8 +294,11 @@ def main():
             "condition": condition,
             "anticondition": {"biomes": ["#cobblemon:is_deep_dark"]},
         })
-    write_json(RES / "data" / NS / "spawn_pool_world" / "wild_trainers.json",
-               {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": spawns})
+    pool_path = RES / "data" / NS / "spawn_pool_world" / "wild_trainers.json"
+    # Role NPC spawns are tuned by hand; they keep their entries, after the trainers.
+    if pool_path.exists():
+        spawns += [s for s in json.loads(pool_path.read_text(encoding="utf-8"))["spawns"] if s.get("npcClass") in roles]
+    write_json(pool_path, {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": spawns})
 
     files = sorted(used)
     variations = [{"aspects": [], "layers": [], "model": "cobblemon:steve.geo", "poser": "cobblemon:standard",
@@ -278,9 +309,10 @@ def main():
     write_json(RES / "assets" / NS / "bedrock/npcs/variations/wild_trainer/0_wild_trainer.json",
                {"name": f"{NS}:wild_trainer", "order": 0, "variations": variations}, indent=1)
     write_json(RES / "assets" / NS / "wild_trainer_skins.json", {"skins": [{"file": f, "slim": used[f]["slim"]} for f in files]}, indent=1)
-    update_lang(RES / "assets" / NS / "lang/ko_kr.json", ko)
-    update_lang(RES / "assets" / NS / "lang/en_us.json", en)
-    print(f"normal {len(NORMAL)}, ace {len(ACE)}, skins {len(files)} ({sum(1 for f in files if used[f]['slim'])} slim)")
+    role_names = {name for role in roles.values() for name in role["names"]}
+    update_lang(RES / "assets" / NS / "lang/ko_kr.json", ko, role_names)
+    update_lang(RES / "assets" / NS / "lang/en_us.json", en, role_names)
+    print(f"normal {len(NORMAL)}, ace {len(ACE)}, roles kept {len(roles)}, skins {len(files)} ({sum(1 for f in files if used[f]['slim'])} slim)")
 
 
 main()
