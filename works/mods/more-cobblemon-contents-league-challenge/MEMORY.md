@@ -1,5 +1,10 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 11:20] 교환 NPC를 종 지정 + 희귀도 한 단계 위로 (문서만)
+
+- **사용자 결정:** 교환 NPC는 스폰을 일으킨 플레이어의 파티·PC에서 원하는 종을 고른다(등급 가중치 common 80 / uncommon 15 / rare 5, 없는 등급은 빼고 재조정). 주면 한 단계 높은 등급 종을 무작위로 준다(타입 제한 없음, rare→ultra-rare 허용). ultra-rare뿐이면 ultra-rare끼리. 전설·환상·패러독스·울트라비스트는 양쪽 다 제외. 스폰시킨 플레이어만 교환할 수 있다.
+- 등급은 Cobblemon 1.8.1 월드 스폰 풀 `bucket` 기준(종마다 가장 흔한 등급). 집계: common 567, uncommon 134, rare 35, ultra-rare 105.
+
 ## [2026-10-08 11:00] 야생 NPC 역할 설계 확정 (문서만)
 
 - **사용자 결정:** 지난 항목의 미정은 제안대로 정한다. 받는 종은 타입이 겹치는 야생 종 무작위, 울트라비스트·패러독스는 받는 후보에서 제외, `cobblemon-npc` 필수 의존, 퀴즈 보상은 보상 풀에서 하나. 회복 NPC는 대기 시간 없음. 보상 NPC는 BP와 아이템이 섞인 보상 풀(`league-challenge/wild_rewards.json`, 가중치·레벨캡 범위)에서 뽑는다.
