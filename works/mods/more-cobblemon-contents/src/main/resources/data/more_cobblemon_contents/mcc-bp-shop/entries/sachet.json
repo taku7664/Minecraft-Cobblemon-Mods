@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "sachet",
+      "item_id": "cobblemon:sachet",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1200,
+      "category": "consumable"
+    }
+  ]
+}

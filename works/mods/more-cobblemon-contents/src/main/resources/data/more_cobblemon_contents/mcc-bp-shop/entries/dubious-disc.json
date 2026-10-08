@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "dubious_disc",
+      "item_id": "cobblemon:dubious_disc",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1150,
+      "category": "consumable"
+    }
+  ]
+}

@@ -21,8 +21,8 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(108, catalog.entries().size)
-        assertEquals(108, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(122, catalog.entries().size)
+        assertEquals(122, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
         assertEquals(listOf(1L, 2L, 4L, 10L, 4L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
@@ -38,17 +38,21 @@ class BattlePointShopCatalogResourceTest {
         // Items with no recipe: the Lucky Egg and the evolution items otherwise found only in chests.
         assertEquals(50L, price("lucky_egg"))
         assertEquals("held_item", catalog.entry("lucky_egg")?.category)
-        assertTrue(listOf("oval_stone", "razor_claw", "razor_fang", "dragon_scale", "prism_scale").all {
-            price(it) == 25L && catalog.entry(it)?.category == "consumable"
-        })
+        // Every evolution item but the stones costs the same.
+        val evolutionItems = listOf("oval_stone", "razor_claw", "razor_fang", "dragon_scale", "prism_scale", "link_cable",
+            "kings_rock", "metal_coat", "upgrade", "dubious_disc", "protector", "electirizer", "magmarizer", "reaper_cloth",
+            "sachet", "whipped_dream")
+        assertTrue(evolutionItems.all { price(it) == 25L && catalog.entry(it)?.category == "consumable" })
+        assertEquals(listOf(10L, 25L), listOf("pp_up", "pp_max").map(::price))
+        assertEquals(25L, price("ability_shield"))
         // Battle items: Life Orb at 100 sets the scale; easily crafted ones are cheaper still.
         val heldItems = catalog.entries().filter { it.category == "held_item" }
-        assertEquals(23, heldItems.size)
+        assertEquals(24, heldItems.size)
         assertEquals(listOf(100L, 100L), listOf("life_orb", "choice_specs").map(::price))
         assertTrue(listOf("choice_band", "choice_scarf", "assault_vest").all { price(it) == 75L })
         assertEquals(6, heldItems.count { it.priceBp == 50L })
         assertEquals(5, heldItems.count { it.priceBp == 40L })
-        assertEquals(6, heldItems.count { it.priceBp == 25L })
+        assertEquals(7, heldItems.count { it.priceBp == 25L })
         assertEquals(5L, price("cell_battery"))
         assertEquals(25L, price("adrenaline_orb"))
         assertEquals("mega_showdown:adrenaline_orb", catalog.entry("adrenaline_orb")?.itemId)

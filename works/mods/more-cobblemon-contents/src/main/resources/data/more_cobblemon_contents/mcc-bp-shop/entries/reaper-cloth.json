@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "reaper_cloth",
+      "item_id": "cobblemon:reaper_cloth",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1190,
+      "category": "consumable"
+    }
+  ]
+}
