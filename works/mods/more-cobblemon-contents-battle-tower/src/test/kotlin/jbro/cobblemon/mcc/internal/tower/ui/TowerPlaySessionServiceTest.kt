@@ -58,7 +58,7 @@ class TowerPlaySessionServiceTest {
     }
 
     @Test
-    fun `boss preview includes the five bp bonus`() {
+    fun `boss preview includes the Champion's ten bp bonus`() {
         val state = service().open(
             playerId,
             TowerPlayOpenRequest(
@@ -72,7 +72,7 @@ class TowerPlaySessionServiceTest {
             ),
         )
 
-        assertEquals(7, state.bpPerWin)
+        assertEquals(12, state.bpPerWin)
     }
 
     @Test

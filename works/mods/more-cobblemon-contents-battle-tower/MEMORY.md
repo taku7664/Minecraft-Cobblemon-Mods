@@ -1,5 +1,12 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-10-08 19:45] 보스 보너스를 타워 에이스 +5, 챔피언 +10으로 나눔 (구현만, 빌드·테스트 안 함)
+
+- **사용자 결정:** 일반 모드 5·15연승째 타워 에이스는 +5, 10·20연승째 챔피언과 무한 모드의 모든 보스(전부 챔피언)는 +10.
+- **구현:** `rewardForNextVictory`가 `nextBossIsChampion`으로 갈라 `TOWER_ACE_BP_BONUS`·`TOWER_CHAMPION_BP_BONUS`를 쓴다(옛 `TOWER_BOSS_BP_BONUS` 제거).
+- **결과:** 일반 클리어 125BP(판당 6.25), 무한 30승까지 210BP(판당 7.0). 무한 모드는 30층이면 충분하다는 사용자 판단으로 승당 BP 상한을 두지 않았다.
+- **변경:** `TowerProgression.kt`, `TowerProgressionTest`, `TowerPlaySessionServiceTest`, 위키 `tower.html`·`hub.html`.
+
 ## [2026-10-08 19:20] 승리 BP 상향 (구현만, 빌드·테스트 안 함)
 
 - **사용자 결정:** 구간 기본값을 모두 +1(입문 2, 실전 3, 고급 4, 프로 5)하고, 21승부터는 5승마다 1씩 계속 올린다(21~25승 5, 26~30승 6 …). 상한은 두지 않았다. 보스 +5, Normal 클리어 +30, 무한 10승마다 +10은 그대로다.
