@@ -21,7 +21,7 @@ internal object WildNpcRoles {
     /** A player talked to [npc], a non-battling wild NPC of [definition]. */
     fun talk(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
         if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
-        if (npc.customName == null) WildTrainers.name(npc)
+        WildTrainers.name(npc)
         if (WildTrainers.isLeaving(npc)) return WildTrainers.sayLine(player, npc, "$KEY.leaving")
         when (definition.role) {
             WildNpcRole.BATTLE -> Unit

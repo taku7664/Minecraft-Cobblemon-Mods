@@ -138,7 +138,9 @@ object WildTrainers {
                 despawns.putIfAbsent(npc.uuid, npc.level().server?.overworld()?.gameTime ?: 0L)
                 return@register
             }
-            if (npc.customName == null) name(npc)
+            // Cobblemon names the NPC after its class as soon as the class is set, so a custom name is always there
+            // already; the personal name is added here when the skin has one.
+            if (hasPersonalName(npc) || npc.customName == null) name(npc)
             // The skin, and with it the personal name, can land after the trainer joins the world.
             if (!hasPersonalName(npc)) renames[npc.uuid] = (npc.level().server?.overworld()?.gameTime ?: 0L) + RENAME_DELAY_TICKS
         }
@@ -206,7 +208,7 @@ object WildTrainers {
     }
 
     private fun offer(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
-        if (npc.customName == null || !hasPersonalName(npc)) name(npc)
+        name(npc)
         val refusal = when {
             BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null -> return
             inLiveBattle(npc) -> "busy"
