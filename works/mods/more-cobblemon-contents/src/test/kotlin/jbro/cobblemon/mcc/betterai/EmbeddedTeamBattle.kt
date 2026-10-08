@@ -44,7 +44,9 @@ internal object EmbeddedTeamBattle {
         p2Tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
         p1TrainerProfile: BattleTrainerProfile = trainerProfile,
-        p2TrainerProfile: BattleTrainerProfile = trainerProfile): JsonObject {
+        p2TrainerProfile: BattleTrainerProfile = trainerProfile,
+        /** Sides whose native session does not correct hidden stats from observed damage. */
+        withoutStatFitting: Set<String> = emptySet()): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -58,7 +60,8 @@ internal object EmbeddedTeamBattle {
             val evaluator = NativeInitialProductDecisionEvaluator(
                 searchWorlds = NativeProductWorldSearchAggregator(
                     runWorld = NativeProductSearchRunner(lease = { _, action -> action(worker) })::run)::search,
-                reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) })::reconcile,
+                reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) },
+                    fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
             LocalTacticalBrain(tuning = tuning, nativeInitialDecision = { context, profile, localTuning, budget, sessionState ->
                 evaluator.evaluate(context, profile, localTuning, budget, sessionState).also { evaluation ->

@@ -11,6 +11,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import jbro.cobblemon.mcc.betterai.engine.RefSet
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
@@ -63,6 +64,7 @@ class LeagueNativeAuditScenarioTest {
 
     @Test
     fun `league battles run the native search with the game's preview and own sets`() {
+        assumeTrue(System.getenv("LEAGUE_DUEL") == null, "a duel run skips the audit")
         val challenges = Files.list(leagueRoot.resolve("challenges")).use { it.sorted().toList() }
             .map { json(it) }.filter { it["format"].asString == "SINGLE" }
         val seeds = System.getenv("LEAGUE_AUDIT_SEEDS")?.toInt() ?: 1
@@ -132,6 +134,69 @@ class LeagueNativeAuditScenarioTest {
         report.append("\n## Battles\n\n")
         outcomes.forEach { report.append("- $it\n") }
         Files.writeString(Path.of("build/reports/league-native-audit.md"), report)
+        println(report)
+    }
+
+    /**
+     * Native sessions that correct an opponent's hidden stats from observed damage against sessions that drop the
+     * worlds instead, both at skill 4 on the League's 6-member teams. Each pairing plays both team orders from both
+     * seats, so neither the teams nor the seat decide. Report: build/reports/league-stat-fit-duel.md.
+     *
+     *     LEAGUE_DUEL=stat-fit ./gradlew :more-cobblemon-contents:unitTest -Pscope=ai -Ptests=LeagueNativeAudit -Poracle
+     *
+     * LEAGUE_DUEL_PAIRS sets how many team pairings play (default 12, four games each).
+     */
+    @Test
+    fun `league duel measures hidden stat fitting`() {
+        assumeTrue(System.getenv("LEAGUE_DUEL") == "stat-fit", "opt-in with LEAGUE_DUEL=stat-fit")
+        val challenges = Files.list(leagueRoot.resolve("challenges")).use { it.sorted().toList() }
+            .map { json(it) }.filter { it["format"].asString == "SINGLE" }
+        val players = challenges.map { challenge ->
+            json(leagueRoot.resolve("trainers/${challenge["trainer"].asString.substringAfter(':')}.json"))["team"].asString
+                .substringAfter(':')
+        }.distinct().filter { team(it).size == 6 }
+        val pairs = players.indices.map { players[it] to players[(it + 1) % players.size] }
+            .take(System.getenv("LEAGUE_DUEL_PAIRS")?.toInt() ?: 12)
+        val root = Path.of("build/reports/league-stat-fit-duel-runs/${UUID.randomUUID()}")
+        Files.createDirectories(root.parent)
+        EmbeddedPresetAudit.run(root.resolve("audit"), teamPairs = 0)
+        val engine = root.resolve("audit/engine")
+        val executor = Executors.newFixedThreadPool(System.getenv("LEAGUE_AUDIT_THREADS")?.toInt() ?: 6) { task ->
+            Thread(null, task, "league-stat-fit-duel", 256L shl 20).apply { isDaemon = true }
+        }
+        val futures = pairs.flatMapIndexed { index, (first, second) ->
+            EmbeddedPolicyComparison.schedule(index).mapIndexed { game, assignment ->
+                executor.submit<String> {
+                    val random = Random(20261008L * 37 + index * 10L)
+                    val pair = JsonObject().apply {
+                        addProperty("battleFormat", "SINGLE")
+                        addProperty("teamPreview", true)
+                        add("battleSeed", JsonArray().apply { repeat(4) { add(random.nextInt(65536)) } })
+                        add("p1", side(team(first), "p1"))
+                        add("p2", side(team(second), "p2"))
+                    }
+                    val fitting = if (assignment.challengerP1) "p1" else "p2"
+                    val label = "$first-vs-$second game=$game reverse=${assignment.reverseTeams} fitting=$fitting"
+                    try {
+                        val result = EmbeddedTeamBattle.run(engine, EmbeddedNativePairs.orient(pair, assignment.reverseTeams),
+                            root.resolve("$first-vs-$second-$game"), maxTurns = 100,
+                            trainerProfile = BattleTrainerProfile.balanced(4),
+                            withoutStatFitting = setOf(if (fitting == "p1") "p2" else "p1"))
+                        "$label ${EmbeddedNativePairs.outcome(result, reverse = !assignment.challengerP1)}"
+                    } catch (failure: Throwable) {
+                        System.err.println("LEAGUE_DUEL_ERROR $label ${failure.stackTraceToString().take(3000)}")
+                        "$label ERROR"
+                    }
+                }
+            }
+        }
+        val outcomes = futures.map { it.get(60, TimeUnit.MINUTES) }
+        executor.shutdown()
+        val tally = outcomes.groupingBy { it.substringAfterLast(' ') }.eachCount()
+        val report = StringBuilder("# League duel: hidden stat fitting on against off\n\n")
+        report.append("Outcome for the side that fits: $tally\n\n")
+        outcomes.forEach { report.append("- $it\n") }
+        Files.writeString(Path.of("build/reports/league-stat-fit-duel.md"), report)
         println(report)
     }
 }
