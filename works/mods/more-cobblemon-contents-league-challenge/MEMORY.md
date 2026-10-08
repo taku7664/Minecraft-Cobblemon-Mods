@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 15:20] 1~4단계 컴파일과 개발 클라이언트 확인 (`WildNpcRoleCheckHarness`)
+
+- **빌드:** `:cobblemon-npc:build :jbro-policy:build :more-cobblemon-contents-league-challenge:build -x test -x unitTest` 성공.
+- **하네스:** `MCC_NPC_ROLE_CHECK=1` + `--quickPlaySingleplayer npc-role-check`(`mcc-hub-capture` 복사본). 다른 세션이 MCC 테스트를 돌리는 중이라 `-x :more-cobblemon-contents:compileKotlin -x :more-cobblemon-contents:compileJava`로 띄웠다. 캡처 `run/screenshots/npc-role-*.png`, 판정 로그 `ROLE CHECK`. 클라이언트는 끝나면 스스로 닫힌다.
+- **확인됨(실게임):** 돌보미 대화창(레터박스·이름표 얼굴) → 회복 후 파티 체력 전부 가득. 교환꾼이 파티에서 꼬렛을 원함 → 교환 결과 랑딸랑(uncommon, Lv.16 = 레벨캡으로 낮아짐), 어버이 `NPC` '교환꾼 Ivan', 오랭열매 1개 반환. [PC 좀 볼게] → `PCGUI` 열림. 야생 트레이너 대화창 [좋아, 승부하자! / 다음에 하자.]. 자연 스폰 7회 모두 `SpawnCause.entity`가 `ServerPlayer`.
+- **보인 문제(미해결):** 하네스로 세운 역할 NPC·트레이너 몸이 RCT 스킨이 아니라 초록 머리 기본 모습으로 그려진다(이름표 얼굴은 RCT 스킨). 이번 변경 전부터인지 확인하지 않았다. 교환 캡처는 NPC가 나무 안에 서서 카메라가 잎에 가렸다(하네스 배치 문제).
+- 하네스가 처음에 `NPCClasses.getByName`을 썼다가 `cobblemon:` 접두사가 붙어 실패했다. 다른 모드 NPC 클래스는 `getByIdentifier`로 찾는다.
+
 ## [2026-10-08 13:40] 교환꾼 NPC (4단계, 구현만, 빌드·테스트 안 함)
 
 - **구현:** `WildTrader`(대화·교환·PC), `WildSpeciesRarity`(월드 스폰 풀 bucket으로 종 희귀도, 전설·환상·패러독스·울트라비스트 라벨 제외). 스폰 때(`ENTITY_SPAWN`) `SpawnCause.entity` 플레이어의 파티+PC에서 원하는 종을 고르고(common 80/uncommon 15/rare 5, 없으면 ultra-rare) NPC 태그 `mcc_trade_want:`·`mcc_trade_owner:`·`mcc_trade_owner_name:`에 적는다. 고를 게 없거나 원인이 플레이어가 아니면 스폰을 취소한다.
