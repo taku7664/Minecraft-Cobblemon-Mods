@@ -444,6 +444,7 @@ kbd {
 /* Wild trainer list: name, reward and time stay on one line; the biome chips get room before the Pokémon column. */
 .trainer-table th, .trainer-table td:nth-child(1), .trainer-table td:nth-child(2), .trainer-table td:nth-child(4) { white-space: nowrap; }
 .trainer-table td:nth-child(3) { min-width: 180px; }
+.shop-table th:first-child, .shop-table td:first-child { width: 7em; white-space: nowrap; }
 details { margin: 0 0 var(--gap); padding: 8px 12px; background: var(--panel-alt); border-radius: 4px; }
 details > summary { cursor: pointer; font-weight: bold; }
 details[open] > summary { margin-bottom: 8px; }
