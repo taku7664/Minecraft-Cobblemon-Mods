@@ -85,6 +85,27 @@ internal interface NativeBranchWorker : AutoCloseable {
 
     /** The values [stat] can take for this Pokemon's species and level under any legal spread and nature. */
     fun statRange(snapshotJson: String, pokemonUuid: String, stat: String): IntRange? = null
+
+    /** Whether [rebindItems] works. */
+    val canRebindItems: Boolean get() = false
+
+    /**
+     * The same position with the held item a hypothesis gave some opponents replaced, as if they had held the new
+     * one (or nothing, for a blank ID) from the start. Only for items still held and never used.
+     */
+    fun rebindItems(snapshotJson: String, rebindings: List<NativeItemRebinding>): NativeBattleFrame =
+        throw UnsupportedOperationException("This native worker cannot rebind held items")
+}
+
+internal data class NativeItemRebinding(
+    val pokemonUuid: String,
+    val expectedItemId: String,
+    val replacementItemId: String,
+) {
+    init {
+        UUID.fromString(pokemonUuid)
+        require(replacementItemId != expectedItemId)
+    }
 }
 
 internal data class NativeStatChange(

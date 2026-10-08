@@ -116,6 +116,38 @@ internal class EngineBranchWorker(
         }
     }
 
+    override val canRebindItems: Boolean get() = true
+
+    override fun rebindItems(snapshotJson: String, rebindings: List<NativeItemRebinding>): NativeBattleFrame {
+        require(rebindings.isNotEmpty()) { "At least one native item rebinding is required" }
+        val battle = resolve(snapshotJson).fork()
+        reitem(battle, rebindings)
+        val token = extend(snapshotJson, JsonArray().apply { add("reitem"); add(gson.toJsonTree(rebindings)) })
+        remember(token, battle)
+        return frame(token, battle, emptyList(), null)
+    }
+
+    private fun reitem(battle: Battle, rebindings: List<NativeItemRebinding>) {
+        for (rebinding in rebindings) {
+            val matches = battle.sides.flatMap { it.pokemon }.filter { it.uuid == rebinding.pokemonUuid }
+            require(matches.size == 1) { "Item rebinding names unknown or duplicate Pokemon ${rebinding.pokemonUuid}" }
+            val pokemon = matches[0]
+            val expected = Js.toID(rebinding.expectedItemId)
+            // Only an item the hypothesis never used: a consumed, knocked-off or swapped one has history to keep.
+            require(pokemon.item == expected && Js.toID(pokemon.set.item) == expected && pokemon.lastItem.isEmpty() &&
+                !pokemon.usedItemThisTurn) { "Unsafe history-sensitive item rebinding for ${rebinding.pokemonUuid}" }
+            val item = battle.dex.item(rebinding.replacementItemId)
+            require(item.exists || rebinding.replacementItemId.isBlank()) { "Unknown rebound item ${rebinding.replacementItemId}" }
+            pokemon.item = item.id
+            pokemon.itemState = EffectState(item.id).also { it.target = pokemon }
+            // A Choice lock the hypothesised item set belongs to that item; the revealed one sets its own.
+            if (!item.id.startsWith("choice")) pokemon.volatiles.remove("choicelock")
+            pokemon.set = pokemon.set.withItem(item.id)
+        }
+        val requests = battle.getRequests(battle.requestState)
+        for (i in battle.sides.indices) battle.sides[i].activeRequest = requests[i]
+    }
+
     override fun statRange(snapshotJson: String, pokemonUuid: String, stat: String): IntRange? {
         val battle = resolve(snapshotJson)
         val pokemon = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == pokemonUuid } ?: return null
@@ -454,6 +486,7 @@ internal class EngineBranchWorker(
                 "rename" -> rename(battle, step[1].asJsonObject.entrySet().associate { it.key to it.value.asString })
                 "reseed" -> reseed(battle, step[1].asInt)
                 "restat" -> restat(battle, gson.fromJson(step[1], Array<NativeStatChange>::class.java).toList())
+                "reitem" -> reitem(battle, gson.fromJson(step[1], Array<NativeItemRebinding>::class.java).toList())
                 else -> error("Unknown engine snapshot step ${step[0]}")
             }
         }

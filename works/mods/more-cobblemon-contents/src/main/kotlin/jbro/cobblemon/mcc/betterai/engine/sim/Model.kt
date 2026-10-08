@@ -82,6 +82,12 @@ class PokemonSet(
         null, teraType, uuid, shiny, happiness, dynamaxLevel, gigantamax, hpType, currentHealth, status,
         statusDuration, pokeball,
     )
+
+    fun withItem(replacement: String): PokemonSet = PokemonSet(
+        species, name, level, gender, ability, replacement, nature, LinkedHashMap(evs), LinkedHashMap(ivs), moves,
+        movesInfo, teraType, uuid, shiny, happiness, dynamaxLevel, gigantamax, hpType, currentHealth, status,
+        statusDuration, pokeball,
+    )
 }
 
 class MoveHitData {

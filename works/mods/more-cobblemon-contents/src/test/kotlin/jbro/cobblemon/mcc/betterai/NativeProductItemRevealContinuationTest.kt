@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciler
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionWorld
 import jbro.cobblemon.mcc.betterai.search.NativeSearchWorldKey
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleStateAdapter
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet
@@ -272,6 +273,133 @@ class NativeProductItemRevealContinuationTest {
             assertEquals("blacksludge", retainedBlackSludge.definition.p2Team.single().item)
             assertEquals("blacksludge", retainedBlackSludge.publicContext.state.pokemon
                 .single { it.battlePokemonId == OPPONENT }.knownHeldItemId)
+        }
+    }
+
+    @Test
+    fun `a revealed item no world holds is bound into the worlds instead of ending the session`() {
+        EngineBranchWorker().use { engine ->
+            val actualDefinition = definition("leftovers")
+            val actualRoot = engine.createBattle(actualDefinition)
+            val scarfRoot = engine.createBattle(definition("choicescarf"))
+            val lifeOrbRoot = engine.createBattle(definition("lifeorb"))
+            val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, actualRoot)
+                .single { it.moveId == "tackle" && it.mechanic == null }
+            val opponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, actualRoot)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val actualAfter = engine.branch(
+                actualRoot.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, actualRoot),
+                NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, actualRoot),
+            )
+            val scarfAfter = engine.branch(
+                scarfRoot.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, scarfRoot),
+                NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, scarfRoot),
+            )
+            assertTrue(actualAfter.p2Team.single().hp > scarfAfter.p2Team.single().hp,
+                "Leftovers must heal what the Scarf world does not, so the reveal alone would end that world")
+            val events = listOf(
+                BattleObservedEventView(1, actualRoot.turn, BattleObservedEventKind.MOVE_USED, ALLY,
+                    targetPokemonIds = listOf(OPPONENT), publicValueId = "tackle", actorSlot = 0),
+                BattleObservedEventView(2, actualRoot.turn, BattleObservedEventKind.MOVE_USED, OPPONENT,
+                    publicValueId = "splash", actorSlot = 0),
+                BattleObservedEventView(3, actualRoot.turn, BattleObservedEventKind.HELD_ITEM_REVEALED, OPPONENT,
+                    publicValueId = "leftovers", actorSlot = 0),
+            )
+            val session = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(
+                    world(engine.rulesFingerprint, "scarf-world", definition("choicescarf"), scarfRoot,
+                        context(scarfRoot, publicTemplate(definition("choicescarf")))),
+                    world(engine.rulesFingerprint, "life-orb-world", definition("lifeorb"), lifeOrbRoot,
+                        context(lifeOrbRoot, publicTemplate(definition("lifeorb")))),
+                ),
+                publicTurn = actualRoot.turn,
+                lastObservedEventSequence = null,
+                pendingOwnAction = allyAction,
+            )
+            val revealed = context(actualAfter, publicTemplate(actualDefinition, events, opponentItem = "leftovers"))
+
+            val result = NativeProductSessionReconciler { _, action -> action(engine) }
+                .reconcile(session, revealed, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}, ${result.inconsistencies}")
+            val worlds = requireNotNull(result.sessionState).worlds
+            assertEquals(setOf("scarf-world", "life-orb-world"), worlds.mapTo(hashSetOf()) { it.key.hypothesisId },
+                "each world keeps the rest of its hypothesis under the revealed item")
+            worlds.forEach { world ->
+                assertEquals("leftovers", world.definition.p2Team.single().item)
+                assertEquals("leftovers", world.rootSnapshot.frame.p2Team.single().item)
+                assertEquals(actualAfter.p2Team.single().hp, world.rootSnapshot.frame.p2Team.single().hp)
+            }
+        }
+    }
+
+    @Test
+    fun `a turn without the Life Orb every world named keeps the worlds without it`() {
+        EngineBranchWorker().use { engine ->
+            fun attacker(item: String) = NativeBattleDefinition(
+                formatId = "cobblemonsingles",
+                seed = listOf(127, 131, 137, 139),
+                p1Team = listOf(NativePokemonSet("Target", "Snorlax", listOf("splash"), "immunity",
+                    uuid = ALLY.toString(), level = 50)),
+                p2Team = listOf(NativePokemonSet("Holder", "Muk", listOf("tackle"), "stench",
+                    uuid = OPPONENT.toString(), item = item, level = 50)),
+            )
+            val actualRoot = engine.createBattle(attacker("lightclay"))
+            val lifeOrbRoot = engine.createBattle(attacker("lifeorb"))
+            val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, actualRoot)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val opponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, actualRoot)
+                .single { it.moveId == "tackle" && it.mechanic == null }
+            val actualAfter = engine.branch(
+                actualRoot.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, actualRoot),
+                NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, actualRoot),
+            )
+            assertEquals(actualAfter.p2Team.single().maxHp, actualAfter.p2Team.single().hp,
+                "Light Clay does nothing here, so the public battle shows no recoil")
+            val events = listOf(
+                BattleObservedEventView(1, actualRoot.turn, BattleObservedEventKind.MOVE_USED, OPPONENT,
+                    targetPokemonIds = listOf(ALLY), publicValueId = "tackle", actorSlot = 0),
+                BattleObservedEventView(2, actualRoot.turn, BattleObservedEventKind.MOVE_USED, ALLY,
+                    publicValueId = "splash", actorSlot = 0),
+            )
+            val session = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(world(engine.rulesFingerprint, "life-orb-world", attacker("lifeorb"), lifeOrbRoot,
+                    context(lifeOrbRoot, publicTemplate(attacker("lifeorb")))).copy(probability = 1.0)),
+                publicTurn = actualRoot.turn,
+                lastObservedEventSequence = null,
+                pendingOwnAction = allyAction,
+            )
+
+            // The adapter reads the item off the native frame; the public battle never showed Light Clay.
+            val adapted = context(actualAfter, publicTemplate(attacker("lightclay"), events))
+            val unseen = adapted.copy(state = adapted.state.derive(pokemon = adapted.state.pokemon.map { pokemon ->
+                if (pokemon.side != BattleSide.OPPONENT) pokemon else BattlePokemonStateView(
+                    pokemon.battlePokemonId, pokemon.side, pokemon.activeSlot, pokemon.speciesId, pokemon.formId,
+                    pokemon.level, pokemon.hpFraction, pokemon.statusId, pokemon.statStages, pokemon.knownMoveIds,
+                    pokemon.knownAbilityId, null, pokemon.fainted, pokemon.knownTypeIds, pokemon.combatStats,
+                    actionConstraints = pokemon.actionConstraints, knownVolatileEffectIds = pokemon.knownVolatileEffectIds,
+                )
+            }))
+
+            val result = NativeProductSessionReconciler { _, action -> action(engine) }
+                .reconcile(session, unseen, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}, ${result.inconsistencies}")
+            val world = requireNotNull(result.sessionState).worlds.single()
+            assertEquals("", world.definition.p2Team.single().item)
+            assertEquals(actualAfter.p2Team.single().hp, world.rootSnapshot.frame.p2Team.single().hp)
+            assertEquals(actualAfter.p1Team.single().hp, world.rootSnapshot.frame.p1Team.single().hp)
         }
     }
 
