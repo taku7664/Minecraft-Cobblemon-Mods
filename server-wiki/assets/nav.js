@@ -53,6 +53,7 @@ window.WIKI_NAV = {
     {
       title: "참고",
       pages: [
+        { path: "pages/map.html", title: "맵 보기", icon: "🗺️", keywords: "맵 지도 오버월드 네더 엔드 광장 bluemap 웨이포인트" },
         { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room waypoint music 문의 디코인증 디스코드 verify" },
         { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌 웨이포인트 지도" },
         { path: "pages/faq.html", title: "자주 묻는 질문", icon: "❓", keywords: "렉 문제 해결 질문 faq" },
