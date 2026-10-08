@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 21:56] main 병합 후 빌드·개발 배포 재확인
+
+- **병합:** 기믹 API 브랜치를 현재 main과 병합한 `5d4afd558bd3c1fa63e7d81d47c568ff5d564933`을 main에 푸시했다. 기존 BP 테스트 기대값 수정 `3c247482`·`10e14da4`도 포함한다. 앞선 브랜치 배포 기록은 이번 main 검증으로 보완하며 이전 실패 기록은 보존한다.
+- **빌드·테스트:** 깨끗한 워크트리에서 현재 main 소스로 MCC 5개 모듈 빌드 성공(2분 19초). 리그 테스트 93개 통과.
+- **배치:** main의 추가 보상 변경을 포함한 JAR로 개발 서버·클라이언트 양쪽을 교체했다. 새 SHA-256은 `22e0c389b6324093b7da652d4f9d1a21cfd624d64b22cbb0405d465bd78d50dc`다. 실제 저장소 `develop-product/server/mods`·`develop-product/client/mods`의 5개 JAR 모두 main 빌드본과 해시 일치, 중복 Fabric ID·`.deploying` 잔여물 없음. JDK 21 `jar --validate`·ZIP CRC 재검사 통과. 백업·manifest는 실제 저장소 `build/mcc-gimmick-deployment/20261008-215627-main/`에 있다.
+- **미확인:** 서버·게임이 꺼진 상태에서 확인했다. 서버 기동·실게임 검증은 하지 않았으며 `deploy-product` 릴리스도 아니다.
+
 ## [2026-10-08 21:48] 공통 배틀 기믹 API 전환 JAR 개발 배포
 
 - **구현:** `e8f428ea`에서 리그·관리자 배틀의 기존 단일 기믹 선택을 공통 `mechanicFlags: Int`로 변환해 PvE API에 전달한다. 콘텐츠의 기믹 선택 규칙은 유지한다.
