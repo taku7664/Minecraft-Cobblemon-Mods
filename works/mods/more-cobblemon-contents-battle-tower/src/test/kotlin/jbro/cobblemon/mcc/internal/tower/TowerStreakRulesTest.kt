@@ -18,6 +18,6 @@ class TowerStreakRulesTest {
 
     @Test
     fun `each later stage pays more bp`() {
-        assertEquals(listOf(1, 2, 3, 4), TowerStreakStage.entries.map { it.bpPerWin })
+        assertEquals(listOf(2, 3, 4, 5), TowerStreakStage.entries.map { it.bpPerWin })
     }
 }

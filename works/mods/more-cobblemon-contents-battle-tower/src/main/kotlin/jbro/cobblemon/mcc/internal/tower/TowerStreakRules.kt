@@ -5,10 +5,10 @@ internal enum class TowerStreakStage(
     val firstWin: Int,
     val bpPerWin: Int,
 ) {
-    INTRODUCTORY("introductory", 1, 1),
-    PRACTICAL("practical", 6, 2),
-    ADVANCED("advanced", 11, 3),
-    PRO("pro", 21, 4),
+    INTRODUCTORY("introductory", 1, 2),
+    PRACTICAL("practical", 6, 3),
+    ADVANCED("advanced", 11, 4),
+    PRO("pro", 21, 5),
     ;
 
     companion object {

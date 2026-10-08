@@ -50,7 +50,7 @@ internal data class TowerProgressUpdate(
 
 internal object TowerProgression {
     /**
-     * The BP for the next win: the stage's BP, 5 more for a boss, and a milestone bonus: 30 for clearing Normal at its
+     * The BP for the next win: [bpPerWin], 5 more for a boss, and a milestone bonus: 30 for clearing Normal at its
      * 20th win, 10 for every 10th win in Endless.
      */
     fun rewardForNextVictory(progress: TowerProgress): Int {
@@ -60,7 +60,14 @@ internal object TowerProgression {
             TowerMode.NORMAL -> if (nextWin == TOWER_NORMAL_CLEAR_WINS) TOWER_NORMAL_CLEAR_BP_BONUS else 0
             TowerMode.ENDLESS -> if (nextWin % TOWER_ENDLESS_MILESTONE_WINS == 0) TOWER_ENDLESS_MILESTONE_BP_BONUS else 0
         }
-        return progress.nextStage.bpPerWin + boss + milestone
+        return bpPerWin(nextWin) + boss + milestone
+    }
+
+    /** A regular win's BP: its stage's, and from the Pro stage on one more for every 5 wins past its first (21st 5, 26th 6). */
+    fun bpPerWin(win: Int): Int {
+        val stage = TowerStreakStage.forWin(win)
+        if (stage != TowerStreakStage.PRO) return stage.bpPerWin
+        return stage.bpPerWin + (win - stage.firstWin) / TOWER_BOSS_INTERVAL
     }
 
     fun nextOpponent(progress: TowerProgress): TowerOpponentKind {
