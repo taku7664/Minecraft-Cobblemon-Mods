@@ -1,5 +1,11 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-10-08 21:47] BP 재조정 묶음 테스트·배포 (빌드·JAR 배치 확인, 서버 기동·실게임 안 함)
+
+- **테스트:** `unitTest` 통과. MCC는 전체 2161개 중 상점 테스트 1개만 실패해서 고친 뒤 그 클래스만 다시 돌렸다. 타워 192, 팩토리 111, 리그 93, jbro-policy 87, NPC 14개는 모두 통과했다. 바뀐 BP에 맞춰 고친 테스트는 세 개다. 타워 `bp_per_win` 1→2, 팩토리 첫 승 3→2, 상점 `ability_` 필터에서 특성가드(도구) 제외(`10e14da4`).
+- **배포:** MCC·타워·팩토리·리그·jbro-policy·NPC JAR을 `develop-product/{server,client}/mods`에 넣었다(무결성·엔트리포인트 확인). NPC 대사 4개는 서버 `config/cobblemon_npc/dialogues/`에, 위키는 서버·클라이언트 `config/more-cobblemon-contents/wiki/`에 복사했다. 백업은 `develop-product/deployment-backups/20261008-214654-bp-rebalance`.
+- **주의:** 다른 모듈은 `test`가 SKIPPED라서 테스트가 안 돈다. `unitTest`로 돌려야 한다. 테스트 필터는 `--tests` 대신 `-Ptests=<클래스명>`을 쓴다.
+
 ## [2026-10-08 20:50] 승리 BP를 모드별로 다시 정함 (구현만, 빌드·테스트 안 함)
 
 - **사용자 결정:** 100BP 품목이 약 20판이 되도록 낮춘다. 일반 모드는 반복할 수 있는 콘텐츠(클리어 뒤 연승 0, 일반 모드는 계속 선택 가능, 클리어 보너스에 첫 클리어 조건 없음)라서 승리 2 고정, 클리어 +10은 매번 준다. 무한 모드는 2부터 10승마다 +1. 타워 에이스 +5, 챔피언 +10, 무한 10승마다 +10은 유지. 싱글·더블은 같은 공식이다.
