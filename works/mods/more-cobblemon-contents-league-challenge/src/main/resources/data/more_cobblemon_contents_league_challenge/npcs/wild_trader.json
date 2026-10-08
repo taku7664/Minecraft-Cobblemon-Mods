@@ -1,0 +1,34 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.trader"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": false
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_collector_brady_03ab",
+      "rct_collector_dominique_0409",
+      "rct_collector_douglas_03aa",
+      "rct_collector_edwin_03ae",
+      "rct_collector_eugene_0484",
+      "rct_collector_fernando_03ad",
+      "rct_collector_ivan_03ac",
+      "rct_collector_ivan_04f2",
+      "rct_collector_jamal_040a",
+      "rct_collector_terry_040b"
+    ]
+  }
+}

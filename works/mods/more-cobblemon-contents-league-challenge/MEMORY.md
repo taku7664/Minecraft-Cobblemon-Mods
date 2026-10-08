@@ -1,5 +1,14 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 13:40] 교환꾼 NPC (4단계, 구현만, 빌드·테스트 안 함)
+
+- **구현:** `WildTrader`(대화·교환·PC), `WildSpeciesRarity`(월드 스폰 풀 bucket으로 종 희귀도, 전설·환상·패러독스·울트라비스트 라벨 제외). 스폰 때(`ENTITY_SPAWN`) `SpawnCause.entity` 플레이어의 파티+PC에서 원하는 종을 고르고(common 80/uncommon 15/rare 5, 없으면 ultra-rare) NPC 태그 `mcc_trade_want:`·`mcc_trade_owner:`·`mcc_trade_owner_name:`에 적는다. 고를 게 없거나 원인이 플레이어가 아니면 스폰을 취소한다.
+- **교환:** 스폰시킨 플레이어만. 파티 1번이 원하는 종이면 확인(별명·★·도구 반환 안내) → [보낼게] 때 UUID 재확인 → 1번을 빼고(도구는 인벤토리, 가득 차면 발밑) 한 단계 희귀한 종을 레벨(캡 이하)에 맞춰 만들어 넣는다. 이로치 1/100, 어버이는 NPC(`setOriginalTrainer(String)`, 이름은 모드 `ko_kr.json`에서 직업명을 찾아 "교환꾼 Alec"처럼). 교환 후 떠난다.
+- **PC:** `PCLinkManager.addLink(uuid, pc) { NPC 8블록 안 }` + `OpenPCPacket` (`ProximityPCLink`는 PC 블록이 필요해서 안 씀).
+- **야생 규칙:** jbro-policy에 `WildPokemonPolicy.applyWildRolls`를 공개하고 리플렉션으로 부른다. jbro-policy JAR도 같이 배치해야 적용된다.
+- **데이터:** `wild_trader`(수집가 스킨, 배틀 불가), 스폰 uncommon 20. 대사는 포켓몬 이름 뒤 조사가 받침에 따라 틀리지 않게 조사 없이 썼다.
+- **미확인:** 컴파일, `SpawnCause.entity`가 실제로 플레이어인지, 교환한 포켓몬 생성(진화 단계 맞춤 포함), 실게임 전부.
+
 ## [2026-10-08 12:50] 야생 NPC 역할 틀(2단계)과 돌보미 회복 NPC(3단계) (구현만, 빌드 안 함)
 
 - **빌드:** 1단계 직후 사용자 지시로 `:cobblemon-npc:build :more-cobblemon-contents-league-challenge:build` 성공(이때 테스트도 같이 돌아 NPC 14개·리그 91개 통과). 그 뒤 사용자: "테스트는 하지 말고". 2·3단계는 빌드도 테스트도 안 했다.

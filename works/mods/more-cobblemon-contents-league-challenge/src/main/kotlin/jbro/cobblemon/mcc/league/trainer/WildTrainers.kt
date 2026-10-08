@@ -123,7 +123,9 @@ object WildTrainers {
             if (definitionOf(npc) == null) return@subscribe
             val level = event.spawnablePosition.world
             if (!spawnAllowed(level, event.spawnablePosition.position.x.toDouble(), event.spawnablePosition.position.y.toDouble(),
-                    event.spawnablePosition.position.z.toDouble())) event.cancel()
+                    event.spawnablePosition.position.z.toDouble())) return@subscribe event.cancel()
+            // A trader wants something the player who brought it has; with nothing to want it does not come.
+            if (definitionOf(npc)?.role == WildNpcRole.TRADE && !WildTrader.prepare(npc, event.cause.entity as? ServerPlayer)) event.cancel()
         }
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             val npc = entity as? NPCEntity ?: return@register
@@ -303,7 +305,7 @@ object WildTrainers {
     }
 
     /** The challenger's League level cap, or their strongest Pokemon's level when no League is loaded. */
-    private fun cap(player: ServerPlayer): Int {
+    internal fun cap(player: ServerPlayer): Int {
         val catalog = LeagueCatalogResources.current
         if (catalog != null) {
             try {
