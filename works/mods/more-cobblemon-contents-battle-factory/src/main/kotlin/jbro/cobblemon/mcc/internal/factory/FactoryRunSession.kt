@@ -12,12 +12,12 @@ internal object FactoryProgression {
     }
 
     /**
-     * BP for the [win]th win of a run: 3 a win in the first round, 4 in the second and 5 from the third, 5 more for
+     * BP for the [win]th win of a run: 2 a win in the first round and one more each round after (3, 4, ...), 5 more for
      * a round's last battle and 10 more for the Factory Head's battles (the 21st and 49th). Singles and Doubles pay
      * alike, though only Singles brings the Factory Head himself.
      */
     fun victoryRewardBp(win: Int): Long {
-        val base = (VICTORY_BASE_BP + roundForBattle(win)).coerceAtMost(VICTORY_MAX_BASE_BP)
+        val base = VICTORY_BASE_BP + roundForBattle(win)
         val roundEnd = if (win % BATTLES_PER_ROUND == 0) ROUND_END_BONUS_BP else 0
         val head = if (win in FACTORY_HEAD_BATTLES) FACTORY_HEAD_BONUS_BP else 0
         return (base + roundEnd + head).toLong()
@@ -75,8 +75,7 @@ internal object FactoryProgression {
         format == FactoryBattleFormat.SINGLE && battleNumber in FACTORY_HEAD_BATTLES
 
     const val BATTLES_PER_ROUND = 7
-    private const val VICTORY_BASE_BP = 2
-    private const val VICTORY_MAX_BASE_BP = 5
+    private const val VICTORY_BASE_BP = 1
     private const val ROUND_END_BONUS_BP = 5
     private const val FACTORY_HEAD_BONUS_BP = 10
     private const val TRADES_PER_ELEVATION = 7

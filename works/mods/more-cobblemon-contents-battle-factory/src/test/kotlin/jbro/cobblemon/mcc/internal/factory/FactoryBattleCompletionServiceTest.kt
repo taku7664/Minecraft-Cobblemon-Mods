@@ -37,9 +37,9 @@ class FactoryBattleCompletionServiceTest {
         assertEquals(1L, completions.single().progressMetrics.values.single())
         assertEquals(1, session.wins)
         assertEquals(FactoryRunPhase.SWAP_DECISION, session.phase)
-        // The first win of a run: the first round's 3 BP.
-        assertEquals(listOf(Triple(playerId, battleId, 3L)), rewards)
-        assertEquals(3L, (result as FactoryBattleCompletionResult.Victory).rewardBp)
+        // The first win of a run: the first round's 2 BP.
+        assertEquals(listOf(Triple(playerId, battleId, 2L)), rewards)
+        assertEquals(2L, (result as FactoryBattleCompletionResult.Victory).rewardBp)
 
         val duplicate = service.completeVictory(playerId, session, battleId, opponent(), emptyMap())
         assertTrue(duplicate is FactoryBattleCompletionResult.NoActiveBattle)
