@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.league.trainer
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlin.math.roundToInt
@@ -38,18 +40,18 @@ enum class WildNpcRole(val id: String) {
 
 /**
  * A kind of NPC met in the wild. [npcClass] is the Cobblemon NPC class it spawns as; [role] is what it does. A trainer
- * ([WildNpcRole.BATTLE]) brings [pokemon] and pays [bp] for a win; the other roles need neither.
+ * ([WildNpcRole.BATTLE]) brings [pokemon] and pays a random amount in [bp] for a win; the other roles need neither.
  */
 data class WildTrainerDefinition(
     val npcClass: String,
-    val bp: Long,
+    val bp: LongRange,
     val tier: WildTrainerTier,
     val pokemon: List<WildTrainerStage>,
     val role: WildNpcRole = WildNpcRole.BATTLE,
 ) {
     init {
         require(npcClass.matches(Regex("[a-z0-9_.-]+:[a-z0-9/._-]+"))) { "Invalid NPC class: $npcClass" }
-        require(bp in 0..1_000_000) { "Invalid BP for $npcClass: $bp" }
+        require(bp.first in 0..1_000_000 && bp.last in bp.first..1_000_000) { "Invalid BP for $npcClass: $bp" }
         require(role != WildNpcRole.BATTLE || pokemon.isNotEmpty()) { "$npcClass has no Pokemon" }
     }
 }
@@ -75,7 +77,7 @@ object WildTrainerCatalogParser {
         require(version == 2 || version == 3) { "schema_version must be 2 or 3" }
         return WildTrainerDefinition(
             npcClass = root.get("npc_class").asString,
-            bp = root.get("bp")?.asLong ?: 0,
+            bp = root.get("bp")?.let(::bpRange) ?: 0L..0L,
             tier = WildTrainerTier.of(root.get("tier")?.asString ?: WildTrainerTier.NORMAL.id),
             pokemon = root.getAsJsonArray("pokemon")?.map { element ->
                 val stage = element.asJsonObject
@@ -83,6 +85,14 @@ object WildTrainerCatalogParser {
             }.orEmpty(),
             role = if (version == 3) WildNpcRole.of(root.get("role")?.asString ?: WildNpcRole.BATTLE.id) else WildNpcRole.BATTLE,
         )
+    }
+
+    /** `[1, 2]` or a single number. */
+    private fun bpRange(element: JsonElement): LongRange = if (element is JsonArray) {
+        require(element.size() == 2) { "BP range is [min, max]" }
+        element[0].asLong..element[1].asLong
+    } else {
+        element.asLong..element.asLong
     }
 }
 

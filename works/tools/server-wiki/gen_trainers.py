@@ -39,7 +39,7 @@ def main():
             "id": kind["id"],
             "name": kind["ko"],
             "tier": "에이스" if definition["tier"] == "ace" else "일반",
-            "bp": definition["bp"],
+            "bp": "~".join(map(str, definition["bp"])) if isinstance(definition["bp"], list) else definition["bp"],
             "biomes": sorted(set(biomes), key=biomes.index),
             "time": TIME[kind["time"]],
             "pokemon": [names.get(s, s) for s in kind["species"]],

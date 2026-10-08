@@ -37,6 +37,7 @@ window.WIKI_NAV = {
         { path: "pages/pvp.html", title: "PvP", icon: "⚔️", keywords: "pvp 대전 방 관전 라운지 타이머" },
         { path: "pages/pvp-matches.html", title: "PvP 전적", icon: "📜", keywords: "pvp 전적 기록 대전 승패 상대 랭킹" },
         { path: "pages/wild-trainers.html", title: "야생 트레이너", icon: "🧢", keywords: "트레이너 에이스 엘리트 bp 스폰 쿨다운 교환 교환꾼 퀴즈 회복 돌보미 여행자 선물" },
+        { path: "pages/gimmicks.html", title: "배틀 기믹", icon: "💎", keywords: "기믹 메가진화 메가링 메가스톤 z기술 z-링 z크리스탈 빈z 다이맥스 거다이맥스 다이맥스밴드 다이수프 다이버섯 소원의별 테라스탈 테라스탈 오브 테라피스 액세서리 키스톤" },
       ],
     },
     {
@@ -52,6 +53,7 @@ window.WIKI_NAV = {
     {
       title: "참고",
       pages: [
+        { path: "pages/map.html", title: "맵 보기", icon: "🗺️", keywords: "맵 지도 오버월드 네더 엔드 광장 bluemap 웨이포인트" },
         { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room waypoint music 문의 디코인증 디스코드 verify" },
         { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌 웨이포인트 지도" },
         { path: "pages/faq.html", title: "자주 묻는 질문", icon: "❓", keywords: "렉 문제 해결 질문 faq" },

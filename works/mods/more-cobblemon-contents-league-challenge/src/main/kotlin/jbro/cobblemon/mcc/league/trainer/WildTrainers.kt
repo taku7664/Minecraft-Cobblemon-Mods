@@ -293,7 +293,7 @@ object WildTrainers {
             return
         }
         if (npc != null) leave(npc) else despawns[fight.npcId] = now + DEFEATED_DESPAWN_TICKS
-        val bp = fight.definition.bp
+        val bp = fight.definition.bp.random()
         val paid = if (bp <= 0) 0L else {
             val transaction = UUID.nameUUIDFromBytes("wild_trainer:${fight.npcId}:${player.uuid}:$now".toByteArray())
             val result = BattlePointRewards.award(server, player.uuid, transaction, bp, ManagedBattleContentIds.LEAGUE_CHALLENGE,

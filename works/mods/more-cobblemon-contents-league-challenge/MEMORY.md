@@ -8,6 +8,18 @@
 - **배치:** 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server/mods`와 `develop-product/client/mods`에 배치했다. 원본·서버·클라이언트 SHA-256 일치, 중복 Fabric ID와 `.deploying` 잔여물 없음 확인. 배치 전 서버·게임 프로세스 및 25565/25566 리스너가 없었다. 이전 JAR·manifest는 실제 저장소 `build/mcc-gimmick-deployment/20261008-214821/`에 보관했다.
 - **미확인:** 서버 기동·실게임 검증은 하지 않았다. `deploy-product` 릴리스가 아니라 개발 배포다.
 
+## [2026-10-08 21:47] BP 재조정 묶음 테스트·배포 (빌드·JAR 배치 확인, 서버 기동·실게임 안 함)
+
+- **테스트:** `unitTest` 통과. MCC는 전체 2161개 중 상점 테스트 1개만 실패해서 고친 뒤 그 클래스만 다시 돌렸다. 타워 192, 팩토리 111, 리그 93, jbro-policy 87, NPC 14개는 모두 통과했다. 바뀐 BP에 맞춰 고친 테스트는 세 개다. 타워 `bp_per_win` 1→2, 팩토리 첫 승 3→2, 상점 `ability_` 필터에서 특성가드(도구) 제외(`10e14da4`).
+- **배포:** MCC·타워·팩토리·리그·jbro-policy·NPC JAR을 `develop-product/{server,client}/mods`에 넣었다(무결성·엔트리포인트 확인). NPC 대사 4개는 서버 `config/cobblemon_npc/dialogues/`에, 위키는 서버·클라이언트 `config/more-cobblemon-contents/wiki/`에 복사했다. 백업은 `develop-product/deployment-backups/20261008-214654-bp-rebalance`.
+- **주의:** 다른 모듈은 `test`가 SKIPPED라서 테스트가 안 돈다. `unitTest`로 돌려야 한다. 테스트 필터는 `--tests` 대신 `-Ptests=<클래스명>`을 쓴다.
+
+## [2026-10-08 21:40] 야생 트레이너 승리 BP 일반 1~2 무작위, 에이스 4 (구현만, 빌드·테스트 안 함)
+
+- **사용자 결정:** 일반 트레이너는 1~2 BP를 무작위로, 에이스는 4 BP를 준다.
+- **변경:** `WildTrainerDefinition.bp`를 `LongRange`로 바꿨다. JSON `bp`는 숫자 하나나 `[min, max]`를 받고(`wild_rewards.json`과 같은 형식), 이길 때 `bp.random()`으로 지급한다. `wild_trainers/*.json` 124개(일반 104개는 `[1, 2]`, 에이스 20개는 `4`), `WildTrainerDataTest`, 생성기 `BP` 상수, 위키 생성기 `gen_trainers.py`(범위면 "1~2"로 출력), `trainers.js`(값만 치환), `wild-trainers.html`·`hub.html`, NPC 대사(배틀걸·상점 아가씨)를 같이 고쳤다.
+- **미확인:** 컴파일과 테스트를 돌리지 않았다.
+
 ## [2026-10-08 20:50] 야생 트레이너 승리 BP 3/6 → 2/5 (구현만, 빌드·테스트 안 함)
 
 - **사용자 결정:** 타워·팩토리 보상을 낮추면서 야생 트레이너도 일반 2, 에이스 5로 낮췄다.
