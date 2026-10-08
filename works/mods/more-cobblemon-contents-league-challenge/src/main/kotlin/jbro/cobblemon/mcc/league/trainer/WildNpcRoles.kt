@@ -28,9 +28,24 @@ internal object WildNpcRoles {
             WildNpcRole.HEAL -> heal(player, npc)
             WildNpcRole.TRADE -> WildTrader.talk(player, npc)
             WildNpcRole.QUIZ -> WildQuiz.talk(player, npc)
-            WildNpcRole.GIFT ->
-                Mod.LOGGER.warn("Wild NPC role {} of {} is not made yet", definition.role.id, definition.npcClass)
+            WildNpcRole.GIFT -> gift(player, npc)
         }
+    }
+
+    /** A traveler gives each player one thing from the reward pool ([WildRewards]); it stays where it is. */
+    private fun gift(player: ServerPlayer, npc: NPCEntity) {
+        if (isDone(npc, player)) return WildTrainers.sayLine(player, npc, "$KEY.gift.done")
+        NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.gift.offer"), listOf(
+            NpcTalkChoice(Component.translatable("$KEY.gift.yes")) answer@{
+                if (!npc.isAlive || isDone(npc, it)) return@answer
+                // Marked only once something was given, so an empty pool does not use up the player's turn.
+                val reward = WildRewards.give(it, "wild_gift") ?: return@answer WildTrainers.sayLine(it, npc, "$KEY.gift.empty")
+                markDone(npc, it)
+                Mod.LOGGER.info("{} took a wild gift: {}", it.gameProfile.name, reward.string)
+                NpcTalks.open(it, WildTrainers.talk(npc, Component.translatable("$KEY.gift.reward", reward)))
+            },
+            NpcTalkChoice(Component.translatable("$KEY.gift.no")),
+        )))
     }
 
     /** A caretaker heals the whole party, as often as asked; it stays where it is. */

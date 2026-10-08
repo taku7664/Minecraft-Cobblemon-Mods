@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 16:50] 여행자 보상 NPC (6단계, 구현만, 빌드·테스트·실게임 안 함)
+
+- **구현:** `WildNpcRoles.gift`. "여행하다 주운 건데, 너 가질래?" → [고마워! / 괜찮아.] → `WildRewards.give`(사유 `wild_gift`) → "○○ ×n 받았다!". 플레이어마다 한 번(`mcc_wild_npc_done:`), 보상을 실제로 준 뒤에만 기록한다. 떠나지 않는다.
+- **데이터:** `wild_traveler`("여행자", 캠퍼·피크니커 RCT 스킨 86장 전부 `0_wild_trainer.json`에 있음 확인), 스폰 uncommon 30. 이로써 설계 문서 1~6단계 구현이 모두 들어갔다.
+- **실수 기록:** 스폰 풀 JSON을 다시 쓸 때 들여쓰기를 1로 써서 파일 전체가 바뀔 뻔했다. 이 파일은 들여쓰기 2다.
+- **미확인:** 5·6단계 컴파일, 실게임 전부.
+
 ## [2026-10-08 16:30] 퀴즈 NPC와 보상 풀 (5단계, 구현만, 빌드·테스트·실게임 안 함)
 
 - **구현:** `WildQuiz`(문제 은행 `league-challenge/wild_quiz.json` 38문제, 출처는 `server-wiki/pages` 문서 이름), `WildRewards`(보상 풀 `league-challenge/wild_rewards.json`, 설계 문서 초깃값 10항목). 퀴즈가 보상 풀을 쓰므로 풀을 이 단계에서 같이 만들었다. 6단계(보상 NPC)는 `WildRewards.give`만 부르면 된다.

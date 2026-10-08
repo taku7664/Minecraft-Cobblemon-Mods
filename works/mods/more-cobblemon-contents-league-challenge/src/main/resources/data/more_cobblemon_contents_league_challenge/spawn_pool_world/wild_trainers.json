@@ -2887,6 +2887,23 @@
           "#cobblemon:is_deep_dark"
         ]
       }
+    },
+    {
+      "id": "wild_npc_traveler",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_traveler",
+      "bucket": "uncommon",
+      "weight": 30.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
     }
   ]
 }
