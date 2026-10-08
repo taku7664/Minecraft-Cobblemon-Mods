@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "stellar_tera_shard",
+      "item_id": "mega_showdown:stellar_tera_shard",
+      "item_count": 1,
+      "price_bp": 5,
+      "sort_order": 1030,
+      "category": "gimmick"
+    }
+  ]
+}

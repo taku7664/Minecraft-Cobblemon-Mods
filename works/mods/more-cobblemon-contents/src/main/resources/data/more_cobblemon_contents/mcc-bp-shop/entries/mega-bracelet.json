@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "mega_bracelet",
+      "item_id": "mega_showdown:mega_bracelet",
+      "item_count": 1,
+      "price_bp": 250,
+      "sort_order": 800,
+      "category": "gimmick"
+    }
+  ]
+}

@@ -30,7 +30,7 @@ window.WIKI_NAV = {
     {
       title: "배틀 콘텐츠",
       pages: [
-        { path: "pages/hub.html", title: "MCC 허브와 BP 상점", icon: "📘", keywords: "mcc 허브 대시보드 상점 bp 터미널 민트 특성캡슐 구애" },
+        { path: "pages/hub.html", title: "MCC 허브와 BP 상점", icon: "📘", keywords: "mcc 허브 대시보드 상점 bp 터미널 민트 특성캡슐 구애 메가 메가스톤 z 테라 다이맥스 기믹" },
         { path: "pages/league.html", title: "리그 챌린지", icon: "🏆", keywords: "관장 체육관 사천왕 챔피언 난천 레벨캡 뱃지 하드 등급" },
         { path: "pages/tower.html", title: "배틀타워", icon: "🗼", keywords: "배틀타워 연승 보스 싱글 더블 bp" },
         { path: "pages/factory.html", title: "배틀팩토리", icon: "🏭", keywords: "배틀팩토리 렌탈 교환 층 bp" },
@@ -42,7 +42,7 @@ window.WIKI_NAV = {
     {
       title: "생활",
       pages: [
-        { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 화약 네더의 별 사탕" },
+        { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 사탕" },
         { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동" },
         { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
         { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 미니맵 xaero 웨이포인트 정보창 우클릭 음성 채팅 도감" },

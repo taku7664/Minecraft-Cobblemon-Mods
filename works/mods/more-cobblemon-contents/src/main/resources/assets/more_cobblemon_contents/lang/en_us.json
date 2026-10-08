@@ -103,6 +103,7 @@
   "screen.more_cobblemon_contents.shop.after": "After purchase",
   "screen.more_cobblemon_contents.shop.items": "Items",
   "screen.more_cobblemon_contents.shop.category.held_item": "Held items",
+  "screen.more_cobblemon_contents.shop.category.gimmick": "Gimmicks",
   "screen.more_cobblemon_contents.shop.category.consumable": "Consumables",
   "screen.more_cobblemon_contents.shop.category.misc": "Other",
   "command.more_cobblemon_contents.admin.status.header": "MCC server status",

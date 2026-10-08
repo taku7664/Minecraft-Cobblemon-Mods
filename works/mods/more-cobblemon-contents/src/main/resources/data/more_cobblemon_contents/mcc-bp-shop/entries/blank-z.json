@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "blank_z",
+      "item_id": "mega_showdown:blank_z",
+      "item_count": 1,
+      "price_bp": 150,
+      "sort_order": 830,
+      "category": "gimmick"
+    }
+  ]
+}

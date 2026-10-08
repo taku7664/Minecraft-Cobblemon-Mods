@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "poison_tera_shard",
+      "item_id": "mega_showdown:poison_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 920,
+      "category": "gimmick"
+    }
+  ]
+}

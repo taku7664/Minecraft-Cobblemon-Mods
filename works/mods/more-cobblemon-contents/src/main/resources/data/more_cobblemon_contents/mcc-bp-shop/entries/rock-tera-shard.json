@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "rock_tera_shard",
+      "item_id": "mega_showdown:rock_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 970,
+      "category": "gimmick"
+    }
+  ]
+}

@@ -21,8 +21,8 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(74, catalog.entries().size)
-        assertEquals(74, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(101, catalog.entries().size)
+        assertEquals(101, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
         assertEquals(listOf(1L, 2L, 4L, 10L, 3L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
@@ -37,12 +37,22 @@ class BattlePointShopCatalogResourceTest {
         assertEquals(2500L, price("ability_patch"))
         assertEquals("ability_patch", catalog.entries().maxBy { it.priceBp }.entryId)
         // Battle items are very dear.
-        assertEquals(5, catalog.entries().count { it.priceBp == 400L })
-        assertEquals(5, catalog.entries().count { it.priceBp == 250L })
-        assertEquals(8, catalog.entries().count { it.priceBp == 200L })
-        assertEquals(4, catalog.entries().count { it.priceBp == 150L })
+        val heldItems = catalog.entries().filter { it.category == "held_item" }
+        assertEquals(5, heldItems.count { it.priceBp == 400L })
+        assertEquals(5, heldItems.count { it.priceBp == 250L })
+        assertEquals(8, heldItems.count { it.priceBp == 200L })
+        assertEquals(4, heldItems.count { it.priceBp == 150L })
         assertEquals(150L, price("adrenaline_orb"))
         assertEquals("mega_showdown:adrenaline_orb", catalog.entry("adrenaline_orb")?.itemId)
+        // Every gimmick's key item and core material, so exploring is not the only way in.
+        val gimmicks = catalog.entries().filter { it.category == "gimmick" }
+        assertEquals(27, gimmicks.size)
+        assertTrue(gimmicks.all { it.itemId.startsWith("mega_showdown:") })
+        assertEquals(listOf(250L, 300L, 250L, 150L, 100L, 250L, 150L, 50L),
+            listOf("mega_bracelet", "mega_stone", "z_ring", "blank_z", "tera_orb", "dynamax_band", "wishing_star", "max_mushroom").map(::price))
+        assertEquals(18, gimmicks.count { it.entryId.endsWith("_tera_shard") && it.priceBp == 2L })
+        assertEquals(5L, price("stellar_tera_shard"))
+        assertEquals(listOf("held_item", "gimmick", "consumable", "misc"), catalog.categories)
     }
 
     private fun fragmentReaders(directory: String): List<Pair<String, Reader>> =
