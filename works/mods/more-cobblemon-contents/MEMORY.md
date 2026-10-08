@@ -5,7 +5,7 @@
 
 ---
 
-## [2026-10-08 18:40] 탈 깨진 따라큐가 있으면 매 턴 세계 계획이 실패하던 문제
+## [2026-10-08 18:24] 탈 깨진 따라큐가 있으면 매 턴 세계 계획이 실패하던 문제
 
 - **원인(감사 추적으로 확인):** 탈이 깨지면 종 ID가 `mimikyubusted`가 되고, 공개 기술 추론이 네 칸 모두 추측(구체 기술 없음)으로 빈다. 계획기는 이 빈 추론을 그대로 받아 `EXECUTABLE_MOVE_UNAVAILABLE`로 실패했다. `byron_hard-vs-fantina_hard` 판 p2가 4~17턴 내내 레거시였다.
 - **수정:** `NativeOpponentPreviewMoveCatalogMaterializer`가 구체 기술이 하나도 없는 추론은 무시하고 미리보기 기술 후보로 채운다.
