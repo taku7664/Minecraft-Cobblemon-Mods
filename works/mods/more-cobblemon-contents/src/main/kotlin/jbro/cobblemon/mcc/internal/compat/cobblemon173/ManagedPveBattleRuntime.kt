@@ -26,7 +26,7 @@ internal class ManagedPveBattleRuntime(
             trainerProfile = prepared.trainerProfile,
             learningScopeId = prepared.learningScopeId,
             opponentTeamPreview = prepared.preview,
-            mechanic = prepared.mechanic,
+            mechanicFlags = prepared.mechanicFlags,
             format = BattleFormat.valueOf(prepared.format.name),
             brainSelectionContext = prepared.brainSelectionContext,
             contentId = prepared.contentId,

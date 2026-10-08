@@ -8,6 +8,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PvpBattleLauncherTest {
+    @Test
+    fun `battle requests use the same mechanic bits as PvE and reject unknown flags`() {
+        val flags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.MEGA or
+            jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.DYNAMAX
+        assertEquals(flags, request().copy(mechanicFlags = flags).mechanicFlags)
+        assertThrows(IllegalArgumentException::class.java) { request().copy(mechanicFlags = 16) }
+        assertEquals(flags, setOf(PvpBattleMechanic.MEGA, PvpBattleMechanic.DYNAMAX).toMechanicFlags())
+    }
+
     private val first = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     private val second = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 
@@ -29,7 +38,7 @@ class PvpBattleLauncherTest {
         assertEquals(listOf("copy-$first"), prepared?.firstTeam)
         assertEquals(listOf("copy-$second"), prepared?.secondTeam)
         assertEquals(PvpBattleFormat.SINGLE, prepared?.request?.format)
-        assertEquals(PvpRoomDefaults.ENABLED_MECHANICS, prepared?.request?.enabledMechanics)
+        assertEquals(PvpRoomDefaults.ENABLED_MECHANICS.toMechanicFlags(), prepared?.request?.mechanicFlags)
     }
 
     @Test

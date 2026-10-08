@@ -10,7 +10,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
-import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.*
 import jbro.cobblemon.mcc.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.mcc.internal.command.MccAdminSource
@@ -29,7 +29,7 @@ object ManagedPveBattles {
     data class Request(
         val transactionId: UUID, val contentId: String, val trainerId: String, val trainerNameKey: String,
         val lockedParty: List<String>, val opponentProperties: List<String>,
-        val format: Format = Format.SINGLE, val mechanic: MajorBattleMechanic? = null, val skill: Int = 3,
+        val format: Format = Format.SINGLE, val mechanicFlags: Int = BattleMechanicFlags.NONE, val skill: Int = 3,
         val appearance: jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin? = null,
         /** Where in the content this battle stands, for the clients' [MccBattleTag]; the trainer id is its opponent. */
         val stage: String? = null,
@@ -40,7 +40,9 @@ object ManagedPveBattles {
         val clientTag: MccBattleTag? = null,
         /** What the trainer says at set moments of the battle, with the camera on it. */
         val scenes: jbro.cobblemon.mcc.api.presentation.TrainerScenes = jbro.cobblemon.mcc.api.presentation.TrainerScenes.NONE,
-    )
+    ) {
+        init { BattleMechanicFlags.requireValid(mechanicFlags) }
+    }
     private data class Active(val playerId: UUID, val request: Request, val complete: (Outcome) -> Unit)
     private data class Completion(val active: Active, val outcome: Outcome)
     private class State {
@@ -106,7 +108,7 @@ object ManagedPveBattles {
                 .also { it.effectedPokemon.heal() }
         }
         val prepared = ManagedPvePrepared(player.uuid, request.contentId, request.trainerId, request.trainerNameKey,
-            PveFormat.valueOf(request.format.name), request.mechanic,
+            PveFormat.valueOf(request.format.name), request.mechanicFlags,
             playerTeam, request.opponentProperties.map { raw ->
                 val properties = PokemonProperties.Companion.parse(raw)
                 require(properties.species != null && properties.species != "random") { "Unknown or random opponent species" }

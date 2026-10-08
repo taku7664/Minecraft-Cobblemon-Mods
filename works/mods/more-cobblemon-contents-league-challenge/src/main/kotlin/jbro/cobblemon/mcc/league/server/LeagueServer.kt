@@ -173,7 +173,8 @@ object LeagueServer {
         try {
             val id = ManagedPveBattles.start(player, ManagedPveBattles.Request(run.battleToken, CONTENT,
                 challenge.id, challenge.nameKey, run.party, challenge.team, ManagedPveBattles.Format.valueOf(challenge.format),
-                challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = challenge.skill,
+                jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(
+                    challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = challenge.skill,
                 appearance = jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(
                     challenge.skin ?: "minecraft:textures/entity/player/wide/steve.png", challenge.slim),
                 stage = LeagueEngine(catalog).stage(run), scenes = trainerScenes(challenge))) { outcome ->

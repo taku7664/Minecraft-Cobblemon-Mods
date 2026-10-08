@@ -84,6 +84,36 @@ MccBattleTags.during(setOf(player.uuid), MccBattleTag(CONTENT_ID, "wild_trainer"
 
 `ManagedPveBattles.Request` takes the stage directly (`stage = "gym"`) and uses its trainer id as the opponent.
 
+### Battle mechanic flags
+
+`ManagedPveBattles.Request.mechanicFlags` is an integer bitmask using `BattleMechanicFlags` from
+`jbro.cobblemon.mcc.api.rules`. PvP battle launch requests use the same bits:
+
+| Constant | Value |
+|---|---|
+| `NONE` | 0 |
+| `MEGA` | 1 |
+| `DYNAMAX` | 2 |
+| `TERA` | 4 |
+| `Z_MOVE` | 8 |
+| `ALL` | 15 |
+
+```kotlin
+mechanicFlags = BattleMechanicFlags.MEGA or BattleMechanicFlags.DYNAMAX
+```
+
+The default is `NONE`. Unknown bits and negative masks are rejected before a battle starts. Each enabled mechanic
+can be used once by each participant; using one does not consume another. In doubles, distinct mechanics may be
+submitted for the two active Pokémon on the same turn. Both the player and trainer receive the allowed mechanics;
+the trainer AI considers every enabled, unused mechanic actually offered by Cobblemon.
+
+This replaces the experimental API's nullable `mechanic` argument. Existing callers must rebuild and pass
+`BattleMechanicFlags.fromMajor(oldMechanic)`, or combine flags with `or`. Tower and League still select one mechanic
+per their content rules, and Factory still disables them. Room settings and their network encoding are unchanged.
+
+These flags permit mechanics; Cobblemon and Mega Showdown still enforce Pokémon eligibility, held items and
+player accessories. Dynamax still follows Mega Showdown's Power Spot/`dynamaxAnywhere` setting.
+
 ## Operator commands
 
 These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and

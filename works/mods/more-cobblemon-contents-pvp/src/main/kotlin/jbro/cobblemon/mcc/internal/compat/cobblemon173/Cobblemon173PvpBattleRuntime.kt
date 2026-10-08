@@ -9,14 +9,13 @@ import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleFormat
-import jbro.cobblemon.mcc.internal.pvp.PvpBattleMechanic
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleLaunchResult
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleRuntime
 import jbro.cobblemon.mcc.internal.pvp.PvpPreparedBattle
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
-import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
@@ -69,25 +68,18 @@ internal class Cobblemon173PvpBattleRuntime(
         Cobblemon173BattlePokemonAppearance.hideHeldItems(prepared.firstTeam, prepared.secondTeam)
         val firstActor = firstParticipant.actor
         val secondActor = secondParticipant.actor
-        val mechanics = request.immutableEnabledMechanics
-        firstActor.canDynamax = PvpBattleMechanic.DYNAMAX in mechanics
-        secondActor.canDynamax = PvpBattleMechanic.DYNAMAX in mechanics
+        val mechanics = request.mechanicFlags
+        firstActor.canDynamax = BattleMechanicFlags.contains(mechanics, BattleMechanicFlags.DYNAMAX)
+        secondActor.canDynamax = BattleMechanicFlags.contains(mechanics, BattleMechanicFlags.DYNAMAX)
         val actorIds = setOf(firstActor.uuid, secondActor.uuid)
         try {
             protectManagedBattleStartup(
                 releasePendingRegistration = { Cobblemon173BattleRuleHooks.finishRegistration(null) },
                 terminateBattle = {},
             ) {
-                Cobblemon173BattleRuleHooks.beginRegistrationMultiple(
+                Cobblemon173BattleRuleHooks.beginRegistrationFlags(
                     ManagedBattleContentIds.PVP,
-                    mechanics.mapTo(LinkedHashSet()) { mechanic ->
-                        when (mechanic) {
-                            PvpBattleMechanic.MEGA -> ManagedSubmittedMechanic.MEGA
-                            PvpBattleMechanic.DYNAMAX -> ManagedSubmittedMechanic.DYNAMAX
-                            PvpBattleMechanic.TERA -> ManagedSubmittedMechanic.TERA
-                            PvpBattleMechanic.Z_MOVE -> ManagedSubmittedMechanic.Z_MOVE
-                        }
-                    },
+                    mechanics,
                     actorIds,
                 )
             }

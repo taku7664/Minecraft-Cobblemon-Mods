@@ -217,7 +217,7 @@ internal class PvpSessionService<P>(
                     firstPlayerId = match.challengerId,
                     secondPlayerId = match.opponentId,
                     format = match.format,
-                    enabledMechanics = match.enabledMechanics,
+                    mechanicFlags = match.enabledMechanics.toMechanicFlags(),
                     firstSelection = firstSelection,
                     secondSelection = secondSelection,
                 ),

@@ -17,7 +17,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
-import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -25,6 +25,50 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173ActionCandidateAdapterTest {
+    @Test
+    fun `multi mechanic double turns permit different mechanics but reject duplicate use`() {
+        val first = listOf(moveChoice(0, mechanicId = "mega"))
+        val second = listOf(moveChoice(1, mechanicId = "tera"), moveChoice(1, mechanicId = "mega"))
+        val choices = Cobblemon173ActionCandidateAdapter.combine(listOf(first, second), allowMultipleMechanics = true)
+        assertEquals(1, choices.size)
+        assertEquals(listOf("mega", "tera"), choices.single().componentCandidates.map { it.mechanic?.mechanicId })
+    }
+
+    @Test
+    fun `z move needs an available transformed move and preserves its transformed target`() {
+        val base = InBattleMove().also {
+            it.id = "tackle"; it.move = "Tackle"; it.pp = 0; it.maxpp = 35
+            it.target = MoveTarget.normal; it.disabled = true
+        }
+        val z = InBattleGimmickMove().also {
+            it.move = "Breakneck Blitz"; it.target = MoveTarget.normal; it.disabled = false
+        }
+        val moveset = ShowdownMoveset().also { it.canZMove = listOf(z) }
+        assertEquals(z, Cobblemon173ActionCandidateAdapter.transformedMove(moveset, 0, ShowdownMoveset.Gimmick.Z_POWER))
+        assertNull(Cobblemon173ActionCandidateAdapter.transformedMove(moveset, 1, ShowdownMoveset.Gimmick.Z_POWER))
+        assertTrue(Cobblemon173ActionCandidateAdapter.isMoveChoiceAvailable(base, ShowdownMoveset.Gimmick.Z_POWER, z))
+        assertFalse(Cobblemon173ActionCandidateAdapter.isMoveChoiceAvailable(base, ShowdownMoveset.Gimmick.Z_POWER, null))
+    }
+
+    @Test
+    fun `AI offers every enabled available mechanic and excludes consumed or unoffered mechanics`() {
+        val moveset = ShowdownMoveset().also {
+            it.canMegaEvo = true
+            it.canDynamax = true
+            it.canTerastallize = "fire"
+        }
+        val flags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
+        assertEquals(listOf(ShowdownMoveset.Gimmick.MEGA_EVOLUTION, ShowdownMoveset.Gimmick.DYNAMAX,
+            ShowdownMoveset.Gimmick.TERASTALLIZATION),
+            Cobblemon173ActionCandidateAdapter.allowedGimmicks(moveset, Cobblemon173MechanicPolicy(flags.ALL)))
+        assertEquals(listOf(ShowdownMoveset.Gimmick.DYNAMAX, ShowdownMoveset.Gimmick.TERASTALLIZATION),
+            Cobblemon173ActionCandidateAdapter.allowedGimmicks(moveset,
+                Cobblemon173MechanicPolicy(flags.ALL and flags.MEGA.inv())))
+        moveset.canDynamax = false
+        assertTrue(Cobblemon173ActionCandidateAdapter.allowedGimmicks(moveset,
+            Cobblemon173MechanicPolicy(flags.DYNAMAX)).isEmpty())
+    }
+
     @Test
     fun `Pressure target flags override self and side targets only when declared`() {
         assertEquals(BattleMoveTargetPattern.ALL_OPPONENTS,
@@ -79,32 +123,28 @@ class Cobblemon173ActionCandidateAdapterTest {
         }
 
         assertEquals(
-            ShowdownMoveset.Gimmick.MEGA_EVOLUTION,
-            Cobblemon173ActionCandidateAdapter.allowedGimmick(
+            listOf(ShowdownMoveset.Gimmick.MEGA_EVOLUTION),
+            Cobblemon173ActionCandidateAdapter.allowedGimmicks(
                 moveset,
-                Cobblemon173MechanicPolicy(MajorBattleMechanic.MEGA, consumed = false),
+                Cobblemon173MechanicPolicy(BattleMechanicFlags.MEGA),
             ),
         )
         assertEquals(
-            ShowdownMoveset.Gimmick.DYNAMAX,
-            Cobblemon173ActionCandidateAdapter.allowedGimmick(
+            listOf(ShowdownMoveset.Gimmick.DYNAMAX),
+            Cobblemon173ActionCandidateAdapter.allowedGimmicks(
                 moveset,
-                Cobblemon173MechanicPolicy(MajorBattleMechanic.DYNAMAX, consumed = false),
+                Cobblemon173MechanicPolicy(BattleMechanicFlags.DYNAMAX),
             ),
         )
         assertEquals(
-            ShowdownMoveset.Gimmick.TERASTALLIZATION,
-            Cobblemon173ActionCandidateAdapter.allowedGimmick(
+            listOf(ShowdownMoveset.Gimmick.TERASTALLIZATION),
+            Cobblemon173ActionCandidateAdapter.allowedGimmicks(
                 moveset,
-                Cobblemon173MechanicPolicy(MajorBattleMechanic.TERA, consumed = false),
+                Cobblemon173MechanicPolicy(BattleMechanicFlags.TERA),
             ),
         )
-        assertNull(
-            Cobblemon173ActionCandidateAdapter.allowedGimmick(
-                moveset,
-                Cobblemon173MechanicPolicy(MajorBattleMechanic.MEGA, consumed = true),
-            ),
-        )
+        assertTrue(Cobblemon173ActionCandidateAdapter.allowedGimmicks(
+            moveset, Cobblemon173MechanicPolicy(BattleMechanicFlags.NONE)).isEmpty())
     }
 
     @Test

@@ -10,6 +10,21 @@ import java.util.UUID
 
 class ManagedBattleRuleRegistryTest {
     @Test
+    fun `using one mechanic leaves other enabled mechanics available to the same actor`() {
+        val registry = ManagedBattleRuleRegistry()
+        registry.registerMultiple(battleId, setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.DYNAMAX,
+            ManagedSubmittedMechanic.TERA, ManagedSubmittedMechanic.Z_MOVE), setOf(playerActorId, trainerActorId))
+        assertTrue(registry.recordAccepted(battleId, playerActorId,
+            ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA))))
+        assertEquals(setOf(ManagedSubmittedMechanic.DYNAMAX, ManagedSubmittedMechanic.TERA, ManagedSubmittedMechanic.Z_MOVE),
+            registry.availableMechanics(battleId, playerActorId))
+        assertEquals(4, registry.availableMechanics(battleId, trainerActorId)?.size)
+        assertNull(registry.availableMechanics(battleId, UUID.randomUUID()))
+        registry.unregister(battleId)
+        assertNull(registry.availableMechanics(battleId, playerActorId))
+    }
+
+    @Test
     fun `allowed mechanic snapshot distinguishes unmanaged factory tower and pvp battles`() {
         val registry = ManagedBattleRuleRegistry()
         val actors = setOf(UUID.randomUUID(), UUID.randomUUID())

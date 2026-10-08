@@ -38,7 +38,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 trainerProfile = prepared.trainerProfile,
                 learningScopeId = prepared.request.learningScopeId,
                 opponentTeamPreview = prepared.request.playerTeamPreview,
-                mechanic = prepared.mechanic,
+                mechanicFlags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(prepared.mechanic),
                 format = prepared.request.progress.format.toBrainFormat(),
                 brainSelectionContext = prepared.brainSelectionContext,
                 contentId = ManagedBattleContentIds.BATTLE_TOWER,

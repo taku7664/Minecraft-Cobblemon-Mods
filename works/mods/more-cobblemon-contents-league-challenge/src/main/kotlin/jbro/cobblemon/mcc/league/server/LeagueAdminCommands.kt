@@ -211,7 +211,8 @@ object LeagueAdminCommands {
             ManagedPveBattles.start(player, ManagedPveBattles.Request(UUID.randomUUID(), ManagedBattleContentIds.AI_TEST,
                 BattleBrainContentIds.AI_TEST_PERSONA_PREFIX + challengeId.substringAfter(':'), challenge.nameKey, ManagedPveBattles.snapshotParty(player, MAX_LEVEL), challenge.team,
                 ManagedPveBattles.Format.valueOf(challenge.format),
-                challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf), skill = skill,
+                jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(
+                    challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = skill,
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
                 stage = engine.stage(challengeId),
                 // The brain logs under the AI test id; the clients still hear and see the league battle.
