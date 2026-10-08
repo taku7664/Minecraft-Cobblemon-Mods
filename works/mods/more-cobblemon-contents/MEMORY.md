@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-09 04:56] 칼춤·여왕의위엄 메시지 수정 빌드·배치
+
+- **빌드:** `main` = `origin/main` = `69fe25f7`, 작업 트리 깨끗한 상태에서 MCC만 `remapJar`. 무결성 검사 통과, `CantInstructionMixin`·믹스인 등록·새 문구 포함 확인.
+- **배치:** `develop-product/server/mods`·`client/mods`의 `more-cobblemon-contents-0.1.0.jar` 교체, SHA-256 세 개 일치(`da468de8…`). 이전 JAR은 `develop-product/deployment-backups/20261009-swordsdance-cant-message/`. 배치 때 서버·게임 모두 꺼져 있었고 켜지 않았다.
+- **실게임:** 확인 안 함. 특히 메시지 믹스인은 대상이 안 맞으면 조용히 빠지므로(`require = 0`) 여왕의위엄 상황에서 확인이 필요하다.
+
 ## [2026-10-09 04:51] 서버 로그로 본 칼춤·수면가루·여왕의위엄 메시지
 
 - **칼춤을 안 씀(버그, 수정):** `LocalPublicMoveTargets.resolve`가 대상 칸 없이 오는 자기 대상 기술을 필드의 상대에게 거는 것으로 풀었다. 상대가 황금몸(골딩고)이면 칼춤이 `publicly_inert`로 후보에서 빠졌다(로그 `bf71c096` 7~12턴, 루카리오). 자기·아군 대상 패턴이면 상대를 대상으로 잡지 않게 했다. 테스트 7개 통과(사용자 요청으로 해당 클래스만).
