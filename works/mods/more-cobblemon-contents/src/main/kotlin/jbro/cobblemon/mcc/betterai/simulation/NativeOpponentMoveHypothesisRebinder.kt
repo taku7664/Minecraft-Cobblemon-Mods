@@ -53,8 +53,9 @@ internal object NativeOpponentMoveHypothesisRebinder {
             require(existing == expected) {
                 "Native definition move set disagrees with its logical inference for $pokemonId"
             }
+            // An inference that names no concrete move says nothing new; the world keeps the moves it has.
             val replacement = concreteMoveIds(target)
-            require(replacement.isNotEmpty()) { "A native opponent hypothesis must retain an executable move" }
+            if (replacement.isEmpty()) return@forEach
             targetInferences[pokemonId] = target
             if (replacement != existing) {
                 rebindings += NativeMoveSetRebinding(pokemonId.toString(), existing, replacement)

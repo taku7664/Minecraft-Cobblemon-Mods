@@ -42,6 +42,9 @@ internal data class NativeBattleRootIssue(
     val battlePokemonId: UUID? = null,
 )
 
+/** Better AI's own bookkeeping tags (an eaten berry, a boost this turn) ride along with public volatiles. */
+internal fun isBetterAiMarker(volatileId: String): Boolean = volatileId.startsWith("better_ai:")
+
 /** Rejects a synthetic native root that contradicts its definition or any supplied public fact. */
 internal object NativeBattleRootValidator {
     fun validate(
@@ -159,7 +162,8 @@ internal object NativeBattleRootValidator {
                 issue(issues, NativeBattleRootIssueCode.STAT_STAGES_MISMATCH, id)
             }
             val actualVolatiles = actual.knownVolatileEffectIds.mapTo(linkedSetOf(), ::normalizedId)
-            val publicVolatiles = public.knownVolatileEffectIds.mapTo(linkedSetOf(), ::normalizedId)
+            val publicVolatiles = public.knownVolatileEffectIds.asSequence()
+                .filterNot(::isBetterAiMarker).mapTo(linkedSetOf(), ::normalizedId)
             if (!actualVolatiles.containsAll(publicVolatiles) ||
                 public.actionConstraints.taunted != actual.actionConstraints.taunted ||
                 public.actionConstraints.mustRecharge != actual.actionConstraints.mustRecharge ||

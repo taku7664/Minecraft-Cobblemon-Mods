@@ -114,8 +114,10 @@ internal class NativeProductSessionReconciler(
                 passes@ for (pass in 0 until passes) {
                     if (pass > 0 && descendants.isNotEmpty()) break
                     val salts: List<Int?> = if (pass == 0) listOf(null) else (1..CHANCE_RESAMPLES).toList()
+                    // Other streams get a third of what is left, so a failure still leaves time to rebuild the worlds.
+                    val passDeadline = if (pass == 0) deadlineNanos else nanoTime().let { now -> now + (deadlineNanos - now) / 3 }
                     for (world in session.worlds.sortedWith(WORLD_ORDER)) {
-                        if (deadlineReached(deadlineNanos)) {
+                        if (deadlineReached(passDeadline)) {
                             if (pass > 0) break@passes
                             return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                         }
@@ -228,7 +230,7 @@ internal class NativeProductSessionReconciler(
                         for (opponentAction in observed.actions) {
                             val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
                             for (salt in salts) {
-                                if (deadlineReached(deadlineNanos)) {
+                                if (deadlineReached(passDeadline)) {
                                     if (pass > 0) break@passes
                                     return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                                 }
@@ -251,7 +253,7 @@ internal class NativeProductSessionReconciler(
                                     submittedOpponentAction = opponentAction,
                                     events = currentEvents,
                                     publicState = worldState,
-                                    deadlineNanos = deadlineNanos,
+                                    deadlineNanos = passDeadline,
                                     publicTurnOffset = publicTurnOffset,
                                 )
                                 when (replayed.status) {
