@@ -11,7 +11,7 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
-import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
 import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
@@ -40,7 +40,7 @@ data class Cobblemon173ManagedAiBattle(
     val trainerProfile: BattleTrainerProfile,
     val learningScopeId: UUID?,
     val opponentTeamPreview: BattleOpponentTeamPreviewView?,
-    val mechanic: MajorBattleMechanic?,
+    val mechanicFlags: Int,
     val format: BrainBattleFormat,
     val brainSelectionContext: BattleBrainSelectionContext,
     val contentId: String,
@@ -49,7 +49,9 @@ data class Cobblemon173ManagedAiBattle(
     val appearance: TrainerResourceSkin? = null,
     val strategyBrief: BattleStrategyBrief? = null,
     val scenes: jbro.cobblemon.mcc.api.presentation.TrainerScenes = jbro.cobblemon.mcc.api.presentation.TrainerScenes.NONE,
-)
+) {
+    init { BattleMechanicFlags.requireValid(mechanicFlags) }
+}
 
 /** How a started battle ended for the player; a null outcome means it ended without a winner. */
 data class Cobblemon173ManagedAiBattleEnd(
@@ -163,7 +165,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 ) { "${prepared.diagnosticsLabel} mechanic rules were not attached before the trainer requested a choice" }
             },
         )
-        val canDynamax = prepared.mechanic == MajorBattleMechanic.DYNAMAX
+        val canDynamax = BattleMechanicFlags.contains(prepared.mechanicFlags, BattleMechanicFlags.DYNAMAX)
         playerActor.canDynamax = canDynamax
         trainerActor.canDynamax = canDynamax
         val actorIds = setOf(playerActor.uuid, trainerActor.uuid)
@@ -184,9 +186,9 @@ class Cobblemon173ManagedAiBattleEngine(
                 releasePendingRegistration = ownerRegistration::close,
                 terminateBattle = {},
             ) {
-                Cobblemon173BattleRuleHooks.beginRegistration(
+                Cobblemon173BattleRuleHooks.beginRegistrationFlags(
                     prepared.contentId,
-                    prepared.mechanic,
+                    prepared.mechanicFlags,
                     actorIds,
                 )
             }

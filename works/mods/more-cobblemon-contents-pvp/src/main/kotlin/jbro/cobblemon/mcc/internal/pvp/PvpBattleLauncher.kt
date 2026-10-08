@@ -2,24 +2,33 @@ package jbro.cobblemon.mcc.internal.pvp
 
 import java.util.Collections
 import java.util.UUID
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 
 internal data class PvpBattleLaunchRequest(
     val matchId: UUID,
     val firstPlayerId: UUID,
     val secondPlayerId: UUID,
     val format: PvpBattleFormat,
-    val enabledMechanics: Set<PvpBattleMechanic> = PvpRoomDefaults.ENABLED_MECHANICS,
+    val mechanicFlags: Int = PvpRoomDefaults.ENABLED_MECHANICS.toMechanicFlags(),
     val firstSelection: PvpSelectedTeam,
     val secondSelection: PvpSelectedTeam,
 ) {
     init {
+        BattleMechanicFlags.requireValid(mechanicFlags)
         require(firstPlayerId != secondPlayerId) { "A PvP battle requires two different players" }
         require(firstSelection.format == format && secondSelection.format == format) {
             "PvP selections must match the requested battle format"
         }
     }
+}
 
-    val immutableEnabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.immutableMechanicSet()
+internal fun Set<PvpBattleMechanic>.toMechanicFlags(): Int = fold(BattleMechanicFlags.NONE) { flags, mechanic ->
+    flags or when (mechanic) {
+        PvpBattleMechanic.MEGA -> BattleMechanicFlags.MEGA
+        PvpBattleMechanic.DYNAMAX -> BattleMechanicFlags.DYNAMAX
+        PvpBattleMechanic.TERA -> BattleMechanicFlags.TERA
+        PvpBattleMechanic.Z_MOVE -> BattleMechanicFlags.Z_MOVE
+    }
 }
 
 internal class PvpPreparedBattle<P> internal constructor(

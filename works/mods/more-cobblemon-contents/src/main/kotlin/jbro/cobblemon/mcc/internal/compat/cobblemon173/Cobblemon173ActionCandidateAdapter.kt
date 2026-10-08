@@ -25,6 +25,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 
 /** Contains every direct Cobblemon 1.7.3 action-request dependency used by the public Brain boundary. */
 internal object Cobblemon173ActionCandidateAdapter {
@@ -92,7 +93,8 @@ internal object Cobblemon173ActionCandidateAdapter {
         if (choicesBySlot.any { it.isEmpty() }) {
             return Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.NO_LEGAL_ACTIONS, format)
         }
-        val choices = (if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot)).filter { choice ->
+        val choices = (if (slotCount == 1) choicesBySlot.single() else combine(choicesBySlot,
+            allowMultipleMechanics = Integer.bitCount(mechanicPolicy.availableFlags) > 1)).filter { choice ->
             val parts = choice.candidate.componentActions.ifEmpty { listOf(choice.candidate) }
             parts.count { it.actorSlot in ordinaryForcedSlots && it.kind == BattleActionKind.SWITCH } == replacementCount
         }
@@ -102,18 +104,18 @@ internal object Cobblemon173ActionCandidateAdapter {
         return Cobblemon173ActionPreparation.ready(choices, format)
     }
 
-    internal fun allowedGimmick(
+    internal fun allowedGimmicks(
         moveset: ShowdownMoveset,
         policy: Cobblemon173MechanicPolicy,
-    ): ShowdownMoveset.Gimmick? {
-        if (policy.consumed) return null
-        val requested = when (policy.selected) {
-            MajorBattleMechanic.MEGA -> ShowdownMoveset.Gimmick.MEGA_EVOLUTION
-            MajorBattleMechanic.DYNAMAX -> ShowdownMoveset.Gimmick.DYNAMAX
-            MajorBattleMechanic.TERA -> ShowdownMoveset.Gimmick.TERASTALLIZATION
-            null -> return null
+    ): List<ShowdownMoveset.Gimmick> = moveset.getGimmicks().filter { gimmick ->
+        val flag = when (gimmick) {
+            ShowdownMoveset.Gimmick.MEGA_EVOLUTION -> BattleMechanicFlags.MEGA
+            ShowdownMoveset.Gimmick.DYNAMAX -> BattleMechanicFlags.DYNAMAX
+            ShowdownMoveset.Gimmick.TERASTALLIZATION -> BattleMechanicFlags.TERA
+            ShowdownMoveset.Gimmick.Z_POWER -> BattleMechanicFlags.Z_MOVE
+            ShowdownMoveset.Gimmick.ULTRA_BURST -> BattleMechanicFlags.NONE
         }
-        return requested.takeIf { it in moveset.getGimmicks() }
+        BattleMechanicFlags.contains(policy.availableFlags, flag)
     }
 
     /** Matches Cobblemon's AIBattleActor response cardinality, including a zero-slot initial wait. */
@@ -122,13 +124,17 @@ internal object Cobblemon173ActionCandidateAdapter {
         activePokemon: List<ActiveBattlePokemon>,
     ): List<ShowdownActionResponse> = request.iterate(activePokemon) { _, _, _ -> PassActionResponse }
 
-    internal fun combine(choicesBySlot: List<List<Cobblemon173ActionChoice>>): List<Cobblemon173ActionChoice> =
+    internal fun combine(
+        choicesBySlot: List<List<Cobblemon173ActionChoice>>,
+        allowMultipleMechanics: Boolean = false,
+    ): List<Cobblemon173ActionChoice> =
         choicesBySlot.fold(listOf(emptyList<Cobblemon173ActionChoice>())) { combinations, slotChoices ->
             combinations.flatMap { combination -> slotChoices.map { combination + it } }
         }.filter { combination ->
             val switchIds = combination.mapNotNull { it.candidate.switchPokemonId }
-            val mechanicUses = combination.count { it.candidate.mechanic != null }
-            switchIds.distinct().size == switchIds.size && mechanicUses <= 1
+            val mechanicUses = combination.mapNotNull { it.candidate.mechanic?.mechanicId }
+            switchIds.distinct().size == switchIds.size && mechanicUses.distinct().size == mechanicUses.size &&
+                (allowMultipleMechanics || mechanicUses.size <= 1)
         }.map { combination ->
             val componentCandidates = combination.map { it.candidate }
             val componentIds = componentCandidates.map { it.actionId }
@@ -166,13 +172,13 @@ internal object Cobblemon173ActionCandidateAdapter {
         }
         if (allowReplacementPass) add(pass)
         if (!forceSwitch && moveset != null) {
-            val gimmick = allowedGimmick(moveset, mechanicPolicy)
+            val gimmicks = allowedGimmicks(moveset, mechanicPolicy)
             moveset.moves.forEachIndexed { moveSlot, move ->
                 val currentMaxMove = currentMaxMove(moveset, moveSlot)
                 addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null, currentMaxMove)
-                if (gimmick != null) {
+                gimmicks.forEach { gimmick ->
                     val transformed = transformedMove(moveset, moveSlot, gimmick)
-                    if (gimmick != ShowdownMoveset.Gimmick.DYNAMAX || transformed != null) {
+                    if ((gimmick != ShowdownMoveset.Gimmick.DYNAMAX && gimmick != ShowdownMoveset.Gimmick.Z_POWER) || transformed != null) {
                         addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, gimmick, transformed)
                     }
                 }
@@ -293,7 +299,7 @@ internal object Cobblemon173ActionCandidateAdapter {
         gimmick: ShowdownMoveset.Gimmick?,
         transformed: InBattleGimmickMove?,
     ): Boolean = when (gimmick) {
-        ShowdownMoveset.Gimmick.DYNAMAX -> transformed != null && !transformed.disabled
+        ShowdownMoveset.Gimmick.DYNAMAX, ShowdownMoveset.Gimmick.Z_POWER -> transformed != null && !transformed.disabled
         null -> if (transformed != null) !transformed.disabled else move.canBeUsed()
         else -> move.canBeUsed()
     }
@@ -302,12 +308,13 @@ internal object Cobblemon173ActionCandidateAdapter {
     internal fun currentMaxMove(moveset: ShowdownMoveset, moveSlot: Int): InBattleGimmickMove? =
         moveset.maxMoves?.getOrNull(moveSlot).takeIf { !moveset.canDynamax }
 
-    private fun transformedMove(
+    internal fun transformedMove(
         moveset: ShowdownMoveset,
         moveSlot: Int,
         gimmick: ShowdownMoveset.Gimmick,
     ): InBattleGimmickMove? = when (gimmick) {
         ShowdownMoveset.Gimmick.DYNAMAX -> moveset.maxMoves?.getOrNull(moveSlot)?.takeUnless { it.disabled }
+        ShowdownMoveset.Gimmick.Z_POWER -> moveset.canZMove?.getOrNull(moveSlot)?.takeUnless { it.disabled }
         else -> null
     }
 
@@ -423,9 +430,8 @@ internal object Cobblemon173ActionCandidateAdapter {
         ShowdownMoveset.Gimmick.MEGA_EVOLUTION -> MajorBattleMechanic.MEGA.id
         ShowdownMoveset.Gimmick.DYNAMAX -> MajorBattleMechanic.DYNAMAX.id
         ShowdownMoveset.Gimmick.TERASTALLIZATION -> MajorBattleMechanic.TERA.id
-        ShowdownMoveset.Gimmick.ULTRA_BURST,
-        ShowdownMoveset.Gimmick.Z_POWER,
-        -> error("Unsupported major mechanic leaked into the MCC candidate adapter: $gimmick")
+        ShowdownMoveset.Gimmick.Z_POWER -> "z_move"
+        ShowdownMoveset.Gimmick.ULTRA_BURST -> error("Unsupported major mechanic leaked into the MCC candidate adapter: $gimmick")
     }
 
     internal fun publicAccuracy(cobblemonAccuracy: Double): Double? =
@@ -496,9 +502,10 @@ internal object Cobblemon173ActionCandidateAdapter {
 }
 
 data class Cobblemon173MechanicPolicy(
-    val selected: MajorBattleMechanic?,
-    val consumed: Boolean,
-)
+    val availableFlags: Int,
+) {
+    init { BattleMechanicFlags.requireValid(availableFlags) }
+}
 
 internal enum class Cobblemon173ActionPreparationStatus {
     READY,

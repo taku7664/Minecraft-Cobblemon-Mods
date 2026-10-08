@@ -52,7 +52,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                 trainerProfile = prepared.trainerProfile,
                 learningScopeId = null,
                 opponentTeamPreview = playerTeamPreview(prepared.playerTeam),
-                mechanic = null,
+                mechanicFlags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.NONE,
                 format = prepared.request.playerTeam.format.toBrainFormat(),
                 brainSelectionContext = prepared.brainSelectionContext,
                 contentId = ManagedBattleContentIds.BATTLE_FACTORY,

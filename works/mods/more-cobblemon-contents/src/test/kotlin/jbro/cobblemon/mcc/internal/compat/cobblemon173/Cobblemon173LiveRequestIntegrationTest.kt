@@ -192,7 +192,7 @@ class Cobblemon173LiveRequestIntegrationTest {
     }
 
     companion object {
-        private val POLICY = Cobblemon173MechanicPolicy(null, consumed = false)
+        private val POLICY = Cobblemon173MechanicPolicy(jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.NONE)
         private var previousSpecies = emptyMap<ResourceLocation, Species>()
 
         @JvmStatic @BeforeAll

@@ -98,6 +98,9 @@ internal class ManagedBattleRuleRegistry {
     fun actorMechanicState(battleId: UUID, actorId: UUID): ManagedActorMechanicState? =
         battles[battleId]?.actorMechanicState(actorId)
 
+    fun availableMechanics(battleId: UUID, actorId: UUID): Set<ManagedSubmittedMechanic>? =
+        battles[battleId]?.availableMechanics(actorId)
+
     private class BattleRules(
         val contentId: String,
         allowedMechanics: Set<ManagedSubmittedMechanic>,
@@ -109,6 +112,10 @@ internal class ManagedBattleRuleRegistry {
         private val actors = actorIds.associateWith { LinkedHashSet<ManagedSubmittedMechanic>() }.toMutableMap()
 
         fun snapshotAllowedMechanics(): Set<ManagedSubmittedMechanic> = allowedMechanics.toSet()
+
+        @Synchronized
+        fun availableMechanics(actorId: UUID): Set<ManagedSubmittedMechanic>? =
+            actors[actorId]?.let { consumed -> allowedMechanics - consumed }
 
         @Synchronized
         fun rejectionReason(actorId: UUID, submission: ManagedActionSubmission): ManagedRuleRejection? {

@@ -3,7 +3,6 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
-import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 
 internal data class ManagedPvePrepared(
     val playerId: UUID,
@@ -11,7 +10,7 @@ internal data class ManagedPvePrepared(
     val trainerId: String,
     val trainerNameKey: String,
     val format: PveFormat,
-    val mechanic: MajorBattleMechanic?,
+    val mechanicFlags: Int,
     val playerTeam: List<BattlePokemon>,
     val opponentTeam: List<BattlePokemon>,
     val trainerProfile: BattleTrainerProfile,

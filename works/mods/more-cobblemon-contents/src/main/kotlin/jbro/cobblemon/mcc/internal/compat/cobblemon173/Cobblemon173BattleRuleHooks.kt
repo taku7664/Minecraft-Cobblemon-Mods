@@ -11,6 +11,8 @@ import jbro.cobblemon.mcc.internal.battle.rules.ManagedActionSubmission
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedBattleRuleRegistry
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedBattleRuleRegistrationWindow
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
+import jbro.cobblemon.mcc.internal.battle.rules.flag
+import jbro.cobblemon.mcc.internal.battle.rules.submittedMechanics
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.mcc.internal.battle.GimmickLockedBattles
@@ -42,6 +44,9 @@ object Cobblemon173BattleRuleHooks {
 
     fun beginRegistrationMultiple(contentId: String, mechanics: Set<ManagedSubmittedMechanic>, actorIds: Set<UUID>) =
         registrationWindow.beginMultiple(contentId, mechanics, actorIds)
+
+    fun beginRegistrationFlags(contentId: String, mechanicFlags: Int, actorIds: Set<UUID>) =
+        registrationWindow.beginMultiple(contentId, submittedMechanics(mechanicFlags), actorIds)
 
     @JvmStatic
     fun attachConstructed(battle: PokemonBattle) {
@@ -111,7 +116,9 @@ object Cobblemon173BattleRuleHooks {
     fun contentId(battleId: UUID): String? = registry.contentId(battleId)
 
     fun mechanicPolicy(battleId: UUID, actorId: UUID): Cobblemon173MechanicPolicy? =
-        registry.actorMechanicState(battleId, actorId)?.let { Cobblemon173MechanicPolicy(it.selected, it.consumed) }
+        registry.availableMechanics(battleId, actorId)?.let { mechanics ->
+            Cobblemon173MechanicPolicy(mechanics.fold(0) { flags, mechanic -> flags or mechanic.flag })
+        }
 
     internal fun inspect(responses: List<ShowdownActionResponse>) = ManagedActionSubmission(
         hasBagItem = responses.any { it is BagItemActionResponse },
