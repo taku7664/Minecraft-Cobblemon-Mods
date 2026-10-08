@@ -9,14 +9,14 @@
 <body data-root=".." data-no-toc>
 <main>
   <h1>포켓몬 도감</h1>
-  <p>이 서버에 있는 포켓몬 <b id="dx-total">-</b>종의 종족값, 쓰러뜨리면 주는 노력치, 특성, 진화, 배우는 기술, 야생 출현 장소를 정리했습니다. 서버의 실제 데이터에서 뽑은 고정 정보이고, 서버 데이터가 바뀌면 다시 갱신합니다. 포켓몬을 누르면 자세한 정보가 열립니다.</p>
+  <p>이 서버에 있는 포켓몬 <b id="dx-total">-</b>종의 종족값, 쓰러뜨리면 주는 노력치와 드롭 아이템, 특성, 진화, 배우는 기술, 야생 출현 장소를 정리했습니다. 서버의 실제 데이터에서 뽑은 고정 정보이고, 서버 데이터가 바뀌면 다시 갱신합니다. 포켓몬을 누르면 자세한 정보가 열립니다. 검색창에 드롭 아이템의 이름이나 ID를 넣으면 해당 아이템을 주는 포켓몬도 찾을 수 있습니다. 모든 폼의 드롭 목록을 검색하므로 상세 화면에서 폼을 확인하세요.</p>
   <div class="note">
     <strong>야생 레벨은 레벨캡을 따릅니다</strong>
     이 서버에서 야생 포켓몬의 레벨은 내 레벨캡에 맞춰 정해지므로, 도감에는 레벨을 적지 않았습니다. → <a href="levels.html">레벨캡과 야생 포켓몬</a>
   </div>
 
   <div class="filters">
-    <input id="dx-q" type="search" placeholder="이름, 영어 ID, 도감 번호" aria-label="포켓몬 검색">
+    <input id="dx-q" type="search" placeholder="포켓몬 이름·ID·번호, 드롭 아이템" aria-label="포켓몬 또는 드롭 아이템 검색">
     <select id="dx-type" aria-label="타입"><option value="">모든 타입</option></select>
     <select id="dx-gen" aria-label="세대"><option value="">모든 세대</option></select>
     <select id="dx-label" aria-label="분류">
@@ -67,7 +67,7 @@
       var q = $("dx-q").value.trim().toLowerCase(), type = $("dx-type").value, gen = $("dx-gen").value, label = $("dx-label").value, ev = $("dx-ev").value;
       var sort = $("dx-sort").value, wild = $("dx-wild").checked;
       var shown = dex.filter(function (p) {
-        if (q && p.name.toLowerCase().indexOf(q) < 0 && p.id.indexOf(q) < 0 && String(p.dex) !== q.replace(/^0+/, "")) return false;
+        if (q && p.name.toLowerCase().indexOf(q) < 0 && p.id.indexOf(q) < 0 && String(p.dex) !== q.replace(/^0+/, "") && (p.dropSearch || "").toLowerCase().indexOf(q) < 0) return false;
         if (type && p.types.indexOf(type) < 0) return false;
         if (gen && String(p.gen) !== gen) return false;
         if (label === "-" && p.labels.some(function (l) { return SPECIAL.indexOf(l) >= 0; })) return false;

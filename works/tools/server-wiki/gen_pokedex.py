@@ -97,6 +97,21 @@ def showdown_moves(server):
     return json.loads(subprocess.run([node, "-e", script, str(moves_js.resolve())], capture_output=True, check=True).stdout)
 
 
+def drop_table(form, item_name):
+    """Preserve configured roll percentages, not final acquisition probabilities."""
+    table = form.get("drops") or {}
+    return {"amount": table.get("amount", 1), "entries": [
+        {"id": entry["item"], "name": item_name(entry["item"]),
+         "quantity": entry.get("quantityRange", entry.get("quantity", 1)),
+         "percentage": entry.get("percentage", 100)}
+        for entry in table.get("entries", []) if "item" in entry
+    ]}
+
+
+def form_signature(form):
+    return tuple(form[key] for key in ("types", "stats", "abilities", "learn", "drops"))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", default=str(DEFAULT_SERVER))
@@ -228,11 +243,10 @@ def main():
                 "abilities": abilities,
                 "evolutions": [evolution(e, species, lang, item_name) for e in form.get("evolutions", [])],
                 "learn": {k: (sorted(v) if k == "level" else sorted(set(v))) for k, v in learn.items()},
+                "drops": drop_table(form, item_name),
             })
-        # Forms that differ only in looks (colours, seasons, regional spawn bias) add nothing to a battle guide.
-        def battle_data(f):
-            return (f["types"], f["stats"], f["abilities"], f["learn"])
-        detail_forms = detail_forms[:1] + [f for f in detail_forms[1:] if battle_data(f) != battle_data(detail_forms[0])]
+        # Keep forms whose drop tables differ, even when their battle data is identical.
+        detail_forms = detail_forms[:1] + [f for f in detail_forms[1:] if form_signature(f) != form_signature(detail_forms[0])]
         base = detail_forms[0]
         labels = [EXCLUDED_LABELS[l] for l in data.get("labels", []) if l in EXCLUDED_LABELS]
         pre = next((sid for sid, (d, _) in species.items() if any(e.get("result", "").split(" ")[0] == id_ for e in d.get("evolutions", []))), None)
@@ -240,6 +254,8 @@ def main():
             "id": id_, "dex": data.get("nationalPokedexNumber", 0), "name": tr(f"cobblemon.species.{id_}.name", data.get("name", id_)),
             "types": base["types"], "stats": base["stats"], "gen": int(re.sub(r"\D", "", generation) or 0), "labels": labels,
             "spawns": len(spawns.get(id_, [])), "ev": [data.get("evYield", {}).get(s, 0) for s in STATS],
+            "dropSearch": " ".join(sorted({value for f in detail_forms for entry in f["drops"]["entries"]
+                                          for value in (entry["name"], entry["id"])})),
         })
         details[id_] = {
             "desc": tr(f"cobblemon.species.{id_}.desc", ""),
@@ -376,4 +392,5 @@ def evolution(e, species, lang, item_name):
     return {"to": target, "name": target_name, "how": [h for h in how if h]}
 
 
-main()
+if __name__ == "__main__":
+    main()
