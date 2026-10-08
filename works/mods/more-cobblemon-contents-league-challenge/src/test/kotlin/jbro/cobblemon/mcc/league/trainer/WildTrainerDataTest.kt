@@ -26,8 +26,13 @@ class WildTrainerDataTest {
 
     @Test
     fun `every kind has its NPC class and every skin it wears is in the variation`() {
-        val variation = JsonParser.parseString(resources.resolve("assets/$ns/bedrock/npcs/variations/wild_trainer/0_wild_trainer.json").readText())
-            .asJsonObject.getAsJsonArray("variations").flatMap { entry -> entry.asJsonObject.getAsJsonArray("aspects").map { it.asString } }.toSet()
+        // The generated RCT skins, and the mod's own in later files of the same variation.
+        val variation = Files.list(resources.resolve("assets/$ns/bedrock/npcs/variations/wild_trainer")).use { files ->
+            files.toList().filter { it.name.endsWith(".json") }.flatMap { file ->
+                JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("variations")
+                    .flatMap { entry -> entry.asJsonObject.getAsJsonArray("aspects").map { it.asString } }
+            }
+        }.toSet()
         assertTrue(definitions.values.count { it.tier == WildTrainerTier.NORMAL } >= 100)
         assertTrue(definitions.values.count { it.tier == WildTrainerTier.ACE } >= 20)
         definitions.keys.forEach { npcClass ->

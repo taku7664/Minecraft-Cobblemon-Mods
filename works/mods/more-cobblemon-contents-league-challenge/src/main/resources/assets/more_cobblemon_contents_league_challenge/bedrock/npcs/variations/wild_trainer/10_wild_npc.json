@@ -1,0 +1,15 @@
+{
+ "name": "more_cobblemon_contents_league_challenge:wild_trainer",
+ "order": 10,
+ "variations": [
+  {
+   "aspects": [
+    "mcc_skin_nurse_joy"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png"
+  }
+ ]
+}

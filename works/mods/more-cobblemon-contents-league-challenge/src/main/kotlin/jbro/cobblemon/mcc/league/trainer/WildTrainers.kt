@@ -67,6 +67,8 @@ object WildTrainers {
      */
     private const val DEFEATED_TAG = "mcc_wild_trainer_defeated"
     private const val SCENE_LINE_VARIANTS = 3
+    /** Skin aspects for textures this mod ships under `textures/npcs/wild/`, such as `mcc_skin_nurse_joy`. */
+    private const val OWN_SKIN_PREFIX = "mcc_skin_"
     private const val NEARBY_LIMIT = 2
     private const val NEARBY_RADIUS = 64.0
     private const val TERMINAL_CHUNK_RADIUS = 2
@@ -345,8 +347,15 @@ object WildTrainers {
         lines = lines,
         choices = choices,
         npc = npc,
-        skin = npc.aspects.firstOrNull { it.startsWith("rct_") }?.let { "rct:" + it.removePrefix("rct_") }.orEmpty(),
+        skin = skinRef(npc),
     )
+
+    /** The skin [npc] wears, as the dialogue box names it: an RCT Trainers+ skin, or one this mod ships. */
+    private fun skinRef(npc: NPCEntity): String {
+        npc.aspects.firstOrNull { it.startsWith("rct_") }?.let { return "rct:" + it.removePrefix("rct_") }
+        val own = npc.aspects.firstOrNull { it.startsWith(OWN_SKIN_PREFIX) } ?: return ""
+        return "${Mod.MOD_ID}:textures/npcs/wild/${own.removePrefix(OWN_SKIN_PREFIX)}.png"
+    }
 
     /** Operator view and control; the commands live under `/mcc league trainer`. */
     internal fun activeFights(): Int = fights.size

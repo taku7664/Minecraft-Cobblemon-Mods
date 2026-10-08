@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 15:50] 돌보미 스킨을 간호순으로 (구현만, 빌드·실게임 안 함)
+
+- **스킨 출처:** 사용자가 구해 `build/skin-search/nurse-joy.png`에 둔 64×64 슬림 팔 스킨(팬 스킨, 라이선스는 사용자 판단). RCT 팩엔 간호사가 없고, Cobblemon의 `villager/profession/nurse_joy.png`는 주민 덧씌우기라 못 쓴다.
+- **연결:** 모드가 직접 싣는 스킨은 `textures/npcs/wild/<이름>.png` + aspect `mcc_skin_<이름>`. 변형은 생성기가 덮어쓰는 `0_wild_trainer.json`이 아니라 같은 이름의 `10_wild_npc.json`에 둔다(Cobblemon이 같은 `name` 파일을 order 순으로 합친다). 슬림 팔이라 `cobblemon:alex.geo`. 대화창 이름표는 `WildTrainers.skinRef`가 이 aspect를 텍스처 경로로 바꾼다.
+- `wild_caretaker`는 이제 간호순 스킨만 쓴다. RCT 이름이 없어 이름표는 "포켓몬 돌보미"만 나온다.
+- `WildTrainerDataTest`가 변형 폴더의 모든 파일을 읽게 고쳤다(실행 안 함).
+- **주의:** `works/tools/wild-trainers/gen_wild_trainers.py`는 `npcs/wild_*.json`을 전부 지우고 다시 만든다. 손으로 만든 `wild_caretaker.json`·`wild_trader.json`도 지워지니 생성기를 다시 돌리면 되살려야 한다.
+
 ## [2026-10-08 15:20] 1~4단계 컴파일과 개발 클라이언트 확인 (`WildNpcRoleCheckHarness`)
 
 - **빌드:** `:cobblemon-npc:build :jbro-policy:build :more-cobblemon-contents-league-challenge:build -x test -x unitTest` 성공.
