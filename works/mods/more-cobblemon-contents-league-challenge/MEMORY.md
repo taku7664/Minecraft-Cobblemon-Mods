@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 12:50] 야생 NPC 역할 틀(2단계)과 돌보미 회복 NPC(3단계) (구현만, 빌드 안 함)
+
+- **빌드:** 1단계 직후 사용자 지시로 `:cobblemon-npc:build :more-cobblemon-contents-league-challenge:build` 성공(이때 테스트도 같이 돌아 NPC 14개·리그 91개 통과). 그 뒤 사용자: "테스트는 하지 말고". 2·3단계는 빌드도 테스트도 안 했다.
+- **2단계:** 정의 파일 schema 3에 `role`(battle·heal·trade·quiz·gift, 없으면 battle). 배틀이 아닌 역할은 `pokemon` 없이 정의한다. 우클릭은 역할로 나누고(`WildNpcRoles.talk`), 떠나는 NPC는 `wild_npc.leaving` 대사를 한다. "볼일 끝난 플레이어"는 NPC 엔티티 태그 `mcc_wild_npc_done:<uuid>`로 남긴다. 진 트레이너가 떠나는 처리는 `WildTrainers.leave(npc)`로 뽑아 역할 NPC도 쓴다.
+- **3단계:** "포켓몬 돌보미"(`wild_caretaker`, 브리더 스킨, 배틀 불가). 회복할 포켓몬이 있으면 [응, 부탁해! / 괜찮아.] → `PartyStore.heal()`, 없으면 "다들 쌩쌩하네!". 대기 시간 없음, 떠나지 않음. 스폰 풀 uncommon 가중치 60, 바이옴 제한 없음(하늘 보이는 밝은 곳, 딥다크 제외). RCT 팩에 간호사 스킨이 없어 브리더 스킨을 같이 쓴다.
+- **테스트 수정(실행 안 함):** `WildTrainerDataTest`의 BP·파티 테스트가 배틀 역할만 보게 했다.
+
 ## [2026-10-08 12:10] 야생 트레이너 대화를 NPC 대화창으로 (1단계, 구현만, 빌드 안 함)
 
 - **사용자 지시:** 트레이너 대화를 NPC 모드 대화창(레터박스 포함)으로 옮기고 선택지로 묻는다.

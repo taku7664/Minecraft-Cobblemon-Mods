@@ -58,7 +58,7 @@ class WildTrainerDataTest {
     @Test
     fun `aces pay twice what normal trainers pay`() {
         // A light side income: the Tower and the Factory pay better for the harder battles.
-        definitions.values.forEach { definition ->
+        definitions.values.filter { it.role == WildNpcRole.BATTLE }.forEach { definition ->
             assertEquals(if (definition.tier == WildTrainerTier.ACE) 6L else 3L, definition.bp, definition.npcClass)
         }
     }
@@ -83,7 +83,7 @@ class WildTrainerDataTest {
     @Test
     fun `parties follow the challenger's cap and never pass it`() {
         val random = Random(7)
-        definitions.values.forEach { definition ->
+        definitions.values.filter { it.role == WildNpcRole.BATTLE }.forEach { definition ->
             listOf(16, 24, 34, 46, 64, 80, 100).forEach { cap ->
                 repeat(20) {
                     val party = WildTrainerParty.roll(definition, cap, random)

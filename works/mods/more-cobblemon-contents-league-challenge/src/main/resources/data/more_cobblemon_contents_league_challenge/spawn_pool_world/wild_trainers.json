@@ -2836,6 +2836,23 @@
           "#cobblemon:is_deep_dark"
         ]
       }
+    },
+    {
+      "id": "wild_npc_caretaker",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_caretaker",
+      "bucket": "uncommon",
+      "weight": 60.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
     }
   ]
 }

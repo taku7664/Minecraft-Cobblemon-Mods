@@ -1,8 +1,12 @@
 package jbro.cobblemon.mcc.league.trainer
 
+import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
+import jbro.cobblemon.npc.api.NpcTalkChoice
+import jbro.cobblemon.npc.api.NpcTalks
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 /**
@@ -21,9 +25,25 @@ internal object WildNpcRoles {
         if (WildTrainers.isLeaving(npc)) return WildTrainers.sayLine(player, npc, "$KEY.leaving")
         when (definition.role) {
             WildNpcRole.BATTLE -> Unit
-            WildNpcRole.HEAL, WildNpcRole.TRADE, WildNpcRole.QUIZ, WildNpcRole.GIFT ->
+            WildNpcRole.HEAL -> heal(player, npc)
+            WildNpcRole.TRADE, WildNpcRole.QUIZ, WildNpcRole.GIFT ->
                 Mod.LOGGER.warn("Wild NPC role {} of {} is not made yet", definition.role.id, definition.npcClass)
         }
+    }
+
+    /** A caretaker heals the whole party, as often as asked; it stays where it is. */
+    private fun heal(player: ServerPlayer, npc: NPCEntity) {
+        val party = Cobblemon.storage.getParty(player)
+        if (party.none { it.canBeHealed() }) return WildTrainers.sayLine(player, npc, "$KEY.heal.fine")
+        NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.heal.offer"), listOf(
+            NpcTalkChoice(Component.translatable("$KEY.heal.yes")) answer@{
+                // Asked again at the answer: a battle may have begun while the box was open.
+                if (BattleRegistry.getBattleByParticipatingPlayerId(it.uuid) != null) return@answer
+                Cobblemon.storage.getParty(it).heal()
+                WildTrainers.sayLine(it, npc, "$KEY.heal.done")
+            },
+            NpcTalkChoice(Component.translatable("$KEY.heal.no")),
+        )))
     }
 
     /** Whether [player] already had their one turn with [npc] (a quiz answered, a gift taken). */
