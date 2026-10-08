@@ -10,6 +10,8 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
 
 - `/npc wand` gives the NPC wand (permission level 2). Right-click a block to place an NPC; right-click an NPC with
   the wand to set its name, skin and dialogue, edit the dialogue, or remove it.
+- Sneak and right-click an NPC with the wand to copy its name, skin and dialogue onto the wand; sneak and right-click a
+  block to place a copy facing you. The copy stays on the wand until another NPC is copied.
 - A skin is a player name (`Steve`), an RCT Trainers+ trainer (`rct:clerk`, short for
   `rctmod:textures/trainers/single/clerk.png`; the **RCT ▶** button browses the enabled pack with a preview), or
   any `namespace:path.png` skin texture. A texture skin's slim or wide model is read from the image; without the

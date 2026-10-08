@@ -4,6 +4,7 @@ import jbro.cobblemon.npc.CobblemonNpc
 import jbro.cobblemon.npc.server.DialogueSessions
 import jbro.cobblemon.npc.server.NpcEditorService
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.chat.Component
 import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
@@ -55,8 +56,15 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
         if (level().isClientSide) return InteractionResult.SUCCESS
         val serverPlayer = player as? ServerPlayer ?: return InteractionResult.PASS
-        if (player.getItemInHand(hand).`is`(CobblemonNpc.WAND)) {
-            NpcEditorService.open(serverPlayer, this)
+        val held = player.getItemInHand(hand)
+        if (held.`is`(CobblemonNpc.WAND)) {
+            // Sneaking copies the NPC onto the wand, to place it again elsewhere; otherwise its settings open.
+            if (player.isSecondaryUseActive && player.hasPermissions(CobblemonNpc.EDIT_PERMISSION)) {
+                NpcWandItem.copy(held, this)
+                player.displayClientMessage(Component.translatable("message.cobblemon_npc.copied", displayName()), true)
+            } else {
+                NpcEditorService.open(serverPlayer, this)
+            }
             return InteractionResult.CONSUME
         }
         if (dialogueId.isBlank()) return InteractionResult.PASS
