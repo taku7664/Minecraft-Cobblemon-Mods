@@ -2,11 +2,12 @@
 stats, abilities, evolutions, learnset and wild spawns, plus move and ability tables. The data is fixed: rerun this
 when the server's mods or species change, the wiki does not refresh it on its own.
 
+Species include enabled data-pack overrides and species_additions, as recorded in the server world's level.dat.
 Spawns come from every spawn pool in the server's mods (built-in data packs included), skipping pools whose
 neededInstalledMods are missing or neededUninstalledMods are present. Move numbers come from the Showdown data the
 server unpacks into its showdown/ folder.
 
-    python tools/server-wiki/gen_pokedex.py [--server DIR] [--cobblemon JAR] [--minecraft-lang FILE]
+    python works/tools/server-wiki/gen_pokedex.py [--server DIR] [--cobblemon JAR] [--minecraft-lang FILE]
 
 Writes server-wiki/assets/data/dex/: index.js, moves.js, abilities.js and species/<id>.js.
 """
@@ -17,6 +18,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 from biomes import STRUCTURES, TAGS  # noqa: E402
+from pokedex_sources import load_species, server_sources  # noqa: E402
 
 OUT = REPO.parent / "server-wiki" / "assets" / "data" / "dex"
 DEFAULT_SERVER = REPO.parent / "develop-product" / "server"
@@ -76,7 +78,8 @@ def lenient_lang(text):
 def mod_ids(jar):
     try:
         with zipfile.ZipFile(jar) as z:
-            ids = [json.loads(z.read("fabric.mod.json")).get("id")]
+            # Fabric accepts literal newlines in strings; Mega Showdown's description uses them.
+            ids = [json.loads(z.read("fabric.mod.json"), strict=False).get("id")]
             for name in z.namelist():
                 if name.startswith("META-INF/jars/") and name.endswith(".jar"):
                     pass  # nested library jars carry no spawn pools worth reading
@@ -117,21 +120,23 @@ def main():
     parser.add_argument("--server", default=str(DEFAULT_SERVER))
     parser.add_argument("--cobblemon")
     parser.add_argument("--minecraft-lang")
+    parser.add_argument("--preserve-existing-spawns", action="store_true",
+                        help="Keep existing wiki spawn listings while adding species and refreshing other data")
     args = parser.parse_args()
     server = pathlib.Path(args.server)
     jars = sorted((server / "mods").glob("*.jar"))
     cobblemon_jar = pathlib.Path(args.cobblemon) if args.cobblemon else next(j for j in jars if j.name.lower().startswith("cobblemon-fabric"))
-    installed = set().union(*(mod_ids(j) for j in jars)) | {"minecraft", "fabric", "cobblemon"}
+    jar_ids = {jar: mod_ids(jar) for jar in jars}
+    installed = set().union(*jar_ids.values()) | {"minecraft", "fabric", "cobblemon"}
+    jars_by_id = {id_: jar for jar, ids in jar_ids.items() for id_ in ids}
+    jars_by_id["cobblemon"] = cobblemon_jar
+    sources = server_sources(server, jars_by_id)
     mc = minecraft_lang(args.minecraft_lang)
     moves_data = showdown_moves(server)
 
     with zipfile.ZipFile(cobblemon_jar) as jar:
         lang = lenient_lang(jar.read("assets/cobblemon/lang/ko_kr.json").decode("utf-8"))
-        species = {}
-        for entry in jar.namelist():
-            if entry.startswith("data/cobblemon/species/") and entry.endswith(".json"):
-                data = json.loads(jar.read(entry))
-                species[entry.rsplit("/", 1)[1][:-5]] = (data, entry.split("/")[3])
+    species = load_species(sources)
 
     def tr(key, fallback):
         return lang.get(key) or fallback
@@ -274,6 +279,13 @@ def main():
     names = {row["id"]: row["name"] for row in index}
 
     index.sort(key=lambda row: (row["dex"], row["id"]))
+    if args.preserve_existing_spawns:
+        for row in index:
+            existing = OUT / "species" / f"{row['id']}.js"
+            if existing.exists():
+                saved = json.loads(existing.read_text(encoding="utf-8").rsplit(" = ", 1)[-1].rstrip(";\r\n"))
+                details[row["id"]]["spawns"] = saved["spawns"]
+                row["spawns"] = len(saved["spawns"])
     if OUT.exists():
         shutil.rmtree(OUT)
     (OUT / "species").mkdir(parents=True)

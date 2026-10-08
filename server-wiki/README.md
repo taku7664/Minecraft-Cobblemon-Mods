@@ -132,8 +132,13 @@ python tools/server-wiki/build_startup_bundle.py --output "서버경로/startup-
 | 파일 | 생성 스크립트 | 원본 |
 |---|---|---|
 | `assets/data/legends.js` | `python tools/server-wiki/gen_legends.py` | jbro-policy의 전설 스폰표, 전설 카탈로그, 등장 대사, Cobblemon과 마인크래프트의 한국어 이름 |
-| `assets/data/dex/` | `python tools/server-wiki/gen_pokedex.py` | 서버 모드의 Cobblemon 종 데이터와 스폰표, 서버의 Showdown 기술 데이터, Cobblemon과 마인크래프트의 한국어 이름 |
+| `assets/data/dex/` | `python works/tools/server-wiki/gen_pokedex.py` | 활성 모드·데이터팩의 종 데이터와 추가 정의, 서버 모드의 스폰표, 서버의 Showdown 기술 데이터, Cobblemon과 마인크래프트의 한국어 이름 |
 | `assets/data/trainers.js` | `python tools/server-wiki/gen_trainers.py` | `tools/wild-trainers/kinds.py`와 리그 모듈의 트레이너 정의 |
+
+도감 생성기는 서버 월드의 `level.dat`에 저장된 활성 데이터팩 순서로 모드·데이터팩의 종 데이터와
+`species_additions`를 읽습니다. 추가 팩에서 활성화한 포켓몬과 변경한 드롭·진화도 반영합니다.
+기존 도감의 출현 목록을 유지하며 종 정보를 갱신하려면
+`python works/tools/server-wiki/gen_pokedex.py --preserve-existing-spawns`를 사용합니다.
 
 전설 가이드의 "내 전설 현황"은 jbro-policy가 `/api/me`에 더하는 `legends` 항목(직접 잡은 종, 리그 등급, 지금 파티)을
 씁니다.
