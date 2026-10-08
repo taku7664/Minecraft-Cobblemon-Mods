@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 10:40] 야생 NPC 역할 설계 문서 (`docs/WILD_NPC_ROLES.md`, 문서만)
+
+- **사용자 결정:** 야생 트레이너 대화를 NPC 모드 대화창(레터박스 포함)으로 옮기고 선택지로 묻는다. 야생 NPC에 교환·회복·퀴즈(·보상) 역할을 더한다. 교환은 전설·환상 금지, 도구 반환, 이로치도 내줄 수 있고 받는 쪽 이로치는 내준 것과 무관하게 1/100, 선택지에서 PC를 열 수 있다.
+- **미정:** 받는 종 규칙(타입 겹치는 종 무작위 제안), 울트라비스트·패러독스, 보상 NPC 내용, 회복 대기 시간, 퀴즈 보상, 출현 빈도, `cobblemon-npc` 필수 의존 여부.
+- 구현·빌드는 아직 없다.
+
 ## [2026-10-08 08:20] `/mcc league check champion|hard|badges <min> [player]` 추가 (빌드·테스트 91개, 서버·클라이언트 배포, 실게임 미확인)
 
 - **이유:** NPC 대화가 리그 진행도로 갈라질 방법이 없었다. 리그 안내원 대화(`develop-product/server/config/cobblemon_npc/dialogues/league_guide.json`)가 `cmd:mcc league check ...`로 배지 수·챔피언·하드 챔피언에 따라 대사를 바꾼다.
