@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-09] 야생 트레이너 배틀에서 상대 도구 가리기
+
+- **원인:** 야생 트레이너는 `BattleBuilder.pvn`으로 Cobblemon 일반 배틀을 연다. MCC 배틀의 도구 가리기(`Cobblemon173BattlePokemonAppearance.hideHeldItems`)는 관리 배틀 엔진과 PvP에서만 불려서 여기서는 상대 도구가 보였다.
+- **수정:** `BATTLE_STARTED_PRE`에서 야생 트레이너 배틀일 때 NPC 쪽 `BattlePokemon`의 `originalPokemon`·`effectedPokemon` 둘 다 `heldItemVisible = false`로 둔다. 플레이어 쪽은 실제 포켓몬이라 설정이 배틀 뒤에도 남으므로 건드리지 않는다. 배틀 복사본(`Pokemon.clone`)이 이 값을 넘기는지는 바이트코드로 확인하지 못해서, 파티 원본이 아니라 배틀 시작 직전 양쪽에 건다.
+- **미확인:** 빌드·테스트·JAR 배치·실게임 확인 안 함.
+
 ## [2026-10-08 23:27] 야생 NPC 개인 이름 한글 음차
 
 - **사용자 결정:** 이름표의 영어 개인 이름("낚시꾼 Alec")을 음차한다("낚시꾼 알렉"). 직업명만 남기는 안은 쓰지 않는다.

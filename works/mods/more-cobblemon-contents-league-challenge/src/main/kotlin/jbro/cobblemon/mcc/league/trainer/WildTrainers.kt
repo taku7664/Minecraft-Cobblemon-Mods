@@ -112,7 +112,13 @@ object WildTrainers {
         CobblemonEvents.BATTLE_STARTED_PRE.subscribe(Priority.HIGH) { event ->
             val npc = event.battle.actors.filterIsInstance<NPCBattleActor>().map { it.npc }.firstOrNull { definitionOf(it) != null }
                 ?: return@subscribe
-            if (npc.uuid !in starting) event.cancel()
+            if (npc.uuid !in starting) return@subscribe event.cancel()
+            // As in MCC battles, the opponent's held items stay hidden. Only the trainer's side: the player fights
+            // with their own Pokemon, whose setting would outlast the battle.
+            event.battle.actors.filterIsInstance<NPCBattleActor>().flatMap { it.pokemonList }.forEach {
+                it.originalPokemon.heldItemVisible = false
+                it.effectedPokemon.heldItemVisible = false
+            }
         }
         CobblemonEvents.BATTLE_VICTORY.subscribe(Priority.NORMAL) { event ->
             val fight = fights.remove(event.battle.battleId) ?: return@subscribe
