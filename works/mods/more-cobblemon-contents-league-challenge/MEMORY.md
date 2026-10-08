@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 20:50] 야생 트레이너 승리 BP 3/6 → 2/5 (구현만, 빌드·테스트 안 함)
+
+- **사용자 결정:** 타워·팩토리 보상을 낮추면서 야생 트레이너도 일반 2, 에이스 5로 낮췄다.
+- **변경:** `wild_trainers/*.json` 124개(일반 104, 에이스 20)의 `bp`, `WildTrainerDataTest`. 생성기 `works/tools/wild-trainers/gen_wild_trainers.py`의 `BP` 상수도 같이 바꿨다(안 바꾸면 재생성 때 3/6으로 돌아간다). 위키 `wild-trainers.html`·`hub.html`과 생성본 `assets/data/trainers.js`, NPC 대사 원본(배틀걸·상점 아가씨)도 고쳤다. `trainers.js`는 생성기를 다시 돌리지 않고 값만 바꿨다.
+- 퀴즈·여행자 선물의 BP(`wild_rewards.json`의 2~5)는 승리 보상이 아니라서 그대로다.
+
 ## [2026-10-08 17:25] 개발 서버 기동 확인
 
 - 사용자 지시로 개발 서버를 켰다. 시작 점검(bluemap·startup hooks) 통과, 리그 로그 `Loaded 128 wild trainer kinds` / `10 wild rewards` / `38 wild quiz questions`, 우리 모드 오류 없음. 광장 NPC 배치(cobblemon-npc MEMORY) 뒤 `stop`으로 저장·종료하고 `explorer.exe run.bat`으로 다시 켜 둠(17:23 Done).

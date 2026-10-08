@@ -2,7 +2,7 @@
   "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_twins",
   "tier": "normal",
-  "bp": 3,
+  "bp": 2,
   "pokemon": [
     {
       "species": "plusle",
