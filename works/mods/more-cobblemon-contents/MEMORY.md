@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-09 05:00] 혼란 재구성 수정 빌드·배치
+
+- **빌드:** `main` = `origin/main` = `5367cf48`, MCC 미커밋 변경 없음. MCC만 `remapJar`, 무결성 검사 통과.
+- **배치:** `develop-product/server/mods`·`client/mods`의 `more-cobblemon-contents-0.1.0.jar` 교체, SHA-256 세 개 일치(`74cdc889…`). 이전 JAR은 `develop-product/deployment-backups/20261009-confusion-rebuild/`. 서버·게임 꺼진 상태였고 켜지 않았다.
+- **실게임:** 확인 안 함.
+
 ## [2026-10-09 04:58] 혼란이 보이면 세계 재구성이 막히던 문제
 
 - **원인:** 중간 재구성(`NativeBattleSituation`)이 휘발성 상태를 설치하지 못해 `NativeMidBattleStateRules`가 혼란이 보이면 `VOLATILE:confusion`으로 막았다. 서버 로그 `bf71c096` 1턴이 이 때문에 레거시.
