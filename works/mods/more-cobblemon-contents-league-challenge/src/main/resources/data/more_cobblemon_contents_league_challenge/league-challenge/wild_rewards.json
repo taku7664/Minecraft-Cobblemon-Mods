@@ -1,0 +1,14 @@
+{
+  "entries": [
+    { "bp": [2, 5], "weight": 30 },
+    { "item": "cobblemon:exp_candy_s", "count": [1, 2], "weight": 20, "max_cap": 46 },
+    { "item": "cobblemon:exp_candy_m", "count": 1, "weight": 15, "min_cap": 39 },
+    { "item": "cobblemon:exp_candy_l", "count": 1, "weight": 8, "min_cap": 64 },
+    { "item": "cobblemon:rare_candy", "count": 1, "weight": 5 },
+    { "item": "cobblemon:great_ball", "count": [3, 5], "weight": 15, "max_cap": 34 },
+    { "item": "cobblemon:ultra_ball", "count": [2, 4], "weight": 12, "min_cap": 34 },
+    { "item": "cobblemon:oran_berry", "count": [2, 3], "weight": 10 },
+    { "item": "cobblemon:sitrus_berry", "count": [1, 2], "weight": 8, "min_cap": 28 },
+    { "items": ["cobblemon:hp_up", "cobblemon:protein", "cobblemon:iron", "cobblemon:calcium", "cobblemon:zinc", "cobblemon:carbos"], "count": 1, "weight": 6 }
+  ]
+}

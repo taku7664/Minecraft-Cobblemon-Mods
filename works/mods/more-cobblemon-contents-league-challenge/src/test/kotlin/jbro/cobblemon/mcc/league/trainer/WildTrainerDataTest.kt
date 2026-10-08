@@ -108,6 +108,26 @@ class WildTrainerDataTest {
     }
 
     @Test
+    fun `the quiz bank reads and every question names its wiki page`() {
+        val bank = WildQuizBankParser.parse(resources.resolve("data/$ns/league-challenge/wild_quiz.json").readText())
+        assertTrue(bank.size >= 30, "${bank.size} questions")
+        val pages = Files.list(Path.of("../../../server-wiki/pages")).use { files -> files.toList().map { it.name.removeSuffix(".html") }.toSet() }
+        bank.forEach { assertTrue(it.source in pages, "${it.id} cites ${it.source}") }
+    }
+
+    @Test
+    fun `the reward pool reads, gives only Cobblemon items that exist, and offers something at every level cap`() {
+        val pool = WildRewardPoolParser.parse(resources.resolve("data/$ns/league-challenge/wild_rewards.json").readText())
+        val cobblemon = JarFile(Paths.get(PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI()).toFile())
+        val items = cobblemon.use { jar ->
+            jar.entries().asSequence().map { it.name }.filter { it.startsWith("assets/cobblemon/models/item/") }
+                .map { "cobblemon:" + it.substringAfterLast('/').removeSuffix(".json") }.toSet()
+        }
+        pool.flatMap { it.items }.forEach { assertTrue(it in items, it) }
+        (1..100).forEach { cap -> assertTrue(pool.any { cap in it.minCap..it.maxCap }, "cap $cap") }
+    }
+
+    @Test
     fun `wild trainers appear only in the overworld, never in the plaza, a MyRoom or the lounge`() {
         assertTrue(WildTrainers.isWild("minecraft:overworld"))
         listOf("jbro_policy:plaza", "myroom:rooms", "more_cobblemon_contents:battle_lounge", "minecraft:the_nether", "minecraft:the_end",

@@ -1,5 +1,14 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 16:30] 퀴즈 NPC와 보상 풀 (5단계, 구현만, 빌드·테스트·실게임 안 함)
+
+- **구현:** `WildQuiz`(문제 은행 `league-challenge/wild_quiz.json` 38문제, 출처는 `server-wiki/pages` 문서 이름), `WildRewards`(보상 풀 `league-challenge/wild_rewards.json`, 설계 문서 초깃값 10항목). 퀴즈가 보상 풀을 쓰므로 풀을 이 단계에서 같이 만들었다. 6단계(보상 NPC)는 `WildRewards.give`만 부르면 된다.
+- **규칙:** NPC마다 문제 하나(태그 `mcc_quiz_question:`), 보기 순서는 매번 섞음, 답을 고르면 그 플레이어는 끝(`mcc_wild_npc_done:`), 문제 화면을 닫기만 하면 기록 안 됨. 맞히면 레벨캡에 맞는 보상 하나, 틀리면 정답을 알려 준다. 떠나지 않는다.
+- **데이터:** `wild_quizzer`("퀴즈 마니아", 슈퍼너드 RCT 스킨 10장, 배틀 불가), 스폰 uncommon 40. 문제 글은 한국어만(영어 언어 파일엔 대사만 있음).
+- **보상 대사:** 보상 이름 뒤 조사를 피하려고 "경험사탕S ×2 받았다!" 형태로 쓴다. BP는 `BattlePointRewards.award`(사유 `wild_quiz_<문제 ID>`, 트랜잭션은 매번 새 UUID).
+- **테스트(작성만, 실행 안 함):** `WildTrainerDataTest`에 문제 은행 파싱·출처 문서 존재, 보상 아이템이 Cobblemon JAR에 있는지, 레벨캡 1~100 어디서나 보상이 하나 이상 있는지.
+- **미확인:** 컴파일, 실게임 전부.
+
 ## [2026-10-08 15:50] 돌보미 스킨을 간호순으로 (구현만, 빌드·실게임 안 함)
 
 - **스킨 출처:** 사용자가 구해 `build/skin-search/nurse-joy.png`에 둔 64×64 슬림 팔 스킨(팬 스킨, 라이선스는 사용자 판단). RCT 팩엔 간호사가 없고, Cobblemon의 `villager/profession/nurse_joy.png`는 주민 덧씌우기라 못 쓴다.

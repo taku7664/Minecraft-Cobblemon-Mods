@@ -27,7 +27,8 @@ internal object WildNpcRoles {
             WildNpcRole.BATTLE -> Unit
             WildNpcRole.HEAL -> heal(player, npc)
             WildNpcRole.TRADE -> WildTrader.talk(player, npc)
-            WildNpcRole.QUIZ, WildNpcRole.GIFT ->
+            WildNpcRole.QUIZ -> WildQuiz.talk(player, npc)
+            WildNpcRole.GIFT ->
                 Mod.LOGGER.warn("Wild NPC role {} of {} is not made yet", definition.role.id, definition.npcClass)
         }
     }

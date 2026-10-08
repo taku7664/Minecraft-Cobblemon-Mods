@@ -94,6 +94,8 @@ object WildTrainers {
 
     fun register() {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(Resources)
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(WildRewards.Resources)
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(WildQuiz.Resources)
         UseEntityCallback.EVENT.register { player, level, hand, entity, _ ->
             val npc = entity as? NPCEntity ?: return@register InteractionResult.PASS
             val definition = definitionOf(npc) ?: return@register InteractionResult.PASS
