@@ -30,6 +30,27 @@ class LocalFlagAbilityImmunityTest {
     }
 
     @Test
+    fun `good as gold does not block the users own setup move sent without a target`() {
+        // The game hands a self-targeting move over with no target slot, as Swords Dance came in the live log.
+        val swordsDance = BattleActionCandidate(
+            actionId = "swordsdance", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "swordsdance", targets = emptyList(),
+            moveDetails = BattleMoveCandidateView(
+                "normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 20, BattleMoveTargetPattern.SELF,
+                effects = BattleMoveEffectsView(
+                    coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    effects = emptyList(),
+                    scriptedBehavior = false,
+                    mechanicFlags = emptySet(),
+                ),
+            ),
+        )
+        assertFalse(
+            LocalPublicMechanicsKernel.projectMove(swordsDance, context("goodasgold", swordsDance)).publiclyNullified,
+        )
+    }
+
+    @Test
     fun `soundproof does not block the users own sound move`() {
         val selfMove = move(
             "clangoroussoul",

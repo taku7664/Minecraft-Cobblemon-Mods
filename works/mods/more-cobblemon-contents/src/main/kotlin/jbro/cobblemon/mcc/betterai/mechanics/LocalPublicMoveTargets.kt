@@ -16,6 +16,9 @@ internal object LocalPublicMoveTargets {
             }
             return listOfNotNull(declared?.let { redirectedAwayFrom(it, candidate, context, actingSide) ?: it })
         }
+        // A move on the user or its side names no opponent; taking the opposing active as its target made Swords Dance
+        // "blocked" by that opponent's Good as Gold.
+        if (candidate.moveDetails?.targetPattern in OWN_SIDE_PATTERNS) return emptyList()
         val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
         val activeOpponents = context.state.pokemon
             .filter { it.side == targetSide && it.activeSlot != null && !it.fainted }
@@ -113,6 +116,8 @@ internal object LocalPublicMoveTargets {
 
     private val SPREAD_PATTERNS = setOf(BattleMoveTargetPattern.ALL_OPPONENTS,
         BattleMoveTargetPattern.ALL_ADJACENT, BattleMoveTargetPattern.ALL_ACTIVE)
+    private val OWN_SIDE_PATTERNS = setOf(BattleMoveTargetPattern.SELF, BattleMoveTargetPattern.ALL_ALLIES,
+        BattleMoveTargetPattern.SELECTED_ALLY, BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF)
     private val REDIRECTABLE_PATTERNS = setOf(BattleMoveTargetPattern.SELECTED, BattleMoveTargetPattern.SELECTED_OPPONENT)
     private val REDIRECTING_ABILITIES = mapOf("lightningrod" to "electric", "stormdrain" to "water")
 }
