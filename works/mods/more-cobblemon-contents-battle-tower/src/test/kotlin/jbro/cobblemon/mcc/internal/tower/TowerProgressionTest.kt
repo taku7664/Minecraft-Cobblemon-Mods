@@ -61,8 +61,8 @@ class TowerProgressionTest {
     }
 
     @Test
-    fun `regular victory bp follows the streak stage and keeps rising every 5 wins from the 21st`() {
-        val expected = mapOf(1 to 2, 4 to 2, 6 to 3, 9 to 3, 11 to 4, 19 to 4, 21 to 5, 24 to 5, 26 to 6, 31 to 7, 49 to 10)
+    fun `an Endless win pays 2 and one more every 10 wins`() {
+        val expected = mapOf(1 to 2, 4 to 2, 6 to 2, 9 to 2, 11 to 3, 19 to 3, 21 to 4, 24 to 4, 26 to 4, 31 to 5, 49 to 6)
 
         expected.forEach { (win, bp) ->
             val before = TowerProgress(TowerBattleFormat.SINGLE, win - 1, win - 1)
@@ -73,7 +73,7 @@ class TowerProgressionTest {
     @Test
     fun `every Endless boss is a Champion and adds ten bp to the stage reward`() {
         // Endless, the default: the 10th, 20th and 50th wins add its milestone 10 as well.
-        val expected = mapOf(5 to 12, 10 to 23, 15 to 14, 20 to 24, 25 to 15, 50 to 30)
+        val expected = mapOf(5 to 12, 10 to 22, 15 to 13, 20 to 23, 25 to 14, 50 to 26)
 
         expected.forEach { (win, bp) ->
             val before = TowerProgress(TowerBattleFormat.SINGLE, win - 1, win - 1)
@@ -86,19 +86,20 @@ class TowerProgressionTest {
     }
 
     @Test
-    fun `clearing Normal pays 30 more and every 10th win in Endless 10 more`() {
+    fun `Normal pays 2 a win and 10 for every clear, and every 10th win in Endless 10 more`() {
         fun reward(mode: TowerMode, win: Int) =
             TowerProgression.record(TowerProgress(TowerBattleFormat.SINGLE, win - 1, win - 1, mode), TowerBattleOutcome.WIN).rewardBp
         // Normal's Tower Aces at the 5th and 15th add 5, its Champions at the 10th and 20th 10.
+        assertEquals(2, reward(TowerMode.NORMAL, 19))
         assertEquals(2 + 5, reward(TowerMode.NORMAL, 5))
-        assertEquals(3 + 10, reward(TowerMode.NORMAL, 10))
-        assertEquals(4 + 5, reward(TowerMode.NORMAL, 15))
-        assertEquals(4 + 10 + 30, reward(TowerMode.NORMAL, 20))
-        // A full Normal run: 15 + 25 + 25 + 30 for the stages and bosses, and the clear.
-        assertEquals(125, (1..20).sumOf { reward(TowerMode.NORMAL, it) })
-        assertEquals(3 + 10 + 10, reward(TowerMode.ENDLESS, 10))
-        assertEquals(6 + 10 + 10, reward(TowerMode.ENDLESS, 30))
-        assertEquals(7, reward(TowerMode.ENDLESS, 31))
+        assertEquals(2 + 10, reward(TowerMode.NORMAL, 10))
+        assertEquals(2 + 5, reward(TowerMode.NORMAL, 15))
+        assertEquals(2 + 10 + 10, reward(TowerMode.NORMAL, 20))
+        // A full Normal run: 40 for the wins, 30 for the bosses and 10 for the clear.
+        assertEquals(80, (1..20).sumOf { reward(TowerMode.NORMAL, it) })
+        assertEquals(2 + 10 + 10, reward(TowerMode.ENDLESS, 10))
+        assertEquals(4 + 10 + 10, reward(TowerMode.ENDLESS, 30))
+        assertEquals(5, reward(TowerMode.ENDLESS, 31))
     }
 
     @Test

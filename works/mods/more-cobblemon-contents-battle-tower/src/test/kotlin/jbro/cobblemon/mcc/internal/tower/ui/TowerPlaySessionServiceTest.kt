@@ -52,7 +52,7 @@ class TowerPlaySessionServiceTest {
         assertEquals(jbro.cobblemon.mcc.internal.tower.TowerStreakStage.PRACTICAL, state.streakStage)
         assertEquals(7, state.currentWinStreak)
         assertEquals(9, state.bestWinStreak)
-        assertEquals(3, state.bpPerWin)
+        assertEquals(2, state.bpPerWin)
         assertEquals(37, state.bpBalance)
         assertTrue(state.errorKeys.isEmpty())
     }

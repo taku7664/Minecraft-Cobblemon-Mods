@@ -3,12 +3,11 @@ package jbro.cobblemon.mcc.internal.tower
 internal enum class TowerStreakStage(
     val serializedId: String,
     val firstWin: Int,
-    val bpPerWin: Int,
 ) {
-    INTRODUCTORY("introductory", 1, 2),
-    PRACTICAL("practical", 6, 3),
-    ADVANCED("advanced", 11, 4),
-    PRO("pro", 21, 5),
+    INTRODUCTORY("introductory", 1),
+    PRACTICAL("practical", 6),
+    ADVANCED("advanced", 11),
+    PRO("pro", 21),
     ;
 
     companion object {

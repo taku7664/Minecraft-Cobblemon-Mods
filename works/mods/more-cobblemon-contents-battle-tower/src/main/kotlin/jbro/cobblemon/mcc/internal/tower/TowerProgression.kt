@@ -50,8 +50,8 @@ internal data class TowerProgressUpdate(
 
 internal object TowerProgression {
     /**
-     * The BP for the next win: [bpPerWin], 5 more for a Tower Ace and 10 for a Champion, and a milestone bonus: 30 for clearing Normal at its
-     * 20th win, 10 for every 10th win in Endless.
+     * The BP for the next win: [bpPerWin], 5 more for a Tower Ace and 10 for a Champion, and a milestone bonus: 10 for
+     * clearing Normal at its 20th win, every time, and 10 for every 10th win in Endless.
      */
     fun rewardForNextVictory(progress: TowerProgress): Int {
         val nextWin = Math.addExact(progress.currentWinStreak, 1)
@@ -64,14 +64,16 @@ internal object TowerProgression {
             TowerMode.NORMAL -> if (nextWin == TOWER_NORMAL_CLEAR_WINS) TOWER_NORMAL_CLEAR_BP_BONUS else 0
             TowerMode.ENDLESS -> if (nextWin % TOWER_ENDLESS_MILESTONE_WINS == 0) TOWER_ENDLESS_MILESTONE_BP_BONUS else 0
         }
-        return bpPerWin(nextWin) + boss + milestone
+        return bpPerWin(progress.mode, nextWin) + boss + milestone
     }
 
-    /** A regular win's BP: its stage's, and from the Pro stage on one more for every 5 wins past its first (21st 5, 26th 6). */
-    fun bpPerWin(win: Int): Int {
-        val stage = TowerStreakStage.forWin(win)
-        if (stage != TowerStreakStage.PRO) return stage.bpPerWin
-        return stage.bpPerWin + (win - stage.firstWin) / TOWER_BOSS_INTERVAL
+    /**
+     * A win's BP before any bonus: Normal, which can be run again and again, pays 2 for every win; Endless starts at 2
+     * and pays one more every 10 wins (11th 3, 21st 4).
+     */
+    fun bpPerWin(mode: TowerMode, win: Int): Int = when (mode) {
+        TowerMode.NORMAL -> TOWER_BASE_BP
+        TowerMode.ENDLESS -> TOWER_BASE_BP + (win - 1) / TOWER_ENDLESS_MILESTONE_WINS
     }
 
     fun nextOpponent(progress: TowerProgress): TowerOpponentKind {
@@ -121,7 +123,8 @@ private const val MAX_OPPONENT_LEVEL = 100
 private const val NORMAL_CHAMPION_INTERVAL = 10
 internal const val TOWER_ACE_BP_BONUS = 5
 internal const val TOWER_CHAMPION_BP_BONUS = 10
-internal const val TOWER_NORMAL_CLEAR_BP_BONUS = 30
+internal const val TOWER_BASE_BP = 2
+internal const val TOWER_NORMAL_CLEAR_BP_BONUS = 10
 internal const val TOWER_ENDLESS_MILESTONE_WINS = 10
 internal const val TOWER_ENDLESS_MILESTONE_BP_BONUS = 10
 private const val BOSS_INTERVAL = TOWER_BOSS_INTERVAL

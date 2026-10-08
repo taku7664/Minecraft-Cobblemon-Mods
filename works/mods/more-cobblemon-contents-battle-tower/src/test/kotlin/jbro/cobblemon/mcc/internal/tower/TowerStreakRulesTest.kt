@@ -15,9 +15,4 @@ class TowerStreakRulesTest {
         assertEquals(TowerStreakStage.PRO, TowerStreakStage.forWin(21))
         assertEquals(TowerStreakStage.PRO, TowerStreakStage.forWin(Int.MAX_VALUE))
     }
-
-    @Test
-    fun `each later stage pays more bp`() {
-        assertEquals(listOf(2, 3, 4, 5), TowerStreakStage.entries.map { it.bpPerWin })
-    }
 }
