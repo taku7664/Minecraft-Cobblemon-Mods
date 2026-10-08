@@ -73,7 +73,7 @@ internal class FactoryBattleCompletionService(
         checkActive(session, battleId)?.let { return it }
         var rewardBp = 0L
         val offers = session.recordVictory(battleId, opponentSets, observations) { winsAfter ->
-            rewardBp = FactoryProgression.victoryRewardBp(winsAfter, session.team.format)
+            rewardBp = FactoryProgression.victoryRewardBp(winsAfter)
             victoryRewards.reward(playerId, battleId, rewardBp)
             records.record(playerId, session.team.format, session.levelMode, BattleRecordOutcome.WIN, winsAfter)
         }
