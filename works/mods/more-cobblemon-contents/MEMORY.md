@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-09 04:58] 혼란이 보이면 세계 재구성이 막히던 문제
+
+- **원인:** 중간 재구성(`NativeBattleSituation`)이 휘발성 상태를 설치하지 못해 `NativeMidBattleStateRules`가 혼란이 보이면 `VOLATILE:confusion`으로 막았다. 서버 로그 `bf71c096` 1턴이 이 때문에 레거시.
+- **수정:** `NativePokemonSituation.confused`를 추가하고 컴파일러가 공개 혼란을 옮기며, 엔진 워커가 `confusion` 휘발성을 `time = 2`로 설치한다(남은 턴은 비공개라 잠듦과 같은 방식: 한 번 더 혼란 상태로 행동한 뒤 풀림). 재구성 규칙은 혼란만 허용한다.
+- **테스트(사용자 요청으로 10개 안쪽):** `EngineBranchWorkerSituationTest` 5개 통과(새 혼란 테스트 포함).
+- **빌드·JAR 배치·실게임:** 안 했다.
+
 ## [2026-10-09 04:56] 칼춤·여왕의위엄 메시지 수정 빌드·배치
 
 - **빌드:** `main` = `origin/main` = `69fe25f7`, 작업 트리 깨끗한 상태에서 MCC만 `remapJar`. 무결성 검사 통과, `CantInstructionMixin`·믹스인 등록·새 문구 포함 확인.
