@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-09 04:58] 이름 음차·상대 도구 가리기·상태 패널 빌드·개발 배치
+
+- **빌드:** `main` = `origin/main` = `7fb43f41`, 리그 소스에 커밋 안 된 변경 없음을 확인하고 `works/`에서 `remapJar`만(테스트 안 함). `jar --validate` 통과. JAR 안에 개인 이름 키 679개, `NOT_PERSONAL_NAMES`, `LeagueHubTab` 포함 확인.
+- **배치:** `develop-product/server/mods`·`client/mods` 교체, 빌드본과 SHA-256 일치(`f87b9eb4…`), 폴더마다 리그 JAR 하나. 이전 JAR(`22e0c389…`)은 `develop-product/deployment-backups/20261009-league-names-items-panel/`. 배치 때 서버·게임 꺼져 있었고 켜지 않았다.
+- **실수 기록:** 빌드 없이 올린 MCC 상점 툴팁 커밋(`04b75e23`)이 파이썬 치환 중 `"\n"`을 실제 줄바꿈으로 넣어 MCC 컴파일을 깼다(다른 세션이 `5f7d193d`로 수정). 코틀린 문자열 이스케이프를 셸·파이썬으로 끼워 넣을 땐 커밋 전에 바이트를 확인한다. 또 Bash 샌드박스는 `~/.gradle`을 실제와 다른 곳으로 보므로 Gradle은 PowerShell로 돌린다. `git archive | tar`로 뽑은 사본도 줄바꿈이 바뀌어 빌드용으로 못 쓴다.
+- **미확인:** 실게임 확인 안 함.
+
 ## [2026-10-09] 리그 상태 패널 제목 줄바꿈
 
 - **문제:** 허브 리그 탭 "리그 상태" 패널의 제목(`StatusBody`)이 `drawLine` 한 줄이라 챔피언 문구("챔피언 달성! 배틀타워와 배틀팩토리를 이용할 수 있습니다.")가 "…"로 잘렸다(사용자 스크린샷).
