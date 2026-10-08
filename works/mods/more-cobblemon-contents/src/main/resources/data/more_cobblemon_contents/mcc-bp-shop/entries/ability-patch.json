@@ -5,7 +5,7 @@
       "entry_id": "ability_patch",
       "item_id": "cobblemon:ability_patch",
       "item_count": 1,
-      "price_bp": 2500,
+      "price_bp": 100,
       "sort_order": 520,
       "category": "consumable"
     }

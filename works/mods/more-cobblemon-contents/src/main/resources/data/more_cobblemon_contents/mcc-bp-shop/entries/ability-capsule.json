@@ -5,7 +5,7 @@
       "entry_id": "ability_capsule",
       "item_id": "cobblemon:ability_capsule",
       "item_count": 1,
-      "price_bp": 100,
+      "price_bp": 30,
       "sort_order": 510,
       "category": "consumable"
     }

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 
 class BattlePointShopCatalogResourceTest {
     @Test
-    fun `bundled catalog prices growth goods low, battle items at a session of battles and a hidden ability highest of all`() {
+    fun `bundled catalog prices growth goods low and battle items at a session of battles`() {
         val loaded = BattlePointShopCatalogLoader.loadSeparated(
             fragmentReaders(RULE_DIRECTORY),
             fragmentReaders(ENTRY_DIRECTORY),
@@ -21,27 +21,32 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(102, catalog.entries().size)
-        assertEquals(102, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(108, catalog.entries().size)
+        assertEquals(108, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
-        assertEquals(listOf(1L, 2L, 4L, 10L, 3L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
+        assertEquals(listOf(1L, 2L, 4L, 10L, 4L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
         assertEquals(6, catalog.entries().count { it.entryId.endsWith("_feather") && it.priceBp == 1L })
         // Mints are farmed later anyway.
-        assertEquals(21, catalog.entries().count { it.entryId.endsWith("_mint") && it.priceBp == 20L })
-        // Raising an IV is a choice worth weighing; lowering one is fair.
-        assertTrue(listOf("health", "mighty", "tough", "smart", "courage", "quick").all { price("${it}_candy") == 15L })
-        assertTrue(listOf("sickly", "weak", "brittle", "numb", "coward", "slow").all { price("${it}_candy") == 5L })
-        // A hidden ability is the dearest thing in the shop.
-        assertEquals(100L, price("ability_capsule"))
-        assertEquals(2500L, price("ability_patch"))
-        assertEquals("ability_patch", catalog.entries().maxBy { it.priceBp }.entryId)
+        assertEquals(21, catalog.entries().count { it.entryId.endsWith("_mint") && it.priceBp == 10L })
+        // Candies are the only way to raise an IV, so a stat's worth costs about a Life Orb; lowering one is near free.
+        assertTrue(listOf("health", "mighty", "tough", "smart", "courage", "quick").all { price("${it}_candy") == 10L })
+        assertTrue(listOf("sickly", "weak", "brittle", "numb", "coward", "slow").all { price("${it}_candy") == 1L })
+        // A hidden ability costs a Life Orb.
+        assertEquals(30L, price("ability_capsule"))
+        assertEquals(100L, price("ability_patch"))
+        // Items with no recipe: the Lucky Egg and the evolution items otherwise found only in chests.
+        assertEquals(50L, price("lucky_egg"))
+        assertEquals("held_item", catalog.entry("lucky_egg")?.category)
+        assertTrue(listOf("oval_stone", "razor_claw", "razor_fang", "dragon_scale", "prism_scale").all {
+            price(it) == 25L && catalog.entry(it)?.category == "consumable"
+        })
         // Battle items: Life Orb at 100 sets the scale; easily crafted ones are cheaper still.
         val heldItems = catalog.entries().filter { it.category == "held_item" }
-        assertEquals(22, heldItems.size)
+        assertEquals(23, heldItems.size)
         assertEquals(listOf(100L, 100L), listOf("life_orb", "choice_specs").map(::price))
         assertTrue(listOf("choice_band", "choice_scarf", "assault_vest").all { price(it) == 75L })
-        assertEquals(5, heldItems.count { it.priceBp == 50L })
+        assertEquals(6, heldItems.count { it.priceBp == 50L })
         assertEquals(5, heldItems.count { it.priceBp == 40L })
         assertEquals(6, heldItems.count { it.priceBp == 25L })
         assertEquals(5L, price("cell_battery"))
