@@ -288,7 +288,14 @@ internal class EngineBranchWorker(
         val before = resolve(snapshotJson)
         val battle = before.fork()
         val hits = step(battle, p1Choice, p2Choice, forcedByCall)
-        val evidence = if (captureDamageRolls && hits.isNotEmpty()) damageEvidence(before, p1Choice, p2Choice, hits, forcedByCall) else emptyList()
+        val evidence = when {
+            !captureDamageRolls || hits.isEmpty() -> emptyList()
+            // A forced replay only confirms that the drawn losses match what was seen; their supports were already
+            // measured on the unforced branch, and measuring them again costs sixteen replays per hit.
+            forced.isNotEmpty() -> hits.map { NativeDamageRollFrame(it.turn, it.attacker, it.target, it.moveId, it.hpBefore,
+                it.maxHp, it.loss, listOf(it.loss), it.callIndex) }
+            else -> damageEvidence(before, p1Choice, p2Choice, hits, forcedByCall)
+        }
         val step = JsonArray().apply {
             add("branch"); add(p1Choice); add(p2Choice)
             add(JsonArray().also { a -> forced.forEach { f -> a.add(JsonArray().also { it.add(f.damageCallIndex); it.add(f.percent) }) } })

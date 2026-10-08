@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.search
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.abs
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -215,7 +216,7 @@ internal class NativeIntermediateRequestReplayer(
                 )),
             )
         }
-        val rootMismatch = describe(definition, rootIssues)
+        val rootMismatch = describe(definition, rootIssues, state.frame, publicState)
         if (intermediateDepth >= MAX_INTERMEDIATE_REQUESTS) return noConsistentWorld("INTERMEDIATE_LIMIT:$rootMismatch")
 
         val allyActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, state.frame)
@@ -321,10 +322,23 @@ internal class NativeIntermediateRequestReplayer(
         }
     }
 
-    private fun describe(definition: NativeBattleDefinition, issues: List<NativeBattleRootIssue>): String {
+    private fun describe(
+        definition: NativeBattleDefinition,
+        issues: List<NativeBattleRootIssue>,
+        frame: NativeBattleFrame,
+        publicState: BattleStateView,
+    ): String {
         val species = (definition.p1Team + definition.p2Team).associate { it.uuid to it.species }
+        val nativeById = (frame.p1Team + frame.p2Team).associateBy { it.uuid }
+        val publicById = publicState.pokemon.associateBy { it.battlePokemonId.toString() }
         return issues.joinToString("+") { issue ->
-            issue.code.name + (issue.battlePokemonId?.let { "@" + (species[it.toString()] ?: it.toString().take(8)) } ?: "")
+            val id = issue.battlePokemonId?.toString()
+            val native = id?.let(nativeById::get)
+            val public = id?.let(publicById::get)
+            val hp = if (issue.code == NativeBattleRootIssueCode.HP_MISMATCH && native != null && public != null) {
+                "[%s native=%d/%d public=%.3f]".format(Locale.ROOT, public.side.name.take(1), native.hp, native.maxHp, public.hpFraction)
+            } else ""
+            issue.code.name + (id?.let { "@" + (species[it] ?: it.take(8)) } ?: "") + hp
         }
     }
 
@@ -447,21 +461,16 @@ internal class NativeIntermediateRequestReplayer(
         if (first.status != NativeDamageObservationStatus.CONSISTENT || first.forcedDamageRollOptions.isEmpty()) {
             return listOf(ConditionedDamageBranch(after))
         }
-        val combinations = first.forcedDamageRollOptions.fold(sequenceOf(emptyList<jbro.cobblemon.mcc.betterai.simulation.NativeForcedDamageRoll>())) {
+        // The rolls that fit one public loss differ only in exact HP inside its rounding. Keeping a world per roll
+        // multiplied the worlds every turn until a decision could neither replay nor search them, so the world
+        // continues with one fitting roll per hit, the middle one first, and keeps the whole likelihood.
+        val ordered = first.forcedDamageRollOptions.map { options ->
+            options.withIndex().sortedBy { (index, _) -> abs(2 * index - (options.size - 1)) }.map { it.value }
+        }
+        val combinations = ordered.fold(sequenceOf(emptyList<jbro.cobblemon.mcc.betterai.simulation.NativeForcedDamageRoll>())) {
             previous, options -> previous.flatMap { chosen -> options.asSequence().map { chosen + it } }
         }
-        val combinationCount = first.forcedDamageRollOptions.fold(1L) { count, options ->
-            if (count > MAX_DAMAGE_BRANCH_COMBINATIONS / options.size) {
-                MAX_DAMAGE_BRANCH_COMBINATIONS + 1L
-            } else {
-                count * options.size
-            }
-        }
-        require(combinationCount <= MAX_DAMAGE_BRANCH_COMBINATIONS) {
-            "Observed damage supports $combinationCount native branches; refusing to silently discard worlds"
-        }
-        val branches = mutableListOf<ConditionedDamageBranch>()
-        for (forcedRolls in combinations) {
+        for (forcedRolls in combinations.take(MAX_DAMAGE_BRANCH_ATTEMPTS)) {
             if (deadlineReached(deadlineNanos)) return null
             val forced = worker.branchWithForcedDamage(
                 before.snapshotJson,
@@ -475,14 +484,14 @@ internal class NativeIntermediateRequestReplayer(
                 requireActualRollMatch = true,
             )
             if (confirmed.status == NativeDamageObservationStatus.CONSISTENT) {
-                branches += ConditionedDamageBranch(
+                return listOf(ConditionedDamageBranch(
                     frame = forced,
-                    likelihood = first.likelihood / combinationCount,
+                    likelihood = first.likelihood,
                     explainedEventSequences = confirmed.explainedEventSequences,
-                )
+                ))
             }
         }
-        return branches
+        return emptyList()
     }
 
     private fun newDamageRolls(
@@ -558,7 +567,7 @@ internal class NativeIntermediateRequestReplayer(
 
     private companion object {
         const val MAX_INTERMEDIATE_REQUESTS = 8
-        const val MAX_DAMAGE_BRANCH_COMBINATIONS = 4096L
+        const val MAX_DAMAGE_BRANCH_ATTEMPTS = 8
         val STRUCTURAL_ROOT_ISSUES = setOf(
             NativeBattleRootIssueCode.MALFORMED_FRAME,
             NativeBattleRootIssueCode.FORMAT_MISMATCH,

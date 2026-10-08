@@ -111,14 +111,18 @@ internal class NativeProductSessionReconciler(
                 // hinge on a chance outcome (a critical hit, a miss, a secondary effect) that stream did not draw, so
                 // the worlds replay it again with other streams before the session is given up.
                 val passes = if (worker.canReseed) 2 else 1
+                // The replay may take only part of the decision clock: a search over the surviving worlds, or a rebuild
+                // when none survive, needs the rest. When it runs out, the worlds already replayed carry on and the less
+                // likely ones not reached yet are dropped, which is why the likeliest worlds are replayed first.
+                val reconcileDeadline = nanoTime().let { now -> now + ((deadlineNanos - now) * RECONCILE_CLOCK_SHARE).toLong() }
                 passes@ for (pass in 0 until passes) {
                     if (pass > 0 && descendants.isNotEmpty()) break
                     val salts: List<Int?> = if (pass == 0) listOf(null) else (1..CHANCE_RESAMPLES).toList()
                     // Other streams get a third of what is left, so a failure still leaves time to rebuild the worlds.
-                    val passDeadline = if (pass == 0) deadlineNanos else nanoTime().let { now -> now + (deadlineNanos - now) / 3 }
-                    for (world in session.worlds.sortedWith(WORLD_ORDER)) {
+                    val passDeadline = if (pass == 0) reconcileDeadline else nanoTime().let { now -> now + (deadlineNanos - now) / 3 }
+                    for (world in session.worlds.sortedWith(compareByDescending<NativeProductSessionWorld> { it.probability }.then(WORLD_ORDER))) {
                         if (deadlineReached(passDeadline)) {
-                            if (pass > 0) break@passes
+                            if (pass > 0 || descendants.isNotEmpty()) break@passes
                             return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                         }
                         var root = world.rootSnapshot.frame
@@ -231,7 +235,7 @@ internal class NativeProductSessionReconciler(
                             val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
                             for (salt in salts) {
                                 if (deadlineReached(passDeadline)) {
-                                    if (pass > 0) break@passes
+                                    if (pass > 0 || descendants.isNotEmpty()) break@passes
                                     return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                                 }
                                 val start = salt?.let { worker.reseed(root.snapshotJson, it) } ?: root
@@ -293,7 +297,7 @@ internal class NativeProductSessionReconciler(
                                         }
                                     }
                                     NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED -> {
-                                        if (pass > 0) break@passes
+                                        if (pass > 0 || descendants.isNotEmpty()) break@passes
                                         return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                                     }
                                     NativeIntermediateReplayStatus.ROOT_STATE_INCONSISTENT -> return@lease failure(
@@ -530,6 +534,7 @@ internal class NativeProductSessionReconciler(
     private companion object {
         /** Other random streams each world tries when no world explains the observed turn with its own. */
         const val CHANCE_RESAMPLES = 8
+        const val RECONCILE_CLOCK_SHARE = 0.5
 
         val WORLD_ORDER = compareBy<NativeProductSessionWorld> { it.key.hypothesisId }
             .thenBy { it.key.randomSampleIndex }

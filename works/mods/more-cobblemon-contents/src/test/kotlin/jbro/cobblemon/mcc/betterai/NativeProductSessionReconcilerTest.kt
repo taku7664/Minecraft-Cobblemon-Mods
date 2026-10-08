@@ -185,8 +185,7 @@ class NativeProductSessionReconcilerTest {
             world.rootSnapshot.frame.p2Active.single().hp == 75 &&
                 world.rootSnapshot.frame.p2Team.single().hp == 75
         })
-        assertEquals(5, worker.forcedDamageCalls,
-            "Every supported native roll must be replayed before identical HP snapshots are merged")
+        assertEquals(2, worker.forcedDamageCalls, "Each world replays one fitting roll")
     }
 
     @Test

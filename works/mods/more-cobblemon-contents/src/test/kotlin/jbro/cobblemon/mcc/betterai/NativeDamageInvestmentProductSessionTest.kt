@@ -37,7 +37,7 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeDamageInvestmentProductSessionTest {
     @Test
-    fun `one public opponent hp percent retains every supported exact native hp`(
+    fun `one public opponent hp percent continues as one world on a supported exact native hp`(
         @TempDir directory: Path,
     ) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
@@ -106,56 +106,10 @@ class NativeDamageInvestmentProductSessionTest {
             assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
                 "root=${result.rootIssues}, observed=${result.observedActionIssues}, failure=${result.failure}")
             val worlds = requireNotNull(result.sessionState).worlds
-            assertEquals(expectedHp, worlds.mapTo(linkedSetOf()) { it.rootSnapshot.frame.p2Active.single().hp })
+            // The fitting rolls differ only in exact HP inside the public rounding: one carries the world on.
+            assertEquals(1, worlds.size)
+            assertTrue(worlds.single().rootSnapshot.frame.p2Active.single().hp in expectedHp)
             assertEquals(1.0, worlds.sumOf { it.probability }, 1e-9)
-
-            val future = worlds.map { world ->
-                val frame = world.rootSnapshot.frame
-                world to engine.branch(
-                    frame.snapshotJson,
-                    encodedMove(frame, BattleSide.ALLY, "seismictoss"),
-                    encodedMove(frame, BattleSide.OPPONENT, "splash"),
-                )
-            }
-            val byPublicHp = future.groupBy { (_, frame) ->
-                NativeShowdownPublicHp.fraction(frame.p2Active.single().hp, frame.p2Active.single().maxHp)
-            }
-            val (nextPublicHp, uniqueFuture) = byPublicHp.entries.firstOrNull { it.value.size == 1 }
-                ?: error("Fixed follow-up damage must publicly distinguish the retained exact HP worlds: " +
-                    future.map { (world, frame) ->
-                        "${world.rootSnapshot.frame.p2Active.single().hp}->${frame.p2Active.single().hp}" +
-                            "/${frame.p2Active.single().maxHp}"
-                    })
-            val chosenWorld = uniqueFuture.single().first
-            val nextEvents = events + listOf(
-                BattleObservedEventView(4, 2, BattleObservedEventKind.MOVE_USED, ALLY,
-                    publicValueId = "seismictoss", actorSlot = 0),
-                BattleObservedEventView(5, 2, BattleObservedEventKind.HP_CHANGED, OPPONENT,
-                    hpFractionDelta = nextPublicHp - supported.key,
-                    precedingActionSequence = 4,
-                    precedingActionActorPokemonId = ALLY,
-                    precedingActionMoveId = "seismictoss"),
-                BattleObservedEventView(6, 2, BattleObservedEventKind.MOVE_USED, OPPONENT,
-                    publicValueId = "splash", actorSlot = 0),
-            )
-            val nextContext = BattleDecisionContext(
-                requestId = UUID.nameUUIDFromBytes("rounded-opponent-hp-follow-up".toByteArray()),
-                state = publicState(3, 1.0, nextPublicHp, nextEvents, allyKnownMove = "tackle",
-                    extraAllyKnownMoves = setOf("seismictoss")),
-                candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, uniqueFuture.single().second),
-                deadlineEpochMillis = Long.MAX_VALUE,
-            )
-            val nextAction = NativeShowdownRequestActionFactory.actions(
-                BattleSide.ALLY, worlds.first().rootSnapshot.frame)
-                .single { it.moveId == "seismictoss" && it.mechanic == null }
-            val continued = NativeProductSessionReconciler { _, action -> action(engine) }
-                .reconcile(requireNotNull(result.sessionState).withPendingOwnAction(nextAction),
-                    nextContext, Long.MAX_VALUE)
-            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, continued.status,
-                "root=${continued.rootIssues}, observed=${continued.observedActionIssues}, failure=${continued.failure}")
-            val surviving = requireNotNull(continued.sessionState).worlds.single()
-            assertEquals(chosenWorld.rootSnapshot.frame.p2Active.single().hp - 50,
-                surviving.rootSnapshot.frame.p2Active.single().hp)
         }
     }
 
