@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-08 18:33] 도구 재결합·따라큐 수정 빌드·배치
+
+- **빌드:** `16dcda7b` 기준 작업 트리(깨끗함)에서 MCC만 `remapJar`. 변경이 MCC 내부(기본 구현 있는 메서드 추가)뿐이라 애드온은 다시 빌드하지 않았다. JAR 무결성 검사 통과, `NativeRevealedItemRebinder` 포함 확인.
+- **배치:** `develop-product/server/mods`·`client/mods`의 `more-cobblemon-contents-0.1.0.jar` 교체, SHA-256 세 개 일치. 이전 JAR은 `develop-product/deployment-backups/20261008-betterai-item-rebind/`. 배치 때 자바 프로세스가 없었고 서버는 켜지 않았다.
+- **실게임:** 확인 안 함.
+
 ## [2026-10-08 18:24] 탈 깨진 따라큐가 있으면 매 턴 세계 계획이 실패하던 문제
 
 - **원인(감사 추적으로 확인):** 탈이 깨지면 종 ID가 `mimikyubusted`가 되고, 공개 기술 추론이 네 칸 모두 추측(구체 기술 없음)으로 빈다. 계획기는 이 빈 추론을 그대로 받아 `EXECUTABLE_MOVE_UNAVAILABLE`로 실패했다. `byron_hard-vs-fantina_hard` 판 p2가 4~17턴 내내 레거시였다.
