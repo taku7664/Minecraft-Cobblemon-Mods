@@ -28,10 +28,12 @@ import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
@@ -150,7 +152,7 @@ internal class MccShopTab : MccHubTabContent {
                 itemName(entry),
                 trailing = Component.literal(bp(entry.priceBp)),
                 enabled = idle && MccShopClient.cart.canAdd(entry, state.limits, state.entries),
-                tooltip = shop("add_tooltip", itemName(entry)),
+                tooltip = itemTooltip(entry, shop("add_tooltip", itemName(entry))),
                 icon = CobblemonUiRenderContent.Item(itemStack(entry)),
             ) {
                 if (MccShopClient.cart.add(entry, state.limits, state.entries)) host.rebuild()
@@ -191,7 +193,7 @@ internal class MccShopTab : MccHubTabContent {
                 itemName(entry),
                 trailing = Component.literal("×$quantity"),
                 enabled = idle,
-                tooltip = shop("line_tooltip", itemName(entry), quantity, bp(entry.priceBp * quantity)),
+                tooltip = itemTooltip(entry, shop("line_tooltip", itemName(entry), quantity, bp(entry.priceBp * quantity))),
                 icon = CobblemonUiRenderContent.Item(itemStack(entry)),
                 actions = listOf(
                     MccHubKit.RowAction(Component.literal("-"), idle) { if (cart.remove(entry.entryId)) host.rebuild() },
@@ -343,6 +345,16 @@ private fun itemStack(entry: ShopEntryView): ItemStack =
 private fun itemName(entry: ShopEntryView): Component {
     val name = itemStack(entry).takeUnless(ItemStack::isEmpty)?.hoverName ?: Component.literal(entry.itemId)
     return if (entry.itemCount > 1) Component.empty().append(name).append(" ×${entry.itemCount}") else name
+}
+
+/** The item's own tooltip (its name, description and the like) with [hint] under it in gray. */
+private fun itemTooltip(entry: ShopEntryView, hint: Component): Component {
+    val stack = itemStack(entry)
+    if (stack.isEmpty) return hint
+    val text = Component.empty()
+    Screen.getTooltipFromItem(Minecraft.getInstance(), stack).forEach { text.append(it).append("
+") }
+    return text.append(hint.copy().withStyle(ChatFormatting.GRAY))
 }
 
 /** A category's tab label, its ID when no translation names it. */
