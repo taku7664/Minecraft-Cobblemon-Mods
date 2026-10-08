@@ -9,9 +9,11 @@ import com.cobblemon.mod.common.client.gui.snapshots.SnapshotWarningScreen
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import java.util.concurrent.atomic.AtomicInteger
+import jbro.cobblemon.mcc.league.trainer.WildQuizBankParser
 import jbro.cobblemon.mcc.league.trainer.WildSpeciesRarity
 import jbro.cobblemon.npc.client.NpcDialogueScreen
 import jbro.cobblemon.npc.network.DialogueAnswerPayload
+import jbro.cobblemon.npc.network.DialogueShowPayload
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
@@ -33,7 +35,8 @@ import org.slf4j.LoggerFactory
 /**
  * Development-only walk through the wild NPC roles (`docs/WILD_NPC_ROLES.md`). Set `MCC_NPC_ROLE_CHECK=1` and launch
  * with `--quickPlaySingleplayer npc-role-check` (a disposable copy of a capture world): it heals at a caretaker, trades
- * with a trader, opens the PC from a second trader, talks to a wild trainer, and logs whether Cobblemon's spawns name
+ * with a trader, opens the PC from a second trader, talks to a wild trainer, answers a quiz right then wrong, takes a
+ * traveler's gift, and logs whether Cobblemon's spawns name
  * the player who caused them. Screenshots land in `screenshots/` as `npc-role-<step>.png`; the log reports `ROLE CHECK`.
  */
 internal object WildNpcRoleCheckHarness {
@@ -81,7 +84,7 @@ internal object WildNpcRoleCheckHarness {
             fun next(to: Int) { phase = to; phaseTick = ticks }
             fun shot(step: String) {
                 Screenshot.grab(client.gameDirectory, "npc-role-$step.png", client.mainRenderTarget) {}
-                logger.info("ROLE CHECK capture {} (screen={})", step, client.screen?.javaClass?.simpleName)
+                logger.info("ROLE CHECK capture {} (screen={}) {}", step, client.screen?.javaClass?.simpleName, describe())
             }
             fun onServer(action: (ServerPlayer) -> Unit) = server.execute {
                 try {
@@ -104,6 +107,10 @@ internal object WildNpcRoleCheckHarness {
                     client.options.guiScale().set(2)
                     client.resizeDisplay()
                     onServer { sp ->
+                        // NPCs a previous run left in the saved world would answer for the new ones.
+                        sp.serverLevel().getEntitiesOfClass(NPCEntity::class.java, sp.boundingBox.inflate(48.0)) {
+                            it.npc.id.namespace == NS
+                        }.forEach { it.discard() }
                         val party = Cobblemon.storage.getParty(sp)
                         party.clearParty()
                         Cobblemon.storage.getPC(sp).clearPC()
@@ -177,14 +184,85 @@ internal object WildNpcRoleCheckHarness {
                     next(13)
                 }
                 13 -> if (dialogueOpen() && since(40)) { shot("7-trainer-offer"); answer(1); next(14) }
-                14 -> if (since(40) && (spawnCauses.get() >= 6 || since(2400))) {
-                    logger.info("ROLE CHECK spawns seen {}, caused by a player {}", spawnCauses.get(), playerCauses.get())
+                // The quiz: a right answer wins a reward, a wrong one (asked again after clearing the record) hears the
+                // answer, and a third talk only greets.
+                14 -> if (since(20)) {
+                    quizAnswer = null
+                    onServer { sp -> spawn(sp, "wild_quizzer", 9.0); interact(sp, "wild_quizzer") }
                     next(15)
                 }
-                15 -> if (since(20)) client.stop()
+                15 -> if (dialogueOpen() && since(40)) { shot("8-quiz-offer"); answer(0); next(16) }
+                16 -> if (dialogueOpen() && since(40)) {
+                    onServer { sp -> quizAnswer = quizAnswerOf(sp) }
+                    next(17)
+                }
+                17 -> if (since(5) && quizAnswer != null) {
+                    shot("9-quiz-question")
+                    val index = shown()?.choices?.indexOfFirst { it.string == quizAnswer } ?: -1
+                    logger.info("ROLE CHECK quiz: right answer '{}' at choice {}", quizAnswer, index)
+                    answer(index)
+                    next(18)
+                }
+                18 -> if (since(40)) { shot("10-quiz-right"); logger.info("ROLE CHECK quiz right: {}", describe()); answer(-1); next(19) }
+                19 -> if (since(20)) {
+                    onServer { sp ->
+                        nearest(sp, "wild_quizzer")?.let { npc -> npc.tags.filter { it.startsWith("mcc_wild_npc_done:") }.forEach(npc::removeTag) }
+                        interact(sp, "wild_quizzer")
+                    }
+                    next(20)
+                }
+                20 -> if (dialogueOpen() && since(40)) { answer(0); next(21) }
+                21 -> if (dialogueOpen() && since(40)) {
+                    val index = shown()?.choices?.indexOfFirst { it.string != quizAnswer } ?: -1
+                    answer(index)
+                    next(22)
+                }
+                22 -> if (since(40)) { shot("11-quiz-wrong"); logger.info("ROLE CHECK quiz wrong: {}", describe()); answer(-1); next(23) }
+                23 -> if (since(20)) { onServer { interact(it, "wild_quizzer") }; next(24) }
+                24 -> if (dialogueOpen() && since(30)) { logger.info("ROLE CHECK quiz again: {}", describe()); answer(-1); next(25) }
+                // The traveler: one gift, then only a greeting.
+                25 -> if (since(20)) { onServer { sp -> spawn(sp, "wild_traveler", 12.0); interact(sp, "wild_traveler") }; next(26) }
+                26 -> if (dialogueOpen() && since(40)) { shot("12-gift-offer"); answer(0); next(27) }
+                27 -> if (since(40)) { shot("13-gift-done"); logger.info("ROLE CHECK gift: {}", describe()); answer(-1); next(28) }
+                28 -> if (since(20)) { onServer { interact(it, "wild_traveler") }; next(29) }
+                29 -> if (dialogueOpen() && since(30)) { logger.info("ROLE CHECK gift again: {}", describe()); answer(-1); next(30) }
+                30 -> if (since(40) && (spawnCauses.get() >= 6 || since(2400))) {
+                    logger.info("ROLE CHECK spawns seen {}, caused by a player {}", spawnCauses.get(), playerCauses.get())
+                    next(31)
+                }
+                31 -> if (since(20)) client.stop()
             }
         })
     }
+
+    /** The right answer's text to the quiz question; read on the server, used on the client. */
+    @Volatile
+    private var quizAnswer: String? = null
+
+    /** What the open dialogue box was sent; the screen keeps it private, and this is a development check. */
+    private fun shown(): DialogueShowPayload? {
+        val screen = Minecraft.getInstance().screen as? NpcDialogueScreen ?: return null
+        return NpcDialogueScreen::class.java.getDeclaredField("show").apply { isAccessible = true }.get(screen) as DialogueShowPayload
+    }
+
+    private fun describe(): String = shown()?.let { show ->
+        "speaker='${show.speaker.string}' skin='${show.skin}' lines=${show.lines.map { it.string }} choices=${show.choices.map { it.string }}"
+    } ?: "(no dialogue)"
+
+    /** The right answer to the question the nearest quiz NPC saved, looked up in the bank the mod ships. */
+    private fun quizAnswerOf(player: ServerPlayer): String {
+        val id = nearest(player, "wild_quizzer")?.tags?.firstOrNull { it.startsWith("mcc_quiz_question:") }?.substringAfter(':')
+        val text = checkNotNull(WildNpcRoleCheckHarness::class.java.getResourceAsStream("/data/$NS/league-challenge/wild_quiz.json"))
+            .reader(Charsets.UTF_8).use { it.readText() }
+        val question = WildQuizBankParser.parse(text).firstOrNull { it.id == id } ?: return "?"
+        logger.info("ROLE CHECK quiz question {}: {}", id, question.question)
+        return question.choices[question.answer]
+    }
+
+    private fun nearest(player: ServerPlayer, npcClass: String): NPCEntity? =
+        player.serverLevel().getEntitiesOfClass(NPCEntity::class.java, player.boundingBox.inflate(24.0)) {
+            it.npc.id.toString() == "$NS:$npcClass"
+        }.minByOrNull { it.distanceToSqr(player) }
 
     private fun pokemon(properties: String): Pokemon = PokemonProperties.parse(properties).create()
 
