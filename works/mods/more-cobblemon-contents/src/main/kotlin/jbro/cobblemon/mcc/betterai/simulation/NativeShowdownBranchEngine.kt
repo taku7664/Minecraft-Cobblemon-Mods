@@ -72,7 +72,38 @@ internal interface NativeBranchWorker : AutoCloseable {
      */
     fun reseed(snapshotJson: String, salt: Int): NativeBattleFrame =
         throw UnsupportedOperationException("This native worker cannot reseed its random stream")
+
+    /** Whether [restat] and [statRange] work. */
+    val canRestat: Boolean get() = false
+
+    /**
+     * The same position with some hidden in-battle stats replaced, for an opponent whose observed damage no
+     * hypothesised spread explains. Only the battle stats change; the set (and so the definition) stays.
+     */
+    fun restat(snapshotJson: String, changes: List<NativeStatChange>): NativeBattleFrame =
+        throw UnsupportedOperationException("This native worker cannot change battle stats")
+
+    /** The values [stat] can take for this Pokemon's species and level under any legal spread and nature. */
+    fun statRange(snapshotJson: String, pokemonUuid: String, stat: String): IntRange? = null
 }
+
+internal data class NativeStatChange(
+    val pokemonUuid: String,
+    val stat: String,
+    val value: Int,
+) {
+    init {
+        UUID.fromString(pokemonUuid)
+        require(stat in setOf("atk", "def", "spa", "spd", "spe")) { "Unknown battle stat $stat" }
+        require(value > 0)
+    }
+}
+
+/** Whose stored stat a damage calculation read. */
+internal data class NativeDamageStat(
+    val pokemonUuid: String,
+    val stat: String,
+)
 
 internal class NativeShowdownBranchEngine private constructor(
     private val context: Context,
@@ -467,6 +498,12 @@ internal data class NativeDamageRollFrame(
     val actualHpLoss: Int,
     val possibleHpLosses: List<Int>,
     val damageCallIndex: Int = 0,
+    /** The attacking stat the calculation read, when the engine reports it. */
+    val offense: NativeDamageStat? = null,
+    /** The defending stat the calculation read, when the engine reports it. */
+    val defense: NativeDamageStat? = null,
+    /** Whether the hit was critical, when the engine reports it. */
+    val critical: Boolean? = null,
 ) {
     init {
         require(turn >= 0)

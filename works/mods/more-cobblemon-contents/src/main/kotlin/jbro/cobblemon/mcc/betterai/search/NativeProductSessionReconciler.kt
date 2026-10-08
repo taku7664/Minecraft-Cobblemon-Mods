@@ -69,11 +69,13 @@ private typealias NativeProductSessionLease = (
  */
 internal class NativeProductSessionReconciler(
     private val nanoTime: () -> Long = System::nanoTime,
+    /** Off only to measure what correcting hidden stats from observed damage is worth. */
+    fitHiddenStats: Boolean = true,
     private val lease: NativeProductSessionLease = { deadlineNanos, action ->
         NativeShowdownRuntimeService.withWorker(deadlineNanos, action)
     },
 ) {
-    private val intermediateReplayer = NativeIntermediateRequestReplayer(nanoTime)
+    private val intermediateReplayer = NativeIntermediateRequestReplayer(nanoTime, fitHiddenStats)
 
     fun reconcile(
         session: NativeProductSessionState,
@@ -104,6 +106,7 @@ internal class NativeProductSessionReconciler(
                 val descendants = mutableListOf<Descendant>()
                 var firstObservedMismatch: Pair<String, List<NativeObservedTurnActionIssue>>? = null
                 val inconsistencies = sortedMapOf<String, Int>()
+                val statFits = HashMap<NativeStatFitKey, Int>()
                 val currentPublicPokemonIds = currentContext.state.pokemon.mapTo(linkedSetOf()) {
                     it.battlePokemonId
                 }
@@ -259,6 +262,7 @@ internal class NativeProductSessionReconciler(
                                     publicState = worldState,
                                     deadlineNanos = passDeadline,
                                     publicTurnOffset = publicTurnOffset,
+                                    statFits = statFits,
                                 )
                                 when (replayed.status) {
                                     NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->

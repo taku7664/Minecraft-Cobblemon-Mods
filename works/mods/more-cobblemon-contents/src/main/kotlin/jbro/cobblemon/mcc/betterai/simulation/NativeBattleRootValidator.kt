@@ -194,7 +194,9 @@ internal object NativeBattleRootValidator {
             val publicMoves = public.knownMoveIds.mapTo(linkedSetOf(), ::normalizedId)
             val actualMoves = actual.knownMoveIds.mapTo(linkedSetOf(), ::normalizedId)
             if (!actualMoves.containsAll(publicMoves)) issue(issues, NativeBattleRootIssueCode.MOVESET_MISMATCH, id)
-            public.combatStats?.let { expected ->
+            // An opponent's estimated spread is the tier's assumption, not a public fact: a world whose hidden stat
+            // observed damage corrected may leave it.
+            public.combatStats?.takeIf { it.knowledge != BattleCombatStatKnowledge.LOCAL_OPPONENT_ESTIMATE }?.let { expected ->
                 val actualStats = actual.combatStats
                 if (actualStats == null || !statsCompatible(expected, actualStats)) {
                     issue(issues, NativeBattleRootIssueCode.COMBAT_STATS_MISMATCH, id)

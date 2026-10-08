@@ -92,6 +92,42 @@ internal class EngineBranchWorker(
         battle.prng = Prng(IntArray(4) { mixer.nextInt(65536) })
     }
 
+    override val canRestat: Boolean get() = true
+
+    override fun restat(snapshotJson: String, changes: List<NativeStatChange>): NativeBattleFrame {
+        require(changes.isNotEmpty()) { "At least one native stat change is required" }
+        val battle = resolve(snapshotJson).fork()
+        restat(battle, changes)
+        val token = extend(snapshotJson, JsonArray().apply { add("restat"); add(gson.toJsonTree(changes)) })
+        remember(token, battle)
+        return frame(token, battle, emptyList(), null)
+    }
+
+    private fun restat(battle: Battle, changes: List<NativeStatChange>) {
+        for (change in changes) {
+            val matches = battle.sides.flatMap { it.pokemon }.filter { it.uuid == change.pokemonUuid }
+            require(matches.size == 1) { "Stat change names unknown or duplicate Pokemon ${change.pokemonUuid}" }
+            val pokemon = matches[0]
+            require(!pokemon.transformed) { "A transformed Pokemon reads another Pokemon's stats" }
+            pokemon.storedStats[change.stat] = change.value
+            // A later forme change recomputes the stats from the set, as it would for the real spread.
+            pokemon.baseStoredStats?.let { base -> pokemon.baseStoredStats = LinkedHashMap(base).also { it[change.stat] = change.value } }
+            if (change.stat == "spe") pokemon.updateSpeed()
+        }
+    }
+
+    override fun statRange(snapshotJson: String, pokemonUuid: String, stat: String): IntRange? {
+        val battle = resolve(snapshotJson)
+        val pokemon = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == pokemonUuid } ?: return null
+        if (stat !in STAT_NATURES) return null
+        fun value(iv: Int, ev: Int, nature: String): Int = battle.spreadModify(pokemon.species.baseStats, PokemonSet(
+            species = pokemon.species.name, level = pokemon.level, nature = nature,
+            evs = linkedMapOf(stat to ev), ivs = linkedMapOf(stat to iv), moves = emptyList()))
+            .getValue(stat)
+        val (raising, lowering) = STAT_NATURES.getValue(stat)
+        return value(0, 0, lowering)..value(31, 252, raising)
+    }
+
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame =
         play(snapshotJson, p1Choice, p2Choice, captureDamageRolls = false, forced = emptyList())
 
@@ -253,6 +289,15 @@ internal class EngineBranchWorker(
         battle.makeRequest("move")
     }
 
+    /** A nature raising and one lowering each battle stat, for its legal range. */
+    private val STAT_NATURES = mapOf(
+        "atk" to ("Adamant" to "Modest"),
+        "def" to ("Bold" to "Lonely"),
+        "spa" to ("Modest" to "Adamant"),
+        "spd" to ("Calm" to "Naughty"),
+        "spe" to ("Timid" to "Brave"),
+    )
+
     private val ENTRY_HAZARDS = setOf("spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge")
 
     private fun install(state: EffectState, effect: NativeEffectSituation) {
@@ -293,7 +338,7 @@ internal class EngineBranchWorker(
             // A forced replay only confirms that the drawn losses match what was seen; their supports were already
             // measured on the unforced branch, and measuring them again costs sixteen replays per hit.
             forced.isNotEmpty() -> hits.map { NativeDamageRollFrame(it.turn, it.attacker, it.target, it.moveId, it.hpBefore,
-                it.maxHp, it.loss, listOf(it.loss), it.callIndex) }
+                it.maxHp, it.loss, listOf(it.loss), it.callIndex, it.offense, it.defense, it.critical) }
             else -> damageEvidence(before, p1Choice, p2Choice, hits, forcedByCall)
         }
         val step = JsonArray().apply {
@@ -337,7 +382,7 @@ internal class EngineBranchWorker(
             }
             check(actual.loss in possible) { "Actual native damage is outside replayed support for ${actual.moveId}" }
             NativeDamageRollFrame(actual.turn, actual.attacker, actual.target, actual.moveId, actual.hpBefore, actual.maxHp,
-                actual.loss, possible, actual.callIndex)
+                actual.loss, possible, actual.callIndex, actual.offense, actual.defense, actual.critical)
         }
 
     private fun rename(battle: Battle, renames: Map<String, String>) {
@@ -408,6 +453,7 @@ internal class EngineBranchWorker(
                 "rebind" -> rebind(battle, gson.fromJson(step[1], Array<NativeMoveSetRebinding>::class.java).toList())
                 "rename" -> rename(battle, step[1].asJsonObject.entrySet().associate { it.key to it.value.asString })
                 "reseed" -> reseed(battle, step[1].asInt)
+                "restat" -> restat(battle, gson.fromJson(step[1], Array<NativeStatChange>::class.java).toList())
                 else -> error("Unknown engine snapshot step ${step[0]}")
             }
         }
@@ -576,9 +622,16 @@ internal class EngineBranchWorker(
     /** Follows the same log lines the Showdown bridge wraps: move messages, damage rolls, and HP changes. */
     private class Trace : BattleTracer {
         class Hit(val turn: Int, val attacker: String, val target: String, val moveId: String, val hpBefore: Int,
-                  val maxHp: Int, val loss: Int, val callIndex: Int)
+                  val maxHp: Int, val loss: Int, val callIndex: Int, val offense: NativeDamageStat? = null,
+                  val defense: NativeDamageStat? = null, val critical: Boolean? = null)
 
-        private class PendingRoll(val turn: Int, val attacker: String, val moveId: String, val callIndex: Int)
+        private class PendingRoll(val turn: Int, val attacker: String, val moveId: String, val callIndex: Int,
+                                  val calculation: Calculation? = null)
+
+        /** The stats and critical hit of the damage calculation whose roll comes next. */
+        private class Calculation(val offense: NativeDamageStat, val defense: NativeDamageStat, val critical: Boolean)
+
+        private var calculation: Calculation? = null
 
         val moveOrder: MutableList<NativeExecutedMoveFrame> = ArrayList()
         var recoil = doubleArrayOf(0.0, 0.0)
@@ -594,6 +647,7 @@ internal class EngineBranchWorker(
             this.forced = forced
             hpByUuid = battle.sides.flatMap { it.pokemon }.associate { it.uuid to it.hp }.toMutableMap()
             current = null
+            calculation = null
             pending = ArrayList()
             hits = ArrayList()
             calls = 0
@@ -618,10 +672,17 @@ internal class EngineBranchWorker(
             val move = current ?: return actual
             if (!active || baseDamage <= 0) return actual
             val callIndex = calls++
-            pending.add(PendingRoll(move.turn, move.attacker, move.moveId, callIndex))
+            pending.add(PendingRoll(move.turn, move.attacker, move.moveId, callIndex, calculation))
+            calculation = null
             val percent = forced[callIndex] ?: return actual
             require(percent in 85..100) { "Invalid forced native damage percentage $percent" }
             return Js.trunc(Js.trunc(baseDamage.toDouble() * percent).toDouble() / 100)
+        }
+
+        override fun damageStats(battle: Battle, attacker: Pokemon, attackStat: String, defender: Pokemon, defenseStat: String,
+                                 crit: Boolean) {
+            if (!active) return
+            calculation = Calculation(NativeDamageStat(attacker.uuid, attackStat), NativeDamageStat(defender.uuid, defenseStat), crit)
         }
 
         override fun hpLine(battle: Battle, kind: String, pokemon: Pokemon, extras: List<String>) {
@@ -640,7 +701,8 @@ internal class EngineBranchWorker(
                     val roll = pending.removeAt(index)
                     val loss = previous - pokemon.hp
                     if (!hasPublicSource && loss > 0) {
-                        hits.add(Hit(move.turn, move.attacker, pokemon.uuid, move.moveId, previous, pokemon.maxhp, loss, roll.callIndex))
+                        hits.add(Hit(move.turn, move.attacker, pokemon.uuid, move.moveId, previous, pokemon.maxhp, loss, roll.callIndex,
+                            roll.calculation?.offense, roll.calculation?.defense, roll.calculation?.critical))
                     }
                 }
             }

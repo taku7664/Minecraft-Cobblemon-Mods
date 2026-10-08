@@ -1056,6 +1056,13 @@ class BattleActions(private val battle: Battle) {
         val ignoreDefensive = move.ignoreDefensive || (ignorePositiveDefensive && defBoosts > 0)
         if (ignoreOffensive) atkBoosts = 0
         if (ignoreDefensive) defBoosts = 0
+        battle.tracer?.let { tracer ->
+            // Wonder Room makes calculateStat read the other defense stat.
+            fun stored(stat: String) = if ("wonderroom" in battle.field.pseudoWeather && stat in setOf("def", "spd")) {
+                if (stat == "def") "spd" else "def"
+            } else stat
+            tracer.damageStats(battle, attacker, stored(attackStat), defender, stored(defenseStat), moveHit.crit)
+        }
         var attack = attacker.calculateStat(attackStat, atkBoosts, 1, source)
         var defense = defender.calculateStat(defenseStat, defBoosts, 1, target)
         attackStat = if (move.category == "Physical") "atk" else "spa"

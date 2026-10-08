@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciler
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionWorld
 import jbro.cobblemon.mcc.betterai.search.NativeSearchWorldKey
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeForcedDamageRoll
@@ -335,6 +336,116 @@ class NativeDamageInvestmentProductSessionTest {
             assertEquals(3, next.turn, "The reconciled root must remain executable by native search")
             assertEquals(retained.rootSnapshot.frame.p1Active.single().hp, next.p1Active.single().hp)
         }
+    }
+
+    @Test
+    fun `damage no build reaches corrects the opponent attack instead of dropping every world`() {
+        EngineBranchWorker().use { engine ->
+            val observed = observedMaxAttackTurn(engine)
+            val worlds = linkedMapOf(
+                "uninvested" to definition("Serious", attackEvs = 0),
+                "partial" to definition("Serious", attackEvs = 128),
+            )
+            val result = reconcileOnEngine(engine, worlds, observed)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}, failure=${result.failure}")
+            val retained = requireNotNull(result.sessionState).worlds
+            assertEquals(worlds.keys, retained.mapTo(linkedSetOf()) { it.key.hypothesisId })
+            retained.forEach { world ->
+                val hypothesised = engine.createBattle(world.definition).p2Active.single().stats.getValue("atk")
+                val frame = world.rootSnapshot.frame
+                assertTrue(frame.p2Active.single().stats.getValue("atk") > hypothesised,
+                    "The world must carry a stronger attack than its build")
+                assertEquals(observed.allyHpAfter, frame.p1Active.single().hp)
+                // The set stays the hypothesis; only the battle reads the corrected stat.
+                assertEquals(world.definition.p2Team.single().evs, worlds.getValue(world.key.hypothesisId).p2Team.single().evs)
+            }
+            val next = retained.first().rootSnapshot.frame.let { frame ->
+                engine.branch(frame.snapshotJson, encodedMove(frame, BattleSide.ALLY, "splash"),
+                    encodedMove(frame, BattleSide.OPPONENT, "splash"))
+            }
+            assertEquals(3, next.turn, "A corrected root must stay executable by native search")
+        }
+    }
+
+    @Test
+    fun `a build that explains the damage outweighs one whose attack had to be corrected`() {
+        EngineBranchWorker().use { engine ->
+            val observed = observedMaxAttackTurn(engine)
+            val result = reconcileOnEngine(engine, linkedMapOf(
+                "uninvested" to definition("Serious", attackEvs = 0),
+                "max" to definition("Adamant", attackEvs = 252),
+            ), observed)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status)
+            val probability = requireNotNull(result.sessionState).worlds
+                .groupBy { it.key.hypothesisId }.mapValues { (_, worlds) -> worlds.sumOf { it.probability } }
+            assertEquals(setOf("uninvested", "max"), probability.keys)
+            assertTrue(probability.getValue("max") > probability.getValue("uninvested"), probability.toString())
+        }
+    }
+
+    private class ObservedTurn(val events: List<BattleObservedEventView>, val allyHpAfter: Int, val allyMaxHp: Int,
+                               val opponentHpFraction: Double)
+
+    /** One Double-Edge from an Adamant 252 Attack Machamp at its highest roll, as the public saw it. */
+    private fun observedMaxAttackTurn(engine: EngineBranchWorker): ObservedTurn {
+        val root = engine.createBattle(definition("Adamant", attackEvs = 252))
+        val ally = encodedMove(root, BattleSide.ALLY, "splash")
+        val opponent = encodedMove(root, BattleSide.OPPONENT, "doubleedge")
+        val roll = engine.branchWithDamageEvidence(root.snapshotJson, ally, opponent)
+            .executedDamageRolls.single { it.moveId == "doubleedge" }
+        val forced = engine.branchWithForcedDamage(root.snapshotJson, ally, opponent,
+            listOf(NativeForcedDamageRoll(roll.damageCallIndex, 100)))
+        val allyMaxHp = root.p1Active.single().maxHp
+        val opponentMaxHp = root.p2Active.single().maxHp
+        val loss = allyMaxHp - forced.p1Active.single().hp
+        val recoil = opponentMaxHp - forced.p2Active.single().hp
+        return ObservedTurn(observedTurnEvents(loss, allyMaxHp, recoil, opponentMaxHp), allyMaxHp - loss, allyMaxHp,
+            (opponentMaxHp - recoil).toDouble() / opponentMaxHp)
+    }
+
+    private fun reconcileOnEngine(
+        engine: EngineBranchWorker,
+        definitions: Map<String, NativeBattleDefinition>,
+        observed: ObservedTurn,
+    ): jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciliation {
+        val roots = definitions.mapValues { (_, definition) -> engine.createBattle(definition) }
+        val anyRoot = roots.values.first()
+        val session = NativeProductSessionState(
+            battleId = BATTLE,
+            format = BattleFormat.SINGLE,
+            rulesFingerprint = engine.rulesFingerprint,
+            worlds = definitions.map { (id, definition) ->
+                val root = roots.getValue(id)
+                NativeProductSessionWorld(
+                    key = NativeSearchWorldKey(id, 0),
+                    probability = 1.0 / definitions.size,
+                    definition = definition,
+                    rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, root),
+                    publicContext = BattleDecisionContext(
+                        requestId = UUID.nameUUIDFromBytes("fit-$id".toByteArray()),
+                        state = publicState(turn = 1, allyHpFraction = 1.0),
+                        candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root),
+                        deadlineEpochMillis = Long.MAX_VALUE,
+                    ),
+                )
+            },
+            publicTurn = 1,
+            lastObservedEventSequence = null,
+            pendingOwnAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, anyRoot)
+                .single { it.moveId == "splash" && it.mechanic == null },
+            trainerTier = BattleTrainerTier.BOSS,
+        )
+        val current = BattleDecisionContext(
+            requestId = UUID.nameUUIDFromBytes("fit-current".toByteArray()),
+            state = publicState(turn = 2, allyHpFraction = observed.allyHpAfter.toDouble() / observed.allyMaxHp,
+                opponentHpFraction = observed.opponentHpFraction, events = observed.events),
+            candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, anyRoot),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+        return NativeProductSessionReconciler { _, action -> action(engine) }.reconcile(session, current, Long.MAX_VALUE)
     }
 
     private fun encodedMove(frame: NativeBattleFrame, side: BattleSide, moveId: String): String {

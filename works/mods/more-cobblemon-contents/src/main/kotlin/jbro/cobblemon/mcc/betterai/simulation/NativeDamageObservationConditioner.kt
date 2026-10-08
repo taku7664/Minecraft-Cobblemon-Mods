@@ -114,6 +114,10 @@ internal object NativeDamageObservationConditioner {
         )
     }
 
+    /** Whether some roll of [roll] loses what the public saw as [observedFraction] of the target's HP. */
+    fun supports(roll: NativeDamageRollFrame, observedFraction: Double): Boolean =
+        roll.possibleHpLosses.any { matchesObservedLoss(roll.hpBefore, roll.maxHp, it, observedFraction) }
+
     private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private fun matchesObservedLoss(hpBefore: Int, maxHp: Int, loss: Int, observedFraction: Double): Boolean {

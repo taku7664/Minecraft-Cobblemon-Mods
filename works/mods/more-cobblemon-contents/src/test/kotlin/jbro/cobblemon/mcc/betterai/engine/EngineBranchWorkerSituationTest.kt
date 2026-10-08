@@ -3,7 +3,10 @@ package jbro.cobblemon.mcc.betterai.engine
 import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleSituation
+import jbro.cobblemon.mcc.betterai.simulation.NativeDamageStat
 import jbro.cobblemon.mcc.betterai.simulation.NativeEffectSituation
+import jbro.cobblemon.mcc.betterai.simulation.NativeForcedDamageRoll
+import jbro.cobblemon.mcc.betterai.simulation.NativeStatChange
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSituation
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownPublicHp
@@ -74,6 +77,29 @@ class EngineBranchWorkerSituationTest {
         assertEquals(listOf("earthquake"), ally.filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.distinct())
         val opponent = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
         assertTrue(opponent.none { it.kind == BattleActionKind.SWITCH }, "A fainted bench cannot be switched in")
+    }
+
+    @Test
+    fun `a hit reports the stats it read and a corrected stat changes its damage`() {
+        val worker = EngineBranchWorker()
+        val root = worker.createBattle(definition)
+        val roll = worker.branchWithDamageEvidence(root.snapshotJson, "move 1", "move 1")
+            .executedDamageRolls.single { it.moveId == "waterfall" }
+        assertEquals(NativeDamageStat(uuid(3), "atk"), roll.offense)
+        assertEquals(NativeDamageStat(uuid(1), "def"), roll.defense)
+        assertTrue(roll.critical != null)
+
+        val attack = root.p2Team.single { it.uuid == uuid(3) }.stats.getValue("atk")
+        val range = requireNotNull(worker.statRange(root.snapshotJson, uuid(3), "atk"))
+        assertTrue(attack in range && range.first < range.last, "$attack in $range")
+        val stronger = worker.restat(root.snapshotJson, listOf(NativeStatChange(uuid(3), "atk", range.last * 2)))
+        assertEquals(range.last * 2, stronger.p2Team.single { it.uuid == uuid(3) }.stats.getValue("atk"))
+        fun loss(start: String) = worker.branchWithForcedDamage(start, "move 1", "move 1",
+            listOf(NativeForcedDamageRoll(roll.damageCallIndex, 100))).executedDamageRolls.single { it.moveId == "waterfall" }.actualHpLoss
+        assertTrue(loss(stronger.snapshotJson) > loss(root.snapshotJson))
+        // The step is part of the token: a fresh worker replays the same stat.
+        assertEquals(range.last * 2, EngineBranchWorker().branch(stronger.snapshotJson, "move 1", "move 1")
+            .p2Team.single { it.uuid == uuid(3) }.stats.getValue("atk"))
     }
 
     @Test

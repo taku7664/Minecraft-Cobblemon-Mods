@@ -40,6 +40,10 @@ interface BattleTracer {
     fun randomizer(battle: Battle, baseDamage: Int, actual: Int): Int
 
     fun hpLine(battle: Battle, kind: String, pokemon: Pokemon, extras: List<String>)
+
+    /** The stored stats a damage calculation is about to read, before its roll. */
+    fun damageStats(battle: Battle, attacker: Pokemon, attackStat: String, defender: Pokemon, defenseStat: String,
+                    crit: Boolean) {}
 }
 
 /**
