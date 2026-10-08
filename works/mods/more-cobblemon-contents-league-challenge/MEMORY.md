@@ -1,5 +1,10 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 17:25] 개발 서버 기동 확인
+
+- 사용자 지시로 개발 서버를 켰다. 시작 점검(bluemap·startup hooks) 통과, 리그 로그 `Loaded 128 wild trainer kinds` / `10 wild rewards` / `38 wild quiz questions`, 우리 모드 오류 없음. 광장 NPC 배치(cobblemon-npc MEMORY) 뒤 `stop`으로 저장·종료하고 `explorer.exe run.bat`으로 다시 켜 둠(17:23 Done).
+- **미확인:** 플레이어 접속 상태에서 야생 역할 NPC 자연 스폰과 대화(온라인 모드라 개발 클라이언트로 못 들어감).
+
 ## [2026-10-08 17:20] 야생 역할 NPC 1~6단계 테스트·빌드·배치
 
 - **방법:** 다른 세션이 MCC에 커밋하지 않은 Better AI 변경이 있어, 커밋된 `HEAD`(5fe75981)의 `works`·`server-wiki`를 `build/deploy-head`로 `git archive`해 그곳에서 테스트·빌드했다(작업 트리 변경은 안 섞임).
