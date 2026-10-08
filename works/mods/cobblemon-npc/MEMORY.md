@@ -1,5 +1,13 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 17:45] 광장 NPC 정리와 `/kill`이 안 먹는 문제
+
+- 사용자 지시: 이름 없는 NPC 삭제, 타워 안내원 이름·스킨 수정. 타워 안내원 (18.5,74,-20.5)은 `data merge`로 이름 "타워 안내원", 스킨 `rct:gatekeeper_logan_0253`(리그 안내원과 같은 문지기 계열).
+- **`/kill`로 광장 NPC가 안 지워진다:** "Killed NPC"가 찍히지만 체력 20 그대로 살아 있다(`Invulnerable:0b`로 바꿔도 같음). `NpcEntity.isInvulnerableTo`는 BYPASSES_INVULNERABILITY 피해를 받게 돼 있으니, 광장의 피해 차단(jbro-policy, "광장 안에서는 피해를 받지 않습니다")이 막는 것으로 보인다(추정, 코드 미확인). 운영 안내의 "`/kill` still removes one"은 광장에서는 틀린다.
+- **이번 삭제 방법:** 서버를 끈 뒤 그 NPC만 있던 엔티티 청크 (0,0)의 슬롯을 `entities/r.0.0.mca` 헤더에서 비웠다. 원본은 `develop-product/deployment-backups/20261008-wild-npc-roles/plaza-entities/r.0.0.mca`. 다시 읽어 광장 NPC 30명, 이름 없는 NPC 없음 확인.
+- **청크 로드 주의:** 플레이어가 없으면 광장 청크가 안 올라와 `execute in jbro_policy:plaza ... @e`가 "No entity was found"를 낸다. `forceload add`로 잠깐 올린 뒤 쓰고 `forceload remove`로 풀었다.
+- 서버는 끈 상태로 둠(사용자 지시).
+
 ## [2026-10-08 17:25] 광장에 안내원·엑스트라 NPC 26명 배치 (개발 서버)
 
 - **방법:** 사용자 지시("서버 켜서 확인까지", "광장 가서 트레이너 배치까지"). 서버가 꺼진 상태에서 `world/dimensions/jbro_policy/plaza`의 Anvil 파일을 직접 읽어 지형 지도를 만들고, 맨 위 블록이 땅(이끼·흙·안산암·응회암·금 간 석재 벽돌 등)이고 3×3이 평평하며 물·섬 끝에서 3칸 떨어진 칸만 골랐다. 서버를 이 세션에서 명령 파일을 stdin으로 붙여 띄운 뒤 `execute in jbro_policy:plaza run summon cobblemon_npc:npc ... {NpcSkin,NpcDialogue,CustomName,Rotation}`로 넣었다.
