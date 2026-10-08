@@ -1,3 +1,18 @@
+# 응답 언어 (최우선)
+
+- 사용자에게 보내는 모든 글은 한국어로 쓴다. 최종 답변, 작업 중간의 진행 보고, 도구 호출 사이에 쓰는 한두 줄 설명까지 전부 해당한다.
+- 코드, 로그, 커밋 메시지, 도구 출력이 영어여도 답변은 한국어다. 영어 로그나 코드를 길게 읽은 직후, 긴 작업을 끝내고 결과를 보고할 때 특히 틀리기 쉬우니 보내기 전에 언어를 확인한다.
+- 코드 식별자, 명령어, 파일 경로는 원문 그대로 두고, 설명은 한국어로 쓴다.
+
+# 모듈 MEMORY.md
+
+`MEMORY.md`는 다음 작업자가 이전 결정의 이유, 모듈 소유권, 검증 범위와 남은 문제를 다시 추측하지 않도록 남기는 작업 기록이다. `README.md`는 현재 기능과 사용법을 설명하는 문서이므로 작업 경과나 시행착오를 대신 기록하지 않는다.
+
+- 모듈 작업을 시작하기 전에 이 `AGENTS.md`, `CLAUDE.md`, 해당 모듈의 `README.md`와 `MEMORY.md`를 읽고 현재 워크트리·대상 모듈을 확인한다. `MEMORY.md`가 없으면 없음을 확인한 뒤 진행한다.
+- 모듈 소유권이나 사용자 결정, 재발하기 쉬운 실수, 배포·검증 결과가 생기면 해당 모듈의 `MEMORY.md`에 기록한다. 사용자가 `MEMORY.md` 기록을 지정하면 `README.md`로 대체하지 않는다. 기록할 맥락이 생긴 모듈에 파일이 없다면 새로 만든다.
+- 기존 형식을 우선 따른다. 새 파일은 `[YYYY-MM-DD HH:MM]` 제목으로 최신 항목을 위에 두고, 무엇을 왜 바꿨는지와 확인된 결과·미확인 사항을 간결하게 적는다. 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증을 서로 구분한다.
+- 확인하지 않은 결과를 완료로 쓰지 않는다. 비밀값과 불필요한 로그를 남기지 않는다. 같은 내용을 `README.md`와 중복하지 말고, 현재 사용법이 바뀌었다면 `README.md`도 별도로 갱신한다.
+
 # Repository layout
 
 - `works/` is the Gradle build: `gradlew`, `settings.gradle.kts`, `gradle.properties`, the wrapper in `gradle/`, every
@@ -15,6 +30,7 @@
   whose content folders sit behind a link. Refer to the repository path. Do not copy JARs into it while its game is
   running.
 - Keep source/build validation, client deployment, server deployment, and live gameplay verification as separate results.
+- 테스트를 위해 실행한 클라이언트는 검증이 끝나면 직접 종료한다.
 
 ## Product folders
 
