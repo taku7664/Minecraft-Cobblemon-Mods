@@ -96,7 +96,9 @@ object WildTrainers {
             val npc = entity as? NPCEntity ?: return@register InteractionResult.PASS
             val definition = definitionOf(npc) ?: return@register InteractionResult.PASS
             if (level.isClientSide || player !is ServerPlayer) return@register InteractionResult.SUCCESS
-            if (hand == InteractionHand.MAIN_HAND) offer(player, npc, definition)
+            if (hand == InteractionHand.MAIN_HAND) {
+                if (definition.role == WildNpcRole.BATTLE) offer(player, npc, definition) else WildNpcRoles.talk(player, npc, definition)
+            }
             InteractionResult.SUCCESS
         }
         // A wild trainer battles only through its offer; Cobblemon's own challenge would use an empty party.
@@ -282,8 +284,7 @@ object WildTrainers {
             BattleResultNotices.defeat(player, opponent)
             return
         }
-        npc?.addTag(DEFEATED_TAG)
-        despawns[fight.npcId] = now + DEFEATED_DESPAWN_TICKS
+        if (npc != null) leave(npc) else despawns[fight.npcId] = now + DEFEATED_DESPAWN_TICKS
         val bp = fight.definition.bp
         val paid = if (bp <= 0) 0L else {
             val transaction = UUID.nameUUIDFromBytes("wild_trainer:${fight.npcId}:${player.uuid}:$now".toByteArray())
@@ -314,15 +315,32 @@ object WildTrainers {
         return Cobblemon.storage.getParty(player).maxOfOrNull { it.level }?.coerceAtLeast(5) ?: 5
     }
 
+    /**
+     * Sends [npc] away once its business is done (a trainer beaten, a trade made): it goes after its closing words,
+     * and still goes if the server stops first, the next time it loads.
+     */
+    internal fun leave(npc: NPCEntity) {
+        npc.addTag(DEFEATED_TAG)
+        despawns[npc.uuid] = (npc.level().server?.overworld()?.gameTime ?: 0L) + DEFEATED_DESPAWN_TICKS
+    }
+
+    /** Whether [npc] has been sent away and is about to go. */
+    internal fun isLeaving(npc: NPCEntity): Boolean = DEFEATED_TAG in npc.tags || npc.uuid in despawns
+
+    /** [npc] says [key] in the dialogue box; for the other wild NPC roles. */
+    internal fun sayLine(player: ServerPlayer, npc: NPCEntity, key: String) = say(player, npc, key)
+
     /** [npc] says [key] in the NPC dialogue box; reading it closes the box. */
     private fun say(player: ServerPlayer, npc: NPCEntity, key: String) {
         NpcTalks.open(player, talk(npc, Component.translatable(key)))
     }
 
     /** A talk with [npc]: its name, its face in the name plate, and the camera on it while the box is up. */
-    private fun talk(npc: NPCEntity, line: Component, choices: List<NpcTalkChoice> = emptyList()) = NpcTalk(
+    internal fun talk(npc: NPCEntity, line: Component, choices: List<NpcTalkChoice> = emptyList()) = talk(npc, listOf(line), choices)
+
+    internal fun talk(npc: NPCEntity, lines: List<Component>, choices: List<NpcTalkChoice> = emptyList()) = NpcTalk(
         speaker = (npc.displayName ?: npc.name).copy(),
-        lines = listOf(line),
+        lines = lines,
         choices = choices,
         npc = npc,
         skin = npc.aspects.firstOrNull { it.startsWith("rct_") }?.let { "rct:" + it.removePrefix("rct_") }.orEmpty(),

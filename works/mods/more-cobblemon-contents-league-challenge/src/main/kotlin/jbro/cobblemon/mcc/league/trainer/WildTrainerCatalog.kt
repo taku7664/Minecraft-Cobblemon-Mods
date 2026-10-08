@@ -23,17 +23,34 @@ enum class WildTrainerTier(val id: String) {
     }
 }
 
-/** A kind of trainer met in the wild. [npcClass] is the Cobblemon NPC class it spawns as; [bp] is paid for a win. */
+/** What a wild NPC does when a player talks to it. Trainers battle; the others help (see `docs/WILD_NPC_ROLES.md`). */
+enum class WildNpcRole(val id: String) {
+    BATTLE("battle"),
+    HEAL("heal"),
+    TRADE("trade"),
+    QUIZ("quiz"),
+    GIFT("gift");
+
+    companion object {
+        fun of(id: String): WildNpcRole = entries.firstOrNull { it.id == id } ?: throw IllegalArgumentException("Unknown role: $id")
+    }
+}
+
+/**
+ * A kind of NPC met in the wild. [npcClass] is the Cobblemon NPC class it spawns as; [role] is what it does. A trainer
+ * ([WildNpcRole.BATTLE]) brings [pokemon] and pays [bp] for a win; the other roles need neither.
+ */
 data class WildTrainerDefinition(
     val npcClass: String,
     val bp: Long,
     val tier: WildTrainerTier,
     val pokemon: List<WildTrainerStage>,
+    val role: WildNpcRole = WildNpcRole.BATTLE,
 ) {
     init {
         require(npcClass.matches(Regex("[a-z0-9_.-]+:[a-z0-9/._-]+"))) { "Invalid NPC class: $npcClass" }
         require(bp in 0..1_000_000) { "Invalid BP for $npcClass: $bp" }
-        require(pokemon.isNotEmpty()) { "$npcClass has no Pokemon" }
+        require(role != WildNpcRole.BATTLE || pokemon.isNotEmpty()) { "$npcClass has no Pokemon" }
     }
 }
 
@@ -53,15 +70,18 @@ object WildTrainerCatalogParser {
     }
 
     private fun read(root: JsonObject): WildTrainerDefinition {
-        require(root.get("schema_version")?.asInt == 2) { "schema_version must be 2" }
+        // Version 3 adds `role`; a version 2 file is a trainer.
+        val version = root.get("schema_version")?.asInt
+        require(version == 2 || version == 3) { "schema_version must be 2 or 3" }
         return WildTrainerDefinition(
             npcClass = root.get("npc_class").asString,
             bp = root.get("bp")?.asLong ?: 0,
             tier = WildTrainerTier.of(root.get("tier")?.asString ?: WildTrainerTier.NORMAL.id),
-            pokemon = root.getAsJsonArray("pokemon").map { element ->
+            pokemon = root.getAsJsonArray("pokemon")?.map { element ->
                 val stage = element.asJsonObject
                 WildTrainerStage(stage.get("species").asString, stage.get("min_level").asInt, stage.get("max_level").asInt)
-            },
+            }.orEmpty(),
+            role = if (version == 3) WildNpcRole.of(root.get("role")?.asString ?: WildNpcRole.BATTLE.id) else WildNpcRole.BATTLE,
         )
     }
 }

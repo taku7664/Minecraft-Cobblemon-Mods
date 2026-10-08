@@ -270,6 +270,7 @@
   "message.more_cobblemon_contents_league_challenge.wild_trainer.refuse.done": "That's enough for today. See you around!",
   "message.more_cobblemon_contents_league_challenge.wild_trainer.refuse.cooldown": "We just battled! Take a break and come back.",
   "message.more_cobblemon_contents_league_challenge.wild_trainer.refuse.no_pokemon": "You don't have a Pokémon that can fight! Heal up first.",
+  "message.more_cobblemon_contents_league_challenge.wild_npc.leaving": "I'd better get going. See you around!",
   "message.more_cobblemon_contents_league_challenge.wild_trainer.unknown": "Trainer",
   "message.more_cobblemon_contents_league_challenge.wild_trainer.scene.player_won.0": "Argh, I lost...! You're really strong.",
   "message.more_cobblemon_contents_league_challenge.wild_trainer.scene.player_won.1": "No way! My Pokémon got beaten like that?",
