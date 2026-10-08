@@ -150,7 +150,12 @@ internal object NativeBattleRootValidator {
             val publicOpponentHpMatches = public.side == BattleSide.OPPONENT &&
                 frame.p2Team.firstOrNull { it.uuid == id.toString() }?.let { native ->
                     abs(NativeShowdownPublicHp.fraction(native.hp, native.maxHp) - public.hpFraction) <=
-                        FRACTION_EPSILON
+                        FRACTION_EPSILON ||
+                        // The game hands over an opponent's exact health ratio, not Showdown's percent. Under a
+                        // hypothesised max HP that ratio rarely lands on a whole HP, so the nearest one stands for it;
+                        // without this every world rebuilt against a wounded opponent failed its own root check.
+                        !onPercentStep(public.hpFraction) && native.hp > 0 &&
+                        abs(native.hp - public.hpFraction * native.maxHp) <= 0.5 + FRACTION_EPSILON
                 } == true
             if ((!exactHpMatches && !publicOpponentHpMatches) || actual.fainted != public.fainted) {
                 issue(issues, NativeBattleRootIssueCode.HP_MISMATCH, id)
@@ -307,6 +312,10 @@ internal object NativeBattleRootValidator {
     ) {
         issues += NativeBattleRootIssue(code, pokemonId)
     }
+
+    /** Whether [fraction] is a whole percent, as Showdown's public HP is. */
+    private fun onPercentStep(fraction: Double): Boolean =
+        abs(fraction * 100.0 - Math.round(fraction * 100.0)) <= 1e-6
 
     private const val FRACTION_EPSILON = 1e-9
 }

@@ -47,6 +47,14 @@ class NativeBattleRootValidatorTest {
             setOf(NativeBattleRootIssueCode.HP_MISMATCH),
             NativeBattleRootValidator.validate(definition(), rounded, wrongPercent).mapTo(linkedSetOf()) { it.code },
         )
+        // The game's exact ratio for an opponent whose true max HP differs: the nearest whole HP stands for it.
+        val exactRatio = state(opponentHp = 0.9384, opponentStats = null)
+        assertTrue(NativeBattleRootValidator.validate(definition(), rounded, exactRatio).isEmpty())
+        val farRatio = state(opponentHp = 0.9284, opponentStats = null)
+        assertEquals(
+            setOf(NativeBattleRootIssueCode.HP_MISMATCH),
+            NativeBattleRootValidator.validate(definition(), rounded, farRatio).mapTo(linkedSetOf()) { it.code },
+        )
         val ally = plain.p1Team.single().copy(hp = 94)
         val wrongOwn = plain.copy(p1Active = listOf(ally), p1Team = listOf(ally))
         val ownPercent = state(ownHp = 0.95)
