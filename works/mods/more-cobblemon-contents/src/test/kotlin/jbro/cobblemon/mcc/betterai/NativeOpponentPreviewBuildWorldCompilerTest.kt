@@ -33,9 +33,14 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-12)
         assertTrue(result.worlds.all { it.builds.map { build -> build.previewSlotId } == listOf(0, 1) })
         assertFalse(result.worlds.flatMap { it.builds }.any { it.abilityId == "levitate" })
-        assertTrue(result.worlds.all { world ->
+        // Trainer teams may repeat an item, so the item clause only makes a shared item unlikely.
+        fun distinctItems(world: jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewBuildWorld): Boolean {
             val heldItems = world.builds.mapNotNull { it.itemId }
-            heldItems.distinct().size == heldItems.size
+            return heldItems.distinct().size == heldItems.size
+        }
+        assertTrue(distinctItems(result.worlds.maxBy { it.probability }))
+        assertTrue(result.worlds.filterNot(::distinctItems).all { shared ->
+            result.worlds.filter(::distinctItems).any { it.probability > shared.probability }
         })
         assertEquals(
             result.worlds.map { it.hypothesisId },

@@ -70,6 +70,9 @@ internal object NativeRevealedPokemonBinder {
             openingState = definition.openingState?.let { opening ->
                 opening.copy(pokemon = opening.pokemon.map { it.copy(uuid = id(it.uuid)) })
             },
+            situation = definition.situation?.let { situation ->
+                situation.copy(pokemon = situation.pokemon.map { it.copy(uuid = id(it.uuid)) })
+            },
         )
     }
 

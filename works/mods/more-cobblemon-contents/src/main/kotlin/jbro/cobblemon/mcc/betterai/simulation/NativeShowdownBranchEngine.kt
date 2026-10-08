@@ -83,9 +83,10 @@ internal class NativeShowdownBranchEngine private constructor(
     override val rulesFingerprint: String,
     private val ownedRulesGeneration: NativeRulesGeneration?,
 ) : NativeBranchWorker {
-    override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = decode(
-        createBattleFunction.execute(gson.toJson(definition)).asString(),
-    )
+    override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame {
+        require(definition.situation == null) { "The Showdown worker cannot rebuild a mid-battle position" }
+        return decode(createBattleFunction.execute(gson.toJson(definition)).asString())
+    }
 
     override fun rebindMoves(
         snapshotJson: String,
@@ -268,6 +269,8 @@ internal data class NativeBattleDefinition(
     val p1Team: List<NativePokemonSet>,
     val p2Team: List<NativePokemonSet>,
     val openingState: NativeBattleOpeningState? = null,
+    /** Set when the root was rebuilt from a mid-battle public board instead of the opening. */
+    val situation: NativeBattleSituation? = null,
 ) {
     init {
         require(formatId.isNotBlank())
@@ -333,6 +336,61 @@ internal data class NativePokemonOpeningState(
 
     private companion object {
         val SIMPLE_OPENING_STATUSES = setOf("", "brn", "par", "psn", "frz")
+    }
+}
+
+/**
+ * A mid-battle position rebuilt from the public board, installed over a started battle whose leads are the
+ * public actives. It is an approximation: what the board does not show is guessed (a sleep counter, the toxic
+ * stage, how long an active Pokemon has been in), and volatile effects other than a choice lock are not rebuilt,
+ * so callers only rebuild a board that shows none. A world built this way is checked against the public board
+ * like any other root before it is searched.
+ */
+internal data class NativeBattleSituation(
+    /** The public turn about to be played. */
+    val turn: Int,
+    val pokemon: List<NativePokemonSituation>,
+    val weather: NativeEffectSituation? = null,
+    val terrain: NativeEffectSituation? = null,
+    val pseudoWeather: List<NativeEffectSituation> = emptyList(),
+    val p1SideConditions: List<NativeEffectSituation> = emptyList(),
+    val p2SideConditions: List<NativeEffectSituation> = emptyList(),
+) {
+    init {
+        require(turn >= 1)
+        require(pokemon.map(NativePokemonSituation::uuid).distinct().size == pokemon.size)
+    }
+}
+
+/** A field, side or room effect; null turns or layers leave the engine's own value. */
+internal data class NativeEffectSituation(
+    val id: String,
+    val remainingTurns: Int? = null,
+    val layers: Int? = null,
+)
+
+internal data class NativePokemonSituation(
+    val uuid: String,
+    /** Exact HP for an own Pokemon; null resolves [hpFraction] against the hypothesis' max HP like the public bar. */
+    val hp: Int?,
+    val hpFraction: Double,
+    val status: String = "",
+    val boosts: Map<String, Int> = emptyMap(),
+    /** The held item now; null keeps the set's item. "" means it is gone. */
+    val item: String? = null,
+    val terastallized: String? = null,
+    /** Remaining PP by move ID; a move left out keeps its full PP. */
+    val movePp: Map<String, Int> = emptyMap(),
+    val choiceLockedMove: String? = null,
+    /** Whether this active Pokemon already acted since it came in (Fake Out, First Impression). */
+    val movedSinceSwitchIn: Boolean = false,
+    /** The in-battle forme it shows now (Mimikyu-Busted), when that is not the set's species. */
+    val forme: String? = null,
+) {
+    init {
+        UUID.fromString(uuid)
+        require(hpFraction in 0.0..1.0)
+        require(hp == null || hp >= 0)
     }
 }
 

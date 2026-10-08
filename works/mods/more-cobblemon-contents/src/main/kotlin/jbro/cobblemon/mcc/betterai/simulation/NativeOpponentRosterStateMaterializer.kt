@@ -71,6 +71,15 @@ internal object NativeOpponentRosterStateMaterializer {
         preview: BattleOpponentTeamPreviewView,
         hypothesis: NativeOpponentRosterHypothesis,
         resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
+    ): NativeOpponentRosterMaterialization = materialize(state, preview, hypothesis, false, resolveShowdownSpecies)
+
+    fun materialize(
+        state: BattleStateView,
+        preview: BattleOpponentTeamPreviewView,
+        hypothesis: NativeOpponentRosterHypothesis,
+        /** A mid-battle board: revealed Pokemon may have fainted or gone back to the bench. */
+        midBattle: Boolean,
+        resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
         val selectionRuleSupported = when (state.format) {
@@ -79,9 +88,10 @@ internal object NativeOpponentRosterStateMaterializer {
                 preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
                     preview.selectionSize in setOf(4, preview.pokemon.size)
         }
+        val faintedCount = state.pokemon.count { it.side == BattleSide.OPPONENT && it.fainted }
         if (!selectionRuleSupported ||
             hypothesis.selectedPreviewSlotIds.size != preview.selectionSize ||
-            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
+            state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) + faintedCount != preview.selectionSize
         ) {
             issues += issue(NativeOpponentRosterMaterializationIssueCode.SELECTION_SIZE_MISMATCH)
         }
@@ -103,11 +113,16 @@ internal object NativeOpponentRosterStateMaterializer {
             BattleFormat.SINGLE -> listOf(0)
             BattleFormat.DOUBLE -> listOf(0, 1)
         }
-        if (state.turn !in 0..1 ||
-            !NativeOpeningStateRules.acceptsObservations(state) ||
-            revealed.any { it.fainted || it.activeSlot == null } ||
-            revealed.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != expectedActiveSlots
-        ) {
+        val notRepresentable = if (midBattle) {
+            revealed.filter { it.activeSlot != null && !it.fainted }.mapNotNull(BattlePokemonStateView::activeSlot)
+                .sorted() != expectedActiveSlots
+        } else {
+            state.turn !in 0..1 ||
+                !NativeOpeningStateRules.acceptsObservations(state) ||
+                revealed.any { it.fainted || it.activeSlot == null } ||
+                revealed.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != expectedActiveSlots
+        }
+        if (notRepresentable) {
             issues += issue(NativeOpponentRosterMaterializationIssueCode.PUBLIC_STATE_NOT_INITIAL)
         }
         if (issues.isNotEmpty()) return unavailable(issues)
@@ -257,7 +272,7 @@ internal object NativeOpponentRosterStateMaterializer {
     ): Boolean {
         val publicForm = pokemon.formId
         val previewForm = preview.formId
-        val species = normalizedSpeciesId(pokemon.speciesId)
+        val species = NativeInBattleFormes.startingSpecies(pokemon.speciesId)
         val baseIdentity = species == normalizedSpeciesId(preview.speciesId) &&
             (publicForm == null || previewForm == null ||
                 normalizedSpeciesId(publicForm) == normalizedSpeciesId(previewForm))

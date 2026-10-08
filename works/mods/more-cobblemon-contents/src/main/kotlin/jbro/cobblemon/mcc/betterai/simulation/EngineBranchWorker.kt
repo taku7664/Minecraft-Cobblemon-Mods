@@ -6,6 +6,8 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.security.MessageDigest
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import jbro.cobblemon.mcc.betterai.engine.Js
 import jbro.cobblemon.mcc.betterai.engine.dex.EngineDex
 import jbro.cobblemon.mcc.betterai.engine.sim.Battle
@@ -126,7 +128,143 @@ internal class EngineBranchWorker(
             for (side in battle.sides) require(side.pokemon[0].hp > 0) { "Native opening state cannot select a fainted lead Pokemon" }
         }
         battle.start()
+        definition.situation?.let { install(battle, it) }
         return battle
+    }
+
+    /**
+     * Lays a mid-battle position over a battle that has just started with the public actives as leads: the
+     * switch-in effects of that start (Intimidate, Drought) are overwritten by the public board, then the
+     * move request is rebuilt from the installed position.
+     */
+    private fun install(battle: Battle, situation: NativeBattleSituation) {
+        require(battle.requestState == "move") { "A mid-battle position needs both sides at a move request" }
+        battle.turn = situation.turn
+        val team = battle.sides.flatMap { it.pokemon }.associateBy { it.uuid }
+        for (state in situation.pokemon) {
+            val pokemon = requireNotNull(team[state.uuid]) { "Situation names unknown Pokemon ${state.uuid}" }
+            state.item?.let { item ->
+                val id = Js.toID(item)
+                if (id != pokemon.item) {
+                    if (id.isEmpty()) pokemon.lastItem = pokemon.item
+                    pokemon.item = id
+                    pokemon.itemState = EffectState(id).also { it.target = pokemon }
+                }
+            }
+            val hp = state.hp?.coerceAtMost(pokemon.maxhp) ?: publicHp(state.hpFraction, pokemon.maxhp)
+            if (hp == 0) {
+                require(!pokemon.isActive) { "A fainted Pokemon cannot lead a rebuilt position" }
+                if (!pokemon.fainted) pokemon.side.pokemonLeft--
+                pokemon.hp = 0
+                pokemon.fainted = true
+                pokemon.status = "fnt"
+                pokemon.statusState = EffectState("fnt").also { it.target = pokemon }
+                continue
+            }
+            pokemon.hp = hp
+            val status = Js.toID(state.status)
+            if (status.isEmpty()) {
+                pokemon.status = ""
+                pokemon.statusState = EffectState("").also { it.target = pokemon }
+            } else if (pokemon.status != status) {
+                pokemon.status = status
+                pokemon.statusState = EffectState(status).also {
+                    it.target = pokemon
+                    // The counters are hidden: a sleeper wakes within two more tries, toxic is one step in.
+                    if (status == "slp") { it["startTime"] = 3; it["time"] = 2 }
+                    if (status == "tox") it["stage"] = 1
+                }
+            }
+            pokemon.boosts = Pokemon.freshBoosts().also { boosts ->
+                state.boosts.forEach { (stat, stage) -> if (stat in boosts) boosts[stat] = stage.coerceIn(-6, 6) }
+            }
+            state.forme?.let { forme ->
+                if (pokemon.species.id != forme) pokemon.formeChange(forme, null, isPermanent = true)
+            }
+            state.terastallized?.let { type ->
+                pokemon.terastallized = type
+                if (type != "Stellar") pokemon.types = listOf(type)
+                for (ally in pokemon.side.pokemon) ally.canTerastallize = null
+            }
+            for (slot in pokemon.moveSlots) state.movePp[slot.id]?.let { slot.pp = it.coerceIn(0, slot.maxpp) }
+            state.choiceLockedMove?.let { move ->
+                pokemon.volatiles["choicelock"] = EffectState("choicelock").also {
+                    it["name"] = "Choice Lock"
+                    it.target = pokemon
+                    it.source = pokemon
+                    it["move"] = Js.toID(move)
+                }
+            }
+            if (state.movedSinceSwitchIn && pokemon.isActive) {
+                pokemon.activeTurns = maxOf(pokemon.activeTurns, 1)
+                pokemon.activeMoveActions = maxOf(pokemon.activeMoveActions, 1)
+            }
+        }
+        val field = battle.field
+        // Who started the weather or terrain is not public either; any active Pokemon stands in for the setter.
+        val anyActive = battle.sides.firstNotNullOf { side -> side.active.firstOrNull { it != null } }
+        val weather = situation.weather
+        if (weather == null) field.clearWeather() else {
+            if (field.weather != Js.toID(weather.id)) field.setWeather(weather.id, anyActive)
+            weather.remainingTurns?.let { field.weatherState.duration = it }
+        }
+        val terrain = situation.terrain
+        if (terrain == null) field.clearTerrain() else {
+            if (field.terrain != Js.toID(terrain.id)) field.setTerrain(terrain.id, anyActive)
+            terrain.remainingTurns?.let { field.terrainState.duration = it }
+        }
+        // Who set an effect is not public: the side's own active stands in, or the foe's for entry hazards.
+        // Only durations depend on the setter (Light Clay), and the installed duration overrides them.
+        field.pseudoWeather.clear()
+        for (effect in situation.pseudoWeather) {
+            field.addPseudoWeather(effect.id, battle.sides[0].active.firstOrNull { it != null })
+            field.pseudoWeather[Js.toID(effect.id)]?.let { install(it, effect) }
+        }
+        for ((side, conditions) in listOf(battle.sides[0] to situation.p1SideConditions,
+            battle.sides[1] to situation.p2SideConditions)) {
+            side.sideConditions.clear()
+            for (effect in conditions) {
+                val setterSide = if (Js.toID(effect.id) in ENTRY_HAZARDS) side.foe else side
+                val setter = setterSide.active.firstOrNull { it != null } ?: setterSide.pokemon.first()
+                repeat(effect.layers ?: 1) { side.addSideCondition(effect.id, setter) }
+                side.sideConditions[Js.toID(effect.id)]?.let { install(it, effect) }
+            }
+        }
+        // Move restrictions and trapping were settled when the turn began; settle them again on the installed
+        // position (a choice lock, an item that is gone), as Battle.nextTurn does.
+        for (side in battle.sides) for (pokemon in side.active) {
+            if (pokemon == null || pokemon.fainted) continue
+            pokemon.maybeDisabled = false
+            for (slot in pokemon.moveSlots) {
+                slot.disabled = false
+                slot.disabledSource = ""
+            }
+            battle.runEvent("DisableMove", pokemon)
+            for (slot in pokemon.moveSlots.toList()) {
+                battle.singleEvent("DisableMove", battle.dex.activeMove(slot.id), null, pokemon)
+            }
+            pokemon.trapped = false
+            pokemon.maybeTrapped = false
+            battle.runEvent("TrapPokemon", pokemon)
+            if (!pokemon.knownType || battle.dex.notImmune("trapped", pokemon.getTypes())) {
+                battle.runEvent("MaybeTrapPokemon", pokemon)
+            }
+        }
+        battle.makeRequest("move")
+    }
+
+    private val ENTRY_HAZARDS = setOf("spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge")
+
+    private fun install(state: EffectState, effect: NativeEffectSituation) {
+        effect.remainingTurns?.let { state.duration = it }
+        effect.layers?.let { state["layers"] = it }
+    }
+
+    /** The HP whose public bar reads [fraction], from the middle of the HP values that read it. */
+    private fun publicHp(fraction: Double, maxHp: Int): Int {
+        if (fraction <= 0.0) return 0
+        val matching = (1..maxHp).filter { abs(NativeShowdownPublicHp.fraction(it, maxHp) - fraction) < 1e-6 }
+        return if (matching.isEmpty()) (fraction * maxHp).roundToInt().coerceIn(1, maxHp) else matching[matching.size / 2]
     }
 
     private fun set(native: NativePokemonSet, opening: NativePokemonOpeningState?): PokemonSet {

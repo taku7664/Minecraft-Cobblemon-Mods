@@ -51,6 +51,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         exactStatSpreadsBySlot: Map<Int, BattleLocalOpponentStatSpreadView> = emptyMap(),
         /** Abilities the opening already revealed (Intimidate, Drought): those slots hold only that ability. */
         revealedAbilitiesBySlot: Map<Int, String> = emptyMap(),
+        /** Items already revealed (Leftovers, an eaten berry): those slots hold only that item. */
+        revealedItemsBySlot: Map<Int, String> = emptyMap(),
     ): NativeOpponentBuildWorldCompilation {
         val selectedSlots = selectedPreviewSlotIds.distinct().sorted()
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
@@ -86,8 +88,11 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 issues += NativeOpponentBuildWorldIssue(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING, slot)
                 return@forEach
             }
-            val source = revealedAbilitiesBySlot[slot]?.let { usageSource.copy(abilityRates = mapOf(it to 1.0)) }
-                ?: usageSource
+            val source = usageSource.let { base ->
+                revealedAbilitiesBySlot[slot]?.let { base.copy(abilityRates = mapOf(it to 1.0)) } ?: base
+            }.let { base ->
+                revealedItemsBySlot[slot]?.let { base.copy(itemRates = mapOf(it to 1.0), noItemRate = 0.0) } ?: base
+            }
             val legalAbilities = buildPool.abilities.mapTo(linkedSetOf()) {
                 canonical(it.abilityId)
             }
@@ -117,17 +122,16 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         var teams = listOf(WeightedTeam(emptyList(), 1.0, POLICY_ID))
         selectedSlots.forEach { slot ->
             teams = teams.asSequence().flatMap { team ->
-                candidatesBySlot.getValue(slot).asSequence().mapNotNull { candidate ->
+                candidatesBySlot.getValue(slot).asSequence().map { candidate ->
+                    // Trainer teams need not follow the item clause, and a revealed item may repeat one: a shared
+                    // item makes a team unlikely, not impossible.
                     val item = candidate.build.itemId
-                    if (item != null && team.builds.any { it.itemId == item }) {
-                        null
-                    } else {
-                        WeightedTeam(
-                            builds = team.builds + candidate.build,
-                            weight = team.weight * candidate.weight,
-                            id = "${team.id}|s$slot=${candidate.id}",
-                        )
-                    }
+                    val shared = item != null && team.builds.any { it.itemId == item }
+                    WeightedTeam(
+                        builds = team.builds + candidate.build,
+                        weight = team.weight * candidate.weight * (if (shared) SHARED_ITEM_WEIGHT else 1.0),
+                        id = "${team.id}|s$slot=${candidate.id}",
+                    )
                 }
             }.sortedWith(TEAM_ORDER).take(teamCap).toList()
         }
@@ -344,6 +348,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
 
     private val STAT_IDS = listOf("hp", "atk", "def", "spa", "spd", "spe")
     private const val POLICY_ID = "public-build-prior-v1"
+    private const val SHARED_ITEM_WEIGHT = 0.05
     private val PARTIAL_ORDER = compareByDescending<PartialBuild> { it.weight }.thenBy { it.id }
     private val TEAM_ORDER = compareByDescending<WeightedTeam> { it.weight }.thenBy { it.id }
     private val VALUE_ORDER = compareByDescending<WeightedValue<*>> { it.weight }.thenBy { it.id }

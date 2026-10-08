@@ -135,6 +135,7 @@ internal class NativeProductSearchRunner(
                         excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
                         opponentThreatWeights = request.opponentThreatWeights,
+                        tolerateExtraNativeRootActions = request.definition.situation != null,
                     ).evaluateProduct(request.productActions, request.maxDepth),
                     rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root, publicTurnOffset),
                 )
@@ -170,7 +171,7 @@ internal class NativeProductSearchRunner(
         }
         leased as NativeLeasedProductSearchAttempt
         val attempt = leased.attempt
-        if (!attempt.mapping.complete || attempt.result == null) {
+        if (attempt.result == null) {
             return NativeProductSearchRun(
                 status = NativeProductSearchRunStatus.ROOT_ACTION_MAPPING_INCOMPLETE,
                 mapping = attempt.mapping,

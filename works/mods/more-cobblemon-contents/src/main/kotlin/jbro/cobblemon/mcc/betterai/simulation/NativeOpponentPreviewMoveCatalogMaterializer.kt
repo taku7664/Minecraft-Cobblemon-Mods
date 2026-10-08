@@ -128,7 +128,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                         slot,
                     )
                 } else {
+                    // A Pokemon revealed earlier and back on the bench has no live inference; its revealed moves
+                    // still bind the slots it is known to hold.
                     candidatesByPokemon[pokemon.battlePokemonId] = candidates
+                        .map { it.withRevealedMoves(pokemon, previewPokemon) }
+                        .distinctBy(WeightedInference::id)
                 }
             }
         if (issues.isNotEmpty()) {
@@ -373,6 +377,24 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         BattleTrainerTier.ADVANCED -> 10
         BattleTrainerTier.BOSS -> 16
     } * pokemonCount.coerceAtLeast(1)
+
+    private fun WeightedInference.withRevealedMoves(
+        pokemon: BattlePokemonStateView,
+        preview: BattleOpponentTeamPreviewPokemonView,
+    ): WeightedInference {
+        val details = preview.moveCandidatePool?.moveDetails.orEmpty().entries.associate { canonical(it.key) to it }
+        val revealed = pokemon.knownMoveIds.map(::canonical).distinct()
+            .mapNotNull { id -> details[id] }.take(MAX_MOVE_SLOTS)
+        if (revealed.isEmpty()) return this
+        val revealedIds = revealed.mapTo(hashSetOf()) { canonical(it.key) }
+        val kept = inference.slots.filterNot { slot -> slot.moveId?.let(::canonical) in revealedIds }
+        val slots = revealed.map { (moveId, move) ->
+            BattleOpponentMoveSlotView(0, moveId, group(preview, move), BattleOpponentMoveKnowledge.CONFIRMED,
+                BattleOpponentMoveSource.PUBLIC_REVEAL, move)
+        }.plus(kept).take(MAX_MOVE_SLOTS).mapIndexed { index, slot -> slot.copy(slot = index) }
+        val bound = BattleOpponentMoveInferenceView(inference.battlePokemonId, slots)
+        return WeightedInference(bound, weight, inferenceId(bound))
+    }
 
     private fun inferenceId(inference: BattleOpponentMoveInferenceView): String =
         inference.slots.joinToString(",") { slot ->

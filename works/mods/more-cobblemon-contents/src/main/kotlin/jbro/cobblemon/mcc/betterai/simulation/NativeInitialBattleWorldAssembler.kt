@@ -109,10 +109,12 @@ internal object NativeInitialBattleWorldAssembler {
         }
 
         val selectedSlots = roster.opponentPreviewSlotByPokemonId.values.toSet()
-        val revealedOpponentIds = roster.state.pokemon.asSequence()
-            .filter { it.side == BattleSide.OPPONENT && it.activeSlot != null }
+        // Every active opponent was revealed; mid-battle, revealed ones may also sit on the bench or have fainted.
+        val activeOpponentIds = roster.state.pokemon.asSequence()
+            .filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
             .mapTo(linkedSetOf()) { it.battlePokemonId }
-        val revealedAssignmentsMatch = rosterHypothesis.revealedAssignments.keys == revealedOpponentIds &&
+        val revealedAssignmentsMatch = rosterHypothesis.revealedAssignments.keys.containsAll(activeOpponentIds) &&
+            rosterHypothesis.revealedAssignments.keys.all(roster.opponentPreviewSlotByPokemonId::containsKey) &&
             rosterHypothesis.revealedAssignments.all { (pokemonId, slot) ->
                 roster.opponentPreviewSlotByPokemonId[pokemonId] == slot
             }

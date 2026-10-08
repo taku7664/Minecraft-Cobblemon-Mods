@@ -86,6 +86,7 @@ internal class NativeRecursiveSearch(
     private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
     /** AI-only threat multipliers; see [LocalOpponentThreat]. Never used to pick opponent replies. */
     private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
+    private val tolerateExtraNativeRootActions: Boolean = false,
 ) {
     private var nodesVisited = 0
     private var truncated = false
@@ -124,7 +125,14 @@ internal class NativeRecursiveSearch(
             productActions,
             tree.actions(tree.root, BattleSide.ALLY),
         )
-        if (!mapping.complete) return NativeProductSearchAttempt(mapping, null)
+        // A rebuilt mid-battle root does not carry every move restriction (Disable, Torment), so it may offer
+        // more than the battle does; the product candidates are the legal ones, and every one must still map.
+        val accepted = if (tolerateExtraNativeRootActions) {
+            mapping.unmatchedProductActionIds.isEmpty() && mapping.ambiguousProductActionIds.isEmpty()
+        } else {
+            mapping.complete
+        }
+        if (!accepted) return NativeProductSearchAttempt(mapping, null)
         val nativeActions = productActions.map { product ->
             mapping.productToNative.getValue(product.actionId)
         }

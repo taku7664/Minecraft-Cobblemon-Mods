@@ -383,6 +383,7 @@ internal class LocalTacticalBrain(
                             } else {
                                 "native_showdown_initial"
                             })
+                            if (nativeInitial.rebuilt) add("native_showdown_rebuilt")
                             if (nativeInitial.truncated) add("lookahead_truncated")
                             addAll(decisionDiagnostics(calculatedContext, selected))
                         },

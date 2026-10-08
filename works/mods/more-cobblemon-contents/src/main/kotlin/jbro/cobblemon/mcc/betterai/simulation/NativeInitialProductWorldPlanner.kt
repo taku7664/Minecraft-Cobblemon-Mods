@@ -90,9 +90,16 @@ internal class NativeInitialProductWorldPlanner(
         LocalOpponentBuildUsage::forFormat,
     private val worldLimit: (BattleTrainerTier, Int) -> Int = ::defaultWorldLimit,
 ) {
+    /** Rebuilds the posterior from a mid-battle public board ([NativeMidBattleStateRules]) instead of the opening. */
+    fun planMidBattle(
+        context: BattleDecisionContext,
+        tier: BattleTrainerTier,
+    ): NativeInitialProductWorldPlan = plan(context, tier, midBattle = true)
+
     fun plan(
         context: BattleDecisionContext,
         tier: BattleTrainerTier,
+        midBattle: Boolean = false,
     ): NativeInitialProductWorldPlan {
         val preview = context.opponentTeamPreview ?: return failure(
             NativeInitialProductWorldPlanIssueCode.OPPONENT_PREVIEW_MISSING,
@@ -103,7 +110,7 @@ internal class NativeInitialProductWorldPlanner(
         val identities = publicIdentityResolver(context, preview, exactOwnTeam)
         if (identities.issues.isNotEmpty()) return NativeInitialProductWorldPlan(emptyList(), identities.issues)
 
-        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview)
+        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview, midBattle = midBattle)
         if (rosterCompilation.issues.isNotEmpty()) {
             return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_COMPILATION_FAILED,
@@ -122,7 +129,8 @@ internal class NativeInitialProductWorldPlanner(
                 context.state,
                 preview,
                 rosterHypothesis,
-                identities.resolve,
+                midBattle = midBattle,
+                resolveShowdownSpecies = identities.resolve,
             )
             val roster = materialization.roster ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_MATERIALIZATION_FAILED,
@@ -143,15 +151,17 @@ internal class NativeInitialProductWorldPlanner(
                     issue.code.name + "@" + speciesOf(roster.state, issue.battlePokemonId)
                 },
             )
-            // A switch-in ability the opening revealed fixes that slot's ability; a world with another one would
-            // contradict the native opening frame and fail the whole search. Copied abilities (Trace) are not the set's.
-            val revealedAbilitiesBySlot = context.state.observedEvents.asSequence()
-                .filter { it.kind == BattleObservedEventKind.ABILITY_REVEALED && it.publicSourceEffectId == null }
+            // A revealed ability or item fixes that slot's; a world with another one would contradict the native
+            // frame and fail the whole search. The first reveal is the set's: later ones may be copied (Trace) or
+            // swapped (Trick). Copied abilities carry their source.
+            fun firstRevealedBySlot(kind: BattleObservedEventKind) = context.state.observedEvents.asSequence()
+                .filter { it.kind == kind && it.publicSourceEffectId == null }
                 .mapNotNull { event ->
                     val slot = event.actorPokemonId?.let(roster.opponentPreviewSlotByPokemonId::get)
-                    val ability = event.publicValueId?.let(PublicIds::canonical)
-                    if (slot == null || ability.isNullOrEmpty()) null else slot to ability
+                    val value = event.publicValueId?.let(PublicIds::canonical)
+                    if (slot == null || value.isNullOrEmpty()) null else slot to value
                 }
+                .distinctBy { it.first }
                 .toMap()
             val buildCompilation = NativeOpponentPreviewBuildWorldCompiler.compile(
                 preview,
@@ -159,7 +169,8 @@ internal class NativeInitialProductWorldPlanner(
                 tier,
                 buildUsageForFormat(context.state.format),
                 context.localOpponentStatSpreads,
-                revealedAbilitiesBySlot,
+                firstRevealedBySlot(BattleObservedEventKind.ABILITY_REVEALED),
+                firstRevealedBySlot(BattleObservedEventKind.HELD_ITEM_REVEALED),
             )
             if (buildCompilation.issues.isNotEmpty()) {
                 return failure(
@@ -231,6 +242,7 @@ internal class NativeInitialProductWorldPlanner(
                     prepared.hypothesisId,
                     randomSampleIndex = 0,
                 ),
+                midBattle = midBattle,
             )
             val definition = compilation.definition ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.BATTLE_DEFINITION_COMPILATION_FAILED,

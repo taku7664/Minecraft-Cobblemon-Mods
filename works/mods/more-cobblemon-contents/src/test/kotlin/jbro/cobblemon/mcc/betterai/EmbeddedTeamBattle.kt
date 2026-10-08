@@ -196,6 +196,7 @@ internal object EmbeddedTeamBattle {
         evaluation.failedRunStatus?.let { addProperty("failedRun", it.name) }
         evaluation.failedRunDetail?.let { addProperty("detail", it) }
         evaluation.failedWorldId?.let { addProperty("failedWorld", it) }
+        if (evaluation.rebuilt) addProperty("rebuilt", "true")
     }
 
     private fun registerMoveDetails(

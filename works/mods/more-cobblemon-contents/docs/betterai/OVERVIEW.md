@@ -108,7 +108,9 @@ the same contract. Missing native species identity, move/build data, roster
 materialization or definition compilation invalidates the whole opening plan;
 the planner never deletes just the failed roster and renormalizes the remainder.
 Seeds are derived deterministically from battle, complete-world ID and sample
-index. Mid-battle continuation and the `LocalTacticalBrain` call remain pending.
+index. Sessions carry on through later turns, and a board that no retained world
+explains is rebuilt as a mid-battle position (`NativeBattleSituation`); see
+`architecture/NATIVE_SHOWDOWN_SIMULATION.md` §1.1.
 
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):

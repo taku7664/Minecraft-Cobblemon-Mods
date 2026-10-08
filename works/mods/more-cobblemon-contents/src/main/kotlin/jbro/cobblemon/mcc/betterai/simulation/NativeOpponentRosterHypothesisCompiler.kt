@@ -61,6 +61,8 @@ internal object NativeOpponentRosterHypothesisCompiler {
         state: BattleStateView,
         preview: BattleOpponentTeamPreviewView,
         compatiblePreviewSlots: Map<UUID, Set<Int>> = emptyMap(),
+        /** A mid-battle board: revealed Pokemon may have fainted or gone back to the bench. */
+        midBattle: Boolean = false,
     ): NativeOpponentRosterCompilation {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
@@ -78,19 +80,28 @@ internal object NativeOpponentRosterHypothesisCompiler {
         if (!selectionRuleSupported) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.UNSUPPORTED_SELECTION_RULE)
         }
-        if (state.turn !in 0..1 ||
+        val faintedCount = revealed.count(BattlePokemonStateView::fainted)
+        if (midBattle) {
+            if (state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) + faintedCount != preview.selectionSize) {
+                issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.PUBLIC_STATE_NOT_INITIAL)
+            }
+        } else if (state.turn !in 0..1 ||
             !NativeOpeningStateRules.acceptsObservations(state) ||
-            revealed.any(BattlePokemonStateView::fainted) ||
+            faintedCount > 0 ||
             state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
         ) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.PUBLIC_STATE_NOT_INITIAL)
         }
-        val revealedActiveSlots = revealed.mapNotNull(BattlePokemonStateView::activeSlot).toSet()
-        if (revealed.isNotEmpty() &&
-            (revealed.any { it.activeSlot == null } ||
+        val liveActives = revealed.filter { it.activeSlot != null && !it.fainted }
+        val revealedActiveSlots = liveActives.mapNotNull(BattlePokemonStateView::activeSlot).toSet()
+        val layoutInvalid = if (midBattle) {
+            revealedActiveSlots != expectedActiveSlots || liveActives.size != expectedActiveSlots.size
+        } else {
+            revealed.isNotEmpty() && (revealed.any { it.activeSlot == null } ||
                 revealed.size != expectedActiveSlots.size ||
                 revealedActiveSlots != expectedActiveSlots)
-        ) {
+        }
+        if (layoutInvalid) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.INITIAL_REVEAL_LAYOUT_INVALID)
         }
         if (revealed.size > preview.selectionSize) {
@@ -218,7 +229,7 @@ internal object NativeOpponentRosterHypothesisCompiler {
     ): Boolean {
         val revealedForm = revealed.formId
         val previewForm = preview.formId
-        val species = normalizedId(revealed.speciesId)
+        val species = NativeInBattleFormes.startingSpecies(revealed.speciesId)
         val baseIdentity = species == normalizedId(preview.speciesId) &&
             (revealedForm == null || previewForm == null ||
                 normalizedId(revealedForm) == normalizedId(previewForm))

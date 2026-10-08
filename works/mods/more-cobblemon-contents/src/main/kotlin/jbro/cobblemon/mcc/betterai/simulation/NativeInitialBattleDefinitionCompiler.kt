@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 
 private fun normalizedNativeId(value: String): String = PublicIds.canonical(value)
 
@@ -132,10 +133,13 @@ internal object NativeInitialBattleDefinitionCompiler {
         identities: List<NativePublicPokemonIdentity>,
         world: NativeBattleWorldHypothesis,
         seed: List<Int>,
+        /** Rebuild a mid-battle board (see [NativeMidBattleStateRules]) instead of requiring the opening. */
+        midBattle: Boolean = false,
     ): NativeInitialBattleDefinitionCompilation {
         require(seed.size == 4) { "Showdown PRNG seed must contain four integers" }
         val issues = linkedSetOf<NativeBattleDefinitionIssue>()
-        if (!isInitialState(state)) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_STATE_NOT_INITIAL)
+        val stateAccepted = if (midBattle) NativeMidBattleStateRules.blocker(state) == null else isInitialState(state)
+        if (!stateAccepted) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_STATE_NOT_INITIAL)
 
         val stateIds = state.pokemon.mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId)
         val identityById = identities.associateBy(NativePublicPokemonIdentity::battlePokemonId)
@@ -146,11 +150,12 @@ internal object NativeInitialBattleDefinitionCompiler {
 
         BattleSide.entries.forEach { side ->
             val sidePokemon = state.pokemon.filter { it.side == side }
-            if (sidePokemon.isEmpty() || state.remainingPokemonBySide.getValue(side) != sidePokemon.size) {
+            val alive = sidePokemon.filterNot(BattlePokemonStateView::fainted)
+            if (sidePokemon.isEmpty() || state.remainingPokemonBySide.getValue(side) != alive.size) {
                 issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ROSTER_INCOMPLETE)
             }
-            val expectedActive = minOf(if (state.format == BattleFormat.SINGLE) 1 else 2, sidePokemon.size)
-            if (sidePokemon.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != (0 until expectedActive).toList()) {
+            val expectedActive = minOf(if (state.format == BattleFormat.SINGLE) 1 else 2, alive.size)
+            if (alive.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != (0 until expectedActive).toList()) {
                 issue(issues, NativeBattleDefinitionIssueCode.ACTIVE_LAYOUT_INVALID)
             }
         }
@@ -189,9 +194,13 @@ internal object NativeInitialBattleDefinitionCompiler {
                     addAll(revealedValues(state, id, BattleObservedEventKind.HELD_ITEM_REVEALED))
                 }.map(::normalizedNativeId)
                 val hypothesizedItem = normalizedNativeId(build.itemId)
-                val itemConflict = when (pokemon.side) {
-                    BattleSide.ALLY -> publicItems.ifEmpty { listOf("") }.any { it != hypothesizedItem }
-                    BattleSide.OPPONENT -> publicItems.any { it != hypothesizedItem }
+                // Mid-battle the item may be gone (eaten, knocked off): only the first one revealed was the set's.
+                val itemConflict = when {
+                    midBattle && pokemon.side == BattleSide.ALLY -> false
+                    midBattle -> revealedValues(state, id, BattleObservedEventKind.HELD_ITEM_REVEALED).firstOrNull()
+                        ?.let(::normalizedNativeId)?.let { it != hypothesizedItem } == true
+                    pokemon.side == BattleSide.ALLY -> publicItems.ifEmpty { listOf("") }.any { it != hypothesizedItem }
+                    else -> publicItems.any { it != hypothesizedItem }
                 }
                 if (itemConflict) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT, id)
                 if (pokemon.side == BattleSide.OPPONENT && build.opponentMoveSet != null) {
@@ -229,10 +238,11 @@ internal object NativeInitialBattleDefinitionCompiler {
         }
 
         if (issues.isNotEmpty()) return NativeInitialBattleDefinitionCompilation(null, issues.toList())
+        // The public actives lead; a fainted Pokemon may still name the slot it fell in.
         fun team(side: BattleSide): List<NativePokemonSet> = state.pokemon.withIndex()
             .filter { it.value.side == side }
             .sortedWith(compareBy<IndexedValue<BattlePokemonStateView>> {
-                it.value.activeSlot ?: Int.MAX_VALUE
+                if (it.value.fainted) Int.MAX_VALUE else it.value.activeSlot ?: Int.MAX_VALUE
             }.thenBy(IndexedValue<BattlePokemonStateView>::index))
             .map { sets.getValue(it.value.battlePokemonId) }
         return NativeInitialBattleDefinitionCompilation(
@@ -241,9 +251,71 @@ internal object NativeInitialBattleDefinitionCompiler {
                 seed = seed,
                 p1Team = team(BattleSide.ALLY),
                 p2Team = team(BattleSide.OPPONENT),
+                situation = if (midBattle) situation(state, catalog, sets) else null,
             ),
             issues = emptyList(),
         )
+    }
+
+    private fun situation(
+        state: BattleStateView,
+        catalog: BattlePublicActionCatalogView,
+        sets: Map<UUID, NativePokemonSet>,
+    ): NativeBattleSituation = NativeBattleSituation(
+        turn = state.turn,
+        pokemon = state.pokemon.map { pokemon ->
+            val id = pokemon.battlePokemonId
+            val ally = pokemon.side == BattleSide.ALLY
+            val item = if (ally) normalizedNativeId(pokemon.knownHeldItemId.orEmpty())
+                else pokemon.knownHeldItemId?.let(::normalizedNativeId)
+            val sinceSwitchIn = movesSinceSwitchIn(state, id)
+            val active = pokemon.activeSlot != null && !pokemon.fainted
+            val choiceItem = normalizedNativeId(item ?: sets.getValue(id).item) in CHOICE_ITEMS
+            val exactMaxHp = pokemon.combatStats?.maxHp?.takeIf { ally && it.minimum == it.maximum }?.minimum
+            NativePokemonSituation(
+                uuid = id.toString(),
+                hp = when {
+                    pokemon.fainted -> 0
+                    exactMaxHp != null -> Math.round(pokemon.hpFraction * exactMaxHp).toInt()
+                    else -> null
+                },
+                hpFraction = if (pokemon.fainted) 0.0 else pokemon.hpFraction,
+                status = pokemon.statusId?.let(::normalizedNativeId)?.takeUnless { it == "fnt" }.orEmpty(),
+                boosts = pokemon.statStages.entries.mapNotNull { (stat, stage) ->
+                    STAGE_IDS[normalizedNativeId(stat)]?.let { it to stage }
+                }.toMap(),
+                item = item,
+                terastallized = pokemon.knownTeraTypeId?.let(::normalizedNativeId)?.takeIf(String::isNotEmpty)
+                    ?.replaceFirstChar(Char::uppercaseChar),
+                movePp = if (ally) {
+                    catalog.forPokemon(id).associate { normalizedNativeId(it.moveId) to it.details.currentPp }
+                } else {
+                    emptyMap()
+                },
+                choiceLockedMove = sinceSwitchIn.lastOrNull()?.takeIf { active && choiceItem },
+                movedSinceSwitchIn = active && sinceSwitchIn.isNotEmpty(),
+                forme = NativeInBattleFormes.inBattleForme(pokemon.speciesId),
+            )
+        },
+        weather = state.field.weather?.let(::effect),
+        terrain = state.field.terrain?.let(::effect),
+        pseudoWeather = (state.field.roomEffects + state.field.globalEffects).map(::effect),
+        p1SideConditions = state.field.sideConditions[BattleSide.ALLY].orEmpty().map(::effect),
+        p2SideConditions = state.field.sideConditions[BattleSide.OPPONENT].orEmpty().map(::effect),
+    )
+
+    private fun effect(view: BattleTimedEffectView) = NativeEffectSituation(
+        id = normalizedNativeId(view.effectId),
+        remainingTurns = view.remainingTurns ?: view.remainingTurnsRange?.maximum,
+        layers = view.stacks,
+    )
+
+    /** The moves a Pokemon used since it last came in, oldest first. */
+    private fun movesSinceSwitchIn(state: BattleStateView, pokemonId: UUID): List<String> {
+        val events = state.observedEvents.filter { it.actorPokemonId == pokemonId }
+        val since = events.indexOfLast { it.kind == BattleObservedEventKind.SWITCHED }
+        return events.drop(since + 1).filter { it.kind == BattleObservedEventKind.MOVE_USED }
+            .mapNotNull { it.publicValueId?.let(::normalizedNativeId) }
     }
 
     private fun concreteMoves(
@@ -294,4 +366,10 @@ internal object NativeInitialBattleDefinitionCompiler {
     }
 
     private const val UNKNOWN_SPECIES_ID = "unknown"
+    private val CHOICE_ITEMS = setOf("choiceband", "choicespecs", "choicescarf")
+    private val STAGE_IDS = mapOf(
+        "attack" to "atk", "atk" to "atk", "defence" to "def", "defense" to "def", "def" to "def",
+        "specialattack" to "spa", "spa" to "spa", "specialdefence" to "spd", "specialdefense" to "spd",
+        "spd" to "spd", "speed" to "spe", "spe" to "spe", "accuracy" to "accuracy", "evasion" to "evasion",
+    )
 }

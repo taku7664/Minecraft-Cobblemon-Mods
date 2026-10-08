@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.mcc.betterai.simulation.NativeMechanicAllowance
+import jbro.cobblemon.mcc.betterai.simulation.NativeMidBattleStateRules
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.mcc.betterai.simulation.NativeProductSeedPolicy
 import jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue
@@ -49,6 +50,8 @@ internal data class NativeInitialProductDecisionEvaluation(
      * them through the legacy fallback so the next turn can continue natively.
      */
     val retainedSessionState: NativeProductSessionState? = null,
+    /** The worlds were rebuilt from this mid-battle board rather than carried from the opening. */
+    val rebuilt: Boolean = false,
 ) {
     init {
         require(depthCompleted >= 0)
@@ -91,6 +94,7 @@ private typealias NativeLeafEvaluator = (
 /** Converts the opening public posterior into native product ranks on the existing score scale. */
 internal class NativeInitialProductDecisionEvaluator(
     private val planWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::plan,
+    private val planMidBattleWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::planMidBattle,
     private val searchWorlds: NativeWorldSearcher = NativeProductWorldSearchAggregator()::search,
     private val reconcileSession: NativeSessionReconciler = NativeProductSessionReconciler()::reconcile,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
@@ -115,11 +119,41 @@ internal class NativeInitialProductDecisionEvaluator(
         if (sessionState != null) {
             return evaluateContinuation(context, profile, tuning, budget, sessionState)
         }
-        if (!isOpeningCandidate(context)) {
+        if (!isOpeningCandidate(context)) return rebuild(context, profile, tuning, budget)
+        return evaluateFresh(context, profile, tuning, budget, midBattle = false)
+    }
+
+    /**
+     * Starts native search over from the current board when no session carries on: the opening was not
+     * native, or the public battle contradicted every retained world.
+     */
+    private fun rebuild(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        budget: LocalLookaheadBudget,
+    ): NativeInitialProductDecisionEvaluation {
+        if (context.opponentTeamPreview == null || context.exactOwnTeam == null) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
         }
+        NativeMidBattleStateRules.blocker(context.state)?.let { blocker ->
+            return NativeInitialProductDecisionEvaluation(
+                NativeInitialProductDecisionStatus.NOT_APPLICABLE,
+                failedRunDetail = "rebuild:$blocker",
+            )
+        }
+        return evaluateFresh(context, profile, tuning, budget, midBattle = true).copy(rebuilt = true)
+    }
+
+    private fun evaluateFresh(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        budget: LocalLookaheadBudget,
+        midBattle: Boolean,
+    ): NativeInitialProductDecisionEvaluation {
         val allowedMechanics = NativeMechanicAllowance.merge(null, context.candidates)
-        val plan = planWorlds(context, profile.difficulty.tier)
+        val plan = (if (midBattle) planMidBattleWorlds else planWorlds)(context, profile.difficulty.tier)
         if (plan.issues.isNotEmpty()) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.PLANNING_FAILED,
@@ -260,19 +294,29 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         val reconciliation = reconcileSession(sessionState, context, deadlineNanos)
         if (reconciliation.status != NativeProductSessionReconcileStatus.AVAILABLE) {
+            val reconciliationDetail = (reconciliation.observedActionIssues
+                .takeIf { reconciliation.inconsistencies.isEmpty() }.orEmpty().map {
+                    "${it.code.name}@event${it.eventSequence}" + (it.detail?.let { detail -> " $detail" } ?: "")
+                } +
+                reconciliation.rootIssues.map { it.code.name } +
+                reconciliation.inconsistencies.entries.sortedByDescending { it.value }.take(3)
+                    .map { (reason, worlds) -> "$reason x$worlds" } +
+                listOfNotNull(reconciliation.failure?.let { "${it.javaClass.simpleName}:${it.message?.take(200)}" }))
+                .joinToString(",").ifEmpty { null }
+            // The board moved away from every retained world: rebuild them from the board itself.
+            val rebuilt = rebuild(context, profile, tuning, budget)
+            if (rebuilt.status == NativeInitialProductDecisionStatus.AVAILABLE) {
+                return rebuilt.copy(reconciliationStatus = reconciliation.status, failedRunDetail = reconciliationDetail)
+            }
+            val rebuildDetail = rebuilt.failedRunDetail?.takeIf { it.startsWith("rebuild:") }
+                ?: "rebuild:" + (listOfNotNull(rebuilt.status.name, rebuilt.searchStatus?.name, rebuilt.failedRunStatus?.name) +
+                    rebuilt.planIssues.take(2).map { it.code.name + (it.detailCode?.let { code -> "/$code" } ?: "") })
+                    .joinToString("/")
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
                 reconciliationStatus = reconciliation.status,
                 failedWorldId = reconciliation.failedWorldId,
-                failedRunDetail = (reconciliation.observedActionIssues.takeIf { reconciliation.inconsistencies.isEmpty() }
-                    .orEmpty().map {
-                        "${it.code.name}@event${it.eventSequence}" + (it.detail?.let { detail -> " $detail" } ?: "")
-                    } +
-                    reconciliation.rootIssues.map { it.code.name } +
-                    reconciliation.inconsistencies.entries.sortedByDescending { it.value }.take(3)
-                        .map { (reason, worlds) -> "$reason x$worlds" } +
-                    listOfNotNull(reconciliation.failure?.let { "${it.javaClass.simpleName}:${it.message?.take(200)}" }))
-                    .joinToString(",").ifEmpty { null },
+                failedRunDetail = listOfNotNull(reconciliationDetail, rebuildDetail).joinToString(","),
             )
         }
         val reconciled = requireNotNull(reconciliation.sessionState) {

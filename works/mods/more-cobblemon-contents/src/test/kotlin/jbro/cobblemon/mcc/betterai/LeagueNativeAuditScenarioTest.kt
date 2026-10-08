@@ -114,8 +114,10 @@ class LeagueNativeAuditScenarioTest {
             Files.readAllLines(battle.resolve("decisions.jsonl")).forEach { line ->
                 val decision = JsonParser.parseString(line).asJsonObject
                 val native = decision.getAsJsonObject("native") ?: return@forEach
-                val key = listOf("status", "planIssues", "reconciliation", "search", "failedRun")
+                val key = listOf("status", "rebuilt", "planIssues", "reconciliation", "search", "failedRun")
                     .mapNotNull { name -> native[name]?.asString?.takeIf(String::isNotEmpty)?.let { "$name=$it" } }
+                    .plus(listOfNotNull(native["detail"]?.asString?.split(',')?.firstOrNull { it.startsWith("rebuild:") }
+                        ?.substringBefore('@')))
                     .joinToString(" ")
                 counts.merge(key, 1, Int::plus)
                 examples.putIfAbsent(key, "${battle.fileName} ${decision["side"].asString} turn=${decision["turn"].asInt} " +

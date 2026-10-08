@@ -138,11 +138,15 @@ function snapshot() {
       if (species[value.id]) return;
       species[value.id] = { types: value.types.map(type => type.toLowerCase()), baseStats: value.baseStats };
       // Public species rules only: no opponent Pokemon object, move slots or referee team access.
-      // Gen 9 pool is partial and differs from Cobblemon FormData learnsets used by the product.
+      // Every generation, like the Cobblemon FormData learnsets the game reads (and the team preview here):
+      // a species absent from Gen 9 (Cherrim) would otherwise have no candidates at all.
       // It does not prove ownership, current legality or compatibility of a four-move combination.
       publicLearnsets[value.id] = {
         sourceId: 'embedded:cobblemon/gen9_move_pool', coverage: 'PARTIAL',
-        moves: Object.fromEntries([...dex.species.getMovePool(value.id)].sort().map(id => [id, moveInfo(id)])),
+        // A battle-only forme (Mimikyu-Busted) learns what its out-of-battle forme does.
+        moves: Object.fromEntries([...dex.species.getMovePool(
+          toId(typeof value.battleOnly === 'string' ? value.battleOnly : value.battleOnly ? value.baseSpecies : value.id),
+          true)].sort().map(id => [id, moveInfo(id)])),
       };
     };
     for (const [slot, pokemon] of side.pokemon.entries()) {

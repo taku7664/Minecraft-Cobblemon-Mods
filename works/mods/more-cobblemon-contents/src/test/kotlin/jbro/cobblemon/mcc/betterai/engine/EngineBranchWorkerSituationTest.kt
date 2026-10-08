@@ -1,0 +1,96 @@
+package jbro.cobblemon.mcc.betterai.engine
+
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
+import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.mcc.betterai.simulation.NativeBattleSituation
+import jbro.cobblemon.mcc.betterai.simulation.NativeEffectSituation
+import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet
+import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSituation
+import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownPublicHp
+import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownRequestActionFactory
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/** A mid-battle position rebuilt over a started battle, as native search does after the public board left its worlds. */
+class EngineBranchWorkerSituationTest {
+    private fun uuid(n: Int) = "00000000-0000-4000-8000-%012d".format(n)
+
+    private val definition = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(11, 22, 33, 44),
+        p1Team = listOf(
+            NativePokemonSet("Garchomp", "Garchomp", listOf("earthquake", "dragonclaw", "stoneedge", "swordsdance"), "Rough Skin", uuid(1), item = "Choice Band", nature = "Jolly"),
+            NativePokemonSet("Rotom-Wash", "Rotom-Wash", listOf("hydropump", "voltswitch", "willowisp", "protect"), "Levitate", uuid(2), item = "Leftovers"),
+        ),
+        p2Team = listOf(
+            NativePokemonSet("Gyarados", "Gyarados", listOf("waterfall", "dragondance", "icefang", "taunt"), "Intimidate", uuid(3), item = "Sitrus Berry"),
+            NativePokemonSet("Kingambit", "Kingambit", listOf("kowtowcleave", "suckerpunch", "ironhead", "swordsdance"), "Defiant", uuid(4), item = "Black Glasses"),
+        ),
+        situation = NativeBattleSituation(
+            turn = 7,
+            pokemon = listOf(
+                NativePokemonSituation(uuid(1), hp = 101, hpFraction = 101.0 / 183, status = "brn", boosts = mapOf("atk" to 1),
+                    movePp = mapOf("earthquake" to 3), choiceLockedMove = "earthquake", movedSinceSwitchIn = true),
+                NativePokemonSituation(uuid(2), hp = 125, hpFraction = 1.0),
+                NativePokemonSituation(uuid(3), hp = null, hpFraction = 0.5, item = ""),
+                NativePokemonSituation(uuid(4), hp = 0, hpFraction = 0.0),
+            ),
+            weather = NativeEffectSituation("raindance", remainingTurns = 3),
+            p1SideConditions = listOf(NativeEffectSituation("reflect", remainingTurns = 2)),
+            p2SideConditions = listOf(NativeEffectSituation("spikes", layers = 2), NativeEffectSituation("stealthrock")),
+        ),
+    )
+
+    @Test
+    fun `the public board replaces what the start produced`() {
+        val root = EngineBranchWorker().createBattle(definition)
+
+        assertEquals(7, root.turn)
+        val garchomp = root.p1Team.single { it.uuid == uuid(1) }
+        assertEquals(101, garchomp.hp)
+        assertEquals("brn", garchomp.status)
+        // Gyarados' Intimidate at the start is overwritten by the public stages.
+        assertEquals(1, garchomp.boosts["atk"])
+        val gyarados = root.p2Team.single { it.uuid == uuid(3) }
+        assertEquals(0.5, NativeShowdownPublicHp.fraction(gyarados.hp, gyarados.maxHp))
+        assertEquals("", gyarados.item)
+        assertEquals(0, root.p2Team.single { it.uuid == uuid(4) }.hp)
+        assertEquals("raindance", root.field.weather?.id)
+        assertEquals(3, root.field.weather?.remainingTurns)
+        assertEquals(2, root.field.p1SideConditions.single { it.id == "reflect" }.remainingTurns)
+        assertEquals(2, root.field.p2SideConditions.single { it.id == "spikes" }.stacks)
+        assertTrue(root.field.p2SideConditions.any { it.id == "stealthrock" })
+    }
+
+    @Test
+    fun `the request follows the installed lock and the fainted bench`() {
+        val root = EngineBranchWorker().createBattle(definition)
+
+        val ally = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root, allowedMechanics = emptySet())
+        assertEquals(listOf("earthquake"), ally.filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.distinct())
+        val opponent = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
+        assertTrue(opponent.none { it.kind == BattleActionKind.SWITCH }, "A fainted bench cannot be switched in")
+    }
+
+    @Test
+    fun `a reseeded root keeps the position but draws other chance outcomes`() {
+        val worker = EngineBranchWorker()
+        val root = worker.createBattle(definition)
+        val reseeded = worker.reseed(root.snapshotJson, 1)
+
+        assertEquals(root.p1Team.map { it.hp }, reseeded.p1Team.map { it.hp })
+        // Gyarados' Waterfall into Garchomp: the roll (and a critical hit) comes from the stream.
+        val outcomes = (1..12).map { salt ->
+            val start = worker.reseed(root.snapshotJson, salt)
+            worker.branch(start.snapshotJson, "move 1", "move 1").p1Team.single { it.uuid == uuid(1) }.hp
+        }.toSet()
+        assertNotEquals(1, outcomes.size, "Different streams must reach different damage rolls")
+        // A token with the reseed step replays to the same frame.
+        val replayed = EngineBranchWorker().branch(reseeded.snapshotJson, "move 1", "move 1")
+        assertEquals(worker.branch(reseeded.snapshotJson, "move 1", "move 1").p1Team.map { it.hp }, replayed.p1Team.map { it.hp })
+    }
+}

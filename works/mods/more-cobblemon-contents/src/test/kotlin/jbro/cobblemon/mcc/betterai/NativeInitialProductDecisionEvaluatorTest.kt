@@ -92,11 +92,13 @@ class NativeInitialProductDecisionEvaluatorTest {
     }
 
     @Test
-    fun `non opening state is not applicable and invokes no native dependency`() {
-        var invoked = false
+    fun `a non opening state rebuilds its worlds from the board instead of the opening`() {
+        var openingPlanned = false
+        var rebuilt = false
         val evaluator = NativeInitialProductDecisionEvaluator(
-            planWorlds = { _, _ -> invoked = true; error("must not plan") },
-            searchWorlds = { invoked = true; error("must not search") },
+            planWorlds = { _, _ -> openingPlanned = true; error("must not plan the opening") },
+            planMidBattleWorlds = { _, _ -> rebuilt = true; unplannable() },
+            searchWorlds = { error("an unplanned board must not be searched") },
         )
 
         val result = evaluator.evaluate(
@@ -106,15 +108,23 @@ class NativeInitialProductDecisionEvaluatorTest {
             LocalLookaheadBudget(250L, 100, 1),
         )
 
-        assertEquals(NativeInitialProductDecisionStatus.NOT_APPLICABLE, result.status)
-        assertFalse(invoked)
+        assertEquals(NativeInitialProductDecisionStatus.PLANNING_FAILED, result.status)
+        assertTrue(result.rebuilt)
+        assertTrue(rebuilt)
+        assertFalse(openingPlanned)
     }
+
+    private fun unplannable() = NativeInitialProductWorldPlan(
+        emptyList(),
+        listOf(NativeInitialProductWorldPlanIssue(NativeInitialProductWorldPlanIssueCode.WORLD_PRIOR_INVALID)),
+    )
 
     @Test
     fun `turn one after a real action does not retry opening compilation`() {
         var invoked = false
         val evaluator = NativeInitialProductDecisionEvaluator(
             planWorlds = { _, _ -> invoked = true; error("must not plan") },
+            planMidBattleWorlds = { _, _ -> unplannable() },
             searchWorlds = { invoked = true; error("must not search") },
         )
         val opening = context(turn = 1)
@@ -138,7 +148,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             LocalLookaheadBudget(250L, 100, 1),
         )
 
-        assertEquals(NativeInitialProductDecisionStatus.NOT_APPLICABLE, result.status)
+        assertTrue(result.status != NativeInitialProductDecisionStatus.AVAILABLE)
         assertFalse(invoked)
     }
 
