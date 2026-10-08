@@ -5,7 +5,7 @@
       "entry_id": "room_service",
       "item_id": "cobblemon:room_service",
       "item_count": 1,
-      "price_bp": 200,
+      "price_bp": 25,
       "sort_order": 680,
       "category": "held_item"
     }

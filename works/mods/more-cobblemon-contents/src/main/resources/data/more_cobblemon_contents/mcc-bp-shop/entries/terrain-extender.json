@@ -5,7 +5,7 @@
       "entry_id": "terrain_extender",
       "item_id": "cobblemon:terrain_extender",
       "item_count": 1,
-      "price_bp": 200,
+      "price_bp": 25,
       "sort_order": 700,
       "category": "held_item"
     }

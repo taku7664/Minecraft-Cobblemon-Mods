@@ -5,7 +5,7 @@
       "entry_id": "air_balloon",
       "item_id": "cobblemon:air_balloon",
       "item_count": 1,
-      "price_bp": 200,
+      "price_bp": 50,
       "sort_order": 640,
       "category": "held_item"
     }

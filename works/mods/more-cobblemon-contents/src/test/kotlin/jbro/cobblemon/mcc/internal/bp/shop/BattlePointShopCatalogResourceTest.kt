@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 
 class BattlePointShopCatalogResourceTest {
     @Test
-    fun `bundled catalog prices growth goods low, IV and ability changes high and battle items highest of all`() {
+    fun `bundled catalog prices growth goods low, battle items at a session of battles and a hidden ability highest of all`() {
         val loaded = BattlePointShopCatalogLoader.loadSeparated(
             fragmentReaders(RULE_DIRECTORY),
             fragmentReaders(ENTRY_DIRECTORY),
@@ -21,8 +21,8 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(101, catalog.entries().size)
-        assertEquals(101, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(102, catalog.entries().size)
+        assertEquals(102, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
         assertEquals(listOf(1L, 2L, 4L, 10L, 3L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
@@ -36,22 +36,29 @@ class BattlePointShopCatalogResourceTest {
         assertEquals(100L, price("ability_capsule"))
         assertEquals(2500L, price("ability_patch"))
         assertEquals("ability_patch", catalog.entries().maxBy { it.priceBp }.entryId)
-        // Battle items are very dear.
+        // Battle items: Life Orb at 100 sets the scale; easily crafted ones are cheaper still.
         val heldItems = catalog.entries().filter { it.category == "held_item" }
-        assertEquals(5, heldItems.count { it.priceBp == 400L })
-        assertEquals(5, heldItems.count { it.priceBp == 250L })
-        assertEquals(8, heldItems.count { it.priceBp == 200L })
-        assertEquals(4, heldItems.count { it.priceBp == 150L })
-        assertEquals(150L, price("adrenaline_orb"))
+        assertEquals(22, heldItems.size)
+        assertEquals(listOf(100L, 100L), listOf("life_orb", "choice_specs").map(::price))
+        assertTrue(listOf("choice_band", "choice_scarf", "assault_vest").all { price(it) == 75L })
+        assertEquals(5, heldItems.count { it.priceBp == 50L })
+        assertEquals(5, heldItems.count { it.priceBp == 40L })
+        assertEquals(6, heldItems.count { it.priceBp == 25L })
+        assertEquals(5L, price("cell_battery"))
+        assertEquals(25L, price("adrenaline_orb"))
         assertEquals("mega_showdown:adrenaline_orb", catalog.entry("adrenaline_orb")?.itemId)
         // Every gimmick's key item and core material, so exploring is not the only way in.
         val gimmicks = catalog.entries().filter { it.category == "gimmick" }
         assertEquals(27, gimmicks.size)
         assertTrue(gimmicks.all { it.itemId.startsWith("mega_showdown:") })
-        assertEquals(listOf(250L, 200L, 250L, 150L, 100L, 250L, 150L, 50L),
+        assertEquals(listOf(150L, 100L, 150L, 50L, 50L, 150L, 50L, 25L),
             listOf("mega_bracelet", "mega_stone", "z_ring", "blank_z", "tera_orb", "dynamax_band", "wishing_star", "max_mushroom").map(::price))
         assertEquals(18, gimmicks.count { it.entryId.endsWith("_tera_shard") && it.priceBp == 2L })
         assertEquals(5L, price("stellar_tera_shard"))
+        // Mints and ability changes are used up, so they sit with the consumables; fireworks are the only other goods.
+        assertTrue(catalog.entries().filter { it.entryId.endsWith("_mint") || it.entryId.startsWith("ability_") }.all { it.category == "consumable" })
+        assertEquals(listOf("firework_rocket"), catalog.entries().filter { it.category == "misc" }.map { it.entryId })
+        assertEquals(2L, price("firework_rocket"))
         assertEquals(listOf("held_item", "gimmick", "consumable", "misc"), catalog.categories)
     }
 
