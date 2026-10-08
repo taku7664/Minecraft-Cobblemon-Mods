@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 11:40] 교환 NPC 구현 전 확인 (Cobblemon 1.8.1 JAR, 문서만)
+
+- **선택 화면:** `PartySelectCallbacks.createFromPokemon(...)`로 Cobblemon 파티 선택 화면을 쓴다. 고를 수 있는지·취소·선택 콜백을 서버에서 받는다.
+- **스폰한 플레이어:** `SpawnEvent.getCause()` → `SpawnCause.getEntity()`. 플레이어 값이 실제로 들어오는지는 구현 때 확인.
+- **제외 라벨:** `legendary` 71, `mythical` 23, `paradox` 20, `ultra_beast` 11 (종 데이터 집계).
+- **어버이(사용자 지시: NPC로):** `setOriginalTrainer(String)`이 타입 `NPC`와 이름을 저장하고, `PlayerPartyStore.add`는 어버이가 `NONE`일 때만 플레이어로 채운다. NPC 이름은 번역 키라 서버에서 `ko_kr.json`으로 풀어 넣어야 한다(전용 서버가 모드 언어를 안 읽는다는 건 알려진 동작, 구현 때 확인).
+
 ## [2026-10-08 11:20] 교환 NPC를 종 지정 + 희귀도 한 단계 위로 (문서만)
 
 - **사용자 결정:** 교환 NPC는 스폰을 일으킨 플레이어의 파티·PC에서 원하는 종을 고른다(등급 가중치 common 80 / uncommon 15 / rare 5, 없는 등급은 빼고 재조정). 주면 한 단계 높은 등급 종을 무작위로 준다(타입 제한 없음, rare→ultra-rare 허용). ultra-rare뿐이면 ultra-rare끼리. 전설·환상·패러독스·울트라비스트는 양쪽 다 제외. 스폰시킨 플레이어만 교환할 수 있다.
