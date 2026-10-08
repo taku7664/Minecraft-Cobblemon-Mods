@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-09] 리그 상태 패널 제목 줄바꿈
+
+- **문제:** 허브 리그 탭 "리그 상태" 패널의 제목(`StatusBody`)이 `drawLine` 한 줄이라 챔피언 문구("챔피언 달성! 배틀타워와 배틀팩토리를 이용할 수 있습니다.")가 "…"로 잘렸다(사용자 스크린샷).
+- **수정:** 제목도 `font.split`으로 줄바꿈하고, 아래 설명은 제목 줄 수만큼 내려 그린다. 한 줄 제목일 때 간격(14px)은 전과 같다.
+- **미확인:** 빌드·실게임 화면 확인 안 함.
+
 ## [2026-10-09] 야생 트레이너 배틀에서 상대 도구 가리기
 
 - **원인:** 야생 트레이너는 `BattleBuilder.pvn`으로 Cobblemon 일반 배틀을 연다. MCC 배틀의 도구 가리기(`Cobblemon173BattlePokemonAppearance.hideHeldItems`)는 관리 배틀 엔진과 PvP에서만 불려서 여기서는 상대 도구가 보였다.

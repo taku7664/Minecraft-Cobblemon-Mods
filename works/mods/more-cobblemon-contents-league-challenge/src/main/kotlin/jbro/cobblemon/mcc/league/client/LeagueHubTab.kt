@@ -213,11 +213,16 @@ internal class LeagueHubTab : MccHubTabContent {
                 else -> leagueCopy("dashboard_no_challenge")
             }
             val text = MccHubKit.panelText(theme)
-            drawLine(graphics, headline, body.x, body.y, body.width, if (view.errorKey != null) theme.colors.accentDanger else text)
+            // The headline wraps like the note, so a long one such as the champion's is not cut short.
+            val width = body.width.coerceAtLeast(1)
+            val headlineLines = font.split(headline, width)
+            val headlineColor = if (view.errorKey != null) theme.colors.accentDanger else text
+            headlineLines.forEachIndexed { index, line -> graphics.drawString(font, line, body.x, body.y + index * 10, headlineColor, false) }
+            val noteTop = body.y + headlineLines.size * 10 + 4
             val note = view.errorKey?.let(Component::translatable)
                 ?: if (view.runChallenge != null) leagueCopy("dashboard_run_note") else leagueCopy("dashboard_team_note")
-            font.split(note, body.width.coerceAtLeast(1)).take(((body.height - 14) / 10).coerceAtLeast(1))
-                .forEachIndexed { index, line -> graphics.drawString(font, line, body.x, body.y + 14 + index * 10, text, false) }
+            font.split(note, width).take(((body.bottom - noteTop) / 10).coerceAtLeast(1))
+                .forEachIndexed { index, line -> graphics.drawString(font, line, body.x, noteTop + index * 10, text, false) }
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
