@@ -170,7 +170,8 @@ internal object WildNpcRoleCheckHarness {
                 }
                 12 -> if (since(20)) {
                     onServer { sp ->
-                        spawn(sp, "wild_youngster", 3.0)
+                        // Further out than the caretaker, which stays where it was put.
+                        spawn(sp, "wild_youngster", 6.0)
                         interact(sp, "wild_youngster")
                     }
                     next(13)
