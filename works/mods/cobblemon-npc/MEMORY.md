@@ -1,5 +1,11 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 18:00] NPC는 `/kill`로도 안 죽는다 (구현·컴파일만, 배치 안 함)
+
+- 사용자 결정: "킬로 못죽여야지. 부활도 못시키는데". `NpcEntity.isInvulnerableTo`가 공허 낙하(`fell_out_of_world`)만 받고 `/kill`(generic_kill)을 포함한 나머지 피해는 전부 막는다. 지우는 길은 지팡이의 제거 버튼(`NpcEditorService`, `remove(DISCARDED)`)뿐. 운영 안내도 고쳤다.
+- 바로 아래 17:45 항목의 "광장에서 `/kill`이 안 먹는다"는 이제 의도된 동작이다(광장 밖에서도 안 먹음). 그 항목에서 띄운 "/kill로 지워지게 고치기" 별도 작업은 취소했다.
+- **확인:** `:cobblemon-npc:compileKotlin` 통과. 테스트·빌드·배치는 안 함.
+
 ## [2026-10-08 17:45] 광장 NPC 정리와 `/kill`이 안 먹는 문제
 
 - 사용자 지시: 이름 없는 NPC 삭제, 타워 안내원 이름·스킨 수정. 타워 안내원 (18.5,74,-20.5)은 `data merge`로 이름 "타워 안내원", 스킨 `rct:gatekeeper_logan_0253`(리그 안내원과 같은 문지기 계열).

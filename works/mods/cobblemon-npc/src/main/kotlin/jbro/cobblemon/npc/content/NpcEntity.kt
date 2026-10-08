@@ -8,10 +8,10 @@ import net.minecraft.network.syncher.EntityDataAccessor
 import net.minecraft.network.syncher.EntityDataSerializers
 import net.minecraft.network.syncher.SynchedEntityData
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.tags.DamageTypeTags
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.damagesource.DamageTypes
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.Mob
@@ -73,8 +73,9 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
 
     fun displayName(): String = customName?.string.orEmpty()
 
-    // Only /kill and the void remove an NPC; an operator's creative hit does not.
-    override fun isInvulnerableTo(source: DamageSource) = !source.`is`(DamageTypeTags.BYPASSES_INVULNERABILITY)
+    // Nothing kills an NPC, /kill included: a dead one cannot be brought back. The wand removes one; only the void
+    // takes one that ended up below the world.
+    override fun isInvulnerableTo(source: DamageSource) = !source.`is`(DamageTypes.FELL_OUT_OF_WORLD)
 
     override fun removeWhenFarAway(distance: Double) = false
 

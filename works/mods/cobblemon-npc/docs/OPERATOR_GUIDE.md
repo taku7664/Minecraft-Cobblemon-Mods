@@ -14,7 +14,8 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
   `rctmod:textures/trainers/single/clerk.png`; the **RCT ▶** button browses the enabled pack with a preview), or
   any `namespace:path.png` skin texture. A texture skin's slim or wide model is read from the image; without the
   pack the NPC wears a default skin.
-- NPCs do not move, take damage or despawn. `/kill` still removes one.
+- NPCs do not move, take damage or despawn, and `/kill` does not kill them either (a removed NPC cannot be
+  brought back). Remove one with the wand's remove button.
 - `/npc talk <players> <dialogue> [node]` opens a dialogue without an NPC (command blocks, other mods' scripts, or a
   dialogue's own `@server` command). `/npc end <players>` closes it. `/npc reload` reads the files again.
 
