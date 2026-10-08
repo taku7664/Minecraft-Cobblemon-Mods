@@ -1,5 +1,13 @@
 # MEMORY
 
+## [2026-10-08 21:48] PvP 배틀 기믹 비트플래그 API 개발 배포
+
+- **구현:** `e8f428ea`에서 PvP 배틀 실행 요청을 공통 `BattleMechanicFlags`의 `mechanicFlags: Int`로 전환했다. 룸의 기존 기믹 선택 집합은 실행 경계에서 비트플래그로 변환한다. 코어와 함께 재빌드·배치했다.
+- **테스트:** PvP 테스트 모음 통과. 이번 기록에서는 정확한 실행 개수를 확인하지 않았다.
+- **빌드·무결성:** 0.1.0 JAR 생성, JDK 21 `jar --validate`와 ZIP CRC 검사 통과.
+- **배치:** 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server/mods`와 `develop-product/client/mods`에 배치했다. 원본·서버·클라이언트 SHA-256 일치, 중복 Fabric ID와 `.deploying` 잔여물 없음 확인. 배치 전 서버·게임 프로세스 및 25565/25566 리스너가 없었다. 이전 JAR·manifest는 실제 저장소 `build/mcc-gimmick-deployment/20261008-214821/`에 보관했다.
+- **미확인:** 서버 기동·실게임 검증은 하지 않았다. `deploy-product` 릴리스가 아니라 개발 배포다.
+
 ## [2026-10-08 01:05] 룸 오류 문장이 한 줄에서 잘리던 문제
 
 - 원인: 룸 화면·목록의 오류 칸 높이가 10px(한 줄)로 고정돼, `MccHubKit.text`가 줄바꿈해도 둘째 줄부터 버려짐.

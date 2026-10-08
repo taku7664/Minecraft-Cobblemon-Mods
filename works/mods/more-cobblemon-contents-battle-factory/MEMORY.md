@@ -1,5 +1,13 @@
 # more-cobblemon-contents-battle-factory 작업 기록
 
+## [2026-10-08 21:48] 공통 배틀 기믹 API 전환 JAR 개발 배포
+
+- **구현:** `e8f428ea`에서 팩토리 배틀 요청이 공통 `BattleMechanicFlags.NONE`을 전달하도록 새 PvE API에 맞췄다. 기존 기믹 비활성 규칙은 유지한다.
+- **테스트:** 111개 중 110개 통과, 기존 BP 보상 테스트 1개 실패(기대 3, 실제 2). 전체 테스트 통과로 기록하지 않는다.
+- **빌드·무결성:** 0.1.0 JAR 생성, JDK 21 `jar --validate`와 ZIP CRC 검사 통과.
+- **배치:** 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server/mods`와 `develop-product/client/mods`에 배치했다. 원본·서버·클라이언트 SHA-256 일치, 중복 Fabric ID와 `.deploying` 잔여물 없음 확인. 배치 전 서버·게임 프로세스 및 25565/25566 리스너가 없었다. 이전 JAR·manifest는 실제 저장소 `build/mcc-gimmick-deployment/20261008-214821/`에 보관했다.
+- **미확인:** 서버 기동·실게임 검증은 하지 않았다. `deploy-product` 릴리스가 아니라 개발 배포다.
+
 ## [2026-10-08 21:25] 승리 BP를 원래보다 1씩 낮춘 2·3·4 (구현만, 빌드·테스트 안 함)
 
 - **사용자 결정:** 원래 3·4·5(상한 5)에서 1씩만 낮춘다. 21:15에 "2/3/4…"를 상한 없이 계속 오르는 것으로 잘못 읽어 반영했다가(`291dab22`), 사용자가 지적해 상한 4로 고쳤다.
