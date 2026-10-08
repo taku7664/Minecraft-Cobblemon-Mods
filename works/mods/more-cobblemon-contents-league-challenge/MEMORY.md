@@ -2,7 +2,7 @@
 
 ## [2026-10-08 11:40] 교환 NPC 구현 전 확인 (Cobblemon 1.8.1 JAR, 문서만)
 
-- **선택 화면:** `PartySelectCallbacks.createFromPokemon(...)`로 Cobblemon 파티 선택 화면을 쓴다. 고를 수 있는지·취소·선택 콜백을 서버에서 받는다.
+- **보낼 포켓몬 (사용자 결정):** 고르는 화면 없이 파티 1번 자리의 포켓몬을 보낸다. 확인 대사에 레벨·이로치·별명을 넣어 개체를 알아보게 하고, [보낼게] 때 1번이 같은 개체(UUID)인지 다시 본다. Cobblemon `PartySelectCallbacks.createFromPokemon`(파티 선택 화면)도 있지만 쓰지 않기로 했다.
 - **스폰한 플레이어:** `SpawnEvent.getCause()` → `SpawnCause.getEntity()`. 플레이어 값이 실제로 들어오는지는 구현 때 확인.
 - **제외 라벨:** `legendary` 71, `mythical` 23, `paradox` 20, `ultra_beast` 11 (종 데이터 집계).
 - **어버이(사용자 지시: NPC로):** `setOriginalTrainer(String)`이 타입 `NPC`와 이름을 저장하고, `PlayerPartyStore.add`는 어버이가 `NONE`일 때만 플레이어로 채운다. NPC 이름은 번역 키라 서버에서 `ko_kr.json`으로 풀어 넣어야 한다(전용 서버가 모드 언어를 안 읽는다는 건 알려진 동작, 구현 때 확인).
