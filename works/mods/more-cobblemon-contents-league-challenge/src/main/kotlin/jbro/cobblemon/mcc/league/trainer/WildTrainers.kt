@@ -2,15 +2,6 @@ package jbro.cobblemon.mcc.league.trainer
 
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.Priority
-import com.cobblemon.mod.common.api.dialogue.Dialogue
-import com.cobblemon.mod.common.api.dialogue.DialogueManager
-import com.cobblemon.mod.common.api.dialogue.DialoguePage
-import com.cobblemon.mod.common.api.dialogue.DialogueSpeaker
-import com.cobblemon.mod.common.api.dialogue.FunctionDialogueAction
-import com.cobblemon.mod.common.api.dialogue.FunctionDialogueText
-import com.cobblemon.mod.common.api.dialogue.ReferenceDialogueFaceProvider
-import com.cobblemon.mod.common.api.dialogue.input.DialogueOption
-import com.cobblemon.mod.common.api.dialogue.input.DialogueOptionSetInput
 import com.cobblemon.mod.common.api.events.CobblemonEvents
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.battles.BattleBuilder
@@ -34,6 +25,9 @@ import jbro.cobblemon.mcc.internal.record.BattleRecordKey
 import jbro.cobblemon.mcc.internal.record.BattleRecordOutcome
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
+import jbro.cobblemon.npc.api.NpcTalk
+import jbro.cobblemon.npc.api.NpcTalkChoice
+import jbro.cobblemon.npc.api.NpcTalks
 import jbro.cobblemon.mcc.league.server.LeagueCatalogResources
 import jbro.cobblemon.mcc.league.server.LeagueSavedData
 import jbro.cobblemon.mcc.league.system.LeagueEngine
@@ -217,35 +211,11 @@ object WildTrainers {
             say(player, npc, "$KEY.refuse.$refusal")
             return
         }
-        val speaker = DialogueSpeaker(
-            name = FunctionDialogueText { (npc.displayName ?: npc.name).copy() },
-            face = ReferenceDialogueFaceProvider(npc.id, false),
-        )
-        val challenge = DialogueOption(
-            text = FunctionDialogueText { Component.translatable("$KEY.option.battle") },
-            value = "battle",
-            action = FunctionDialogueAction { dialogue, _ ->
-                DialogueManager.stopDialogue(dialogue.playerEntity)
-                start(dialogue.playerEntity, npc, definition)
-            },
-        )
-        val leave = DialogueOption(
-            text = FunctionDialogueText { Component.translatable("$KEY.option.leave") },
-            value = "leave",
-            action = FunctionDialogueAction { dialogue, _ -> DialogueManager.stopDialogue(dialogue.playerEntity) },
-        )
         val line = "$KEY.greeting.${Random.nextInt(GREETINGS)}"
-        val page = DialoguePage(
-            id = "challenge",
-            speaker = "npc",
-            lines = mutableListOf<com.cobblemon.mod.common.api.dialogue.DialogueText>(FunctionDialogueText { Component.translatable(line) }),
-            input = DialogueOptionSetInput(options = mutableListOf(challenge, leave), vertical = false),
-        )
-        DialogueManager.startDialogue(player, npc, Dialogue(
-            pages = listOf(page),
-            speakers = mapOf("npc" to speaker),
-            escapeAction = FunctionDialogueAction { dialogue, _ -> DialogueManager.stopDialogue(dialogue.playerEntity) },
-        ))
+        NpcTalks.open(player, talk(npc, Component.translatable(line), listOf(
+            NpcTalkChoice(Component.translatable("$KEY.option.battle")) { start(it, npc, definition) },
+            NpcTalkChoice(Component.translatable("$KEY.option.leave")),
+        )))
     }
 
     private fun start(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
@@ -344,9 +314,19 @@ object WildTrainers {
         return Cobblemon.storage.getParty(player).maxOfOrNull { it.level }?.coerceAtLeast(5) ?: 5
     }
 
+    /** [npc] says [key] in the NPC dialogue box; reading it closes the box. */
     private fun say(player: ServerPlayer, npc: NPCEntity, key: String) {
-        player.sendSystemMessage(Component.literal("<").append(npc.displayName ?: npc.name).append("> ").append(Component.translatable(key)))
+        NpcTalks.open(player, talk(npc, Component.translatable(key)))
     }
+
+    /** A talk with [npc]: its name, its face in the name plate, and the camera on it while the box is up. */
+    private fun talk(npc: NPCEntity, line: Component, choices: List<NpcTalkChoice> = emptyList()) = NpcTalk(
+        speaker = (npc.displayName ?: npc.name).copy(),
+        lines = listOf(line),
+        choices = choices,
+        npc = npc,
+        skin = npc.aspects.firstOrNull { it.startsWith("rct_") }?.let { "rct:" + it.removePrefix("rct_") }.orEmpty(),
+    )
 
     /** Operator view and control; the commands live under `/mcc league trainer`. */
     internal fun activeFights(): Int = fights.size

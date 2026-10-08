@@ -20,6 +20,10 @@ dependencies {
     compileOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
     testImplementation(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
+    // Wild trainers talk in the NPC dialogue box; the NPC mod ships as its own JAR.
+    compileOnly(project(path = ":cobblemon-npc", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":cobblemon-npc", configuration = "namedElements")) { isTransitive = false }
+    testImplementation(project(path = ":cobblemon-npc", configuration = "namedElements")) { isTransitive = false }
     // Development runs only: the battle camera that closing scenes turn.
     runtimeOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
