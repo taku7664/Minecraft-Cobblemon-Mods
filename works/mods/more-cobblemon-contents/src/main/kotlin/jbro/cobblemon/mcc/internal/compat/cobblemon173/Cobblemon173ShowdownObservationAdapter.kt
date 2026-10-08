@@ -361,7 +361,7 @@ class Cobblemon173ShowdownObservationAdapter(
             )
 
             ResourceKind.ITEM -> observer.observe(
-                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, effect.id),
+                Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, effect.id, fromEffectSource = true),
             )
         }
     }

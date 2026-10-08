@@ -186,6 +186,21 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `a berry heal after eating it names the berry without giving it back`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(3)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry",
+            removed = true, consumed = true))
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(1, actor, "sitrusberry", fromEffectSource = true))
+        assertEquals("", observer.publicSnapshot().pokemon.single().knownHeldItemId)
+        // An item still held (Leftovers) is revealed the same way and stays known.
+        val other = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.HeldItemRevealed(2, other, "leftovers", fromEffectSource = true))
+        assertEquals("leftovers", observer.publicSnapshot().pokemon.single { it.battlePokemonId == other.battlePokemonId }
+            .knownHeldItemId)
+    }
+
+    @Test
     fun `knocked off item can activate Unburden but cannot become a harvested berry`() {
         val actor = publicPokemon(BattleSide.ALLY, 0)
         val observer = Cobblemon173PublicBattleObserver(3)

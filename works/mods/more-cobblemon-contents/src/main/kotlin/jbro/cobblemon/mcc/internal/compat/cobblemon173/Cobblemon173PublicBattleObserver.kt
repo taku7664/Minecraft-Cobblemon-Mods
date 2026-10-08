@@ -247,9 +247,13 @@ internal class Cobblemon173PublicBattleObserver(
                 if (observation.removed && PublicIds.canonical((observation.ownAbilityAtRemoval ?: actor.knownAbilityId).orEmpty()) == "unburden")
                     markers = markers + "unburden"
                 if (!observation.removed) markers = markers - "unburden"
-                // "" is a publicly confirmed absence, unlike null (not yet seen).
-                pokemon[actor.battlePokemonId] = actor.copyView(knownHeldItemId = if (observation.removed) "" else observation.itemId,
-                    knownVolatileEffectIds = markers)
+                // "" is a publicly confirmed absence, unlike null (not yet seen). An effect source never brings it back.
+                val heldItem = when {
+                    observation.removed -> ""
+                    observation.fromEffectSource && actor.knownHeldItemId == "" -> ""
+                    else -> observation.itemId
+                }
+                pokemon[actor.battlePokemonId] = actor.copyView(knownHeldItemId = heldItem, knownVolatileEffectIds = markers)
                 appendEvent(
                     observation.turn,
                     BattleObservedEventKind.HELD_ITEM_REVEALED,
@@ -974,6 +978,11 @@ internal sealed interface Cobblemon173PublicObservation {
         val consumed: Boolean = false,
         /** The deciding actor's own request can identify an unannounced Unburden at item loss. */
         val ownAbilityAtRemoval: String? = null,
+        /**
+         * Named only as the source of another effect (`[from] item: Sitrus Berry`). That proves which item it held,
+         * not that it still holds one: a berry's heal follows the line that removed it.
+         */
+        val fromEffectSource: Boolean = false,
     ) : Cobblemon173PublicObservation {
         init {
             require(itemId.isNotBlank())

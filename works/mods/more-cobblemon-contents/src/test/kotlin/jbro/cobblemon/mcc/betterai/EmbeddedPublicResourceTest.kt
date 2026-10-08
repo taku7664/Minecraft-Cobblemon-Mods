@@ -47,6 +47,9 @@ class EmbeddedPublicResourceTest {
     fun `unknown explicit owner never falls back to damaged pokemon and removal wins`() {
         assertNull(holder("|-damage|$opponent|10/100|[from] item: Rocky Helmet|[of] p1a: unseen").knownHeldItemId)
         assertNull(holder("|-damage|$opponent|10/100|[from] item: Rocky Helmet|[of] ").knownHeldItemId)
-        assertNull(holder("|-heal|$opponent|30/100|[from] item: Leftovers", "|-enditem|$opponent|Leftovers").knownHeldItemId)
+        // Removal is a confirmed absence, as the game's observer records it.
+        assertEquals("", holder("|-heal|$opponent|30/100|[from] item: Leftovers", "|-enditem|$opponent|Leftovers").knownHeldItemId)
+        // A berry's heal names the berry after the line that ate it; that does not give it back.
+        assertEquals("", holder("|-enditem|$opponent|Sitrus Berry|[eat]", "|-heal|$opponent|55/100|[from] item: Sitrus Berry").knownHeldItemId)
     }
 }

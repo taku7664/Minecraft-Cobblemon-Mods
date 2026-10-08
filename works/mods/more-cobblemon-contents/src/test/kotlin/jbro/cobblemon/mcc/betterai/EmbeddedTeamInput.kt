@@ -162,7 +162,8 @@ internal object EmbeddedTeamInput {
                     if (source != null && owner != null) {
                         val resource = id(source).takeIf(String::isNotEmpty)
                         if (resource != null) when {
-                            source.startsWith("item: ") -> owner.item = resource
+                            // Like the game's observer: an effect source never brings back an item already gone.
+                            source.startsWith("item: ") -> if (owner.item != "") owner.item = resource
                             source.startsWith("ability: ") -> {
                                 owner.ability = resource
                                 events += BattleObservedEventView(index.toLong() * 2, eventTurn,
@@ -183,7 +184,8 @@ internal object EmbeddedTeamInput {
                 }
                 "-endability" -> current?.let { it.abilityEnded = true }
                 "-item" -> current?.let { it.item = id(p[3]) }
-                "-enditem" -> current?.let { it.item = null }
+                // "" is a confirmed absence, as the game's observer records it; null is not yet seen.
+                "-enditem" -> current?.let { it.item = "" }
                 "-boost", "-unboost", "-setboost" -> current?.let {
                     val stat = statName(p[3]); val amount = p[4].toInt()
                     it.stages[stat] = (if (kind == "-setboost") amount else (it.stages[stat] ?: 0) +
