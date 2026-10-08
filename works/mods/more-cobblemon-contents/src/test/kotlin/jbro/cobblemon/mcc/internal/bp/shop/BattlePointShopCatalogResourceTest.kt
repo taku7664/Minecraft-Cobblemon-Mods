@@ -21,8 +21,8 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(122, catalog.entries().size)
-        assertEquals(122, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(123, catalog.entries().size)
+        assertEquals(123, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
         assertEquals(listOf(1L, 2L, 4L, 10L, 4L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
@@ -67,8 +67,9 @@ class BattlePointShopCatalogResourceTest {
         // Mints and ability changes are used up, so they sit with the consumables; the Ability Shield is a held item.
         assertTrue(catalog.entries().filter { it.entryId.endsWith("_mint") || it.entryId in setOf("ability_capsule", "ability_patch") }.all { it.category == "consumable" })
         assertEquals("held_item", catalog.entry("ability_shield")?.category)
-        assertEquals(listOf("firework_rocket"), catalog.entries().filter { it.category == "misc" }.map { it.entryId })
+        assertEquals(listOf("firework_rocket", "enchanted_golden_apple"), catalog.entries().filter { it.category == "misc" }.map { it.entryId })
         assertEquals(2L, price("firework_rocket"))
+        assertEquals(80L, price("enchanted_golden_apple"))
         assertEquals(listOf("held_item", "gimmick", "consumable", "misc"), catalog.categories)
     }
 
