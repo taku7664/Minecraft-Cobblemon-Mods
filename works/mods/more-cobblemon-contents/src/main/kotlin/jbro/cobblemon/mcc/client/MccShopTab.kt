@@ -352,8 +352,7 @@ private fun itemTooltip(entry: ShopEntryView, hint: Component): Component {
     val stack = itemStack(entry)
     if (stack.isEmpty) return hint
     val text = Component.empty()
-    Screen.getTooltipFromItem(Minecraft.getInstance(), stack).forEach { text.append(it).append("
-") }
+    Screen.getTooltipFromItem(Minecraft.getInstance(), stack).forEach { text.append(it).append("\n") }
     return text.append(hint.copy().withStyle(ChatFormatting.GRAY))
 }
 
