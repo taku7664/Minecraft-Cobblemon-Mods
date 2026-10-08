@@ -87,7 +87,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                     )
                     return@forEach
                 }
-                sourceCatalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { existing ->
+                // An inference that names no move at all (a forme the catalog has no learnset for, such as
+                // Mimikyu-Busted) says nothing: the preview's learnset fills the slots as before any reveal.
+                sourceCatalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.takeIf { inference ->
+                    inference.slots.any { it.knowledge != BattleOpponentMoveKnowledge.GUESS }
+                }?.let { existing ->
                     val compiled = NativeMoveHypothesisCompiler.compile(pokemon, sourceCatalog)
                     when {
                         !compiled.isCompleteSet -> issues += issue(
