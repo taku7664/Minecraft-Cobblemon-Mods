@@ -1,5 +1,12 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 17:20] NpcTalks·컴포넌트 대화 패킷 배치 (리그 야생 NPC 배치와 함께)
+
+- **방법:** 다른 세션이 MCC에 커밋하지 않은 Better AI 변경이 있어, 커밋된 `HEAD`(5fe75981)의 `works`·`server-wiki`를 `build/deploy-head`로 `git archive`해 그곳에서 테스트·빌드했다(작업 트리 변경은 안 섞임).
+- **테스트:** NPC 14, jbro-policy 87, 리그 93, 타워 193, 팩토리 111, MCC `-Pscope=core` 609 전부 통과. MCC의 `BattleContentCommandsTest` 1건은 `/mcc terminal` 관리자 전용 변경 때 갱신을 빠뜨린 검사라 고쳤다(5fe75981).
+- **빌드:** 처음엔 remap이 동시에 돌며 Gradle 힙(2G)이 모자라 실패했다(실패한 JAR은 22바이트). `-Dorg.gradle.jvmargs=-Xmx4G --max-workers=2`로 성공.
+- **배치:** NPC·jbro-policy·타워·팩토리·리그·MCC JAR 6개를 `develop-product/server/mods`와 `client/mods`에 넣고 SHA-256 대조 일치. 이전 JAR은 `develop-product/deployment-backups/20261008-wild-npc-roles/`. 서버는 꺼져 있었고 켜지 않았다. 실서버 기동·접속 확인은 안 함.
+
 ## [2026-10-08 12:10] 코드로 여는 대화 API(`NpcTalks`)와 컴포넌트 패킷 (구현만, 빌드 안 함)
 
 - **이유:** 야생 트레이너 대화를 이 대화창으로 옮긴다(리그 `docs/WILD_NPC_ROLES.md` 1단계).

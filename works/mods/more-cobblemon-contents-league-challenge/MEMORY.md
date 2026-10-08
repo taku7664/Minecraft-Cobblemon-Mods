@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 17:20] 야생 역할 NPC 1~6단계 테스트·빌드·배치
+
+- **방법:** 다른 세션이 MCC에 커밋하지 않은 Better AI 변경이 있어, 커밋된 `HEAD`(5fe75981)의 `works`·`server-wiki`를 `build/deploy-head`로 `git archive`해 그곳에서 테스트·빌드했다(작업 트리 변경은 안 섞임).
+- **테스트:** NPC 14, jbro-policy 87, 리그 93, 타워 193, 팩토리 111, MCC `-Pscope=core` 609 전부 통과. MCC의 `BattleContentCommandsTest` 1건은 `/mcc terminal` 관리자 전용 변경 때 갱신을 빠뜨린 검사라 고쳤다(5fe75981).
+- **빌드:** 처음엔 remap이 동시에 돌며 Gradle 힙(2G)이 모자라 실패했다(실패한 JAR은 22바이트). `-Dorg.gradle.jvmargs=-Xmx4G --max-workers=2`로 성공.
+- **배치:** NPC·jbro-policy·타워·팩토리·리그·MCC JAR 6개를 `develop-product/server/mods`와 `client/mods`에 넣고 SHA-256 대조 일치. 이전 JAR은 `develop-product/deployment-backups/20261008-wild-npc-roles/`. 서버는 꺼져 있었고 켜지 않았다. 실서버 기동·접속 확인은 안 함.
+
 ## [2026-10-08 17:30] 생성기가 역할 NPC를 지키게 함
 
 - `works/tools/wild-trainers/gen_wild_trainers.py`가 정의 파일의 `role`이 battle이 아닌 NPC(지금 돌보미·교환꾼·퀴즈 마니아·여행자)를 찾아 NPC·정의 파일, 스폰 풀 항목, 언어 파일의 직업명, RCT 스킨 변형을 그대로 남긴다. 역할 NPC는 kinds.py가 아니라 손으로 관리한다.
