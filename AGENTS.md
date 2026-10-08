@@ -52,6 +52,12 @@
 - Every source, configuration, documentation, build, or deployment change MUST be committed and pushed as its own logical unit.
 - Do not combine unrelated work in one commit. Verify the exact staged file set before every commit and verify the remote is synchronized after every push.
 
+### 메인 병합과 배포
+
+- 사용자가 명시적으로 브랜치에서만 작업하거나 병합하지 말라고 한 경우를 제외하고, 작업 브랜치·워크트리 변경은 완료 전에 `main`에 병합하고 `origin/main`에 푸시해야 한다(MUST). 작업 브랜치 커밋·푸시만으로 완료 보고하지 않는다.
+- 배포는 `main` 병합·푸시 후 커밋된 `main` 소스로 빌드한 산출물을 사용해야 한다(MUST). 기존 빌드본은 대상 모듈 소스·리소스·빌드 설정·관련 의존 소스가 병합된 `main`과 동일함을 먼저 확인한 경우에 재사용할 수 있다(MAY). 다르면 재빌드한다. 설치본 SHA-256이 검증된 빌드본과 같으면 재복사할 필요는 없다.
+- 완료 보고에서는 `main` 병합 커밋과 `origin/main` 동기화, 배포 대상과 빌드본의 해시 일치, 실행하지 않은 검증을 구분하여 확인된 결과만 적어야 한다(MUST).
+
 ## Mod implementation
 
 - Every mod source and resource change MUST account for localization and MUST follow a consistent project structure across modules.
