@@ -330,6 +330,10 @@ internal object NativeInitialBattleDefinitionCompiler {
                 it.all { move -> move.knowledge == BattlePublicMoveKnowledge.EXACT_OWN }
         }?.map { normalizedNativeId(it.moveId) }
             ?.takeIf { moves -> moves.all(String::isNotBlank) && moves.distinct().size == moves.size }
+            // A fainted ally drops out of the request, so the catalog no longer lists its moves; it never acts again,
+            // and its own known moves keep its set whole. Without this a single fainted ally stopped every rebuild.
+            ?: pokemon.takeIf { it.fainted && catalog.forPokemon(it.battlePokemonId).isEmpty() }?.knownMoveIds
+                ?.map(::normalizedNativeId)?.filter(String::isNotBlank)?.distinct()?.takeIf { it.size in 1..4 }
             .orEmpty()
         BattleSide.OPPONENT -> build?.opponentMoveSet?.nativeMoveIds.orEmpty()
     }
