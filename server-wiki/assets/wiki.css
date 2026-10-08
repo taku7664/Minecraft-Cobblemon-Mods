@@ -411,6 +411,14 @@ kbd {
 .dex-table tbody tr { cursor: pointer; }
 .dex-table tbody tr:hover td { background: var(--panel-alt); }
 .dex-table a { color: var(--panel-text); font-weight: bold; text-decoration: none; }
+.learn-table { table-layout: fixed; min-width: 620px; }
+.learn-table .learn-level { width: 8%; }
+.learn-table .learn-name { width: 30%; }
+.learn-table .learn-type, .learn-table .learn-category { width: 15%; }
+.learn-table .learn-stat { width: 12%; }
+.learn-table .learn-pp { width: 8%; }
+.learn-table th, .learn-table td, .learn-table th.num, .learn-table td.num { text-align: center; }
+.learn-table th:nth-child(2), .learn-table td:nth-child(2) { text-align: left; white-space: normal; overflow-wrap: anywhere; }
 .table-wrap { overflow-x: auto; margin: 0 0 var(--gap); }
 .table-wrap table { margin: 0; }
 .drop-table { table-layout: fixed; }

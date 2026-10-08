@@ -33,7 +33,7 @@
     <h2>배우는 기술</h2>
     <div class="tabs" id="pk-learn-tabs"></div>
     <div class="table-wrap">
-      <table class="dex-table"><thead id="pk-learn-head"></thead><tbody id="pk-learn"></tbody></table>
+      <table class="dex-table learn-table"><colgroup><col class="learn-level"><col class="learn-name"><col class="learn-type"><col class="learn-category"><col class="learn-stat"><col class="learn-stat"><col class="learn-pp"></colgroup><thead id="pk-learn-head"></thead><tbody id="pk-learn"></tbody></table>
     </div>
 
     <h2>야생 출현</h2>
@@ -198,7 +198,7 @@
     function learnTable(kind, list) {
       var head = $("pk-learn-head"); head.innerHTML = "";
       var hr = el("tr");
-      (kind === "level" ? ["Lv."] : []).concat(["기술", "타입", "분류", "위력", "명중", "PP"]).forEach(function (h, i) {
+      [kind === "level" ? "Lv." : "", "기술", "타입", "분류", "위력", "명중", "PP"].forEach(function (h, i) {
         hr.appendChild(el("th", h === "기술" || h === "타입" || h === "분류" ? "" : "num", h));
       });
       head.appendChild(hr);
@@ -208,7 +208,7 @@
         var m = moves[moveId] || { name: moveId };
         var tr = el("tr");
         tr.title = m.desc || "";
-        if (level != null) tr.appendChild(el("td", "num", level === 0 ? "진화" : String(level)));
+        tr.appendChild(el("td", "num", level == null ? "" : level === 0 ? "진화" : String(level)));
         tr.appendChild(el("td", "", m.name));
         var type = el("td"); if (m.type) type.appendChild(el("span", "type " + m.type, TYPES[m.type] || m.type)); tr.appendChild(type);
         var cat = el("td"); if (m.cat) cat.appendChild(el("span", "cat " + m.cat, CATEGORY[m.cat] || m.cat)); tr.appendChild(cat);
