@@ -1,5 +1,9 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-09] 팩토리 단골 대사에서 "4마리" 삭제
+
+- 팩토리는 싱글(`FactoryBattleFormat.SINGLE`, 3마리)만 남았는데 `extra_factory_regular`에 더블 시절 "3마리나 4마리"가 남아 있었다. "3마리"로 고쳤다. 원본(`docs/dialogues/`)과 개발 서버 사본(`develop-product/server/config/cobblemon_npc/dialogues/`)이 같은 내용인 것 확인. 서버에 반영되려면 대화 다시 불러오기나 재시작이 필요하고, 게임에서는 확인하지 않았다.
+
 ## [2026-10-08 18:00] NPC는 `/kill`로도 안 죽는다 (빌드·배치함)
 
 - 사용자 결정: "킬로 못죽여야지. 부활도 못시키는데". `NpcEntity.isInvulnerableTo`가 공허 낙하(`fell_out_of_world`)만 받고 `/kill`(generic_kill)을 포함한 나머지 피해는 전부 막는다. 지우는 길은 지팡이의 제거 버튼(`NpcEditorService`, `remove(DISCARDED)`)뿐. 운영 안내도 고쳤다.
