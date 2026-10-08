@@ -69,6 +69,9 @@ object WildTrainers {
     private const val SCENE_LINE_VARIANTS = 3
     /** Skin aspects for textures this mod ships under `textures/npcs/wild/`, such as `mcc_skin_nurse_joy`. */
     private const val OWN_SKIN_PREFIX = "mcc_skin_"
+    private const val PERSONAL_NAME_KEY = "npc.${Mod.MOD_ID}.personal_name"
+    /** The last word of nameless RCT skins such as `rct_bug_catcher_01ec` and `rct_biker_goon_020f`. */
+    private val NOT_PERSONAL_NAMES = setOf("catcher", "goon")
     private const val NEARBY_LIMIT = 2
     private const val NEARBY_RADIUS = 64.0
     private const val TERMINAL_CHUNK_RADIUS = 2
@@ -189,9 +192,15 @@ object WildTrainers {
     fun name(npc: NPCEntity) {
         val title = npc.npc.names.firstOrNull() ?: return
         val skin = npc.aspects.firstOrNull { it.startsWith("rct_") }
-        val personal = skin?.let(::personalName)
+        val personal = skin?.let(::personalNameText)
         npc.customName = if (personal == null) title.copy() else title.copy().append(" ").append(personal)
     }
+
+    /** [personalName] as a translatable name, so a Korean client reads "알렉" where the skin says "alec". */
+    fun personalNameText(aspect: String): Component? =
+        personalName(aspect)?.let { Component.translatableWithFallback(personalNameKey(it), it) }
+
+    fun personalNameKey(name: String): String = "$PERSONAL_NAME_KEY.${name.lowercase()}"
 
     private fun hasPersonalName(npc: NPCEntity): Boolean =
         npc.aspects.any { it.startsWith("rct_") && personalName(it) != null }
@@ -204,6 +213,7 @@ object WildTrainers {
     fun personalName(aspect: String): String? {
         val base = aspect.removePrefix("rct_").replace(Regex("_[0-9a-f]{4}$"), "")
         val given = base.substringAfterLast('_').takeIf { it.isNotEmpty() && it.all(Char::isLetter) } ?: return null
+        if (given in NOT_PERSONAL_NAMES) return null
         return given.replaceFirstChar { it.uppercase() }
     }
 

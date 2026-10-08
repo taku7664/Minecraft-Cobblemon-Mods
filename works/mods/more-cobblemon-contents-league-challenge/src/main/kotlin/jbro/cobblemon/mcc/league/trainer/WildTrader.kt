@@ -140,7 +140,7 @@ internal object WildTrader {
     }
 
     /**
-     * The NPC's name as its nameplate reads in Korean, such as "낚시꾼 Alec". The title is a translation key the
+     * The NPC's name as its nameplate reads in Korean, such as "낚시꾼 알렉". The title is a translation key the
      * dedicated server cannot read itself, so it is looked up in the mod's own Korean file.
      */
     private fun originalTrainerName(npc: NPCEntity): String {
@@ -148,6 +148,7 @@ internal object WildTrader {
         val key = (title?.contents as? TranslatableContents)?.key
         val korean = key?.let { koreanNames[it] } ?: title?.string ?: "?"
         val personal = npc.aspects.firstOrNull { it.startsWith("rct_") }?.let(WildTrainers::personalName)
+            ?.let { koreanNames[WildTrainers.personalNameKey(it)] ?: it }
         return if (personal == null) korean else "$korean $personal"
     }
 

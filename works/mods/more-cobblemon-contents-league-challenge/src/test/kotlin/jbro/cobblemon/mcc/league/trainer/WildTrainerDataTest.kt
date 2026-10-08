@@ -105,6 +105,22 @@ class WildTrainerDataTest {
         assertEquals("Kati", WildTrainers.personalName("rct_waitress_kati_03fc"))
         assertNull(WildTrainers.personalName("rct_"))
         assertFalse(WildTrainers.personalName("rct_hiker_bob_0123").isNullOrEmpty())
+        assertNull(WildTrainers.personalName("rct_bug_catcher_01ec"))
+        assertNull(WildTrainers.personalName("rct_biker_goon_020f"))
+    }
+
+    @Test
+    fun `every personal name a skin gives has a name in both languages`() {
+        fun lang(code: String) = JsonParser.parseString(resources.resolve("assets/$ns/lang/$code.json").readText()).asJsonObject
+        val korean = lang("ko_kr")
+        val english = lang("en_us")
+        val missing = Files.list(resources.resolve("data/$ns/npcs")).use { files -> files.toList() }
+            .flatMap { file -> JsonParser.parseString(file.readText()).asJsonObject.getAsJsonObject("variation")?.getAsJsonArray("skin")?.map { it.asString }.orEmpty() }
+            .mapNotNull(WildTrainers::personalName)
+            .map(WildTrainers::personalNameKey)
+            .distinct()
+            .filter { !korean.has(it) || !english.has(it) }
+        assertTrue(missing.isEmpty(), "$missing")
     }
 
     @Test

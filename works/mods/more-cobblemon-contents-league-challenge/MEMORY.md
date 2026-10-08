@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 23:27] 야생 NPC 개인 이름 한글 음차
+
+- **사용자 결정:** 이름표의 영어 개인 이름("낚시꾼 Alec")을 음차한다("낚시꾼 알렉"). 직업명만 남기는 안은 쓰지 않는다.
+- **구현:** 스킨에서 나오는 개인 이름 679개를 `npc.<modid>.personal_name.<이름>` 키로 `ko_kr`·`en_us`에 넣었다. `WildTrainers.name()`은 `Component.translatableWithFallback`으로 붙이므로 키가 없으면 영어 그대로 나온다. 교환한 포켓몬의 어버이 이름(문자열)은 서버에서 `ko_kr.json`을 읽어 한글로 쓴다. RCT 패러디 이름 `agathare`/`brunore`/`lancere`는 공식 한국어명 국화/시바/목호, `red`는 레드로 옮겼다.
+- **버그 수정:** 이름 없는 스킨 `rct_bug_catcher_*`·`rct_biker_goon_*`에서 "Catcher"·"Goon"을 개인 이름으로 붙이던 것을 `NOT_PERSONAL_NAMES`로 막았다.
+- **테스트:** 모든 스킨의 개인 이름에 두 언어 키가 있는지 보는 `WildTrainerDataTest`를 추가했다. 이미 월드에 있는 NPC는 로드될 때 `name()`이 다시 불려 새 이름으로 바뀐다(코드상, 실게임 미확인).
+- **미확인:** 빌드·테스트 실행, JAR 배치, 실게임 확인 모두 하지 않았다(빌드는 요청 시에만).
+
 ## [2026-10-08 21:56] main 병합 후 빌드·개발 배포 재확인
 
 - **병합:** 기믹 API 브랜치를 현재 main과 병합한 `5d4afd558bd3c1fa63e7d81d47c568ff5d564933`을 main에 푸시했다. 기존 BP 테스트 기대값 수정 `3c247482`·`10e14da4`도 포함한다. 앞선 브랜치 배포 기록은 이번 main 검증으로 보완하며 이전 실패 기록은 보존한다.
