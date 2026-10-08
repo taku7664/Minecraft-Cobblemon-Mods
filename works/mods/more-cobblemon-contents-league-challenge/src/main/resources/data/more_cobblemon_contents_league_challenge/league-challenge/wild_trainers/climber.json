@@ -2,7 +2,10 @@
   "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_climber",
   "tier": "normal",
-  "bp": 2,
+  "bp": [
+    1,
+    2
+  ],
   "pokemon": [
     {
       "species": "snorunt",

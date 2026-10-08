@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-08 21:40] 야생 트레이너 승리 BP 일반 1~2 무작위, 에이스 4 (구현만, 빌드·테스트 안 함)
+
+- **사용자 결정:** 일반 트레이너는 1~2 BP를 무작위로, 에이스는 4 BP를 준다.
+- **변경:** `WildTrainerDefinition.bp`를 `LongRange`로 바꿨다. JSON `bp`는 숫자 하나나 `[min, max]`를 받고(`wild_rewards.json`과 같은 형식), 이길 때 `bp.random()`으로 지급한다. `wild_trainers/*.json` 124개(일반 104개는 `[1, 2]`, 에이스 20개는 `4`), `WildTrainerDataTest`, 생성기 `BP` 상수, 위키 생성기 `gen_trainers.py`(범위면 "1~2"로 출력), `trainers.js`(값만 치환), `wild-trainers.html`·`hub.html`, NPC 대사(배틀걸·상점 아가씨)를 같이 고쳤다.
+- **미확인:** 컴파일과 테스트를 돌리지 않았다.
+
 ## [2026-10-08 20:50] 야생 트레이너 승리 BP 3/6 → 2/5 (구현만, 빌드·테스트 안 함)
 
 - **사용자 결정:** 타워·팩토리 보상을 낮추면서 야생 트레이너도 일반 2, 에이스 5로 낮췄다.
