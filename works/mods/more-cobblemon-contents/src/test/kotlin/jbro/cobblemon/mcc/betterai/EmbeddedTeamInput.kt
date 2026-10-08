@@ -183,7 +183,12 @@ internal object EmbeddedTeamInput {
                         val resource = id(source).takeIf(String::isNotEmpty)
                         if (resource != null) when {
                             // Like the game's observer: an effect source never brings back an item already gone.
-                            source.startsWith("item: ") -> if (owner.item != "") owner.item = resource
+                            source.startsWith("item: ") -> {
+                                if (owner.item != "") owner.item = resource
+                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                                    BattleObservedEventKind.HELD_ITEM_REVEALED, uuid(owner.ident), publicValueId = resource,
+                                    actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
+                            }
                             source.startsWith("ability: ") -> {
                                 owner.ability = resource
                                 // After the line's HP change, as the game's observer orders them.
@@ -209,9 +214,10 @@ internal object EmbeddedTeamInput {
                     event(BattleObservedEventKind.ABILITY_REVEALED, id(p[3]))
                 }
                 "-endability" -> current?.let { it.abilityEnded = true }
-                "-item" -> current?.let { it.item = id(p[3]) }
+                // Both reveal the item as the game's observer records it.
+                "-item" -> current?.let { it.item = id(p[3]); event(BattleObservedEventKind.HELD_ITEM_REVEALED, id(p[3])) }
                 // "" is a confirmed absence, as the game's observer records it; null is not yet seen.
-                "-enditem" -> current?.let { it.item = "" }
+                "-enditem" -> current?.let { it.item = ""; event(BattleObservedEventKind.HELD_ITEM_REVEALED, id(p[3])) }
                 "-boost", "-unboost", "-setboost" -> current?.let {
                     val stat = statName(p[3]); val amount = p[4].toInt()
                     it.stages[stat] = (if (kind == "-setboost") amount else (it.stages[stat] ?: 0) +
@@ -260,6 +266,18 @@ internal object EmbeddedTeamInput {
                 seen[identity(ident)]?.let { uuid(it.ident) }
             }?.let { outcome ->
                 if (!EmbeddedPublicMoveOutcomes.duplicatesMiss(events.lastOrNull(), outcome)) events += outcome
+            }
+            // The game's observer reveals an item named as any line's source, not only an HP change's (handled above).
+            val itemSource = p.drop(3).singleOrNull { it.startsWith("[from] item: ") }?.removePrefix("[from] item: ")
+                ?.let(::id)?.takeIf(String::isNotEmpty)
+            if (itemSource != null && kind !in setOf("-damage", "-heal") && events.lastOrNull()?.sequence != index.toLong() * 2 + 1) {
+                val ownerTag = p.drop(3).singleOrNull { it.startsWith("[of] ") }?.removePrefix("[of] ")
+                seen[identity(ownerTag ?: actor)]?.let { owner ->
+                    if (owner.item != "") owner.item = itemSource
+                    events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                        BattleObservedEventKind.HELD_ITEM_REVEALED, uuid(owner.ident), publicValueId = itemSource,
+                        actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
+                }
             }
         }
         val request = input.getAsJsonObject("request")
