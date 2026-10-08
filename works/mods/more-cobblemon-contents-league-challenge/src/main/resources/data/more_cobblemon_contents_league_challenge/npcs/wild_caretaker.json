@@ -19,7 +19,8 @@
   "skill": 2,
   "variation": {
     "skin": [
-      "mcc_skin_nurse_joy"
+      "mcc_skin_nurse_joy",
+      "mcc_skin_nurse_joy_2"
     ]
   }
 }
