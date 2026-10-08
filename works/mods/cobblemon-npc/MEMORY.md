@@ -1,10 +1,10 @@
 # cobblemon-npc 작업 기록
 
-## [2026-10-09] 지팡이로 NPC 복사·붙여넣기 (구현·테스트, 빌드·배치 안 함)
+## [2026-10-09] 지팡이로 NPC 복사·붙여넣기 (빌드·배치함)
 
 - 사용자 요청: 복사 기능, "세우는 것도 웅크리고 우클릭으로". 웅크리고 NPC 우클릭 → 이름·스킨·대화를 지팡이 아이템의 `custom_data`(`NpcCopy`)에 저장, 웅크리고 블록 우클릭 → 그 설정으로 배치(플레이어를 바라봄). 그냥 우클릭은 예전대로(블록=빈 NPC, NPC=설정 창). 복사한 것이 없으면 안내만 하고 배치하지 않는다. 툴팁에 복사한 NPC 이름이 나온다.
 - 권한: 복사·배치 모두 `EDIT_PERMISSION`(2). 권한 없는 사람이 웅크리고 NPC를 누르면 설정 창 경로로 가서 "OP만" 안내를 받는다.
-- **확인:** `:cobblemon-npc:unitTest` 14개 통과(컴파일 포함). 빌드·배치·실게임 확인은 안 함.
+- **확인:** `:cobblemon-npc:unitTest` 14개 통과(컴파일 포함). main(`e3a54b30` 푸시 후, NPC·cobblemon-ui·battlecam에 영향 없는 다른 세션 커밋만 더 쌓인 상태)에서 빌드해 `develop-product/server/mods`·`client/mods`에 배치, 해시 a7902e5c3e80 일치. 이전 JAR은 `develop-product/deployment-backups/20261009-npc-wand-copy/`. 서버는 꺼진 채, 실게임 확인 안 함.
 
 ## [2026-10-09] 팩토리 단골 대사에서 "4마리" 삭제
 
