@@ -438,6 +438,8 @@ internal data class NativePokemonSituation(
     val movedSinceSwitchIn: Boolean = false,
     /** The in-battle forme it shows now (Mimikyu-Busted), when that is not the set's species. */
     val forme: String? = null,
+    /** Whether this active Pokemon is confused; how many turns are left is not public. */
+    val confused: Boolean = false,
 ) {
     init {
         UUID.fromString(uuid)

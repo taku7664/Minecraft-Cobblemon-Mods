@@ -70,6 +70,25 @@ class EngineBranchWorkerSituationTest {
     }
 
     @Test
+    fun `a confused active is rebuilt confused and snaps out within two moves`() {
+        val confused = definition.copy(situation = definition.situation!!.copy(pokemon = definition.situation!!.pokemon.map {
+            if (it.uuid == uuid(3)) it.copy(confused = true) else it
+        }))
+        val worker = EngineBranchWorker()
+        var frame = worker.createBattle(confused)
+        assertTrue("confusion" in frame.p2Team.single { it.uuid == uuid(3) }.volatiles)
+        repeat(2) {
+            val ally = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, frame, allowedMechanics = emptySet()).first()
+            val opponent = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, frame)
+                .first { it.kind == BattleActionKind.USE_MOVE }
+            frame = worker.branch(frame.snapshotJson,
+                jbro.cobblemon.mcc.betterai.simulation.NativeShowdownChoiceEncoder.encode(ally, BattleSide.ALLY, frame),
+                jbro.cobblemon.mcc.betterai.simulation.NativeShowdownChoiceEncoder.encode(opponent, BattleSide.OPPONENT, frame))
+        }
+        assertTrue("confusion" !in frame.p2Team.single { it.uuid == uuid(3) }.volatiles)
+    }
+
+    @Test
     fun `the request follows the installed lock and the fainted bench`() {
         val root = EngineBranchWorker().createBattle(definition)
 

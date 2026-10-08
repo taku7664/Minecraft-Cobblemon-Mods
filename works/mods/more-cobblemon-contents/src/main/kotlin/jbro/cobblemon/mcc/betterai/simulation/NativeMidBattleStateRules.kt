@@ -8,8 +8,8 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 /**
  * Which mid-battle public boards a native world can be rebuilt from ([NativeBattleSituation]).
  *
- * The rebuild installs HP, status, stat stages, items, Terastallization, PP, a choice lock and the field. An
- * active volatile effect (Substitute, Leech Seed, confusion), a move lock it implies (Taunt, Encore, recharge),
+ * The rebuild installs HP, status, stat stages, items, Terastallization, PP, a choice lock, confusion and the field.
+ * Any other active volatile effect (Substitute, Leech Seed), a move lock it implies (Taunt, Encore, recharge),
  * or an active slot still waiting for its replacement is not rebuilt, so such a board waits for a later turn.
  */
 internal object NativeMidBattleStateRules {
@@ -21,7 +21,7 @@ internal object NativeMidBattleStateRules {
             val actives = state.pokemon.filter { it.side == side && it.activeSlot != null && !it.fainted }
             if (actives.size != 1 || actives.single().activeSlot != 0) return "ACTIVE_NOT_READY:${side.name}"
             val active = actives.single()
-            active.knownVolatileEffectIds.firstOrNull { !isBetterAiMarker(it) }
+            active.knownVolatileEffectIds.firstOrNull { !isBetterAiMarker(it) && PublicIds.canonical(it) !in REBUILT_VOLATILES }
                 ?.let { return "VOLATILE:" + PublicIds.canonical(it) }
             val constraints = active.actionConstraints
             if (constraints.taunted || constraints.mustRecharge || constraints.encoreMoveId != null) {
@@ -30,4 +30,6 @@ internal object NativeMidBattleStateRules {
         }
         return null
     }
+
+    private val REBUILT_VOLATILES = setOf("confusion")
 }

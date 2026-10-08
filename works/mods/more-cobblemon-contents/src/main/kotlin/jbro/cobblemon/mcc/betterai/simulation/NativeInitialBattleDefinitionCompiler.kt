@@ -295,6 +295,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                 choiceLockedMove = sinceSwitchIn.lastOrNull()?.takeIf { active && choiceItem },
                 movedSinceSwitchIn = active && sinceSwitchIn.isNotEmpty(),
                 forme = NativeInBattleFormes.inBattleForme(pokemon.speciesId),
+                confused = active && pokemon.knownVolatileEffectIds.any { normalizedNativeId(it) == "confusion" },
             )
         },
         weather = state.field.weather?.let(::effect),

@@ -263,6 +263,13 @@ internal class EngineBranchWorker(
                     it["move"] = Js.toID(move)
                 }
             }
+            if (state.confused && pokemon.isActive && "confusion" !in pokemon.volatiles) {
+                // The turns left are hidden: like a sleeper, it stays confused for one more move and then snaps out.
+                pokemon.volatiles["confusion"] = EffectState("confusion").also {
+                    it.target = pokemon
+                    it["time"] = 2
+                }
+            }
             if (state.movedSinceSwitchIn && pokemon.isActive) {
                 pokemon.activeTurns = maxOf(pokemon.activeTurns, 1)
                 pokemon.activeMoveActions = maxOf(pokemon.activeMoveActions, 1)
