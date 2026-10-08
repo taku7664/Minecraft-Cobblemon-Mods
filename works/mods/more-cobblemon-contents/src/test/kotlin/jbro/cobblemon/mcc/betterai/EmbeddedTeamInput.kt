@@ -90,6 +90,10 @@ internal object EmbeddedTeamInput {
         // same remaining-turn ranges production does.
         val started = mutableMapOf<String, Int>()
         var eventTurn = 0
+        // The move whose direct damage the game's observer links to the next HP loss: open from the move line until
+        // the turn, its upkeep or a switch closes it.
+        class ActionWindow(val turn: Int, val sequence: Long, val actor: UUID, val moveId: String, val targets: Set<UUID>)
+        var actionWindow: ActionWindow? = null
         fun baseTypes(species: String): Set<String> = if (species.startsWith("arceus")) emptySet() else
             speciesData.getAsJsonObject(species)?.getAsJsonArray("types")?.map { it.asString }?.toSet().orEmpty()
         fun types(pokemon: Seen): Set<String> = pokemon.tera?.takeUnless { it == "stellar" }?.let { setOf(it) } ?: baseTypes(pokemon.species)
@@ -114,6 +118,7 @@ internal object EmbeddedTeamInput {
                     // The game's observer records the actor's active slot; the native session matches by it.
                     actorSlot = if (nativeInputs && current != null) activeSlot(actor) else null)
             }
+            if (kind in setOf("turn", "upkeep", "switch", "drag")) actionWindow = null
             when (kind) {
                 "turn" -> eventTurn = actor.toInt()
                 "teamsize" -> sizes[side(actor)] = p[3].toInt()
@@ -150,8 +155,23 @@ internal object EmbeddedTeamInput {
                         actorSlot = if (nativeInputs) activeSlot(actor) else null)
                 }
                 "-damage", "-heal" -> {
+                    val previousHp = current?.hp
                     current?.let { val hp = condition(p[3]); it.hp = hp.first; it.status = hp.second }
                     val source = p.drop(4).singleOrNull { it.startsWith("[from] ") }?.removePrefix("[from] ")
+                    // As the game's observer records it: every HP change, with direct move damage linked to its move.
+                    if (current != null) {
+                        val target = uuid(current.ident)
+                        val delta = previousHp?.let { current.hp - it }
+                        val sourceId = source?.let(::id)?.takeIf(String::isNotEmpty)
+                        val link = actionWindow?.takeIf {
+                            kind == "-damage" && sourceId == null && delta != null && delta < 0.0 &&
+                                it.turn == eventTurn && target in it.targets
+                        }
+                        events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.HP_CHANGED,
+                            target, hpFractionDelta = delta, precedingActionSequence = link?.sequence,
+                            precedingActionActorPokemonId = link?.actor, precedingActionMoveId = link?.moveId,
+                            publicSourceEffectId = sourceId)
+                    }
                     val ownerTags = p.drop(4).filter { it.startsWith("[of]") }
                     val owner = when {
                         ownerTags.isEmpty() -> current
@@ -166,7 +186,8 @@ internal object EmbeddedTeamInput {
                             source.startsWith("item: ") -> if (owner.item != "") owner.item = resource
                             source.startsWith("ability: ") -> {
                                 owner.ability = resource
-                                events += BattleObservedEventView(index.toLong() * 2, eventTurn,
+                                // After the line's HP change, as the game's observer orders them.
+                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
                                     BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
                                     actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
                             }
@@ -174,7 +195,12 @@ internal object EmbeddedTeamInput {
                     }
                 }
                 "faint" -> current?.let { it.hp = 0.0; it.volatileEffects.clear(); event(BattleObservedEventKind.FAINTED) }
-                "move" -> current?.let { it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3])) }
+                "move" -> current?.let {
+                    it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3]))
+                    val targets = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
+                        ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
+                    actionWindow = ActionWindow(eventTurn, index.toLong() * 2, uuid(it.ident), id(p[3]), targets)
+                }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
                 // The game's observer records every ability reveal as an event; the native opening pins it to the set.
@@ -397,9 +423,14 @@ internal object EmbeddedTeamInput {
     }
 
     /** The game's observer numbers public events 1, 2, 3 and keeps the last 128; the native session needs that. */
-    private fun gameNumbered(events: List<BattleObservedEventView>) = events.mapIndexed { index, event ->
+    private fun gameNumbered(events: List<BattleObservedEventView>): List<BattleObservedEventView> {
+        val renumbered = events.withIndex().associate { (index, event) -> event.sequence to index + 1L }
+        return events.mapIndexed { index, event -> gameNumbered(event, index + 1L, renumbered) }
+    }
+
+    private fun gameNumbered(event: BattleObservedEventView, sequence: Long, renumbered: Map<Long, Long>) =
         BattleObservedEventView(
-            sequence = index + 1L,
+            sequence = sequence,
             turn = event.turn,
             kind = event.kind,
             actorPokemonId = event.actorPokemonId,
@@ -407,14 +438,13 @@ internal object EmbeddedTeamInput {
             publicValueId = event.publicValueId,
             hpFractionDelta = event.hpFractionDelta,
             baseMovePriority = event.baseMovePriority,
-            precedingActionSequence = event.precedingActionSequence,
+            precedingActionSequence = event.precedingActionSequence?.let(renumbered::getValue),
             precedingActionActorPokemonId = event.precedingActionActorPokemonId,
             precedingActionMoveId = event.precedingActionMoveId,
             publicSourceEffectId = event.publicSourceEffectId,
             moveOutcome = event.moveOutcome,
             actorSlot = event.actorSlot,
         )
-    }
 
     internal fun publicMoveDetails(move: JsonObject, moveId: String, pp: Int): BattleMoveCandidateView {
         val target = when (move["target"].asString) {
