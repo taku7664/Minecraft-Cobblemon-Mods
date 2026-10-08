@@ -1,12 +1,10 @@
 # more-cobblemon-contents-battle-factory 작업 기록
 
-## [2026-10-08 21:15] 승리 BP를 2부터 라운드마다 +1, 상한 없음 (구현만, 빌드·테스트 안 함)
+## [2026-10-08 21:25] 승리 BP를 원래보다 1씩 낮춘 2·3·4 (구현만, 빌드·테스트 안 함)
 
-- **사용자 결정:** 팩토리 승리 BP를 타워 무한처럼 2/3/4…로 올린다. 라운드 막판 +5, 21·49승 +10은 그대로.
-- **구현:** `VICTORY_BASE_BP = 1`에 라운드 번호를 더하고 `VICTORY_MAX_BASE_BP` 상한을 없앴다.
-- **결과:** 7승 19BP(판당 2.7), 21승 88BP(4.2), 49승 300BP(6.1), 70승 525BP(7.5). 초반은 타워 일반(4.0)보다 적고, 길게 이어 갈수록 많아진다.
-- **변경:** `FactoryRunSession.kt`, `FactoryVictoryRewardTest`, `FactoryBattleCompletionServiceTest`, 위키 `factory.html`·`hub.html`.
-
+- **사용자 결정:** 원래 3·4·5(상한 5)에서 1씩만 낮춘다. 21:15에 "2/3/4…"를 상한 없이 계속 오르는 것으로 잘못 읽어 반영했다가(`291dab22`), 사용자가 지적해 상한 4로 고쳤다.
+- **결과:** 21승 88BP(판당 4.2), 49승 230BP(4.7). 라운드 막판 +5, 헤드 +10은 그대로.
+- **변경:** `FactoryRunSession.kt`(`VICTORY_BASE_BP = 1`, `VICTORY_MAX_BASE_BP = 4`), `FactoryVictoryRewardTest`, 위키 `factory.html`·`hub.html`.
 ## [2026-10-08 21:00] 더블 진입점 확인: 이미 없음
 
 - **사용자 요청:** 팩토리 더블과 싱글 버튼을 UI에서 없애고 싱글을 기본으로 한다(코드는 남긴다).
