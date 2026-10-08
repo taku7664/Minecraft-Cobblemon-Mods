@@ -16,9 +16,11 @@ import kotlin.random.Random
 object WildPokemonPolicy {
     private val PERMANENT_STATS = listOf(Stats.HP, Stats.ATTACK, Stats.DEFENCE, Stats.SPECIAL_ATTACK, Stats.SPECIAL_DEFENCE, Stats.SPEED)
     private var hiddenAbilityRate = 0
+    private var config: PolicyConfig? = null
 
     fun register(config: PolicyConfig) {
         hiddenAbilityRate = config.wildHiddenAbilityRate
+        this.config = config
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe { event ->
             val pokemon = event.entity.pokemon
             if (config.wildIvEnabled) rollIvs(pokemon, config.wildIvRanges)
@@ -32,6 +34,17 @@ object WildPokemonPolicy {
             applyHiddenAbilityChance(pokemon)
         }
         CobblemonEvents.FOSSIL_REVIVED.subscribe { event -> applyHiddenAbilityChance(event.pokemon) }
+    }
+
+    /**
+     * The wild rolls for a Pokemon made in code that should come out like a wild one: IVs from the server's bands and
+     * the hidden ability chance. Other mods call it by reflection (League's wild trade NPC), so its name and
+     * signature stay put.
+     */
+    @JvmStatic
+    fun applyWildRolls(pokemon: Pokemon): Pokemon {
+        config?.let { if (it.wildIvEnabled) rollIvs(pokemon, it.wildIvRanges) }
+        return applyHiddenAbilityChance(pokemon)
     }
 
     /** Also called by the /givepokemon and /spawnpokemon mixins. */
