@@ -48,7 +48,7 @@ class BattlePointShopCatalogResourceTest {
         val gimmicks = catalog.entries().filter { it.category == "gimmick" }
         assertEquals(27, gimmicks.size)
         assertTrue(gimmicks.all { it.itemId.startsWith("mega_showdown:") })
-        assertEquals(listOf(250L, 300L, 250L, 150L, 100L, 250L, 150L, 50L),
+        assertEquals(listOf(250L, 200L, 250L, 150L, 100L, 250L, 150L, 50L),
             listOf("mega_bracelet", "mega_stone", "z_ring", "blank_z", "tera_orb", "dynamax_band", "wishing_star", "max_mushroom").map(::price))
         assertEquals(18, gimmicks.count { it.entryId.endsWith("_tera_shard") && it.priceBp == 2L })
         assertEquals(5L, price("stellar_tera_shard"))
