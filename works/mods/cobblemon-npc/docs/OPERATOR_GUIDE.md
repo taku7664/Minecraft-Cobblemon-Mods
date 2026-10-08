@@ -52,3 +52,20 @@ example `tower_guide.json`.
   positive result, e.g. `cmd:execute if score @s wins matches 10..`), negated with `!`, joined with `&&`.
 - `{player}` and `{npc}` are filled into lines, choices and commands. `speaker` and `skin` are used when no NPC
   opened the talk.
+
+## For other mods: talks built in code
+
+`jbro.cobblemon.npc.api.NpcTalks.open(player, NpcTalk(...))` shows a talk in the same dialogue box, with its letterbox
+and camera, without a dialogue file. Each `NpcTalkChoice` carries an action the server runs when the player picks it;
+the box closes, unless the action opens another talk, which then takes the same box over. The texts are components,
+so translation keys are read in each player's language. More Cobblemon Contents' wild trainers talk this way.
+
+```kotlin
+NpcTalks.open(player, NpcTalk(
+    speaker = npc.displayName,
+    lines = listOf(Component.translatable("my_mod.greeting")),
+    choices = listOf(NpcTalkChoice(Component.translatable("my_mod.yes")) { startBattle(it) }, NpcTalkChoice(Component.translatable("my_mod.no"))),
+    npc = npc,
+    skin = "rct:fisher_alec_036a",
+))
+```

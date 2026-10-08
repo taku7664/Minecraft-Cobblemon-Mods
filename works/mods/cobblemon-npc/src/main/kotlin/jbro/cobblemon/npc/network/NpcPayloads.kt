@@ -4,6 +4,8 @@ import jbro.cobblemon.npc.CobblemonNpc
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 
@@ -24,19 +26,35 @@ private fun FriendlyByteBuf.readStrings(): List<String> {
     return List(size) { readUtf(TEXT) }
 }
 
+private fun RegistryFriendlyByteBuf.writeComponent(value: Component) = ComponentSerialization.TRUSTED_STREAM_CODEC.encode(this, value)
+
+private fun RegistryFriendlyByteBuf.readComponent(): Component = ComponentSerialization.TRUSTED_STREAM_CODEC.decode(this)
+
+private fun RegistryFriendlyByteBuf.writeComponents(values: List<Component>) {
+    require(values.size <= MAX_ITEMS) { "Too many entries" }
+    writeVarInt(values.size)
+    values.forEach { writeComponent(it) }
+}
+
+private fun RegistryFriendlyByteBuf.readComponents(): List<Component> {
+    val size = readVarInt().also { require(it in 0..MAX_ITEMS) }
+    return List(size) { readComponent() }
+}
+
 private fun <T : CustomPacketPayload> codec(write: (RegistryFriendlyByteBuf, T) -> Unit, read: (RegistryFriendlyByteBuf) -> T):
     StreamCodec<RegistryFriendlyByteBuf, T> = StreamCodec.of(write, read)
 
 /**
  * A node to show: who speaks, the pages to read and the answers to pick from. [npcEntityId] is the speaking NPC's
- * network id, which the client's battle camera turns to ([NO_NPC] for a talk opened without one).
+ * network id, which the client's battle camera turns to ([NO_NPC] for a talk opened without one). The texts are
+ * components, so a talk built in code can send translation keys the client reads in its own language.
  */
 data class DialogueShowPayload(
     val session: Int,
-    val speaker: String,
+    val speaker: Component,
     val skin: String,
-    val lines: List<String>,
-    val choices: List<String>,
+    val lines: List<Component>,
+    val choices: List<Component>,
     val npcEntityId: Int = NO_NPC,
 ) : CustomPacketPayload {
     override fun type() = TYPE
@@ -45,9 +63,9 @@ data class DialogueShowPayload(
         const val NO_NPC = -1
         val TYPE = type<DialogueShowPayload>("dialogue_show")
         val CODEC = codec<DialogueShowPayload>({ b, p ->
-            b.writeVarInt(p.session); b.writeUtf(p.speaker, TEXT); b.writeUtf(p.skin, TEXT)
-            b.writeStrings(p.lines); b.writeStrings(p.choices); b.writeVarInt(p.npcEntityId)
-        }, { b -> DialogueShowPayload(b.readVarInt(), b.readUtf(TEXT), b.readUtf(TEXT), b.readStrings(), b.readStrings(), b.readVarInt()) })
+            b.writeVarInt(p.session); b.writeComponent(p.speaker); b.writeUtf(p.skin, TEXT)
+            b.writeComponents(p.lines); b.writeComponents(p.choices); b.writeVarInt(p.npcEntityId)
+        }, { b -> DialogueShowPayload(b.readVarInt(), b.readComponent(), b.readUtf(TEXT), b.readComponents(), b.readComponents(), b.readVarInt()) })
     }
 }
 

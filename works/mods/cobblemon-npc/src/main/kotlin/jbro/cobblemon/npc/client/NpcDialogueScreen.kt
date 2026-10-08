@@ -33,8 +33,12 @@ import kotlin.math.sin
  * written out, a click or the confirm key finishes it and then moves on, and the answers appear as buttons above the box
  * once the last line is read. The world keeps running behind it.
  */
-class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Component.literal(show.speaker)), CinematicScreen {
+class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.speaker), CinematicScreen {
     private var restoreTheme: (() -> Unit)? = null
+    // The texts in this client's language; a translation key from the server is read here.
+    private var speaker = show.speaker.string
+    private var lines = show.lines.map(Component::getString)
+    private var choices = show.choices.map(Component::getString)
     private var page = 0
     private var revealStart = System.nanoTime()
     private var waiting = false
@@ -46,6 +50,9 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     /** The server moved on to [next] in the same talk. */
     fun update(next: DialogueShowPayload) {
         show = next
+        speaker = next.speaker.string
+        lines = next.lines.map(Component::getString)
+        choices = next.choices.map(Component::getString)
         page = 0
         waiting = false
         revealStart = System.nanoTime()
@@ -83,7 +90,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {}
 
     override fun tick() {
-        if (!choicesShown && lastPage() && revealed() && show.choices.isNotEmpty()) {
+        if (!choicesShown && lastPage() && revealed() && choices.isNotEmpty()) {
             choicesShown = true
             rebuildWidgets()
         }
@@ -105,7 +112,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
         if (choicesShown) {
             val number = keyCode - GLFW.GLFW_KEY_1
-            if (number in show.choices.indices) {
+            if (number in choices.indices) {
                 choose(number)
                 return true
             }
@@ -131,7 +138,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
             revealStart = System.nanoTime()
             return
         }
-        if (show.choices.isNotEmpty()) return
+        if (choices.isNotEmpty()) return
         waiting = true
         ClientPlayNetworking.send(DialogueAnswerPayload(show.session, -1))
     }
@@ -148,7 +155,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         val box = boxRect()
         val theme = CobblemonUiThemes.registry.snapshot()
         val padding = theme.metrics(UiControlSize.MEDIUM).horizontalPadding
-        val labels = show.choices.mapIndexed { index, text -> Component.literal("${index + 1}. $text") }
+        val labels = choices.mapIndexed { index, text -> Component.literal("${index + 1}. $text") }
         val buttonWidth = (labels.maxOf(font::width) + padding * 2 + 8).coerceIn(80, box.width / 2)
         var bottom = box.y - 4
         labels.asReversed().forEachIndexed { reversed, label ->
@@ -185,10 +192,10 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
 
         val textLeft = box.x + PADDING
         val hasFace = show.skin.isNotBlank()
-        if (show.speaker.isNotBlank() || hasFace) {
+        if (speaker.isNotBlank() || hasFace) {
             // The speaker's face sits in the name plate, in front of the name.
-            val name = Component.literal(show.speaker)
-            val faceWidth = if (hasFace) FACE + if (show.speaker.isNotBlank()) FACE_GAP else 0 else 0
+            val name = Component.literal(speaker)
+            val faceWidth = if (hasFace) FACE + if (speaker.isNotBlank()) FACE_GAP else 0 else 0
             val plateLeft = box.x + 8
             val plateWidth = faceWidth + font.width(name) + 16
             val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
@@ -197,7 +204,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
             UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, box.y - 10, plate.text, plate.textShadowColor)
         }
 
-        val line = show.lines.getOrElse(page) { "" }
+        val line = lines.getOrElse(page) { "" }
         val wrapped = font.splitter.splitLines(line, box.right - PADDING - 12 - textLeft, Style.EMPTY).map { it.string }
         var budget = revealedCharacters()
         wrapped.forEachIndexed { index, text ->
@@ -206,7 +213,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
             budget -= text.length
             UiTextRenderer.draw(graphics, font, Component.literal(shown), textLeft, box.y + 12 + index * LINE_HEIGHT, ink, shadow)
         }
-        if (!revealed() || waiting || (lastPage() && show.choices.isNotEmpty())) return
+        if (!revealed() || waiting || (lastPage() && choices.isNotEmpty())) return
         // The line is complete: a bobbing arrow says there is more to read.
         val arrowX = box.right - 20
         val baseY = box.bottom - 14 + (sin(System.nanoTime() / 180_000_000.0) * 1.5).toInt()
@@ -215,12 +222,12 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(Componen
         }
     }
 
-    private fun lastPage() = page >= show.lines.size - 1
+    private fun lastPage() = page >= lines.size - 1
 
     private fun revealedCharacters(): Int =
         if (revealStart == 0L) Int.MAX_VALUE else ((System.nanoTime() - revealStart) / 1e9 * CHARACTERS_PER_SECOND).toInt()
 
-    private fun revealed() = revealedCharacters() >= show.lines.getOrElse(page) { "" }.length
+    private fun revealed() = revealedCharacters() >= lines.getOrElse(page) { "" }.length
 
     private fun click() {
         // The battle message box's click, so a talk and a battle sound the same.

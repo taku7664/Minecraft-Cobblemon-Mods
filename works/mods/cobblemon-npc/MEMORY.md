@@ -1,5 +1,12 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-08 12:10] 코드로 여는 대화 API(`NpcTalks`)와 컴포넌트 패킷 (구현만, 빌드 안 함)
+
+- **이유:** 야생 트레이너 대화를 이 대화창으로 옮긴다(리그 `docs/WILD_NPC_ROLES.md` 1단계).
+- **패킷:** `DialogueShowPayload`의 speaker·lines·choices가 문자열에서 `Component`로 바뀌었다(`ComponentSerialization.TRUSTED_STREAM_CODEC`). 번역 키를 클라이언트 언어로 읽게 하려는 것이다(전용 서버는 모드 언어를 모른다). **프로토콜이 바뀌어 클라이언트·서버 NPC JAR을 같이 바꿔야 한다.** 대화 파일 대사는 `Component.literal`로 보낸다.
+- **API:** `jbro.cobblemon.npc.api.NpcTalks.open(player, NpcTalk(speaker, lines, choices, npc, skin))`. 선택지(`NpcTalkChoice`)마다 서버 함수가 붙고, 고르면 창이 닫힌다. 그 함수가 다른 대화를 열면 같은 세션 번호를 써서 창을 닫지 않고 이어 보여 준다(`DialogueSessions.answering`). 함수가 예외를 던지면 기록하고 창은 닫는다.
+- **미확인:** 사용자 지시로 빌드하지 않아 컴파일도 확인하지 않았다. 실게임도 안 함.
+
 ## [2026-10-08 10:00] 대사 다듬기
 
 - 쉼표로 끝나 다음 페이지로 문장이 잘리던 곳(등산가·브리더·연구원·아가씨)을 한 줄로 합쳤다. 대화창이 줄바꿈하므로 한 페이지에 들어간다고 보지만 실게임으로 확인하지 않았다.
