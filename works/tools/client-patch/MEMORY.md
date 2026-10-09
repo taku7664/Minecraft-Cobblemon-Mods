@@ -1,3 +1,15 @@
+# [2026-10-09 22:53] 개발 클라이언트 기반 PPakemon 최초 구축·파일 검증 완료
+
+- 사용자가 `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\PPakemon`을 개발 클라이언트 기반 새 프로필로 구축하도록 명시했습니다. 시작 시 대상 파일 0개·실행 중 클라이언트 0개를 확인한 뒤 기존 개발 설치 파일을 사용했습니다. 최초 구축에 필요한 기본 컨픽·옵션·리소스를 복사한 일회성 작업이며, 이후 패쳐의 반복 갱신에서 개인 컨픽을 보존하는 기존 원칙은 유지합니다.
+- 메인 작업자 보고 기준으로 기존 패쳐 기능 파일 적용은 `Status=complete`, `Changed=1153`으로 완료됐습니다(모드 84개·위키 1,069개). 기능 ZIP 6개는 아래 초기 리소스 복사에 이미 포함돼 추가 변경이 없었습니다. 패쳐 백업은 `C:\Users\박주형\AppData\Local\MinecraftClientPatch\2943A7F97E95FBB9\history\20261009-224953-9b3b8b02`입니다.
+- Git-ignored `build/`의 임시 `bootstrap-profile.py`로 초기 파일 532개·419,390,183바이트를 복사하고 모두 해시를 확인했습니다. 구성은 음악 파일을 포함한 config 155개, `datapacks/ATM x MSD[v4.0].zip` 1개, `emi.json`·`options.txt`·`optionsshaders.txt`·`servers.dat` 각 1개, plaza-assets 3개, resourcepacks 10개, shaderpacks 2개, showdown 357개입니다. 외부 초기 구축 작업 기록은 `C:\Users\박주형\AppData\Local\MinecraftClientBootstrap\20261009-224820`에 있습니다.
+- OpenRouter·Discord·메일·문의 검토 설정, voicechat 플레이어 캐시, Sodium fingerprint, 적용 완료 마커, 제거된 구형 모드 설정과 `.bak`은 제외했습니다. saves·지도·계정·캐시·로그·백업·usercache는 복제하지 않았습니다. 기존 대상 컨픽은 덮어쓰지 않았으며 초기 복사 스크립트는 작업 도중 새로 생긴 대상 파일도 보존합니다.
+- 개발 원본 `client.toml`의 CLC ALWAYS·keybindings ONCE·Xaero ALWAYS 규칙은 복사했지만 `applied-defaults.properties`는 복사하지 않았습니다. 새 프로필에서 첫 실행 훅을 적용할 수 있도록 완료 기록을 제외한 결정이며, 훅의 실제 게임 내 실행 결과는 아직 확인하지 않았습니다.
+- 최종 파일 검증: Fabric 모드 ID 84개가 고유하고 모드·리소스팩·위키 SHA-256이 원본과 일치했습니다. 옵션 파일은 원본과 바이트 단위로 같으며 선택된 파일형 리소스팩 10개와 LumaVale 0.1.3 셰이더가 모두 존재했습니다. config 155개·위키 1,069개·saves 파일 0개를 확인했습니다. 초기 복사 재검사 결과는 동일 파일 532개·추가 0개, 패쳐 최종 Preview의 남은 변경은 0개입니다.
+- Modrinth 정보는 필요한 프로필 열만 읽기 전용으로 조회했습니다. `PPakemon`의 Minecraft 1.21.1 / Fabric 0.19.5 / `install_stage=installed`를 확인했고 계정 열은 수정하지 않았습니다. 이것은 런처 기록과 설치 파일 확인이며 실제 실행 호환성 증거는 아닙니다.
+- 실행 중 발견한 문제: 첫 패쳐 Apply가 끝나기 전에 초기 추가 복사를 시작해 기존 Preview가 오래된 상태로 판정됐습니다. 패쳐는 안전하게 중단했고 당시 기능 파일은 적용되지 않았습니다. 초기 532개 해시 검증을 마친 뒤 패쳐를 순차 재검사·적용해 성공했습니다. 같은 프로필을 변경하는 작업은 동시에 실행하면 안 되며 검사부터 적용 완료까지 다른 복사 작업을 끼워 넣지 않습니다.
+- 이 기록은 main `0c7b7f7e`까지 fast-forward된 워크트리에서 메인 작업자의 배포 검증 보고를 정리했습니다. 도구 소스와 서버 런타임은 변경하지 않았고 Gradle 빌드·테스트 재실행도 하지 않았습니다. 실제 게임 실행·실게임·음악·리소스팩 시각 및 활성화 동작은 미검증입니다. 파일 설치 완료와 게임 검증 완료를 구분합니다.
+
 # [2026-10-09 19:38] 통합 설치와 실제 UI 검사 완료
 
 - 메인 작업자 보고 기준으로 main 병합 `1c04d9d0b3567169a673d992751d7f46a912b9d9`를 푸시하고 `origin/main`·원격 ref 일치를 확인했습니다. 메인 소스로 통합 패쳐를 설치했으며 클라이언트 런타임 두 파일을 포함한 설치 내부 5개 파일의 SHA-256이 원본과 일치했습니다.
