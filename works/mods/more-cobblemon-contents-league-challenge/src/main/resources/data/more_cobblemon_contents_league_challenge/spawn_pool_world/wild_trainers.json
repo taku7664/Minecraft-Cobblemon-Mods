@@ -25,7 +25,7 @@
       "type": "npc",
       "npcClass": "more_cobblemon_contents_league_challenge:spawn_wild_npc",
       "bucket": "uncommon",
-      "weight": 150.0,
+      "weight": 15.0,
       "spawnablePositionType": "grounded",
       "condition": {
         "canSeeSky": true,

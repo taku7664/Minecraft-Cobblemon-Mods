@@ -113,7 +113,7 @@ class WildTrainerDataTest {
     fun `the world spawns one stand-in per group and every kind is in exactly one group`() {
         val world = JsonParser.parseString(resources.resolve("data/$ns/spawn_pool_world/wild_trainers.json").readText()).asJsonObject
             .getAsJsonArray("spawns").map { it.asJsonObject }
-        assertEquals(mapOf("$ns:spawn_wild_trainer" to 50.0, "$ns:spawn_wild_npc" to 150.0),
+        assertEquals(mapOf("$ns:spawn_wild_trainer" to 50.0, "$ns:spawn_wild_npc" to 15.0),
             world.associate { it.get("npcClass").asString to it.get("weight").asDouble })
         val groups = Files.list(resources.resolve("data/$ns/league-challenge/wild_spawns")).use { files -> files.toList() }.associate { file ->
             val group = JsonParser.parseString(file.readText()).asJsonObject

@@ -7,6 +7,10 @@
 - **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
 - **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
+## [2026-10-09 16:35] 역할 NPC 월드 가중치 150 → 15
+
+- **사용자 결정:** 역할 NPC가 너무 자주 나온다 → 15. 트레이너 50은 그대로. 트레이너를 50으로 줄이면서 역할을 150으로 둬 역할이 트레이너의 3배가 됐던 것을 바로잡았다. 평원 낮 약 0.1%, 숲 낮 약 0.25%(추정).
+
 ## [2026-10-09 16:22] 스폰 그룹 구조 빌드·개발 배치
 
 - **빌드:** `main` = `origin/main` = `67ba5039`, 리그 소스 변경 없음 확인 후 `remapJar`(테스트 안 함). `jar --validate` 통과. JAR 안에 `WildNpcSpawns`, `wild_spawns/{trainers,roles}.json`, 자리표시 클래스 두 개, 월드 스폰 풀 50/150 확인.
