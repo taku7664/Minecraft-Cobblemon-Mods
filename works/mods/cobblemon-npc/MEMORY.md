@@ -1,10 +1,11 @@
 # cobblemon-npc 작업 기록
 
-## [2026-10-09] 대화 선택지를 한 창 안의 목록 행으로 (빌드 안 함)
+## [2026-10-09] 대화 선택지를 한 창 안의 목록 행으로 (빌드·배치함)
 
 - 사용자 요청: 선택지마다 흰 버튼이 있는 모양이 "구리다". MCC 허브 탭 목록처럼 둥근 흰 창 하나가 선택지를 감싸고, 고른 선택지만 둥근 커서 테두리로 표시한다. 목업으로 확인받고 진행(https://claude.ai/artifact/KAtAhATEQU6EAANdbYPmyX).
 - 구현: `NpcDialogueScreen`이 버튼 위젯 대신 테마 패널(`theme.surfaces.panel`) 하나와 `CobblemonUiListRows`(허브 탭과 같은 행)로 직접 그린다. 커서는 마우스를 따라가고 ↑↓로 옮기며, 확인 키·클릭·숫자 키로 고른다. 글자 앞 번호("1.")는 뺐다(숫자 키는 유지). 테두리 색·모서리는 테마 값(DS 창은 `Outline(cursor, 2)`, 타워 로비 커서 `#F07820`)을 따른다.
-- **미확인:** 컴파일·테스트·빌드·배치 모두 안 함(빌드는 요청 시에만). 게임 화면 확인도 안 함.
+- **확인:** `06348f02`를 `origin/main`에 푸시(병합할 원격 커밋 없었음). `:cobblemon-npc:remapJar -x test` 빌드 성공(컴파일 포함), JAR을 `develop-product/server/mods`·`client/mods`에 넣고 SHA-256 대조 일치(3fdd8f923ede). 이전 JAR은 `develop-product/deployment-backups/20261009-140910-npc-choice-window/`. 클라이언트·서버 둘 다 꺼진 채였고 켜지 않았다.
+- **미확인:** 단위 테스트는 안 돌림(요청대로 제외). 게임 화면 확인도 안 함.
 
 ## [2026-10-09] 지팡이로 NPC 복사·붙여넣기 (빌드·배치함)
 
