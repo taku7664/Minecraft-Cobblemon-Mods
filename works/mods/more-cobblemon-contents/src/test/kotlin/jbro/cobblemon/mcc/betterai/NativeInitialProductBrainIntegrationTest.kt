@@ -59,7 +59,7 @@ class NativeInitialProductBrainIntegrationTest {
             ))
             val decision = brain.decide(session, context).toCompletableFuture().get()
             assertTrue("native_fallback_planning_failed" in decision.tags)
-            assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
+            assertTrue("native_failed_policy_choice" in decision.tags)
         }
 
         val startedAt = System.currentTimeMillis()
@@ -118,7 +118,7 @@ class NativeInitialProductBrainIntegrationTest {
     }
 
     @Test
-    fun `opening native planning failure uses legacy lookahead instead of baseline`() {
+    fun `opening native planning failure takes the one-turn policy, never the legacy lookahead`() {
         val context = contestedContext()
         val issue = NativeInitialProductWorldPlanIssue(
             NativeInitialProductWorldPlanIssueCode.PUBLIC_SPECIES_IDENTITY_MISSING,
@@ -135,7 +135,8 @@ class NativeInitialProductBrainIntegrationTest {
         val decision = brain.decide(open(brain, context), context).toCompletableFuture().get()
 
         assertTrue("native_fallback_planning_failed" in decision.tags)
-        assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
+        assertTrue("native_failed_policy_choice" in decision.tags)
+        assertFalse(decision.tags.any { it.startsWith("lookahead_stop_") })
     }
 
     @Test
@@ -310,7 +311,7 @@ class NativeInitialProductBrainIntegrationTest {
     }
 
     @Test
-    fun `continuation reconciliation failure clears native state and uses legacy lookahead`() {
+    fun `continuation reconciliation failure clears native state and takes the one-turn policy`() {
         val context = contestedContext()
         val state = nativeSessionState(context)
         var calls = 0
@@ -342,11 +343,12 @@ class NativeInitialProductBrainIntegrationTest {
         val decision = brain.decide(session, context).toCompletableFuture().get()
 
         assertTrue("native_fallback_reconciliation_failed" in decision.tags)
-        assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
+        assertTrue("native_failed_policy_choice" in decision.tags)
+        assertFalse(decision.tags.any { it.startsWith("lookahead_stop_") })
     }
 
     @Test
-    fun `failed continued search keeps reconciled roots and replays the legacy choice next turn`() {
+    fun `failed continued search keeps reconciled roots and replays the submitted choice next turn`() {
         val context = contestedContext()
         val opening = nativeSessionState(context)
         val reconciled = nativeSessionState(context, snapshotJson = "reconciled")
@@ -388,7 +390,7 @@ class NativeInitialProductBrainIntegrationTest {
         val carried = requireNotNull(received[2]) { "The reconciled roots must reach the next decision" }
         assertEquals("reconciled", carried.worlds.single().rootSnapshot.frame.snapshotJson)
         assertEquals(fallback.actionId, carried.pendingOwnAction?.actionId,
-            "The next reconciliation must replay the action the legacy search actually submitted")
+            "The next reconciliation must replay the action actually submitted")
     }
 
     private fun nativeSessionState(

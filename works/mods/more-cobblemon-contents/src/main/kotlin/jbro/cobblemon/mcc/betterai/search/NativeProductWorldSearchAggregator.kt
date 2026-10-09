@@ -97,6 +97,8 @@ internal data class NativeProductWorldSearchResult(
     val settledAtNodes: Int? = null,
     /** The root values at that moment, by action ID. */
     val settledRootValues: Map<String, Double> = emptyMap(),
+    /** Worlds left out because their root could not be made or contradicted the board. */
+    val droppedWorlds: Int = 0,
 ) {
     init {
         require(depthCompleted >= 0)

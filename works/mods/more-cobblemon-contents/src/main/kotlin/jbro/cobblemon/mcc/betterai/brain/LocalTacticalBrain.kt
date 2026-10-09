@@ -420,10 +420,15 @@ internal class LocalTacticalBrain(
                 decisionTrace?.nativeFallback(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
                     it.code.name + (it.detailCode?.let { detail -> "/$detail" } ?: "")
                 })
-                logger.warn("Native product decision unavailable; using legacy lookahead: {}",
+                // No legacy lookahead after a native failure: it reads the same board more coarsely. The decision
+                // takes the one-turn policy's best below, and the failure is logged loudly so it gets fixed.
+                logger.error("Native product decision failed; taking the one-turn policy's best (no legacy fallback): {}",
                     nativeFailureMessage(nativeInitial, difficultyContext))
             }
-            NativeInitialProductDecisionStatus.NOT_APPLICABLE -> Unit
+            NativeInitialProductDecisionStatus.NOT_APPLICABLE -> nativeInitial.failedRunDetail?.let { detail ->
+                // The board could not be rebuilt and no live battle came with the request (Showdown out of reach).
+                logger.warn("Native search not applicable ({}); this decision uses the legacy lookahead", detail)
+            }
         }
         difficultyContext.candidates.singleOrNull()?.let {
             val selected = LocalBattleActionPolicy.rank(
@@ -446,6 +451,28 @@ internal class LocalTacticalBrain(
                         add("single_legal_action")
                         add("difficulty_${profile.difficulty.tier.name.lowercase()}")
                         nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
+                        if (retainedNativeState != null) add("native_session_retained")
+                    },
+                ),
+            )
+        }
+        nativeFallbackStatus?.let { failed ->
+            val ranked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
+            val selected = ranked.first()
+            decisionTrace?.resolved("native_failed_policy", ranked, LocalActionSelection(selected, 0L, 1, 1.0))
+            retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
+            return CompletableFuture.completedFuture(
+                BattleDecision(
+                    requestId = context.requestId,
+                    actionId = selected.outcome.candidate.actionId,
+                    confidence = 0.35,
+                    advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
+                    tags = buildSet {
+                        add("local_tactical_v4")
+                        add("tuning_${tuning.id}")
+                        add("native_failed_policy_choice")
+                        add("difficulty_${profile.difficulty.tier.name.lowercase()}")
+                        add("native_fallback_${failed.name.lowercase(Locale.ROOT)}")
                         if (retainedNativeState != null) add("native_session_retained")
                     },
                 ),

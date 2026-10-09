@@ -158,13 +158,28 @@ internal class NativeInformationSetSearch(
                     .thenBy { request.worlds[it].key.randomSampleIndex }
                     .thenBy { request.worlds[it].key.lineage },
             )
+            // A world whose root cannot be made or does not match the board is left out: the others still stand
+            // for the battle. Only when none is left does the search fail.
+            var firstDropped: NativeProductWorldSearchResult? = null
             for (index in preparationOrder) {
                 if (!timeAvailable()) break
-                worlds[index] = prepare(index)
+                worlds[index] = try {
+                    prepare(index)
+                } catch (dropped: Abort) {
+                    if (firstDropped == null) firstDropped = dropped.result
+                    droppedWorlds++
+                    null
+                } catch (error: RuntimeException) {
+                    if (firstDropped == null) firstDropped = failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
+                        request.worlds[index], nodesVisited,
+                        NativeProductSearchRun(NativeProductSearchRunStatus.NATIVE_EXECUTION_FAILURE, failure = error))
+                    droppedWorlds++
+                    null
+                }
             }
             val prepared = worlds.filterNotNull()
             if (prepared.isEmpty()) {
-                return failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, request.worlds.first(),
+                return firstDropped ?: failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, request.worlds.first(),
                     0, NativeProductSearchRun(NativeProductSearchRunStatus.DEADLINE_EXHAUSTED))
             }
             val cumulative = DoubleArray(prepared.size)
@@ -226,13 +241,15 @@ internal class NativeInformationSetSearch(
                 }
             }
 
-            val rootValues = rootActions.map { action ->
-                val arm = root.ally[action.actionId]
-                if (arm == null || arm.visits == 0) {
-                    return failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, prepared.first().input,
-                        nodesVisited, NativeProductSearchRun(NativeProductSearchRunStatus.DEADLINE_EXHAUSTED))
-                }
+            // What the clock let the search see is still the best estimate: a root choice never tried is left unranked
+            // rather than throwing away the ones that were.
+            val rootValues = rootActions.mapNotNull { action ->
+                val arm = root.ally[action.actionId]?.takeIf { it.visits > 0 } ?: return@mapNotNull null
                 NativeRootActionValue(action, arm.value)
+            }
+            if (rootValues.isEmpty()) {
+                return failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, prepared.first().input,
+                    nodesVisited, NativeProductSearchRun(NativeProductSearchRunStatus.DEADLINE_EXHAUSTED))
             }
             // Unproven root values rest on part of the horizon; they are reported as one turn deep.
             return NativeProductWorldSearchResult(
@@ -248,8 +265,11 @@ internal class NativeInformationSetSearch(
                 iterations = iterations,
                 settledAtNodes = settledAtNodes,
                 settledRootValues = settledRootValues,
+                droppedWorlds = droppedWorlds,
             )
         }
+
+        private var droppedWorlds = 0
 
         private fun prepare(index: Int): PreparedWorld {
             val input = request.worlds[index]
@@ -263,7 +283,9 @@ internal class NativeInformationSetSearch(
                 ?: worker.createBattle(input.definition)
             val publicTurnOffset = supplied?.publicTurnOffset
                 ?: if (input.publicState.turn == 0 && rootFrame.turn == 1) 1 else 0
-            val rootIssues = NativeBattleRootValidator.validate(input.definition, rootFrame, input.publicState, publicTurnOffset)
+            // A root made from the live battle is the board itself; only a rebuilt or replayed one is checked against it.
+            val rootIssues = if (supplied == null && input.liveState != null) emptyList()
+                else NativeBattleRootValidator.validate(input.definition, rootFrame, input.publicState, publicTurnOffset)
             if (rootIssues.isNotEmpty()) {
                 throw Abort(failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, input, nodesVisited,
                     NativeProductSearchRun(NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT, rootIssues = rootIssues)))
