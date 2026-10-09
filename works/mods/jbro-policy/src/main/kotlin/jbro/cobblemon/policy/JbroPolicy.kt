@@ -65,11 +65,12 @@ object JbroPolicy : ModInitializer {
         val configDir = FabricLoader.getInstance().configDir
         val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
         Inquiries.register(discord)
-        InquiryReview.register(discord,
-            InquiryReviewSettings.load(configDir.resolve("jbro-policy-inquiry-review.json")) { message, failure -> LOGGER.warn(message, failure) },
+        val aiSettings = InquiryReviewSettings.load(configDir.resolve("jbro-policy-inquiry-review.json")) { message, failure -> LOGGER.warn(message, failure) }
+        InquiryReview.register(discord, aiSettings,
             FabricLoader.getInstance().gameDir, withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
         DiscordBot.register(discord,
             withContents = FabricLoader.getInstance().isModLoaded("more_cobblemon_contents"))
+        if (discord.botConfigured) jbro.cobblemon.policy.support.PichuQuestionAI.register(aiSettings, FabricLoader.getInstance().gameDir)
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         // Keep the legacy candy pack ID so existing worlds retain their activation setting.
