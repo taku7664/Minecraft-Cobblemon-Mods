@@ -43,7 +43,9 @@ class EngineBranchWorkerTest {
     )
 
     private fun comparable(frame: NativeBattleFrame): String {
-        val json = com.google.gson.Gson().toJsonTree(frame.copy(snapshotJson = "", log = emptyList())).asJsonObject
+        // The Showdown bridge does not report a pending Wish; with none pending the two frames mean the same.
+        val field = frame.field.copy(pendingHeals = frame.field.pendingHeals?.ifEmpty { null })
+        val json = com.google.gson.Gson().toJsonTree(frame.copy(snapshotJson = "", log = emptyList(), field = field)).asJsonObject
         // Requests are compared on the fields the search reads.
         for (key in listOf("p1RequestJson", "p2RequestJson")) {
             val request = JsonParser.parseString(frame.javaClass.getMethod("get${key.replaceFirstChar { it.uppercase() }}").invoke(frame) as String)
@@ -148,6 +150,18 @@ class EngineBranchWorkerTest {
             NativePokemonOpeningState(uuid(4), 175, 175, "Defiant", "Black Glasses"),
         )),
     ))
+
+    @Test
+    fun `a snapshot extended as text is what parsing and reprinting would give`() {
+        val engine = EngineBranchWorker()
+        val root = engine.createBattle(definition)
+        val first = engine.branch(root.snapshotJson, "move 1", "move 2")
+        val second = engine.reseed(first.snapshotJson, 3)
+        for (token in listOf(first.snapshotJson, second.snapshotJson)) {
+            assertEquals(JsonParser.parseString(token).toString(), token)
+        }
+        assertEquals(2, JsonParser.parseString(second.snapshotJson).asJsonObject.getAsJsonArray("steps").size())
+    }
 
     @Test
     fun `an evicted snapshot is rebuilt by replay`() {

@@ -21,13 +21,45 @@ object BattleCopier {
 
     private val plans = HashMap<Class<*>, Array<Field>>()
 
+    /** One instance field read and written through its raw offset; reflective access dominated forking. */
+    private class Slot(val offset: Long, val kind: Char)
+
+    private val slots = object : ClassValue<Array<Slot>>() {
+        override fun computeValue(type: Class<*>): Array<Slot> = fieldsOf(type).map { field ->
+            val kind = when (field.type) {
+                Int::class.javaPrimitiveType -> 'I'
+                Long::class.javaPrimitiveType -> 'J'
+                Boolean::class.javaPrimitiveType -> 'Z'
+                Double::class.javaPrimitiveType -> 'D'
+                Float::class.javaPrimitiveType -> 'F'
+                Byte::class.javaPrimitiveType -> 'B'
+                Short::class.javaPrimitiveType -> 'S'
+                Char::class.javaPrimitiveType -> 'C'
+                else -> 'L'
+            }
+            Slot(unsafe.objectFieldOffset(field), kind)
+        }.toTypedArray()
+    }
+
+    /** [shared] depends only on the class, so it is decided once per class. */
+    private val sharedByClass = object : ClassValue<Boolean>() {
+        override fun computeValue(type: Class<*>): Boolean = sharedClass(type)
+    }
+
     /** Classes whose instances are immutable or owned by the dex: copied by reference. */
-    private fun shared(value: Any): Boolean = when (value) {
-        is String, is Number, is Boolean, is Char, is Unit, is Enum<*> -> true
-        is Effect, is EngineDex, is BattleOptions, is PokemonSet, is SecondaryHit, is LiteralHit -> true
-        is Function<*> -> true
-        is IntArray -> false
-        else -> value.javaClass.name.startsWith("kotlin.") && value !is Collection<*> && value !is Map<*, *>
+    private fun shared(value: Any): Boolean = sharedByClass.get(value.javaClass)
+
+    private fun sharedClass(type: Class<*>): Boolean = when {
+        String::class.java.isAssignableFrom(type) || Number::class.java.isAssignableFrom(type) ||
+            type == java.lang.Boolean::class.java || type == java.lang.Character::class.java ||
+            type == Unit::class.java || Enum::class.java.isAssignableFrom(type) -> true
+        Effect::class.java.isAssignableFrom(type) || EngineDex::class.java.isAssignableFrom(type) ||
+            BattleOptions::class.java.isAssignableFrom(type) || PokemonSet::class.java.isAssignableFrom(type) ||
+            SecondaryHit::class.java.isAssignableFrom(type) || LiteralHit::class.java.isAssignableFrom(type) -> true
+        Function::class.java.isAssignableFrom(type) -> true
+        type == IntArray::class.java -> false
+        else -> type.name.startsWith("kotlin.") && !Collection::class.java.isAssignableFrom(type) &&
+            !Map::class.java.isAssignableFrom(type)
     }
 
     fun copy(battle: Battle, keepLog: Boolean = false): Battle {
@@ -91,7 +123,20 @@ object BattleCopier {
             else -> {
                 val out = unsafe.allocateInstance(value.javaClass)
                 seen[value] = out
-                for (field in fieldsOf(value.javaClass)) field.set(out, clone(field.get(value), seen))
+                for (slot in slots.get(value.javaClass)) {
+                    val o = slot.offset
+                    when (slot.kind) {
+                        'L' -> unsafe.putObject(out, o, clone(unsafe.getObject(value, o), seen))
+                        'I' -> unsafe.putInt(out, o, unsafe.getInt(value, o))
+                        'J' -> unsafe.putLong(out, o, unsafe.getLong(value, o))
+                        'Z' -> unsafe.putBoolean(out, o, unsafe.getBoolean(value, o))
+                        'D' -> unsafe.putDouble(out, o, unsafe.getDouble(value, o))
+                        'F' -> unsafe.putFloat(out, o, unsafe.getFloat(value, o))
+                        'B' -> unsafe.putByte(out, o, unsafe.getByte(value, o))
+                        'S' -> unsafe.putShort(out, o, unsafe.getShort(value, o))
+                        else -> unsafe.putChar(out, o, unsafe.getChar(value, o))
+                    }
+                }
                 out
             }
         }
