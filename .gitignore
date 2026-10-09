@@ -17,10 +17,11 @@ cobleserver-music-resourcepack-*.zip
 run/
 runs/
 /develop-product/
-# Release outputs: only VERSION.txt is tracked; the JARs are rebuilt from their commit.
+# Release outputs: VERSION.txt and the requested production-server shortcut are tracked.
 /deploy-product/**/*
 !/deploy-product/*/
 !/deploy-product/*/VERSION.txt
+!/deploy-product/server/MineCraftPPakemonServer.lnk
 /docs/
 logs/
 crash-reports/

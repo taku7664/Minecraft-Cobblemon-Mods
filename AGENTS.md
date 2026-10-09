@@ -24,7 +24,7 @@
 # Workspace targets
 
 - Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
-  folder; there is no other server root. Do not refer to or deploy into any server outside this repository.
+  folder. Development deployments use this root only; the separate production root is listed below.
 - Development client: `develop-product/client` in this repository (git-ignored), a junction to the Modrinth profile
   `%APPDATA%\ModrinthApp\profiles\cobblemon-dev`. The files stay in AppData because the Modrinth App refuses a profile
   whose content folders sit behind a link. Refer to the repository path. Do not copy JARs into it while its game is
@@ -32,13 +32,22 @@
 - Keep source/build validation, client deployment, server deployment, and live gameplay verification as separate results.
 - 테스트를 위해 실행한 클라이언트는 검증이 끝나면 직접 종료한다.
 
+### Production server (2026-10-09)
+
+- 배포 서버 저장소: `C:\Users\박주형\Documents\GitHub\MineCraftPPakemonServer`.
+- GitHub: `https://github.com/taku7664/MineCraftPPakemonServer` (비공개).
+- 서버 실행 루트는 이 저장소 자체이며 `run.bat`으로 실행한다. 게임 포트는 25565이며 개발 서버의 25566과 구분한다.
+- `deploy-product/server/MineCraftPPakemonServer.lnk`는 배포 서버 폴더를 여는 바로가기다. 이 사용자 지정 바로가기는 아래 산출물 전용 규칙의 예외다.
+- 단순 “배포”는 계속 개발 서버를 뜻한다. “배포 서버”, “운영 서버” 또는 위 저장소를 명시한 요청에만 이 경로를 사용한다.
+- 배포 서버 저장소에는 실행 파일·모드·설정·데이터팩·실제 에셋만 둔다. 작업 기록·안내 MD·manifest 등 검증 산출물과 개발 월드·플레이어 기록·비밀값은 원격 배포 저장소에 넣지 않는다.
+
 ## Product folders
 
 - `deploy-product/client` and `deploy-product/server` hold the release outputs: the finished mod JARs a player's client
   or the live server needs, and each folder's `VERSION.txt`. A mod that runs on both sides goes in both folders.
 - Put JARs in `deploy-product` or edit its `VERSION.txt` only when the user explicitly asks for a release; a plain
   "deploy" (배포) means `develop-product`.
-- Nothing else goes in `deploy-product`: no sources/dev JARs, backups, logs, reports, scratch files or notes.
+- Except for the user-requested production-server shortcut above, nothing else goes in `deploy-product`: no sources/dev JARs, backups, logs, reports, scratch files or notes.
   Replacing a JAR removes the old one; a previous build is recovered by rebuilding its commit.
 - `VERSION.txt` records, per version, what changed in that folder's set of mods. Releases are published on Modrinth;
   the record is how the changes are noticed and shared. Versions are `v0.x` until the first live release, `v1.0`.
