@@ -1150,6 +1150,12 @@ class BattleDecisionContext private constructor(
     val exactOwnTeam: BattleExactOwnTeamView?,
     localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView>,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
+    /**
+     * The live battle as Showdown serializes it (`battle.toJSON()`), for the local Brain's native search: its own
+     * side and the field exactly as they stand. It holds the opponent's real sets too, which the search replaces
+     * with its own hypotheses. Null where the battle could not be read or the tier does not search natively.
+     */
+    val showdownState: String? = null,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
     val localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> =
@@ -1195,6 +1201,22 @@ class BattleDecisionContext private constructor(
         exactOwnTeam,
         localOpponentStatSpreads,
         Unit,
+        showdownState,
+    )
+
+    /** The same decision with [showdownState] attached; [copy] keeps it. */
+    fun withShowdownState(showdownState: String?): BattleDecisionContext = BattleDecisionContext(
+        requestId,
+        state,
+        candidates,
+        deadlineEpochMillis,
+        memory,
+        publicActionCatalog,
+        opponentTeamPreview,
+        exactOwnTeam,
+        localOpponentStatSpreads,
+        Unit,
+        showdownState,
     )
 
     /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */

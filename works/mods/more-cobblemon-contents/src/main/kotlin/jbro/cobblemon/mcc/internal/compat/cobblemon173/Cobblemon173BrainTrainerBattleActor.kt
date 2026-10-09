@@ -195,7 +195,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                             )) {
                             actualOpponentStatSpreadsByPreviewSlot()
                         } else emptyMap(),
-                    )
+                    ).withShowdownState(liveShowdownState())
                 }
                 val decision = fallbackChain.decide(
                     endpoint(primaryBrain, primarySession),
@@ -231,6 +231,21 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     decisionStartedAtNanos = preparedDecision.startedAtNanos,
                 )
             }
+        }
+    }
+
+    /**
+     * The live battle as Showdown holds it, for the local Brain's native search. Showdown's context belongs to the
+     * server thread; a request that arrives elsewhere waits briefly for it, and goes without on a timeout.
+     */
+    private fun liveShowdownState(): String? {
+        if (server.isSameThread) return Cobblemon173ShowdownStateCapture.capture(battle.battleId)
+        return try {
+            server.submit(java.util.function.Supplier { Cobblemon173ShowdownStateCapture.capture(battle.battleId) })
+                .get(LIVE_STATE_WAIT_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS)
+        } catch (failure: Exception) {
+            MoreCobblemonContents.LOGGER.warn("Battle {} Showdown state was not read in time", battle.battleId)
+            null
         }
     }
 
@@ -568,6 +583,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
             brainExecutor = BattleBrainExecutors.worker(),
         )
         val fallbackChain = BattleDecisionFallbackChain(coordinator)
+        const val LIVE_STATE_WAIT_MILLIS = 2_000L
     }
 }
 
