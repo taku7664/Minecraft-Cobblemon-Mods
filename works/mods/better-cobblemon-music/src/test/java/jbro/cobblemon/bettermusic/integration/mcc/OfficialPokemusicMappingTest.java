@@ -61,9 +61,10 @@ final class OfficialPokemusicMappingTest {
                 var report = element.getAsJsonObject();
                 if (Set.of("field/plaza/route_1.ogg", "field/badlands/abandoned_ship.ogg",
                     "field/cave/sinnoh_lake_caverns.ogg", "field/river/sealed_chamber.ogg",
-                    "field/swamp/road_to_reversal_mountain.ogg", "field/snow/sinnoh_route_205_night.ogg")
+                    "field/swamp/road_to_reversal_mountain.ogg", "field/snow/sinnoh_route_205_night.ogg",
+                    "field/jungle/route_210.ogg")
                     .contains(report.get("target").getAsString())) {
-                    continue; // Historical imports replaced by the current plaza and badlands songs.
+                    continue; // Historical imports superseded by later field-song changes.
                 }
                 Path audio = pack.resolve("assets/better_cobblemon_music/sounds/music/" + report.get("target").getAsString());
                 assertEquals(report.get("outputSha256").getAsString(), sha256(audio), audio.toString());
@@ -73,7 +74,7 @@ final class OfficialPokemusicMappingTest {
                 assertEquals(44100, report.get("sample_rate").getAsInt());
                 preserved++;
             }
-            assertEquals(24, preserved);
+            assertEquals(23, preserved);
         }
         Path newPlazaSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/jubilife_city_day.ogg");
         assertEquals("eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105", sha256(newPlazaSong));
@@ -83,6 +84,10 @@ final class OfficialPokemusicMappingTest {
         assertEquals("eb72dd859b0414a561a3bc5a698acb207e3884bf7841310503b1214df78f586d", sha256(newBadlandsSong));
         assertEquals(3_123_415L, Files.size(newBadlandsSong));
         assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/badlands/abandoned_ship.ogg")));
+        Path newJungleSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/jungle/southern_jungle.ogg");
+        assertEquals("c5c56db75348d7b484a96af4313ec2e0ce8904d8a9be2107fc9efb605820f851", sha256(newJungleSong));
+        assertEquals(1_208_958L, Files.size(newJungleSong));
+        assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/jungle/route_210.ogg")));
         assertEquals("3a0b977babf57f6ea5d3da04f0da85596d1fa2d50fe69f7f1c1064a91aa5666b",
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/normal.ogg")));
         assertEquals("d4dbddb4c776544feb6d83e83dd1f89a27c7c1261b0cb5cb9477f0a6b9ad44bd",
@@ -130,7 +135,7 @@ final class OfficialPokemusicMappingTest {
         expectField("minecraft:ocean", false, "field/ocean/route_47");
         expectField("minecraft:deep_ocean", false, "field/ocean/underground_ruins");
         expectField("minecraft:mangrove_swamp", false, "field/swamp/route_120");
-        expectField("minecraft:bamboo_jungle", false, "field/jungle/route_210");
+        expectField("minecraft:bamboo_jungle", false, "field/jungle/southern_jungle");
         for (String biome : List.of("minecraft:ice_spikes", "minecraft:grove", "minecraft:snowy_plains", "minecraft:frozen_peaks")) {
             expectField(biome, false, "field/snow/sinnoh_route_216_night");
         }

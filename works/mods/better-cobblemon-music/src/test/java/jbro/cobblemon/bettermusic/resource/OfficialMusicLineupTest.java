@@ -77,6 +77,8 @@ final class OfficialMusicLineupTest {
         assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/badlands/abandoned_ship"));
         assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/river/sealed_chamber"));
         assertTitle("field/swamp/route_120", "120번도로");
+        assertTitle("field/jungle/southern_jungle", "남쪽 정글");
+        assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/jungle/route_210"));
         assertTitle("field/snow/sinnoh_route_216_night", "216번도로 (밤)");
         assertTitle("field/plains/sinnoh_route_201_night", "201번도로 (밤)");
         assertTitle("field/plaza/jubilife_city_day", "축복시티 (낮)");
