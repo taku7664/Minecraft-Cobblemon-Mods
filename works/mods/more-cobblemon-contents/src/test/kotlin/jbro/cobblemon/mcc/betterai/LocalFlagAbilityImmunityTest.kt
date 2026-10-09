@@ -51,6 +51,31 @@ class LocalFlagAbilityImmunityTest {
     }
 
     @Test
+    fun `the native ranking drops a move the target is publicly immune to`() {
+        // An introductory Roserade's native search ranked Sludge Bomb into Ferrothorn above Giga Drain.
+        val sludgeBomb = move("sludgebomb", "poison", emptySet())
+        val gigaDrain = move("gigadrain", "grass", emptySet())
+        val context = BattleDecisionContext(
+            UUID.randomUUID(),
+            BattleStateView(
+                UUID.randomUUID(), BattleFormat.SINGLE, 1,
+                listOf(mon(BattleSide.ALLY, null), mon(BattleSide.OPPONENT, null, types = setOf("grass", "steel"))),
+                BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList(),
+            ),
+            listOf(sludgeBomb, gigaDrain), Long.MAX_VALUE,
+        )
+        val ranks = jbro.cobblemon.mcc.betterai.search.NativeProductRankAdapter.rank(
+            listOf(
+                jbro.cobblemon.mcc.betterai.search.NativeRootActionValue(sludgeBomb, 0.5),
+                jbro.cobblemon.mcc.betterai.search.NativeRootActionValue(gigaDrain, 0.2),
+            ),
+            context = context,
+        ).associateBy { it.outcome.candidate.moveId }
+        assertTrue(ranks.getValue("sludgebomb").outcome.publiclyInert)
+        assertFalse(ranks.getValue("gigadrain").outcome.publiclyInert)
+    }
+
+    @Test
     fun `soundproof does not block the users own sound move`() {
         val selfMove = move(
             "clangoroussoul",

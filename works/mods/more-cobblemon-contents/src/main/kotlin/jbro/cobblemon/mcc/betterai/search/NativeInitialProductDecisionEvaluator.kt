@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalSetupMovePreference
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcome
@@ -490,7 +491,13 @@ internal object NativeProductRankAdapter {
             } else 0.0
             val setupBonus = (context?.let { LocalSetupMovePreference.bonus(value.action, it) } ?: 0.0) - mechanicCost
             LocalBattleActionRank(
-                outcome = neutralOutcome(value.action, scaled + setupBonus),
+                outcome = neutralOutcome(value.action, scaled + setupBonus).let { outcome ->
+                    // A move the target is publicly immune to does nothing whatever the search found around it;
+                    // the selector drops it as it does for the legacy scorer.
+                    if (context != null && publiclyNullified(value.action, context)) {
+                        outcome.copy(publiclyInert = true, executableDamageActions = 0)
+                    } else outcome
+                },
                 decisionTier = 0,
                 comparisonValue = scaled + setupBonus,
                 lookaheadUtility = scaled,
@@ -499,6 +506,10 @@ internal object NativeProductRankAdapter {
             )
         })
     }
+
+    private fun publiclyNullified(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean =
+        candidate.kind == BattleActionKind.USE_MOVE &&
+            LocalPublicMechanicsKernel.projectMove(candidate, context).publiclyNullified
 
     private fun neutralOutcome(
         candidate: BattleActionCandidate,

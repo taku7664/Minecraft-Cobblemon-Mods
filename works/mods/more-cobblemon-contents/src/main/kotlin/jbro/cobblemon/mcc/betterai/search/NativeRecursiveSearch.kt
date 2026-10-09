@@ -219,6 +219,14 @@ internal class NativeRecursiveSearch(
         val values = mutableListOf<NativeRootActionValue>()
         val currentResponseValues = linkedMapOf<String, Map<String, Double>>()
         val rootThreat = LocalOpponentThreat.materialAdjustment(tree.root.state, opponentThreatWeights)
+        // A narrower tier follows only the replies the shallower iteration found worst for it on average over its own
+        // choices. Every root action meets the same replies; a per-action set let a move whose own worst replies
+        // happened to be mild outrank one that met the dangerous ones, so an immune Sludge Bomb beat Giga Drain.
+        val followedResponseIds = if (depth > 1 && opponentResponseLimit != null) {
+            opponentActions.sortedBy { response ->
+                rootActions.map { previousRootResponseValues[it.actionId]?.get(response.actionId) ?: 0.0 }.average()
+            }.take(opponentResponseLimit).map(BattleActionCandidate::actionId).toSet()
+        } else null
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
             var worstThreatDelta = 0.0
@@ -227,10 +235,8 @@ internal class NativeRecursiveSearch(
                 opponentActions, responseMemory, responseInformation,
                 previousRootResponseValues[allyAction.actionId].orEmpty(),
             )
-            // A narrower tier follows only the replies the shallower iteration found worst for it; the first
-            // iteration still meets every reply, so this ordering exists before anything is left out.
-            val followedResponses = if (depth > 1 && opponentResponseLimit != null) {
-                orderedResponses.take(opponentResponseLimit)
+            val followedResponses = if (followedResponseIds != null) {
+                orderedResponses.filter { it.actionId in followedResponseIds }
             } else {
                 orderedResponses
             }
