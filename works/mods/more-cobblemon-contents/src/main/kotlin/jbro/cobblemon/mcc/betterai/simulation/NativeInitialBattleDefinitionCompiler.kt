@@ -157,7 +157,8 @@ internal object NativeInitialBattleDefinitionCompiler {
                 issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ROSTER_INCOMPLETE)
             }
             val expectedActive = minOf(if (state.format == BattleFormat.SINGLE) 1 else 2, alive.size)
-            if (alive.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != (0 until expectedActive).toList()) {
+            // A live root has whatever layout the battle has, such as a fainted active awaiting its replacement.
+            if (!live && alive.mapNotNull(BattlePokemonStateView::activeSlot).sorted() != (0 until expectedActive).toList()) {
                 issue(issues, NativeBattleDefinitionIssueCode.ACTIVE_LAYOUT_INVALID)
             }
         }
