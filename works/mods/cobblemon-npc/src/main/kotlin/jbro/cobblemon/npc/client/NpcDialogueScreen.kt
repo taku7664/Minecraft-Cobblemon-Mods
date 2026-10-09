@@ -10,13 +10,11 @@ import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
-import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
-import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
-import jbro.cobblemon.uikit.UiWidthPolicy
-import jbro.cobblemon.uikit.client.CobblemonUiButton
+import jbro.cobblemon.uikit.client.CobblemonUiListRows
+import jbro.cobblemon.uikit.client.UiListRowContent
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -30,8 +28,9 @@ import kotlin.math.sin
 
 /**
  * An NPC's message box in the shared UI kit look, at the bottom of the screen like the games' own: each line is
- * written out, a click or the confirm key finishes it and then moves on, and the answers appear as buttons above the box
- * once the last line is read. The world keeps running behind it.
+ * written out, a click or the confirm key finishes it and then moves on, and once the last line is read the answers
+ * appear above the box in one window, read as the MCC hub's tab rail reads: plain lines, the chosen one ringed by the
+ * theme's cursor. The world keeps running behind it.
  */
 class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.speaker), CinematicScreen {
     private var restoreTheme: (() -> Unit)? = null
@@ -43,6 +42,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     private var revealStart = System.nanoTime()
     private var waiting = false
     private var choicesShown = false
+    private var cursor = 0
     private var closedByServer = false
 
     val session: Int get() = show.session
@@ -57,7 +57,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         waiting = false
         revealStart = System.nanoTime()
         choicesShown = false
-        rebuildWidgets()
+        cursor = 0
     }
 
     /** The server ended the talk; closing now must not report a leave back. */
@@ -73,7 +73,6 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
             if (show.npcEntityId != DialogueShowPayload.NO_NPC) NpcDialogueCamera.focus(show.npcEntityId)
             CinematicLetterbox.show(LETTERBOX_OWNER)
         }
-        if (choicesShown) addChoices()
     }
 
     override fun removed() {
@@ -92,7 +91,6 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     override fun tick() {
         if (!choicesShown && lastPage() && revealed() && choices.isNotEmpty()) {
             choicesShown = true
-            rebuildWidgets()
         }
     }
 
@@ -100,23 +98,36 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         // A talk plays as a scene: the letterbox first, the dialogue box floating over it.
         CinematicLetterbox.renderBars(graphics, 0f)
         drawBox(graphics)
+        if (choicesShown) drawChoices(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
+    override fun mouseMoved(mouseX: Double, mouseY: Double) {
+        // The cursor follows the mouse, as on the hub's rail.
+        if (choicesShown) choiceAt(mouseX, mouseY)?.let { cursor = it }
+    }
+
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (super.mouseClicked(mouseX, mouseY, button)) return true
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) advance()
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return true
+        if (choicesShown) {
+            choiceAt(mouseX, mouseY)?.let(::choose)
+            return true
+        }
+        advance()
         return true
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
         if (choicesShown) {
             val number = keyCode - GLFW.GLFW_KEY_1
-            if (number in choices.indices) {
-                choose(number)
-                return true
+            when {
+                number in choices.indices -> choose(number)
+                keyCode == GLFW.GLFW_KEY_UP -> moveCursor(-1)
+                keyCode == GLFW.GLFW_KEY_DOWN -> moveCursor(1)
+                CobblemonUiClient.selectActionKey.matches(keyCode, scanCode) -> choose(cursor)
+                else -> return super.keyPressed(keyCode, scanCode, modifiers)
             }
-            return super.keyPressed(keyCode, scanCode, modifiers)
+            return true
         }
         // The same confirm key the battle narration uses, set under the controls' Cobblemon Dialog UI.
         if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) {
@@ -150,24 +161,41 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         ClientPlayNetworking.send(DialogueAnswerPayload(show.session, index))
     }
 
-    private fun addChoices() {
+    private fun moveCursor(step: Int) {
+        if (waiting) return
+        cursor = Math.floorMod(cursor + step, choices.size)
+        click()
+    }
+
+    /** The window that holds the answers, right-aligned just above the message box. */
+    private fun choicesRect(): UiRect {
         val font = minecraft!!.font
         val box = boxRect()
+        val width = (choices.maxOf(font::width) + ROW_TEXT_ROOM + CHOICES_INSET * 2).coerceIn(80, box.width / 2)
+        val height = choices.size * CHOICE_ROW + (choices.size - 1) * CHOICE_GAP + CHOICES_INSET * 2
+        return UiRect(box.right - width, box.y - 4 - height, width, height)
+    }
+
+    private fun choiceRow(index: Int): UiRect {
+        val window = choicesRect()
+        return UiRect(window.x + CHOICES_INSET, window.y + CHOICES_INSET + index * (CHOICE_ROW + CHOICE_GAP),
+            window.width - CHOICES_INSET * 2, CHOICE_ROW)
+    }
+
+    private fun choiceAt(mouseX: Double, mouseY: Double): Int? = choices.indices.firstOrNull { index ->
+        val row = choiceRow(index)
+        mouseX >= row.x && mouseX < row.right && mouseY >= row.y && mouseY < row.bottom
+    }
+
+    private fun drawChoices(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
-        val padding = theme.metrics(UiControlSize.MEDIUM).horizontalPadding
-        val labels = choices.mapIndexed { index, text -> Component.literal("${index + 1}. $text") }
-        val buttonWidth = (labels.maxOf(font::width) + padding * 2 + 8).coerceIn(80, box.width / 2)
-        var bottom = box.y - 4
-        labels.asReversed().forEachIndexed { reversed, label ->
-            val index = labels.size - 1 - reversed
-            val spec = UiButtonSpec(label, variant = UiButtonVariant.SECONDARY, width = UiWidthPolicy.Fixed(buttonWidth))
-            val button = CobblemonUiButton.create(box.right - buttonWidth, 0, buttonWidth, spec, downSound = false) { choose(index) }
-            bottom -= button.height
-            button.y = bottom
-            bottom -= 3
-            addRenderableWidget(button)
+        val window = choicesRect()
+        UiSurfaceRenderer.draw(graphics, window.x, window.y, window.width, window.height, theme.surfaces.panel)
+        choices.forEachIndexed { index, text ->
+            // Rows in the theme's list style: unframed lines, the cursor's ring on the chosen one only.
+            CobblemonUiListRows.draw(graphics, choiceRow(index), UiListRowContent(Component.literal(text), selected = index == cursor),
+                enabled = !waiting, hovered = false, mouseX, mouseY, partialTick)
         }
-        children().firstOrNull()?.let(::setInitialFocus)
     }
 
     private fun boxRect(): UiRect {
@@ -243,5 +271,11 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         private const val FACE_GAP = 4
         private const val END_BAR = 4
         private const val LINE_HEIGHT = 12
+        // The answers' window keeps the hub rail's room around its rows.
+        private const val CHOICES_INSET = 6
+        private const val CHOICE_ROW = 18
+        private const val CHOICE_GAP = 3
+        // A row's text starts 6 in and needs a little room after it.
+        private const val ROW_TEXT_ROOM = 16
     }
 }
