@@ -41,6 +41,7 @@
 - 단순 “배포”는 계속 개발 서버를 뜻한다. “배포 서버”, “운영 서버” 또는 위 저장소를 명시한 요청에만 이 경로를 사용한다.
 - 배포 서버 저장소에는 실행 파일·모드·설정·데이터팩·실제 에셋만 둔다. 작업 기록·안내 MD·manifest 등 검증 산출물과 일반 개발 월드·플레이어 기록·비밀값은 원격 배포 저장소에 넣지 않는다.
 - 운영 서버 업데이트는 기능 파일만 반영하며 기존 설정·실행 옵션·시작 규칙·월드·플레이어·광장 데이터를 보존한다. 복사는 서버가 정상 저장·종료된 상태에서만 한다.
+- 개발·운영 서버 구성에서 JourneyMap JAR과 관련 설정·전용 폴더를 제외하며, JourneyMap은 재배포 대상이 아니다.
 - `world/datapacks/`는 기능 에셋으로 업데이트하되, 운영 서버가 생성한 `cobblemon-startup-hooks.zip`은 보존한다. 광장 차원 `world/dimensions/jbro_policy/plaza/`와 바이옴 변환 완료 데이터 `world/data/jbro_policy_plaza_biome.dat`는 대상에 광장이 없는 최초 설치에서만 함께 복사한다.
 - DEV→운영 배포 패쳐는 이 PC의 로컬 전용이다. 운영 루트의 `deploy-from-dev.bat`, `tools/deploy-server.ps1`, `tools/server-deployment.psm1`과 개발 저장소 `works/tools/server-deploy/`의 `deploy-from-dev.bat`, `deploy-server.ps1`, `server-deployment.psm1`, `server-deployment.tests.ps1`은 운영·개발 원격 저장소에서 모두 제외한다. 추적된 패쳐는 삭제 커밋을 푸시한 뒤 로컬에 복구하고 `.gitignore`로 유지한다. Cloud Pull은 삭제 커밋을 받아 패쳐를 제거한다. 정상 서버 시작 훅과 실행에 필요한 파일은 계속 배포 대상이다. 로컬 패쳐는 개발 서버에 설치된 파일을 복사하며 자동 빌드하지 않는다. 백업은 서버 밖 `%LOCALAPPDATA%\MinecraftServerDeploy`에 보관하며, 배포 전 기존 `world` 전체(`playerdata` 포함)를 작업별 `world-snapshot/`에 백업한다. 자동 복구와 복구 버튼은 교체한 기능 파일만 되돌리며 이후 플레이 진행도를 덮어쓰지 않는다.
 
