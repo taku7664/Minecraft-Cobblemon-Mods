@@ -423,35 +423,39 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
             }
             return handlers
         }
+        // The handler names are built once per event name: a new string every call rehashed it at every lookup.
+        val names = CALLBACK_NAMES.getOrPut(eventName) {
+            arrayOf("on$eventName", "onAlly$eventName", "onAny$eventName", "onFoe$eventName", "onSource$eventName")
+        }
         var target: Any = targetIn
         val prefixed = eventName !in UNPREFIXED_EVENTS
         if (target is Pokemon && (target.isActive || source?.isActive == true)) {
-            handlers = findPokemonEventHandlers(target, "on$eventName")
+            handlers = findPokemonEventHandlers(target, names[0])
             if (prefixed) {
                 for (ally in target.alliesAndSelf()) {
-                    handlers.addAll(findPokemonEventHandlers(ally, "onAlly$eventName"))
-                    handlers.addAll(findPokemonEventHandlers(ally, "onAny$eventName"))
+                    handlers.addAll(findPokemonEventHandlers(ally, names[1]))
+                    handlers.addAll(findPokemonEventHandlers(ally, names[2]))
                 }
                 for (foe in target.foes()) {
-                    handlers.addAll(findPokemonEventHandlers(foe, "onFoe$eventName"))
-                    handlers.addAll(findPokemonEventHandlers(foe, "onAny$eventName"))
+                    handlers.addAll(findPokemonEventHandlers(foe, names[3]))
+                    handlers.addAll(findPokemonEventHandlers(foe, names[2]))
                 }
             }
             target = target.side
         }
-        if (source != null && prefixed) handlers.addAll(findPokemonEventHandlers(source, "onSource$eventName"))
+        if (source != null && prefixed) handlers.addAll(findPokemonEventHandlers(source, names[4]))
         if (target is Side) {
             for (side in sides) {
                 if (side.n >= 2 && side.allySide != null) break
                 if (side === target || side === target.allySide) {
-                    handlers.addAll(findSideEventHandlers(side, "on$eventName"))
+                    handlers.addAll(findSideEventHandlers(side, names[0]))
                 } else if (prefixed) {
-                    handlers.addAll(findSideEventHandlers(side, "onFoe$eventName"))
+                    handlers.addAll(findSideEventHandlers(side, names[3]))
                 }
-                if (prefixed) handlers.addAll(findSideEventHandlers(side, "onAny$eventName"))
+                if (prefixed) handlers.addAll(findSideEventHandlers(side, names[2]))
             }
         }
-        handlers.addAll(findFieldEventHandlers(field, "on$eventName"))
+        handlers.addAll(findFieldEventHandlers(field, names[0]))
         return handlers
     }
 
@@ -498,7 +502,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
 
     /** Showdown folds `Conditions[baseSpecies]` (Arceus, Silvally ...) into the species itself. */
     private fun speciesEffect(species: Species): Effect? {
-        val id = Js.toID(species.baseSpecies)
+        val id = species.baseSpeciesId
         return if (id in dex.conditionIds) dex.conditionById(id) else null
     }
 
@@ -1475,6 +1479,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
         val EMPTY_EFFECT: Effect = Effect("", "", "", com.google.gson.JsonObject(), "", emptySet())
         val TOP_EVENT = BattleEvent("", null, null, null)
         private val LEFT_TO_RIGHT_EVENTS = setOf("Invulnerability", "TryHit", "DamagingHit", "EntryHazard")
+        private val CALLBACK_NAMES = java.util.concurrent.ConcurrentHashMap<String, Array<String>>()
         private val UNPREFIXED_EVENTS = setOf("BeforeTurn", "Update", "Weather", "WeatherChange", "TerrainChange")
         private const val DEFAULT_ORDER = 4294967296.0
 

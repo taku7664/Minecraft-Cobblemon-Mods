@@ -192,6 +192,8 @@ class Species(raw: JsonObject) : Effect(
     raw.get("id").asString, raw.get("name").asString, "Pokemon", raw, "", emptySet(),
 ) {
     val baseSpecies: String = string("baseSpecies") ?: name
+    /** [baseSpecies] as an id, which every event's handler lookup asks for. */
+    val baseSpeciesId: String = Js.toID(baseSpecies)
     val forme: String = string("forme") ?: ""
     val types: List<String> = list("types")?.map { it as String } ?: listOf("???")
     val baseStats: Map<String, Int> = map("baseStats")?.mapValues { Js.int(it.value) } ?: emptyMap()

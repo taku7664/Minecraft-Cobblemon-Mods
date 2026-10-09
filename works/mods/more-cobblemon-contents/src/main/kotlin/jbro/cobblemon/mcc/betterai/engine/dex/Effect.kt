@@ -107,19 +107,22 @@ open class Effect(
         callbackName in declaredHooks || (raw.has(callbackName) && !isPriorityField(callbackName))
 
     override fun handler(callbackName: String): Any? {
-        if (handlerCache.containsKey(callbackName)) return handlerCache[callbackName]
+        // One lookup per call: an absent handler is cached as [NO_HANDLER] rather than as null behind containsKey.
+        handlerCache[callbackName]?.let { return if (it === NO_HANDLER) null else it }
         val resolved: Any? = when {
             callbackName in declaredHooks -> EngineHooks.get(hookKey, callbackName) ?: MissingHook(hookKey, callbackName)
             raw.has(callbackName) && !isPriorityField(callbackName) -> JsonValues.convert(raw.get(callbackName))
             else -> EngineHooks.get(hookKey, callbackName)
         }
-        handlerCache[callbackName] = resolved
+        handlerCache[callbackName] = resolved ?: NO_HANDLER
         return resolved
     }
 
     override fun toString(): String = name
 
     companion object {
+        private val NO_HANDLER = Any()
+
         /** Handler names that themselves end in "Priority" (the events FractionalPriority and ModifyPriority). */
         private val PRIORITY_EVENT_HANDLER = Regex("^on(Ally|Foe|Source|Any)?(FractionalPriority|ModifyPriority)$")
 

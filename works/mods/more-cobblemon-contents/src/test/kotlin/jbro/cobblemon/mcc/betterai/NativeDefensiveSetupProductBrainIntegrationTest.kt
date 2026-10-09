@@ -100,7 +100,7 @@ class NativeDefensiveSetupProductBrainIntegrationTest {
                 },
                 nowEpochMillis = { 1_000L },
                 nanoTime = { 5_000_000L },
-                leafEvaluator = { state, _, _, _ -> material(state) },
+                leafEvaluator = { state, _, _, _, _ -> material(state) },
             )
             val evaluation = evaluator.evaluate(
                 context = context,

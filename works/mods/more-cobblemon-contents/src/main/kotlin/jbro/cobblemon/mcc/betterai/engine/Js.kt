@@ -95,6 +95,9 @@ object Js {
             is HasId -> text.id
             else -> return ""
         }
+        // Most calls pass an id already (a Pokemon's item and ability are stored as ids): hand it back unchanged
+        // rather than building the same text again. A search node made thousands of these calls.
+        if (raw.all { it in 'a'..'z' || it in '0'..'9' }) return raw
         val out = StringBuilder(raw.length)
         for (ch in raw) {
             val lower = ch.lowercaseChar()

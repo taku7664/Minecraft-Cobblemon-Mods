@@ -273,7 +273,8 @@ class LocalLookaheadEvaluationTest {
             catalog(allyMoves = listOf(physical, setup), opponentMoves = listOf(opponentSplash)),
         )
         val calculated = PublicBattleTacticalCalculator.calculate(raw)
-        val profile = BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY)
+        // One turn, as this tier searched before every tier took two (b99de0a6).
+        val profile = BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY.copy(lookaheadPlies = 1))
         val ranked = LocalBattleActionPolicy.rank(calculated, null, profile)
         fun evaluated(authority: Double) = LocalRecursiveLookaheadEvaluator.evaluate(
             ranked,
@@ -2367,10 +2368,11 @@ class LocalLookaheadEvaluationTest {
             catalog(allyMoves = listOf(dragonDance), opponentMoves = listOf(splash)),
         )
 
+        // A one-turn search, as Introductory was before every tier took two (b99de0a6).
         val introductory = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(dragonDance)),
             source,
-            BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY),
+            BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY.copy(lookaheadPlies = 1)),
         )
         val advanced = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(dragonDance)),

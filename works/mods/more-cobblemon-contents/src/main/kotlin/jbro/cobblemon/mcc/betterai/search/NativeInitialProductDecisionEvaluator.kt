@@ -24,6 +24,7 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.mcc.betterai.simulation.NativeProductSeedPolicy
 import jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
+import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 
 internal enum class NativeInitialProductDecisionStatus {
     NOT_APPLICABLE,
@@ -104,6 +105,8 @@ private typealias NativeLeafEvaluator = (
     state: BattleStateView,
     source: BattleDecisionContext,
     tuning: LocalDecisionTuning,
+    /** Shared by every leaf of one world, whose [source] is the same: positions a roll apart reuse its work. */
+    cache: LocalProjectedActionCalculationCache,
     shouldContinue: () -> Boolean,
 ) -> Double
 
@@ -115,10 +118,11 @@ internal class NativeInitialProductDecisionEvaluator(
     private val reconcileSession: NativeSessionReconciler = NativeProductSessionReconciler()::reconcile,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val nanoTime: () -> Long = System::nanoTime,
-    private val leafEvaluator: NativeLeafEvaluator = { state, source, tuning, shouldContinue ->
+    private val leafEvaluator: NativeLeafEvaluator = { state, source, tuning, cache, shouldContinue ->
         LocalLookaheadStateEvaluator.evaluate(
             state = state,
             source = source,
+            calculationCache = cache,
             shouldContinue = shouldContinue,
             tuning = tuning,
             includePositionEffects = true,
@@ -193,7 +197,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
                 )
             }
-            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning) {
+            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning, LocalProjectedActionCalculationCache()) {
                 nanoTime() - deadlineNanos < 0L
             }
             if (!value.isFinite() || nanoTime() - deadlineNanos >= 0L) {
@@ -225,6 +229,7 @@ internal class NativeInitialProductDecisionEvaluator(
         val search = searchWorlds(
             NativeProductWorldSearchRequest(
                 worlds = sampledWorlds.map { (world, sampleIndex) ->
+                    val cache = LocalProjectedActionCalculationCache()
                     NativeProductWorldSearchInput(
                         key = NativeSearchWorldKey(world.hypothesisId, sampleIndex),
                         probability = world.probability,
@@ -232,7 +237,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         publicState = world.publicContext.state,
                         publicActionCatalog = world.publicContext.publicActionCatalog,
                         evaluate = { state ->
-                            leafEvaluator(state, world.publicContext, tuning) {
+                            leafEvaluator(state, world.publicContext, tuning, cache) {
                                 nanoTime() - deadlineNanos < 0L
                             }
                         },
@@ -364,7 +369,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     retainedSessionState = retained,
                 )
             }
-            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning) {
+            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning, LocalProjectedActionCalculationCache()) {
                 nanoTime() - deadlineNanos < 0L
             }
             if (!value.isFinite() || nanoTime() - deadlineNanos >= 0L) {
@@ -379,6 +384,7 @@ internal class NativeInitialProductDecisionEvaluator(
         val search = searchWorlds(
             NativeProductWorldSearchRequest(
                 worlds = reconciled.worlds.map { world ->
+                    val cache = LocalProjectedActionCalculationCache()
                     NativeProductWorldSearchInput(
                         key = world.key,
                         probability = world.probability,
@@ -387,7 +393,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         publicActionCatalog = world.publicContext.publicActionCatalog,
                         rootSnapshot = world.rootSnapshot,
                         evaluate = { state ->
-                            leafEvaluator(state, world.publicContext, tuning) {
+                            leafEvaluator(state, world.publicContext, tuning, cache) {
                                 nanoTime() - deadlineNanos < 0L
                             }
                         },

@@ -74,6 +74,12 @@ internal class NativeInformationSetSearch(
     private val rootReport: ((String) -> Unit)? = null,
     /** Lets later turns' bounded switches follow the matchup scores; off only to measure what that changes. */
     private val matchupSwitchTargets: Boolean = true,
+    /**
+     * Stop once every root value is proven and the best root choice has stayed the same for this many more nodes;
+     * null searches on to the node budget. A proof can come undone when a world that never reached a line reaches
+     * it, and the first proven best was not always the last, so the proof alone does not end the search.
+     */
+    private val stableStopNodes: Int? = STABLE_STOP_NODES,
 ) {
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val first = request.worlds.first()
@@ -84,7 +90,7 @@ internal class NativeInformationSetSearch(
         val result = try {
             lease(request.deadlineNanos) { worker ->
                 try {
-                    Run(request, worker, replacementSpendsTurn, rootReport, matchupSwitchTargets).execute()
+                    Run(request, worker, replacementSpendsTurn, rootReport, matchupSwitchTargets, stableStopNodes).execute()
                 } catch (abort: Abort) {
                     abort.result
                 }
@@ -116,6 +122,7 @@ internal class NativeInformationSetSearch(
         private val replacementSpendsTurn: Boolean,
         private val rootReport: ((String) -> Unit)?,
         private val matchupSwitchTargets: Boolean,
+        private val stableStopNodes: Int?,
     ) {
         /**
          * The per-world search's attack-only third turn for Boss setup lines is not taken: it was admitted only
@@ -170,6 +177,8 @@ internal class NativeInformationSetSearch(
             var idleIterations = 0
             var settledAtNodes: Int? = null
             var settledRootValues = emptyMap<String, Double>()
+            var stableTop: String? = null
+            var stableSince = 0
             while (nodesVisited < request.nodeLimit && idleIterations < IDLE_ITERATION_LIMIT) {
                 if (!timeAvailable()) break
                 val draw = random.nextDouble() * mass
@@ -181,6 +190,17 @@ internal class NativeInformationSetSearch(
                 if (settled && settledAtNodes == null) {
                     settledAtNodes = nodesVisited
                     settledRootValues = rootActions.associate { it.actionId to root.ally.getValue(it.actionId).value }
+                }
+                if (settled) {
+                    val top = rootActions.maxBy { root.ally.getValue(it.actionId).value }.actionId
+                    if (top != stableTop) {
+                        stableTop = top
+                        stableSince = nodesVisited
+                    } else if (stableStopNodes != null && nodesVisited - stableSince >= stableStopNodes) {
+                        break
+                    }
+                } else {
+                    stableTop = null
                 }
                 idleIterations = if (settled && nodesVisited == before) idleIterations + 1 else 0
             }
@@ -712,6 +732,7 @@ internal class NativeInformationSetSearch(
         const val EXPLORATION = 0.7
         /** Stop once this many iterations in a row met only positions every world had already reached. */
         const val IDLE_ITERATION_LIMIT = 300
+        const val STABLE_STOP_NODES = 2_000
         const val SEED_BASE = 0x5EED_1A55L
         private val MOVE_SLOT = Regex(":move:\\d+:")
 

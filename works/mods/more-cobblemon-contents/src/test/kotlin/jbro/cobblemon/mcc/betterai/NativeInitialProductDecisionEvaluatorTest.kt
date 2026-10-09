@@ -67,7 +67,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.05 },
+            leafEvaluator = { _, _, _, _, _ -> 0.05 },
         )
 
         val result = evaluator.evaluate(
@@ -162,7 +162,7 @@ class NativeInitialProductDecisionEvaluatorTest {
                 NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
             },
             nowEpochMillis = { 1_000L },
-            leafEvaluator = { _, _, _, _ -> 0.05 },
+            leafEvaluator = { _, _, _, _, _ -> 0.05 },
         )
 
         evaluator.evaluate(
@@ -193,7 +193,7 @@ class NativeInitialProductDecisionEvaluatorTest {
                 },
                 nowEpochMillis = { 1_000L },
                 nanoTime = { 5_000_000L },
-                leafEvaluator = { _, _, _, _ -> 0.1 },
+                leafEvaluator = { _, _, _, _, _ -> 0.1 },
             )
             val profile = BattleTrainerProfile.boss()
             val budget = LocalLookaheadBudgetPolicy.forFormat(LocalLookaheadBudget(250L, 100, 1), format)
@@ -218,7 +218,7 @@ class NativeInitialProductDecisionEvaluatorTest {
                 NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
             },
             nowEpochMillis = { 1_000L },
-            leafEvaluator = { _, _, _, _ -> 0.05 },
+            leafEvaluator = { _, _, _, _, _ -> 0.05 },
         )
         val context = context().let { it.copy(candidates = it.candidates + tera) }
 
@@ -248,7 +248,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.1 },
+            leafEvaluator = { _, _, _, _, _ -> 0.1 },
         )
 
         evaluator.evaluate(current, BattleTrainerProfile.boss(), LocalDecisionTuning.CURRENT,
@@ -272,7 +272,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.1 },
+            leafEvaluator = { _, _, _, _, _ -> 0.1 },
         )
 
         val result = evaluator.evaluate(current, BattleTrainerProfile.boss(), LocalDecisionTuning.CURRENT,
@@ -418,7 +418,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> baselineCalls++; 0.0 },
+            leafEvaluator = { _, _, _, _, _ -> baselineCalls++; 0.0 },
         )
 
         val result = evaluator.evaluate(
@@ -459,7 +459,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.0 },
+            leafEvaluator = { _, _, _, _, _ -> 0.0 },
         )
 
         val result = evaluator.evaluate(
@@ -509,7 +509,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.1 },
+            leafEvaluator = { _, _, _, _, _ -> 0.1 },
         )
 
         val result = evaluator.evaluate(
@@ -586,7 +586,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             ) },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> 0.0 },
+            leafEvaluator = { _, _, _, _, _ -> 0.0 },
         )
 
         val result = evaluator.evaluate(
