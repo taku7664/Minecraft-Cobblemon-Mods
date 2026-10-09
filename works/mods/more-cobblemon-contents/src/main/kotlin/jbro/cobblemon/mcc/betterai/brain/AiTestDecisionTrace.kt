@@ -72,7 +72,7 @@ internal class AiTestDecisionTrace private constructor(
         logger.info(
             "[BetterAI Trace] battle={} turn={} phase=search engine=native status={} search={} requestedDepth={} completedDepth={} nodes={} nodeLimit={} timeLimitMs={} truncated={} worlds={} failedWorld={} failedRun={} detail={} elapsed_s={}",
             battleId, turn, result.status, result.searchStatus ?: "-", requestedDepth,
-            result.depthCompleted, result.nodesVisited, budget.nodeLimit, budget.timeMillis,
+            result.depthCompleted, result.nodesVisited, budget.nativeNodeLimit, budget.timeMillis,
             result.truncated, result.sessionState?.worlds?.size ?: 0,
             result.failedWorldId ?: "-", result.failedRunStatus ?: "-", result.failedRunDetail ?: "-",
             elapsedSeconds(),

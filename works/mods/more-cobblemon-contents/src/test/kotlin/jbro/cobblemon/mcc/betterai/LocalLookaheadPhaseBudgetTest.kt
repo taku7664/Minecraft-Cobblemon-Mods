@@ -22,6 +22,18 @@ class LocalLookaheadPhaseBudgetTest {
         assertEquals(boss.timeMillis, budget(1, 1).timeMillis)
     }
 
+    @Test
+    fun `the native search sees a third turn on more nodes once two or fewer of its own are left`() {
+        val boss = LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS)
+        fun budget(ally: Int, opponent: Int) = LocalLookaheadBudgetPolicy.forNativePosition(boss, state(ally, opponent))
+        assertEquals(20_000, boss.nativeNodeLimit)
+        assertEquals(boss, budget(3, 1))
+        assertEquals(3, budget(2, 6).nativePlies)
+        assertEquals(40_000, budget(2, 6).nativeNodeLimit)
+        assertEquals(60_000, budget(1, 6).nativeNodeLimit)
+        assertEquals(boss.timeMillis, budget(1, 1).timeMillis)
+    }
+
     private fun state(ally: Int, opponent: Int) = BattleStateView(UUID(0, 1), BattleFormat.DOUBLE, 5, emptyList(),
         BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to ally, BattleSide.OPPONENT to opponent), emptyList(), emptyList())
 }

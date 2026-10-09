@@ -318,7 +318,7 @@ internal class LocalTacticalBrain(
         } else configuredBudget
         // AI test battles play on the same clock as real ones; they only add the snapshot and the trace.
         val budget = phaseBudget
-        val nativeBudget = configuredBudget
+        val nativeBudget = LocalLookaheadBudgetPolicy.forNativePosition(configuredBudget, calculatedContext.state)
         val continuingNative = active?.nativeProductState != null
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
@@ -327,7 +327,7 @@ internal class LocalTacticalBrain(
             nativeBudget,
             active?.nativeProductState,
         )
-        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, nativeBudget)
+        decisionTrace?.nativeSearch(nativeInitial, nativeBudget.nativePlies ?: profile.difficulty.lookaheadPlies, nativeBudget)
         var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
         // Roots that reconciled with the current board survive a failed native search. The legacy
         // choice made this turn becomes their pending action, so the next turn can continue natively
@@ -373,7 +373,7 @@ internal class LocalTacticalBrain(
                                 "choice_seed_${selection.seed.toULong().toString(16)}",
                                 "difficulty_${profile.difficulty.tier.name.lowercase()}",
                                 "lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
-                                    else profile.difficulty.lookaheadPlies}",
+                                    else nativeBudget.nativePlies ?: profile.difficulty.lookaheadPlies}",
                                 "lookahead_turns_${nativeInitial.depthCompleted}",
                                 "lookahead_nodes_${nativeInitial.nodesVisited}",
                                 "native_search_${nativeSearchStatus.name.lowercase(Locale.ROOT)}",

@@ -1289,7 +1289,8 @@ fun interface BattleBrainFactory {
 }
 
 object BattleBrainDefaults {
-    const val DECISION_TIMEOUT_MILLIS: Long = 20_000L
+    /** The native search's 40 s safety ceiling plus room for preparing and selecting around it. */
+    const val DECISION_TIMEOUT_MILLIS: Long = 45_000L
 }
 
 enum class BattleDecisionValidationStatus { VALID, STALE_REQUEST, UNKNOWN_ACTION, DEADLINE_EXPIRED }

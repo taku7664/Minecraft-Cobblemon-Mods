@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.search
 
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 internal data class LocalLookaheadBudget(
@@ -15,9 +16,18 @@ internal data class LocalLookaheadBudget(
     val opponentResponseLimit: Int? = null,
     /** Whether this side's last simulated turn considers only its damaging moves. */
     val finalPlyAttacksOnly: Boolean = false,
+    /**
+     * The native search's node budget. Its nodes are whole Showdown turns, far dearer than the legacy
+     * projector's, so the two do not share [nodeLimit]; unset, it is [nodeLimit].
+     */
+    val nativeNodeLimit: Int = nodeLimit,
+    /** Turns the native search plays; null keeps the difficulty's own horizon. */
+    val nativePlies: Int? = null,
 ) {
     init {
         require(opponentResponseLimit == null || opponentResponseLimit > 0)
+        require(nativeNodeLimit > 0)
+        require(nativePlies == null || nativePlies > 0)
     }
 }
 
@@ -32,12 +42,11 @@ internal data class LocalLookaheadBudget(
  */
 internal object LocalLookaheadBudgetPolicy {
     /**
-     * One wall-clock ceiling for every tier; the node and chance-branch limits make the tiers differ. At
-     * 1.5 s a Boss doubles search stopped before finishing a single turn in 20 of 22 decisions of a real
-     * battle, so the clock, not the tier, decided how far it saw. Once level 100 teams stopped skipping the
-     * search, 10 s made a Boss turn feel stalled; 6 s is the player's wait the whole decision may take.
+     * A safety ceiling only, the same for every tier: the native node budgets decide how far a decision sees.
+     * Under a 6 s clock the depth followed the host's load instead; a real Boss battle saw 760 to 3,332 nodes
+     * a turn where finishing two turns took 22,782 to 33,685.
      */
-    const val MAX_TIME_MILLIS = 6_000L
+    const val MAX_TIME_MILLIS = 40_000L
 
     /**
      * Every tier searches two turns on the Boss node budget; the tiers differ in breadth instead. A one-turn
@@ -49,6 +58,7 @@ internal object LocalLookaheadBudgetPolicy {
         BattleTrainerTier.INTRODUCTORY -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
             nodeLimit = NODE_LIMIT,
+            nativeNodeLimit = 2_500,
             chanceBranchesPerMove = 16,
             opponentResponseLimit = 2,
             finalPlyAttacksOnly = true,
@@ -56,6 +66,7 @@ internal object LocalLookaheadBudgetPolicy {
         BattleTrainerTier.STANDARD -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
             nodeLimit = NODE_LIMIT,
+            nativeNodeLimit = 5_000,
             chanceBranchesPerMove = 24,
             opponentResponseLimit = 3,
             finalPlyAttacksOnly = true,
@@ -63,12 +74,14 @@ internal object LocalLookaheadBudgetPolicy {
         BattleTrainerTier.ADVANCED -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
             nodeLimit = NODE_LIMIT,
+            nativeNodeLimit = 10_000,
             chanceBranchesPerMove = 40,
             opponentResponseLimit = 5,
         )
         BattleTrainerTier.BOSS -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
             nodeLimit = NODE_LIMIT,
+            nativeNodeLimit = 20_000,
             chanceBranchesPerMove = 64,
         )
     }
@@ -91,6 +104,18 @@ internal object LocalLookaheadBudgetPolicy {
         return if (factor == 1) budget else budget.copy(nodeLimit = budget.nodeLimit * factor)
     }
 
+    /**
+     * With two or fewer Pokemon of its own left, the native search sees a third turn on a larger node budget:
+     * the tree is small by then and each choice decides the battle. Twice the nodes with two left, three
+     * times with one.
+     */
+    fun forNativePosition(budget: LocalLookaheadBudget, state: BattleStateView): LocalLookaheadBudget {
+        val own = state.remainingPokemonBySide[BattleSide.ALLY] ?: return budget
+        if (own > NATIVE_ENDGAME_OWN || budget.nativeNodeLimit == Int.MAX_VALUE) return budget
+        val factor = if (own <= 1) ENDGAME_NODE_FACTOR else LATE_NODE_FACTOR
+        return budget.copy(nativeNodeLimit = budget.nativeNodeLimit * factor, nativePlies = NATIVE_ENDGAME_PLIES)
+    }
+
     /** Doubles resolves one turn without a node ceiling; its existing clock ceiling still applies. */
     fun forFormat(budget: LocalLookaheadBudget, format: BattleFormat): LocalLookaheadBudget =
         if (format == BattleFormat.DOUBLE) budget.copy(nodeLimit = Int.MAX_VALUE) else budget
@@ -100,6 +125,8 @@ internal object LocalLookaheadBudgetPolicy {
     const val LATE_REMAINING = 5
     const val ENDGAME_NODE_FACTOR = 3
     const val LATE_NODE_FACTOR = 2
+    const val NATIVE_ENDGAME_OWN = 2
+    const val NATIVE_ENDGAME_PLIES = 3
 
     fun deadline(startMillis: Long, externalDeadlineMillis: Long, budgetMillis: Long): Long {
         val localDeadline = if (startMillis > Long.MAX_VALUE - budgetMillis) {

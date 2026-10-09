@@ -314,8 +314,8 @@ class BattleDecisionContractTest {
     }
 
     @Test
-    fun `decision deadline allows a fifteen second router budget`() {
-        assertEquals(20_000L, BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
+    fun `decision deadline covers the native search's forty second ceiling`() {
+        assertEquals(45_000L, BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
     }
 
     @Test

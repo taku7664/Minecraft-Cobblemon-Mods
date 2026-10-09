@@ -222,7 +222,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 },
                 productActions = context.candidates,
                 maxDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
-                    else profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                    else (budget.nativePlies ?: profile.difficulty.lookaheadPlies).coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
@@ -232,7 +232,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,
             ),
@@ -326,7 +326,7 @@ internal class NativeInitialProductDecisionEvaluator(
             "An available native reconciliation must return its conditioned session"
         }
         val retained = reconciled.copy(allowedMechanics = allowedMechanics)
-        if (budget.nodeLimit < reconciled.worlds.size) {
+        if (budget.nativeNodeLimit < reconciled.worlds.size) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                 searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
@@ -374,7 +374,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 },
                 productActions = context.candidates,
                 maxDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
-                    else profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                    else (budget.nativePlies ?: profile.difficulty.lookaheadPlies).coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
@@ -384,7 +384,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
-                nodeLimit = budget.nodeLimit,
+                nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,
             ),
