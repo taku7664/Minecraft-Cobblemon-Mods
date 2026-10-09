@@ -183,7 +183,9 @@ internal object NativeBattleRootValidator {
             if (publicTypes.isNotEmpty() && publicTypes != actualTypes) {
                 issue(issues, NativeBattleRootIssueCode.TYPE_MISMATCH, id)
             }
-            public.knownAbilityId?.let { known ->
+            // A fainted Pokemon never acts again, and the game reports one with no ability ("noability") or reverted
+            // out of its Mega forme: every rebuild after a Mega Garchomp fainted failed here.
+            public.knownAbilityId?.takeUnless { bothFainted }?.let { known ->
                 if (normalizedId(known) != normalizedId(actual.knownAbilityId.orEmpty())) {
                     issue(issues, NativeBattleRootIssueCode.ABILITY_MISMATCH, id)
                 }
