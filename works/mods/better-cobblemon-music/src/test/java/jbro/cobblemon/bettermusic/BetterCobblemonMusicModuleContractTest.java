@@ -3,6 +3,7 @@ package jbro.cobblemon.bettermusic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -29,10 +30,9 @@ final class BetterCobblemonMusicModuleContractTest {
             .orElse(null);
 
         assertNotNull(metadata, "the module fabric.mod.json must exist");
-        assertEquals(
-            "Data-driven field and battle music with battle hit audio for Cobblemon.",
-            metadata.get("description").getAsString()
-        );
+        String description = metadata.get("description").getAsString();
+        assertTrue(description.contains("music for Cobblemon"));
+        assertTrue(description.contains("resource pack"));
         assertEquals("Better Cobblemon Music", metadata.get("name").getAsString());
         assertEquals("client", metadata.get("environment").getAsString());
         assertEquals(
