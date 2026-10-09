@@ -1,5 +1,11 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-09 20:56] 전투 BGM 감쇠팩 개발 클라이언트 적용
+
+- `746e4639`의 Music 소스·리소스가 `main`과 `origin/main`에 올라간 것을 확인했다. 이 소스와 동일한 빌드 ZIP SHA-256은 `AFBB27FC33390357E91F37DDA2BEC38CA30D1C8220EED2EBBE40441D19BF8DC8`이다.
+- `cobblemon-dev` 게임 프로세스가 없을 때 선택된 `better-cobblemon-music-resourcepack-1.3.18.zip`을 교체했다. 설치 ZIP과 빌드 ZIP의 SHA-256이 같다. 같은 이름의 압축 해제 폴더도 갱신했고, 94개 파일이 생성본과 각각 SHA-256이 일치한다. `options.txt`는 이미 해당 ZIP을 선택하고 있어 수정하지 않았다.
+- 모드 JAR·개인 `settings.json`/`overrides.json`·다른 팩·서버·릴리스 제품은 변경하지 않았다. 게임을 실행하거나 실제 청취는 하지 않았다.
+
 ## [2026-10-09 20:53] 공식 전투 BGM 61곡의 음원 음량 조정
 
 - 빡대리님 요청대로 공식 팩 `sounds/music/battle/`의 야생·트레이너·체육관·사천왕·챔피언·PvP·보스·울트라비스트·전설 BGM 61곡을 각각 기존 실측 RMS 음량의 약 60%로 낮췄다. 필드·메뉴 BGM과 `sounds/battle/`의 타격음·저체력 경고음은 변경하지 않았다. 전설곡은 이전 1.3배 증폭본을 입력으로 삼아 기존 곡별 차이를 보존했다.
