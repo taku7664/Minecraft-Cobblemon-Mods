@@ -10,6 +10,8 @@
 | 클라이언트 | 저장소 `develop-product/client` | `%APPDATA%/ModrinthApp/profiles/PPakemon` |
 
 서버는 기존 로컬 패쳐의 설정·월드·플레이어·광장 보존 및 기능 파일 복구를 그대로 사용합니다.
+서버 복사에서는 JourneyMap 모드·설정, BlueMap 비활성 지도 설정, Showdown 예제와 문의 번역 파일을 제외합니다.
+BlueMap 저장소 설정은 개발·운영 서버의 활성 지도가 사용하는 백엔드와 기본 `file`만 포함하며, 표기를 해석하지 못하면 전체를 유지합니다.
 클라이언트는 모드·시작 훅·위키·지정 기능 리소스팩을 갱신하며 위키 외 개인 컨픽·단축키·셋업 기록·
 서버 목록·월드·지도·추가 모드·셰이더를 보존합니다. 자세한 범위는
 [`../client-patch/README.md`](../client-patch/README.md)에 있습니다.

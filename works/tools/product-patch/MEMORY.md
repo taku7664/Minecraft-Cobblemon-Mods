@@ -1,3 +1,12 @@
+# [2026-10-09 19:52] 로컬 서버 패쳐의 불필요 파일 필터 보완
+
+- 로컬 전용 `works/tools/server-deploy/server-deployment.psm1`의 `Test-PrivatePath`가 JourneyMap 설정, BlueMap `disabled-maps/`, Showdown `translations/<언어>/helptickets.js`와 `sim/examples/`를 제외합니다. 모드는 실제 ID `journeymap`으로 제외합니다. 이 원본과 `server-deployment.tests.ps1`은 계속 Git-ignored이며 원격에 게시하지 않습니다.
+- BlueMap `storages/*.conf`는 개발·운영 서버 양쪽의 활성 `maps/*.conf`에서 선택한 백엔드와 기본 `file`만 포함합니다. 저장소 표기를 해석하지 못하면 전체를 유지해 운영 백엔드가 누락되지 않도록 했습니다.
+- 기록 담당자가 원본과 `develop-product/tools/patcher/server/server-deployment.psm1`의 SHA-256 일치를 확인했습니다: `7EBB251D84BEC6B6F468FC8A7715CCA5D31AA0E8731FC478E62B36BA372D5708`. 메인 작업자 보고 기준으로 클라이언트를 포함한 다른 설치 파일 4개의 해시는 불변입니다.
+- 메인 작업자 보고 기준으로 Windows PowerShell 5.1과 PowerShell 7에서 각각 테스트 24개가 통과했으며 새 제외 규칙과 운영 SQL 선택 보존을 포함합니다. `product-patch.tests.ps1`도 PowerShell 5.1 `-STA`에서 BAT 상대 경로·서버/클라이언트 두 탭·검사 전 적용 비활성화를 통과했습니다. 실제 로컬 서버 미리보기는 19개(추가 2·교체 17), 약 12.46 MiB이며 주로 위키·MCC/league JAR·위키 묶음·시작 훅입니다. 불필요 파일 패턴은 0개로 확인됐습니다. 이 기록 담당자는 테스트를 재실행하지 않았습니다.
+- 앞선 개발 서버 정리에서는 808개 파일(245.91 MiB)을 서버 밖 `build/server-cleanup-20261009-d6011a4cf5cc47a885b14355c2179179/`로 옮기고 나머지 5,170개의 SHA-256 보존을 확인했다고 메인 작업자가 보고했습니다.
+- 패쳐 설치본만 갱신했고 게임 기능 파일은 적용하지 않았습니다. 서버 기동·실게임은 미검증입니다. 이 기록의 커밋·푸시는 메인 작업자가 별도로 담당합니다.
+
 # [2026-10-09 19:38] main 반영·로컬 설치·두 탭 검사 완료
 
 - 메인 작업자 보고 기준으로 최초 구현은 `a44dee8aac69a65a8d80f813f745b038d6eac04f`에서 main에 병합했습니다. 실제 BAT가 전달하는 `develop-product/..` 경로로 서버 대상 경로를 잘못 계산하는 결함을 회귀 테스트로 재현하고 저장소 경로를 `GetFullPath`로 정규화했습니다. 수정 커밋은 `995e1d82`, 최종 main 병합은 `1c04d9d0b3567169a673d992751d7f46a912b9d9`입니다. 이 main과 `origin/main`·`ls-remote`의 일치를 확인했습니다.
