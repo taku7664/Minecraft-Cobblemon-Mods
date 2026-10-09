@@ -110,3 +110,9 @@ works/mods/better-cobblemon-music/music-input/**/*.aac
 
 # Keep the Gradle wrapper JAR tracked.
 !gradle/wrapper/gradle-wrapper.jar
+
+# Local-only DEV-to-production patcher. Never ship to the cloud server.
+/works/tools/server-deploy/deploy-from-dev.bat
+/works/tools/server-deploy/deploy-server.ps1
+/works/tools/server-deploy/server-deployment.psm1
+/works/tools/server-deploy/server-deployment.tests.ps1
