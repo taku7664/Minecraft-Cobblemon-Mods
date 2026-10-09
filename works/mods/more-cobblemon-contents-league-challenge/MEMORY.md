@@ -10,6 +10,7 @@
 ## [2026-10-09 16:35] 역할 NPC 월드 가중치 150 → 15
 
 - **사용자 결정:** 역할 NPC가 너무 자주 나온다 → 15. 트레이너 50은 그대로. 트레이너를 50으로 줄이면서 역할을 150으로 둬 역할이 트레이너의 3배가 됐던 것을 바로잡았다. 평원 낮 약 0.1%, 숲 낮 약 0.25%(추정).
+- **빌드·배치:** `main` = `origin/main` = `f64ffb42`에서 `remapJar`(테스트 안 함), `jar --validate` 통과, JAR 안 월드 가중치 50/15 확인. `develop-product/server/mods`·`client/mods` 교체, SHA-256 일치(`a4ae1a2e…`). 이전 JAR은 `develop-product/deployment-backups/20261009-wild-npc-weight-15/`. 서버·게임 꺼진 상태, 켜지 않음. 실게임 미확인.
 
 ## [2026-10-09 16:22] 스폰 그룹 구조 빌드·개발 배치
 
