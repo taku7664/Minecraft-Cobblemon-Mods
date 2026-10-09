@@ -21,7 +21,7 @@ runs/
 /deploy-product/**/*
 !/deploy-product/*/
 !/deploy-product/*/VERSION.txt
-!/deploy-product/server/MineCraftPPakemonServer.lnk
+!/deploy-product/server/MinecraftPPakemonServer.lnk
 /docs/
 logs/
 crash-reports/
