@@ -100,6 +100,8 @@ public final class MusicResourcePackBuildTool {
         JsonObject configuredTitles = catalog.has("trackTitles")
             ? requiredObject(catalog, "trackTitles", "catalog layout") : new JsonObject();
         catalog.remove("trackTitles");
+        double battleSoundVolume = battleSoundVolume(catalog);
+        catalog.remove("battleSoundVolume");
         JsonObject tracks = new JsonObject();
         JsonObject playlists = requiredObject(catalog, "playlists", "catalog layout");
         JsonObject sounds = new JsonObject();
@@ -127,7 +129,8 @@ public final class MusicResourcePackBuildTool {
                 }
                 track.add("legacyPaths", legacyPaths);
                 tracks.add(trackId, track);
-                sounds.add(eventPath, soundDefinition(NAMESPACE + ":" + soundPath, true));
+                sounds.add(eventPath, soundDefinition(NAMESPACE + ":" + soundPath, true,
+                    trackPath.startsWith("battle/") ? battleSoundVolume : 1.0));
                 String implicitPlaylistId = NAMESPACE + ":track/" + trackPath;
                 if (playlists.has(implicitPlaylistId)) {
                     throw new IOException("Catalog layout conflicts with implicit playlist " + implicitPlaylistId);
@@ -192,16 +195,38 @@ public final class MusicResourcePackBuildTool {
     }
 
     private static JsonObject soundDefinition(String name, boolean stream) {
+        return soundDefinition(name, stream, 1.0);
+    }
+
+    private static JsonObject soundDefinition(String name, boolean stream, double volume) {
         JsonObject sound = new JsonObject();
         sound.addProperty("name", name);
         if (stream) {
             sound.addProperty("stream", true);
+        }
+        if (volume != 1.0) {
+            sound.addProperty("volume", volume);
         }
         JsonArray definitions = new JsonArray();
         definitions.add(sound);
         JsonObject event = new JsonObject();
         event.add("sounds", definitions);
         return event;
+    }
+
+    private static double battleSoundVolume(JsonObject catalog) throws IOException {
+        if (!catalog.has("battleSoundVolume")) {
+            return 1.0;
+        }
+        var value = catalog.get("battleSoundVolume");
+        if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()) {
+            throw new IOException("battleSoundVolume must be a number between 0 and 1");
+        }
+        double volume = value.getAsDouble();
+        if (!Double.isFinite(volume) || volume < 0.0 || volume > 1.0) {
+            throw new IOException("battleSoundVolume must be a number between 0 and 1");
+        }
+        return volume;
     }
 
     private static String title(String trackPath) {

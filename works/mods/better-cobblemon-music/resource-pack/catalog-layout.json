@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "packId": "better_cobblemon_music:official",
   "kind": "base",
+  "battleSoundVolume": 0.713,
   "legacyAliases": {
     "better_cobblemon_music:battle/legendary/frlg_deoxys_battle_music": [
       "battle/legendary/frlg_deoxys_battle.ogg"

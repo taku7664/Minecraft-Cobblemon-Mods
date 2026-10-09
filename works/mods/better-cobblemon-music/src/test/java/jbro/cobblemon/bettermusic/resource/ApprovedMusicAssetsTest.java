@@ -50,6 +50,18 @@ final class ApprovedMusicAssetsTest {
             entry.getValue().getAsJsonObject().get("event").getAsString().substring("better_cobblemon_music:".length())));
         expectedEvents.addAll(Set.of("battle.hit.normal", "battle.hit.super_effective", "battle.hit.not_very_effective", "battle.low_hp.alert"));
         assertEquals(expectedEvents, sounds.keySet(), "Removed music events must not remain selectable");
+        long attenuated = 0;
+        for (var entry : sounds.entrySet()) {
+            var sound = entry.getValue().getAsJsonObject().getAsJsonArray("sounds")
+                .get(0).getAsJsonObject();
+            if (entry.getKey().startsWith("music.track.battle.")) {
+                assertEquals(0.713, sound.get("volume").getAsDouble(), entry.getKey());
+                attenuated++;
+            } else {
+                assertEquals(false, sound.has("volume"), entry.getKey());
+            }
+        }
+        assertEquals(61, attenuated, "Only the official battle BGMs should be attenuated");
     }
 
     private static JsonObject read(Path file) throws Exception {

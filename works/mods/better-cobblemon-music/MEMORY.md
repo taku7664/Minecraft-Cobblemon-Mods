@@ -1,5 +1,11 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-10 05:35] 음악 슬라이더 100%에 맞춘 전투 BGM 재생 음량 조정
+
+- 결정·소스: 빡대리님은 Minecraft 음악 슬라이더를 71.3028%에서 100%로 올리면 필드곡은 적당하지만 전투곡은 크다고 확인하셨다. 공식 팩의 `catalog-layout.json`에 `battleSoundVolume: 0.713`을 추가하고, `MusicResourcePackBuildTool`이 `sounds.json`의 `music.track.battle.*` 61개에만 `volume: 0.713`을 생성하도록 했다. OGG는 다시 인코딩하지 않는다.
+- 빌드 검증: 원본 OGG 87개와 생성본의 해시가 모두 같고, 필드곡·효과음에는 `volume` 값이 없다. ZIP SHA-256은 `F571FED8FF06727EC3FA6E39612D6E2513B2E8F666690C80F8DC6652CE9FE34E`(189,477,253바이트). 처음에는 기존 `BetterCobblemonMusicModuleContractTest`가 낡은 설명문과 비교해 1개 실패했으나, 현재 메타데이터의 핵심 문구를 검사하도록 별도로 고쳤다. 이후 `:better-cobblemon-music:unitTest` 전체 175개 통과.
+- 배포·실게임: 개발 게임이 실행 중이라 설치본은 교체하지 않았다. 실제 청취도 확인하지 않았다.
+
 ## [2026-10-09 20:56] 전투 BGM 감쇠팩 개발 클라이언트 적용
 
 - `746e4639`의 Music 소스·리소스가 `main`과 `origin/main`에 올라간 것을 확인했다. 이 소스와 동일한 빌드 ZIP SHA-256은 `AFBB27FC33390357E91F37DDA2BEC38CA30D1C8220EED2EBBE40441D19BF8DC8`이다.
