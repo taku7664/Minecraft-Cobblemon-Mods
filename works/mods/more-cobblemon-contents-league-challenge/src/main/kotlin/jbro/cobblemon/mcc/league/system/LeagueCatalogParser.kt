@@ -57,10 +57,12 @@ private fun wildLevel(league: JsonObject): WildLevelRule {
     val defaults = WildLevelRule()
     if (!league.has("wild_level") || league.get("wild_level").isJsonNull) return defaults
     val rule = league.get("wild_level").also { require(it.isJsonObject) { "Expected object: wild_level" } }.asJsonObject
+    require(!rule.has("floor_level")) { "wild_level.floor_level is obsolete; use region_min, region_max and transition_regions" }
     fun field(key: String, fallback: Int) = if (rule.has(key)) rule.number(key).toInt() else fallback
     return WildLevelRule(
         field("below_cap", defaults.belowCap), field("spread", defaults.spread), field("region_chunks", defaults.regionChunks),
-        field("floor_level", defaults.floorLevel),
+        field("region_min", defaults.regionMin), field("region_max", defaults.regionMax),
+        field("transition_regions", defaults.transitionRegions),
     )
 }
 

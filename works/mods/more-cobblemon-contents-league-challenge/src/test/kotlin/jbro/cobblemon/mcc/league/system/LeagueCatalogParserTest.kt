@@ -33,8 +33,8 @@ class LeagueCatalogParserTest {
         }
     }
 
-    @Test fun `the bundled league spawns wild Pokemon from level ten up to three below the cap, leaning by four chunk areas`() {
-        assertEquals(WildLevelRule(belowCap = 10, spread = 7, regionChunks = 8, floorLevel = 10), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
+    @Test fun `the bundled league uses fixed ten to eighty three regions and a six plus or minus three spawn band`() {
+        assertEquals(WildLevelRule(), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
     }
 
     @Test fun `wild level fields are optional and each falls back alone`() {
@@ -47,6 +47,13 @@ class LeagueCatalogParserTest {
         resources["leagues"] = mapOf("$ns:active" to root.toString())
         assertEquals(WildLevelRule(spread = 3), LeagueCatalogParser.parse(resources, "$ns:active").wildLevel)
         root.add("wild_level", JsonParser.parseString("{\"region_chunks\":0}"))
+        resources["leagues"] = mapOf("$ns:active" to root.toString())
+        assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
+        root.add("wild_level", JsonParser.parseString("{\"region_min\":20,\"region_max\":70,\"transition_regions\":8}"))
+        resources["leagues"] = mapOf("$ns:active" to root.toString())
+        assertEquals(WildLevelRule(regionMin = 20, regionMax = 70, transitionRegions = 8),
+            LeagueCatalogParser.parse(resources, "$ns:active").wildLevel)
+        root.add("wild_level", JsonParser.parseString("{\"floor_level\":10}"))
         resources["leagues"] = mapOf("$ns:active" to root.toString())
         assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
     }

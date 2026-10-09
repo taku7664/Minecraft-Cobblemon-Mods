@@ -1,5 +1,7 @@
 # League 야생 스폰 레벨
 
+> 2026-10-09 종료. 현재 계약은 [WILD_SPAWN_LEVELS_V2.md](WILD_SPAWN_LEVELS_V2.md)가 이 문서를 대체한다. 아래 본문은 변경 이력으로만 보존하며 기존 규칙의 호환 분기를 유지하지 않는다.
+
 | 항목 | 값 |
 | --- | --- |
 | Status | `shared` |

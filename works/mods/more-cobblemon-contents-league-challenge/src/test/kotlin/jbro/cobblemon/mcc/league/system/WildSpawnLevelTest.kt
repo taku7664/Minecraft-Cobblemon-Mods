@@ -1,79 +1,48 @@
 package jbro.cobblemon.mcc.league.system
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import kotlin.math.abs
 
 class WildSpawnLevelTest {
     private val rule = WildLevelRule()
-    private val rolls = (0 until 1000).map { it / 1000.0 }
 
-    @Test fun `spawns run from level ten up to three below the cap`() {
-        for (lean in listOf(-1.0, -0.4, 0.0, 0.6, 1.0)) {
-            val levels = rolls.map { WildSpawnLevel.roll(100, rule, lean, it) }
-            assertTrue(levels.all { it in 10..97 }, "lean $lean")
-            // The whole range stays reachable wherever the area leans.
-            assertEquals(10, WildSpawnLevel.roll(100, rule, lean, 0.0), "lean $lean")
-            assertEquals(97, WildSpawnLevel.roll(100, rule, lean, 0.999999), "lean $lean")
+    @Test fun `a high region grows with the player cap without changing its actual level`() {
+        assertEquals(15..21, rule.range(24, 83))
+        assertEquals(74..80, rule.range(100, 83))
+        assertEquals(1..7, rule.range(100, 10))
+        assertEquals(11..17, rule.range(100, 20))
+    }
+
+    @Test fun `spawn levels never use the ten to eighty three regional bounds`() {
+        assertEquals(1, WildSpawnLevel.roll(100, rule, 10, 0.0))
+        assertEquals(7, WildSpawnLevel.roll(100, rule, 10, 0.999999))
+        assertEquals(74, WildSpawnLevel.roll(100, rule, 83, 0.0))
+        assertEquals(80, WildSpawnLevel.roll(100, rule, 83, 0.999999))
+    }
+
+    @Test fun `cap limiting comes before uniform sampling rather than collapsing every roll to the ceiling`() {
+        val counts = (0 until 700).map { WildSpawnLevel.roll(24, rule, 83, it / 700.0) }.groupingBy { it }.eachCount()
+        assertEquals((15..21).toSet(), counts.keys)
+        assertTrue(counts.values.all { it in 99..101 }, counts.toString())
+    }
+
+    @Test fun `every ordinary cap and region preserves the player buffer and a narrow band`() {
+        for (cap in 4..100) for (region in 10..83) {
+            val levels = listOf(0.0, 0.1, 0.5, 0.9, 0.999999).map { WildSpawnLevel.roll(cap, rule, region, it) }
+            assertTrue(levels.all { it in 1..(cap - 3) })
+            assertTrue(levels.max() - levels.min() <= 6)
+            assertEquals(rule.range(cap, region).first, levels.first())
+            assertEquals(rule.range(cap, region).last, levels.last())
         }
     }
 
-    @Test fun `a cap too low to reach the floor keeps seven levels either side of ten below it`() {
-        assertEquals(1..13, rule.range(16))
-        assertEquals(6..20, rule.range(23))
-        assertEquals(10..31, rule.range(34))
-        assertEquals(10..97, rule.range(100))
-    }
-
-    @Test fun `an even area spreads spawns evenly across the range`() {
-        val levels = rolls.map { WildSpawnLevel.roll(100, rule, 0.0, it) }
-        assertEquals(53.5, levels.average(), 0.2)
-    }
-
-    @Test fun `a strong area favours the high end and a weak one the low end`() {
-        val weak = rolls.map { WildSpawnLevel.roll(100, rule, -1.0, it) }.average()
-        val strong = rolls.map { WildSpawnLevel.roll(100, rule, 1.0, it) }.average()
-        assertTrue(weak < 40.0, "weak $weak")
-        assertTrue(strong > 67.0, "strong $strong")
-    }
-
-    @Test fun `low caps never create a zero level pokemon and spawns never exceed the cap`() {
-        assertEquals(1, WildSpawnLevel.roll(5, rule, -1.0, 0.0))
-        val tight = WildLevelRule(belowCap = 2, spread = 7)
-        assertTrue(rolls.all { WildSpawnLevel.roll(30, tight, 1.0, it) <= 30 })
-    }
-
-    @Test fun `invalid inputs are rejected`() {
-        assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(50, rule, 1.5, 0.5) }
-        assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(50, rule, 0.0, 1.0) }
-        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(spread = -1) }
+    @Test fun `invalid inputs and a configuration that removes the buffer are rejected`() {
+        assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(50, rule, 83, 1.0) }
+        assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(50, rule, 9, 0.5) }
+        assertThrows(IllegalArgumentException::class.java) { WildSpawnLevel.roll(0, rule, 20, 0.5) }
+        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(belowCap = 3, spread = 1) }
         assertThrows(IllegalArgumentException::class.java) { WildLevelRule(regionChunks = 0) }
-        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(floorLevel = 0) }
-    }
-
-    @Test fun `a chunk's lean is fixed by the world and stays within range`() {
-        val lean = WildSpawnRegions.lean(1234L, "minecraft:overworld", 10, -3, 4)
-        assertEquals(lean, WildSpawnRegions.lean(1234L, "minecraft:overworld", 10, -3, 4))
-        assertNotEquals(lean, WildSpawnRegions.lean(99L, "minecraft:overworld", 10, -3, 4))
-        assertNotEquals(lean, WildSpawnRegions.lean(1234L, "minecraft:the_nether", 10, -3, 4))
-        for (x in -40..40) for (z in -40..40) {
-            assertTrue(WildSpawnRegions.lean(1234L, "minecraft:overworld", x, z, 4) in -1.0..1.0)
-        }
-    }
-
-    @Test fun `neighbouring chunks lean alike while distant areas differ`() {
-        val steps = mutableListOf<Double>()
-        val values = mutableListOf<Double>()
-        for (x in -64..64) for (z in -64..64) {
-            val here = WildSpawnRegions.lean(42L, "minecraft:overworld", x, z, 4)
-            values += here
-            steps += abs(here - WildSpawnRegions.lean(42L, "minecraft:overworld", x + 1, z, 4))
-        }
-        // One chunk over moves the lean by at most 2 / regionChunks, but across the map it reaches weak and strong areas.
-        assertTrue(steps.max() <= 0.5 + 1e-9, "largest step ${steps.max()}")
-        assertTrue(values.min() < -0.5 && values.max() > 0.5, "range ${values.min()}..${values.max()}")
+        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(regionMin = 84, regionMax = 83) }
+        assertThrows(IllegalArgumentException::class.java) { WildLevelRule(transitionRegions = 0) }
     }
 }

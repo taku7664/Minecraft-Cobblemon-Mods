@@ -4,10 +4,12 @@
   "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
   "initial_cap": 16,
   "wild_level": {
-    "below_cap": 10,
-    "spread": 7,
-    "region_chunks": 8,
-    "floor_level": 10
+    "below_cap": 6,
+    "spread": 3,
+    "region_chunks": 4,
+    "region_min": 10,
+    "region_max": 83,
+    "transition_regions": 16
   },
   "gyms": [
     "more_cobblemon_contents_league_challenge:roark",

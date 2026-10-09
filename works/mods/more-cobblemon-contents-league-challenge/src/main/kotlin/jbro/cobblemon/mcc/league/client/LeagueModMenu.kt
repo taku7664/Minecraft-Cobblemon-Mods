@@ -21,7 +21,7 @@ private class LeagueConfigurationScreen(private val parent: Screen?) : Screen(te
         super.render(graphics, mouseX, mouseY, partialTick)
         graphics.drawCenteredString(font, title, width / 2, 24, 0xFFFFFF)
         var y = 56
-        for (key in listOf("datapack", "caps", "rewards", "reload")) {
+        for (key in listOf("datapack", "caps", "wild_levels", "rewards", "reload")) {
             val lines = font.split(text(key), (width - 48).coerceAtLeast(100))
             lines.forEach { graphics.drawString(font, it, 24, y, 0xCCCCCC); y += 12 }
             y += 12

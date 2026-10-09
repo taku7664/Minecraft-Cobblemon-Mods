@@ -49,6 +49,7 @@
   "config.more_cobblemon_contents_league_challenge.title": "League Challenge Configuration",
   "config.more_cobblemon_contents_league_challenge.datapack": "Server rules: edit the active League data pack under league-challenge/.",
   "config.more_cobblemon_contents_league_challenge.caps": "Level caps: match each League cap to a numeric tier in Cobbled Level Control. Client settings cannot override server caps.",
+  "config.more_cobblemon_contents_league_challenge.wild_levels": "Wild levels: edit wild_level in the data pack's leagues/active.json. Regions default to levels 10-83 and 64x64 blocks; Pokemon spawn 3-9 levels below the lower of the regional level and your cap.",
   "config.more_cobblemon_contents_league_challenge.rewards": "Teams, trainers, rewards and appearances are replaceable data-pack definitions. Skins use local resource-pack textures.",
   "config.more_cobblemon_contents_league_challenge.reload": "Apply data packs with /reload (operator permission required). Invalid catalogs keep the last valid version; active runs keep their original teams.",
   "message.more_cobblemon_contents_league_challenge.champion_required": "Defeat the League Champion to unlock this facility.",

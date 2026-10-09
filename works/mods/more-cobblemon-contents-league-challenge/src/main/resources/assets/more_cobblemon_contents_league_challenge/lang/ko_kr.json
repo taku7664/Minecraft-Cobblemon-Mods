@@ -49,6 +49,7 @@
   "config.more_cobblemon_contents_league_challenge.title": "League Challenge 설정",
   "config.more_cobblemon_contents_league_challenge.datapack": "서버 규칙: 데이터팩의 league-challenge/ 아래 활성 리그를 편집합니다.",
   "config.more_cobblemon_contents_league_challenge.caps": "레벨캡: League의 각 캡을 Cobbled Level Control의 숫자 단계와 맞추세요. 클라이언트에서는 서버 캡을 변경할 수 없습니다.",
+  "config.more_cobblemon_contents_league_challenge.wild_levels": "야생 레벨: 데이터팩 leagues/active.json의 wild_level에서 지역 범위·구역 크기를 조정합니다. 기본은 지역 10~83, 64×64블록이며, 지역값과 내 캡 중 낮은 값에서 3~9 낮게 나옵니다.",
   "config.more_cobblemon_contents_league_challenge.rewards": "팀·관장·보상·외형은 데이터팩으로 교체합니다. 스킨은 리소스팩 텍스처를 사용합니다.",
   "config.more_cobblemon_contents_league_challenge.reload": "데이터팩 적용: 관리자 권한으로 /reload. 잘못된 데이터는 이전 유효 버전을 유지하고, 진행 중인 연전의 팀은 바뀌지 않습니다.",
   "message.more_cobblemon_contents_league_challenge.champion_required": "리그 챔피언을 쓰러뜨려야 이 시설을 이용할 수 있습니다.",
