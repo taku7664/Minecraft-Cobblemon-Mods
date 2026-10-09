@@ -13,6 +13,7 @@
   "rank.jbro_policy.hard_champion": "하드 챔피언",
 
   "biome.jbro_policy.plaza": "광장",
+  "message.jbro_policy.hub.bed_denied": "마이룸과 광장에서는 침대를 사용할 수 없어 침대로 스폰 지점을 지정할 수 없습니다.",
   "message.jbro_policy.plaza.usage": "사용법: /plaza enter (입장), /plaza exit (퇴장)",
   "message.jbro_policy.plaza.already_here": "이미 광장에 있습니다.",
   "message.jbro_policy.plaza.battle": "포켓몬 전투 중에는 광장을 오갈 수 없습니다.",
