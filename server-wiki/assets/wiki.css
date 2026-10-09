@@ -205,6 +205,7 @@ a:hover { color: var(--primary); }
   background: var(--frame-highlight);
 }
 .wiki-rail .icon { width: 18px; text-align: center; }
+.wiki-menu-button { display: none; padding: 5px 10px; font: inherit; color: var(--panel-text); background: var(--panel); border: 2px solid var(--border); border-radius: 4px; cursor: pointer; }
 
 /* ---- Content panel ------------------------------------------------------------------------------------------ */
 
@@ -261,6 +262,7 @@ a:hover { color: var(--primary); }
 
 .grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: var(--gap); }
 .grid > .card { margin: 0; }
+.stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* A stat tile: a label over a large value, like the record totals. */
 .stat { padding: 8px 12px; background: var(--frame-highlight); border-left: 4px solid var(--primary); border-radius: 3px; }
@@ -288,7 +290,7 @@ table {
   border: 2px solid var(--frame-shade);
   font-size: 14px;
 }
-th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--panel-alt); vertical-align: top; }
+th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--panel-alt); vertical-align: top; word-break: keep-all; }
 th { background: var(--title-bar); color: var(--text); font-weight: normal; }
 tbody tr:nth-child(even) td { background: var(--panel); }
 
@@ -350,9 +352,12 @@ kbd {
   .wiki-brand strong { font-size: 17px; }
   .wiki-search { width: 100%; }
   .wiki-body { grid-template-columns: 1fr; }
-  .wiki-rail { position: static; max-height: none; overflow: visible; }
+  .wiki-menu-button { display: block; }
+  .wiki-rail { display: none; position: static; max-height: 60vh; overflow-y: auto; }
+  .wiki-rail.open { display: block; }
   .wiki-content { padding: 16px; }
 }
+@media (max-width: 380px) { .stats-grid { grid-template-columns: 1fr; } }
 
 /* ---- Legend guide ------------------------------------------------------------------------------------------- */
 
@@ -361,12 +366,17 @@ kbd {
 .filters input[type="search"] { flex: 1 1 200px; padding: 6px 10px; font: inherit; color: var(--panel-text);
   background: var(--frame-highlight); border: 2px solid var(--border); border-radius: 4px; outline: none; }
 .filters input[type="search"]:focus { border-color: var(--cursor); }
+.filters input[type="search"], .filters select { min-width: 0; max-width: 100%; }
 .filters select { padding: 5px 6px; font: inherit; color: var(--panel-text); background: var(--frame-highlight);
   border: 2px solid var(--border); border-radius: 4px; }
 .filters label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .filters .count { margin-left: auto; color: var(--panel-text-dim); font-size: 13px; }
 
-.legend-list { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.legend-list { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+.legend { min-width: 0; overflow-wrap: anywhere; }
+.legend .chip { white-space: normal; }
+.legend dl { min-width: 0; }
+.legend dd { min-width: 0; }
 .legend { position: relative; padding: 12px 14px; background: var(--frame-highlight); border: 2px solid var(--frame-shade);
   border-radius: 4px; }
 .legend.caught { border-color: var(--good); }
@@ -412,8 +422,8 @@ kbd {
 .dex-table tbody tr:hover td { background: var(--panel-alt); }
 .dex-table a { color: var(--panel-text); font-weight: bold; text-decoration: none; }
 .learn-table { table-layout: fixed; min-width: 620px; }
-.learn-table .learn-level { width: 8%; }
-.learn-table .learn-name { width: 30%; }
+.learn-table .learn-level { width: 52px; }
+.learn-table .learn-name { width: auto; }
 .learn-table .learn-type, .learn-table .learn-category { width: 15%; }
 .learn-table .learn-stat { width: 12%; }
 .learn-table .learn-pp { width: 8%; }
@@ -421,6 +431,10 @@ kbd {
 .learn-table th:nth-child(2), .learn-table td:nth-child(2) { text-align: left; white-space: normal; overflow-wrap: anywhere; }
 .table-wrap { overflow-x: auto; margin: 0 0 var(--gap); }
 .table-wrap table { margin: 0; }
+.nature-table { min-width: 760px; }
+.nature-table th, .nature-table td { white-space: nowrap; }
+.league-table { min-width: 580px; }
+.league-table th, .league-table td { white-space: nowrap; }
 .drop-table { table-layout: fixed; }
 .drop-table th:first-child { width: 50%; }
 .drop-table td:first-child { overflow-wrap: anywhere; }

@@ -110,7 +110,20 @@
 
   // ---- Rail ---------------------------------------------------------------------------------------------------
 
-  var rail = el("nav", { class: "wiki-rail", "aria-label": "목차" });
+  var rail = el("nav", { class: "wiki-rail", id: "wiki-menu", "aria-label": "목차" });
+  var menuButton = el("button", { class: "wiki-menu-button", type: "button", text: "메뉴 열기", "aria-controls": "wiki-menu", "aria-expanded": "false" });
+  header.appendChild(menuButton);
+  menuButton.addEventListener("click", function () {
+    var open = rail.classList.toggle("open");
+    menuButton.setAttribute("aria-expanded", String(open));
+    menuButton.textContent = open ? "메뉴 닫기" : "메뉴 열기";
+  });
+  header.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && rail.classList.contains("open")) menuButton.click();
+  });
+  rail.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && rail.classList.contains("open")) { menuButton.click(); menuButton.focus(); }
+  });
   nav.sections.forEach(function (section) {
     rail.appendChild(el("h2", { text: section.title }));
     section.pages.forEach(function (page) {
@@ -137,6 +150,13 @@
     ]));
   }
   while (main.firstChild) content.appendChild(main.firstChild);
+  // Keep wide tables inside their own scroll area, rather than widening the page.
+  Array.prototype.forEach.call(content.querySelectorAll("table"), function (table) {
+    if (table.parentElement.classList.contains("table-wrap")) return;
+    var wrap = el("div", { class: "table-wrap" });
+    table.replaceWith(wrap);
+    wrap.appendChild(table);
+  });
 
   var headings = content.querySelectorAll("h2");
   if (headings.length >= 2 && !document.body.hasAttribute("data-no-toc")) {

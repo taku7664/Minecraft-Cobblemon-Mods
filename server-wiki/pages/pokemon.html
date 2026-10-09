@@ -198,17 +198,17 @@
     function learnTable(kind, list) {
       var head = $("pk-learn-head"); head.innerHTML = "";
       var hr = el("tr");
-      [kind === "level" ? "Lv." : "", "기술", "타입", "분류", "위력", "명중", "PP"].forEach(function (h, i) {
+      [kind === "level" ? "Lv." : "No.", "기술", "타입", "분류", "위력", "명중", "PP"].forEach(function (h, i) {
         hr.appendChild(el("th", h === "기술" || h === "타입" || h === "분류" ? "" : "num", h));
       });
       head.appendChild(hr);
       var body = $("pk-learn"); body.innerHTML = "";
-      list.forEach(function (entry) {
+      list.forEach(function (entry, index) {
         var level = kind === "level" ? entry[0] : null, moveId = kind === "level" ? entry[1] : entry;
         var m = moves[moveId] || { name: moveId };
         var tr = el("tr");
         tr.title = m.desc || "";
-        tr.appendChild(el("td", "num", level == null ? "" : level === 0 ? "진화" : String(level)));
+        tr.appendChild(el("td", "num", level == null ? String(index + 1) : level === 0 ? "진화" : String(level)));
         tr.appendChild(el("td", "", m.name));
         var type = el("td"); if (m.type) type.appendChild(el("span", "type " + m.type, TYPES[m.type] || m.type)); tr.appendChild(type);
         var cat = el("td"); if (m.cat) cat.appendChild(el("span", "cat " + m.cat, CATEGORY[m.cat] || m.cat)); tr.appendChild(cat);
