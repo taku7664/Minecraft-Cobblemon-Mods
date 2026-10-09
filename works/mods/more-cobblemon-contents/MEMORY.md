@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-09 13:59] 쓰러진 아군·상대 HP 비율 수정 빌드·배치
+
+- **빌드:** `main` = `origin/main` = `91a5a87d`, MCC 미커밋 변경 없음. MCC만 `remapJar`, 무결성 검사 통과.
+- **배치:** `develop-product/server/mods`·`client/mods`의 `more-cobblemon-contents-0.1.0.jar` 교체, SHA-256 세 개 일치(`7ae6ba17…`). 이전 JAR은 `develop-product/deployment-backups/20261009-fainted-ally-hp-ratio/`. 서버·게임 꺼진 상태였고 켜지 않았다.
+- **실게임:** 확인 안 함. 다음 서버 로그에서 `MOVESET_UNAVAILABLE@ally`와 `ROOT_STATE_INCONSISTENT detail=HP_MISMATCH`가 줄었는지 보면 된다.
+
 ## [2026-10-09 05:10] 서버 로그 점검: 레거시 전환 원인 두 개 추가 수정
 
 - **점검 범위:** 10-08 저녁 배포 이후 서버 로그(판단 105건)의 네이티브 실패 사유를 집계. 사유 없는 `NOT_APPLICABLE` 208건은 10-07 이전 로그의 리그 테스트 전투(미리보기 없음)뿐이고 최근 7판에는 없어 이미 해결된 것으로 봤다.
