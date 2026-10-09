@@ -67,6 +67,29 @@ try {
     $blocked=$false;try{Restore-ClientPatch $target $state -SkipProcessCheck|Out-Null}catch{$blocked=$true};Assert $blocked 'Restore overwrote later user edit'
     [IO.File]::WriteAllText("$target/config/more-cobblemon-contents/wiki/index.html",'new wiki')
     Restore-ClientPatch $target $state -SkipProcessCheck|Out-Null
+    # Retired web-map mods must not return from an old package, even under renamed JARs.
+    Jar "$payload/payload/mods/renamed-map.jar" 'bluemap' '1'
+    Jar "$payload/payload/mods/renamed-link.jar" 'maplink' '1'
+    Jar "$target/mods/old-map.jar" 'bluemap' '1'
+    Jar "$target/mods/old-link.jar" 'maplink' '1'
+    foreach($name in @('renamed-map.jar','renamed-link.jar')){
+        $p="$payload/payload/mods/$name"
+        $manifest.Files+=@{Path="mods/$name";Sha256=(Get-FileHash $p).Hash;Size=(Get-Item $p).Length}
+    }
+    foreach($rel in @('config/more-cobblemon-contents/wiki/pages/map.html','config/more-cobblemon-contents/wiki/assets/map.js')){
+        $p=Join-Path "$payload/payload" $rel
+        [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($p))|Out-Null
+        [IO.File]::WriteAllText($p,'retired map')
+        $manifest.Files+=@{Path=$rel;Sha256=(Get-FileHash $p).Hash;Size=(Get-Item $p).Length}
+    }
+    SaveManifest
+    $plan=Get-ClientPatchPlan $payload $target $state -SkipProcessCheck
+    Assert (-not(@($plan.Managed)|Where-Object {$_ -match 'renamed-(map|link)'})) 'Retired map mods selected'
+    Assert (-not(@($plan.Managed)|Where-Object {$_ -match '/(pages/map\.html|assets/map\.js)$'})) 'Retired wiki map files selected'
+    foreach($name in @('old-map.jar','old-link.jar')){
+        Assert (@($plan.Operations|Where-Object {$_.Path -eq "mods/$name" -and $_.Action -eq 'delete'}).Count -eq 1) 'Retired installed map mod not removed'
+    }
+    Assert (@($plan.Operations|Where-Object Path -eq 'mods/personal.jar').Count -eq 0) 'Unrelated personal mod selected'
     # Tampered packages must never introduce arbitrary config paths or traversal.
     foreach($bad in @('options.txt','config/settings.json','../outside.txt','mods/../../outside.jar','resourcepacks/personal.zip')) {
         $manifest.Files[0].Path=$bad;SaveManifest

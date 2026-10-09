@@ -1,3 +1,11 @@
+# [2026-10-10 06:20] BlueMap·Map Link 전체 제거 및 재배포 제외 결정
+
+- 사용자가 개발 클라이언트·서버와 배포 클라이언트·운영 서버 모두에서 BlueMap의 JAR·설정·잔여물 전체 제거를 요청했습니다. 연결용 Map Link와 관련 위키 지도 페이지·스크립트, BlueMap 전용 서버 시작 훅도 제거 대상입니다.
+- 통합 패쳐의 현재 변경 범위는 서버·클라이언트 복사에서 BlueMap·Map Link와 관련 설정·전용 데이터를 제외해 재설치를 막는 것입니다. 이전 BlueMap 활성 지도별 저장소 백엔드 선택 방침은 더 이상 사용하지 않습니다. JourneyMap 서버 제외와 로컬 전용 서버 패쳐 소유권은 유지합니다.
+- 메인 작업자 보고 기준으로 서버 패쳐는 모드 ID별 재설치 제외·모든 관련 설정 및 훅 제외·기존 JAR 삭제 회귀 테스트의 실패를 먼저 확인한 뒤 수정했고 Windows PowerShell 5.1에서 테스트 24그룹이 통과했습니다. `tools` 직접 복사 루프가 `Test-PrivatePath`를 우회해 BlueMap 훅 제외 검사가 실패한 문제도 해당 루프에 제외 규칙을 적용해 통과시켰습니다. 서버 패쳐 원본·테스트는 계속 Git-ignored이며 원격 게시 대상이 아닙니다.
+- 실행 중인 Minecraft 프로세스와 25565·25566·8100·8101 리스너가 없고, 개발·운영 서버에 BlueMap 5.7 JAR이 각각 1개이며 BlueMap을 필수 의존하는 모드가 없다고 메인 작업자가 보고했습니다. 이 기록 담당자는 위 테스트·런타임 검사를 재실행하지 않았습니다.
+- 실제 네 대상의 잔여물 제거·보존 검증, 로컬 설치본 해시, 커밋·푸시 결과는 아직 확인하지 않았습니다. 게임 기동·실게임 검증도 미확인입니다.
+
 # [2026-10-09 19:52] 로컬 서버 패쳐의 불필요 파일 필터 보완
 
 - 로컬 전용 `works/tools/server-deploy/server-deployment.psm1`의 `Test-PrivatePath`가 JourneyMap 설정, BlueMap `disabled-maps/`, Showdown `translations/<언어>/helptickets.js`와 `sim/examples/`를 제외합니다. 모드는 실제 ID `journeymap`으로 제외합니다. 이 원본과 `server-deployment.tests.ps1`은 계속 Git-ignored이며 원격에 게시하지 않습니다.

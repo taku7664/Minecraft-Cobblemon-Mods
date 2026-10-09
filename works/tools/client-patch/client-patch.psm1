@@ -75,6 +75,7 @@ function ClientInventory([string]$source,[string]$wiki) {
     $files=[Collections.Generic.List[object]]::new();$mods=[Collections.Generic.List[object]]::new();$packs=[Collections.Generic.List[object]]::new()
     foreach($file in Get-ChildItem -LiteralPath (Local $source 'mods') -Filter '*.jar' -File){
         $relative='mods/'+$file.Name;$path=Local $source $relative;$meta=ModInfo $path
+        if($meta.id -in @('bluemap','maplink')){continue}
         if($meta.PSObject.Properties['environment'] -and $meta.environment -eq 'server'){continue}
         $files.Add([pscustomobject]@{Path=$relative;Source=$path;Sha256=(Hash $path);Size=$file.Length})
         $mods.Add([pscustomobject]@{Id=$meta.id;Version=$meta.version;Path=$relative})
@@ -96,6 +97,7 @@ function ClientInventory([string]$source,[string]$wiki) {
     }
     foreach($file in $wikiPaths){
         $relative='config/more-cobblemon-contents/wiki/'+$file.FullName.Substring($wiki.Length+1).Replace('\','/')
+        if($relative -match '/(pages/map\.html|assets/map\.js)$'){continue}
         if(-not(Allowed $relative) -or $relative -match '(^|/)\.|/_template\.html$'){continue}
         $files.Add([pscustomobject]@{Path=$relative;Source=$file.FullName;Sha256=(Hash $file.FullName);Size=$file.Length})
     }
@@ -114,7 +116,7 @@ function Get-ClientPatchPlan {
     $manifestPath=$null
     if($localMode){$manifest=ClientInventory $package $WikiRoot}else{$manifestPath=Local $package 'patch.json';$manifest=[IO.File]::ReadAllText($manifestPath)|ConvertFrom-Json}
     if($manifest.Schema -ne 1 -or @($manifest.Files).Count -eq 0){throw '유효한 패치 목록이 없습니다.'}
-    $desired=@{};$ids=@{};$packs=@{};$retired=@('cobblemon_client_defaults')
+    $desired=@{};$ids=@{};$packs=@{};$retired=@('cobblemon_client_defaults','bluemap','maplink')
     # Only these project-owned packs can be replaced. Visual preference packs are excluded.
     $packNames=@('better-cobblemon-music-resourcepack','cobblemon-korean-translation-bundle','E19-Xaero-Icons','galmuri11-8px','RCT Trainers+ [1.7] v2.2','spawn-notification-ment')
     foreach($pack in @($manifest.ResourcePacks)){
@@ -123,11 +125,13 @@ function Get-ClientPatchPlan {
     }
     foreach($file in @($manifest.Files)){
         $relative=[string]$file.Path;$source=if($localMode){$file.Source}else{Local $package ('payload/'+$relative)};$null=Local $target $relative
+        if($relative -match '^config/more-cobblemon-contents/wiki/(pages/map\.html|assets/map\.js)$'){continue}
         if(-not(Allowed $relative) -and $relative -notin @($packs.Values)){throw ('패치 범위 밖의 파일: '+$relative)}
         if($relative -match '(^|/)\.|(^|/)(README|MEMORY)\.md$' -or $desired.ContainsKey($relative)){throw '중복 또는 비공개 파일입니다.'}
         if($file.Sha256 -notmatch '^[a-fA-F0-9]{64}$' -or (Hash $source) -ne $file.Sha256.ToLowerInvariant() -or (Get-Item -LiteralPath $source).Length -ne $file.Size){throw ('패치 파일 검증 실패: '+$relative)}
         if($relative.StartsWith('mods/')){
             $meta=ModInfo $source
+            if($meta.id -in @('bluemap','maplink')){continue}
             if($meta.PSObject.Properties['environment'] -and $meta.environment -eq 'server'){throw '서버 전용 모드는 패치할 수 없습니다.'}
             if($ids.ContainsKey($meta.id)){throw ('중복된 모드 ID: '+$meta.id)};$ids[$meta.id]=$relative
         }

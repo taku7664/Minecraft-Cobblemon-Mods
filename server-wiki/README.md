@@ -56,56 +56,7 @@ MCC 서버가 이 위키를 HTTP로 띄우고, 접속한 플레이어의 대시�
 
 문서를 고치면 서버의 `wiki/` 폴더만 바꾸면 되고, 서버를 다시 켤 필요도 없습니다.
 
-## 맵 보기
-
-목차의 **참고 → 맵 보기**는 BlueMap을 문서 안에 표시합니다. 서버 지도는 위키가 사용하는 게임 서버의
-호스트에서 8101 포트로 접속합니다. 클라이언트가 위키를 localhost에서 띄워도 `MccWiki`에 저장된 게임
-서버 주소를 사용합니다. 외부 유저에게 제공하려면 지도 포트도 해당 서버에서 접근 가능해야 합니다.
-HTTPS 위키를 사용할 때는 지도에도 HTTPS를 제공해야 합니다.
-
-개발 BlueMap의 공개 지도는 오버월드(`world`), 네더(`world_the_nether`), 엔드(`world_the_end`),
-광장(`world_jbro_policy_plaza`)입니다. 배틀 라운지와 MyRoom 지도 설정은 서버의
-`config/bluemap/disabled-maps/`로 옮겨 자동 렌더 및 지도 목록에서 제외합니다. 기존 렌더 데이터는 보존합니다.
-이는 지도 목록 제한이며, 저장된 타일 URL에 대한 접근 제어 기능은 아닙니다.
-
-### 서버 장소 마커 등록
-
-BlueMap 기본 설치는 설정 파일로 장소 마커를 등록합니다. 개인 Xaero 웨이포인트와 별개의 서버 공용 표시입니다.
-
-1. F3로 등록할 위치의 좌표와 차원을 확인합니다.
-2. 개발 서버 `config/bluemap/maps/` 안에서 해당 차원의 `.conf`를 엽니다.
-   오버월드는 `world.conf`, 네더는 `world_the_nether.conf`, 엔드는 `world_the_end.conf`,
-   광장은 `world_jbro_policy_plaza.conf`입니다.
-3. 기존 `marker-sets` 블록 안에 아래 예시를 넣고 이름과 좌표를 바꿉니다. 예시 좌표는 실제 서버 시설의 위치가 아닙니다.
-
-```hocon
-server-places: {
-  label: "서버 장소"
-  toggleable: true
-  default-hidden: false
-  markers: {
-    shop: {
-      type: "poi"
-      label: "상점"
-      position: { x: 100, y: 64, z: -200 }
-    }
-  }
-}
-```
-
-4. 서버 콘솔에서는 `bluemap reload`, 게임에서는 운영자 권한으로 `/bluemap reload`를 실행합니다.
-   지도 지형을 다시 렌더할 필요 없이 마커 설정이 반영됩니다.
-5. 그림 아이콘을 쓰려면 PNG를 `bluemap/web/assets/markers/shop.png`에 넣고 `shop` 블록에
-   `icon: "assets/markers/shop.png"`와 `anchor: { x: 16, y: 32 }`를 추가합니다.
-   anchor 예시는 32×32 이미지의 아래 중앙을 좌표에 맞춥니다. 이미지 크기에 맞춰 바꿉니다.
-
-장소를 더 추가할 때는 `markers` 안에 다른 ID의 블록을 추가합니다. `marker-sets`를 중복으로 만들지 않습니다.
-Map Link에서 동일한 웹 지도에 연결되어 있고 마커 표시가 켜져 있으면 이 마커를 가져옵니다.
-클라이언트 접속 주소와 Map Link의 서버 항목은 정확히 일치해야 합니다. 개발 설정에는
-`localhost:25566`과 `127.0.0.1:25566`을 모두 등록했습니다. 실행 중인 클라이언트는 다음 실행 때 파일 변경을 읽습니다.
-
-공식 자료: [BlueMap 마커 설정](https://bluemap.bluecolored.de/wiki/customization/Markers.html),
-[Map Link](https://modrinth.com/mod/maplink).
+## 서버 시작 훅용 파일 묶음
 
 서버 실행 훅용 정적 파일 묶음은 다음 명령으로 만들 수 있습니다.
 
