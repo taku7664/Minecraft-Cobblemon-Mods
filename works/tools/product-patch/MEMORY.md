@@ -1,3 +1,12 @@
+# [2026-10-09 19:38] main 반영·로컬 설치·두 탭 검사 완료
+
+- 메인 작업자 보고 기준으로 최초 구현은 `a44dee8aac69a65a8d80f813f745b038d6eac04f`에서 main에 병합했습니다. 실제 BAT가 전달하는 `develop-product/..` 경로로 서버 대상 경로를 잘못 계산하는 결함을 회귀 테스트로 재현하고 저장소 경로를 `GetFullPath`로 정규화했습니다. 수정 커밋은 `995e1d82`, 최종 main 병합은 `1c04d9d0b3567169a673d992751d7f46a912b9d9`입니다. 이 main과 `origin/main`·`ls-remote`의 일치를 확인했습니다.
+- 메인 저장소의 설치기를 실행해 `develop-product/patch-products.bat`와 `tools/patcher/`의 host 1개·client 2개·server 2개 파일을 설치했습니다. 내부 5개 파일의 원본·설치본 SHA-256이 모두 일치했습니다. 기존 설치 서버 모듈과 원본의 별도 해시 차이는 `ReadAllLines` 비교로 BOM/CRLF 차이임을 확인했습니다. 게임 모드 빌드는 수행하지 않았습니다.
+- 최초 `-MigrateLegacy`에서 운영 서버의 `tools/deploy-server.ps1`, `tools/server-deployment.psm1` 두 코드 파일을 `%LOCALAPPDATA%/MinecraftProductPatcher/legacy`에 백업한 후 제거했습니다. 기존 `deploy-from-dev.bat`은 통합창 서버 탭을 여는 진입점으로 전환했고 `server-startup-*` 파일은 모두 보존했습니다. 이 변경은 패쳐 설치 통합이며 게임 기능 파일 패치가 아닙니다.
+- 설치본 host와 BAT의 실제 상대 경로로 두 탭 UI를 검사하고 캡처를 확인했습니다. 클라이언트는 추가 1,159개(모드 84개·기능 리소스팩 6개·위키 1,069개), 477.9 MiB를 표시했습니다. 서버는 변경 21개(추가 2개·교체 17개·삭제 2개), 12.4 MB를 표시했습니다. 최초 개발 월드 잠금 시 오류 표시·적용 차단과 이후 정상 Preview를 각각 확인했습니다.
+- 앞선 client fixture 검증 범위는 유지되며 새 `product-patch.tests.ps1` 경로 회귀 검증도 main 소스로 통과했습니다. 이 기록 담당자는 메인 작업자 보고를 정리했으며 테스트를 재실행하지 않았습니다.
+- 서버·클라이언트 게임 기능 파일은 실제 적용하지 않았고 `PPakemon/mods`는 0개를 유지했습니다. Minecraft 실행·실게임·음악·리소스팩 활성화는 미검증입니다. 위 main 푸시는 코드 완료 근거이며 이 후속 기록 자체의 커밋·푸시는 메인 작업자가 별도로 담당합니다.
+
 # [2026-10-09 19:31] 개발 제품 폴더의 서버·클라이언트 통합 패쳐
 
 - 사용자가 클라이언트 단독 패쳐를 `develop-product`에 통합하고 서버·클라이언트를 모두 지원하도록 요청했습니다. 공통 창은 `patch-products.ps1`, 설치는 `install-product-patcher.ps1`이 담당합니다. 실행 진입점은 `develop-product/patch-products.bat`, 로컬 설치본은 `develop-product/tools/patcher/` 아래 서버·클라이언트 폴더입니다.
