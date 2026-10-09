@@ -7,6 +7,11 @@
 - **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
 - **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
+## [2026-10-09 18:10] 교환꾼 안내·자리표시 방어 코드 빌드·개발 배치
+
+- **빌드:** `main` = `origin/main` = `abda4ff4`, 리그 소스 변경 없음 확인 후 `remapJar`(테스트 안 함). `jar --validate` 통과, JAR 안에 새 교환 대사·`WildNpcSpawns$Kind` 확인. `3cb56d50`(자리표시 방어)·`abda4ff4`(교환꾼 안내) 포함.
+- **배치:** `develop-product/server/mods`·`client/mods` 교체, SHA-256 일치(`a5ce4701…`), 폴더마다 리그 JAR 하나. 이전 JAR은 `develop-product/deployment-backups/20261009-trader-offer-standin-guard/`. 서버·게임 꺼진 상태, 켜지 않음. 실게임 미확인.
+
 ## [2026-10-09 18:00] 교환꾼이 줄 포켓몬을 미리 말함
 
 - **사용자 요청:** 교환꾼이 어떤 포켓몬과 바꿔 주는지 말해야 한다.
