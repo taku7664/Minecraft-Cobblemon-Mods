@@ -5,17 +5,18 @@
 
 ---
 
-## [2026-10-09 14:29] 디스코드 `/피츄 질문` 추가 (구현·빌드·AI 호출 확인, 배치·봇 실사용 미확인)
+## [2026-10-09 14:29] 디스코드 `/피츄 질문` 추가 (구현·빌드·AI 호출·서버 배치 확인, 기동·디스코드 실사용 미확인)
 
 - **동작:** 필수 옵션 `질문`은 1~500자이며 답변은 공개로 보낸다. `anyChannel = true`로 일반 채팅방에서도 사용할 수 있다. Discord user ID별로 채널을 공유하는 5분 쿨다운을 두고, 같은 유저가 답변을 기다리는 중에는 중복 질문을 막는다. AI 실패·빈 답변이면 쿨다운을 해제한다.
 - **AI 실행:** 별도 worker에서 최대 2개 질문을 동시에 처리한다. 기존 `inquiry-review`의 `enabled`·`command`·`model`·`timeoutSeconds` 설정을 재사용하되 질문 응답 제한시간은 최대 120초다. agy 전용 `jbro-pichu-chat` 프로필은 `inheritCustomizations: false`, `excludeDefaultComponents: true`, `tools: [finish]`로 제한한다. 질문만 전달하고 서버 로그·유저 기록은 제공하지 않는다.
 - **구현 위치:** `DiscordQuestion.kt`, `PichuQuestionAI.kt`, `pichu-chat-agent.md`. Discord 비동기 응답 처리와 한국어 안내 문구를 연결했다.
-- **빌드 검증:** 메인 작업자의 보고 기준으로 최신 `origin/main`(`a6d1e20d`)을 fast-forward 반영한 뒤 `:jbro-policy:build`를 다시 실행해 단위 테스트 93개 모두 성공, `BUILD SUCCESSFUL`(44초)을 확인했다.
+- **커밋·최종 빌드:** 구현 커밋 `460749ca`를 main에 병합한 `9ea58ba23417eede00885a1ea4429c9a6b3d7997`과 `origin/main`의 같은 해시를 확인했다. 깨끗한 분리 작업트리에 이 병합 커밋을 fast-forward 반영한 소스로 `:jbro-policy:build`를 실행해 단위 테스트 93개 모두 성공, `BUILD SUCCESSFUL`(30초)을 확인했다. `jar --validate` 종료 코드 0과 새 클래스·제한 프로필 포함도 확인했다(메인 작업자 보고).
 - **AI 실호출:** Java 검증용 harness에서 실제 `PichuQuestionAI.ask`를 기존 로그인 agy의 `gemini-3.8-flash-low`로 호출해 `SUCCESS`, 비어 있지 않은 피츄 설명 답변, `AI_SMOKE_OK`, 종료 코드 0을 확인했다(메인 작업자 보고). 디스코드 slash 경로를 거친 검증은 아니다.
 - **프로필 확인:** `.gemini/config/agents/jbro-pichu-chat/agent.md` 설치와 CLI agent 검색을 확인했다. 초기 flat `agent.md` 경로는 검색되지 않아 폴더 안 `agent.md` 경로로 고쳤다. 로컬 CLI 내장 changelog와 protobuf·YAML 설정 태그에서 `excludeDefaultComponents` 지원을 확인했다. 무해한 sentinel 파일을 읽으라는 질문에는 파일 접근 불가 답변을 받았고 도구 호출은 없었다. CLI `init.tools`는 기본 도구 전체를 표시하므로 제한 프로필의 실제 도구 목록을 증명하는 근거로 쓰지 않는다.
 - **채널 권한 확인:** Discord API 읽기 조회에서 `💬┃잡담`(`1555187393236041820`)의 `@everyone`에 `SEND_MESSAGES`·`USE_APPLICATION_COMMANDS`가 허용되고 관련 channel overwrite 거부가 없음을 확인했다. 권한은 변경하지 않았다.
 - **검증 도구 보정:** Gradle init task 등록 시점 조정과 Java 인자 CP949 보정은 검증용 scratch에서만 했으며 제품 코드 수정과 무관하다.
-- **미확인:** 서버가 꺼져 있어 디스코드 slash 명령 등록·호출은 아직 검증하지 않았다. JAR 배치, 서버 기동, 실게임 동작도 검증하지 않았다.
+- **개발 서버 배치:** 배치 직전 `java`·`javaw` Fabric 서버 프로세스와 25565·25566 수신이 모두 없음을 재확인한 뒤, 실제 primary 저장소의 `develop-product/server/mods/jbro-policy-0.1.3.jar`를 빌드본으로 교체했다. 빌드본·설치본 SHA-256은 모두 `38DD83FA8C39A4956AE7EF2A3722A5798CF26354D210EAB03F9A27391464BA4E`로 일치했다(메인 작업자 보고). 서버 디스코드 기능 범위이므로 개발 클라이언트와 release 산출물은 변경하지 않았다.
+- **미확인:** 서버는 기동하지 않았다. 다음 서버 기동 시 slash 명령이 자동 등록되며, 실제 등록·디스코드 호출은 아직 검증하지 않았다.
 
 ## [2026-10-08 18:51] 커스텀 레시피(화약·네더의 별) 제거 (구현만, 빌드 안 함)
 
