@@ -1,3 +1,10 @@
+# [2026-10-09 23:10] PPakemon 기본 서버 목록을 빡켓몬으로 변경
+
+- 사용자가 기본 월드를 제거하고 빡켓몬을 추가하도록 요청했으며 서버 IP는 기본값으로 지정했습니다. 메인 작업자가 확인한 실제 `PPakemon/saves`는 폴더·파일 0개였고, 첨부된 Modrinth Worlds 카드에 해당하는 `servers.dat`에는 `MBC Development Server` / `127.0.0.1:25566` / hidden 0 항목 1개가 있었습니다. 삭제할 로컬 세이브 없이 서버 목록만 변경했습니다.
+- 운영 서버의 `server.properties`에서 `server-ip` 빈값·`server-port=25565`와 실행 중 클라이언트 0개를 확인한 뒤, `PPakemon/servers.dat`을 `빡켓몬` / `localhost:25565` 항목 1개로 교체했습니다. 기존 NBT 파싱·생성할 예상 객체·실제 파일 재파싱의 일치를 확인했다고 메인 작업자가 보고했습니다. 이전 파일은 `C:\Users\박주형\AppData\Local\MinecraftClientBootstrap\server-list-20261009-231032\servers.dat`에 백업했습니다.
+- Modrinth DB는 읽기 전용으로 해당 프로필의 ID·경로와 `instance_servers`·`instance_server_projection_entries` 행 0개만 확인했고 수정하지 않았습니다. 실제 변경은 `PPakemon/servers.dat` 한 파일이며 개발 프로필의 서버 목록·세이브·설정은 변경하지 않았습니다. 일회성 스크립트는 Git-ignored `build/`에 두었고 도구 소스는 변경하지 않았습니다.
+- Modrinth UI 새로고침과 서버 네트워크 접속은 검증하지 않았습니다. UI 표시 갱신에는 사용자 새로고침이 필요할 수 있습니다. 서버 목록 파일 수정과 실제 접속 성공은 구분합니다.
+
 # [2026-10-09 22:53] 개발 클라이언트 기반 PPakemon 최초 구축·파일 검증 완료
 
 - 사용자가 `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\PPakemon`을 개발 클라이언트 기반 새 프로필로 구축하도록 명시했습니다. 시작 시 대상 파일 0개·실행 중 클라이언트 0개를 확인한 뒤 기존 개발 설치 파일을 사용했습니다. 최초 구축에 필요한 기본 컨픽·옵션·리소스를 복사한 일회성 작업이며, 이후 패쳐의 반복 갱신에서 개인 컨픽을 보존하는 기존 원칙은 유지합니다.
