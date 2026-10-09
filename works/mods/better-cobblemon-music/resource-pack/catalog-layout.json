@@ -70,7 +70,6 @@
     "better_cobblemon_music:battle/wild/swsh_wild_pokemon_battle": "전투! 야생 포켓몬 (Sw·Sh)",
     "better_cobblemon_music:battle/wild/xy_wild_pokemon_battle": "전투! 야생 포켓몬 (X·Y)",
     "better_cobblemon_music:field/badlands/mt_pyre_exterior": "송화산 (외부)",
-    "better_cobblemon_music:field/cave/sinnoh_lake_caverns": "호수의 공동",
     "better_cobblemon_music:field/cave/sinnoh_oreburgh_mine": "무쇠탄갱",
     "better_cobblemon_music:field/deep_dark/sinnoh_old_chateau": "숲의 양옥집",
     "better_cobblemon_music:field/deep_dark/union_cave": "연결동굴",
@@ -81,17 +80,17 @@
     "better_cobblemon_music:field/jungle/route_210": "210번도로 (낮)",
     "better_cobblemon_music:field/mountain/route_3": "3번도로",
     "better_cobblemon_music:field/mountain/sinnoh_route_205_day": "205번도로 (낮)",
-    "better_cobblemon_music:field/myroom/eterna_forest": "영원의숲",
+    "better_cobblemon_music:field/myroom/valor_lakefront_day": "입지호수 근처 (낮)",
+    "better_cobblemon_music:field/myroom/valor_lakefront_night": "입지호수 근처 (밤)",
     "better_cobblemon_music:field/nether/sinnoh_stark_mountain": "하드마운틴",
     "better_cobblemon_music:field/ocean/route_47": "47번도로",
     "better_cobblemon_music:field/ocean/underground_ruins": "땅밑유적",
     "better_cobblemon_music:field/plains/sinnoh_route_201_night": "201번도로 (밤)",
     "better_cobblemon_music:field/plaza/pallet_town": "태초마을",
     "better_cobblemon_music:field/plaza/jubilife_city_day": "축복시티 (낮)",
-    "better_cobblemon_music:field/river/sealed_chamber": "고시의 석실",
     "better_cobblemon_music:field/river/sinnoh_lake_theme": "호수",
-    "better_cobblemon_music:field/snow/sinnoh_route_205_night": "205번도로 (밤)",
-    "better_cobblemon_music:field/swamp/road_to_reversal_mountain": "리버스마운틴으로 가는 길",
+    "better_cobblemon_music:field/snow/sinnoh_route_216_night": "216번도로 (밤)",
+    "better_cobblemon_music:field/swamp/route_120": "120번도로",
     "better_cobblemon_music:screen/mcc/boutique": "부티크",
     "better_cobblemon_music:screen/mcc/poke_mart": "프렌들리숍",
     "better_cobblemon_music:screen/title/sinnoh_introduction": "인트로",
@@ -112,16 +111,13 @@
       "tracks": ["better_cobblemon_music:field/deep_dark/sinnoh_old_chateau", "better_cobblemon_music:field/deep_dark/union_cave"]
     },
     "better_cobblemon_music:field_cave": {
-      "selection": "random",
-      "tracks": ["better_cobblemon_music:field/cave/sinnoh_oreburgh_mine", "better_cobblemon_music:field/cave/sinnoh_lake_caverns"]
+      "tracks": ["better_cobblemon_music:field/cave/sinnoh_oreburgh_mine"]
     },
     "better_cobblemon_music:field_river": {
-      "selection": "random",
-      "tracks": ["better_cobblemon_music:field/river/sinnoh_lake_theme", "better_cobblemon_music:field/river/sealed_chamber"]
+      "tracks": ["better_cobblemon_music:field/river/sinnoh_lake_theme"]
     },
     "better_cobblemon_music:field_ocean": {
-      "selection": "random",
-      "tracks": ["better_cobblemon_music:field/ocean/route_47", "better_cobblemon_music:field/ocean/underground_ruins"]
+      "tracks": ["better_cobblemon_music:field/ocean/route_47"]
     },
     "better_cobblemon_music:field_mountain": {
       "selection": "random",
@@ -205,17 +201,19 @@
     "field": {
       "default": "better_cobblemon_music:track/field/plains/sinnoh_route_201_night",
       "dimensions": {
-        "myroom:rooms": "better_cobblemon_music:track/field/myroom/eterna_forest",
+        "myroom:rooms": "better_cobblemon_music:track/field/myroom/valor_lakefront_day",
         "jbro_policy:plaza": "better_cobblemon_music:field_plaza",
         "cobblemon_policy:plaza": "better_cobblemon_music:field_plaza",
         "minecraft:the_nether": "better_cobblemon_music:track/field/nether/sinnoh_stark_mountain",
         "minecraft:the_end": "better_cobblemon_music:track/field/end/distortion_world"
       },
       "dayDimensions": {
+        "myroom:rooms": "better_cobblemon_music:track/field/myroom/valor_lakefront_day",
         "jbro_policy:plaza": "better_cobblemon_music:field_plaza",
         "cobblemon_policy:plaza": "better_cobblemon_music:field_plaza"
       },
       "nightDimensions": {
+        "myroom:rooms": "better_cobblemon_music:track/field/myroom/valor_lakefront_night",
         "jbro_policy:plaza": "better_cobblemon_music:track/field/plaza/pallet_town",
         "cobblemon_policy:plaza": "better_cobblemon_music:track/field/plaza/pallet_town"
       },
@@ -223,8 +221,9 @@
         "minecraft:deep_dark": "better_cobblemon_music:field_deep_dark",
         "minecraft:lush_caves": "better_cobblemon_music:field_cave",
         "minecraft:dripstone_caves": "better_cobblemon_music:field_cave",
-        "minecraft:ice_spikes": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
-        "minecraft:grove": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "minecraft:ice_spikes": "better_cobblemon_music:track/field/snow/sinnoh_route_216_night",
+        "minecraft:grove": "better_cobblemon_music:track/field/snow/sinnoh_route_216_night",
+        "minecraft:deep_ocean": "better_cobblemon_music:track/field/ocean/underground_ruins",
         "minecraft:cherry_grove": "better_cobblemon_music:field_forest",
         "#minecraft:is_river": "better_cobblemon_music:field_river",
         "#minecraft:is_ocean": "better_cobblemon_music:field_ocean",
@@ -239,10 +238,10 @@
         "ocean": "better_cobblemon_music:field_ocean",
         "badlands": "better_cobblemon_music:track/field/badlands/mt_pyre_exterior",
         "desert": "better_cobblemon_music:track/field/desert/route_111",
-        "swamp": "better_cobblemon_music:track/field/swamp/road_to_reversal_mountain",
+        "swamp": "better_cobblemon_music:track/field/swamp/route_120",
         "jungle": "better_cobblemon_music:track/field/jungle/route_210",
-        "snow": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
-        "frozen": "better_cobblemon_music:track/field/snow/sinnoh_route_205_night",
+        "snow": "better_cobblemon_music:track/field/snow/sinnoh_route_216_night",
+        "frozen": "better_cobblemon_music:track/field/snow/sinnoh_route_216_night",
         "peak": "better_cobblemon_music:field_mountain",
         "slope": "better_cobblemon_music:field_mountain",
         "windswept": "better_cobblemon_music:field_mountain",
@@ -256,7 +255,7 @@
         "biome:minecraft:deep_dark", "path:deep_dark",
         "biome:minecraft:lush_caves", "biome:minecraft:dripstone_caves", "path:cave", "underground",
         "biome:#minecraft:is_river", "path:river",
-        "biome:#minecraft:is_ocean", "path:ocean",
+        "biome:minecraft:deep_ocean", "biome:#minecraft:is_ocean", "path:ocean",
         "path:swamp",
         "biome:#minecraft:is_jungle", "path:jungle",
         "biome:minecraft:ice_spikes", "biome:minecraft:grove", "path:snow", "path:frozen",

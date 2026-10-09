@@ -51,7 +51,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(88, eventTitles.size());
+        assertEquals(87, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -66,16 +66,18 @@ final class OfficialMusicLineupTest {
 
     @Test
     void localizedTitlesUseCheckedPlaceAndSoundtrackNamesInsteadOfTranslatingIds() {
-        assertTitle("field/myroom/eterna_forest", "영원의숲");
+        assertTitle("field/myroom/valor_lakefront_day", "입지호수 근처 (낮)");
+        assertTitle("field/myroom/valor_lakefront_night", "입지호수 근처 (밤)");
         assertTitle("field/nether/sinnoh_stark_mountain", "하드마운틴");
         assertTitle("field/deep_dark/sinnoh_old_chateau", "숲의 양옥집");
         assertTitle("field/cave/sinnoh_oreburgh_mine", "무쇠탄갱");
-        assertTitle("field/cave/sinnoh_lake_caverns", "호수의 공동");
+        assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/cave/sinnoh_lake_caverns"));
         assertTitle("field/ocean/underground_ruins", "땅밑유적");
         assertTitle("field/badlands/mt_pyre_exterior", "송화산 (외부)");
         assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/badlands/abandoned_ship"));
-        assertTitle("field/river/sealed_chamber", "고시의 석실");
-        assertTitle("field/swamp/road_to_reversal_mountain", "리버스마운틴으로 가는 길");
+        assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/river/sealed_chamber"));
+        assertTitle("field/swamp/route_120", "120번도로");
+        assertTitle("field/snow/sinnoh_route_216_night", "216번도로 (밤)");
         assertTitle("field/plains/sinnoh_route_201_night", "201번도로 (밤)");
         assertTitle("field/plaza/jubilife_city_day", "축복시티 (낮)");
         assertTitle("screen/mcc/poke_mart", "프렌들리숍");

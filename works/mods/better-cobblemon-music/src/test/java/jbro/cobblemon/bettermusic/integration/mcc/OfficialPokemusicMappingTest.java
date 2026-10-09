@@ -59,7 +59,9 @@ final class OfficialPokemusicMappingTest {
             int preserved = 0;
             for (var element : files) {
                 var report = element.getAsJsonObject();
-                if (Set.of("field/plaza/route_1.ogg", "field/badlands/abandoned_ship.ogg")
+                if (Set.of("field/plaza/route_1.ogg", "field/badlands/abandoned_ship.ogg",
+                    "field/cave/sinnoh_lake_caverns.ogg", "field/river/sealed_chamber.ogg",
+                    "field/swamp/road_to_reversal_mountain.ogg", "field/snow/sinnoh_route_205_night.ogg")
                     .contains(report.get("target").getAsString())) {
                     continue; // Historical imports replaced by the current plaza and badlands songs.
                 }
@@ -71,7 +73,7 @@ final class OfficialPokemusicMappingTest {
                 assertEquals(44100, report.get("sample_rate").getAsInt());
                 preserved++;
             }
-            assertEquals(28, preserved);
+            assertEquals(24, preserved);
         }
         Path newPlazaSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/jubilife_city_day.ogg");
         assertEquals("eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105", sha256(newPlazaSong));
@@ -89,31 +91,28 @@ final class OfficialPokemusicMappingTest {
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg")));
         assertEquals("b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad",
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg")));
-        assertEquals(88, compiled.trackEvents().size());
+        assertEquals(87, compiled.trackEvents().size());
     }
 
     @Test
-    void myRoomUsesEternaForestAtBothTimesRegardlessOfBiomeOrUnderground() throws Exception {
+    void myRoomUsesSeparateValorLakefrontThemesAtBothTimesRegardlessOfBiomeOrUnderground() throws Exception {
         for (var time : FieldMusicContext.TimeOfDay.values()) {
             for (String biome : List.of("minecraft:plains", "minecraft:forest", "minecraft:deep_dark")) {
                 for (boolean underground : new boolean[]{false, true}) {
                     var selection = field.select(new FieldMusicContext("myroom:rooms", biome, Set.of(), underground, time));
-                    assertEquals("field.dimension:myroom:rooms", selection.id());
-                    expectTracks(selection.playlist(), "field/myroom/eterna_forest");
+                    assertEquals("field.dimension." + (time == FieldMusicContext.TimeOfDay.DAY ? "day:" : "night:") + "myroom:rooms", selection.id());
+                    expectTracks(selection.playlist(), time == FieldMusicContext.TimeOfDay.DAY
+                        ? "field/myroom/valor_lakefront_day" : "field/myroom/valor_lakefront_night");
                 }
             }
         }
         expectField("minecraft:forest", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
-        try (var reader = Files.newBufferedReader(module.resolve("resource-pack/import-myroom-2026-10-03.json"))) {
-            var report = JsonParser.parseReader(reader).getAsJsonObject();
-            assertEquals(report.get("outputSha256").getAsString(), sha256(pack.resolve(
-                "assets/better_cobblemon_music/sounds/music/field/myroom/eterna_forest.ogg")));
-        }
+        assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/myroom/eterna_forest.ogg")));
     }
 
     @Test
     void everyTwoSongReadmeGroupUsesExplicitRandomSelectionRatherThanTheGlobalDefault() {
-        for (String group : List.of("screen_title", "field_deep_dark", "field_cave", "field_river", "field_ocean", "field_mountain", "field_forest")) {
+        for (String group : List.of("screen_title", "field_deep_dark", "field_mountain", "field_forest")) {
             var playlist = compiled.playlists().get("better_cobblemon_music:" + group);
             assertEquals(2, playlist.tracks().size(), group);
             assertEquals(PlaylistDefinition.Selection.RANDOM, playlist.selection(), group);
@@ -124,15 +123,16 @@ final class OfficialPokemusicMappingTest {
     void readmeFieldGroupsResolveThroughExactBiomePathAndUndergroundSelectors() {
         expectField("minecraft:deep_dark", false, "field/deep_dark/sinnoh_old_chateau", "field/deep_dark/union_cave");
         for (String biome : List.of("minecraft:lush_caves", "minecraft:dripstone_caves")) {
-            expectField(biome, true, "field/cave/sinnoh_oreburgh_mine", "field/cave/sinnoh_lake_caverns");
+            expectField(biome, true, "field/cave/sinnoh_oreburgh_mine");
         }
-        expectField("minecraft:plains", true, "field/cave/sinnoh_oreburgh_mine", "field/cave/sinnoh_lake_caverns");
-        expectField("minecraft:frozen_river", false, "field/river/sinnoh_lake_theme", "field/river/sealed_chamber");
-        expectField("minecraft:deep_ocean", false, "field/ocean/route_47", "field/ocean/underground_ruins");
-        expectField("minecraft:mangrove_swamp", false, "field/swamp/road_to_reversal_mountain");
+        expectField("minecraft:plains", true, "field/cave/sinnoh_oreburgh_mine");
+        expectField("minecraft:frozen_river", false, "field/river/sinnoh_lake_theme");
+        expectField("minecraft:ocean", false, "field/ocean/route_47");
+        expectField("minecraft:deep_ocean", false, "field/ocean/underground_ruins");
+        expectField("minecraft:mangrove_swamp", false, "field/swamp/route_120");
         expectField("minecraft:bamboo_jungle", false, "field/jungle/route_210");
         for (String biome : List.of("minecraft:ice_spikes", "minecraft:grove", "minecraft:snowy_plains", "minecraft:frozen_peaks")) {
-            expectField(biome, false, "field/snow/sinnoh_route_205_night");
+            expectField(biome, false, "field/snow/sinnoh_route_216_night");
         }
         expectField("minecraft:jagged_peaks", false, "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
         for (String biome : List.of("minecraft:forest", "minecraft:cherry_grove", "minecraft:old_growth_birch_forest", "minecraft:taiga")) {
@@ -144,7 +144,7 @@ final class OfficialPokemusicMappingTest {
         for (String biome : List.of("minecraft:beach", "minecraft:stony_shore")) {
             expectField(biome, false, "field/plains/sinnoh_route_201_night");
         }
-        expectField("minecraft:snowy_beach", false, "field/snow/sinnoh_route_205_night");
+        expectField("minecraft:snowy_beach", false, "field/snow/sinnoh_route_216_night");
         for (var time : FieldMusicContext.TimeOfDay.values()) {
             expectTracks(field.select(context("minecraft:the_nether", time)).playlist(), "field/nether/sinnoh_stark_mountain");
             expectTracks(field.select(context("minecraft:the_end", time)).playlist(), "field/end/distortion_world");
@@ -154,15 +154,15 @@ final class OfficialPokemusicMappingTest {
     @Test
     void readmePriorityAppliesAcrossExactBiomesTagsPathsAndUnderground() {
         for (String biome : List.of("minecraft:cherry_grove", "minecraft:stony_shore", "minecraft:deep_ocean")) {
-            expectField(biome, true, "field/cave/sinnoh_oreburgh_mine", "field/cave/sinnoh_lake_caverns");
+            expectField(biome, true, "field/cave/sinnoh_oreburgh_mine");
         }
         expectField("minecraft:deep_dark", true, "field/deep_dark/sinnoh_old_chateau", "field/deep_dark/union_cave");
         expectField("example:forest_desert", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
         expectField("example:desert_badlands", false, "field/desert/route_111");
         expectField("example:plains_desert", false, "field/plains/sinnoh_route_201_night");
-        expectField("example:river_ocean", false, "field/river/sinnoh_lake_theme", "field/river/sealed_chamber");
+        expectField("example:river_ocean", false, "field/river/sinnoh_lake_theme");
         expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:snowy_ridge",
-            Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(), "field/snow/sinnoh_route_205_night");
+            Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(), "field/snow/sinnoh_route_216_night");
         expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:wooded_ridge",
             Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(),
             "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
@@ -171,7 +171,7 @@ final class OfficialPokemusicMappingTest {
     @Test
     void personalPlaylistRemappingDoesNotChangeThePacksFieldPriority() throws Exception {
         var overrides = jbro.cobblemon.bettermusic.catalog.MusicMappingOverridesParser.parse(new StringReader("""
-            {"schemaVersion":1,"field":{"underground":"better_cobblemon_music:track/field/myroom/eterna_forest",
+            {"schemaVersion":1,"field":{"underground":"better_cobblemon_music:track/field/myroom/valor_lakefront_day",
               "biomes":{"minecraft:cherry_grove":"better_cobblemon_music:track/field/desert/route_111"}}}
             """));
         try (var reader = Files.newBufferedReader(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"))) {
@@ -179,7 +179,7 @@ final class OfficialPokemusicMappingTest {
                 MusicCatalogSettings.defaults("better_cobblemon_music:official"), overrides);
             var resolver = new FieldPlaylistResolver(custom.snapshot().field());
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
-                Set.of(), true)).playlist(), "field/myroom/eterna_forest");
+                Set.of(), true)).playlist(), "field/myroom/valor_lakefront_day");
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
                 Set.of(), false)).playlist(), "field/desert/route_111");
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
