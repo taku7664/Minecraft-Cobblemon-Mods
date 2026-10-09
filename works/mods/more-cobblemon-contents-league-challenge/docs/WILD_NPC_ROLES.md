@@ -143,7 +143,7 @@ NpcDialogues.open(
 
 ### 받는 포켓몬
 
-- **종:** 원한 종보다 등급이 한 단계 높은 종 중 무작위(common→uncommon, uncommon→rare, rare→ultra-rare). 원한 종이 ultra-rare면 ultra-rare 중 무작위. 타입은 따지지 않고, 제외 종은 뺀다. 진화 단계는 레벨에 맞춰 `WildSpawnSpecies.fit()`으로 맞춘다.
+- **종:** 원한 종보다 등급이 한 단계 높은 종 중 무작위(common→uncommon, uncommon→rare, rare→ultra-rare). 스폰할 때 원하는 종과 함께 정해 두고, 제안 대사("바꿔 주면 내 ○○ 줄게!")와 교환 확인 대사에서 알려 준다. 확인 대사는 레벨에 맞춰 이전 진화 단계로 내려간 실제 종을 보여 준다. 원한 종이 ultra-rare면 ultra-rare 중 무작위. 타입은 따지지 않고, 제외 종은 뺀다. 진화 단계는 레벨에 맞춰 `WildSpawnSpecies.fit()`으로 맞춘다.
 - **레벨:** 내준 포켓몬의 레벨. 단 플레이어 레벨캡을 넘지 않는다.
 - **이로치:** 1/100. 내준 포켓몬이 이로치였는지와 무관하다.
 - **어버이:** 그 NPC로 정한다. Cobblemon `Pokemon.setOriginalTrainer(String)`이 어버이 종류를 `NPC`로, 문자열을 어버이 이름으로 저장한다. 파티에 넣을 때 `PlayerPartyStore.add`는 어버이가 비어 있을 때만 플레이어로 채우므로, 미리 정한 NPC 어버이가 그대로 남는다(JAR 바이트코드로 확인).
