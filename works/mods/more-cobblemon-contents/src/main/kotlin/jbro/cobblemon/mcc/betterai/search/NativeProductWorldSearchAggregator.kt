@@ -42,6 +42,8 @@ internal data class NativeProductWorldSearchRequest(
      * searched nor valued. Only [NativeInformationSetSearch] honors it.
      */
     val excludedRootActionIds: Set<String> = emptySet(),
+    /** Orders the actions tried at every position; values do not depend on it. Only [NativeInformationSetSearch]. */
+    val actionPrior: NativeActionPrior? = null,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -89,6 +91,10 @@ internal data class NativeProductWorldSearchResult(
     val rootSnapshots: Map<NativeSearchWorldKey, NativeProductRootSnapshot> = emptyMap(),
     /** Information-set search iterations; zero for the per-world search. */
     val iterations: Int = 0,
+    /** Nodes spent when every root value was first proven; null if never, or for the per-world search. */
+    val settledAtNodes: Int? = null,
+    /** The root values at that moment, by action ID. */
+    val settledRootValues: Map<String, Double> = emptyMap(),
 ) {
     init {
         require(depthCompleted >= 0)

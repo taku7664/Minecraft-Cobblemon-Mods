@@ -70,6 +70,8 @@ internal class NativeInformationSetSearch(
     private val lease: NativeInformationSetLease = { deadlineNanos, action ->
         NativeShowdownRuntimeService.withWorker(deadlineNanos, action)
     },
+    /** Diagnostics only: receives every root choice's replies, grouped by opponent set, once the search ends. */
+    private val rootReport: ((String) -> Unit)? = null,
 ) {
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val first = request.worlds.first()
@@ -80,7 +82,7 @@ internal class NativeInformationSetSearch(
         val result = try {
             lease(request.deadlineNanos) { worker ->
                 try {
-                    Run(request, worker, replacementSpendsTurn).execute()
+                    Run(request, worker, replacementSpendsTurn, rootReport).execute()
                 } catch (abort: Abort) {
                     abort.result
                 }
@@ -110,6 +112,7 @@ internal class NativeInformationSetSearch(
         private val request: NativeProductWorldSearchRequest,
         private val worker: NativeBranchWorker,
         private val replacementSpendsTurn: Boolean,
+        private val rootReport: ((String) -> Unit)?,
     ) {
         /**
          * The per-world search's attack-only third turn for Boss setup lines is not taken: it was admitted only
@@ -162,6 +165,8 @@ internal class NativeInformationSetSearch(
             }
 
             var idleIterations = 0
+            var settledAtNodes: Int? = null
+            var settledRootValues = emptyMap<String, Double>()
             while (nodesVisited < request.nodeLimit && idleIterations < IDLE_ITERATION_LIMIT) {
                 if (!timeAvailable()) break
                 val draw = random.nextDouble() * mass
@@ -169,9 +174,34 @@ internal class NativeInformationSetSearch(
                 val before = nodesVisited
                 if (!iterate(prepared[pick])) break
                 iterations++
-                idleIterations = if (rootSettled() && nodesVisited == before) idleIterations + 1 else 0
+                val settled = rootSettled()
+                if (settled && settledAtNodes == null) {
+                    settledAtNodes = nodesVisited
+                    settledRootValues = rootActions.associate { it.actionId to root.ally.getValue(it.actionId).value }
+                }
+                idleIterations = if (settled && nodesVisited == before) idleIterations + 1 else 0
             }
             val proven = rootSettled()
+            rootReport?.let { report ->
+                for (action in rootActions) {
+                    val arm = root.ally[action.actionId] ?: continue
+                    report("ROOT ${action.actionId} value=${"%.3f".format(arm.value)} settled=${arm.settled} visits=${arm.visits}")
+                    arm.replies.values.filter { it.visits > 0 }.groupBy { it.opponentSet }.forEach { (set, replies) ->
+                        report("  SET ${set.substringAfter("/")} visits=${replies.sumOf { it.visits }} stats=" +
+                            replies.first().child.entries.values.firstOrNull()?.position?.frame?.p2Team
+                                ?.firstOrNull { it.activeSlot != null }?.let { "${it.stats} lv${it.level}" })
+                        replies.sortedBy { it.value }.forEach { reply ->
+                            report("    ${reply.key.substringAfter(SET_SEPARATOR).takeLast(40)} v=${"%.3f".format(reply.value)} " +
+                                "n=${reply.visits} threat=${"%.3f".format(reply.threatSum / reply.visits)} " +
+                                "tempo=${"%.3f".format(reply.tempoSum / reply.visits)} settled=${reply.settled} " +
+                                reply.child.entries.values.firstOrNull()?.position?.frame?.let { frame ->
+                                    (frame.p1Team + frame.p2Team).filter { it.activeSlot != null || it.hp == 0 }
+                                        .joinToString(" ") { "${it.species}:${it.hp}/${it.maxHp}" }
+                                }.orEmpty())
+                        }
+                    }
+                }
+            }
 
             val rootValues = rootActions.map { action ->
                 val arm = root.ally[action.actionId]
@@ -193,6 +223,8 @@ internal class NativeInformationSetSearch(
                 nodesVisited = nodesVisited,
                 rootSnapshots = prepared.associate { it.input.key to it.rootSnapshot },
                 iterations = iterations,
+                settledAtNodes = settledAtNodes,
+                settledRootValues = settledRootValues,
             )
         }
 
@@ -242,12 +274,12 @@ internal class NativeInformationSetSearch(
                 position = tree.root,
                 ply = 0,
                 replacement = false,
-                ally = rootActions.map { product ->
+                ally = ordered(tree.root, BattleSide.ALLY, rootActions).map { product ->
                     Choice(product.actionId, mapping.productToNative.getValue(product.actionId))
                 },
-                opponent = NativeOpponentResponseOrdering.order(
+                opponent = ordered(tree.root, BattleSide.OPPONENT, NativeOpponentResponseOrdering.order(
                     rootOpponent, request.responseMemory, request.responseInformation,
-                ).let { choices(tree.root, it) },
+                )).let { choices(tree.root, it) },
                 opponentSet = opponentSet(tree.root),
             )
             return world
@@ -362,7 +394,7 @@ internal class NativeInformationSetSearch(
                 ply == attackOnlyPly -> tree.attackingActions(position)
                 else -> tree.actions(position, BattleSide.ALLY,
                     if (request.excludeFutureAllyVoluntarySwitches) 0 else FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
-            }
+            }.let { ordered(position, BattleSide.ALLY, it) }
             val opponentActions = if (replacement) {
                 tree.actions(position, BattleSide.OPPONENT)
             } else {
@@ -370,7 +402,7 @@ internal class NativeInformationSetSearch(
                     tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT),
                     request.responseMemory, request.responseInformation,
                 )
-            }
+            }.let { ordered(position, BattleSide.OPPONENT, it) }
             if (allyActions.isEmpty() || opponentActions.isEmpty()) {
                 return Entry(position, ply, replacement, emptyList(), emptyList())
             }
@@ -383,6 +415,13 @@ internal class NativeInformationSetSearch(
                 opponentSet = opponentSet(position),
             )
         }
+
+        /**
+         * Untried choices are opened in this order, and away from the root one at a time as alpha-beta does, so the
+         * likeliest best first lets a proven sibling cut the rest off sooner. The values do not depend on it.
+         */
+        private fun ordered(position: NativeSearchPosition, side: BattleSide, actions: List<BattleActionCandidate>) =
+            NativeMatchupPrior.order(request.actionPrior, position.state, side, actions)
 
         private fun choices(position: NativeSearchPosition, actions: List<BattleActionCandidate>): List<Choice> {
             val set = opponentSet(position)

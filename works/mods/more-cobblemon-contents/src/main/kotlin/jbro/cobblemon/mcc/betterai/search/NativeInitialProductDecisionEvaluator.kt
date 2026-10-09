@@ -77,6 +77,8 @@ internal data class NativeInitialProductDecisionEvaluation(
 internal data class NativeRulePriorities(
     val excludedActionIds: Set<String> = emptySet(),
     val weights: Map<java.util.UUID, Double> = emptyMap(),
+    /** The decision's matchup scores; the search tries actions in the order they suggest. */
+    val scores: jbro.cobblemon.mcc.betterai.matchup.MatchupScores? = null,
 ) {
     companion object {
         val NONE = NativeRulePriorities()
@@ -249,6 +251,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget, rules),
                 excludedRootActionIds = rootExclusions(context, rules),
+                actionPrior = rules.scores?.let(::NativeMatchupPrior),
                 nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,
@@ -403,6 +406,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget, rules),
                 excludedRootActionIds = rootExclusions(context, rules),
+                actionPrior = rules.scores?.let(::NativeMatchupPrior),
                 nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,

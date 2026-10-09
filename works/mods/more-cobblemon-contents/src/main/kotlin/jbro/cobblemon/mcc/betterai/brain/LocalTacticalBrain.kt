@@ -337,6 +337,7 @@ internal class LocalTacticalBrain(
         val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(
             excludedActionIds = ruleExclusions(difficultyContext.candidates).keys,
             weights = LocalRuleWeights.weights(difficultyContext.state, profile.difficulty.tier, aceScores, ruleScores),
+            scores = ruleScores,
         )
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
