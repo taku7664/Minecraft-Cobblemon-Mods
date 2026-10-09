@@ -7,6 +7,13 @@
 - **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
 - **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
+## [2026-10-09 14:20] 야생 NPC 스폰을 그룹 자리표시 하나로
+
+- **사용자 결정:** 트레이너가 너무 자주 나온다. 종류마다 스폰 항목을 두는 대신 "트레이너" 스폰 하나를 두고, 스폰될 때 어떤 트레이너가 될지 정한다. 트레이너 월드 가중치 50. 역할 NPC도 같은 방식, 역할별 가중치는 유지.
+- **구현:** 월드 스폰 풀(`spawn_pool_world/wild_trainers.json`)은 자리표시 두 개뿐이다. `spawn_wild_trainer` 50, `spawn_wild_npc` 150(예전 역할 네 항목 합계 그대로, 역할 쪽 빈도는 바꾸지 않음). 둘 다 uncommon·지상·하늘 보임·밝기 8·딥다크 제외. 종류별 조건·가중치는 `league-challenge/wild_spawns/{trainers,roles}.json`(예전 항목 그대로). `WildNpcSpawns`가 `ENTITY_SPAWN`에서 자리표시를 그 자리 조건(`SpawnDetail.isSatisfiedBy`, Cobblemon `SpawnLoader.gson`으로 읽음)이 맞는 종류 중 가중치로 골라 `setNpc`+`initialize(1)`로 바꾼다. rare로 적힌 종류는 가중치 0.1배. 교환꾼이 뽑혔는데 원할 종이 없으면 남은 역할 중에서 다시 고른다. 맞는 종류가 없으면 스폰 취소.
+- **생성기:** `tools/wild-trainers/gen_wild_trainers.py`는 이제 `wild_spawns/trainers.json`만 쓰고 월드 스폰 풀은 건드리지 않는다. 자리표시 이름 키는 생성기가 지우는 `wild_trainer.` 접두사를 피해 `npc.<ns>.wild_spawn.*`.
+- **검증:** 리그 본 코드·테스트 컴파일 통과. 정합성 테스트(`WildTrainerDataTest`의 그룹 테스트) 추가했지만 돌리지 않았다. 빌드·배치·실게임 안 함. 실제로 자리표시가 바뀌어 나오는지, 스킨·이름이 정상인지는 게임에서 확인해야 한다.
+
 ## [2026-10-09 04:58] 이름 음차·상대 도구 가리기·상태 패널 빌드·개발 배치
 
 - **빌드:** `main` = `origin/main` = `7fb43f41`, 리그 소스에 커밋 안 된 변경 없음을 확인하고 `works/`에서 `remapJar`만(테스트 안 함). `jar --validate` 통과. JAR 안에 개인 이름 키 679개, `NOT_PERSONAL_NAMES`, `LeagueHubTab` 포함 확인.

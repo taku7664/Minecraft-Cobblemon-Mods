@@ -30,8 +30,8 @@ BLOCKED_SKINS = re.compile(r"^(leader|gym_leader|sinnoh_leader|elite_four|champi
                            r"rocket_admin|shadow_admin|light_of_ruin|professor|prof|player|pokemon_trainer|expert|sucessor|game_freaks|"
                            r"dumbass|terror|friendly|pi|interviewers|reporter|cameraman|idol|team_rocket|team_galactic|shadow_grunt|"
                            r"burglar|double_team|black_emboar|black_ferrothorn)(_[a-z0-9_]+)?")
-# The world spawn weight shared by every trainer kind that can appear in one biome, per bucket. A biome's uncommon
-# Pokemon weigh well over a thousand together, so at 32 a trainer turned up once in thousands of spawns.
+# The weight shared by every trainer kind that can appear in one biome, per bucket. These only share out the single
+# stand-in trainer spawn among the kinds (WildNpcSpawns); how often trainers appear at all is that spawn's own weight.
 BIOME_WEIGHT = {"uncommon": 320.0, "rare": 100.0}
 
 
@@ -294,11 +294,11 @@ def main():
             "condition": condition,
             "anticondition": {"biomes": ["#cobblemon:is_deep_dark"]},
         })
-    pool_path = RES / "data" / NS / "spawn_pool_world" / "wild_trainers.json"
-    # Role NPC spawns are tuned by hand; they keep their entries, after the trainers.
-    if pool_path.exists():
-        spawns += [s for s in json.loads(pool_path.read_text(encoding="utf-8"))["spawns"] if s.get("npcClass") in roles]
-    write_json(pool_path, {"enabled": True, "neededInstalledMods": [], "neededUninstalledMods": [], "spawns": spawns})
+    # The world spawn pool holds one stand-in trainer entry (spawn_pool_world/wild_trainers.json, tuned by hand); when
+    # it spawns, the mod picks one of these kinds by weight among those whose conditions hold there (WildNpcSpawns).
+    # Role NPCs are their own group in wild_spawns/roles.json, also tuned by hand.
+    write_json(RES / "data" / NS / "league-challenge" / "wild_spawns" / "trainers.json",
+               {"placeholder": f"{NS}:spawn_wild_trainer", "spawns": spawns})
 
     files = sorted(used)
     variations = [{"aspects": [], "layers": [], "model": "cobblemon:steve.geo", "poser": "cobblemon:standard",

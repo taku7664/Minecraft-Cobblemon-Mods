@@ -1026,5 +1026,7 @@
   "npc.more_cobblemon_contents_league_challenge.personal_name.zachary": "Zachary",
   "npc.more_cobblemon_contents_league_challenge.personal_name.zachery": "Zachery",
   "npc.more_cobblemon_contents_league_challenge.personal_name.zackary": "Zackary",
-  "npc.more_cobblemon_contents_league_challenge.personal_name.zeek": "Zeek"
+  "npc.more_cobblemon_contents_league_challenge.personal_name.zeek": "Zeek",
+  "npc.more_cobblemon_contents_league_challenge.wild_spawn.trainer": "Wild Trainer",
+  "npc.more_cobblemon_contents_league_challenge.wild_spawn.npc": "Wild NPC"
 }

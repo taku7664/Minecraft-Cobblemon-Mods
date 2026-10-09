@@ -1026,5 +1026,7 @@
   "npc.more_cobblemon_contents_league_challenge.personal_name.zachary": "재커리",
   "npc.more_cobblemon_contents_league_challenge.personal_name.zachery": "재커리",
   "npc.more_cobblemon_contents_league_challenge.personal_name.zackary": "재커리",
-  "npc.more_cobblemon_contents_league_challenge.personal_name.zeek": "지크"
+  "npc.more_cobblemon_contents_league_challenge.personal_name.zeek": "지크",
+  "npc.more_cobblemon_contents_league_challenge.wild_spawn.trainer": "야생 트레이너",
+  "npc.more_cobblemon_contents_league_challenge.wild_spawn.npc": "야생 NPC"
 }

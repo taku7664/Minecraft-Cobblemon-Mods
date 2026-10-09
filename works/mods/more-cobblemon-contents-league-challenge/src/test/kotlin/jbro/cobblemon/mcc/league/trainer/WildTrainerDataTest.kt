@@ -110,6 +110,26 @@ class WildTrainerDataTest {
     }
 
     @Test
+    fun `the world spawns one stand-in per group and every kind is in exactly one group`() {
+        val world = JsonParser.parseString(resources.resolve("data/$ns/spawn_pool_world/wild_trainers.json").readText()).asJsonObject
+            .getAsJsonArray("spawns").map { it.asJsonObject }
+        assertEquals(mapOf("$ns:spawn_wild_trainer" to 50.0, "$ns:spawn_wild_npc" to 150.0),
+            world.associate { it.get("npcClass").asString to it.get("weight").asDouble })
+        val groups = Files.list(resources.resolve("data/$ns/league-challenge/wild_spawns")).use { files -> files.toList() }.associate { file ->
+            val group = JsonParser.parseString(file.readText()).asJsonObject
+            group.get("placeholder").asString to group.getAsJsonArray("spawns").map { it.asJsonObject.get("npcClass").asString }
+        }
+        assertEquals(world.map { it.get("npcClass").asString }.toSet(), groups.keys)
+        groups.keys.forEach { assertTrue(Files.exists(resources.resolve("data/$ns/npcs/${it.substringAfter(':')}.json")), it) }
+        val listed = groups.values.flatten()
+        assertEquals(listed.size, listed.toSet().size, "a kind is listed twice")
+        assertEquals(definitions.keys, listed.toSet())
+        // Battling kinds and role NPCs stay in their own groups, so each group's frequency is its own.
+        assertTrue(groups.getValue("$ns:spawn_wild_trainer").all { definitions.getValue(it).role == WildNpcRole.BATTLE })
+        assertTrue(groups.getValue("$ns:spawn_wild_npc").none { definitions.getValue(it).role == WildNpcRole.BATTLE })
+    }
+
+    @Test
     fun `every personal name a skin gives has a name in both languages`() {
         fun lang(code: String) = JsonParser.parseString(resources.resolve("assets/$ns/lang/$code.json").readText()).asJsonObject
         val korean = lang("ko_kr")

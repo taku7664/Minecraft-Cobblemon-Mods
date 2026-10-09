@@ -1,0 +1,25 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_spawn.npc"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": false
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_youngster_austin_0303"
+    ]
+  }
+}

@@ -99,6 +99,7 @@ object WildTrainers {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(Resources)
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(WildRewards.Resources)
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(WildQuiz.Resources)
+        WildNpcSpawns.register()
         UseEntityCallback.EVENT.register { player, level, hand, entity, _ ->
             val npc = entity as? NPCEntity ?: return@register InteractionResult.PASS
             val definition = definitionOf(npc) ?: return@register InteractionResult.PASS
@@ -133,12 +134,17 @@ object WildTrainers {
         CobblemonEvents.BATTLE_FLED.subscribe(Priority.NORMAL) { event -> fights.remove(event.battle.battleId) }
         CobblemonEvents.ENTITY_SPAWN.subscribe(Priority.NORMAL) { event ->
             val npc = event.entity as? NPCEntity ?: return@subscribe
-            if (definitionOf(npc) == null) return@subscribe
-            val level = event.spawnablePosition.world
-            if (!spawnAllowed(level, event.spawnablePosition.position.x.toDouble(), event.spawnablePosition.position.y.toDouble(),
-                    event.spawnablePosition.position.z.toDouble())) return@subscribe event.cancel()
+            val placeholder = WildNpcSpawns.isPlaceholder(npc)
+            if (!placeholder && definitionOf(npc) == null) return@subscribe
+            val position = event.spawnablePosition
+            if (!spawnAllowed(position.world, position.position.x.toDouble(), position.position.y.toDouble(),
+                    position.position.z.toDouble())) return@subscribe event.cancel()
             // A trader wants something the player who brought it has; with nothing to want it does not come.
-            if (definitionOf(npc)?.role == WildNpcRole.TRADE && !WildTrader.prepare(npc, event.cause.entity as? ServerPlayer)) event.cancel()
+            val accept = { candidate: NPCEntity ->
+                definitionOf(candidate)?.role != WildNpcRole.TRADE || WildTrader.prepare(candidate, event.cause.entity as? ServerPlayer)
+            }
+            val accepted = if (placeholder) WildNpcSpawns.become(npc, position, accept) else accept(npc)
+            if (!accepted) event.cancel()
         }
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             val npc = entity as? NPCEntity ?: return@register

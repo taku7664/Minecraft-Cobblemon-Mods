@@ -27,7 +27,7 @@
 
 코드 기준이다(`src/main/kotlin/jbro/cobblemon/mcc/league/trainer/WildTrainers.kt`).
 
-- 트레이너 124종이 Cobblemon NPC 클래스(`data/.../npcs/wild_*.json`)이고, 스폰 풀 `data/.../spawn_pool_world/wild_trainers.json`에 바이옴·시간 조건과 함께 올라가 있다.
+- 트레이너 124종이 Cobblemon NPC 클래스(`data/.../npcs/wild_*.json`)다. 월드 스폰 풀(`data/.../spawn_pool_world/wild_trainers.json`)에는 자리표시 항목 두 개(트레이너·역할 NPC)만 있고, 자리표시가 스폰되면 `WildNpcSpawns`가 그 자리에서 조건(바이옴·시간)이 맞는 종류를 가중치로 골라 그 클래스로 바꾼다. 종류별 조건과 가중치는 `data/.../league-challenge/wild_spawns/{trainers,roles}.json`에 있다.
 - 스폰 제한은 `WildTrainers`가 공통으로 건다. `WILD_DIMENSIONS`에 있는 차원에서만, 64블록 안에 2명까지(`NEARBY_LIMIT`), 터미널 2청크 안 제외.
 - 우클릭은 `UseEntityCallback`이 가로챈다. `offer()`가 거절 사유(배틀 중, 이미 짐, 5분 대기, 싸울 포켓몬 없음)를 보고, 사유가 있으면 채팅으로 `<이름> 대사`를 보낸다. 없으면 Cobblemon `DialogueManager`로 인사 한 줄과 [승부한다! / 다음에]를 띄운다.
 - 배틀이 끝나면 BP를 주고 `DEFEATED_TAG`를 붙여 300틱 뒤에 지운다.
@@ -210,16 +210,14 @@ NpcDialogues.open(
 
 ## 출현 빈도
 
-지금 트레이너 가중치는 `uncommon` 104종 합계 약 1498, `rare` 20종 합계 약 315다(`spawn_pool_world/wild_trainers.json`). 역할 NPC는 `uncommon`에 넣고, 합계가 트레이너의 10% 정도가 되게 시작한다.
+월드 스폰 풀에는 그룹마다 자리표시 항목 하나만 있다(`uncommon`). 그래서 종류가 늘어도 그룹 전체의 출현 빈도는 이 가중치 하나로만 정해진다.
 
-| 역할 | 가중치 초깃값 | 트레이너 대비 |
+| 그룹 | 월드 가중치 | 그룹 안에서 고르는 기준 |
 |---|---|---|
-| 회복 | 60 | 약 4% |
-| 퀴즈 | 40 | 약 2.7% |
-| 보상 | 30 | 약 2% |
-| 교환 | 20 | 약 1.3% |
+| 트레이너 | 50 (2026-10-09 사용자 결정) | 종류별 가중치. `rare`로 적힌 종류는 0.1배(월드 rare 0.5% / uncommon 5%) |
+| 역할 NPC | 150 (예전 네 항목 합계 그대로) | 회복 60, 퀴즈 40, 보상 30, 교환 20 |
 
-교환은 이로치 1/100과 희귀도 상승이 걸려 있어 가장 드물게 둔다.
+교환은 이로치 1/100과 희귀도 상승이 걸려 있어 가장 드물게 둔다. 교환꾼이 뽑혔는데 원할 종이 없으면 남은 역할 중에서 다시 고른다.
 
 ## 작업 순서
 

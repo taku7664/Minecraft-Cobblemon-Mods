@@ -1,0 +1,73 @@
+{
+  "placeholder": "more_cobblemon_contents_league_challenge:spawn_wild_npc",
+  "spawns": [
+    {
+      "id": "wild_npc_caretaker",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_caretaker",
+      "bucket": "uncommon",
+      "weight": 60.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_npc_trader",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_trader",
+      "bucket": "uncommon",
+      "weight": 20.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_npc_quizzer",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_quizzer",
+      "bucket": "uncommon",
+      "weight": 40.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    },
+    {
+      "id": "wild_npc_traveler",
+      "type": "npc",
+      "npcClass": "more_cobblemon_contents_league_challenge:wild_traveler",
+      "bucket": "uncommon",
+      "weight": 30.0,
+      "spawnablePositionType": "grounded",
+      "condition": {
+        "canSeeSky": true,
+        "minSkyLight": 8
+      },
+      "anticondition": {
+        "biomes": [
+          "#cobblemon:is_deep_dark"
+        ]
+      }
+    }
+  ]
+}
