@@ -59,7 +59,7 @@ final class OfficialPokemusicMappingTest {
             int preserved = 0;
             for (var element : files) {
                 var report = element.getAsJsonObject();
-                if (Set.of("field/plaza/route_1.ogg", "field/badlands/abandoned_ship.ogg",
+                if (report.get("target").getAsString().startsWith("battle/") || Set.of("field/plaza/route_1.ogg", "field/badlands/abandoned_ship.ogg",
                     "field/cave/sinnoh_lake_caverns.ogg", "field/river/sealed_chamber.ogg",
                     "field/swamp/road_to_reversal_mountain.ogg", "field/snow/sinnoh_route_205_night.ogg",
                     "field/jungle/route_210.ogg")
@@ -74,7 +74,7 @@ final class OfficialPokemusicMappingTest {
                 assertEquals(44100, report.get("sample_rate").getAsInt());
                 preserved++;
             }
-            assertEquals(23, preserved);
+            assertEquals(19, preserved);
         }
         Path newPlazaSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/jubilife_city_day.ogg");
         assertEquals("eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105", sha256(newPlazaSong));

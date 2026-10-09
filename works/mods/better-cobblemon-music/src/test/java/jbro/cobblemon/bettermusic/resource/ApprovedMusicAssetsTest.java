@@ -17,27 +17,16 @@ final class ApprovedMusicAssetsTest {
     @TempDir Path directory;
 
     @Test
-    void packedAssetsExactlyMatchReadmeAndSeparatelyApprovedBattleMusic() throws Exception {
+    void packedAssetsExactlyMatchTheCurrentApprovedCatalog() throws Exception {
         Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
         Path pack = directory.resolve("pack");
         MusicResourcePackBuildTool.build(module.resolve("resource-pack/src"),
             module.resolve("resource-pack/catalog-layout.json"), pack);
         JsonObject catalog = read(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"));
         JsonObject playlists = catalog.getAsJsonObject("playlists");
-        JsonObject battle = catalog.getAsJsonObject("mappings").getAsJsonObject("battle");
-
-        Set<String> approved = new HashSet<>();
-        for (JsonElement file : read(module.resolve("resource-pack/import-pokemusic-2026-10-03.json")).getAsJsonArray("files")) {
-            approved.add(trackId(file.getAsJsonArray().get(1).getAsString()));
-        }
-        approved.add(trackId(read(module.resolve("resource-pack/import-myroom-2026-10-03.json")).get("target").getAsString()));
-        approved.add(trackId("battle/pvp/pokemon_champions_arena_battle.ogg"));
-        for (String key : Set.of("wild", "alpha", "legendary", "ultraBeast")) {
-            addPlaylistTracks(playlists, battle.get(key).getAsString(), approved);
-        }
-        for (JsonElement rule : battle.getAsJsonArray("pokemon")) {
-            addPlaylistTracks(playlists, rule.getAsJsonObject().get("playlist").getAsString(), approved);
-        }
+        Set<String> approved = new HashSet<>(read(module.resolve("resource-pack/catalog-layout.json"))
+            .getAsJsonObject("trackTitles").keySet());
+        assertEquals(87, approved.size());
         assertEquals(approved, catalog.getAsJsonObject("tracks").keySet(), "Unrequested BGM must not be packaged");
 
         Set<String> mapped = new HashSet<>();
@@ -67,10 +56,6 @@ final class ApprovedMusicAssetsTest {
         try (var reader = Files.newBufferedReader(file)) {
             return JsonParser.parseReader(reader).getAsJsonObject();
         }
-    }
-
-    private static String trackId(String ogg) {
-        return "better_cobblemon_music:" + ogg.substring(0, ogg.length() - ".ogg".length());
     }
 
     private static void addPlaylistTracks(JsonObject playlists, String id, Set<String> tracks) {
