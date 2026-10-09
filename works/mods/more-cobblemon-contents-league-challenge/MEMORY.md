@@ -18,6 +18,23 @@
 - **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
 - **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
+## [2026-10-09 18:10] 교환꾼 안내·자리표시 방어 코드 빌드·개발 배치
+
+- **빌드:** `main` = `origin/main` = `abda4ff4`, 리그 소스 변경 없음 확인 후 `remapJar`(테스트 안 함). `jar --validate` 통과, JAR 안에 새 교환 대사·`WildNpcSpawns$Kind` 확인. `3cb56d50`(자리표시 방어)·`abda4ff4`(교환꾼 안내) 포함.
+- **배치:** `develop-product/server/mods`·`client/mods` 교체, SHA-256 일치(`a5ce4701…`), 폴더마다 리그 JAR 하나. 이전 JAR은 `develop-product/deployment-backups/20261009-trader-offer-standin-guard/`. 서버·게임 꺼진 상태, 켜지 않음. 실게임 미확인.
+
+## [2026-10-09 18:00] 교환꾼이 줄 포켓몬을 미리 말함
+
+- **사용자 요청:** 교환꾼이 어떤 포켓몬과 바꿔 주는지 말해야 한다.
+- **구현:** `WildTrader.prepare`가 원하는 종과 함께 줄 종(원하는 종보다 한 등급 위에서 무작위)을 정해 태그 `mcc_trade_offer:`에 적는다. 제안 대사 "혹시 %1$s 있어? 바꿔 주면 내 %2$s 줄게!", 교환 확인 때 "대신 내 %s 줄게."(레벨에 맞춰 `WildSpawnSpecies.fit`으로 이전 단계가 된 실제 종). 교환 때 그 종을 만든다. 태그가 없는 예전 교환꾼은 "귀한 포켓몬"이라 말하고 예전처럼 무작위. 이름 뒤 조사 문제를 피하려고 "내 ○○ 줄게" 꼴로 썼다. 컴파일 확인.
+
+## [2026-10-09 17:40] 싱글 월드에 Cobblemon 테스트 NPC("AI Man"·"The Kitchen Sink"·사치박사)가 나타남
+
+- **확인:** 사용자 스크린샷. 싱글 월드 `새로운 세계/entities/r.-4.-1.mca`에 `cobblemon:ai_test`·`kitchen_sink`·`sacchi` NPC 세 개, 모두 `VariationAspects` 비었고 Level 1, 태그 없음. Cobblemon 1.8.1 자연 스폰 풀엔 NPC가 없다. `NPCEntity`는 저장된 클래스를 못 찾으면 `NPCClasses.classes.first()`로 되살리고(바이트코드 확인), 이 테스트 클래스들은 `canDespawn: false`라 계속 남는다.
+- **추정(미확정):** 새 자리표시 변환(`WildNpcSpawns`)이 클래스 없이(또는 엉뚱한 클래스로) NPC를 세웠고, 저장·로드 때 테스트 클래스로 바뀌었다. 스폰 데이터 파싱(`SpawnLoader.gson`, `NPCClassReferenceAdapter`)은 정상으로 보여 정확한 경로는 못 찾았다.
+- **수정:** 변환 때 파싱한 클래스 객체를 쓰지 않고 JSON의 `npcClass` ID로 `NPCClasses.getByIdentifier`를 다시 찾는다. 우리 정의(`WildTrainers.definitions`)에 없는 클래스는 건너뛰고, 설정 뒤 ID가 다르면 스폰을 취소한다. 변환마다 INFO 로그(`Wild NPC stand-in became ...`)를 남겨 실게임에서 경로를 확인할 수 있게 했다. 컴파일만 확인, 빌드·배치·실게임 안 함.
+- **남은 NPC 정리:** `/kill @e[type=cobblemon:npc,nbt={NPCClass:"cobblemon:ai_test"}]`(kitchen_sink·sacchi도 같은 식). 자동 삭제는 사용자 결정 전이라 넣지 않았다.
+
 ## [2026-10-09 16:35] 역할 NPC 월드 가중치 150 → 15
 
 - **사용자 결정:** 역할 NPC가 너무 자주 나온다 → 15. 트레이너 50은 그대로. 트레이너를 50으로 줄이면서 역할을 150으로 둬 역할이 트레이너의 3배가 됐던 것을 바로잡았다. 평원 낮 약 0.1%, 숲 낮 약 0.25%(추정).

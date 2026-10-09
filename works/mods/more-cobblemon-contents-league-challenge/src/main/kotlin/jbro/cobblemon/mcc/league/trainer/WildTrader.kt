@@ -8,6 +8,7 @@ import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import com.cobblemon.mod.common.net.messages.client.storage.pc.OpenPCPacket
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.cobblemon.mod.common.pokemon.Species
 import com.google.gson.JsonParser
 import java.util.UUID
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
@@ -23,12 +24,14 @@ import net.minecraft.server.level.ServerPlayer
 /**
  * The trade NPC (`docs/WILD_NPC_ROLES.md`). When it spawns it picks a species the player who brought it has, in their
  * party or PC; given that species from party slot 1, it gives back a Pokemon one rarity step rarer, whose original
- * trainer is the NPC. Only that player may trade with it, and it leaves after the trade.
+ * trainer is the NPC. Which species it gives is picked with what it wants, so it can say so up front. Only that
+ * player may trade with it, and it leaves after the trade.
  */
 internal object WildTrader {
     private const val KEY = "${WildNpcRoles.KEY}.trade"
     private const val WANT_TAG = "mcc_trade_want:"
     private const val OWNER_TAG = "mcc_trade_owner:"
+    private const val OFFER_TAG = "mcc_trade_offer:"
     private const val OWNER_NAME_TAG = "mcc_trade_owner_name:"
     private const val SHINY_ONE_IN = 100
     private const val PC_REACH = 8.0
@@ -45,8 +48,10 @@ internal object WildTrader {
             .groupBy({ it.first }, { it.second })
         val weighted = wantWeights.filterKeys { it in byRarity }
         val rarity = if (weighted.isNotEmpty()) pick(weighted) else WildRarity.ULTRA_RARE.takeIf { it in byRarity } ?: return false
-        val wanted = byRarity.getValue(rarity).random().species.resourceIdentifier.path
-        npc.addTag(WANT_TAG + wanted)
+        val wanted = byRarity.getValue(rarity).random().species
+        val offered = WildSpeciesRarity.species(rarity.next()).randomOrNull() ?: return false
+        npc.addTag(WANT_TAG + wanted.resourceIdentifier.path)
+        npc.addTag(OFFER_TAG + offered.resourceIdentifier.path)
         npc.addTag(OWNER_TAG + player.uuid)
         npc.addTag(OWNER_NAME_TAG + player.gameProfile.name)
         return true
@@ -60,7 +65,7 @@ internal object WildTrader {
             return NpcTalks.open(player, WildTrainers.talk(npc,
                 Component.translatable("$KEY.not_yours", tagValue(npc, OWNER_NAME_TAG) ?: "?")))
         }
-        NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.offer", wanted.translatedName), listOf(
+        NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.offer", wanted.translatedName, offeredName(npc)), listOf(
             NpcTalkChoice(Component.translatable("$KEY.choice.trade")) { confirm(it, npc) },
             NpcTalkChoice(Component.translatable("$KEY.choice.pc")) { openPc(it, npc) },
             NpcTalkChoice(Component.translatable("$KEY.choice.later")),
@@ -76,6 +81,8 @@ internal object WildTrader {
             return NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.not_first", species)))
         }
         val lines = mutableListOf<Component>(Component.translatable("$KEY.confirm", label(first), first.level))
+        // At the level it would come at, the promised species may still be an earlier stage of its line.
+        offered(npc)?.let { lines += Component.translatable("$KEY.receive", fitted(player, it, first.level).translatedName) }
         val held = first.heldItem()
         if (!held.isEmpty) lines += Component.translatable("$KEY.item_back", held.hoverName)
         val chosen = first.uuid
@@ -117,7 +124,7 @@ internal object WildTrader {
 
     /** The Pokemon given back: a random species of [rarity], at [level] but never past the player's cap. */
     private fun create(player: ServerPlayer, npc: NPCEntity, rarity: WildRarity, level: Int): Pokemon? {
-        val species = WildSpeciesRarity.species(rarity).randomOrNull() ?: return null
+        val species = offered(npc)?.takeIf { WildSpeciesRarity.of(it) == rarity } ?: WildSpeciesRarity.species(rarity).randomOrNull() ?: return null
         val at = level.coerceAtMost(WildTrainers.cap(player)).coerceIn(1, 100)
         val pokemon = PokemonProperties.parse("${species.resourceIdentifier.path} level=$at").create()
         WildSpawnSpecies.fit(pokemon, at)
@@ -157,6 +164,20 @@ internal object WildTrader {
         stream.reader(Charsets.UTF_8).use { reader ->
             JsonParser.parseReader(reader).asJsonObject.entrySet().associate { it.key to it.value.asString }
         }
+    }
+
+    /** The species this trader gives, picked when it spawned; null for one that spawned before it picked one. */
+    private fun offered(npc: NPCEntity): Species? = tagValue(npc, OFFER_TAG)?.let(PokemonSpecies::getByName)
+
+    private fun offeredName(npc: NPCEntity): Component =
+        offered(npc)?.translatedName ?: Component.translatable("$KEY.rarer")
+
+    /** [species] stepped back to the stage it would be given at for a Pokemon of [level], as [create] does. */
+    private fun fitted(player: ServerPlayer, species: Species, level: Int): Species {
+        val at = level.coerceAtMost(WildTrainers.cap(player)).coerceIn(1, 100)
+        val pokemon = PokemonProperties.parse("${species.resourceIdentifier.path} level=$at").create()
+        WildSpawnSpecies.fit(pokemon, at)
+        return pokemon.species
     }
 
     /** The Pokemon's nickname or species, with a star when it is shiny. */

@@ -501,7 +501,20 @@ internal class EngineBranchWorker(
         return battle
     }
 
+    /**
+     * The snapshot is `{"engine":1,"definition":{...},"steps":[...]}` with the steps last, so a step is appended to
+     * the text instead of parsing and reprinting the whole definition at every search node. That reprint, with
+     * hashing the new text, was a sixth of a node's cost. A snapshot in any other shape takes the old path.
+     */
     private fun extend(snapshotJson: String, step: JsonArray): String {
+        val stepText = step.toString()
+        if (snapshotJson.endsWith(EMPTY_STEPS_END)) {
+            return snapshotJson.substring(0, snapshotJson.length - EMPTY_STEPS_END.length) +
+                STEPS_KEY + stepText + "]}"
+        }
+        if (snapshotJson.endsWith("]]}") && snapshotJson.contains(STEPS_KEY)) {
+            return snapshotJson.substring(0, snapshotJson.length - 2) + "," + stepText + "]}"
+        }
         val root = JsonParser.parseString(snapshotJson).asJsonObject
         root.getAsJsonArray("steps").add(step)
         return root.toString()
@@ -770,3 +783,6 @@ internal class EngineBranchWorker(
         return digest.digest().take(8).joinToString("") { "%02x".format(it) }
     }
 }
+
+private const val STEPS_KEY = "\"steps\":["
+private const val EMPTY_STEPS_END = "\"steps\":[]}"

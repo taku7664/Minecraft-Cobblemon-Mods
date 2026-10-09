@@ -72,6 +72,8 @@ final class OfficialMusicLineupTest {
         assertTitle("field/cave/sinnoh_oreburgh_mine", "무쇠탄갱");
         assertTitle("field/cave/sinnoh_lake_caverns", "호수의 공동");
         assertTitle("field/ocean/underground_ruins", "땅밑유적");
+        assertTitle("field/badlands/mt_pyre_exterior", "송화산 (외부)");
+        assertTrue(!trackEvents.containsKey("better_cobblemon_music:field/badlands/abandoned_ship"));
         assertTitle("field/river/sealed_chamber", "고시의 석실");
         assertTitle("field/swamp/road_to_reversal_mountain", "리버스마운틴으로 가는 길");
         assertTitle("field/plains/sinnoh_route_201_night", "201번도로 (밤)");
