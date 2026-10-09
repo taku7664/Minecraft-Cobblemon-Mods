@@ -44,6 +44,7 @@
 <script src="../assets/data/dex/index.js"></script>
 <script src="../assets/data/dex/moves.js"></script>
 <script src="../assets/data/dex/abilities.js"></script>
+<script src="../assets/pokemon-text.js"></script>
 <script src="../assets/wiki.js"></script>
 <script>
   (function () {
@@ -161,20 +162,20 @@
       var container = $("pk-drops"); container.innerHTML = "";
       var table = form.drops;
       if (!table) { container.appendChild(el("p", "", "드롭 정보를 불러오지 못했습니다.")); return; }
-      if (!table.entries.length) { container.appendChild(el("p", "", "등록된 드롭 아이템이 없습니다.")); return; }
+      if (!table.entries.length) { container.appendChild(el("p", "", "쓰러뜨려도 아이템을 주지 않습니다.")); return; }
       var wrap = el("div", "table-wrap"), list = el("table", "drop-table");
       var head = el("thead"), header = el("tr");
-      ["아이템", "수량", "판정 확률"].forEach(function (label) { header.appendChild(el("th", "", label)); });
+      ["아이템", "수량", "확률 (참고)"].forEach(function (label) { header.appendChild(el("th", "", label)); });
       head.appendChild(header); list.appendChild(head);
       var body = el("tbody");
       table.entries.forEach(function (entry) {
         var row = el("tr"), name = el("td", "", entry.name);
-        name.appendChild(el("br")); name.appendChild(el("small", "", entry.id)); row.appendChild(name);
+        row.appendChild(name);
         row.appendChild(el("td", "", String(entry.quantity).replace(/-/g, "~") + "개"));
         row.appendChild(el("td", "", entry.percentage + "%")); body.appendChild(row);
       });
       list.appendChild(body); wrap.appendChild(list); container.appendChild(wrap);
-      container.appendChild(el("p", "note", "확률은 드롭 목록에 설정된 판정 확률입니다. 목록 순서와 총 드롭 수량 제한 때문에 최종 획득 확률과 다를 수 있습니다. 수량에 0이 포함되면 아이템을 얻지 못할 수도 있습니다."));
+      container.appendChild(el("p", "note", "표의 확률은 실제 획득 확률과 다를 수 있습니다. 아이템이 하나도 나오지 않을 수도 있습니다."));
     }
 
     function learnTabs(form) {
@@ -221,11 +222,11 @@
 
     function info(data) {
       var rows = [];
-      if (data.catchRate != null) rows.push(["포획률", data.catchRate + " / 255"]);
-      if (data.eggGroups && data.eggGroups.length) rows.push(["알 그룹", data.eggGroups.join(", ")]);
-      rows.push(["성비", data.maleRatio == null || data.maleRatio < 0 ? "성별 없음" : "수컷 " + Math.round(data.maleRatio * 100) + "% · 암컷 " + Math.round((1 - data.maleRatio) * 100) + "%"]);
+      if (data.eggGroups && data.eggGroups.length) rows.push(["알 그룹", window.WikiPokemonText.eggGroups(data.eggGroups)]);
+      var malePercent = Math.round(data.maleRatio * 1000) / 10;
+      rows.push(["성비", data.maleRatio == null || data.maleRatio < 0 ? "성별 없음" : "수컷 " + malePercent + "% · 암컷 " + Math.round((100 - malePercent) * 10) / 10 + "%"]);
       if (data.height != null) rows.push(["키 · 몸무게", (data.height / 10) + "m · " + (data.weight / 10) + "kg"]);
-      if (data.experienceGroup) rows.push(["경험치 그룹", EXP[data.experienceGroup] || data.experienceGroup]);
+      if (data.experienceGroup) rows.push(["레벨업 속도", EXP[data.experienceGroup] || "정보 없음"]);
       var body = $("pk-info");
       rows.forEach(function (r) { var tr = el("tr"); tr.appendChild(el("th", "", r[0])); tr.appendChild(el("td", "", r[1])); body.appendChild(tr); });
     }
@@ -234,7 +235,7 @@
       var box = $("pk-spawns");
       if (row.labels.some(function (l) { return l === "전설" || l === "환상" || l === "패러독스" || l === "제한급"; })) {
         var legend = el("div", "note tip");
-        legend.innerHTML = "<strong>전설 포켓몬</strong>나타나는 조건, 잡을 수 있는 등급, 엔트리 조건은 <a href=\"legends.html\">전설 스폰 가이드</a>에 자세히 있습니다.";
+        legend.innerHTML = "<strong>전설 포켓몬</strong>나타나는 장소, 잡을 수 있는 등급, 파티에 필요한 포켓몬은 <a href=\"legends.html\">전설 스폰 가이드</a>에서 확인하세요.";
         box.appendChild(legend);
       }
       if (!data.spawns.length) { box.appendChild(el("p", "", "야생에서는 나오지 않습니다. 진화나 다른 방법으로 얻어야 합니다.")); return; }
@@ -252,9 +253,9 @@
           (s.except || []).forEach(function (b) { biomes.appendChild(el("span", "chip no", b + " 제외")); });
           tr.appendChild(biomes);
           var cond = el("td");
-          (s.notes || []).forEach(function (n) { cond.appendChild(el("span", "chip", n)); });
-          s.conditions.forEach(function (c) { cond.appendChild(el("span", "chip cond", c)); });
-          (s.boosts || []).forEach(function (b) { cond.appendChild(el("span", "chip", b)); });
+          (s.notes || []).forEach(function (n) { cond.appendChild(el("span", "chip", window.WikiPokemonText.condition(n))); });
+          s.conditions.forEach(function (c) { cond.appendChild(el("span", "chip cond", window.WikiPokemonText.condition(c))); });
+          (s.boosts || []).forEach(function (b) { cond.appendChild(el("span", "chip", window.WikiPokemonText.condition(b))); });
           tr.appendChild(cond);
           body.appendChild(tr);
         });
@@ -269,11 +270,11 @@
       if (alpha.length) {
         var details = el("details"); var summary = el("summary", "", "알파 포켓몬 출현 " + alpha.length + "곳");
         details.appendChild(summary);
-        details.appendChild(el("p", "wiki-crumbs", "우두머리(알파) 포켓몬은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다. 새로 출현하는 개체는 최소 2V(능력치 개체값 31이 2개 이상)를 보장합니다. 기존에 잡은 포켓몬에는 소급 적용되지 않습니다."));
+        details.appendChild(el("p", "wiki-crumbs", "우두머리(알파) 포켓몬은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다. 새로 출현하는 개체는 최소 2V(능력치 개체값 31이 2개 이상)를 보장합니다. 이미 잡은 포켓몬의 개체값은 바뀌지 않습니다."));
         details.appendChild(spawnTable(alpha));
         box.appendChild(details);
       }
-      box.appendChild(el("p", "wiki-crumbs", "희귀도는 흔함 · 보통 · 드묾 · 매우 드묾 순서로 드뭅니다. 점선 바이옴은 그 계열의 바이옴이면 어디든 된다는 뜻입니다. 레벨은 내 레벨캡을 따릅니다."));
+      box.appendChild(el("p", "wiki-crumbs", "희귀도는 흔함 · 보통 · 드묾 · 매우 드묾 순서로 드뭅니다. 점선 바이옴은 그 계열의 바이옴이면 어디든 된다는 뜻입니다. 야생 레벨은 장소와 내 레벨캡에 맞춰 조절됩니다. 강한 지역은 성장한 뒤 다시 찾아가 보세요."));
     }
   })();
 </script>

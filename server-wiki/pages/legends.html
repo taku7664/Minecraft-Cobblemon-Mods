@@ -9,13 +9,13 @@
 <body data-root="..">
 <main>
   <h1>전설 포켓몬 스폰 가이드 <span class="badge gold">필독</span></h1>
-  <p>이 서버에서는 전설·환상·패러독스 포켓몬 <b id="lg-total">103</b>종이 야생에 나타납니다. 이 문서는 어디서, 어떤 조건에서, 누가 잡을 수 있는지를 모두 정리했습니다. 아래 도감의 조건은 서버가 실제로 쓰는 스폰 데이터에서 그대로 뽑았습니다.</p>
+  <p>이 서버에서는 전설·환상·패러독스 포켓몬 <b id="lg-total">103</b>종을 야생에서 만날 수 있습니다. 나타나는 장소와 조건, 잡을 수 있는 리그 등급을 아래에서 확인하세요.</p>
 
   <div class="grid stats-grid">
     <div class="stat"><small>하이퍼볼 등급부터</small><b id="lg-ultra">-</b></div>
     <div class="stat"><small>마스터볼 등급부터</small><b id="lg-master">-</b></div>
     <div class="stat"><small>챔피언 등급부터</small><b id="lg-champion">-</b></div>
-    <div class="stat"><small>엔트리 조건이 있는 전설</small><b id="lg-entry">-</b></div>
+    <div class="stat"><small>파티 조건이 있는 전설</small><b id="lg-entry">-</b></div>
   </div>
 
   <div class="note tip">
@@ -26,7 +26,7 @@
   <h2 id="rules">전설은 이렇게 나타납니다</h2>
   <h3>자연 스폰</h3>
   <ul>
-    <li>전설은 일반 야생 포켓몬처럼 플레이어 주변에 자연스럽게 나타납니다. 다만 가장 드문 칸(ultra-rare)에서 뽑히기 때문에 쉽게 보기는 어렵습니다.</li>
+    <li>전설은 플레이어 주변에 자연스럽게 나타나지만, 일반 포켓몬보다 훨씬 드물게 만날 수 있습니다.</li>
     <li>희귀도는 세 단계입니다. <b>희귀</b>(일반 전설)가 가장 자주, <b>매우 희귀</b>(환상, 아르세우스)가 그다음, <b>극희귀</b>(제한급·패러독스)가 가장 드물게 나옵니다.</li>
     <li>바이옴은 목록 중 <b>하나만</b> 맞으면 되고, 나머지 조건(시간, 날씨, 높이 등)은 <b>모두</b> 맞아야 합니다.</li>
     <li>점선으로 표시한 바이옴(예: <span class="chip group">산 계열</span>)은 그 계열의 바이옴이라면 어디든 된다는 뜻입니다.</li>
@@ -34,16 +34,16 @@
 
   <h3>내 전설은 나만 잡을 수 있습니다</h3>
   <ul>
-    <li>전설은 <b>스폰을 일으킨 플레이어의 것</b>입니다. 다른 사람이 배틀을 걸면 배틀이 취소되고, 볼을 던져도 잡히지 않습니다.</li>
+    <li>전설은 <b>등장 알림에 이름이 나온 플레이어만</b> 배틀하고 잡을 수 있습니다. 다른 사람은 볼을 던져도 잡히지 않습니다.</li>
     <li>전설이 나타나면 서버 전체에 등장 대사와 함께 "○○가 (플레이어) 근처에 나타났습니다!"라고 알립니다. <b>좌표는 알리지 않습니다.</b></li>
-    <li>서버를 다시 켜도 주인 정보는 남습니다.</li>
+    <li>서버가 다시 열려도 그 전설을 잡을 수 있는 사람은 바뀌지 않습니다.</li>
   </ul>
 
   <h3>종마다 한 마리</h3>
   <ul>
     <li>야생에서 <b>볼로 직접 잡은</b> 전설만 기록됩니다. 교환으로 받거나 포켓몬 아이템(<code>/itemtopoke</code>)으로 되돌린 전설은 기록되지 않습니다.</li>
     <li>한 번 잡은 종은 놓아주거나 남에게 줘도 기록이 지워지지 않습니다. 그래서 그 종은 <b>다시 내 주변에 나오지 않고</b>, 포켓내비 스폰표에서도 빠집니다.</li>
-    <li><code>/legends &lt;포켓몬&gt;</code>으로 내가 그 전설을 잡았는지, 필요한 등급과 엔트리 조건이 무엇인지 확인할 수 있습니다. 포켓몬 이름은 영어 ID로 씁니다(예: <code>/legends mewtwo</code>). 뒤에 닉네임을 붙이면 다른 사람 것도 볼 수 있습니다.</li>
+    <li><code>/legends &lt;포켓몬&gt;</code>으로 내가 잡은 전설인지, 필요한 등급과 파티 조건을 확인할 수 있습니다. 포켓몬의 영문 이름을 입력하세요(예: <code>/legends mewtwo</code>). 뒤에 닉네임을 붙이면 다른 사람 것도 볼 수 있습니다.</li>
   </ul>
 
   <h3>레벨</h3>
@@ -63,7 +63,7 @@
   <h3>포케스낵으로 부르기</h3>
   <ul>
     <li>포케스낵으로 나온 전설은 <b>포케스낵을 설치한 사람</b>의 것이고, 알림에도 설치한 사람 이름이 나옵니다.</li>
-    <li>"이미 잡은 종"과 엔트리 조건도 설치한 사람을 기준으로 봅니다. 설치한 사람이 접속해 있지 않으면 전설이 나오지 않습니다.</li>
+    <li>설치한 사람이 아직 잡지 않은 종이며, 필요한 포켓몬을 파티에 데리고 있어야 합니다. 설치한 사람이 접속해 있지 않으면 전설이 나오지 않습니다.</li>
     <li>한 번도 쓰지 않은 포케스낵은 부수면 아이템으로 돌아옵니다.</li>
   </ul>
 
@@ -79,8 +79,8 @@
     </tbody>
   </table>
 
-  <h2 id="entry">엔트리 조건</h2>
-  <p>아래 전설은 스폰을 일으킨 플레이어의 <b>지금 파티</b>에 특정 포켓몬이 있어야 나타납니다. "잡은 적이 있는지"가 아니라 "지금 데리고 있는지"만 보므로, 교환으로 빌린 포켓몬도 됩니다. 조건이 맞지 않으면 포켓내비 스폰표에도 보이지 않습니다.</p>
+  <h2 id="entry">파티에 필요한 포켓몬</h2>
+  <p>아래 전설을 만나려면 <b>지금 파티</b>에 특정 포켓몬을 데리고 있어야 합니다. 잡은 적이 있어도 박스에 넣어 두면 안 되며, 교환으로 받은 포켓몬도 됩니다. 필요한 포켓몬이 없으면 포켓내비 스폰표에도 보이지 않습니다.</p>
   <div id="lg-chains"></div>
 
   <h2 id="my">내 전설 현황</h2>
@@ -88,7 +88,7 @@
 
   <h2 id="dex">전설 도감</h2>
   <div class="filters">
-    <input id="lg-q" type="search" placeholder="이름 또는 영어 ID (예: 뮤츠, mewtwo)" aria-label="전설 검색">
+    <input id="lg-q" type="search" placeholder="한국어 또는 영문 이름 (예: 뮤츠, mewtwo)" aria-label="전설 검색">
     <select id="lg-rank" aria-label="필요 등급">
       <option value="">모든 등급</option><option>하이퍼볼</option><option>마스터볼</option><option>챔피언</option>
     </select>
@@ -102,7 +102,7 @@
       <option value="dex">도감 번호순</option><option value="name">이름순</option><option value="rarity">흔한 순</option>
     </select>
     <label><input id="lg-special" type="checkbox"> 특수 조건 있음</label>
-    <label><input id="lg-hasentry" type="checkbox"> 엔트리 필요</label>
+    <label><input id="lg-hasentry" type="checkbox"> 파티 조건 있음</label>
     <label id="lg-open-wrap" hidden><input id="lg-open" type="checkbox"> 아직 못 잡은 것만</label>
     <span class="count" id="lg-count"></span>
   </div>
@@ -112,11 +112,11 @@
   <h3>알림이 떴는데 내 이름이 아니에요. 가서 잡아도 되나요?</h3>
   <p>구경은 할 수 있지만 배틀과 포획은 그 전설이 나타난 플레이어만 할 수 있습니다.</p>
   <h3>전설을 놓아줬는데 다시 잡을 수 있나요?</h3>
-  <p>아니요. 직접 잡은 기록은 놓아줘도 남기 때문에, 그 종은 다시 내 주변에 나오지 않습니다. 롤백 같은 문제로 기록이 꼬였다면 운영자에게 문의하세요.</p>
+  <p>아니요. 한 번 잡은 종은 놓아줘도 내 주변에 다시 나오지 않습니다. 잡은 기록이 실제와 다르게 보인다면 운영자에게 문의하세요.</p>
   <h3>등급이 모자란데 전설이 나왔어요.</h3>
   <p>배틀은 할 수 있지만 잡을 수는 없습니다. 등급을 올린 뒤 다시 나타나길 기다려야 합니다.</p>
-  <h3>엔트리 조건의 포켓몬을 잡았다가 박스에 넣었어요.</h3>
-  <p>엔트리 조건은 지금 파티만 봅니다. 그 포켓몬을 파티에 넣고 다니세요.</p>
+  <h3>필요한 포켓몬을 잡았다가 박스에 넣었어요.</h3>
+  <p>박스에 있으면 전설이 나타날 조건을 만족하지 못합니다. 그 포켓몬을 파티에 넣고 다니세요.</p>
 </main>
 <script src="../assets/nav.js"></script>
 <script src="../assets/data/legends.js"></script>
@@ -166,7 +166,6 @@
         if (legend.entryAll) row.appendChild(el("span", "chip cond", "모두"));
         row.appendChild(el("span", "arrow", "→"));
         row.appendChild(el("b", "", legend.name));
-        if (depthOf(legend) >= 2) row.appendChild(el("span", "chip cond", depthOf(legend) + "단계 사슬"));
         chains.appendChild(row);
       });
 
@@ -188,7 +187,7 @@
       render();
     }).catch(function (failure) {
       my.innerHTML = failure && failure.message === "no_section"
-        ? "이 서버는 아직 전설 현황을 보내지 않습니다."
+        ? "지금은 위키에서 전설 현황을 볼 수 없습니다. 게임에서 <code>/legends &lt;포켓몬&gt;</code>으로 확인하세요."
         : "게임에서 <code>/wiki</code>로 받은 링크로 열면, 여기에 내가 잡은 전설과 지금 등급으로 잡을 수 있는 전설이 표시되고 도감에도 표시가 붙습니다.";
     });
 
@@ -235,7 +234,7 @@
           parts.push(chip);
         });
         parts.push(document.createTextNode(legend.entryAll ? " (모두 파티에)" : " (하나 이상 파티에)"));
-        row("엔트리", parts);
+        row("필요한 파티", parts);
       }
       node.appendChild(dl);
       node.appendChild(el("p", "line", legend.line));
@@ -250,12 +249,12 @@
           var allowed = mine.allowed.has(legend.rank);
           status.appendChild(el("span", allowed ? "badge" : "badge gray", allowed ? "잡을 수 있는 등급" : "등급 부족"));
           if (legend.entry.length && !mine.partyKnown) {
-            status.appendChild(document.createTextNode(" 엔트리 충족 여부는 게임에 접속해 있을 때 보입니다."));
+            status.appendChild(document.createTextNode(" 필요한 파티가 준비됐는지는 게임에 접속해 있을 때 보입니다."));
           } else if (legend.entry.length) {
             var met = legend.entryAll ? legend.entry.every(function (need) { return mine.party.has(need.id); })
               : legend.entry.some(function (need) { return mine.party.has(need.id); });
             status.appendChild(document.createTextNode(" "));
-            status.appendChild(el("span", met ? "badge green" : "badge gray", met ? "엔트리 충족 (지금 파티)" : "엔트리 미충족"));
+            status.appendChild(el("span", met ? "badge green" : "badge gray", met ? "필요한 파티 준비됨" : "필요한 포켓몬 없음"));
           }
         }
         node.appendChild(status);
