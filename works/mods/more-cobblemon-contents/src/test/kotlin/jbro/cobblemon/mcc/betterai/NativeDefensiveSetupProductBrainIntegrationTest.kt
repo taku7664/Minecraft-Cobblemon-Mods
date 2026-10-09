@@ -26,6 +26,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciliation
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionWorld
+import jbro.cobblemon.mcc.betterai.search.NativeInformationSetSearch
 import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchAggregator
 import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchStatus
 import jbro.cobblemon.mcc.betterai.search.NativeRecursiveSearch
@@ -90,7 +91,7 @@ class NativeDefensiveSetupProductBrainIntegrationTest {
             )
             val evaluator = NativeInitialProductDecisionEvaluator(
                 planWorlds = { _, _ -> error("A retained native root must not be replanned") },
-                searchWorlds = NativeProductWorldSearchAggregator(runner::run)::search,
+                searchWorlds = NativeInformationSetSearch(lease = { _, action -> action(engine) })::search,
                 reconcileSession = { supplied, _, _ ->
                     NativeProductSessionReconciliation(
                         NativeProductSessionReconcileStatus.AVAILABLE,

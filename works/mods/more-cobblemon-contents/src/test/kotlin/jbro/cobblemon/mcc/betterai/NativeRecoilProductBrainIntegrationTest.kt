@@ -26,6 +26,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciliation
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionWorld
+import jbro.cobblemon.mcc.betterai.search.NativeInformationSetSearch
 import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchAggregator
 import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchStatus
 import jbro.cobblemon.mcc.betterai.search.NativeSearchWorldKey
@@ -150,7 +151,7 @@ class NativeRecoilProductBrainIntegrationTest {
                 "The retained recoil root must agree with its native definition and public state: $rootIssues")
             val evaluator = NativeInitialProductDecisionEvaluator(
                 planWorlds = { _, _ -> error("A retained native root must not be replanned") },
-                searchWorlds = NativeProductWorldSearchAggregator(runner::run)::search,
+                searchWorlds = NativeInformationSetSearch(lease = { _, action -> action(engine) })::search,
                 reconcileSession = { supplied, _, _ ->
                     NativeProductSessionReconciliation(
                         NativeProductSessionReconcileStatus.AVAILABLE,
@@ -173,7 +174,7 @@ class NativeRecoilProductBrainIntegrationTest {
                 "Native recoil product evaluation failed: $evaluation",
             )
             assertEquals(NativeProductWorldSearchStatus.COMPLETED, evaluation.searchStatus)
-            assertEquals(1, evaluation.depthCompleted)
+            assertEquals(2, evaluation.depthCompleted) // Every tier searches two turns since b99de0a6.
             val bestValueByMove = evaluation.ranked.groupBy { it.outcome.candidate.moveId }
                 .mapValues { (_, ranks) -> ranks.maxOf { it.comparisonValue } }
             assertTrue(

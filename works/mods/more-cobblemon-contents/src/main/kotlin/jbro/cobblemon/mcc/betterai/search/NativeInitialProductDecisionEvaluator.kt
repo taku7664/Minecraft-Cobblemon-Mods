@@ -96,7 +96,7 @@ private typealias NativeLeafEvaluator = (
 internal class NativeInitialProductDecisionEvaluator(
     private val planWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::plan,
     private val planMidBattleWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::planMidBattle,
-    private val searchWorlds: NativeWorldSearcher = NativeProductWorldSearchAggregator()::search,
+    private val searchWorlds: NativeWorldSearcher = NativeInformationSetSearch()::search,
     private val reconcileSession: NativeSessionReconciler = NativeProductSessionReconciler()::reconcile,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val nanoTime: () -> Long = System::nanoTime,

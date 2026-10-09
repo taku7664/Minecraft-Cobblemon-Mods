@@ -379,25 +379,9 @@ internal class NativeRecursiveSearch(
         return best
     }
 
-    /**
-     * A Wish heals at the end of the turn after it was used, past a one-turn horizon. Without this a search that
-     * stops there saw Wish as a wasted turn and Protect as the better way to stall, so a STANDARD Alomomola
-     * protected again rather than wishing. Discounted like the legacy Wish value: the slot may change hands.
-     */
-    private fun pendingHealValue(frame: NativeBattleFrame): Double = frame.field.pendingHeals.orEmpty().sumOf { heal ->
-        val ally = frame.p1Team.firstOrNull { it.uuid == heal.targetUuid }
-        val target = ally ?: frame.p2Team.firstOrNull { it.uuid == heal.targetUuid } ?: return@sumOf 0.0
-        if (target.hp <= 0 || target.maxHp <= 0) return@sumOf 0.0
-        val gained = minOf(heal.hp, target.maxHp - target.hp).coerceAtLeast(0).toDouble() / target.maxHp
-        (if (ally != null) 1.0 else -1.0) * gained * PENDING_HEAL_DISCOUNT
-    }
+    private fun pendingHealValue(frame: NativeBattleFrame): Double = NativeSearchLeafTerms.pendingHeal(frame)
 
-    private fun hpAdvantage(position: NativeSearchPosition): Double =
-        position.frame.p1Team.sumOf { it.hp.toDouble() / it.maxHp } -
-            position.frame.p2Team.sumOf { it.hp.toDouble() / it.maxHp } +
-            // First-turn tempo measures progress, not the price of a move. Recoil is already
-            // priced in the material value, so remove it completely from this extra tempo term.
-            position.recoilCredit * 2.0
+    private fun hpAdvantage(position: NativeSearchPosition): Double = NativeSearchLeafTerms.hpAdvantage(position)
 
     private fun descend(
         position: NativeSearchPosition,
@@ -460,7 +444,31 @@ internal class NativeRecursiveSearch(
         const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
         const val FUTURE_VALUE_WEIGHT = 0.90
         const val ROOT_TEMPO_WEIGHT = 0.75
-        /** The legacy Wish value's discount for waiting a turn. */
-        const val PENDING_HEAL_DISCOUNT = 0.6
     }
+}
+
+/** Value terms both native searches add to a scored position, so their root values share one scale. */
+internal object NativeSearchLeafTerms {
+    /**
+     * A Wish heals at the end of the turn after it was used, past a one-turn horizon. Without this a search that
+     * stops there saw Wish as a wasted turn and Protect as the better way to stall, so a STANDARD Alomomola
+     * protected again rather than wishing. Discounted like the legacy Wish value: the slot may change hands.
+     */
+    fun pendingHeal(frame: NativeBattleFrame): Double = frame.field.pendingHeals.orEmpty().sumOf { heal ->
+        val ally = frame.p1Team.firstOrNull { it.uuid == heal.targetUuid }
+        val target = ally ?: frame.p2Team.firstOrNull { it.uuid == heal.targetUuid } ?: return@sumOf 0.0
+        if (target.hp <= 0 || target.maxHp <= 0) return@sumOf 0.0
+        val gained = minOf(heal.hp, target.maxHp - target.hp).coerceAtLeast(0).toDouble() / target.maxHp
+        (if (ally != null) 1.0 else -1.0) * gained * PENDING_HEAL_DISCOUNT
+    }
+
+    fun hpAdvantage(position: NativeSearchPosition): Double =
+        position.frame.p1Team.sumOf { it.hp.toDouble() / it.maxHp } -
+            position.frame.p2Team.sumOf { it.hp.toDouble() / it.maxHp } +
+            // First-turn tempo measures progress, not the price of a move. Recoil is already
+            // priced in the material value, so remove it completely from this extra tempo term.
+            position.recoilCredit * 2.0
+
+    /** The legacy Wish value's discount for waiting a turn. */
+    private const val PENDING_HEAL_DISCOUNT = 0.6
 }

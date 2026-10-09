@@ -81,6 +81,8 @@ internal data class NativeProductWorldSearchResult(
     val failedRunStatus: NativeProductSearchRunStatus? = null,
     val failedRunDetail: String? = null,
     val rootSnapshots: Map<NativeSearchWorldKey, NativeProductRootSnapshot> = emptyMap(),
+    /** Information-set search iterations; zero for the per-world search. */
+    val iterations: Int = 0,
 ) {
     init {
         require(depthCompleted >= 0)
@@ -284,28 +286,8 @@ internal class NativeProductWorldSearchAggregator(
         nodesVisited = nodesVisited,
         failedWorldId = world.key.hypothesisId,
         failedRunStatus = run?.status,
-        failedRunDetail = run?.let { failed ->
-            when {
-                failed.rootIssues.isNotEmpty() -> failed.rootIssues.joinToString(",") { issue ->
-                    issue.code.name + (issue.battlePokemonId?.let { ":${it.toString().take(8)}" } ?: "")
-                }
-                failed.mapping != null -> with(failed.mapping) {
-                    "unmatchedProduct=${unmatchedProductActionIds.size},unmatchedNative=${unmatchedNativeActionIds.size}," +
-                        "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}" +
-                        idSample("unmatchedProductIds", unmatchedProductActionIds) +
-                        idSample("unmatchedNativeIds", unmatchedNativeActionIds)
-                }
-                failed.failure != null -> failed.failure.javaClass.simpleName + ":" +
-                    (failed.failure.message ?: "no message").take(240)
-                else -> null
-            }
-        },
+        failedRunDetail = run?.failureDetail(),
     )
-
-    /** A few IDs are enough to name the mismatch without flooding the log. */
-    private fun idSample(label: String, ids: Set<String>): String =
-        if (ids.isEmpty()) "" else ",$label=" + ids.take(ID_SAMPLE_LIMIT).joinToString("|") +
-            if (ids.size > ID_SAMPLE_LIMIT) "|..." else ""
 
     private data class CompletedWorld(
         val input: NativeProductWorldSearchInput,
@@ -313,6 +295,26 @@ internal class NativeProductWorldSearchAggregator(
         val rootSnapshot: NativeProductRootSnapshot,
     )
 }
+
+/** Names why one native world run failed, for the decision log. */
+internal fun NativeProductSearchRun.failureDetail(): String? = when {
+    rootIssues.isNotEmpty() -> rootIssues.joinToString(",") { issue ->
+        issue.code.name + (issue.battlePokemonId?.let { ":${it.toString().take(8)}" } ?: "")
+    }
+    mapping != null -> with(mapping) {
+        "unmatchedProduct=${unmatchedProductActionIds.size},unmatchedNative=${unmatchedNativeActionIds.size}," +
+            "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}" +
+            idSample("unmatchedProductIds", unmatchedProductActionIds) +
+            idSample("unmatchedNativeIds", unmatchedNativeActionIds)
+    }
+    failure != null -> failure.javaClass.simpleName + ":" + (failure.message ?: "no message").take(240)
+    else -> null
+}
+
+/** A few IDs are enough to name the mismatch without flooding the log. */
+private fun idSample(label: String, ids: Set<String>): String =
+    if (ids.isEmpty()) "" else ",$label=" + ids.take(ID_SAMPLE_LIMIT).joinToString("|") +
+        if (ids.size > ID_SAMPLE_LIMIT) "|..." else ""
 
 private const val ID_SAMPLE_LIMIT = 6
 private const val MIN_DEEPENED_MASS_SHARE = 0.5
