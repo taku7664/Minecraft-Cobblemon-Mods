@@ -12,6 +12,7 @@
 - **변경:** `LocalLookaheadBudget`에 `nativeNodeLimit`·`nativePlies`(레거시 `nodeLimit` 40만은 그대로), `forNativePosition`. 판단기가 이 둘을 쓴다. `MAX_TIME_MILLIS` 6초 → 40초, 바깥 판단 제한 `BattleBrainDefaults.DECISION_TIMEOUT_MILLIS` 20초 → 45초(20초면 40초 상한이 잘린다).
 - **바로잡음:** 앞서 "후반 노드 배수가 네이티브에도 걸린다"고 사용자에게 말했는데, `forPosition`은 레거시 탐색에만 걸려 있었다. 이번에 네이티브 전용 `forNativePosition`을 따로 만들었다.
 - **테스트:** 예산·계약·탐색 7개 클래스 26건 통과.
+- **배포(같은 날):** `main` = `origin/main` = `2b8c189e`에서 MCC만 `remapJar`, 무결성 검사 통과. `develop-product/server/mods`·`client/mods` 교체, SHA-256 세 개 일치(`ed3a40df…`). 이전 JAR(`74f16ff6…`)은 `develop-product/deployment-backups/20261009-native-node-budget/`. 서버·게임 꺼져 있었고 켜지 않았다. 실게임 미확인.
 
 ## [2026-10-09 19:40] 네이티브 판단을 정보 집합 탐색(ISMCTS)으로 교체
 
