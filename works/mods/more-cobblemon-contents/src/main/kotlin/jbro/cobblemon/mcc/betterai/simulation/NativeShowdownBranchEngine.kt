@@ -601,11 +601,19 @@ internal data class NativeBattleFieldFrame(
     val pseudoWeather: List<NativeTimedEffectFrame>,
     val p1SideConditions: List<NativeTimedEffectFrame>,
     val p2SideConditions: List<NativeTimedEffectFrame>,
+    /**
+     * Wishes waiting to land at the end of the next turn, for the leaf to count the healing they bring. Null where
+     * the worker does not report them: frames read back from JSON skip Kotlin's default.
+     */
+    val pendingHeals: List<NativePendingHealFrame>? = null,
 ) {
     companion object {
         fun empty() = NativeBattleFieldFrame(null, null, emptyList(), emptyList(), emptyList())
     }
 }
+
+/** A Wish on the board: [hp] lands on whoever stands in its slot then, here the Pokemon [targetUuid] there now. */
+internal data class NativePendingHealFrame(val targetUuid: String, val hp: Int)
 
 internal data class NativeTimedEffectFrame(
     val id: String,

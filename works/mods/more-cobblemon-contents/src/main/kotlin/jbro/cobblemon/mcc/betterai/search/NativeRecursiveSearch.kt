@@ -255,7 +255,7 @@ internal class NativeRecursiveSearch(
         upperBound: Double,
     ): Double? {
         if (!timeAvailable()) return null
-        if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state) + position.recoilCredit
+        if (depthRemaining <= 0 || position.frame.ended) return leafValue(position)
         val key = ValueKey(
             tree.rulesFingerprint,
             world.hypothesisId,
@@ -276,7 +276,7 @@ internal class NativeRecursiveSearch(
             tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT),
             responseMemory, responseInformation,
         )
-        if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
+        if (allyActions.isEmpty() || opponentActions.isEmpty()) return leafValue(position)
         var best = Double.NEGATIVE_INFINITY
         for (allyAction in allyActions) {
             var worstResponse = Double.POSITIVE_INFINITY
@@ -291,7 +291,7 @@ internal class NativeRecursiveSearch(
             // the parent's minimum. This is only a lower bound, so never cache a cutoff result.
             if (best >= upperBound) return best
         }
-        val result = if (best.isFinite()) best else evaluate(position.state) + position.recoilCredit
+        val result = if (best.isFinite()) best else leafValue(position)
         if (!truncated) valueCache[key] = result
         return result
     }
@@ -323,6 +323,22 @@ internal class NativeRecursiveSearch(
         }
         val continuation = positionValue(child, depthRemaining, childBound) ?: return null
         return immediateWeight * immediateMaterial + remainingWeight * continuation
+    }
+
+    private fun leafValue(position: NativeSearchPosition): Double =
+        evaluate(position.state) + position.recoilCredit + pendingHealValue(position.frame)
+
+    /**
+     * A Wish heals at the end of the turn after it was used, past a one-turn horizon. Without this a search that
+     * stops there saw Wish as a wasted turn and Protect as the better way to stall, so a STANDARD Alomomola
+     * protected again rather than wishing. Discounted like the legacy Wish value: the slot may change hands.
+     */
+    private fun pendingHealValue(frame: NativeBattleFrame): Double = frame.field.pendingHeals.orEmpty().sumOf { heal ->
+        val ally = frame.p1Team.firstOrNull { it.uuid == heal.targetUuid }
+        val target = ally ?: frame.p2Team.firstOrNull { it.uuid == heal.targetUuid } ?: return@sumOf 0.0
+        if (target.hp <= 0 || target.maxHp <= 0) return@sumOf 0.0
+        val gained = minOf(heal.hp, target.maxHp - target.hp).coerceAtLeast(0).toDouble() / target.maxHp
+        (if (ally != null) 1.0 else -1.0) * gained * PENDING_HEAL_DISCOUNT
     }
 
     private fun hpAdvantage(position: NativeSearchPosition): Double =
@@ -391,5 +407,7 @@ internal class NativeRecursiveSearch(
         const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
         const val FUTURE_VALUE_WEIGHT = 0.90
         const val ROOT_TEMPO_WEIGHT = 0.75
+        /** The legacy Wish value's discount for waiting a turn. */
+        const val PENDING_HEAL_DISCOUNT = 0.6
     }
 }

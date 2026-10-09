@@ -579,6 +579,13 @@ internal class EngineBranchWorker(
         pseudoWeather = battle.field.pseudoWeather.map { (id, s) -> timed(id, s) }.sortedBy { it.id },
         p1SideConditions = battle.sides[0].sideConditions.map { (id, s) -> timed(id, s) }.sortedBy { it.id },
         p2SideConditions = battle.sides[1].sideConditions.map { (id, s) -> timed(id, s) }.sortedBy { it.id },
+        pendingHeals = battle.sides.flatMap { side ->
+            side.slotConditions.mapIndexedNotNull { slot, conditions ->
+                val wish = conditions["wish"] ?: return@mapIndexedNotNull null
+                val target = side.active.getOrNull(slot)?.takeIf { !it.fainted } ?: return@mapIndexedNotNull null
+                NativePendingHealFrame(target.uuid, Js.int(wish["hp"]))
+            }
+        },
     )
 
     /** The parts of Showdown's request JSON the native search reads. */
