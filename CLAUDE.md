@@ -13,7 +13,8 @@
 - 모드 소스는 `works/mods/<모드>`, 스크립트는 `works/tools/`, Gradle 루트(`gradlew`, `settings.gradle.kts`, `gradle/`)는 `works/`에 있다. Gradle은 `works/`에서 실행한다. 저장소 루트에는 규칙·문서·`server-wiki/`·제품 폴더만 둔다.
 - 개발 서버는 저장소 안 `develop-product/server` 하나뿐이다. 옛 `Mincraft-Cobblemon-Server`나 옛 `dev-server/` 경로는 참조하지 않는다.
 - 배포 서버는 `C:\Users\박주형\Documents\GitHub\MinecraftPPakemonServer`이고, 같은 이름의 비공개 GitHub 저장소를 사용한다. 저장소 루트의 `run.bat`으로 실행하며 게임 포트는 25565(개발 서버는 25566)다. `deploy-product/server/MinecraftPPakemonServer.lnk`로 폴더를 연다. 이 바로가기는 JAR·VERSION.txt 전용 규칙의 사용자 지정 예외다. 단순 “배포”는 계속 개발 서버를 뜻하며, 운영 서버 변경은 대상이 명시된 경우에만 한다. 새 배포 서버에는 실행 파일·모드·설정·데이터팩·실제 에셋만 두고, 작업 기록·안내 MD·manifest 등 검증 산출물은 넣지 않는다.
-- 서버 배포에는 개발 월드의 `world/datapacks/`, `world/dimensions/jbro_policy/plaza/`, `world/data/jbro_policy_plaza_biome.dat`를 함께 복사한다. 정상 저장·종료 상태에서 복사하며 일반 월드와 플레이어 진행도는 제외한다.
+- 운영 서버 업데이트는 기능 파일만 반영하며 기존 설정·실행 옵션·시작 규칙·월드·플레이어·광장 데이터를 보존한다. 정상 저장·종료 상태에서 복사한다. `world/datapacks/`는 기능 에셋으로 업데이트하되 생성된 `cobblemon-startup-hooks.zip`은 보존한다. `world/dimensions/jbro_policy/plaza/`와 `world/data/jbro_policy_plaza_biome.dat`는 대상에 광장이 없는 최초 설치에서만 함께 복사한다.
+- 운영 루트의 `deploy-from-dev.bat`을 더블클릭해 변경 목록을 검사한 뒤 배포하거나 복구한다. `tools/deploy-server.ps1`, `tools/server-deployment.psm1`의 원본은 `works/tools/server-deploy/`에 있다. 개발 서버에 설치된 파일을 복사하며 자동 빌드는 하지 않는다. 백업은 서버 밖 `%LOCALAPPDATA%\MinecraftServerDeploy`에 두며, 배포 전 기존 `world` 전체(`playerdata` 포함)를 작업별 `world-snapshot/`에 백업한다. 자동 복구와 복구 버튼은 교체한 기능 파일만 되돌리며 이후 플레이 진행도를 덮어쓰지 않는다.
 - 개발 클라이언트는 저장소 안 `develop-product/client`로 다룬다. 이 경로는 Modrinth 프로필 `%APPDATA%\ModrinthApp\profiles\cobblemon-dev`를 가리키는 정션이다. Modrinth가 링크 뒤의 프로필을 거부해서 실제 파일은 AppData에 둔다. 게임이 켜져 있으면 JAR을 복사하지 않는다.
 - 릴리스 산출물은 `deploy-product/client`, `deploy-product/server`에 모은다. 완성된 JAR과 `VERSION.txt` 외에는 아무것도 두지 않는다(백업·임시파일·로그·소스 JAR 금지). 자세한 규칙은 `AGENTS.md`의 Product folders.
 - 임시파일과 중간 산출물은 `build/`나 세션 scratchpad에 두고, 제품 폴더나 저장소 루트에 남기지 않는다.

@@ -40,7 +40,9 @@
 - `deploy-product/server/MinecraftPPakemonServer.lnk`는 배포 서버 폴더를 여는 바로가기다. 이 사용자 지정 바로가기는 아래 산출물 전용 규칙의 예외다.
 - 단순 “배포”는 계속 개발 서버를 뜻한다. “배포 서버”, “운영 서버” 또는 위 저장소를 명시한 요청에만 이 경로를 사용한다.
 - 배포 서버 저장소에는 실행 파일·모드·설정·데이터팩·실제 에셋만 둔다. 작업 기록·안내 MD·manifest 등 검증 산출물과 일반 개발 월드·플레이어 기록·비밀값은 원격 배포 저장소에 넣지 않는다.
-- 서버 배포에는 개발 월드의 `world/datapacks/`와 광장 차원 `world/dimensions/jbro_policy/plaza/`를 포함한다. 복사는 서버가 정상 저장·종료된 상태에서만 한다. 광장 바이옴 변환 완료 상태인 `world/data/jbro_policy_plaza_biome.dat`도 함께 옮기며, 일반 월드와 플레이어 진행도는 옮기지 않는다.
+- 운영 서버 업데이트는 기능 파일만 반영하며 기존 설정·실행 옵션·시작 규칙·월드·플레이어·광장 데이터를 보존한다. 복사는 서버가 정상 저장·종료된 상태에서만 한다.
+- `world/datapacks/`는 기능 에셋으로 업데이트하되, 운영 서버가 생성한 `cobblemon-startup-hooks.zip`은 보존한다. 광장 차원 `world/dimensions/jbro_policy/plaza/`와 바이옴 변환 완료 데이터 `world/data/jbro_policy_plaza_biome.dat`는 대상에 광장이 없는 최초 설치에서만 함께 복사한다.
+- 운영 루트의 `deploy-from-dev.bat`을 더블클릭하면 변경 목록을 검사한 뒤 배포하거나 복구할 수 있다. 도구는 `tools/deploy-server.ps1`, `tools/server-deployment.psm1`이며 원본은 이 저장소의 `works/tools/server-deploy/`에 있다. 개발 서버에 설치된 파일을 복사하고 자동 빌드하지 않는다. 백업은 서버 밖 `%LOCALAPPDATA%\MinecraftServerDeploy`에 보관하며, 배포 전 기존 `world` 전체(`playerdata` 포함)를 작업별 `world-snapshot/`에 백업한다. 자동 복구와 복구 버튼은 교체한 기능 파일만 되돌리며 이후 플레이 진행도를 덮어쓰지 않는다.
 
 ## Product folders
 
