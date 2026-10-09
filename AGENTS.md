@@ -57,6 +57,7 @@
   the record is how the changes are noticed and shared. Versions are `v0.x` until the first live release, `v1.0`.
 - `develop-product/server` and `develop-product/client` are the running development server and client. Deploys there
   install JARs only; do not leave backups, temporary copies or working files in them.
+- 사용자 지정 예외: `develop-product/patch-products.bat`와 `develop-product/tools/patcher/`에는 이 PC의 로컬 통합 서버·클라이언트 패쳐를 둘 수 있다. 설치본은 원격 저장소·릴리스 제품에 포함하지 않는다. 기존 서버 패쳐 소스의 로컬 전용 규칙은 유지한다.
 - Intermediate and temporary files (downloads, decompiled sources, captures, logs, probes) belong in `build/` or a
   session scratch directory, never in either product folder or the repository root.
 
