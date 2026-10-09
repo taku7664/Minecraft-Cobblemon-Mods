@@ -4,7 +4,8 @@
 
 - **사용자 결정:** 사천왕은 BP를 주지 않고(일반·하드 모두), 챔피언 난천은 일반 150, 하드 300을 준다. 관장은 그대로 10·30이다. 사천왕을 리그에서 빼는 것이 아니라 BP만 없앴다.
 - **변경:** `rewards/{aaron,bertha,flint,lucian}{,_hard}.json`의 `first_bp`를 0, `cynthia.json` 150, `cynthia_hard.json` 300. 합계는 일반 190→230, 하드 550→540. 위키 `league.html`(표와 합계), `hub.html` 수입 표, NPC 대사 원본(상점 아가씨)도 고쳤다.
-- **미확인:** 테스트·빌드·배포를 하지 않았다. 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
+- **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
+- **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
 ## [2026-10-09 04:58] 이름 음차·상대 도구 가리기·상태 패널 빌드·개발 배치
 
