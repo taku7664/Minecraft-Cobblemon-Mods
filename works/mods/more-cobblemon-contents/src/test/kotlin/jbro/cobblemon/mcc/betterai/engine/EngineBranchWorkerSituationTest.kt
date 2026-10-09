@@ -89,6 +89,25 @@ class EngineBranchWorkerSituationTest {
     }
 
     @Test
+    fun `a Mega Evolved Pokemon is rebuilt in its Mega forme and its side cannot Mega Evolve again`() {
+        val worker = EngineBranchWorker()
+        val stone = definition.copy(p1Team = definition.p1Team.map { if (it.uuid == uuid(1)) it.copy(item = "Garchompite") else it })
+        fun situation(megaEvolved: Boolean) = stone.copy(situation = stone.situation!!.copy(pokemon = stone.situation!!.pokemon.map {
+            if (it.uuid == uuid(1)) it.copy(choiceLockedMove = null, megaEvolved = megaEvolved) else it
+        }))
+        val base = worker.createBattle(situation(megaEvolved = false))
+        val mega = worker.createBattle(situation(megaEvolved = true))
+        val before = base.p1Team.single { it.uuid == uuid(1) }
+        val after = mega.p1Team.single { it.uuid == uuid(1) }
+
+        assertTrue(after.species.contains("mega", ignoreCase = true), after.species)
+        assertEquals("sandforce", after.ability.lowercase().filter(Char::isLetter))
+        assertTrue(after.stats.getValue("atk") > before.stats.getValue("atk"))
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, base).any { it.mechanic != null })
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, mega).none { it.mechanic != null })
+    }
+
+    @Test
     fun `the request follows the installed lock and the fainted bench`() {
         val root = EngineBranchWorker().createBattle(definition)
 

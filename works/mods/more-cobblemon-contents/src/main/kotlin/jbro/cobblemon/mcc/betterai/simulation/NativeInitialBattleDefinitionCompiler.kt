@@ -296,6 +296,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                 movedSinceSwitchIn = active && sinceSwitchIn.isNotEmpty(),
                 forme = NativeInBattleFormes.inBattleForme(pokemon.speciesId),
                 confused = active && pokemon.knownVolatileEffectIds.any { normalizedNativeId(it) == "confusion" },
+                megaEvolved = normalizedNativeId(pokemon.formId.orEmpty()).startsWith("mega"),
             )
         },
         weather = state.field.weather?.let(::effect),

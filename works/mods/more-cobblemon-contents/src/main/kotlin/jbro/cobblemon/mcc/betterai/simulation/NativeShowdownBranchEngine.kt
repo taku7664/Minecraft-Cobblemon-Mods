@@ -440,6 +440,8 @@ internal data class NativePokemonSituation(
     val forme: String? = null,
     /** Whether this active Pokemon is confused; how many turns are left is not public. */
     val confused: Boolean = false,
+    /** It shows its Mega forme: it evolves from its set's species, and its side has spent its Mega Evolution. */
+    val megaEvolved: Boolean = false,
 ) {
     init {
         UUID.fromString(uuid)

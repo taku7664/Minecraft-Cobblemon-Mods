@@ -219,6 +219,11 @@ internal class EngineBranchWorker(
                     pokemon.itemState = EffectState(id).also { it.target = pokemon }
                 }
             }
+            if (state.megaEvolved) {
+                // As the Mega Evolution itself does: the forme and its ability for good, and the side's chance spent.
+                pokemon.canMegaEvo?.let { mega -> pokemon.formeChange(mega, pokemon.getItem(), true) }
+                for (ally in pokemon.side.pokemon) ally.canMegaEvo = null
+            }
             val hp = state.hp?.coerceAtMost(pokemon.maxhp) ?: publicHp(state.hpFraction, pokemon.maxhp)
             if (hp == 0) {
                 require(!pokemon.isActive) { "A fainted Pokemon cannot lead a rebuilt position" }
