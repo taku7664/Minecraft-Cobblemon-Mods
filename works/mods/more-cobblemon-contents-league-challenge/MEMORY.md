@@ -7,6 +7,12 @@
 - **배포(2026-10-09 16:14):** `unitTest` 94개 통과, `9a938b31` 기준으로 빌드한 리그 JAR을 `develop-product/{server,client}/mods`에 넣었다(SHA-256 앞자리 `edc3d106d2db8f5f`로 세 곳 일치). 상점 아가씨 대사는 서버 `config/cobblemon_npc/dialogues/`에, `league.html`·`hub.html`은 서버·클라이언트 위키에 복사했다. 백업은 `develop-product/deployment-backups/20261009-161447-league-champion-bp`. 서버 기동·실게임 확인은 안 했다.
 - **미확인:** 사천왕을 이겼을 때 BP 0이면 승리 알림이 BP 없이 나오는지는 실게임에서 확인하지 않았다(`BattleResultNotices.victory`의 기본값이 0이라 문제없을 것으로 추정).
 
+## [2026-10-09 16:22] 스폰 그룹 구조 빌드·개발 배치
+
+- **빌드:** `main` = `origin/main` = `67ba5039`, 리그 소스 변경 없음 확인 후 `remapJar`(테스트 안 함). `jar --validate` 통과. JAR 안에 `WildNpcSpawns`, `wild_spawns/{trainers,roles}.json`, 자리표시 클래스 두 개, 월드 스폰 풀 50/150 확인.
+- **배치:** `develop-product/server/mods`·`client/mods` 교체, SHA-256 일치(`3f7c96f8…`), 폴더마다 리그 JAR 하나. 이전 JAR은 `develop-product/deployment-backups/20261009-wild-spawn-groups/`. 서버·게임 꺼진 상태였고 켜지 않았다.
+- **미확인:** 실게임(자리표시가 실제 트레이너로 바뀌어 나오는지, 스킨·이름).
+
 ## [2026-10-09 14:20] 야생 NPC 스폰을 그룹 자리표시 하나로
 
 - **사용자 결정:** 트레이너가 너무 자주 나온다. 종류마다 스폰 항목을 두는 대신 "트레이너" 스폰 하나를 두고, 스폰될 때 어떤 트레이너가 될지 정한다. 트레이너 월드 가중치 50. 역할 NPC도 같은 방식, 역할별 가중치는 유지.
