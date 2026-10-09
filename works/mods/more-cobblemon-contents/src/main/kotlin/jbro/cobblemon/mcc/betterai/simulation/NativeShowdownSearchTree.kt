@@ -28,6 +28,11 @@ internal class NativeShowdownSearchTree(
     private val publicActionCatalog: BattlePublicActionCatalogView? = null,
     /** See [NativeMechanicAllowance]; null keeps every mechanic the native request offers. */
     private val allowedMechanics: Set<String>? = null,
+    /**
+     * A bench Pokemon's promise coming in on an active slot of one side at a position, or null when unknown; it picks
+     * the bounded voluntary switches. Null keeps the type and HP order.
+     */
+    private val switchPreference: ((state: BattleStateView, side: BattleSide, slot: Int, benchUuid: String) -> Double?)? = null,
 ) {
     val rulesFingerprint: String = worker.rulesFingerprint
 
@@ -43,7 +48,7 @@ internal class NativeShowdownSearchTree(
     ): List<BattleActionCandidate> =
         NativeShowdownRequestActionFactory.actions(
             side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog,
-            allowedMechanics)
+            allowedMechanics, switchPreference?.let { preference -> { slot, uuid -> preference(position.state, side, slot, uuid) } })
 
     /** Attack-only extension uses exact own move metadata; forced replacements remain untouched. */
     fun attackingActions(position: NativeSearchPosition): List<BattleActionCandidate> {

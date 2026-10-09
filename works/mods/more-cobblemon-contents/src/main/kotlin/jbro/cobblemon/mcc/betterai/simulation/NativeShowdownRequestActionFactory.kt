@@ -28,6 +28,12 @@ internal object NativeShowdownRequestActionFactory {
         publicActionCatalog: BattlePublicActionCatalogView? = null,
         /** Canonical mechanic IDs the live battle permits; null leaves native legality unfiltered. */
         allowedMechanics: Set<String>? = null,
+        /**
+         * How good a bench Pokemon looks coming in on an active slot (its one-on-one win chance against the opposing
+         * active), or null when nothing is known about it. Bounded voluntary switches prefer it; see
+         * [preferredVoluntarySwitches].
+         */
+        switchPreference: ((slot: Int, benchUuid: String) -> Double?)? = null,
     ): List<BattleActionCandidate> {
         require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot >= 0)
         if (frame.ended) return emptyList()
@@ -61,7 +67,7 @@ internal object NativeShowdownRequestActionFactory {
         // Forced and pivot replacements returned above are never pruned. Only future ordinary
         // move requests receive a bounded voluntary-switch set, before double combinations form.
         val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.takeIf { it > 0 }?.let { limit ->
-            preferredVoluntarySwitches(side, frame, active, limit, publicState, publicActionCatalog)
+            preferredVoluntarySwitches(side, frame, active, limit, publicState, publicActionCatalog, switchPreference)
         }
         val bySlot = active.mapIndexed { slot, element ->
             val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == slot }
@@ -181,6 +187,7 @@ internal object NativeShowdownRequestActionFactory {
         limit: Int,
         publicState: BattleStateView?,
         publicActionCatalog: BattlePublicActionCatalogView?,
+        switchPreference: ((slot: Int, benchUuid: String) -> Double?)?,
     ): Map<Int, Set<String>> {
         val opposingTypes = activeTeam(opposite(side), frame).asSequence()
             .filter { it.hp > 0 }
@@ -194,6 +201,12 @@ internal object NativeShowdownRequestActionFactory {
                         it.details.damageCategory != BattleMoveDamageCategory.STATUS && it.details.power > 0.0 }
                     .map { option -> opponent to option.details }
             }.toList()
+        fun remainingHp(pokemon: NativePokemonFrame): Double {
+            val hazardLoss = publicState?.pokemon?.firstOrNull {
+                it.battlePokemonId.toString() == pokemon.uuid && it.side == side
+            }?.let { PublicSwitchEntryHazardCalculator.hpLoss(publicState, side, it) } ?: 0.0
+            return (pokemon.hp.toDouble() / pokemon.maxHp - hazardLoss).coerceAtLeast(0.0)
+        }
         val bench = fullTeam(side, frame).asSequence()
             .filter { it.activeSlot == null && it.hp > 0 }
             .sortedWith(compareByDescending<NativePokemonFrame> { pokemon ->
@@ -217,10 +230,16 @@ internal object NativeShowdownRequestActionFactory {
         return active.mapIndexedNotNull { slot, element ->
             val request = element.takeIf { it.isJsonObject }?.asJsonObject
             if (request == null || request.trapped() || bench.isEmpty()) return@mapIndexedNotNull null
+            // The matchup scores' win chance, discounted by the HP it comes in with, ranks the Pokemon they know;
+            // the rest follow in the type and HP order above. Type alone sent in a Pokemon that resists the
+            // attacker's type but loses to it anyway.
+            val known = bench.associateWith { pokemon -> switchPreference?.invoke(slot, pokemon.uuid)?.times(remainingHp(pokemon)) }
+            val ranked = bench.filter { known[it] != null }.sortedByDescending { known.getValue(it) } +
+                bench.filter { known[it] == null }
             // Distinct first choices preserve at least one legal simultaneous double switch.
-            val first = bench.firstOrNull { it.uuid !in reserved } ?: bench.first()
+            val first = ranked.firstOrNull { it.uuid !in reserved } ?: ranked.first()
             reserved += first.uuid
-            val chosen = (listOf(first) + bench.filter { it.uuid != first.uuid }.take(limit - 1))
+            val chosen = (listOf(first) + ranked.filter { it.uuid != first.uuid }.take(limit - 1))
                 .mapTo(linkedSetOf()) { it.uuid }
             slot to chosen
         }.toMap()

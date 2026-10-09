@@ -72,6 +72,8 @@ internal class NativeInformationSetSearch(
     },
     /** Diagnostics only: receives every root choice's replies, grouped by opponent set, once the search ends. */
     private val rootReport: ((String) -> Unit)? = null,
+    /** Lets later turns' bounded switches follow the matchup scores; off only to measure what that changes. */
+    private val matchupSwitchTargets: Boolean = true,
 ) {
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val first = request.worlds.first()
@@ -82,7 +84,7 @@ internal class NativeInformationSetSearch(
         val result = try {
             lease(request.deadlineNanos) { worker ->
                 try {
-                    Run(request, worker, replacementSpendsTurn, rootReport).execute()
+                    Run(request, worker, replacementSpendsTurn, rootReport, matchupSwitchTargets).execute()
                 } catch (abort: Abort) {
                     abort.result
                 }
@@ -113,6 +115,7 @@ internal class NativeInformationSetSearch(
         private val worker: NativeBranchWorker,
         private val replacementSpendsTurn: Boolean,
         private val rootReport: ((String) -> Unit)?,
+        private val matchupSwitchTargets: Boolean,
     ) {
         /**
          * The per-world search's attack-only third turn for Boss setup lines is not taken: it was admitted only
@@ -244,7 +247,7 @@ internal class NativeInformationSetSearch(
                     NativeProductSearchRun(NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT, rootIssues = rootIssues)))
             }
             val tree = NativeShowdownSearchTree(worker, rootFrame, input.publicState, publicTurnOffset,
-                input.publicActionCatalog, request.allowedMechanics)
+                input.publicActionCatalog, request.allowedMechanics, switchPreference)
             val mapping = NativeRootActionMatcher.match(
                 tree.root.state.format, request.productActions, tree.actions(tree.root, BattleSide.ALLY))
             // A rebuilt mid-battle root does not carry every move restriction (Disable, Torment), so it may offer
@@ -422,6 +425,18 @@ internal class NativeInformationSetSearch(
          */
         private fun ordered(position: NativeSearchPosition, side: BattleSide, actions: List<BattleActionCandidate>) =
             NativeMatchupPrior.order(request.actionPrior, position.state, side, actions)
+
+        /**
+         * Which bench Pokemon a later turn's bounded voluntary switch brings in, on either side: the matchup scores'
+         * one-on-one win chance against the opposing active, the opponent's by its own interest.
+         */
+        private val switchPreference = request.actionPrior?.takeIf { matchupSwitchTargets }?.let { prior ->
+            { state: jbro.cobblemon.mcc.internal.ai.BattleStateView, side: BattleSide, slot: Int, benchUuid: String ->
+                val switch = BattleActionCandidate("preference:$slot:$benchUuid", jbro.cobblemon.mcc.internal.ai.BattleActionKind.SWITCH,
+                    actorSlot = slot, switchPokemonId = java.util.UUID.fromString(benchUuid))
+                prior.score(state, side, switch)
+            }
+        }
 
         private fun choices(position: NativeSearchPosition, actions: List<BattleActionCandidate>): List<Choice> {
             val set = opponentSet(position)

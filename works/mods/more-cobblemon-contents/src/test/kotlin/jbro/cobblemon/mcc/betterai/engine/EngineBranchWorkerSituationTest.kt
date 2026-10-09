@@ -108,6 +108,28 @@ class EngineBranchWorkerSituationTest {
     }
 
     @Test
+    fun `a bounded voluntary switch brings in the bench Pokemon the switch preference rates highest`() {
+        val worker = EngineBranchWorker()
+        val three = definition.copy(
+            p1Team = definition.p1Team + NativePokemonSet("Ferrothorn", "Ferrothorn",
+                listOf("powerwhip", "gyroball", "leechseed", "protect"), "Iron Barbs", uuid(5), item = "Leftovers"),
+            situation = definition.situation!!.copy(pokemon = definition.situation!!.pokemon.map {
+                if (it.uuid == uuid(1)) it.copy(choiceLockedMove = null) else it
+            } + NativePokemonSituation(uuid(5), hp = null, hpFraction = 1.0)),
+        )
+        val root = worker.createBattle(three)
+        fun switchTargets(preference: ((Int, String) -> Double?)?) =
+            NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root, 1, allowedMechanics = emptySet(),
+                switchPreference = preference).filter { it.kind == BattleActionKind.SWITCH }.map { it.switchPokemonId.toString() }
+        val byType = switchTargets(null).single()
+        val other = listOf(uuid(2), uuid(5)).single { it != byType }
+
+        assertEquals(listOf(other), switchTargets { _, bench -> if (bench == other) 0.9 else 0.1 })
+        // A Pokemon the preference knows nothing about keeps the type order behind the ones it rates.
+        assertEquals(listOf(byType), switchTargets { _, bench -> if (bench == byType) 0.2 else null })
+    }
+
+    @Test
     fun `the request follows the installed lock and the fainted bench`() {
         val root = EngineBranchWorker().createBattle(definition)
 
