@@ -135,10 +135,12 @@ internal object NativeInitialBattleDefinitionCompiler {
         seed: List<Int>,
         /** Rebuild a mid-battle board (see [NativeMidBattleStateRules]) instead of requiring the opening. */
         midBattle: Boolean = false,
+        /** The root comes from the live battle: no board to rebuild, so none is refused or described. */
+        live: Boolean = false,
     ): NativeInitialBattleDefinitionCompilation {
         require(seed.size == 4) { "Showdown PRNG seed must contain four integers" }
         val issues = linkedSetOf<NativeBattleDefinitionIssue>()
-        val stateAccepted = if (midBattle) NativeMidBattleStateRules.blocker(state) == null else isInitialState(state)
+        val stateAccepted = live || if (midBattle) NativeMidBattleStateRules.blocker(state) == null else isInitialState(state)
         if (!stateAccepted) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_STATE_NOT_INITIAL)
 
         val stateIds = state.pokemon.mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId)
@@ -251,7 +253,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                 seed = seed,
                 p1Team = team(BattleSide.ALLY),
                 p2Team = team(BattleSide.OPPONENT),
-                situation = if (midBattle) situation(state, catalog, sets) else null,
+                situation = if (midBattle && !live) situation(state, catalog, sets) else null,
             ),
             issues = emptyList(),
         )

@@ -28,8 +28,10 @@ data class RefSet(
     val gender: String = "M",
     val teraType: String? = null,
     val name: String? = null,
+    /** A real battle's UUID instead of the readable default, for code that requires one. */
+    val fixedUuid: String? = null,
 ) {
-    fun uuid(side: String, index: Int) = "$side-$index-${species.lowercase().replace(Regex("[^a-z0-9]"), "")}"
+    fun uuid(side: String, index: Int) = fixedUuid ?: "$side-$index-${species.lowercase().replace(Regex("[^a-z0-9]"), "")}"
 
     fun toJson(side: String, index: Int): JsonObject = JsonObject().apply {
         addProperty("species", species)
@@ -202,6 +204,47 @@ object EngineReferee {
         val log = battle?.log?.filter { !it.startsWith("|t:|") }?.drop(showdown.logLengths[step]) ?: emptyList()
         return tail to RefResult(scenario.id, log, error, battle?.ended ?: false, battle?.turn ?: 0,
             battle?.missingHooks?.toSet() ?: emptySet(), states = states, rejections = unknown.toList())
+    }
+
+    /**
+     * The engine's own battle after step [step], written as Showdown writes one and read back: both play the rest of
+     * [scenario], and the round trip must not change a line.
+     */
+    fun roundTrip(scenario: RefScenario, step: Int): Pair<RefResult, RefResult> {
+        val battle = Battle(dex, BattleOptions(gameType = scenario.gameType, seed = scenario.seed))
+        battle.setPlayer("p1", "p1", scenario.p1.mapIndexed { i, s -> s.toSet("p1", i) })
+        battle.setPlayer("p2", "p2", scenario.p2.mapIndexed { i, s -> s.toSet("p2", i) })
+        for ((a, b) in scenario.turns.take(step + 1)) {
+            if (battle.ended) break
+            choose(battle.sides[0], a)
+            choose(battle.sides[1], b)
+            battle.commitDecisions()
+        }
+        val written = jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateWriter.write(battle, includeLog = true).toString()
+        val prefix = battle.log.size
+        fun playOn(b: Battle, id: String): RefResult {
+            var error: String? = null
+            val states = ArrayList<String>()
+            try {
+                for ((a, c) in scenario.turns.drop(step + 1)) {
+                    if (b.ended) break
+                    choose(b.sides[0], a)
+                    choose(b.sides[1], c)
+                    b.commitDecisions()
+                    states += stateLine(b)
+                }
+            } catch (e: Throwable) {
+                error = e.stackTraceToString().lines().take(12).joinToString("\n")
+            }
+            return RefResult(id, b.log.drop(prefix).filter { !it.startsWith("|t:|") }, error, b.ended, b.turn, states = states)
+        }
+        val read = try {
+            jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateReader.read(dex, written, keepLog = true).battle
+        } catch (e: Throwable) {
+            return RefResult(scenario.id, emptyList(), null, false, 0) to
+                RefResult(scenario.id, emptyList(), e.stackTraceToString().lines().take(12).joinToString("\n"), false, 0)
+        }
+        return playOn(battle, scenario.id) to playOn(read, scenario.id)
     }
 
     /** Mirrors the referee script: skip a waiting side, auto-replace a fainted one, fall back when rejected. */

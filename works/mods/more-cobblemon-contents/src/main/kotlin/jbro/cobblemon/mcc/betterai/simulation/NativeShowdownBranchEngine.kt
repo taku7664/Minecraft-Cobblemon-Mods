@@ -34,6 +34,14 @@ internal interface NativeBranchWorker : AutoCloseable {
 
     fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame
 
+    /**
+     * The live battle Showdown serialized ([liveStateJson]), seen from the side that holds [definition]'s own team,
+     * with the opponent's hidden information replaced by the definition's hypothesis and its random stream by the
+     * definition's seed.
+     */
+    fun createLiveBattle(liveStateJson: String, definition: NativeBattleDefinition): NativeBattleFrame =
+        throw UnsupportedOperationException("This native worker cannot start from a live battle")
+
     fun rebindMoves(snapshotJson: String, rebindings: List<NativeMoveSetRebinding>): NativeBattleFrame
 
     /** Gives synthetic team members the real IDs the public battle revealed them under (old → new). */

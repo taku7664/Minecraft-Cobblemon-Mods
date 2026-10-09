@@ -114,6 +114,7 @@ private typealias NativeLeafEvaluator = (
 internal class NativeInitialProductDecisionEvaluator(
     private val planWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::plan,
     private val planMidBattleWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::planMidBattle,
+    private val planLiveWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::planLive,
     private val searchWorlds: NativeWorldSearcher = NativeInformationSetSearch()::search,
     private val reconcileSession: NativeSessionReconciler = NativeProductSessionReconciler()::reconcile,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
@@ -158,6 +159,10 @@ internal class NativeInitialProductDecisionEvaluator(
         if (context.opponentTeamPreview == null || context.exactOwnTeam == null) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
         }
+        // The live battle itself is the root: nothing has to be rebuilt, so no board is refused.
+        context.showdownState?.let { live ->
+            return evaluateFresh(context, profile, tuning, budget, midBattle = true, rules, live).copy(rebuilt = true)
+        }
         NativeMidBattleStateRules.blocker(context.state)?.let { blocker ->
             return NativeInitialProductDecisionEvaluation(
                 NativeInitialProductDecisionStatus.NOT_APPLICABLE,
@@ -174,9 +179,16 @@ internal class NativeInitialProductDecisionEvaluator(
         budget: LocalLookaheadBudget,
         midBattle: Boolean,
         rules: NativeRulePriorities,
+        /** Showdown's serialized live battle, which every world's root starts from. */
+        live: String? = null,
     ): NativeInitialProductDecisionEvaluation {
         val allowedMechanics = NativeMechanicAllowance.merge(null, context.candidates)
-        val plan = (if (midBattle) planMidBattleWorlds else planWorlds)(context, profile.difficulty.tier)
+        val planner = when {
+            live != null -> planLiveWorlds
+            midBattle -> planMidBattleWorlds
+            else -> planWorlds
+        }
+        val plan = planner(context, profile.difficulty.tier)
         if (plan.issues.isNotEmpty()) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.PLANNING_FAILED,
@@ -241,6 +253,7 @@ internal class NativeInitialProductDecisionEvaluator(
                                 nanoTime() - deadlineNanos < 0L
                             }
                         },
+                        liveState = live,
                     )
                 },
                 productActions = context.candidates,

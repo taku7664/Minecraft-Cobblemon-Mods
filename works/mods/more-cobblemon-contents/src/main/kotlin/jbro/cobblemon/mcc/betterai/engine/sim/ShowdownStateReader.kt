@@ -95,6 +95,40 @@ object ShowdownStateReader {
         return Result(battle, reader.unknown)
     }
 
+    /**
+     * The same singles or doubles battle seen from the other seat: the sides trade places, and every reference to one
+     * (`[Side:p1]`, `[Pokemon:p2a]`, a slot such as `p1b`, a side ID) now names the other. Returns a copy.
+     */
+    fun swapSides(state: JsonObject): JsonObject {
+        val swapped = swapStrings(state).asJsonObject
+        val sides = swapped.getAsJsonArray("sides")
+        require(sides.size() == 2) { "Only two-sided battles change seats" }
+        val reordered = JsonArray().apply { add(sides[1]); add(sides[0]) }
+        reordered.forEachIndexed { n, side -> side.asJsonObject.addProperty("n", n) }
+        swapped.add("sides", reordered)
+        return swapped
+    }
+
+    private val SIDE_TEXT = Regex("""^p([12])([a-x]?)$""")
+    private val SIDE_REF = Regex("""\[(Side|Pokemon):p([12])""")
+
+    private fun swapStrings(json: JsonElement): JsonElement = when {
+        json.isJsonObject -> JsonObject().also { out -> json.asJsonObject.entrySet().forEach { (k, v) -> out.add(k, swapStrings(v)) } }
+        json.isJsonArray -> JsonArray().also { out -> json.asJsonArray.forEach { out.add(swapStrings(it)) } }
+        json.isJsonPrimitive && json.asJsonPrimitive.isString -> {
+            val text = json.asString
+            val side = SIDE_TEXT.matchEntire(text)
+            when {
+                side != null -> JsonPrimitive("p" + other(side.groupValues[1]) + side.groupValues[2])
+                text.startsWith("[") -> JsonPrimitive(SIDE_REF.replace(text) { m -> "[${m.groupValues[1]}:p${other(m.groupValues[2])}" })
+                else -> json
+            }
+        }
+        else -> json
+    }
+
+    private fun other(digit: String) = if (digit == "1") "2" else "1"
+
     /** `side.team`: for each original team index, the Pokemon's 1-based position in `side.pokemon`. */
     private fun teamOrder(sideState: JsonObject, size: Int): List<Int> {
         val team = sideState.get("team").asString

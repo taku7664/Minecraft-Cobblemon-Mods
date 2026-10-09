@@ -258,7 +258,9 @@ internal class NativeInformationSetSearch(
                 throw Abort(failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, input, nodesVisited,
                     NativeProductSearchRun(NativeProductSearchRunStatus.RULES_GENERATION_MISMATCH)))
             }
-            val rootFrame = supplied?.frame ?: worker.createBattle(input.definition)
+            val rootFrame = supplied?.frame
+                ?: input.liveState?.let { worker.createLiveBattle(it, input.definition) }
+                ?: worker.createBattle(input.definition)
             val publicTurnOffset = supplied?.publicTurnOffset
                 ?: if (input.publicState.turn == 0 && rootFrame.turn == 1) 1 else 0
             val rootIssues = NativeBattleRootValidator.validate(input.definition, rootFrame, input.publicState, publicTurnOffset)

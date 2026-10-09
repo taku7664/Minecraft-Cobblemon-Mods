@@ -80,6 +80,8 @@ internal object NativeOpponentRosterStateMaterializer {
         /** A mid-battle board: revealed Pokemon may have fainted or gone back to the bench. */
         midBattle: Boolean,
         resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
+        /** The battle comes from the live battle itself, so any layout of the board can be searched. */
+        live: Boolean = false,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
         val selectionRuleSupported = when (state.format) {
@@ -113,7 +115,7 @@ internal object NativeOpponentRosterStateMaterializer {
             BattleFormat.SINGLE -> listOf(0)
             BattleFormat.DOUBLE -> listOf(0, 1)
         }
-        val notRepresentable = if (midBattle) {
+        val notRepresentable = if (live) false else if (midBattle) {
             revealed.filter { it.activeSlot != null && !it.fainted }.mapNotNull(BattlePokemonStateView::activeSlot)
                 .sorted() != expectedActiveSlots
         } else {

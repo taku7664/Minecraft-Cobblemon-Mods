@@ -16,6 +16,8 @@ internal data class NativeProductWorldSearchInput(
     val publicActionCatalog: BattlePublicActionCatalogView? = null,
     val rootSnapshot: NativeProductRootSnapshot? = null,
     val evaluate: (BattleStateView) -> Double,
+    /** Showdown's serialized live battle: the root is this battle with the definition's hypothesis laid over it. */
+    val liveState: String? = null,
 ) {
     init {
         require(probability.isFinite() && probability > 0.0 && probability <= 1.0)

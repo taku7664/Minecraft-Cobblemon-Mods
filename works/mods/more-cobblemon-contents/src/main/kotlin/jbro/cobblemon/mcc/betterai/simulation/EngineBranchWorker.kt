@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.betterai.engine.sim.MoveSlot
 import jbro.cobblemon.mcc.betterai.engine.sim.Pokemon
 import jbro.cobblemon.mcc.betterai.engine.sim.PokemonSet
 import jbro.cobblemon.mcc.betterai.engine.sim.Prng
+import jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateReader
 import jbro.cobblemon.mcc.betterai.engine.sim.Side
 import jbro.cobblemon.mcc.betterai.engine.sim.activeMove
 import jbro.cobblemon.mcc.betterai.engine.sim.fork
@@ -55,6 +56,19 @@ internal class EngineBranchWorker(
             add("steps", JsonArray())
         }.toString()
         val battle = build(definition)
+        remember(token, battle)
+        return frame(token, battle, emptyList(), null)
+    }
+
+    override fun createLiveBattle(liveStateJson: String, definition: NativeBattleDefinition): NativeBattleFrame {
+        val key = NativeLiveBattleStates.register(liveStateJson)
+        val token = JsonObject().apply {
+            addProperty("engine", 1)
+            addProperty("live", key)
+            add("definition", gson.toJsonTree(definition))
+            add("steps", JsonArray())
+        }.toString()
+        val battle = buildLive(key, definition)
         remember(token, battle)
         return frame(token, battle, emptyList(), null)
     }
@@ -333,6 +347,149 @@ internal class EngineBranchWorker(
         battle.makeRequest("move")
     }
 
+    /** The live battle read once per state and seat; every world forks it. */
+    private val liveBases = object : LinkedHashMap<String, Battle>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Battle>?): Boolean = size > 8
+    }
+
+    /**
+     * [definition]'s world laid over the live battle. The own side and everything public stay as Showdown holds them;
+     * the opponent's hidden information becomes the hypothesis: a revealed Pokemon keeps its battle state with the
+     * hypothesis' set, moves, untouched ability and item, and stats (HP kept at the same share), and Pokemon the
+     * opponent has not shown are the hypothesis' own. The random stream is the world's, never the live one.
+     */
+    private fun buildLive(key: String, definition: NativeBattleDefinition): Battle {
+        val own = definition.p1Team.mapTo(hashSetOf()) { it.uuid }
+        val base = synchronized(liveBases) {
+            liveBases.getOrPut(key) {
+                val text = requireNotNull(NativeLiveBattleStates.get(key)) { "Live battle state $key is no longer held" }
+                var state = JsonParser.parseString(text).asJsonObject
+                val seat = state.getAsJsonArray("sides").indexOfFirst { side ->
+                    side.asJsonObject.getAsJsonArray("pokemon").any { p ->
+                        p.asJsonObject.getAsJsonObject("set")?.get("uuid")?.asString in own
+                    }
+                }
+                require(seat >= 0) { "No side of the live battle holds the own team" }
+                if (seat == 1) state = ShowdownStateReader.swapSides(state)
+                ShowdownStateReader.read(dex, state).battle
+            }
+        }
+        val battle = base.fork()
+        battle.tracer = Trace()
+        applyHypothesis(battle, definition.p2Team)
+        battle.prng = Prng(definition.seed.toIntArray())
+        if (battle.requestState == "move") settleRestrictions(battle)
+        if (battle.requestState.isNotEmpty()) {
+            val requests = battle.getRequests(battle.requestState)
+            for (i in battle.sides.indices) battle.sides[i].activeRequest = requests[i]
+        }
+        return battle
+    }
+
+    private fun applyHypothesis(battle: Battle, hypotheses: List<NativePokemonSet>) {
+        val side = battle.sides[1]
+        val byUuid = hypotheses.associateBy { it.uuid }
+        val kept = side.pokemon.filter { it.uuid in byUuid }
+        require(side.active.all { it == null || it in kept }) { "The world has no hypothesis for an active opponent" }
+        val added = hypotheses.filter { h -> kept.none { it.uuid == h.uuid } }.map { Pokemon(set(it, null), side) }
+        side.pokemon = (kept + added).toMutableList()
+        side.pokemon.forEachIndexed { i, p -> p.position = i }
+        for (pokemon in kept) swapHidden(battle, pokemon, byUuid.getValue(pokemon.uuid))
+        side.pokemonLeft = side.pokemon.count { !it.fainted }
+        // Whether the side may still Mega Evolve or Terastallize is public; whether this Pokemon can depends on its item.
+        val megaSpent = side.pokemon.any { it.species.isMega }
+        val teraSpent = side.pokemon.any { it.terastallized != null }
+        for (pokemon in side.pokemon) {
+            pokemon.canMegaEvo = if (megaSpent) null else battle.actions.canMegaEvo(pokemon)
+            pokemon.canTerastallize = if (teraSpent) null else battle.actions.canTerastallize(pokemon)
+        }
+    }
+
+    /** A revealed opponent Pokemon with the hypothesis' hidden information; what the battle changed stays. */
+    private fun swapHidden(battle: Battle, pokemon: Pokemon, hypothesis: NativePokemonSet) {
+        val previous = pokemon.set
+        val set = set(hypothesis, null)
+        if (!pokemon.transformed) {
+            val live = pokemon.moveSlots.associateBy { it.id }
+            val slots = set.moves.mapNotNull { name ->
+                val move = dex.move(name) ?: return@mapNotNull null
+                live[move.id] ?: MoveSlot(move.name, move.id, move.pp, move.pp, move.target)
+            }
+            pokemon.moveSlots = slots.toMutableList()
+            pokemon.baseMoveSlots = slots.toMutableList()
+        }
+        // An ability or item the battle has not changed is still the set's, so it is the hypothesis'.
+        if (pokemon.baseAbility == Js.toID(previous.ability)) {
+            val id = Js.toID(set.ability)
+            if (pokemon.ability == pokemon.baseAbility && pokemon.ability != id) {
+                pokemon.ability = id
+                pokemon.abilityState = EffectState(id).also { it.target = pokemon }
+            }
+            pokemon.baseAbility = id
+        }
+        if (pokemon.item == Js.toID(previous.item)) {
+            val id = Js.toID(set.item)
+            if (pokemon.item != id) {
+                pokemon.item = id
+                pokemon.itemState = EffectState(id).also { it.target = pokemon }
+            }
+            // A Choice lock belongs to the held item: the hypothesis' item decides whether there is one.
+            if (!id.startsWith("choice")) {
+                pokemon.volatiles.remove("choicelock")
+            } else if (pokemon.isActive && "choicelock" !in pokemon.volatiles && pokemon.activeMoveActions > 0) {
+                pokemon.lastMove?.let { last ->
+                    pokemon.volatiles["choicelock"] = EffectState("choicelock").also {
+                        it["name"] = "Choice Lock"
+                        it.target = pokemon
+                        it.source = pokemon
+                        it["move"] = last.id
+                    }
+                }
+            }
+        }
+        val stats = battle.spreadModify(pokemon.species.baseStats, set)
+        val maxHp = stats.getValue("hp")
+        // Dynamax doubles the max HP over the base; the share of HP left is what the opponent shows.
+        val scale = if (pokemon.baseMaxhp > 0) pokemon.maxhp.toDouble() / pokemon.baseMaxhp else 1.0
+        val newMax = (maxHp * scale).roundToInt()
+        if (pokemon.hp > 0 && pokemon.maxhp > 0) {
+            pokemon.hp = (pokemon.hp.toDouble() / pokemon.maxhp * newMax).roundToInt().coerceIn(1, newMax)
+        }
+        pokemon.baseMaxhp = maxHp
+        pokemon.maxhp = newMax
+        if (!pokemon.transformed) {
+            for (stat in listOf("atk", "def", "spa", "spd", "spe")) pokemon.storedStats[stat] = stats.getValue(stat)
+        }
+        pokemon.baseStoredStats = LinkedHashMap(stats)
+        set.teraType?.let { pokemon.teraType = it }
+        pokemon.set = set
+        pokemon.updateSpeed()
+    }
+
+    /** Move restrictions and trapping as Battle.nextTurn settles them, for a position whose moves or items were laid in. */
+    private fun settleRestrictions(battle: Battle) {
+        for (side in battle.sides) for (pokemon in side.active) {
+            if (pokemon == null || pokemon.fainted) continue
+            pokemon.maybeDisabled = false
+            for (slot in pokemon.moveSlots) {
+                slot.disabled = false
+                slot.disabledSource = ""
+            }
+            battle.runEvent("DisableMove", pokemon)
+            for (slot in pokemon.moveSlots.toList()) {
+                val active = battle.dex.activeMove(slot.id)
+                battle.singleEvent("DisableMove", active, null, pokemon)
+                if (active.flag("cantusetwice") && pokemon.lastMove?.id == slot.id) pokemon.disableMove(slot.id)
+            }
+            pokemon.trapped = false
+            pokemon.maybeTrapped = false
+            battle.runEvent("TrapPokemon", pokemon)
+            if (!pokemon.knownType || battle.dex.notImmune("trapped", pokemon.getTypes())) {
+                battle.runEvent("MaybeTrapPokemon", pokemon)
+            }
+        }
+    }
+
     /** A nature raising and one lowering each battle stat, for its legal range. */
     private val STAT_NATURES = mapOf(
         "atk" to ("Adamant" to "Modest"),
@@ -487,7 +644,7 @@ internal class EngineBranchWorker(
         val root = JsonParser.parseString(snapshotJson).asJsonObject
         require(root.get("engine")?.asInt == 1) { "Not an AI engine snapshot" }
         val definition = gson.fromJson(root.get("definition"), NativeBattleDefinition::class.java)
-        var battle = build(definition)
+        var battle = root.get("live")?.asString?.let { buildLive(it, definition) } ?: build(definition)
         for (element in root.getAsJsonArray("steps")) {
             val step = element.asJsonArray
             battle = battle.fork()

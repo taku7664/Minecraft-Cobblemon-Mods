@@ -63,6 +63,8 @@ internal object NativeOpponentRosterHypothesisCompiler {
         compatiblePreviewSlots: Map<UUID, Set<Int>> = emptyMap(),
         /** A mid-battle board: revealed Pokemon may have fainted or gone back to the bench. */
         midBattle: Boolean = false,
+        /** The battle comes from the live battle itself, so any layout of the board can be searched. */
+        live: Boolean = false,
     ): NativeOpponentRosterCompilation {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
@@ -94,7 +96,7 @@ internal object NativeOpponentRosterHypothesisCompiler {
         }
         val liveActives = revealed.filter { it.activeSlot != null && !it.fainted }
         val revealedActiveSlots = liveActives.mapNotNull(BattlePokemonStateView::activeSlot).toSet()
-        val layoutInvalid = if (midBattle) {
+        val layoutInvalid = if (live) false else if (midBattle) {
             revealedActiveSlots != expectedActiveSlots || liveActives.size != expectedActiveSlots.size
         } else {
             revealed.isNotEmpty() && (revealed.any { it.activeSlot == null } ||

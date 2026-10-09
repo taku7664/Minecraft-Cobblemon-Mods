@@ -135,5 +135,25 @@ class ShowdownStateResumeTest {
         assertTrue(failures.isEmpty()) { "${failures.size} of $resumed resumed positions differ; first:\n${failures.first()}" }
     }
 
+    /** [jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateWriter]: an engine battle written and read back plays on unchanged. */
+    @Test
+    fun `an engine battle written as Showdown writes one plays on unchanged after reading it back`() {
+        val scenarios = scripted() + sweepScenarios()
+        val failures = ArrayList<String>()
+        var compared = 0
+        for (scenario in scenarios) {
+            for (step in 0 until scenario.turns.size - 1) {
+                val (original, roundTrip) = EngineReferee.roundTrip(scenario, step)
+                compared++
+                EngineReferee.difference(original, roundTrip)?.let { failures += "step $step: $it" }
+            }
+        }
+        val reports = Path.of(System.getProperty("aiengine.coverage") ?: "build/reports/x").parent
+        Files.createDirectories(reports)
+        Files.writeString(reports.resolve("showdown-state-roundtrip.md"),
+            "# Round trips: $compared, differing ${failures.size}\n\n" + failures.joinToString("\n\n") { it.lines().take(30).joinToString("\n") })
+        assertTrue(failures.isEmpty()) { "${failures.size} of $compared round trips differ; first:\n${failures.first()}" }
+    }
+
     private fun RefResult.copyWithoutUnknown() = RefResult(id, log, error, ended, turn, missingHooks, emptyList(), states)
 }

@@ -96,10 +96,17 @@ internal class NativeInitialProductWorldPlanner(
         tier: BattleTrainerTier,
     ): NativeInitialProductWorldPlan = plan(context, tier, midBattle = true)
 
+    /** The posterior for a board whose root is the live battle itself: no board layout needs rebuilding. */
+    fun planLive(
+        context: BattleDecisionContext,
+        tier: BattleTrainerTier,
+    ): NativeInitialProductWorldPlan = plan(context, tier, midBattle = true, live = true)
+
     fun plan(
         context: BattleDecisionContext,
         tier: BattleTrainerTier,
         midBattle: Boolean = false,
+        live: Boolean = false,
     ): NativeInitialProductWorldPlan {
         val preview = context.opponentTeamPreview ?: return failure(
             NativeInitialProductWorldPlanIssueCode.OPPONENT_PREVIEW_MISSING,
@@ -110,7 +117,7 @@ internal class NativeInitialProductWorldPlanner(
         val identities = publicIdentityResolver(context, preview, exactOwnTeam)
         if (identities.issues.isNotEmpty()) return NativeInitialProductWorldPlan(emptyList(), identities.issues)
 
-        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview, midBattle = midBattle)
+        val rosterCompilation = NativeOpponentRosterHypothesisCompiler.compile(context.state, preview, midBattle = midBattle, live = live)
         if (rosterCompilation.issues.isNotEmpty()) {
             return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_COMPILATION_FAILED,
@@ -131,6 +138,7 @@ internal class NativeInitialProductWorldPlanner(
                 rosterHypothesis,
                 midBattle = midBattle,
                 resolveShowdownSpecies = identities.resolve,
+                live = live,
             )
             val roster = materialization.roster ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.ROSTER_MATERIALIZATION_FAILED,
@@ -243,6 +251,7 @@ internal class NativeInitialProductWorldPlanner(
                     randomSampleIndex = 0,
                 ),
                 midBattle = midBattle,
+                live = live,
             )
             val definition = compilation.definition ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.BATTLE_DEFINITION_COMPILATION_FAILED,
