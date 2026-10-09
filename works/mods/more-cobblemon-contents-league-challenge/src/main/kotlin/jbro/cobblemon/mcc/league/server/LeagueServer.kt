@@ -317,9 +317,13 @@ object LeagueServer {
             val index = gyms.indexOf(id)
             val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }
             val challenge = catalog.challenges.getValue(id)
+            // The League entry shows whoever of its finals the player faces next: the run's next battle, or the first.
+            val facing = state.run?.takeIf { index < 0 && it.encounters.first().id == id }
+                ?.let { it.encounters[if (it.awaitingNext) it.index + 1 else it.index] } ?: challenge
             LeagueChallengeView(id, challenge.nameKey,
                 if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", challenge.unlockCap,
-                challenge.badge ?: gyms.indexOf(id).takeIf { it >= 0 }?.let { catalog.challenges.getValue(catalog.gyms[it]).badge })
+                challenge.badge ?: gyms.indexOf(id).takeIf { it >= 0 }?.let { catalog.challenges.getValue(catalog.gyms[it]).badge },
+                facing.skin)
         }
         val views = route(catalog.gyms, catalog.finals)
         val hardUnlocked = engine.hardUnlocked(state)

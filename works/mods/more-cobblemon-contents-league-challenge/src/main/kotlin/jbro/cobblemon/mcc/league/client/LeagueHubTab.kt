@@ -15,6 +15,7 @@ import jbro.cobblemon.uikit.UiRect
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
+import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.narration.NarrationElementOutput
@@ -30,6 +31,7 @@ internal class LeagueHubTab : MccHubTabContent {
     private val state get() = LeagueHomeController.state
 
     override fun shown() {
+        faces.clear()
         // A server-opened hub already carries a fresh session; otherwise the tab asks for one.
         if (!LeagueHomeController.takeOpenedSession()) MccHubTabs.requestContent(LeagueHomeController.CONTENT)
     }
@@ -131,8 +133,10 @@ internal class LeagueHubTab : MccHubTabContent {
             }
             graphics.fill(center - half, y, center + half, y + 21, border)
             graphics.fill(center - half + 2, y + 2, center + half - 2, y + 19, theme.colors.shell)
+            val face = faceTexture(entry.skin)
             val badge = badgeStack(entry.badgeId)
-            if (badge != null) graphics.renderItem(badge, center - 8, y + 2)
+            if (face != null) PlayerFaceRenderer.draw(graphics, face, center - 8, y + 3, 16)
+            else if (badge != null) graphics.renderItem(badge, center - 8, y + 2)
             else graphics.drawCenteredString(font, marker, center, y + 6,
                 if (entry.status == "LOCKED") theme.colors.textDim else theme.colors.textPrimary)
             if (entry.status == "LOCKED") graphics.fill(center - half + 2, y + 2, center + half - 2, y + 19, 0x880A1A28.toInt())
@@ -148,7 +152,7 @@ internal class LeagueHubTab : MccHubTabContent {
     }
 
     /**
-     * The focused challenge: its badge in a frame, name and state beside it, the unlock reward below. The frame
+     * The focused challenge: its trainer's face (or badge) in a frame, name and state beside it, the unlock reward below. The frame
      * grows with the card and the whole block sits a little above the middle, so a tall card is not top-heavy.
      */
     private class ChallengeBody(private val body: UiRect, private val view: LeagueView,
@@ -162,8 +166,13 @@ internal class LeagueHubTab : MccHubTabContent {
             val top = body.y + ((body.height - box - REWARD_ROWS) / 3).coerceAtLeast(0)
             graphics.fill(body.x, top, body.x + box, top + box, theme.colors.borderBright)
             graphics.fill(body.x + 2, top + 2, body.x + box - 2, top + box - 2, theme.colors.shell)
+            val face = faceTexture(selected?.skin)
             val badge = badgeStack(selected?.badgeId)
-            if (badge != null) {
+            if (face != null) {
+                // Whole multiples of the skin's 8-pixel face keep it crisp.
+                val size = ((box - 6) / 8 * 8).coerceAtLeast(16)
+                PlayerFaceRenderer.draw(graphics, face, body.x + (box - size) / 2, top + (box - size) / 2, size)
+            } else if (badge != null) {
                 val scale = ((box - 6) / 16).coerceIn(1, 3).toFloat()
                 val pose = graphics.pose()
                 pose.pushPose()
@@ -251,6 +260,16 @@ internal fun leagueCopy(key: String, vararg args: Any): Component =
 private fun drawLine(graphics: GuiGraphics, component: Component, x: Int, y: Int, width: Int, color: Int) {
     if (width <= 0) return
     graphics.drawString(Minecraft.getInstance().font, MccHubKit.fitted(component, width), x, y, color, false)
+}
+
+/** A trainer skin the loaded resource packs actually have; without the pack the frame keeps its badge. */
+private val faces = HashMap<String, ResourceLocation?>()
+
+private fun faceTexture(skin: String?): ResourceLocation? {
+    if (skin == null) return null
+    return faces.getOrPut(skin) {
+        ResourceLocation.tryParse(skin)?.takeIf { Minecraft.getInstance().resourceManager.getResource(it).isPresent }
+    }
 }
 
 private fun badgeStack(id: String?): ItemStack? {
