@@ -6,6 +6,7 @@
 $ErrorActionPreference='Stop'
 
 function New-ProductPatchWindow([string]$Repo,[string]$InitialTab='Client',[switch]$QuietErrors) {
+    $Repo=[IO.Path]::GetFullPath($Repo).TrimEnd('\','/')
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
     [Windows.Forms.Application]::EnableVisualStyles()
