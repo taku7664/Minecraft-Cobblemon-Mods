@@ -421,6 +421,7 @@ internal object LocalBattleActionOutcomeEvaluator {
 
     private fun isPubliclyInert(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean =
         LocalIdleUtilityMoveRules.failsForInsufficientHp(candidate, context) ||
+            LocalIdleUtilityMoveRules.purposelessProtect(candidate, context) ||
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) > 0.0 ||
