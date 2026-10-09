@@ -25,6 +25,10 @@ internal data class NativeProductSearchRequest(
     val responseInformation: Double = 1.0,
     val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
+    /** See [LocalLookaheadBudget.opponentResponseLimit]. */
+    val opponentResponseLimit: Int? = null,
+    /** See [LocalLookaheadBudget.finalPlyAttacksOnly]. */
+    val finalPlyAttacksOnly: Boolean = false,
     val allowedMechanics: Set<String>? = null,
     val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
     val nodeLimit: Int,
@@ -136,6 +140,8 @@ internal class NativeProductSearchRunner(
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
                         opponentThreatWeights = request.opponentThreatWeights,
                         tolerateExtraNativeRootActions = request.definition.situation != null,
+                        opponentResponseLimit = request.opponentResponseLimit,
+                        finalPlyAttacksOnly = request.finalPlyAttacksOnly,
                     ).evaluateProduct(request.productActions, request.maxDepth),
                     rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root, publicTurnOffset),
                 )

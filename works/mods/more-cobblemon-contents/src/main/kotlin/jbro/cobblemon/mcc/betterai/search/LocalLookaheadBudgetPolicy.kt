@@ -8,7 +8,18 @@ internal data class LocalLookaheadBudget(
     val timeMillis: Long,
     val nodeLimit: Int,
     val chanceBranchesPerMove: Int,
-)
+    /**
+     * How many opponent replies a deeper root iteration follows past the first turn, in the order the
+     * previous iteration scored them worst for this side. Null follows every reply.
+     */
+    val opponentResponseLimit: Int? = null,
+    /** Whether this side's last simulated turn considers only its damaging moves. */
+    val finalPlyAttacksOnly: Boolean = false,
+) {
+    init {
+        require(opponentResponseLimit == null || opponentResponseLimit > 0)
+    }
+}
 
 /**
  * Keeps local search responsive without changing the independent Router timeout.
@@ -28,28 +39,41 @@ internal object LocalLookaheadBudgetPolicy {
      */
     const val MAX_TIME_MILLIS = 6_000L
 
+    /**
+     * Every tier searches two turns on the Boss node budget; the tiers differ in breadth instead. A one-turn
+     * horizon could not tell Protect from an attack when neither changed the board this turn, so a lower tier
+     * protected again and again. The narrower tiers follow fewer of the opponent's replies and only attack on
+     * their own second turn, which is where they miss what a Boss sees.
+     */
     fun forTier(tier: BattleTrainerTier): LocalLookaheadBudget = when (tier) {
         BattleTrainerTier.INTRODUCTORY -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
-            nodeLimit = 2_000,
+            nodeLimit = NODE_LIMIT,
             chanceBranchesPerMove = 16,
+            opponentResponseLimit = 2,
+            finalPlyAttacksOnly = true,
         )
         BattleTrainerTier.STANDARD -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
-            nodeLimit = 15_000,
+            nodeLimit = NODE_LIMIT,
             chanceBranchesPerMove = 24,
+            opponentResponseLimit = 3,
+            finalPlyAttacksOnly = true,
         )
         BattleTrainerTier.ADVANCED -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
-            nodeLimit = 80_000,
+            nodeLimit = NODE_LIMIT,
             chanceBranchesPerMove = 40,
+            opponentResponseLimit = 5,
         )
         BattleTrainerTier.BOSS -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
-            nodeLimit = 400_000,
+            nodeLimit = NODE_LIMIT,
             chanceBranchesPerMove = 64,
         )
     }
+
+    const val NODE_LIMIT = 400_000
 
     /**
      * More search where few Pokemon are left. The tree is small there and each choice decides the battle,

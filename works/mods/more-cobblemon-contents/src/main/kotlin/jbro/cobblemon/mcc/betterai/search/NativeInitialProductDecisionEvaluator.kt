@@ -227,6 +227,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
+                opponentResponseLimit = budget.opponentResponseLimit,
+                finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,
@@ -377,6 +379,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
+                opponentResponseLimit = budget.opponentResponseLimit,
+                finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
                 opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,

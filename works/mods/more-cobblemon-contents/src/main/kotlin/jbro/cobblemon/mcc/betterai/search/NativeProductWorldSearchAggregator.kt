@@ -30,6 +30,10 @@ internal data class NativeProductWorldSearchRequest(
     val responseInformation: Double = 1.0,
     val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
+    /** See [LocalLookaheadBudget.opponentResponseLimit]. */
+    val opponentResponseLimit: Int? = null,
+    /** See [LocalLookaheadBudget.finalPlyAttacksOnly]. */
+    val finalPlyAttacksOnly: Boolean = false,
     /** Canonical mechanics the live battle permits; null leaves native legality unfiltered. */
     val allowedMechanics: Set<String>? = null,
     val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
@@ -134,6 +138,8 @@ internal class NativeProductWorldSearchAggregator(
                 responseInformation = request.responseInformation,
                 allowSetupAttackExtension = request.allowSetupAttackExtension,
                 excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
+                opponentResponseLimit = request.opponentResponseLimit,
+                finalPlyAttacksOnly = request.finalPlyAttacksOnly,
                 allowedMechanics = request.allowedMechanics,
                 opponentThreatWeights = request.opponentThreatWeights,
                 nodeLimit = nodeLimit,

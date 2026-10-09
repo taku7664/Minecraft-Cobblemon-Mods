@@ -107,12 +107,11 @@ object BattleDifficultyProfiles {
         id = "more_cobblemon_contents:introductory",
         tier = BattleTrainerTier.INTRODUCTORY,
         maximumHypothesesPerPokemon = 3,
-        lookaheadPlies = 1,
+        // Two turns like every tier: one turn could not tell Protect from an attack. This tier's
+        // short-sightedness comes from the search breadth in LocalLookaheadBudgetPolicy and from the
+        // little it trusts what the second turn shows.
+        lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 3,
-        // At one ply there is no foresight to scale, so this tier's short-sightedness comes from the
-        // depth itself. The weight is still stated rather than left at the default: it is what this
-        // tier would trust if it ever searched further, and one ply per tower stage is a designed
-        // contract that this change has no business rewriting.
         foresightWeight = 0.25,
         // Widest band on the ladder. This tier is the one a player meets first and the one that has
         // to be beatable, and it is the only place a genuine mistake is wanted.
@@ -128,9 +127,8 @@ object BattleDifficultyProfiles {
         id = "more_cobblemon_contents:standard",
         tier = BattleTrainerTier.STANDARD,
         maximumHypothesesPerPokemon = 6,
-        lookaheadPlies = 1,
+        lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 5,
-        // One complete turn, paired with the standard tier's public-learnset slot policy.
         foresightWeight = 0.60,
         decisionRegretBand = 4.0,
         decisionShortlistWidth = 1.6,

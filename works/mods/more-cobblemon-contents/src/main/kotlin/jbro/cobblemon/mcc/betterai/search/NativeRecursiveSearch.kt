@@ -87,6 +87,10 @@ internal class NativeRecursiveSearch(
     /** AI-only threat multipliers; see [LocalOpponentThreat]. Never used to pick opponent replies. */
     private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
     private val tolerateExtraNativeRootActions: Boolean = false,
+    /** See [LocalLookaheadBudget.opponentResponseLimit]. */
+    private val opponentResponseLimit: Int? = null,
+    /** See [LocalLookaheadBudget.finalPlyAttacksOnly]. */
+    private val finalPlyAttacksOnly: Boolean = false,
 ) {
     private var nodesVisited = 0
     private var truncated = false
@@ -110,6 +114,7 @@ internal class NativeRecursiveSearch(
         require(nodeLimit > 0)
         require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(cacheEntryLimit > 0)
+        require(opponentResponseLimit == null || opponentResponseLimit > 0)
     }
 
     fun evaluate(maxDepth: Int): NativeRecursiveSearchResult {
@@ -222,7 +227,14 @@ internal class NativeRecursiveSearch(
                 opponentActions, responseMemory, responseInformation,
                 previousRootResponseValues[allyAction.actionId].orEmpty(),
             )
-            for (opponentAction in orderedResponses) {
+            // A narrower tier follows only the replies the shallower iteration found worst for it; the first
+            // iteration still meets every reply, so this ordering exists before anything is left out.
+            val followedResponses = if (depth > 1 && opponentResponseLimit != null) {
+                orderedResponses.take(opponentResponseLimit)
+            } else {
+                orderedResponses
+            }
+            for (opponentAction in followedResponses) {
                 val child = descend(tree.root, allyAction, opponentAction) ?: return null
                 // The deep leaf can give the same final board to an immediate attack and a wasted
                 // recovery turn. Retain first-turn HP progress as a separate tempo term. A
@@ -266,7 +278,7 @@ internal class NativeRecursiveSearch(
         valueCache[key]?.let { return it }
         // Root choices stay complete. Only voluntary switches in simulated continuation
         // requests are narrowed; forced/pivot replacements retain every legal target.
-        val allyActions = if (attackOnlyFinalPly && depthRemaining == 1) {
+        val allyActions = if ((attackOnlyFinalPly || finalPlyAttacksOnly) && depthRemaining == 1) {
             tree.attackingActions(position)
         } else {
             tree.actions(position, BattleSide.ALLY,
@@ -291,7 +303,7 @@ internal class NativeRecursiveSearch(
             // the parent's minimum. This is only a lower bound, so never cache a cutoff result.
             if (best >= upperBound) return best
         }
-        val result = if (best.isFinite()) best else leafValue(position)
+        val result = if (best.isFinite()) best else leafValue(position) ?: return null
         if (!truncated) valueCache[key] = result
         return result
     }
@@ -325,8 +337,37 @@ internal class NativeRecursiveSearch(
         return immediateWeight * immediateMaterial + remainingWeight * continuation
     }
 
-    private fun leafValue(position: NativeSearchPosition): Double =
-        evaluate(position.state) + position.recoilCredit + pendingHealValue(position.frame)
+    private fun leafValue(position: NativeSearchPosition): Double? {
+        if (!position.frame.ended && position.frame.requestState == REPLACEMENT_REQUEST) {
+            return replacementValue(position)
+        }
+        return evaluate(position.state) + position.recoilCredit + pendingHealValue(position.frame)
+    }
+
+    /**
+     * A knockout leaves the battle waiting for a replacement. Scored there, the side that lost a Pokemon has no
+     * active one, so nothing this side's active gained - a stat boost from the knocking-out move, say - was weighed
+     * against anybody, and Draco Meteor scored the same as Dragon Pulse. The replacement comes in before the next
+     * turn whatever either side chooses, so it is played out here, each side picking its best, without counting as
+     * a turn of the horizon.
+     */
+    private fun replacementValue(position: NativeSearchPosition): Double? {
+        val allyActions = tree.actions(position, BattleSide.ALLY)
+        val opponentActions = tree.actions(position, BattleSide.OPPONENT)
+        if (allyActions.isEmpty() || opponentActions.isEmpty()) {
+            return evaluate(position.state) + position.recoilCredit + pendingHealValue(position.frame)
+        }
+        var best = Double.NEGATIVE_INFINITY
+        for (allyAction in allyActions) {
+            var worstResponse = Double.POSITIVE_INFINITY
+            for (opponentAction in opponentActions) {
+                val child = descend(position, allyAction, opponentAction) ?: return null
+                worstResponse = minOf(worstResponse, leafValue(child) ?: return null)
+            }
+            best = maxOf(best, worstResponse)
+        }
+        return best
+    }
 
     /**
      * A Wish heals at the end of the turn after it was used, past a one-turn horizon. Without this a search that
@@ -404,6 +445,8 @@ internal class NativeRecursiveSearch(
 
     private companion object {
         const val FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT = 1
+        /** Showdown's request state while a side must send in a replacement. */
+        const val REPLACEMENT_REQUEST = "switch"
         const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
         const val FUTURE_VALUE_WEIGHT = 0.90
         const val ROOT_TEMPO_WEIGHT = 0.75
