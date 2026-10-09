@@ -7,9 +7,10 @@
 - **구현:** 16구역 간격 앵커 사이를 선형 보간한다. 각 32 × 32구역(2,048 × 2,048블록) 권역에서 무작위 위치의 기준 83 앵커를 하나 보장하고, 월드 시드와 차원을 반영한다. 시작 원점 앵커는 10이며 같은 권역의 최고 앵커는 다른 자리에 둔다. 보간 후 반올림하며 인접 구역의 기준 차이는 최대 5다. 원점인 월드 스폰 좌표는 첫 사용 때 `SavedData`에 저장해 서버 재시작이나 관리자의 worldspawn 이동에도 유지한다.
 - **설정·안내:** 이전 `floor_level` 데이터팩은 오류로 거부하며 `region_min`·`region_max`·`transition_regions`로 이전해야 한다. README, 새 V2 계약, Mod Menu의 한국어·영어 안내, 위키 `levels`·`legends` 문구와 표도 새 계산을 반영했다.
 - **검증:** 수정 전 회귀시험 2개가 기존 10~97 범위 혼재와 기본 감소량 10 때문에 실패함을 확인했다. 수정 후 순수 로직 테스트 14개와 리그 전체 `unitTest` 99개가 통과했다. 원점 `SavedData` 코드 포함본 컴파일과 첫 `remapJar` 빌드는 성공했다(`BUILD SUCCESSFUL`, 47초).
-- **빌드 실수와 수정:** 첫 빌드가 진행 중일 때 Mod Menu 안내 번역을 추가해 첫 JAR에는 새 `ko_kr`·`en_us` 안내 키가 없었다. ZIP 내용 검사에서 발견한 뒤 `remapJar`를 다시 실행해 성공했다(`BUILD SUCCESSFUL`, 33초). 최종 JAR에서 두 언어 안내 키 포함을 확인해 수정 완료했다. 99개 코드 테스트 통과 결과에는 영향이 없다.
-- **최종 JAR 검사:** JDK 21 `jar --validate` 통과. `active.json`의 기본값은 `below_cap: 6`, `spread: 3`, `region_chunks: 4`, `region_min: 10`, `region_max: 83`, `transition_regions: 16`이며 `WildSpawnLevel`·`WildSpawnRegions`·`WildSpawnOrigin` 클래스 포함을 확인했다. SHA-256은 `2b909f91eaa674b7df61c9295f118c7f7b6f22cf219b0bf35fc024e1cf9e5bf4`다.
-- **배포·실게임:** 개발·운영 배포와 서버 기동·실게임 확인은 수행하지 않았다.
+- **빌드 실수와 수정:** 첫 빌드가 진행 중일 때 Mod Menu 안내 번역을 추가해 첫 JAR에는 새 `ko_kr`·`en_us` 안내 키가 없었다. ZIP 내용 검사에서 발견한 뒤 `remapJar`를 다시 실행해 성공했다(`BUILD SUCCESSFUL`, 33초). 재빌드 JAR에서 두 언어 안내 키 포함을 확인해 수정 완료했다. 99개 코드 테스트 통과 결과에는 영향이 없다.
+- **병합 전 JAR 검사:** JDK 21 `jar --validate` 통과. `active.json`의 기본값은 `below_cap: 6`, `spread: 3`, `region_chunks: 4`, `region_min: 10`, `region_max: 83`, `transition_regions: 16`이며 `WildSpawnLevel`·`WildSpawnRegions`·`WildSpawnOrigin` 클래스 포함을 확인했다. 병합 전 검사본 SHA-256은 `2b909f91eaa674b7df61c9295f118c7f7b6f22cf219b0bf35fc024e1cf9e5bf4`다.
+- **main 반영·재검증:** 구현 커밋 `c1c4ce43`을 다른 최신 main 변경을 보존한 `544f0f40`으로 병합했다. 워크트리 HEAD·main·origin/main은 `544f0f407a32b6ba36281b44a11b28bab3130bca`로 같으며 원격 `ls-remote`로 일치 확인했다. 병합된 커밋 소스로 `unitTest` 99개 재통과, `remapJar` 재성공(44초), `jar --validate`와 새 `ko_kr`·`en_us` 안내 키 포함을 확인했다. 최신 병합 소스 JAR의 SHA-256은 `ac67b61b63a4d3f6ad67a1114db74efbda75f7990cfb8cacc33ba1a538667c26`다.
+- **미실행:** 개발·운영 배포, 서버 기동·실게임 확인, Mod Menu·위키 화면 확인은 수행하지 않았다.
 
 ## [2026-10-09 14:30] 리그 첫 승리 BP: 사천왕 0, 챔피언 150·하드 300 (구현만, 빌드·테스트·배포 안 함)
 
