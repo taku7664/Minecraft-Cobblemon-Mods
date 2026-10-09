@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-09 14:39] 얻는 게 없는 싱글 방어 제외
+
+- **사용자 기준:** 방어는 상대가 맹독·화상 같은 지속 피해 중이거나, 내가 먹다남은음식·가속일 때가 아니면 쓸 이유가 없다.
+- **확인:** 재현 테스트 문맥에 행동 목록을 채우자(실게임과 같게) 상대 명상은 손해로 잡혔지만, 방어 직후에도 방어 -45.0 > 퀵턴 -48.2 > 열탕 -50.4였다. 1턴 탐색은 방어로 피한 공격을 손해 없는 턴으로 본다(다음 턴에 그대로 맞는 걸 못 봄). 행동 목록 없이 잰 앞선 숫자는 압력 항이 0이라 실게임과 다르다.
+- **수정:** `LocalIdleUtilityMoveRules.purposelessProtect`(싱글, 기본 방어·판별만). 상대 지속 피해(psn/tox/brn, leechseed·saltcure·partiallytrapped·curse·nightmare·yawn·octolock·syrupbomb), 내 회복·이득(leftovers, 독 타입 blacksludge, speedboost, 독 상태 poisonheal, ingrain·aquaring, 접지 상태 grassyterrain), 지난 턴 이후 내 편 소원 사용 중 하나도 없으면 레거시 `isPubliclyInert`와 네이티브 순위 변환기 모두 `publicly_inert`로 뺀다. 더블·니들가드 등 부가 효과 방어는 제외 대상이 아니다.
+- **테스트(10개 이내):** `LocalPurposelessProtectTest` 1 + 소원 1 + 날개쉬기 2, 4개 통과.
+- **빌드·JAR 배치·실게임:** 안 했다.
+
 ## [2026-10-09 14:26] 맘복치 연속 방어: 1턴 탐색이 소원을 못 보던 문제
 
 - **판:** `42af5f80`(03:47, 팩토리 STANDARD, 맘복치 퀵턴·방어·열탕·소원). 2~4턴 노말 기술 3연속, 레거시 전환 경고 없음(네이티브 이어 쓰기). 요약 로그는 기술 이름을 안 남겨 방어·소원 구분은 로그로 불가. STANDARD 판은 스냅샷도 안 남는다.
