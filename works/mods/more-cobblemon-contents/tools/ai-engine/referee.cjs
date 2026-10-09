@@ -84,6 +84,11 @@ function run(scenario) {
   rejections = [];
   result.rejections = rejections;
   result.states = [];
+  if (scenario.snapshots) {
+    // The serialized battle after every step, for resuming it on the engine (ShowdownStateReader).
+    result.snapshots = [];
+    result.logLengths = [];
+  }
   if (scenario.traceRng) {
     result.rngTrace = [];
     const prng = battle.prng;
@@ -104,6 +109,10 @@ function run(scenario) {
       choices.forEach((input, i) => choose(battle.sides[i], input));
       battle.commitDecisions();
       result.states.push(stateLine(battle));
+      if (scenario.snapshots) {
+        result.snapshots.push(JSON.stringify(battle.toJSON()));
+        result.logLengths.push(battle.log.filter((line) => !line.startsWith('|t:|')).length);
+      }
     }
   } catch (error) {
     result.error = String(error && error.stack || error);

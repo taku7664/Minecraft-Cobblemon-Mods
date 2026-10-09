@@ -68,11 +68,14 @@ data class RefScenario(
     val gameType: String = "singles",
     /** Record every PRNG roll on both sides, to find where the random sequences part. */
     val traceRng: Boolean = false,
+    /** Have Showdown serialize the battle after every step, for [EngineReferee.resume]. */
+    val snapshots: Boolean = false,
 ) {
     fun toJson(): JsonObject = JsonObject().apply {
         addProperty("id", id)
         addProperty("gameType", gameType)
         if (traceRng) addProperty("traceRng", true)
+        if (snapshots) addProperty("snapshots", true)
         add("seed", JsonArray().also { a -> seed.forEach { a.add(it) } })
         add("p1", JsonArray().also { a -> p1.forEachIndexed { i, s -> a.add(s.toJson("p1", i)) } })
         add("p2", JsonArray().also { a -> p2.forEachIndexed { i, s -> a.add(s.toJson("p2", i)) } })
@@ -84,7 +87,8 @@ data class RefScenario(
 
 class RefResult(val id: String, val log: List<String>, val error: String?, val ended: Boolean, val turn: Int,
                 val missingHooks: Set<String> = emptySet(), val rejections: List<String> = emptyList(),
-                val states: List<String> = emptyList(), val rngTrace: List<String> = emptyList())
+                val states: List<String> = emptyList(), val rngTrace: List<String> = emptyList(),
+                val snapshots: List<String> = emptyList(), val logLengths: List<Int> = emptyList())
 
 /** Runs scenarios on the dev server's Showdown and on the engine. */
 object EngineReferee {
@@ -142,6 +146,8 @@ object EngineReferee {
                 rejections = r.getAsJsonArray("rejections")?.map { it.asString } ?: emptyList(),
                 states = r.getAsJsonArray("states")?.map { it.asString } ?: emptyList(),
                 rngTrace = r.getAsJsonArray("rngTrace")?.map { it.asString } ?: emptyList(),
+                snapshots = r.getAsJsonArray("snapshots")?.map { it.asString } ?: emptyList(),
+                logLengths = r.getAsJsonArray("logLengths")?.map { it.asInt } ?: emptyList(),
             )
         }
     }
@@ -166,6 +172,36 @@ object EngineReferee {
         }
         return RefResult(scenario.id, battle.log.filter { !it.startsWith("|t:|") }, error, battle.ended, battle.turn,
             battle.missingHooks.toSet(), states = states, rngTrace = rng ?: emptyList())
+    }
+
+    /**
+     * Showdown's battle as it stood after step [step] of [scenario], read by the engine and played on from there.
+     * The result holds only what came after: the log lines past [RefResult.logLengths] and the later states.
+     */
+    fun resume(scenario: RefScenario, showdown: RefResult, step: Int): Pair<RefResult, RefResult> {
+        val tail = RefResult(showdown.id, showdown.log.drop(showdown.logLengths[step]), showdown.error, showdown.ended,
+            showdown.turn, rejections = showdown.rejections, states = showdown.states.drop(step + 1))
+        var error: String? = null
+        val states = ArrayList<String>()
+        var battle: Battle? = null
+        var unknown = emptySet<String>()
+        try {
+            val read = jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateReader.read(dex, showdown.snapshots[step], keepLog = true)
+            unknown = read.unknownKeys
+            battle = read.battle
+            for ((a, b) in scenario.turns.drop(step + 1)) {
+                if (battle.ended) break
+                choose(battle.sides[0], a)
+                choose(battle.sides[1], b)
+                battle.commitDecisions()
+                states += stateLine(battle)
+            }
+        } catch (e: Throwable) {
+            error = e.stackTraceToString().lines().take(12).joinToString("\n")
+        }
+        val log = battle?.log?.filter { !it.startsWith("|t:|") }?.drop(showdown.logLengths[step]) ?: emptyList()
+        return tail to RefResult(scenario.id, log, error, battle?.ended ?: false, battle?.turn ?: 0,
+            battle?.missingHooks?.toSet() ?: emptySet(), states = states, rejections = unknown.toList())
     }
 
     /** Mirrors the referee script: skip a waiting side, auto-replace a fainted one, fall back when rejected. */
