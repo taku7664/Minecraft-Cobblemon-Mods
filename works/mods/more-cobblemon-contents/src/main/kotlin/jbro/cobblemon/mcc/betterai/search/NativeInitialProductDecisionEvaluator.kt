@@ -9,7 +9,6 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
-import jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalSetupMovePreference
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcome
@@ -487,13 +486,7 @@ internal object NativeProductRankAdapter {
             } else 0.0
             val setupBonus = (context?.let { LocalSetupMovePreference.bonus(value.action, it) } ?: 0.0) - mechanicCost
             LocalBattleActionRank(
-                outcome = neutralOutcome(value.action, scaled + setupBonus).let { outcome ->
-                    // A Protect that buys nothing only defers the foe's attack; the selector drops it like the
-                    // legacy scorer does. The search alone priced the dodged hit as a free turn.
-                    if (context != null && LocalIdleUtilityMoveRules.purposelessProtect(value.action, context)) {
-                        outcome.copy(publiclyInert = true)
-                    } else outcome
-                },
+                outcome = neutralOutcome(value.action, scaled + setupBonus),
                 decisionTier = 0,
                 comparisonValue = scaled + setupBonus,
                 lookaheadUtility = scaled,

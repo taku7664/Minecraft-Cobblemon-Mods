@@ -3,8 +3,6 @@ package jbro.cobblemon.mcc.betterai.evaluation
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.internal.ai.BattleFormat
-import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 
@@ -47,42 +45,6 @@ internal object LocalIdleUtilityMoveRules {
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
                 LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
-        }
-    }
-
-    /**
-     * A singles Protect or Detect that gains nothing: the foe's next attack only waits a turn. It earns its turn
-     * when the wait itself pays: the foe takes residual damage (poison, burn, Leech Seed, Salt Cure, a trap,
-     * Yawn), the user heals or speeds up (Leftovers, Black Sludge, Poison Heal, Ingrain, Aqua Ring, Grassy
-     * Terrain, Speed Boost), or its own Wish lands. A one-turn search could not tell the difference: a dodged
-     * hit looked like a free turn, so a factory Alomomola protected turn after turn instead of attacking.
-     * Doubles keep Protect for the partner; the shields with a contact or forme effect keep their own gain.
-     */
-    fun purposelessProtect(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
-        if (context.state.format != BattleFormat.SINGLE || candidate.mechanic != null) return false
-        if (candidate.moveId?.let(::canonical) !in PLAIN_PROTECTS) return false
-        val actor = actor(candidate, context) ?: return false
-        val foe = opposingActive(context, actor.side).singleOrNull() ?: return false
-        val foeResidual = canonical(foe.statusId.orEmpty()) in RESIDUAL_STATUSES ||
-            foe.knownVolatileEffectIds.any { canonical(it) in RESIDUAL_VOLATILES }
-        val item = actor.knownHeldItemId?.let(::canonical)
-        val ability = actor.knownAbilityId?.let(::canonical)
-        val ownRecovery = item == LEFTOVERS ||
-            item == BLACK_SLUDGE && actor.knownTypeIds.any { canonical(it) == "poison" } ||
-            ability == SPEED_BOOST ||
-            ability == POISON_HEAL && canonical(actor.statusId.orEmpty()) in POISON_STATUSES ||
-            actor.knownVolatileEffectIds.any { canonical(it) in RECOVERY_VOLATILES } ||
-            context.state.field.terrain?.effectId?.let(::canonical) == GRASSY_TERRAIN &&
-            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.grounded(context.state, actor)
-        return !foeResidual && !ownRecovery && !ownWishPending(context)
-    }
-
-    /** A Wish from this side last turn lands at the end of this one. */
-    private fun ownWishPending(context: BattleDecisionContext): Boolean {
-        val own = context.state.pokemon.filter { it.side == BattleSide.ALLY }.mapTo(hashSetOf()) { it.battlePokemonId }
-        return context.state.observedEvents.any {
-            it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId in own &&
-                it.publicValueId?.let(::canonical) == WISH && it.turn >= context.state.turn - 1
         }
     }
 
@@ -158,19 +120,6 @@ internal object LocalIdleUtilityMoveRules {
     private val FORCED_ROTATIONS = setOf("roar", "whirlwind", "dragontail", "circlethrow")
     private val HALF_HEALTH_BOOSTS = setOf("bellydrum", "filletaway")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
-
-    private val PLAIN_PROTECTS = setOf("protect", "detect")
-    private val RESIDUAL_STATUSES = setOf("psn", "tox", "brn")
-    private val POISON_STATUSES = setOf("psn", "tox")
-    private val RESIDUAL_VOLATILES = setOf("leechseed", "saltcure", "partiallytrapped", "curse", "nightmare", "yawn",
-        "octolock", "syrupbomb")
-    private val RECOVERY_VOLATILES = setOf("ingrain", "aquaring")
-    private const val LEFTOVERS = "leftovers"
-    private const val BLACK_SLUDGE = "blacksludge"
-    private const val SPEED_BOOST = "speedboost"
-    private const val POISON_HEAL = "poisonheal"
-    private const val GRASSY_TERRAIN = "grassyterrain"
-    private const val WISH = "wish"
 
     /** How many times each entry hazard can be stacked before another use does nothing. */
     private val HAZARD_LAYERS = mapOf(
