@@ -1,4 +1,11 @@
 {
+  "message.jbro_policy.discord_question.description": "Ask Pichu a question (once every five minutes per user)",
+  "message.jbro_policy.discord_question.option": "Your question for Pichu",
+  "message.jbro_policy.discord_question.invalid": "Please enter a question between 1 and 500 characters.",
+  "message.jbro_policy.discord_question.cooldown": "You can ask Pichu once every five minutes. Please wait %s seconds.",
+  "message.jbro_policy.discord_question.failed": "I could not answer right now. Please try again shortly; no cooldown was used.",
+  "message.jbro_policy.discord_question.answer": "⚡ Pichu\nQuestion: %s\n\n%s",
+
   "chat.type.jbro_policy.chat": "%s: %s",
   "message.jbro_policy.announcement": "[Notice]",
   "message.jbro_policy.tip": "[Tip]",

@@ -309,16 +309,27 @@ internal object DiscordBot {
         val command = DiscordCommands.find(data.get("name").asString)
         val caller = caller(interaction)
         val misplaced = command?.let { DiscordAdminAccess.channelRefusal(settings, it, caller.channelId) }
-        client.request("POST", "/interactions/$id/$interactionToken/callback", JsonObject().apply {
+        val acknowledged = client.request("POST", "/interactions/$id/$interactionToken/callback", JsonObject().apply {
             addProperty("type", DEFERRED_REPLY)
             // A command in the wrong channel is told so to the caller alone.
             if (command?.ephemeral == true || misplaced != null) add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
         }, authorized = false)
+        if (command is DiscordAsyncCommand && !acknowledged.ok) return
         val live = server
         val refusal = (command as? DiscordAdminCommand)?.let { DiscordAdminAccess.check(settings, caller, it.name) }
             as? DiscordAdminAccess.Verdict.Refused
         if (command is DiscordAdminCommand) {
             JbroPolicy.LOGGER.info("Discord {} /{} {} by {}", if (refusal == null) "ran" else "refused", command.name, options, caller)
+        }
+        if (command is DiscordAsyncCommand && misplaced == null && refusal == null && live != null) {
+            // AI calls finish later; neither the gateway, the REST queue nor Minecraft waits for them.
+            command.replyAsync(options, caller).whenComplete { reply, failure ->
+                restWorker.execute(guarded {
+                    editReply(client, applicationId, interactionToken, if (failure == null) reply
+                        else DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요."))
+                })
+            }
+            return
         }
         val reply = when {
             command == null -> DiscordRest.message("모르는 명령이에요.")
@@ -334,6 +345,10 @@ internal object DiscordBot {
                 DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요.")
             }
         }
+        editReply(client, applicationId, interactionToken, reply)
+    }
+
+    private fun editReply(client: DiscordRest, applicationId: String, interactionToken: String, reply: JsonObject) {
         val edited = client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original", reply, authorized = false)
         if (edited.ok) return
         JbroPolicy.LOGGER.warn("Discord refused a command reply ({}): {}", edited.status, edited.body.take(500))

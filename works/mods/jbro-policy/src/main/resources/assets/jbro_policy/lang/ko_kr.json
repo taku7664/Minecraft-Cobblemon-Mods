@@ -1,4 +1,11 @@
 {
+  "message.jbro_policy.discord_question.description": "피츄에게 질문해요 (유저마다 5분에 한 번)",
+  "message.jbro_policy.discord_question.option": "피츄에게 물어볼 내용",
+  "message.jbro_policy.discord_question.invalid": "질문을 1~500자로 적어 주세요.",
+  "message.jbro_policy.discord_question.cooldown": "피츄에게는 5분에 한 번 질문할 수 있어요. %s초 뒤에 다시 물어봐 주세요.",
+  "message.jbro_policy.discord_question.failed": "지금은 답을 만들지 못했어요. 잠시 뒤에 다시 물어봐 주세요. 대기시간은 걸리지 않아요.",
+  "message.jbro_policy.discord_question.answer": "⚡ 피츄\n질문: %s\n\n%s",
+
   "chat.type.jbro_policy.chat": "%s: %s",
   "message.jbro_policy.announcement": "[공지]",
   "message.jbro_policy.tip": "[안내]",
