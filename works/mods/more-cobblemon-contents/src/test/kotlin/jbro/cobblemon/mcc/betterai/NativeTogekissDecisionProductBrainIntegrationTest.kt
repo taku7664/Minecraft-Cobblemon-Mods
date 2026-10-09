@@ -156,7 +156,7 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
                         .toSet()
                     shippingSelector.choose(ranked, seed, mixing)
                 },
-                nativeInitialDecision = { supplied, _, _, _, previous ->
+                nativeInitialDecision = { supplied, _, _, _, previous, _ ->
                     assertEquals(context.candidates.map { it.actionId }, supplied.candidates.map { it.actionId })
                     assertEquals(null, previous)
                     evaluation
@@ -280,7 +280,7 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
                         .mapNotNull { it.outcome.candidate.moveId }.toSet()
                     shippingSelector.choose(ranked, seed, mixing)
                 },
-                nativeInitialDecision = { _, _, _, _, _ -> evaluation },
+                nativeInitialDecision = { _, _, _, _, _, _ -> evaluation },
             )
             val brainSession = brain.openSession(BattleBrainOpenContext(
                 battleId = context.state.battleId,

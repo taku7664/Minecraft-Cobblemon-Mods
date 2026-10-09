@@ -218,7 +218,7 @@ class NativePsychicTerrainProductBrainIntegrationTest {
             assertEquals(evaluation.ranked, ranked)
             LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
         },
-        nativeInitialDecision = { supplied, _, _, _, previous ->
+        nativeInitialDecision = { supplied, _, _, _, previous, _ ->
             assertEquals(candidates.map { it.actionId }, supplied.candidates.map { it.actionId })
             assertEquals(context.state, supplied.state)
             assertEquals(null, previous)

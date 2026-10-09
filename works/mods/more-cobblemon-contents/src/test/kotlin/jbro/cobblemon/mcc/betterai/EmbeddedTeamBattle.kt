@@ -63,8 +63,8 @@ internal object EmbeddedTeamBattle {
                 reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) },
                     fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
-            LocalTacticalBrain(tuning = tuning, nativeInitialDecision = { context, profile, localTuning, budget, sessionState ->
-                evaluator.evaluate(context, profile, localTuning, budget, sessionState).also { evaluation ->
+            LocalTacticalBrain(tuning = tuning, nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
+                evaluator.evaluate(context, profile, localTuning, budget, sessionState, rules).also { evaluation ->
                     nativeEvaluations[side] = evaluation
                     // A failed native decision is kept whole, so the planner can be replayed on it.
                     if (evaluation.status != NativeInitialProductDecisionStatus.AVAILABLE &&

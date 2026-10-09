@@ -426,7 +426,7 @@ class NativeInitialProductWorldPlannerTest {
             assertEquals(productActions.map { it.actionId }.toSet(),
                 nativeDecision.ranked.map { it.outcome.candidate.actionId }.toSet())
 
-            val brain = LocalTacticalBrain(nativeInitialDecision = { _, _, _, _, _ -> nativeDecision })
+            val brain = LocalTacticalBrain(nativeInitialDecision = { _, _, _, _, _, _ -> nativeDecision })
             val session = brain.openSession(BattleBrainOpenContext(
                 battleId = productContext.state.battleId,
                 format = BattleFormat.SINGLE,

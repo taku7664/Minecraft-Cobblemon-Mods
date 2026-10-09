@@ -44,7 +44,7 @@ internal object AiDecisionSnapshotReplay {
         val brain = if (legacyOnly) {
             LocalTacticalBrain(
                 actionSelector = selector,
-                nativeInitialDecision = { _, _, _, _, _ ->
+                nativeInitialDecision = { _, _, _, _, _, _ ->
                     NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
                 },
             )

@@ -249,7 +249,7 @@ class NativeMiloticToxicRecoveryTest {
                         .mapNotNull { it.outcome.candidate.moveId }.toSet()
                     selector.choose(productRanks, seed, mixing)
                 },
-                nativeInitialDecision = { _, _, _, _, _ -> evaluation },
+                nativeInitialDecision = { _, _, _, _, _, _ -> evaluation },
             )
             val brainSession = brain.openSession(BattleBrainOpenContext(
                 battleId = BATTLE,

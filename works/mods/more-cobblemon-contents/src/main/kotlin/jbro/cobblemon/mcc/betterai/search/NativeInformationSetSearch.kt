@@ -117,6 +117,8 @@ internal class NativeInformationSetSearch(
          * the clock. Setup is priced at the root by `LocalSetupMovePreference` as before.
          */
         private val horizon = request.maxDepth
+        /** The root candidates searched and valued; the rules' exclusions only take part in the mapping. */
+        private val rootActions = request.productActions.filter { it.actionId !in request.excludedRootActionIds }
         private val attackOnlyPly = if (horizon > 1 && request.finalPlyAttacksOnly) horizon - 1 else -1
         private val root = Node()
         private val worlds = arrayOfNulls<PreparedWorld>(request.worlds.size)
@@ -171,7 +173,7 @@ internal class NativeInformationSetSearch(
             }
             val proven = rootSettled()
 
-            val rootValues = request.productActions.map { action ->
+            val rootValues = rootActions.map { action ->
                 val arm = root.ally[action.actionId]
                 if (arm == null || arm.visits == 0) {
                     return failure(NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH, prepared.first().input,
@@ -240,7 +242,7 @@ internal class NativeInformationSetSearch(
                 position = tree.root,
                 ply = 0,
                 replacement = false,
-                ally = request.productActions.map { product ->
+                ally = rootActions.map { product ->
                     Choice(product.actionId, mapping.productToNative.getValue(product.actionId))
                 },
                 opponent = NativeOpponentResponseOrdering.order(
@@ -396,7 +398,7 @@ internal class NativeInformationSetSearch(
          * Whether every root value is proven. A narrower tier's followed replies move as their first-turn values
          * come in, so the root choices' flags are refreshed against the current ones first.
          */
-        private fun rootSettled(): Boolean = request.productActions.all { action ->
+        private fun rootSettled(): Boolean = rootActions.all { action ->
             val arm = root.ally[action.actionId] ?: return@all false
             if (request.opponentResponseLimit != null) {
                 val proving = provingReplies(arm, atRoot = true)

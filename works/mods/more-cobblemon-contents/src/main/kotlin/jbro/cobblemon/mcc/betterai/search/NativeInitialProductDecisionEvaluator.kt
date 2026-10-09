@@ -70,6 +70,19 @@ internal data class NativeInitialProductDecisionEvaluation(
     }
 }
 
+/**
+ * What the matchup rules hand the native search: root candidates it spends nothing on, and material
+ * multipliers multiplied into the AI-only threat weights.
+ */
+internal data class NativeRulePriorities(
+    val excludedActionIds: Set<String> = emptySet(),
+    val weights: Map<java.util.UUID, Double> = emptyMap(),
+) {
+    companion object {
+        val NONE = NativeRulePriorities()
+    }
+}
+
 private typealias NativeWorldPlanner = (
     context: BattleDecisionContext,
     tier: BattleTrainerTier,
@@ -116,12 +129,13 @@ internal class NativeInitialProductDecisionEvaluator(
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
         sessionState: NativeProductSessionState? = null,
+        rules: NativeRulePriorities = NativeRulePriorities.NONE,
     ): NativeInitialProductDecisionEvaluation {
         if (sessionState != null) {
-            return evaluateContinuation(context, profile, tuning, budget, sessionState)
+            return evaluateContinuation(context, profile, tuning, budget, sessionState, rules)
         }
-        if (!isOpeningCandidate(context)) return rebuild(context, profile, tuning, budget)
-        return evaluateFresh(context, profile, tuning, budget, midBattle = false)
+        if (!isOpeningCandidate(context)) return rebuild(context, profile, tuning, budget, rules)
+        return evaluateFresh(context, profile, tuning, budget, midBattle = false, rules)
     }
 
     /**
@@ -133,6 +147,7 @@ internal class NativeInitialProductDecisionEvaluator(
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
+        rules: NativeRulePriorities,
     ): NativeInitialProductDecisionEvaluation {
         if (context.opponentTeamPreview == null || context.exactOwnTeam == null) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
@@ -143,7 +158,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 failedRunDetail = "rebuild:$blocker",
             )
         }
-        return evaluateFresh(context, profile, tuning, budget, midBattle = true).copy(rebuilt = true)
+        return evaluateFresh(context, profile, tuning, budget, midBattle = true, rules).copy(rebuilt = true)
     }
 
     private fun evaluateFresh(
@@ -152,6 +167,7 @@ internal class NativeInitialProductDecisionEvaluator(
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
         midBattle: Boolean,
+        rules: NativeRulePriorities,
     ): NativeInitialProductDecisionEvaluation {
         val allowedMechanics = NativeMechanicAllowance.merge(null, context.candidates)
         val plan = (if (midBattle) planMidBattleWorlds else planWorlds)(context, profile.difficulty.tier)
@@ -231,7 +247,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 opponentResponseLimit = budget.opponentResponseLimit,
                 finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
-                opponentThreatWeights = threatWeights(context, profile, budget),
+                opponentThreatWeights = threatWeights(context, profile, budget, rules),
+                excludedRootActionIds = rootExclusions(context, rules),
                 nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,
@@ -288,6 +305,7 @@ internal class NativeInitialProductDecisionEvaluator(
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
         sessionState: NativeProductSessionState,
+        rules: NativeRulePriorities,
     ): NativeInitialProductDecisionEvaluation {
         val deadlineNanos = nativeDeadline(context.deadlineEpochMillis, budget.timeMillis)
             ?: return reconciliationFailure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
@@ -307,7 +325,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 listOfNotNull(reconciliation.failure?.let { "${it.javaClass.simpleName}:${it.message?.take(200)}" }))
                 .joinToString(",").ifEmpty { null }
             // The board moved away from every retained world: rebuild them from the board itself.
-            val rebuilt = rebuild(context, profile, tuning, budget)
+            val rebuilt = rebuild(context, profile, tuning, budget, rules)
             if (rebuilt.status == NativeInitialProductDecisionStatus.AVAILABLE) {
                 return rebuilt.copy(reconciliationStatus = reconciliation.status, failedRunDetail = reconciliationDetail)
             }
@@ -383,7 +401,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 opponentResponseLimit = budget.opponentResponseLimit,
                 finalPlyAttacksOnly = budget.finalPlyAttacksOnly,
                 allowedMechanics = allowedMechanics,
-                opponentThreatWeights = threatWeights(context, profile, budget),
+                opponentThreatWeights = threatWeights(context, profile, budget, rules),
+                excludedRootActionIds = rootExclusions(context, rules),
                 nodeLimit = budget.nativeNodeLimit,
                 deadlineNanos = deadlineNanos,
                 nanoTime = nanoTime,
@@ -437,10 +456,21 @@ internal class NativeInitialProductDecisionEvaluator(
         context: BattleDecisionContext,
         profile: BattleTrainerProfile,
         budget: LocalLookaheadBudget,
+        rules: NativeRulePriorities,
     ): Map<java.util.UUID, Double> {
         val stopAt = nanoTime() + minOf(budget.timeMillis, THREAT_TIME_LIMIT_MILLIS) * NANOS_PER_MILLI
-        return LocalOpponentThreat.weights(context, profile.difficulty.tier) { nanoTime() - stopAt < 0L }
+        val threats = LocalOpponentThreat.weights(context, profile.difficulty.tier) { nanoTime() - stopAt < 0L }
+        if (rules.weights.isEmpty()) return threats
+        // The rules' roles multiply the threat weights, kept inside the threat band.
+        val band = LocalOpponentThreat.band(profile.difficulty.tier)
+        return (threats.keys + rules.weights.keys).associateWith { id ->
+            ((threats[id] ?: 1.0) * (rules.weights[id] ?: 1.0)).coerceIn(band.minimum, band.maximum)
+        }
     }
+
+    /** A turn the rules would empty keeps every candidate, as the legacy search does. */
+    private fun rootExclusions(context: BattleDecisionContext, rules: NativeRulePriorities): Set<String> =
+        rules.excludedActionIds.takeIf { excluded -> context.candidates.any { it.actionId !in excluded } }.orEmpty()
 
     private fun reconciliationFailure(
         status: NativeProductSessionReconcileStatus,

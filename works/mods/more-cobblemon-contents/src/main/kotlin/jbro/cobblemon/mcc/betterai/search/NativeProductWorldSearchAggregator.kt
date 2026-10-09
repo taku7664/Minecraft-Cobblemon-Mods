@@ -37,6 +37,11 @@ internal data class NativeProductWorldSearchRequest(
     /** Canonical mechanics the live battle permits; null leaves native legality unfiltered. */
     val allowedMechanics: Set<String>? = null,
     val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
+    /**
+     * Root candidates the matchup rules rule out: still mapped onto every world's native actions, but neither
+     * searched nor valued. Only [NativeInformationSetSearch] honors it.
+     */
+    val excludedRootActionIds: Set<String> = emptySet(),
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -51,6 +56,7 @@ internal data class NativeProductWorldSearchRequest(
         }
         require(productActions.isNotEmpty())
         require(productActions.map(BattleActionCandidate::actionId).distinct().size == productActions.size)
+        require(productActions.any { it.actionId !in excludedRootActionIds })
         require(maxDepth > 0)
         require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(nodeLimit >= worlds.size) {

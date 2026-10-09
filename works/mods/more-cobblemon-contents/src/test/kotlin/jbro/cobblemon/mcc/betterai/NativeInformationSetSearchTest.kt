@@ -68,6 +68,18 @@ class NativeInformationSetSearchTest {
         assertTrue(result.rootValues.all { it.value.isFinite() })
     }
 
+    @Test
+    fun `a root candidate the rules rule out is neither searched nor valued`() {
+        val root = worker.createBattle(battle())
+        val full = informationSet(request(listOf(root)), replacementSpendsTurn = false)
+        val excluded = values(full).keys.first { it.contains("switch", ignoreCase = true) }
+        val pruned = informationSet(request(listOf(root)).copy(excludedRootActionIds = setOf(excluded)), replacementSpendsTurn = false)
+        assertEquals(NativeProductWorldSearchStatus.COMPLETED, pruned.status, "$pruned")
+        assertEquals(values(full).keys - excluded, values(pruned).keys)
+        values(pruned).forEach { (id, value) -> assertEquals(values(full).getValue(id), value, 1e-9, id) }
+        assertTrue(pruned.nodesVisited < full.nodesVisited, "${pruned.nodesVisited} < ${full.nodesVisited}")
+    }
+
     private fun perWorld(request: NativeProductWorldSearchRequest) = NativeProductWorldSearchAggregator(
         NativeProductSearchRunner(nanoTime = { 0L }, lease = { _, action -> action(worker) })::run,
     ).search(request)

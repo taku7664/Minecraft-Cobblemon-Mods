@@ -39,7 +39,7 @@ class NativeInitialProductBrainIntegrationTest {
         val deadlines = mutableListOf<Long>()
         val brain = LocalTacticalBrain(
             lookaheadBudget = { base },
-            nativeInitialDecision = { decisionContext, _, _, budget, _ ->
+            nativeInitialDecision = { decisionContext, _, _, budget, _, _ ->
                 observed += budget
                 deadlines += decisionContext.deadlineEpochMillis
                 NativeInitialProductDecisionEvaluation(
@@ -67,8 +67,10 @@ class NativeInitialProductBrainIntegrationTest {
         invoke("${BattleBrainContentIds.AI_TEST_PERSONA_PREFIX}boss")
         val finishedAt = System.currentTimeMillis()
 
-        assertEquals(base, observed[0])
-        assertEquals(base, observed[1])
+        // Two Pokemon a side: the native search looks a turn further on more nodes.
+        val native = LocalLookaheadBudgetPolicy.forNativePosition(base, context.state)
+        assertEquals(native, observed[0])
+        assertEquals(native, observed[1])
         // The whole decision shares one clock, however far the caller's own deadline lies.
         deadlines.forEach { deadline ->
             assertTrue(deadline in startedAt..finishedAt + LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS)
@@ -92,7 +94,7 @@ class NativeInitialProductBrainIntegrationTest {
         }
         val brain = LocalTacticalBrain(
             actionSelector = selector,
-            nativeInitialDecision = { _, _, _, _, _ ->
+            nativeInitialDecision = { _, _, _, _, _, _ ->
                 NativeInitialProductDecisionEvaluation(
                     status = NativeInitialProductDecisionStatus.AVAILABLE,
                     ranked = nativeRanks,
@@ -122,7 +124,7 @@ class NativeInitialProductBrainIntegrationTest {
             NativeInitialProductWorldPlanIssueCode.PUBLIC_SPECIES_IDENTITY_MISSING,
         )
         val brain = LocalTacticalBrain(
-            nativeInitialDecision = { _, _, _, _, _ ->
+            nativeInitialDecision = { _, _, _, _, _, _ ->
                 NativeInitialProductDecisionEvaluation(
                     status = NativeInitialProductDecisionStatus.PLANNING_FAILED,
                     planIssues = listOf(issue),
@@ -141,7 +143,7 @@ class NativeInitialProductBrainIntegrationTest {
         val context = contestedContext()
         var invoked = false
         val brain = LocalTacticalBrain(
-            nativeInitialDecision = { _, _, _, _, _ ->
+            nativeInitialDecision = { _, _, _, _, _, _ ->
                 invoked = true
                 NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
             },
@@ -168,7 +170,7 @@ class NativeInitialProductBrainIntegrationTest {
         }
         val brain = LocalTacticalBrain(
             actionSelector = selector,
-            nativeInitialDecision = { _, _, _, _, state ->
+            nativeInitialDecision = { _, _, _, _, state, _ ->
                 calls++
                 if (calls == 1) {
                     assertNull(state)
@@ -213,7 +215,7 @@ class NativeInitialProductBrainIntegrationTest {
             actionSelector = LocalActionSelector { ranked, seed, _ ->
                 LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
             },
-            nativeInitialDecision = { _, _, _, _, state ->
+            nativeInitialDecision = { _, _, _, _, state, _ ->
                 calls++
                 when (calls) {
                     1 -> NativeInitialProductDecisionEvaluation(
@@ -267,7 +269,7 @@ class NativeInitialProductBrainIntegrationTest {
             actionSelector = LocalActionSelector { ranked, seed, _ ->
                 LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
             },
-            nativeInitialDecision = { _, _, _, _, supplied ->
+            nativeInitialDecision = { _, _, _, _, supplied, _ ->
                 calls++
                 if (calls == 1) {
                     assertNull(supplied)
@@ -313,7 +315,7 @@ class NativeInitialProductBrainIntegrationTest {
         val state = nativeSessionState(context)
         var calls = 0
         val brain = LocalTacticalBrain(
-            nativeInitialDecision = { _, _, _, _, _ ->
+            nativeInitialDecision = { _, _, _, _, _, _ ->
                 calls++
                 if (calls == 1) {
                     NativeInitialProductDecisionEvaluation(
@@ -350,7 +352,7 @@ class NativeInitialProductBrainIntegrationTest {
         val reconciled = nativeSessionState(context, snapshotJson = "reconciled")
         val received = mutableListOf<NativeProductSessionState?>()
         val brain = LocalTacticalBrain(
-            nativeInitialDecision = { _, _, _, _, previous ->
+            nativeInitialDecision = { _, _, _, _, previous, _ ->
                 received += previous
                 when (received.size) {
                     1 -> NativeInitialProductDecisionEvaluation(

@@ -176,7 +176,7 @@ class NativeRoostProductBrainIntegrationTest {
                     assertEquals(evaluation.ranked, ranked)
                     LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
                 },
-                nativeInitialDecision = { supplied, _, _, _, previous ->
+                nativeInitialDecision = { supplied, _, _, _, previous, _ ->
                     assertEquals(context.candidates.map { it.actionId }, supplied.candidates.map { it.actionId })
                     assertEquals(null, previous)
                     evaluation

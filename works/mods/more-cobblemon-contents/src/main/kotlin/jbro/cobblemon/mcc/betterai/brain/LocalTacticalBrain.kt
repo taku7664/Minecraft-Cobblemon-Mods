@@ -51,8 +51,10 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
+import jbro.cobblemon.mcc.betterai.search.NativeRulePriorities
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.mcc.betterai.matchup.LocalAceScore
+import jbro.cobblemon.mcc.betterai.matchup.LocalRuleWeights
 import jbro.cobblemon.mcc.betterai.matchup.LocalGimmickReserve
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
@@ -78,6 +80,7 @@ internal fun interface NativeInitialDecisionSource {
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
         sessionState: NativeProductSessionState?,
+        rules: NativeRulePriorities,
     ): NativeInitialProductDecisionEvaluation
 }
 
@@ -121,8 +124,8 @@ internal class LocalTacticalBrain(
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
     private val nativeInitialDecision: NativeInitialDecisionSource =
-        NativeInitialDecisionSource { context, profile, localTuning, budget, sessionState ->
-            defaultNativeInitialDecisionEvaluator.evaluate(context, profile, localTuning, budget, sessionState)
+        NativeInitialDecisionSource { context, profile, localTuning, budget, sessionState, rules ->
+            defaultNativeInitialDecisionEvaluator.evaluate(context, profile, localTuning, budget, sessionState, rules)
         },
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
@@ -217,15 +220,15 @@ internal class LocalTacticalBrain(
                 ?: LocalSwitchRules.Judgement.NONE
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
-        fun ruleExclusions(ranked: List<LocalBattleActionRank>): Map<String, String> {
+        fun ruleExclusions(candidates: List<BattleActionCandidate>): Map<String, String> {
             if (!rulesApply) return emptyMap()
             // A turn with nothing but failing moves keeps them, as the search does.
-            val failing = ranked.map { it.outcome.candidate }.filter { candidate ->
+            val failing = candidates.filter { candidate ->
                 publicFailures.getOrPut(candidate.actionId) { LocalPublicFailureTriage.fails(candidate, difficultyContext) }
-            }.takeIf { it.size < ranked.size }.orEmpty()
-            val plainExclusions = switchJudgement.exclusions.filterKeys { id -> ranked.any { it.outcome.candidate.actionId == id } } +
+            }.takeIf { it.size < candidates.size }.orEmpty()
+            val plainExclusions = switchJudgement.exclusions.filterKeys { id -> candidates.any { it.actionId == id } } +
                 failing.associate { it.actionId to LocalPublicFailureTriage.REASON }
-            val judged = ranked.map { it.outcome.candidate }.filter {
+            val judged = candidates.filter {
                 LocalSetupGate.raisesOwnStats(it) || LocalStatusMoveTriage.judgeable(it, difficultyContext)
             }
             if (judged.isEmpty()) return plainExclusions
@@ -282,7 +285,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                ruleExclusions = if (authoritativeSimulationScores) emptyMap() else ruleExclusions(ranked),
+                ruleExclusions = if (authoritativeSimulationScores) emptyMap() else ruleExclusions(ranked.map { it.outcome.candidate }),
                 sacrificeSwitchIds = if (authoritativeSimulationScores) emptySet() else switchJudgement.sacrifices,
                 tuning = tuning,
                 authoritativeSimulationScores = authoritativeSimulationScores,
@@ -320,12 +323,28 @@ internal class LocalTacticalBrain(
         val budget = phaseBudget
         val nativeBudget = LocalLookaheadBudgetPolicy.forNativePosition(configuredBudget, calculatedContext.state)
         val continuingNative = active?.nativeProductState != null
+        // The ace keeps the once-per-battle mechanics: worked out once, and again when a new opponent is seen.
+        val aceScores = if (!rulesApply || active == null) emptyMap() else {
+            val seen = difficultyContext.state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
+            if (active.aceScores.isEmpty() || !active.aceOpponentIds.containsAll(seen)) {
+                active.aceScores = LocalAceScore.calculate(difficultyContext)
+                active.aceOpponentIds = seen
+            }
+            active.aceScores
+        }
+        // The rules steer the native search too: what they rule out is not searched, and the ace, the
+        // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
+        val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(
+            excludedActionIds = ruleExclusions(difficultyContext.candidates).keys,
+            weights = LocalRuleWeights.weights(difficultyContext.state, profile.difficulty.tier, aceScores, ruleScores),
+        )
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
             decidingProfile,
             tuning,
             nativeBudget,
             active?.nativeProductState,
+            nativeRules,
         )
         decisionTrace?.nativeSearch(nativeInitial, nativeBudget.nativePlies ?: profile.difficulty.lookaheadPlies, nativeBudget)
         var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
@@ -456,7 +475,7 @@ internal class LocalTacticalBrain(
                 profile.difficulty.tier,
                 shouldContinue = { System.nanoTime() - threatStartedAtNanos < THREAT_TIME_LIMIT_NANOS },
             ),
-            excludedActionIds = ruleExclusions(rootRanked).keys,
+            excludedActionIds = ruleExclusions(rootRanked.map { it.outcome.candidate }).keys,
             // Read from the same table as the rules; the AI's threat weights play no part in it.
             opponentIntents = opponentIntents,
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
@@ -480,15 +499,6 @@ internal class LocalTacticalBrain(
             },
         )
         decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
-        // The ace keeps the once-per-battle mechanics: worked out once, and again when a new opponent is seen.
-        val aceScores = if (!rulesApply || active == null) emptyMap() else {
-            val seen = difficultyContext.state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
-            if (active.aceScores.isEmpty() || !active.aceOpponentIds.containsAll(seen)) {
-                active.aceScores = LocalAceScore.calculate(difficultyContext)
-                active.aceOpponentIds = seen
-            }
-            active.aceScores
-        }
         val gimmickAdjustments = if (!tuning.mechanicReserve) emptyMap()
             else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
