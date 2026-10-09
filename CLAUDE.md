@@ -17,6 +17,7 @@
 - 개발·운영 서버 구성에서 JourneyMap JAR과 관련 설정·전용 폴더를 제외하며, JourneyMap은 재배포 대상이 아니다.
 - DEV→운영 배포 패쳐는 이 PC의 로컬 전용이다. 운영 루트의 `deploy-from-dev.bat`, `tools/deploy-server.ps1`, `tools/server-deployment.psm1`과 개발 저장소 `works/tools/server-deploy/`의 `deploy-from-dev.bat`, `deploy-server.ps1`, `server-deployment.psm1`, `server-deployment.tests.ps1`은 운영·개발 원격 저장소에서 모두 제외한다. 추적된 패쳐는 삭제 커밋을 푸시한 뒤 로컬에 복구하고 `.gitignore`로 유지한다. Cloud Pull은 삭제 커밋을 받아 패쳐를 제거한다. 정상 서버 시작 훅과 실행에 필요한 파일은 계속 배포 대상이다. 로컬 패쳐는 개발 서버에 설치된 파일을 복사하며 자동 빌드하지 않는다. 백업은 서버 밖 `%LOCALAPPDATA%\MinecraftServerDeploy`에 두며, 배포 전 기존 `world` 전체(`playerdata` 포함)를 작업별 `world-snapshot/`에 백업한다. 자동 복구와 복구 버튼은 교체한 기능 파일만 되돌리며 이후 플레이 진행도를 덮어쓰지 않는다.
 - 개발 클라이언트는 저장소 안 `develop-product/client`로 다룬다. 이 경로는 Modrinth 프로필 `%APPDATA%\ModrinthApp\profiles\cobblemon-dev`를 가리키는 정션이다. Modrinth가 링크 뒤의 프로필을 거부해서 실제 파일은 AppData에 둔다. 게임이 켜져 있으면 JAR을 복사하지 않는다.
+- 개발 제품의 JAR 배치 규칙에 대한 사용자 지정 예외: `develop-product/patch-products.bat`와 `develop-product/tools/patcher/`에는 이 PC의 로컬 통합 서버·클라이언트 패쳐를 둘 수 있다. 설치본은 원격 저장소·릴리스 제품에 포함하지 않는다. 기존 서버 패쳐 소스의 로컬 전용 규칙은 유지한다.
 - 릴리스 산출물은 `deploy-product/client`, `deploy-product/server`에 모은다. 완성된 JAR과 `VERSION.txt` 외에는 아무것도 두지 않는다(백업·임시파일·로그·소스 JAR 금지). 자세한 규칙은 `AGENTS.md`의 Product folders.
 - 임시파일과 중간 산출물은 `build/`나 세션 scratchpad에 두고, 제품 폴더나 저장소 루트에 남기지 않는다.
 <!-- 대화 중 발견된 프로젝트 규칙이 여기에 추가됩니다. -->
