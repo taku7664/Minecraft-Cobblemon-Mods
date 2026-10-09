@@ -1,5 +1,11 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-10 07:05] 전투 BGM 재생 음량 조정팩 개발 클라이언트 적용
+
+- `main` HEAD와 `origin/main`이 모두 `d97dc9c67516572ad0f19b818f2ac5d2badb5531`이며, 팩 빌드 기준 `0e92a0d7` 이후 현재 HEAD까지 Music 관련 경로 변경은 없다. 게임 프로세스 0개를 확인한 뒤 개발 클라이언트의 선택된 1.3.18 리소스팩 ZIP을 기존 SHA-256 `AFBB27FC33390357E91F37DDA2BEC38CA30D1C8220EED2EBBE40441D19BF8DC8`에서 빌드본 SHA-256 `F571FED8FF06727EC3FA6E39612D6E2513B2E8F666690C80F8DC6652CE9FE34E`로 교체했고, 설치본 해시가 빌드본과 같다.
+- 같은 이름의 압축 해제 폴더는 배포 직전 94개 파일 중 `sounds.json`만 빌드본과 달랐다. 이 파일만 교체했고 설치 파일 SHA-256은 `ED0E10070A916602BBC0BEED1776BE6A29C9262FCFFB32B2DFC8880C27BC19D2`다. `options.txt`·개인 설정·모드 JAR·OGG는 변경하지 않았다.
+- 설치와 파일 해시만 확인했다. 실게임 청취는 아직 검증하지 않았다. 아래 05:35 항목의 미배포 표기는 당시 상태다.
+
 ## [2026-10-10 05:35] 음악 슬라이더 100%에 맞춘 전투 BGM 재생 음량 조정
 
 - 결정·소스: 빡대리님은 Minecraft 음악 슬라이더를 71.3028%에서 100%로 올리면 필드곡은 적당하지만 전투곡은 크다고 확인하셨다. 공식 팩의 `catalog-layout.json`에 `battleSoundVolume: 0.713`을 추가하고, `MusicResourcePackBuildTool`이 `sounds.json`의 `music.track.battle.*` 61개에만 `volume: 0.713`을 생성하도록 했다. OGG는 다시 인코딩하지 않는다.
