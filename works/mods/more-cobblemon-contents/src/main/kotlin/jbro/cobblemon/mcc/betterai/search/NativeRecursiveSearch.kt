@@ -302,6 +302,9 @@ internal class NativeRecursiveSearch(
                 val child = descend(position, allyAction, opponentAction) ?: return null
                 val value = projectedValue(child, depthRemaining - 1, worstResponse) ?: return null
                 worstResponse = minOf(worstResponse, value)
+                // An earlier ally action already guarantees best. Once a reply holds this one to no more, the
+                // remaining replies can only lower it further, so the maximum and the cached value stay exact.
+                if (worstResponse <= best) break
             }
             best = maxOf(best, worstResponse)
             // The parent is minimizing responses and already has one worth upperBound. Once this
@@ -369,6 +372,7 @@ internal class NativeRecursiveSearch(
             for (opponentAction in opponentActions) {
                 val child = descend(position, allyAction, opponentAction) ?: return null
                 worstResponse = minOf(worstResponse, leafValue(child) ?: return null)
+                if (worstResponse <= best) break
             }
             best = maxOf(best, worstResponse)
         }

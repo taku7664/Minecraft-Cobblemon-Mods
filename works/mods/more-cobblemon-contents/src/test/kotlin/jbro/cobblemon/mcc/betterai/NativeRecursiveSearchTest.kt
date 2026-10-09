@@ -255,8 +255,10 @@ class NativeRecursiveSearchTest {
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
         assertEquals(0.705, result.rootValues.single().value, 1e-9)
-        assertEquals(10, result.nodesVisited, "Prior-depth ordering may visit more nodes on this counterexample")
+        assertEquals(9, result.nodesVisited, "Prior-depth ordering may visit more nodes on this counterexample")
         assertEquals(4, worker.visitedSnapshots.count { it == "second" })
+        // In "first" Quick Attack's first reply already leaves it no better than Scratch, so its other reply is skipped.
+        assertEquals(3, worker.visitedSnapshots.count { it == "first" })
     }
 
     @Test
