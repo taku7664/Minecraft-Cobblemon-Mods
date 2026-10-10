@@ -1,3 +1,12 @@
+# [2026-10-11 04:32] VPS 광장 외 월드·유저 데이터 초기화, 초대 링크·상점·정책 JAR 반영
+
+- **사용자 지시:** "VPS 서버 광장을 제외한 모든 차원 초기화. 유저데이터도. 내꺼까지. 전부."
+- **초기화(직접 확인):** 접속자 0명 확인 → `TmuxRuntime.stop()` → 삭제 대신 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-043020-world-reset/world/`로 33개 이동: 오버월드(`region`·`entities`·`poi`), `DIM-1`, `DIM1`, `dimensions/cobblemon_dimensions`·`myroom`·`more_cobblemon_contents`(PvP 라운지, 경기장은 필요할 때 생성), 플레이어 폴더(`playerdata`·`advancements`·`stats`·`cobblemonplayerdata`·`cobblenav`·`player-mod-data`·`pokedex`·`pokemon`·`tm_moves`), `world/data`의 모든 SavedData(리그 진행·디스코드 연동·첫 접속 키트·광장 복귀점·PvP 기록·위키 토큰·마이룸·차원 진입점·스코어보드 등).
+- **유지:** 광장 차원, `data/jbro_policy_plaza_biome.dat`, `data/command_storage_cobblemon_startup.dat`, `datapacks`, `serverconfig`, `level.dat`(같은 시드·게임룰·데이터팩 활성 목록). 광장 파일+`level.dat` 해시가 작업 전후 같았다(`1ef15ea9…`). 시드는 바꾸지 않았으므로 지형은 같은 시드로 다시 생성된다.
+- **기동:** 새 PID 46302, 04:32:05 `Done (26.807s)`, 스폰 영역 새로 생성, 봇 online·명령 15개, 25565 LISTEN, 외부 TCP 성공, 광장 `time query` 응답, 데이터팩 30개 활성(초기화 전과 같음).
+- **같은 정지 구간에 함께 적용(04:25~04:27):** `jbro-policy-discord.json` `inviteUrl`→`https://discord.gg/rcvmf3txDE`(만료 없음, API로 `expires_at=null` 확인), 상점 `bp-shop.json`을 운영 저장소의 95품목(`0646c05e`)으로 교체(사용자 결정, 기동 로그 `95 entries`), 정책 JAR `C3A2443D…`(첫 접속 초대 링크) 업데이트 job, 이후 오박사·기자 대사. 백업 `…/20261011-042551-invite-shop`, `…/20261011-042604-b33d870a`. VPS HEAD `5c81e61`.
+- **남는 것:** 디스코드에서 이미 받은 등급 역할은 연동 데이터가 지워져도 디스코드 쪽에 남는다. 유저는 `/디코인증`을 다시 해야 한다.
+
 # [2026-10-11 04:14] VPS 시뮬레이션 거리 6 적용, deploy-product 갱신
 
 - **시뮬레이션 거리:** 사용자 결정으로 VPS `server.properties`의 `simulation-distance`만 10→6(운영 저장소 `b08deda`와 같은 값). 원본 백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-041156-simulation-distance/`, 다른 줄은 변경 전후 동일. 접속자 0명 확인 후 `TmuxRuntime.stop()`·`start()`로 재기동: 새 PID 43843, 04:13:06 `Done (9.469s)`, 25565 LISTEN, 봇 online·명령 15개. `view-distance=10`은 그대로. 체감 성능 변화는 측정하지 않았다.

@@ -22,6 +22,14 @@
 - **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
 - **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
 
+## [2026-10-11 04:35] 첫 접속 초대 링크 빌드·전체 배포
+
+- **빌드:** main `dbece5a7`을 F 드라이브에 풀어 `:jbro-policy:build` 성공, 테스트 108개 통과, JAR SHA-256 `C3A2443D13FE2502D487AF547BEEA123A1BC3B554C3B88CCF0CEA58A3A00CACE`, `jar --validate` 0, `welcome.discord` 번역 포함.
+- **배포(정책 JAR이 있는 모든 곳):** 개발 서버·개발 클라이언트·`PPakemon`·로컬 운영 서버·`deploy-product/client`·`deploy-product/server` 여섯 곳 해시 일치, 운영 저장소 `ccf20e7`, VPS 적용·04:27 기동. 이전 JAR 백업 `F:/AI/build/welcome-invite-20261011/deployment-backups/`.
+- **링크:** 사용자가 만료 없는 `https://discord.gg/rcvmf3txDE`를 만들었다(`expires_at=null` 확인, #서버-상태 채널 초대). 개발 서버·로컬 운영·VPS `inviteUrl`과 기자 NPC 대사를 이 링크로 바꿨다. 실게임 첫 접속 메시지는 확인하지 않았다(VPS 유저 데이터 초기화로 다음 접속자는 모두 첫 접속이다).
+
+---
+
 ## [2026-10-11 04:20] 첫 접속 메시지에 디스코드 초대 링크 (구현·커밋, 빌드·배포 미실행)
 
 - **사용자 요청:** 첫 접속 키트 메시지에 디코 링크(`https://discord.gg/fpkNjYwCp`)를 넣자. 30일 만료를 피할 방법도 물었다.
