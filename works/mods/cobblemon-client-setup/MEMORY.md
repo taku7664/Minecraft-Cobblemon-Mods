@@ -10,7 +10,9 @@
 - **빡대리 지시:** Iris 셰이더 새로고침 기본 R이 Cobblemon 포켓몬 내보내기 R과 겹치니 미지정으로 둔다. Rounding-Block이 기본으로 꺼져 있지 않다는 제보를 확인한다.
 - **확인:** 독립 저장소 `GitHub/RoundingBlock`(1.0.0 릴리스 커밋 `6112a64`)의 `RoundingBlockConfig.DEFAULTS.enabled`는 `true`다. 셋업 훅에는 Rounding-Block 규칙이 없었다. 개발클라 `config/rounding-block.json`이 `false`인 건 파일에 이미 저장돼 있었기 때문이고, 설정 파일이 없는 새 클라이언트는 켜진 채 시작한다. 제보가 맞다. 설치된 Iris 1.8.8의 모드 ID `iris`, 키 `iris.keybind.reload`도 JAR에서 확인했다.
 - **구현:** 셋업 0.1.14. `KeybindingSetup`에 `iris` 규칙(`key_iris.keybind.reload` → unknown, 기록 `keybindings-iris-v1`)을 추가했다. `RoundingBlockSetup`은 `rounding_block`이 있을 때 `enabled=false`를 최초 한 번 적용하고(`rounding-block-disabled-v1`) 다른 값은 유지한다. 잘못된 JSON은 덮어쓰지 않고 다음 실행에 재시도한다. 테스트 `RoundingBlockSetupTest`와 Iris 키 테스트를 추가했다.
-- **미확인:** 사용자 지시(빌드·테스트는 요청 시에만)에 따라 빌드·테스트·JAR 배치를 하지 않았다. 실게임 확인도 하지 않았다.
+- **빌드:** 사용자 지시로 `main` `7d51ad67`에서 빌드했다(테스트 제외 `-x unitTest`). JAR 무결성, 0.1.14 메타데이터, `RoundingBlockSetup` 클래스와 Iris 키 문자열 포함을 확인했다.
+- **개발 클라이언트 배포:** `develop-product/client/mods`에 0.1.14를 넣고 0.1.13은 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.14/`로 옮겼다. SHA-256 `7F46B56059A31CF504E6A3C1908338105F0FBA3A3FE61B87F7DB19591ADBB620`.
+- **미확인:** 새 단위 테스트는 실행하지 않았다. 실게임 적용(다음 클라이언트 시작)도 확인하지 않았다. 운영 저장소에는 클라이언트 모드 폴더가 없어 배치하지 않았다.
 
 ## [2026-10-08 00:34] Accessories 화면 열기 기본 단축키 해제
 
