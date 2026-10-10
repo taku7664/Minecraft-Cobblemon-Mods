@@ -9,6 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.StringTag
 import net.minecraft.nbt.Tag
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
@@ -17,10 +18,16 @@ import net.minecraft.util.datafix.DataFixTypes
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.saveddata.SavedData
 
-/** A player's very first join gets Poke Balls, Potions and a greeting. The Pokenav needs no item: it is /pokenav. */
+/**
+ * A player's very first join gets Poke Balls, Potions and a greeting, with the server's Discord invite when one is set.
+ * The Pokenav needs no item: it is /pokenav.
+ */
 object WelcomeKit {
     private val KIT = listOf("cobblemon:poke_ball" to 20, "cobblemon:potion" to 10)
     private const val KEY = "message.${JbroPolicy.MOD_ID}.welcome."
+
+    /** `inviteUrl` from `config/jbro-policy-discord.json`, the same link `/디코인증` shows; blank sends no invite line. */
+    @Volatile var inviteUrl: String = ""
 
     fun register() {
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> grantIfFirstJoin(handler.player) }
@@ -43,6 +50,11 @@ object WelcomeKit {
         player.sendSystemMessage(Component.translatable(KEY + "greeting").withStyle(ChatFormatting.GOLD))
         player.sendSystemMessage(Component.translatable(KEY + "starter").withStyle(ChatFormatting.YELLOW))
         player.sendSystemMessage(Component.translatable(KEY + "pokenav").withStyle(ChatFormatting.YELLOW))
+        val invite = inviteUrl
+        if (invite.isNotBlank()) player.sendSystemMessage(Component.translatable(KEY + "discord",
+            Component.literal(invite).withStyle { style ->
+                style.withColor(ChatFormatting.AQUA).withUnderlined(true).withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, invite))
+            }).withStyle(ChatFormatting.YELLOW))
     }
 
     internal fun isFirstJoin(alreadyGranted: Boolean, leaveGameCount: Int): Boolean = !alreadyGranted && leaveGameCount == 0

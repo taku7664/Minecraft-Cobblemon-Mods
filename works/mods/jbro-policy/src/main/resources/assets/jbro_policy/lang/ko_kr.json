@@ -42,6 +42,7 @@
   "message.jbro_policy.welcome.greeting": "코블몬 서버에 오신 것을 환영합니다!",
   "message.jbro_policy.welcome.starter": "M키를 눌러 스타팅 포켓몬을 받아주세요.",
   "message.jbro_policy.welcome.pokenav": "/pokenav 명령으로 언제든 포켓내비를 열 수 있습니다.",
+  "message.jbro_policy.welcome.discord": "빡켓몬 디스코드에서 공지를 받고 질문도 할 수 있어요: %s",
 
   "message.jbro_policy.release.empty": "파티 %s번 슬롯이 비어 있습니다.",
   "message.jbro_policy.release.last": "마지막 포켓몬은 놓아줄 수 없습니다.",

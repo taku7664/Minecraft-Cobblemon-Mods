@@ -66,6 +66,7 @@ object JbroPolicy : ModInitializer {
         Tips.register(config.tipIntervalSeconds, config.tips)
         val configDir = FabricLoader.getInstance().configDir
         val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
+        WelcomeKit.inviteUrl = discord.inviteUrl
         Inquiries.register(discord)
         val aiSettings = InquiryReviewSettings.load(configDir.resolve("jbro-policy-inquiry-review.json")) { message, failure -> LOGGER.warn(message, failure) }
         InquiryReview.register(discord, aiSettings,

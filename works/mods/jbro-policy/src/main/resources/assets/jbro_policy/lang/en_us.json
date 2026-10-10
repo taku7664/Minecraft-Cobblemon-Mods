@@ -42,6 +42,7 @@
   "message.jbro_policy.welcome.greeting": "Welcome to the Cobblemon server!",
   "message.jbro_policy.welcome.starter": "Press M to choose your starter Pokemon.",
   "message.jbro_policy.welcome.pokenav": "Use /pokenav to open your Pokenav at any time.",
+  "message.jbro_policy.welcome.discord": "Join our Discord for news and questions: %s",
 
   "message.jbro_policy.release.empty": "Party slot %s is empty.",
   "message.jbro_policy.release.last": "You cannot release your last Pokemon.",
