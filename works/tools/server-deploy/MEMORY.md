@@ -1,3 +1,11 @@
+# [2026-10-10 16:04 KST] VPS GitHub·Codex·agy 인증 완료
+
+- 메인 작업자의 직접 SSH 확인 기준으로, 이전 설치 기록의 미인증 상태 중 GitHub·Codex·agy 인증을 마쳤습니다. `gh auth status`가 exit 0으로 통과했고 `/srv/MinecraftPPakemonServer`에서 비공개 저장소의 `git ls-remote origin HEAD`가 성공해 `3fad1d136426cfca435bad48b284614f03cc14a8`을 확인했습니다. 기록 담당자는 원격 검증을 재실행하지 않았습니다.
+- Codex `0.162.1`의 device 인증은 계정 보안 설정에서 비활성화되어 실패했습니다. 공식 일반 브라우저 로그인과 `localhost:1455` SSH callback forwarding으로 전환해 `Successfully logged in`·`Logged in using ChatGPT` 및 `codex login status` exit 0을 확인했습니다.
+- agy `1.3.3`은 사용자의 Google OAuth 승인 후 인증했고 `agy models`가 exit 0으로 모델 18개를 반환했습니다. 첫 실행 온보딩에서 선택 항목인 Google Interactions 대화 데이터 수집 checkbox를 끄고 `Done`을 완료했습니다. `/home/ubuntu` 전체에 AI 읽기·수정·실행 신뢰 권한을 부여하지 않고 `No, exit`로 정상 종료(exit 0)했습니다.
+- 사용자 결정으로 Claude Code 설치본은 유지하되 로그인·인증 작업은 요청 범위에서 제외했습니다. 인증코드·토큰·계정 이메일·OAuth URL/state/PKCE는 이 기록에 포함하지 않았습니다.
+- 실제 AI 문의·게임 동작은 미검증입니다. Minecraft 서비스 기동·EULA 동의·Discord 설정 복사·방화벽 변경은 이번 인증 단위에서 수행하지 않았습니다.
+
 # [2026-10-10 15:42 KST] VPS GitHub·AI CLI 설치 및 경로 검증
 
 - 사용자 요청에 따라 `ubuntu@210.207.108.196`의 Java `21.0.12.1`, Git `2.53.0`, Git LFS `3.7.1`, PowerShell `7.6.6`, agy `1.3.3`, Bash `5.3.9` 기존 설치를 재확인했습니다. 공식 GitHub CLI apt 저장소에서 gh `2.102.0`, 공식 Codex standalone 설치기로 Codex `0.162.1`, 공식 Claude native 설치기의 `stable` 채널로 Claude Code `2.1.287`을 새로 설치했습니다. Node/npm·GUI는 설치하지 않았습니다. 이 항목은 메인 작업자의 직접 SSH 검증 보고이며 기록 담당자는 원격 검증을 재실행하지 않았습니다.
