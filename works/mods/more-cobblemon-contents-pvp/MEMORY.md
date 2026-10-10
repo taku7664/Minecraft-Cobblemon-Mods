@@ -1,5 +1,12 @@
 # MEMORY
 
+## [2026-10-11 03:17] 방 나가기·파티 하한·관전자 툴팁 개발 배포
+
+- **빌드:** 공유 작업 트리의 MCC 코어에 다른 세션의 미커밋 Better AI 변경이 있어, `main` `1d7da204`를 `git archive`로 `F:/AI/build/pvp-deploy-20261011/src`에 내보내 빌드했다(워크트리 아님). `:more-cobblemon-contents-pvp:build -x unitTest` 성공(테스트는 직전에 76개 통과). JDK 21 `jar --validate`·ZIP CRC 통과, 새 코드 포함·테스트 클래스 미포함 확인.
+- **호환성:** 배치된 코어 JAR(10-10 20:18)은 `main`보다 오래됐지만 이후 코어 변경은 상점·Better AI 내부뿐이다. PvP JAR이 참조하는 외부 멤버 384개를 배치된 코어·`cobblemon-ui` JAR과 바이트코드로 대조해 모두 해석됨(남은 6건은 바닐라 `AbstractWidget` 상속 멤버라 검사기 한계). 그래서 PvP JAR만 교체했다.
+- **배치:** `develop-product/server/mods`와 `develop-product/client/mods`의 PvP JAR 교체. 빌드본·서버·클라 SHA-256 `f049a4b1…` 일치, `.deploying` 잔여물 없음, PvP JAR 하나씩만 있음. 배치 전 25565/25566 리스너와 게임 프로세스 없음. 이전 JAR은 `develop-product/deployment-backups/20261011-0320-pvp-room-leave/{server,client}`.
+- **미확인:** 서버를 켜지 않았고 실게임 확인 안 함. 목록 패킷 형식이 바뀌어 서버·클라 PvP JAR 버전이 다르면 접속 중 끊길 수 있다(이번엔 둘 다 같은 JAR). `deploy-product` 릴리스 아님.
+
 ## [2026-10-11 03:08] 룸 사용자 흐름 모의 시나리오 검증
 
 - **요청:** 사용자가 위 수정을 믿기 어렵다며 룸 사용자 흐름을 코드로 모의 실행해 달라고 함.
