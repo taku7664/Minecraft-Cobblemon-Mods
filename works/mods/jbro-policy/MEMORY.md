@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-10 19:18] 운영 서버 재기동·디스코드 상태 알림 목적지 미설정 확인
+
+- **정상 재기동:** 빡대리가 디스코드 서버 켜짐 알림이 보이지 않아 재기동을 요청했다. VPS의 Minecraft만 `save-all flush` → `stop`으로 종료해 `All dimensions are saved`·기존 PID 종료·TCP 25565 포트 닫힘을 확인했다. 운영체제는 재부팅하지 않았다.
+- **기동 확인:** 기존 PID `16097`에서 새 PID `20874`로 기동했다. 새 `Done` 로그 19:16:50과 TCP 25565 LISTEN, 19:16:51 피츄 봇 online·슬래시 명령 7개 등록을 확인했다(메인 작업자 직접 검증 보고).
+- **알림 원인:** 비밀값을 출력하지 않고 `config/jbro-policy-discord.json`의 `botConfigured=true`, `statusChannelConfigured=false`(빈 `statusChannelId`), `newsChannelConfigured=false`를 확인했다. 메인 작업자가 `DiscordBot.kt`의 `register`에서 상태 채널 ID가 비면 상태 객체 생성을 생략하고 `showStatus`가 반환함을 확인해 상태 알림 목적지 미지정을 판별했다.
+- **미완료·범위:** 운영 설정 수정이나 기타 파일 배포는 하지 않았다. 알림 채널 이름/ID를 사용자에게 질문했고 답변 대기 중이며 실제 켜짐·꺼짐 메시지 전송 성공은 확인하지 않았다. 기록 담당자는 SSH·기동·소스 검증을 재실행하지 않았다.
+
 ## [2026-10-10 17:42] 디스코드 인증 설정 적용 확인 (봇·명령·권한 확인, 실제 인증 교환 미검증)
 
 - **현재 적용:** 메인 작업자의 직접 확인 기준으로 VPS `/srv/MinecraftPPakemonServer/config/jbro-policy-discord.json`은 유효하며 수정 시각은 17:20:44, 현재 Java PID `14132`의 시작 시각은 17:24:46이다. 교체한 설정은 현재 실행에 적용돼 있으며 재시작이 필요하지 않다. 기록 담당자는 추가 조회를 하지 않았다.
