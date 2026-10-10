@@ -1,4 +1,16 @@
 {
+  "message.jbro_policy.servercmd.usage": "Usage: /servercmd <console command> (example: /servercmd list)",
+  "message.jbro_policy.servercmd.permission": "Only online players with current operator permission level 4 may run console commands.",
+  "message.jbro_policy.servercmd.empty": "Enter a console command to run.",
+  "message.jbro_policy.servercmd.invalid": "Commands cannot contain line breaks or control characters.",
+  "message.jbro_policy.servercmd.too_long": "Console commands must be at most 2048 characters long.",
+  "message.jbro_policy.servercmd.recursion": "You cannot invoke /servercmd again while a console command is running.",
+  "message.jbro_policy.servercmd.busy": "The console command queue is full. Please try again shortly.",
+  "message.jbro_policy.servercmd.output": "[Console output]",
+  "message.jbro_policy.servercmd.truncated": "Some output was omitted because it was too long.",
+  "message.jbro_policy.servercmd.completed": "Console command executed. Return value: %s",
+  "message.jbro_policy.servercmd.failed": "The console command did not complete. Check the error messages and server log.",
+
   "message.jbro_policy.discord_question.description": "Ask Pichu a question (once every five minutes per user)",
   "message.jbro_policy.discord_question.option": "Your question for Pichu",
   "message.jbro_policy.discord_question.invalid": "Please enter a question between 1 and 500 characters.",
