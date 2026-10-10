@@ -111,7 +111,8 @@ final class OfficialPokemusicMappingTest {
                 }
             }
         }
-        expectField("minecraft:forest", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        expectFieldWithTags("minecraft:forest", Set.of("minecraft:is_forest"), false,
+            "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
         assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/myroom/eterna_forest.ogg")));
     }
 
@@ -125,24 +126,30 @@ final class OfficialPokemusicMappingTest {
     }
 
     @Test
-    void readmeFieldGroupsResolveThroughExactBiomePathAndUndergroundSelectors() {
+    void readmeFieldGroupsResolveThroughExactBiomeTagsAndUndergroundSelectors() {
         expectField("minecraft:deep_dark", false, "field/deep_dark/sinnoh_old_chateau", "field/deep_dark/union_cave");
         for (String biome : List.of("minecraft:lush_caves", "minecraft:dripstone_caves")) {
             expectField(biome, true, "field/cave/sinnoh_oreburgh_mine");
         }
         expectField("minecraft:plains", true, "field/cave/sinnoh_oreburgh_mine");
-        expectField("minecraft:frozen_river", false, "field/river/sinnoh_lake_theme");
-        expectField("minecraft:ocean", false, "field/ocean/route_47");
+        expectFieldWithTags("minecraft:frozen_river", Set.of("minecraft:is_river"), false, "field/river/sinnoh_lake_theme");
+        expectFieldWithTags("minecraft:ocean", Set.of("minecraft:is_ocean"), false, "field/ocean/route_47");
         expectField("minecraft:deep_ocean", false, "field/ocean/underground_ruins");
         expectField("minecraft:mangrove_swamp", false, "field/swamp/route_120");
-        expectField("minecraft:bamboo_jungle", false, "field/jungle/southern_jungle");
+        expectFieldWithTags("minecraft:bamboo_jungle", Set.of("minecraft:is_jungle"), false,
+            "field/jungle/southern_jungle");
         for (String biome : List.of("minecraft:ice_spikes", "minecraft:grove", "minecraft:snowy_plains", "minecraft:frozen_peaks")) {
             expectField(biome, false, "field/snow/sinnoh_route_216_night");
         }
-        expectField("minecraft:jagged_peaks", false, "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
-        for (String biome : List.of("minecraft:forest", "minecraft:cherry_grove", "minecraft:old_growth_birch_forest", "minecraft:taiga")) {
-            expectField(biome, false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        expectFieldWithTags("minecraft:jagged_peaks", Set.of("minecraft:is_mountain"), false,
+            "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
+        expectField("minecraft:cherry_grove", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        for (String biome : List.of("minecraft:forest", "minecraft:old_growth_birch_forest")) {
+            expectFieldWithTags(biome, Set.of("minecraft:is_forest"), false,
+                "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
         }
+        expectFieldWithTags("minecraft:taiga", Set.of("minecraft:is_taiga"), false,
+            "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
         expectField("minecraft:plains", false, "field/plains/sinnoh_route_201_night");
         expectField("minecraft:desert", false, "field/desert/route_111");
         expectField("minecraft:wooded_badlands", false, "field/badlands/mt_pyre_exterior");
@@ -157,17 +164,22 @@ final class OfficialPokemusicMappingTest {
     }
 
     @Test
-    void readmePriorityAppliesAcrossExactBiomesTagsPathsAndUnderground() {
+    void readmePriorityAppliesAcrossExactBiomesTagsAndUnderground() {
         for (String biome : List.of("minecraft:cherry_grove", "minecraft:stony_shore", "minecraft:deep_ocean")) {
             expectField(biome, true, "field/cave/sinnoh_oreburgh_mine");
         }
         expectField("minecraft:deep_dark", true, "field/deep_dark/sinnoh_old_chateau", "field/deep_dark/union_cave");
-        expectField("example:forest_desert", false, "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
-        expectField("example:desert_badlands", false, "field/desert/route_111");
-        expectField("example:plains_desert", false, "field/plains/sinnoh_route_201_night");
-        expectField("example:river_ocean", false, "field/river/sinnoh_lake_theme");
+        expectFieldWithTags("example:forest_desert", Set.of("c:is_forest", "c:is_desert"), false,
+            "field/forest/sinnoh_route_203_day", "field/forest/viridian_forest");
+        expectFieldWithTags("example:desert_badlands", Set.of("c:is_desert", "c:is_badlands"), false,
+            "field/desert/route_111");
+        expectFieldWithTags("example:plains_desert", Set.of("c:is_plains", "c:is_desert"), false,
+            "field/plains/sinnoh_route_201_night");
+        expectFieldWithTags("example:river_ocean", Set.of("c:is_river", "minecraft:is_ocean"), false,
+            "field/river/sinnoh_lake_theme");
         expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:snowy_ridge",
-            Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(), "field/snow/sinnoh_route_216_night");
+            Set.of("c:is_snowy", "minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(),
+            "field/snow/sinnoh_route_216_night");
         expectTracks(field.select(new FieldMusicContext("minecraft:overworld", "example:wooded_ridge",
             Set.of("minecraft:is_mountain", "minecraft:is_forest"), false)).playlist(),
             "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
@@ -188,7 +200,10 @@ final class OfficialPokemusicMappingTest {
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
                 Set.of(), false)).playlist(), "field/desert/route_111");
             expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:cherry_grove",
-                Set.of("minecraft:is_mountain"), false)).playlist(), "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
+                Set.of("minecraft:is_mountain"), false)).playlist(), "field/desert/route_111");
+            expectTracks(resolver.select(new FieldMusicContext("minecraft:overworld", "minecraft:stony_peaks",
+                Set.of("minecraft:is_mountain"), false)).playlist(),
+                "field/mountain/sinnoh_route_205_day", "field/mountain/route_3");
             assertEquals(compiled.snapshot().field().ruleOrder(), custom.snapshot().field().ruleOrder());
             assertTrue(custom.inactiveOverrides().isEmpty());
         }
@@ -248,6 +263,10 @@ final class OfficialPokemusicMappingTest {
 
     private static void expectField(String biome, boolean underground, String... paths) {
         expectTracks(field.select(new FieldMusicContext("minecraft:overworld", biome, Set.of(), underground)).playlist(), paths);
+    }
+
+    private static void expectFieldWithTags(String biome, Set<String> tags, boolean underground, String... paths) {
+        expectTracks(field.select(new FieldMusicContext("minecraft:overworld", biome, tags, underground)).playlist(), paths);
     }
 
     private static FieldMusicContext context(String dimension, FieldMusicContext.TimeOfDay time) {
