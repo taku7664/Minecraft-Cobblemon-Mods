@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-10 20:19] 포켓스낵 전포 차단 개발 서버·클라이언트 배포 (빌드·테스트·JAR 배치 확인, 실게임 미검증)
+
+- **후속 요청·main:** 빡대리의 “배포해” 요청에 따라 개발 서버·클라이언트에 배포했다. 원 구현은 main 병합 커밋 `97b842d41a419cae3a9ec02cba38b150393aae03`으로 원격 동기화를 확인했다. 그 커밋의 최초 빌드 후 비교에서 다른 세션의 MCC 상점 소스 변경이 main에 들어온 것을 발견해 최신 `origin/main`의 `3825e2795ecfef5eafc639bce2f65e634b65b88a`로 fast-forward하고 재빌드했다. 최종 소스 HEAD와 `origin/main`의 `works/` 차이 0, main·origin/main 0/0을 확인했다.
+- **최종 빌드·테스트:** `:jbro-policy:build`가 1분 25초에 종료 코드 0으로 성공했다. Gradle `test` 태스크는 `SKIPPED`였지만 실제 `unitTest` JUnit 실행에서 101개 시작·101개 성공·실패 0을 확인했다.
+- **F 쓰기 경로·실행 오류:** `GRADLE_USER_HOME=F:/AI/caches/gradle`이며 워크트리 전용 `F:/AI/build/snack-275a-20261010` 아래에 project-cache, 모든 root/modules 빌드 출력, `TEMP`·`TMP`·`java.io.tmpdir`(JavaExec·Test 포함), kotlin-project·daemon 경로를 지정·검사했다. 첫 검증용 init의 `gradle.beforeProject`는 configure-on-demand로 미구성된 `:better-battle-presentation`의 기본 C: buildDirectory를 검사해 3분 44초 후 중단했다. 원인 확인 뒤 `allprojects`로 전체 모듈 경로를 먼저 지정해 보완했다. 별도 C: 출력 검사에서 `works/works`를 잘못 조회한 1건도 절대경로로 고쳐 C: 모듈 build 폴더가 없음을 확인했다. 두 오류는 사용자에게 보고했으며 제품 코드 수정은 없었다.
+- **산출물·정적 확인:** `F:/AI/build/snack-275a-20261010/modules/jbro-policy/libs/jbro-policy-0.1.3.jar`의 SHA-256은 `CD50991F3E9C527B1E95A537787401EAC1DA94BF3A58361E8005284D326BB869`이다. Java 21 `jar --validate` 종료 코드 0, 빌드본 Mixin JSON 등록, `javap`에서 `legendOf != null`일 때 Boolean false를 `setReturnValue`하는 경로를 확인했다. `LegendPolicy.class`의 `snackMayOffer`·`POKE_SNACK_SPAWN_POKEMON_POST` 제거와 `RareSpawnNotice.class`의 스낵 이벤트 유지를 직접 확인했다.
+- **개발 JAR 배치:** 빌드 전·교체 직전 Java 조회에서 서버·게임 실행 없음과 TCP 25565·25566 수신 없음 확인 후 실제 primary 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server/mods/jbro-policy-0.1.3.jar`와 `develop-product/client/mods/jbro-policy-0.1.3.jar`를 교체했다. 두 설치본 SHA-256은 위 빌드본과 일치했다. 기존 JAR는 제품 폴더 밖 `F:/AI/build/snack-275a-20261010/deployment-backups/server/`·`client/`에 백업하고 해시를 확인했다.
+- **검증 경계·기록 상태:** 위 빌드·테스트·소스 비교·JAR 검사·배치 결과는 메인 작업자의 직접 확인 보고이며 기록 담당자는 재실행하지 않았다. 운영 서버와 `deploy-product` 릴리스 산출물은 수정하지 않았다. 서버·게임 기동과 실제 스낵 스폰은 미검증이다. 이 후속 기록의 커밋·푸시는 기록 시점에 아직 수행하지 않았으며 메인 작업자가 담당한다.
+
+---
+
 ## [2026-10-10 20:01] 포켓스낵 전포 스폰 전면 차단·기존 스낵 전포 코드 제거 (구현·정적 확인, 빌드·배포 미실행)
 
 - **사용자 결정·범위:** 빡대리의 요청으로 포켓스낵에서는 `LegendCatalog`의 103종(전설·환상·전설급 패러독스)을 스폰하지 않는다. 스낵 설치자의 진행도·접속 상태와 무관하게 차단하며 일반 자연 스폰 전설의 소유권·등장 알림은 유지한다.
