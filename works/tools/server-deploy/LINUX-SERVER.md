@@ -2,6 +2,8 @@
 
 ## 현재 서버 루트에서 실행: run.sh
 
+운영 VPS 서버 파일 루트는 `/srv/MinecraftPPakemonServer`입니다. 실행 파일 `run.sh`, 모드 `mods/`, 설정 `config/`, 월드 `world/`가 이 안에 있습니다.
+
 `run.sh`는 운영 저장소 루트의 Fabric 런처·설정·월드를 그대로 사용합니다.
 별도 `release/data` 폴더나 월드 심볼릭 링크를 만들지 않습니다. 기존 Windows `run.bat`과
 PowerShell 시작 훅도 유지하며, Linux에서는 같은 시작 훅을 PowerShell 7로 실행합니다.
