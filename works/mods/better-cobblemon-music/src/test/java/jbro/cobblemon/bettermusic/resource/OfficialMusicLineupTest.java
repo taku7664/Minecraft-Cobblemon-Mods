@@ -19,6 +19,9 @@ import jbro.cobblemon.bettermusic.catalog.MusicCatalogParser;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalogSettings;
 import jbro.cobblemon.bettermusic.catalog.MusicMappingOverrides;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
+import jbro.cobblemon.bettermusic.config.FieldMusicConfig;
+import jbro.cobblemon.bettermusic.field.FieldMusicContext;
+import jbro.cobblemon.bettermusic.field.FieldPlaylistResolver;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,6 +32,7 @@ final class OfficialMusicLineupTest {
     static Path temporaryDirectory;
     static BattleMusicConfig battle;
     static BattlePlaylistResolver resolver;
+    static FieldMusicConfig field;
     static Map<String, String> eventTitles;
     static Map<String, String> trackEvents;
 
@@ -44,10 +48,39 @@ final class OfficialMusicLineupTest {
                 MusicCatalogSettings.defaults("better_cobblemon_music:official"), MusicMappingOverrides.empty());
             assertTrue(compiled.inactiveOverrides().isEmpty());
             battle = compiled.snapshot().battle();
+            field = compiled.snapshot().field();
             resolver = new BattlePlaylistResolver(battle);
             eventTitles = compiled.eventTitles();
             trackEvents = compiled.trackEvents();
         }
+    }
+
+    @Test
+    void officialFieldRulesUseTagsAndExactIdsInsteadOfBiomeNameFragments() {
+        assertTrue(field.biomePathContains().isEmpty(), "official pack must not match biome ID fragments");
+        assertTrue(field.ruleOrder().stream().noneMatch(rule -> rule.kind() ==
+            jbro.cobblemon.bettermusic.field.FieldMusicRule.Kind.PATH));
+        var fieldResolver = new FieldPlaylistResolver(field);
+        assertEquals("field.biome:#c:is_swamp", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "terralith:ice_marsh", Set.of("c:is_swamp", "c:is_snowy"), false)).id());
+        assertEquals("field.biome:#c:is_jungle", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "terralith:tropical_jungle", Set.of("c:is_jungle"), false)).id());
+        assertEquals("field.biome:#c:is_cave", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "terralith:cave", Set.of("c:is_cave"), false)).id());
+        assertEquals("field.biome:terralith:deep_warm_ocean", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "terralith:deep_warm_ocean", Set.of(), false)).id());
+        assertEquals("field.biome:#minecraft:is_deep_ocean", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "minecraft:deep_cold_ocean",
+            Set.of("minecraft:is_deep_ocean", "minecraft:is_ocean"), false)).id());
+        assertEquals("field.biome:minecraft:cherry_grove", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "minecraft:cherry_grove",
+            Set.of("minecraft:is_mountain"), false)).id());
+        assertEquals("field.biome:minecraft:swamp", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "minecraft:swamp", Set.of(), false)).id());
+        assertEquals("field.biome:minecraft:desert", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "minecraft:desert", Set.of(), false)).id());
+        assertEquals("field.default", fieldResolver.select(new FieldMusicContext(
+            "minecraft:overworld", "example:desert_swamp_fake", Set.of(), false)).id());
     }
 
     @Test

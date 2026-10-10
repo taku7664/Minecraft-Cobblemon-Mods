@@ -1,0 +1,44 @@
+{
+  "speaker": "간호순",
+  "skin": "more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "안녕하세요! 포켓몬센터에 오신 것을 환영합니다.",
+        "지친 포켓몬들을 쉬게 해 드릴까요?"
+      ],
+      "choices": [
+        {
+          "text": "네, 회복해 주세요.",
+          "next": "heal"
+        },
+        {
+          "text": "괜찮아요.",
+          "next": null
+        }
+      ]
+    },
+    "heal": {
+      "branches": [
+        {
+          "if": "cmd:healpokemon",
+          "next": "healed"
+        }
+      ],
+      "next": "unavailable"
+    },
+    "healed": {
+      "lines": [
+        "포켓몬들이 모두 건강해졌어요!",
+        "또 필요하시면 언제든 찾아오세요."
+      ]
+    },
+    "unavailable": {
+      "lines": [
+        "지금은 회복할 수 없어요.",
+        "포켓몬 배틀 중이라면 배틀을 마친 뒤 다시 찾아와 주세요."
+      ]
+    }
+  }
+}

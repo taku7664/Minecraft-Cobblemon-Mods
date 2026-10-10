@@ -22,6 +22,10 @@ sealed interface NpcSkinRef {
         private val PATH = Regex("[a-z0-9/._-]+\\.png")
         private val FILE = Regex("[a-z0-9_.-]+")
 
+        fun isSkinFolder(path: String): Boolean = path.split('/').any {
+            it in setOf("trainers", "npcs", "npc", "skins", "skin", "player", "players")
+        }
+
         fun parse(value: String): NpcSkinRef {
             val text = value.trim()
             if (text.isEmpty()) return Default
