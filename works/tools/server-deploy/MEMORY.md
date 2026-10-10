@@ -1,3 +1,13 @@
+# [2026-10-10 15:08 KST] VPS 설치·정적 검증 완료, 최초 기동 승인 대기
+
+- 이 항목은 메인 작업자의 직접 관찰 보고를 기록한 것으로, 기록 담당자는 VPS 검증을 재실행하지 않았습니다. Ubuntu 26.04 LTS x86_64 VPS(2 vCPU·8GB RAM·50GB NVMe)에 `ubuntu@210.207.108.196:22` 키 인증 접속이 성공했습니다. 키 내용은 읽거나 출력하지 않았으며 Windows 키 ACL만 현재 사용자 `Read`로 제한했습니다.
+- Java `21.0.12.1`, Git LFS `3.7.1`, PowerShell `7.6.6`, agy `1.3.3` 설치와 버전 확인을 마쳤습니다. Microsoft 26.04 저장소에는 `powershell` 패키지가 없어 공식 GitHub universal deb를 사용했고, 공식 `hashes.sha256`의 UTF-16LE 인코딩을 디코딩해 SHA-256 일치를 확인했습니다. agy 공식 설치기의 SHA-512 검증도 성공했습니다. `/home/ubuntu/.local/bin`을 `PATH`에 포함한 `inquiry.cli-version`은 성공했지만 모델 조회는 Google 로그인 부재로 실패했습니다. Google 로그인은 사용자 본인 수행이 필요한 상태입니다.
+- 운영 저장소의 `main=origin/main` 커밋 `3fad1d136426cfca435bad48b284614f03cc14a8`에서 추적된 1,572개 파일을 `/srv/MinecraftPPakemonServer`에 설치했고 전체 원본 SHA-256 일치를 확인했습니다. 모드 46개, `world/datapacks/`, 초기 광장 차원과 `world/data/jbro_policy_plaza_biome.dat`를 포함하며 로컬 패쳐·BlueMap·JourneyMap·Map Link·MD·일반 월드·플레이어 기록은 제외했습니다.
+- Git bundle과 실제 LFS 바이트를 함께 전송했습니다. LFS 71개 파일의 SHA 일치와 `fsck` 성공을 확인했습니다. 파일의 stat 캐시에 pointer 크기만 남은 상태는 정확한 LFS 경로에만 `git add --renormalize`를 적용해 갱신했으며, 이후 staged·working tree가 모두 커밋과 일치했습니다. `origin`은 비공개 GitHub 저장소 URL로 연결했지만 VPS의 GitHub 원격 인증은 아직 준비하지 않았습니다.
+- `run.sh`의 `bash -n`과 실제 Linux PowerShell 시작 훅의 `-DryRun`이 exit 0으로 통과했습니다. 운영 배포본에서 제외된 Discord 설정은 VPS에도 없는 상태입니다. systemd 259 서비스 초안은 `/tmp`에만 두었으며 `systemd-analyze verify`를 통과했습니다. 기존 OS `xfs_scrub`의 `CPUAccounting` 폐기 경고만 관찰했고 서비스는 설치·시작하지 않았습니다.
+- 서비스 계획은 `User=ubuntu`, `WorkingDirectory=/srv/MinecraftPPakemonServer`, `Xms2G/Xmx4G`, agy 실행 경로 포함, `Restart=on-failure`, `SIGINT` 종료와 180초 대기입니다. UFW는 현재 `inactive`이며 방화벽은 변경하지 않았습니다. Minecraft EULA 동의·최초 기동과 함께 TCP 22·25565 및 UDP 24454만 허용하고 8100 외부 접근을 차단하는 적용 여부, 개발 Discord 설정 복사 여부를 사용자에게 질문한 상태입니다.
+- 실제 서버 기동, 서비스 설치·자동 시작, 방화벽 적용, 외부 게임·음성 연결, 실게임·10명 부하 검증, GitHub 원격 인증은 미완료입니다. EULA·최초 기동과 Discord 설정 복사에 대한 사용자 응답도 아직 받지 않은 상태이며, 설치·정적 검증 결과를 서비스 운영 완료로 해석하면 안 됩니다.
+
 # [2026-10-10 14:47] 서버 루트를 사용하는 Linux 실행기 추가
 
 - 사용자가 기존 Windows BAT·PowerShell 실행을 보존하면서 Linux 실행기를 추가하도록 요청했습니다. `run.sh`는 기존 서버 루트를 그대로 사용하고 Java 21 이상·PowerShell 7 이상으로 시작 훅을 통과한 뒤 Fabric 런처를 실행합니다. 메모리 기본값은 `JAVA_XMS=2G`, `JAVA_XMX=4G`이며 자동 재시작은 호스트 관리 기능에 맡깁니다.
