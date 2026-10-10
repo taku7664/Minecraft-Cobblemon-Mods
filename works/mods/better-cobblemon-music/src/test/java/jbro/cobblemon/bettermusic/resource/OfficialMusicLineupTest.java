@@ -84,8 +84,28 @@ final class OfficialMusicLineupTest {
     }
 
     @Test
+    void ultraAndParadoxDimensionsIgnoreBiomeUndergroundAndTimeOfDay() {
+        var fieldResolver = new FieldPlaylistResolver(field);
+        for (String dimension : List.of("ultra_space", "ancient", "future")) {
+            for (String biome : List.of("minecraft:deep_dark", "minecraft:forest", "minecraft:river",
+                "cobblemon_dimensions:ultra_desert", "minecraft:plains")) {
+                for (boolean underground : List.of(false, true)) {
+                    for (var time : FieldMusicContext.TimeOfDay.values()) {
+                        String id = "cobblemon_dimensions:" + dimension;
+                        var selection = fieldResolver.select(new FieldMusicContext(
+                            id, biome, Set.of("minecraft:is_forest", "minecraft:is_river"), underground, time));
+                        assertEquals("field.dimension:" + id, selection.id());
+                        assertEquals(List.of("better_cobblemon_music:field/ultra_space/ultra_desert"),
+                            selection.playlist().tracks());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(87, eventTitles.size());
+        assertEquals(88, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -101,6 +121,7 @@ final class OfficialMusicLineupTest {
     @Test
     void localizedTitlesUseCheckedPlaceAndSoundtrackNamesInsteadOfTranslatingIds() {
         assertTitle("field/myroom/valor_lakefront_day", "입지호수 근처 (낮)");
+        assertTitle("field/ultra_space/ultra_desert", "울트라데저트");
         assertTitle("field/myroom/valor_lakefront_night", "입지호수 근처 (밤)");
         assertTitle("field/nether/sinnoh_stark_mountain", "하드마운틴");
         assertTitle("field/deep_dark/sinnoh_old_chateau", "숲의 양옥집");
@@ -149,6 +170,40 @@ final class OfficialMusicLineupTest {
     }
 
     @Test
+    void allOfficialBgmAndAlertAreHalvedWithoutChangingTheHitEffects() throws Exception {
+        Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
+        var report = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/all-bgm-alert-volume-2026-10-11.json"))).getAsJsonObject();
+        assertEquals(0.5, report.get("multiplier").getAsDouble());
+        var tracks = report.getAsJsonArray("tracks");
+        assertEquals(89, tracks.size());
+        Set<String> expected = trackEvents.keySet().stream()
+            .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
+            .collect(Collectors.toSet());
+        expected.add("battle/low_hp/alert.ogg");
+        Set<String> reported = new java.util.HashSet<>();
+        Path soundRoot = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
+        for (var element : tracks) {
+            var track = element.getAsJsonObject();
+            String name = track.get("target").getAsString();
+            assertTrue(reported.add(name), "duplicate: " + name);
+            assertEquals(track.get("afterSha256").getAsString(),
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(soundRoot.resolve(name)))), name);
+            assertEquals(20 * Math.log10(0.5),
+                track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
+        }
+        assertEquals(expected, reported);
+        var ultra = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/import-ultra-desert-2026-10-07.json"))).getAsJsonObject();
+        var ultraRecord = java.util.stream.StreamSupport.stream(tracks.spliterator(), false)
+            .map(item -> item.getAsJsonObject())
+            .filter(item -> item.get("target").getAsString().equals("music/field/ultra_space/ultra_desert.ogg"))
+            .findFirst().orElseThrow();
+        assertEquals(ultra.get("outputSha256").getAsString(), ultraRecord.get("beforeSha256").getAsString());
+    }
+
+    @Test
     void battleVolumeReportCoversEveryBattleBgmAtSixtyPercent() throws Exception {
         Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
         var report = JsonParser.parseString(Files.readString(
@@ -156,6 +211,8 @@ final class OfficialMusicLineupTest {
         assertEquals(0.6, report.get("multiplier").getAsDouble());
         var tracks = report.getAsJsonArray("tracks");
         assertEquals(61, tracks.size());
+        var currentReport = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/all-bgm-alert-volume-2026-10-11.json"))).getAsJsonObject();
         Path battleDirectory = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds/music/battle");
         Set<String> actual;
         try (var files = Files.walk(battleDirectory)) {
@@ -168,8 +225,13 @@ final class OfficialMusicLineupTest {
             var track = element.getAsJsonObject();
             String name = track.get("target").getAsString();
             assertTrue(reported.add(name), "duplicate: " + name);
+            var current = java.util.stream.StreamSupport.stream(currentReport.getAsJsonArray("tracks").spliterator(), false)
+                .map(item -> item.getAsJsonObject())
+                .filter(item -> item.get("target").getAsString().equals("music/battle/" + name))
+                .findFirst().orElseThrow();
+            assertEquals(track.get("afterSha256").getAsString(), current.get("beforeSha256").getAsString(), name);
             byte[] audio = Files.readAllBytes(battleDirectory.resolve(name));
-            assertEquals(track.get("afterSha256").getAsString(),
+            assertEquals(current.get("afterSha256").getAsString(),
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)), name);
             assertEquals(20 * Math.log10(0.6),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.3, name);
@@ -216,7 +278,14 @@ final class OfficialMusicLineupTest {
             pvp.get("beforeSha256").getAsString());
         byte[] audio = Files.readAllBytes(temporaryDirectory.resolve(
             "pack/assets/better_cobblemon_music/sounds/music/battle/pvp/pokemon_champions_arena_battle.ogg"));
-        assertEquals(pvp.get("afterSha256").getAsString(),
+        var current = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/all-bgm-alert-volume-2026-10-11.json"))).getAsJsonObject();
+        var currentPvp = java.util.stream.StreamSupport.stream(current.getAsJsonArray("tracks").spliterator(), false)
+            .map(element -> element.getAsJsonObject())
+            .filter(track -> track.get("target").getAsString().equals("music/battle/pvp/pokemon_champions_arena_battle.ogg"))
+            .findFirst().orElseThrow();
+        assertEquals(pvp.get("afterSha256").getAsString(), currentPvp.get("beforeSha256").getAsString());
+        assertEquals(currentPvp.get("afterSha256").getAsString(),
             HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
     }
 

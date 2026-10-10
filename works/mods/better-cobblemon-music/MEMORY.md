@@ -1,5 +1,12 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-11 02:47] 차원곡 복구와 공식 BGM·경고음 파일 음량 조정
+
+- 빡대리님 요청대로 현재 `main` 작업본에 울트라스페이스·고대·미래 차원(`cobblemon_dimensions:ultra_space`/`ancient`/`future`)의 `울트라데저트` 매핑과 OGG를 이식했다. 이전 브랜치 `71714d25`의 직접 cherry-pick은 충돌로 중단하고 현재 매핑을 보존했다.
+- 공식 팩의 BGM 88곡과 저체력 경고음 1개 OGG를 각각 직전 파일 대비 0.5배로 조정했다. 타격음 3개는 변경하지 않았다. `tools/scale_all_bgm_and_alert.py`와 `resource-pack/all-bgm-alert-volume-2026-10-11.json`으로 변환 전후 해시, 44.1kHz·Vorbis 형식, 길이와 RMS를 검증했다. 실측 RMS 감소폭은 -5.93~-6.065dB이며, 재실행 시 중복 감쇠를 차단한다.
+- F 드라이브의 검증 작업 폴더에서 `:better-cobblemon-music:build`가 성공하고 JUnit 178/178개가 통과했다. 이는 소스·빌드 검증이며 실게임 청취 결과가 아니다.
+- 이 기록 시점에 `main` 커밋·`origin/main` 푸시, 개발 클라이언트 JAR·ZIP 배치, 실게임 재생·청취는 아직 완료되지 않았다.
+
 ## [2026-10-10 17:16] 태그 기반 바이옴 음악 개발 클라이언트 적용
 
 - 공식 바이옴 판정 변경 커밋 `a35d6c76f49ee04f9b1bec2f9cdd8571d66f03c8`이 빌드 전에 `main`과 `origin/main`에 동일하게 반영된 것을 확인했다. 이후 같은 저장소의 다른 작업으로 현재 HEAD가 더 진행됐으므로 이 SHA는 이번 Music 변경의 기준 커밋이다.

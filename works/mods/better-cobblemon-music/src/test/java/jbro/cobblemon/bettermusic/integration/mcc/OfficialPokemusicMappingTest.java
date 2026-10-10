@@ -67,8 +67,9 @@ final class OfficialPokemusicMappingTest {
                     continue; // Historical imports superseded by later field-song changes.
                 }
                 Path audio = pack.resolve("assets/better_cobblemon_music/sounds/music/" + report.get("target").getAsString());
-                assertEquals(report.get("outputSha256").getAsString(), sha256(audio), audio.toString());
-                assertEquals(report.get("output_bytes").getAsLong(), Files.size(audio));
+                var gain = volumeTrack("music/" + report.get("target").getAsString());
+                assertEquals(report.get("outputSha256").getAsString(), gain.get("beforeSha256").getAsString(), audio.toString());
+                assertEquals(gain.get("afterSha256").getAsString(), sha256(audio), audio.toString());
                 assertEquals(1, report.get("logical_streams").getAsInt());
                 assertEquals(2, report.get("channels").getAsInt());
                 assertEquals(44100, report.get("sample_rate").getAsInt());
@@ -77,16 +78,16 @@ final class OfficialPokemusicMappingTest {
             assertEquals(19, preserved);
         }
         Path newPlazaSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/jubilife_city_day.ogg");
-        assertEquals("eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105", sha256(newPlazaSong));
-        assertEquals(1_577_176L, Files.size(newPlazaSong));
+        assertScaledImport(newPlazaSong, "music/field/plaza/jubilife_city_day.ogg",
+            "eee2e22e674c3d89d158efb8d795d3d509c9dd5708d0cb08a1b59275a7e9f105");
         assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/plaza/route_1.ogg")));
         Path newBadlandsSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/badlands/mt_pyre_exterior.ogg");
-        assertEquals("eb72dd859b0414a561a3bc5a698acb207e3884bf7841310503b1214df78f586d", sha256(newBadlandsSong));
-        assertEquals(3_123_415L, Files.size(newBadlandsSong));
+        assertScaledImport(newBadlandsSong, "music/field/badlands/mt_pyre_exterior.ogg",
+            "eb72dd859b0414a561a3bc5a698acb207e3884bf7841310503b1214df78f586d");
         assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/badlands/abandoned_ship.ogg")));
         Path newJungleSong = pack.resolve("assets/better_cobblemon_music/sounds/music/field/jungle/southern_jungle.ogg");
-        assertEquals("c5c56db75348d7b484a96af4313ec2e0ce8904d8a9be2107fc9efb605820f851", sha256(newJungleSong));
-        assertEquals(1_208_958L, Files.size(newJungleSong));
+        assertScaledImport(newJungleSong, "music/field/jungle/southern_jungle.ogg",
+            "c5c56db75348d7b484a96af4313ec2e0ce8904d8a9be2107fc9efb605820f851");
         assertFalse(Files.exists(pack.resolve("assets/better_cobblemon_music/sounds/music/field/jungle/route_210.ogg")));
         assertEquals("3a0b977babf57f6ea5d3da04f0da85596d1fa2d50fe69f7f1c1064a91aa5666b",
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/normal.ogg")));
@@ -94,9 +95,9 @@ final class OfficialPokemusicMappingTest {
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/not_very_effective.ogg")));
         assertEquals("ac569053487563e8f037e4e984f29f5ad1b34fd5b78cf8339e0a2313a43e5b8b",
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg")));
-        assertEquals("b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad",
-            sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg")));
-        assertEquals(87, compiled.trackEvents().size());
+        assertScaledImport(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg"),
+            "battle/low_hp/alert.ogg", "b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad");
+        assertEquals(88, compiled.trackEvents().size());
     }
 
     @Test
@@ -279,5 +280,20 @@ final class OfficialPokemusicMappingTest {
 
     private static String sha256(Path file) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));
+    }
+
+    private static com.google.gson.JsonObject volumeTrack(String target) throws Exception {
+        var volumeReport = JsonParser.parseString(Files.readString(module.resolve(
+            "resource-pack/all-bgm-alert-volume-2026-10-11.json"))).getAsJsonObject();
+        return java.util.stream.StreamSupport.stream(volumeReport.getAsJsonArray("tracks").spliterator(), false)
+            .map(item -> item.getAsJsonObject())
+            .filter(item -> item.get("target").getAsString().equals(target))
+            .findFirst().orElseThrow();
+    }
+
+    private static void assertScaledImport(Path audio, String target, String originalHash) throws Exception {
+        var gain = volumeTrack(target);
+        assertEquals(originalHash, gain.get("beforeSha256").getAsString(), target);
+        assertEquals(gain.get("afterSha256").getAsString(), sha256(audio), target);
     }
 }

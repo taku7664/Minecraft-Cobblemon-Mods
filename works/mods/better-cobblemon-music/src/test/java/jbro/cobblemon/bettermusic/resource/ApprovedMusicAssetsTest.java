@@ -26,7 +26,7 @@ final class ApprovedMusicAssetsTest {
         JsonObject playlists = catalog.getAsJsonObject("playlists");
         Set<String> approved = new HashSet<>(read(module.resolve("resource-pack/catalog-layout.json"))
             .getAsJsonObject("trackTitles").keySet());
-        assertEquals(87, approved.size());
+        assertEquals(88, approved.size());
         assertEquals(approved, catalog.getAsJsonObject("tracks").keySet(), "Unrequested BGM must not be packaged");
 
         Set<String> mapped = new HashSet<>();
