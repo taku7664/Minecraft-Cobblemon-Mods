@@ -1,11 +1,12 @@
 # Better Cobblemon Music 작업 기록
 
-## [2026-10-11 02:47] 차원곡 복구와 공식 BGM·경고음 파일 음량 조정
+## [2026-10-11 02:47] 차원곡 복구와 공식 BGM·경고음 음량 조정 및 개발 클라이언트 적용
 
 - 빡대리님 요청대로 현재 `main` 작업본에 울트라스페이스·고대·미래 차원(`cobblemon_dimensions:ultra_space`/`ancient`/`future`)의 `울트라데저트` 매핑과 OGG를 이식했다. 이전 브랜치 `71714d25`의 직접 cherry-pick은 충돌로 중단하고 현재 매핑을 보존했다.
 - 공식 팩의 BGM 88곡과 저체력 경고음 1개 OGG를 각각 직전 파일 대비 0.5배로 조정했다. 타격음 3개는 변경하지 않았다. `tools/scale_all_bgm_and_alert.py`와 `resource-pack/all-bgm-alert-volume-2026-10-11.json`으로 변환 전후 해시, 44.1kHz·Vorbis 형식, 길이와 RMS를 검증했다. 실측 RMS 감소폭은 -5.93~-6.065dB이며, 재실행 시 중복 감쇠를 차단한다.
-- F 드라이브의 검증 작업 폴더에서 `:better-cobblemon-music:build`가 성공하고 JUnit 178/178개가 통과했다. 이는 소스·빌드 검증이며 실게임 청취 결과가 아니다.
-- 이 기록 시점에 `main` 커밋·`origin/main` 푸시, 개발 클라이언트 JAR·ZIP 배치, 실게임 재생·청취는 아직 완료되지 않았다.
+- Music 구현 커밋 `670e3e240dfd9d937b607832537439522f27c739`은 `origin/main`에 푸시됐고, 이후 진행된 `origin/main`에도 포함된다. 해당 커밋의 Music 파일과 동일한 F 드라이브 작업트리에서 커밋 후 `:better-cobblemon-music:build`가 32초에 성공하고 JUnit 178/178개가 통과했다.
+- 빌드본 SHA-256은 JAR `234E1F342AB0EABE4E4B804E99202C45C4781BF20D8560AFCC29836FC1057D21`, ZIP `5FF780871F16570CCE13E97140713B18EAC9D12516E670E3D4D10C669D87EEC3`이다. 게임 프로세스가 없음을 확인한 뒤 개발 클라이언트의 같은 이름 JAR·ZIP과 압축 해제 팩 폴더의 95개 파일을 교체했다. 설치 JAR·ZIP 해시는 빌드본과 일치한다.
+- 소스·빌드·파일 배치는 확인했으나 실게임 재생·청취는 아직 확인하지 않았다.
 
 ## [2026-10-10 17:16] 태그 기반 바이옴 음악 개발 클라이언트 적용
 
