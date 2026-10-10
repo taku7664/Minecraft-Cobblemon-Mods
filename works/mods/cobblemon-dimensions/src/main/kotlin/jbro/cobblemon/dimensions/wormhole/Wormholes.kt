@@ -104,18 +104,32 @@ object Wormholes {
             if (inUltraSpace) {
                 if (random.nextDouble() < 1.0 / (settings.returnEveryMinutes * checksPerMinute)) {
                     open(level, player.blockPosition(), 6, 16, settings.returnRadius, settings.returnSeconds, returning = true)
+                        ?.let { notifyNearby(player, it) }
                 }
             } else if (random.nextDouble() < 1.0 / (settings.personalEveryMinutes * checksPerMinute)) {
                 open(level, player.blockPosition(), 6, 16, settings.personalRadius, settings.personalSeconds, returning = false)
+                    ?.let { notifyNearby(player, it) }
             }
         }
 
         if (overworldPlayers.isNotEmpty() && random.nextDouble() < 1.0 / (settings.greatEveryMinutes * checksPerMinute)) {
             val near = overworldPlayers[random.nextInt(overworldPlayers.size)]
             if (open(server.overworld(), near.blockPosition(), 48, 128, settings.greatRadius, settings.greatSeconds, returning = false) != null) {
-                server.playerList.broadcastSystemMessage(Component.translatable("message.cobblemon_dimensions.great_wormhole")
-                    .withStyle(ChatFormatting.LIGHT_PURPLE), false)
+                announceGreat(server)
             }
         }
+    }
+
+    /** A small hole is only for the player it opened by: a line over the hotbar and a soft sound, no coordinates. */
+    fun notifyNearby(player: ServerPlayer, hole: UltraWormhole) {
+        val key = if (hole.returning) "message.cobblemon_dimensions.return_wormhole" else "message.cobblemon_dimensions.small_wormhole"
+        player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.LIGHT_PURPLE), true)
+        player.playNotifySound(SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 0.35f, 1.6f)
+    }
+
+    /** A great hole is told to the whole server, without saying where. */
+    fun announceGreat(server: MinecraftServer) {
+        server.playerList.broadcastSystemMessage(Component.translatable("message.cobblemon_dimensions.great_wormhole")
+            .withStyle(ChatFormatting.LIGHT_PURPLE), false)
     }
 }

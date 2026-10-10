@@ -27,5 +27,7 @@
   "entity.cobblemon_dimensions.ultra_wormhole": "Ultra Wormhole",
   "message.cobblemon_dimensions.not_worthy": "It seems you are not yet worthy of entering.",
   "message.cobblemon_dimensions.great_wormhole": "A great Ultra Wormhole has opened somewhere in the sky!",
+  "message.cobblemon_dimensions.small_wormhole": "An Ultra Wormhole has opened in the sky nearby!",
+  "message.cobblemon_dimensions.return_wormhole": "A way home has opened in the sky nearby!",
   "command.cobblemon_dimensions.no_sky": "No open sky nearby for a wormhole."
 }

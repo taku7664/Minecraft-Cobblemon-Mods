@@ -74,21 +74,50 @@ object DimensionTravel {
         return if (free && y - ground <= 3) y else ground
     }
 
-    /** Islands leave gaps of void, so landing searches outward in a spiral for a column with ground. */
+    /**
+     * Islands leave gaps of void, so landing searches outward in a spiral. It wants broad, level ground at an ordinary
+     * height: Ultra Space hangs small sky islands and lone peaks above the main islands, and the top of a column is
+     * often one of those. Failing that within [PREFERRED_RINGS], broad ground at any height, then any dry ground.
+     */
     private fun findLanding(level: ServerLevel, x: Int, z: Int): BlockPos? {
         val step = 16
+        var broad: BlockPos? = null
+        var any: BlockPos? = null
         for (ring in 0..16) {
+            if (ring > PREFERRED_RINGS && (broad ?: any) != null) break
             for (dx in -ring..ring) for (dz in -ring..ring) {
                 if (maxOf(kotlin.math.abs(dx), kotlin.math.abs(dz)) != ring) continue
                 val cx = x + dx * step
                 val cz = z + dz * step
                 val top = surfaceY(level, cx, cz)
-                val ground = BlockPos(cx, top - 1, cz)
-                if (top > level.minBuildHeight + 1 && level.getFluidState(ground).isEmpty) return BlockPos(cx, top, cz)
+                if (top <= level.minBuildHeight + 1 || !level.getFluidState(BlockPos(cx, top - 1, cz)).isEmpty) continue
+                val spot = BlockPos(cx, top, cz)
+                if (any == null) any = spot
+                if (ring > PREFERRED_RINGS || !isBroad(level, cx, top, cz)) continue
+                if (top <= LANDING_MAX_Y) return spot
+                if (broad == null) broad = spot
             }
         }
-        return null
+        return broad ?: any
     }
+
+    /** Dry ground at about the same height all around, so the spot is not the tip of a small island. */
+    private fun isBroad(level: ServerLevel, x: Int, top: Int, z: Int): Boolean {
+        for (dx in -1..1) for (dz in -1..1) {
+            if (dx == 0 && dz == 0) continue
+            val nx = x + dx * BROAD_REACH
+            val nz = z + dz * BROAD_REACH
+            val nTop = surfaceY(level, nx, nz)
+            if (kotlin.math.abs(nTop - top) > BROAD_STEP || !level.getFluidState(BlockPos(nx, nTop - 1, nz)).isEmpty) return false
+        }
+        return true
+    }
+
+    /** Main-island ground sits near overworld heights; sky islands float from about y 120 up. */
+    private const val LANDING_MAX_Y = 118
+    private const val PREFERRED_RINGS = 8
+    private const val BROAD_REACH = 8
+    private const val BROAD_STEP = 6
 
     /**
      * The first free block above the ground at [x], [z]. `Level.getHeight` reports the world's bottom for a chunk that
