@@ -12,7 +12,7 @@
 - **구현:** 셋업 0.1.14. `KeybindingSetup`에 `iris` 규칙(`key_iris.keybind.reload` → unknown, 기록 `keybindings-iris-v1`)을 추가했다. `RoundingBlockSetup`은 `rounding_block`이 있을 때 `enabled=false`를 최초 한 번 적용하고(`rounding-block-disabled-v1`) 다른 값은 유지한다. 잘못된 JSON은 덮어쓰지 않고 다음 실행에 재시도한다. 테스트 `RoundingBlockSetupTest`와 Iris 키 테스트를 추가했다.
 - **빌드:** 사용자 지시로 `main` `7d51ad67`에서 빌드했다(테스트 제외 `-x unitTest`). JAR 무결성, 0.1.14 메타데이터, `RoundingBlockSetup` 클래스와 Iris 키 문자열 포함을 확인했다.
 - **개발 클라이언트 배포:** `develop-product/client/mods`에 0.1.14를 넣고 0.1.13은 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.14/`로 옮겼다. SHA-256 `7F46B56059A31CF504E6A3C1908338105F0FBA3A3FE61B87F7DB19591ADBB620`.
-- **미확인:** 새 단위 테스트는 실행하지 않았다. 실게임 적용(다음 클라이언트 시작)도 확인하지 않았다. 운영 저장소에는 클라이언트 모드 폴더가 없어 배치하지 않았다.
+- **미확인:** 새 단위 테스트는 실행하지 않았다. 실게임 적용(다음 클라이언트 시작)도 확인하지 않았다. 배포 클라이언트 폴더 `deploy-product/client`에도 사용자 요청으로 같은 해시의 0.1.14를 넣었다. 옛 `client-mods`는 옛 서버 저장소 경로라서 지금은 쓰지 않는다.
 
 ## [2026-10-08 00:34] Accessories 화면 열기 기본 단축키 해제
 
