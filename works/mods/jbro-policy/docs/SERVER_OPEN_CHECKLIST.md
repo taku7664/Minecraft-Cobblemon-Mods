@@ -4,7 +4,7 @@
 
 | 항목 | 값 |
 |---|---|
-| Last reviewed | 2026-10-08 |
+| Last reviewed | 2026-10-11 |
 | 기준 서버 | 저장소의 `develop-product/server` |
 
 ## 필수 설정
@@ -16,10 +16,12 @@
 | `config/more-cobblemon-contents/hub_tabs.json` | `command_permission_level` | `0` | 모든 플레이어가 `/mcc`로 허브(대시보드·상점·PvP)를 연다. `/mcc` 아래 관리 명령은 이 값과 관계없이 OP 전용이다. `[안내]`의 상점·PvP 안내가 `/mcc`를 소개한다. |
 | `config/more-cobblemon-contents/hub_tabs.json` | `terminals."more_cobblemon_contents:holo_battle_terminal"` | `["more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:pvp"]` | 본체 홀로 배틀 터미널은 `/mcc`처럼 대시보드·상점·PvP만 연다. 리그·배틀타워·배틀팩토리는 각자 터미널에서 연다. 2026-10-04 이전에 만들어진 파일에는 여섯 탭이 모두 저장돼 있으니 이 값으로 고친다. |
 | `config/styled-nicknames.json` | `nicknameFormat` | `"${nickname}"` | 기본값 `"#${nickname}"`이면 채팅 이름 앞에 `#`이 붙는다. `#`은 닉네임과 본래 이름을 구분하는 표시라서, 빼면 다른 사람 이름을 흉내 낸 닉네임을 구분하기 어려워진다. |
+| `config/styled-nicknames.json` | `changePlayerListName` | `true` | 기본값 `false`면 Tab 접속자 목록에 닉네임 대신 계정 이름이 뜬다. |
 | `config/jbro-policy.json` | `tips`, `tipIntervalSeconds` | 코드 기본 안내 목록, `60` | 기본 1분마다 나오는 `[안내]` 목록이다. 파일이 없으면 코드 기본값으로 만들어진다. 기존 파일도 초기 설정 시 간격을 60초로 맞추며, 이후 운영자가 목록과 간격을 바꿀 수 있다. |
 | `config/jbro-policy-discord.json` | `botToken`, `inquiryChannelId`, `statusChannelId`, `newsChannelId`, `webhookUrl` | 서버 디스코드 봇의 토큰, 문의·상태·소식 채널 ID, 또는 문의용 웹훅 주소 | 봇 토큰이 있으면 서버가 켜져 있는 동안 봇이 온라인으로 뜨고, 상태 채널에 시작·정상 종료 때마다 새 채팅 메시지를 보낸다. 문의는 봇과 채널이 있으면 봇이, 없으면 웹훅이 올린다. 문의 채널과 웹훅이 모두 비어 있으면 문의(`/문의`, 위키 문의하기)가 꺼진다. 토큰과 주소는 이 문서나 저장소에 적지 않는다. |
 | `config/jbro-policy-discord.json` | `verifiedRoleId`, `syncNickname` | 마크 인증을 마친 사람에게 줄 역할 ID, `true` | 비어 있으면 `/디코인증`과 `/verify`가 꺼진다. `@everyone`은 `#인증` 채널만 보고, 인증 역할이 나머지 채널을 보게 디스코드 권한을 맞춘다. 봇 역할은 인증 역할보다 위에 두고 역할 관리·별명 관리 권한을 준다. 문의 채널에서는 봇에게 비공개 스레드 만들기·스레드에서 메시지 보내기·스레드 관리를 준다. |
 | `config/jbro-policy-discord.json` | `commandChannelId` | 플레이어용 봇 명령 채널 ID | 비어 있으면 봇 명령을 어느 채널에서나 받는다. 다른 채널은 `@everyone`의 "애플리케이션 명령 사용"을 꺼서 명령 목록을 숨긴다(인증·관리자 채널은 제외). |
+| `config/jbro-policy-discord.json` | `inviteUrl` | `https://discord.gg/HbKxTFeGB` | `/디코인증`이 코드와 함께 서버 디스코드 초대 링크를 보여 준다. 비어 있으면 링크 없이 코드만 나온다. `https://discord.gg/` 또는 `https://discord.com/invite/` 형식이 아니면 디스코드 설정 전체가 꺼진다. |
 | `config/jbro-policy-discord.json` | `rankRoleIds` | 리그 등급(`POKE_BALL`~`CHAMPION`)별 디스코드 역할 ID | 비어 있으면 등급 역할을 맞추지 않는다. 디스코드 역할 목록에서 봇 역할을 맨 위로 올려 둔다. 봇은 자기 역할보다 아래 역할만 주고 뗄 수 있다. |
 | `config/jbro-policy-discord.json` | `adminChannelId`, `adminAccess` | 관리자 명령을 받을 비공개 채널 ID, 운영진 디스코드 사용자·역할 ID별로 쓸 수 있는 명령 | 비어 있으면 디스코드 관리자 명령(`/announce`, `/players`, `/ban`, `/bp`, `/give`, `/spawn`, `/console`)이 꺼진다. 채널은 운영진만 볼 수 있게 만든다. `/console`은 서버 콘솔과 같은 권한이므로 꼭 필요한 사람에게만 준다. 문의 검토의 "처리 완료" 버튼을 누를 사람에게는 `resolve`를 준다. |
 | `config/jbro-policy-inquiry-review.json` | `enabled`, `command`, `model` | `true`, `agy`, `gemini-3.8-flash-low` | 문의를 Antigravity CLI로 로그와 대조한다. 서버를 실행하는 Windows 계정에서 `agy`를 설치하고 로그인해 둬야 한다. 봇 토큰, 문의 채널, 관리자 채널이 모두 있어야 켜진다. 문의 채널은 공개해도 되고(카드와 요약 답글만 올라감), 관리자 채널은 비공개로 둔다. |

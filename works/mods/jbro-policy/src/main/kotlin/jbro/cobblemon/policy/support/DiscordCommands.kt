@@ -107,7 +107,10 @@ internal object DiscordCommands {
         override val description = "지금 서버에 접속한 트레이너"
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject {
-            val names = server.playerList.players.map { it.gameProfile.name }.sortedBy { it.lowercase() }
+            // Players know each other by their Styled Nicknames nickname, which is the display name.
+            val names = server.playerList.players
+                .map { player -> KoreanText.render(player.displayName ?: player.name).ifBlank { player.gameProfile.name } }
+                .sortedBy { it.lowercase() }
             val text = if (names.isEmpty()) "지금은 접속한 트레이너가 없어요." else "지금 ${names.size}명 접속 중이에요.\n" + names.joinToString(", ")
             return DiscordRest.message(text)
         }

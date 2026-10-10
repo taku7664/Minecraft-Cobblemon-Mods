@@ -83,6 +83,7 @@
   "message.jbro_policy.legends.reset_none": "%1$s에게는 %2$s 포획 기록이 없습니다.",
   "message.jbro_policy.discord_link.code": "디스코드에서 /verify %1$s 를 입력하세요. 코드는 %2$s분 동안 쓸 수 있습니다.",
   "message.jbro_policy.discord_link.copy": "눌러서 /verify 명령 복사",
+  "message.jbro_policy.discord_link.invite": "아직 빡켓몬 디스코드에 없다면 먼저 들어오세요: %s",
   "message.jbro_policy.discord_link.done": "디스코드 계정 %s과(와) 연결했습니다.",
   "message.jbro_policy.pending_items": "디스코드에서 운영진이 보낸 아이템 %s개를 받았습니다.",
   "message.jbro_policy.spawn_for.done": "%2$s 앞에 %1$s을(를) 스폰했습니다.",

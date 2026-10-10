@@ -61,6 +61,12 @@ internal object DiscordLinks {
                                 .withClickEvent(ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "/verify $code"))
                                 .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, KoreanText.message(KEY + "copy")))
                         }, CODE_MINUTES).withStyle(ChatFormatting.GREEN))
+                    // Players who have not joined the Discord yet need the way in before /verify means anything.
+                    if (settings.inviteUrl.isNotBlank()) player.sendSystemMessage(KoreanText.message(KEY + "invite",
+                        Component.literal(settings.inviteUrl).withStyle { style ->
+                            style.withColor(ChatFormatting.AQUA).withUnderlined(true)
+                                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, settings.inviteUrl))
+                        }).withStyle(ChatFormatting.GREEN))
                     1
                 }.then(Commands.literal("linked")
                     // 1 when the player has linked Discord, 0 when not; an NPC dialogue asks it (`cmd:디코인증 linked`).

@@ -104,6 +104,7 @@ object Plaza {
         val landing = if (point != null && level != null) SafeLanding.find(level, player, point.x, point.y, point.z) else null
         if (point != null && level != null && landing != null) {
             player.teleportTo(level, landing.first, landing.second, landing.third, point.yaw, point.pitch)
+            land(player)
             points.remove(player.uuid)
             player.sendSystemMessage(message(reason).withStyle(ChatFormatting.GREEN))
             return
@@ -113,6 +114,7 @@ object Plaza {
         val (x, y, z) = SafeLanding.find(target, player, pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
             ?: Triple(pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5)
         player.teleportTo(target, x, y, z, player.yRot, player.xRot)
+        land(player)
         points.remove(player.uuid)
         val why = when {
             point == null -> "returned_to_spawn"
@@ -120,6 +122,16 @@ object Plaza {
             else -> "return_blocked"
         }
         player.sendSystemMessage(message(why).withStyle(ChatFormatting.YELLOW))
+    }
+
+    /**
+     * Ends the fall the player was in. A fall into the plaza's void is a long one that the plaza's damage rule kept
+     * harmless; carried home, it would be paid in full on the first block they touch.
+     */
+    private fun land(player: ServerPlayer) {
+        player.resetFallDistance()
+        player.deltaMovement = player.deltaMovement.multiply(1.0, 0.0, 1.0)
+        player.setOnGround(true)
     }
 
     /** A 9x9 stone brick floor under the landing spot, so a fresh plaza is not a drop into the void. */

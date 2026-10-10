@@ -26,6 +26,15 @@ class DiscordWebhookTest {
     }
 
     @Test
+    fun `the invite is read from the config and takes only Discord invite links`() {
+        assertEquals("", DiscordSettings().inviteUrl)
+        assertEquals("https://discord.gg/HbKxTFeGB", DiscordSettings.parse("""{"inviteUrl": " https://discord.gg/HbKxTFeGB "}""").inviteUrl)
+        DiscordSettings(inviteUrl = "https://discord.com/invite/HbKxTFeGB")
+        assertThrows<IllegalArgumentException> { DiscordSettings(inviteUrl = "https://example.com/HbKxTFeGB") }
+        assertThrows<IllegalArgumentException> { DiscordSettings(inviteUrl = "discord.gg/HbKxTFeGB") }
+    }
+
+    @Test
     fun `with a channel the bot posts inquiries, without one the webhook does`() {
         val url = "https://discord.com/api/webhooks/1/x"
         assertEquals(DiscordSettings.InquiryRoute.Bot("T", "42"), DiscordSettings(url, "T", "42").inquiryRoute)

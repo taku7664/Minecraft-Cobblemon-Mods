@@ -30,6 +30,7 @@ import jbro.cobblemon.policy.JbroPolicy
  * @property commandChannelId the only channel where the bot answers players' commands (/접속자, /전적 and so on);
  *   blank answers them anywhere. `/verify` and the operator commands keep their own channels.
  * @property rankRoleIds the Discord role for each League rank (`POKE_BALL` to `CHAMPION`), kept in step with the game.
+ * @property inviteUrl the server's Discord invite, shown with the `/디코인증` code; blank shows none.
  */
 data class DiscordSettings(
     val webhookUrl: String = "",
@@ -43,6 +44,7 @@ data class DiscordSettings(
     val syncNickname: Boolean = true,
     val rankRoleIds: Map<String, String> = emptyMap(),
     val commandChannelId: String = "",
+    val inviteUrl: String = "",
 ) {
     val botConfigured: Boolean get() = botToken.isNotBlank()
 
@@ -72,12 +74,15 @@ data class DiscordSettings(
         require(rankRoleIds.values.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Rank roles are Discord role IDs" }
         require(adminAccess.keys.all { it.isNotEmpty() && it.all(Char::isDigit) }) { "Admin access is keyed by Discord user or role IDs" }
         require(botToken.none(Char::isWhitespace)) { "The bot token cannot contain spaces" }
+        require(inviteUrl.isBlank() || INVITE.matches(inviteUrl)) { "The invite is a https://discord.gg/ or https://discord.com/invite/ link" }
     }
 
     companion object {
         private val gson = GsonBuilder().setPrettyPrinting().create()
         val RANKS = listOf("POKE_BALL", "GREAT_BALL", "ULTRA_BALL", "MASTER_BALL", "CHAMPION")
         private val WEBHOOK = Regex("https://(?:(?:canary|ptb)\\.)?discord(?:app)?\\.com/api/webhooks/\\d+/[A-Za-z0-9_-]+")
+
+        private val INVITE = Regex("https://(?:discord\\.gg|(?:www\\.)?discord(?:app)?\\.com/invite)/[A-Za-z0-9-]+")
 
         fun isWebhookUrl(value: String): Boolean = WEBHOOK.matches(value)
 
@@ -91,7 +96,7 @@ data class DiscordSettings(
                 text("newsChannelId"), text("adminChannelId"), access, text("verifiedRoleId"),
                 root.get("syncNickname")?.asBoolean ?: true,
                 root.getAsJsonObject("rankRoleIds")?.entrySet()?.associate { (rank, role) -> rank.trim() to role.asString.trim() }.orEmpty(),
-                text("commandChannelId"))
+                text("commandChannelId"), text("inviteUrl"))
         }
 
         /** Writes an empty template when the file is missing; a broken file turns Discord off without being touched. */
