@@ -253,18 +253,12 @@ final class KeybindingSetupTest {
     }
 
     @Test void irisShaderReloadKeyClearsOnceAndKeepsOtherIrisKeys() throws Exception {
-        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r
-key_iris.keybind.toggleShaders:key.keyboard.k
-");
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r\nkey_iris.keybind.toggleShaders:key.keyboard.k\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
-        assertEquals("key_iris.keybind.reload:key.keyboard.unknown
-key_iris.keybind.toggleShaders:key.keyboard.k
-",
+        assertEquals("key_iris.keybind.reload:key.keyboard.unknown\nkey_iris.keybind.toggleShaders:key.keyboard.k\n",
             Files.readString(optionsFile()));
-        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r
-");
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r\n");
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
-        assertEquals("key_iris.keybind.reload:key.keyboard.r
-", Files.readString(optionsFile()));
+        assertEquals("key_iris.keybind.reload:key.keyboard.r\n", Files.readString(optionsFile()));
     }
 }
