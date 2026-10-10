@@ -32,6 +32,12 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             LOGGER.error("Could not apply CLC HUD default; initialization will retry next launch", exception);
         }
         try {
+            int applied = OptionsSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);
+            if (applied > 0) LOGGER.info("Applied {} first-launch option defaults (language, resource packs, shader)", applied);
+        } catch (IOException exception) {
+            LOGGER.error("Could not apply first-launch option defaults; initialization will retry next launch", exception);
+        }
+        try {
             int applied = KeybindingSetup.apply(loader.getGameDir(), loader.getConfigDir(),
                 installedMods);
             if (applied > 0) LOGGER.info("Applied keybinding cleanup for {} installed mods", applied);

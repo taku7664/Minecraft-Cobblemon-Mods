@@ -61,6 +61,14 @@ Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTT
 파일이 이미 `BUTTONS`이면 다시 쓰지 않으며, 다른 값과 주석은 유지합니다.
 기존 TOML을 다시 작성할 때는 들여쓰기와 줄바꿈이 정리될 수 있습니다.
 
+## 첫 실행 기본 옵션
+
+모드팩에 `options.txt`·`optionsshaders.txt`를 넣으면 팩을 업데이트할 때마다 플레이어 설정을 덮어쓸 수 있어서, 팩에서는 두 파일을 빼고 이 훅이 처음 한 번만 기본값을 넣습니다. 그 뒤에는 플레이어가 바꾼 값을 그대로 둡니다.
+
+- `options.txt`(`options-defaults-v1`): `lang:ko_kr`, `skipMultiplayerWarning:true`, `joinedFirstServer:true`, `tutorialStep:none`. `resourcePacks`에서 팩 기본 리소스팩 10개(알림음, CCC, 한국어 번역, 음악, Galmuri, Whimscape 두 종, RCT Trainers+, MoreRadicalTextures, E19 Xaero 아이콘)를 이 순서로 켭니다. `resourcepacks/`에 실제로 있는 파일만 켜고, 이름은 패턴으로 찾으므로 버전이 바뀌어도 잡힙니다. 같은 팩의 옛 버전 항목은 빼고, 플레이어가 따로 켠 팩과 모드 내장 팩은 유지합니다.
+- `optionsshaders.txt`(`shader-defaults-v1`): Iris가 있고 `shaderpacks/`에 LumaVale이 있으면 가장 높은 버전을 `shaderPack`으로 넣고 `enableShaders=true`로 켭니다. LumaVale이 아직 없으면 표시하지 않고 다음 실행에 다시 시도합니다.
+- 매 실행: `shaderPack`이 설치되지 않은 LumaVale 파일을 가리키면 설치된 LumaVale로 바꿉니다. 켜짐·꺼짐과 다른 셰이더 선택은 건드리지 않습니다.
+
 ## Xaero 지도 설정
 
 Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기화 전에 준비합니다.
