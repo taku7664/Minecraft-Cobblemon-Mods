@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-10 19:48] DEV Discord 연결 해제·시작 훅 검사 보완
+
+- 빡대리의 명시 요청으로 개발 서버 Discord 연결을 해제했다. DEV의 TCP 25565/25566 LISTEN 및 Fabric 서버 Java 실행이 없음을 확인했으며, Java PID 34828은 JUnit 테스트 프로세스여서 그대로 보존했다.
+- `develop-product/server/config/jbro-policy-discord.json`의 `botToken`·`webhookUrl`만 빈 문자열로 바꾸고, `startup-hooks.json`에서 `discord.*` 필수 검사 10개만 제거했다. 다른 채널·역할·연결 기록 설정과 훅의 canonical 값은 원본과 동일함을 비교 확인했다. 두 설치 설정은 Git 제외 상태로 원격에 포함하지 않는다.
+- 원본은 제품 폴더 밖 `C:/Users/박주형/AppData/Local/MinecraftServerDeploy/manual-config-backups/dev-discord-20261010-194451-c0295f7d5046433b8bce7c625ccf5b0a`에 백업했고 원문·비밀값은 출력하지 않았다. 개발 서버는 기동하지 않았으며 시작 훅 `-DryRun`은 종료 코드 0(64줄)으로 통과했다.
+- 첫 교체 시 PowerShell 7의 `File.Replace(src,dst,$null)`이 빈 경로로 전달되어 `path is empty`로 실패했다. 쓰기 전 원본 두 파일의 SHA 동일을 확인했고, F 드라이브 독립 fixture에서 `[NullString]::Value`로 성공을 확인한 뒤 준비한 파일을 적용했다. 대기 파일은 남지 않았으며 실패와 보완을 사용자에게 보고했다.
+- 메인의 직접 확인 보고를 기록했으며 기록 담당자는 검증을 재실행하지 않았다. VPS는 읽기 확인에서 PID 21810·`java`·tmux `dead=0`, `productionBotConfigured=true`, 기존 상태 채널 설정을 유지했다. 운영 VPS 설정 변경이나 서버 재시작은 수행하지 않았다.
+
+---
+
 ## [2026-10-10 19:37] DEV 상태 채널 복구·서버 켜짐 알림 실제 전송 확인
 
 - **DEV 비교·단일 필드 복구:** DEV의 기존 상태 채널은 `🟢┃서버-상태`였고 VPS `statusChannelId`는 공백이었다. 기존 피츄 봇 인증을 서버 내부에서만 사용한 Discord GET으로 동일 봇·채널 접근 HTTP 200을 확인한 뒤 VPS의 해당 필드만 DEV 값으로 복구했다. 그 외 모든 설정값은 변경 전후 동일함을 확인했으며 토큰·전체 설정 원문은 출력하지 않았다. 운영 비밀 설정은 Git에서 제외한다.
