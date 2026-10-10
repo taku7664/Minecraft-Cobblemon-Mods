@@ -1,3 +1,12 @@
+# [2026-10-10 22:42] VPS 60초 JFR 성능 측정·CPU 부하 확인
+
+- 메인 직접 측정 보고: 22:29:54 온라인 3명을 확인한 뒤 PID `26662`를 Java 21 내장 `jdk.jcmd` 모듈(`java -m`, 별도 jcmd/jfr 실행 파일 없음)로 22:31:44~22:32:44 KST JFR profile 측정했다. pidstat/iostat는 22:32:20~22:33:04의 1초 45표본이다. 사용자 후속 시점은 1명이지만 60초 기록은 이미 수집했다. 코드·배포·설정·재시작 없이 JFR 자동 종료와 recording 없음, tmux `dead=0`·동일 PID 유지를 확인했다. 기록 담당자는 재측정하지 않았다.
+- ServerTickTime 59표본은 평균 38.681ms·p95 50.348ms·최대 93.148ms·50ms 초과 4개이며, 22:32:17에는 2145ms/42ticks 지연 로그가 있었다. Xeon Gold 6230 2vCPU에서 프로세스 CPU 평균 197.846%는 전체 용량의 98.9%(2코어 최대 200%), JFR machine 평균 99.226%, steal 평균 1.034%였다. CPU 합계에는 C2 JIT compiler 평균 71.834%가 포함되며 프로파일 자체의 JIT 영향과 청크 탐험 워밍업을 분리 측정하지 못했으므로 평상시 부하로 일반화하지 않는다.
+- CPU 샘플 5114개 중 WorkerMain 2904개(56.8%)는 NoiseChunkGenerator/Aquifer/Perlin 지형 생성, Server 2147개 중 PokemonEntity 507개(23.6%)·Spawner 166개(7.7%)였다(inclusive 집계는 중첩 가능). ChunkGeneration 3532단계·서로 다른 좌표 1090개는 완성 청크 수가 아니며 full 267단계의 최대 3216ms는 비동기·동시 실행을 포함한 wall duration이다. Server thread 평균 `%wait` 63.061%는 CPU 스케줄링 대기이며 디스크 I/O wait가 아니다.
+- RAM 7931MiB, Xms2G/Xmx4G에서 초기 RSS 약 3.22GiB·available 3733MiB·swap 0·memory PSI 0이었다. Heap 최대 2531MiB, GC 후 최대 2468.8MiB로 전체 메모리 압박은 관찰하지 않았다. GC pause 21개 총 986.369ms/60초·최대 85.064ms이며 concurrent G1 old 7초는 정지 7초가 아니다. 디스크 평균 write await 0.898ms·fsync 1.26ms·I/O wait 0.033%로 이 구간의 주병목 근거는 CPU·새 청크 생성과 시뮬레이션 부하 및 JIT/GC 경쟁이다.
+- `view-distance=10`, `simulation-distance=10`은 유지했다. RAM 증설보다 먼저 6/6 등 거리 축소를 별도 동일 조건 A/B로 비교하자고 제안했으며 실제 설정 변경·성능 개선·10명 수용 여부는 검증하지 않았다. 이동 되돌림·새 지역 표시 지연은 사용자 보고이며 순간 상태와 지속 프로파일을 구분한다.
+- 원본은 `/home/ubuntu/.local/share/ppakemon-profiles/20261010-223144-a7a41970/server-60s.jfr`(3,612,396bytes·0600), 로컬은 `F:/AI/scratch/ppakemon-profile-20261010-223144/`의 JFR와 `analysis-summary.json`으로 보존한다. 전체 stack 64의 allocation/threadpark를 JSON으로 펼쳐 scratch 3.13GB와 분석 지연을 만들었고 로컬 Python 분석은 exit 0으로 완료됐다. 변환 방식으로 시간을 끌었다고 사용자에게 정정했다. 해당 로컬 폴더의 `events.json`(3,132,493,877bytes) 삭제가 자동 승인 검토에서 두 번 `blocked by policy`로 거부돼 해당 방식을 중단했으며 파일은 남아 있다(세부 사유 미제공). 다음 대량 JFR은 binary consumer 또는 좁은 event subset·제한된 stack으로 분석한다.
+
 # [2026-10-10 20:09] 실제 VPS 기능 업데이트·명시적 기동·외부 연결과 시작 알림 확인
 
 - **요청·실행 경로:** 빡대리의 “일단 됐고 지금 VPS에서 풀 받아서 다시 실행” 요청에 따라 GUI 개선은 보류하고 기존 backend SSH detached update RPC(job `fff625150e444d47b142e2d6ef65cf59`)를 실행했다. 사전 조회용 일회성 `Manager.plan()` 호출은 실제 함수명 `plan_update`와 달라 실패했으나 서버 변경 없이 `dispatch(plan)`으로 정정했으며 프로그램 코드 오류는 아니었다. 프로그램 소스 변경·빌드는 하지 않았다. 아래 결과는 메인 작업자의 직접 검증 보고이며 기록 담당자는 SSH 검증을 재실행하지 않았다.
