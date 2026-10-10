@@ -31,6 +31,8 @@ object ChampionsBattleInfoOverlay {
     private const val LINE = 10
     private const val OPEN_SECONDS = 0.18
     private const val MEDIUM_CARD_HEIGHT = 66
+    /** In front of a party chip's portrait model, which Cobblemon draws a few dozen units toward the viewer. */
+    private const val PORTRAIT_FRONT_Z = 100.0
 
     private val STAT_ORDER = listOf(
         BattleStateTracker.BattleStat.ATTACK,
@@ -186,7 +188,12 @@ object ChampionsBattleInfoOverlay {
                     it, aspects), chipX, y, chip)
             }
             if (pokemon.isKO) {
+                // The portrait is a 3D model that reaches toward the viewer; at the chip's own depth the veil
+                // would sit behind it and never show.
+                context.pose().pushPose()
+                context.pose().translate(0.0, 0.0, PORTRAIT_FRONT_Z)
                 BattleSurfaceRenderer.draw(context, chipX, y, chip, chip, BattleSurface(BattleUiTheme.palette.koVeil, cornerCuts = corners))
+                context.pose().popPose()
             } else pokemon.status?.let { status ->
                 BattleSurfaceRenderer.capsule(context, chipX + chip - 5, y + chip - 5, 5, 5,
                     BattleStatusPalette.background(status.showdownName))
