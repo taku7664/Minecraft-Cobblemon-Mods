@@ -39,6 +39,12 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             LOGGER.error("Could not apply keybinding defaults; initialization will retry next launch", exception);
         }
         try {
+            int moved = XaeroWorldReset.apply(loader.getGameDir(), loader.getConfigDir());
+            if (moved > 0) LOGGER.info("Moved {} Xaero map caches of the reset live server aside", moved);
+        } catch (IOException exception) {
+            LOGGER.error("Could not move the reset live server's Xaero map caches; initialization will retry next launch", exception);
+        }
+        try {
             int applied = XaeroSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);
             if (applied > 0) LOGGER.info("Applied Xaero map preset for {} installed map mods", applied);
         } catch (IOException exception) {
