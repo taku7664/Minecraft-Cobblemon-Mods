@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-11 02:36] VPS 문의 불가 원인 확인·설정 복구·재기동
+
+- **원인(직접 확인):** VPS `config/jbro-policy-discord.json`에서 `inquiryChannelId`·`webhookUrl`이 모두 비어 있어 `/문의`가 꺼져 있었다. `adminChannelId`·`commandChannelId`·`newsChannelId`도 비었고 `inviteUrl` 키는 없었다. 개발 서버에는 모두 값이 있다. `jbro-policy/inquiries` 폴더가 없어 VPS에서 문의가 처리된 적이 없었다. agy는 `~/.local/bin/agy`에 있고 서버 Java PATH에 포함되며 로그인 토큰도 있어 원인이 아니었다(비로그인 SSH 셸의 `command -v`는 이 경로를 몰라 "없음"으로 보였다).
+- **적용:** 사용자 지시("기존 서버 기준으로 다 채우되")로 VPS의 빈 필드 5개(`inquiryChannelId`, `adminChannelId`, `commandChannelId`, `newsChannelId`, `inviteUrl`)만 개발 서버 값으로 채웠다. 다른 값은 변경 전후 동일, 파일 권한 600 유지, 원본 백업은 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-023349-discord-config/`. 값은 기록하지 않는다. 봇 토큰 GET으로 네 채널 모두 HTTP 200을 확인했다.
+- **잡담방 `/피츄`:** 사용자가 잡담방에서도 `/피츄`를 쓰게 해 달라고 했다. 디스코드 GET으로 @everyone에 애플리케이션 명령 사용 권한이 있고, 잡담 채널 덮어쓰기와 명령별 권한 제한이 없음을 확인했다. VPS JAR(`CD50991F…`)의 `DiscordQuestion`에 `anyChannel` 예외가 있어 `commandChannelId`를 채워도 잡담방 `/피츄`는 답한다. 코드·디스코드 권한 변경은 하지 않았다. 실제 잡담방에서 써 본 확인은 안 했다.
+- **재기동:** 접속자 0명(`list`) 확인 후 vps-manager `TmuxRuntime.stop()`(저장 로그 확인)·`start()`로 재기동했다. 새 PID 36925, 02:35:23 `Done (14.931s)`, TCP 25565 LISTEN, 02:35:26 봇 online, 슬래시 명령 7개→15개(관리자 명령 등록). 실제 `/문의` 전송·문의 검토 결과는 확인하지 않았다.
+
+---
+
 ## [2026-10-11] `/피츄`가 서버 위키를 근거로 답하게 함 (구현·커밋, 빌드·테스트·배포 미실행)
 
 - **사용자 신고:** 피츄가 서버 구조를 모른다. 울트라홀에 왜 못 들어가냐고 묻자 "자격이 안 된다"만 하고 이유를 설명하지 못했다.
@@ -12,7 +21,7 @@
 - **결정:** 공개 디스코드 질문에 파일 읽기 도구를 주면 프롬프트 주입으로 서버 파일을 읽힐 수 있어 도구 없음은 유지했다. 대신 `PichuWiki`가 MCC 위키 폴더(`wiki.json`의 `directory`)의 홈과 `pages/*.html` `<main>`을 텍스트로 바꿔 질문마다 프롬프트에 넣는다(상한 6만 자, 현재 약 4만 자 추정). 검색으로 일부만 고르면 빠뜨릴 수 있어 전체를 넣었다. agent.md는 바꾸지 않았다(설치본과 다르면 호출을 거부하는 검사가 있어서, 바꾸면 기존 설치 서버에서 피츄가 멈춘다).
 - **위키:** `server-wiki/pages/dimensions.html` 추가(server-wiki MEMORY 참고).
 - **검증 경계:** "빌드는 지시할 때만" 결정에 따라 Gradle 컴파일·`DiscordQuestionTest`(새 테스트 3개)·JAR 배치·실제 agy 호출·디스코드 확인은 하지 않았다. 토큰 사용량이 질문당 위키 분량만큼 늘어난다.
-- **VPS 문의 불가(미해결):** 같은 날 사용자가 "VPS 서버에서 문의가 안 된다"고 신고했다. VPS 읽기 SSH가 자동 권한 검사에서 막혀 설정·로그를 보지 못했다. 코드상 후보는 (1) VPS `jbro-policy-discord.json`의 `inquiryChannelId`·`webhookUrl`이 비어 `/문의`가 꺼짐(같은 VPS에서 `statusChannelId`가 비어 있던 전례가 있다), (2) VPS(리눅스)에 `agy`가 없거나 로그인되지 않아 문의 검토·`/피츄`가 실패, (3) 봇 권한으로 비공개 스레드·메시지 전송 실패다. 확인 전에는 원인을 단정하지 않는다.
+- **VPS 문의 불가:** 같은 날 원인 확인·복구했다(위 02:36 항목). 설정 채널 값이 비어 있던 것이 원인이었고 agy는 정상이었다.
 
 ---
 
