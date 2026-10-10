@@ -45,6 +45,22 @@ class DialogueTest {
     }
 
     @Test
+    fun `the plaza nurse confirms healing only when the heal command succeeds`() {
+        val dialogue = DialogueCodec.decode(java.io.File("docs/dialogues/plaza_nurse_joy.json").readText()).valid!!
+        val healed = Player(passing = setOf("healpokemon"))
+        val success = DialogueWalker(dialogue, healed).choose("greet", 0)!!
+        assertEquals("healed", (success.step as DialogueWalker.Step.Show).nodeId)
+        assertEquals(listOf("healpokemon"), healed.checked)
+        val blocked = Player()
+        val failure = DialogueWalker(dialogue, blocked).choose("greet", 0)!!
+        assertEquals("unavailable", (failure.step as DialogueWalker.Step.Show).nodeId)
+        assertEquals(listOf("healpokemon"), blocked.checked)
+        val declined = Player()
+        assertEquals(DialogueWalker.Step.End, DialogueWalker(dialogue, declined).choose("greet", 1)!!.step)
+        assertEquals(emptyList<String>(), declined.checked)
+    }
+
+    @Test
     fun `a qualified player is taken to the terminal and the command runs as the box closes`() {
         val walker = DialogueWalker(example(), Player(passing = setOf("mcc tower access")))
         val greet = walker.enter().step as DialogueWalker.Step.Show
