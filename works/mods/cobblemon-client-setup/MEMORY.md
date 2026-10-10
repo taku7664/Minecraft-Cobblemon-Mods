@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-11 05:20] 첫 실행 언어·리소스팩·셰이더 기본값 0.1.16
+
+- **이유:** 사용자가 모드팩에 무엇을 넣을지 묻다가, 팩에 `options.txt`를 넣으면 업데이트 때마다 플레이어 설정을 덮어쓸 수 있으니 훅으로 처음 한 번만 넣자고 결정했다. 셰이더는 처음부터 켜기로 했다(사용자 결정).
+- **구현:** `OptionsSetup` — `options-defaults-v1`(한국어, 첫 실행 안내 건너뛰기, 팩 리소스팩 10개를 운영 클라이언트 순서대로 켬, 이름은 패턴이라 버전이 바뀌어도 잡힘, 옛 버전 항목 제거, 플레이어 팩·내장 팩 유지)과 `shader-defaults-v1`(Iris와 LumaVale이 있을 때 가장 높은 버전 켜기). 매 실행 `shaderPack`이 없는 LumaVale 파일을 가리키면 설치된 버전으로 바꾼다(켜짐·꺼짐 유지).
+- **발견:** 운영 클라이언트 `optionsshaders.txt`가 설치되지 않은 `LumaVale-0.1.0.zip`을 가리키고 있었다(설치본은 0.1.3). 이 파일을 팩에 넣었다면 셰이더가 켜지지 않았을 것이다(실행 확인은 안 함). 새 훅이 다음 실행 때 고친다.
+- **빌드·배포:** main `d5eb23e6`, 테스트 80개 통과(새 6개), JAR `C8F13046D1506EC9862F2E65E7CE3870F0A3875AB5C078498B5210A7A9617BF1`, `jar --validate` 0. 개발 클라이언트·`PPakemon`·`deploy-product/client`의 0.1.15를 백업 후 교체(해시 일치). 백업 `F:/AI/build/xaero-reset-20261011/deployment-backups-0.1.16/`. 실제 실행 결과는 아직 확인하지 않았다.
+- **모드팩 안내:** 이제 팩에서 `options.txt`·`optionsshaders.txt`·`config/cobblemon-client-setup/applied-defaults.properties`·`xaero/`를 뺀다.
+
 ## [2026-10-11 05:00] 운영 서버 월드 초기화에 맞춘 Xaero 지도 캐시 정리 0.1.15
 
 - **이유:** 사용자가 VPS를 광장만 남기고 같은 시드로 초기화했다. 운영 클라이언트에 `xaero/minimap`·`xaero/world-map`의 `Multiplayer_210.207.108.196`이 실제로 남아 있었고, 그대로 두면 새 월드 지도에 예전 건물·웨이포인트가 보인다.
