@@ -57,6 +57,13 @@ internal class Cobblemon173PublicBattleObserver(
     }
     private val pendingSlotEffects = linkedMapOf<Triple<BattleSide, Int, String>, PublicPendingSlotEffect>()
     private var activeActionWindow: ActiveActionWindow? = null
+    /**
+     * Each Pokemon's HP as the last `-damage`/`-heal` line stated it. Other observations refresh a Pokemon from
+     * Cobblemon's live battle, whose HP is already the turn's end while the turn's lines are still being read, so a
+     * change measured against the stored view was off: a Recover line at 100% read +51% against the 49% Milotic ended
+     * the turn at, and the Power Whip after it vanished. Changes are measured line to line instead.
+     */
+    private val lastStatedHp = linkedMapOf<UUID, Double>()
 
     init {
         require(initialOpponentPokemonCount > 0)
@@ -74,6 +81,7 @@ internal class Cobblemon173PublicBattleObserver(
                 } }
                 val transferMove = observation.publicTransferMoveId
                 closeActionWindow()
+                observation.publicHp?.let { lastStatedHp[incoming.battlePokemonId] = it }
                 finishTransformation(incoming.battlePokemonId)?.let { moves ->
                     pokemon[incoming.battlePokemonId]?.let { current ->
                         pokemon[incoming.battlePokemonId] = current.copyView(knownMoveIds = moves)
@@ -269,7 +277,8 @@ internal class Cobblemon173PublicBattleObserver(
                 if (healingEffect in setOf("wish", "healingwish")) {
                     pendingSlotEffects.remove(Triple(current.side, current.activeSlot ?: -1, healingEffect))
                 }
-                val hpFractionDelta = previous?.let { current.hpFraction - it.hpFraction }
+                val hpFractionDelta = (lastStatedHp[current.battlePokemonId] ?: previous?.hpFraction)?.let { current.hpFraction - it }
+                lastStatedHp[current.battlePokemonId] = current.hpFraction
                 val precedingAction = activeActionWindow?.takeIf {
                     observation.allowPrecedingActionLink &&
                         observation.publicSourceEffectId == null &&
@@ -896,7 +905,9 @@ internal sealed interface Cobblemon173PublicObservation {
     val turn: Int
 
     data class PokemonPresented @JvmOverloads constructor(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
-        val transfersSubstitute: Boolean = false, val publicTransferMoveId: String? = null) : Cobblemon173PublicObservation {
+        val transfersSubstitute: Boolean = false, val publicTransferMoveId: String? = null,
+        /** The HP the switch line states, which HP changes later in the turn are measured from. */
+        val publicHp: Double? = null) : Cobblemon173PublicObservation {
         init { require(publicTransferMoveId == null || publicTransferMoveId in setOf("batonpass", "shedtail")) }
     }
 

@@ -336,8 +336,21 @@ internal object LocalTacticalSituationalEvaluator {
         // shrinks again when failure is nearly certain; the low expected score handles that end.
         val uncertaintyReserve = PROTECTION_UNCERTAINTY_SCORE *
             successProbability * (1.0 - successProbability)
-        return uncertaintyReserve +
-            context.memory.nonProgressControlStreak.coerceAtMost(MAX_PROTECTION_NO_PROGRESS_STREAK) *
+        return uncertaintyReserve + protectionNoProgressPenalty(candidate, context)
+    }
+
+    /**
+     * The part of [repeatedProtectionPenalty] that reads the battle so far: Protect again after turns of control that
+     * bought nothing. A simulated turn prices the success odds, not this.
+     */
+    fun protectionNoProgressPenalty(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+    ): Double {
+        if (!LocalStallingProtectionRules.isStallingProtection(candidate)) return 0.0
+        val chain = LocalStallingProtectionRules.consecutiveSuccessfulUses(context.state, BattleSide.ALLY, candidate.actorSlot)
+        if (chain < 1) return 0.0
+        return context.memory.nonProgressControlStreak.coerceAtMost(MAX_PROTECTION_NO_PROGRESS_STREAK) *
             PROTECTION_NO_PROGRESS_PENALTY
     }
 

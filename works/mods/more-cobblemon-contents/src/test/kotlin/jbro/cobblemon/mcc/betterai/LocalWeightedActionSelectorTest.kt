@@ -739,7 +739,7 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
-    fun `authoritative native scores are not vetoed by handmade outcome metadata`() {
+    fun `authoritative native scores are not vetoed on the HP a search already priced`() {
         val ranked = listOf(
             rank(
                 "native_best_setup",
@@ -750,19 +750,37 @@ class LocalWeightedActionSelectorTest {
             ),
             rank("native_attack", 100.0, moveId = "bugbuzz", executableDamageActions = 1),
         )
-        val legacyContext = mixingContext().copy(
-            overcommittedSetupActionIds = setOf("native_best_setup"),
-        )
-        val nativeContext = legacyContext.copy(authoritativeSimulationScores = true)
+        val nativeContext = mixingContext().copy(authoritativeSimulationScores = true)
 
         assertEquals(
             listOf("native_attack"),
-            selector.shortlist(ranked, legacyContext).map { it.outcome.candidate.actionId },
+            selector.shortlist(ranked, nativeContext.copy(authoritativeSimulationScores = false)).map { it.outcome.candidate.actionId },
         )
         assertEquals(
             listOf("native_best_setup", "native_attack"),
             selector.shortlist(ranked, nativeContext).map { it.outcome.candidate.actionId },
         )
+    }
+
+    @Test
+    fun `authoritative native scores keep the vetoes that read the battle and the rules`() {
+        val ranked = listOf(
+            rank("overcommitted_setup", 130.0, moveId = "quiverdance", selfSetup = true),
+            rank("inert", 120.0, moveId = "sludgebomb", publiclyInert = true, executableDamageActions = 1),
+            rank("ruled_out", 115.0, moveId = "toxic"),
+            rank("native_attack", 100.0, moveId = "bugbuzz", executableDamageActions = 1),
+        )
+        val context = mixingContext().copy(
+            authoritativeSimulationScores = true,
+            overcommittedSetupActionIds = setOf("overcommitted_setup"),
+            ruleExclusions = mapOf("ruled_out" to "status_wasted"),
+        )
+
+        val selection = selector.choose(ranked, 7L, context)
+        assertEquals("native_attack", selection.rank.outcome.candidate.actionId)
+        assertEquals("setup_without_future", selection.exclusionsByActionId["overcommitted_setup"])
+        assertEquals("publicly_inert", selection.exclusionsByActionId["inert"])
+        assertEquals("status_wasted", selection.exclusionsByActionId["ruled_out"])
     }
 
     @Test

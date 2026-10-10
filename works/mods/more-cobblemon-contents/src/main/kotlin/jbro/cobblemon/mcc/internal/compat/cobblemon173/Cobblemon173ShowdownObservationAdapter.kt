@@ -158,6 +158,7 @@ class Cobblemon173ShowdownObservationAdapter(
                             publicSwitchSnapshot(it, message.argumentAt(1)),
                             transfersSubstitute = transfersSubstitute(message),
                             publicTransferMoveId = publicSwitchTransferMove(message),
+                            publicHp = parseHpFraction(message.argumentAt(2)),
                         ),
                     )
                 }

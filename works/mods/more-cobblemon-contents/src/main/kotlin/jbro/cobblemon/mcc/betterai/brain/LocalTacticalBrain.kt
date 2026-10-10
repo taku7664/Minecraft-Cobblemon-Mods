@@ -37,6 +37,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
+import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.policy.LocalRootDecisionPolicy
@@ -258,7 +259,7 @@ internal class LocalTacticalBrain(
                 riskBudget = mind.riskBudget,
                 decisionRegretBand = decidingProfile.difficulty.decisionRegretBand,
                 decisionShortlistWidth = decidingProfile.difficulty.decisionShortlistWidth,
-                uncertainConditionalActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
+                uncertainConditionalActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(
                             it.outcome.candidate,
@@ -267,7 +268,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                alreadyBoostedSetupActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
+                alreadyBoostedSetupActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(
                             it.outcome.candidate,
@@ -276,7 +277,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                overcommittedSetupActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
+                overcommittedSetupActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.overcommittedSelfSetup(
                             it.outcome.candidate,
@@ -285,7 +286,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                ruleExclusions = if (authoritativeSimulationScores) emptyMap() else ruleExclusions(ranked.map { it.outcome.candidate }),
+                ruleExclusions = ruleExclusions(ranked.map { it.outcome.candidate }),
                 sacrificeSwitchIds = if (authoritativeSimulationScores) emptySet() else switchJudgement.sacrifices,
                 tuning = tuning,
                 authoritativeSimulationScores = authoritativeSimulationScores,
@@ -332,6 +333,21 @@ internal class LocalTacticalBrain(
             }
             active.aceScores
         }
+        // The rules' credits and debits for what the search does not see; both paths add them to the search's values.
+        val gimmickAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
+            else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
+        // A stat raise the gate lets through is credited for the sweep it adds (singles).
+        val setupAdjustments by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
+            difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
+        else ruleScores?.let { scores ->
+            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).associate { candidate ->
+                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
+            }.filterValues { it > 0.0 }
+        }.orEmpty() }
+        // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
+        val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
+        }.orEmpty() }
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
         // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
         val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(
@@ -355,7 +371,22 @@ internal class LocalTacticalBrain(
         var retainedNativeState: NativeProductSessionState? = null
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
-                val ranked = nativeInitial.ranked
+                // The search values the turns it played. What it cannot see - the battle so far, the trainer, the rules'
+                // longer view - is added as the legacy path adds it. Predicted switches and doubles Protect credit are
+                // left out: the search's worst reply already holds the opponent's switch and its hits.
+                val oneTurn = nativeInitial.depthCompleted < 2
+                // Read from the calculated candidates, which carry the facts (a heal's share) the rules look at.
+                val calculated = difficultyContext.candidates.associateBy { it.actionId }
+                val adjusted = LocalBattleActionPolicy.sort(nativeInitial.ranked.map { rank ->
+                    val id = rank.outcome.candidate.actionId
+                    val extra = LocalTacticalScorer.simulationBlindAdjustment(
+                        calculated[id] ?: rank.outcome.candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn,
+                    ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickAdjustments[id] ?: 0.0) +
+                        (setupAdjustments[id] ?: 0.0) + (healRaceAdjustments[id] ?: 0.0)
+                    if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
+                })
+                // Only the re-entry veto: the setup one reads the HP a stay keeps, which native ranks do not carry.
+                val ranked = LocalRootDecisionPolicy.refine(adjusted, difficultyContext, preserveSetup = false).ranked
                 val nativeSearchStatus = requireNotNull(nativeInitial.searchStatus)
                 val seed = LocalActionChoiceSeed.derive(
                     battleId = battleId,
@@ -527,8 +558,6 @@ internal class LocalTacticalBrain(
             },
         )
         decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
-        val gimmickAdjustments = if (!tuning.mechanicReserve) emptyMap()
-            else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
         // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
         val expectedSwitches = when {
@@ -550,22 +579,10 @@ internal class LocalTacticalBrain(
                     difficultyContext.candidates, difficultyContext, scores, expectedSwitches, tuning)
             }.orEmpty()
         }
-        // A stat raise the gate lets through is credited for the sweep it adds (singles).
-        val setupAdjustments = if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
-            difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
-        else ruleScores?.let { scores ->
-            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).associate { candidate ->
-                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
-            }.filterValues { it > 0.0 }
-        }.orEmpty()
         // A doubles Protect is credited for the hits the opponents are predicted to aim at its user.
         val protectAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
                 difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
-        }.orEmpty()
-        // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
-        val healRaceAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
         }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys).associateWith {

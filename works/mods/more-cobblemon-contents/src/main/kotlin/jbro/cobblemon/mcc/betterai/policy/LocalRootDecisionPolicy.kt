@@ -37,6 +37,8 @@ internal object LocalRootDecisionPolicy {
     fun refine(
         ranked: List<LocalBattleActionRank>,
         context: BattleDecisionContext,
+        /** Off where the ranks do not carry the HP a stay keeps against the worst reply, as native ranks do not. */
+        preserveSetup: Boolean = true,
     ): LocalRootDecisionRefinement {
         if (ranked.size < 2) {
             return LocalRootDecisionRefinement(ranked)
@@ -94,7 +96,7 @@ internal object LocalRootDecisionPolicy {
 
             val positiveStages = active.statStages.values.sumOf { it.coerceAtLeast(0) }
             val stayCanSurviveKnownResponse = credibleStays.any { it.first.worstResponseHpRetention > 0.0 }
-            if (positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse) {
+            if (preserveSetup && positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse) {
                 vetoes += LocalSwitchVetoReason.PRESERVE_SETUP
             }
 
