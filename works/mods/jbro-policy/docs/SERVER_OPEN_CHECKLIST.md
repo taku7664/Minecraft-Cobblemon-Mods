@@ -27,6 +27,7 @@
 | `config/jbro-policy-inquiry-review.json` | `enabled`, `command`, `model` | `true`, `agy`, `gemini-3.8-flash-low` | 문의를 Antigravity CLI로 로그와 대조한다. 서버를 실행하는 Windows 계정에서 `agy`를 설치하고 로그인해 둬야 한다. 봇 토큰, 문의 채널, 관리자 채널이 모두 있어야 켜진다. 문의 채널은 공개해도 되고(카드와 요약 답글만 올라감), 관리자 채널은 비공개로 둔다. |
 | `config/jbro-policy-inquiry-review.json` | `autoResolve`, `autoMaxBpPerInquiry`, `autoMaxBpPerDay` | `true`, `300`, `600` | 기록으로 확실한 문의는 피츄가 직접 처리하고, 모호한 것만 관리자 채널에 넘긴다. 지금 자동으로 실행하는 것은 보상 누락이 확인됐을 때 문의한 본인에게 주는 `/bp add` 하나이고, 1건·하루 한도를 넘으면 넘긴다. 하루 지급량은 `jbro-policy/inquiries/auto-bp.json`에 남는다. 끄면 모든 문의를 넘긴다. |
 | `config/mega_showdown/config.json` | `dynamaxAnywhere` | `true` | 기본값 `false`면 반경 `powerSpotRange`(20) 블록 안에 파워스폿이 있어야 다이맥스할 수 있다. 서버는 어디서나 다이맥스밴드만 끼우면 되도록 설계했다(배틀타워 기믹 선택 포함). 시작 훅이 매 실행 `true`로 맞추지만, 설정 파일이 없을 때는 건너뛰므로 새 서버는 메가쇼다운이 파일을 만든 다음 실행부터 적용된다. 서버를 다시 켜야 반영된다. |
+| `server.properties` | `simulation-distance` | `6` | 몹·작물·레드스톤이 돌아가는 범위다. 10이던 값을 2026-10-11에 6으로 줄였다(개발 서버 반영). 시야 거리(`view-distance`)는 별개이며 10을 유지한다. 서버를 다시 켜야 반영된다. |
 | `startup-hooks.json` | `more_cobblemon_contents_league_challenge`의 `requires` 중 `pokebadges` | `{ "mod": "pokebadges" }` (버전 조건 없음) | 리그챌린지 JAR이 PokeBadges 버전을 묶지 않는다(`"pokebadges": "*"`). 예전 `>=1.6.1 <1.7.0` 조건이 남아 있으면 PokeBadges 2.0.0을 넣었을 때 `run.bat`이 시작 훅 단계에서 서버를 띄우지 않는다. |
 | `startup-hooks.json` | `simple_myroom` 규칙의 `version` | `"*"` | MyRoom은 2026-10-07에 독립 모드 SimpleMyRoom으로 나가면서 버전이 1.0.0부터 다시 시작했다. 예전 `>=1.3.0 <2.0.0`이 남아 있으면 `run.bat`이 서버를 띄우지 않는다. BetterEmote(`player_popup_emotes`)는 시작 훅에 규칙이 없다. |
 
