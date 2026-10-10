@@ -20,7 +20,30 @@ JAVA_XMS=2G JAVA_XMX=6G bash run.sh
 바이트 그대로 보존하고, 없을 때만 개발 설치본에서 복사하며 개발 포트 25566 지정은 제거합니다.
 
 Git Bash 모의 실행과 Windows에서의 훅 검증은 실제 Linux 서버 기동 검증과 구분합니다.
-실제 Linux OS 기동·외부 접속·실게임은 확인하지 않았습니다.
+2026-10-10 메인 작업자의 직접 SSH 검증으로 Ubuntu VPS에서 운영 `run.sh`의 실제 기동과
+서버 내부 Minecraft status 응답·Voice Chat UDP 리스닝·위키 localhost HTTP 200을 확인했습니다.
+외부 Minecraft 접속은 타임아웃 상태이며 실제 클라이언트 입장·음성 통신·10명 부하는 미검증입니다.
+이 문서의 기록 담당자는 원격 검증을 재실행하지 않았습니다.
+
+### VPS tmux 콘솔
+
+현재 서버는 `ppakemon` tmux 세션에서 실행하며 SSH 접속이 끝나도 유지됩니다.
+VPS에 SSH로 접속한 뒤 콘솔을 엽니다.
+
+```bash
+tmux attach -t ppakemon
+```
+
+콘솔에서 분리하려면 `Ctrl+B`를 누른 다음 `D`를 누릅니다. 서버를 정상 종료하려면 콘솔에
+`stop`을 입력합니다. 동일 세션이나 서버가 이미 실행 중이면 아래 명령으로 중복 실행하지 않습니다.
+정상 종료한 서버를 다시 실행할 때는 다음 명령을 사용합니다.
+
+```bash
+cd /srv/MinecraftPPakemonServer
+tmux new-session -d -s ppakemon -c /srv/MinecraftPPakemonServer 'export PATH="$HOME/.local/bin:$PATH"; export JAVA_XMS=2G JAVA_XMX=4G; bash ./run.sh'
+```
+
+systemd 서비스 설치·자동 재시작·재부팅 자동 시작은 아직 적용하지 않았습니다.
 
 ## 기존 별도 패키징: package-server.ps1 / start-linux.sh
 

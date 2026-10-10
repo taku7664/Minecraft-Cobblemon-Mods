@@ -1,3 +1,13 @@
+# [2026-10-10 16:21 KST] VPS 최초 기동·내부 응답 확인, 외부 게임 접속 실패
+
+- 빡대리가 EULA 동의 설정과 실제 기동을 명시적으로 승인했습니다. 메인 작업자의 직접 SSH 확인 기준으로 기존 `/srv/MinecraftPPakemonServer` 클론을 재사용했고 `git pull --ff-only`는 `Already up to date`, `main=origin/main=3fad1d136426cfca435bad48b284614f03cc14a8`, `git lfs fsck`는 OK였습니다. 기동 전 추적 파일의 working tree·staged가 모두 깨끗했고, 없던 Git-ignored `eula.txt`에 `eula=true`를 설정했습니다. 기록 담당자는 원격 검증을 재실행하지 않았습니다.
+- `tmux` 세션 `ppakemon`에서 서버 루트를 작업 경로로 삼고 agy 경로·`JAVA_XMS=2G`·`JAVA_XMX=4G`를 지정해 `bash ./run.sh`로 실행했습니다. SSH 종료 후에도 실행이 유지됐습니다. Java PID `10378`, Minecraft `1.21.1`·Fabric `0.19.5`·Java `21.0.12.1` 및 `[16:15:47] Done (28.416s)!`를 확인했습니다. `Unknown preset name: underwater.` 경고가 두 번 관찰됐지만 Done까지 기동했고 경고 원인·실게임 영향은 조사하지 않았습니다. systemd 서비스 설치·자동 재시작·재부팅 자동 시작은 수행하지 않았으며 tmux로만 실행 중입니다.
+- 서버 내부 `127.0.0.1:25565`의 Minecraft status handshake가 성공했습니다(version `1.21.1`, protocol `767`, players `0/20`, MOTD `MinecraftPPakemonServer`). Voice Chat UDP 24454 시작 로그와 리스닝, 위키 `0.0.0.0:8100` 리스닝과 localhost HTTP 200도 확인했습니다. 이는 외부 클라이언트 접속이나 음성 통신 검증이 아닙니다.
+- 활성 데이터팩 30개에 `CCC_2.21-data.zip`과 생성된 `cobblemon-startup-hooks.zip`이 포함됐습니다. `execute in jbro_policy:plaza run time query daytime`이 `The time is 4353`으로 성공했고 광장 파일 24개·`world/data/jbro_policy_plaza_biome.dat`가 존재했습니다. Showdown 기동·nativeAI generation 활성화 로그와 시작 훅의 `inquiry.cli-version`·models 성공을 확인했습니다. 문의·리뷰 Discord 봇은 설정 부재로 비활성화됐으며, 비밀 설정 복사는 미승인이라 수행하지 않았습니다.
+- UFW를 활성화해 기본 incoming deny·outgoing allow, IPv4/IPv6의 TCP 22·25565와 UDP 24454만 허용하고 8100 외부 접근은 허용하지 않았습니다. 새 SSH 접속은 정상이었지만 Windows에서 공인 IP `210.207.108.196:25565` 접속은 두 번 `TimeoutError`, 8100도 `TimeoutError`였습니다. Minecraft UFW ACCEPT counter는 0, 외부 재시도와 동시에 진행한 `enp5s0`의 10초 tcpdump도 captured/received 0 packets였습니다. 업체 방화벽·NAT 가능성은 추정이며 확정 원인은 모릅니다. 사용자는 에그 콘솔 방화벽을 아직 확인하지 않았다고 답했고, TCP 25565·UDP 24454를 출발지 `0.0.0.0/0`에 허용하도록 안내한 상태입니다. 업체 방화벽 미설정도 확정하지 않았습니다.
+- 서버 내부 응답만 확인했으며 실제 클라이언트 입장·외부 음성·10명 부하·실제 AI 문의·게임 동작은 미검증입니다. 게임 소스 패치는 하지 않았으며 보유 SSH 키 내용·인증코드·토큰은 기록하지 않았습니다.
+- 기동 후에도 운영 HEAD와 `origin/main`은 위 커밋의 0/0 상태지만, 기동으로 일부 추적 `config/`·`server.properties`·`world/datapacks/cobblemon-startup-hooks.zip`·광장 데이터가 수정됐습니다. 이는 기동 전 clean 상태와 구분합니다. 해당 변경을 되돌리거나 커밋하지 않았으며 생성된 일반 월드·설정·로그도 운영 runtime 상태로 보존했습니다. 후속 Pull에서도 이 runtime 변경과 월드가 보존 대상입니다. `.gitignore` 정책은 변경하지 않았습니다.
+
 # [2026-10-10 16:04 KST] VPS GitHub·Codex·agy 인증 완료
 
 - 메인 작업자의 직접 SSH 확인 기준으로, 이전 설치 기록의 미인증 상태 중 GitHub·Codex·agy 인증을 마쳤습니다. `gh auth status`가 exit 0으로 통과했고 `/srv/MinecraftPPakemonServer`에서 비공개 저장소의 `git ls-remote origin HEAD`가 성공해 `3fad1d136426cfca435bad48b284614f03cc14a8`을 확인했습니다. 기록 담당자는 원격 검증을 재실행하지 않았습니다.
