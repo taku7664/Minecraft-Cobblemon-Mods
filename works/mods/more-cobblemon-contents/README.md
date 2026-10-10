@@ -48,7 +48,7 @@ UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 
 
 - `config/more-cobblemon-contents/hub_tabs.json`: `/mcc`와 각 터미널에 표시할 탭, 허브 명령어 권한.
 - `config/more-cobblemon-contents/wiki.json`: 서버 위키 연동 설정.
-- 데이터팩의 `mcc-bp-shop/`: BP 상점 콘텐츠.
+- 데이터팩의 `mcc-bp-shop/`: BP 상점 콘텐츠. 기본 상점에서는 볼·사탕·학습장치·PP에이드 계열을 판매하지 않습니다.
 
 서버 설정과 데이터팩을 수정한 뒤 관리자 권한으로 `/reload`를 사용합니다. `/mcc`의 기본 허브 접근 권한은 0이며, 운영 명령은 권한 2를 요구합니다. `/mcc bp`와 `/mcc bp history [count]`로 자신의 BP를 조회할 수 있습니다.
 
