@@ -1,3 +1,10 @@
+# [2026-10-10 16:43 KST] Windows 바탕화면 서버 콘솔 바로가기 생성
+
+- 빡대리의 Windows 직접 접속 요청에 따라 메인 작업자가 `C:/Users/박주형/Desktop/빡케몬 서버 콘솔.lnk`를 만들었습니다. 설치된 PowerShell 7에서 `NoLogo/NoProfile/NoExit`로 시스템 `ssh.exe`를 실행하고, 기존 로컬 PEM 키로 `ubuntu@210.207.108.196`에 tty 접속해 `env TERM=xterm-256color tmux attach-session -t ppakemon`을 엽니다. 바로가기는 이 PC 로컬 전용이며 원격 운영 저장소·배포 제품에 포함하지 않습니다. 키 내용은 읽거나 복사하지 않았습니다.
+- 저장된 `TargetPath`·`Arguments`의 원본 일치와 PowerShell Parser 오류 0을 확인했습니다. 도구 PTY에서 같은 SSH 명령으로 실제 콘솔 접속, `list` 성공(online `1/20`), `Ctrl+B` 다음 `D` 분리 exit 0을 확인했습니다. 분리 후에도 `tmux ppakemon`과 TCP 25565 LISTEN이 유지됐으며 서버를 재시작하거나 종료하지 않았습니다.
+- 최초 검증 도구 터미널은 로컬·원격 모두 `TERM=dumb`이라 `terminal does not support clear` 오류가 발생했습니다. `infocmp`로 `dumb`·`xterm-256color` 존재를 확인한 뒤 바로가기 원격 명령에 `env TERM=xterm-256color`를 명시해 해결했고 실제 접속·명령·분리를 재검증했습니다. 이는 검증 도구 터미널에서 관찰한 문제이며 사용자 게임 환경의 터미널 문제로 판단하지 않습니다.
+- 위 결과는 메인 작업자의 직접 검증 보고이며 기록 담당자는 재실행하지 않았습니다. 바로가기 더블클릭 UI는 직접 실행하지 않았고 저장값·구문과 별도로 실행한 접속 명령만 검증했습니다. 바로가기를 사용하려면 기존 SSH 키 파일이 이 PC에 있어야 합니다.
+
 # [2026-10-10 16:28 KST] 외부 게임 응답·음성 UDP 도달 확인
 
 - 메인 작업자의 직접 검증 보고 기준으로 로컬 Windows Python socket에서 공인 `210.207.108.196:25565`의 Minecraft status handshake가 성공했습니다. 응답은 version.name `1.21.1`, protocol `767`, players `0/20`, description `MinecraftPPakemonServer`였습니다. 기록 담당자는 검증을 재실행하지 않았습니다.

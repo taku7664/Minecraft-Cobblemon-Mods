@@ -48,6 +48,14 @@ tmux new-session -d -s ppakemon -c /srv/MinecraftPPakemonServer 'export PATH="$H
 
 systemd 서비스 설치·자동 재시작·재부팅 자동 시작은 아직 적용하지 않았습니다.
 
+#### Windows에서 바로 열기
+
+이 PC 바탕화면의 **빡케몬 서버 콘솔**을 더블클릭하면 PowerShell 창에서 현재 Minecraft 서버
+콘솔로 접속합니다. `list`나 `op <닉네임>` 같은 서버 명령을 입력할 수 있습니다.
+콘솔에서 빠져나오려면 `Ctrl+B` 다음 `D`, 서버를 정상 종료하려면 `stop`을 사용합니다.
+기존 SSH 키 파일이 이 PC에 있어야 합니다. 바로가기는 PC 로컬 전용이며 원격 운영 저장소나
+배포 제품에 넣지 않습니다.
+
 ## 기존 별도 패키징: package-server.ps1 / start-linux.sh
 
 아래 방식은 새 ZIP의 `release/`와 외부 `SERVER_DATA_DIR`을 분리하는 기존 패키징 도구입니다.
