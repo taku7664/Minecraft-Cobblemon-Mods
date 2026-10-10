@@ -27,6 +27,12 @@
 - The repository root holds only rules and docs (`AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/`), the server wiki
   site (`server-wiki/`), and the product folders. A new mod goes in `works/mods/` and is added to `settings.gradle.kts`.
 
+# Gradle 쓰기 경로 (필수)
+
+- Gradle 실행으로 C 드라이브에 캐시·데몬 로그·프로젝트 캐시·`build` 산출물·임시파일을 생성하면 안 된다(MUST). C 드라이브의 소스는 읽을 수 있지만, 모든 Gradle 쓰기 경로는 F 드라이브로 지정해야 한다(MUST).
+- `GRADLE_USER_HOME`은 `F:/AI/caches/gradle`로 지정한다(MUST). 프로젝트 캐시(`--project-cache-dir`), 모든 프로젝트·하위 모듈의 빌드 출력, `TEMP`·`TMP`와 JVM 임시 경로(`java.io.tmpdir`)는 워크트리별로 분리한 F 드라이브 하위 경로를 사용한다(MUST).
+- 실행 전에 환경 변수·Gradle 옵션·빌드 출력 설정의 실제 경로가 모두 F 드라이브를 가리키는지 확인한다(MUST). 지정되지 않았거나 C 드라이브로 쓰는 경로가 남아 있으면 Gradle을 실행하지 않는다(MUST). `GRADLE_USER_HOME`만 바꾸고 C 드라이브의 프로젝트 캐시·빌드 출력·임시 경로를 남겨두면 안 된다.
+
 # Workspace targets
 
 - Development server: `develop-product/server` in this repository (git-ignored). It replaces the old `dev-server/`
