@@ -1,3 +1,11 @@
+# [2026-10-10 18:50] VPS 관리 GUI main 반영·로컬 설치·실행·작업트리 정리 완료
+
+- **main 반영:** 구현 커밋 `1a9d175e825c5fa7e19863104deb7cb00cdded14`를 main `e8e6ebf96d33282f6baa023d75a22403106f1818`에 병합·푸시하고 원격 `ls-remote` 일치와 ahead/behind 0/0을 확인했다. 커밋된 main의 설치기로 설치했다(메인 작업자 보고).
+- **설치·해시:** `C:/Users/박주형/AppData/Local/PPakemonVpsManager`에 설치하고 `C:/Users/박주형/Desktop/빡케몬 VPS 관리.lnk`를 생성했다. 설치본 SHA-256은 GUI `9F5498CE5DBDE23068671089FA0583F879941541F0C310E4F3479AD5DB946520`, backend `CFB05A459865503177BCF6248DD2224FEED5A6112E0CC27F3714F2D21EEAC7E0`으로 각각 main 소스와 일치했다. SSH 키는 기존 경로만 참조했으며 내용을 읽거나 복사하지 않았다.
+- **설치본 검증:** 설치본 `-Probe`로 실제 VPS HEAD `6f0ea24`, 서버 실행 중, 변경 14개·미푸시 0·미반영 0·제외 0을 조회했다. 바로가기의 Target/Arguments를 사용해 GUI를 실제 실행했고 PID `23624`, MainWindowTitle `빡케몬 VPS 관리`와 실행 유지를 확인했다.
+- **작업트리 정리:** 작업용 `vps-manager` 관리 작업트리를 앱 `archive_worktree`로 아카이브했다. 실제 경로 `Test-Path=false`와 Git worktree 목록에서 제외된 것을 확인해 정리를 완료했으며 주 작업폴더는 유지했다.
+- **검증 한계:** 실제 운영 파일 선택 커밋·업데이트 적용·종료 버튼 실행은 하지 않았다. 테스트 Git fixture와 상태 조회·기존 실행 중 서버의 start Probe 검증 범위는 그대로이며 실제 운영 파일 변경 성공으로 해석하지 않는다. 설치·동기화·해시·GUI·정리 결과는 메인 작업자의 직접 검증 보고이고 기록 담당자는 재실행하지 않았다.
+
 # [2026-10-10 18:42] VPS 관리 GUI 구현·최종 fixture 검증 (main 반영·설치·실제 운영 변경 미완료)
 
 - **사용자 결정·구현:** Windows 바탕화면에서 개발 폴더 패쳐처럼 GUI로 관리하며 광장 전용이 아닌 JSON·properties 등 변경 파일을 직접 선택해 커밋·푸시한다. Windows PowerShell 7 WinForms와 Python SSH RPC로 상태·변경 목록, 업데이트 검사·기능 적용, 선택 파일 커밋·푸시, 기존 커밋 푸시, 서버 시작·종료, 기존 콘솔, 로컬 연결 설정을 구현했다(메인 작업자 보고).
