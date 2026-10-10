@@ -127,7 +127,8 @@ internal class LeagueHubTab : MccHubTabContent {
             // Narrow routes shrink the badge frame so neighbouring frames do not touch.
             val half = if (width >= 32) 16 else 13
             val border = when {
-                selected -> theme.colors.accentCaution
+                selected -> theme.colors.accentPrimary
+                entry.status == "CLEARED" -> theme.colors.accentGood
                 isFocused || isHovered -> theme.colors.borderBright
                 else -> theme.colors.border
             }
@@ -147,7 +148,7 @@ internal class LeagueHubTab : MccHubTabContent {
             }
             val label = MccHubKit.fitted(caption, width)
             graphics.drawString(font, label, x + (width - font.width(label)) / 2, y + 24,
-                if (selected) theme.colors.accentCaution else theme.colors.textSecondary, false)
+                if (selected) theme.colors.accentPrimary else theme.colors.textSecondary, false)
         }
     }
 
