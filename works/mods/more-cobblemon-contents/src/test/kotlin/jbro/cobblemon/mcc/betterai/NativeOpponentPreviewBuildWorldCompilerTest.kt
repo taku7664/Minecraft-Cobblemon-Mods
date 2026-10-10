@@ -72,7 +72,9 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         assertTrue(bossBuilds.any { it.ivs.getValue("spe") == 0 })
         assertTrue(bossBuilds.any { it.itemId == null })
         assertTrue(bossBuilds.all { it.teraTypeId in setOf("normal", "flying") })
-        assertTrue(bossBuilds.any { it.teraTypeId == "flying" })
+        // Neither the Tera type nor the gender branches the worlds (2026-10-11 user decision).
+        assertEquals(1, bossBuilds.map { it.teraTypeId }.distinct().size)
+        assertEquals(1, bossBuilds.map { it.gender }.distinct().size)
     }
 
     @Test

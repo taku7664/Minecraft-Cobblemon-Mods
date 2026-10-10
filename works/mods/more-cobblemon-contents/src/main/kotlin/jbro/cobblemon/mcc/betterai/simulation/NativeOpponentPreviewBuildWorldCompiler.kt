@@ -198,16 +198,16 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
             .sortedWith(compareByDescending<LocalOpponentSpreadUsage> { it.rate }
                 .thenBy(::spreadId))
             .toList()
-        val teraTypes = usage.teraTypeRates.entries.asSequence()
-            .filter { it.value > 0.0 }
-            .map { WeightedValue(canonical(it.key), it.value, canonical(it.key)) }
-            .sortedWith(VALUE_ORDER)
-            .toList()
-        val genders = pool.genderRates.entries.asSequence()
-            .filter { it.value > 0.0 }
-            .map { WeightedValue(it.key, it.value, it.key) }
-            .sortedWith(VALUE_ORDER)
-            .toList()
+        // Neither the gender nor a guess at the Tera type branches the worlds (2026-10-11 user decision). The gender
+        // decides almost nothing, and a Tera type not yet shown is taken to be the species' own first type, which a
+        // Cobblemon Pokemon keeps unless its trainer changed it. The two multiplied a Boss's 6 worlds into 96.
+        val teraTypes = (pokemon.knownTypeIds.map(::canonical).firstOrNull(String::isNotBlank)
+            ?: usage.teraTypeRates.entries.filter { it.value > 0.0 }.minWithOrNull(
+                compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { canonical(it.key) })?.key?.let(::canonical))
+            ?.let { listOf(WeightedValue(it, 1.0, it)) }.orEmpty()
+        val genders = pool.genderRates.entries.filter { it.value > 0.0 }
+            .minWithOrNull(compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { it.key })
+            ?.let { listOf(WeightedValue(it.key, 1.0, it.key)) }.orEmpty()
         if (abilities.isEmpty() || items.isEmpty() || spreads.isEmpty() ||
             teraTypes.isEmpty() || genders.isEmpty()
         ) return emptyList()
