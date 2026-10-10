@@ -30,7 +30,7 @@
       "entry_id": "hp_up",
       "item_id": "cobblemon:hp_up",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 60,
       "category": "consumable"
     },
@@ -38,7 +38,7 @@
       "entry_id": "protein",
       "item_id": "cobblemon:protein",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 70,
       "category": "consumable"
     },
@@ -46,7 +46,7 @@
       "entry_id": "iron",
       "item_id": "cobblemon:iron",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 80,
       "category": "consumable"
     },
@@ -54,7 +54,7 @@
       "entry_id": "calcium",
       "item_id": "cobblemon:calcium",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 90,
       "category": "consumable"
     },
@@ -62,7 +62,7 @@
       "entry_id": "zinc",
       "item_id": "cobblemon:zinc",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 100,
       "category": "consumable"
     },
@@ -70,7 +70,7 @@
       "entry_id": "carbos",
       "item_id": "cobblemon:carbos",
       "item_count": 1,
-      "price_bp": 2,
+      "price_bp": 3,
       "sort_order": 110,
       "category": "consumable"
     },
@@ -123,171 +123,99 @@
       "category": "consumable"
     },
     {
-      "entry_id": "lonely_mint",
-      "item_id": "cobblemon:lonely_mint",
+      "entry_id": "health_candy",
+      "item_id": "cobblemon:health_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 300,
+      "sort_order": 180,
       "category": "consumable"
     },
     {
-      "entry_id": "adamant_mint",
-      "item_id": "cobblemon:adamant_mint",
+      "entry_id": "mighty_candy",
+      "item_id": "cobblemon:mighty_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 310,
+      "sort_order": 190,
       "category": "consumable"
     },
     {
-      "entry_id": "naughty_mint",
-      "item_id": "cobblemon:naughty_mint",
+      "entry_id": "tough_candy",
+      "item_id": "cobblemon:tough_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 320,
+      "sort_order": 200,
       "category": "consumable"
     },
     {
-      "entry_id": "brave_mint",
-      "item_id": "cobblemon:brave_mint",
+      "entry_id": "smart_candy",
+      "item_id": "cobblemon:smart_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 330,
+      "sort_order": 210,
       "category": "consumable"
     },
     {
-      "entry_id": "bold_mint",
-      "item_id": "cobblemon:bold_mint",
+      "entry_id": "courage_candy",
+      "item_id": "cobblemon:courage_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 340,
+      "sort_order": 220,
       "category": "consumable"
     },
     {
-      "entry_id": "impish_mint",
-      "item_id": "cobblemon:impish_mint",
+      "entry_id": "quick_candy",
+      "item_id": "cobblemon:quick_candy",
       "item_count": 1,
       "price_bp": 10,
-      "sort_order": 350,
+      "sort_order": 230,
       "category": "consumable"
     },
     {
-      "entry_id": "lax_mint",
-      "item_id": "cobblemon:lax_mint",
+      "entry_id": "sickly_candy",
+      "item_id": "cobblemon:sickly_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 360,
+      "price_bp": 1,
+      "sort_order": 240,
       "category": "consumable"
     },
     {
-      "entry_id": "relaxed_mint",
-      "item_id": "cobblemon:relaxed_mint",
+      "entry_id": "weak_candy",
+      "item_id": "cobblemon:weak_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 370,
+      "price_bp": 1,
+      "sort_order": 250,
       "category": "consumable"
     },
     {
-      "entry_id": "modest_mint",
-      "item_id": "cobblemon:modest_mint",
+      "entry_id": "brittle_candy",
+      "item_id": "cobblemon:brittle_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 380,
+      "price_bp": 1,
+      "sort_order": 260,
       "category": "consumable"
     },
     {
-      "entry_id": "mild_mint",
-      "item_id": "cobblemon:mild_mint",
+      "entry_id": "numb_candy",
+      "item_id": "cobblemon:numb_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 390,
+      "price_bp": 1,
+      "sort_order": 270,
       "category": "consumable"
     },
     {
-      "entry_id": "rash_mint",
-      "item_id": "cobblemon:rash_mint",
+      "entry_id": "coward_candy",
+      "item_id": "cobblemon:coward_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 400,
+      "price_bp": 1,
+      "sort_order": 280,
       "category": "consumable"
     },
     {
-      "entry_id": "quiet_mint",
-      "item_id": "cobblemon:quiet_mint",
+      "entry_id": "slow_candy",
+      "item_id": "cobblemon:slow_candy",
       "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 410,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "calm_mint",
-      "item_id": "cobblemon:calm_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 420,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "gentle_mint",
-      "item_id": "cobblemon:gentle_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 430,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "careful_mint",
-      "item_id": "cobblemon:careful_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 440,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "sassy_mint",
-      "item_id": "cobblemon:sassy_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 450,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "timid_mint",
-      "item_id": "cobblemon:timid_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 460,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "hasty_mint",
-      "item_id": "cobblemon:hasty_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 470,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "jolly_mint",
-      "item_id": "cobblemon:jolly_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 480,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "naive_mint",
-      "item_id": "cobblemon:naive_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 490,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "serious_mint",
-      "item_id": "cobblemon:serious_mint",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 500,
+      "price_bp": 1,
+      "sort_order": 290,
       "category": "consumable"
     },
     {
@@ -856,22 +784,6 @@
       "item_count": 1,
       "price_bp": 25,
       "sort_order": 1210,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "pp_up",
-      "item_id": "cobblemon:pp_up",
-      "item_count": 1,
-      "price_bp": 10,
-      "sort_order": 1220,
-      "category": "consumable"
-    },
-    {
-      "entry_id": "pp_max",
-      "item_id": "cobblemon:pp_max",
-      "item_count": 1,
-      "price_bp": 25,
-      "sort_order": 1230,
       "category": "consumable"
     }
   ]

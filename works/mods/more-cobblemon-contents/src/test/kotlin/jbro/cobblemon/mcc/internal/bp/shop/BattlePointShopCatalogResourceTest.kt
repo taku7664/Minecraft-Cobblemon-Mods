@@ -15,16 +15,17 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(106, catalog.entries().size)
-        assertEquals(106, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(95, catalog.entries().size)
+        assertEquals(95, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
-        assertTrue(catalog.entries().none { it.itemId.endsWith("_candy") || it.itemId.contains(":exp_candy_") ||
+        assertTrue(catalog.entries().none { it.itemId == "cobblemon:rare_candy" || it.itemId.contains(":exp_candy_") ||
             (it.itemId.endsWith("_ball") && it.itemId != "cobblemon:iron_ball") ||
             it.itemId in setOf("cobblemon:exp_share", "cobblemon:ether", "cobblemon:max_ether", "cobblemon:elixir", "cobblemon:max_elixir") })
-        assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
+        assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 3L })
         assertEquals(6, catalog.entries().count { it.entryId.endsWith("_feather") && it.priceBp == 1L })
         // Mints are farmed later anyway.
-        assertEquals(21, catalog.entries().count { it.entryId.endsWith("_mint") && it.priceBp == 10L })
+        assertTrue(catalog.entries().none { it.entryId.endsWith("_mint") })
+        assertEquals(12, catalog.entries().count { it.entryId.endsWith("_candy") })
         // Candies are crafted or found while exploring; BP remains for the other goods.
         // A hidden ability costs a Life Orb.
         assertEquals(30L, price("ability_capsule"))
@@ -37,7 +38,7 @@ class BattlePointShopCatalogResourceTest {
             "kings_rock", "metal_coat", "upgrade", "dubious_disc", "protector", "electirizer", "magmarizer", "reaper_cloth",
             "sachet", "whipped_dream")
         assertTrue(evolutionItems.all { price(it) == 25L && catalog.entry(it)?.category == "consumable" })
-        assertEquals(listOf(10L, 25L), listOf("pp_up", "pp_max").map(::price))
+        assertTrue(listOf("pp_up", "pp_max").all { catalog.entry(it) == null })
         assertEquals(25L, price("ability_shield"))
         // Battle items: Life Orb at 100 sets the scale; easily crafted ones are cheaper still.
         val heldItems = catalog.entries().filter { it.category == "held_item" }
