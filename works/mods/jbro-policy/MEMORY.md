@@ -22,6 +22,15 @@
 - **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
 - **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
 
+## [2026-10-11 04:20] 첫 접속 메시지에 디스코드 초대 링크 (구현·커밋, 빌드·배포 미실행)
+
+- **사용자 요청:** 첫 접속 키트 메시지에 디코 링크(`https://discord.gg/fpkNjYwCp`)를 넣자. 30일 만료를 피할 방법도 물었다.
+- **구현:** `WelcomeKit.inviteUrl`을 `DiscordSettings.inviteUrl`로 채워, `/디코인증`과 같은 링크를 `welcome.discord` 번역 키로 눌러서 열리게 보낸다. 링크를 코드에 넣지 않아 링크가 바뀌어도 설정만 고치면 된다. 커밋 `11fb1a09`.
+- **링크 만료(직접 조회):** 설정에 든 `HbKxTFeGB`는 2026-11-06 23:27 UTC, 새 `fpkNjYwCp`는 2026-11-09 12:10 UTC 만료. 둘 다 만료 링크다. 만료 없는 초대(`max_age=0`)를 만들어 `inviteUrl`에 넣어야 한다. 아직 설정 값은 바꾸지 않았다.
+- **미확인:** Gradle 빌드·테스트, JAR 배치, 실게임 첫 접속 메시지 확인 안 함.
+
+---
+
 ## [2026-10-11 04:06] 피츄 위키 선택 운영·VPS 반영
 
 - 정책 JAR `F5DB967F…`와 차원 문서가 든 위키를 로컬 운영 서버·`PPakemon`·운영 저장소(`0f71835`)·VPS에 반영했다. VPS는 04:04:43 기동, 봇 online·명령 15개, 해시 일치 확인. 디스코드에서 실제로 `/피츄`에 물어본 결과는 확인하지 않았다. 자세한 배포 기록은 `works/tools/vps-manager/MEMORY.md`.

@@ -1,3 +1,9 @@
+# [2026-10-11 04:14] VPS 시뮬레이션 거리 6 적용, deploy-product 갱신
+
+- **시뮬레이션 거리:** 사용자 결정으로 VPS `server.properties`의 `simulation-distance`만 10→6(운영 저장소 `b08deda`와 같은 값). 원본 백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-041156-simulation-distance/`, 다른 줄은 변경 전후 동일. 접속자 0명 확인 후 `TmuxRuntime.stop()`·`start()`로 재기동: 새 PID 43843, 04:13:06 `Done (9.469s)`, 25565 LISTEN, 봇 online·명령 15개. `view-distance=10`은 그대로. 체감 성능 변화는 측정하지 않았다.
+- **deploy-product:** 앞 항목에서 "운영 클라·서버 갱신"에 포함되는데 빠뜨려 사용자 지적을 받았다. `deploy-product/client`에 `PPakemon`의 자체 모드 JAR 14개, `deploy-product/server`에 운영 서버의 자체 모드 JAR 9개를 넣고 바이트 대조(차이 0). 리소스팩 ZIP·셰이더는 규칙(JAR과 `VERSION.txt`만)에 따라 넣지 않았고, `VERSION.txt` 버전 항목은 버전 번호를 사용자가 정해야 해서 추가하지 않았다.
+- **설정 보존 주의(VPS):** VPS 업데이트는 기존 `config/` 파일을 보존한다. 지금 VPS의 `config/cobblemon_npc/dialogues/plaza_oak.json`은 운영 저장소보다 새 대사(VPS에서 직접 수정, 미커밋), `config/more-cobblemon-contents/bp-shop.json`은 기록상 VPS에 반영하지 않기로 한 로컬 조정과 다르다. 둘 다 건드리지 않았다.
+
 # [2026-10-11 04:06] 개발→운영 클라·서버 갱신, 운영 커밋 `0f71835`, VPS 반영·기동 확인
 
 - **범위:** 사용자 요청으로 위키 반영, 개발↔운영 클라이언트·서버 대조 갱신, 운영 저장소 커밋·푸시, VPS Pull 적용. 통합 패쳐 모듈(`develop-product/tools/patcher`)을 화면 없이 `Get-*Plan`/`Invoke-*`로 불렀다.
