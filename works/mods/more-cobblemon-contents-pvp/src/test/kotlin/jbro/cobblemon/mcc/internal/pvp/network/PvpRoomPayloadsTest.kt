@@ -47,6 +47,10 @@ class PvpRoomPayloadsTest {
             roundTrip(PvpRoomListStatePayload.CODEC, PvpRoomListStatePayload(requestId, listOf(summary))),
         )
         assertEquals(
+            PvpRoomListStatePayload(null, listOf(summary), memberRoomId = roomId),
+            roundTrip(PvpRoomListStatePayload.CODEC, PvpRoomListStatePayload(null, listOf(summary), memberRoomId = roomId)),
+        )
+        assertEquals(
             PvpRoomStatePayload(requestId, room),
             roundTrip(PvpRoomStatePayload.CODEC, PvpRoomStatePayload(requestId, room)),
         )

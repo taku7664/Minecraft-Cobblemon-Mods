@@ -28,18 +28,18 @@ internal class PvpSelectionScreenController(
             selected -= pokemonId
             return true
         }
-        if (selected.size >= state.format.selectionSize) return false
+        if (selected.size >= state.requiredSelectionSize) return false
         selected += pokemonId
         return true
     }
 
     fun submit(): Boolean {
-        if (state.spectatorMode || isPending || state.waitingForOpponent || selected.size != state.format.selectionSize) return false
+        if (state.spectatorMode || isPending || state.waitingForOpponent || selected.size != state.requiredSelectionSize) return false
         return send(PvpSelectionIntent.Submit(nextRequestId(), state.matchId, selected.toList()))
     }
 
     fun retry(): Boolean {
-        if (state.spectatorMode || isPending || selected.size != state.format.selectionSize) return false
+        if (state.spectatorMode || isPending || selected.size != state.requiredSelectionSize) return false
         return send(PvpSelectionIntent.Retry(nextRequestId(), state.matchId))
     }
 

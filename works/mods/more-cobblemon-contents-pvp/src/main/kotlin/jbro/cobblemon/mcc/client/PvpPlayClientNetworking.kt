@@ -46,6 +46,11 @@ internal object PvpPlayClientNetworking {
                     deactivateControls = { PvpLoungeSpectatorControls.setActive(false) },
                     clearExitPending = { PvpLoungeSpectatorControls.setExitPending(false) },
                 )
+                // The server took this spectator out of the room as well; nothing may reopen it from cache.
+                if (payload.accepted) {
+                    PvpHubClient.leftRoom()
+                    PvpRoomHudOverlay.refreshControls()
+                }
                 if (closeScreen) {
                     context.client().setScreen(null)
                 } else if (!payload.accepted) {
@@ -82,10 +87,11 @@ internal object PvpPlayClientNetworking {
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomListStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                if (PvpRoomClientState.lastRoom?.roomId?.let { roomId -> payload.rooms.none { it.roomId == roomId } } == true) {
+                // A room that is still listed may be one this player just left; only membership keeps it.
+                if (PvpRoomClientState.lastRoom?.roomId != payload.memberRoomId) {
                     PvpRoomClientState.lastRoom = null
                 }
-                PvpHubClient.acceptRooms(payload.rooms)
+                PvpHubClient.acceptRooms(payload.rooms, payload.memberRoomId)
                 PvpRoomHudOverlay.refreshControls()
             }
         }

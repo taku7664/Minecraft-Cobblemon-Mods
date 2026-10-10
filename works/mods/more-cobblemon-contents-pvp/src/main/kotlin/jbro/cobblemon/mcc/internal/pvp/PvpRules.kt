@@ -9,8 +9,12 @@ internal enum class PvpBattleFormat(
     val registrationRange: IntRange,
     val selectionSize: Int,
 ) {
-    SINGLE("single", 3..6, 3),
-    DOUBLE("double", 4..6, 4),
+    SINGLE("single", 1..6, 3),
+    DOUBLE("double", 1..6, 4),
+    ;
+
+    /** How many of a [teamSize] party enter the battle: the format's pick, or the whole party when it is smaller. */
+    fun selectionSizeFor(teamSize: Int): Int = selectionSize.coerceAtMost(teamSize)
 }
 
 internal class PvpRulesPreset private constructor(
@@ -132,7 +136,7 @@ internal object PvpTeamRules {
     ): PvpTeamSelectionResult {
         val issues = linkedSetOf<PvpTeamIssue>()
         if (team.format != format) issues += PvpTeamIssue.FORMAT_MISMATCH
-        if (pokemonIds.size != format.selectionSize) issues += PvpTeamIssue.WRONG_SELECTION_SIZE
+        if (pokemonIds.size != format.selectionSizeFor(team.members.size)) issues += PvpTeamIssue.WRONG_SELECTION_SIZE
         if (pokemonIds.distinct().size != pokemonIds.size) issues += PvpTeamIssue.DUPLICATE_POKEMON
         val registered = team.members.associateBy(PvpPokemonRegistration::pokemonId)
         if (pokemonIds.any { it !in registered }) issues += PvpTeamIssue.UNREGISTERED_POKEMON

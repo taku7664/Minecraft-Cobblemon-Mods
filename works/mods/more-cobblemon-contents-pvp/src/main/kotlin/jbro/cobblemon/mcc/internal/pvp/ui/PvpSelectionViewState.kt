@@ -69,6 +69,10 @@ internal class PvpSelectionViewState(
         require(selectionDeadlineEpochMillis >= 0) { "PvP selection deadline cannot be negative" }
     }
 
+    /** How many of the own party this player picks; a party smaller than the format's pick enters whole. */
+    val requiredSelectionSize: Int
+        get() = format.selectionSizeFor(ownParty.size)
+
     val immutableOwnParty: List<PvpSelectionPartySlot> = this.ownParty
     val immutableOpponentParty: List<PvpSelectionOpponentSlot> = this.opponentParty
     val immutableSelectedPokemonIds: Set<UUID> = this.selectedPokemonIds

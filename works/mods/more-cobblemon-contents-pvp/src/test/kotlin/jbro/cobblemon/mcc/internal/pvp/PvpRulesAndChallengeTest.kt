@@ -38,11 +38,23 @@ class PvpRulesAndChallengeTest {
 
         assertEquals(3, acceptedSelection(single, (1..3).map(::pokemonId)).members.size)
         assertEquals(4, acceptedSelection(double, (1..4).map(::pokemonId)).members.size)
-        assertTrue(PvpTeamRules.register((1..2).map(::pokemon), PvpBattleFormat.SINGLE) is PvpTeamRegistrationResult.Rejected)
-        assertTrue(PvpTeamRules.register((1..3).map(::pokemon), PvpBattleFormat.DOUBLE) is PvpTeamRegistrationResult.Rejected)
+        assertTrue(PvpTeamRules.register(emptyList(), PvpBattleFormat.SINGLE) is PvpTeamRegistrationResult.Rejected)
+        assertTrue(PvpTeamRules.register((1..7).map(::pokemon), PvpBattleFormat.SINGLE) is PvpTeamRegistrationResult.Rejected)
         assertTrue(PvpTeamRules.select(double, listOf(pokemonId(1)), PvpBattleFormat.DOUBLE) is PvpTeamSelectionResult.Rejected)
         assertEquals(50, pokemon(1, level = 1).battleLevel)
         assertEquals(50, pokemon(1, level = 100).battleLevel)
+    }
+
+    @Test
+    fun `a party smaller than the format's pick registers and enters whole`() {
+        val lone = acceptedTeam(listOf(pokemon(1)), PvpBattleFormat.SINGLE)
+        val pair = acceptedTeam((1..2).map(::pokemon), PvpBattleFormat.DOUBLE)
+
+        assertEquals(1, PvpBattleFormat.SINGLE.selectionSizeFor(1))
+        assertEquals(3, PvpBattleFormat.SINGLE.selectionSizeFor(6))
+        assertEquals(1, acceptedSelection(lone, listOf(pokemonId(1))).members.size)
+        assertEquals(2, acceptedSelection(pair, (1..2).map(::pokemonId)).members.size)
+        assertTrue(PvpTeamRules.select(pair, listOf(pokemonId(1)), PvpBattleFormat.DOUBLE) is PvpTeamSelectionResult.Rejected)
     }
 
     @Test

@@ -408,7 +408,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         if (seated && room.phase != jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.LOBBY) return AdminKick.COMPETITOR
         val online = onlinePlayers[playerId]
         if (room.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.ACTIVE && playerId in room.spectatorIds && online != null) {
-            return if (exitSpectator(online) == PvpSpectatorExitResult.ACCEPTED) AdminKick.KICKED else AdminKick.FAILED
+            if (exitSpectator(online) != PvpSpectatorExitResult.ACCEPTED) return AdminKick.FAILED
+            sendRoomListSafely(online, null, "admin kick")
+            return AdminKick.KICKED
         }
         rooms.leave(room.roomId, playerId)?.let { remaining -> pushRoomToMembers(remaining, null) }
         online?.let { sendRoomListSafely(it, null, "admin kick") }
@@ -655,7 +657,12 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     return
                 }
                 val remaining = rooms.leave(intent.roomId, player.uuid)
-                if (remaining != null) pushRoomToMembers(remaining, null)
+                if (remaining != null) {
+                    pushRoomToMembers(remaining, null)
+                    if (remaining.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                        pushSpectatorPreview(remaining)
+                    }
+                }
                 sendRoomListSafely(player, intent.requestId, "room leave response")
             }
             is PvpRoomIntent.ClaimSeat ->
@@ -844,7 +851,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
     private fun sendRoomList(player: ServerPlayer, requestId: UUID?) {
         val summaries = rooms.visibleRoomsFor(player.uuid).map(::summaryView)
-        ServerPlayNetworking.send(player, PvpRoomListStatePayload(requestId, summaries))
+        ServerPlayNetworking.send(player, PvpRoomListStatePayload(requestId, summaries, rooms.roomFor(player.uuid)?.roomId))
     }
 
     private fun sendRoomListSafely(player: ServerPlayer, requestId: UUID?, operation: String) {

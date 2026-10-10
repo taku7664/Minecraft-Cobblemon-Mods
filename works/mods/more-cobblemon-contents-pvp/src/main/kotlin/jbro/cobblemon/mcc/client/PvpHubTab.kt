@@ -71,12 +71,22 @@ internal object PvpHubClient {
     var mechanicsOffset = 0
     private var openedByServer = false
 
-    fun acceptRooms(rooms: List<PvpRoomSummaryView>) {
+    fun acceptRooms(rooms: List<PvpRoomSummaryView>, memberRoomId: UUID? = null) {
         PvpRoomClientState.lastRooms = rooms
         listFeedbackKey = null
         room = null
-        if (view != View.SELECTION) view = View.LIST
+        // A spectator's team preview belongs to the room; out of every room, it is gone too.
+        if (memberRoomId == null && selection?.state?.spectatorMode == true) selection = null
+        if (view != View.SELECTION || selection == null) view = View.LIST
         show()
+    }
+
+    /** This player is out of their room (a confirmed spectator exit): forget it so no cached view rejoins it. */
+    fun leftRoom() {
+        PvpRoomClientState.lastRoom = null
+        room = null
+        if (selection?.state?.spectatorMode == true) selection = null
+        if (view != View.SELECTION || selection == null) view = View.LIST
     }
 
     fun acceptRoom(requestId: UUID?, state: PvpRoomClientView, reopen: Boolean) {
@@ -251,6 +261,7 @@ internal class PvpHubTab : MccHubTabContent {
         MccHubKit.strip(host, layout.strip,
             Component.empty().append(room("title")).append(" · ").append(room("phase.${state.phase.name.lowercase()}")),
             room("spectators", state.spectators.size))
+        host.add(SpectatorCount(layout.strip, room("spectators", state.spectators.size), state.spectators))
         val (left, right, settings) = MccHubKit.columns(layout.body, 3, 3, 4)
         seat(host, left, PvpRoomSide.LEFT, state.leftPlayer, controller, me, lobby)
         seat(host, right, PvpRoomSide.RIGHT, state.rightPlayer, controller, me, lobby)
@@ -323,7 +334,8 @@ internal class PvpHubTab : MccHubTabContent {
         val manageable = isHost && lobby && idle && (state.inviteCandidates.isNotEmpty() || members.any { it.playerId != state.hostId })
         MccHubKit.footer(host, layout.footer,
             listOf(
-                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER, idle) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
+                // Past the lobby only a spectator can leave; a seated player ends the match from the battle instead.
+                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER, idle && (lobby || state.spectators.any { it.playerId == me })) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
                 MccHubKit.Action(room("back_to_list")) {
                     sendRoom(PvpRoomIntent.Refresh(UUID.randomUUID()))
                     PvpHubClient.navigate(PvpHubClient.View.LIST)
@@ -397,6 +409,7 @@ internal class PvpHubTab : MccHubTabContent {
             .distinctBy(PvpRoomMemberView::playerId).filter { it.playerId != state.hostId }
         val inviting = PvpHubClient.inviting
         MccHubKit.strip(host, layout.strip, room("title"), room("spectators", state.spectators.size))
+        host.add(SpectatorCount(layout.strip, room("spectators", state.spectators.size), state.spectators))
         val body = MccHubKit.card(host, layout.body, room(if (inviting) "picker.invite" else "picker.transfer"), MccHubKit.CardTone.FEATURE)
         val listTop = MccHubKit.choices(host, MccHubKit.lineAbove(body, MccHubKit.CONTROL_HEIGHT).first, listOf(
             MccHubKit.ChoiceRow(room("invite_manage"), listOf(
@@ -470,7 +483,7 @@ internal class PvpHubTab : MccHubTabContent {
                 if (controller.retry()) host.rebuild()
             }
             else -> MccHubKit.Action(pvp("confirm_selection"), UiButtonVariant.PRIMARY,
-                !controller.isPending && controller.selectedPokemonIds.size == state.format.selectionSize, minWidth = 96) {
+                !controller.isPending && controller.selectedPokemonIds.size == state.requiredSelectionSize, minWidth = 96) {
                 if (controller.submit()) host.rebuild()
             }
         }
@@ -511,7 +524,7 @@ internal class PvpHubTab : MccHubTabContent {
             controller.feedbackKey != null -> Component.translatable(controller.feedbackKey!!)
             state.battleStartRetryAvailable -> pvp("error.battle_unavailable")
             state.waitingForOpponent -> pvp("waiting")
-            else -> pvp("selection_summary", controller.selectedPokemonIds.size, state.format.selectionSize, remainingSeconds(state))
+            else -> pvp("selection_summary", controller.selectedPokemonIds.size, state.requiredSelectionSize, remainingSeconds(state))
         }
     }
 
@@ -543,6 +556,31 @@ internal class PvpHubTab : MccHubTabContent {
                 graphics.drawString(font, font.plainSubstrByWidth(member.name, slot.nameWidth), slot.nameLeft, slot.bounds.y + 2,
                     MccHubKit.panelText(theme), false)
             }
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+    }
+
+    /**
+     * Over the strip's spectator count, where [MccHubKit.strip] right-aligns it: draws nothing, and hovering it
+     * lists who is watching.
+     */
+    private class SpectatorCount(private val strip: UiRect, private val label: Component, private val spectators: List<PvpRoomMemberView>) :
+        AbstractWidget(0, strip.y, 0, strip.height, label) {
+        init {
+            active = false
+            val labelWidth = Minecraft.getInstance().font.width(label)
+            x = strip.right - STRIP_END_PADDING - labelWidth
+            width = labelWidth
+        }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            if (spectators.isEmpty() || mouseX !in x until x + width || mouseY !in y until y + height) return
+            val shown = spectators.take(MAX_LISTED_SPECTATORS)
+            val lines = buildList {
+                add(label.visualOrderText)
+                shown.forEach { add(Component.literal("• ${it.name}").visualOrderText) }
+                if (spectators.size > shown.size) add(room("hud.more_spectators", spectators.size - shown.size).visualOrderText)
+            }
+            Minecraft.getInstance().screen?.setTooltipForNextRenderPass(lines)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
@@ -579,6 +617,9 @@ internal class PvpHubTab : MccHubTabContent {
 
     private companion object {
         const val TEAM_SIZE = 6
+        /** [MccHubKit.strip]'s inset of its end text from the right edge. */
+        const val STRIP_END_PADDING = 6
+        const val MAX_LISTED_SPECTATORS = 20
 
         fun remainingSeconds(state: PvpSelectionViewState): Long =
             ((state.selectionDeadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(0) + 999) / 1_000

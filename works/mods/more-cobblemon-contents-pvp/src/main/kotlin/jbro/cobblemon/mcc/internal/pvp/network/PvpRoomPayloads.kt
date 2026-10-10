@@ -59,6 +59,11 @@ internal sealed interface PvpRoomIntent {
 internal data class PvpRoomListStatePayload(
     val requestId: UUID?,
     val rooms: List<PvpRoomSummaryView>,
+    /**
+     * The room the receiving player is a member of, or null. A room still in [rooms] says nothing about
+     * membership, so the client drops the room it remembers when this does not name it.
+     */
+    val memberRoomId: UUID? = null,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<PvpRoomListStatePayload> = TYPE
 
@@ -69,13 +74,14 @@ internal data class PvpRoomListStatePayload(
                 buffer.writeNullableUuid(payload.requestId)
                 buffer.writeVarInt(payload.rooms.size)
                 payload.rooms.forEach(buffer::writeSummary)
+                buffer.writeNullableUuid(payload.memberRoomId)
             },
             { buffer ->
                 val requestId = buffer.readNullableUuid()
                 val rooms = buildList {
                     repeat(buffer.readBoundedCount(MAX_ROOMS, "room")) { add(buffer.readSummary()) }
                 }
-                PvpRoomListStatePayload(requestId, rooms)
+                PvpRoomListStatePayload(requestId, rooms, buffer.readNullableUuid())
             },
         )
     }
