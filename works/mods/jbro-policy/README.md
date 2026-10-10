@@ -121,6 +121,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 - 기존 `config/jbro-policy-inquiry-review.json`의 `enabled`, `command`, `model`, `timeoutSeconds`를 사용합니다. 문의 채널·관리자 채널 설정과 계정 연동 여부는 질문 기능에 필요하지 않습니다.
 - 서버를 켤 때 명령을 등록합니다. 로그인된 `agy`가 필요하며, 별도 Gemini API 키를 쓰지 않습니다.
 - 질문 AI에는 파일 읽기·서버 명령·MCP·브라우저 도구를 주지 않습니다. 제한된 전용 프로필을 `~/.gemini/config/agents/jbro-pichu-chat/agent.md`에 설치하며, 다른 내용으로 바뀌면 호출하지 않습니다. 서버 로그나 플레이어 저장 자료도 전달하지 않습니다.
+- 대신 서버 위키 본문을 질문과 함께 넘겨서, 서버 규칙·콘텐츠 질문은 위키에 근거해 답합니다. 위키 폴더는 MCC `config/more-cobblemon-contents/wiki.json`의 `directory`(기본 `config/more-cobblemon-contents/wiki`)이고, 홈과 `pages/*.html`의 `<main>`을 질문마다 다시 읽으므로 위키를 고치면 재시작 없이 반영됩니다. 6만 자를 넘는 뒤쪽 문서는 빠집니다. 위키가 없으면 서버 규칙은 모른다고 답하고 `/문의`를 안내합니다. 위키에 없는 내용은 피츄도 모르니, 자주 묻는 내용은 위키에 적어 둡니다.
 - 대기시간은 봇 실행 중에만 유지하며 서버를 재시작하면 초기화됩니다. 질문마다 독립적으로 답하므로 앞선 채팅 내용을 기억하지 않습니다.
 
 ### 디스코드
