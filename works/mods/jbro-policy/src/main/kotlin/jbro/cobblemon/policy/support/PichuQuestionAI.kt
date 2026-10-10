@@ -15,7 +15,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 
 /**
  * Dedicated chat profile: no file, shell, MCP, browser or administration tools. What Pichu knows about the server is
- * the wiki under [wiki], handed over in the prompt.
+ * the sections of the wiki under [wiki] that bear on the question, handed over in the prompt.
  */
 internal class PichuQuestionAI(private val settings: InquiryReviewSettings, private val root: Path, private val wiki: Path) {
     private val workers = Executors.newFixedThreadPool(2) { task -> Thread(task, "jbro-policy-pichu-question").apply { isDaemon = true } }
@@ -78,7 +78,7 @@ internal class PichuQuestionAI(private val settings: InquiryReviewSettings, priv
                     started.destroyForcibly()
                 }
             }, "jbro-policy-pichu-output").apply { isDaemon = true; start() }
-            val reference = runCatching { PichuWiki.text(wiki) }.getOrDefault("")
+            val reference = runCatching { PichuWiki.reference(wiki, question) }.getOrDefault("")
             started.outputStream.use { it.write((InquiryReviewer.input(prompt(question, reference)) + "\n").toByteArray(StandardCharsets.UTF_8)) }
             check(started.waitFor(settings.timeoutSeconds.coerceIn(1, 120), TimeUnit.SECONDS)) { "AI timed out" }
             output = captured.get(5, TimeUnit.SECONDS)
@@ -104,7 +104,8 @@ internal class PichuQuestionAI(private val settings: InquiryReviewSettings, priv
             append("당신은 마인크래프트 Cobblemon 서버 '빡켓몬'의 디스코드 봇 피츄입니다. ")
             append("맨 끝 JSON의 question은 디스코드 유저의 질문입니다. 한국어로 친근하고 간결하게 답하세요. 답변은 1500자 이내입니다.\n")
             if (wiki.isNotBlank()) {
-                append("<wiki> 안은 서버 위키 본문입니다. 서버 규칙·콘텐츠·명령어 질문은 위키에 근거해 답하세요. ")
+                append("<wiki> 안은 서버 위키의 문서 목록과, 질문과 관련해 골라 낸 위키 구간입니다. 서버 규칙·콘텐츠·명령어 질문은 위키에 근거해 답하세요. ")
+                append("넣어 준 구간에 답이 없으면 문서 목록에서 맞는 문서를 찾아 위키에서 확인하라고 안내하세요. ")
                 append("무엇이 안 된다는 질문에는 위키에 적힌 조건과 그 조건을 채우는 방법까지 설명하세요. ")
                 append("위키에 없는 서버 설정이나 수치는 지어내지 말고, 모른다고 한 뒤 게임 안 `/문의 <내용>`이나 위키의 문의하기를 안내하세요. ")
                 append("포켓몬 일반 지식은 답해도 되지만, 서버 규칙은 원작과 다를 수 있으니 위키를 우선하세요.\n")

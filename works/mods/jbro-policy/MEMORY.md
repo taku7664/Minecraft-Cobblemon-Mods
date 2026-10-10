@@ -22,6 +22,16 @@
 - **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
 - **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
 
+## [2026-10-11] 피츄 위키 참고를 질문별 구간 선택으로 바꿈 (구현·커밋, 빌드·테스트·배포 미실행)
+
+- **이유:** 위키 전체(약 3.9만 자, 추정 2만~3만 토큰)를 질문마다 넣으면 agy 사용 한도를 많이 쓴다는 사용자 우려. 세션을 이어 가며 압축하는 안도 검토했으나, 매 턴 대화 전체를 다시 보내 토큰이 줄지 않고 공개 질문끼리 섞이거나 한 유저의 지시가 다른 유저 답을 오염시킬 수 있어 질문마다 새로 띄우는 방식을 유지했다. agy 로그(`~/.gemini/antigravity-cli/log`)에는 `input_tokens`/`output_tokens`만 있고 캐시 토큰 항목이 없어 서버 캐싱 여부는 확인할 수 없었다.
+- **구현:** `PichuWiki.select` — `<h2>` 구간 161개를 두 글자 조각+단어 첫 글자(가중치 0.3)로 비교하는 IDF 점수. 가중치는 nav 제목·키워드 3, 소제목 2, 본문 출현(최대 3회)/3, 문서 제목 일치는 그 문서 모든 구간에 0.4배 가산. 의문사 조각(어디·어떻게·있어 등)은 제외. 1위 문서 점수 10 미만이면 FAQ 문서, 아니면 1위의 60% 이상인 문서 최대 2개에서 최고 구간의 25% 이상인 구간을 6천 자까지. 위키 문서 목록은 항상 붙인다. 가중치·문턱은 저장소 위키로 Python 시험 스크립트를 돌려 맞췄다(세션 임시 폴더, 저장소에 없음).
+- **시험 결과(Python 프로토타입, Kotlin 동일 규칙):** 울트라홀 1,358자, 메가스톤 3,448자, 레벨캡 732자, 렉·잡담 → FAQ 878자 등 질문당 약 700~3,500자. "전설 어디서"가 "어디서" 소제목에 끌려가던 문제는 의문사 제외와 문서 우선 선택으로 해결했다. "서버 렉"은 점수 9.8로 문턱 바로 아래라 FAQ 경로로 답을 얻는다. 위키가 바뀌면 경로가 달라질 수 있다.
+- **위키:** `nav.js`에 "보상"(배틀타워·팩토리·리그)과 "배지"(리그)를 키워드로 추가했다.
+- **테스트:** `DiscordQuestionTest`에 구간 분리, 조사 일치, nav 순서·MCC 폴더 설정, 실제 저장소 위키(`../../../server-wiki`) 질문 7개 회귀 테스트를 넣었다. Gradle 컴파일·테스트는 "빌드는 지시할 때만" 결정에 따라 실행하지 않았다.
+
+---
+
 ## [2026-10-11 02:36] VPS 문의 불가 원인 확인·설정 복구·재기동
 
 - **원인(직접 확인):** VPS `config/jbro-policy-discord.json`에서 `inquiryChannelId`·`webhookUrl`이 모두 비어 있어 `/문의`가 꺼져 있었다. `adminChannelId`·`commandChannelId`·`newsChannelId`도 비었고 `inviteUrl` 키는 없었다. 개발 서버에는 모두 값이 있다. `jbro-policy/inquiries` 폴더가 없어 VPS에서 문의가 처리된 적이 없었다. agy는 `~/.local/bin/agy`에 있고 서버 Java PATH에 포함되며 로그인 토큰도 있어 원인이 아니었다(비로그인 SSH 셸의 `command -v`는 이 경로를 몰라 "없음"으로 보였다).
