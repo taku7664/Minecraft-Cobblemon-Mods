@@ -1,10 +1,32 @@
 {
+  "category": "medicines",
   "fabric:load_conditions": [
     {
-      "condition": "fabric:not",
-      "value": {
-        "condition": "fabric:true"
-      }
+      "condition": "fabric:all_mods_loaded",
+      "values": [
+        "create"
+      ]
     }
-  ]
+  ],
+  "ingredients": [
+    {
+      "item": "create:experience_nugget"
+    },
+    {
+      "item": "minecraft:honeycomb"
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "modid": "create",
+      "type": "neoforge:mod_loaded"
+    }
+  ],
+  "result": {
+    "id": "cobblemon:exp_candy_xs",
+    "count": 3
+  },
+  "seasoningProcessors": [],
+  "seasoningTag": "cobblemon:empty",
+  "type": "cobblemon:cooking_pot_shapeless"
 }

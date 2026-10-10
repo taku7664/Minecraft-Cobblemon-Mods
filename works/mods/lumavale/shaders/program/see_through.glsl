@@ -7,21 +7,25 @@ uniform vec3 mcc_seeThroughB;
 
 in vec3 seeThroughPos;
 
-// How much the fragment at p (camera-relative) is in the way of target, 0 to 1: inside a cone from the camera that
-// widens toward the target, stopping short of the target itself so its ground stays.
+// How much the fragment at p (camera-relative) hides target (a body center), 0 to 1. Only fragments the target is
+// actually behind count: the camera ray through p has to pass close to the target, and p has to sit in front of it.
+// Nothing below the target's center counts, so the ground under and in front of a Pokemon stays put and the
+// underground never opens up (the old fat cone around the camera-target line did both: haze and x-ray).
 float seeThroughOcclusion(vec3 p, vec3 target) {
-    float reach = length(target);
-    if (reach < 1.0) {
+    if (dot(target, target) < 1.0 || p.y < target.y - 0.15) {
         return 0.0;
     }
-    vec3 dir = target / reach;
-    float along = dot(p, dir);
-    if (along <= 0.2 || along >= reach - 0.8) {
+    float depth = length(p);
+    if (depth < 0.2) {
         return 0.0;
     }
-    float radius = mix(0.7, 1.8, along / reach);
-    float off = length(p - dir * along);
-    return 1.0 - smoothstep(radius * 0.6, radius, off);
+    vec3 ray = p / depth;
+    float along = dot(target, ray);
+    if (depth >= along - 0.6) {
+        return 0.0;
+    }
+    float miss = length(target - ray * along);
+    return 1.0 - smoothstep(0.7, 1.2, miss);
 }
 
 float seeThroughBayer4(vec2 fragCoord) {

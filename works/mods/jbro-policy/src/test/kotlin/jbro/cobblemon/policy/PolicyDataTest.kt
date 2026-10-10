@@ -24,15 +24,19 @@ class PolicyDataTest {
     }
 
     @Test
-    fun `every experience candy recipe is disabled including splitting and Create`() {
-        val recipes = listOf("xs", "s", "m", "l", "xl").map { "campfire_pot/exp_candy_$it" } +
-            listOf("xs_from_exp_candy_s", "s_from_exp_candy_m", "m_from_exp_candy_l", "l_from_exp_candy_xl").map { "exp_candy_$it" } +
-            "mod_compatibility/create/campfire_pot/exp_candy_xs_create"
-        for (path in recipes) {
+    fun `experience candy crafting is unlocked and XS cooking yields three`() {
+        for (path in listOf("campfire_pot/exp_candy_xs", "mod_compatibility/create/campfire_pot/exp_candy_xs_create")) {
             val recipe = json("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/$path.json")
-            val condition = recipe.getAsJsonArray("fabric:load_conditions").single().asJsonObject
-            assertEquals("fabric:not", condition.get("condition").asString)
-            assertEquals("fabric:true", condition.getAsJsonObject("value").get("condition").asString)
+            assertEquals("cobblemon:cooking_pot_shapeless", recipe.get("type").asString)
+            assertEquals("cobblemon:exp_candy_xs", recipe.getAsJsonObject("result").get("id").asString)
+            assertEquals(3, recipe.getAsJsonObject("result").get("count").asInt)
+            if (path.startsWith("campfire_pot/")) assertFalse(recipe.has("fabric:load_conditions"))
+            else assertEquals("fabric:all_mods_loaded", recipe.getAsJsonArray("fabric:load_conditions").single().asJsonObject.get("condition").asString)
+        }
+        val recipes = listOf("s", "m", "l", "xl").map { "campfire_pot/exp_candy_$it" } +
+            listOf("xs_from_exp_candy_s", "s_from_exp_candy_m", "m_from_exp_candy_l", "l_from_exp_candy_xl").map { "exp_candy_$it" }
+        for (path in recipes) {
+            assertEquals(null, javaClass.getResource("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/$path.json"))
         }
         for (stat in listOf("courage", "health", "mighty", "quick", "smart", "tough")) for (size in listOf("l", "xl")) {
             assertEquals(null, javaClass.getResource("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/campfire_pot/${stat}_candy_$size.json"))

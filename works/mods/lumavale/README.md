@@ -29,4 +29,4 @@ Rounding-Block과는 독립된 쉐이더팩입니다. Rounding-Block이 없어�
 .\lumavale\build.ps1
 ```
 
-산출물은 `lumavale/dist/LumaVale-0.1.3.zip`입니다.
+산출물은 `lumavale/dist/LumaVale-0.1.4.zip`입니다.

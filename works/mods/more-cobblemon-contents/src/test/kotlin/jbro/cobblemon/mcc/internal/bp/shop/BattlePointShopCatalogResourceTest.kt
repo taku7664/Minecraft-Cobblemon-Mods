@@ -21,17 +21,17 @@ class BattlePointShopCatalogResourceTest {
         fun price(entryId: String) = requireNotNull(catalog.entry(entryId)) { entryId }.priceBp
 
         assertEquals("mcc_core", catalog.catalogId)
-        assertEquals(123, catalog.entries().size)
-        assertEquals(123, catalog.entries().map { it.sortOrder }.distinct().size)
+        assertEquals(106, catalog.entries().size)
+        assertEquals(106, catalog.entries().map { it.sortOrder }.distinct().size)
         // Levels and EVs are no burden.
-        assertEquals(listOf(1L, 2L, 4L, 10L, 4L), listOf("exp_candy_s", "exp_candy_m", "exp_candy_l", "exp_candy_xl", "rare_candy").map(::price))
+        assertTrue(catalog.entries().none { it.itemId.endsWith("_candy") || it.itemId.contains(":exp_candy_") ||
+            (it.itemId.endsWith("_ball") && it.itemId != "cobblemon:iron_ball") ||
+            it.itemId in setOf("cobblemon:exp_share", "cobblemon:ether", "cobblemon:max_ether", "cobblemon:elixir", "cobblemon:max_elixir") })
         assertTrue(listOf("hp_up", "protein", "iron", "calcium", "zinc", "carbos").all { price(it) == 2L })
         assertEquals(6, catalog.entries().count { it.entryId.endsWith("_feather") && it.priceBp == 1L })
         // Mints are farmed later anyway.
         assertEquals(21, catalog.entries().count { it.entryId.endsWith("_mint") && it.priceBp == 10L })
-        // Candies are the only way to raise an IV, so a stat's worth costs about a Life Orb; lowering one is near free.
-        assertTrue(listOf("health", "mighty", "tough", "smart", "courage", "quick").all { price("${it}_candy") == 10L })
-        assertTrue(listOf("sickly", "weak", "brittle", "numb", "coward", "slow").all { price("${it}_candy") == 1L })
+        // Candies are crafted or found while exploring; BP remains for the other goods.
         // A hidden ability costs a Life Orb.
         assertEquals(30L, price("ability_capsule"))
         assertEquals(100L, price("ability_patch"))

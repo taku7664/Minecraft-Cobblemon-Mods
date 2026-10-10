@@ -1,10 +1,18 @@
 {
-  "fabric:load_conditions": [
+  "category": "medicines",
+  "ingredients": [
     {
-      "condition": "fabric:not",
-      "value": {
-        "condition": "fabric:true"
-      }
+      "item": "minecraft:sculk"
+    },
+    {
+      "item": "minecraft:honeycomb"
     }
-  ]
+  ],
+  "result": {
+    "id": "cobblemon:exp_candy_xs",
+    "count": 3
+  },
+  "seasoningProcessors": [],
+  "seasoningTag": "cobblemon:empty",
+  "type": "cobblemon:cooking_pot_shapeless"
 }

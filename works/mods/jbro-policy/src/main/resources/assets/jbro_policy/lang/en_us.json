@@ -91,7 +91,7 @@
   "message.jbro_policy.spawn_for.rank": "%1$s is below the %2$s League rank and cannot catch it.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
-  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no experience candy crafting",
+  "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: craft three XS Exp. Candies",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: no Ability Patch recipe",
 
   "legend.jbro_policy.appeared.arceus": "%2$s appeared near %1$s!",

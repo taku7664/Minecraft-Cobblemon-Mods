@@ -107,3 +107,13 @@ python -m unittest discover -s works/tools/server-wiki -p 'test_*.py'
 
 전설 가이드의 "내 전설 현황"은 jbro-policy가 `/api/me`에 더하는 `legends` 항목(직접 잡은 종, 리그 등급, 지금 파티)을
 씁니다.
+
+## 제작법
+
+`pages/crafting.html`은 주요 품목의 제작법을 몬스터볼·소모품·장치와 도구 탭으로 나눕니다. 아이템이나 재료 이름으로 검색하면 해당 제작법을 펼칩니다. 조합대·냄비의 배치, 양조기·대장장이 작업대의 슬롯, 제작 수량과 제작 불가 품목을 표시합니다.
+
+`assets/data/crafting.js`는 생성 데이터입니다. Cobblemon 1.8.1 기본 레시피와 `jbro-policy`의 커밋된 XS 제작량 오버라이드를 읽으며, 선택 모드 연동 레시피는 제외합니다. 모드나 정책 레시피가 바뀌면 다음 명령으로 갱신합니다. 게임에서 읽은 활성 레시피 목록은 아니므로 별도 월드 데이터팩의 변경은 포함하지 않습니다.
+
+```powershell
+python works/tools/server-wiki/gen_crafting.py --cobblemon "설치된 Cobblemon JAR 경로"
+```
