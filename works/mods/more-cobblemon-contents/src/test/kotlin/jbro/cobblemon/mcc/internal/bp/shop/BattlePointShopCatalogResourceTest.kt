@@ -69,7 +69,7 @@ class BattlePointShopCatalogResourceTest {
         assertEquals("held_item", catalog.entry("ability_shield")?.category)
         assertEquals(listOf("firework_rocket", "enchanted_golden_apple"), catalog.entries().filter { it.category == "misc" }.map { it.entryId })
         assertEquals(2L, price("firework_rocket"))
-        assertEquals(80L, price("enchanted_golden_apple"))
+        assertEquals(120L, price("enchanted_golden_apple"))
         assertEquals(listOf("held_item", "gimmick", "consumable", "misc"), catalog.categories)
     }
 
