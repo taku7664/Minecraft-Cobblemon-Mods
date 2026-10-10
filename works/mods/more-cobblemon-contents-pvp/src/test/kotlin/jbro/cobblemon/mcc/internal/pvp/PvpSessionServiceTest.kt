@@ -502,6 +502,59 @@ class PvpSessionServiceTest {
         )
     }
 
+    @Test
+    fun `a doubles match between a two and a one pokemon party selects both parties whole and starts`() {
+        val snapshots = RecordingSnapshots()
+        var prepared: PvpPreparedBattle<String>? = null
+        val service = service(snapshots, BattleRecordStore()) { battle ->
+            prepared = battle
+            PvpBattleLaunchResult.Started(battleId)
+        }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.DOUBLE))
+        service.accept(matchId, second)
+        assertEquals(PvpTeamRegistrationMutation.STORED, service.registerTeam(matchId, first, smallTeam(first, 2, PvpBattleFormat.DOUBLE)))
+        assertEquals(PvpTeamRegistrationMutation.STORED, service.registerTeam(matchId, second, smallTeam(second, 1, PvpBattleFormat.DOUBLE)))
+
+        // One short of the whole party is still refused: a small party enters whole.
+        assertEquals(PvpSelectionMutation.INVALID_SELECTION, service.select(matchId, first, listOf(pokemonId(first, 1))))
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, first, (1..2).map { pokemonId(first, it) }))
+        assertEquals(PvpSelectionMutation.WAITING_FOR_OPPONENT, service.ready(matchId, first))
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, listOf(pokemonId(second, 1))))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertEquals(2, prepared?.request?.firstSelection?.members?.size)
+        assertEquals(1, prepared?.request?.secondSelection?.members?.size)
+    }
+
+    @Test
+    fun `entry deadline auto selects a one pokemon party whole`() {
+        var now = 0L
+        val snapshots = RecordingSnapshots()
+        var prepared: PvpPreparedBattle<String>? = null
+        val service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(snapshots, PvpBattleRuntime { battle ->
+                prepared = battle
+                PvpBattleLaunchResult.Started(battleId)
+            }),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = now
+                override fun monotonicMillis(): Long = now
+            },
+        )
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, smallTeam(first, 1, PvpBattleFormat.SINGLE))
+        service.registerTeam(matchId, second, smallTeam(second, 6, PvpBattleFormat.SINGLE))
+
+        now = 90_000L
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.expireEntrySelections().single().launchResult)
+        assertEquals(listOf(pokemonId(first, 1)), prepared?.request?.firstSelection?.members?.map(PvpPokemonRegistration::pokemonId))
+        assertEquals(3, prepared?.request?.secondSelection?.members?.size)
+    }
+
+    private fun smallTeam(playerId: UUID, size: Int, format: PvpBattleFormat): PvpRegisteredTeam =
+        (PvpTeamRules.register((1..size).map { index -> pokemon(playerId, index) }, format) as PvpTeamRegistrationResult.Accepted).team
+
     private fun ready(service: PvpSessionService<String>) {
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
         service.accept(matchId, second)

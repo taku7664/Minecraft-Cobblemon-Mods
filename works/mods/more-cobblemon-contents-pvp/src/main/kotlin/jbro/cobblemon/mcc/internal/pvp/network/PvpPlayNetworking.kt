@@ -850,8 +850,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun sendRoomList(player: ServerPlayer, requestId: UUID?) {
-        val summaries = rooms.visibleRoomsFor(player.uuid).map(::summaryView)
-        ServerPlayNetworking.send(player, PvpRoomListStatePayload(requestId, summaries, rooms.roomFor(player.uuid)?.roomId))
+        ServerPlayNetworking.send(player, rooms.listStateFor(player.uuid, requestId, ::summaryView))
     }
 
     private fun sendRoomListSafely(player: ServerPlayer, requestId: UUID?, operation: String) {

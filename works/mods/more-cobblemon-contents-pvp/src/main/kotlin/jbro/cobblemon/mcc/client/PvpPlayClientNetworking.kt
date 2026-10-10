@@ -87,10 +87,8 @@ internal object PvpPlayClientNetworking {
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomListStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                // A room that is still listed may be one this player just left; only membership keeps it.
-                if (PvpRoomClientState.lastRoom?.roomId != payload.memberRoomId) {
-                    PvpRoomClientState.lastRoom = null
-                }
+                PvpRoomClientState.lastRoom =
+                    PvpRoomNavigationContract.rememberedAfterRoomList(PvpRoomClientState.lastRoom, payload.memberRoomId)
                 PvpHubClient.acceptRooms(payload.rooms, payload.memberRoomId)
                 PvpRoomHudOverlay.refreshControls()
             }

@@ -75,8 +75,9 @@ internal object PvpHubClient {
         PvpRoomClientState.lastRooms = rooms
         listFeedbackKey = null
         room = null
-        // A spectator's team preview belongs to the room; out of every room, it is gone too.
-        if (memberRoomId == null && selection?.state?.spectatorMode == true) selection = null
+        selection?.let { current ->
+            if (!PvpRoomNavigationContract.keepsSelectionAfterRoomList(current.state.spectatorMode, memberRoomId)) selection = null
+        }
         if (view != View.SELECTION || selection == null) view = View.LIST
         show()
     }
@@ -85,7 +86,9 @@ internal object PvpHubClient {
     fun leftRoom() {
         PvpRoomClientState.lastRoom = null
         room = null
-        if (selection?.state?.spectatorMode == true) selection = null
+        selection?.let { current ->
+            if (!PvpRoomNavigationContract.keepsSelectionAfterRoomList(current.state.spectatorMode, null)) selection = null
+        }
         if (view != View.SELECTION || selection == null) view = View.LIST
     }
 
@@ -334,8 +337,8 @@ internal class PvpHubTab : MccHubTabContent {
         val manageable = isHost && lobby && idle && (state.inviteCandidates.isNotEmpty() || members.any { it.playerId != state.hostId })
         MccHubKit.footer(host, layout.footer,
             listOf(
-                // Past the lobby only a spectator can leave; a seated player ends the match from the battle instead.
-                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER, idle && (lobby || state.spectators.any { it.playerId == me })) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
+                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER,
+                    idle && PvpRoomNavigationContract.canLeave(lobby, state.spectators.any { it.playerId == me })) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
                 MccHubKit.Action(room("back_to_list")) {
                     sendRoom(PvpRoomIntent.Refresh(UUID.randomUUID()))
                     PvpHubClient.navigate(PvpHubClient.View.LIST)

@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomClientView
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomIntent
 
 internal object PvpRoomNavigationContract {
@@ -22,6 +23,19 @@ internal object PvpRoomNavigationContract {
             throw failure
         }
     }
+
+    /**
+     * What a client still remembers after a room list: only the room the server says it belongs to. A room that is
+     * still listed may be one this player just left, and reopening a remembered room joins it again.
+     */
+    fun rememberedAfterRoomList(remembered: PvpRoomClientView?, memberRoomId: UUID?): PvpRoomClientView? =
+        remembered?.takeIf { it.roomId == memberRoomId }
+
+    /** A spectator's team preview belongs to their room and goes with it; a participant's challenge preview stays. */
+    fun keepsSelectionAfterRoomList(spectatorMode: Boolean, memberRoomId: UUID?): Boolean = !spectatorMode || memberRoomId != null
+
+    /** Past the lobby only a spectator may leave; the server refuses a seated player (`leaveRequestError`). */
+    fun canLeave(lobby: Boolean, spectator: Boolean): Boolean = lobby || spectator
 
     fun shouldOpenFromRoomList(requestId: UUID?, pendingRequestIds: MutableSet<UUID>): Boolean =
         requestId != null && pendingRequestIds.remove(requestId)
