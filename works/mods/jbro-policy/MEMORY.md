@@ -22,6 +22,14 @@
 - **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
 - **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
 
+## [2026-10-11 03:50] 피츄 위키 선택 빌드·개발 배포 (빌드·테스트·개발 배치 확인, 서버 기동·디스코드 실사용 미확인)
+
+- **빌드:** `origin/main` `4ff986e4`를 `git archive`로 `F:/AI/build/pichu-wiki-20261011/src`에 풀어 빌드(워크트리 아님, 이전 `plaza-fix` init·빌드 스크립트를 경로만 바꿔 재사용, Gradle 쓰기 경로 모두 F). 첫 빌드는 테스트 파일 두 줄의 `\n`이 셸 heredoc에서 실제 줄바꿈으로 바뀌어 `compileTestKotlin` 실패(본 코드는 컴파일됨) → `4ff986e4`로 수정. 재빌드 `:jbro-policy:build` 종료 코드 0, 테스트 108개 성공·중단 0(실제 위키 회귀 테스트 포함). JAR SHA-256 `F5DB967F72AE67280D59606123F8966A7449FC710EBB2EE70E0C93A46059D916`, `jar --validate` 0.
+- **개발 배포:** 게임·서버 미실행과 25565/25566 미수신 확인 후 `develop-product/server`·`client`의 `mods/jbro-policy-0.1.3.jar` 교체, 두 설치본 해시가 빌드본과 같다. 개발 서버 위키(`config/more-cobblemon-contents/wiki`)는 main보다 오래돼(제작법·차원 문서 없음, 상점 가격 구버전) main 위키로 맞췄고 1,073개 파일 해시가 일치한다. 이전 JAR·위키 백업은 `F:/AI/build/pichu-wiki-20261011/deployment-backups/`. 개발 서버는 켜지 않았다. VPS·운영에는 반영하지 않았다.
+- **교훈:** Git Bash heredoc(`<<'EOF'`)으로 Python·PowerShell 코드를 쓰면 `\\`가 `\`로 줄어드는 일이 이번 세션에서 세 번 있었다(시험 스크립트 경로, 테스트 `\n`, 배포 스크립트 정규식). 백슬래시가 든 코드는 Write/Edit 도구로 쓴다.
+
+---
+
 ## [2026-10-11] 피츄 위키 참고를 질문별 구간 선택으로 바꿈 (구현·커밋, 빌드·테스트·배포 미실행)
 
 - **이유:** 위키 전체(약 3.9만 자, 추정 2만~3만 토큰)를 질문마다 넣으면 agy 사용 한도를 많이 쓴다는 사용자 우려. 세션을 이어 가며 압축하는 안도 검토했으나, 매 턴 대화 전체를 다시 보내 토큰이 줄지 않고 공개 질문끼리 섞이거나 한 유저의 지시가 다른 유저 답을 오염시킬 수 있어 질문마다 새로 띄우는 방식을 유지했다. agy 로그(`~/.gemini/antigravity-cli/log`)에는 `input_tokens`/`output_tokens`만 있고 캐시 토큰 항목이 없어 서버 캐싱 여부는 확인할 수 없었다.
