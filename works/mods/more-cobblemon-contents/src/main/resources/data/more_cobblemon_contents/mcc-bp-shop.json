@@ -1,0 +1,878 @@
+{
+  "schema_version": 1,
+  "catalog_id": "mcc_core",
+  "limits": {
+    "max_cart_lines": 16,
+    "max_quantity_per_line": 64,
+    "max_total_items": 64
+  },
+  "shopkeeper": {
+    "appearances": [
+      {
+        "skin": "rctmod:textures/trainers/single/waitress_kati_03fc.png"
+      },
+      {
+        "villager": {
+          "profession": "cobblemon:nurse_joy",
+          "type": "minecraft:plains"
+        }
+      }
+    ]
+  },
+  "categories": [
+    "held_item",
+    "gimmick",
+    "consumable",
+    "misc"
+  ],
+  "entries": [
+    {
+      "entry_id": "hp_up",
+      "item_id": "cobblemon:hp_up",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 60,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "protein",
+      "item_id": "cobblemon:protein",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 70,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "iron",
+      "item_id": "cobblemon:iron",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 80,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "calcium",
+      "item_id": "cobblemon:calcium",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 90,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "zinc",
+      "item_id": "cobblemon:zinc",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 100,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "carbos",
+      "item_id": "cobblemon:carbos",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 110,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "health_feather",
+      "item_id": "cobblemon:health_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 120,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "muscle_feather",
+      "item_id": "cobblemon:muscle_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 130,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "resist_feather",
+      "item_id": "cobblemon:resist_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 140,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "genius_feather",
+      "item_id": "cobblemon:genius_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 150,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "clever_feather",
+      "item_id": "cobblemon:clever_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 160,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "swift_feather",
+      "item_id": "cobblemon:swift_feather",
+      "item_count": 1,
+      "price_bp": 1,
+      "sort_order": 170,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "lonely_mint",
+      "item_id": "cobblemon:lonely_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 300,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "adamant_mint",
+      "item_id": "cobblemon:adamant_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 310,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "naughty_mint",
+      "item_id": "cobblemon:naughty_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 320,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "brave_mint",
+      "item_id": "cobblemon:brave_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 330,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "bold_mint",
+      "item_id": "cobblemon:bold_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 340,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "impish_mint",
+      "item_id": "cobblemon:impish_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 350,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "lax_mint",
+      "item_id": "cobblemon:lax_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 360,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "relaxed_mint",
+      "item_id": "cobblemon:relaxed_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 370,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "modest_mint",
+      "item_id": "cobblemon:modest_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 380,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "mild_mint",
+      "item_id": "cobblemon:mild_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 390,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "rash_mint",
+      "item_id": "cobblemon:rash_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 400,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "quiet_mint",
+      "item_id": "cobblemon:quiet_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 410,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "calm_mint",
+      "item_id": "cobblemon:calm_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 420,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "gentle_mint",
+      "item_id": "cobblemon:gentle_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 430,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "careful_mint",
+      "item_id": "cobblemon:careful_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 440,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "sassy_mint",
+      "item_id": "cobblemon:sassy_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 450,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "timid_mint",
+      "item_id": "cobblemon:timid_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 460,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "hasty_mint",
+      "item_id": "cobblemon:hasty_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 470,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "jolly_mint",
+      "item_id": "cobblemon:jolly_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 480,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "naive_mint",
+      "item_id": "cobblemon:naive_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 490,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "serious_mint",
+      "item_id": "cobblemon:serious_mint",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 500,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "ability_capsule",
+      "item_id": "cobblemon:ability_capsule",
+      "item_count": 1,
+      "price_bp": 30,
+      "sort_order": 510,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "ability_patch",
+      "item_id": "cobblemon:ability_patch",
+      "item_count": 1,
+      "price_bp": 100,
+      "sort_order": 520,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "oval_stone",
+      "item_id": "cobblemon:oval_stone",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 521,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "razor_claw",
+      "item_id": "cobblemon:razor_claw",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 522,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "razor_fang",
+      "item_id": "cobblemon:razor_fang",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 523,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "dragon_scale",
+      "item_id": "cobblemon:dragon_scale",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 524,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "prism_scale",
+      "item_id": "cobblemon:prism_scale",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 525,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "choice_band",
+      "item_id": "cobblemon:choice_band",
+      "item_count": 1,
+      "price_bp": 75,
+      "sort_order": 530,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "choice_specs",
+      "item_id": "cobblemon:choice_specs",
+      "item_count": 1,
+      "price_bp": 100,
+      "sort_order": 540,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "choice_scarf",
+      "item_id": "cobblemon:choice_scarf",
+      "item_count": 1,
+      "price_bp": 75,
+      "sort_order": 550,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "assault_vest",
+      "item_id": "cobblemon:assault_vest",
+      "item_count": 1,
+      "price_bp": 75,
+      "sort_order": 560,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "life_orb",
+      "item_id": "cobblemon:life_orb",
+      "item_count": 1,
+      "price_bp": 100,
+      "sort_order": 570,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "red_card",
+      "item_id": "cobblemon:red_card",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 580,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "eject_button",
+      "item_id": "cobblemon:eject_button",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 590,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "eject_pack",
+      "item_id": "cobblemon:eject_pack",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 600,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "blunder_policy",
+      "item_id": "cobblemon:blunder_policy",
+      "item_count": 1,
+      "price_bp": 40,
+      "sort_order": 610,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "weakness_policy",
+      "item_id": "cobblemon:weakness_policy",
+      "item_count": 1,
+      "price_bp": 40,
+      "sort_order": 620,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "focus_sash",
+      "item_id": "cobblemon:focus_sash",
+      "item_count": 1,
+      "price_bp": 40,
+      "sort_order": 630,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "air_balloon",
+      "item_id": "cobblemon:air_balloon",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 640,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "white_herb",
+      "item_id": "cobblemon:white_herb",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 650,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "mental_herb",
+      "item_id": "cobblemon:mental_herb",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 660,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "power_herb",
+      "item_id": "cobblemon:power_herb",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 670,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "room_service",
+      "item_id": "cobblemon:room_service",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 680,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "light_clay",
+      "item_id": "cobblemon:light_clay",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 690,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "terrain_extender",
+      "item_id": "cobblemon:terrain_extender",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 700,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "throat_spray",
+      "item_id": "cobblemon:throat_spray",
+      "item_count": 1,
+      "price_bp": 40,
+      "sort_order": 710,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "adrenaline_orb",
+      "item_id": "mega_showdown:adrenaline_orb",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 720,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "absorb_bulb",
+      "item_id": "cobblemon:absorb_bulb",
+      "item_count": 1,
+      "price_bp": 40,
+      "sort_order": 730,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "cell_battery",
+      "item_id": "cobblemon:cell_battery",
+      "item_count": 1,
+      "price_bp": 5,
+      "sort_order": 740,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "lucky_egg",
+      "item_id": "cobblemon:lucky_egg",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 750,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "ability_shield",
+      "item_id": "cobblemon:ability_shield",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 760,
+      "category": "held_item"
+    },
+    {
+      "entry_id": "mega_bracelet",
+      "item_id": "mega_showdown:mega_bracelet",
+      "item_count": 1,
+      "price_bp": 150,
+      "sort_order": 800,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "mega_stone",
+      "item_id": "mega_showdown:mega_stone",
+      "item_count": 1,
+      "price_bp": 100,
+      "sort_order": 810,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "z_ring",
+      "item_id": "mega_showdown:z_ring",
+      "item_count": 1,
+      "price_bp": 150,
+      "sort_order": 820,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "blank_z",
+      "item_id": "mega_showdown:blank_z",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 830,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "tera_orb",
+      "item_id": "mega_showdown:tera_orb",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 840,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "normal_tera_shard",
+      "item_id": "mega_showdown:normal_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 850,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "fire_tera_shard",
+      "item_id": "mega_showdown:fire_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 860,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "water_tera_shard",
+      "item_id": "mega_showdown:water_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 870,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "electric_tera_shard",
+      "item_id": "mega_showdown:electric_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 880,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "grass_tera_shard",
+      "item_id": "mega_showdown:grass_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 890,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "ice_tera_shard",
+      "item_id": "mega_showdown:ice_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 900,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "fighting_tera_shard",
+      "item_id": "mega_showdown:fighting_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 910,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "poison_tera_shard",
+      "item_id": "mega_showdown:poison_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 920,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "ground_tera_shard",
+      "item_id": "mega_showdown:ground_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 930,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "flying_tera_shard",
+      "item_id": "mega_showdown:flying_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 940,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "psychic_tera_shard",
+      "item_id": "mega_showdown:psychic_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 950,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "bug_tera_shard",
+      "item_id": "mega_showdown:bug_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 960,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "rock_tera_shard",
+      "item_id": "mega_showdown:rock_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 970,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "ghost_tera_shard",
+      "item_id": "mega_showdown:ghost_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 980,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "dragon_tera_shard",
+      "item_id": "mega_showdown:dragon_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 990,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "dark_tera_shard",
+      "item_id": "mega_showdown:dark_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 1000,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "steel_tera_shard",
+      "item_id": "mega_showdown:steel_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 1010,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "fairy_tera_shard",
+      "item_id": "mega_showdown:fairy_tera_shard",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 1020,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "stellar_tera_shard",
+      "item_id": "mega_showdown:stellar_tera_shard",
+      "item_count": 1,
+      "price_bp": 5,
+      "sort_order": 1030,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "dynamax_band",
+      "item_id": "mega_showdown:dynamax_band",
+      "item_count": 1,
+      "price_bp": 150,
+      "sort_order": 1040,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "wishing_star",
+      "item_id": "mega_showdown:wishing_star",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 1050,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "max_mushroom",
+      "item_id": "mega_showdown:max_mushroom",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1060,
+      "category": "gimmick"
+    },
+    {
+      "entry_id": "firework_rocket",
+      "item_id": "minecraft:firework_rocket",
+      "item_count": 1,
+      "price_bp": 2,
+      "sort_order": 1100,
+      "category": "misc"
+    },
+    {
+      "entry_id": "enchanted_golden_apple",
+      "item_id": "minecraft:enchanted_golden_apple",
+      "item_count": 1,
+      "price_bp": 120,
+      "sort_order": 1105,
+      "category": "misc"
+    },
+    {
+      "entry_id": "link_cable",
+      "item_id": "cobblemon:link_cable",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1110,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "kings_rock",
+      "item_id": "cobblemon:kings_rock",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1120,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "metal_coat",
+      "item_id": "cobblemon:metal_coat",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1130,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "upgrade",
+      "item_id": "cobblemon:upgrade",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1140,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "dubious_disc",
+      "item_id": "cobblemon:dubious_disc",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1150,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "protector",
+      "item_id": "cobblemon:protector",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1160,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "electirizer",
+      "item_id": "cobblemon:electirizer",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1170,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "magmarizer",
+      "item_id": "cobblemon:magmarizer",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1180,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "reaper_cloth",
+      "item_id": "cobblemon:reaper_cloth",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1190,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "sachet",
+      "item_id": "cobblemon:sachet",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1200,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "whipped_dream",
+      "item_id": "cobblemon:whipped_dream",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1210,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "pp_up",
+      "item_id": "cobblemon:pp_up",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 1220,
+      "category": "consumable"
+    },
+    {
+      "entry_id": "pp_max",
+      "item_id": "cobblemon:pp_max",
+      "item_count": 1,
+      "price_bp": 25,
+      "sort_order": 1230,
+      "category": "consumable"
+    }
+  ]
+}

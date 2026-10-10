@@ -1,9 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogFiles
+import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogFile
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogReloadOutcome
-import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogResourceBundle
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogResourceReloader
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogStore
 import jbro.cobblemon.mcc.internal.catalog.CatalogResourceInput
@@ -16,13 +15,12 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 internal object BattlePointShopCatalogResources {
-    const val ruleDirectory = "mcc-bp-shop/rules"
-    const val entryDirectory = "mcc-bp-shop/entries"
+    const val catalogPath = "mcc-bp-shop.json"
     private val listenerId = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "bp_shop_catalog")
     val store = BattlePointShopCatalogStore(::itemExists)
     private val reloader = BattlePointShopCatalogResourceReloader(store)
     private val files by lazy {
-        BattlePointShopCatalogFiles(FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents/bp-shop"))
+        BattlePointShopCatalogFile(FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents/bp-shop.json"))
     }
 
     fun register() {
@@ -47,18 +45,13 @@ internal object BattlePointShopCatalogResources {
     }
 
     private fun reload(resourceManager: ResourceManager): ReloadReport {
-        fun resources(directory: String): List<CatalogResourceInput> =
-            resourceManager.listResources(directory) { location -> location.path.endsWith(".json") }
-                .entries
-                .sortedBy { it.key.toString() }
-                .map { (id, resource) -> CatalogResourceInput(id.toString(), resource::openAsReader) }
-        val bundle = files.load { BattlePointShopCatalogResourceBundle(resources(ruleDirectory), resources(entryDirectory)) }
-        val rules = bundle.rules
-        val entries = bundle.entries
+        val resource = files.load {
+            val id = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, catalogPath)
+            val defaults = resourceManager.getResource(id).orElseThrow { IllegalStateException("Missing default BP shop: $id") }
+            CatalogResourceInput(id.toString(), defaults::openAsReader)
+        }
         return ReloadReport(
-            reloader.reload(BattlePointShopCatalogResourceBundle(rules, entries)),
-            rules.size,
-            entries.size,
+            reloader.reload(resource),
         )
     }
 
@@ -66,15 +59,13 @@ internal object BattlePointShopCatalogResources {
         try {
             when (val outcome = report.outcome) {
                 BattlePointShopCatalogReloadOutcome.MissingResource -> MoreCobblemonContents.LOGGER.error(
-                    "BP shop rules are missing under config/more-cobblemon-contents/bp-shop/rules. Keeping the previous catalog.",
+                    "BP shop file is missing at config/more-cobblemon-contents/bp-shop.json. Keeping the previous catalog.",
                 )
                 is BattlePointShopCatalogReloadOutcome.ReadFailed -> reportReloadFailureSafely(outcome.cause)
                 is BattlePointShopCatalogReloadOutcome.Applied -> MoreCobblemonContents.LOGGER.info(
-                    "Loaded BP shop catalog {} with {} entries from {} rules and {} entry JSON files",
+                    "Loaded BP shop catalog {} with {} entries from config/more-cobblemon-contents/bp-shop.json",
                     outcome.catalog.catalogId,
                     outcome.catalog.entries().size,
-                    report.ruleCount,
-                    report.entryCount,
                 )
                 is BattlePointShopCatalogReloadOutcome.Rejected -> outcome.issues.forEach { issue ->
                     MoreCobblemonContents.LOGGER.error(
@@ -112,7 +103,5 @@ internal object BattlePointShopCatalogResources {
 
     private data class ReloadReport(
         val outcome: BattlePointShopCatalogReloadOutcome,
-        val ruleCount: Int,
-        val entryCount: Int,
     )
 }

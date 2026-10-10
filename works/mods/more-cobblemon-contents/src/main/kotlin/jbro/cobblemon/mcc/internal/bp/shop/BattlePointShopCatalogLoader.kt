@@ -28,13 +28,14 @@ internal object BattlePointShopCatalogLoader {
         val entries = root.requiredArray("$", "entries").mapIndexed { index, element ->
             parseEntry(element.requireObject("$.entries[$index]"), "$.entries[$index]", itemExists)
         }
-        if (entries.isEmpty()) reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$.entries", "entries must not be empty")
         rejectDuplicates(entries.map(BattlePointShopEntry::entryId), "$.entries", "entry ID")
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
         val categories = parseCategories(root, "$")
+        val shopkeeper = root.get("shopkeeper")?.let { parseShopkeeper(it.requireObject("$.shopkeeper"), "$.shopkeeper") }
+            ?: BattlePointShopkeeperAppearance.DEFAULT
 
         BattlePointShopCatalogLoadResult.Loaded(
-            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, categoryOrder = categories),
+            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper, categories),
         )
     } catch (error: ShopCatalogDecodeException) {
         BattlePointShopCatalogLoadResult.Rejected(listOf(error.issue))
@@ -287,7 +288,7 @@ private fun rejectDuplicates(values: List<String>, path: String, label: String) 
     }
 }
 
-private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries", "categories")
+private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries", "categories", "shopkeeper")
 private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "shopkeeper", "categories")
 private val SHOPKEEPER_FIELDS = setOf("appearances")
 private val APPEARANCE_FIELDS = setOf("skin", "slim", "villager")

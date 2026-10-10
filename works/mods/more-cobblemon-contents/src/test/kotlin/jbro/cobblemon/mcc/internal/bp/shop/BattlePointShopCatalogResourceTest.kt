@@ -1,20 +1,14 @@
 package jbro.cobblemon.mcc.internal.bp.shop
 
-import java.io.Reader
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BattlePointShopCatalogResourceTest {
     @Test
     fun `bundled catalog prices growth goods low and battle items at a session of battles`() {
-        val loaded = BattlePointShopCatalogLoader.loadSeparated(
-            fragmentReaders(RULE_DIRECTORY),
-            fragmentReaders(ENTRY_DIRECTORY),
+        val loaded = BattlePointShopCatalogLoader.load(
+            checkNotNull(javaClass.getResourceAsStream("/data/more_cobblemon_contents/mcc-bp-shop.json")).bufferedReader(),
         ) { true }
         assertTrue(loaded is BattlePointShopCatalogLoadResult.Loaded)
         val catalog = (loaded as BattlePointShopCatalogLoadResult.Loaded).catalog
@@ -73,19 +67,4 @@ class BattlePointShopCatalogResourceTest {
         assertEquals(listOf("held_item", "gimmick", "consumable", "misc"), catalog.categories)
     }
 
-    private fun fragmentReaders(directory: String): List<Pair<String, Reader>> =
-        resourceFiles(directory).map { path -> path.fileName.toString() to Files.newBufferedReader(path) }
-
-    private fun resourceFiles(directory: String): List<Path> {
-        val url = javaClass.getResource(directory)
-        assertNotNull(url, "Missing bundled resource directory: $directory")
-        return Files.list(Paths.get(url!!.toURI())).use { paths ->
-            paths.filter { it.fileName.toString().endsWith(".json") }.sorted().toList()
-        }
-    }
-
-    companion object {
-        const val RULE_DIRECTORY = "/data/more_cobblemon_contents/mcc-bp-shop/rules"
-        const val ENTRY_DIRECTORY = "/data/more_cobblemon_contents/mcc-bp-shop/entries"
-    }
 }

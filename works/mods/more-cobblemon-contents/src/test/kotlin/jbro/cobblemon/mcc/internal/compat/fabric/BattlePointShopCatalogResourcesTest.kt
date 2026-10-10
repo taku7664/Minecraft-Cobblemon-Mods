@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test
 
 class BattlePointShopCatalogResourcesTest {
     @Test
-    fun `uses prefixed independent BP shop directories`() {
-        assertEquals("mcc-bp-shop/rules", BattlePointShopCatalogResources.ruleDirectory)
-        assertEquals("mcc-bp-shop/entries", BattlePointShopCatalogResources.entryDirectory)
+    fun `uses a single BP shop catalog`() {
+        assertEquals("mcc-bp-shop.json", BattlePointShopCatalogResources.catalogPath)
     }
 }

@@ -19,6 +19,19 @@ internal data class BattlePointShopCatalogResourceBundle(
 internal class BattlePointShopCatalogResourceReloader(
     private val store: BattlePointShopCatalogStore,
 ) {
+    fun reload(resource: CatalogResourceInput): BattlePointShopCatalogReloadOutcome = try {
+        resource.openReader().use { reader ->
+            when (val result = store.reload(reader)) {
+                is BattlePointShopCatalogLoadResult.Loaded -> BattlePointShopCatalogReloadOutcome.Applied(result.catalog)
+                is BattlePointShopCatalogLoadResult.Rejected -> BattlePointShopCatalogReloadOutcome.Rejected(result.issues)
+            }
+        }
+    } catch (failure: Exception) {
+        BattlePointShopCatalogReloadOutcome.ReadFailed(failure)
+    } catch (failure: LinkageError) {
+        BattlePointShopCatalogReloadOutcome.ReadFailed(failure)
+    }
+
     fun reload(bundle: BattlePointShopCatalogResourceBundle): BattlePointShopCatalogReloadOutcome {
         if (bundle.rules.isEmpty()) {
             return BattlePointShopCatalogReloadOutcome.MissingResource
