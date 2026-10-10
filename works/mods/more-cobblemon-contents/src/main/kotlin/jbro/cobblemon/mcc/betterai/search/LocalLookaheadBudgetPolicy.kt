@@ -81,7 +81,8 @@ internal object LocalLookaheadBudgetPolicy {
         BattleTrainerTier.BOSS -> LocalLookaheadBudget(
             timeMillis = MAX_TIME_MILLIS,
             nodeLimit = NODE_LIMIT,
-            nativeNodeLimit = 20_000,
+            // 2026-10-10: half of 20,000 kept the choice in 29 of 32 recorded Boss positions at 30% less time.
+            nativeNodeLimit = 10_000,
             chanceBranchesPerMove = 64,
         )
     }

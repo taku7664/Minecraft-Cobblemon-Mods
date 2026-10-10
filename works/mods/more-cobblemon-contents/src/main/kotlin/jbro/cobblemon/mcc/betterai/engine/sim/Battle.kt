@@ -983,6 +983,11 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     }
 
     fun natureModify(stats: LinkedHashMap<String, Int>, set: PokemonSet): LinkedHashMap<String, Int> {
+        if (Js.toID(set.nature) == OFFENSIVE_ASSUMPTION_NATURE) {
+            // Better AI's stand-in for a nature it does not know: both attacks and Speed raised, nothing lowered.
+            for (s in listOf("atk", "spa", "spe")) stats[s] = Js.trunc(Js.trunc(stats.getValue(s) * 110.0, 16).toDouble() / 100)
+            return stats
+        }
         val nature = dex.nature(set.nature) ?: return stats
         nature.plus?.let { s -> stats[s] = Js.trunc(Js.trunc(stats.getValue(s) * 110.0, 16).toDouble() / 100) }
         nature.minus?.let { s -> stats[s] = Js.trunc(Js.trunc(stats.getValue(s) * 90.0, 16).toDouble() / 100) }
@@ -1519,3 +1524,10 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
 
 /** `dex.getActiveMove(name)`: a fresh mutable copy of the move's data. */
 fun EngineDex.activeMove(name: String): ActiveMove = ActiveMove(moveOrPlaceholder(name))
+
+/**
+ * Not a real nature: Better AI's assumption for an opponent whose spread it knows but whose nature it does not
+ * (Boss). Attack, Special Attack and Speed are all raised by a tenth and nothing is lowered, the worst case of
+ * every offensive nature at once, so the worlds need not branch on the nature.
+ */
+const val OFFENSIVE_ASSUMPTION_NATURE = "betteraioffensive"

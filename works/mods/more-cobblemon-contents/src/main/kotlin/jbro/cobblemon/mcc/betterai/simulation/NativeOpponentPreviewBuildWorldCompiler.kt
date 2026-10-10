@@ -91,7 +91,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
             val source = usageSource.let { base ->
                 revealedAbilitiesBySlot[slot]?.let { base.copy(abilityRates = mapOf(it to 1.0)) } ?: base
             }.let { base ->
-                revealedItemsBySlot[slot]?.let { base.copy(itemRates = mapOf(it to 1.0), noItemRate = 0.0) } ?: base
+                revealedItemsBySlot[slot]?.let { base.copy(itemRates = mapOf(it to 1.0), noItemRate = 0.0) }
+                    ?: silentItemsOnly(base)
             }
             val legalAbilities = buildPool.abilities.mapTo(linkedSetOf()) {
                 canonical(it.abilityId)
@@ -179,7 +180,13 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         }.sortedWith(VALUE_ORDER)
         val baseStats = pool.baseStats.takeIf { it.isNotEmpty() }
         val observedSpreads = usage.spreads.filter { it.rate > 0.0 }
-        val spreads = (if (baseStats == null) observedSpreads else observedSpreads
+        // A Boss knows the opponent's exact spread but not its nature; one offensive assumption stands for every
+        // nature instead of branching the worlds on it (2026-10-10 user decision).
+        val assumedSpread = if (tier == BattleTrainerTier.BOSS && exactStatSpread != null && baseStats != null) {
+            listOf(LocalOpponentSpreadUsage(jbro.cobblemon.mcc.betterai.engine.sim.OFFENSIVE_ASSUMPTION_NATURE,
+                LocalOpponentStatAssumption.evs(tier, baseStats, exactStatSpread), 1.0))
+        } else null
+        val spreads = assumedSpread ?: (if (baseStats == null) observedSpreads else observedSpreads
             .groupBy { canonical(it.natureId) }
             .map { (_, candidates) ->
                 LocalOpponentSpreadUsage(
@@ -310,6 +317,27 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         val probability = 1.0 / candidates.size
         return candidates.map { (id, values) -> WeightedIvs(values, probability, id) }
     }
+
+    /**
+     * An unrevealed item is weighed only where it changes the next turn without announcing itself (2026-10-10 user
+     * decision): the Choice items, Focus Sash and Assault Vest, plus the items that change a forme or enable a
+     * mechanic (Mega Stones, Z-Crystals, forme items). Every other item shows itself once it acts (Life Orb,
+     * Leftovers) and the worlds then take the revealed one, so until then it counts as no item. Folding them
+     * together keeps the worlds on the hypotheses that change a decision.
+     */
+    private fun silentItemsOnly(usage: LocalOpponentBuildUsageEntry): LocalOpponentBuildUsageEntry {
+        val kept = usage.itemRates.filterKeys { weighedUnrevealed(canonical(it)) }
+        val folded = usage.itemRates.values.sum() - kept.values.sum()
+        return usage.copy(itemRates = kept, noItemRate = usage.noItemRate + folded)
+    }
+
+    private fun weighedUnrevealed(item: String): Boolean {
+        if (item in SILENT_ITEMS) return true
+        val data = jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().itemOrNull(item) ?: return false
+        return listOf("megaStone", "zMove", "forcedForme", "itemUser").any { data.data(it) != null }
+    }
+
+    private val SILENT_ITEMS = setOf("choiceband", "choicespecs", "choicescarf", "focussash", "assaultvest")
 
     private fun perPokemonCap(tier: BattleTrainerTier): Int = when (tier) {
         BattleTrainerTier.INTRODUCTORY -> 3
