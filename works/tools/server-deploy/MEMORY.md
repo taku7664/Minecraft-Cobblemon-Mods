@@ -1,0 +1,9 @@
+# [2026-10-10 14:47] 서버 루트를 사용하는 Linux 실행기 추가
+
+- 사용자가 기존 Windows BAT·PowerShell 실행을 보존하면서 Linux 실행기를 추가하도록 요청했습니다. `run.sh`는 기존 서버 루트를 그대로 사용하고 Java 21 이상·PowerShell 7 이상으로 시작 훅을 통과한 뒤 Fabric 런처를 실행합니다. 메모리 기본값은 `JAVA_XMS=2G`, `JAVA_XMX=4G`이며 자동 재시작은 호스트 관리 기능에 맡깁니다.
+- 기존 `package-server.ps1`·`start-linux.sh`는 별도 `release/`와 외부 `SERVER_DATA_DIR`을 사용하는 패키징 방식으로 유지합니다. 현재 서버 루트의 `run.sh` 방식과 혼동하지 않도록 사용법을 `LINUX-SERVER.md`에 구분했습니다. 운영 저장소에는 안내 MD를 설치하지 않습니다.
+- 메인 작업자 보고 기준으로 시작 훅의 Windows 경로·Java classpath를 플랫폼에 맞게 처리했습니다. Git Bash 모의 실행 8항목, Windows PowerShell 5.1·PowerShell 7에서 실제 Java/Fabric 버전 어댑터와 격리된 시작 훅 실행이 각각 통과했습니다. 실제 Java가 `world/session.lock` 바이트 잠금을 잡은 상태의 훅 쓰기 거부도 포함해 운영 훅 검증 5항목이 두 PowerShell 버전에서 각각 통과했습니다. 이 기록 담당자는 테스트를 재실행하지 않았습니다.
+- 로컬 서버 패쳐는 대상에 `run.sh`가 없을 때만 개발 설치본을 복사하며 개발 포트 25566 지정을 제거하고, 기존 운영 실행기는 바이트 그대로 보존합니다. 메인 작업자 보고 기준으로 보존·복구 테스트 25그룹이 PowerShell 5.1·7에서 각각 통과했습니다. 패쳐 `server-deployment.psm1`과 테스트의 로컬 Git-ignored 범위는 유지하며 원격 추적 대상이 아닙니다.
+- `run.sh`를 개발·로컬 운영 루트에 설치했습니다. 기록 담당자가 원본과 운영 설치본의 SHA-256 `DFEBDF9335F644218F5197BF002A957D6BFBAD68667D6094118E8F4EE6B80BAF` 일치를 확인했습니다. 메인 작업자 보고 기준으로 개발 설치본은 `port_args=(--port 25566)`만 다르고 운영은 `port_args=()`여서 `server.properties` 포트를 사용합니다. 공통 PowerShell 파일 4개의 양쪽 설치본 해시도 일치하며 기존 두 `run.bat`의 작업 전후 해시는 불변입니다.
+- 소스 `main` 커밋 `bb804d1112c5e1c18600986186def1822a50699d`와 운영 `main` 커밋 `3fad1d136426cfca435bad48b284614f03cc14a8`을 푸시했습니다. 기록 담당자가 두 저장소에서 `main...origin/main`의 0/0 일치를 확인했습니다. 운영 `run.sh`는 실행 권한 `100755`, LF·BOM 없음으로 반영했습니다. 운영 변경은 `.gitattributes`, `run.sh`, 공통 시작 훅 PowerShell 4개이며 운영 안내 MD나 로컬 패쳐를 원격에 추가하지 않았습니다.
+- 메인 작업자 보고 기준으로 운영 설정의 `server-startup-hooks.ps1 -DryRun`이 PowerShell 7의 `-NoProfile -NonInteractive` 실행에서 exit 0으로 통과했으며 파일을 쓰지 않았습니다. 기존 미설치 클라이언트 지도 모드와 Discord 설정 부재 경고는 남아 있습니다. 실제 클라우드 Linux 접속·Pull·OS 기동·외부 접속·실게임은 수행하지 않았습니다. Java/Kotlin 모드 빌드나 게임 기능 패치는 이 문서 작업에서 수행하지 않았습니다. 이 후속 기록의 최종 커밋은 메인 작업자가 별도로 담당합니다.
