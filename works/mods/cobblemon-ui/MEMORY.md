@@ -1,11 +1,13 @@
 # cobblemon-ui 작업 기록
 
-## [2026-10-10] TAB 현황판 기절 칩 막이 안 보이던 문제 (`8c7bd3b6`, 구현만, 빌드·실게임 미확인)
+## [2026-10-10 18:25] TAB 현황판 기절 칩 막이 안 보이던 문제 (`8c7bd3b6`, 빌드·배치 확인, 실게임 미확인)
 
 - **빡대리님 신고:** TAB 현황판에 기절한 포켓몬 표시가 없다. 검은 반투명 막이나 초상화 처리로 구분해 달라.
 - **원인(코드로 확인):** `ChampionsBattleInfoOverlay.drawTeam`은 원래 기절 칩에 `palette.koVeil`(다크 `0xA0101624`)을 덮고 있었다. 그런데 칩 초상화는 `drawPosablePortrait`로 그리는 3D 모델이라(`scale(s, s, -s)`) 보는 쪽으로 튀어나오고, 막은 칩과 같은 깊이에 그려져 깊이 테스트에서 모델 뒤로 숨었다.
 - **수정:** 막을 `PORTRAIT_FRONT_Z`(100)만큼 앞으로 올려 그린다. 색은 테마 팔레트 그대로다(라이트 테마는 흰 막). 상태이상 점(비기절 칩)도 같은 이유로 가려질 수 있지만 이번엔 손대지 않았다.
-- **미확인:** 빌드하지 않았다(요청 시에만 빌드). 100이 큰 모델(예: 거대한 종)까지 덮는지는 실게임으로 봐야 한다.
+- **빌드:** 빡대리님 지시로 main(`bc4e93eb`) 그대로 `:cobblemon-ui:build -x test -x unitTest`. `GRADLE_USER_HOME=F:/AI/caches/gradle`, `--project-cache-dir`·TEMP·`java.io.tmpdir`는 `F:/AI/builds/cobblemon-mods-main/`, 빌드 출력은 init 스크립트(`f-build-dirs.init.gradle`, 같은 폴더)로 `.../out/<모듈>`에 보냈다. 저장소 빌드 스크립트에는 출력 경로를 F로 돌리는 설정이 없다. JAR SHA-256 앞자리 a5dcef0c.
+- **배치:** 게임·서버가 꺼진 상태에서 클라이언트 `cobblemon-ui-0.2.0.jar` 교체. MCC·cobblemon-npc가 같은 버전 사본을 `META-INF/jars/`에 품고 있어서, 두 JAR(클라이언트·서버)은 다시 빌드하지 않고 내장 사본만 새 JAR로 바꿔 끼웠다. MCC 작업 트리에 다른 세션의 미커밋 Better AI 변경이 있어 다시 빌드하면 섞이기 때문이다. 백업 `develop-product/deployment-backups/20261010-tab-ko-veil`.
+- **미확인:** 실게임. 100이 큰 모델(예: 거대한 종)까지 덮는지는 화면으로 봐야 한다.
 
 ## [2026-10-06 12:55] 대화창을 아래 띠 위쪽으로, 레터박스 슬라이드 강화 (개발 클라이언트 연속 캡처 확인)
 
