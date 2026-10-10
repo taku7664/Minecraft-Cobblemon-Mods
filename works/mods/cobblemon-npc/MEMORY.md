@@ -1,5 +1,11 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-11 02:53] VPS 광장 간호순 대화 누락 복구 (콘솔 명령, 실게임 미확인)
+
+- **원인(직접 확인):** VPS `/srv/MinecraftPPakemonServer` 광장 `entities/r.0.0.mca`의 간호순(UUID `e9d88c69-170c-4ded-b0d6-3eacd7c0268c`, `[4.5, 80, 7.5]`)은 스킨만 있고 `NpcDialogue`가 빈 값이었다. 대화 JSON·NPC JAR 해시는 로컬 운영본과 같았다. 10-10 VPS 업데이트가 광장 엔티티 파일을 보존 대상으로 건너뛰어 운영본의 `plaza_nurse_joy` 값이 들어가지 않았다. **광장 NPC 값을 바꾸면 VPS에는 파일 업데이트로 반영되지 않는다.**
+- **적용:** 사용자 승인 후 접속자 0명에서 tmux 콘솔로 광장 청크 `[0, 0]`을 잠깐 forceload(기존 forceload 없음 확인) → `data merge entity … {NpcDialogue:"plaza_nurse_joy"}` → `data get`으로 값 확인 → forceload 해제 → `save-all flush`. 저장 후 받은 mca NBT에서도 `plaza_nurse_joy`를 확인했다. 재시작은 하지 않았다.
+- **미확인:** 실제 접속해 간호순과 대화·회복해 보는 확인은 안 했다.
+
 ## [2026-10-10 18:23] 간호순·광장·NPC JAR을 개발·운영에 적용 (빌드·파일 검증 완료)
 
 - **사용자 승인:** 개발·운영 서버 모두 적용하고 운영 광장을 개발 광장에 백업 없이 덮어쓰도록 승인했다. 개발 클라이언트 NPC JAR 갱신도 별도로 승인했다. 아래 두 항목의 배치 보류 상태는 이번 적용으로 해소했다.
