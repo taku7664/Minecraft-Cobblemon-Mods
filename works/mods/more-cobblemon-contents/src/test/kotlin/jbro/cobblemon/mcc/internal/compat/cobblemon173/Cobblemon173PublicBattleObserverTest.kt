@@ -802,6 +802,30 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `hp changes are measured line to line, not against a live refresh that already holds the turn's end`() {
+        // Dev game b73aae8a, turn 5: Milotic at 58% Recovered to full, took Power Whip and Leech Seed and ended at 49%.
+        // A refresh from the live battle in between left the stored HP at 49% before the Recover line was read, and the
+        // turn summed to +51%: the losing heal loop it was in never counted.
+        val opponent = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val milotic = publicPokemon(BattleSide.ALLY, activeSlot = 0)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, opponent))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(4, milotic.copy(hpFraction = 0.49), publicHp = 0.58))
+
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(5, milotic.copy(hpFraction = 0.49), "recover", emptyList()))
+        for (stated in listOf(1.0, 0.55, 0.425, 0.49)) {
+            observer.observe(Cobblemon173PublicObservation.VolatileChanged(5, milotic.copy(hpFraction = 0.49), "supereffective", true))
+            observer.observe(Cobblemon173PublicObservation.HpChanged(5, milotic.copy(hpFraction = stated)))
+        }
+
+        val deltas = observer.publicSnapshot().events
+            .filter { it.kind == BattleObservedEventKind.HP_CHANGED && it.actorPokemonId == milotic.battlePokemonId }
+            .map { requireNotNull(it.hpFractionDelta) }
+        assertEquals(listOf(0.42, -0.45, -0.125, 0.065), deltas.map { Math.round(it * 1000) / 1000.0 })
+        assertEquals(-0.09, deltas.sum(), 0.000_001)
+    }
+
+    @Test
     fun `direct target hp loss links to the preceding public action window`() {
         val opponent = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
         val target = publicPokemon(BattleSide.ALLY, activeSlot = 0)

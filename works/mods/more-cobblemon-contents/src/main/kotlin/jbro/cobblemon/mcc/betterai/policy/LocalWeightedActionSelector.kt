@@ -115,9 +115,18 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             val reason = if (dominatedKnockout(rank, selectionUniverse)) {
                 "dominated_knockout"
             } else if (context.authoritativeSimulationScores) {
-                when (rank.outcome.candidate.kind) {
-                    BattleActionKind.FORFEIT -> "forfeit"
-                    BattleActionKind.WAIT -> "wait"
+                // The vetoes that read the battle and the rules, not the HP and odds a search already priced.
+                when {
+                    rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
+                    rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
+                    rank.outcome.publiclyInert -> "publicly_inert"
+                    rank.outcome.candidate.actionId in context.ruleExclusions -> context.ruleExclusions.getValue(rank.outcome.candidate.actionId)
+                    rank.outcome.candidate.kind == BattleActionKind.SWITCH && rank !== best && credibleStayAlternativeExists &&
+                        context.memory.turnsSinceLastSwitch?.let { it <= 1 } == true &&
+                        context.memory.switchPressure >= REPEATED_SWITCH_PRESSURE -> "repeated_switch_pressure"
+                    !selfSetupHasFuture(rank, rank === best, credibleStayAlternativeExists, context.memory,
+                        context.alreadyBoostedSetupActionIds, context.overcommittedSetupActionIds, readsRetention = false) ->
+                        "setup_without_future"
                     else -> null
                 }
             } else {
@@ -439,10 +448,12 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         memory: BattleTacticalMemoryView,
         alreadyBoostedSetupActionIds: Set<String>,
         overcommittedSetupActionIds: Set<String>,
+        /** Off for native ranks, which do not carry the HP the worst reply leaves. */
+        readsRetention: Boolean = true,
     ): Boolean {
         if (!isSelfSetup(rank)) return true
         if (rank.outcome.candidate.actionId in overcommittedSetupActionIds) return false
-        if (rank.worstResponseHpRetention <= 0.0) return false
+        if (readsRetention && rank.worstResponseHpRetention <= 0.0) return false
         if (!credibleDamagingStayExists) return true
         if (!bestRanked && rank.outcome.candidate.actionId in alreadyBoostedSetupActionIds) return false
         val moveId = rank.outcome.candidate.moveId?.let(::canonical) ?: return true

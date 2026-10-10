@@ -89,6 +89,63 @@ internal object LocalTacticalScorer {
     }
 
     /**
+     * The terms of [score] a played-out turn cannot show, for the native search's root values: what the battle so far
+     * says (a heal that kept losing, a move that just failed publicly, Protect that bought nothing, a pattern the
+     * opponent adapted to, switching again right after a switch) and what the trainer and its strategy prefer. The
+     * native search values the turns themselves and none of these; the legacy path has them in its base score.
+     * [oneTurn]: the search saw only the first turn, so a charge or recharge turn after it is still unpriced.
+     */
+    fun simulationBlindAdjustment(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        strategy: BattleStrategyBrief?,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        oneTurn: Boolean,
+    ): Double = when (candidate.kind) {
+        BattleActionKind.USE_MOVE -> {
+            val actor = context.state.pokemon.firstOrNull {
+                it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
+            }
+            val losingHeals = if (candidate.facts?.selfHealingFractionRange == null || actor == null) 0
+                else LocalRecoveryLoop.failedStreak(actor.battlePokemonId, context)
+            -losingHeals * tuning.recoveryLoopPenalty -
+                LocalTacticalSituationalEvaluator.recentPublicFailurePenalty(candidate, context) -
+                LocalTacticalSituationalEvaluator.protectionNoProgressPenalty(candidate, context) -
+                (if (oneTurn) LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) else 0.0) +
+                selfPatternAdjustment(candidate, context, profile) +
+                strategyMoveAdjustment(candidate, context, strategy)
+        }
+        BattleActionKind.SWITCH -> if (LocalRevivalBlessing.applies(candidate)) 0.0 else {
+            (profile.personality.switching - 0.5) * 20.0 + switchMemoryAdjustment(context) +
+                strategySwitchAdjustment(candidate, context, strategy, publicPositioningGain(candidate, context, tuning)) +
+                planSwitchAdjustment(candidate, context, strategy)
+        }
+        BattleActionKind.COMPOSITE -> candidate.componentActions.sumOf {
+            simulationBlindAdjustment(it, context, strategy, profile, tuning, oneTurn)
+        }
+        BattleActionKind.WAIT, BattleActionKind.FORFEIT -> 0.0
+    }
+
+    /** Whether a switch publicly improves the position: less exposure, a healthier Pokemon in, or the active nearly out. */
+    private fun publicPositioningGain(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+    ): Boolean {
+        val target = LocalPublicPositionFacts.switchTarget(candidate, context) ?: return false
+        val active = LocalPublicPositionFacts.activeAlly(candidate, context)
+        val activeHp = active?.hpFraction ?: allyActiveHp(context)
+        val currentRisk = active?.let { LocalPublicPositionFacts.defensiveExposure(it, context, tuning = tuning) }
+            ?: tuning.neutralHitHpFraction
+        val targetRisk = LocalPublicPositionFacts.defensiveExposure(target, context, candidate.actorSlot, tuning)
+            ?: tuning.neutralHitHpFraction
+        val healthAdvantage = (LocalTacticalSituationalEvaluator.postEntryHp(candidate, target.hpFraction) - activeHp)
+            .coerceAtLeast(0.0)
+        return currentRisk - targetRisk > 0.0 || healthAdvantage >= MEANINGFUL_SWITCH_HEALTH_ADVANTAGE || activeHp <= CRITICAL_HP
+    }
+
+    /**
      * Knockout material credited inside [score] for this candidate.
      *
      * Exposed so the recursive search can subtract exactly what the root scorer added instead of

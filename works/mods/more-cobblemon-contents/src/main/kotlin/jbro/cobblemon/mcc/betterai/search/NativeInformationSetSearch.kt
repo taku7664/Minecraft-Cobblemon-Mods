@@ -80,6 +80,13 @@ internal class NativeInformationSetSearch(
      * it, and the first proven best was not always the last, so the proof alone does not end the search.
      */
     private val stableStopNodes: Int? = STABLE_STOP_NODES,
+    /**
+     * Keep counting the best root choice's stability once every root value has been proven, through the proof coming
+     * undone again. With 96 worlds each world that reaches a line unproves it for a while, so a count that restarted
+     * on every such break ran thousands of nodes past a first proof that already had the final choice. 2026-10-10, 42
+     * recorded Boss positions searched to the end: the same choice in all 42 on 12% fewer nodes.
+     */
+    private val stableAfterProof: Boolean = true,
 ) {
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val first = request.worlds.first()
@@ -90,7 +97,7 @@ internal class NativeInformationSetSearch(
         val result = try {
             lease(request.deadlineNanos) { worker ->
                 try {
-                    Run(request, worker, replacementSpendsTurn, rootReport, matchupSwitchTargets, stableStopNodes).execute()
+                    Run(request, worker, replacementSpendsTurn, rootReport, matchupSwitchTargets, stableStopNodes, stableAfterProof).execute()
                 } catch (abort: Abort) {
                     abort.result
                 }
@@ -123,6 +130,7 @@ internal class NativeInformationSetSearch(
         private val rootReport: ((String) -> Unit)?,
         private val matchupSwitchTargets: Boolean,
         private val stableStopNodes: Int?,
+        private val stableAfterProof: Boolean,
     ) {
         /**
          * The per-world search's attack-only third turn for Boss setup lines is not taken: it was admitted only
@@ -206,7 +214,7 @@ internal class NativeInformationSetSearch(
                     settledAtNodes = nodesVisited
                     settledRootValues = rootActions.associate { it.actionId to root.ally.getValue(it.actionId).value }
                 }
-                if (settled) {
+                if (settled || stableAfterProof && settledAtNodes != null) {
                     val top = rootActions.maxBy { root.ally.getValue(it.actionId).value }.actionId
                     if (top != stableTop) {
                         stableTop = top

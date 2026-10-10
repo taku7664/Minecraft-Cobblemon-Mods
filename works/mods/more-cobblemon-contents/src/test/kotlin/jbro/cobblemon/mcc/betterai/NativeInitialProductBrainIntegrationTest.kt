@@ -393,6 +393,55 @@ class NativeInitialProductBrainIntegrationTest {
             "The next reconciliation must replay the action actually submitted")
     }
 
+    @Test
+    fun `a heal that kept losing is charged on the native path as on the legacy one`() {
+        // Dev game b73aae8a, turn 8: Milotic had used Recover three turns in a row into Ferrothorn's Leech Seed and
+        // Power Whip and ended each lower. The native search, which sees the coming turns only, still put Recover first.
+        // The recording predates the observer measuring HP changes line to line: Milotic's turns 5 to 7 carry the net
+        // change between the recorded decisions instead of the +51% each the old observer wrote.
+        val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream(
+            "/betterai/snapshots/milotic-losing-recover-loop.json.gz"))).use { it.readBytes().toString(Charsets.UTF_8) }
+            .let(jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot::fromJson)
+        val context = snapshot.context.copy(deadlineEpochMillis = System.currentTimeMillis() + 60_000L)
+        val milotic = context.state.pokemon.single { it.side.name == "ALLY" && it.activeSlot == 0 }
+        assertTrue(jbro.cobblemon.mcc.betterai.evaluation.LocalRecoveryLoop.failedStreak(milotic.battlePokemonId, context) >= 2)
+        // The turn's native values, Recover ahead of the switch to Giratina.
+        val boardValues = mapOf(
+            "move:0:1:auto:base" to -0.115, "switch:0:2d75d3e6-abe4-4909-940a-3070a5323abe" to -0.35,
+            "switch:0:25414feb-753d-456e-91e6-87052c5a4501" to -0.62, "switch:0:a2201571-a26c-44a4-baa9-c92987691dc5" to -0.63,
+            "move:0:0:p1a:base" to -1.62, "move:0:3:p1a:base" to -1.99, "move:0:2:auto:base" to -2.35,
+            "switch:0:eabf28a2-8e74-4d83-8dcd-085acafe1580" to -2.48, "switch:0:7669caac-2343-4af6-9dd9-e332a44a2909" to -2.52,
+        )
+        val nativeRanks = jbro.cobblemon.mcc.betterai.search.NativeProductRankAdapter.rank(context.candidates.map {
+            jbro.cobblemon.mcc.betterai.search.NativeRootActionValue(it, boardValues.getValue(it.actionId))
+        })
+        assertEquals("move:0:1:auto:base", nativeRanks.first().outcome.candidate.actionId)
+        var finalRanks = emptyList<jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank>()
+        val brain = LocalTacticalBrain(
+            actionSelector = jbro.cobblemon.mcc.betterai.policy.LocalActionSelector { ranked, seed, _ ->
+                finalRanks = ranked
+                jbro.cobblemon.mcc.betterai.policy.LocalActionSelection(ranked.first(), seed, 1, 1.0)
+            },
+            nativeInitialDecision = { _, _, _, _, _, _ ->
+                NativeInitialProductDecisionEvaluation(
+                    status = NativeInitialProductDecisionStatus.AVAILABLE,
+                    ranked = nativeRanks,
+                    depthCompleted = 2,
+                    nodesVisited = 100,
+                    searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                    sessionState = nativeSessionState(context),
+                )
+            },
+        )
+
+        val decision = brain.decide(open(brain, context), context).toCompletableFuture().get()
+
+        assertEquals("switch:0:2d75d3e6-abe4-4909-940a-3070a5323abe", decision.actionId)
+        val recover = finalRanks.single { it.outcome.candidate.actionId == "move:0:1:auto:base" }
+        val giratina = finalRanks.single { it.outcome.candidate.actionId == decision.actionId }
+        assertTrue(recover.comparisonValue < giratina.comparisonValue)
+    }
+
     private fun nativeSessionState(
         context: jbro.cobblemon.mcc.internal.ai.BattleDecisionContext,
         snapshotJson: String = "root",
