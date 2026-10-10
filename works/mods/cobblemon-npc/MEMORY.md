@@ -1,5 +1,16 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-10 18:23] 간호순·광장·NPC JAR을 개발·운영에 적용 (빌드·파일 검증 완료)
+
+- **사용자 승인:** 개발·운영 서버 모두 적용하고 운영 광장을 개발 광장에 백업 없이 덮어쓰도록 승인했다. 개발 클라이언트 NPC JAR 갱신도 별도로 승인했다. 아래 두 항목의 배치 보류 상태는 이번 적용으로 해소했다.
+- **운영 간호순:** `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer` 광장의 기존 간호순 `[4.5, 80, 7.5]`에서 `NpcSkin=more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png`, `NpcDialogue=plaza_nurse_joy`만 변경했다. UUID·위치·방향, 해당 청크의 나머지 NBT, 다른 청크 원시 데이터, 전체 엔티티 30개 보존을 비교 검증했다. 수정한 `entities/r.0.0.mca` SHA-256은 `bbdf34ccb2f2230c502bcb20d21f2ad13472d7e65e91e41a78cee77dbe18ab93`다.
+- **광장·대화 적용:** 수정 대화 JSON을 양쪽 서버 `config/cobblemon_npc/dialogues`에 설치해 커밋된 main JSON(LF)과 양쪽 서버 파일의 바이트가 동일함을 확인했다. 운영 저장소의 `* -text` 설정에서 최초 복사본 CRLF가 `diff --check`에 검출되어, `git show`로 읽은 커밋 원본 바이트를 값 변경 없이 양쪽에 기록한 뒤 `git diff --cached --check`를 통과했다. 운영 광장 24개 파일을 개발 광장에 모두 덮어써 파일셋·전체 해시가 동일하다. 파일셋이 같아 삭제하지 않았고 승인대로 백업하지 않았다. 재귀 삭제 명령은 자동 승인 검토 정책에 거부되어 실행되지 않았으며, 파일별 `Copy-Item` 덮어쓰기로 완료했다. `world/data/jbro_policy_plaza_biome.dat`는 원래 양쪽 해시가 같아 변경하지 않았다.
+- **빌드:** 커밋된 main `bc4e93ebbcbf395d620b9f2b981ed9bbdba4850b`의 NPC/UI/Battlecam 관련 소스·빌드 설정을 `F:/AI/Temp/codex-npc-6bb3-apply-20261010/source/works`에 추출했다. `GRADLE_USER_HOME=F:/AI/caches/gradle`와 작업별 F 드라이브 캐시·출력·임시 경로를 사용했다. 최종 `:cobblemon-npc:build`는 1분 13초에 성공했고 JUnit 16/16이 통과했다.
+- **빌드 중 문제·해결:** 전체 모듈 소스 변환 지연으로 초기 시도를 중단했고, 공용 Loom 캐시 파일 잠금과 PowerShell의 인용 없는 `-Pkotlin.compiler.execution.strategy` 인자 분할로 후속 시도가 실패했다. 최종 실행은 문자열 인자 배열, CI/SystemProperty true, 작업별 `npc-scope.gradle` init으로 NPC/UI/Battlecam의 main 빌드 스크립트를 유지하고 다른 등록 모듈을 빈 buildfile로 비활성화했다. PATH의 구버전 `jar`가 Java 21 class version 65를 지원하지 못해 검증에 실패한 뒤 `C:/Program Files/Java/jdk-21/bin/jar.exe`로 명시하여 검증했다.
+- **JAR 적용·확인:** 새 스킨·대화 picker 클래스 포함, 이전 RCT picker 부재, `jar --validate`·ZIP CRC 검증을 확인했다. 빌드본과 운영 서버·개발 서버·개발 클라이언트 설치본 3곳 SHA-256은 모두 `376154651008c55fbea518f922fa00d53d738eb12e01480649d9f745301c9f05`로 같다. 설치 전 게임 프로세스 및 25565·25566 수신이 없음을 확인했다.
+- **운영 커밋·푸시:** 운영 저장소는 대화 JSON·NPC JAR·광장 `entities/r.0.0.mca` 3파일만 `fe476d7b5f0a878980b3f338382a0d8d2d00514c`로 커밋·푸시했다. `HEAD=origin/main=ls-remote main` 및 깨끗한 작업트리를 확인했다. 개발 저장소의 이번 기록 커밋·main 병합은 아직 진행 전이다.
+- **미확인:** 서버·클라이언트 기동, 실제 화면, 파티 회복 실게임 검증은 하지 않았다.
+
 ## [2026-10-10 18:04] 운영 광장 간호순 확인과 장소 가정 없는 인사 수정 (대화 수정만)
 
 - **대상 확인:** 사용자는 운영 서버 광장에 이미 있는 간호순을 바꾸라고 했다. `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer/world/dimensions/jbro_policy/plaza/entities/r.0.0.mca`의 slot 0에서 `cobblemon_npc:npc`, 이름 `간호순`, 좌표 `[4.5, 80, 7.5]`, 빈 `NpcSkin`·`NpcDialogue`를 조회했다.
