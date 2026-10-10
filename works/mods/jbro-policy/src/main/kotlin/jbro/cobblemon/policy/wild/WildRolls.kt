@@ -14,8 +14,8 @@ internal object WildRolls {
         return result
     }
 
-    /** [roll] is uniform in 0 until 100. */
-    fun hiddenAbility(ratePercent: Int, roll: Int): Boolean = roll < ratePercent
+    /** [roll] is uniform in 0 until [oneIn]; odds of 0 never hit. */
+    fun hiddenAbility(oneIn: Int, roll: Int): Boolean = oneIn > 0 && roll == 0
 
     /** [point] is uniform in 0 until the summed chances. */
     fun ivRange(ranges: List<IvRange>, point: Double): IvRange {

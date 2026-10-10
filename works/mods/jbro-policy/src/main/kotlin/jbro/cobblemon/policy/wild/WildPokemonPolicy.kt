@@ -15,11 +15,11 @@ import kotlin.random.Random
  */
 object WildPokemonPolicy {
     private val PERMANENT_STATS = listOf(Stats.HP, Stats.ATTACK, Stats.DEFENCE, Stats.SPECIAL_ATTACK, Stats.SPECIAL_DEFENCE, Stats.SPEED)
-    private var hiddenAbilityRate = 0
+    private var hiddenAbilityOneIn = 0
     private var config: PolicyConfig? = null
 
     fun register(config: PolicyConfig) {
-        hiddenAbilityRate = config.wildHiddenAbilityRate
+        hiddenAbilityOneIn = config.wildHiddenAbilityOneIn
         this.config = config
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe { event ->
             val pokemon = event.entity.pokemon
@@ -50,7 +50,7 @@ object WildPokemonPolicy {
     /** Also called by the /givepokemon and /spawnpokemon mixins. */
     @JvmStatic
     fun applyHiddenAbilityChance(pokemon: Pokemon): Pokemon {
-        if (WildRolls.hiddenAbility(hiddenAbilityRate, ThreadLocalRandom.current().nextInt(100))) HiddenAbilityProperty(true).apply(pokemon)
+        if (hiddenAbilityOneIn > 0 && WildRolls.hiddenAbility(hiddenAbilityOneIn, ThreadLocalRandom.current().nextInt(hiddenAbilityOneIn))) HiddenAbilityProperty(true).apply(pokemon)
         return pokemon
     }
 

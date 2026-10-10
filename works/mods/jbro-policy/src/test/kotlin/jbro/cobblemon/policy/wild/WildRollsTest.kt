@@ -49,10 +49,10 @@ class WildRollsTest {
     }
 
     @Test
-    fun `hidden ability hits exactly the rate`() {
-        assertEquals(30, (0 until 100).count { WildRolls.hiddenAbility(30, it) })
+    fun `hidden ability hits one roll in the odds`() {
+        assertEquals(1, (0 until 30).count { WildRolls.hiddenAbility(30, it) })
         assertFalse(WildRolls.hiddenAbility(0, 0))
-        assertTrue(WildRolls.hiddenAbility(100, 99))
+        assertTrue(WildRolls.hiddenAbility(1, 0))
     }
 
     private fun List<jbro.cobblemon.policy.config.IvRange>.pick(point: Double) = WildRolls.ivRange(this, point).let { it.min..it.max }

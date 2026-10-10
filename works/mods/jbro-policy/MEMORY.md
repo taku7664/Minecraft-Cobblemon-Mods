@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-11 02:54] 숨겨진 특성 30% → 1/30 수정 (구현만, 빌드·테스트·배포 전)
+
+- **사용자 결정:** 숨겨진 특성 확률은 1/30이 맞고 30%는 버그다(기본 게임은 1/128). 정책 설정이 정수 퍼센트라 1/30을 담을 수 없어 키를 `wildHiddenAbilityOneIn`(N마리 중 1마리, 기본 30, 0이면 끔)으로 바꿨다.
+- **옛 키:** `wildHiddenAbilityRate`는 퍼센트 뜻이라 읽지 않는다. 개발·운영·VPS `config/jbro-policy.json`에 `30`이 남아 있어도 기본 1/30으로 동작한다. 서버 설정 파일의 옛 키는 손대지 않았다(운영 업데이트도 설정을 보존한다).
+- **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
+- **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
+
 ## [2026-10-11 02:36] VPS 문의 불가 원인 확인·설정 복구·재기동
 
 - **원인(직접 확인):** VPS `config/jbro-policy-discord.json`에서 `inquiryChannelId`·`webhookUrl`이 모두 비어 있어 `/문의`가 꺼져 있었다. `adminChannelId`·`commandChannelId`·`newsChannelId`도 비었고 `inviteUrl` 키는 없었다. 개발 서버에는 모두 값이 있다. `jbro-policy/inquiries` 폴더가 없어 VPS에서 문의가 처리된 적이 없었다. agy는 `~/.local/bin/agy`에 있고 서버 Java PATH에 포함되며 로그인 토큰도 있어 원인이 아니었다(비로그인 SSH 셸의 `command -v`는 이 경로를 몰라 "없음"으로 보였다).

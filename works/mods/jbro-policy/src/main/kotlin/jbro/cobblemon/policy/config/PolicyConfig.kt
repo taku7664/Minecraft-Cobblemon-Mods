@@ -23,8 +23,11 @@ data class IvRange(val min: Int, val max: Int, val chance: Double) {
 
 data class PolicyConfig(
     val plaza: PlazaSpawn = PlazaSpawn(),
-    /** Percent chance that a wild, revived or command-made Pokemon gets its hidden ability. */
-    val wildHiddenAbilityRate: Int = 30,
+    /**
+     * A wild, revived or command-made Pokemon gets its hidden ability 1 time in this many; 0 turns it off. The old
+     * percent key `wildHiddenAbilityRate` is not read, so a config still holding it falls back to this default.
+     */
+    val wildHiddenAbilityOneIn: Int = 30,
     val wildIvEnabled: Boolean = true,
     val wildIvRanges: List<IvRange> = DEFAULT_IV_RANGES,
     /** Seconds between two `[안내]` tips; 0 turns them off. */
@@ -39,7 +42,7 @@ data class PolicyConfig(
 ) {
     init {
         require(tipIntervalSeconds >= 0) { "Tip interval cannot be negative" }
-        require(wildHiddenAbilityRate in 0..100) { "Hidden ability rate must be between 0 and 100" }
+        require(wildHiddenAbilityOneIn >= 0) { "Hidden ability odds cannot be negative" }
         require(!wildIvEnabled || wildIvRanges.isNotEmpty()) { "At least one wild IV range is required" }
     }
 
@@ -81,7 +84,7 @@ data class PolicyConfig(
             val iv = root.getAsJsonObject("wildIvDistribution")
             return PolicyConfig(
                 plaza,
-                root.get("wildHiddenAbilityRate")?.asInt ?: defaults.wildHiddenAbilityRate,
+                root.get("wildHiddenAbilityOneIn")?.asInt ?: defaults.wildHiddenAbilityOneIn,
                 iv?.get("enabled")?.asBoolean ?: defaults.wildIvEnabled,
                 iv?.getAsJsonArray("ranges")?.map { element ->
                     val range = element.asJsonObject
@@ -100,7 +103,7 @@ data class PolicyConfig(
                 addProperty("yaw", config.plaza.yaw); addProperty("pitch", config.plaza.pitch)
                 add("otherHubDimensions", gson.toJsonTree(config.plazaOtherHubDimensions))
             })
-            addProperty("wildHiddenAbilityRate", config.wildHiddenAbilityRate)
+            addProperty("wildHiddenAbilityOneIn", config.wildHiddenAbilityOneIn)
             add("wildIvDistribution", JsonObject().apply {
                 addProperty("enabled", config.wildIvEnabled)
                 add("ranges", gson.toJsonTree(config.wildIvRanges))

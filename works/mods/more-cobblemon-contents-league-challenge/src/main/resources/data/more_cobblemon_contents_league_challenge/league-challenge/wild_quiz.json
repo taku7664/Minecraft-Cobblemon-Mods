@@ -19,7 +19,7 @@
     { "id": "cap_badge8", "question": "배지 8개를 모두 모으면 레벨캡은 몇이 될까?", "choices": ["64", "60", "70"], "answer": 0, "source": "levels" },
     { "id": "cap_champion", "question": "챔피언이 되면 레벨캡은 몇이 될까?", "choices": ["80", "70", "100"], "answer": 0, "source": "levels" },
     { "id": "league_exp", "question": "리그 배틀에서 이기면 경험치는 어떻게 될까?", "choices": ["받지 않는다", "두 배로 받는다", "평소처럼 받는다"], "answer": 0, "source": "league" },
-    { "id": "hidden_ability", "question": "야생 포켓몬이 숨겨진 특성을 갖고 나올 확률은?", "choices": ["30%", "10%", "50%"], "answer": 0, "source": "ivs-abilities" },
+    { "id": "hidden_ability", "question": "야생 포켓몬이 숨겨진 특성을 갖고 나올 확률은?", "choices": ["1/30", "1/128", "1/10"], "answer": 0, "source": "ivs-abilities" },
     { "id": "iv_max", "question": "개체값은 능력치마다 최대 얼마까지 나올까?", "choices": ["31", "15", "63"], "answer": 0, "source": "ivs-abilities" },
     { "id": "alpha_ivs", "question": "우두머리 포켓몬은 개체값 31을 최소 몇 개 보장할까?", "choices": ["2개", "1개", "3개"], "answer": 0, "source": "ivs-abilities" },
     { "id": "nature_adamant", "question": "고집 성격은 어떤 능력치를 올려 줄까?", "choices": ["공격", "스피드", "특수공격"], "answer": 0, "source": "natures" },

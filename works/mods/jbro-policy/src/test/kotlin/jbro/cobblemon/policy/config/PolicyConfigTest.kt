@@ -11,7 +11,7 @@ class PolicyConfigTest {
     @Test
     fun `defaults keep the old server policy`() {
         val config = PolicyConfig()
-        assertEquals(30, config.wildHiddenAbilityRate)
+        assertEquals(30, config.wildHiddenAbilityOneIn)
         assertEquals(listOf(20.0, 45.0, 25.0, 10.0), config.wildIvRanges.map { it.chance })
         assertEquals(PlazaSpawn(0.5, 80.0, 0.5), config.plaza)
     }
@@ -23,15 +23,20 @@ class PolicyConfigTest {
 
     @Test
     fun `missing keys keep their defaults`() {
-        val config = PolicyConfig.parse("""{"wildHiddenAbilityRate": 5, "plaza": {"y": 120}}""")
-        assertEquals(5, config.wildHiddenAbilityRate)
+        val config = PolicyConfig.parse("""{"wildHiddenAbilityOneIn": 5, "plaza": {"y": 120}}""")
+        assertEquals(5, config.wildHiddenAbilityOneIn)
         assertEquals(PlazaSpawn(0.5, 120.0, 0.5), config.plaza)
         assertEquals(PolicyConfig.DEFAULT_IV_RANGES, config.wildIvRanges)
     }
 
     @Test
+    fun `the old percent key is ignored, so its 30 no longer means 30 percent`() {
+        assertEquals(30, PolicyConfig.parse("""{"wildHiddenAbilityRate": 5}""").wildHiddenAbilityOneIn)
+    }
+
+    @Test
     fun `invalid values are rejected`() {
-        assertThrows<IllegalArgumentException> { PolicyConfig.parse("""{"wildHiddenAbilityRate": 101}""") }
+        assertThrows<IllegalArgumentException> { PolicyConfig.parse("""{"wildHiddenAbilityOneIn": -1}""") }
         assertThrows<IllegalArgumentException> {
             PolicyConfig.parse("""{"wildIvDistribution": {"ranges": [{"min": 10, "max": 5, "chance": 1}]}}""")
         }
