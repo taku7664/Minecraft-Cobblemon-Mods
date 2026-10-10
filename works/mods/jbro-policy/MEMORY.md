@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-10 20:01] 포켓스낵 전포 스폰 전면 차단·기존 스낵 전포 코드 제거 (구현·정적 확인, 빌드·배포 미실행)
+
+- **사용자 결정·범위:** 빡대리의 요청으로 포켓스낵에서는 `LegendCatalog`의 103종(전설·환상·전설급 패러독스)을 스폰하지 않는다. 스낵 설치자의 진행도·접속 상태와 무관하게 차단하며 일반 자연 스폰 전설의 소유권·등장 알림은 유지한다.
+- **구현:** `PokeSnackLegendFilterMixin`의 `affectSpawnable` HEAD에서 `PokemonSpawnDetail`이고 `LegendPolicy.INSTANCE.legendOf(properties) != null`이면 `false`를 반환한다. `LegendPolicy`의 스낵 전설 소유권·등장 알림용 `POKE_SNACK_SPAWN_POKEMON_POST` 구독, 설치자 조건을 검사하던 `snackMayOffer`와 불필요 import를 제거했다. 일반 울트라비스트·패러독스 스낵 알림을 담당하는 `RareSpawnNotice`는 보존했다. 기록 담당자는 두 구현 파일의 diff를 직접 확인했다.
+- **문서:** 모듈 README·`docs/LEGENDARY_SPAWNS.md`와 위키 `pages/legends.html`·`pages/systems.html`에 스낵 차단 정책을 반영하고 기존 스낵 전설 소유권 안내를 제거했다.
+- **정적 확인:** 메인 작업자가 실제 Cobblemon 1.8.1 `sources.jar`에서 `PokeSnackBlockEntity` 스포너의 `influences.add(this)`, `affectSpawnable` 시그니처와 `SpawnablePosition.preFilter`의 `allForInfluences` 호출을 확인해 `false`인 후보가 제외되는 경로를 확인했다. Mixin JSON 등록·카탈로그 103항목·`RareSpawnNotice` diff 없음·삭제 참조 및 옛 안내 잔여 없음·`git diff --check` 통과도 메인 작업자 보고 기준이다. 기록 담당자는 이 검증을 재실행하지 않았다.
+- **검증·배포 경계:** 기존 “빌드는 지시할 때만” 결정에 따라 Gradle 빌드·단위 테스트(TDD red-green)·JAR 배치·서버 기동·실게임 검증은 수행하지 않았다. 정적 확인을 런타임 차단 성공으로 기록하지 않는다.
+- **커밋 상태:** 작업 브랜치는 `codex/block-snack-legends`이며 작업 전 `main`·`origin/main` 0/0 동기화를 메인 작업자가 확인했다. 소스·현재 기능 문서 6파일은 `cab36792`로 커밋했다(메인 작업자 보고). 이 기록 시점에는 이번 변경의 main 병합·푸시를 아직 수행하지 않았으며, 기록의 별도 커밋·main 병합·푸시는 메인 작업자가 담당한다.
+
+---
+
 ## [2026-10-10 19:48] DEV Discord 연결 해제·시작 훅 검사 보완
 
 - 빡대리의 명시 요청으로 개발 서버 Discord 연결을 해제했다. DEV의 TCP 25565/25566 LISTEN 및 Fabric 서버 Java 실행이 없음을 확인했으며, Java PID 34828은 JUnit 테스트 프로세스여서 그대로 보존했다.

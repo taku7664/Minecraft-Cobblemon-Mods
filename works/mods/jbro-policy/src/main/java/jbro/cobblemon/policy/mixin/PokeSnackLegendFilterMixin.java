@@ -10,16 +10,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * A Poke Snack's Legends follow its placer: no Legend they already caught, none whose entry Pokemon is missing from
- * their party, and none at all while they are offline.
- */
+/** Poke Snacks never offer Legends, regardless of their placer's progress or online status. */
 @Mixin(value = PokeSnackBlockEntity.class, remap = false)
 abstract class PokeSnackLegendFilterMixin {
     @Inject(method = "affectSpawnable", at = @At("HEAD"), cancellable = true)
-    private void jbroPolicy$placerLegends(SpawnDetail detail, SpawnablePosition position, CallbackInfoReturnable<Boolean> cir) {
+    private void jbroPolicy$blockLegends(SpawnDetail detail, SpawnablePosition position, CallbackInfoReturnable<Boolean> cir) {
         if (detail instanceof PokemonSpawnDetail pokemon
-            && !LegendPolicy.snackMayOffer((PokeSnackBlockEntity) (Object) this, pokemon.getPokemon())) {
+            && LegendPolicy.INSTANCE.legendOf(pokemon.getPokemon()) != null) {
             cir.setReturnValue(false);
         }
     }
