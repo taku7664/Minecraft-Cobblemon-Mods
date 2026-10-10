@@ -1,3 +1,12 @@
+# [2026-10-10 15:42 KST] VPS GitHub·AI CLI 설치 및 경로 검증
+
+- 사용자 요청에 따라 `ubuntu@210.207.108.196`의 Java `21.0.12.1`, Git `2.53.0`, Git LFS `3.7.1`, PowerShell `7.6.6`, agy `1.3.3`, Bash `5.3.9` 기존 설치를 재확인했습니다. 공식 GitHub CLI apt 저장소에서 gh `2.102.0`, 공식 Codex standalone 설치기로 Codex `0.162.1`, 공식 Claude native 설치기의 `stable` 채널로 Claude Code `2.1.287`을 새로 설치했습니다. Node/npm·GUI는 설치하지 않았습니다. 이 항목은 메인 작업자의 직접 SSH 검증 보고이며 기록 담당자는 원격 검증을 재실행하지 않았습니다.
+- 공식 설치 스크립트를 로컬에서 읽고 SSH 다운로드본의 SHA-256 일치를 확인한 뒤 실행했습니다(Codex `150e3cf675682efeaac115aa3747add3f27887896d04ce6d0b56478d8b428bf6`, Claude `3a68d3406cf674e17bed1733a4dcf37805e2e47d87417700007d7e1aa766a944`). GitHub 저장소 keyring은 공식 공지의 SHA-256 검증을 통과했고 `apt-cache policy`도 공식 저장소와 일치했습니다. 계정 비밀값은 읽거나 복사하지 않았습니다.
+- 전체 도구의 버전, Codex·Claude·agy의 help와 `bash -lc` 로그인 셸 경로 확인을 통과했습니다. gh는 `/usr/bin/gh`, agy·codex·claude는 `/home/ubuntu/.local/bin`에서 실행됩니다. Codex 실제 파일은 `/home/ubuntu/.codex/packages/standalone/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex`, Claude는 `/home/ubuntu/.local/share/claude/versions/2.1.287`입니다. `tmux`·`curl`·`python3`도 존재합니다.
+- 사용자 계정 로그인은 필요합니다. `gh auth status`·`codex login status`는 미인증으로 exit 1, `claude auth status`는 `loggedIn=false`, `agy models`는 `Please sign in`으로 exit 1이었습니다. 로그인 후 실제 AI 요청은 검증하지 않았습니다.
+- `ppakemon.service`는 `inactive`, TCP 25565·8100 및 UDP 24454 리스너는 없었고 서버 저장소의 `git status --porcelain`은 비어 있었습니다. 당시 디스크 45G 중 4.5G 사용·40G 여유, RAM 7,931MiB 중 962MiB 사용·6,968MiB available, swap 0을 확인했습니다.
+- Minecraft 기동·EULA 동의·서비스 설치·방화벽 변경·Discord 비밀 설정 복사·계정 인증은 이번 설치 범위에서 수행하지 않았습니다. 실제 AI 요청과 게임 동작은 미검증이며 CLI 설치·경로 검증을 서비스 운영 완료로 해석하면 안 됩니다.
+
 # [2026-10-10 15:08 KST] VPS 설치·정적 검증 완료, 최초 기동 승인 대기
 
 - 이 항목은 메인 작업자의 직접 관찰 보고를 기록한 것으로, 기록 담당자는 VPS 검증을 재실행하지 않았습니다. Ubuntu 26.04 LTS x86_64 VPS(2 vCPU·8GB RAM·50GB NVMe)에 `ubuntu@210.207.108.196:22` 키 인증 접속이 성공했습니다. 키 내용은 읽거나 출력하지 않았으며 Windows 키 ACL만 현재 사용자 `Read`로 제한했습니다.
