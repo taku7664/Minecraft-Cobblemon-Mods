@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-10 20:43] 단일 JSON 상점 로컬 운영·VPS 배포 및 서버 재기동 확인
+
+- **적용·동기화:** 메인 작업자 보고 기준으로 로컬 운영 저장소 `MinecraftPPakemonServer`와 VPS에 MCC JAR·`config/more-cobblemon-contents/bp-shop.json` 정확히 2파일만 교체했다. 운영 main `aaa09e494279de3a19e2c4fad0f1434b66357da4`의 원격 동기화와 VPS HEAD 일치, `ahead=0`·`behind=0`·`running=true` 및 manager update 성공을 확인했다.
+- **파일 검증:** 로컬·VPS JAR SHA-256은 `3ed7757ab2277fb45a803e0b716d01d7eb588da37f466ef4eb0772ecfd38068c`, JSON은 `501de6efda8a40e16ada454b6386a1f13918e6a983905bd9e5c5e63304d0104b`로 각각 같았다. 설정의 106품목·사탕 0·마법이 부여된 황금 사과 120 BP·분류 4개 및 레벨업 탭 제거를 확인했다. 운영 JSON은 CRLF 공백 검사 지적 후 LF로 수정해 검사를 통과했다.
+- **보존·기동:** VPS manager가 월드를 정상 저장·종료하고 전체 월드를 서버 밖에 백업한 뒤 설치·재시작까지 완료했다. 로컬 월드 백업은 `C:/Users/박주형/AppData/Local/MinecraftServerDeploy/shop-single-json-20261010-203903/world-snapshot`, 원격 백업은 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261010-204148-3c65fa91`이다. VPS 로그의 20:42:36 외부 JSON 상점 106품목 로딩, 20:42:52 `Done (12.501s)` 및 TCP 25565 LISTEN을 확인했다.
+- **검증 한계:** 게임 접속·실제 구매는 확인하지 않았다. 기록 담당자는 위 검증을 재실행하지 않았으며 이 후속 기록의 커밋·main 병합·푸시는 메인 작업자가 별도로 진행한다.
+
 ## [2026-10-10 20:13] BP 상점 단일 JSON 결정 (20:08 분할 디렉터리 방식 대체·20:19:20 개발 배포 완료)
 
 - **사용자 결정:** 품목별 JSON을 사용하지 않고 `config/more-cobblemon-contents/bp-shop.json` 한 파일의 `schema`·`catalog`·`limits`·`categories`·`shopkeeper`·`entries`를 편집한다. 기본 소스도 `data/more_cobblemon_contents/mcc-bp-shop.json` 하나로 합치고 분할 JSON 107개를 삭제했다. 20:08의 디렉터리 방식은 배포하지 않았으며 이 결정으로 대체한다.
