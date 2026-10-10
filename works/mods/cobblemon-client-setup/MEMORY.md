@@ -9,8 +9,7 @@
 
 - **이유:** 사용자가 VPS를 광장만 남기고 같은 시드로 초기화했다. 운영 클라이언트에 `xaero/minimap`·`xaero/world-map`의 `Multiplayer_210.207.108.196`이 실제로 남아 있었고, 그대로 두면 새 월드 지도에 예전 건물·웨이포인트가 보인다.
 - **구현:** `XaeroWorldReset`이 PreLaunch에서 한 번(`xaero-world-reset-2026-10-11`) 그 서버 폴더(포트가 붙은 이름 포함)를 `cobblemon_client_setup/backups/<rule>/`로 옮긴다. 지우지 않고, 다른 서버·싱글 월드는 건드리지 않는다. `127.0.0.1`은 다른 사람의 로컬 서버와 겹칠 수 있어 넣지 않았다(개발 클라이언트 캐시는 직접 `develop-product/deployment-backups/20261011-dev-world-reset/client-xaero/`로 옮김). 이미 새 월드에서 쌓인 지도도 클라이언트를 0.1.15로 처음 켤 때 한 번 옮겨지는 한계가 있다.
-- **깨진 테스트 수정:** 0.1.14의 `KeybindingSetupTest` Iris 테스트가 문자열 안에 실제 줄바꿈이 든 채 커밋돼 컴파일되지 않았다(0.1.14는 `-x unitTest` 빌드라 드러나지 않음). `3d01ae46`에서 `
-`으로 고쳤다.
+- **깨진 테스트 수정:** 0.1.14의 `KeybindingSetupTest` Iris 테스트가 문자열 안에 실제 줄바꿈이 든 채 커밋돼 컴파일되지 않았다(0.1.14는 `-x unitTest` 빌드라 드러나지 않음). `3d01ae46`에서 `\n` 이스케이프로 고쳤다. 셸 heredoc으로 코드를 쓰면 `\\`가 `\`로 줄어 이런 일이 생긴다. 백슬래시가 든 코드는 Write/Edit 도구로 쓴다.
 - **빌드·배포:** main `3d01ae46`, `:cobblemon-client-setup:build` 성공·테스트 74개 통과, JAR `48DBEC940909767CDC1F5DABBCD2A0F98D3F926E4C37D9BFDF981DE85FC3E588`, `jar --validate` 0. 개발 클라이언트·`PPakemon`·`deploy-product/client`에서 0.1.14를 백업 후 빼고 0.1.15를 넣었다(해시 일치). 백업 `F:/AI/build/xaero-reset-20261011/deployment-backups/`. 플레이어용 Modrinth 팩 업로드는 사용자 몫. 실제 실행 시 폴더가 옮겨지는지는 아직 확인하지 않았다.
 
 ## [2026-10-11 02:23] Iris 셰이더 새로고침 키 해제, Rounding-Block 기본 비활성
