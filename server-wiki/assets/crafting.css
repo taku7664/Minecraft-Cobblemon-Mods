@@ -1,0 +1,20 @@
+.craft-controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: end; margin: 24px 0 12px; }
+.craft-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.craft-tabs button { font: inherit; cursor: pointer; border: 2px solid var(--border); border-radius: 6px; background: var(--panel); color: inherit; padding: 10px 16px; }
+.craft-tabs button[aria-selected="true"] { background: var(--selected); border-color: var(--cursor); color: var(--selected-text); }
+.craft-tabs button:focus-visible, .craft-search input:focus-visible { outline: 3px solid var(--cursor); outline-offset: 3px; }
+.craft-search { display: grid; gap: 6px; flex: 1; min-width: 220px; font-size: 13px; }
+.craft-search input { box-sizing: border-box; width: 100%; font: inherit; color: inherit; background: var(--frame-highlight); border: 2px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+.craft-count { color: var(--panel-text-dim); font-size: 13px; }
+.craft-item { border-top: 1px solid var(--border); padding: 16px 0; }
+.craft-item summary { cursor: pointer; font-weight: bold; line-height: 1.6; }
+.craft-item summary small { font-weight: normal; color: var(--panel-text-dim); margin-left: 12px; }
+.craft-variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; margin-top: 16px; }
+.craft-recipe { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px; min-width: 0; }
+.craft-recipe h3 { margin: 0 0 10px; font-size: 15px; }
+.craft-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 14px 0; }
+.craft-slot { display: flex; align-items: center; justify-content: center; min-height: 62px; padding: 7px 4px; text-align: center; background: var(--panel-alt); border: 1px solid var(--border); border-radius: 3px; font-size: 12px; overflow-wrap: anywhere; }
+.craft-slot:empty { opacity: .5; }
+.craft-recipe ul { padding-left: 20px; margin-bottom: 0; }
+.craft-recipe p { font-size: 13px; }
+@media (max-width: 600px) { .craft-tabs { width: 100%; } .craft-tabs button { flex: 1; padding: 10px 6px; } .craft-item summary small { display: block; margin-left: 20px; } }

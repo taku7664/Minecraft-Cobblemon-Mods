@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>제작법 · 빡켓몬 위키</title>
+  <link rel="stylesheet" href="../assets/wiki.css">
+  <link rel="stylesheet" href="../assets/crafting.css">
+</head>
+<body data-root=".." data-no-toc>
+<main>
+  <h1>제작법</h1>
+  <p>포켓몬 생활에 필요한 <b>주요 품목의 제작법을 알려주는 공간</b>입니다. 몬스터볼, 회복약과 사탕, PC와 회복기까지 재료·제작 위치·배치를 확인하세요.</p>
+  <div class="note tip"><strong>사탕을 직접 만들어 보세요</strong>모닥불 냄비에서 <b>스컬크 1개 + 벌집 조각 1개 → 경험사탕 XS 3개</b>를 만듭니다. 큰 사탕으로 합치거나 작은 사탕으로 나눌 수도 있습니다.</div>
+  <div class="craft-controls">
+    <div class="craft-tabs" role="tablist" aria-label="제작법 분류">
+      <button id="tab-balls" type="button" role="tab" aria-selected="true" aria-controls="craft-results" data-category="balls">몬스터볼</button>
+      <button id="tab-consumables" type="button" role="tab" aria-selected="false" aria-controls="craft-results" tabindex="-1" data-category="consumables">소모품</button>
+      <button id="tab-equipment" type="button" role="tab" aria-selected="false" aria-controls="craft-results" tabindex="-1" data-category="equipment">장치·도구</button>
+    </div>
+    <label class="craft-search" for="craft-search">아이템·재료 찾기<input id="craft-search" type="search" placeholder="예: 몬스터볼, PP에이드, 철 주괴" autocomplete="off"></label>
+  </div>
+  <p id="craft-count" class="craft-count" aria-live="polite"></p>
+  <div id="craft-results" role="tabpanel" aria-labelledby="tab-balls" tabindex="0"></div>
+  <noscript><div class="note warn">제작법을 표시하려면 브라우저에서 JavaScript를 허용해 주세요.</div></noscript>
+  <h2>제작 장소 준비</h2>
+  <ul>
+    <li><b>조합대:</b> 3×3 배치 그림대로 재료를 넣습니다. ‘배치 무관’은 재료를 아무 칸에 넣어도 됩니다.</li>
+    <li><b>모닥불 냄비:</b> 불이 켜진 모닥불 위에 냄비를 설치합니다. 냄비의 재료 칸에 넣고 요리가 끝날 때까지 기다립니다. 냄비 제작법은 장치·도구 탭에 있습니다.</li>
+    <li><b>양조기:</b> 아래 병 슬롯과 위 재료 슬롯을 구분해서 넣고, 연료로 블레이즈 가루를 사용합니다.</li>
+    <li><b>대장장이 작업대:</b> 표시된 형판·기본 장비·추가 재료를 각 슬롯에 넣습니다.</li>
+    <li>한 칸에 ‘또는’으로 적힌 재료는 그중 하나를 골라 사용합니다. 수량은 <b>한 번 제작할 때</b>의 재료와 결과입니다.</li>
+  </ul>
+  <div class="note">볼·사탕·학습장치·PP에이드 계열은 BP 상점에서 판매하지 않습니다. 이상한사탕은 제작할 수 없으며 유적의 금빛 상자나 우두머리 보상에서 얻습니다. 특성패치는 제작이 막혀 있고 <a href="hub.html">BP 상점</a>에서 구매합니다.</div>
+</main>
+<script src="../assets/nav.js"></script>
+<script src="../assets/wiki.js"></script>
+<script src="../assets/data/crafting.js"></script>
+<script src="../assets/crafting.js"></script>
+</body>
+</html>
