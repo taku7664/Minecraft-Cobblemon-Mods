@@ -10,6 +10,7 @@
 | 클라이언트 | 저장소 `develop-product/client` | `%APPDATA%/ModrinthApp/profiles/PPakemon` |
 
 서버는 기존 로컬 패쳐의 설정·월드·플레이어·광장 보존 및 기능 파일 복구를 그대로 사용합니다.
+Linux `run.sh`는 대상에 없을 때만 개발 설치본에서 복사하며 개발 포트 25566 지정을 제거합니다. 기존 운영 `run.sh`는 바이트 그대로 보존합니다.
 서버 복사에서는 JourneyMap, BlueMap·Map Link 모드와 관련 설정·전용 데이터, Showdown 예제와 문의 번역 파일을 제외합니다.
 클라이언트도 BlueMap·Map Link와 관련 설정·전용 데이터, 위키 지도 페이지·스크립트를 재설치하지 않습니다.
 대상에 남은 BlueMap·Map Link JAR은 파일명이 바뀌었어도 모드 ID로 확인해 제거합니다.

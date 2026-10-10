@@ -1,4 +1,32 @@
-# Linux 서버 패키징
+# Linux 서버 실행과 패키징
+
+## 현재 서버 루트에서 실행: run.sh
+
+`run.sh`는 운영 저장소 루트의 Fabric 런처·설정·월드를 그대로 사용합니다.
+별도 `release/data` 폴더나 월드 심볼릭 링크를 만들지 않습니다. 기존 Windows `run.bat`과
+PowerShell 시작 훅도 유지하며, Linux에서는 같은 시작 훅을 PowerShell 7로 실행합니다.
+Java 21 이상과 PowerShell 7 이상(`pwsh`)을 설치하고 운영 설정·EULA를 준비한 뒤 실행합니다.
+
+```bash
+cd /srv/MinecraftPPakemonServer
+bash run.sh
+# 메모리 크기를 바꾸려면:
+JAVA_XMS=2G JAVA_XMX=6G bash run.sh
+```
+
+`JAVA_XMS`·`JAVA_XMX`의 기본값은 2G·4G입니다. `JAVA_HOME`으로 Java 경로를 지정할 수 있습니다.
+시작 훅이 실패하면 게임 서버를 실행하지 않습니다. 종료 후 자동 재시작은 하지 않으며
+재시작 정책은 호스트의 서비스 관리 기능에서 설정합니다. 기존 운영 `run.sh`는 로컬 패쳐가
+바이트 그대로 보존하고, 없을 때만 개발 설치본에서 복사하며 개발 포트 25566 지정은 제거합니다.
+
+Git Bash 모의 실행과 Windows에서의 훅 검증은 실제 Linux 서버 기동 검증과 구분합니다.
+실제 Linux OS 기동·외부 접속·실게임은 확인하지 않았습니다.
+
+## 기존 별도 패키징: package-server.ps1 / start-linux.sh
+
+아래 방식은 새 ZIP의 `release/`와 외부 `SERVER_DATA_DIR`을 분리하는 기존 패키징 도구입니다.
+`start-linux.sh`는 데이터 폴더를 링크하고 Java를 실행하며 현재 `run.sh`의 시작 훅 흐름과 다릅니다.
+운영 저장소를 그대로 실행하려면 위의 `run.sh` 방식을 사용합니다.
 
 기준: Minecraft 1.21.1 / Fabric Loader 0.19.5 / launcher 1.1.2 / Java 21.
 기존 run.bat과 원본 설정은 변경하지 않는다. PowerShell 5.1 이상에서 실행한다.
