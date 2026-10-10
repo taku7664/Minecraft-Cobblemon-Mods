@@ -10,7 +10,6 @@ import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
 import com.cobblemon.mod.common.api.spawning.position.SpawnablePosition
 import com.cobblemon.mod.common.api.spawning.spawner.PlayerSpawnerFactory
-import com.cobblemon.mod.common.block.entity.PokeSnackBlockEntity
 import com.cobblemon.mod.common.entity.pokeball.EmptyPokeBallEntity
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
@@ -21,7 +20,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 /**
- * Wild Legends belong to the player whose spawner made them, or who placed the Poke Snack that drew them: only that
+ * Wild Legends belong to the player whose spawner made them: only that
  * player may battle or catch them. A Legend
  * appears only for players who have not caught it yet, hold its League rank and carry its entry Pokemon; since
  * Cobblenav lists spawns through the same spawner check, the Pokenav's spawn list follows along. The rank is checked
@@ -38,13 +37,6 @@ object LegendPolicy {
             if (event.isCanceled) return@subscribe
             val player = event.spawnablePosition.cause.entity as? ServerPlayer ?: return@subscribe
             claim(event.entity.pokemon, player)
-        }
-        // A Poke Snack's Legend belongs to whoever placed the snack.
-        CobblemonEvents.POKE_SNACK_SPAWN_POKEMON_POST.subscribe { event ->
-            val placer = event.pokeSnackBlockEntity.placedBy ?: return@subscribe
-            val level = event.pokeSnackBlockEntity.level ?: return@subscribe
-            val player = level.server?.playerList?.getPlayer(placer) ?: return@subscribe
-            claim(event.pokemonEntity.pokemon, player)
         }
         CobblemonEvents.BATTLE_STARTED_PRE.subscribe { event ->
             val battle = event.battle
@@ -109,18 +101,6 @@ object LegendPolicy {
         player.server.playerList.broadcastSystemMessage(Component.translatable(
             "legend.${JbroPolicy.MOD_ID}.appeared.${legend.id}", player.displayName, Component.translatable(legend.nameKey),
         ).withStyle(ChatFormatting.LIGHT_PURPLE), false)
-    }
-
-    /**
-     * For the Poke Snack mixin: whether a snack placed by [placer] may offer [pokemon]. A Legend needs its placer
-     * online, because the entry rule reads their party.
-     */
-    @JvmStatic
-    fun snackMayOffer(snack: PokeSnackBlockEntity, pokemon: PokemonProperties): Boolean {
-        val legend = legendOf(pokemon) ?: return true
-        val placer = snack.placedBy ?: return false
-        val player = snack.level?.server?.playerList?.getPlayer(placer) ?: return false
-        return mayMeet(player, legend)
     }
 
     /** The Legend [pokemon] is, its regional form telling Galarian Zapdos from Zapdos; null for any other Pokemon. */
