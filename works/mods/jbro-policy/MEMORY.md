@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-11] 광장 낙하 사망·/디코인증 초대 링크·접속자 닉네임 수정 (구현·커밋, 빌드·테스트·배포 미실행)
+
+- **사용자 신고:** 광장에서 떨어지면 죽음, `/디코인증`에 서버 디스코드 링크 없음, 접속자 목록이 닉네임이 아님.
+- **광장 낙하 원인(코드 추론, 재현 안 함):** 광장은 데미지를 모두 막고 공허(`minBuildHeight - 8` 아래)로 떨어지면 `goHome`으로 원래 위치에 보낸다. 이때 광장에서 쌓인 낙하 거리(스폰 y=80 기준 약 150블록)를 초기화하지 않아, 돌아간 차원에서 첫 착지 때 낙하 데미지로 죽는 구조였다. `goHome`의 두 순간이동 뒤에 `land()`로 `resetFallDistance`·수직 속도 0·`onGround`를 넣었다.
+- **초대 링크:** `DiscordSettings.inviteUrl`(`https://discord.gg/…`·`https://discord.com/invite/…`만 허용, 틀리면 디스코드 설정 전체 무효)을 추가하고, `/디코인증` 코드 아래 눌러서 여는 초대 링크(`discord_link.invite` 번역 키)를 보낸다. 개발 서버 `config/jbro-policy-discord.json`에 `https://discord.gg/HbKxTFeGB`를 넣었다. 운영·VPS 설정은 바꾸지 않았다.
+- **접속자 목록:** 디스코드 `/접속자`가 `gameProfile.name` 대신 표시 이름(Styled Nicknames 닉네임)을 보여 준다. 게임 Tab 목록은 이 모드 소관이 아니라 `styled-nicknames.json`의 `changePlayerListName`(기본 false) 때문이어서 개발 서버 설정만 true로 바꾸고 체크리스트에 적었다.
+- **검증 경계:** "빌드는 지시할 때만" 결정에 따라 Gradle 컴파일·단위 테스트(새 `inviteUrl` 테스트 포함)·JAR 배치·실게임 확인은 하지 않았다. 개발 서버는 켜지 않았다.
+
+---
+
 ## [2026-10-10 20:53] 운영·VPS 사탕 제작 정책 JAR 누락 해소 및 재기동 확인
 
 - **누락 확인·적용:** 사용자 지적 후 개발 정책 JAR SHA-256 `CD50991F3E9C527B1E95A537787401EAC1DA94BF3A58361E8005284D326BB869`와 기존 운영본(`38DD83FA…`)이 달라, 앞선 MCC 배포에서 정책 JAR가 누락된 것을 확인했다. 개발 정책 JAR를 운영에 복사하고 운영 소스 `afb7a750ea1a04244cc277e4c48b668a1043c2f7` 커밋·푸시 후 VPS에도 정책 JAR 1파일을 적용했다(메인 작업자 보고).
