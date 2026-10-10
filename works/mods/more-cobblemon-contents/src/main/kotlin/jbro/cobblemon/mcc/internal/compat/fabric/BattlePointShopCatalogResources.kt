@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogFiles
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogReloadOutcome
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogResourceBundle
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogResourceReloader
@@ -8,6 +9,7 @@ import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogStore
 import jbro.cobblemon.mcc.internal.catalog.CatalogResourceInput
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.PackType
@@ -19,6 +21,9 @@ internal object BattlePointShopCatalogResources {
     private val listenerId = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "bp_shop_catalog")
     val store = BattlePointShopCatalogStore(::itemExists)
     private val reloader = BattlePointShopCatalogResourceReloader(store)
+    private val files by lazy {
+        BattlePointShopCatalogFiles(FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents/bp-shop"))
+    }
 
     fun register() {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(
@@ -28,7 +33,7 @@ internal object BattlePointShopCatalogResources {
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
                     val report = try {
                         reload(resourceManager)
-                    } catch (failure: RuntimeException) {
+                    } catch (failure: Exception) {
                         reportReloadFailureSafely(failure)
                         return
                     } catch (failure: LinkageError) {
@@ -47,8 +52,9 @@ internal object BattlePointShopCatalogResources {
                 .entries
                 .sortedBy { it.key.toString() }
                 .map { (id, resource) -> CatalogResourceInput(id.toString(), resource::openAsReader) }
-        val rules = resources(ruleDirectory)
-        val entries = resources(entryDirectory)
+        val bundle = files.load { BattlePointShopCatalogResourceBundle(resources(ruleDirectory), resources(entryDirectory)) }
+        val rules = bundle.rules
+        val entries = bundle.entries
         return ReloadReport(
             reloader.reload(BattlePointShopCatalogResourceBundle(rules, entries)),
             rules.size,
@@ -60,9 +66,7 @@ internal object BattlePointShopCatalogResources {
         try {
             when (val outcome = report.outcome) {
                 BattlePointShopCatalogReloadOutcome.MissingResource -> MoreCobblemonContents.LOGGER.error(
-                    "BP shop rules or entries are missing under {} and {}. Keeping the previous catalog.",
-                    ruleDirectory,
-                    entryDirectory,
+                    "BP shop rules are missing under config/more-cobblemon-contents/bp-shop/rules. Keeping the previous catalog.",
                 )
                 is BattlePointShopCatalogReloadOutcome.ReadFailed -> reportReloadFailureSafely(outcome.cause)
                 is BattlePointShopCatalogReloadOutcome.Applied -> MoreCobblemonContents.LOGGER.info(

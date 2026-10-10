@@ -20,7 +20,7 @@ internal class BattlePointShopCatalogResourceReloader(
     private val store: BattlePointShopCatalogStore,
 ) {
     fun reload(bundle: BattlePointShopCatalogResourceBundle): BattlePointShopCatalogReloadOutcome {
-        if (bundle.rules.isEmpty() || bundle.entries.isEmpty()) {
+        if (bundle.rules.isEmpty()) {
             return BattlePointShopCatalogReloadOutcome.MissingResource
         }
         val readers = ArrayList<Reader>(bundle.rules.size + bundle.entries.size)

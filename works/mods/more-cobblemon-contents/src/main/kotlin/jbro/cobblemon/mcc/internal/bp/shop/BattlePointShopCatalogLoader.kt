@@ -56,10 +56,6 @@ internal object BattlePointShopCatalogLoader {
                 "Exactly one BP shop rules JSON file must be active, found ${ruleFragments.size}",
             )
         }
-        if (entryFragments.isEmpty()) {
-            reject(BattlePointShopCatalogIssueCode.MISSING_FIELD, "$.entries", "No BP shop entry JSON files were found")
-        }
-
         val (ruleResourceId, ruleReader) = ruleFragments.single()
         val rulePath = "resource[$ruleResourceId]"
         val rules = ruleReader.use { JsonParser.parseReader(it).requireObject(rulePath) }
@@ -100,7 +96,6 @@ internal object BattlePointShopCatalogLoader {
                 parseEntry(element.requireObject("$path.entries[$index]"), "$path.entries[$index]", itemExists)
             }
         }
-        if (entries.isEmpty()) reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$.entries", "entries must not be empty")
         rejectDuplicates(entries.map(BattlePointShopEntry::entryId), "$.entries", "entry ID")
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
 
