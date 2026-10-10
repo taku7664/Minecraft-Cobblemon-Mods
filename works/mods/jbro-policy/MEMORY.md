@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-11 03:24] 숨겨진 특성 1/30 빌드·개발 배포·운영·VPS 반영 (실게임 미검증)
+
+- **빌드:** 커밋된 `origin/main` `5611b7e7`를 `git archive`로 `F:/AI/build/hidden-ability-20261011/src`에 풀어 빌드했다(워크트리 아님, Gradle 쓰기 경로 모두 F). `:jbro-policy:build` 종료 코드 0, unitTest 106개 모두 통과. 리그는 `assemble` 후 `unitTest`를 `WildTrainerDataTest`로 좁혀 11개 통과. 정책 JAR SHA-256 `3B08009542D332FDD481CC9734C06A50E9669E2BD5DC8CE355A705246F322521`, 리그 JAR `DCDA43CF079DA76787F71AF52CB407790958B4FEE0E6CD3E3C4AFD7F53A789A5`, 둘 다 `jar --validate` 통과.
+- **같이 나간 변경:** 리그 JAR은 설치본 대비 실제 차이가 `wild_quiz.json` 하나뿐이고(나머지 210개는 줄바꿈 차이, 클래스 동일) 정책 JAR에는 미배포였던 `/피츄` 위키 답변(`67e156fc`, `PichuWiki`)이 들어 있다. 사용자가 "같이 배포"를 골랐다. 새 위키 `dimensions.html`은 서버 설치 위키에 넣지 않았다.
+- **위키·대사 설치본:** 서버 설치 위키(`config/more-cobblemon-contents/wiki/pages`)는 저장소 `server-wiki` 원본과 이미 내용이 달라(BP 상점 문구 등) 원본으로 덮지 않고, 개발·운영 설치본 4쪽의 숨특 문구만 바꿨다. 과학자 대사 설치본은 커밋 원본과 해시가 같다. `startup-assets/server-wiki.zip`은 다시 만들지 않았다(훅은 빠진 파일만 채운다).
+- **개발 배포:** 게임·서버 미실행, 25565/25566 미수신 확인 후 `develop-product/server`·`client`의 두 JAR을 교체했고 해시가 빌드본과 같다. 이전 JAR 백업은 `F:/AI/build/hidden-ability-20261011/deployment-backups/`. 개발 서버는 켜지 않았다.
+- **운영 저장소:** JAR 2개·위키 4쪽·과학자 대사를 `1a1981a4`로 커밋·푸시했고 `ls-remote`와 같다.
+- **VPS:** 접속자 0명에서 매니저 update job `53f86e4f01734e5c8b04addf3cd79e89`로 반영(백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-032133-912137ae`). 03:22:44 `Done`, 25565 LISTEN, tmux `dead=0`, 피츄 봇 online, JAR·위키 해시가 운영 저장소와 같다. **매니저 업데이트는 VPS에 이미 있는 `config/` 파일을 보존하므로** 과학자 대사는 반영되지 않아, 서버 밖 `~/.local/share/ppakemon-backups/config-edit/20261011-extra-scientist/`에 백업한 뒤 직접 교체하고 콘솔 `npc reload`(`Loaded 31 dialogues.`)로 적용했다. VPS `config/jbro-policy.json`에는 옛 키 `wildHiddenAbilityRate: 30`이 남아 있고 새 코드는 이를 무시해 기본 1/30으로 동작한다.
+- **미검증:** 실게임에서 야생 숨특 빈도, 과학자 대사, 퀴즈 보기, 피츄 위키 답변은 확인하지 않았다.
+
 ## [2026-10-11 02:54] 숨겨진 특성 30% → 1/30 수정 (구현만, 빌드·테스트·배포 전)
 
 - **사용자 결정:** 숨겨진 특성 확률은 1/30이 맞고 30%는 버그다(기본 게임은 1/128). 정책 설정이 정수 퍼센트라 1/30을 담을 수 없어 키를 `wildHiddenAbilityOneIn`(N마리 중 1마리, 기본 30, 0이면 끔)으로 바꿨다.
