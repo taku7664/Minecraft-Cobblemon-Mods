@@ -27,7 +27,5 @@
   "entity.cobblemon_dimensions.ultra_wormhole": "울트라홀",
   "message.cobblemon_dimensions.not_worthy": "아직 들어갈 자격이 없는 것 같다.",
   "message.cobblemon_dimensions.great_wormhole": "어딘가의 하늘에 거대한 울트라홀이 열렸다!",
-  "message.cobblemon_dimensions.small_wormhole": "근처 하늘에 울트라홀이 열렸다!",
-  "message.cobblemon_dimensions.return_wormhole": "근처 하늘에 돌아가는 울트라홀이 열렸다!",
   "command.cobblemon_dimensions.no_sky": "근처 하늘에 울트라홀을 열 빈 공간이 없습니다."
 }
