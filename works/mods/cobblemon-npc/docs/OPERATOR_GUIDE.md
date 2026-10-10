@@ -13,9 +13,12 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
 - Sneak and right-click an NPC with the wand to copy its name, skin and dialogue onto the wand; sneak and right-click a
   block to place a copy facing you. The copy stays on the wand until another NPC is copied.
 - A skin is a player name (`Steve`), an RCT Trainers+ trainer (`rct:clerk`, short for
-  `rctmod:textures/trainers/single/clerk.png`; the **RCT ▶** button browses the enabled pack with a preview), or
+  `rctmod:textures/trainers/single/clerk.png`; the **Skins ▶** button searches enabled mods and packs with a preview), or
   any `namespace:path.png` skin texture. A texture skin's slim or wide model is read from the image; without the
-  pack the NPC wears a default skin.
+  pack the NPC wears a default skin. The picker lists 64×64 or 64×32 PNGs under trainer, NPC, skin or player
+  directories; hover a row to see its full texture ID. MCC League Challenge includes
+  `more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png` and `nurse_joy_2.png`.
+- The dialogue **List ▶** button opens the server's dialogue IDs as a searchable, scrollable list.
 - NPCs do not move, take damage or despawn, and `/kill` does not kill them either (a removed NPC cannot be
   brought back). Remove one with the wand's remove button.
 - `/npc talk <players> <dialogue> [node]` opens a dialogue without an NPC (command blocks, other mods' scripts, or a

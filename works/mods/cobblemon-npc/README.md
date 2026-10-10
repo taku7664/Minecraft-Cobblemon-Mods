@@ -14,7 +14,7 @@ Install the same version on **both client and server**. Requires Minecraft 1.21.
 
 ## Use and settings
 
-Operators with permission level 2 use `/npc wand`. Right-click a block to place an NPC; right-click the NPC with the wand to edit its name, skin and dialogue, preview conversations, or remove it. Sneak and right-click an NPC to copy its name, skin and dialogue onto the wand, then sneak and right-click a block to place a copy. Players right-click the NPC to talk.
+Operators with permission level 2 use `/npc wand`. Right-click a block to place an NPC; right-click the NPC with the wand to edit its name, skin and dialogue, preview conversations, or remove it. Sneak and right-click an NPC to copy its name, skin and dialogue onto the wand, then sneak and right-click a block to place a copy. Players right-click the NPC to talk. The skin picker searches trainer/NPC skins from enabled mods and packs with a preview; the dialogue picker searches the server dialogue list.
 
 Dialogue files live on the server at `config/cobblemon_npc/dialogues/<id>.json`. Use `/npc reload` after editing files. `/npc talk <players> <dialogue> [node]` opens a conversation without an NPC; `/npc end <players>` closes it. See the [operator guide](docs/OPERATOR_GUIDE.md) for JSON, conditions and command permissions.
 

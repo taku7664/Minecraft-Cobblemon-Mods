@@ -111,9 +111,9 @@ class NpcSettingsScreen(private val settings: NpcSettingsPayload) :
         label(labelTexts[1], left + 14, y + 5)
         val pickWidth = 60
         skinField = field(fieldLeft, y, fieldWidth - pickWidth - 4, skin, Component.translatable("screen.cobblemon_npc.hint.skin"), 128)
-        button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.pick_rct"), width = pickWidth) {
+        button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.pick_skin"), width = pickWidth) {
             remember()
-            minecraft!!.setScreen(RctSkinPickerScreen(this, skin) { picked ->
+            minecraft!!.setScreen(NpcSkinPickerScreen(this, skin) { picked ->
                 // Coming back rebuilds the fields from what they hold, so the field takes the pick too.
                 skin = picked
                 skinField.value = picked
@@ -122,8 +122,12 @@ class NpcSettingsScreen(private val settings: NpcSettingsPayload) :
         y += 26
         label(labelTexts[2], left + 14, y + 5)
         dialogueField = field(fieldLeft, y, fieldWidth - pickWidth - 4, dialogue, Component.translatable("screen.cobblemon_npc.hint.dialogue"), 64)
-        button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.next_dialogue"), width = pickWidth) {
-            cycleDialogue()
+        button(fieldLeft + fieldWidth - pickWidth, y, Component.translatable("screen.cobblemon_npc.pick_dialogue"), width = pickWidth) {
+            remember()
+            minecraft!!.setScreen(DialoguePickerScreen(this, settings.dialogues, dialogue) { picked ->
+                dialogue = picked
+                dialogueField.value = picked
+            })
         }.active = settings.dialogues.isNotEmpty()
         y += 34
 
@@ -156,12 +160,6 @@ class NpcSettingsScreen(private val settings: NpcSettingsPayload) :
         name = nameField.value
         skin = skinField.value
         dialogue = dialogueField.value
-    }
-
-    private fun cycleDialogue() {
-        val ids = settings.dialogues
-        val next = ids.getOrNull(ids.indexOf(dialogueField.value.trim()) + 1) ?: ids.first()
-        dialogueField.value = next
     }
 
     private fun save(removing: Boolean) {
