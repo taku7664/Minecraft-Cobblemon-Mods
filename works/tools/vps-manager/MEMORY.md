@@ -1,3 +1,13 @@
+# [2026-10-10 20:09] 실제 VPS 기능 업데이트·명시적 기동·외부 연결과 시작 알림 확인
+
+- **요청·실행 경로:** 빡대리의 “일단 됐고 지금 VPS에서 풀 받아서 다시 실행” 요청에 따라 GUI 개선은 보류하고 기존 backend SSH detached update RPC(job `fff625150e444d47b142e2d6ef65cf59`)를 실행했다. 사전 조회용 일회성 `Manager.plan()` 호출은 실제 함수명 `plan_update`와 달라 실패했으나 서버 변경 없이 `dispatch(plan)`으로 정정했으며 프로그램 코드 오류는 아니었다. 프로그램 소스 변경·빌드는 하지 않았다. 아래 결과는 메인 작업자의 직접 검증 보고이며 기록 담당자는 SSH 검증을 재실행하지 않았다.
+- **원격 반영·해시:** 운영 HEAD를 `6f0ea241f139d73bd7fcb92300516be315a0d121`에서 `e654112385fa5246fc10c4f88ecb68dad8c8f717`로 반영했고 실제 GitHub `origin/main`의 `ls-remote`와 일치했다. 적용한 6개 파일은 `config/cobblemon_npc/dialogues/plaza_nurse_joy.json`, `mods/cobblemon-npc-0.1.0.jar`, `mods/jbro-policy-0.1.3.jar`, `mods/more-cobblemon-contents-0.1.0.jar`, `mods/more-cobblemon-contents-league-challenge-0.1.0.jar`, `startup-assets/server-wiki.zip`이다. 기동 후 모두 커밋된 운영 main 실제 파일과 SHA-256이 일치했다.
+- **보존·백업:** 원격에서 변경된 보호 대상 `startup-hooks.json`, `world/dimensions/jbro_policy/plaza/entities/r.0.0.mca`와 기존 설정·월드·플레이어를 보존했다. 서버 밖 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261010-200140-6ad76003`에 광장을 포함한 `world-snapshot.tar`(126 members)와 `settings-snapshot.tar`를 백업했다. 비밀 Discord 설정과 시작 훅의 JSON 값, `run.sh`·`run.bat` 바이트가 백업과 동일함을 확인했으며 비밀값은 기록하지 않는다.
+- **기동 보고 정정:** 서버는 업데이트(20:01:40) 전에 이미 19:54:29 `save-all flush`·`stop`, 19:54:30 `All dimensions are saved`, 19:54:31 pane `dead`(status 0)로 종료됐다. 업데이트는 원래 실행 상태 유지 계약에 따라 기동하지 않았다. 메인 작업자가 재기동 완료로 먼저 보고했던 판단을 독립 상태 확인으로 정정하고, 요청 이행을 위해 `TmuxRuntime.start`를 명시적으로 호출했다.
+- **실제 기동·연결:** 최종 `tmux ppakemon:0.0 dead=0`, PID `23732`, cmd `java`를 확인했다. `/srv/MinecraftPPakemonServer`의 새 로그에서 20:07:55 `Done (13.943s)`, 20:07:57 voice UDP 24454 시작을 확인했다. `ss`로 TCP 25565·UDP 24454 모두 같은 PID의 Java 리스닝을 확인했고 Windows에서 공인 TCP 25565 직접 연결에 성공했다.
+- **Discord 실제 알림:** 20:07:57 피츄 봇 online과 slash commands 7개 등록을 확인했다. Discord 읽기 전용 GET에서 새 시작 알림 1개(2026-10-10 20:07:56.966 KST)를 확인했고 해당 메시지 ID의 직접 GET에서도 `bot=true`, 내용 `🟢 서버가 열렸어요!`를 확인했다: [서버 켜짐 메시지](https://discord.com/channels/1555187390962860162/1555215001361317938/1558435917059063898).
+- **재발 방지·검증 한계:** update 성공은 서버 기동 증명이 아니다. 업데이트 전 stopped 상태이면 유지되므로 “다시 실행” 요청은 explicit start와 새 `Done`·프로세스·포트·외부 TCP를 확인한 뒤 완료로 보고한다. 상태를 조회하지 않은 가정으로 기동 완료를 보고하지 않는다. 실제 게임 입장·플레이와 GUI 버튼 직접 클릭은 검증하지 않았다.
+
 # [2026-10-10 18:50] VPS 관리 GUI main 반영·로컬 설치·실행·작업트리 정리 완료
 
 - **main 반영:** 구현 커밋 `1a9d175e825c5fa7e19863104deb7cb00cdded14`를 main `e8e6ebf96d33282f6baa023d75a22403106f1818`에 병합·푸시하고 원격 `ls-remote` 일치와 ahead/behind 0/0을 확인했다. 커밋된 main의 설치기로 설치했다(메인 작업자 보고).
