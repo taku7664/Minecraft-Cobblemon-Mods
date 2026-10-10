@@ -2,7 +2,7 @@
 
 `New-PlazaNurseBundle.ps1`은 간호순 대화 JSON과 콘솔 명령, 설치 안내를 새 폴더에 만듭니다. 서버 파일을 변경하거나 명령을 실행하지 않습니다.
 
-필수 인자는 `-OutputDirectory`, `-X`, `-Y`, `-Z`입니다. 좌표는 대상 서버 plaza의 포켓몬센터에서 직접 확인한 발 위치를 지정하세요. `-Yaw`는 시선 방향이며 기본 0입니다. `-SkinVariant 1`은 `nurse_joy.png`, `-SkinVariant 2`는 `nurse_joy_2.png`를 사용합니다. 기본은 1입니다.
+필수 인자는 `-OutputDirectory`, `-X`, `-Y`, `-Z`입니다. 좌표는 대상 서버 plaza에서 간호순을 세울 지점의 발 위치를 지정하세요. `-Yaw`는 시선 방향이며 기본 0입니다. `-SkinVariant 1`은 `nurse_joy.png`, `-SkinVariant 2`는 `nurse_joy_2.png`를 사용합니다. 기본은 1입니다.
 
 ```powershell
 # 좌표를 확인한 뒤 변수를 지정합니다. 출력 폴더는 아직 없는 경로여야 합니다.

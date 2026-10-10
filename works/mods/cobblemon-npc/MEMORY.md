@@ -1,5 +1,11 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-10 18:04] 운영 광장 간호순 확인과 장소 가정 없는 인사 수정 (대화 수정만)
+
+- **대상 확인:** 사용자는 운영 서버 광장에 이미 있는 간호순을 바꾸라고 했다. `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer/world/dimensions/jbro_policy/plaza/entities/r.0.0.mca`의 slot 0에서 `cobblemon_npc:npc`, 이름 `간호순`, 좌표 `[4.5, 80, 7.5]`, 빈 `NpcSkin`·`NpcDialogue`를 조회했다.
+- **사용자 결정·수정:** 대화 흐름을 먼저 제시한 뒤 “일단 포켓몬센터가 아니야. 대화 수정해”라는 지시에 따라 `docs/dialogues/plaza_nurse_joy.json` 인사만 “안녕하세요! 포켓몬을 돌보는 간호순이에요.”로 바꿨다. 회복 선택지·명령·분기는 보존했고 `works/tools/npc/README.md`에서도 포켓몬센터라는 장소 가정을 삭제했다.
+- **확인·남은 작업:** JSON 파싱, 인사 한 줄을 제외한 원본 JSON 구조 동일성, `diff --check`를 확인했다. 이번 단위에서는 빌드·실제 NPC 및 운영 설정 변경·서버 기동을 하지 않았다. 최신 지시는 대화 수정이며 실제 대화 배치·스킨 적용은 아직 미완료다.
+
 ## [2026-10-10 17:13] 스킨·대화 검색 목록과 간호순 설치 스크립트 (구현·생성 검증만)
 
 - **구현:** RCT 전용 스킨 목록을 모든 활성 모드·팩의 trainer/npc/skin/player 폴더에 있는 64×64 또는 64×32 PNG 검색·미리보기로 확대했다. 이름 검색과 전체 텍스처 ID 툴팁을 제공하며, 대화 순환 버튼은 서버가 제공한 ID를 검색·스크롤하는 목록으로 교체했다. MCC 간호순 스킨 경로는 `more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png`와 같은 폴더의 `nurse_joy_2.png`다.
