@@ -22,6 +22,12 @@
 - **같이 고친 곳:** 위키 `growth`·`ivs-abilities`·`legends`·`levels`, 과학자 대사(`cobblemon-npc/docs/dialogues/extra_scientist.json`), 리그 야생 퀴즈 `hidden_ability` 보기(1/30·1/128·1/10), README. 리그 야생 교환꾼은 `applyWildRolls`로 같은 확률을 쓴다.
 - **미확인:** Gradle 빌드·JUnit(`WildRollsTest`, `PolicyConfigTest`, `WildTrainerDataTest`) 미실행. JAR·위키 zip·대사 배포, 실게임 확인 안 함. 서버에 깔린 대사 복사본(`config/cobblemon_npc/dialogues`)과 `startup-assets/server-wiki.zip`도 배포 때 같이 옮겨야 한다.
 
+## [2026-10-11 04:06] 피츄 위키 선택 운영·VPS 반영
+
+- 정책 JAR `F5DB967F…`와 차원 문서가 든 위키를 로컬 운영 서버·`PPakemon`·운영 저장소(`0f71835`)·VPS에 반영했다. VPS는 04:04:43 기동, 봇 online·명령 15개, 해시 일치 확인. 디스코드에서 실제로 `/피츄`에 물어본 결과는 확인하지 않았다. 자세한 배포 기록은 `works/tools/vps-manager/MEMORY.md`.
+
+---
+
 ## [2026-10-11 03:50] 피츄 위키 선택 빌드·개발 배포 (빌드·테스트·개발 배치 확인, 서버 기동·디스코드 실사용 미확인)
 
 - **빌드:** `origin/main` `4ff986e4`를 `git archive`로 `F:/AI/build/pichu-wiki-20261011/src`에 풀어 빌드(워크트리 아님, 이전 `plaza-fix` init·빌드 스크립트를 경로만 바꿔 재사용, Gradle 쓰기 경로 모두 F). 첫 빌드는 테스트 파일 두 줄의 `\n`이 셸 heredoc에서 실제 줄바꿈으로 바뀌어 `compileTestKotlin` 실패(본 코드는 컴파일됨) → `4ff986e4`로 수정. 재빌드 `:jbro-policy:build` 종료 코드 0, 테스트 108개 성공·중단 0(실제 위키 회귀 테스트 포함). JAR SHA-256 `F5DB967F72AE67280D59606123F8966A7449FC710EBB2EE70E0C93A46059D916`, `jar --validate` 0.

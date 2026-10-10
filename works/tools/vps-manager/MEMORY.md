@@ -1,3 +1,13 @@
+# [2026-10-11 04:06] 개발→운영 클라·서버 갱신, 운영 커밋 `0f71835`, VPS 반영·기동 확인
+
+- **범위:** 사용자 요청으로 위키 반영, 개발↔운영 클라이언트·서버 대조 갱신, 운영 저장소 커밋·푸시, VPS Pull 적용. 통합 패쳐 모듈(`develop-product/tools/patcher`)을 화면 없이 `Get-*Plan`/`Invoke-*`로 불렀다.
+- **JAR 출처 확인:** 바뀐 JAR은 모두 모듈 기록의 main 빌드본과 해시가 같고, 빌드 커밋 이후 모듈 소스·빌드 설정이 현재 main과 같아 재빌드하지 않았다(정책 `F5DB967F`/main `4ff986e4`, 차원 `e05339ec`/`1347320d`, PvP `f049a4b1`/`1d7da204`, 셋업 0.1.14 `7F46B560`/`7d51ad67`, 음악 `234E1F34`·팩 `5FF78087`/`670e3e24`, 리그 `DCDA43CF`/`5611b7e7`).
+- **로컬 운영 서버:** 게임·서버 미실행, 25565/25566 미수신 확인 후 30개 적용(JAR 3, 위키 25, 위키 zip, `startup-hooks.json` 위키 해시), 재검사 남은 차이 0. 백업 `%LOCALAPPDATA%\MinecraftServerDeploy\6fddb4c310db0ebb\history\20261011-035710-bad1a866`.
+- **운영 클라이언트 `PPakemon`:** 28개 적용(정책·차원·PvP·리그·음악 JAR과 음악 팩 교체, 셋업 0.1.13→0.1.14, 위키 20), 남은 차이 0. 위키 원본은 공유 작업 트리 대신 main을 푼 `F:/AI/build/pichu-wiki-20261011/src/server-wiki`. 백업 `%LOCALAPPDATA%\MinecraftClientPatch\2943A7F97E95FBB9\history\20261011-035953-a3058630`.
+- **운영 저장소:** `0f71835` 커밋·푸시, LFS 4개 업로드, `origin/main`·`ls-remote` 일치. 패쳐·작업 기록은 포함하지 않았다.
+- **VPS:** 업데이트 전 HEAD `1a1981a`, 직접 수정 파일은 보존 대상 설정뿐이라 충돌 없음. VPS `startup-hooks.json`은 보존되므로 위키 해시가 옛 값(`df5c5f26…`)이고, 그 해시의 ONCE 표시가 `.startup-hooks-state.json`에 있어 위키 훅이 해시 검사 전에 건너뛴다는 것을 먼저 확인했다. GUI와 같은 detached update job(`56cb225e…`)으로 29개 적용, `server.properties`·`startup-hooks.json` 보존, 백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-040335-ebbf3f11`. 독립 확인: HEAD `0f71835`, 새 PID 42487, 04:04:43 `Done (14.959s)`, TCP 25565 LISTEN, 봇 online·명령 15개, JAR·zip·위키 해시가 로컬 운영본과 일치, Windows에서 공인 25565 TCP 연결 성공.
+- **남은 것:** 운영 커밋 `b08deda`(시뮬레이션 거리 10→6)는 `server.properties`라 VPS에서 보존돼 VPS는 여전히 10이다(이번에 바꾸지 않음). 실게임 접속·디스코드 `/피츄` 실제 답변은 확인하지 않았다. `deploy-product` 릴리스 폴더는 건드리지 않았다.
+
 # [2026-10-10 22:42] VPS 60초 JFR 성능 측정·CPU 부하 확인
 
 - 메인 직접 측정 보고: 22:29:54 온라인 3명을 확인한 뒤 PID `26662`를 Java 21 내장 `jdk.jcmd` 모듈(`java -m`, 별도 jcmd/jfr 실행 파일 없음)로 22:31:44~22:32:44 KST JFR profile 측정했다. pidstat/iostat는 22:32:20~22:33:04의 1초 45표본이다. 사용자 후속 시점은 1명이지만 60초 기록은 이미 수집했다. 코드·배포·설정·재시작 없이 JFR 자동 종료와 recording 없음, tmux `dead=0`·동일 PID 유지를 확인했다. 기록 담당자는 재측정하지 않았다.
