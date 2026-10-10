@@ -5,7 +5,7 @@
   "screen.cobblemon_client_setup.description": "CLC HUD·Xaero 설정은 매 실행, 단축키 정리는 최초 한 번 적용합니다. 저장한 방식은 다음 실행부터 적용됩니다.",
   "screen.cobblemon_client_setup.clc_hud": "CLC HUD 자동 끄기: %s",
   "screen.cobblemon_client_setup.keybindings": "단축키 정리: %s",
-  "screen.cobblemon_client_setup.keybindings_help": "CLC HUD·Talking Heads 토글, 음성 채팅 아이콘·마이크 음소거, 보조 줌, 뱃지 보관함, Accessories 화면 열기, Crafting Tweaks, 웨이포인트 생성, 볼 비교, 탑승 자유 시점, 배낭 1·2번 슬롯 키를 해제합니다. PvP룸 GUI는 J, 줌은 왼쪽 Alt, 패널 글자 작게·크게는 =·-로 설정합니다. 최초 한 번 적용 후에는 개인 설정을 유지합니다.",
+  "screen.cobblemon_client_setup.keybindings_help": "CLC HUD·Talking Heads 토글, 음성 채팅 아이콘·마이크 음소거, 보조 줌, 뱃지 보관함, Accessories 화면 열기, Crafting Tweaks, 웨이포인트 생성, 볼 비교, 탑승 자유 시점, 셰이더 새로고침, 배낭 1·2번 슬롯 키를 해제합니다. PvP룸 GUI는 J, 줌은 왼쪽 Alt, 패널 글자 작게·크게는 =·-로 설정합니다. 최초 한 번 적용 후에는 개인 설정을 유지합니다.",
   "screen.cobblemon_client_setup.xaero": "Xaero 지도 설정: %s",
   "screen.cobblemon_client_setup.xaero_help": "미니맵을 원형·우측 상단으로 설정하고 웨이포인트를 허용합니다. 지도 텔레포트·사망 지점은 끄고 아이콘을 항상 표시합니다. 지도·설정은 N·Y입니다.",
   "screen.cobblemon_client_setup.mode.once": "최초 한 번",

@@ -5,7 +5,7 @@
   "screen.cobblemon_client_setup.description": "Setup: apply CLC HUD and Xaero settings every launch; clean up keys once. Saved modes take effect on the next launch.",
   "screen.cobblemon_client_setup.clc_hud": "Disable CLC HUD: %s",
   "screen.cobblemon_client_setup.keybindings": "Keybinding cleanup: %s",
-  "screen.cobblemon_client_setup.keybindings_help": "Unbinds CLC HUD, Talking Heads, voice chat icon/mute, secondary zoom, badge box, Accessories screen, Crafting Tweaks, quick waypoint, ball comparison, riding free look, and backpack slots 1/2. Sets PvP Room GUI to J, zoom to Left Alt, and smaller/larger panel text to =/-. Once mode preserves later personal settings.",
+  "screen.cobblemon_client_setup.keybindings_help": "Unbinds CLC HUD, Talking Heads, voice chat icon/mute, secondary zoom, badge box, Accessories screen, Crafting Tweaks, quick waypoint, ball comparison, riding free look, shader reload, and backpack slots 1/2. Sets PvP Room GUI to J, zoom to Left Alt, and smaller/larger panel text to =/-. Once mode preserves later personal settings.",
   "screen.cobblemon_client_setup.xaero": "Xaero map settings: %s",
   "screen.cobblemon_client_setup.xaero_help": "Sets a round minimap in the top-right corner. Enables waypoints, keeps map teleport and deathpoints disabled, and shows icons. Map/settings use N/Y.",
   "screen.cobblemon_client_setup.mode.once": "Once",

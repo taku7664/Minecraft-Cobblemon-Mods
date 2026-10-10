@@ -33,6 +33,8 @@ public final class KeybindingSetup {
         new Rule("cobblemon_ui", List.of("key_key.cobblemon_ui.increase_font"),
             "keybindings-cobblemon_ui-increase-font-v1", "key.keyboard.minus"),
         new Rule("cobblemon", List.of("key_key.cobblemon.ridingfreelook")),
+        // Iris binds shader reload to R, which collides with Cobblemon's send-out key.
+        new Rule("iris", List.of("key_iris.keybind.reload")),
         new Rule("sophisticatedbackpacks", List.of("key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
             "key_keybind.sophisticatedbackpacks.toggle_upgrade_2")),
         new Rule("craftingtweaks", List.of("key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack")));

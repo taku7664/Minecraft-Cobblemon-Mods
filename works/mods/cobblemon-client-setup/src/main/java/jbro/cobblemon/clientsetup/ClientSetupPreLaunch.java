@@ -44,5 +44,12 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
         } catch (IOException exception) {
             LOGGER.error("Could not apply Xaero map defaults; initialization will retry next launch", exception);
         }
+        try {
+            if (RoundingBlockSetup.apply(loader.getConfigDir(), installedMods) == ClientSetup.Result.APPLIED) {
+                LOGGER.info("Applied client setup: Rounding-Block enabled=false");
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Could not apply Rounding-Block default; initialization will retry next launch", exception);
+        }
     }
 }

@@ -46,6 +46,7 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 | Cobblemon UI | `key_key.cobblemon_ui.decrease_font` | = |
 | Cobblemon UI | `key_key.cobblemon_ui.increase_font` | - |
 | Cobblemon | `key_key.cobblemon.ridingfreelook` | 미지정 |
+| Iris | `key_iris.keybind.reload` (셰이더 새로고침) | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_1` | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_2` | 미지정 |
 | Crafting Tweaks | `key_key.craftingtweaks.compress_stack` | 미지정 |
@@ -53,6 +54,7 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 
 PvP룸 키는 별도 `more_cobblemon_contents_pvp` 모드가 설치되었을 때 적용합니다.
 PvP룸 HUD 접기/펼치기 H와 전투 정보 창의 Tab은 유지합니다.
+Iris 셰이더 새로고침의 기본 R은 Cobblemon 포켓몬 내보내기 R과 겹쳐서 해제합니다. 다른 Iris 키는 유지합니다.
 
 Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTTONS"`로
 설정하여 버튼을 유지하고 단축키를 끕니다. 이 설정 역시 단축키 정리 적용 방식을 따릅니다.
@@ -118,6 +120,12 @@ mode = "ALWAYS"
 `keybindings-voicechat-microphone-v1=true`로 따로 한 번 적용합니다. PvP룸 GUI 키도
 `keybindings-more_cobblemon_contents_pvp-room-open-v2=true`로 따로 기록하므로 이전 Tab 적용 기록이 있어도 J를 한 번 적용합니다.
 Zoomify의 기본 줌은 `keybindings-zoomify-primary-v1=true`로 따로 기록합니다.
+
+Rounding-Block이 설치되어 있으면 `config/rounding-block.json`의 `enabled`를 최초 한 번 `false`로
+설정합니다. Rounding-Block 1.0.0의 기본값은 `true`라서, 설정 파일이 없는 새 클라이언트에서는
+둥근 블록이 켜진 채 시작합니다. 파일이 없으면 `enabled`만 담아 만들고, 기존 파일은 다른 값을 유지합니다.
+완료 기록은 `rounding-block-disabled-v1=true`이며, 이후 플레이어가 다시 켠 설정은 바꾸지 않습니다.
+잘못된 JSON은 덮어쓰지 않고 로그를 남긴 뒤 다음 실행에 다시 시도합니다.
 
 대상 모드가 없으면 해당 규칙의 설정 파일이나 완료 기록을 새로 만들지 않고, 나중에 설치했을 때 적용합니다.
 잘못된 TOML, 지원하지 않는 적용 방식 또는 파일 접근 오류는 로그에 남기고 게임 시작을

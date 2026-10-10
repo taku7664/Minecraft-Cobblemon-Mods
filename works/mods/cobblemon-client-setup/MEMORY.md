@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-11 02:23] Iris 셰이더 새로고침 키 해제, Rounding-Block 기본 비활성
+
+- **빡대리 지시:** Iris 셰이더 새로고침 기본 R이 Cobblemon 포켓몬 내보내기 R과 겹치니 미지정으로 둔다. Rounding-Block이 기본으로 꺼져 있지 않다는 제보를 확인한다.
+- **확인:** 독립 저장소 `GitHub/RoundingBlock`(1.0.0 릴리스 커밋 `6112a64`)의 `RoundingBlockConfig.DEFAULTS.enabled`는 `true`다. 셋업 훅에는 Rounding-Block 규칙이 없었다. 개발클라 `config/rounding-block.json`이 `false`인 건 파일에 이미 저장돼 있었기 때문이고, 설정 파일이 없는 새 클라이언트는 켜진 채 시작한다. 제보가 맞다. 설치된 Iris 1.8.8의 모드 ID `iris`, 키 `iris.keybind.reload`도 JAR에서 확인했다.
+- **구현:** 셋업 0.1.14. `KeybindingSetup`에 `iris` 규칙(`key_iris.keybind.reload` → unknown, 기록 `keybindings-iris-v1`)을 추가했다. `RoundingBlockSetup`은 `rounding_block`이 있을 때 `enabled=false`를 최초 한 번 적용하고(`rounding-block-disabled-v1`) 다른 값은 유지한다. 잘못된 JSON은 덮어쓰지 않고 다음 실행에 재시도한다. 테스트 `RoundingBlockSetupTest`와 Iris 키 테스트를 추가했다.
+- **미확인:** 사용자 지시(빌드·테스트는 요청 시에만)에 따라 빌드·테스트·JAR 배치를 하지 않았다. 실게임 확인도 하지 않았다.
+
 ## [2026-10-08 00:34] Accessories 화면 열기 기본 단축키 해제
 
 - **구현:** 커밋 `f1e4fc3b`, 셋업 0.1.13. `accessories` 모드가 있을 때 `key_accessories.key.open_accessories_screen`을 `unknown`으로 준비한다. 독립적인 `keybindings-accessories-v1` 기록을 사용하므로 기존 단축키 적용 기록과 별개로 한 번 적용된다. 한국어·영어 도움말도 갱신했다.

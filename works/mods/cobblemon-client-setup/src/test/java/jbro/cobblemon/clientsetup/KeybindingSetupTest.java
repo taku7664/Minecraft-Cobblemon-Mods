@@ -251,4 +251,20 @@ final class KeybindingSetupTest {
         assertEquals(42, (int) new TomlParser().parse(Files.readString(settings)).get("other.value"));
         assertTrue(Files.readString(settings).contains("keep me"));
     }
+
+    @Test void irisShaderReloadKeyClearsOnceAndKeepsOtherIrisKeys() throws Exception {
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r
+key_iris.keybind.toggleShaders:key.keyboard.k
+");
+        assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
+        assertEquals("key_iris.keybind.reload:key.keyboard.unknown
+key_iris.keybind.toggleShaders:key.keyboard.k
+",
+            Files.readString(optionsFile()));
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r
+");
+        assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
+        assertEquals("key_iris.keybind.reload:key.keyboard.r
+", Files.readString(optionsFile()));
+    }
 }
