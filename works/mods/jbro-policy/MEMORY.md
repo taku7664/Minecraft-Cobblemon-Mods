@@ -25,6 +25,17 @@
 
 ---
 
+## [2026-10-11 02:40] 광장 낙하·초대 링크·닉네임 수정 빌드·개발 배포·VPS 반영 (실게임 미검증)
+
+- **빌드:** 공유 체크아웃에 다른 세션의 병합 충돌·미커밋 MCC 변경이 있어, 커밋된 `origin/main`(`c3d471c9`, 수정 `a02069fa` 포함)을 `git archive`로 `F:/AI/build/plaza-fix-20261011/src`에 풀어 빌드했다(워크트리 아님). `GRADLE_USER_HOME=F:/AI/caches/gradle`, 프로젝트 캐시·모듈 출력·TEMP·JVM tmp 모두 F 경로이고 init 스크립트가 F 경로를 검사한다. `:jbro-policy:build` 종료 코드 0(6분 56초), 테스트 102개 모두 통과(새 `inviteUrl` 테스트 포함). JAR SHA-256 `F8DA22E646EE7BDF792151219F4D3854807C9D6C94FE96F8E96DF527BC7096E4`, `jar --validate` 0.
+- **개발 배포:** 게임·서버 미실행과 25565/25566 미수신 확인 후 `develop-product/server`·`client`의 `mods/jbro-policy-0.1.3.jar`를 교체했고 두 설치본 해시가 빌드본과 같다. 기존 JAR 백업은 `F:/AI/build/plaza-fix-20261011/deployment-backups/`. 개발 서버는 켜지 않았다.
+- **운영 저장소:** `mods/jbro-policy-0.1.3.jar` 교체 커밋 `63638c39`, Tab 닉네임 `config/styled-nicknames.json` `changePlayerListName: true` 커밋 `d40b07c`를 푸시했고 원격과 일치한다.
+- **VPS:** 매니저 업데이트 job `1749da72d3494fa99be6dbcaf5d836f7`(02:36 시작)이 정상 종료·백업(`/home/ubuntu/.local/share/ppakemon-backups/manager/20261011-023638-a66d48f3`)·정책 JAR 반영·재기동을 마쳤다. `bp-shop.json`은 보존됐다. 02:37:41 `Done`, 25565 LISTEN, tmux `dead=0`, VPS JAR 해시가 빌드본과 같음을 확인했다. 이 job은 내 업데이트 요청이 사용자 거부로 취소된 직후 시작돼, 사용자가 GUI로 실행한 것으로 보이나 확인하지 못했다.
+- **VPS 설정:** `inviteUrl`은 02:33에 이미 `https://discord.gg/HbKxTFeGB`로 들어가 있었다(넣은 주체 미확인). 재기동 뒤 봇 명령 등록 로그를 확인했다. `styled-nicknames.json`은 서버 밖 `~/.local/share/ppakemon-backups/config-edit/20261011-styled-nicknames/`에 백업한 뒤 `changePlayerListName`만 true로 바꾸고 콘솔 `styled-nicknames reload`로 적용했다(`Reloaded config!` 확인). VPS Git은 `d40b07c`보다 한 커밋 뒤지만 파일 내용은 같다.
+- **미검증:** 광장 낙하 후 생존, `/디코인증` 초대 링크 표시, 디스코드 `/접속자`·Tab 목록 닉네임 표시는 실게임에서 확인하지 않았다. Tab 목록은 리로드 후 기존 접속자에게 바로 반영되는지 확인하지 않았다(재접속 필요할 수 있음).
+
+---
+
 ## [2026-10-11] 광장 낙하 사망·/디코인증 초대 링크·접속자 닉네임 수정 (구현·커밋, 빌드·테스트·배포 미실행)
 
 - **사용자 신고:** 광장에서 떨어지면 죽음, `/디코인증`에 서버 디스코드 링크 없음, 접속자 목록이 닉네임이 아님.
