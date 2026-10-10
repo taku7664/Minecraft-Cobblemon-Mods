@@ -91,8 +91,7 @@ class DiscordQuestionTest {
             <script>alert(1)</script></main><script src="nav.js"></script></body></html>""")
         assertEquals("차원과 울트라홀", title)
         assertEquals(listOf("개요", "들어갈 수 있는 조건", "홀"), sections.map { it.heading })
-        assertEquals("일반 리그 챔피언만 & 들어갑니다.
-- 배지 8개로는 안 됩니다.", sections[1].text)
+        assertEquals("일반 리그 챔피언만 & 들어갑니다.\n- 배지 8개로는 안 됩니다.", sections[1].text)
         assertEquals("| 작은 홀 | 30분", sections[2].text)
         assertFalse(sections.any { it.text.contains("alert") || it.text.contains("<") })
     }
@@ -137,8 +136,7 @@ class DiscordQuestionTest {
         for ((question, expected) in cases) {
             val reference = PichuWiki.select(pages, question)
             assertTrue(reference.contains(expected)) { "$question -> ${reference.lines().filter { it.startsWith("# ") }}" }
-            assertTrue(reference.substringAfter('
-').length <= PichuWiki.BUDGET + 2_000) { "$question is too long" }
+            assertTrue(reference.substringAfter('\n').length <= PichuWiki.BUDGET + 2_000) { "$question is too long" }
         }
         val smallTalk = PichuWiki.select(pages, "오늘 날씨 어때")
         assertTrue(smallTalk.contains("찾지 못해"))
