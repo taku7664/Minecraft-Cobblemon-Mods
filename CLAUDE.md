@@ -27,6 +27,7 @@
 - 개발 제품의 JAR 배치 규칙에 대한 사용자 지정 예외: `develop-product/patch-products.bat`와 `develop-product/tools/patcher/`에는 이 PC의 로컬 통합 서버·클라이언트 패쳐를 둘 수 있다. 설치본은 원격 저장소·릴리스 제품에 포함하지 않는다. 기존 서버 패쳐 소스의 로컬 전용 규칙은 유지한다.
 - 릴리스 산출물은 `deploy-product/client`, `deploy-product/server`에 모은다. 완성된 JAR과 `VERSION.txt` 외에는 아무것도 두지 않는다(백업·임시파일·로그·소스 JAR 금지). 자세한 규칙은 `AGENTS.md`의 Product folders.
 - 임시파일과 중간 산출물은 `build/`나 세션 scratchpad에 두고, 제품 폴더나 저장소 루트에 남기지 않는다.
+- Gradle은 `AGENTS.md`의 「Gradle 쓰기 경로 (필수)」를 따른다. C 드라이브 쓰기를 금지하며 `GRADLE_USER_HOME=F:/AI/caches/gradle`과 워크트리별 F 프로젝트 캐시·빌드 출력·임시 경로를 실행 전에 지정·확인하지 않으면 실행하지 않는다.
 <!-- 대화 중 발견된 프로젝트 규칙이 여기에 추가됩니다. -->
 
 - 테스트를 위해 실행한 클라이언트는 검증이 끝나면 직접 종료한다.

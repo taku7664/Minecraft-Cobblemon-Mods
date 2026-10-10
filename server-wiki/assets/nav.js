@@ -43,6 +43,7 @@ window.WIKI_NAV = {
     {
       title: "생활",
       pages: [
+        { path: "pages/crafting.html", title: "제작법", icon: "🔨", keywords: "제작법 레시피 조합 몬스터볼 소모품 회복약 사탕 PP에이드 학습장치 PC 회복기 냄비 양조기 도구" },
         { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 사탕" },
         { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동" },
         { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
