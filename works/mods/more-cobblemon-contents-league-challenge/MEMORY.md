@@ -1,11 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-10 15:50] 경로 칸: 깬 칸 초록 테두리, 선택 테두리 테마 파란색 (클라이언트만 배치)
+## [2026-10-10 15:50] 경로 칸: 깬 칸 초록 테두리, 선택 테두리 테마 파란색 (개발 서버·클라이언트 배치)
 
 - **사용자 요청:** 깬 칸이 헷갈리니 초록 테두리로, 선택(포커스) 테두리는 빨강·노랑 대신 테마 파란색으로. 관장 얼굴을 경로 칸에도 넣은 것은 원래 요청(다음 도전 칸만)과 달랐지만 사용자가 그대로 두라고 했다.
 - **구현:** `RouteNode` 테두리 우선순위 선택 `accentPrimary` > 깬 칸 `accentGood` > 호버 > 기본. 선택된 칸 이름 글자도 `accentPrimary`. 클라이언트 렌더링만 바뀌었고 서버 코드는 `70d76534`와 같다.
 - **검증:** 커밋 `5bb58d23`(`main` = `origin/main`)으로 `unitTest` 99개 통과, `remapJar` 성공, `jar --validate` 통과.
-- **배치:** 클라이언트만 교체(SHA-256 `3c701102…`, 빌드본과 일치). 개발 서버는 켜져 있어서 교체하지 않았고 `8688fd36…`(직전 빌드) 그대로다. 서버 쪽 코드 차이는 없다. 백업 `develop-product/deployment-backups/20261010-league-cleared-frame/client/`.
+- **배치:** `develop-product/{server,client}/mods` 교체, SHA-256 `3c701102…` 세 곳 일치. 백업 `develop-product/deployment-backups/20261010-league-cleared-frame/{server,client}/`.
+- **실수:** 처음에 명령줄에 `develop-product\server`가 든 java 프로세스를 개발 서버로 오인해 서버 교체를 미뤘다. 실제로는 다른 세션의 MCC JUnit 테스트(`-Daiengine.showdown=...develop-product\server\showdown`)였다. 서버 실행 여부는 경로가 아니라 `ConsoleLauncher`·`GradleDaemon`을 빼고 서버 실행 인자로 판단한다.
 - **미확인:** 실게임 화면.
 
 ## [2026-10-10 06:00] 리그 터미널에 트레이너 얼굴 표시 (구현·테스트·빌드·개발 배치, 실게임 미확인)
