@@ -63,7 +63,7 @@
         "채팅으로 디스코드 링크를 보내 드릴게요. 눌러서 들어오세요!"
       ],
       "commands": [
-        "@server /tellraw {player} {\"text\": \"▶ 빡켓몬 디스코드 들어가기 (클릭)\", \"color\": \"aqua\", \"underlined\": true, \"clickEvent\": {\"action\": \"open_url\", \"value\": \"https://discord.gg/HbKxTFeGB\"}}"
+        "@server /tellraw {player} {\"text\": \"▶ 빡켓몬 디스코드 들어가기 (클릭)\", \"color\": \"aqua\", \"underlined\": true, \"clickEvent\": {\"action\": \"open_url\", \"value\": \"https://discord.gg/rcvmf3txDE\"}}"
       ]
     },
     "bye": {
