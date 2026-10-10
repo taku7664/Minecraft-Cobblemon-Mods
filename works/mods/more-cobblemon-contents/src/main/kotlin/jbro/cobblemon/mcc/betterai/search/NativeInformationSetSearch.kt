@@ -217,7 +217,9 @@ internal class NativeInformationSetSearch(
                 } else {
                     stableTop = null
                 }
-                idleIterations = if (settled && nodesVisited == before) idleIterations + 1 else 0
+                // A tree every world has played out to the horizon adds no node however long it runs; settled or not, its
+                // values only stop moving. Few worlds reach that within the budget, and the search then spun to the clock.
+                idleIterations = if (nodesVisited == before) idleIterations + 1 else 0
             }
             val proven = rootSettled()
             rootReport?.let { report ->
@@ -755,7 +757,7 @@ internal class NativeInformationSetSearch(
         const val ROOT_TEMPO_WEIGHT = 0.75
         const val EXPLORATION = 0.7
         /** Stop once this many iterations in a row met only positions every world had already reached. */
-        const val IDLE_ITERATION_LIMIT = 300
+        const val IDLE_ITERATION_LIMIT = 1_000
         const val STABLE_STOP_NODES = 2_000
         const val SEED_BASE = 0x5EED_1A55L
         private val MOVE_SLOT = Regex(":move:\\d+:")

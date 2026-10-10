@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-10-10 17:42] 디스코드 인증 설정 적용 확인 (봇·명령·권한 확인, 실제 인증 교환 미검증)
+
+- **현재 적용:** 메인 작업자의 직접 확인 기준으로 VPS `/srv/MinecraftPPakemonServer/config/jbro-policy-discord.json`은 유효하며 수정 시각은 17:20:44, 현재 Java PID `14132`의 시작 시각은 17:24:46이다. 교체한 설정은 현재 실행에 적용돼 있으며 재시작이 필요하지 않다. 기록 담당자는 추가 조회를 하지 않았다.
+- **봇·설정:** 17:25:51 로그에서 피츄 봇 online과 slash commands 7개 등록을 확인했다. 인증 역할 설정이 존재하고 `syncNickname`은 true다. 비밀값·역할 ID·원문 설정은 기록하지 않는다.
+- **Discord 읽기 확인:** 읽기 전용 GET API로 빡켓몬 서버의 `/verify`와 필수 `code` 옵션 등록을 직접 확인했다. `인증됨` 역할이 존재하며 managed false·봇 역할보다 아래이고, 봇의 `MANAGE_ROLES`·`MANAGE_NICKNAMES` 권한도 true임을 확인했다(메인 작업자 보고).
+- **미검증:** 실제 플레이어의 `/디코인증` → `/verify` 코드 교환, 인증 역할 부여, 닉네임 변경은 실행하지 않았다. 설정·명령 등록·권한 확인을 실제 인증 성공으로 해석하지 않는다.
+
+## [2026-10-10 17:09] `/servercmd` 콘솔 명령 실행 추가 (구현·main·빌드·운영 배포·기동·외부 응답 확인, 채팅 실사용 미확인)
+
+- **사용자 결정·범위:** 빡대리가 `/servercmd` 구현·테스트·운영 서버 배포를 승인했다. 개발 서버·클라이언트는 변경하지 않는 결정이며, 구현·기록은 분리 작업트리 `C:/Users/박주형/.codex/worktrees/servercmd/Cobblemon-Mods`의 `jbro-policy`에서 진행했다.
+- **구현 확인:** 기록 담당자가 `admin/ConsoleCommandQueue.kt`·`admin/ServerCommand.kt`와 `JbroPolicy.kt` 등록을 직접 읽었다. 현재 실제 OP 권한 4인 플레이어만 접수하며, 실행 틱에서도 접속·권한을 다시 확인한다. 앞의 `/` 한 개는 선택 사항이고 입력은 2,048자 이하·제어 문자 금지다. 대기열 최대 32개, 틱당 최대 4개를 처리하고 서버 종료 시 대기열을 지운다.
+- **출력·제약:** 기존 명령 실행 문맥 밖의 서버 틱에서 콘솔 권한으로 실행하며, 실행 중 중첩 `/servercmd` 접수를 거절하는 상태 검사를 둬 `execute`·`function` 경로도 대비했다. 결과·오류는 요청자의 채팅으로 최대 32개 메시지·4,096자까지 캡처한다. 접수 명령의 반환값과 실제 실행 결과는 구분한다. 셸 실행이나 서버 정지 후 재시작은 제공하지 않는다. 명령 인자를 제외하고 호출자·최상위 명령만 정상 실행 로그에 남긴다.
+- **문서·현지화 확인:** README 사용법과 한국어·영어 `message.jbro_policy.servercmd.*` 11개씩을 확인하고 양쪽 JSON 파싱을 통과했다. 안내는 `KoreanText.message`의 `translatableWithFallback`을 사용해 새 번역 키가 없는 기존 클라이언트도 문구를 받도록 구현했다. 실제 클라이언트 표시와 명령 연쇄 동작은 아직 검증하지 않았다.
+- **TDD·단위 테스트:** 메인 작업자 보고 기준으로 첫 실행은 기존 93개 통과·신규 8개 TODO 실패(총 101개)였다. 구현 후 두 번째 `:jbro-policy:unitTest`는 종료 코드 0·`BUILD SUCCESSFUL`, 101개 전부 통과(기존 93+신규 8)를 확인했다. 기록 담당자는 테스트를 재실행하지 않았다.
+- **main·최종 빌드:** 구현 `8e19041b`를 main 병합 커밋 `725dfff042162fe70beba71f7c4fec5693f3bc41`에 반영하고 원격 실제 ref 일치·0/0을 확인했다. 해당 커밋의 분리 소스에서 `:jbro-policy:build`가 종료 코드 0·`BUILD SUCCESSFUL`(5분 18초), 테스트 101개 모두 통과했다. 이후 `main`이 `f8994446`으로 전진했지만 관련 모듈 소스·리소스·빌드 설정·의존 소스의 차이가 0임을 재확인해 같은 빌드본을 사용했다(메인 작업자 보고).
+- **빌드 경로·산출물:** 초기 red/green은 C: Gradle 쓰기 금지 규칙이 없던 `0a404f26` 작업트리에서 실행했다. 최신 `b7660a42` 규칙 확인 후 최종 빌드의 캐시·모듈 출력·`TEMP`/`TMP`·JVM tmp는 `F:/AI/build/servercmd-20261010` 아래로, `GRADLE_USER_HOME`은 `F:/AI/caches/gradle`로 지정했다. 산출물은 `F:/AI/build/servercmd-20261010/modules/jbro-policy/libs/jbro-policy-0.1.3.jar`, SHA-256은 `0DDDC4ECBCC74F7A4A9E106A8CB7DAE4B90D26A80150CE25E95F25D554793056`이다. Java 21 `jar --validate` 종료 코드 0과 두 신규 클래스 포함을 확인했다.
+- **검증 도구 보완:** 첫 최종 빌드 명령은 PowerShell에서 따옴표 없는 `-Pkotlin.compiler.execution.strategy` 옵션이 분리돼 task not found로 실패했다. 전체 옵션 문자열을 따옴표로 감싼 뒤 성공했다. PATH의 구 JDK `jar`는 major 65를 지원하지 않아 실패했고, `C:/Program Files/Java/jdk-21/bin/jar.exe`를 명시해 검증했다. 두 실패는 호출 옵션·검증 JDK 문제였다.
+- **로컬 운영 배포:** `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer`의 `mods/jbro-policy-0.1.3.jar`만 교체하고 커밋 `d4e1d01e49329307063bc6b9ca4b4ffc92cc60b9`을 푸시해 원격 0/0을 확인했다. 별도 미커밋 `startup-hooks.json`은 보존했다.
+- **VPS 정상 종료·배포·보존:** `/srv/MinecraftPPakemonServer`에서 `save-all flush`의 `Saved game`, `stop`의 모든 차원 `All saved`, 기존 Java PID `10378` 종료와 TCP 25565 포트 닫힘을 확인했다. `/home/ubuntu/.local/share/ppakemon-backups/servercmd-20261010-172444/world-snapshot.tar.gz`와 이전 JAR를 백업했다. fetch 후 들어오는 변경이 policy JAR 1개임을 확인해 fast-forward 병합했다. JAR 교체 전후 config·world·player·plaza·루트 실행 설정 1,224개 파일의 SHA가 같았고 VPS 새 JAR는 위 빌드본 SHA-256과 일치했다.
+- **VPS 기동·외부 응답:** 기존 `tmux ppakemon`의 `remain-on-exit`을 이용해 같은 pane을 respawn하고 콘솔을 유지했다. 새 Java PID `14132`, `[17:25:49] Done (12.780s)!`, TCP 25565·UDP 24454 리스닝과 Windows 외부 Minecraft status 응답(version `1.21.1`, protocol `767`) 성공을 확인했다.
+- **최종 범위·미확인:** 구현·main 동기화·최종 빌드·로컬 운영/VPS JAR 배치·서버 기동·외부 상태 응답까지 확인했다. 17:28:11 VPS `list`는 접속자 0명으로 실제 플레이어의 `/servercmd` 실행·채팅 결과 표시·실게임은 미확인이다. 개발 서버·클라이언트와 `deploy-product` 릴리스 산출물은 변경하지 않았다. 이번 관리 작업트리는 archive 후 실제 경로 삭제·Git worktree 등록 제거를 확인했고 F 빌드 JAR는 유지하며 해시가 같았다. 빌드·배포·기동·보존·정리 결과는 메인 작업자의 직접 검증 보고이며 기록 담당자는 재실행하지 않았다.
+
 ## [2026-10-10 16:47] 사탕 제작 잠금 해제·경험사탕 XS 결과 3개 (구현·리소스 확인, 빌드·배포 미실행)
 
 - **사용자 결정:** 사탕 제작을 잠금 해제하고 스컬크 1개와 벌집 조각 1개로 경험사탕 XS 3개를 만든다. 기존 월드의 내장팩 선택을 유지하기 위해 legacy 내장팩 ID `no_stat_candy_l_xl`는 바꾸지 않는다.

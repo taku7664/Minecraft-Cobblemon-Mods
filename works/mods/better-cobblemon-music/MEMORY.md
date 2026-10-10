@@ -1,5 +1,12 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-10 17:16] 태그 기반 바이옴 음악 개발 클라이언트 적용
+
+- 공식 바이옴 판정 변경 커밋 `a35d6c76f49ee04f9b1bec2f9cdd8571d66f03c8`이 빌드 전에 `main`과 `origin/main`에 동일하게 반영된 것을 확인했다. 이후 같은 저장소의 다른 작업으로 현재 HEAD가 더 진행됐으므로 이 SHA는 이번 Music 변경의 기준 커밋이다.
+- `:better-cobblemon-music:build --configure-on-demand` 성공, Music 테스트 176/176 통과. 공식 매핑의 `path:` 규칙은 0개이고, `#c:is_swamp`는 늪지 `120번도로` 곡으로 연결된다. `#minecraft:is_deep_ocean`은 깊은 바다 전용곡에 연결하고, `minecraft:cherry_grove`는 산 태그보다 먼저 숲 곡을 선택하도록 배치했다.
+- `cobblemon-dev` 게임이 실행 중이지 않은 상태에서 빌드본 Music 1.3.18 JAR과 선택된 음악 리소스팩 ZIP을 개발 클라이언트에 교체했다. 압축 해제된 같은 이름의 팩 폴더에서는 변경된 생성 카탈로그만 교체했다. `options.txt`는 이미 그 ZIP을 선택하고 있어 수정하지 않았다.
+- 빌드본과 설치본 SHA-256이 각각 일치한다: JAR `F8184B6843014E2097039A4AAF44ABB29411DEBC2DC48B9F83EADBBC0CBF9595`, ZIP `E3E2071B104B8492F1CC24F8576AF5B67E00A750A90FB9525B7BADE2960406C3`. 실게임 재생·청취는 아직 확인하지 않았다. 아래 17:10 항목의 미배포 표기는 당시 상태다.
+
 ## [2026-10-10 17:10] 공식 음악팩 바이옴 판정을 태그·정확한 ID로 전환
 
 - 빡대리님은 공식 기본팩의 `biomePathContains`만 제거하고 실제 바이옴 태그와 필요한 정확한 ID로 선곡하되, 개인 `overrides.json`의 경로명 부분 일치 기능은 호환성을 위해 유지하기로 결정하셨다. 공식 `catalog-layout.json`의 경로명 규칙 17개와 `path:` 우선순위 항목을 없애고 동굴·강·바다·늪지·정글·설원·산·숲·평원·사막·악지에 태그·ID 규칙을 지정했다. 별도 곡을 쓰는 `minecraft:deep_ocean`은 정확한 ID를 유지하고, `terralith:deep_warm_ocean`은 일반 바다로 지정했다.

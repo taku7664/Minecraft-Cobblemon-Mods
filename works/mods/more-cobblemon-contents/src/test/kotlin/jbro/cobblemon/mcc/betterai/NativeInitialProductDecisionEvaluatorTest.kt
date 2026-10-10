@@ -396,7 +396,7 @@ class NativeInitialProductDecisionEvaluatorTest {
     }
 
     @Test
-    fun `native chance budget expands every hidden world into equally weighted deterministic samples`() {
+    fun `native search takes one deterministic sample per hidden world whatever the chance budget`() {
         val context = context()
         var searchedWorlds = emptyList<jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchInput>()
         var baselineCalls = 0
@@ -429,15 +429,14 @@ class NativeInitialProductDecisionEvaluatorTest {
         )
 
         assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
-        assertEquals(listOf(0, 1, 2), searchedWorlds.map { it.key.randomSampleIndex })
-        assertTrue(searchedWorlds.all { kotlin.math.abs(it.probability - 1.0 / 3.0) < 1e-9 })
-        assertEquals(3, searchedWorlds.map { it.definition.seed }.distinct().size)
-        assertEquals(3, result.sessionState?.worlds?.size)
+        assertEquals(listOf(0), searchedWorlds.map { it.key.randomSampleIndex })
+        assertTrue(searchedWorlds.all { kotlin.math.abs(it.probability - 1.0) < 1e-9 })
+        assertEquals(1, result.sessionState?.worlds?.size)
         assertEquals(1, baselineCalls)
     }
 
     @Test
-    fun `native chance budget is shared across hidden worlds by posterior mass`() {
+    fun `hidden worlds keep their posterior mass without chance replicas`() {
         val context = context()
         var searchedWorlds = emptyList<jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchInput>()
         val evaluator = NativeInitialProductDecisionEvaluator(
@@ -470,9 +469,9 @@ class NativeInitialProductDecisionEvaluatorTest {
         )
 
         assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
-        assertEquals(mapOf("world-a" to 3, "world-b" to 1),
-            searchedWorlds.groupingBy { it.key.hypothesisId }.eachCount())
-        assertEquals(4, searchedWorlds.size)
+        assertEquals(mapOf("world-a" to 0.75, "world-b" to 0.25),
+            searchedWorlds.associate { it.key.hypothesisId to it.probability })
+        assertEquals(listOf(0, 0), searchedWorlds.map { it.key.randomSampleIndex })
         assertTrue(kotlin.math.abs(searchedWorlds.sumOf { it.probability } - 1.0) < 1e-9)
     }
 

@@ -220,23 +220,15 @@ internal class NativeInitialProductDecisionEvaluator(
             }
             rootBaseline += world.probability * value
         }
-        val sampledWorlds = NativeChanceSampleAllocator.allocate(
-            plan.worlds,
-            budget.chanceBranchesPerMove,
-        ).flatMap { allocation ->
-            val world = allocation.world
-            (0 until allocation.sampleCount).map { sampleIndex ->
-                world.copy(
-                    probability = world.probability / allocation.sampleCount.toDouble(),
-                    definition = world.definition.copy(
-                        seed = NativeProductSeedPolicy.derive(
-                            context.state.battleId,
-                            world.hypothesisId,
-                            sampleIndex,
-                        ),
-                    ),
-                ) to sampleIndex
-            }
+        // One random stream per hypothesis. Topping the worlds up to a sample budget with copies of the same
+        // hypothesis on other streams only multiplied the work: it kept a Boss at 64 worlds however few hypotheses
+        // it had (2026-10-10 user decision). Each world's own stream still differs from the others'.
+        val sampledWorlds = plan.worlds.map { world ->
+            world.copy(
+                definition = world.definition.copy(
+                    seed = NativeProductSeedPolicy.derive(context.state.battleId, world.hypothesisId, 0),
+                ),
+            ) to 0
         }
         val search = searchWorlds(
             NativeProductWorldSearchRequest(

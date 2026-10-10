@@ -1,4 +1,16 @@
 {
+  "message.jbro_policy.servercmd.usage": "사용법: /servercmd <콘솔 명령> (예: /servercmd list)",
+  "message.jbro_policy.servercmd.permission": "콘솔 명령은 현재 OP 권한 4인 접속자만 실행할 수 있습니다.",
+  "message.jbro_policy.servercmd.empty": "실행할 콘솔 명령을 입력해 주세요.",
+  "message.jbro_policy.servercmd.invalid": "명령에 줄바꿈이나 제어 문자를 넣을 수 없습니다.",
+  "message.jbro_policy.servercmd.too_long": "콘솔 명령은 2048자 이하로 입력해 주세요.",
+  "message.jbro_policy.servercmd.recursion": "콘솔 명령 실행 중에는 /servercmd를 다시 호출할 수 없습니다.",
+  "message.jbro_policy.servercmd.busy": "콘솔 명령 대기열이 가득 찼습니다. 잠시 뒤에 다시 실행해 주세요.",
+  "message.jbro_policy.servercmd.output": "[콘솔 실행 결과]",
+  "message.jbro_policy.servercmd.truncated": "출력이 길어 일부만 표시했습니다.",
+  "message.jbro_policy.servercmd.completed": "콘솔 명령을 실행했습니다. 반환값: %s",
+  "message.jbro_policy.servercmd.failed": "콘솔 명령을 완료하지 못했습니다. 오류 메시지와 서버 로그를 확인해 주세요.",
+
   "message.jbro_policy.discord_question.description": "피츄에게 질문해요 (유저마다 5분에 한 번)",
   "message.jbro_policy.discord_question.option": "피츄에게 물어볼 내용",
   "message.jbro_policy.discord_question.invalid": "질문을 1~500자로 적어 주세요.",
