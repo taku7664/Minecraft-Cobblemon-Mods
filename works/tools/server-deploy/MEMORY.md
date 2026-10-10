@@ -1,3 +1,10 @@
+# [2026-10-10 16:28 KST] 외부 게임 응답·음성 UDP 도달 확인
+
+- 메인 작업자의 직접 검증 보고 기준으로 로컬 Windows Python socket에서 공인 `210.207.108.196:25565`의 Minecraft status handshake가 성공했습니다. 응답은 version.name `1.21.1`, protocol `767`, players `0/20`, description `MinecraftPPakemonServer`였습니다. 기록 담당자는 검증을 재실행하지 않았습니다.
+- Windows에서 UDP 24454로 보낸 28byte 포트 프로브 1패킷이 VPS `enp5s0` tcpdump에서 목적지 `172.22.0.40:24454`로 포착됐습니다. `ufw-user-input`의 ACCEPT counter도 TCP 25565·UDP 24454 각각 1이었습니다. Java PID `10378`의 두 포트 리스닝과 `tmux ppakemon` 실행 유지도 확인했습니다.
+- 사용자가 에그 콘솔의 TCP 25565·UDP 24454 인바운드 허용 규칙 추가를 마쳤다고 답했고, 이후 검증에서 이전 외부 타임아웃이 해소됐습니다. 업체 내부 동작이나 NAT 방식은 단정하지 않습니다.
+- 실제 게임 입장·음성 양방향 대화·AI 문의·10명 부하는 여전히 미검증이며 systemd 서비스·재부팅 자동 기동은 설정하지 않았습니다.
+
 # [2026-10-10 16:21 KST] VPS 최초 기동·내부 응답 확인, 외부 게임 접속 실패
 
 - 빡대리가 EULA 동의 설정과 실제 기동을 명시적으로 승인했습니다. 메인 작업자의 직접 SSH 확인 기준으로 기존 `/srv/MinecraftPPakemonServer` 클론을 재사용했고 `git pull --ff-only`는 `Already up to date`, `main=origin/main=3fad1d136426cfca435bad48b284614f03cc14a8`, `git lfs fsck`는 OK였습니다. 기동 전 추적 파일의 working tree·staged가 모두 깨끗했고, 없던 Git-ignored `eula.txt`에 `eula=true`를 설정했습니다. 기록 담당자는 원격 검증을 재실행하지 않았습니다.

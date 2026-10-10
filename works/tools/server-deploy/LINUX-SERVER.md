@@ -22,7 +22,8 @@ JAVA_XMS=2G JAVA_XMX=6G bash run.sh
 Git Bash 모의 실행과 Windows에서의 훅 검증은 실제 Linux 서버 기동 검증과 구분합니다.
 2026-10-10 메인 작업자의 직접 SSH 검증으로 Ubuntu VPS에서 운영 `run.sh`의 실제 기동과
 서버 내부 Minecraft status 응답·Voice Chat UDP 리스닝·위키 localhost HTTP 200을 확인했습니다.
-외부 Minecraft 접속은 타임아웃 상태이며 실제 클라이언트 입장·음성 통신·10명 부하는 미검증입니다.
+공인 TCP 25565의 Minecraft status 응답과 UDP 24454 패킷의 VPS 도달도 확인했습니다.
+실제 클라이언트 입장·음성 양방향 대화·AI 문의·10명 부하는 미검증입니다.
 이 문서의 기록 담당자는 원격 검증을 재실행하지 않았습니다.
 
 ### VPS tmux 콘솔
