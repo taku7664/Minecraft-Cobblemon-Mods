@@ -1,3 +1,11 @@
+# [2026-10-11 14:01] VPS 광장 커밋·푸시, 설정 변경 정체 확인
+
+- **사용자 지시:** "VPS 깃 상황 보고 광장차원 같은 건 커밋&푸시". LFS 오류는 이미 풀려 `git status`가 정상이었다.
+- **겹침 처리:** 업데이트가 `dimensions.html`·Chunky JAR(직접 올린 사본)과 겹친다며 멈췄다. 둘 다 `origin/main`과 바이트가 같은 걸 확인하고 JAR은 `~/.local/share/ppakemon-backups/manual-wiki-20261011/`로 옮기고 위키는 `git checkout`한 뒤 업데이트(`2c9ae7a`, 백업 `…/manager/20261011-135800-91be3c3a`). 관리 도구는 같은 내용의 겹침도 충돌로 본다.
+- **커밋:** 광장 12개(`data/raids.dat`, `entities` 4, `poi` 1, `region` 6, 새 `r.1.-1`·`r.1.0` 포함)를 관리 도구 commit job으로 `82d487d` 푸시(백업 `…/manager/20261011-135856-387b1fd7`). 로컬 운영 저장소도 ff로 맞췄다.
+- **커밋하지 않은 변경(의미 없음):** `peaceful_hunger-server.toml`·`ferritecore`·`forgeconfigapiport`·`voicechat` 2개는 CRLF→LF만 바뀜(값 동일, 리눅스에서 모드가 다시 씀). `worldedit.properties`는 타임스탬프 주석만. `server.properties`는 기존 값 변경 없이 마크가 기본 키를 채워 넣은 것. `cobblemon-startup-hooks.zip`은 생성물이라 보존. `config/chunky/`, `sophisticatedcore-client.toml`은 런타임 생성물.
+- **Chunky:** 재시작 두 번으로 체인 스크립트가 "server gone"으로 멈췄다. `chunky continue`로 15.7%부터 이어졌고 스크립트를 다시 띄웠다. 광장 `r.0.0` 두 파일은 재기동 직후 다시 바뀐다(정상 drift).
+
 # [2026-10-11 13:35] VPS Chunky 프리젠 시작
 
 - **사용자 결정:** 오버월드 스폰 기준 반경 3000(정사각형), 고대·미래·울트라스페이스(`cobblemon_dimensions:ancient`/`future`/`ultra_space`) 각각 중심 0,0 반경 1000. 접속자 0명일 때 시작.
