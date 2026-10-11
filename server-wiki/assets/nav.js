@@ -55,7 +55,7 @@ window.WIKI_NAV = {
     {
       title: "참고",
       pages: [
-        { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room waypoint music 문의 디코인증 디스코드 verify" },
+        { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room waypoint 광장 마이룸 포켓내비 웨이포인트 music 문의 디코인증 디스코드 verify" },
         { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌 웨이포인트 지도" },
         { path: "pages/faq.html", title: "자주 묻는 질문", icon: "❓", keywords: "렉 문제 해결 질문 faq" },
         { path: "pages/support.html", title: "문의하기", icon: "✉️", keywords: "문의 신고 건의 버그 운영자 메일 inquiry" },

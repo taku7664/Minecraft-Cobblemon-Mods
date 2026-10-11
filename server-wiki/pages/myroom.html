@@ -9,33 +9,33 @@
 <body data-root="..">
 <main>
   <h1>마이룸</h1>
-  <p>나만 쓰는 100×100 크기의 방입니다. 처음 <code>/room enter</code>를 입력하면 방이 만들어지고, 준비가 끝나면 들어가집니다.</p>
+  <p>나만 쓰는 100×100 크기의 방입니다. 처음 <code>/마이룸 들어가기</code>를 입력하면 방이 만들어지고, 준비가 끝나면 들어가집니다.</p>
 
   <h2>명령어</h2>
   <table>
     <thead><tr><th>명령어</th><th>설명</th></tr></thead>
     <tbody>
-      <tr><td><code>/room</code></td><td>내 방 정보와 도움말</td></tr>
-      <tr><td><code>/room enter</code></td><td>내 방에 들어갑니다</td></tr>
-      <tr><td><code>/room enter &lt;닉네임&gt;</code></td><td>다른 사람의 공개된 방에 놀러 갑니다</td></tr>
-      <tr><td><code>/room exit</code></td><td>들어오기 전 자리로 돌아갑니다</td></tr>
-      <tr><td><code>/room public true|false</code></td><td>방을 공개하거나 비공개로 바꿉니다</td></tr>
-      <tr><td><code>/room trust|untrust &lt;닉네임&gt;</code></td><td>건축을 허락하거나 거둡니다. 허락받은 사람은 비공개 방에도 들어올 수 있습니다</td></tr>
-      <tr><td><code>/room ban|unban &lt;닉네임&gt;</code></td><td>방 출입을 막거나 풉니다</td></tr>
-      <tr><td><code>/room kick &lt;닉네임&gt;</code></td><td>방에 있는 사람을 내보냅니다</td></tr>
-      <tr><td><code>/room setspawn</code> · <code>/room setspawn reset</code></td><td>들어올 때 서는 자리를 정하거나 되돌립니다</td></tr>
-      <tr><td><code>/room visitors</code></td><td>지금 방에 있는 방문자를 봅니다</td></tr>
-      <tr><td><code>/room notify on|off</code></td><td>방문자가 드나들 때 알림을 켜고 끕니다</td></tr>
-      <tr><td><code>/room active on|off|status</code></td><td>내가 없을 때도 방을 돌아가게 합니다(작물, 화로, 호퍼, 목장)</td></tr>
+      <tr><td><code>/마이룸</code></td><td>내 방 정보와 도움말</td></tr>
+      <tr><td><code>/마이룸 들어가기</code></td><td>내 방에 들어갑니다</td></tr>
+      <tr><td><code>/마이룸 들어가기 &lt;닉네임&gt;</code></td><td>다른 사람의 공개된 방에 놀러 갑니다</td></tr>
+      <tr><td><code>/마이룸 나가기</code></td><td>들어오기 전 자리로 돌아갑니다</td></tr>
+      <tr><td><code>/마이룸 공개</code> · <code>/마이룸 비공개</code></td><td>방을 공개하거나 비공개로 바꿉니다</td></tr>
+      <tr><td><code>/마이룸 권한허용|권한해제 &lt;닉네임&gt;</code></td><td>건축을 허락하거나 거둡니다. 허락받은 사람은 비공개 방에도 들어올 수 있습니다</td></tr>
+      <tr><td><code>/마이룸 차단|차단해제 &lt;닉네임&gt;</code></td><td>방 출입을 막거나 풉니다</td></tr>
+      <tr><td><code>/마이룸 내보내기 &lt;닉네임&gt;</code></td><td>방에 있는 사람을 내보냅니다</td></tr>
+      <tr><td><code>/마이룸 스폰설정</code> · <code>/마이룸 스폰설정 초기화</code></td><td>들어올 때 서는 자리를 정하거나 되돌립니다</td></tr>
+      <tr><td><code>/마이룸 방문자</code></td><td>지금 방에 있는 방문자를 봅니다</td></tr>
+      <tr><td><code>/마이룸 알림 켜기|끄기</code></td><td>방문자가 드나들 때 알림을 켜고 끕니다</td></tr>
+      <tr><td><code>/마이룸 상시활성 켜기|끄기|상태</code></td><td>내가 없을 때도 방을 돌아가게 합니다(작물, 화로, 호퍼, 목장)</td></tr>
     </tbody>
   </table>
 
   <h2>방 규칙</h2>
   <ul>
-    <li>새로 만든 방은 <b>공개</b> 상태입니다. 혼자 쓰고 싶다면 <code>/room public false</code>를 입력하세요.</li>
+    <li>새로 만든 방은 <b>공개</b> 상태입니다. 혼자 쓰고 싶다면 <code>/마이룸 비공개</code>를 입력하세요.</li>
     <li>방문자는 블록을 부수거나 놓을 수 없고, 맨손으로 상자, 제작대, 모루, 숫돌, 엔더 상자만 쓸 수 있습니다.</li>
     <li>방 안에서는 플레이어끼리 피해를 주지 않고, 폭발과 불 번짐이 없고, 피스톤이 움직이지 않고, 몬스터가 자연적으로 나오지 않습니다.</li>
-    <li><code>/room active on</code>은 서버 전체에서 동시에 20개 방까지만 켤 수 있습니다.</li>
+    <li><code>/마이룸 상시활성 켜기</code>는 서버 전체에서 동시에 20개 방까지만 켤 수 있습니다.</li>
   </ul>
 </main>
 <script src="../assets/nav.js"></script>
