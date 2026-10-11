@@ -10,6 +10,8 @@ import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
 import jbro.cobblemon.partysidebar.network.ItemizePayload
+import jbro.cobblemon.partysidebar.network.RestorePayload
+import jbro.cobblemon.partysidebar.PokemonToItemFormat
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -29,8 +31,10 @@ import java.util.UUID
  * Held-item slots act like inventory slots: a click swaps the slot with the cursor item, shift-click sends the item to
  * the inventory, and an item can be dragged between them and the inventory. The server makes every change (see
  * [HeldItemClickPayload]); without the mod on the server the column only shows the party. Dragging a Pokemon onto
- * another row swaps the two, or moves it into an empty row, through Cobblemon's own party packets. The itemize key
- * over a Pokemon turns it into a PokemonToItem item ([ItemizePayload]); the Pokemon tooltip names the key.
+ * another row swaps the two, or moves it into an empty row, through Cobblemon's own party packets. Dropping a Pokemon
+ * on the inventory, or the itemize key over it, turns it into a PokemonToItem item ([ItemizePayload]); the Pokemon
+ * tooltip names the key. A PokemonToItem item clicked or dropped on an empty Pokemon frame goes back into that party
+ * slot ([RestorePayload]).
  */
 object PartySidebar {
     private const val ROWS = 6
@@ -173,7 +177,11 @@ object PartySidebar {
             return false
         }
         val hit = bounds.hit(mouseX, mouseY) ?: return true
-        val pokemon = party(hit.row) ?: return true
+        val pokemon = party(hit.row)
+        if (pokemon == null) {
+            if (hit.column == Column.MODEL && button <= 1) restore(screen, hit.row)
+            return true
+        }
         when (hit.column) {
             Column.MODEL -> if (button == 0 && CobblemonClient.battle == null) press = Press.Model(hit.row)
             Column.HELD -> {
@@ -196,6 +204,7 @@ object PartySidebar {
         when (started) {
             is Press.Model -> {
                 if (hit != null && hit.row != started.row) reorder(started.row, hit.row)
+                else if (!over && overInventory(screen, mouseX, mouseY)) itemize(screen, started.row, screen.hoveredSlot?.index ?: ItemizePayload.ANY_SLOT)
                 return true
             }
             Press.HeldPickup -> {
@@ -210,9 +219,12 @@ object PartySidebar {
                 if (!over) return false
                 // The press may have started vanilla's drag-split; a release on the column ends it here instead.
                 screen.isQuickCrafting = false
-                val target = hit?.takeIf { it.column == Column.HELD } ?: return true
-                val pokemon = party(target.row) ?: return true
-                clickHeld(screen, target.row, pokemon, quickMove = false)
+                val target = hit ?: return true
+                val pokemon = party(target.row)
+                when {
+                    pokemon == null -> if (target.column == Column.MODEL) restore(screen, target.row)
+                    target.column == Column.HELD -> clickHeld(screen, target.row, pokemon, quickMove = false)
+                }
                 return true
             }
             null -> return over
@@ -224,11 +236,27 @@ object PartySidebar {
         if (!CobblemonPartySidebarClient.ITEMIZE.matches(keyCode, scanCode) || !canItemize()) return false
         val bounds = bounds(screen) ?: return false
         val hit = bounds.hit(mouseX, mouseY)?.takeIf { it.column == Column.MODEL } ?: return false
-        val pokemon = party(hit.row) ?: return false
-        if (press != null || !screen.menu.carried.isEmpty) return true
-        ClientPlayNetworking.send(ItemizePayload(hit.row, pokemon.uuid))
+        if (party(hit.row) == null) return false
+        if (press == null && screen.menu.carried.isEmpty) itemize(screen, hit.row, ItemizePayload.ANY_SLOT)
         return true
     }
+
+    /** Asks the server to itemize the Pokemon in [row], putting the item in menu slot [targetSlot] when it can. */
+    private fun itemize(screen: InventoryScreen, row: Int, targetSlot: Int) {
+        val pokemon = party(row) ?: return
+        if (!canItemize() || !screen.menu.carried.isEmpty || CobblemonClient.battle != null) return
+        ClientPlayNetworking.send(ItemizePayload(row, pokemon.uuid, targetSlot))
+    }
+
+    /** Asks the server to put the itemized Pokemon on the cursor into the empty party [row]. */
+    private fun restore(screen: InventoryScreen, row: Int) {
+        if (!canRestore() || !PokemonToItemFormat.isPokemonItem(screen.menu.carried) || CobblemonClient.battle != null) return
+        ClientPlayNetworking.send(RestorePayload(row))
+    }
+
+    private fun overInventory(screen: InventoryScreen, mouseX: Double, mouseY: Double) =
+        mouseX >= screen.leftPos && mouseX < screen.leftPos + screen.imageWidth &&
+            mouseY >= screen.topPos && mouseY < screen.topPos + screen.imageHeight
 
     /** Asks the server to act on a held-item slot; false when there is nothing to do or no server half to ask. */
     private fun clickHeld(screen: InventoryScreen, row: Int, pokemon: Pokemon, quickMove: Boolean): Boolean {
@@ -240,8 +268,12 @@ object PartySidebar {
 
     /** The server takes the request and has PokemonToItem's command, which it only sends to players allowed to use it. */
     internal fun canItemize(): Boolean =
-        ClientPlayNetworking.canSend(ItemizePayload.TYPE) &&
-            Minecraft.getInstance().connection?.commands?.root?.getChild("poketoitem") != null
+        ClientPlayNetworking.canSend(ItemizePayload.TYPE) && serverHas(PokemonToItemFormat.ITEMIZE_COMMAND)
+
+    private fun canRestore(): Boolean =
+        ClientPlayNetworking.canSend(RestorePayload.TYPE) && serverHas(PokemonToItemFormat.RESTORE_COMMAND)
+
+    private fun serverHas(command: String) = Minecraft.getInstance().connection?.commands?.root?.getChild(command) != null
 
     private fun reorder(from: Int, to: Int) {
         if (CobblemonClient.battle != null) return

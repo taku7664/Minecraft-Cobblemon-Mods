@@ -1,5 +1,13 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 05:40] I키 아이템화가 포켓몬 데이터를 버리던 버그 수정, 끌어다 놓기 아이템화·빈 칸 복원 (구현·빌드만)
+
+- **버그(사용자 발견):** "I로 아이템화한 건 우클릭으로 엔트리에 안 들어간다". `PokemonUtility.pokemonToItem`은 모델·설명 줄만 만든 보여 주기용 아이템이다. `/poketoitem` 메뉴(`PokeToItemMenu`)는 그 아이템에 `custom_data` `{slot: 파티칸, PTI_NBT: pokemon.saveToNBT(registryAccess)}`를 따로 붙인다(바이트코드 확인). 이전 구현은 앞 단계만 따라 해서 **포켓몬을 파티에서 빼고 데이터 없는 아이템을 줬다 = 그 포켓몬은 사라졌다.** 우클릭 복원은 jbro-policy `PokemonItemRestore`가 `PTI_NBT`로 한다.
+- **수정:** 메뉴와 같은 custom data를 붙이고(`PokemonToItemFormat.customData`), 아이템에 `PTI_NBT`가 없으면 파티에서 빼지 않는다. **재발 주의:** 다른 모드의 "변환" 함수를 쓸 때는 실제 결과물이 원래 경로의 결과물과 같은지(데이터 포함) 끝까지 대조한다.
+- **잃은 포켓몬(개발 서버):** 버그 버전으로 아이템화한 포켓몬은 데이터가 없다. 파티 파일은 05:19에 이미 빠진 상태로 저장됐다(`.dat.old`도 같은 시각). 아이템 설명 줄에 레벨·별명·성격·특성·폼·개체값·노력치·기술이 남아 있어 그걸로 다시 만들 수는 있다(친밀도·경험치·볼 등은 미보존).
+- **사용자 요청 추가:** 모델을 인벤토리에 끌어다 놓으면 아이템화(놓은 칸이 플레이어 인벤토리의 빈 칸이면 그 칸, 아니면 아무 데나), 아이템화한 포켓몬 아이템을 빈 모델 칸에 놓거나 클릭하면 그 파티 칸으로 복원. 복원은 `/itemtopoke`처럼 `Pokemon.loadFromNBT` 후 `party.add`(빈 칸이 있으니 PC로 안 감) → `party.move`로 그 칸에. 권한은 각각 `poketoitem`/`itemtopoke` 명령 노드 `canUse`.
+- **미확인:** 실게임 전부. 배포는 게임이 켜져 있어 보류.
+
 ## [2026-10-12 05:12] 스킨·PP·I키 아이템화 개발 배포 (실게임 미확인)
 
 - **빌드:** main `184ccf29`과 같은 소스(빌드 뒤에는 README·MEMORY만 수정)로 `:cobblemon-party-sidebar:build -x test`, F 드라이브 경로. 성공. `unzip -t` 통과, 진입점·mixin·EMI·`InventorySkin`·`PokemonItemize` 클래스와 빈 칸 아이콘이 JAR에 있음.

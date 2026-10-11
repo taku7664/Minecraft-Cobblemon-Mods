@@ -9,8 +9,10 @@ inventory texture, so it matches the inventory under any resource pack.
 - **Party order:** drag a Pokemon onto another row to swap the two, or onto an empty row to move it there.
 - **Tooltip:** hover a Pokemon to see its level, name and gender, HP, nature and ability, moves with their PP, and the
   IVs and EVs of each stat. Stats its nature raises are red, lowered ones blue.
-- **Itemize:** with PokemonToItem on the server, press **I** (rebindable) over a Pokemon to turn it into a PokemonToItem
-  item, as `/poketoitem` would. Only players allowed to run `/poketoitem` can; the Pokemon tooltip names the key.
+- **Itemize:** with PokemonToItem on the server, drag a Pokemon onto the inventory (or onto an empty slot there), or
+  press **I** (rebindable) over it, to turn it into a PokemonToItem item, as `/poketoitem` would. Drop or click such an
+  item on an empty Pokemon frame to put the Pokemon back in that party slot, as `/itemtopoke` would. Each needs
+  permission for the matching command; the Pokemon tooltip names the key.
 
 Held items cannot be changed during a battle, and Cobblemon's held-item tags (`cobblemon:held/blacklisted_items_to_hold`,
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI
