@@ -107,15 +107,30 @@ object Wormholes {
                 }
             } else if (random.nextDouble() < 1.0 / (settings.personalEveryMinutes * checksPerMinute)) {
                 open(level, player.blockPosition(), 6, 16, settings.personalRadius, settings.personalSeconds, returning = false)
+                    ?.let { tellOwner(player) }
             }
         }
 
         if (overworldPlayers.isNotEmpty() && random.nextDouble() < 1.0 / (settings.greatEveryMinutes * checksPerMinute)) {
             val near = overworldPlayers[random.nextInt(overworldPlayers.size)]
-            if (open(server.overworld(), near.blockPosition(), 48, 128, settings.greatRadius, settings.greatSeconds, returning = false) != null) {
-                server.playerList.broadcastSystemMessage(Component.translatable("message.cobblemon_dimensions.great_wormhole")
-                    .withStyle(ChatFormatting.LIGHT_PURPLE), false)
-            }
+            open(server.overworld(), near.blockPosition(), 48, 128, settings.greatRadius, settings.greatSeconds, returning = false)
+                ?.let { announceGreat(server, it) }
         }
+    }
+
+    /**
+     * A personal hole is told only to the player it opened by, without coordinates. These lines carry a Korean fallback:
+     * a client without this version's language file still shows them.
+     */
+    fun tellOwner(player: ServerPlayer) {
+        player.sendSystemMessage(Component.translatableWithFallback("message.cobblemon_dimensions.personal_wormhole",
+            "근처 하늘에 울트라홀이 열렸다!").withStyle(ChatFormatting.LIGHT_PURPLE))
+    }
+
+    /** A great hole is told to the whole server with where it opened. */
+    fun announceGreat(server: MinecraftServer, hole: UltraWormhole) {
+        val at = hole.center
+        server.playerList.broadcastSystemMessage(Component.translatableWithFallback("message.cobblemon_dimensions.great_wormhole_at",
+            "거대한 울트라홀이 열렸다! (X %s, Y %s, Z %s)", Math.floor(at.x).toInt(), Math.floor(at.y).toInt(), Math.floor(at.z).toInt()).withStyle(ChatFormatting.LIGHT_PURPLE), false)
     }
 }

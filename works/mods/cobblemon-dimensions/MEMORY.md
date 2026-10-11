@@ -1,5 +1,11 @@
 # cobblemon-dimensions 작업 기록
 
+## [2026-10-11 17:00] 개인 홀 본인 알림, 거대 홀 좌표 공지
+
+- 사용자 결정(정해 둔 적은 없지만 당연히 그런 줄 알았다고 함): 개인 홀은 열린 플레이어에게만 채팅으로 알린다(좌표 없음, `personal_wormhole`). 거대 홀 서버 공지에 좌표를 붙인다(`great_wormhole_at`, 홀 중심 좌표). 귀환 홀은 요청이 없어 알림 없음 그대로. `/cdim wormhole small|great`도 같은 알림을 띄운다(테스트용 명령이라 맞춤).
+- 사용자 지시로 개발 서버에만 배치하고 클라이언트는 그대로 둔다. 문구는 클라이언트 언어 파일에서 꺼내므로, 키를 새로 만들고 `translatableWithFallback`에 한국어 기본 문구를 넣었다. 옛 클라이언트 JAR에는 두 키가 없어 기본 문구가 뜬다. 옛 키 `great_wormhole`는 지웠다.
+- 위키 `server-wiki/pages/dimensions.html` 홀 표도 맞게 고쳤다(위키 배포는 안 함).
+
 ## [2026-10-11 13:55] 위키 포탈 틀 블록 이름 정정
 
 - 사용자 지적: 위키의 "깎은 심층암"은 한국어 번역상 "조각된". 틀 태그(`ancient_portal_frame`/`future_portal_frame`)는 `chiseled_deepslate`·`chiseled_copper` 계열이고 바닐라 `ko_kr`은 "조각된 심층암"/"조각된 구리"다. "깎인 구리"는 `cut_copper`라 다른 블록이어서 미래 쪽도 고쳤다. 위키·README 수정 `1f71431d`.

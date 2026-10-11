@@ -59,6 +59,11 @@ object DimensionCommand {
             source.sendFailure(Component.translatable("command.cobblemon_dimensions.no_sky"))
             return 0
         }
+        when (kind) {
+            "great" -> Wormholes.announceGreat(player.server, hole)
+            "return" -> {}
+            else -> Wormholes.tellOwner(player)
+        }
         return 1
     }
 }

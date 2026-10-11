@@ -12,11 +12,11 @@ import jbro.cobblemon.dimensions.CobblemonDimensions
  */
 data class WormholeSettings(
     val checkSeconds: Int = 60,
-    /** A small hole near one player in the overworld. */
+    /** A small hole near one player in the overworld, told only to that player. */
     val personalEveryMinutes: Double = 30.0,
     val personalSeconds: Int = 60,
     val personalRadius: Float = 2.5f,
-    /** A great hole near a random overworld player, announced to the whole server without coordinates. */
+    /** A great hole near a random overworld player, announced to the whole server with its coordinates. */
     val greatEveryMinutes: Double = 120.0,
     val greatSeconds: Int = 300,
     val greatRadius: Float = 6f,
