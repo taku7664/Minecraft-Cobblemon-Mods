@@ -34,5 +34,7 @@
   "screen.pokefusion.material_slot": "Material",
   "screen.pokefusion.material_slot.hint": "Same evolution family. Consumed on fusion",
   "screen.pokefusion.result": "Result",
-  "screen.pokefusion.result.hint": "Add a base and materials to see the result"
+  "screen.pokefusion.result.hint": "Add a base and materials to see the result",
+  "tooltip.pokefusion.alpha": "Alpha",
+  "tooltip.pokefusion.size": "Size: %sx"
 }

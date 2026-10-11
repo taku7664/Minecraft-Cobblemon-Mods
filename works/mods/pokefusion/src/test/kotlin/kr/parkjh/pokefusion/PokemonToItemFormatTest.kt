@@ -17,6 +17,18 @@ class PokemonToItemFormatTest {
     }
 
     @Test
+    fun `reads cobblemon size and alpha from the stored pokemon`() {
+        val pokemon = CompoundTag()
+        assertEquals(null, PokemonToItemFormat.scaleModifier(pokemon))
+        assertFalse(PokemonToItemFormat.isAlpha(pokemon))
+
+        pokemon.putFloat("ScaleModifier", 1.08f)
+        pokemon.putBoolean("Alpha", true)
+        assertEquals(1.08f, PokemonToItemFormat.scaleModifier(pokemon))
+        assertTrue(PokemonToItemFormat.isAlpha(pokemon))
+    }
+
+    @Test
     fun `finds only the three-line PokemonToItem 0_2_0 iv lore block`() {
         val actualFormat = listOf("Level: 50", "IVs:", "  HP:31  Atk:20  Def:19", "  SpAtk:22  SpDef:23  Spd:24", "EVs:")
         assertEquals(1..3, PokemonToItemFormat.findIvLoreBlock(actualFormat))

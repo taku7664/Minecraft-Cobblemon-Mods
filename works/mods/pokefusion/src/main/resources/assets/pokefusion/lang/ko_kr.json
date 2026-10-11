@@ -34,5 +34,7 @@
   "screen.pokefusion.material_slot": "재료",
   "screen.pokefusion.material_slot.hint": "같은 진화 계보 포켓몬. 합성하면 소모됩니다",
   "screen.pokefusion.result": "결과",
-  "screen.pokefusion.result.hint": "베이스와 재료를 넣으면 합성 결과가 표시됩니다"
+  "screen.pokefusion.result.hint": "베이스와 재료를 넣으면 합성 결과가 표시됩니다",
+  "tooltip.pokefusion.alpha": "우두머리",
+  "tooltip.pokefusion.size": "크기: %s배"
 }
