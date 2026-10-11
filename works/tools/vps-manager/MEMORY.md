@@ -1,3 +1,12 @@
+# [2026-10-11 13:27] Chunky 1.4.23 추가, VPS는 JAR 직접 업로드 후 재시작
+
+- **사용자 지시:** "청키 추가해줘. VPS서버 재부팅도" + "청키만 적용". 재부팅은 마크 서버 재시작으로 확인받았다.
+- **JAR:** Modrinth `Chunky-Fabric-1.4.23.jar`(1.21.1 Fabric 최신, 의존은 Fabric API뿐). SHA-512가 Modrinth 값과 일치, SHA-256 `3412b170…`. 서버 전용이라 클라이언트에는 넣지 않았다. `deploy-product/server`는 자체 모드 JAR만 두는 관례라 넣지 않았다.
+- **배치:** 개발 서버 `mods`(서버 꺼진 상태, 켜지 않음), 운영 저장소 커밋 `060509e`(Chunky만, LFS 업로드, `origin/main` 일치). 시작 훅 `mod_compatibility`는 목록에 없는 JAR을 지우지 않는다.
+- **VPS 업데이트 불가:** `plan`이 git 단계에서 실패한다. 광장 `world/dimensions/jbro_policy/plaza/entities/r.-1.-1.mca`의 LFS clean filter가 기존 객체 `6eca08c8…`와 내용 불일치(`Files don't match`)로 죽는다. 이번 작업 전부터 있던 문제이고 고치지 않았다. GUI의 상태/업데이트 검사도 같은 이유로 실패할 것이다.
+- **VPS 적용:** JAR을 `scp`로 `mods`에 올려 해시 일치 확인. 접속자 1명(`Park_JH`)은 사용자 확인 후 진행. 관리 도구 stop job(13:25:36 `All dimensions are saved`) → start job, 새 PID 4160, 13:26:24 `Done (4.770s)`, 모드 목록에 `chunky 1.4.23`, 25565 LISTEN·외부 TCP 성공, 콘솔 `chunky progress` → `No tasks running.` VPS git은 HEAD `54f9d76`이고 Chunky는 미추적 파일로 남는다. LFS 문제를 고친 뒤 업데이트하면 같은 내용의 파일을 받게 된다(그때 충돌 여부는 미확인).
+- **미확인:** 프리젠 실행, 실게임 접속.
+
 # [2026-10-11 12:17] 업데이트 때 startup-hooks.json을 저장소 버전으로
 
 - **문제:** `preserve()`가 `startup-hooks.json`을 보존해 VPS의 위키 해시·모드 버전 규칙이 갱신되지 않았다. 기록상 VPS 해시는 옛 값이고 `.startup-hooks-state.json`의 ONCE 표시 덕에만 기동했는데, 이 상태 파일은 백업에도 없었다.
