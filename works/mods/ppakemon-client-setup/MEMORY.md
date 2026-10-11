@@ -1,9 +1,17 @@
-# Cobblemon Client Setup MEMORY
+# PPakemon Client Setup MEMORY
 
 작업 내역과 결정은 `[YYYY-MM-DD HH:MM]` 형식으로 최신 항목을 위에 기록한다.
 구현, 빌드, 클라이언트·서버 배포, 실게임 검증은 서로 다른 상태로 적는다.
 
 ---
+
+## [2026-10-11 15:10] ppakemon-client-setup으로 이름 변경, 훅 파일을 config 밖으로 0.1.20
+
+- **사용자 지시:** "관련 컨픽 다 삭제해", "ppakemon-client-setup으로 바꿔". `cobblemon-client-setup`(그 전 `cobblemon-client-defaults`)은 2026-10-03 AI 세션이 지은 이름이고 사용자가 정한 적이 없다.
+- **정정:** 앞선 답변에서 기록 파일을 다른 곳으로 옮겼다고 헷갈리게 말했지만, 0.1.19까지는 `config/cobblemon-client-setup/`에 그대로 있었다(해시로 무시만 함).
+- **구현:** 모듈·JAR `ppakemon-client-setup`, 모드 ID `ppakemon_client_setup`, 표시명 `PPakemon Client Setup`/`빡케몬 클라이언트 셋업`, Gradle 속성 `ppakemon_client_setup_version`. 기록·적용 방식·Xaero 백업은 프로필의 `ppakemon_client_setup/`에 둔다. 시작할 때 `config/cobblemon-client-defaults/`, `config/cobblemon-client-setup/`, `cobblemon_client_setup/`을 옮기고 지운다. 새 폴더에 같은 파일이 있으면 새 것을 남기고 `config` 사본을 지운다. Java 패키지 `jbro.cobblemon.clientsetup`은 그대로다. 클라이언트 패쳐는 새 ID를 필수로, 옛 ID를 제거 대상으로 바꿨다(테스트 통과, 설치본 갱신). main `3b656084`, 테스트 91개 통과.
+- **배포:** JAR SHA-256 `1B8797795E5F43D575C0BAC70560BFD40E7E27D4393AC40CE8753A394FB2E089`. 개발 클라이언트·`deploy-product/client`에서 `cobblemon-client-setup-0.1.19.jar`를 `develop-product/deployment-backups/2026-10-11-ppakemon-client-setup-0.1.20/`로 빼고 새 JAR을 넣었다. 개발 클라이언트 프로필은 새 JAR의 이동 코드로 `config/cobblemon-client-setup/`을 `ppakemon_client_setup/`으로 옮겼다. `PPakemon`은 게임 실행 중(PID 45584)이라 아직 옛 JAR·옛 위치다.
+- **주의:** 모드 ID가 바뀌어 옛 JAR과 새 JAR이 함께 있으면 둘 다 돈다. 팩·프로필에서 옛 JAR을 반드시 뺀다.
 
 ## [2026-10-11 14:40] Iris 새로고침과 내보내기 키 충돌을 매 실행 해제 0.1.19
 
