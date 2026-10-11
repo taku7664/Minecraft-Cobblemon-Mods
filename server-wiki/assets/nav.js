@@ -45,7 +45,7 @@ window.WIKI_NAV = {
       pages: [
         { path: "pages/crafting.html", title: "제작법", icon: "🔨", keywords: "제작법 레시피 조합 몬스터볼 소모품 회복약 사탕 PP에이드 학습장치 PC 회복기 냄비 양조기 도구" },
         { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 사탕" },
-        { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동" },
+        { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동 안내원 npc 간호순 회복 상점 리그 타워 팩토리" },
         { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
         { path: "pages/dimensions.html", title: "차원과 울트라홀", icon: "🌀", keywords: "차원 울트라홀 웜홀 울트라스페이스 울트라비스트 고대 미래 포탈 패러독스 자격 입장 챔피언" },
         { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 미니맵 xaero 웨이포인트 정보창 우클릭 음성 채팅 도감" },
