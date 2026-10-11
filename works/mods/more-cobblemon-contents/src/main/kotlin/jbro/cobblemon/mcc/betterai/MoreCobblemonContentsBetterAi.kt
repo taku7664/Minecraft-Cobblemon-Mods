@@ -88,7 +88,8 @@ object MoreCobblemonContentsBetterAi {
             BattleBrainProvider(
                 id = BrainId("$MOD_ID:local_tactical"),
                 capabilities = setOf(BrainCapability.SINGLE, BrainCapability.DOUBLE),
-                factory = BattleBrainFactory(::LocalTacticalBrain),
+                // No search in play: the live host could not afford it (see LocalTacticalBrain.searchless).
+                factory = BattleBrainFactory { LocalTacticalBrain(searchless = true) },
                 role = BattleBrainProviderRole.LOCAL,
                 selectionPolicy = BattleBrainSelectionPolicy.ALWAYS,
             ),

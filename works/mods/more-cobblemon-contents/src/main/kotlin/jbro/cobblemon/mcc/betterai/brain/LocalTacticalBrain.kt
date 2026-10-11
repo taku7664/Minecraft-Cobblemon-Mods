@@ -128,6 +128,12 @@ internal class LocalTacticalBrain(
         NativeInitialDecisionSource { context, profile, localTuning, budget, sessionState, rules ->
             defaultNativeInitialDecisionEvaluator.evaluate(context, profile, localTuning, budget, sessionState, rules)
         },
+    /**
+     * Decide on the one-turn ranking alone, with the rules' credits, vetoes and the weighted draw it always had, and
+     * search nothing, native or legacy. The live server's 2-vCPU host took 6 to 27 s a decision with the search
+     * (2026-10-11 release); this decides at once. Off keeps the search.
+     */
+    private val searchless: Boolean = false,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -355,7 +361,9 @@ internal class LocalTacticalBrain(
             weights = LocalRuleWeights.weights(difficultyContext.state, profile.difficulty.tier, aceScores, ruleScores),
             scores = ruleScores,
         )
-        val nativeInitial = nativeInitialDecision.evaluate(
+        val nativeInitial = if (searchless) {
+            NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
+        } else nativeInitialDecision.evaluate(
             difficultyContext,
             decidingProfile,
             tuning,
@@ -517,7 +525,7 @@ internal class LocalTacticalBrain(
             else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel) }.orEmpty().let { intents ->
                 if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
-        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
+        val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
             decidingProfile,
@@ -557,7 +565,8 @@ internal class LocalTacticalBrain(
                 )
             },
         )
-        decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
+        lookahead?.let { decisionTrace?.legacySearch(it, profile.difficulty.lookaheadPlies, budget) }
+        val searchedRanked = lookahead?.ranked ?: rootRanked
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
         // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
         val expectedSwitches = when {
@@ -590,10 +599,10 @@ internal class LocalTacticalBrain(
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
-            LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->
+            LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
                 adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
             })
-        } ?: lookahead.ranked
+        } ?: searchedRanked
         val rootDecision = LocalRootDecisionPolicy.refine(switchAdjusted, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(
@@ -629,23 +638,25 @@ internal class LocalTacticalBrain(
                     "choice_pool_${selection.shortlistSize}",
                     "choice_seed_${selection.seed.toULong().toString(16)}",
                     "difficulty_${profile.difficulty.tier.name.lowercase()}",
-                     // Doubles searches one turn whatever the tier asks for.
-                     "lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
-                         else profile.difficulty.lookaheadPlies}",
-                     "lookahead_turns_${lookahead.depthCompleted}",
-                     "lookahead_nodes_${lookahead.nodesVisited}",
-                    "lookahead_pruned_${lookahead.branchesPruned}",
-                    "lookahead_coverage_${(lookahead.publicResponseCoverage * 100).roundToInt()}",
-                    "lookahead_stop_${lookahead.terminationReason.name.lowercase(Locale.ROOT)}",
-                    "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
-                    "lookahead_accepted_ms_${lookahead.acceptedDepthMillis}",
-                    "lookahead_accepted_nodes_${lookahead.acceptedDepthNodes}",
-                    "lookahead_partial_depth_candidates_${lookahead.partialDepthCandidates}",
                      ))
-                    if (lookahead.truncated) add("lookahead_truncated")
+                    if (lookahead == null) add("searchless") else {
+                        // Doubles searches one turn whatever the tier asks for.
+                        add("lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+                            else profile.difficulty.lookaheadPlies}")
+                        add("lookahead_turns_${lookahead.depthCompleted}")
+                        add("lookahead_nodes_${lookahead.nodesVisited}")
+                        add("lookahead_pruned_${lookahead.branchesPruned}")
+                        add("lookahead_coverage_${(lookahead.publicResponseCoverage * 100).roundToInt()}")
+                        add("lookahead_stop_${lookahead.terminationReason.name.lowercase(Locale.ROOT)}")
+                        add("lookahead_elapsed_ms_${lookahead.elapsedMillis}")
+                        add("lookahead_accepted_ms_${lookahead.acceptedDepthMillis}")
+                        add("lookahead_accepted_nodes_${lookahead.acceptedDepthNodes}")
+                        add("lookahead_partial_depth_candidates_${lookahead.partialDepthCandidates}")
+                        if (lookahead.truncated) add("lookahead_truncated")
+                        if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
+                    }
                     nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
                     if (retainedNativeState != null) add("native_session_retained")
-                    if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]
                         .orEmpty()

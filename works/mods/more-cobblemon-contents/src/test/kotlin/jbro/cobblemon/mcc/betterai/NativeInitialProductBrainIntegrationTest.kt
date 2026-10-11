@@ -442,6 +442,28 @@ class NativeInitialProductBrainIntegrationTest {
         assertTrue(recover.comparisonValue < giratina.comparisonValue)
     }
 
+    @Test
+    fun `a searchless brain decides on the one-turn ranking without any search`() {
+        val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream(
+            "/betterai/snapshots/milotic-losing-recover-loop.json.gz"))).use { it.readBytes().toString(Charsets.UTF_8) }
+            .let(jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot::fromJson)
+        val context = snapshot.context.copy(deadlineEpochMillis = System.currentTimeMillis() + 60_000L)
+        val brain = LocalTacticalBrain(
+            nativeInitialDecision = { _, _, _, _, _, _ -> error("the native search must not run") },
+            searchless = true,
+        )
+
+        val started = System.nanoTime()
+        val decision = brain.decide(open(brain, context), context).toCompletableFuture().get()
+        val seconds = (System.nanoTime() - started) / 1e9
+
+        assertTrue("searchless" in decision.tags, "${decision.tags}")
+        assertTrue(decision.tags.none { it.startsWith("lookahead_turns") || it.startsWith("native_") }, "${decision.tags}")
+        assertTrue(context.candidates.any { it.actionId == decision.actionId })
+        assertTrue(seconds < 5.0, "decided in $seconds s")
+        println("SEARCHLESS chose=${decision.actionId} in ${"%.2f".format(seconds)} s")
+    }
+
     private fun nativeSessionState(
         context: jbro.cobblemon.mcc.internal.ai.BattleDecisionContext,
         snapshotJson: String = "root",
