@@ -15,6 +15,7 @@
   - 관리 배틀 전용 처리(파티 잠금, 트레이너 몸체, 규칙 훅, 결과 기록)는 거치지 않는다.
 - **주의:** 트레이너 액터가 `NPCBattleActor`가 아니므로, NPC를 찾을 때는 `BrainNpcBattles.npcOf(actor)`를 쓴다. 코어 API가 추가돼 리그 JAR과 함께 배포해야 한다.
 - **테스트:** 코어 관련 9건 통과. 실게임은 확인하지 않았다.
+- **개발 배포:** 코어 `945dcd501e3432b6`(main `fe2ad5a3`, 클래스 1893 → 1895)를 리그 JAR과 함께 넣었다. 백업은 `develop-product/deployment-backups/20261012-wild-trainer-brain/`에 있다.
 
 ## [2026-10-12 06:10] 입문·표준에도 명백한 실수 막기
 
