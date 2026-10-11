@@ -373,7 +373,10 @@ internal class NativeInitialProductWorldPlanner(
             BattleTrainerTier.INTRODUCTORY -> 3
             BattleTrainerTier.STANDARD -> 6
             BattleTrainerTier.ADVANCED -> 10
-            BattleTrainerTier.BOSS -> 16
+            // 2026-10-11: 8 (48 worlds for six) on 15,000 nodes beat 16 on 20,000 against a full two-turn search of all
+            // 96 (median loss 576 vs 862 over 4-6 seeds, 73 recorded positions) at 3.6 s instead of 5.6 s: the 96 mostly
+            // stopped one turn deep.
+            BattleTrainerTier.BOSS -> 8
         } * selectionSize
 
         fun canonical(value: String): String = PublicIds.canonical(value)
