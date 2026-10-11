@@ -39,6 +39,8 @@ final class KeybindingSetupTest {
         assertEquals(5, KeybindingSetup.apply(gameDirectory, configDirectory(), MODS));
         String expected = other;
         for (String key : KEYS) expected += key + ":key.keyboard.unknown\r\n";
+        // Missing lines are appended after the ones already present.
+        expected += "key_key.disable_voice_chat:key.keyboard.unknown\r\n";
         assertEquals(expected, Files.readString(optionsFile()));
         assertEquals("BUTTONS", new TomlParser().parse(Files.readString(craftingFile())).get("client.mode"));
         assertEquals(ClientSetup.ApplyMode.ONCE, KeybindingSetup.mode(configDirectory()));
@@ -156,7 +158,8 @@ final class KeybindingSetupTest {
         assertFalse(Files.exists(optionsFile()));
         assertFalse(Files.exists(stateFile()));
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat")));
-        assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("version:3955\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n"
+            + "key_key.disable_voice_chat:key.keyboard.unknown\n", Files.readString(optionsFile()));
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "zoomify")));
         assertEquals("key_key.hide_icons:key.keyboard.j\nkey_zoomify.key.zoom.secondary:key.keyboard.unknown\nkey_zoomify.key.zoom:key.keyboard.left.alt\n", Files.readString(optionsFile()));
@@ -166,7 +169,7 @@ final class KeybindingSetupTest {
     @Test void freshProfileSeedsBindingsBeforeMinecraftLoadsOptions() throws Exception {
         KeybindingSetup.apply(gameDirectory, configDirectory(), MODS);
         String options = Files.readString(optionsFile());
-        assertEquals(9, options.lines().count());
+        assertEquals(10, options.lines().count());
         assertTrue(options.startsWith("version:3955\n"));
         for (String key : KEYS) assertTrue(options.contains(key + ":key.keyboard.unknown\n"));
     }
@@ -174,13 +177,15 @@ final class KeybindingSetupTest {
     @Test void duplicatesAreAllClearedWithoutMatchingLongerKeys() throws Exception {
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.h\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.j");
         KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat"));
-        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.hide_icons.extra:key.keyboard.h\nkey_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n"
+            + "key_key.disable_voice_chat:key.keyboard.unknown\n", Files.readString(optionsFile()));
     }
 
     @Test void appendingMissingKeysRespectsExistingNewlinesAndMissingFinalNewline() throws Exception {
         Files.writeString(optionsFile(), "fullscreen:false\r\nkey_key.other:key.keyboard.k");
         KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat"));
-        assertEquals("fullscreen:false\r\nkey_key.other:key.keyboard.k\r\nkey_key.hide_icons:key.keyboard.unknown\r\nkey_key.mute_microphone:key.keyboard.unknown\r\n", Files.readString(optionsFile()));
+        assertEquals("fullscreen:false\r\nkey_key.other:key.keyboard.k\r\nkey_key.hide_icons:key.keyboard.unknown\r\nkey_key.mute_microphone:key.keyboard.unknown\r\n"
+            + "key_key.disable_voice_chat:key.keyboard.unknown\r\n", Files.readString(optionsFile()));
     }
 
     @Test void craftingButtonsRetainOtherValuesAndComments() throws Exception {
@@ -217,7 +222,8 @@ final class KeybindingSetupTest {
         KeybindingSetup.saveMode(configDirectory(), ClientSetup.ApplyMode.ALWAYS);
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat")));
-        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n", Files.readString(optionsFile()));
+        assertEquals("key_key.hide_icons:key.keyboard.unknown\nkey_key.mute_microphone:key.keyboard.unknown\n"
+            + "key_key.disable_voice_chat:key.keyboard.unknown\n", Files.readString(optionsFile()));
     }
 
     @Test void clcAlwaysAndKeybindingOnceDoNotOverwriteEachOthersState() throws Exception {
