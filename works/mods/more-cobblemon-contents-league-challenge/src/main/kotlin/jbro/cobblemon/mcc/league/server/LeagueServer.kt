@@ -25,6 +25,7 @@ import net.fabricmc.fabric.api.networking.v1.*
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.TickTask
 import net.minecraft.server.level.ServerPlayer
 
 /** All mutations execute on the server thread. Clients send intent, never outcomes or cap values. */
@@ -72,17 +73,25 @@ object LeagueServer {
             sessions.remove(handler.player.uuid)
             lastRequestTick.remove(handler.player.uuid)
             sentRanks.remove(handler.player.uuid)
-            LeagueCatalogResources.current?.let { catalog ->
-                try {
-                    val storage = LeagueSavedData.get(server)
-                    val state = storage.read(catalog.id, handler.player.uuid)
-                    storage.write(catalog.id, handler.player.uuid, LeagueEngine(catalog).cancel(state))
-                } catch (failure: RuntimeException) { Mod.LOGGER.error("Could not cancel disconnected League run", failure) }
-            }
+            // Queued behind work already waiting, such as a battle result handed over from another thread the moment
+            // the battle ended: that result is settled first, so a win right at the disconnect is kept.
+            // tell, not execute: on the server thread execute would run it right away, ahead of that result. A server
+            // stopping first leaves the run to cancelInterruptedRuns at the next start.
+            val playerId = handler.player.uuid
+            server.tell(TickTask(server.tickCount) { cancelDisconnectedRun(server, playerId) })
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
             if (server.tickCount % 200 == 0) server.playerList.players.forEach(::reconcileSafely)
         }
+    }
+
+    private fun cancelDisconnectedRun(server: MinecraftServer, playerId: UUID) {
+        val catalog = LeagueCatalogResources.current ?: return
+        try {
+            val storage = LeagueSavedData.get(server)
+            val state = storage.read(catalog.id, playerId)
+            storage.write(catalog.id, playerId, LeagueEngine(catalog).cancel(state))
+        } catch (failure: RuntimeException) { Mod.LOGGER.error("Could not cancel disconnected League run", failure) }
     }
 
     /**
@@ -170,6 +179,8 @@ object LeagueServer {
     private fun launch(player: ServerPlayer, catalog: LeagueCatalog, state: LeagueProgress) {
         val run = requireNotNull(state.run)
         val challenge = run.encounters[run.index]
+        // The hub this battle was chosen from; its timeout restarts when the battle ends, however long it took.
+        val session = sessions[player.uuid]
         try {
             val id = ManagedPveBattles.start(player, ManagedPveBattles.Request(run.battleToken, CONTENT,
                 challenge.id, challenge.nameKey, run.party, challenge.team, ManagedPveBattles.Format.valueOf(challenge.format),
@@ -194,6 +205,8 @@ object LeagueServer {
                             BattleResultNotices.defeat(online, opponent)
                         }
                     }
+                    // Only the time is renewed; validate still holds the player to the terminal's distance and world.
+                    sessions[online.uuid]?.takeIf { it === session }?.touched = online.server.tickCount.toLong()
                     reconcileSafely(online)
                     // Idempotent callbacks do not repeatedly reopen the screen.
                     send(online, openScreen = completed != latest)

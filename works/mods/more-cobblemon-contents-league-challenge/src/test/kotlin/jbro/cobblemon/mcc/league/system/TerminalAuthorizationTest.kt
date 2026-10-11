@@ -26,4 +26,13 @@ class TerminalAuthorizationTest {
         assertEquals("terminal_invalid", TerminalAuthorization.rejectDetached(false, 10, 0))
         assertEquals("terminal_expired", TerminalAuthorization.rejectDetached(true, 12000, 0))
     }
+    @Test fun `a session renewed when a long battle ends is valid again but still bound to the terminal`() {
+        val battleEnd = 30000L
+        assertEquals("terminal_expired", TerminalAuthorization.reject(expected, valid.copy(tick = battleEnd), 0))
+        assertNull(TerminalAuthorization.reject(expected, valid.copy(tick = battleEnd), battleEnd))
+        assertNull(TerminalAuthorization.reject(expected, valid.copy(tick = battleEnd + 11999), battleEnd))
+        assertEquals("terminal_invalid", TerminalAuthorization.reject(expected, valid.copy(tick = battleEnd, playerX = 20.0), battleEnd))
+        assertEquals("terminal_invalid",
+            TerminalAuthorization.reject(expected, valid.copy(tick = battleEnd, dimension = "minecraft:the_nether"), battleEnd))
+    }
 }

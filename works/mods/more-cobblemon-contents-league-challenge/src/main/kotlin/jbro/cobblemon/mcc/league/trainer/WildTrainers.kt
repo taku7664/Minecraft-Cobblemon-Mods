@@ -171,8 +171,9 @@ object WildTrainers {
             val now = server.overworld().gameTime
             despawns.entries.filter { it.value <= now }.map { it.key }.forEach { id ->
                 despawns.remove(id)
-                // One still in a battle keeps its tag and leaves the next time it loads.
-                server.allLevels.firstNotNullOfOrNull { it.getEntity(id) as? NPCEntity }?.takeIf { !it.isInBattle() }?.discard()
+                // One still in a battle waits for it to end; one not loaded keeps its tag and leaves the next time it loads.
+                val npc = server.allLevels.firstNotNullOfOrNull { it.getEntity(id) as? NPCEntity } ?: return@forEach
+                if (inLiveBattle(npc)) despawns[id] = now + DEFEATED_DESPAWN_TICKS else npc.discard()
             }
         }
         ServerLifecycleEvents.SERVER_STOPPED.register {
@@ -231,14 +232,8 @@ object WildTrainers {
 
     private fun offer(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
         name(npc)
-        val refusal = when {
-            BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null -> return
-            inLiveBattle(npc) -> "busy"
-            npc.uuid in despawns -> "done"
-            (cooldowns[player.uuid to npc.uuid] ?: 0L) > player.serverLevel().gameTime -> "cooldown"
-            Cobblemon.storage.getParty(player).none { !it.isFainted() } -> "no_pokemon"
-            else -> null
-        }
+        if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
+        val refusal = refusal(player, npc)
         if (refusal != null) {
             say(player, npc, "$KEY.refuse.$refusal")
             return
@@ -250,8 +245,21 @@ object WildTrainers {
         )))
     }
 
+    /**
+     * Why [npc] will not battle [player] now, or null when it will. Asked again when the battle is chosen: the talk
+     * box can stay open while someone else beats the trainer or the cooldown is set by another fight.
+     */
+    private fun refusal(player: ServerPlayer, npc: NPCEntity): String? = when {
+        inLiveBattle(npc) -> "busy"
+        isLeaving(npc) -> "done"
+        (cooldowns[player.uuid to npc.uuid] ?: 0L) > player.serverLevel().gameTime -> "cooldown"
+        Cobblemon.storage.getParty(player).none { !it.isFainted() } -> "no_pokemon"
+        else -> null
+    }
+
     private fun start(player: ServerPlayer, npc: NPCEntity, definition: WildTrainerDefinition) {
-        if (!npc.isAlive || inLiveBattle(npc) || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
+        if (!npc.isAlive || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
+        refusal(player, npc)?.let { return say(player, npc, "$KEY.refuse.$it") }
         val lead = Cobblemon.storage.getParty(player).firstOrNull { !it.isFainted() } ?: return say(player, npc, "$KEY.refuse.no_pokemon")
         val party = NPCPartyStore(npc)
         val cap = cap(player)
@@ -311,6 +319,8 @@ object WildTrainers {
             BattleScenes.play(player, npc, opponent, listOf(line))
         }
         if (!won) {
+            // A trainer already beaten by someone else still goes, after its words to this player.
+            if (npc != null && isLeaving(npc)) leave(npc)
             BattleResultNotices.defeat(player, opponent)
             return
         }
