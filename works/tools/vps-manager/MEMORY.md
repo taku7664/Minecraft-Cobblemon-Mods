@@ -1,3 +1,11 @@
+# [2026-10-11 14:22] VPS 월드 스폰을 초원으로 이동, Chunky 재시작
+
+- **사용자 지시:** 시작 지형이 초원이 아니어서 바꾸고 Chunky도 다시. 코드 확인: 첫 접속은 바닐라 월드 스폰, 광장 `goHome`은 귀환점 → 리스폰 지점 → `sharedSpawnPos` 순서(`Plaza.kt:99`).
+- **후보 탐색:** `locate biome minecraft:plains`를 여러 위치에서 실행. 옛 스폰(대략 90,0) 근처 (864,48)은 좁은 띠. 사용자가 직접 보고 E (-1240,-664)를 골랐다.
+- **적용:** `positioned over motion_blocking_no_leaves`로 `setworldspawn` → `-1240, 64, -664`(밑 블록 흙). 플레이어 데이터는 2명뿐이고 신규 1명 포함 3명 모두 오버월드에 접속 중이어서 공지 후 `spawnpoint @a`·`tp` (`Yoon_SSU_`는 usercache에만 있고 데이터 없음). 차원 확인용 `say`가 채팅에 한 번씩 보였다.
+- **Chunky:** 옛 작업 cancel·confirm 후 `chunky spawn`, 반경 3000 재시작(이미 만든 청크는 건너뜀, 처음 90cps). 체인 스크립트 재실행. 주의: `pkill -f chunky-chain.sh`는 SSH 명령 줄 자체를 죽인다. `pgrep -f "^bash ./chunky-chain"`을 쓴다.
+- **범위:** VPS만. 개발 서버 월드 스폰은 바꾸지 않았다.
+
 # [2026-10-11 14:01] VPS 광장 커밋·푸시, 설정 변경 정체 확인
 
 - **사용자 지시:** "VPS 깃 상황 보고 광장차원 같은 건 커밋&푸시". LFS 오류는 이미 풀려 `git status`가 정상이었다.
