@@ -1,5 +1,12 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-12 04:50] 바닐라 완드 화면·스킨 탭/스크롤 빌드·개발 배포 (실게임 미확인)
+
+- **컴파일 오류 1건(수정):** `SkinList` 안의 `selected`가 바닐라 `AbstractSelectionList`의 같은 이름 필드로 묶였다. `this@NpcSkinPickerScreen.selected`로 고쳐 `3072ccde`로 푸시했다. **바닐라 목록·위젯을 상속한 inner class에서는 화면 필드 이름이 부모 필드와 겹치는지 먼저 본다.**
+- **빌드:** main `3072ccde`를 `F:/AI/build/npc-vanilla-20261012/src`에 풀어 `:cobblemon-npc:remapJar`(테스트 제외) 성공. 이번엔 캐시가 아니라 실제 컴파일했다. `jar --validate` 통과, `SkinList`·`SkinEntry`·`NpcPokemonModel` 클래스 포함 확인.
+- **배치:** 게임·포트 꺼짐 확인 후 `develop-product/server/mods`·`client/mods` 교체. 세 곳 SHA-256 `e459efb7372f200e23aad2bce05e9b18c7c1250c5e471e0497b17c2841cb5d58`. 이전 JAR은 `develop-product/deployment-backups/20261012-045046-npc-vanilla-screens/`.
+- **미확인:** 서버·클라이언트를 켜지 않아 화면은 보지 않았다.
+
 ## [2026-10-12] 스킨 선택 화면 스크롤바·사람/포켓몬 탭 (구현만, 빌드·배치 안 함)
 
 - **사용자 요청:** "스킨 선택란에 스크롤바도 좀 만들어라", "포켓몬 모델이랑 스티브 모델 따로따로 볼 수 있게 탭도".
