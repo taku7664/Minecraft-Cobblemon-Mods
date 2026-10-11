@@ -43,8 +43,8 @@ class BattlePointShopCatalogResourceTest {
         // Battle items: Life Orb at 100 sets the scale; easily crafted ones are cheaper still.
         val heldItems = catalog.entries().filter { it.category == "held_item" }
         assertEquals(24, heldItems.size)
-        assertEquals(listOf(100L, 100L), listOf("life_orb", "choice_specs").map(::price))
-        assertTrue(listOf("choice_band", "choice_scarf", "assault_vest").all { price(it) == 75L })
+        assertTrue(listOf("life_orb", "choice_specs", "choice_band", "choice_scarf").all { price(it) == 150L })
+        assertEquals(75L, price("assault_vest"))
         assertEquals(6, heldItems.count { it.priceBp == 50L })
         assertEquals(5, heldItems.count { it.priceBp == 40L })
         assertEquals(7, heldItems.count { it.priceBp == 25L })

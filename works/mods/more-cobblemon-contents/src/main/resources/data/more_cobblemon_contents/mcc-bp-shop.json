@@ -278,7 +278,7 @@
       "entry_id": "choice_band",
       "item_id": "cobblemon:choice_band",
       "item_count": 1,
-      "price_bp": 75,
+      "price_bp": 150,
       "sort_order": 530,
       "category": "held_item"
     },
@@ -286,7 +286,7 @@
       "entry_id": "choice_specs",
       "item_id": "cobblemon:choice_specs",
       "item_count": 1,
-      "price_bp": 100,
+      "price_bp": 150,
       "sort_order": 540,
       "category": "held_item"
     },
@@ -294,7 +294,7 @@
       "entry_id": "choice_scarf",
       "item_id": "cobblemon:choice_scarf",
       "item_count": 1,
-      "price_bp": 75,
+      "price_bp": 150,
       "sort_order": 550,
       "category": "held_item"
     },
@@ -310,7 +310,7 @@
       "entry_id": "life_orb",
       "item_id": "cobblemon:life_orb",
       "item_count": 1,
-      "price_bp": 100,
+      "price_bp": 150,
       "sort_order": 570,
       "category": "held_item"
     },
