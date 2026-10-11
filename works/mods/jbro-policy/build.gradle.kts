@@ -23,6 +23,8 @@ dependencies {
     testImplementation(project(path = ":more-cobblemon-contents-league-challenge", configuration = "namedElements")) { isTransitive = false }
     // The server wiki is optional too: the Legend guide's progress section registers only when MCC is installed.
     compileOnly(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
+    // Pichu's help screen draws with Cobblemon UI's kit; it registers only when that mod is installed.
+    compileOnly(project(path = ":cobblemon-ui", configuration = "namedElements")) { isTransitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")
