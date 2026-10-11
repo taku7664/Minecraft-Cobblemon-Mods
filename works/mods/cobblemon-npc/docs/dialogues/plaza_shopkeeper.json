@@ -1,0 +1,36 @@
+{
+  "speaker": "상점 주인",
+  "skin": "more_cobblemon_contents:textures/npcs/shopkeeper.png",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "어서 오세요! BP로 살 수 있는 물건을 팔고 있어요.",
+        "천천히 둘러보세요."
+      ],
+      "choices": [
+        {
+          "text": "물건 좀 볼게요.",
+          "next": "open"
+        },
+        {
+          "text": "다음에 올게요.",
+          "next": "bye"
+        }
+      ]
+    },
+    "open": {
+      "lines": [
+        "자, 여기 있어요!"
+      ],
+      "commands": [
+        "@server /mcc terminal shop"
+      ]
+    },
+    "bye": {
+      "lines": [
+        "네, 또 오세요!"
+      ]
+    }
+  }
+}

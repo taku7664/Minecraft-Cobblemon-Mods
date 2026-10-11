@@ -9,7 +9,7 @@
   "shopkeeper": {
     "appearances": [
       {
-        "skin": "rctmod:textures/trainers/single/waitress_kati_03fc.png"
+        "skin": "more_cobblemon_contents:textures/npcs/shopkeeper.png"
       },
       {
         "villager": {

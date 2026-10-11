@@ -13,7 +13,8 @@ import net.minecraft.resources.ResourceLocation
 
 /**
  * Opens the same configured tabs as a terminal, without requiring a physical block. Operators only: players open these
- * at the plaza terminals, and an NPC opens one for a player through a dialogue command run as the server.
+ * at the plaza terminals, and an NPC opens one for a player through a dialogue command run as the server. `shop` opens
+ * the `/mcc` tabs on the shop tab, for a shopkeeper NPC.
  */
 internal object TerminalCommands {
     private const val KEY = "command.${MoreCobblemonContents.MOD_ID}.terminal"
@@ -26,6 +27,7 @@ internal object TerminalCommands {
 
     fun build(
         open: (CommandContext<CommandSourceStack>, ResourceLocation, Boolean) -> Int = ::open,
+        openShop: (CommandContext<CommandSourceStack>, Boolean) -> Int = ::openShop,
     ) = Commands.literal("terminal").requires(BattleProgressCommands::isAdmin).also { root ->
         terminals.forEach { (name, identifier) ->
             val id = ResourceLocation.parse(identifier)
@@ -34,6 +36,18 @@ internal object TerminalCommands {
                 .then(Commands.argument("player", EntityArgument.player())
                     .executes { open(it, id, true) }))
         }
+        root.then(Commands.literal("shop")
+            .executes { openShop(it, false) }
+            .then(Commands.argument("player", EntityArgument.player())
+                .executes { openShop(it, true) }))
+    }
+
+    private fun openShop(context: CommandContext<CommandSourceStack>, targeted: Boolean): Int {
+        val player = if (targeted) EntityArgument.getPlayer(context, "player") else context.source.playerOrException
+        if (!BattleHubNetworking.openShopCommand(player)) {
+            throw SimpleCommandExceptionType(Component.translatable("$KEY.open_failed", player.name)).create()
+        }
+        return 1
     }
 
     private fun open(context: CommandContext<CommandSourceStack>, id: ResourceLocation, targeted: Boolean): Int {
