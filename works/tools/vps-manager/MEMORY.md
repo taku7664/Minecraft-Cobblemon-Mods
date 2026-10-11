@@ -1,3 +1,11 @@
+# [2026-10-11 13:28] 광장 LFS 캐시 복구, 관리 도구 상태 조회 정상화
+
+- **확인·범위:** 사용자 요청으로 아래 Chunky 작업에서 확인한 LFS 실패를 복구했다. VPS `.git/lfs/objects/6e/ca/6eca08c85ffc8e979deb161dd17b8d91f81ef062f78fb66229408c0344d659ef`가 0바이트였고, 정상 임시 파일 `.git/lfs/tmp/2568781714`는 24,576바이트·SHA-256이 해당 객체 ID와 일치했다.
+- **복구:** 관리 작업 `operation.lock`을 획득하고 손상 캐시와 검증한 복구 원본을 `/home/ubuntu/.local/share/ppakemon-backups/lfs-repair/20261011-132718-3109177d/`에 백업한 뒤 캐시만 원자 교체했다.
+- **보존:** 광장 원본 `world/dimensions/jbro_policy/plaza/entities/r.-1.-1.mca` 내용, HEAD, index 내용과 staged 목록이 작업 전후 동일했다. 이 복구 작업에서는 서버 재시작·월드 변경·운영 커밋·푸시를 하지 않았다.
+- **검증:** `git lfs clean`·`git status` 성공, 실제 설치된 `PPakemonVpsManager/remote_manager.py`의 `dispatch(status)` 성공. 서버 실행 중(Java PID 4160), 변경 23개·제외 0개·ahead 0·behind 1, VPS HEAD `54f9d763291bdb0b76011694e20454bda730277e`를 확인했다.
+- **한계:** 0바이트 캐시가 처음 생긴 원인은 미확인이다. 복구·검증 결과는 메인 작업자의 직접 확인 보고이며 기록 담당자는 SSH나 GUI 조작을 재실행하지 않았다.
+
 # [2026-10-11 13:27] Chunky 1.4.23 추가, VPS는 JAR 직접 업로드 후 재시작
 
 - **사용자 지시:** "청키 추가해줘. VPS서버 재부팅도" + "청키만 적용". 재부팅은 마크 서버 재시작으로 확인받았다.
