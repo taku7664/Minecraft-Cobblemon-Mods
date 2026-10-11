@@ -106,6 +106,20 @@
 
 ---
 
+## [2026-10-12 06:30] 1.1.0 운영 반영: 운영 저장소·PPakemon·VPS·deploy-product, 광장 안내원 → 피츄 (VPS 서버는 꺼진 상태 유지)
+
+- **사용자 요청:** 지금까지 개발 쪽 커밋 전부를 운영 서버·운영 프로필에 반영, 패치노트용 변경점 추적(버전 1.1.0, 예전 v0.1 기록 무시). 주요 변경은 AI 로직과 파티 사이드바·HUD 움짤. 추가로 VPS 풀 → 광장 최신화 → 광장 "안내원"을 피츄(이름·모델)로, 우클릭 시 짧은 대사 + `/피츄`.
+- **빌드:** `origin/main` `480be6fc`를 F 드라이브에 풀어 우리 모드 16개를 `assemble`(테스트 없이)로 빌드. 개발 서버·클라 같은 이름 JAR 25개 교체(해시 일치). 이후 서버 `/피츄` 추가(`23cddd55`, 테스트 108개 통과, JAR `574F92B6…`)로 jbro-policy만 다시 빌드해 4곳 교체.
+- **VPS 광장 분기:** VPS는 23:00부터 정상 저장·종료로 꺼져 있었고, 04:36 VPS에서 만든 미푸시 커밋 `9c94b89 광장 갱신`(광장 107파일) 때문에 원격과 갈라져(ahead 1, behind 8) 매니저 업데이트가 막혀 있었다. VPS에서 그 커밋을 원격 브랜치 `vps-plaza-20261012`로 푸시(LFS 포함)하고 로컬 운영 저장소에서 병합(`649c1ac`)했다.
+- **운영 저장소:** 통합 패쳐 모듈을 명령줄로 호출(`Get-ServerDeploymentPlan`/`Invoke-ServerDeployment`, 27개). 시작 훅은 운영 파일을 두고 모드 호환·위키 해시만 바꾸며, 위키 압축본은 개발 서버 위키로 새로 만든다(개발 훅의 디스코드 검사 누락은 넘어오지 않음, 코드로 확인). 설정은 보존되므로 `jbro-policy.json` 안내 34개, `simple-myroom-messages.json` 도움말 13줄, 마이룸 디자이너 대사, `plaza_guide.json`을 따로 바꿨다. 커밋 `bb34052`, `df3bb1b`, VPS 커밋 `de663ad` 동기화.
+- **PPakemon:** `Get-ClientPatchPlan`/`Invoke-ClientPatch`(39개, 위키 25개 포함, MouseTweaks 제거·Nemo's Inventory Sorting 추가는 개발 클라 기준). 모든 JAR이 개발 클라와 해시 일치.
+- **VPS:** 매니저 update job `51d929af…`(`9c94b89`→`df3bb1b`, 백업 `manager/20261012-062031-b946fdf9`). 서버가 꺼져 있어 재시작 없음. 모드 해시 전부 운영 저장소와 일치. 보존된 설정 중 위 4개를 서버 밖 `config-edit/20261012-release-1.1.0/before.tar`에 백업 후 교체(이제 저장소와 동일). BP 상점·CLC·Chunky 설정은 저장소와 이미 같았다.
+- **피츄 NPC:** 대화 `plaza_guide`를 `{speaker 피츄, skin pokemon:pichu, 대사 1줄, commands ["/피츄"]}`로. VPS 광장 `entities/r.-1.0.mca`를 내려받아 손실 없는 NBT 왕복(바이트 동일 확인) 도구로 그 NPC 하나의 `CustomName` "안내원"→"피츄", `NpcSkin` `Park_JH`→`pokemon:pichu`만 바꿨다(다른 엔티티 10개·UUID·태그 수 동일). 원본은 `config-edit/20261012-release-1.1.0/r.-1.0.mca.before`. 매니저 선택 커밋으로 `de663ad` 푸시. **개발 서버 광장의 안내원은 바꾸지 않았다.**
+- **deploy-product:** 서버 폴더를 운영 모드 48개(서드파티 포함, 230MB)로 맞추고, 클라 폴더는 우리 모드 16개 최신 빌드(PokemonFusion 추가). 이전 JAR은 `F:/AI/build/plaza-fix-20261011/deployment-backups/deploy-product-1.1.0/`. 두 `VERSION.txt`를 1.1.0 패치노트로 다시 씀.
+- **미검증·남은 것:** VPS 서버 기동은 하지 않았다(사용자 확인 대기). 실게임에서 피츄 NPC 모양·대화·화면 열림, 사이드바, AI 동작은 확인하지 않았다. 원격 브랜치 `vps-plaza-20261012`는 병합 후 남아 있다.
+
+---
+
 ## [2026-10-12] ESC 메뉴는 "피츄 도우미" 하나만
 
 - **사용자 요청:** 왼쪽 위 디코·위키·광장 가기를 없애고 피츄 도우미만 남김. 세 기능은 피츄 화면 안에 있다.

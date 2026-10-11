@@ -1,0 +1,15 @@
+{
+  "speaker": "피츄",
+  "skin": "pokemon:pichu",
+  "start": "greet",
+  "nodes": {
+    "greet": {
+      "lines": [
+        "피츄! 반가워요, {player}! 궁금한 게 있으면 제가 도와줄게요."
+      ],
+      "commands": [
+        "/피츄"
+      ]
+    }
+  }
+}
