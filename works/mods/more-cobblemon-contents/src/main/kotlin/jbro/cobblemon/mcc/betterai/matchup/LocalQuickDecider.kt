@@ -134,6 +134,9 @@ internal object LocalQuickDecider {
         // 4. The move kept.
         val chosenMove = part(chosen)
         if (chosenMove.kind != BattleActionKind.USE_MOVE) return null
+        // The scores read the base move. Terastallization, a Z-Move or Dynamax changes what the move does, so a move
+        // chosen with one is the ranking's to keep; Mega Evolution leaves the move as it is.
+        if (transformsMove(chosenMove)) return null
         val strongest = bestAttack(attacks) ?: return null
         val statusScores = scores.statusMoves(self.battlePokemonId, foe.battlePokemonId).associateBy { PublicIds.canonical(it.moveId) }
         fun statusScore(rank: LocalBattleActionRank) = part(rank).moveId?.let { statusScores[PublicIds.canonical(it)] }
@@ -193,6 +196,9 @@ internal object LocalQuickDecider {
         return Verdict(read.maxBy { (_, matchup) -> matchup.score + OFFENSE * (matchup.subjectMove?.score ?: 0.0) }.first, "replace_matchup")
     }
 
+    private fun transformsMove(move: BattleActionCandidate): Boolean =
+        move.mechanic?.let { PublicIds.canonical(it.mechanicId) !in MEGA_IDS } ?: false
+
     /** The share of maximum HP a move heals its user, Rest (which also puts it to sleep) aside. */
     private fun healShare(move: BattleActionCandidate): Double {
         val effects = move.moveDetails?.effects?.effects.orEmpty()
@@ -241,6 +247,7 @@ internal object LocalQuickDecider {
     /** Reasons no roll lets pass and no margin holds back: staying does nothing at all. */
     private val UNCONDITIONAL = setOf("no_damage", "cannot_act")
     private val DRAINING = setOf("leechseed", "curse", "perish1", "perish2", "perish3", "perishsong", "yawn")
+    private val MEGA_IDS = setOf("mega", "megaevolution")
     private val HAZARDS = setOf("stealthrock", "spikes", "toxicspikes", "stickyweb")
 
     /** Knockout chance (landed before their hit, or survived) at which the attack is taken outright. */
