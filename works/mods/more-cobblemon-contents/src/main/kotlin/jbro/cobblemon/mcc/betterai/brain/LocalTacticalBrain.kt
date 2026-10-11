@@ -621,12 +621,13 @@ internal class LocalTacticalBrain(
             mixingContext(ranked),
         )
         // Without the search, singles at the tiers with the rules go through the quick decider on top of the ranking.
-        val quick = if (!searchless || !quickDecider || !rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) null
+        // Below Advanced only its blunder checks: a lower tier may play weaker, not senselessly.
+        val quick = if (!searchless || !quickDecider || difficultyContext.state.format != BattleFormat.SINGLE) null
             else ruleScores?.let { scores ->
-                jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
+                if (rulesApply) jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                     ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
                     ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments, expectedSwitches,
-                )
+                ) else jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(ranked, selection.rank, difficultyContext, scores)
             }
         val drawn = quick?.rank ?: selection.rank
         // The draw chooses between actions, not between a move with its mechanic and the same move without: drawn

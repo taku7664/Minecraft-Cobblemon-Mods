@@ -260,6 +260,50 @@ internal object LocalQuickDecider {
             .maxOfOrNull { effect -> effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0 } ?: 0.0
     }
 
+    /**
+     * The lower tiers' checks: only the senseless choices, each replaced by the ranking's own next pick so the tier
+     * keeps its character. A move that publicly fails, an attack that does nothing when another does damage, a heal at
+     * nearly full HP, hazards against a last Pokemon or already up, and staying in with nothing that does damage.
+     */
+    fun blunders(
+        ranked: List<LocalBattleActionRank>,
+        chosen: LocalBattleActionRank,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+    ): Verdict? {
+        val state = context.state
+        val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+            ?: return null
+        val self = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+            ?: return null
+        val move = part(chosen)
+        if (move.kind != BattleActionKind.USE_MOVE || transformsMove(move)) return null
+        val moveScores = scores.moves(self.battlePokemonId, foe.battlePokemonId).associateBy { PublicIds.canonical(it.moveId) }
+        fun damages(rank: LocalBattleActionRank) = part(rank).kind == BattleActionKind.USE_MOVE &&
+            (part(rank).moveId?.let { moveScores[PublicIds.canonical(it)] }?.maximumDamageFraction ?: 0.0) > 0.0
+        // The ranking's next pick that does damage and does not fail.
+        val next = ranked.firstOrNull { it !== chosen && damages(it) && !LocalPublicFailureTriage.fails(it.outcome.candidate, context) }
+        val reason = when {
+            LocalPublicFailureTriage.fails(move, context) -> "blunder_fails"
+            // Only an attack read as doing nothing (an immunity); one the scores cannot read (Mirror Coat) is left alone.
+            move.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS ->
+                if (move.moveId?.let { moveScores[PublicIds.canonical(it)] }?.let { it.maximumDamageFraction <= 0.0 } == true) "blunder_no_effect" else null
+            healShare(move) > 0.0 && self.hpFraction >= FULL_HP -> "blunder_full_heal"
+            PublicIds.canonical(move.moveId.orEmpty()) in HAZARDS && (wasted(move, context) ||
+                PublicIds.canonical(move.moveId.orEmpty()) in NON_STACKING &&
+                state.field.sideConditions[BattleSide.OPPONENT].orEmpty().any { PublicIds.canonical(it.effectId) == PublicIds.canonical(move.moveId.orEmpty()) }) ->
+                "blunder_hazard"
+            else -> null
+        } ?: return null
+        next?.let { return Verdict(it, reason) }
+        // Nothing does damage: hand over to one that does (the Emerald AI's "all moves bad" switch).
+        return ranked.filter { part(it).kind == BattleActionKind.SWITCH && part(it).switchPokemonId != null }
+            .mapNotNull { rank ->
+                scores.switchIn(requireNotNull(part(rank).switchPokemonId), foe.battlePokemonId, self.battlePokemonId)
+                    ?.takeIf { (it.afterEntry?.subjectMove?.maximumDamageFraction ?: 0.0) > 0.0 }?.let { rank to it.score }
+            }.maxByOrNull { it.second }?.let { Verdict(it.first, "blunder_no_damage_switch") }
+    }
+
     private fun bestAttack(attacks: List<Pair<LocalBattleActionRank, MoveMatchupScore>>): LocalBattleActionRank? =
         attacks.maxByOrNull { it.second.score }?.first
 
@@ -301,6 +345,8 @@ internal object LocalQuickDecider {
     private val UNCONDITIONAL = setOf("no_damage", "cannot_act")
     private val DRAINING = setOf("leechseed", "curse", "perish1", "perish2", "perish3", "perishsong", "yawn")
     private val MEGA_IDS = setOf("mega", "megaevolution")
+    /** Hazards one use of which is all there is. */
+    private val NON_STACKING = setOf("stealthrock", "stickyweb")
     private val HAZARDS = setOf("stealthrock", "spikes", "toxicspikes", "stickyweb")
 
     /** Knockout chance (landed before their hit, or survived) at which the attack is taken outright. */
@@ -319,6 +365,8 @@ internal object LocalQuickDecider {
     const val CLEAR_GAIN = 0.7
     /** An attack under this share of the best attack's score gives way to it. */
     const val WEAK_ATTACK = 0.6
+    /** HP at which a heal is a blunder at any tier. */
+    const val FULL_HP = 0.9
     /** Weight of a switch-in's own best attack (1 / hits to knock the opponent out) in ranking switch-ins. */
     const val OFFENSE = 1.0
     /** A Pokemon worth keeping ([LocalSwitchRules.WORTH_KEEPING]) leaves on this much less margin. */
