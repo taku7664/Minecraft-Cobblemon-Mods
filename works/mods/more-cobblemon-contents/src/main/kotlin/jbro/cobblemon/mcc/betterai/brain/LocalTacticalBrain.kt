@@ -134,6 +134,8 @@ internal class LocalTacticalBrain(
      * (2026-10-11 release); this decides at once. Off keeps the search.
      */
     private val searchless: Boolean = false,
+    /** With [searchless], singles at Advanced and Boss go through [jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider]. */
+    private val quickDecider: Boolean = true,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -617,7 +619,7 @@ internal class LocalTacticalBrain(
             mixingContext(ranked),
         )
         // Without the search, singles at the tiers with the rules go through the quick decider on top of the ranking.
-        val quick = if (!searchless || !rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) null
+        val quick = if (!searchless || !quickDecider || !rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) null
             else ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                     ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,

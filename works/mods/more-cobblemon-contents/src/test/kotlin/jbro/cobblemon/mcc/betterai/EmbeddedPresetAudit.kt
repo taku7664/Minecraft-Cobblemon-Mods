@@ -16,7 +16,7 @@ internal object EmbeddedPresetAudit {
     }
 
     fun run(directory: Path, sets: JsonArray = rawSets(), teamPairs: Int = 0, teamSeed: Int = 20260906,
-        teamSplit: EvaluationSplit? = null): JsonObject {
+        teamSplit: EvaluationSplit? = null, teamSize: Int = 3): JsonObject {
         require(teamPairs in 0..1000)
         val ids = sets.map { it.asJsonObject["set_id"].asString }
         require(ids.isNotEmpty() && ids.distinct().size == ids.size) { "Empty or duplicate preset IDs" }
@@ -25,6 +25,7 @@ internal object EmbeddedPresetAudit {
             addProperty("teamPairs", teamPairs)
             addProperty("teamSeed", teamSeed)
             addProperty("teamSplit", teamSplit?.name ?: "ALL")
+            if (teamSize != 3) addProperty("teamSize", teamSize)
             add("reservedTuningKeys", JsonArray().apply { EmbeddedNativeCorpus.reservedTuningKeys.sorted().forEach(::add) })
         }
         return EmbeddedShowdownOracle.presetAudit(directory, input).apply {

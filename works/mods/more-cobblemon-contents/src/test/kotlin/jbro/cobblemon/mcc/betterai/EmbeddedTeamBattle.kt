@@ -46,7 +46,9 @@ internal object EmbeddedTeamBattle {
         p1TrainerProfile: BattleTrainerProfile = trainerProfile,
         p2TrainerProfile: BattleTrainerProfile = trainerProfile,
         /** Sides whose native session does not correct hidden stats from observed damage. */
-        withoutStatFitting: Set<String> = emptySet()): JsonObject {
+        withoutStatFitting: Set<String> = emptySet(),
+        /** Sides deciding without any search, and whether the quick decider runs for them. */
+        searchlessSides: Map<String, Boolean> = emptyMap()): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -63,7 +65,8 @@ internal object EmbeddedTeamBattle {
                 reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) },
                     fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
-            LocalTacticalBrain(tuning = tuning, nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
+            LocalTacticalBrain(tuning = tuning, searchless = side in searchlessSides,
+                quickDecider = searchlessSides[side] ?: true, nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
                 evaluator.evaluate(context, profile, localTuning, budget, sessionState, rules).also { evaluation ->
                     nativeEvaluations[side] = evaluation
                     // A failed native decision is kept whole, so the planner can be replayed on it.

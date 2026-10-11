@@ -37,6 +37,20 @@ class LocalQuickDeciderTest {
         assertEquals("sleeppowder", label(context, decision), "${decision.tags}")
     }
 
+    @Test
+    fun `a low Pokemon whose heal outpaces the hit heals instead of attacking`() {
+        // Togekiss at 14% in front of Koraidon, whose Breaking Swipe cannot touch a Fairy: Roost, not Air Slash.
+        val (context, decision) = decide("togekiss-low-heals-against-koraidon")
+        assertEquals("roost", label(context, decision), "${decision.tags}")
+    }
+
+    @Test
+    fun `a doomed Pokemon is not sacrificed when a switch-in takes the hit well`() {
+        // Milotic at 38% falls to Ferrothorn's Power Whip, but Lucario takes it resisted: switch, not a sacrifice.
+        val (context, decision) = decide("milotic-low-switches-rather-than-sacked")
+        assertTrue(label(context, decision) in setOf("lucario", "giratina"), "${label(context, decision)} ${decision.tags}")
+    }
+
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {
         val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }

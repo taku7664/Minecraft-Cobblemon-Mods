@@ -94,6 +94,7 @@ const sampleTeams = () => {
   const count = input.teamPairs || 0;
   const seed = input.teamSeed === undefined ? 20260906 : input.teamSeed;
   const partition = input.teamSplit || 'ALL';
+  const teamSize = input.teamSize || 3;
   if (!['ALL', 'TUNING', 'HOLDOUT'].includes(partition)) throw new Error('Invalid corpus partition');
   const reserved = new Set(input.reservedTuningKeys || []);
   const encode = values => [...values].sort().map(value => `${value.length}:${value}`).join('');
@@ -119,7 +120,7 @@ const sampleTeams = () => {
     const chosen = [];
     const species = new Set();
     const items = new Set();
-    while (available.length && chosen.length < 3) {
+    while (available.length && chosen.length < teamSize) {
       const index = Math.floor(next() * available.length);
       const row = available[index];
       available[index] = available[available.length - 1];
@@ -131,7 +132,7 @@ const sampleTeams = () => {
       species.add(base);
       if (item) items.add(item);
     }
-    if (chosen.length !== 3) throw new Error('Cannot draw three distinct species/items from eligible presets');
+    if (chosen.length !== teamSize) throw new Error(`Cannot draw ${teamSize} distinct species/items from eligible presets`);
     const sets = chosen.map(row => JSON.parse(JSON.stringify(row.engineSet)));
     const validatedSets = JSON.parse(JSON.stringify(sets));
     const problems = teamValidator.validateTeam(validatedSets) || [];
@@ -164,12 +165,12 @@ const sampleTeams = () => {
       }
       p1.initializedCount = battle.p1.pokemon.length;
       p2.initializedCount = battle.p2.pokemon.length;
-      if (p1.initializedCount !== 3 || p2.initializedCount !== 3) throw new Error('Incomplete initialized team');
+      if (p1.initializedCount !== teamSize || p2.initializedCount !== teamSize) throw new Error('Incomplete initialized team');
     } finally { battle.destroy(); }
     pairs.push({ index: pairs.length, battleSeed, p1, p2, corpusKey: key, partition: split });
   }
   if (pairs.length !== count) throw new Error('Cannot draw enough distinct pairs in corpus partition');
-  return { seed, algorithm: 'MULBERRY32_SEQUENTIAL_SET_DRAW_V1', teamSize: 3,
+  return { seed, algorithm: 'MULBERRY32_SEQUENTIAL_SET_DRAW_V1', teamSize,
     partition, partitionMethod: 'SHA256_UNORDERED_SET_IDS_V1_MOD5_RESERVED_TUNING',
     reservedTuningKeys: [...reserved].sort(), attemptedPairs, partitionSkipped, duplicatePairsSkipped,
     eligibleSets: pool.length, ruleset: teamRules, rejectedTeams: 0, pairs,
