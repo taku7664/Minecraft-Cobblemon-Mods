@@ -1,5 +1,14 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-11 23:05] 야생 스폰 범위 캡 −15~−5, `/구역스폰레벨` 추가 — 개발 서버·클라이언트 배치 (실게임 미검증)
+
+- **사용자 결정:** 초반 캡 16에서 7~13만 나오던 범위(캡 −9~−3)를 −15~−5로 넓힌다. 1보다 낮으면 1. 야생 우두머리도 같은 범위. `below_cap` 10, `spread` 5로 코드 기본값과 `active.json`을 같이 바꿨다(`below_cap - spread >= 3` 검사 통과). 캡 16이면 1~11, 시작 구역(기준 10)은 1~5, 최고 구역은 68~78.
+- **명령어:** `/구역스폰레벨`(권한 0, 플레이어만)이 서 있는 청크 기준 범위·구역 기준값·내 캡을 채팅에 출력한다. 계산은 스폰 처리와 같은 `LeagueWildSpawns.read`를 쓴다. 문구는 `translatableWithFallback`이라 옛 클라이언트에서도 한국어로 보인다. 한글 리터럴 명령어는 저장소 첫 사례였고 실게임 입력은 확인하지 않았다.
+- **API:** `LeagueRanks.wildLevelRange(player, level, chunkX, chunkZ)`를 추가했고 jbro-policy 우두머리 믹스인이 쓴다. 두 JAR은 함께 배포해야 한다(옛 리그 JAR + 새 정책 JAR이면 `NoSuchMethodError`).
+- **빌드:** 커밋 `0b3156e2` 뒤 다른 세션이 jbro-policy를 바꿔 푸시(`cb583179`)해서, `origin/main` `63842632`을 `git archive`로 `F:/AI/build/wild-band-20261011/src2`에 풀어 다시 빌드했다(Gradle 쓰기 경로 모두 F). 리그 unitTest 100/100, 정책 109/109. `jar --validate` 통과. 리그 JAR SHA-256 `e4d26751…1261ec0`.
+- **배치:** `develop-product/{server,client}/mods` 해시 일치. 서버·게임 꺼진 상태, 켜지 않음. 백업 `develop-product/deployment-backups/20261011-wild-band/`. 운영·VPS·deploy-product는 사용자 지시로 건드리지 않았다.
+- **미확인:** 실게임 명령어 입력·출력, 실제 스폰 레벨 분포, 우두머리 레벨.
+
 ## [2026-10-11 12:18] 오픈 전 점검 수정
 
 - **야생 트레이너 재대결:** 대화창(cobblemon-npc)은 계속 열어 둘 수 있어서, 제안을 열어 둔 채 다른 사람이 트레이너를 이기길 기다렸다가 "배틀"을 고르면 이미 진 트레이너와 다시 싸워 BP를 또 받을 수 있었다. `start()`가 `offer()`와 같은 거절 조건(`refusal()`: 배틀 중, 떠나는 중, 쿨다운, 싸울 포켓몬 없음)을 다시 확인하고 같은 거절 대사를 띄운다. "떠나는 중"은 이제 `despawns`만이 아니라 패배 태그도 본다(`isLeaving`). 사라질 시각에 배틀 중이던 트레이너는 예전엔 예약만 지워져 그 배틀에서 플레이어가 지면 계속 남아 있었는데, 이제 배틀이 끝날 때까지 예약을 미루고, 그 배틀에서 이긴 트레이너도 마지막 대사 뒤 떠난다.
