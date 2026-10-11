@@ -49,11 +49,14 @@ public final class ClientWaypoints implements ClientModInitializer {
                 }
             }
         });
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(
-            literal("waypoint")
-                .executes(context -> create(context.getSource().getClient(), null))
-                .then(argument("name", StringArgumentType.greedyString())
-                    .executes(context -> create(context.getSource().getClient(), StringArgumentType.getString(context, "name"))))));
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            for (String name : new String[] {"waypoint", "웨이포인트"}) {
+                dispatcher.register(literal(name)
+                    .executes(context -> create(context.getSource().getClient(), null))
+                    .then(argument("name", StringArgumentType.greedyString())
+                        .executes(context -> create(context.getSource().getClient(), StringArgumentType.getString(context, "name")))));
+            }
+        });
     }
 
     private static int create(Minecraft client, String requestedName) {

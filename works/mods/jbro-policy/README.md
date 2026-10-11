@@ -5,21 +5,21 @@ jbro 포켓몬 서버에 적용하는 정책과 다듬기 기능을 하나로 �
 - Mod ID: `jbro_policy`
 - 실행 환경: 서버와 클라이언트 모두 필요
 - 필요 모드: Fabric API, Fabric Language Kotlin, Cobblemon 1.8.1
-- 선택 모드: More Cobblemon Contents: League Challenge(채팅 등급), Cobblenav(`/pokenav`)
+- 선택 모드: More Cobblemon Contents: League Challenge(채팅 등급), Cobblenav(`/pokenav`, `/포켓내비`), Simple MyRoom(`/마이룸`)
 - 설정 파일: `config/jbro-policy.json`
 - 새 서버를 열 때 맞출 설정: [docs/SERVER_OPEN_CHECKLIST.md](docs/SERVER_OPEN_CHECKLIST.md)
 
 ## Xaero 웨이포인트
 
 클라이언트에 Xaero's Minimap과 `jbro-policy`를 함께 설치하면 B 키 또는
-`/waypoint [이름]`으로 현재 위치에 영구 웨이포인트를 바로 저장합니다. 이름을 생략하면
+`/waypoint [이름]`(`/웨이포인트 [이름]`)으로 현재 위치에 영구 웨이포인트를 바로 저장합니다. 이름을 생략하면
 `Waypoint`입니다. 명령은 클라이언트에서 실행하며 이름의 줄바꿈·콜론은 허용하지 않습니다.
 접속 중 새로 생성된 Xaero 월드의 웨이포인트 텔레포트 설정은 끄고 저장합니다.
 기존 월드의 설정·기본 키를 게임 시작 전에 준비하는 코드는 `ppakemon-client-setup`에 있습니다.
 
 ## 광장
 
-`/plaza enter`로 광장 차원(`jbro_policy:plaza`)에 가고, `/plaza exit`로 들어오기 전 위치에 돌아옵니다.
+`/plaza enter`(`/광장 들어가기`)로 광장 차원(`jbro_policy:plaza`)에 가고, `/plaza exit`(`/광장 나가기`)로 들어오기 전 위치에 돌아옵니다.
 
 - 이동 대기시간과 피해 후 대기시간은 없습니다. 포켓몬 배틀 중에는 오갈 수 없습니다.
 - 복귀 위치는 월드 데이터에 저장되므로 광장에서 접속을 끊어도 나중에 돌아갈 수 있습니다.
@@ -55,7 +55,8 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 - **첫 접속 키트:** 처음 접속한 플레이어에게 몬스터볼 20개와 상처약 10개를 주고 환영 메시지를 보냅니다. `config/jbro-policy-discord.json`의 `inviteUrl`이 있으면 눌러서 여는 디스코드 초대 링크도 함께 보냅니다(`/디코인증`과 같은 링크). 이 모드를 넣기 전에 접속한 적이 있는 플레이어는 받지 않습니다.
 - **`/wiki` (`/위키`):** 서버 위키가 켜져 있을 때 내 정보와 함께 위키를 여는 링크를 줍니다. `/wiki reset`은 새 링크를 주고 예전 링크를 막으며, `/wiki link <플레이어>`는 OP가 다른 사람의 링크를 받습니다. 위키 서버 자체는 More Cobblemon Contents가 띄우므로, 그 모드가 있을 때만 생깁니다.
 - **ESC 메뉴 버튼:** ESC 메뉴 왼쪽 위에 같은 너비의 "빡켓몬 위키"·"빡켓몬 디스코드" 버튼이 있습니다. 누르면 서버에 링크를 받아 바로 브라우저로 엽니다. 위키는 `/wiki`와 같은 개인 링크이고, 디스코드는 `jbro-policy-discord.json`의 `inviteUrl`입니다. 둘 중 없는 것은 채팅으로 꺼져 있다고 알려 주고, 이 모드가 없는 서버에서는 버튼이 비활성화됩니다.
-- **`/pokenav`:** 포켓내비 아이템 없이 Cobblenav의 포켓내비 화면을 엽니다. Cobblenav의 `/pokenav` 하위 명령도 그대로 쓸 수 있습니다.
+- **`/pokenav` (`/포켓내비`):** 포켓내비 아이템 없이 Cobblenav의 포켓내비 화면을 엽니다. Cobblenav의 `/pokenav` 하위 명령도 그대로 쓸 수 있습니다.
+- **`/마이룸`:** Simple MyRoom의 명령을 한국어로 씁니다. 각 하위 명령은 모드의 영어 명령(`/myroom`, 없으면 `/room`)을 그대로 실행하므로 권한·규칙·메시지는 모드 설정을 따릅니다. `들어가기 [플레이어]`(enter), `나가기`(exit), `공개`/`비공개`(public true/false), `권한허용`/`권한해제 <플레이어>`(trust/untrust), `차단`/`차단해제 <플레이어>`(ban/unban), `내보내기 <플레이어>`(kick), `상시활성 [켜기|끄기|상태]`(active), `스폰설정 [초기화]`(setspawn), `방문자`(visitors), `알림 [켜기|끄기]`(notify), `리로드`(reload, OP). `/마이룸`만 입력하면 모드의 방 정보와 도움말이 나오며, 도움말 문구는 서버의 `config/simple-myroom-messages.json`에서 한국어 명령으로 맞춥니다.
 - **`/release <슬롯>`:** 파티 포켓몬을 놓아줍니다. 채팅의 [예]를 2분 안에 눌러야 확정되고, 마지막 포켓몬은 놓아줄 수 없습니다.
 - **포켓몬 아이템 우클릭 복원:** PokemonToItem으로 만든 포켓몬 아이템을 들고 우클릭하면 `/itemtopoke`처럼 포켓몬으로 되돌립니다. 파티가 가득 찼다면 PC로 보내고, 아이템은 한 개만 사라집니다. `/itemtopoke`의 OP 권한 설정과 관계없이 누구나 쓸 수 있습니다.
 - **꺼낸 포켓몬 우클릭 정보창:** 내보낸 내 포켓몬을 우클릭하면 M키로 그 포켓몬을 고른 것과 같은 정보창이 열립니다. 상처약·사탕·진화 아이템처럼 Cobblemon이 그 클릭을 처리했다면 정보창은 열리지 않습니다. 몬스터볼·음식·활·도감처럼 우클릭 기능이 따로 있는 아이템은 어느 모드 것이든 그 기능을 그대로 쓰고, 그 밖의 아이템을 들었거나 맨손이면 정보창이 열립니다. 웅크리고 우클릭하면 원래처럼 상호작용 휠이 뜹니다.
@@ -261,7 +262,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
     ]
   },
   "tipIntervalSeconds": 60,
-  "tips": ["/plaza enter로 광장에 갈 수 있습니다. 돌아올 때는 /plaza exit를 입력하세요.", "..."]
+  "tips": ["/광장 들어가기로 광장에 갈 수 있습니다. 돌아올 때는 /광장 나가기를 입력하세요.", "..."]
 }
 ```
 

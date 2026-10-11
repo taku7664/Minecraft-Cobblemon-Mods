@@ -26,11 +26,11 @@
 
   "biome.jbro_policy.plaza": "광장",
   "message.jbro_policy.hub.bed_denied": "마이룸과 광장에서는 침대를 사용할 수 없어 침대로 스폰 지점을 지정할 수 없습니다.",
-  "message.jbro_policy.plaza.usage": "사용법: /plaza enter (입장), /plaza exit (퇴장)",
+  "message.jbro_policy.plaza.usage": "사용법: /광장 들어가기, /광장 나가기",
   "message.jbro_policy.plaza.already_here": "이미 광장에 있습니다.",
   "message.jbro_policy.plaza.battle": "포켓몬 전투 중에는 광장을 오갈 수 없습니다.",
   "message.jbro_policy.plaza.unavailable": "광장 차원을 불러오지 못했습니다.",
-  "message.jbro_policy.plaza.arrived": "광장에 도착했습니다. /plaza exit으로 원래 위치에 돌아갈 수 있습니다.",
+  "message.jbro_policy.plaza.arrived": "광장에 도착했습니다. /광장 나가기로 원래 위치에 돌아갈 수 있습니다.",
   "message.jbro_policy.plaza.exit_outside": "복귀 명령은 광장에서만 사용할 수 있습니다.",
   "message.jbro_policy.plaza.returned": "원래 위치로 복귀했습니다.",
   "message.jbro_policy.plaza.fell": "광장 아래로 떨어져 원래 위치로 돌아왔습니다.",
@@ -41,7 +41,7 @@
 
   "message.jbro_policy.welcome.greeting": "코블몬 서버에 오신 것을 환영합니다!",
   "message.jbro_policy.welcome.starter": "M키를 눌러 스타팅 포켓몬을 받아주세요.",
-  "message.jbro_policy.welcome.pokenav": "/pokenav 명령으로 언제든 포켓내비를 열 수 있습니다.",
+  "message.jbro_policy.welcome.pokenav": "/포켓내비 명령으로 언제든 포켓내비를 열 수 있습니다.",
   "message.jbro_policy.welcome.discord": "빡켓몬 디스코드에서 공지를 받고 질문도 할 수 있어요: %s",
 
   "message.jbro_policy.release.empty": "파티 %s번 슬롯이 비어 있습니다.",
@@ -57,6 +57,7 @@
   "message.jbro_policy.pokemon_item.failed": "이 아이템의 포켓몬을 되돌리지 못했습니다.",
 
   "message.jbro_policy.pokenav.failed": "포켓내비를 열지 못했습니다.",
+  "message.jbro_policy.myroom.unavailable": "마이룸을 지금 쓸 수 없습니다.",
 
   "message.jbro_policy.inquiry.sent": "문의를 보냈습니다. 피츄 봇에게 전달했어요.",
   "message.jbro_policy.inquiry.empty": "문의 사유를 입력하세요.",

@@ -41,6 +41,7 @@ object JbroPolicy : ModInitializer {
             LOGGER.warn(message, failure)
         }
         Plaza.register()
+        jbro.cobblemon.policy.plaza.MyRoomCommand.register()
         WildPokemonPolicy.register(config)
         WelcomeKit.register()
         PartyRelease.register()

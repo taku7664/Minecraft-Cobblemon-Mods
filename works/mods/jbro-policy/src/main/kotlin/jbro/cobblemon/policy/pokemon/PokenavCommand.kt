@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 /**
- * `/pokenav` opens Cobblenav's Pokenav without the item, the way using the item does. Cobblenav also registers a
+ * `/pokenav` (`/포켓내비`) opens Cobblenav's Pokenav without the item, the way using the item does. Cobblenav also registers a
  * `pokenav` root for its own subcommands; Brigadier merges the two, so those keep working.
  */
 object PokenavCommand {
@@ -20,7 +20,7 @@ object PokenavCommand {
     fun register() {
         if (!FabricLoader.getInstance().isModLoaded("cobblenav")) return
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-            dispatcher.register(Commands.literal("pokenav").executes { open(it.source.playerOrException) })
+            for (name in listOf("pokenav", "포켓내비")) dispatcher.register(Commands.literal(name).executes { open(it.source.playerOrException) })
         }
     }
 

@@ -30,10 +30,12 @@ object Plaza {
     fun register() {
         PlazaProtection.register()
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-            dispatcher.register(Commands.literal("plaza")
-                .executes { it.source.sendFailure(message("usage")); 0 }
-                .then(Commands.literal("enter").executes { enter(it.source.playerOrException) })
-                .then(Commands.literal("exit").executes { exit(it.source.playerOrException) }))
+            for ((root, enterName, exitName) in listOf(Triple("plaza", "enter", "exit"), Triple("광장", "들어가기", "나가기"))) {
+                dispatcher.register(Commands.literal(root)
+                    .executes { it.source.sendFailure(message("usage")); 0 }
+                    .then(Commands.literal(enterName).executes { enter(it.source.playerOrException) })
+                    .then(Commands.literal(exitName).executes { exit(it.source.playerOrException) }))
+            }
         }
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             val level = server.getLevel(DIMENSION)
