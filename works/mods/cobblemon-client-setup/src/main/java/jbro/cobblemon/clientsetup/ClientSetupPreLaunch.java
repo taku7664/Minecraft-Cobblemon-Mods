@@ -45,6 +45,13 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             LOGGER.error("Could not apply keybinding defaults; initialization will retry next launch", exception);
         }
         try {
+            if (KeybindingSetup.resolveSendOutConflict(loader.getGameDir(), installedMods)) {
+                LOGGER.info("Unbound Iris shader reload: it shared a key with Cobblemon send-out");
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Could not check the Iris reload and Cobblemon send-out keys", exception);
+        }
+        try {
             int moved = XaeroWorldReset.apply(loader.getGameDir(), loader.getConfigDir());
             if (moved > 0) LOGGER.info("Moved {} Xaero map caches of the reset live server aside", moved);
         } catch (IOException exception) {

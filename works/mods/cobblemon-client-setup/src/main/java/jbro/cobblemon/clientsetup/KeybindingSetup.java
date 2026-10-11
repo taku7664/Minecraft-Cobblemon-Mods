@@ -72,6 +72,31 @@ public final class KeybindingSetup {
         return (int) pending.stream().map(Rule::modId).distinct().count();
     }
 
+    private static final String IRIS_RELOAD = "key_iris.keybind.reload";
+    private static final String SEND_OUT = "key_key.cobblemon.throwpartypokemon";
+    private static final String DEFAULT_R = "key.keyboard.r";
+
+    /**
+     * Checked on every launch, apart from the once-only rules and their records: Iris reloads shaders on R by default,
+     * the same key that sends out a Pokémon. If both resolve to one key, unbind the shader reload. A missing line means
+     * the mod's default, R for both. Returns whether options.txt changed.
+     */
+    public static synchronized boolean resolveSendOutConflict(Path gameDirectory, Set<String> installedMods) throws IOException {
+        if (!installedMods.contains("iris") || !installedMods.contains("cobblemon")) return false;
+        Path optionsFile = gameDirectory.resolve("options.txt");
+        String original = Files.exists(optionsFile) ? Files.readString(optionsFile) : "";
+        String reload = binding(original, IRIS_RELOAD, DEFAULT_R);
+        if (reload.equals("key.keyboard.unknown") || !reload.equals(binding(original, SEND_OUT, DEFAULT_R))) return false;
+        String updated = setKeys(SetupFiles.seedOptions(original), List.of(new Rule("iris", List.of(IRIS_RELOAD))));
+        SetupFiles.atomicWrite(optionsFile, updated);
+        return true;
+    }
+
+    private static String binding(String options, String key, String fallback) {
+        var matcher = Pattern.compile("(?m)^" + Pattern.quote(key) + ":([^\\r\\n]*)").matcher(options);
+        return matcher.find() ? matcher.group(1).trim() : fallback;
+    }
+
     public static ClientSetup.ApplyMode mode(Path configDirectory) throws IOException {
         return SetupFiles.mode(configDirectory, MODE, ClientSetup.ApplyMode.ONCE);
     }

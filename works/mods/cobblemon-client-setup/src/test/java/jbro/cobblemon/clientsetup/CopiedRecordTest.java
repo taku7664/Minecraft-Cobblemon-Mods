@@ -55,6 +55,23 @@ final class CopiedRecordTest {
         assertEquals("true", SetupFiles.readState(config()).getProperty(XaeroWorldReset.RULE));
     }
 
+    @Test void sendOutConflictIsResolvedOnEveryLaunchWhateverTheRecordSays() throws Exception {
+        Set<String> mods = Set.of("iris", "cobblemon");
+        // Brand-new profile: no options.txt, both keys on their R default.
+        assertTrue(KeybindingSetup.resolveSendOutConflict(game, mods));
+        assertTrue(Files.readString(game.resolve("options.txt")).contains("key_iris.keybind.reload:key.keyboard.unknown\n"));
+        assertFalse(KeybindingSetup.resolveSendOutConflict(game, mods));
+        // Someone puts the reload back on R later: unbound again.
+        Files.writeString(game.resolve("options.txt"), "key_iris.keybind.reload:key.keyboard.r\n");
+        assertTrue(KeybindingSetup.resolveSendOutConflict(game, mods));
+        // Different keys are a player's choice and stay.
+        Files.writeString(game.resolve("options.txt"), "key_iris.keybind.reload:key.keyboard.r\nkey_key.cobblemon.throwpartypokemon:key.keyboard.g\n");
+        assertFalse(KeybindingSetup.resolveSendOutConflict(game, mods));
+        Files.writeString(game.resolve("options.txt"), "key_iris.keybind.reload:key.keyboard.g\nkey_key.cobblemon.throwpartypokemon:key.keyboard.g\n");
+        assertTrue(KeybindingSetup.resolveSendOutConflict(game, mods));
+        assertFalse(KeybindingSetup.resolveSendOutConflict(game, Set.of("iris")));
+    }
+
     @Test void ownRecordIsKept() throws Exception {
         assertEquals(1, KeybindingSetup.apply(game, config(), Set.of("iris")));
         assertEquals(0, KeybindingSetup.apply(game, config(), Set.of("iris")));
