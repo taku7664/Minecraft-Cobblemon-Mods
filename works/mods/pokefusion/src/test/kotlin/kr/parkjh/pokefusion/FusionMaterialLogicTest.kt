@@ -15,18 +15,6 @@ class FusionMaterialLogicTest {
     }
 
     @Test
-    fun `material slots stay contiguous and wrap after five inputs`() {
-        assertEquals(listOf(31), FusionMaterialLogic.visibleSlots(0))
-        assertEquals(listOf(30, 31), FusionMaterialLogic.visibleSlots(1))
-        assertEquals(listOf(30, 31, 32), FusionMaterialLogic.visibleSlots(2))
-        assertEquals((29..32).toList(), FusionMaterialLogic.visibleSlots(3))
-        assertEquals((29..33).toList() + listOf(40), FusionMaterialLogic.visibleSlots(5))
-        assertEquals((29..33).toList() + (39..40).toList(), FusionMaterialLogic.visibleSlots(6))
-        assertEquals((29..33).toList() + (38..41).toList(), FusionMaterialLogic.visibleSlots(8))
-        assertEquals((29..33).toList() + (38..41).toList(), FusionMaterialLogic.visibleSlots(9))
-    }
-
-    @Test
     fun `a material contributes when it supplies a final iv above the base`() {
         val base = intArrayOf(20, 20, 20, 20, 20, 20)
         val materials = listOf(

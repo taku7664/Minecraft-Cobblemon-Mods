@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.util.Unit as MinecraftUnit
 import net.minecraft.world.Container
 import net.minecraft.world.SimpleContainer
 import net.minecraft.world.entity.player.Inventory
@@ -11,6 +12,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.inventory.MenuType
+import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ItemLore
@@ -20,7 +22,7 @@ class PokeFusionMenu(
     syncId: Int,
     inventory: Inventory,
     private val serverPlayer: ServerPlayer
-) : ChestMenu(MenuType.GENERIC_9x6, syncId, inventory, SimpleContainer(SIZE), ROWS) {
+) : ChestMenu(MenuType.GENERIC_9x6, syncId, inventory, SimpleContainer(PokeFusionLayout.SIZE), PokeFusionLayout.ROWS) {
     private val fusionContainer: Container = getContainer()
     private var baseInput = ItemStack.EMPTY
     private val materialInputs = mutableListOf<ItemStack>()
@@ -39,16 +41,16 @@ class PokeFusionMenu(
     }
 
     override fun clicked(slotIndex: Int, button: Int, clickType: ClickType, player: Player) {
-        if (slotIndex == CONFIRM_SLOT && clickType == ClickType.PICKUP) {
+        if (slotIndex == PokeFusionLayout.CONFIRM_SLOT && clickType == ClickType.PICKUP) {
             confirmFusion()
             return
         }
 
-        if (slotIndex in 0 until SIZE) {
+        if (slotIndex in 0 until PokeFusionLayout.SIZE) {
             if (clickType != ClickType.PICKUP) return
             when {
-                slotIndex == BASE_SLOT -> handleBaseClick()
-                slotIndex in FusionMaterialLogic.visibleSlots(materialInputs.size) -> handleMaterialClick(slotIndex)
+                slotIndex == PokeFusionLayout.BASE_SLOT -> handleBaseClick()
+                PokeFusionLayout.materialIndexOf(slotIndex) >= 0 -> handleMaterialClick(slotIndex)
                 else -> return
             }
             refreshDisplay()
@@ -62,7 +64,7 @@ class PokeFusionMenu(
 
     override fun quickMoveStack(player: Player, index: Int): ItemStack {
         if (!storageAvailable) return ItemStack.EMPTY
-        if (index < SIZE || index >= slots.size) return ItemStack.EMPTY
+        if (index < PokeFusionLayout.SIZE || index >= slots.size) return ItemStack.EMPTY
         val sourceSlot = slots[index]
         val sourceStack = sourceSlot.item
         if (!PokeFusionService.isPokemonItem(sourceStack)) return ItemStack.EMPTY
@@ -116,8 +118,7 @@ class PokeFusionMenu(
 
     private fun handleMaterialClick(slotIndex: Int) {
         if (!storageAvailable) return
-        val displayedSlots = FusionMaterialLogic.visibleSlots(materialInputs.size)
-        val materialIndex = displayedSlots.indexOf(slotIndex)
+        val materialIndex = PokeFusionLayout.materialIndexOf(slotIndex)
         if (materialIndex < 0) return
 
         val cursor = carried
@@ -126,7 +127,9 @@ class PokeFusionMenu(
                 val removed = materialInputs.removeAt(materialIndex)
                 if (persistInputs()) setCarried(removed) else materialInputs.add(materialIndex, removed)
             }
-            materialIndex == materialInputs.size && !cursor.isEmpty && acceptPokemon(cursor) -> {
+            // 빈 재료 칸 어디를 눌러도 다음 순서 칸에 채운다.
+            materialIndex >= materialInputs.size && materialInputs.size < FusionMaterialLogic.MAX_MATERIALS &&
+                !cursor.isEmpty && acceptPokemon(cursor) -> {
                 materialInputs += cursor.copy()
                 if (persistInputs()) setCarried(ItemStack.EMPTY) else materialInputs.removeLast()
             }
@@ -136,7 +139,7 @@ class PokeFusionMenu(
     private fun acceptPokemon(stack: ItemStack): Boolean {
         if (PokeFusionService.isPokemonItem(stack)) return true
         serverPlayer.displayClientMessage(
-            Component.translatable("message.pokefusion.invalid_item").withStyle(ChatFormatting.RED),
+            PokeFusionText.of("message.pokefusion.invalid_item").withStyle(ChatFormatting.RED),
             false
         )
         return false
@@ -144,38 +147,83 @@ class PokeFusionMenu(
 
     private fun refreshDisplay() {
         fusionContainer.clearContent()
+        drawFrame()
 
-        fusionContainer.setItem(BASE_SLOT, baseInput.copy())
+        fusionContainer.setItem(
+            PokeFusionLayout.BASE_SLOT,
+            if (baseInput.isEmpty) emptySlot(Items.LIGHT_BLUE_STAINED_GLASS_PANE, "item.pokefusion.slot.base", ChatFormatting.AQUA)
+            else baseInput.copy()
+        )
 
         val contributions = PokeFusionService.materialContributions(serverPlayer, baseInput, materialInputs)
-        val displayedSlots = FusionMaterialLogic.visibleSlots(materialInputs.size)
-        materialInputs.forEachIndexed { index, input ->
-            val display = input.copy()
-            if (contributions.getOrElse(index) { false }) {
-                display.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+        PokeFusionLayout.MATERIAL_SLOTS.forEachIndexed { index, slot ->
+            val input = materialInputs.getOrNull(index)
+            val display = if (input == null) {
+                emptySlot(Items.LIME_STAINED_GLASS_PANE, "item.pokefusion.slot.material", ChatFormatting.GREEN)
+            } else {
+                input.copy().also {
+                    if (contributions.getOrElse(index) { false }) it.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+                }
             }
-            fusionContainer.setItem(displayedSlots[index], display)
-        }
-        if (materialInputs.size < FusionMaterialLogic.MAX_MATERIALS) {
-            fusionContainer.setItem(displayedSlots.last(), ItemStack.EMPTY)
+            fusionContainer.setItem(slot, display)
         }
 
         refreshPreview()
     }
 
+    private fun drawFrame() {
+        PokeFusionLayout.decorationSlots().forEach { slot ->
+            fusionContainer.setItem(
+                slot,
+                ItemStack(Items.GRAY_STAINED_GLASS_PANE).also { it.set(DataComponents.HIDE_TOOLTIP, MinecraftUnit.INSTANCE) }
+            )
+        }
+        fusionContainer.setItem(
+            PokeFusionLayout.BASE_LABEL_SLOT,
+            label(Items.LIGHT_BLUE_STAINED_GLASS, "item.pokefusion.label.base", ChatFormatting.AQUA)
+        )
+        fusionContainer.setItem(
+            PokeFusionLayout.MATERIAL_LABEL_SLOT,
+            label(
+                Items.LIME_STAINED_GLASS,
+                "item.pokefusion.label.material",
+                ChatFormatting.GREEN,
+                materialInputs.size,
+                FusionMaterialLogic.MAX_MATERIALS
+            )
+        )
+        fusionContainer.setItem(
+            PokeFusionLayout.PREVIEW_LABEL_SLOT,
+            label(Items.YELLOW_STAINED_GLASS, "item.pokefusion.label.preview", ChatFormatting.YELLOW)
+        )
+        fusionContainer.setItem(PokeFusionLayout.ARROW_SLOT, named(ItemStack(Items.ARROW), "item.pokefusion.arrow", ChatFormatting.WHITE))
+    }
+
+    private fun label(item: Item, key: String, color: ChatFormatting, vararg arguments: Any): ItemStack =
+        withHint(named(ItemStack(item), key, color, *arguments), "$key.hint")
+
+    private fun emptySlot(item: Item, key: String, color: ChatFormatting): ItemStack =
+        withHint(named(ItemStack(item), key, color), "$key.hint")
+
+    private fun withHint(stack: ItemStack, hintKey: String): ItemStack {
+        val line = PokeFusionText.of(hintKey).withStyle { it.withColor(ChatFormatting.GRAY).withItalic(false) }
+        stack.set(DataComponents.LORE, ItemLore(listOf(line)))
+        return stack
+    }
+
     private fun refreshPreview() {
         if (!storageAvailable) {
-            fusionContainer.setItem(PREVIEW_SLOT, named(ItemStack(Items.BARRIER), "item.pokefusion.storage_error", ChatFormatting.RED))
-            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
+            fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, named(ItemStack(Items.BARRIER), "item.pokefusion.storage_error", ChatFormatting.RED))
+            fusionContainer.setItem(PokeFusionLayout.CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
             return
         }
         val pendingCount = PendingOutputService.count(serverPlayer)
         if (pendingCount > 0) {
             fusionContainer.setItem(
-                PREVIEW_SLOT,
+                PokeFusionLayout.PREVIEW_SLOT,
                 named(ItemStack(Items.CHEST), "item.pokefusion.pending_results", ChatFormatting.YELLOW, pendingCount)
             )
-            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.retry_results", ChatFormatting.GREEN))
+            fusionContainer.setItem(PokeFusionLayout.CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.retry_results", ChatFormatting.GREEN))
             return
         }
         when (val result = PokeFusionService.createResult(serverPlayer, baseInput, materialInputs)) {
@@ -184,14 +232,14 @@ class PokeFusionMenu(
                 val oldLore = preview.get(DataComponents.LORE)?.lines() ?: emptyList()
                 preview.set(
                     DataComponents.LORE,
-                    ItemLore(oldLore + Component.translatable("item.pokefusion.preview").withStyle(ChatFormatting.GREEN))
+                    ItemLore(oldLore + PokeFusionText.of("item.pokefusion.preview").withStyle(ChatFormatting.GREEN))
                 )
-                fusionContainer.setItem(PREVIEW_SLOT, preview)
-                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.confirm", ChatFormatting.GREEN))
+                fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, preview)
+                fusionContainer.setItem(PokeFusionLayout.CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.confirm", ChatFormatting.GREEN))
             }
             is PokeFusionService.Result.Failure -> {
-                fusionContainer.setItem(PREVIEW_SLOT, statusItem(result.reason))
-                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
+                fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, statusItem(result.reason))
+                fusionContainer.setItem(PokeFusionLayout.CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
             }
         }
     }
@@ -211,7 +259,7 @@ class PokeFusionMenu(
                 } catch (exception: Exception) {
                     LOGGER.error("Pokefusion 결과를 저장하지 못해 합성을 취소했습니다.", exception)
                     serverPlayer.displayClientMessage(
-                        Component.translatable("message.pokefusion.store_result_failed")
+                        PokeFusionText.of("message.pokefusion.store_result_failed")
                             .withStyle(ChatFormatting.RED),
                         false
                     )
@@ -224,7 +272,7 @@ class PokeFusionMenu(
                 deliverPendingOutputs()
                 if (PendingOutputService.count(serverPlayer) == 0) {
                     serverPlayer.displayClientMessage(
-                        Component.translatable("message.pokefusion.completed").withStyle(ChatFormatting.GREEN),
+                        PokeFusionText.of("message.pokefusion.completed").withStyle(ChatFormatting.GREEN),
                         false
                     )
                 }
@@ -252,7 +300,7 @@ class PokeFusionMenu(
         }
         if (PendingOutputService.count(serverPlayer) > 0) {
             serverPlayer.displayClientMessage(
-                Component.translatable("message.pokefusion.delivery_incomplete")
+                PokeFusionText.of("message.pokefusion.delivery_incomplete")
                     .withStyle(ChatFormatting.RED),
                 false
             )
@@ -276,18 +324,22 @@ class PokeFusionMenu(
 
     private fun showStorageFailure() {
         serverPlayer.displayClientMessage(
-            Component.translatable("message.pokefusion.store_input_failed").withStyle(ChatFormatting.RED),
+            PokeFusionText.of("message.pokefusion.store_input_failed").withStyle(ChatFormatting.RED),
             false
         )
     }
 
     private fun statusItem(reason: PokeFusionService.ValidationFailure): ItemStack {
+        // 아직 덜 넣은 상태는 오류가 아니므로 결과 칸 자리표시로 보여준다.
+        if (reason == PokeFusionService.ValidationFailure.MISSING_INPUT) {
+            return emptySlot(Items.YELLOW_STAINED_GLASS_PANE, "item.pokefusion.slot.preview", ChatFormatting.YELLOW)
+        }
         return named(ItemStack(Items.BARRIER), failureKey("item", reason), ChatFormatting.RED)
     }
 
     private fun showFailure(reason: PokeFusionService.ValidationFailure) {
         serverPlayer.displayClientMessage(
-            Component.translatable(failureKey("message", reason)).withStyle(ChatFormatting.RED),
+            PokeFusionText.of(failureKey("message", reason)).withStyle(ChatFormatting.RED),
             false
         )
     }
@@ -298,9 +350,9 @@ class PokeFusionMenu(
         color: ChatFormatting? = null,
         vararg arguments: Any
     ): ItemStack {
-        var component = Component.translatable(translationKey, *arguments)
+        var component = PokeFusionText.of(translationKey, *arguments)
         if (color != null) component = component.withStyle(color)
-        stack.set(DataComponents.CUSTOM_NAME, component)
+        stack.set(DataComponents.ITEM_NAME, component)
         return stack
     }
 
@@ -316,11 +368,6 @@ class PokeFusionMenu(
     }
 
     companion object {
-        private const val ROWS = 6
-        private const val SIZE = ROWS * 9
-        private const val BASE_SLOT = 11
-        private const val PREVIEW_SLOT = 15
-        private const val CONFIRM_SLOT = 49
         private val LOGGER = LoggerFactory.getLogger(PokeFusionMenu::class.java)
     }
 }
