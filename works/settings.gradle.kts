@@ -17,6 +17,7 @@ include(
     "cobblemon-custom-species",
     "cobblemon-dimensions",
     "cobblemon-npc",
+    "cobblemon-party-sidebar",
     "ppakemon-client-setup",
     "font-glyph-race-fix",
     "jbro-policy",

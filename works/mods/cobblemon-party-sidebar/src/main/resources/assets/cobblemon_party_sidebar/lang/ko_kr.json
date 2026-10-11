@@ -1,0 +1,14 @@
+{
+  "cobblemon_party_sidebar.tooltip.level": "Lv.%s",
+  "cobblemon_party_sidebar.tooltip.hp": "HP %s/%s",
+  "cobblemon_party_sidebar.tooltip.nature": "성격",
+  "cobblemon_party_sidebar.tooltip.ability": "특성",
+  "cobblemon_party_sidebar.tooltip.iv": "개체값",
+  "cobblemon_party_sidebar.tooltip.ev": "노력치",
+  "cobblemon_party_sidebar.message.in_battle": "배틀 중에는 지닌 물건을 바꿀 수 없습니다.",
+  "cobblemon_party_sidebar.message.inventory_full": "인벤토리에 빈 칸이 없습니다.",
+  "config.cobblemon_party_sidebar.title": "코블몬 파티 사이드바",
+  "config.cobblemon_party_sidebar.enabled": "파티 표시",
+  "config.cobblemon_party_sidebar.tooltip": "포켓몬 툴팁",
+  "config.cobblemon_party_sidebar.save_failed": "설정을 저장하지 못했습니다."
+}

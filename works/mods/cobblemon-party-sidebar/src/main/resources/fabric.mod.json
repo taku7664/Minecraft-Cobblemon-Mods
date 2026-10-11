@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_party_sidebar",
+  "version": "${version}",
+  "name": "Cobblemon Party Sidebar",
+  "description": "Shows the Cobblemon party beside the survival inventory. Drag held items in and out, and drag Pokemon to reorder the party.",
+  "authors": [
+    "jbro"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.partysidebar.CobblemonPartySidebar"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.partysidebar.client.CobblemonPartySidebarClient"
+      }
+    ],
+    "modmenu": [
+      "jbro.cobblemon.partysidebar.client.SidebarModMenu"
+    ],
+    "emi": [
+      "jbro.cobblemon.partysidebar.compat.PartySidebarEmiPlugin"
+    ]
+  },
+  "mixins": [
+    "cobblemon_party_sidebar.mixins.json"
+  ],
+  "accessWidener": "cobblemon_party_sidebar.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0"
+  },
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/cobblemon-party-sidebar",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "emi": "*"
+  }
+}
