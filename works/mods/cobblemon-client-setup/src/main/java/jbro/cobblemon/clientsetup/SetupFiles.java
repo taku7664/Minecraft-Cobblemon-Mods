@@ -85,7 +85,10 @@ final class SetupFiles {
                 changed = true;
             }
         }
-        if (!changed) return;
+        if (changed) saveState(directory, state);
+    }
+
+    static void saveState(Path directory, Properties state) throws IOException {
         StringWriter text = new StringWriter();
         state.store(text, "Applied once; later launches preserve user settings");
         atomicWrite(stateFile(directory), text.toString());

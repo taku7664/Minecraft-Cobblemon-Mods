@@ -63,11 +63,13 @@ Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTT
 
 ## 첫 실행 기본 옵션
 
-모드팩에 `options.txt`·`optionsshaders.txt`를 넣으면 팩을 업데이트할 때마다 플레이어 설정을 덮어쓸 수 있어서, 팩에서는 두 파일을 빼고 이 훅이 처음 한 번만 기본값을 넣습니다. 그 뒤에는 플레이어가 바꾼 값을 그대로 둡니다.
+모드팩에 `options.txt`·`config/iris.properties`를 넣으면 팩을 업데이트할 때마다 플레이어 설정을 덮어쓸 수 있어서, 팩에서는 두 파일을 빼고 이 훅이 새로 설치한 클라이언트에만 기본값을 넣습니다.
 
-- `options.txt`(`options-defaults-v1`): `lang:ko_kr`, `skipMultiplayerWarning:true`, `joinedFirstServer:true`, `tutorialStep:none`. `resourcePacks`에서 팩 기본 리소스팩 10개(알림음, CCC, 한국어 번역, 음악, Galmuri, Whimscape 두 종, RCT Trainers+, MoreRadicalTextures, E19 Xaero 아이콘)를 이 순서로 켭니다. `resourcepacks/`에 실제로 있는 파일만 켜고, 이름은 패턴으로 찾으므로 버전이 바뀌어도 잡힙니다. 같은 팩의 옛 버전 항목은 빼고, 플레이어가 따로 켠 팩과 모드 내장 팩은 유지합니다.
-- `optionsshaders.txt`(`shader-defaults-v1`): Iris가 있고 `shaderpacks/`에 LumaVale이 있으면 가장 높은 버전을 `shaderPack`으로 넣고 `enableShaders=true`로 켭니다. LumaVale이 아직 없으면 표시하지 않고 다음 실행에 다시 시도합니다.
-- 매 실행: `shaderPack`이 설치되지 않은 LumaVale 파일을 가리키면 설치된 LumaVale로 바꿉니다. 켜짐·꺼짐과 다른 셰이더 선택은 건드리지 않습니다.
+**첫 실행과 업데이트 구분:** 이 규칙이 처음 실행될 때 `options.txt`가 없거나 비어 있으면 새 설치로, 있으면 기존 프로필의 업데이트로 보고 `fresh-install=true|false`로 기록합니다. 판정은 한 번만 하며, 이 규칙이 `options.txt`를 쓰는 다른 규칙보다 먼저 돕니다. 업데이트한 프로필은 언어·리소스팩 선택과 순서·셰이더 켜짐을 바꾸지 않고 완료 기록만 남깁니다.
+
+- `options.txt`(`options-defaults-v1`, 새 설치만): `lang:ko_kr`, `skipMultiplayerWarning:true`, `joinedFirstServer:true`, `tutorialStep:none`. `resourcePacks`에서 팩 기본 리소스팩 10개(알림음, CCC, 한국어 번역, 음악, Galmuri, Whimscape 두 종, RCT Trainers+, MoreRadicalTextures, E19 Xaero 아이콘)를 이 순서로 켭니다. `resourcepacks/`에 실제로 있는 파일만 켜고, 이름은 패턴으로 찾으며 같은 팩이 여러 버전이면 숫자로 비교해 가장 높은 버전(`CCC_2.21` > `CCC_2.9`)을 고릅니다.
+- `config/iris.properties`(`shader-defaults-v2`, 새 설치만): Iris가 있고 `shaderpacks/`에 LumaVale이 있으면 가장 높은 버전을 `shaderPack`으로 넣고 `enableShaders=true`로 켭니다. LumaVale이 아직 없으면 표시하지 않고 다음 실행에 다시 시도합니다. v1은 Iris가 읽지 않는 OptiFine용 `optionsshaders.txt`에 썼기 때문에 기록 이름을 올렸습니다.
+- 매 실행(새 설치·업데이트 공통): 켜진 리소스팩 중 우리 팩 파일이 사라졌으면(팩 업데이트로 버전이 바뀐 경우) 같은 자리에 설치된 새 버전으로 바꿉니다. 새 버전이 이미 켜져 있거나 없으면 사라진 항목만 뺍니다. 실제로 있는 파일·폴더형 팩과 플레이어 팩은 건드리지 않습니다. `shaderPack`이 설치되지 않은 LumaVale 파일을 가리킬 때도 설치된 LumaVale로 바꾸며, 켜짐·꺼짐과 다른 셰이더 선택은 그대로 둡니다.
 
 ## Xaero 지도 설정
 
@@ -83,7 +85,7 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - 전체 지도는 N, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다.
 - 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 접속 중 새로 생성된 월드는 `jbro-policy`가 처리합니다.
 - 운영 서버 월드 초기화(2026-10-11, 광장만 유지·같은 시드)에 맞춰 `xaero/minimap`, `xaero/world-map`의 `Multiplayer_210.207.108.196` 폴더(포트가 붙은 이름 포함)를 한 번만 `cobblemon_client_setup/backups/xaero-world-reset-2026-10-11/`로 옮깁니다. 예전 건물·웨이포인트가 새 월드 지도에 남지 않게 하려는 것이며, 다른 서버와 싱글 월드 지도는 건드리지 않고 아무것도 지우지 않습니다.
-- `resourcepacks/E19-Xaero-Icons-1.5.1.zip`이 설치되어 있으면 활성화하고 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
+- `resourcepacks/E19-Xaero-Icons-<버전>.zip`이 설치되어 있으면 가장 높은 버전을 활성화하고(옛 버전 항목은 뺌) 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
 - JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
 
 Xaero의 기본 적용 방식은 `ALWAYS`입니다. Mod Menu에서 `ONCE`로 바꾸면 각 지도 모드의

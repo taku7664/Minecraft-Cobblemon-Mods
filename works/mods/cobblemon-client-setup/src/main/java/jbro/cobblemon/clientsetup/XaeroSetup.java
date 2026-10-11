@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 /** Xaero's preset is prepared using files only, before either map mod initializes. */
 public final class XaeroSetup {
     private static final String MODE = "xaero.mode";
-    private static final String ICON_PACK = "E19-Xaero-Icons-1.5.1.zip";
+    private static final Pattern ICON_PACK = Pattern.compile("E19-Xaero-Icons-[^/]*\\.zip");
     private static final List<String> MAPS = List.of("xaerominimap", "xaeroworldmap");
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private XaeroSetup() {}
@@ -89,8 +89,8 @@ public final class XaeroSetup {
                 options = option(options, "key_gui.xaero_" + key, "key.keyboard.unknown");
         }
         options = packs(options, "resourcePacks", removeJourneyMap, minimap,
-            Files.isRegularFile(gameDirectory.resolve("resourcepacks").resolve(ICON_PACK)));
-        options = packs(options, "incompatibleResourcePacks", removeJourneyMap, false, false);
+            OptionsSetup.newestPack(gameDirectory, ICON_PACK).orElse(null));
+        options = packs(options, "incompatibleResourcePacks", removeJourneyMap, false, null);
         writes.put(optionsFile, options);
 
         SetupFiles.ensureMode(configDirectory, MODE, mode);
@@ -226,10 +226,10 @@ public final class XaeroSetup {
         }
     }
 
-    private static String packs(String original, String key, boolean removeJourneyMap, boolean selectIcons, boolean packExists) throws IOException {
+    private static String packs(String original, String key, boolean removeJourneyMap, boolean selectIcons, String iconPack) throws IOException {
         var matcher = Pattern.compile("(?m)^" + Pattern.quote(key) + ":([^\\r\\n]*)").matcher(original);
         boolean present = matcher.find();
-        if (!present && !(selectIcons && packExists)) return original;
+        if (!present && !(selectIcons && iconPack != null)) return original;
         try {
             JsonArray before = present ? JsonParser.parseString(matcher.group(1)).getAsJsonArray() : new JsonArray();
             JsonArray after = new JsonArray();
@@ -238,10 +238,10 @@ public final class XaeroSetup {
                 if (!entry.isJsonPrimitive() || !entry.getAsJsonPrimitive().isString()) throw new IllegalArgumentException("Pack IDs must be strings");
                 String id = entry.getAsString();
                 if (removeJourneyMap && (id.equals("file/cc-journeymap-icons.zip") || id.equals("file/Maxi's-JM+CM_Pixel-U11.zip"))) continue;
-                if (selectIcons && id.equals("file/" + ICON_PACK)) continue;
+                if (selectIcons && id.startsWith("file/") && ICON_PACK.matcher(id.substring(5)).matches()) continue;
                 after.add(entry);
             }
-            if (selectIcons && packExists) after.add("file/" + ICON_PACK);
+            if (selectIcons && iconPack != null) after.add("file/" + iconPack);
             return after.equals(before) ? original : option(original, key, after.toString());
         } catch (RuntimeException exception) {
             throw new IOException("Invalid Minecraft " + key + " list", exception);

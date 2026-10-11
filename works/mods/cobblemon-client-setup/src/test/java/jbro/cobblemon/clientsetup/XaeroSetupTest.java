@@ -46,6 +46,13 @@ final class XaeroSetupTest {
         assertFalse(keys.contains("file/E19-Xaero-Icons-1.5.1.zip"));
     }
 
+    @Test void newerIconPackVersionReplacesTheOldEntry() throws Exception {
+        write(game.resolve("resourcepacks/E19-Xaero-Icons-1.6.0.zip"), "installed");
+        write(options(), "version:3955\nresourcePacks:[\"vanilla\",\"file/E19-Xaero-Icons-1.5.1.zip\",\"file/other.zip\"]\n");
+        XaeroSetup.apply(game, config(), Set.of("xaerominimap"));
+        assertTrue(Files.readString(options()).contains("resourcePacks:[\"vanilla\",\"file/other.zip\",\"file/E19-Xaero-Icons-1.6.0.zip\"]\n"));
+    }
+
     @Test void alwaysRepairsPresetWhilePreservingOtherSettingsAndPackOrder() throws Exception {
         write(minimap(), "# personal\r\nprofile_name = My map\r\nwaypoints_in_world = true # keep\r\nzoom = 3\r\n");
         write(radar(), "{\"settingOverrides\":{\"icons\":0,\"names\":1},\"custom\":42}");
