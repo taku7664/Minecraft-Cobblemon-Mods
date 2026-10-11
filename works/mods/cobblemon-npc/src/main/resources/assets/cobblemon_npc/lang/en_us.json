@@ -82,6 +82,8 @@
   "config.cobblemon_npc.save_failed": "Could not save settings. Check the log.",
   "screen.cobblemon_npc.pick_skin": "Skins ▶",
   "screen.cobblemon_npc.skin_picker": "Trainer, NPC and Pokemon skins",
+  "screen.cobblemon_npc.tab.people": "People",
+  "screen.cobblemon_npc.tab.pokemon": "Pokemon",
   "screen.cobblemon_npc.skin_count": "%s skins",
   "screen.cobblemon_npc.skins_missing": "No skins available. Check your enabled resource packs.",
   "screen.cobblemon_npc.pick_dialogue": "List ▶",

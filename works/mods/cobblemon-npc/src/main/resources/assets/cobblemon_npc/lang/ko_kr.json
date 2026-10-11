@@ -82,6 +82,8 @@
   "config.cobblemon_npc.save_failed": "설정 저장 실패. 로그를 확인해 주세요.",
   "screen.cobblemon_npc.pick_skin": "스킨 ▶",
   "screen.cobblemon_npc.skin_picker": "트레이너·NPC·포켓몬 스킨",
+  "screen.cobblemon_npc.tab.people": "사람",
+  "screen.cobblemon_npc.tab.pokemon": "포켓몬",
   "screen.cobblemon_npc.skin_count": "스킨 %s개",
   "screen.cobblemon_npc.skins_missing": "사용 가능한 스킨이 없습니다. 리소스팩을 확인해 주세요.",
   "screen.cobblemon_npc.pick_dialogue": "목록 ▶",

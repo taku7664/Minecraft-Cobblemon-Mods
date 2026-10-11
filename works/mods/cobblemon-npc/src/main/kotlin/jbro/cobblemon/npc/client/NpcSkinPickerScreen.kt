@@ -10,77 +10,85 @@ import jbro.cobblemon.uikit.UiModelFraming
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
+import net.minecraft.Util
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.AbstractWidget
-import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.components.ObjectSelectionList
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
 /**
- * Picks a trainer or NPC skin from the enabled resource packs, or a Cobblemon Pokemon, with a search box and a
- * full-body preview. Duplicate images within a namespace are listed once; tooltips show their complete IDs.
+ * Picks a trainer or NPC skin from the enabled resource packs, or a Cobblemon Pokemon, on two tabs, from a vanilla
+ * scrolling list with a search box and a full-body preview. Duplicate images within a namespace are listed once;
+ * tooltips show complete IDs. A double click picks a row.
  */
 class NpcSkinPickerScreen(private val parent: Screen, current: String, private val pick: (String) -> Unit) :
     NpcEditorScreen(Component.translatable("screen.cobblemon_npc.skin_picker")) {
-    private val skins = availableSkins() + availablePokemon()
-    private val labels = skins.associateWith(::labelOf)
+    private enum class Tab(val key: String) { PEOPLE("screen.cobblemon_npc.tab.people"), POKEMON("screen.cobblemon_npc.tab.pokemon") }
+
+    private val people = availableSkins()
+    private val pokemon = availablePokemon()
+    private val labels = (people + pokemon).associateWith(::labelOf)
+    private var tab = if (NpcSkinRef.parse(current) is NpcSkinRef.Pokemon) Tab.POKEMON else Tab.PEOPLE
     private var query = ""
-    private var offset = 0
     private var selected: String? = NpcSkinRef.parse(current).takeIf { it is NpcSkinRef.Texture || it is NpcSkinRef.Pokemon }
         ?.toString()?.takeIf { it in labels }
-    private val rows = mutableListOf<AbstractWidget>()
     /** The chosen skin drawn beside the list: where, what, and its name. */
     private var preview: Triple<UiRect, CobblemonUiRenderContent, Component>? = null
     private var choose: AbstractWidget? = null
-    private lateinit var search: EditBox
+    private lateinit var list: SkinList
 
     override fun init() {
         super.init()
+        status = null
         panel(MARGIN, MARGIN, width - MARGIN * 2, height - MARGIN * 2, title)
-        search = field(MARGIN + 10, MARGIN + 24, LIST_WIDTH, query, Component.translatable("screen.cobblemon_npc.hint.search"), 64)
+        val left = MARGIN + 10
+        var y = MARGIN + 22
+        val tabWidth = (LIST_WIDTH - 4) / 2
+        Tab.entries.forEachIndexed { index, each ->
+            button(left + index * (tabWidth + 4), y, Component.translatable(each.key),
+                if (each == tab) UiButtonVariant.PRIMARY else UiButtonVariant.SECONDARY, tabWidth) {
+                if (tab != each) {
+                    tab = each
+                    query = ""
+                    rebuildWidgets()
+                }
+            }
+        }
+        y += BUTTON_HEIGHT + 4
+        val search = field(left, y, LIST_WIDTH, query, Component.translatable("screen.cobblemon_npc.hint.search"), 64)
+        y += FIELD_HEIGHT + 4
+        val actionsY = height - MARGIN - 30
+        list = addRenderableWidget(SkinList(LIST_WIDTH, (actionsY - 6 - y).coerceAtLeast(ITEM), y).also { it.x = left })
         search.setResponder {
             query = it
-            offset = 0
-            refreshRows()
+            refreshList()
         }
-        val actionsY = height - MARGIN - 30
         choose = button(width - MARGIN - 10 - 2 * ACTION_WIDTH - 6, actionsY, Component.translatable("screen.cobblemon_npc.pick"),
-            UiButtonVariant.PRIMARY, ACTION_WIDTH) {
-            selected?.let { pick(it) }
-            onClose()
-        }
+            UiButtonVariant.PRIMARY, ACTION_WIDTH) { choose() }
         button(width - MARGIN - 10 - ACTION_WIDTH, actionsY, Component.translatable("gui.cancel"), UiButtonVariant.GHOST, ACTION_WIDTH) {
             onClose()
         }
-        if (skins.isEmpty()) showResult(false, Component.translatable("screen.cobblemon_npc.skins_missing"))
-        else label(Component.translatable("screen.cobblemon_npc.skin_count", skins.size), MARGIN + 10, actionsY + 6)
-        refreshRows()
+        val shown = shown()
+        if (shown.isEmpty()) showResult(false, Component.translatable("screen.cobblemon_npc.skins_missing"))
+        else label(Component.translatable("screen.cobblemon_npc.skin_count", shown.size), left, actionsY + 6)
+        refreshList()
+        refreshPreview()
         setInitialFocus(search)
     }
 
-    private fun filtered() = query.trim().lowercase().let { text ->
-        skins.filter { text.isEmpty() || text in it.lowercase() || text in labels.getValue(it).lowercase() }
+    private fun shown() = if (tab == Tab.POKEMON) pokemon else people
+
+    private fun refreshList() {
+        val text = query.trim().lowercase()
+        list.show(shown().filter { text.isEmpty() || text in it.lowercase() || text in labels.getValue(it).lowercase() })
     }
 
-    private fun listTop() = MARGIN + 24 + FIELD_HEIGHT + 6
-
-    private fun refreshRows() {
-        rows.forEach(::removeWidget)
-        rows.clear()
-        val matches = filtered()
-        val visible = ((height - MARGIN - 40 - listTop()) / ROW).coerceAtLeast(1)
-        offset = offset.coerceIn(0, (matches.size - visible).coerceAtLeast(0))
-        matches.drop(offset).take(visible).forEachIndexed { index, file ->
-            val variant = if (file == selected) UiButtonVariant.PRIMARY else UiButtonVariant.GHOST
-            rows += button(MARGIN + 10, listTop() + index * ROW, Component.literal(labels.getValue(file)), variant, LIST_WIDTH) {
-                selected = file
-                refreshRows()
-            }.also { it.setTooltip(Tooltip.create(Component.literal(file))) }
-        }
-        refreshPreview()
+    private fun choose() {
+        selected?.let { pick(it) }
+        onClose()
     }
 
     private fun refreshPreview() {
@@ -104,13 +112,48 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         graphics.drawCenteredString(font, name, bounds.x + bounds.width / 2, bounds.bottom + 3, 0xFFFFFF)
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
-        if (mouseX < MARGIN + 10 + LIST_WIDTH && scrollY != 0.0) {
-            offset -= scrollY.toInt().coerceIn(-1, 1) * 3
-            refreshRows()
+    /** Minecraft's own scrolling list, as the language and resource pack screens use, with its scrollbar. */
+    private inner class SkinList(width: Int, height: Int, y: Int) :
+        ObjectSelectionList<SkinEntry>(Minecraft.getInstance(), width, height, y, ITEM) {
+        fun show(values: List<String>) {
+            replaceEntries(values.map { SkinEntry(it) })
+            val chosen = children().firstOrNull { it.value == selected }
+            super.setSelected(chosen)
+            if (chosen != null) centerScrollOn(chosen) else setScrollAmount(0.0)
+        }
+
+        override fun setSelected(entry: SkinEntry?) {
+            super.setSelected(entry)
+            if (entry != null && entry.value != selected) {
+                selected = entry.value
+                refreshPreview()
+            }
+        }
+
+        override fun getRowWidth() = getWidth() - 16
+
+        override fun getScrollbarPosition() = getX() + getWidth() - 6
+    }
+
+    private inner class SkinEntry(val value: String) : ObjectSelectionList.Entry<SkinEntry>() {
+        private val label = Component.literal(labels.getValue(value))
+        private var lastClick = 0L
+
+        override fun getNarration(): Component = label
+
+        override fun render(graphics: GuiGraphics, index: Int, top: Int, left: Int, width: Int, height: Int,
+                            mouseX: Int, mouseY: Int, hovering: Boolean, partialTick: Float) {
+            val color = if (value == selected) 0xFFFF55 else 0xFFFFFF
+            graphics.drawString(Minecraft.getInstance().font, label, left + 3, top + (height - 8) / 2, color)
+            if (hovering) setTooltipForNextRenderPass(Component.literal(value))
+        }
+
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+            val now = Util.getMillis()
+            if (now - lastClick < DOUBLE_CLICK && value == selected) choose()
+            lastClick = now
             return true
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
     }
 
     override fun onClose() {
@@ -120,8 +163,9 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
     companion object {
         private const val MARGIN = 8
         private const val LIST_WIDTH = 200
-        private const val ROW = 21
+        private const val ITEM = 16
         private const val ACTION_WIDTH = 80
+        private const val DOUBLE_CLICK = 250L
 
         private fun labelOf(skin: String): String = when (val ref = NpcSkinRef.parse(skin)) {
             is NpcSkinRef.Pokemon -> NpcPokemonForms.form(ref)?.species?.translatedName?.string ?: ref.path

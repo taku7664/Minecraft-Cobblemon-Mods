@@ -22,7 +22,8 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
   (`pokemon:vulpix alolan shiny`), or `pokemon:<namespace>:<species>` for a species another mod adds. The NPC stands
   on Cobblemon's model with its idle animation, at a wild one's size, and its hitbox is that form's hitbox, so large
   Pokemon are clicked where their model stands. The dialogue box shows its portrait in place of a face. The skin
-  picker lists every implemented species and searches its name as well. An unknown species falls back to a player
+  picker keeps people and Pokemon on separate tabs; its Pokemon tab lists every implemented species and searches
+  its name as well. The list scrolls with a scrollbar, and a double click picks a row. An unknown species falls back to a player
   skin.
 - The dialogue **List ▶** button opens the server's dialogue IDs as a searchable, scrollable list.
 - NPCs do not move, take damage or despawn, and `/kill` does not kill them either (a removed NPC cannot be
