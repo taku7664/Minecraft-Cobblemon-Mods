@@ -13,6 +13,8 @@ inventory texture, so it matches the inventory under any resource pack.
   press **I** (rebindable) over it, to turn it into a PokemonToItem item, as `/poketoitem` would. Drop or click such an
   item on an empty Pokemon frame to put the Pokemon back in that party slot, as `/itemtopoke` would. Each needs
   permission for the matching command; the Pokemon tooltip names the key.
+- **Fusion:** the button at the foot of the column opens PokeFusion's window, as `/pokefusion` does. It is greyed out
+  when the server has no such command for you.
 
 Held items cannot be changed during a battle, and Cobblemon's held-item tags (`cobblemon:held/blacklisted_items_to_hold`,
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI

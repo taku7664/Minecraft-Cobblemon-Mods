@@ -14,5 +14,6 @@
   "cobblemon_party_sidebar.hint.itemize": "%s키 눌러 아이템화",
   "cobblemon_party_sidebar.message.itemize_in_battle": "배틀 중에는 포켓몬을 아이템화하거나 되돌릴 수 없습니다.",
   "key.cobblemon_party_sidebar.itemize": "가리킨 포켓몬 아이템화",
-  "key.categories.cobblemon_party_sidebar": "코블몬 파티 사이드바"
+  "key.categories.cobblemon_party_sidebar": "코블몬 파티 사이드바",
+  "button.cobblemon_party_sidebar.fusion": "포켓몬 합성"
 }

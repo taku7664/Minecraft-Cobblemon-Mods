@@ -18,6 +18,8 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.RenderType
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.item.ItemStack
 import org.joml.Vector4f
@@ -35,6 +37,9 @@ import java.util.UUID
  * on the inventory, or the itemize key over it, turns it into a PokemonToItem item ([ItemizePayload]); the Pokemon
  * tooltip names the key. A PokemonToItem item clicked or dropped on an empty Pokemon frame goes back into that party
  * slot ([RestorePayload]).
+ *
+ * Under the rows a button opens PokeFusion's window, as `/pokefusion` does; it is off when the server has no such
+ * command for the player.
  */
 object PartySidebar {
     private const val ROWS = 6
@@ -45,6 +50,13 @@ object PartySidebar {
     const val WIDTH = PADDING * 2 + FRAME + COLUMN_GAP + SLOT
     private const val ROWS_HEIGHT = FRAME * ROWS
     private const val MODEL_SIZE = 20
+    private const val BUTTON_HEIGHT = 16
+    private const val BUTTON_GAP = 4
+    private const val BUTTON_INSET = 4
+    private const val FUSION_COMMAND = "pokefusion"
+    private val BUTTON = ResourceLocation.withDefaultNamespace("widget/button")
+    private val BUTTON_HOVERED = ResourceLocation.withDefaultNamespace("widget/button_highlighted")
+    private val BUTTON_DISABLED = ResourceLocation.withDefaultNamespace("widget/button_disabled")
     private val EMPTY_HELD_ITEM = CobblemonPartySidebar.id("textures/gui/empty_held_item.png")
 
     // Vanilla's recipe book: its width, how far it shifts left of the centre, and the screen width below which it
@@ -68,6 +80,13 @@ object PartySidebar {
         fun cellY(row: Int, column: Column) = rowY(row) + if (column == Column.MODEL) 0 else (FRAME - SLOT) / 2
 
         fun cellSize(column: Column) = if (column == Column.MODEL) FRAME else SLOT
+
+        /** The fusion button: across the column at its foot, below the rows. */
+        fun fusionX() = x + BUTTON_INSET
+        fun fusionY() = y + height - PADDING - BUTTON_HEIGHT
+        fun fusionWidth() = width - BUTTON_INSET * 2
+        fun overFusion(mouseX: Double, mouseY: Double) =
+            mouseX >= fusionX() && mouseX < fusionX() + fusionWidth() && mouseY >= fusionY() && mouseY < fusionY() + BUTTON_HEIGHT
 
         fun hit(mouseX: Double, mouseY: Double): Hit? {
             for (row in 0 until ROWS) for (column in Column.entries) {
@@ -107,7 +126,8 @@ object PartySidebar {
         }
         val x = anchor - WIDTH
         if (x < 0) return null
-        return Bounds(x, screen.topPos, WIDTH, maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT))
+        return Bounds(x, screen.topPos, WIDTH,
+            maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT + BUTTON_GAP + BUTTON_HEIGHT))
     }
 
     fun contains(screen: InventoryScreen, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
@@ -145,6 +165,25 @@ object PartySidebar {
                 if (highlight) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + size - 1, y + size - 1, HIGHLIGHT)
             }
         }
+        drawFusionButton(graphics, bounds)
+    }
+
+    /** A vanilla button from the active resource pack, its label shrunk to fit the narrow column. */
+    private fun drawFusionButton(graphics: GuiGraphics, bounds: Bounds) {
+        val enabled = serverHas(FUSION_COMMAND)
+        val hovered = enabled && bounds.overFusion(mouseX, mouseY)
+        val x = bounds.fusionX()
+        val y = bounds.fusionY()
+        val width = bounds.fusionWidth()
+        graphics.blitSprite(if (!enabled) BUTTON_DISABLED else if (hovered) BUTTON_HOVERED else BUTTON, x, y, width, BUTTON_HEIGHT)
+        val font = Minecraft.getInstance().font
+        val label = Component.translatableWithFallback("button.cobblemon_party_sidebar.fusion", "포켓몬 합성")
+        val scale = minOf(1f, (width - 4f) / font.width(label))
+        graphics.pose().pushPose()
+        graphics.pose().translate(x + width / 2f, y + (BUTTON_HEIGHT - font.lineHeight * scale) / 2f + scale, 0f)
+        graphics.pose().scale(scale, scale, 1f)
+        graphics.drawString(font, label, -font.width(label) / 2, 0, if (enabled) 0xFFFFFF else 0xA0A0A0, true)
+        graphics.pose().popPose()
     }
 
     fun renderOverlay(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
@@ -175,6 +214,12 @@ object PartySidebar {
         if (!bounds.contains(mouseX, mouseY)) {
             press = Press.Inventory
             return false
+        }
+        if (bounds.overFusion(mouseX, mouseY)) {
+            if (button == 0 && serverHas(FUSION_COMMAND)) {
+                Minecraft.getInstance().player?.connection?.sendCommand(FUSION_COMMAND)
+            }
+            return true
         }
         val hit = bounds.hit(mouseX, mouseY) ?: return true
         val pokemon = party(hit.row)
