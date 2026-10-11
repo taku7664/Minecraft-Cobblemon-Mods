@@ -1,5 +1,6 @@
 package jbro.cobblemon.npc.client
 
+import jbro.cobblemon.npc.dialogue.NpcSkinRef
 import jbro.cobblemon.npc.network.DialogueAnswerPayload
 import jbro.cobblemon.npc.network.DialogueLeavePayload
 import jbro.cobblemon.npc.network.DialogueShowPayload
@@ -14,6 +15,7 @@ import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.CobblemonUiListRows
+import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiListRowContent
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.UiTextRenderer
@@ -97,7 +99,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         // A talk plays as a scene: the letterbox first, the dialogue box floating over it.
         CinematicLetterbox.renderBars(graphics, 0f)
-        drawBox(graphics)
+        drawBox(graphics, partialTick)
         if (choicesShown) drawChoices(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
     }
@@ -206,7 +208,16 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         return UiRect((this.width - width) / 2, top.coerceAtLeast(4), width, height)
     }
 
-    private fun drawBox(graphics: GuiGraphics) {
+    // A Pokemon speaker shows its portrait where a person shows their face.
+    private fun drawFace(graphics: GuiGraphics, x: Int, y: Int, partialTick: Float) {
+        if (NpcSkinRef.parse(show.skin) is NpcSkinRef.Pokemon) {
+            CobblemonUiRenderSlot.drawContent(graphics, UiRect(x, y, FACE, FACE), NpcSkins.content(show.skin), partialTick)
+        } else {
+            PlayerFaceRenderer.draw(graphics, NpcSkins.skin(show.skin), x, y, FACE)
+        }
+    }
+
+    private fun drawBox(graphics: GuiGraphics, partialTick: Float) {
         val font = minecraft!!.font
         val theme = CobblemonUiThemes.registry.snapshot()
         val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
@@ -228,7 +239,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
             val plateWidth = faceWidth + font.width(name) + 16
             val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
             UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, plate.surface)
-            if (hasFace) PlayerFaceRenderer.draw(graphics, NpcSkins.skin(show.skin), plateLeft + 8, box.y - 12, FACE)
+            if (hasFace) drawFace(graphics, plateLeft + 8, box.y - 12, partialTick)
             UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, box.y - 10, plate.text, plate.textShadowColor)
         }
 

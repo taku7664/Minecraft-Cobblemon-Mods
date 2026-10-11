@@ -1,6 +1,7 @@
 package jbro.cobblemon.npc.content
 
 import jbro.cobblemon.npc.CobblemonNpc
+import jbro.cobblemon.npc.dialogue.NpcSkinRef
 import jbro.cobblemon.npc.server.DialogueSessions
 import jbro.cobblemon.npc.server.NpcEditorService
 import net.minecraft.nbt.CompoundTag
@@ -14,9 +15,11 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.damagesource.DamageTypes
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityDimensions
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.Mob
 import net.minecraft.world.entity.PathfinderMob
+import net.minecraft.world.entity.Pose
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal
@@ -25,8 +28,9 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 
 /**
- * A person standing in the world in a player's skin. It does not move, take damage or despawn; a right click opens
- * its dialogue, and a right click with the wand opens its settings for an operator.
+ * A person standing in the world in a player's skin, or a Pokemon when its skin names one. It does not move, take
+ * damage or despawn; a right click opens its dialogue, and a right click with the wand opens its settings for an
+ * operator.
  */
 class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(type, level) {
     /** The dialogue a right click opens; blank for none. */
@@ -37,6 +41,9 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
         get() = entityData.get(SKIN)
         set(value) = entityData.set(SKIN, value)
 
+    /** A Pokemon skin whose species data was not there yet, so its hitbox is sized again once it arrives. */
+    private var hitboxPending = false
+
     init {
         setPersistenceRequired()
         isInvulnerable = true
@@ -45,6 +52,25 @@ class NpcEntity(type: EntityType<out NpcEntity>, level: Level) : PathfinderMob(t
     override fun defineSynchedData(builder: SynchedEntityData.Builder) {
         super.defineSynchedData(builder)
         builder.define(SKIN, "")
+    }
+
+    override fun onSyncedDataUpdated(key: EntityDataAccessor<*>) {
+        super.onSyncedDataUpdated(key)
+        if (key == SKIN) refreshDimensions()
+    }
+
+    // A Pokemon NPC is as large as a wild one of its form, so it is clicked and collides where its model stands.
+    override fun getDefaultDimensions(pose: Pose): EntityDimensions {
+        val pokemon = NpcSkinRef.parse(skinName) as? NpcSkinRef.Pokemon
+        val dimensions = pokemon?.let(NpcPokemonForms::dimensions)
+        hitboxPending = pokemon != null && dimensions == null
+        return dimensions ?: super.getDefaultDimensions(pose)
+    }
+
+    override fun tick() {
+        super.tick()
+        // Species data reaches a client after the entities around it; size the hitbox once it is there.
+        if (hitboxPending && tickCount % 20 == 0) refreshDimensions()
     }
 
     override fun registerGoals() {

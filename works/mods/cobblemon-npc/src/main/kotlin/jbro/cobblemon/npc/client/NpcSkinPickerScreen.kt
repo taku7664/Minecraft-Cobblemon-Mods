@@ -1,5 +1,7 @@
 package jbro.cobblemon.npc.client
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import jbro.cobblemon.npc.content.NpcPokemonForms
 import jbro.cobblemon.npc.dialogue.NpcSkinRef
 import com.mojang.blaze3d.platform.NativeImage
 import java.security.MessageDigest
@@ -16,16 +18,17 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 
 /**
- * Picks a trainer or NPC skin from the enabled resource packs, with a search box and a full-body preview.
- * Duplicate images within a namespace are listed once; tooltips show their complete texture IDs.
+ * Picks a trainer or NPC skin from the enabled resource packs, or a Cobblemon Pokemon, with a search box and a
+ * full-body preview. Duplicate images within a namespace are listed once; tooltips show their complete IDs.
  */
 class NpcSkinPickerScreen(private val parent: Screen, current: String, private val pick: (String) -> Unit) :
     NpcEditorScreen(Component.translatable("screen.cobblemon_npc.skin_picker")) {
-    private val skins = availableSkins()
+    private val skins = availableSkins() + availablePokemon()
+    private val labels = skins.associateWith(::labelOf)
     private var query = ""
     private var offset = 0
-    private var selected: String? = (NpcSkinRef.parse(current) as? NpcSkinRef.Texture)?.toString()
-        ?.takeIf { it in skins }
+    private var selected: String? = NpcSkinRef.parse(current).takeIf { it is NpcSkinRef.Texture || it is NpcSkinRef.Pokemon }
+        ?.toString()?.takeIf { it in labels }
     private val rows = mutableListOf<AbstractWidget>()
     private var preview: AbstractWidget? = null
     private var choose: AbstractWidget? = null
@@ -55,7 +58,9 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         setInitialFocus(search)
     }
 
-    private fun filtered() = skins.filter { query.isBlank() || query.trim().lowercase() in it.lowercase() }
+    private fun filtered() = query.trim().lowercase().let { text ->
+        skins.filter { text.isEmpty() || text in it.lowercase() || text in labels.getValue(it).lowercase() }
+    }
 
     private fun listTop() = MARGIN + 24 + FIELD_HEIGHT + 6
 
@@ -67,7 +72,7 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         offset = offset.coerceIn(0, (matches.size - visible).coerceAtLeast(0))
         matches.drop(offset).take(visible).forEachIndexed { index, file ->
             val variant = if (file == selected) UiButtonVariant.PRIMARY else UiButtonVariant.GHOST
-            rows += button(MARGIN + 10, listTop() + index * ROW, Component.literal(file.substringAfterLast('/').removeSuffix(".png")), variant, LIST_WIDTH) {
+            rows += button(MARGIN + 10, listTop() + index * ROW, Component.literal(labels.getValue(file)), variant, LIST_WIDTH) {
                 selected = file
                 refreshRows()
             }.also { it.setTooltip(Tooltip.create(Component.literal(file))) }
@@ -85,7 +90,7 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         val slotWidth = (slotHeight / 2).coerceAtMost(width - MARGIN - 10 - left)
         if (slotWidth <= 0 || slotHeight <= 0) return
         preview = addRenderableOnly(CobblemonUiRenderSlot.create(left, top, slotWidth, slotHeight,
-            UiRenderSlotSpec(Component.literal(file.substringAfterLast('/').removeSuffix(".png"))), NpcSkins.content(file, UiModelFraming.FULL_BODY)))
+            UiRenderSlotSpec(Component.literal(labels.getValue(file))), NpcSkins.content(file, UiModelFraming.FULL_BODY)))
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
@@ -106,6 +111,20 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         private const val LIST_WIDTH = 200
         private const val ROW = 21
         private const val ACTION_WIDTH = 80
+
+        private fun labelOf(skin: String): String = when (val ref = NpcSkinRef.parse(skin)) {
+            is NpcSkinRef.Pokemon -> NpcPokemonForms.form(ref)?.species?.translatedName?.string ?: ref.path
+            else -> skin.substringAfterLast('/').removeSuffix(".png")
+        }
+
+        /** Every species with a Cobblemon model on this client, in Pokedex order. */
+        fun availablePokemon(): List<String> = try {
+            PokemonSpecies.implemented.sortedBy { it.nationalPokedexNumber }.map {
+                NpcSkinRef.pokemon(it.resourceIdentifier.namespace, it.resourceIdentifier.path)
+            }
+        } catch (_: RuntimeException) {
+            emptyList()
+        }
 
         /** Discover player skins in trainer/NPC/skin directories across all enabled mods and packs. */
         fun availableSkins(): List<String> {

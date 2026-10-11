@@ -3,6 +3,7 @@ package jbro.cobblemon.npc.client
 import com.mojang.authlib.GameProfile
 import com.mojang.blaze3d.platform.NativeImage
 import jbro.cobblemon.npc.CobblemonNpc
+import jbro.cobblemon.npc.content.NpcPokemonForms
 import jbro.cobblemon.npc.dialogue.NpcSkinRef
 import jbro.cobblemon.uikit.UiIcon
 import jbro.cobblemon.uikit.UiModelFraming
@@ -49,7 +50,7 @@ object NpcSkins : SimpleSynchronousResourceReloadListener {
     }
 
     fun skin(value: String): PlayerSkin = when (val ref = NpcSkinRef.parse(value)) {
-        NpcSkinRef.Default -> fallback(value)
+        NpcSkinRef.Default, is NpcSkinRef.Pokemon -> fallback(value)
         is NpcSkinRef.Player -> profile(ref.name)?.let(Minecraft.getInstance().skinManager::getInsecureSkin) ?: fallback(value)
         is NpcSkinRef.Texture -> {
             val texture = ResourceLocation.fromNamespaceAndPath(ref.namespace, ref.path)
@@ -60,6 +61,9 @@ object NpcSkins : SimpleSynchronousResourceReloadListener {
     /** The NPC drawn in a UI kit render slot, the way its skin field names it. */
     fun content(value: String, framing: UiModelFraming = UiModelFraming.PORTRAIT): CobblemonUiRenderContent {
         val ref = NpcSkinRef.parse(value)
+        if (ref is NpcSkinRef.Pokemon) {
+            return CobblemonUiRenderContent.Pokemon(NpcPokemonForms.id(ref), ref.aspects, stateKey = "cobblemon_npc:$ref")
+        }
         if (ref is NpcSkinRef.Player) profile(ref.name)?.let { return CobblemonUiRenderContent.PlayerProfile(it, framing) }
         val skin = skin(value)
         return CobblemonUiRenderContent.PlayerSkin(UiIcon(skin.texture().namespace, skin.texture().path),

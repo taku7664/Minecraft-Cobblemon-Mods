@@ -27,6 +27,20 @@ class NpcSkinRefTest {
     }
 
     @Test
+    fun `pokemon skins name a species and the aspects that pick its form`() {
+        assertEquals(NpcSkinRef.Pokemon("cobblemon", "pikachu"), NpcSkinRef.parse("pokemon:pikachu"))
+        assertEquals(NpcSkinRef.Pokemon("cobblemon", "vulpix", setOf("alolan", "shiny")), NpcSkinRef.parse(" pokemon:Vulpix  alolan shiny "))
+        assertEquals(NpcSkinRef.Pokemon("mymod", "fakemon"), NpcSkinRef.parse("pokemon:mymod:fakemon"))
+        assertEquals("pokemon:vulpix alolan shiny", NpcSkinRef.parse("pokemon:vulpix alolan shiny").toString())
+        assertEquals("pokemon:mymod:fakemon", NpcSkinRef.pokemon("mymod", "fakemon"))
+        // A pack namespaced `pokemon` still names textures by path.
+        assertEquals(NpcSkinRef.Texture("pokemon", "textures/npcs/guide.png"), NpcSkinRef.parse("pokemon:textures/npcs/guide.png"))
+        listOf("pokemon:", "pokemon:  ", "pokemon:a:b:c", "pokemon:pikachu sh!ny").forEach {
+            assertEquals(NpcSkinRef.Default, NpcSkinRef.parse(it), it)
+        }
+    }
+
+    @Test
     fun `anything else falls back to the default skin`() {
         listOf("", "   ", "rct:", "rct:../x", "rct:Big Name", "a:textures/../skin.png", "a:textures/skin", "A:b.png",
             "name with spaces", "way_too_long_player_name").forEach {

@@ -18,6 +18,12 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
   pack the NPC wears a default skin. The picker lists 64×64 or 64×32 PNGs under trainer, NPC, skin or player
   directories; hover a row to see its full texture ID. MCC League Challenge includes
   `more_cobblemon_contents_league_challenge:textures/npcs/wild/nurse_joy.png` and `nurse_joy_2.png`.
+- A skin can also be a Pokemon: `pokemon:pikachu`, with aspects after spaces to pick its form and texture
+  (`pokemon:vulpix alolan shiny`), or `pokemon:<namespace>:<species>` for a species another mod adds. The NPC stands
+  on Cobblemon's model with its idle animation, at a wild one's size, and its hitbox is that form's hitbox, so large
+  Pokemon are clicked where their model stands. The dialogue box shows its portrait in place of a face. The skin
+  picker lists every implemented species and searches its name as well. An unknown species falls back to a player
+  skin.
 - The dialogue **List ▶** button opens the server's dialogue IDs as a searchable, scrollable list.
 - NPCs do not move, take damage or despawn, and `/kill` does not kill them either (a removed NPC cannot be
   brought back). Remove one with the wand's remove button.
