@@ -169,6 +169,35 @@ class FactoryRentalRulesTest {
     }
 
     @Test
+    fun `an offer of a species the team holds can only replace that same species`() {
+        val team = FactoryRentalDraft((1..6).map(::rental))
+            .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+        val session = FactoryRunSession(UUID.randomUUID(), team, FactoryLevelMode.LEVEL_50, healRentals = {})
+        val battleId = UUID.randomUUID()
+        val sameSpeciesToken = UUID(2, 7)
+        session.beginBattle(battleId)
+        session.recordVictory(
+            battleId,
+            mapOf(
+                sameSpeciesToken to rental(7, species = "cobblemon:species2"),
+                UUID(2, 8) to rental(8),
+                UUID(2, 9) to rental(9),
+            ),
+            emptyMap(),
+        )
+
+        assertFalse(factorySwapKeepsSpeciesUnique(session.team.sets, "set1", "cobblemon:species2"))
+        assertTrue(factorySwapKeepsSpeciesUnique(session.team.sets, "set2", "cobblemon:species2"))
+        assertThrows<IllegalArgumentException> { session.swap("set1", sameSpeciesToken) }
+        assertEquals(FactoryRunPhase.SWAP_DECISION, session.phase)
+        assertEquals(1, session.rentAndTradeCount)
+
+        session.swap("set2", sameSpeciesToken)
+
+        assertEquals(listOf("set1", "set3", "set7"), session.team.sets.map(FactoryRentalSet::setId))
+    }
+
+    @Test
     fun `invalid opponent observations fail before healing or mutating the run`() {
         val team = FactoryRentalDraft((1..6).map(::rental))
             .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)

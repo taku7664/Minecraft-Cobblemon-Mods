@@ -52,8 +52,12 @@ internal class FactoryPlayService(
     private val random: FactoryCatalogRandom,
     private val draftOffers: FactoryDraftOfferService,
     private val startingWins: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Int = { _, _, _ -> 0 },
+    /** Resets the stored win streak of a run that ended without a loss; best records stay. Throws when it cannot. */
+    private val endStreak: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Unit = { _, _, _ -> },
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
+    /** Runs an operator set a streak on while the player had no live run of that kind; the next start keeps it. */
+    private val adminSetRuns = HashMap<UUID, MutableSet<FactoryRunKey>>()
     private val recentOpponentTrainers = RecentSelectionHistory<UUID, String>(RECENT_TRAINER_LIMIT)
     private val recentOpponentSpecies = RecentSelectionHistory<UUID, String>(RECENT_OPPONENT_SPECIES_LIMIT)
 
@@ -80,12 +84,30 @@ internal class FactoryPlayService(
                     )
                 } ?: pending.draft
                 pendingStarts[playerId] = pending.copy(draft = refreshedDraft, initialWins = value)
+            } else {
+                markAdminSet(playerId, format, levelMode, value)
             }
             return true
         }
-        val active = sessions.snapshot(playerId) ?: return true
-        if (active.format != format || active.levelMode != levelMode) return true
+        val active = sessions.snapshot(playerId)
+        if (active == null || active.format != format || active.levelMode != levelMode) {
+            markAdminSet(playerId, format, levelMode, value)
+            return true
+        }
         return sessions.adminSetWins(playerId, value)
+    }
+
+    /** A streak an operator stored outside a live run of its own is theirs, not a leftover: the next start keeps it. */
+    private fun markAdminSet(playerId: UUID, format: FactoryBattleFormat, levelMode: FactoryLevelMode, value: Int) {
+        val run = FactoryRunKey(format, levelMode)
+        if (value > 0) {
+            adminSetRuns.getOrPut(playerId, ::HashSet) += run
+        } else {
+            adminSetRuns[playerId]?.let { runs ->
+                runs -= run
+                if (runs.isEmpty()) adminSetRuns.remove(playerId)
+            }
+        }
     }
 
     @Synchronized
@@ -97,8 +119,14 @@ internal class FactoryPlayService(
         if (playerId in pendingStarts || sessions.snapshot(playerId) != null) {
             return FactoryPlayResult.Rejected(FactoryPlayError.ALREADY_ACTIVE)
         }
-        val initialWins = startingWins(playerId, format, levelMode)
-        require(initialWins >= 0) { "Factory starting wins must be non-negative" }
+        // With no live run, a stored streak was left by a run whose session is gone (a disconnect outside a battle, a
+        // server stop or crash); its rentals went with it, so it ends and the new run starts from zero. Only a streak
+        // an operator set while the player had no run carries into the next one.
+        val run = FactoryRunKey(format, levelMode)
+        val stored = startingWins(playerId, format, levelMode)
+        require(stored >= 0) { "Factory starting wins must be non-negative" }
+        val keepStored = adminSetRuns[playerId]?.contains(run) == true
+        val initialWins = if (keepStored) stored else 0
         val nextBattleNumber = FactoryProgression.nextBattleNumber(initialWins)
             ?: return FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
         val draft = draftOffers.select(
@@ -108,6 +136,11 @@ internal class FactoryPlayService(
             rentAndTradeCount = 1,
         )
             ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
+        if (!keepStored && stored > 0) endStreak(playerId, format, levelMode)
+        adminSetRuns[playerId]?.let { runs ->
+            runs -= run
+            if (runs.isEmpty()) adminSetRuns.remove(playerId)
+        }
         pendingStarts[playerId] = PendingStart(format, levelMode, draft, initialWins)
         return FactoryPlayResult.Accepted(current(playerId))
     }
@@ -178,6 +211,7 @@ internal class FactoryPlayService(
                     round,
                     recentOpponentTrainers.recent(playerId),
                     recentOpponentSpecies.recent(playerId),
+                    snapshot.teamSets.mapTo(HashSet(), FactoryRentalSet::speciesId),
                 )
             if (opponent !is FactoryOpponentSelectionResult.Selected) {
                 return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
@@ -237,8 +271,22 @@ internal class FactoryPlayService(
         }
     }
 
+    /**
+     * Gives up the player's run. A run is resumed from its stored wins, so giving one up ends that streak first: the
+     * stored streak goes to zero (no loss is counted, best records stay), or the run is kept when that fails. A run that
+     * already ended in a loss, or never won, has nothing to reset. A run lost to a disconnect or a server stop ends its
+     * streak when the player next starts one (see [start]).
+     */
     @Synchronized
     fun abandon(playerId: UUID): FactoryPlayView {
+        val pending = pendingStarts[playerId]
+        if (pending != null) {
+            if (pending.initialWins > 0) endStreak(playerId, pending.format, pending.levelMode)
+        } else {
+            sessions.snapshot(playerId)
+                ?.takeIf { it.phase != FactoryRunPhase.COMPLETE && it.wins > 0 }
+                ?.let { endStreak(playerId, it.format, it.levelMode) }
+        }
         pendingStarts.remove(playerId)
         sessions.close(playerId)
         return available(playerId)
@@ -262,6 +310,7 @@ internal class FactoryPlayService(
     @Synchronized
     fun clear() {
         pendingStarts.clear()
+        adminSetRuns.clear()
         recentOpponentTrainers.clear()
         recentOpponentSpecies.clear()
         draftOffers.clear()
@@ -326,6 +375,8 @@ internal class FactoryPlayService(
         FactoryRunPhase.DRAFT_SELECTION -> FactoryPlayPhase.ROUND_DRAFT
         FactoryRunPhase.COMPLETE -> FactoryPlayPhase.COMPLETE
     }
+
+    private data class FactoryRunKey(val format: FactoryBattleFormat, val levelMode: FactoryLevelMode)
 
     private data class PendingStart(
         val format: FactoryBattleFormat,

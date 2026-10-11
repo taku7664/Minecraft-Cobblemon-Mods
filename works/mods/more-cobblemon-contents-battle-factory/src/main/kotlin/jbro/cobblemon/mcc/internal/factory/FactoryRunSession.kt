@@ -103,6 +103,16 @@ internal class FactorySwapOffer internal constructor(
     val revealedMoveIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(revealedMoveIds))
 }
 
+/**
+ * Whether trading [outgoingSetId] away for a rental of [incomingSpeciesId] leaves [teamSets] with distinct species.
+ * An offer of a species the team already holds is only valid in exchange for that same rental.
+ */
+internal fun factorySwapKeepsSpeciesUnique(
+    teamSets: List<FactoryRentalSet>,
+    outgoingSetId: String,
+    incomingSpeciesId: String,
+): Boolean = teamSets.none { it.setId != outgoingSetId && it.speciesId == incomingSpeciesId }
+
 internal enum class FactoryRunPhase {
     READY,
     IN_BATTLE,
@@ -244,6 +254,9 @@ internal class FactoryRunSession(
         check(phase == FactoryRunPhase.SWAP_DECISION) { "Factory run is not waiting for a swap decision" }
         require(team.sets.any { it.setId == outgoingSetId }) { "Outgoing rental is not in the current Factory team" }
         val incoming = requireNotNull(offeredSets[incomingToken]) { "Unknown Factory swap token" }
+        require(factorySwapKeepsSpeciesUnique(team.sets, outgoingSetId, incoming.speciesId)) {
+            "Factory swap would put the same species on the team twice"
+        }
         val replacement = team.sets.filterNot { it.setId == outgoingSetId } + incoming
         team = FactoryRentalTeam(team.format, replacement)
         rentAndTradeCount++

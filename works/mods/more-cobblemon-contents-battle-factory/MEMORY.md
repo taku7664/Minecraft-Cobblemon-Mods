@@ -1,5 +1,15 @@
 # more-cobblemon-contents-battle-factory 작업 기록
 
+## [2026-10-11 12:20] 오픈 전 점검 수정 (구현만, 빌드·테스트 안 함)
+
+- **포기하면 연승 종료(사용자 결정):** 새 도전은 기록의 `CURRENT_FLOOR`에서 이어 가는데, 포기는 세션만 닫아서 포기 후 다시 시작하면 연승은 그대로 두고 대여 포켓몬만 다시 뽑을 수 있었다. 이제 `FactoryPlayService.abandon`이 세션을 닫기 전에 `endStreak`로 `CURRENT_FLOOR`와 `currentWinStreak`를 0으로 만든다. 배틀을 한 게 아니라서 패배 수는 늘리지 않고, 최고 기록(`HIGHEST_FLOOR`, `bestWinStreak`)은 그대로 둔다. 이미 패배로 끝난 런(COMPLETE)이나 승수 0인 런은 건드리지 않는다. 기록 저장소를 못 쓰면 포기를 거절하고 런을 그대로 둔다. 관리자 `abandon force`도 같은 경로라 연승이 끝난다.
+- **세션이 사라진 런도 연승 종료(코디네이터 후속 결정, 타워와 맞춤):** 배틀 밖에서 로그아웃하거나 서버가 멈추거나 크래시해 메모리 세션이 사라진 런은 더 이상 저장된 승수와 새 대여로 이어 가지 않는다. 살아 있는 세션이 없을 때 `start`가 저장된 연승을 같은 `endStreak` 경로로 0으로 만들고(패배 수 추가 없음, 최고 기록 유지) 0승부터 시작한다. 연승을 못 지우면 새 런을 시작하지 않는다. 예외는 관리자가 세션 없을 때 `CURRENT_FLOOR`를 설정한 경우로, 타워 `adminSetTracks`처럼 `adminSetRuns`에 표시해 다음 시작 한 번만 그 값을 이어 받는다(서버 정지 시 표시도 지움). 배틀 중 끊김은 여전히 패배로 기록되고 `CURRENT_FLOOR`가 0이 되므로 다음 시작에서 지울 것이 없다.
+- **패배 이중 기록 없음 확인:** 끊김 핸들러가 먼저 돌면 `sessions.disconnect`가 같은 battleId로 패배를 정산하고 세션을 지운다. 뒤늦은 코어 LOSS는 `NoSession`으로 버려진다. 코어 LOSS가 먼저면 `activeBattleId`가 비어 끊김 쪽은 세션만 지운다. 정산은 `checkActive`로 battleId를 확인한다.
+- **받을 수 없는 교환 제안:** 상대 팀이 플레이어 팀과 같은 종을 가질 수 있어서, 그 제안으로 교환하면 종 중복 검사에 걸려 `invalid_swap`이 났다. `FactoryOpponentSelector.select`가 플레이어 팀의 종을 빼고 고르고, 풀이 모자랄 때만 그 종을 맨 뒤 순위로 다시 허용한다. 그런 제안은 같은 종을 내보낼 때만 교환되도록 `factorySwapKeepsSpeciesUnique` 하나로 서버(`FactoryRunSession.swap`)와 UI(`canSwap`, 교환 버튼 활성화)가 같은 규칙을 쓴다.
+- **푸시 뒤 응답 무시:** 요청 ID 없는 서버 푸시가 컨트롤러를 새로 만들면서 대기 중인 요청을 지워, 그 뒤에 온 응답(더 최신 상태)을 버렸다. 이제 푸시는 기존 컨트롤러의 `applyPushed`로 반영한다. 화면 잠금은 전처럼 풀되, 대기 중이던 요청 ID를 기억해 두었다가 그 응답이 오면 적용한다. 그사이 새 요청을 보냈다면 상태만 바꾸고 새 요청의 대기는 유지한다.
+- **테스트 추가(미실행):** `FactoryPlayServiceTest`(새 시작 시 남은 연승 종료·실패 시 시작 거절·관리자 설정 연승 1회 유지·포기 시 연승 종료·저장 실패 시 런 유지·상대 팀 종 제외, 기존 관리자 승수 테스트 2개는 관리자 설정 경로로 고침), `FactoryCatalogSelectorsTest`(종 제외와 대체 경로), `FactoryRentalRulesTest`(같은 종 교환 규칙), `FactoryPlayScreenControllerTest`(교환 버튼 규칙, 푸시에 밀린 응답 적용).
+- **미확인:** 빌드·테스트·배포·실게임 검증 모두 하지 않았다.
+
 ## [2026-10-08 21:56] main 병합 후 빌드·개발 배포 재확인
 
 - **병합:** 기믹 API 브랜치를 현재 main과 병합한 `5d4afd558bd3c1fa63e7d81d47c568ff5d564933`을 main에 푸시했다. 기존 BP 테스트 기대값 수정 `3c247482`·`10e14da4`도 포함한다. 앞선 브랜치 배포 기록은 이번 main 검증으로 보완하며 이전 실패 기록은 보존한다.

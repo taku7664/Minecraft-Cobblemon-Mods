@@ -60,6 +60,7 @@ class FactoryPlayServiceTest {
             launched = request
             FactoryBattleLaunchResult.Started(battleId)
         }
+        assertTrue(service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, 14))
 
         val initial = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
             as FactoryPlayResult.Accepted
@@ -77,6 +78,7 @@ class FactoryPlayServiceTest {
             catalog = catalog(),
             startingWins = { _, _, _ -> Int.MAX_VALUE },
         ) { FactoryBattleLaunchResult.Started(battleId) }
+        service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, Int.MAX_VALUE)
 
         val result = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
 
@@ -102,6 +104,127 @@ class FactoryPlayServiceTest {
         assertEquals(FactoryPlayError.BATTLE_UNAVAILABLE, (result as FactoryPlayResult.Rejected).error)
         assertEquals(selectedIds, service.status(playerId).teamSets.map(FactoryRentalSet::setId))
         assertEquals(false, launched)
+    }
+
+    @Test
+    fun `a fresh start ends a stored streak whose session is gone and starts from zero`() {
+        val ended = ArrayList<Pair<FactoryBattleFormat, FactoryLevelMode>>()
+        val service = playService(
+            catalog = catalog(),
+            startingWins = { _, _, _ -> 14 },
+            endStreak = { _, format, levelMode -> ended += format to levelMode },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+
+        val started = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+
+        assertEquals(0, started.view.wins)
+        assertEquals(listOf(FactoryBattleFormat.SINGLE to FactoryLevelMode.LEVEL_50), ended)
+    }
+
+    @Test
+    fun `a leftover streak that cannot be ended starts no run`() {
+        val service = playService(
+            catalog = catalog(),
+            startingWins = { _, _, _ -> 14 },
+            endStreak = { _, _, _ -> throw IllegalStateException("storage unavailable") },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+
+        assertThrows(IllegalStateException::class.java) {
+            service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+        }
+
+        assertEquals(FactoryPlayPhase.AVAILABLE, service.status(playerId).phase)
+    }
+
+    @Test
+    fun `an operator set streak carries into one start and abandoning that run ends it`() {
+        val ended = ArrayList<Pair<FactoryBattleFormat, FactoryLevelMode>>()
+        var stored = 14
+        val service = playService(
+            catalog = catalog(poolGroup = FactoryPoolGroup.INTERMEDIATE, variant = 2),
+            startingWins = { _, _, _ -> stored },
+            endStreak = { _, format, levelMode ->
+                ended += format to levelMode
+                stored = 0
+            },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+        assertTrue(service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, 14))
+
+        val draft = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        assertEquals(14, draft.view.wins)
+        assertTrue(ended.isEmpty())
+        service.selectDraft(playerId, draft.view.draftSets.take(3).map(FactoryRentalSet::setId))
+        service.abandon(playerId)
+
+        assertEquals(listOf(FactoryBattleFormat.SINGLE to FactoryLevelMode.LEVEL_50), ended)
+        assertEquals(FactoryPlayPhase.AVAILABLE, service.status(playerId).phase)
+    }
+
+    @Test
+    fun `an operator streak is kept for one start and a relog afterwards ends it`() {
+        var ended = 0
+        val service = playService(
+            catalog = catalog(),
+            startingWins = { _, _, _ -> 3 },
+            endStreak = { _, _, _ -> ended++ },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+        service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, 3)
+
+        val kept = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        assertEquals(3, kept.view.wins)
+        service.disconnect(playerId)
+        val relogged = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+
+        assertEquals(0, relogged.view.wins)
+        assertEquals(1, ended)
+    }
+
+    @Test
+    fun `abandoning a run without wins leaves the stored streak alone`() {
+        var ended = 0
+        val service = playService(catalog(), endStreak = { _, _, _ -> ended++ }) { FactoryBattleLaunchResult.Started(battleId) }
+
+        service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+        service.abandon(playerId)
+
+        assertEquals(0, ended)
+    }
+
+    @Test
+    fun `a run whose streak cannot be ended is kept`() {
+        val service = playService(
+            catalog = catalog(poolGroup = FactoryPoolGroup.INTERMEDIATE, variant = 2),
+            startingWins = { _, _, _ -> 14 },
+            endStreak = { _, _, _ -> throw IllegalStateException("storage unavailable") },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+        service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, 14)
+        service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+
+        assertThrows(IllegalStateException::class.java) { service.abandon(playerId) }
+
+        assertEquals(FactoryPlayPhase.INITIAL_DRAFT, service.status(playerId).phase)
+        assertEquals(14, service.status(playerId).wins)
+    }
+
+    @Test
+    fun `opponent offers leave out the species on the players team`() {
+        var launched: FactoryBattleLaunchRequest? = null
+        val service = playService(catalog()) { request ->
+            launched = request
+            FactoryBattleLaunchResult.Started(battleId)
+        }
+        val draft = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        val team = draft.view.draftSets.take(3)
+        service.selectDraft(playerId, team.map(FactoryRentalSet::setId))
+        service.beginBattle(playerId)
+
+        val teamSpecies = team.map(FactoryRentalSet::speciesId).toSet()
+        assertTrue(checkNotNull(launched).opponentTeam.values.none { it.speciesId in teamSpecies })
     }
 
     @Test
@@ -339,6 +462,7 @@ class FactoryPlayServiceTest {
         catalog: FactoryCatalog?,
         catalogRandom: FactoryCatalogRandom = random,
         startingWins: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Int = { _, _, _ -> 0 },
+        endStreak: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Unit = { _, _, _ -> },
         launcher: FactoryBattleLauncher,
     ): FactoryPlayService {
         val draftOffers = FactoryDraftOfferService({ catalog }, catalogRandom)
@@ -349,7 +473,7 @@ class FactoryPlayServiceTest {
             ),
             draftProvider = draftOffers::select,
         )
-        return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers, startingWins)
+        return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers, startingWins, endStreak)
     }
 
     private fun catalog(

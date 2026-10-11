@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.internal.factory.FactoryLevelMode
 import jbro.cobblemon.mcc.internal.factory.FactoryPlayError
 import jbro.cobblemon.mcc.internal.factory.FactoryPlayPhase
 import jbro.cobblemon.mcc.internal.factory.FactoryPlayView
+import jbro.cobblemon.mcc.internal.factory.factorySwapKeepsSpeciesUnique
 
 internal sealed interface FactoryPlayIntent {
     val requestId: UUID
@@ -63,6 +64,7 @@ internal class FactoryPlayScreenController(
     private var selectedOutgoingSetId: String? = null
     private var selectedIncomingToken: UUID? = null
     private var pendingRequestId: UUID? = null
+    private var supersededRequestId: UUID? = null
 
     val isPending: Boolean
         get() = pendingRequestId != null
@@ -155,8 +157,17 @@ internal class FactoryPlayScreenController(
         if (state.phase == FactoryPlayPhase.SWAP_DECISION) FactoryPlayIntent.KeepTeam(it) else null
     }
 
+    /** True when the chosen rental and offer can be traded: the team would still hold distinct species. */
+    val canSwap: Boolean
+        get() {
+            if (state.phase != FactoryPlayPhase.SWAP_DECISION) return false
+            val outgoing = selectedOutgoingSetId ?: return false
+            val offer = state.swapOffers.firstOrNull { it.token == selectedIncomingToken } ?: return false
+            return factorySwapKeepsSpeciesUnique(state.teamSets, outgoing, offer.speciesId)
+        }
+
     fun swap(): Boolean = submit { requestId ->
-        if (state.phase != FactoryPlayPhase.SWAP_DECISION) return@submit null
+        if (!canSwap) return@submit null
         FactoryPlayIntent.Swap(
             requestId,
             selectedOutgoingSetId ?: return@submit null,
@@ -166,8 +177,30 @@ internal class FactoryPlayScreenController(
 
     fun abandon(): Boolean = submit { FactoryPlayIntent.Abandon(it) }
 
+    /**
+     * A state the server sent on its own (a battle result, an operator's action). It is current, so it replaces the
+     * screen and frees the controls like a fresh controller would; a request still in flight is remembered, because
+     * the server answers it after this push and that answer is the newer state.
+     */
+    fun applyPushed(next: FactoryPlayView) {
+        val inFlight = pendingRequestId
+        applyAccepted(null, next)
+        chosenFormat = next.format ?: FactoryBattleFormat.SINGLE
+        chosenLevelMode = next.levelMode ?: FactoryLevelMode.OPEN_LEVEL
+        supersededRequestId = inFlight ?: supersededRequestId
+    }
+
     fun applyAccepted(requestId: UUID?, next: FactoryPlayView) {
-        if (requestId != null && requestId != pendingRequestId) return
+        if (requestId != null && requestId != pendingRequestId) {
+            if (requestId != supersededRequestId) return
+            // The reply to a request a push overtook: the server sent it after that push, so it is newer.
+            supersededRequestId = null
+            if (pendingRequestId != null) {
+                // A later request is in flight and its reply follows; show this state without releasing it.
+                state = next
+                return
+            }
+        }
         state = next
         pendingRequestId = null
         feedbackKey = null
@@ -180,6 +213,11 @@ internal class FactoryPlayScreenController(
     }
 
     fun applyRejected(requestId: UUID, messageKey: String) {
+        if (requestId == supersededRequestId) {
+            // Refused after a push already showed the current state; nothing changed, so there is nothing to show.
+            supersededRequestId = null
+            return
+        }
         if (requestId != pendingRequestId) return
         pendingRequestId = null
         feedbackKey = messageKey

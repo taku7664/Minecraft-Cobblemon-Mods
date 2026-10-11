@@ -131,19 +131,33 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
             sessions,
             random,
             draftOffers,
-        ) { playerId, format, levelMode ->
-            val player = onlinePlayers[playerId] ?: return@FactoryPlayService 0
-            BattleRecordService.get(
-                player.server,
-                BattleRecordKey(
+            startingWins = startingWins@{ playerId, format, levelMode ->
+                val player = onlinePlayers[playerId] ?: return@startingWins 0
+                BattleRecordService.get(
+                    player.server,
+                    BattleRecordKey(
+                        playerId,
+                        BattleRecordCategory(FactoryRecordContract.CONTENT_ID, format.recordId(levelMode)),
+                    ),
+                ).progressMetrics[BattleRecordMetrics.CURRENT_FLOOR]
+                    ?.coerceAtMost(Int.MAX_VALUE.toLong())
+                    ?.toInt()
+                    ?: 0
+            },
+            endStreak = { playerId, format, levelMode ->
+                val server = checkNotNull(onlinePlayers[playerId]?.server ?: currentServer) {
+                    "Factory server is unavailable while ending an abandoned run"
+                }
+                check(BattleRecordService.isAvailable(server)) { "Factory record storage is unavailable" }
+                val key = BattleRecordKey(
                     playerId,
                     BattleRecordCategory(FactoryRecordContract.CONTENT_ID, format.recordId(levelMode)),
-                ),
-            ).progressMetrics[BattleRecordMetrics.CURRENT_FLOOR]
-                ?.coerceAtMost(Int.MAX_VALUE.toLong())
-                ?.toInt()
-                ?: 0
-        }
+                )
+                // An abandon is not a battle, so it adds no loss; it only ends the streak a loss would end.
+                BattleRecordService.setProgressMetric(server, key, BattleRecordMetrics.CURRENT_FLOOR, 0L)
+                BattleRecordService.setCurrentWinStreak(server, key, 0)
+            },
+        )
     }
 
     fun registerServer() {
@@ -228,7 +242,19 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         player: ServerPlayer,
         format: FactoryBattleFormat,
         levelMode: FactoryLevelMode,
-    ): FactoryPlayResult = mutate(player) { play.start(player.uuid, format, levelMode) }
+    ): FactoryPlayResult = mutate(player) {
+        try {
+            play.start(player.uuid, format, levelMode)
+        } catch (failure: IllegalStateException) {
+            // A leftover streak could not be ended, so no run starts on top of it.
+            jbro.cobblemon.mcc.MoreCobblemonContents.LOGGER.error(
+                "Battle Factory run of {} could not start",
+                player.uuid,
+                failure,
+            )
+            FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
+        }
+    }
 
     override fun select(player: ServerPlayer, setIds: List<String>): FactoryPlayResult =
         mutate(player) { play.selectDraft(player.uuid, setIds) }
@@ -258,7 +284,17 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                 FactoryPlayResult.Accepted(current)
             }
         } else {
-            FactoryPlayResult.Accepted(play.abandon(player.uuid))
+            try {
+                FactoryPlayResult.Accepted(play.abandon(player.uuid))
+            } catch (failure: IllegalStateException) {
+                // The streak could not be ended, so the run stays as it was.
+                jbro.cobblemon.mcc.MoreCobblemonContents.LOGGER.error(
+                    "Battle Factory run of {} could not be abandoned",
+                    player.uuid,
+                    failure,
+                )
+                FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
+            }
         }
     }
 
@@ -281,7 +317,8 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
 
     /**
      * Ends [playerId]'s run for an operator. Without [force] it is the player's own abandon: a battle in progress
-     * is forfeited and counts as a loss. With [force] a battle is ended without a result and the run is dropped.
+     * is forfeited and counts as a loss. With [force] a battle is ended without a result and the run is dropped, its
+     * stored streak ended like any abandon.
      */
     fun adminAbandon(playerId: UUID, force: Boolean): AdminAbandon {
         val run = sessions.snapshot(playerId) ?: return AdminAbandon.NO_SESSION

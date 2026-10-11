@@ -42,6 +42,9 @@ internal object FactoryHubClient {
         val current = controller
         if (requestId != null && current != null) {
             current.applyAccepted(requestId, state)
+        } else if (current != null) {
+            // A push keeps the controller so the reply to a request still in flight is not mistaken for a stale one.
+            current.applyPushed(state)
         } else {
             controller = FactoryPlayScreenController(state, sendIntent = { intent ->
                 FactoryPlayClientNetworking.send(FactoryPlayIntentPayload(intent))
@@ -172,7 +175,7 @@ internal class FactoryHubTab : MccHubTabContent {
             host.add(offerCard(cell, offer, controller) { if (controller.chooseIncoming(offer.token)) host.rebuild() })
         }
         MccHubKit.footer(host, layout.footer, emptyList(), listOf(
-            action(controller, host, "swap", enabled = controller.outgoingSetId != null && controller.incomingToken != null) { controller.swap() },
+            action(controller, host, "swap", enabled = controller.canSwap) { controller.swap() },
             action(controller, host, "keep_team", UiButtonVariant.PRIMARY, primary = true) { controller.keepTeam() },
         ))
     }

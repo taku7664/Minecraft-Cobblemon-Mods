@@ -38,6 +38,30 @@ class FactoryCatalogSelectorsTest {
     }
 
     @Test
+    fun `opponent leaves out the players species and falls back to them only when the pool is too small`() {
+        val sets = (1..6).map { template("set_$it", FactoryPoolGroup.STARTER, 1, it) }
+        val selector = FactoryOpponentSelector(FactoryCatalog("test", listOf(trainer("first")), sets), firstChoiceRandom)
+        val playerSpecies = sets.take(3).map(FactoryRentalTemplate::speciesId).toSet()
+
+        val apart = selector.select(
+            FactoryBattleFormat.SINGLE,
+            FactoryLevelMode.LEVEL_50,
+            round = 1,
+            playerSpeciesIds = playerSpecies,
+        ) as FactoryOpponentSelectionResult.Selected
+        val crowded = selector.select(
+            FactoryBattleFormat.SINGLE,
+            FactoryLevelMode.LEVEL_50,
+            round = 1,
+            playerSpeciesIds = sets.take(5).map(FactoryRentalTemplate::speciesId).toSet(),
+        ) as FactoryOpponentSelectionResult.Selected
+
+        assertTrue(apart.team.none { it.speciesId in playerSpecies })
+        assertEquals(3, crowded.team.map(FactoryRentalSet::speciesId).distinct().size)
+        assertTrue(sets[5].speciesId in crowded.team.map(FactoryRentalSet::speciesId))
+    }
+
+    @Test
     fun `draft contains exactly the original trade elevation count from the next pool`() {
         val starter = (1..6).map { template("starter_$it", FactoryPoolGroup.STARTER, 1, it) }
         val intermediate = (7..12).map { template("intermediate_$it", FactoryPoolGroup.INTERMEDIATE, 1, it) }

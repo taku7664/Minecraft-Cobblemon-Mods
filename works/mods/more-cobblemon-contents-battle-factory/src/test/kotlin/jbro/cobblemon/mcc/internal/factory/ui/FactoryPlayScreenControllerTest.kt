@@ -69,6 +69,63 @@ class FactoryPlayScreenControllerTest {
     }
 
     @Test
+    fun `swap is refused when the offer repeats a species staying on the team`() {
+        val sent = ArrayList<FactoryPlayIntent>()
+        val token = UUID.randomUUID()
+        val controller = FactoryPlayScreenController(
+            view(
+                FactoryPlayPhase.SWAP_DECISION,
+                team = listOf(rental(1), rental(2), rental(3)),
+                offers = listOf(FactorySwapOffer(token, "cobblemon:species2", emptySet(), null, null)),
+            ),
+            sent::add,
+        )
+
+        controller.chooseIncoming(token)
+        controller.chooseOutgoing("set1")
+        assertFalse(controller.canSwap)
+        assertFalse(controller.swap())
+        controller.chooseOutgoing("set2")
+        assertTrue(controller.canSwap)
+        assertTrue(controller.swap())
+        assertEquals("set2", (sent.single() as FactoryPlayIntent.Swap).outgoingSetId)
+    }
+
+    @Test
+    fun `reply to a request a push overtook is still applied`() {
+        val requestId = UUID.randomUUID()
+        val controller = FactoryPlayScreenController(
+            view(FactoryPlayPhase.READY, team = listOf(rental(1), rental(2), rental(3)), canRevise = true),
+            {},
+            requestIdFactory = { requestId },
+        )
+        assertTrue(controller.reviseSelection())
+
+        controller.applyPushed(view(FactoryPlayPhase.READY, team = listOf(rental(1), rental(2), rental(3))))
+        assertFalse(controller.isPending)
+        controller.applyAccepted(requestId, view(FactoryPlayPhase.INITIAL_DRAFT, draft = (1..6).map(::rental)))
+
+        assertEquals(FactoryPlayPhase.INITIAL_DRAFT, controller.state.phase)
+        controller.applyAccepted(requestId, view(FactoryPlayPhase.READY))
+        assertEquals(FactoryPlayPhase.INITIAL_DRAFT, controller.state.phase)
+    }
+
+    @Test
+    fun `overtaken reply does not release a later request`() {
+        val ids = ArrayDeque(listOf(UUID.randomUUID(), UUID.randomUUID()))
+        val first = ids.first()
+        val controller = FactoryPlayScreenController(view(FactoryPlayPhase.AVAILABLE), {}, requestIdFactory = { ids.removeFirst() })
+        assertTrue(controller.start())
+        controller.applyPushed(view(FactoryPlayPhase.AVAILABLE))
+        assertTrue(controller.start())
+
+        controller.applyAccepted(first, view(FactoryPlayPhase.INITIAL_DRAFT, draft = (1..6).map(::rental)))
+
+        assertEquals(FactoryPlayPhase.INITIAL_DRAFT, controller.state.phase)
+        assertTrue(controller.isPending)
+    }
+
+    @Test
     fun `failed send releases the pending factory mutation`() {
         val failure = AssertionError("network send failed")
         val controller = FactoryPlayScreenController(view(FactoryPlayPhase.AVAILABLE), { throw failure })

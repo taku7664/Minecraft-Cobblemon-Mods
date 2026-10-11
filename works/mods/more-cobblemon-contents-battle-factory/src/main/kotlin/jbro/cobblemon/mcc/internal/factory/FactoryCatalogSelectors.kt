@@ -157,9 +157,14 @@ internal class FactoryOpponentSelector(
         round: Int,
         excludedTrainerIds: Set<String> = emptySet(),
         recentSpeciesIds: Set<String> = emptySet(),
+        playerSpeciesIds: Set<String> = emptySet(),
     ): FactoryOpponentSelectionResult {
         val window = FactoryProgression.opponentPoolWindow(levelMode, round)
-        val templates = selectTeam(catalog.rentalPool(window), format.selectionSize, recentSpeciesIds)
+        val pool = catalog.rentalPool(window)
+        // The opponent's rentals become the swap offers, so species the player already holds are left out; only a pool
+        // too small for that falls back to them (put last), and such an offer can then only replace its own species.
+        val templates = selectTeam(pool.filterNot { it.speciesId in playerSpeciesIds }, format.selectionSize, recentSpeciesIds)
+            ?: selectTeam(pool, format.selectionSize, recentSpeciesIds, playerSpeciesIds)
             ?: return FactoryOpponentSelectionResult.NoEligibleTrainer
         val eligible = catalog.trainersFor(format)
         if (eligible.isEmpty()) return FactoryOpponentSelectionResult.NoEligibleTrainer
@@ -193,8 +198,19 @@ internal class FactoryOpponentSelector(
     }
 
     /** A team of [size] species drawn evenly by species; species the player met lately come last. */
-    private fun selectTeam(candidates: List<FactoryRentalTemplate>, size: Int, recentSpeciesIds: Set<String>): List<FactoryRentalTemplate>? {
-        val ordered = onePerSpecies(candidates, random).sortedBy { if (it.speciesId in recentSpeciesIds) 1 else 0 }
+    private fun selectTeam(
+        candidates: List<FactoryRentalTemplate>,
+        size: Int,
+        recentSpeciesIds: Set<String>,
+        avoidedSpeciesIds: Set<String> = emptySet(),
+    ): List<FactoryRentalTemplate>? {
+        val ordered = onePerSpecies(candidates, random).sortedBy {
+            when (it.speciesId) {
+                in avoidedSpeciesIds -> 2
+                in recentSpeciesIds -> 1
+                else -> 0
+            }
+        }
         val selected = ArrayList<FactoryRentalTemplate>(size)
         return selected.takeIf { selectTeam(ordered, size, 0, selected, HashSet()) }
     }
