@@ -1,5 +1,11 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-12 04:26] 포켓몬 모델 NPC 빌드·개발 배포 (실게임 미확인)
+
+- **빌드:** 사용자가 클라·서버를 끄고 "빌드해서 배포해"라고 지시. 공유 트리에 다른 세션의 미커밋 파일이 있어 main `311219d3`(이번 기능 `e9838b78` 포함, 이후 커밋은 jbro-policy만)을 `F:/AI/build/npc-pokemon-20261012/src`에 풀어 `:cobblemon-npc:remapJar`(테스트 제외, F 드라이브 전용 경로)로 빌드했다. 성공(2분 58초). Kotlin 컴파일은 빌드 캐시 적중이라 JAR에 `NpcPokemonModel`·`NpcPokemonForms`·`NpcSkinRef$Pokemon`·`NpcEntity.hitboxPending`이 들어 있음을 직접 확인했고, `jar --validate`·ZIP 검사도 통과했다.
+- **배치:** 게임 프로세스·25565/25566 수신 없음을 확인한 뒤 `develop-product/server/mods`·`client/mods`의 `cobblemon-npc-0.1.0.jar`를 교체했다. 세 곳 SHA-256 `88b8d762887c31c8c3940dec76d2fdb1f97a84f28b236c7b75fd3cfa9f0bb972`. 이전 JAR은 `develop-product/deployment-backups/20261012-042633-npc-pokemon-model/`. PPakemon 프로필·운영·VPS는 건드리지 않았다.
+- **미확인:** 서버·클라이언트를 켜지 않아 실게임 모델·히트박스·초상화는 확인하지 않았다. 파싱 JUnit도 돌리지 않았다.
+
 ## [2026-10-12] 포켓몬 모델 NPC (구현만, 빌드·테스트·배치·실게임 미실행)
 
 - **사용자 요청:** NPC에 포켓몬 모델도 넣을 수 있게. 작업 중 "히트박스도 실제 포켓몬 모델로 됨?"이라고 물어 히트박스도 포켓몬 크기로 맞췄다.
