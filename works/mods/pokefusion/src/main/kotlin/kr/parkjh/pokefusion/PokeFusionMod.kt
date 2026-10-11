@@ -12,6 +12,7 @@ import net.minecraft.commands.Commands
 class PokeFusionMod : ModInitializer {
     override fun onInitialize() {
         PokeFusionPlayerStorage.initialize()
+        PokeFusionMenu.register()
         PokeFusionConfigManager.initialize(FabricLoader.getInstance().configDir)
         ServerLifecycleEvents.SERVER_STARTED.register {
             PokeFusionService.refreshEvolutionFamilies()

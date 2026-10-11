@@ -1,30 +1,30 @@
 package kr.parkjh.pokefusion
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PokeFusionLayoutTest {
     @Test
-    fun `materials form a 3x3 grid between base and preview`() {
-        assertEquals(listOf(12, 13, 14, 21, 22, 23, 30, 31, 32), PokeFusionLayout.MATERIAL_SLOTS)
-        assertEquals(FusionMaterialLogic.MAX_MATERIALS, PokeFusionLayout.MATERIAL_SLOTS.size)
-        assertEquals(0, PokeFusionLayout.materialIndexOf(12))
-        assertEquals(8, PokeFusionLayout.materialIndexOf(32))
+    fun `menu has one base, nine material and one preview slot`() {
+        assertEquals(0, PokeFusionLayout.BASE_SLOT)
+        assertEquals(10, PokeFusionLayout.PREVIEW_SLOT)
+        assertEquals(11, PokeFusionLayout.SIZE)
         assertEquals(-1, PokeFusionLayout.materialIndexOf(PokeFusionLayout.BASE_SLOT))
+        assertEquals(0, PokeFusionLayout.materialIndexOf(1))
+        assertEquals(8, PokeFusionLayout.materialIndexOf(9))
+        assertEquals(-1, PokeFusionLayout.materialIndexOf(PokeFusionLayout.PREVIEW_SLOT))
     }
 
     @Test
-    fun `every slot has exactly one role`() {
-        val roles = PokeFusionLayout.MATERIAL_SLOTS + listOf(
-            PokeFusionLayout.BASE_SLOT,
-            PokeFusionLayout.PREVIEW_SLOT,
-            PokeFusionLayout.CONFIRM_SLOT,
-            PokeFusionLayout.BASE_LABEL_SLOT,
-            PokeFusionLayout.MATERIAL_LABEL_SLOT,
-            PokeFusionLayout.PREVIEW_LABEL_SLOT,
-            PokeFusionLayout.ARROW_SLOT
-        ) + PokeFusionLayout.decorationSlots()
-
-        assertEquals((0 until PokeFusionLayout.SIZE).toList(), roles.sorted())
+    fun `slots sit apart inside the fusion area`() {
+        val materialRight = PokeFusionLayout.materialX(8) + 16
+        assertTrue(PokeFusionLayout.BASE_X + 16 < PokeFusionLayout.MATERIAL_X)
+        assertTrue(materialRight <= PokeFusionLayout.ARROW_X)
+        // 결과 칸은 26x26 테두리로 그리고 오른쪽 7px 테두리 안에 들어가야 한다.
+        assertTrue(PokeFusionLayout.ARROW_X + 24 <= PokeFusionLayout.PREVIEW_X - 5)
+        assertTrue(PokeFusionLayout.PREVIEW_X + 21 <= PokeFusionLayout.IMAGE_WIDTH - 7)
+        assertTrue(PokeFusionLayout.materialY(8) + 16 < PokeFusionLayout.BUTTON_Y)
+        assertTrue(PokeFusionLayout.BUTTON_Y + PokeFusionLayout.BUTTON_HEIGHT <= PokeFusionLayout.FUSION_AREA_BOTTOM)
     }
 }

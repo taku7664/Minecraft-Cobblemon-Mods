@@ -16,6 +16,9 @@
     "main": [
       "kr.parkjh.pokefusion.PokeFusionMod"
     ],
+    "client": [
+      "kr.parkjh.pokefusion.client.PokeFusionClient"
+    ],
     "modmenu": [
       "kr.parkjh.pokefusion.client.PokeFusionModMenu"
     ]
