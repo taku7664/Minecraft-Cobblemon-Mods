@@ -58,6 +58,7 @@
 
   "message.jbro_policy.pokenav.failed": "포켓내비를 열지 못했습니다.",
   "message.jbro_policy.myroom.unavailable": "마이룸을 지금 쓸 수 없습니다.",
+  "message.jbro_policy.pichu.unavailable": "피츄 도우미를 열 수 없습니다. 클라이언트에 최신 jbro-policy와 Cobblemon UI가 필요합니다.",
 
   "message.jbro_policy.inquiry.sent": "문의를 보냈습니다. 피츄 봇에게 전달했어요.",
   "message.jbro_policy.inquiry.empty": "문의 사유를 입력하세요.",

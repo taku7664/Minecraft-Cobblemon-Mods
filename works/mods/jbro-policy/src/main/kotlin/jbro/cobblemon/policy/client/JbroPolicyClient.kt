@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.client.gui.summary.Summary
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.pokemon.OpenSummaryPayload
 import jbro.cobblemon.policy.menu.OpenLinkPayload
+import jbro.cobblemon.policy.menu.OpenPichuPayload
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -29,6 +30,10 @@ object JbroPolicyClient : ClientModInitializer {
         PokenavKey.register()
         MccHubTabRequest.register()
         if (pichuAvailable) InvMoveCompat.register()
+        // The server's /피츄, run by an NPC talk, asks for the screen.
+        if (pichuAvailable) ClientPlayNetworking.registerGlobalReceiver(OpenPichuPayload.TYPE) { _, context ->
+            context.client().execute { context.client().setScreen(PichuScreen()) }
+        }
         if (pichuAvailable) ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             for (name in listOf("피츄", "pichu")) dispatcher.register(ClientCommandManager.literal(name).executes { context ->
                 // After the chat screen this command came from has closed.

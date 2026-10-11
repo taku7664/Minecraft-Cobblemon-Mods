@@ -57,6 +57,7 @@
   "message.jbro_policy.pokemon_item.failed": "The Pokemon on this item could not be restored.",
 
   "message.jbro_policy.myroom.unavailable": "MyRoom is not available right now.",
+  "message.jbro_policy.pichu.unavailable": "Pichu's helper cannot open: the client needs the latest jbro-policy and Cobblemon UI.",
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
   "message.jbro_policy.inquiry.sent": "Your inquiry was sent. Pichu Bot has it.",

@@ -49,6 +49,7 @@ object JbroPolicy : ModInitializer {
         PokemonItemRestore.register()
         PokemonSummaryOnInteract.register()
         jbro.cobblemon.policy.menu.MenuLinks.register()
+        jbro.cobblemon.policy.menu.PichuHelper.register()
         TestCommand.register()
         ServerCommand.register()
         jbro.cobblemon.policy.support.PendingItems.register()
