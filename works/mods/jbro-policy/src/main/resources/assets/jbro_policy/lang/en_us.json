@@ -211,6 +211,8 @@
   "command.jbro_policy.wiki.one_player": "Name exactly one player.",
   "menu.jbro_policy.wiki": "PPakemon Wiki",
   "menu.jbro_policy.discord": "PPakemon Discord",
+  "menu.jbro_policy.plaza_enter": "Go to the Plaza",
+  "menu.jbro_policy.plaza_exit": "Leave the Plaza",
   "message.jbro_policy.menu_link.wiki_off": "The server wiki is off.",
   "message.jbro_policy.menu_link.discord_off": "No Discord invite is set.",
 
