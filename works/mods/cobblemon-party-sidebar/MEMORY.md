@@ -6,6 +6,13 @@
 - **배치:** 사용자가 "껐어 배포해". 마인크래프트 프로세스·25565/25566 수신 없음 확인. 이전 JAR은 `develop-product/deployment-backups/20261012-052406-party-sidebar-itemize-fix/{server,client}`, 교체 후 세 곳 SHA-256 `4c154231510230f3276ffc6bc32aa4be1596d5105fbdc7bb9c310ffe9d5e92f6`.
 - **미확인:** 실게임 전부. 버그 버전으로 잃은 포켓몬은 아직 복구하지 않았다.
 
+## [2026-10-12] 맨 아래 "포켓몬 합성" 버튼 (구현·빌드·개발 배포, 실게임 미확인)
+
+- **사용자 요청:** 사이드바 맨 하단에 버튼을 넣어 포켓퓨전 창이 열리게. 피츄 도우미 화면의 아이템화·합성 버튼은 빼서 이쪽으로 옮겼다(아이템화는 이미 끌어다 놓기·I키).
+- **구현(`49afe97f`):** 행 6개 아래, 패널 안쪽 4px 여백으로 폭 전체, 높이 16의 바닐라 버튼 스프라이트(`widget/button`·`_highlighted`·`_disabled`, 리소스팩을 따름). 글자는 폭에 맞게 줄인다. 클릭 시 `/pokefusion` 전송, 클라 명령 트리에 `pokefusion`이 없으면 회색. 패널 높이는 `max(인벤토리 높이, 7*2+132+4+16)`이라 바닐라·Whimscape(166) 모두 늘지 않는다. 번역 키 `button.cobblemon_party_sidebar.fusion`.
+- **빌드·배포:** jbro-policy와 함께 커밋된 소스로 빌드 성공. JAR `F36FABFDBEB27454D1E16D052552E26D877A42002BE39B795EB08FD4EE8DBB11`을 개발 서버·클라에 넣고 해시 일치(게임·개발 서버 꺼진 상태 확인). 이전 JAR 백업은 `F:/AI/build/plaza-fix-20261011/deployment-backups/sidebar-fusion/`. `PPakemon`에는 이 모드가 없어 넣지 않았다.
+- **미확인:** 실게임에서 버튼 위치·글자 크기·클릭.
+
 ## [2026-10-12 05:40] I키 아이템화가 포켓몬 데이터를 버리던 버그 수정, 끌어다 놓기 아이템화·빈 칸 복원 (구현·빌드만)
 
 - **버그(사용자 발견):** "I로 아이템화한 건 우클릭으로 엔트리에 안 들어간다". `PokemonUtility.pokemonToItem`은 모델·설명 줄만 만든 보여 주기용 아이템이다. `/poketoitem` 메뉴(`PokeToItemMenu`)는 그 아이템에 `custom_data` `{slot: 파티칸, PTI_NBT: pokemon.saveToNBT(registryAccess)}`를 따로 붙인다(바이트코드 확인). 이전 구현은 앞 단계만 따라 해서 **포켓몬을 파티에서 빼고 데이터 없는 아이템을 줬다 = 그 포켓몬은 사라졌다.** 우클릭 복원은 jbro-policy `PokemonItemRestore`가 `PTI_NBT`로 한다.
