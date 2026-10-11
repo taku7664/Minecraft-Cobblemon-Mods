@@ -35,7 +35,9 @@ class PokeFusionMenu(
     private val fusionContainer: Container = SimpleContainer(PokeFusionLayout.SIZE)
     private val state: ContainerData = SimpleContainerData(STATE_FIELDS)
     private var baseInput = ItemStack.EMPTY
-    private val materialInputs = mutableListOf<ItemStack>()
+    /** 재료 칸 9개의 내용. 제작대처럼 칸마다 자리를 지키며, 계산과 저장에는 빈칸을 뺀 목록을 쓴다. */
+    private val materialSlots = Array<ItemStack>(FusionMaterialLogic.MAX_MATERIALS) { ItemStack.EMPTY }
+    private val materialInputs: List<ItemStack> get() = materialSlots.filterNot(ItemStack::isEmpty)
     private var returnedInputs = false
     private var storageAvailable = true
 
@@ -74,7 +76,7 @@ class PokeFusionMenu(
                 null -> storageAvailable = false
                 else -> {
                     baseInput = loaded.baseInput.copy()
-                    materialInputs += loaded.materialInputs.map(ItemStack::copy)
+                    loaded.materialInputs.take(materialSlots.size).forEachIndexed { index, stack -> materialSlots[index] = stack.copy() }
                 }
             }
             refreshDisplay()
@@ -122,15 +124,17 @@ class PokeFusionMenu(
         if (destination == FusionMaterialLogic.InputDestination.NONE) return ItemStack.EMPTY
 
         val moved = sourceStack.copy()
+        // Shift+클릭은 베이스가 비었으면 베이스, 아니면 비어 있는 첫 재료 칸에 넣는다.
+        val emptyMaterial = materialSlots.indexOfFirst(ItemStack::isEmpty)
         when (destination) {
             FusionMaterialLogic.InputDestination.BASE -> baseInput = moved
-            FusionMaterialLogic.InputDestination.MATERIAL -> materialInputs += moved
+            FusionMaterialLogic.InputDestination.MATERIAL -> materialSlots[emptyMaterial] = moved
             FusionMaterialLogic.InputDestination.NONE -> return ItemStack.EMPTY
         }
         if (!persistInputs()) {
             when (destination) {
                 FusionMaterialLogic.InputDestination.BASE -> baseInput = ItemStack.EMPTY
-                FusionMaterialLogic.InputDestination.MATERIAL -> materialInputs.removeLast()
+                FusionMaterialLogic.InputDestination.MATERIAL -> materialSlots[emptyMaterial] = ItemStack.EMPTY
                 FusionMaterialLogic.InputDestination.NONE -> Unit
             }
             return ItemStack.EMPTY
@@ -158,9 +162,11 @@ class PokeFusionMenu(
                 baseInput = ItemStack.EMPTY
                 if (persistInputs()) setCarried(removed) else baseInput = removed
             }
-            !cursor.isEmpty && baseInput.isEmpty && acceptPokemon(cursor) -> {
+            !cursor.isEmpty && acceptPokemon(cursor) -> {
+                // 빈 칸이면 넣고, 차 있으면 들고 있던 것과 맞바꾼다.
+                val previous = baseInput
                 baseInput = cursor.copy()
-                if (persistInputs()) setCarried(ItemStack.EMPTY) else baseInput = ItemStack.EMPTY
+                if (persistInputs()) setCarried(previous) else baseInput = previous
             }
         }
     }
@@ -171,16 +177,16 @@ class PokeFusionMenu(
         if (materialIndex < 0) return
 
         val cursor = carried
+        val current = materialSlots[materialIndex]
         when {
-            materialIndex < materialInputs.size && cursor.isEmpty -> {
-                val removed = materialInputs.removeAt(materialIndex)
-                if (persistInputs()) setCarried(removed) else materialInputs.add(materialIndex, removed)
+            cursor.isEmpty && !current.isEmpty -> {
+                materialSlots[materialIndex] = ItemStack.EMPTY
+                if (persistInputs()) setCarried(current) else materialSlots[materialIndex] = current
             }
-            // 빈 재료 칸 어디를 눌러도 다음 순서 칸에 채운다.
-            materialIndex >= materialInputs.size && materialInputs.size < FusionMaterialLogic.MAX_MATERIALS &&
-                !cursor.isEmpty && acceptPokemon(cursor) -> {
-                materialInputs += cursor.copy()
-                if (persistInputs()) setCarried(ItemStack.EMPTY) else materialInputs.removeLast()
+            // 제작대처럼 누른 칸에 넣고, 차 있으면 들고 있던 것과 맞바꾼다.
+            !cursor.isEmpty && acceptPokemon(cursor) -> {
+                materialSlots[materialIndex] = cursor.copy()
+                if (persistInputs()) setCarried(current) else materialSlots[materialIndex] = current
             }
         }
     }
@@ -199,13 +205,16 @@ class PokeFusionMenu(
         fusionContainer.clearContent()
         fusionContainer.setItem(PokeFusionLayout.BASE_SLOT, baseInput.copy())
 
-        val contributions = PokeFusionService.materialContributions(player, baseInput, materialInputs)
-        materialInputs.forEachIndexed { index, input ->
+        val inputs = materialInputs
+        val contributions = PokeFusionService.materialContributions(player, baseInput, inputs)
+        var inputIndex = 0
+        materialSlots.forEachIndexed { slot, input ->
+            if (input.isEmpty) return@forEachIndexed
             val display = input.copy()
-            if (contributions.getOrElse(index) { false }) {
+            if (contributions.getOrElse(inputIndex++) { false }) {
                 display.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
             }
-            fusionContainer.setItem(PokeFusionLayout.FIRST_MATERIAL_SLOT + index, display)
+            fusionContainer.setItem(PokeFusionLayout.FIRST_MATERIAL_SLOT + slot, display)
         }
         state.set(FIELD_MATERIALS, materialInputs.size)
 
@@ -273,7 +282,7 @@ class PokeFusionMenu(
                     return
                 }
                 baseInput = ItemStack.EMPTY
-                materialInputs.clear()
+                materialSlots.fill(ItemStack.EMPTY)
                 deliverPendingOutputs()
                 if (PendingOutputService.count(player) == 0) {
                     player.displayClientMessage(
@@ -292,7 +301,7 @@ class PokeFusionMenu(
         returnedInputs = true
         if (storageAvailable && PendingOutputService.returnInputs(server())) {
             baseInput = ItemStack.EMPTY
-            materialInputs.clear()
+            materialSlots.fill(ItemStack.EMPTY)
             deliverPendingOutputs()
         }
     }
