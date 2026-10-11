@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-11 19:45] 야생 우두머리 레벨을 리그 레벨캡으로 고정 — 개발·로컬 운영만 배포 (VPS 미반영, 실게임 미검증)
+
+- **원인(바이트코드 확인):** Cobblemon 1.8.1 `AlphaLevelMatchingSensor`가 야생·비배틀 우두머리의 32블록 안 가장 가까운 플레이어가 바뀔 때마다 `getTargetLevel`로 레벨을 다시 맞춘다. 파티 최고 레벨 ≤20 +4, 21~30 +8, 31~45 +12, 46~65 +16, 66+ +20, 100 상한, 진화 최소 레벨 하한. 레벨캡·CLC 설정과 무관해서 캡을 넘었다.
+- **구현:** `AlphaLevelMatchingCapMixin`이 `AlphaLevelMatchingSensor$Companion.getTargetLevel` 반환값을 `WildPokemonPolicy.capAlphaLevel`로 `LeagueRanks.levelCap` 이하로 자른다(사용자 결정: 캡과 같게). 진화 최소 레벨 하한보다 뒤에 자르므로 캡이 우선한다. 리그가 없거나 캡을 못 읽으면 그대로 둔다.
+- **빌드:** `main` `f6fa907f` + 변경 5파일을 `F:/AI/build/alpha-cap-20261011`에서 빌드(쓰기 경로 모두 F). `:jbro-policy:build :jbro-policy:unitTest` 종료 0, 109개 중 108 통과·실패 0·중단 1(assumption, 신규 테스트 아님). 빌드 소스가 푸시한 `823ba5a4`와 같음을 diff로 확인. JAR SHA-256 `41ab1018ae53cb21acf2ebe677d4b7ac2340fb25c0e5e5250027541c6e858d65`, `unzip -t` 통과, 믹스인 시그니처가 `class_3222`로 리맵됨.
+- **배치:** 개발 서버 `mods/`, 로컬 운영 `MinecraftPPakemonServer/mods/`(커밋 `61a7221` 푸시), `deploy-product/server/` 세 곳 해시 일치. 두 서버 모두 꺼진 상태에서 복사, 켜지 않음. 이전 JAR은 `develop-product/deployment-backups/20261011-alpha-cap/`. 클라이언트 JAR은 서버 전용 변경이라 바꾸지 않았다.
+- **VPS:** 사용자 지시로 건드리지 않았다. 다만 운영 저장소에 푸시됐으므로 다음 매니저 update 때 함께 나간다.
+- **미확인:** 서버 기동 시 믹스인 적용, 실게임에서 우두머리가 캡에 묶이는지.
+
 ## [2026-10-11 18:30] Cobbled Level Control 권한 노드 전부 비움 (서버 무중단, 유저 포획 미확인)
 
 - **원인:** VPS 유저가 이로치 지그제구리를 던지면 `Catch Canceled: You do not have permission to do that!`. 문구는 `cobbled-level-control` 1.2.0의 `missingPermission`이다. `server.toml` 기본값이 이로치·전설·환상·울트라비스트·2단계·최종 진화체에 권한 노드를 요구하는데, 권한 모드가 없어서 OP가 아니면 아무도 못 가졌다. 사용자 결정: 포켓몬 제한은 jbro-policy가 맡으니 이 모드의 노드 제한은 전부 푼다. 레벨캡 스위치(`restrict*`)는 `true`로 남긴다.
