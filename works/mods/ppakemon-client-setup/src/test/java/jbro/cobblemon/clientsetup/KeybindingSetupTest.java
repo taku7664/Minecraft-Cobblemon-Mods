@@ -58,7 +58,8 @@ final class KeybindingSetupTest {
 
     @Test void newlyAddedBadgeKeyClearsOnceWithoutChangingPolicyBKeyOrOldCompletedKeys() throws Exception {
         Files.createDirectories(stateFile().getParent());
-        Files.writeString(stateFile(), profile() + "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n");
+        Files.writeString(stateFile(), profile() + "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n"
+            + "keybindings-voicechat-disable-v1=true\n");
         Files.writeString(optionsFile(), "key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
             + "key_key.pokebadges.open_badgebox:key.keyboard.b\n"
             + "key_key.hide_icons:key.keyboard.j\n");
@@ -84,7 +85,8 @@ final class KeybindingSetupTest {
         assertEquals(2, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "more_cobblemon_contents_pvp")));
         assertEquals("key_key.hide_icons:key.keyboard.j\n"
             + "key_key.mute_microphone:key.keyboard.unknown\n"
-            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.j\n", Files.readString(optionsFile()));
+            + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.j\n"
+            + "key_key.disable_voice_chat:key.keyboard.unknown\n", Files.readString(optionsFile()));
         String state = Files.readString(stateFile());
         assertTrue(state.contains("keybindings-voicechat-microphone-v1=true"));
         assertTrue(state.contains("keybindings-more_cobblemon_contents_pvp-room-open-v2=true"));
@@ -110,10 +112,12 @@ final class KeybindingSetupTest {
             + "key_keybind.sophisticatedbackpacks.toggle_upgrade_2:key.keyboard.x\n");
         Set<String> mods = Set.of("jbro_policy", "catchrate-display", "cobblemon_ui", "cobblemon",
             "more_cobblemon_contents_pvp", "zoomify", "sophisticatedbackpacks");
-        assertEquals(7, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
+        assertEquals(6, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
         String updated = Files.readString(optionsFile());
         assertTrue(updated.startsWith(untouched));
-        for (String key : List.of("key_key.jbro_policy.quick_waypoint", "key_key.catchrate.show_comparison",
+        // jbro-policy no longer has a waypoint key, so a leftover line is left alone.
+        assertTrue(updated.contains("key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"));
+        for (String key : List.of("key_key.catchrate.show_comparison",
             "key_key.cobblemon.ridingfreelook", "key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
             "key_keybind.sophisticatedbackpacks.toggle_upgrade_2")) {
             assertTrue(updated.contains(key + ":key.keyboard.unknown\n"));
@@ -125,6 +129,26 @@ final class KeybindingSetupTest {
         Files.writeString(optionsFile(), untouched);
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
         assertEquals(untouched, Files.readString(optionsFile()));
+    }
+
+    @Test void voiceChatDisableAndXaeroQuickConfirmClearOnceDespiteOlderRecords() throws Exception {
+        Files.createDirectories(stateFile().getParent());
+        Files.writeString(stateFile(), profile() + "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n");
+        Files.writeString(optionsFile(), "key_key.disable_voice_chat:key.keyboard.n\n"
+            + "key_gui.xaero_quick_confirm:key.keyboard.right.shift\n"
+            + "key_key.hide_icons:key.keyboard.j\n");
+
+        assertEquals(2, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "xaeroworldmap")));
+        assertEquals("key_key.disable_voice_chat:key.keyboard.unknown\n"
+            + "key_gui.xaero_quick_confirm:key.keyboard.unknown\n"
+            + "key_key.hide_icons:key.keyboard.j\n", Files.readString(optionsFile()));
+        String state = Files.readString(stateFile());
+        assertTrue(state.contains("keybindings-voicechat-disable-v1=true"));
+        assertTrue(state.contains("keybindings-xaeroworldmap-quick-confirm-v1=true"));
+
+        Files.writeString(optionsFile(), "key_key.disable_voice_chat:key.keyboard.k\n");
+        assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("voicechat", "xaeroworldmap")));
+        assertEquals("key_key.disable_voice_chat:key.keyboard.k\n", Files.readString(optionsFile()));
     }
 
     @Test void absentModsAreSkippedAndLaterInstallationHasItsOwnOnceRecord() throws Exception {

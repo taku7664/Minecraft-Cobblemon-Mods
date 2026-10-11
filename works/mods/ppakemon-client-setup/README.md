@@ -40,12 +40,13 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 | Talking Heads | `key_talkingheads.keybinding.modToggle` | 미지정 |
 | Simple Voice Chat | `key_key.hide_icons` | 미지정 |
 | Simple Voice Chat | `key_key.mute_microphone` | 미지정 |
+| Simple Voice Chat | `key_key.disable_voice_chat` (음성 채팅 사용안함) | 미지정 |
+| Xaero's World Map | `key_gui.xaero_quick_confirm` (Quick Manual Confirmation) | 미지정 |
 | Zoomify | `key_zoomify.key.zoom.secondary` | 미지정 |
 | Zoomify | `key_zoomify.key.zoom` | 왼쪽 Alt |
 | PokeBadges | `key_key.pokebadges.open_badgebox` | 미지정 |
 | Accessories | `key_accessories.key.open_accessories_screen` | 미지정 |
 | More Cobblemon Contents: PvP | `key_key.more_cobblemon_contents.pvp.room_hud.open` | J |
-| jbro-policy | `key_key.jbro_policy.quick_waypoint` | 미지정 |
 | 포획률 표시 | `key_key.catchrate.show_comparison` | 미지정 |
 | Cobblemon UI | `key_key.cobblemon_ui.decrease_font` | = |
 | Cobblemon UI | `key_key.cobblemon_ui.increase_font` | - |
