@@ -35,6 +35,25 @@ class LeagueTeamDataTest {
     private val finals = listOf("aaron", "bertha", "flint", "lucian", "cynthia")
     private val normal = gyms + finals
     private val hard = normal.map { "${it}_hard" }
+
+    /**
+     * The AI level each trainer plays at (user decision 2026-10-12): gyms Standard (2), the Elite Four Advanced (4),
+     * the Champion Boss (5); the hard rematches one step up, gyms Advanced and the Elite Four and Champion Boss.
+     */
+    private fun aiSkill(name: String): Int {
+        val base = name.removeSuffix("_hard")
+        val rematch = name.endsWith("_hard")
+        return when {
+            base == "cynthia" -> 5
+            base in finals -> if (rematch) 5 else 4
+            else -> if (rematch) 4 else 2
+        }
+    }
+
+    @Test
+    fun `every trainer plays at its AI level`() {
+        (normal + hard).forEach { name -> assertEquals(aiSkill(name), json("trainers", name)["ai_skill"].asInt, name) }
+    }
     private val stats = listOf("hp", "attack", "defence", "special_attack", "special_defence", "speed")
     private val natures = setOf("hardy", "lonely", "brave", "adamant", "naughty", "bold", "docile", "relaxed", "impish", "lax",
         "timid", "hasty", "serious", "jolly", "naive", "modest", "mild", "quiet", "bashful", "rash", "calm", "gentle", "sassy",
@@ -125,7 +144,7 @@ class LeagueTeamDataTest {
             assertEquals(ace.substringBefore(' '), data.megaStones.getValue(fields(ace).getValue("held_item")), "$name ace holds another's stone")
             assertEquals(members.maxOf(::level), level(ace), "$name ace is not its highest level")
             assertEquals("MEGA", json("challenges", name)["mechanic"].asString, name)
-            assertEquals(5, json("trainers", name)["ai_skill"].asInt, name)
+            assertEquals(aiSkill(name), json("trainers", name)["ai_skill"].asInt, name)
             assertTrue(json("challenges", name)["badge"] == null, "$name must not award a badge again")
             // Item Clause, as in the games' Battle Facilities: no two members hold the same item.
             val items = members.map { fields(it).getValue("held_item") }
