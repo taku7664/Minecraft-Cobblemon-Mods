@@ -23,6 +23,7 @@ final class KeybindingSetupTest {
     private Path optionsFile() { return gameDirectory.resolve("options.txt"); }
     private Path craftingFile() { return configDirectory().resolve("craftingtweaks-common.toml"); }
     private Path stateFile() { return configDirectory().resolve("cobblemon-client-setup/applied-defaults.properties"); }
+    private String profile() { return SetupFiles.PROFILE + "=" + SetupFiles.profileId(configDirectory()) + "\n"; }
     private void crafting(String content) throws IOException {
         Files.createDirectories(configDirectory());
         Files.writeString(craftingFile(), content);
@@ -57,7 +58,7 @@ final class KeybindingSetupTest {
 
     @Test void newlyAddedBadgeKeyClearsOnceWithoutChangingPolicyBKeyOrOldCompletedKeys() throws Exception {
         Files.createDirectories(stateFile().getParent());
-        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n");
+        Files.writeString(stateFile(), profile() + "keybindings-voicechat-v1=true\nkeybindings-voicechat-microphone-v1=true\n");
         Files.writeString(optionsFile(), "key_key.jbro_policy.quick_waypoint:key.keyboard.b\n"
             + "key_key.pokebadges.open_badgebox:key.keyboard.b\n"
             + "key_key.hide_icons:key.keyboard.j\n");
@@ -75,7 +76,7 @@ final class KeybindingSetupTest {
 
     @Test void newVoiceMuteAndPvpRoomBindingsApplyDespiteOldVoiceCompletion() throws Exception {
         Files.createDirectories(stateFile().getParent());
-        Files.writeString(stateFile(), "keybindings-voicechat-v1=true\n");
+        Files.writeString(stateFile(), profile() + "keybindings-voicechat-v1=true\n");
         Files.writeString(optionsFile(), "key_key.hide_icons:key.keyboard.j\n"
             + "key_key.mute_microphone:key.keyboard.m\n"
             + "key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.o\n");
@@ -92,7 +93,7 @@ final class KeybindingSetupTest {
 
     @Test void revisedPresetsApplyOnceDespitePreviousCompletionAndPreserveOtherKeys() throws Exception {
         Files.createDirectories(stateFile().getParent());
-        Files.writeString(stateFile(), "keybindings-zoomify-v1=true\nkeybindings-more_cobblemon_contents_pvp-room-open-v1=true\n");
+        Files.writeString(stateFile(), profile() + "keybindings-zoomify-v1=true\nkeybindings-more_cobblemon_contents_pvp-room-open-v1=true\n");
         String untouched = "key_key.more_cobblemon_contents.pvp.room_hud.toggle:key.keyboard.h\n"
             + "key_key.cobblemon_ui.select_action:key.keyboard.z\n"
             + "key_key.cobblemon_ui.cancel_action:key.keyboard.x\n"

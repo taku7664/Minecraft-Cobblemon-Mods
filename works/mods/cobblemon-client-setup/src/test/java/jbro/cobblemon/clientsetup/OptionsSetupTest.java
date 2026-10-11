@@ -72,7 +72,7 @@ final class OptionsSetupTest {
     @Test void profileThatAlreadyRanTheOldRuleIsTreatedAsAnUpdate() throws Exception {
         Files.createDirectories(config().resolve("cobblemon-client-setup"));
         Files.writeString(config().resolve("cobblemon-client-setup/applied-defaults.properties"),
-            "options-defaults-v1=true\nshader-defaults-v1=true\n");
+            SetupFiles.PROFILE + "=" + SetupFiles.profileId(config()) + "\noptions-defaults-v1=true\nshader-defaults-v1=true\n");
         Files.writeString(options(), "lang:en_us\n");
         iris("enableShaders=false\n");
         file("shaderpacks/LumaVale-0.1.3.zip");

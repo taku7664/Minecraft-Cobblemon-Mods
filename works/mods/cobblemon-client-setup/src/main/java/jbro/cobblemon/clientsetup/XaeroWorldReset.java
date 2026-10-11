@@ -24,6 +24,11 @@ public final class XaeroWorldReset {
     public static synchronized int apply(Path gameDirectory, Path configDirectory) throws IOException {
         Properties state = SetupFiles.readState(configDirectory);
         if ("true".equals(state.getProperty(RULE))) return 0;
+        // A record copied in with a modpack still dates this profile after the reset, so its maps are new ones.
+        if ("true".equals(SetupFiles.readRawState(configDirectory).getProperty(RULE))) {
+            SetupFiles.markApplied(configDirectory, state, List.of(RULE));
+            return 0;
+        }
         Path backup = gameDirectory.resolve("cobblemon_client_setup").resolve("backups").resolve(RULE);
         int moved = 0;
         for (String kind : KINDS) {

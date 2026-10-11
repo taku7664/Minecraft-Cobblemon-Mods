@@ -64,7 +64,35 @@ final class SetupFiles {
         atomicWrite(file, new TomlWriter().writeToString(config));
     }
 
+    /**
+     * The completion record of this profile. A record written in another profile (a modpack exported with the
+     * author's record, or one from before records named their profile) says nothing about this one, so its rules
+     * start over here.
+     */
     static Properties readState(Path directory) throws IOException {
+        Properties state = readRawState(directory);
+        String profile = profileId(directory);
+        if (profile.equals(state.getProperty(PROFILE))) return state;
+        Properties own = new Properties();
+        own.setProperty(PROFILE, profile);
+        return own;
+    }
+
+    static final String PROFILE = "profile";
+
+    /** A short hash of the config directory's absolute path, so the record does not carry the user name. */
+    static String profileId(Path directory) {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(directory.toAbsolutePath().normalize().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest, 0, 8);
+        } catch (java.security.NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    /** The record file as written, whichever profile wrote it. */
+    static Properties readRawState(Path directory) throws IOException {
         Properties state = new Properties();
         Path file = stateFile(directory);
         if (Files.exists(file)) {
