@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-12] 음성 채팅 사용안함·Xaero Quick Manual Confirmation 키 해제 0.1.21
+
+- **사용자 요청:** 키 설정의 "Quick Manual Confirmation"(오른쪽 Shift)과 "음성 채팅 사용안함"(N)을 클라 훅으로 해제.
+- **구현:** `key_gui.xaero_quick_confirm`(Xaero's World Map, 모드 ID `xaeroworldmap`)과 `key_key.disable_voice_chat`(Simple Voice Chat)을 `ONCE` 규칙으로 추가했다. 기존 `keybindings-voicechat-v1`·`-microphone-v1` 기록이 있는 프로필에도 적용되도록 표식을 `keybindings-voicechat-disable-v1`, `keybindings-xaeroworldmap-quick-confirm-v1`로 따로 뒀다. jbro-policy가 웨이포인트 키를 없애서 `key_key.jbro_policy.quick_waypoint` 규칙은 지웠다(남은 줄은 건드리지 않음).
+- **테스트:** 새 규칙 때문에 결과 끝에 `disable_voice_chat` 줄이 붙어 결과 문자열 전체를 비교하던 기존 테스트 6개가 처음 빌드에서 실패했다. 기대값을 고치고(`95bae9ca`) 두 키 전용 테스트를 추가했다. 최종 92개 통과.
+- **빌드·배포:** `f0b13bc3` 소스로 빌드, JAR `FCE4ABD6320166A3B29FE7D44405B581DA91684B5AE0EF8F6D515F8549B23F8E`. `PPakemon` 프로필의 0.1.20을 `F:/AI/build/plaza-fix-20261011/deployment-backups/keys/ppakemon/`로 옮기고 0.1.21을 넣었다(해시 일치). 개발 클라는 실행 중(PID 28116)이라 아직 0.1.20이다. `deploy-product/client`는 바꾸지 않았다.
+- **미확인:** 실제 실행에서 두 키가 미지정으로 바뀌는지.
+
+---
+
 ## [2026-10-11 15:10] ppakemon-client-setup으로 이름 변경, 훅 파일을 config 밖으로 0.1.20
 
 - **사용자 지시:** "관련 컨픽 다 삭제해", "ppakemon-client-setup으로 바꿔". `cobblemon-client-setup`(그 전 `cobblemon-client-defaults`)은 2026-10-03 AI 세션이 지은 이름이고 사용자가 정한 적이 없다.
