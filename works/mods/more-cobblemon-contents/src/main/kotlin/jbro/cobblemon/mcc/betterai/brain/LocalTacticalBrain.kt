@@ -616,7 +616,15 @@ internal class LocalTacticalBrain(
             seed,
             mixingContext(ranked),
         )
-        val selected = selection.rank
+        // Without the search, singles at the tiers with the rules go through the quick decider on top of the ranking.
+        val quick = if (!searchless || !rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) null
+            else ruleScores?.let { scores ->
+                jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
+                    ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
+                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed,
+                )
+            }
+        val selected = quick?.rank ?: selection.rank
         decisionTrace?.resolved("legacy_lookahead", ranked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
@@ -639,6 +647,7 @@ internal class LocalTacticalBrain(
                     "choice_seed_${selection.seed.toULong().toString(16)}",
                     "difficulty_${profile.difficulty.tier.name.lowercase()}",
                      ))
+                    quick?.let { add("quick_${it.reason}") }
                     if (lookahead == null) add("searchless") else {
                         // Doubles searches one turn whatever the tier asks for.
                         add("lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
