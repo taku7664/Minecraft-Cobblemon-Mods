@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-12 07:00] 1.1.0 플레이어 업데이트 안내: 옮길 파일
+
+- **배경:** Modrinth 앱에는 설치된 인스턴스를 `.mrpack` 파일로 업데이트하는 메뉴가 없다(설정의 Installation 탭은 Edit·Repair뿐, 앱 화면으로 직접 확인). 그래서 1.1.0 패치노트는 새 인스턴스 설치 후 예전 폴더에서 `options.txt`, `xaero/`, `ppakemon_client_setup/`을 옮기도록 안내했다.
+- **`ppakemon_client_setup/`을 같이 옮기는 이유:** 기록 없이 `xaero/`만 옮기면 월드 초기화 규칙이 서버 지도 폴더를 `backups/`로 옮겨 지도가 비어 보인다. 복사된 기록은 프로필 해시가 달라 다른 `ONCE` 규칙은 다시 판단하지만, 지도 이동은 완료 표시가 있으면 건너뛴다(README 106행). `options.txt`가 있으니 새 설치 기본값(언어·리소스팩)도 덮어쓰지 않는다.
+- **미확인:** 이 순서로 실제 새 인스턴스를 만들어 본 적은 없다. 코드·README 기준 판단이다.
+- **대안:** Modrinth 앱의 인스턴스 공유(Share 탭, Push update)를 쓰면 플레이어가 실행할 때 업데이트를 받는다. 받는 쪽 계정 필요 여부와 비 Modrinth JAR·용량 제한은 확인하지 않았다.
+
 ## [2026-10-12] 음성 채팅 사용안함·Xaero Quick Manual Confirmation 키 해제 0.1.21
 
 - **사용자 요청:** 키 설정의 "Quick Manual Confirmation"(오른쪽 Shift)과 "음성 채팅 사용안함"(N)을 클라 훅으로 해제.
