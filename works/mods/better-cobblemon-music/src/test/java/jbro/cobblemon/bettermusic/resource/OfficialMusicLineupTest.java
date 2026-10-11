@@ -187,9 +187,11 @@ final class OfficialMusicLineupTest {
             var track = element.getAsJsonObject();
             String name = track.get("target").getAsString();
             assertTrue(reported.add(name), "duplicate: " + name);
-            assertEquals(track.get("afterSha256").getAsString(),
-                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
-                    Files.readAllBytes(soundRoot.resolve(name)))), name);
+            if (!name.startsWith("music/battle/")) {
+                assertEquals(track.get("afterSha256").getAsString(),
+                    HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                        Files.readAllBytes(soundRoot.resolve(name)))), name);
+            }
             assertEquals(20 * Math.log10(0.5),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
         }
@@ -230,13 +232,44 @@ final class OfficialMusicLineupTest {
                 .filter(item -> item.get("target").getAsString().equals("music/battle/" + name))
                 .findFirst().orElseThrow();
             assertEquals(track.get("afterSha256").getAsString(), current.get("beforeSha256").getAsString(), name);
-            byte[] audio = Files.readAllBytes(battleDirectory.resolve(name));
-            assertEquals(current.get("afterSha256").getAsString(),
-                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)), name);
             assertEquals(20 * Math.log10(0.6),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.3, name);
         }
         assertEquals(actual, reported);
+    }
+
+    @Test
+    void battleBgmIsRaisedThirtyPercentAfterTheAllBgmPass() throws Exception {
+        Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
+        var previous = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/all-bgm-alert-volume-2026-10-11.json"))).getAsJsonObject();
+        var current = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/battle-gain-2026-10-11.json"))).getAsJsonObject();
+        assertEquals(1.3, current.get("multiplier").getAsDouble());
+        var tracks = current.getAsJsonArray("tracks");
+        assertEquals(61, tracks.size());
+        Set<String> expected = trackEvents.keySet().stream()
+            .filter(id -> id.startsWith("better_cobblemon_music:battle/"))
+            .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
+            .collect(Collectors.toSet());
+        Set<String> reported = new java.util.HashSet<>();
+        Path soundRoot = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
+        for (var element : tracks) {
+            var track = element.getAsJsonObject();
+            String name = track.get("target").getAsString();
+            assertTrue(reported.add(name), "duplicate: " + name);
+            var prior = java.util.stream.StreamSupport.stream(previous.getAsJsonArray("tracks").spliterator(), false)
+                .map(item -> item.getAsJsonObject())
+                .filter(item -> item.get("target").getAsString().equals(name))
+                .findFirst().orElseThrow();
+            assertEquals(prior.get("afterSha256").getAsString(), track.get("beforeSha256").getAsString(), name);
+            assertEquals(track.get("afterSha256").getAsString(),
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(soundRoot.resolve(name)))), name);
+            assertEquals(20 * Math.log10(1.3),
+                track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
+        }
+        assertEquals(expected, reported);
     }
 
     @Test
@@ -285,7 +318,14 @@ final class OfficialMusicLineupTest {
             .filter(track -> track.get("target").getAsString().equals("music/battle/pvp/pokemon_champions_arena_battle.ogg"))
             .findFirst().orElseThrow();
         assertEquals(pvp.get("afterSha256").getAsString(), currentPvp.get("beforeSha256").getAsString());
-        assertEquals(currentPvp.get("afterSha256").getAsString(),
+        var raised = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/battle-gain-2026-10-11.json"))).getAsJsonObject();
+        var raisedPvp = java.util.stream.StreamSupport.stream(raised.getAsJsonArray("tracks").spliterator(), false)
+            .map(element -> element.getAsJsonObject())
+            .filter(track -> track.get("target").getAsString().equals("music/battle/pvp/pokemon_champions_arena_battle.ogg"))
+            .findFirst().orElseThrow();
+        assertEquals(currentPvp.get("afterSha256").getAsString(), raisedPvp.get("beforeSha256").getAsString());
+        assertEquals(raisedPvp.get("afterSha256").getAsString(),
             HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(audio)));
     }
 
