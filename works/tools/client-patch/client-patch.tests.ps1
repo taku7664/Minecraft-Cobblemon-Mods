@@ -8,14 +8,14 @@ function Jar($path,$id,$version) {
 }
 $root=Join-Path $env:TEMP ('client-patch-test-'+[guid]::NewGuid().ToString('N'))
 $payload=Join-Path $root 'package';$target=Join-Path $root 'client';$state=Join-Path $root 'state'
-New-Item -ItemType Directory -Path "$payload/payload/mods","$payload/payload/config/more-cobblemon-contents/wiki/pages","$target/mods","$target/config/cobblemon-client-setup","$target/config/more-cobblemon-contents/wiki","$target/saves" -Force | Out-Null
+New-Item -ItemType Directory -Path "$payload/payload/mods","$payload/payload/config/more-cobblemon-contents/wiki/pages","$target/mods","$target/ppakemon_client_setup","$target/config/more-cobblemon-contents/wiki","$target/saves" -Force | Out-Null
 try {
     Jar "$payload/payload/mods/new.jar" 'cobblemon' '2'
     Jar "$target/mods/renamed-old.jar" 'cobblemon' '1'
     Jar "$target/mods/personal.jar" 'personal' '1'
     [IO.File]::WriteAllText("$payload/payload/config/more-cobblemon-contents/wiki/index.html",'new wiki')
     [IO.File]::WriteAllText("$target/config/more-cobblemon-contents/wiki/index.html",'old wiki')
-    $protected=@('options.txt','servers.dat','config/cobblemon-client-setup/client.toml','config/cobblemon-client-setup/applied-defaults.properties','saves/player.dat')
+    $protected=@('options.txt','servers.dat','ppakemon_client_setup/client.toml','ppakemon_client_setup/applied-defaults.properties','saves/player.dat')
     foreach($path in $protected){[IO.File]::WriteAllText((Join-Path $target $path),'personal bytes')}
     $files=@(Get-ChildItem "$payload/payload" -Recurse -File | ForEach-Object { @{Path=$_.FullName.Substring(("$payload/payload").Length+1).Replace('\','/');Sha256=(Get-FileHash $_.FullName).Hash;Size=$_.Length} })
     $manifest=@{Schema=1;Files=$files;Mods=@(@{Id='cobblemon';Path='mods/new.jar';Version='2'});RetiredModIds=@();ResourcePacks=@()}

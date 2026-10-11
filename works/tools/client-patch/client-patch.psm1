@@ -102,7 +102,7 @@ function ClientInventory([string]$source,[string]$wiki) {
         $files.Add([pscustomobject]@{Path=$relative;Source=$file.FullName;Sha256=(Hash $file.FullName);Size=$file.Length})
     }
     $ids=@($mods|ForEach-Object {$_.Id})
-    foreach($required in @('cobblemon','cobblemon_client_setup','more_cobblemon_contents')){if($required -notin $ids){throw ('필수 클라이언트 모드가 없습니다: '+$required)}}
+    foreach($required in @('cobblemon','ppakemon_client_setup','more_cobblemon_contents')){if($required -notin $ids){throw ('필수 클라이언트 모드가 없습니다: '+$required)}}
     return [pscustomobject]@{Schema=1;Files=@($files.ToArray());Mods=@($mods.ToArray());ResourcePacks=@($packs.ToArray())}
 }
 function Get-ClientPatchPlan {
@@ -116,7 +116,7 @@ function Get-ClientPatchPlan {
     $manifestPath=$null
     if($localMode){$manifest=ClientInventory $package $WikiRoot}else{$manifestPath=Local $package 'patch.json';$manifest=[IO.File]::ReadAllText($manifestPath)|ConvertFrom-Json}
     if($manifest.Schema -ne 1 -or @($manifest.Files).Count -eq 0){throw '유효한 패치 목록이 없습니다.'}
-    $desired=@{};$ids=@{};$packs=@{};$retired=@('cobblemon_client_defaults','bluemap','maplink')
+    $desired=@{};$ids=@{};$packs=@{};$retired=@('cobblemon_client_defaults','cobblemon_client_setup','bluemap','maplink')
     # Only these project-owned packs can be replaced. Visual preference packs are excluded.
     $packNames=@('better-cobblemon-music-resourcepack','cobblemon-korean-translation-bundle','E19-Xaero-Icons','galmuri11-8px','RCT Trainers+ [1.7] v2.2','spawn-notification-ment')
     foreach($pack in @($manifest.ResourcePacks)){

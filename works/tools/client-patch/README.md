@@ -14,7 +14,7 @@ Minecraft 1.21.1 / Fabric 프로필을 런처에서 먼저 만들어야 합니�
 | 대상 | 처리 |
 |---|---|
 | `mods/*.jar` | Fabric 메타데이터로 클라이언트/공용 모드를 고릅니다. 같은 모드 ID의 기존 JAR만 제거하고 새 버전을 설치합니다. 서버 전용 모드와 BlueMap·Map Link는 제외합니다. |
-| 시작 훅 | `cobblemon-client-setup` JAR을 갱신합니다. 이전 `cobblemon-client-defaults` JAR은 제거합니다. 설정과 적용 완료 기록은 보존합니다. |
+| 시작 훅 | `ppakemon-client-setup` JAR을 갱신합니다. 이전 `cobblemon-client-setup`·`cobblemon-client-defaults` JAR은 제거합니다. 설정과 적용 완료 기록은 보존합니다. |
 | 위키 | `config/more-cobblemon-contents/wiki/`의 홈·문서·도감 데이터·이미지·스크립트·스타일·폰트를 저장소의 최신 파일로 갱신합니다. README·MEMORY·문서 템플릿은 제외합니다. |
 | 기능 리소스팩 | 음악, 코블몬 한국어 번역, Xaero 포켓몬 아이콘, Galmuri 폰트, RCT 트레이너 외형, 스폰 알림의 ZIP 6계열만 복사합니다. 기존 같은 계열 ZIP의 이름을 유지하면서 내용도 갱신합니다. |
 
