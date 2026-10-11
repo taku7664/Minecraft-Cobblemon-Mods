@@ -644,6 +644,51 @@ class TowerPlaySessionServiceTest {
         assertEquals(17, changed.state.bpBalance)
     }
 
+    @Test
+    fun `a new session retires streaks an unclean stop left without a session`() {
+        val retired = mutableListOf<TowerTrack>()
+        val service = retiringService(retired)
+        val doubleEndless = TowerTrack(TowerBattleFormat.DOUBLE, TowerMode.ENDLESS)
+
+        service.open(playerId, openRequest(), retireOrphanedRuns = true)
+
+        assertEquals(listOf(doubleEndless), retired)
+        val progress = service.progress(playerId)!!.getValue(doubleEndless)
+        assertEquals(0, progress.currentWinStreak)
+        assertEquals(9, progress.bestWinStreak)
+    }
+
+    @Test
+    fun `reopening a live session keeps its streak`() {
+        val retired = mutableListOf<TowerTrack>()
+        val service = retiringService(retired)
+        service.open(playerId, openRequest())
+
+        val reopened = service.open(playerId, openRequest(), retireOrphanedRuns = true)
+
+        assertTrue(retired.isEmpty())
+        assertEquals(7, service.progress(playerId)!!.getValue(TowerTrack(TowerBattleFormat.DOUBLE, TowerMode.ENDLESS)).currentWinStreak)
+        assertEquals(TowerPlayPhase.SELECTING, reopened.phase)
+    }
+
+    @Test
+    fun `a streak an operator set with no session survives the next open`() {
+        val retired = mutableListOf<TowerTrack>()
+        val service = retiringService(retired)
+
+        assertTrue(service.adminSetProgress(playerId, TowerProgress(TowerBattleFormat.DOUBLE, 7, 9)))
+        service.open(playerId, openRequest(), retireOrphanedRuns = true)
+
+        assertTrue(retired.isEmpty())
+        assertEquals(7, service.progress(playerId)!!.getValue(TowerTrack(TowerBattleFormat.DOUBLE, TowerMode.ENDLESS)).currentWinStreak)
+    }
+
+    private fun retiringService(retired: MutableList<TowerTrack>) = TowerPlaySessionService(
+        registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+        runRetirementSink = { _, track -> retired += track },
+        entryContextIdFactory = { entryContextId },
+    )
+
     private fun service(): TowerPlaySessionService = TowerPlaySessionService(
         registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
     ) { entryContextId }

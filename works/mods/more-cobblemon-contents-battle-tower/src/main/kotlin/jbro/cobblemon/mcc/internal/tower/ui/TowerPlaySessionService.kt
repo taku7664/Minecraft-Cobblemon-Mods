@@ -125,16 +125,23 @@ internal class TowerPlaySessionService(
 ) {
     private val sessions = HashMap<UUID, Session>()
     private val launchingPlayers = HashSet<UUID>()
+    /** Tracks an operator set a streak on while their player had no session; the next open keeps those streaks. */
+    private val adminSetTracks = HashMap<UUID, MutableSet<TowerTrack>>()
 
     /**
      * Opens the Tower for [playerId]. A session holding a registered team shows its run as it stands; a selecting one
      * takes the party, progress and balance [request] read now and keeps the rules the challenger chose.
+     *
+     * With [retireOrphanedRuns], a new session first retires every streak stored without a session behind it. A clean
+     * close retires them already, so such a streak was left by a server that stopped without closing its sessions, and
+     * its registered team is gone with that server.
      */
     @Synchronized
     fun open(
         playerId: UUID,
         request: TowerPlayOpenRequest,
         entryContext: TowerPlayEntryContext = TowerPlayEntryContext.Command(entryContextIdFactory()),
+        retireOrphanedRuns: Boolean = false,
     ): TowerPlayViewState {
         sessions[playerId]?.let { existing ->
             val shown = existing.state
@@ -156,7 +163,9 @@ internal class TowerPlaySessionService(
             return refreshed
         }
         registeredTeamSnapshots.discard(playerId)
-        val progress = request.progressByTrack.getValue(TowerTrack(request.initialFormat, request.initialMode))
+        val progressByTrack =
+            if (retireOrphanedRuns) retireStaleStreaks(playerId, request.progressByTrack) else request.progressByTrack
+        val progress = progressByTrack.getValue(TowerTrack(request.initialFormat, request.initialMode))
         val state = viewState(
             entryContextId = entryContext.entryContextId,
             revision = 0,
@@ -169,8 +178,26 @@ internal class TowerPlaySessionService(
             selectedMechanic = DEFAULT_TOWER_MECHANIC,
             endlessUnlocked = request.endlessUnlocked,
         )
-        sessions[playerId] = Session(request.progressByTrack, entryContext, state)
+        sessions[playerId] = Session(progressByTrack, entryContext, state)
         return state
+    }
+
+    /** [stored] with every streak no live session holds ended as a retirement ends it; the best streak stays. */
+    private fun retireStaleStreaks(
+        playerId: UUID,
+        stored: Map<TowerTrack, TowerProgress>,
+    ): Map<TowerTrack, TowerProgress> {
+        val kept = adminSetTracks[playerId].orEmpty()
+        val retired = stored.mapValues { (track, progress) ->
+            if (progress.currentWinStreak == 0 || track in kept) {
+                progress
+            } else {
+                runRetirementSink.retire(playerId, track)
+                progress.copy(currentWinStreak = 0)
+            }
+        }
+        adminSetTracks.remove(playerId)
+        return retired
     }
 
     @Synchronized
@@ -188,7 +215,15 @@ internal class TowerPlaySessionService(
 
     @Synchronized
     fun adminSetProgress(playerId: UUID, progress: TowerProgress): Boolean {
-        val session = sessions[playerId] ?: return true
+        val session = sessions[playerId] ?: run {
+            // A streak set with no session is the operator's, not a leftover of an unclean stop: the next open keeps it.
+            if (progress.currentWinStreak > 0) {
+                adminSetTracks.getOrPut(playerId, ::HashSet) += progress.track
+            } else {
+                adminSetTracks[playerId]?.remove(progress.track)
+            }
+            return true
+        }
         val current = session.state.format == progress.format && session.state.mode == progress.mode
         if (session.activeBattleId != null && current) return false
         session.progressByTrack[progress.track] = progress
@@ -380,6 +415,7 @@ internal class TowerPlaySessionService(
             }
         }
         launchingPlayers.clear()
+        adminSetTracks.clear()
         failure?.let { throw it }
     }
 

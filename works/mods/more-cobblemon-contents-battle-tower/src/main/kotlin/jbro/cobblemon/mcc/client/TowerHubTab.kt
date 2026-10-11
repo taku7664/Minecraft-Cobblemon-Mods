@@ -57,6 +57,12 @@ internal object TowerHubClient {
 
     /** True once after the server opened the hub on Tower, whose fresh state the tab then uses. */
     fun takeOpenedByServer(): Boolean = openedByServer.also { openedByServer = false }
+
+    /** Forgets the session of the server or world left behind; the next one sends its own state. */
+    fun clear() {
+        controller = null
+        openedByServer = false
+    }
 }
 
 /** Battle Tower inside the MCC hub: pick six, choose the session rules, lock the team and climb. */

@@ -64,8 +64,8 @@ internal data class TowerPlayPartySlot(
         require(heldItemId == null || IdentifierSyntax.isResourceId(heldItemId)) {
             "Invalid held item ID: $heldItemId"
         }
-        require(level in LEVEL_RANGE) { "Pokemon level must be between 1 and 100" }
-        require(battleLevel in LEVEL_RANGE && battleLevel <= level && battleLevel <= TOWER_BATTLE_LEVEL_CAP) {
+        require(level >= MIN_PARTY_LEVEL) { "Pokemon level must be at least $MIN_PARTY_LEVEL" }
+        require(battleLevel >= MIN_PARTY_LEVEL && battleLevel <= level && battleLevel <= TOWER_BATTLE_LEVEL_CAP) {
             "Battle level must be valid, no greater than the original level, and capped at $TOWER_BATTLE_LEVEL_CAP"
         }
         require(formId == null || formId.isNotBlank()) { "Pokemon form ID cannot be blank" }
@@ -323,4 +323,4 @@ private fun <T> Collection<T>.immutableSet(): Set<T> =
     Collections.unmodifiableSet(LinkedHashSet(this))
 
 private val PARTY_SLOT_RANGE = 0 until TOWER_REGISTERED_TEAM_SIZE
-private val LEVEL_RANGE = 1..100
+private const val MIN_PARTY_LEVEL = 1

@@ -39,12 +39,14 @@ import jbro.cobblemon.mcc.internal.command.BattleProgressSetResult
 import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
 import jbro.cobblemon.mcc.internal.record.BattleRecordKey
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
+import jbro.cobblemon.mcc.internal.record.BattleRecordStats
 import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.tower.TowerBattleRecordService
 import jbro.cobblemon.mcc.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerTrack
 import jbro.cobblemon.mcc.internal.tower.TowerProgressRecordCodec
+import jbro.cobblemon.mcc.internal.tower.TowerProgressUpdate
 import jbro.cobblemon.mcc.internal.tower.TowerRecordContract
 import jbro.cobblemon.mcc.internal.tower.TowerPveBattleLauncher
 import jbro.cobblemon.mcc.internal.tower.application.BattleTowerApplicationBackend
@@ -82,6 +84,11 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     private val settledRewards = HashMap<java.util.UUID, Long>()
     /** Battles whose win cleared Normal, so the challenger hears of it once the result has settled. */
     private val clearedBattles = HashSet<java.util.UUID>()
+    /**
+     * The record each battle's settlement committed, held until that settlement finishes: a retry after a later step
+     * failed reuses it instead of counting the battle again.
+     */
+    private val recordedBattles = HashMap<java.util.UUID, Pair<TowerProgressUpdate, BattleRecordStats>>()
     private val runtime: Cobblemon173TowerPveBattleRuntime by lazy {
         Cobblemon173TowerPveBattleRuntime(
             playerResolver = onlinePlayers::get,
@@ -210,6 +217,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                     }
                 },
                 pendingCompletions::clear,
+                recordedBattles::clear,
                 sessions::clear,
                 launcher::clear,
                 onlinePlayers::clear,
@@ -272,10 +280,11 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         return try {
             onlinePlayers[player.uuid] = player
             val request = Cobblemon173TowerPlayOpenRequestFactory.create(player, initialFormat)
+            // A streak stored with no session here outlived an unclean stop; a fresh session retires it.
             val state = if (entryContext == null) {
-                sessions.open(player.uuid, request)
+                sessions.open(player.uuid, request, retireOrphanedRuns = true)
             } else {
-                sessions.open(player.uuid, request, entryContext)
+                sessions.open(player.uuid, request, entryContext, retireOrphanedRuns = true)
             }
             BattleHubNetworking.sendHeader(player)
             ServerPlayNetworking.send(player, TowerPlayStatePayload(null, state))
@@ -611,9 +620,10 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                     ),
                 ).requireAcceptedReward()
             }
-            val recorded = TowerBattleRecordService { completion ->
-                BattleRecordService.recordCompletedBattle(server, completion)
-            }.record(recordedPlayerId, update)
+            val recorded = recordedBattles[battleId]?.takeIf { (recordedUpdate, _) -> recordedUpdate == update }?.second
+                ?: TowerBattleRecordService { completion ->
+                    BattleRecordService.recordCompletedBattle(server, completion)
+                }.record(recordedPlayerId, update).also { recordedBattles[battleId] = update to it }
             check(TowerProgressRecordCodec.decode(recorded) == update.after) {
                 "Battle Tower record storage did not accept the completed progress update"
             }
@@ -623,6 +633,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 clearedBattles += battleId
             }
             if (update.outcome == TowerBattleOutcome.WIN) settledRewards[battleId] = update.rewardBp.toLong()
+            recordedBattles.remove(battleId)
         }
 
     private val TOWER_CONTENT_ID = BattleContentId(ManagedBattleContentIds.BATTLE_TOWER)

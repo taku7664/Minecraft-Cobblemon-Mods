@@ -48,6 +48,14 @@ class TowerPlayPayloadsTest {
     }
 
     @Test
+    fun `state payload carries a party level above one hundred`() {
+        val overLevel = TowerPlayPartySlot(0, UUID(0, 9), "cobblemon:species_9", null, 150, 50)
+        val payload = TowerPlayStatePayload(null, state().copy(party = listOf(overLevel), selectedPokemonIds = emptySet()))
+
+        assertEquals(payload, roundTrip(TowerPlayStatePayload.CODEC, payload))
+    }
+
+    @Test
     fun `every mutation intent round trips`() {
         val intents = listOf(
             TowerPlayIntent.ToggleSelection(requestId, contextId, 7, UUID(0, 1)),

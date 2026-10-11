@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 
 internal object TowerPlayClientNetworking {
     fun register() {
+        MccClientSessionReset.onReset("Battle Tower client state", TowerHubClient::clear)
         ClientPlayNetworking.registerGlobalReceiver(TowerPlayStatePayload.TYPE) { payload, context ->
             context.client().execute {
                 val requestId = payload.requestId

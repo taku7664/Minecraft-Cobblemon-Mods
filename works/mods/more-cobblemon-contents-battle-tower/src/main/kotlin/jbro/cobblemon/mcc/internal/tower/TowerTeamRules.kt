@@ -25,7 +25,8 @@ internal data class TowerPokemonRegistration(
         require(heldItemId == null || IdentifierSyntax.isResourceId(heldItemId)) {
             "Invalid held item ID: $heldItemId"
         }
-        require(level in MIN_LEVEL..MAX_LEVEL) { "Pokemon level must be between $MIN_LEVEL and $MAX_LEVEL" }
+        // Above 100 is allowed: some servers raise the cap, and battles field a level-50 copy anyway.
+        require(level >= MIN_LEVEL) { "Pokemon level must be at least $MIN_LEVEL" }
         require(formId == null || formId.isNotBlank()) { "Pokemon form ID cannot be blank" }
     }
 
@@ -151,4 +152,3 @@ private fun <T> Iterable<T>.duplicateValues(): List<T> {
 internal const val TOWER_REGISTERED_TEAM_SIZE = 6
 internal const val TOWER_BATTLE_LEVEL_CAP = 50
 private const val MIN_LEVEL = 1
-private const val MAX_LEVEL = 100

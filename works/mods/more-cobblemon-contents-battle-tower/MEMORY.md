@@ -1,5 +1,14 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-10-11 12:18] 오픈 전 점검 수정 (구현만, 빌드·테스트 안 함)
+
+- **비정상 종료 뒤 연승 이어가기:** 정상 종료는 세션을 닫으며 모든 트랙의 연승을 은퇴시키지만, 크래시·강제 종료는 이를 건너뛰어 저장된 연승이 남았다. 재시작 뒤 새 세션에서 다른 팀으로 그 연승을 이어갈 수 있었다. `TowerPlaySessionService.open(..., retireOrphanedRuns = true)`가 살아 있는 세션이 없을 때 남은 연승을 은퇴 싱크로 0으로 만들고 최고 연승은 그대로 둔다. 네트워킹의 `open`만 이 옵션을 켠다. 기존 세션을 다시 여는 경우는 건드리지 않는다. 세션이 없을 때 관리자가 `streak set`으로 넣은 연승은 메모리에 표시해 다음 열기에서 지키며, 그 사이 서버를 재시작하면 은퇴된다.
+- **클라이언트 상태 초기화:** `TowerHubClient.clear()`를 `MccClientSessionReset.onReset("Battle Tower client state")`에 등록해 서버·월드를 옮기면 이전 세션의 컨트롤러와 `openedByServer`를 지운다.
+- **레벨 100 초과 포켓몬:** `TowerPokemonRegistration`·`TowerPlayPartySlot`의 레벨 상한(100)을 없애고 1 이상만 검사한다. 배틀은 어차피 50레벨 복제본을 쓴다. 페이로드는 VarInt라 범위 제한이 없어 따로 바꿀 것이 없다.
+- **정산 재시도 중복 기록 방지:** BP는 battleId로 멱등이지만 `recordCompletedBattle`은 매번 올린다. 기록 커밋 뒤 단계(확인 검사, Normal 클리어 리셋)에서 예외가 나 재시도하면 한 판이 두 번 기록됐다. `recordedBattles`에 battleId별 기록 결과를 정산이 끝날 때까지 두고, 같은 업데이트의 재시도는 그 결과를 다시 쓴다. 서버 종료 정리에서 비운다.
+- **확인만 함:** 사망·로그아웃 패배(코어 `ManagedBattleForfeits`)와 타워 자체 접속 종료 처리는 둘 다 `activeBattleId == battleId`일 때만 정산하고, 접속 종료 처리는 대기 중인 정산이 있으면 먼저 처리한 뒤 없을 때만 직접 정산하므로 이중 기록되지 않는다.
+- **테스트:** `TowerPlaySessionServiceTest`(고아 연승 은퇴, 살아 있는 세션 유지, 관리자 설정 유지), `TowerTeamRulesTest`(150레벨 허용·0레벨 거부), `TowerPlayPayloadsTest`(150레벨 왕복)를 추가했다. 빌드·테스트·배포·실게임 검증은 하지 않았다.
+
 ## [2026-10-08 21:56] main 병합 후 빌드·개발 배포 재확인
 
 - **병합:** 기믹 API 브랜치를 현재 main과 병합한 `5d4afd558bd3c1fa63e7d81d47c568ff5d564933`을 main에 푸시했다. 기존 BP 테스트 기대값 수정 `3c247482`·`10e14da4`도 포함한다. 앞선 브랜치 배포 기록은 이번 main 검증으로 보완하며 이전 실패 기록은 보존한다.

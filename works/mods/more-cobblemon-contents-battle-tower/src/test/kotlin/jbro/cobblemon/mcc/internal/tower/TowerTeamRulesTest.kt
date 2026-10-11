@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.internal.tower
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -137,6 +138,12 @@ class TowerTeamRulesTest {
         assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 50).battleLevel)
         assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 51).battleLevel)
         assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 100).battleLevel)
+    }
+
+    @Test
+    fun `accepts levels above one hundred and still fields them at fifty`() {
+        assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 150).battleLevel)
+        assertThrows(IllegalArgumentException::class.java) { pokemon(1, "cobblemon:pikachu", level = 0) }
     }
 
     private fun acceptedTeam(): TowerRegisteredTeam =
