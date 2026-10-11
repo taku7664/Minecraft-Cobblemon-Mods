@@ -83,6 +83,15 @@
 
 ---
 
+## [2026-10-11 03:00] ESC 메뉴 위키·디스코드 버튼 추가 (구현·빌드·클라 배치, 개발 서버 배치 보류, 실게임 미검증)
+
+- **사용자 요청:** ESC 메뉴 왼쪽 위에 "빡켓몬 위키", 그 아래 "빡켓몬 디스코드" 버튼, 두 버튼 너비 동일. 마크 기본 `Button`을 쓴다. 배포는 jbro-policy만.
+- **구현(`fbdbc0ae`):** 위키 링크는 플레이어별 토큰이고 초대 링크는 서버 설정이라 클라가 주소를 모른다. 버튼이 C2S `request_link`(wiki/discord)를 보내면 서버가 `WikiApi.linkFor`(MCC 있을 때)나 `MenuLinks.inviteUrl`로 S2C `open_link`를 보내고, 클라가 `Util.getPlatform().openUri`로 바로 연다. 없으면 채팅으로 꺼져 있다고 알린다. 버튼은 `ScreenEvents.AFTER_INIT`에서 `PauseScreen.showsPauseMenu()`일 때만 100x20으로 (4,4)·(4,28)에 붙고, 서버가 패킷을 모르면 비활성화한다. 패킷 타입은 공통 초기화에서 항상 등록한다.
+- **빌드:** `fbdbc0ae`를 `git archive`로 F 드라이브에 풀어 `:jbro-policy:build` 성공, 테스트 107개 통과. JAR SHA-256 `976DDCE9D286D387C61D960D611F6E53BADFE7C2F4CC1F60854FD59A331ED494`. 빌드 뒤 main이 `61d42625`로 전진했지만 jbro-policy·빌드 설정·MCC API 차이 0을 확인해 같은 빌드본을 쓴다.
+- **배치:** 개발 클라만 교체했고 해시 일치(백업 `F:/AI/build/plaza-fix-20261011/deployment-backups/client-menu/`). 개발 서버는 PID 30600이 25566에서 실행 중이라 교체하지 않았다. 서버 설치본은 `C3A2443D…`로 앞선 `F8DA22E6…`과 달라 다른 세션이 이후 교체한 것으로 보인다. 서버 JAR이 바뀌기 전까지 새 클라에서 두 버튼은 비활성화된다. VPS·운영 저장소는 건드리지 않았다.
+
+---
+
 ## [2026-10-11 02:40] 광장 낙하·초대 링크·닉네임 수정 빌드·개발 배포·VPS 반영 (실게임 미검증)
 
 - **빌드:** 공유 체크아웃에 다른 세션의 병합 충돌·미커밋 MCC 변경이 있어, 커밋된 `origin/main`(`c3d471c9`, 수정 `a02069fa` 포함)을 `git archive`로 `F:/AI/build/plaza-fix-20261011/src`에 풀어 빌드했다(워크트리 아님). `GRADLE_USER_HOME=F:/AI/caches/gradle`, 프로젝트 캐시·모듈 출력·TEMP·JVM tmp 모두 F 경로이고 init 스크립트가 F 경로를 검사한다. `:jbro-policy:build` 종료 코드 0(6분 56초), 테스트 102개 모두 통과(새 `inviteUrl` 테스트 포함). JAR SHA-256 `F8DA22E646EE7BDF792151219F4D3854807C9D6C94FE96F8E96DF527BC7096E4`, `jar --validate` 0.
