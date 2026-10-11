@@ -208,6 +208,10 @@
   "command.jbro_policy.wiki.hover": "Opens the wiki in your browser. Keep this link to yourself.",
   "command.jbro_policy.wiki.off": "The server wiki is off.",
   "command.jbro_policy.wiki.one_player": "Name exactly one player.",
+  "menu.jbro_policy.wiki": "PPakemon Wiki",
+  "menu.jbro_policy.discord": "PPakemon Discord",
+  "message.jbro_policy.menu_link.wiki_off": "The server wiki is off.",
+  "message.jbro_policy.menu_link.discord_off": "No Discord invite is set.",
 
   "message.jbro_policy.test.party_empty": "Your party is empty.",
   "message.jbro_policy.test.slot_empty": "Party slot %s is empty.",
