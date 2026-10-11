@@ -7,11 +7,13 @@ import com.mojang.blaze3d.platform.NativeImage
 import java.security.MessageDigest
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiModelFraming
-import jbro.cobblemon.uikit.UiRenderSlotSpec
+import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.EditBox
+import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
@@ -30,7 +32,8 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
     private var selected: String? = NpcSkinRef.parse(current).takeIf { it is NpcSkinRef.Texture || it is NpcSkinRef.Pokemon }
         ?.toString()?.takeIf { it in labels }
     private val rows = mutableListOf<AbstractWidget>()
-    private var preview: AbstractWidget? = null
+    /** The chosen skin drawn beside the list: where, what, and its name. */
+    private var preview: Triple<UiRect, CobblemonUiRenderContent, Component>? = null
     private var choose: AbstractWidget? = null
     private lateinit var search: EditBox
 
@@ -81,7 +84,7 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
     }
 
     private fun refreshPreview() {
-        preview?.let(::removeWidget)
+        preview = null
         choose?.active = selected != null
         val file = selected ?: return
         val left = MARGIN + 10 + LIST_WIDTH + 16
@@ -89,8 +92,16 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         val slotHeight = height - MARGIN - 40 - top
         val slotWidth = (slotHeight / 2).coerceAtMost(width - MARGIN - 10 - left)
         if (slotWidth <= 0 || slotHeight <= 0) return
-        preview = addRenderableOnly(CobblemonUiRenderSlot.create(left, top, slotWidth, slotHeight,
-            UiRenderSlotSpec(Component.literal(labels.getValue(file))), NpcSkins.content(file, UiModelFraming.FULL_BODY)))
+        preview = Triple(UiRect(left, top, slotWidth, slotHeight - 12), NpcSkins.content(file, UiModelFraming.FULL_BODY),
+            Component.literal(labels.getValue(file)))
+    }
+
+    // The model alone on the screen's background with its name under it, without a framed slot.
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        super.render(graphics, mouseX, mouseY, partialTick)
+        val (bounds, content, name) = preview ?: return
+        CobblemonUiRenderSlot.drawContent(graphics, bounds, content, partialTick)
+        graphics.drawCenteredString(font, name, bounds.x + bounds.width / 2, bounds.bottom + 3, 0xFFFFFF)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {

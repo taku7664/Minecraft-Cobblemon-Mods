@@ -3,37 +3,28 @@ package jbro.cobblemon.npc.client
 import jbro.cobblemon.npc.network.DialogueFetchPayload
 import jbro.cobblemon.npc.network.NpcSavePayload
 import jbro.cobblemon.npc.network.NpcSettingsPayload
-import jbro.cobblemon.uikit.CobblemonUiSharedTheme
-import jbro.cobblemon.uikit.CobblemonUiThemes
-import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
-import jbro.cobblemon.uikit.UiControlSize
-import jbro.cobblemon.uikit.UiPanelSpec
-import jbro.cobblemon.uikit.UiWidthPolicy
-import jbro.cobblemon.uikit.client.CobblemonUiButton
-import jbro.cobblemon.uikit.client.CobblemonUiPanel
-import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-/** What the operator screens share: the UI kit's shared theme while open, field labels, and a status line. */
+/**
+ * What the operator screens share, drawn with Minecraft's own widgets: titles, field labels and a status line. A
+ * [UiButtonVariant] only tints the label: yellow marks the chosen row or main action, red a destructive one.
+ */
 abstract class NpcEditorScreen(title: Component) : Screen(title) {
-    private var restoreTheme: (() -> Unit)? = null
     private val labels = mutableListOf<Triple<Component, Int, Int>>()
+    private val titles = mutableListOf<Triple<Component, Int, Int>>()
     protected var status: Component? = null
     protected var statusOk = true
 
     override fun init() {
-        if (restoreTheme == null) restoreTheme = CobblemonUiSharedTheme.install()
         labels.clear()
-    }
-
-    override fun removed() {
-        restoreTheme?.invoke()
-        restoreTheme = null
+        titles.clear()
     }
 
     override fun isPauseScreen() = false
@@ -56,29 +47,36 @@ abstract class NpcEditorScreen(title: Component) : Screen(title) {
     }
 
     protected fun button(x: Int, y: Int, text: Component, variant: UiButtonVariant = UiButtonVariant.SECONDARY,
-                         width: Int? = null, press: () -> Unit): CobblemonUiButton {
-        val spec = UiButtonSpec(text, variant = variant, size = UiControlSize.SMALL,
-            width = width?.let { UiWidthPolicy.Fixed(it) } ?: UiWidthPolicy.Content)
-        return addRenderableWidget(CobblemonUiButton.create(x, y, width ?: 200, spec, press = press))
+                         width: Int? = null, press: () -> Unit): Button {
+        val shown = when (variant) {
+            UiButtonVariant.PRIMARY -> text.copy().withStyle(ChatFormatting.YELLOW)
+            UiButtonVariant.DANGER -> text.copy().withStyle(ChatFormatting.RED)
+            else -> text
+        }
+        val buttonWidth = width ?: (font.width(text) + 16).coerceAtLeast(40)
+        return addRenderableWidget(Button.builder(shown) { press() }.bounds(x, y, buttonWidth, BUTTON_HEIGHT).build())
     }
 
+    /** The screen's title over the area its widgets fill, where the UI kit drew a panel. */
     protected fun panel(x: Int, y: Int, width: Int, height: Int, title: Component) {
-        addRenderableOnly(CobblemonUiPanel.create(x, y, width, height, UiPanelSpec(title = title, featured = true)))
+        titles += Triple(title, x + width / 2, y + 8)
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         super.render(graphics, mouseX, mouseY, partialTick)
-        val theme = CobblemonUiThemes.registry.snapshot()
-        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
-        labels.forEach { (text, x, y) -> UiTextRenderer.draw(graphics, font, text, x, y, ink) }
+        titles.forEach { (text, x, y) -> graphics.drawCenteredString(font, text, x, y, 0xFFFFFF) }
+        labels.forEach { (text, x, y) -> graphics.drawString(font, text, x, y, LABEL_COLOR) }
         status?.let {
-            val color = if (statusOk) theme.colors.accentPrimary else 0xFFE05050.toInt()
-            graphics.drawCenteredString(font, it, width / 2, height - 14, color)
+            graphics.drawCenteredString(font, it, width / 2, height - 14, if (statusOk) 0x55FF55 else 0xFF5555)
         }
     }
 
     companion object {
-        const val FIELD_HEIGHT = 18
+        const val FIELD_HEIGHT = 20
+        const val BUTTON_HEIGHT = 20
+
+        /** The grey vanilla uses for field labels, as on the create-world screen. */
+        private const val LABEL_COLOR = 0xA0A0A0
     }
 }
 
