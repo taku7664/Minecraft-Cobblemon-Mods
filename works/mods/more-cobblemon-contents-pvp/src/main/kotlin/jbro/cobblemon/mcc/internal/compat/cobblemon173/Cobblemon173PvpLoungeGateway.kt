@@ -48,7 +48,8 @@ internal class Cobblemon173PvpLoungeGateway(
             z = player.z,
             yaw = player.yRot,
             pitch = player.xRot,
-            gameModeId = player.gameMode.gameModeForPlayer.name,
+            // The serialized lowercase name ("creative"), which GameType.byName reads back.
+            gameModeId = player.gameMode.gameModeForPlayer.getName(),
         )
     }
 
@@ -83,6 +84,10 @@ internal class Cobblemon173PvpLoungeGateway(
             RemoteSpectateResult.ALREADY_SPECTATING,
         )
     }
+
+    /** Someone fighting a battle of their own is left where they are rather than pulled into spectator mode. */
+    override fun canSpectate(viewerId: UUID): Boolean =
+        BattleRegistry.getBattleByParticipatingPlayerId(viewerId) == null
 
     override fun stopSpectating(viewerId: UUID, battleId: UUID) {
         BattleRegistry.getBattle(battleId)?.spectators?.remove(viewerId)
@@ -123,10 +128,18 @@ internal class Cobblemon173PvpLoungeGateway(
 
     override fun restore(playerId: UUID, point: PvpReturnPoint): Boolean {
         val player = playerResolver(playerId) ?: return false
-        val location = ResourceLocation.tryParse(point.dimensionId) ?: return false
-        val key = ResourceKey.create(Registries.DIMENSION, location)
-        val level = player.server.getLevel(key) ?: return false
-        val restoredGameMode = GameType.byName(point.gameModeId, GameType.SURVIVAL) ?: GameType.SURVIVAL
+        val restoredGameMode = pvpReturnGameMode(point.gameModeId)
+        val level = ResourceLocation.tryParse(point.dimensionId)
+            ?.let { location -> player.server.getLevel(ResourceKey.create(Registries.DIMENSION, location)) }
+        if (level == null) {
+            // A dimension that is gone will not come back on a later tick; retrying would loop forever.
+            MoreCobblemonContents.LOGGER.warn(
+                "PvP return point dimension {} is unavailable for {}; returning them to the overworld spawn",
+                point.dimensionId,
+                playerId,
+            )
+            return restoreToOverworldSpawn(playerId, restoredGameMode)
+        }
         if (player.gameMode.gameModeForPlayer != restoredGameMode && !player.setGameMode(restoredGameMode)) return false
         player.teleportTo(level, point.x, point.y, point.z, point.yaw, point.pitch)
         player.deltaMovement = Vec3.ZERO
@@ -152,13 +165,14 @@ internal class Cobblemon173PvpLoungeGateway(
      * Last-resort exit used when a recorded return point is gone, for example because the server
      * restarted while somebody was standing in an arena. The exact previous game mode is no longer
      * available, so restore the server default instead of leaving an admitted spectator in spectator
-     * mode after returning them to the overworld.
+     * mode after returning them to the overworld. A return point whose dimension is gone passes its
+     * recorded [gameMode] instead.
      */
-    fun restoreToOverworldSpawn(playerId: UUID): Boolean {
+    fun restoreToOverworldSpawn(playerId: UUID, gameMode: GameType? = null): Boolean {
         val player = playerResolver(playerId) ?: return false
         val overworld = player.server.overworld()
         val spawn = overworld.sharedSpawnPos
-        val fallbackGameMode = player.server.defaultGameType
+        val fallbackGameMode = gameMode ?: player.server.defaultGameType
         if (player.gameMode.gameModeForPlayer != fallbackGameMode && !player.setGameMode(fallbackGameMode)) return false
         player.teleportTo(overworld, spawn.x + 0.5, spawn.y.toDouble(), spawn.z + 0.5, 0F, 0F)
         player.deltaMovement = Vec3.ZERO
@@ -205,6 +219,15 @@ internal class Cobblemon173PvpLoungeGateway(
         )
     }
 }
+
+/**
+ * The game mode a return point recorded. Points are written with the lowercase serialized name ("creative"), but
+ * builds before that wrote the enum constant name ("CREATIVE"), so the match ignores case. Only an unknown name
+ * falls back to survival.
+ */
+internal fun pvpReturnGameMode(id: String): GameType =
+    GameType.entries.firstOrNull { it.getName().equals(id, ignoreCase = true) || it.name.equals(id, ignoreCase = true) }
+        ?: GameType.SURVIVAL
 
 internal fun notifyCompletedPvpLoungeRestore(
     notifyClient: () -> Unit,

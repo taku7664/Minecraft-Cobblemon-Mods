@@ -94,17 +94,43 @@ internal object PvpHubClient {
 
     fun acceptRoom(requestId: UUID?, state: PvpRoomClientView, reopen: Boolean) {
         PvpRoomClientState.lastRoom = state
+        val droppedPreview = dropStaleSpectatorPreview(state)
         val requested = PvpRoomNavigationContract.shouldOpen(requestId, PvpRoomClientState.pendingOpenRequests, reopen)
         val current = room
-        if (current != null && current.state.roomId == state.roomId && (view == View.ROOM || view == View.PICKER)) {
+        if (current != null && current.state.roomId == state.roomId &&
+            (view == View.ROOM || view == View.PICKER || droppedPreview)
+        ) {
             current.applyState(requestId, state)
+            if (droppedPreview) view = View.ROOM
             MccHubScreen.refresh(CONTENT)
             return
         }
-        if (!requested) return
+        if (!requested && !droppedPreview) return
         room = PvpRoomScreenController(state) { intent -> PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent)) }
         if (view != View.SELECTION) view = View.ROOM
-        show()
+        // A preview that ended under a spectator swaps to the room in place; it does not open the hub over a battle.
+        if (requested) show() else MccHubScreen.refresh(CONTENT)
+    }
+
+    /**
+     * Drops a spectator's team preview once [state] shows its room past the preview (the match started, or it was
+     * cancelled back to the lobby). The server closes the preview for the two players only by message, and a stale
+     * preview's one button would send a lounge exit that takes the spectator out of the room. True when dropped.
+     */
+    private fun dropStaleSpectatorPreview(state: PvpRoomClientView): Boolean {
+        val current = selection ?: return false
+        if (PvpRoomNavigationContract.keepsSpectatorPreview(
+                current.state.spectatorMode,
+                current.state.matchId,
+                state.roomId,
+                state.phase,
+            )
+        ) {
+            return false
+        }
+        selection = null
+        if (view == View.SELECTION) view = if (room != null) View.ROOM else View.LIST
+        return true
     }
 
     fun rejectRoom(requestId: UUID, messageKey: String, messageArgs: List<String> = emptyList()) {
@@ -156,6 +182,7 @@ internal object PvpHubClient {
     /** The HUD's open control: the last room this client was in, refreshed through the join handshake when shown. */
     fun showLastRoom() {
         val last = PvpRoomClientState.lastRoom ?: return
+        dropStaleSpectatorPreview(last)
         if (room?.state?.roomId != last.roomId) {
             room = PvpRoomScreenController(last) { intent -> PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent)) }
         }
@@ -478,12 +505,14 @@ internal class PvpHubTab : MccHubTabContent {
         }
         publicTeam(host, opponentRect, opponentName, state.opponentParty, state, 0, MccHubKit.CardTone.INFO, withCard = true)
 
+        // Retry comes first: after a failed launch both players are ready (waitingForOpponent), and the server refuses
+        // to unready a match that is only waiting for its battle to start.
         val primary = when {
-            state.waitingForOpponent -> MccHubKit.Action(pvp("unready"), enabled = !controller.isPending) {
-                if (controller.unready()) host.rebuild()
-            }
             state.battleStartRetryAvailable -> MccHubKit.Action(pvp("retry"), UiButtonVariant.PRIMARY, !controller.isPending, minWidth = 96) {
                 if (controller.retry()) host.rebuild()
+            }
+            state.waitingForOpponent -> MccHubKit.Action(pvp("unready"), enabled = !controller.isPending) {
+                if (controller.unready()) host.rebuild()
             }
             else -> MccHubKit.Action(pvp("confirm_selection"), UiButtonVariant.PRIMARY,
                 !controller.isPending && controller.selectedPokemonIds.size == state.requiredSelectionSize, minWidth = 96) {

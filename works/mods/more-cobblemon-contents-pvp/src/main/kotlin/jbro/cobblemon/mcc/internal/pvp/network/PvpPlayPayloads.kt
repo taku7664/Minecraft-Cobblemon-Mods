@@ -154,6 +154,7 @@ private fun RegistryFriendlyByteBuf.writeState(state: PvpSelectionViewState) {
     writeBoolean(state.playerOnLeft)
     writeBoundedString(state.leftPlayerName)
     writeBoundedString(state.rightPlayerName)
+    require(state.immutableSpectators.size <= MAX_SPECTATORS) { "Too many PvP selection spectators" }
     writeVarInt(state.immutableSpectators.size)
     state.immutableSpectators.forEach { spectator ->
         writeUUID(spectator.playerId)
@@ -277,4 +278,5 @@ private fun id(path: String): ResourceLocation =
 private val MAX_PARTY_SIZE = PvpBattleFormat.entries.maxOf { it.registrationRange.last }
 private val MAX_SELECTION_SIZE = PvpBattleFormat.entries.maxOf(PvpBattleFormat::selectionSize)
 private const val MAX_STRING_LENGTH = 160
-private const val MAX_SPECTATORS = 128
+/** Matches the room packet's member bound, so any room's spectators fit its team preview too. */
+private const val MAX_SPECTATORS = 512

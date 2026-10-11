@@ -186,6 +186,7 @@ private fun RegistryFriendlyByteBuf.writeSummary(summary: PvpRoomSummaryView) {
     writeRoomString(summary.phase.name.lowercase())
     writeNullableMember(summary.leftPlayer)
     writeNullableMember(summary.rightPlayer)
+    require(summary.spectatorCount in 0..MAX_MEMBERS) { "Invalid spectator count: ${summary.spectatorCount}" }
     writeVarInt(summary.spectatorCount)
 }
 
@@ -206,8 +207,8 @@ private fun RegistryFriendlyByteBuf.writeRoom(room: PvpRoomClientView) {
     writeRoomString(room.phase.name.lowercase())
     writeNullableMember(room.leftPlayer)
     writeNullableMember(room.rightPlayer)
-    writeMemberList(room.spectators)
-    writeMemberList(room.inviteCandidates)
+    writeMemberList(room.spectators, MAX_MEMBERS, "spectator")
+    writeMemberList(room.inviteCandidates, PVP_ROOM_MAX_INVITE_CANDIDATES, "invite candidate")
 }
 
 private fun RegistryFriendlyByteBuf.readRoom() = PvpRoomClientView(
@@ -217,8 +218,8 @@ private fun RegistryFriendlyByteBuf.readRoom() = PvpRoomClientView(
     phase = readEnum("phase", PvpRoomPhase.entries),
     leftPlayer = readNullableMember(),
     rightPlayer = readNullableMember(),
-    spectators = readMemberList("spectator"),
-    inviteCandidates = readMemberList("invite candidate"),
+    spectators = readMemberList(MAX_MEMBERS, "spectator"),
+    inviteCandidates = readMemberList(PVP_ROOM_MAX_INVITE_CANDIDATES, "invite candidate"),
 )
 
 private fun RegistryFriendlyByteBuf.writeSettings(settings: PvpRoomSettings) {
@@ -320,13 +321,15 @@ private fun RegistryFriendlyByteBuf.writeNullableMember(member: PvpRoomMemberVie
 private fun RegistryFriendlyByteBuf.readNullableMember(): PvpRoomMemberView? =
     if (readBoolean()) readMember() else null
 
-private fun RegistryFriendlyByteBuf.writeMemberList(members: List<PvpRoomMemberView>) {
+/** Refuses on the sending side what the receiver would refuse, instead of disconnecting the client. */
+private fun RegistryFriendlyByteBuf.writeMemberList(members: List<PvpRoomMemberView>, maximum: Int, label: String) {
+    require(members.size <= maximum) { "Too many PvP ${label}s: ${members.size}" }
     writeVarInt(members.size)
     members.forEach(::writeMember)
 }
 
-private fun RegistryFriendlyByteBuf.readMemberList(label: String) = buildList {
-    repeat(readBoundedCount(MAX_MEMBERS, label)) { add(readMember()) }
+private fun RegistryFriendlyByteBuf.readMemberList(maximum: Int, label: String) = buildList {
+    repeat(readBoundedCount(maximum, label)) { add(readMember()) }
 }
 
 private fun RegistryFriendlyByteBuf.writeNullableUuid(value: UUID?) {
@@ -351,6 +354,11 @@ private fun roomId(path: String): ResourceLocation =
     ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, path)
 
 private const val MAX_ROOMS = 256
-private const val MAX_MEMBERS = 128
+
+/** Room members (spectators) a room packet carries; far above any real server, and the same bound on both ends. */
+private const val MAX_MEMBERS = 512
 private const val MAX_STRING_LENGTH = 160
 private const val MAX_MESSAGE_ARGS = 4
+
+/** Invite candidates a room packet carries. The server sends the first ones by name and leaves the rest out. */
+internal const val PVP_ROOM_MAX_INVITE_CANDIDATES = 100

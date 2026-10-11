@@ -324,7 +324,7 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
-    fun `partial spectator activation is stopped before preparation rollback`() {
+    fun `partial spectator registration is stopped and sent back while the match goes on`() {
         val gateway = RecordingGateway().apply {
             spectateFailure = NoSuchMethodError("spectate API drift")
         }
@@ -333,13 +333,64 @@ class PvpLoungeCoordinatorTest {
         val battleId = UUID(0, 900)
 
         assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
-        assertFalse(coordinator.activate(roomId, battleId))
+        assertTrue(coordinator.activate(roomId, battleId))
 
         assertEquals(listOf(viewer to battleId), gateway.stoppedSpectating)
-        assertEquals(setOf(left, right, viewer), gateway.restored.toSet())
-        assertTrue(coordinator.activeRoomIds().isEmpty())
-        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertEquals(listOf(viewer), gateway.restored)
+        assertEquals(setOf(roomId), coordinator.activeRoomIds())
+        assertEquals(setOf(left, right), coordinator.pendingReturnPlayerIds())
+        assertFalse(viewer in gateway.shownArenaHolograms.map { it.playerId })
+        assertTrue(coordinator.finish(roomId))
+        assertEquals(listOf(viewer), gateway.restored.filter { it == viewer })
         assertNull(pool.leaseFor(roomId))
+    }
+
+    @Test
+    fun `spectator refused by the battle is returned without a stop and the match still starts`() {
+        val other = UUID(0, 4)
+        val gateway = RecordingGateway().apply { refusedSpectators += viewer }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        val battleId = UUID(0, 900)
+
+        assertTrue(coordinator.prepare(room(spectators = listOf(viewer, other), phase = PvpRoomPhase.TEAM_PREVIEW)))
+        assertTrue(coordinator.activate(roomId, battleId))
+
+        // A stop would close the battle screen of a viewer who is busy in a battle of their own.
+        assertTrue(gateway.stoppedSpectating.isEmpty())
+        assertEquals(listOf(viewer), gateway.restored)
+        assertEquals(listOf(viewer to left, other to left), gateway.spectating)
+        assertEquals(setOf(left, right, other), coordinator.pendingReturnPlayerIds())
+        assertFalse(coordinator.removeSpectator(roomId, viewer))
+        assertTrue(coordinator.removeSpectator(roomId, other))
+    }
+
+    @Test
+    fun `spectator busy in their own battle is never moved and keeps no return point`() {
+        val gateway = RecordingGateway().apply { busySpectators += viewer }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        assertTrue(coordinator.activate(roomId, UUID(0, 900)))
+
+        assertTrue(gateway.spectators.isEmpty())
+        assertTrue(gateway.spectating.isEmpty())
+        assertTrue(gateway.restored.isEmpty())
+        assertEquals(setOf(left, right), coordinator.pendingReturnPlayerIds())
+        assertEquals(setOf(roomId), coordinator.activeRoomIds())
+    }
+
+    @Test
+    fun `failed spectator move is returned and left out without aborting the launch`() {
+        val gateway = RecordingGateway().apply { unmovableSpectators += viewer }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        assertTrue(coordinator.activate(roomId, UUID(0, 900)))
+
+        assertTrue(gateway.spectating.isEmpty())
+        assertTrue(gateway.stoppedSpectating.isEmpty())
+        assertEquals(listOf(viewer), gateway.restored)
+        assertEquals(setOf(left, right), coordinator.pendingReturnPlayerIds())
     }
 
     @Test
@@ -473,6 +524,11 @@ class PvpLoungeCoordinatorTest {
         var onSpectate: (() -> Unit)? = null
         var showFailure: Pair<UUID, Throwable>? = null
         var hideFailure: Throwable? = null
+        val refusedSpectators = LinkedHashSet<UUID>()
+        val busySpectators = LinkedHashSet<UUID>()
+        val unmovableSpectators = LinkedHashSet<UUID>()
+
+        override fun canSpectate(viewerId: UUID): Boolean = viewerId !in busySpectators
 
         override fun ensureArena(lease: PvpArenaLease): Boolean = true.also { ensured += lease }
 
@@ -486,6 +542,7 @@ class PvpLoungeCoordinatorTest {
 
         override fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean {
             spectatorFailure?.let { throw it }
+            if (playerId in unmovableSpectators) return false
             spectators += playerId
             onMoveSpectator?.invoke()
             return true
@@ -495,7 +552,7 @@ class PvpLoungeCoordinatorTest {
             spectating += viewerId to targetId
             onSpectate?.invoke()
             spectateFailure?.let { throw it }
-            return true
+            return viewerId !in refusedSpectators
         }
 
         override fun showArenaHologram(playerId: UUID, battleId: UUID, lease: PvpArenaLease, perspective: PvpRoomSide) {

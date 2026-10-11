@@ -21,6 +21,8 @@ internal interface PvpLoungeGateway {
     fun moveCompetitor(playerId: UUID, lease: PvpArenaLease, side: PvpRoomSide): Boolean
     fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean
     fun spectate(viewerId: UUID, targetId: UUID): Boolean
+    /** False for a viewer who cannot watch a lounge battle right now, such as one fighting a battle of their own. */
+    fun canSpectate(viewerId: UUID): Boolean = true
     fun stopSpectating(viewerId: UUID, battleId: UUID) = Unit
     fun disconnectSpectating(viewerId: UUID, battleId: UUID) = Unit
     fun showArenaHologram(playerId: UUID, battleId: UUID, lease: PvpArenaLease, perspective: PvpRoomSide) = Unit
@@ -85,11 +87,31 @@ internal class PvpLoungeCoordinator(
         }
     }
 
+    /**
+     * Moves the room's spectators in once the battle exists. A spectator who cannot watch (in a battle of their
+     * own, already watching another one, or a failed move) is sent back and left out of the lounge while the match
+     * goes on; they stay in the room. Only a preparation that disappeared underneath us rolls the launch back.
+     */
     @Synchronized
     fun activate(roomId: UUID, battleId: UUID): Boolean {
         val preparation = preparations[roomId] ?: return false
         val attemptedSpectators = LinkedHashSet<UUID>()
-        preparation.spectators.forEach { viewerId ->
+        val skippedSpectators = LinkedHashSet<UUID>()
+        val untouchedSpectators = LinkedHashSet<UUID>()
+        preparation.spectators.toList().forEach { viewerId ->
+            var available = true
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreCobblemonContents.LOGGER.error("PvP spectator availability check failed for $viewerId", failure)
+                },
+                { available = gateway.canSpectate(viewerId) },
+            )
+            if (!available) {
+                // Busy in a battle of their own: never moved, so they keep standing where they are.
+                untouchedSpectators += viewerId
+                skippedSpectators += viewerId
+                return@forEach
+            }
             attemptedSpectators += viewerId
             // Mark the stop obligation before calling external code. The gateway can synchronously
             // re-enter rollbackPreparation, which must not restore the player ahead of this stop.
@@ -101,20 +123,50 @@ internal class PvpLoungeCoordinator(
                 },
                 { moved = gateway.moveSpectator(viewerId, preparation.lease) },
             )
-            if (!moved || preparations[roomId] !== preparation) {
+            if (preparations[roomId] !== preparation) {
                 rollbackActivation(roomId, battleId, attemptedSpectators)
                 return false
             }
+            if (!moved) {
+                // Nothing registered them with the battle, so there is no spectating to stop.
+                pendingSpectatorStops.remove(viewerId)
+                attemptedSpectators.remove(viewerId)
+                skippedSpectators += viewerId
+                return@forEach
+            }
             var spectating = false
+            var spectateThrew = false
             runManagedCleanupActionsSafely(
                 reportFailure = { failure ->
+                    spectateThrew = true
                     MoreCobblemonContents.LOGGER.error("PvP spectator registration failed for $viewerId", failure)
                 },
                 { spectating = gateway.spectate(viewerId, preparation.leftPlayerId) },
             )
-            if (!spectating || preparations[roomId] !== preparation) {
+            if (preparations[roomId] !== preparation) {
                 rollbackActivation(roomId, battleId, attemptedSpectators)
                 return false
+            }
+            if (!spectating) {
+                attemptedSpectators.remove(viewerId)
+                skippedSpectators += viewerId
+                // A clean refusal registered nothing; stopping would end the battle screen of a viewer busy in a
+                // battle of their own. Only a half-finished registration (an exception) is stopped.
+                if (!spectateThrew) pendingSpectatorStops.remove(viewerId)
+            }
+        }
+        skippedSpectators.forEach { viewerId ->
+            preparation.spectators.remove(viewerId)
+            MoreCobblemonContents.LOGGER.warn(
+                "PvP spectator {} could not watch battle {}; the match goes on without them",
+                viewerId,
+                battleId,
+            )
+            if (viewerId in untouchedSpectators) {
+                returns.remove(viewerId)
+            } else {
+                // Restores the captured point; a pending stop from a half-finished registration runs first.
+                restorePending(viewerId)
             }
         }
         if (preparations[roomId] !== preparation) {

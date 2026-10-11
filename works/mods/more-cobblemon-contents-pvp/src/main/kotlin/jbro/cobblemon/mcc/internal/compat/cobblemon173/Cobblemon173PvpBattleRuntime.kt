@@ -13,6 +13,8 @@ import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleLaunchResult
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleRuntime
 import jbro.cobblemon.mcc.internal.pvp.PvpPreparedBattle
+import jbro.cobblemon.mcc.internal.pvp.resolvePvpBattleOutcome
+import jbro.cobblemon.mcc.api.battle.ManagedBattleForfeits
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
@@ -181,12 +183,18 @@ internal class Cobblemon173PvpBattleRuntime(
                         },
                         { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
                         {
-                            when {
-                                firstActor in ended.winners && secondActor in ended.losers ->
-                                    completion(first.server, request.matchId, first.uuid, second.uuid, ended.battleId)
-                                secondActor in ended.winners && firstActor in ended.losers ->
-                                    completion(first.server, request.matchId, second.uuid, first.uuid, ended.battleId)
-                                else -> cancellation(first.server, request.matchId, ended.battleId)
+                            // A death or logout ends the battle as a forced tie; the player who left loses it.
+                            val outcome = resolvePvpBattleOutcome(
+                                firstId = first.uuid,
+                                secondId = second.uuid,
+                                firstWon = firstActor in ended.winners && secondActor in ended.losers,
+                                secondWon = secondActor in ended.winners && firstActor in ended.losers,
+                                forfeits = ManagedBattleForfeits.of(ended.battleId),
+                            )
+                            if (outcome != null) {
+                                completion(first.server, request.matchId, outcome.winnerId, outcome.loserId, ended.battleId)
+                            } else {
+                                cancellation(first.server, request.matchId, ended.battleId)
                             }
                         },
                     )

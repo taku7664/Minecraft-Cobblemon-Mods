@@ -62,6 +62,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -82,13 +83,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private val pendingCompletions = PvpCompletionRetryQueue()
     private val rooms = PvpRoomService()
     private var currentServer: MinecraftServer? = null
-    private val loungeGateway by lazy { Cobblemon173PvpLoungeGateway({ currentServer }, onlinePlayers::get) }
+    private val loungeGateway by lazy { Cobblemon173PvpLoungeGateway({ currentServer }, ::livePlayer) }
     private val arenas = PvpArenaPool()
     private val lounge by lazy { PvpLoungeCoordinator(arenas, loungeGateway) }
-    private val snapshots = Cobblemon173PvpRegisteredTeamSnapshotStore(onlinePlayers::get)
+    private val snapshots = Cobblemon173PvpRegisteredTeamSnapshotStore(::livePlayer)
     private val runtime: Cobblemon173PvpBattleRuntime by lazy {
         Cobblemon173PvpBattleRuntime(
-            playerResolver = onlinePlayers::get,
+            playerResolver = ::livePlayer,
             completion = { server, matchId, winnerId, loserId, battleId ->
                 val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId)
                 pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
@@ -237,6 +238,10 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 { onlinePlayers[player.uuid] = player },
                 { rescueStrandedLoungePlayer(player) },
             )
+        }
+        // Respawning replaces the ServerPlayer; keep the live one, or teleports and game mode changes hit the old body.
+        ServerPlayerEvents.AFTER_RESPAWN.register { _, newPlayer, _ ->
+            if (newPlayer.uuid in onlinePlayers) onlinePlayers[newPlayer.uuid] = newPlayer
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
@@ -1059,13 +1064,17 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         leftPlayer = room.leftPlayerId?.let(::memberView),
         rightPlayer = room.rightPlayerId?.let(::memberView),
         spectators = room.spectatorIds.map(::memberView),
-        inviteCandidates = onlinePlayers.keys
-            .asSequence()
-            .filter { it !in room.memberIds }
-            .map(::memberView)
-            .sortedBy(PvpRoomMemberView::name)
-            .toList(),
+        inviteCandidates = pvpInviteCandidates(onlinePlayers.keys, room.memberIds, ::memberView),
     )
+
+    /**
+     * The player tracked as online, read back from the server's player list. [onlinePlayers] decides who counts as
+     * online (a disconnecting player leaves it first), but the object it holds can be one a respawn already replaced.
+     */
+    private fun livePlayer(playerId: UUID): ServerPlayer? {
+        val tracked = onlinePlayers[playerId] ?: return null
+        return tracked.server.playerList.getPlayer(playerId) ?: tracked
+    }
 
     private fun memberView(playerId: UUID) = PvpRoomMemberView(
         playerId,
@@ -1219,8 +1228,14 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ServerPlayNetworking.send(player, PvpSelectionRejectedPayload(intent.requestId, intent.matchId, messageKey))
     }
 
+    /**
+     * Closes the team preview for both players and for the room's spectators, who watch it read-only. A room match's
+     * id is its room id; call this while the room still lists its spectators.
+     */
     private fun notifyClosed(request: PvpChallengeRequest, messageKey: String) {
-        notifyOnlinePlayers(listOf(request.challengerId, request.opponentId), "selection close") { player ->
+        val recipients = linkedSetOf(request.challengerId, request.opponentId)
+        rooms.get(request.challengeId)?.let { room -> recipients += room.spectatorIds }
+        notifyOnlinePlayers(recipients, "selection close") { player ->
             if (ServerPlayNetworking.canSend(player, PvpSelectionClosedPayload.TYPE)) {
                 ServerPlayNetworking.send(player, PvpSelectionClosedPayload(request.challengeId, messageKey))
             }
@@ -1362,3 +1377,19 @@ internal fun attemptUntrackedPvpSpectatorRecovery(
         true
     }
 }
+
+/**
+ * Who a room's host can invite: online players outside the room, by name, at most [PVP_ROOM_MAX_INVITE_CANDIDATES]
+ * so the room packet stays inside what the client reads.
+ */
+internal fun pvpInviteCandidates(
+    onlinePlayerIds: Iterable<UUID>,
+    memberIds: Collection<UUID>,
+    memberView: (UUID) -> PvpRoomMemberView,
+): List<PvpRoomMemberView> = onlinePlayerIds
+    .asSequence()
+    .filter { it !in memberIds }
+    .map(memberView)
+    .sortedBy(PvpRoomMemberView::name)
+    .take(PVP_ROOM_MAX_INVITE_CANDIDATES)
+    .toList()

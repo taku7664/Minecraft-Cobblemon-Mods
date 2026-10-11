@@ -11,7 +11,9 @@ import jbro.cobblemon.mcc.internal.pvp.PvpRoomVisibility
 import net.minecraft.core.RegistryAccess
 import net.minecraft.network.RegistryFriendlyByteBuf
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class PvpRoomPayloadsTest {
     private val roomId = UUID(0, 100)
@@ -93,6 +95,60 @@ class PvpRoomPayloadsTest {
             PvpRoomInvitePayload(roomId, host.name),
             roundTrip(PvpRoomInvitePayload.CODEC, PvpRoomInvitePayload(roomId, host.name)),
         )
+    }
+
+    @Test
+    fun `a room past the old 128 member bound round trips with the capped invite list`() {
+        val spectators = List(300) { PvpRoomMemberView(UUID(1, it.toLong()), "Viewer$it") }
+        val candidates = List(PVP_ROOM_MAX_INVITE_CANDIDATES) { PvpRoomMemberView(UUID(2, it.toLong()), "Guest$it") }
+        val room = PvpRoomClientView(
+            roomId,
+            host.playerId,
+            PvpRoomSettings(PvpRoomVisibility.PUBLIC, PvpBattleFormat.SINGLE, emptySet()),
+            PvpRoomPhase.LOBBY,
+            host,
+            null,
+            spectators,
+            candidates,
+        )
+        val summary = PvpRoomSummaryView(roomId, host, room.settings, PvpRoomPhase.LOBBY, host, null, spectators.size)
+
+        assertEquals(PvpRoomStatePayload(null, room), roundTrip(PvpRoomStatePayload.CODEC, PvpRoomStatePayload(null, room)))
+        assertEquals(
+            PvpRoomListStatePayload(null, listOf(summary)),
+            roundTrip(PvpRoomListStatePayload.CODEC, PvpRoomListStatePayload(null, listOf(summary))),
+        )
+    }
+
+    @Test
+    fun `the sender refuses an invite list the client would reject instead of disconnecting it`() {
+        val room = PvpRoomClientView(
+            roomId,
+            host.playerId,
+            PvpRoomSettings(PvpRoomVisibility.PUBLIC, PvpBattleFormat.SINGLE, emptySet()),
+            PvpRoomPhase.LOBBY,
+            host,
+            null,
+            emptyList(),
+            List(PVP_ROOM_MAX_INVITE_CANDIDATES + 1) { PvpRoomMemberView(UUID(2, it.toLong()), "Guest$it") },
+        )
+
+        assertThrows<IllegalArgumentException> {
+            PvpRoomStatePayload.CODEC.encode(RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY), PvpRoomStatePayload(null, room))
+        }
+    }
+
+    @Test
+    fun `invite candidates leave out room members and keep the first names up to the cap`() {
+        val members = setOf(host.playerId)
+        val online = listOf(host.playerId) + List(PVP_ROOM_MAX_INVITE_CANDIDATES + 30) { UUID(3, it.toLong()) }
+
+        val candidates = pvpInviteCandidates(online, members) { id -> PvpRoomMemberView(id, "P%04d".format(id.leastSignificantBits)) }
+
+        assertEquals(PVP_ROOM_MAX_INVITE_CANDIDATES, candidates.size)
+        assertEquals("P0000", candidates.first().name)
+        assertEquals(candidates.sortedBy(PvpRoomMemberView::name), candidates)
+        assertTrue(candidates.none { it.playerId == host.playerId })
     }
 
     private fun <T : Any> roundTrip(

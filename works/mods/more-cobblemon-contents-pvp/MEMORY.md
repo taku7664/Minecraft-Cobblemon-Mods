@@ -1,5 +1,18 @@
 # MEMORY
 
+## [2026-10-11 12:22] 오픈 전 점검 수정
+
+- **라운지 복귀 게임 모드:** 복귀 지점에 `GameType.name`(`CREATIVE`)을 저장하고 `GameType.byName`(소문자 `creative`만 인식)으로 읽어서 모두 서바이벌로 돌아갔다. 이제 `getName()`(소문자)으로 저장하고, 복원은 `pvpReturnGameMode`가 대소문자 구분 없이 두 형식을 모두 읽는다. 모르는 값일 때만 서바이벌. 복귀 지점은 메모리에만 있어(파일 저장 없음) 옛 데이터 이전은 필요 없다.
+- **사라진 차원의 복귀 지점:** 차원을 찾지 못하면 `restore`가 false를 돌려 매 틱 재시도했다. 이제 기록된 게임 모드로 오버월드 스폰에 보낸다(`restoreToOverworldSpawn`에 게임 모드 인자 추가).
+- **관전자 팀 프리뷰 잔류:** 서버는 프리뷰 종료를 두 선수에게만 알렸고, 관전자의 프리뷰 화면은 남아 "돌아가기"(라운지 퇴장 → 로비 방에서 빠짐)만 누를 수 있었다. 클라이언트는 방 상태가 TEAM_PREVIEW가 아니거나 다른 방이면 관전 프리뷰를 버리고 방 화면으로 바꾼다(`PvpRoomNavigationContract.keepsSpectatorPreview`, `acceptRoom`·`showLastRoom`). 이때 허브를 새로 열지는 않는다. 서버 `notifyClosed`도 방 관전자에게 닫힘을 보낸다.
+- **재시도 버튼:** 출전 실패 뒤엔 두 선수 모두 준비 상태라 `waitingForOpponent`가 먼저 걸려 "준비 취소"만 보였고 서버는 이를 거절했다. 재시도 분기를 먼저 검사한다.
+- **관전자 한 명이 경기를 막던 문제:** `activate`에서 관전자 한 명의 이동·관전 등록이 실패하면 경기 전체를 되돌렸다. 이제 그 관전자만 빼고(복귀 지점으로 되돌림, 방 소속은 유지) 경기를 진행한다. 다른 배틀 중인 사람은 `canSpectate`로 미리 걸러 아예 옮기지 않는다. 관전 등록이 깨끗하게 거절된 경우엔 `stopSpectating`을 부르지 않는다(자기 배틀 화면이 닫히므로). 선수 이동 실패는 지금처럼 치명적이다.
+- **배틀 중 이탈 무기록:** 승자 없이 끝나면 무조건 취소였다. 이제 코어 `ManagedBattleForfeits.of(battleId)`에 두 선수 중 한 명만 있으면 그 선수 패배·상대 승리로 일반 승리와 같은 경로(`completion`)에 기록한다. 둘 다거나 아무도 없으면 기존처럼 취소(`resolvePvpBattleOutcome`).
+- **리스폰 뒤 옛 ServerPlayer:** `AFTER_RESPAWN`에서 `onlinePlayers`를 새 객체로 바꾼다. 라운지 게이트웨이·배틀 런타임·스냅샷 저장소는 `livePlayer`로 조회한다(온라인 여부는 `onlinePlayers`, 객체는 `playerList`).
+- **접속자 129명 이상에서 끊김:** 룸 패킷의 초대 후보가 접속자 전원이라 클라 읽기 상한 128을 넘었다. 서버는 이름순 100명(`PVP_ROOM_MAX_INVITE_CANDIDATES`)만 보낸다. 관전자·관전자 수 상한은 512로 올리고 선출 패킷 관전자 상한도 같게 맞췄다. 쓰는 쪽도 같은 상한을 검사해 넘으면 보내지 않는다.
+- **주의:** 룸·선출 패킷 상한이 바뀌어 서버·클라 PvP JAR을 함께 배치해야 한다. 이탈 패배 기록은 코어의 `ManagedBattleForfeits`(미커밋 코어 변경)가 들어간 MCC JAR이 필요하다.
+- **미확인:** 빌드·테스트를 돌리지 않았다(테스트 코드만 추가·수정: `PvpLoungeCoordinatorTest`, `PvpRoomPayloadsTest`, `PvpRoomNavigationContractTest`, 새 `PvpBattleOutcomeTest`, `PvpReturnGameModeTest`). 배치·실게임 확인 안 함.
+
 ## [2026-10-11 03:17] 방 나가기·파티 하한·관전자 툴팁 개발 배포
 
 - **빌드:** 공유 작업 트리의 MCC 코어에 다른 세션의 미커밋 Better AI 변경이 있어, `main` `1d7da204`를 `git archive`로 `F:/AI/build/pvp-deploy-20261011/src`에 내보내 빌드했다(워크트리 아님). `:more-cobblemon-contents-pvp:build -x unitTest` 성공(테스트는 직전에 76개 통과). JDK 21 `jar --validate`·ZIP CRC 통과, 새 코드 포함·테스트 클래스 미포함 확인.

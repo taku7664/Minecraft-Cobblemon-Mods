@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,6 +53,24 @@ class PvpRoomNavigationContractTest {
 
         assertEquals(requestId, intent.requestId)
         assertEquals(roomId, intent.roomId)
+    }
+
+    @Test
+    fun `a spectator preview ends when its room leaves the team preview`() {
+        val roomId = UUID.randomUUID()
+
+        assertTrue(PvpRoomNavigationContract.keepsSpectatorPreview(true, roomId, roomId, PvpRoomPhase.TEAM_PREVIEW))
+        assertFalse(PvpRoomNavigationContract.keepsSpectatorPreview(true, roomId, roomId, PvpRoomPhase.ACTIVE))
+        assertFalse(PvpRoomNavigationContract.keepsSpectatorPreview(true, roomId, roomId, PvpRoomPhase.LOBBY))
+        assertFalse(PvpRoomNavigationContract.keepsSpectatorPreview(true, roomId, UUID.randomUUID(), PvpRoomPhase.TEAM_PREVIEW))
+    }
+
+    @Test
+    fun `a participant selection is never retired by a room state`() {
+        val roomId = UUID.randomUUID()
+
+        assertTrue(PvpRoomNavigationContract.keepsSpectatorPreview(false, roomId, roomId, PvpRoomPhase.ACTIVE))
+        assertTrue(PvpRoomNavigationContract.keepsSpectatorPreview(false, roomId, UUID.randomUUID(), PvpRoomPhase.LOBBY))
     }
 
     @Test

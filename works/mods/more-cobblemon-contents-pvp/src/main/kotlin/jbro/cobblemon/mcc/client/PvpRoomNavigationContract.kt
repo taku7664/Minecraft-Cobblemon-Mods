@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomClientView
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomIntent
 
@@ -33,6 +34,14 @@ internal object PvpRoomNavigationContract {
 
     /** A spectator's team preview belongs to their room and goes with it; a participant's challenge preview stays. */
     fun keepsSelectionAfterRoomList(spectatorMode: Boolean, memberRoomId: UUID?): Boolean = !spectatorMode || memberRoomId != null
+
+    /**
+     * A spectator's team preview lasts only while its room is in the preview. A room state showing the match started
+     * or cancelled back to the lobby, or another room altogether, retires it. A participant's own selection stays;
+     * the server closes that one itself.
+     */
+    fun keepsSpectatorPreview(spectatorMode: Boolean, previewMatchId: UUID, roomId: UUID, roomPhase: PvpRoomPhase): Boolean =
+        !spectatorMode || (previewMatchId == roomId && roomPhase == PvpRoomPhase.TEAM_PREVIEW)
 
     /** Past the lobby only a spectator may leave; the server refuses a seated player (`leaveRequestError`). */
     fun canLeave(lobby: Boolean, spectator: Boolean): Boolean = lobby || spectator
