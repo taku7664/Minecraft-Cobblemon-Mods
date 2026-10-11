@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-12 06:50] Cobblemon NPC를 Better AI로 싸우게 하는 API (`BrainNpcBattles`)
+
+- **용도:** 리그 야생 트레이너처럼 월드에 있는 Cobblemon NPC와의 싱글 전투를 Better AI로 연다.
+- **구현:**
+  - `api/battle/BrainNpcBattles.start(player, npc, leadId, skill, contentId)`는 `BattleBuilder.pvn`과 같이 전투를 꾸린다. 플레이어 실제 파티, `getPartyForChallenge`, 배틀 테마, `NPCEntity.BATTLE_IDS` 등록이 같고, 트레이너 쪽만 `Cobblemon173BrainTrainerBattleActor(cobblemonNpc = true)`다.
+  - 이 액터는 `BattleEndPacket`을 받으면 Cobblemon `NPCBattleActor`처럼 NPC 포켓몬을 회수하고 전투 ID를 지운다.
+  - 기믹은 없다(`BattleMechanicFlags.NONE`).
+  - 관리 배틀 전용 처리(파티 잠금, 트레이너 몸체, 규칙 훅, 결과 기록)는 거치지 않는다.
+- **주의:** 트레이너 액터가 `NPCBattleActor`가 아니므로, NPC를 찾을 때는 `BrainNpcBattles.npcOf(actor)`를 쓴다. 코어 API가 추가돼 리그 JAR과 함께 배포해야 한다.
+- **테스트:** 코어 관련 9건 통과. 실게임은 확인하지 않았다.
+
 ## [2026-10-12 06:10] 입문·표준에도 명백한 실수 막기
 
 - **사용자 결정:** 입문·표준(초반 관장)은 규칙과 판단기를 전혀 거치지 않았다. 그래서 명백한 실수만 막는 부분을 전 난이도에 켠다.

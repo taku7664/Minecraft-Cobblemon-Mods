@@ -4,13 +4,11 @@ import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.Priority
 import com.cobblemon.mod.common.api.events.CobblemonEvents
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
-import com.cobblemon.mod.common.battles.BattleBuilder
-import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.battles.ErroredBattleStart
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
-import com.cobblemon.mod.common.entity.npc.NPCBattleActor
+import jbro.cobblemon.mcc.api.battle.BrainNpcBattles
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import java.util.UUID
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
@@ -57,6 +55,8 @@ import net.minecraft.world.phys.AABB
  */
 object WildTrainers {
     const val RECORD_FORMAT = "wild_trainer"
+    /** The content the Better AI brain plays wild trainer battles under. */
+    private const val WILD_TRAINER_CONTENT = "${Mod.MOD_ID}:wild_trainer"
     private const val KEY = "message.${Mod.MOD_ID}.wild_trainer"
     private const val COOLDOWN_TICKS = 6_000L
     // Long enough for the trainer's closing words, which the camera looks at, to be said before it leaves.
@@ -111,12 +111,12 @@ object WildTrainers {
         }
         // A wild trainer battles only through its offer; Cobblemon's own challenge would use an empty party.
         CobblemonEvents.BATTLE_STARTED_PRE.subscribe(Priority.HIGH) { event ->
-            val npc = event.battle.actors.filterIsInstance<NPCBattleActor>().map { it.npc }.firstOrNull { definitionOf(it) != null }
+            val trainer = event.battle.actors.firstOrNull { actor -> BrainNpcBattles.npcOf(actor)?.let(::definitionOf) != null }
                 ?: return@subscribe
-            if (npc.uuid !in starting) return@subscribe event.cancel()
+            if (requireNotNull(BrainNpcBattles.npcOf(trainer)).uuid !in starting) return@subscribe event.cancel()
             // As in MCC battles, the opponent's held items stay hidden. Only the trainer's side: the player fights
             // with their own Pokemon, whose setting would outlast the battle.
-            event.battle.actors.filterIsInstance<NPCBattleActor>().flatMap { it.pokemonList }.forEach {
+            trainer.pokemonList.forEach {
                 it.originalPokemon.heldItemVisible = false
                 it.effectedPokemon.heldItemVisible = false
             }
@@ -124,8 +124,8 @@ object WildTrainers {
         CobblemonEvents.BATTLE_VICTORY.subscribe(Priority.NORMAL) { event ->
             val fight = fights.remove(event.battle.battleId) ?: return@subscribe
             val server = event.battle.players.firstOrNull()?.server ?: return@subscribe
-            val npc = (event.winners + event.losers).filterIsInstance<NPCBattleActor>().firstOrNull()?.npc
-            val npcWon = event.winners.any { it is NPCBattleActor }
+            val npc = (event.winners + event.losers).firstNotNullOfOrNull(BrainNpcBattles::npcOf)
+            val npcWon = event.winners.any { BrainNpcBattles.npcOf(it) != null }
             event.battle.actors.filterIsInstance<PlayerBattleActor>().forEach { actor ->
                 val player = server.playerList.getPlayer(actor.uuid) ?: return@forEach
                 settle(server, player, npc, fight, won = !npcWon)
@@ -281,14 +281,16 @@ object WildTrainers {
             Mod.LOGGER.warn("Wild trainer {} raised no Pokemon at cap {}", definition.npcClass, cap)
             return say(player, npc, "$KEY.refuse.busy")
         }
-        npc.skill = WildTrainerQuality.of(definition.tier, cap).skill
+        val skill = WildTrainerQuality.of(definition.tier, cap).skill
+        npc.skill = skill
         // Cobblemon reads the trainer's side from the NPC itself; pvn's own party argument is the player's.
         npc.party = party
         starting += npc.uuid
         val result = try {
             val stage = if (definition.tier == WildTrainerTier.ACE) "wild_trainer_ace" else "wild_trainer"
             MccBattleTags.during(setOf(player.uuid), MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, stage, definition.npcClass)) {
-                BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false)
+                // Played by the Better AI; the battle is set up as Cobblemon's pvn sets it up.
+                BrainNpcBattles.start(player, npc, lead.uuid, skill, WILD_TRAINER_CONTENT)
             }
         } catch (failure: RuntimeException) {
             Mod.LOGGER.error("Wild trainer battle could not start for {}", player.uuid, failure)

@@ -72,6 +72,11 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val unboundedDecisionTime: Boolean = false,
     /** Runs as each choice is asked for, before the brain answers it (a trainer's lines at its last Pokemon). */
     private val onChoiceRequestedHook: () -> Unit = {},
+    /**
+     * The trainer is a Cobblemon NPC the battle started on its own (a wild trainer), not a body MCC spawned and clears:
+     * at the end its Pokemon are called back and the battle leaves its list, as Cobblemon's own NPC actor does.
+     */
+    private val cobblemonNpc: Boolean = false,
 ) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<LivingEntity> {
     override val entity: LivingEntity = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
@@ -102,6 +107,15 @@ internal class Cobblemon173BrainTrainerBattleActor(
     override fun lose(winners: List<BattleActor>, losers: List<BattleActor>) {
         super.lose(winners, losers)
         (trainerEntity as? PosableEntity)?.playAnimation("lose", emptyList())
+    }
+
+    override fun sendUpdate(packet: com.cobblemon.mod.common.api.net.NetworkPacket<*>) {
+        super.sendUpdate(packet)
+        if (!cobblemonNpc || packet !is com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket) return
+        val npc = trainerEntity as? com.cobblemon.mod.common.entity.npc.NPCEntity ?: return
+        val battleId = battle.battleId
+        if (npc.isAlive) pokemonList.mapNotNull { it.entity }.forEach { it.recallWithAnimation() }
+        npc.entityData.set(com.cobblemon.mod.common.entity.npc.NPCEntity.BATTLE_IDS, npc.battleIds - battleId)
     }
 
     override fun onChoiceRequested() {

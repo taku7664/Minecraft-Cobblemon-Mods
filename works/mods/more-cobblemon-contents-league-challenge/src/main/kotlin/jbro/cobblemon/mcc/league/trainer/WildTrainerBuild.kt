@@ -24,7 +24,8 @@ enum class WildTrainerPhase {
  * How well a trainer's Pokemon are raised. [smartMoves] is the chance each move slot is chosen for the Pokemon
  * rather than at random from what it knows; [tmMoves] the chance it also knows TM and tutor moves up to
  * [tmPowerCap]; [fittedNature] the chance of a nature that suits its stats. [evTotal] effort values go into the
- * stats it fights with. [itemChance] is the chance of holding anything; [skill] is Cobblemon's battle AI skill.
+ * stats it fights with. [itemChance] is the chance of holding anything; [skill] is the Better AI skill level (user decision 2026-10-12:
+ * ordinary trainers Introductory, aces Standard, at every phase).
  */
 data class WildTrainerQuality(
     val ivs: IntRange,
@@ -40,13 +41,13 @@ data class WildTrainerQuality(
     companion object {
         private val table = mapOf(
             (WildTrainerTier.NORMAL to WildTrainerPhase.EARLY) to WildTrainerQuality(0..15, 0, 0.0, 0.35, 0.0, 0, 1, 0.10, 1),
-            (WildTrainerTier.NORMAL to WildTrainerPhase.MID) to WildTrainerQuality(4..20, 0, 0.15, 0.5, 0.10, 70, 1, 0.25, 2),
-            (WildTrainerTier.NORMAL to WildTrainerPhase.LATE) to WildTrainerQuality(8..24, 128, 0.30, 0.6, 0.25, 90, 1, 0.40, 2),
-            (WildTrainerTier.NORMAL to WildTrainerPhase.END) to WildTrainerQuality(10..27, 256, 0.40, 0.7, 0.35, 100, 1, 0.50, 3),
-            (WildTrainerTier.ACE to WildTrainerPhase.EARLY) to WildTrainerQuality(8..22, 64, 0.50, 0.7, 0.15, 60, 1, 0.35, 3),
-            (WildTrainerTier.ACE to WildTrainerPhase.MID) to WildTrainerQuality(12..26, 192, 0.70, 0.8, 0.35, 80, 1, 0.60, 3),
-            (WildTrainerTier.ACE to WildTrainerPhase.LATE) to WildTrainerQuality(16..30, 320, 0.85, 0.85, 0.50, 100, 2, 0.80, 4),
-            (WildTrainerTier.ACE to WildTrainerPhase.END) to WildTrainerQuality(20..31, 510, 0.90, 0.9, 0.60, 120, 2, 0.90, 4),
+            (WildTrainerTier.NORMAL to WildTrainerPhase.MID) to WildTrainerQuality(4..20, 0, 0.15, 0.5, 0.10, 70, 1, 0.25, 1),
+            (WildTrainerTier.NORMAL to WildTrainerPhase.LATE) to WildTrainerQuality(8..24, 128, 0.30, 0.6, 0.25, 90, 1, 0.40, 1),
+            (WildTrainerTier.NORMAL to WildTrainerPhase.END) to WildTrainerQuality(10..27, 256, 0.40, 0.7, 0.35, 100, 1, 0.50, 1),
+            (WildTrainerTier.ACE to WildTrainerPhase.EARLY) to WildTrainerQuality(8..22, 64, 0.50, 0.7, 0.15, 60, 1, 0.35, 2),
+            (WildTrainerTier.ACE to WildTrainerPhase.MID) to WildTrainerQuality(12..26, 192, 0.70, 0.8, 0.35, 80, 1, 0.60, 2),
+            (WildTrainerTier.ACE to WildTrainerPhase.LATE) to WildTrainerQuality(16..30, 320, 0.85, 0.85, 0.50, 100, 2, 0.80, 2),
+            (WildTrainerTier.ACE to WildTrainerPhase.END) to WildTrainerQuality(20..31, 510, 0.90, 0.9, 0.60, 120, 2, 0.90, 2),
         )
 
         fun of(tier: WildTrainerTier, cap: Int): WildTrainerQuality = table.getValue(tier to WildTrainerPhase.of(cap))

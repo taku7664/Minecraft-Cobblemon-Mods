@@ -1,5 +1,17 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-12 06:50] 야생 트레이너를 Better AI로 전환
+
+- **사용자 결정:** 야생 트레이너도 Better AI를 쓴다. 일반 트레이너는 입문, 에이스 트레이너는 표준이다.
+- **구현:**
+  - `BattleBuilder.pvn` 대신 MCC 코어의 `BrainNpcBattles.start`로 전투를 연다. 플레이어 실제 파티, NPC의 도전용 파티, NPC 배틀 테마, NPC 전투 ID 등록은 `pvn`과 같다. 트레이너 쪽만 Better AI 액터다.
+  - 트레이너 액터가 Cobblemon `NPCBattleActor`가 아니어서, 전투 시작 검사·지닌 물건 숨기기·승패 판정은 `BrainNpcBattles.npcOf(actor)`(액터의 엔티티)로 NPC를 찾는다.
+  - `WildTrainerQuality`의 스킬을 일반 1(전 단계), 에이스 2(전 단계)로 고정했다. 이전에는 일반 1~3, 에이스 3~4였고 Cobblemon 기본 AI가 썼다.
+  - 브레인 선택 콘텐츠 ID는 `more_cobblemon_contents_league_challenge:wild_trainer`다.
+- **배포 주의:** 코어에 새 API가 생겼으므로 리그 JAR은 같은 커밋의 코어 JAR과 함께 넣어야 한다. 옛 코어와 새 리그 조합이면 `NoClassDefFoundError`가 난다.
+- **테스트:** 리그 모듈 테스트, 코어 관련 9건 통과.
+- **미확인:** 실게임 전투(내보내기·회수 연출, 경험치, 보상, NPC 전투 표시 해제)는 확인하지 않았다.
+
 ## [2026-10-12 06:20] 리그 AI 난이도 재배치
 
 - **사용자 결정:** 관장은 모두 표준, 사천왕은 상급, 챔피언은 보스. 하드 재도전은 관장이 상급, 사천왕·챔피언이 보스다.
