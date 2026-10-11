@@ -1,5 +1,13 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-12] 포켓몬 모델 NPC (구현만, 빌드·테스트·배치·실게임 미실행)
+
+- **사용자 요청:** NPC에 포켓몬 모델도 넣을 수 있게. 작업 중 "히트박스도 실제 포켓몬 모델로 됨?"이라고 물어 히트박스도 포켓몬 크기로 맞췄다.
+- **형식:** 스킨 칸에 `pokemon:<종족>`(기본 `cobblemon` 네임스페이스), 띄어 쓴 특성(`pokemon:vulpix alolan shiny`), 다른 모드 종족은 `pokemon:<ns>:<종족>`. 해석이 안 되면 기존 텍스처 해석으로 넘어간다(`pokemon` 네임스페이스 텍스처 호환). NBT·패킷 형식은 그대로(`NpcSkin` 문자열).
+- **구현:** `NpcPokemonModel`은 Cobblemon `VaryingModelRepository` 포저를 엔티티 없이 자체 `PosableState`(NPC `tickCount`로 시간 진행)로 그린다. Cobblemon `PosableEntityModel`처럼 1.5 올려 그리고, 크기는 `form.baseScale`. 히트박스는 `NpcEntity.getDefaultDimensions`에서 `form.hitbox × baseScale`(PokemonEntity와 같은 계산, effectiveScale 제외), 눈높이는 종족 `standingEyeHeight`(없으면 0.85). 스킨 변경 시 `refreshDimensions`, 클라이언트에 종족 데이터가 늦게 오면 20틱마다 다시 잰다. 대화창 얼굴 자리는 포켓몬 초상화(`CobblemonUiRenderSlot.drawContent`), 스킨 선택 화면은 구현된 전 종족을 도감순으로 넣고 한국어 이름 검색을 지원한다.
+- **확인한 것:** 쓴 Cobblemon·MC API 시그니처를 Cobblemon 1.8.1 소스 JAR과 MC 1.21.1 매핑 JAR에서 대조했다. 파싱 JUnit을 `NpcSkinRefTest`에 추가했으나 **돌리지 않았다**.
+- **미확인:** 컴파일·빌드(빌드는 요청 시에만), JAR 배치, 실제 모델 방향·높이·애니메이션, 큰 포켓몬 히트박스가 광장 블록에 끼는지, 12px 대화 얼굴 칸의 초상화 모양. 퀵(quirk) 애니메이션 효과·파티클은 엔티티가 없어 돌지 않을 수 있다(추정).
+
 ## [2026-10-11 13:06] 광장 상점 주인 NPC 추가·개발·운영·VPS 동기화 (VPS 기동 확인, 실게임 미확인)
 
 - **사용자 결정:** 간호순에 이어 오박사 앞에 상점 주인을 둔다. 대화로 MCC 상점 탭을 연다. 스킨은 웹에서 찾았다. minecraftskins.com의 "ORAS Pokemart Male"(24143724)를 사용자가 골랐고, 허브 상점 탭의 상점 주인도 같은 스킨으로 바꿨다.
