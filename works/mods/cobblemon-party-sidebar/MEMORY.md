@@ -1,5 +1,11 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 04:50] 빌드·개발 배포 (실게임 미확인)
+
+- **빌드:** 사용자 지시("빌드해서 배포해"). main `39f45541`(모듈 파일 미수정 상태)에서 `:cobblemon-party-sidebar:build -x test`. `GRADLE_USER_HOME=F:/AI/caches/gradle`, `--project-cache-dir`·TEMP·`java.io.tmpdir`는 `F:/AI/builds/cobblemon-mods-main/`, 출력은 같은 폴더의 `f-build-dirs.init.gradle`로 `out/cobblemon-party-sidebar`. 첫 시도에 성공(1분 46초). `unzip -t` 통과, `fabric.mod.json`의 진입점·mixin·EMI 플러그인 클래스가 모두 JAR에 있음. refmap은 없고 mixin 대상 이름이 intermediary로 직접 리매핑돼 있다(jbro-policy와 같은 방식).
+- **배치:** 마인크래프트 프로세스·25565/25566 수신 없음을 확인하고 `develop-product/server/mods`·`client/mods`에 새로 넣었다(기존 파일 없어 백업 없음). 세 곳 SHA-256 `99581a2a4f246df5cda3231266831df927875dd2383e98cf77dd9c8a36b02a88`. PPakemon 프로필·운영·VPS는 건드리지 않았다(서버 절반이 필요해 운영 서버 없이 넣으면 표시와 순서 교체만 된다).
+- **미확인:** 서버·클라이언트를 켜지 않아 실게임 동작은 하나도 보지 않았다.
+
 ## [2026-10-12 04:43] 모듈 신설 (구현만, 컴파일·빌드·배치·실게임 미실행)
 
 - **사용자 요청:** 서바이벌 인벤토리 왼쪽에 파티 6마리를 세로로, 한 줄은 `[모델][지닌 물건]`. 모델은 PokemonToItem처럼, 지닌 물건은 인벤토리와 드래그 앤 드롭. 크리에이티브 제외, 빈 파티 칸은 빈 슬롯 모양, 모델끼리 드래그하면 순서 교체(지닌 물건도 따라감), 모델 호버 툴팁(레벨·이름·성별, HP, 기술 4개, 능력치별 개체값·노력치)에 성격·특성 추가. 이름은 사용자가 `cobblemon-party-sidebar`로 정했다.
