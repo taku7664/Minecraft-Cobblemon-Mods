@@ -224,7 +224,7 @@
   "message.jbro_policy.discord_status.closed": "🔴 서버가 닫혔어요.",
 
   "key.categories.jbro_policy": "jbro 정책",
-  "key.jbro_policy.quick_waypoint": "현재 위치에 웨이포인트 생성",
+  "key.jbro_policy.pokenav": "포켓내비 열기·닫기",
   "message.jbro_policy.waypoint_created": "웨이포인트 생성: %s",
   "message.jbro_policy.waypoint_failed": "웨이포인트를 만들지 못했습니다. 게임 로그를 확인하세요."
 }

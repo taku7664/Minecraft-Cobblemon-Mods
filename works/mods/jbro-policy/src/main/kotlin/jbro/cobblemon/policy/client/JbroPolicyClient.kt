@@ -21,6 +21,7 @@ object JbroPolicyClient : ClientModInitializer {
     private const val MENU_MARGIN = 4
 
     override fun onInitializeClient() {
+        PokenavKey.register()
         ClientPlayNetworking.registerGlobalReceiver(OpenLinkPayload.TYPE) { payload, context ->
             context.client().execute { Util.getPlatform().openUri(payload.url) }
         }

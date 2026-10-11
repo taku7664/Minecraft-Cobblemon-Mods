@@ -224,7 +224,7 @@
   "message.jbro_policy.discord_status.closed": "🔴 The server is closed.",
 
   "key.categories.jbro_policy": "jbro Policy",
-  "key.jbro_policy.quick_waypoint": "Create waypoint at current location",
+  "key.jbro_policy.pokenav": "Open or close the Pokenav",
   "message.jbro_policy.waypoint_created": "Waypoint created: %s",
   "message.jbro_policy.waypoint_failed": "Could not create waypoint. Check the game log."
 }
