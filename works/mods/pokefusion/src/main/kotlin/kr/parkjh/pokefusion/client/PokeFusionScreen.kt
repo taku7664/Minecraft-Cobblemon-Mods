@@ -7,9 +7,11 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.item.ItemStack
 
 /**
  * 합성 전용 화면. 칸 테두리와 배경은 바닐라 상자·화로 텍스처 조각으로 그려서 리소스팩 테마를 그대로 따른다.
@@ -22,6 +24,7 @@ class PokeFusionScreen(menu: PokeFusionMenu, inventory: Inventory, title: Compon
         imageWidth = PokeFusionLayout.IMAGE_WIDTH
         imageHeight = PokeFusionLayout.IMAGE_HEIGHT
         inventoryLabelY = imageHeight - 94
+        titleLabelX = TITLE_ICON_X + TITLE_ICON_SIZE + 3
     }
 
     override fun init() {
@@ -100,6 +103,7 @@ class PokeFusionScreen(menu: PokeFusionMenu, inventory: Inventory, title: Compon
 
     override fun renderLabels(graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
         super.renderLabels(graphics, mouseX, mouseY)
+        drawTitleIcon(graphics)
         drawCentered(graphics, Component.translatable("screen.pokefusion.base"), PokeFusionLayout.BASE_X + 8, PokeFusionLayout.BASE_Y - 11)
         drawCentered(
             graphics,
@@ -130,6 +134,16 @@ class PokeFusionScreen(menu: PokeFusionMenu, inventory: Inventory, title: Compon
             return
         }
         super.renderTooltip(graphics, mouseX, mouseY)
+    }
+
+    /** 제목 앞 몬스터볼 아이콘. 제목줄(17px)에 맞춰 12px로 줄여 그린다. */
+    private fun drawTitleIcon(graphics: GuiGraphics) {
+        val pose = graphics.pose()
+        pose.pushPose()
+        pose.translate(TITLE_ICON_X.toFloat(), TITLE_ICON_Y.toFloat(), 0f)
+        pose.scale(TITLE_ICON_SIZE / 16f, TITLE_ICON_SIZE / 16f, 1f)
+        graphics.renderItem(POKE_BALL, 0, 0)
+        pose.popPose()
     }
 
     private fun drawSlot(graphics: GuiGraphics, slotX: Int, slotY: Int) {
@@ -168,6 +182,13 @@ class PokeFusionScreen(menu: PokeFusionMenu, inventory: Inventory, title: Compon
         private const val INVENTORY_HEIGHT = 96
         private const val SLOT_U = 7
         private const val SLOT_V = 17
+
+        private const val TITLE_ICON_X = 7
+        private const val TITLE_ICON_Y = 3
+        private const val TITLE_ICON_SIZE = 12
+        private val POKE_BALL: ItemStack by lazy {
+            ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("cobblemon", "poke_ball")))
+        }
 
         private const val LABEL_COLOR = 0x404040
         private const val BASE_TINT = 0x5040A8E0
