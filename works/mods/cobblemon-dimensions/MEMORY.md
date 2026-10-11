@@ -3,7 +3,7 @@
 ## [2026-10-11 13:55] 위키 포탈 틀 블록 이름 정정
 
 - 사용자 지적: 위키의 "깎은 심층암"은 한국어 번역상 "조각된". 틀 태그(`ancient_portal_frame`/`future_portal_frame`)는 `chiseled_deepslate`·`chiseled_copper` 계열이고 바닐라 `ko_kr`은 "조각된 심층암"/"조각된 구리"다. "깎인 구리"는 `cut_copper`라 다른 블록이어서 미래 쪽도 고쳤다. 위키·README 수정 `1f71431d`.
-- 반영: 게임 안 위키는 클라이언트 사본을 `LocalWikiServer`로 띄우고, 디스코드 링크·피츄는 서버 사본을 요청마다 읽는다. 그래서 재시작 없이 `config/more-cobblemon-contents/wiki/pages/dimensions.html` 한 파일만 교체했다(설치본 CRLF 유지, `bc619cd5…`): `PPakemon` 프로필, 개발 서버, 운영 저장소 `2c9ae7a`, VPS(백업 `~/.local/share/ppakemon-backups/manual-wiki-20261011/`, `127.0.0.1:8100` 응답에서 새 문구 확인). 개발 클라이언트에는 위키 사본이 없어 건드리지 않았다.
+- 반영: 게임 안 위키는 클라이언트 사본을 `LocalWikiServer`로 띄우고, 디스코드 링크·피츄는 서버 사본을 요청마다 읽는다. 그래서 재시작 없이 `config/more-cobblemon-contents/wiki/pages/dimensions.html` 한 파일만 교체했다(설치본 CRLF 유지, `bc619cd5…`): `PPakemon` 프로필, 개발 서버, 운영 저장소 `2c9ae7a`, VPS(백업 `~/.local/share/ppakemon-backups/manual-wiki-20261011/`, `127.0.0.1:8100` 응답에서 새 문구 확인). 개발 클라이언트(`cobblemon-dev`)는 위키 사본이 옛 상태(`dimensions.html`·`crafting` 페이지 없음, 21개 파일 옛 내용)였다. 처음에 "사본 없음"으로 잘못 보고했다가 사용자 지시("걍 덮어씌워")로 개발 서버 사본으로 미러링했다(트리 해시 일치, 1073개, 기존본 백업 `develop-product/deployment-backups/20261011-dev-client-wiki/`).
 - 남은 것: `startup-assets/server-wiki.zip`과 시작 훅 위키 해시는 옛 값 그대로다. 다음 위키 재배포 때 함께 갱신한다.
 
 ## [2026-10-11 16:00] 울트라스페이스 착지 높이 (알림 추가는 되돌림)
