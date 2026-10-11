@@ -17,7 +17,7 @@ import org.joml.Matrix4f
 
 /**
  * The summary shown over a party Pokemon:
- * level, name and gender; HP; nature and ability; the moves; then IVs and EVs per stat in aligned columns.
+ * level, name and gender; HP; nature and ability; the moves with their PP; then IVs and EVs per stat in aligned columns.
  */
 internal object PokemonTooltip {
     private const val MALE_COLOR = 0x5DA9FF
@@ -28,7 +28,7 @@ internal object PokemonTooltip {
 
     fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int) {
         val font = Minecraft.getInstance().font
-        val lines = textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } + StatTable(pokemon)
+        val lines = textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } + MoveTable(pokemon) + StatTable(pokemon)
         graphics.renderTooltipInternal(font, lines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE)
     }
 
@@ -39,7 +39,6 @@ internal object PokemonTooltip {
         add(key("hp", pokemon.currentHealth, pokemon.maxHealth).copy().withStyle { it.withColor(hpColor(pokemon)) })
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
-        pokemon.moveSet.getMoves().forEach { add(it.displayName) }
     }
 
     private fun genderSymbol(gender: Gender): Component? = when (gender) {
@@ -62,6 +61,42 @@ internal object PokemonTooltip {
 
     private fun key(name: String, vararg args: Any): MutableComponent =
         Component.translatable("cobblemon_party_sidebar.tooltip.$name", *args)
+
+    private fun draw(font: Font, text: Component, x: Int, y: Int, color: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
+        font.drawInBatch(text, x.toFloat(), y.toFloat(), color or OPAQUE, true, matrix, buffer, Font.DisplayMode.NORMAL, 0, FULL_BRIGHT)
+    }
+
+    /** Move names on the left, remaining and maximum PP right-aligned; running-low PP turns yellow, none red. */
+    private class MoveTable(pokemon: Pokemon) : ClientTooltipComponent {
+        private data class Row(val name: Component, val pp: String, val color: Int)
+
+        private val rows = pokemon.moveSet.getMoves().map { move ->
+            val color = when {
+                move.currentPp <= 0 -> 0xFF5555
+                move.currentPp * 4 <= move.maxPp -> 0xFFFF55
+                else -> 0xFFFFFF
+            }
+            Row(move.displayName, "${move.currentPp}/${move.maxPp}", color)
+        }
+
+        private fun nameWidth(font: Font) = rows.maxOfOrNull { font.width(it.name) } ?: 0
+
+        private fun ppWidth(font: Font) = rows.maxOfOrNull { font.width(it.pp) } ?: 0
+
+        override fun getHeight() = if (rows.isEmpty()) 0 else TOP_GAP + rows.size * LINE
+
+        override fun getWidth(font: Font) = if (rows.isEmpty()) 0 else nameWidth(font) + COLUMN_GAP + ppWidth(font)
+
+        override fun renderText(font: Font, x: Int, y: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
+            val ppRight = x + nameWidth(font) + COLUMN_GAP + ppWidth(font)
+            var lineY = y + TOP_GAP
+            for (row in rows) {
+                draw(font, row.name, x, lineY, 0xFFFFFF, matrix, buffer)
+                draw(font, Component.literal(row.pp), ppRight - font.width(row.pp), lineY, row.color, matrix, buffer)
+                lineY += LINE
+            }
+        }
+    }
 
     /** Stat names on the left, IVs and EVs right-aligned under their headings; nature-raised and lowered stats tinted. */
     private class StatTable(pokemon: Pokemon) : ClientTooltipComponent {
@@ -103,17 +138,14 @@ internal object PokemonTooltip {
             }
         }
 
-        private fun draw(font: Font, text: Component, x: Int, y: Int, color: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
-            font.drawInBatch(text, x.toFloat(), y.toFloat(), color or OPAQUE, true, matrix, buffer, Font.DisplayMode.NORMAL, 0, FULL_BRIGHT)
-        }
-
         companion object {
             private val STATS: List<Stat> = listOf(Stats.HP, Stats.ATTACK, Stats.DEFENCE, Stats.SPECIAL_ATTACK, Stats.SPECIAL_DEFENCE, Stats.SPEED)
-            private const val TOP_GAP = 4
-            private const val LINE = 10
-            private const val COLUMN_GAP = 8
-            private const val OPAQUE = 0xFF000000.toInt()
-            private const val FULL_BRIGHT = 0xF000F0
         }
     }
+
+    private const val TOP_GAP = 4
+    private const val LINE = 10
+    private const val COLUMN_GAP = 8
+    private const val OPAQUE = 0xFF000000.toInt()
+    private const val FULL_BRIGHT = 0xF000F0
 }
