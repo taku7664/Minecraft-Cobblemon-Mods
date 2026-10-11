@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-11 14:20] 팩에 실린 완료 기록 무시 0.1.18
+
+- **신고:** 사용자 "사람들 다 R키 중복이라는데?" — 내 PC `PPakemon` 프로필에는 `keybindings-iris-v1=true`, `key_iris.keybind.reload:key.keyboard.unknown`으로 적용돼 있었다.
+- **원인(직접 확인):** `Downloads/PPakemon 1.0.0.mrpack`(10-11 13:53)에 `overrides/config/cobblemon-client-setup/applied-defaults.properties`가 들어 있었다. 제작자 프로필 기록 그대로라 모든 규칙이 `true`, `fresh-install=false`였고, `options.txt`는 없었다. 그래서 플레이어 훅은 Iris 새로고침 해제·나머지 단축키 정리·Rounding-Block 끄기·첫 실행 기본값을 모두 이미 적용된 것으로 보고 건너뛰었다. Iris는 기본 R로 남아 Cobblemon 내보내기와 겹쳤다. 팩에는 `config/iris.properties`(LumaVale 0.1.4, 켜짐)도 들어 있다.
+- **구현:** `SetupFiles.readState`가 기록의 `profile=`(config 폴더 절대 경로 SHA-256 앞 16자리)를 확인하고, 다르거나 없으면 빈 기록에서 시작한다. `XaeroWorldReset`은 복사된 기록에 완료 표시가 있으면 옮기지 않고 기록만 남긴다(팩이 초기화 뒤에 만들어져 지도가 새 월드 것). `CopiedRecordTest` 5개 추가, 전체 89개 통과.
+- **영향:** 0.1.17 이하 기록에는 해시가 없어서 내 PC 프로필도 단축키 정리·Rounding-Block 끄기가 한 번 다시 적용된다(개인 재지정 키가 있으면 그 키만 되돌아감). 언어·리소스팩 기본값은 `options.txt`가 이미 있으면 업데이트로 보고 건드리지 않는다. 그래서 팩을 받아 이미 한 번 실행한 플레이어는 한국어·팩 리소스팩 기본값을 자동으로 받지 못한다(사용자 결정 대기).
+- **빌드·배포:** main `97a3cfa0`, JAR SHA-256 `282B54AB34B9C4FA2D8DC24F4563F134C4A2675E7FB1713462C998A469522097`. 개발 클라이언트와 `deploy-product/client`에 넣고 0.1.17은 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.18/`로 옮겼다. `PPakemon` 프로필은 게임 실행 중(PID 44464)이라 아직 0.1.17이다.
+- **팩 안내:** 다음 팩에는 0.1.18을 넣고 `config/cobblemon-client-setup/applied-defaults.properties`를 뺀다(0.1.18은 실려도 무시하지만 불필요). `config/iris.properties`도 실으면 팩 업데이트 때마다 플레이어 셰이더 설정을 덮는다.
+
 ## [2026-10-11 12:17] 첫 실행·업데이트 구분, Iris 설정 파일 수정 0.1.17
 
 - **문제(검토로 발견):** 0.1.16 `OptionsSetup`은 완료 기록만 보고 적용해서, 업데이트한 기존 플레이어도 다음 실행 때 언어가 `ko_kr`로 바뀌고 꺼 둔 팩이 다시 켜지며 팩 순서가 바뀔 뻔했다(운영 `PPakemon` 프로필은 0.1.16 미실행 상태에서 교체). 셰이더는 OptiFine용 `optionsshaders.txt`에 써서 Iris가 읽지 않았다. Iris 1.8.8 JAR에 `optionsshaders` 문자열이 없고 `config/iris.properties`만 읽는 것을 직접 확인했다. 0.1.16 기록의 "운영 클라이언트 셰이더 설정이 틀렸다"는 진단도 잘못이었다(실제 `iris.properties`는 정상).
