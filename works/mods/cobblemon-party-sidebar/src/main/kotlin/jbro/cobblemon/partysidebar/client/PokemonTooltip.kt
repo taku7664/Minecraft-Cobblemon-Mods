@@ -17,7 +17,8 @@ import org.joml.Matrix4f
 
 /**
  * The summary shown over a party Pokemon:
- * level, name and gender; HP; nature and ability; the moves with their PP; then IVs and EVs per stat in aligned columns.
+ * level, name and gender; HP; nature and ability; the moves with their PP; IVs and EVs per stat in aligned columns;
+ * and, where the server allows it, the key that itemizes the Pokemon.
  */
 internal object PokemonTooltip {
     private const val MALE_COLOR = 0x5DA9FF
@@ -28,7 +29,8 @@ internal object PokemonTooltip {
 
     fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int) {
         val font = Minecraft.getInstance().font
-        val lines = textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } + MoveTable(pokemon) + StatTable(pokemon)
+        val lines = textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } + MoveTable(pokemon) + StatTable(pokemon) +
+            listOfNotNull(itemizeHint()).map { ClientTooltipComponent.create(it.visualOrderText) }
         graphics.renderTooltipInternal(font, lines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE)
     }
 
@@ -39,6 +41,13 @@ internal object PokemonTooltip {
         add(key("hp", pokemon.currentHealth, pokemon.maxHealth).copy().withStyle { it.withColor(hpColor(pokemon)) })
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
+    }
+
+    /** The itemize key, in grey under the stats, when the server lets this player itemize. */
+    private fun itemizeHint(): Component? {
+        if (!PartySidebar.canItemize()) return null
+        return Component.translatable("cobblemon_party_sidebar.hint.itemize", CobblemonPartySidebarClient.ITEMIZE.translatedKeyMessage)
+            .withStyle(ChatFormatting.GRAY)
     }
 
     private fun genderSymbol(gender: Gender): Component? = when (gender) {

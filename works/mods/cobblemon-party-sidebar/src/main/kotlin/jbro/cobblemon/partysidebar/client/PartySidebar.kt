@@ -16,8 +16,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.RenderType
-import net.minecraft.network.chat.Component
-import net.minecraft.util.FormattedCharSequence
 import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.item.ItemStack
 import org.joml.Vector4f
@@ -32,7 +30,7 @@ import java.util.UUID
  * the inventory, and an item can be dragged between them and the inventory. The server makes every change (see
  * [HeldItemClickPayload]); without the mod on the server the column only shows the party. Dragging a Pokemon onto
  * another row swaps the two, or moves it into an empty row, through Cobblemon's own party packets. The itemize key
- * over a Pokemon turns it into a PokemonToItem item ([ItemizePayload]); a hint under the rows names the key.
+ * over a Pokemon turns it into a PokemonToItem item ([ItemizePayload]); the Pokemon tooltip names the key.
  */
 object PartySidebar {
     private const val ROWS = 6
@@ -40,8 +38,6 @@ object PartySidebar {
     private const val SLOT = InventorySkin.SLOT
     private const val PADDING = 7
     private const val COLUMN_GAP = 2
-    private const val HINT_GAP = 3
-    private const val LINE = 9
     const val WIDTH = PADDING * 2 + FRAME + COLUMN_GAP + SLOT
     private const val ROWS_HEIGHT = FRAME * ROWS
     private const val MODEL_SIZE = 20
@@ -107,9 +103,7 @@ object PartySidebar {
         }
         val x = anchor - WIDTH
         if (x < 0) return null
-        val hintLines = hintLines().size
-        val content = PADDING + ROWS_HEIGHT + (if (hintLines > 0) HINT_GAP + hintLines * LINE else 0) + PADDING
-        return Bounds(x, screen.topPos, WIDTH, maxOf(InventorySkin.current().panelHeight, content))
+        return Bounds(x, screen.topPos, WIDTH, maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT))
     }
 
     fun contains(screen: InventoryScreen, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
@@ -147,7 +141,6 @@ object PartySidebar {
                 if (highlight) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + size - 1, y + size - 1, HIGHLIGHT)
             }
         }
-        drawHint(graphics, bounds)
     }
 
     fun renderOverlay(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
@@ -246,7 +239,7 @@ object PartySidebar {
     }
 
     /** The server takes the request and has PokemonToItem's command, which it only sends to players allowed to use it. */
-    private fun canItemize(): Boolean =
+    internal fun canItemize(): Boolean =
         ClientPlayNetworking.canSend(ItemizePayload.TYPE) &&
             Minecraft.getInstance().connection?.commands?.root?.getChild("poketoitem") != null
 
@@ -259,30 +252,6 @@ object PartySidebar {
     }
 
     private fun party(row: Int): Pokemon? = CobblemonClient.storage.party.get(row)
-
-    private fun hintLines(): List<FormattedCharSequence> {
-        if (!canItemize()) return emptyList()
-        val text = Component.translatable("cobblemon_party_sidebar.hint.itemize", CobblemonPartySidebarClient.ITEMIZE.translatedKeyMessage)
-        return Minecraft.getInstance().font.split(text, WIDTH - 8)
-    }
-
-    /** The itemize hint under the rows, centred, in a grey that reads on both light and dark panels. */
-    private fun drawHint(graphics: GuiGraphics, bounds: Bounds) {
-        val font = Minecraft.getInstance().font
-        val color = if (luminance(InventorySkin.current().bodyColor) > 128) 0xFF555555.toInt() else 0xFFA8A8A8.toInt()
-        var y = bounds.rowY(ROWS) + HINT_GAP
-        for (line in hintLines()) {
-            graphics.drawString(font, line, bounds.x + (bounds.width - font.width(line)) / 2, y, color, false)
-            y += LINE
-        }
-    }
-
-    private fun luminance(argb: Int): Int {
-        val r = argb shr 16 and 0xFF
-        val g = argb shr 8 and 0xFF
-        val b = argb and 0xFF
-        return (r * 299 + g * 587 + b * 114) / 1000
-    }
 
     /** The model as Cobblemon's Pokemon item draws it, [MODEL_SIZE] across, greyed out once the Pokemon has fainted. */
     private fun drawModel(graphics: GuiGraphics, pokemon: Pokemon, x: Int, y: Int) {

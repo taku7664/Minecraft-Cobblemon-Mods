@@ -10,7 +10,7 @@ inventory texture, so it matches the inventory under any resource pack.
 - **Tooltip:** hover a Pokemon to see its level, name and gender, HP, nature and ability, moves with their PP, and the
   IVs and EVs of each stat. Stats its nature raises are red, lowered ones blue.
 - **Itemize:** with PokemonToItem on the server, press **I** (rebindable) over a Pokemon to turn it into a PokemonToItem
-  item, as `/poketoitem` would. Only players allowed to run `/poketoitem` can, and a hint under the rows names the key.
+  item, as `/poketoitem` would. Only players allowed to run `/poketoitem` can; the Pokemon tooltip names the key.
 
 Held items cannot be changed during a battle, and Cobblemon's held-item tags (`cobblemon:held/blacklisted_items_to_hold`,
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI
