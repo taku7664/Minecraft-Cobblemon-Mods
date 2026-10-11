@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-11 12:17] 첫 실행·업데이트 구분, Iris 설정 파일 수정 0.1.17
+
+- **문제(검토로 발견):** 0.1.16 `OptionsSetup`은 완료 기록만 보고 적용해서, 업데이트한 기존 플레이어도 다음 실행 때 언어가 `ko_kr`로 바뀌고 꺼 둔 팩이 다시 켜지며 팩 순서가 바뀔 뻔했다(운영 `PPakemon` 프로필은 0.1.16 미실행 상태에서 교체). 셰이더는 OptiFine용 `optionsshaders.txt`에 써서 Iris가 읽지 않았다. Iris 1.8.8 JAR에 `optionsshaders` 문자열이 없고 `config/iris.properties`만 읽는 것을 직접 확인했다. 0.1.16 기록의 "운영 클라이언트 셰이더 설정이 틀렸다"는 진단도 잘못이었다(실제 `iris.properties`는 정상).
+- **사용자 결정:** "첫 실행과 업데이트를 구분해야 한다."
+- **구현:** 규칙이 처음 돌 때 `options.txt`가 없거나 비었으면 새 설치(`fresh-install=true`), 아니면 업데이트(`false`)로 한 번 기록한다. 새 설치만 언어·리소스팩·셰이더 기본값을 넣고, 업데이트는 기록만 남긴다. 셰이더는 `config/iris.properties`로 옮기고 기록을 `shader-defaults-v2`로 올렸다. 매 실행 공통으로 켜진 우리 팩 파일이 사라졌으면 같은 자리를 설치된 새 버전으로 바꾼다. 팩 버전은 숫자로 비교하고(`CCC_2.21` > `CCC_2.9`), 폴더형 팩은 우리 팩으로 인정해 zip을 중복으로 켜지 않는다. `XaeroSetup`의 E19 아이콘팩도 파일명 고정 대신 패턴과 최신 버전으로 찾는다.
+- **빌드:** main `97d3e36f`, 테스트 84개 통과. JAR SHA-256 `1E57D054411579C7136D397B01EB72636BF7F9CDA423BBA77FF914D6BA967931`.
+- **배포:** 개발 클라이언트, 운영 `PPakemon` 프로필, `deploy-product/client`의 0.1.16을 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.17/`로 옮기고 0.1.17을 넣었다(세 곳 해시 일치, 게임 꺼진 상태).
+- **미확인:** 실제 클라이언트 실행 결과. `XaeroWorldReset`의 서버 식별은 IP 폴더명만 보는데, 지금 서버는 도메인이 없어 고칠 대상이 없다(도메인을 쓰게 되면 폴더명도 추가해야 함).
+- **모드팩 안내:** 팩에서 빼야 할 파일은 `options.txt`, `config/iris.properties`(`optionsshaders.txt` 아님), `config/cobblemon-client-setup/applied-defaults.properties`, `xaero/`.
+
 ## [2026-10-11 05:20] 첫 실행 언어·리소스팩·셰이더 기본값 0.1.16
 
 - **이유:** 사용자가 모드팩에 무엇을 넣을지 묻다가, 팩에 `options.txt`를 넣으면 업데이트 때마다 플레이어 설정을 덮어쓸 수 있으니 훅으로 처음 한 번만 넣자고 결정했다. 셰이더는 처음부터 켜기로 했다(사용자 결정).

@@ -1,3 +1,9 @@
+# [2026-10-11 12:17] 업데이트 때 startup-hooks.json을 저장소 버전으로
+
+- **문제:** `preserve()`가 `startup-hooks.json`을 보존해 VPS의 위키 해시·모드 버전 규칙이 갱신되지 않았다. 기록상 VPS 해시는 옛 값이고 `.startup-hooks-state.json`의 ONCE 표시 덕에만 기동했는데, 이 상태 파일은 백업에도 없었다.
+- **수정:** `25df5a43`. `startup-hooks.json`은 저장소 버전을 받는다. VPS에서 직접 고친 상태면 기존 충돌 검사가 업데이트를 멈춘다(새 테스트). 설정 백업에 `.startup-hooks-state.json`을 넣었다. 테스트 22개 통과(1개 원래 skip).
+- **미적용:** 설치본 `%LOCALAPPDATA%/PPakemonVpsManager`는 갱신하지 않았다(Claude 데스크톱에서 설치하면 MSIX 가상화 경로로 감). 사용자가 `install-vps-manager.ps1`을 직접 실행해야 한다. `server.properties`는 여전히 보존 대상이라 운영 저장소의 `simulation-distance=6`은 VPS에 자동 반영되지 않는다.
+
 # [2026-10-11 05:00] 디스코드 역할 초기화, 개발 서버도 같은 방식으로 초기화
 
 - **디스코드 역할:** 사용자 지시("디코 역할도 전부 초기화"). 봇은 서버 멤버 인텐트가 꺼져 있어 멤버 목록을 못 본다(403). `GET /guilds/{id}/roles/member-counts`로 관리 역할(인증됨 + 등급 5종, 개발·VPS 설정 합침) 보유 인원을 셌더니 인증됨 1명(서버 주인)·등급 0명이었다. VPS 연동 백업의 계정 1개는 이미 서버를 나간 상태. 주인의 인증됨 역할을 `DELETE`(204)한 뒤 다시 세어 모두 0명을 확인했다. 운영자 역할은 건드리지 않았다. 닉네임은 바꾸지 않았다.

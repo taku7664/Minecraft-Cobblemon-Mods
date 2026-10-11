@@ -1,3 +1,22 @@
+# [2026-10-11 12:17] 시작 훅 검토 수정: Discord 검사 복구, 모드 버전 규칙 전달, DryRun·상태 파일
+
+- **Discord 검사:** 10-10 19:48 개발 서버 Discord 연결 해제 때 `develop-product/server/startup-hooks.json`에서 `discord.*` 검사 10개가 빠졌다. 사용자가 "디스코드 검사도 필수야. 의도 아냐"라고 해서 운영 파일과 같은 내용(위키 해시만 개발 값 `df5c…`)으로 되돌렸다. 원래 파일은 `develop-product/deployment-backups/2026-10-11-startup-hooks/`. 개발 서버 `botToken`이 비어 있어 지금 개발 서버 DryRun은 `discord.bot`에서 막힌다(토큰 복구는 사용자 확인 필요).
+- **로컬 패쳐(로컬 전용 파일):** 대상 `startup-hooks.json`을 보존하면서 위키 해시만 바꾸던 것을, 개발 서버의 `mod_compatibility` 블록도 텍스트 그대로 옮기도록 바꿨다(나머지 운영 규칙·형식 유지). 대상에 훅 파일이 없으면 개발 규칙으로 시작하되 경고한다. 테스트 26개 그룹 통과, 설치본 `develop-product/tools/patcher/server/server-deployment.psm1` 갱신.
+- **훅 스크립트(운영 `53ed670`, 개발 서버 동일 복사):** DryRun에서 `command` 검사(agy)를 실행하지 않는다. `.startup-hooks-state.json`이 깨지면 예외 대신 복구 방법을 알려 주고 기동을 멈춘다(계속 진행하면 ONCE 규칙이 운영자 변경값을 덮을 수 있어 막는 쪽을 유지). Xaero 설정·waypoint-lock 검사 16개는 WARN으로 바꿨다. `startup-hooks.tests.ps1` 통과, 운영 DryRun exit 0.
+- **MBC 흔적:** 개발 서버 `config/cobblemon-more-battle-content-better-ai/`(openrouter.json 하나)를 같은 백업 폴더로 옮겼다.
+- **미확인:** 로컬 운영 `config/jbro-policy-discord.json`에는 `inquiryChannelId` 등 8개 필드가 없어 WARN이 난다(이번에 바꾸지 않음). 서버는 기동하지 않았다.
+
+# [2026-10-10 17:22 KST] VPS Discord 인증 설정 보완·시작 훅 필수 검사 강화
+
+- 빡대리가 인증 명령 미등록을 신고했습니다. 메인 작업자의 직접 SSH 확인 기준으로 `ubuntu@210.207.108.196`의 `/srv/MinecraftPPakemonServer/config/jbro-policy-discord.json`은 존재했지만 `botToken`과 `verifiedRoleId`가 모두 비어 있었습니다. 기록 담당자는 원격 확인을 재실행하지 않았습니다.
+- 개발 서버 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server`의 기존 두 설정값을 비밀값 출력 없이 로컬 운영 `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer`와 VPS의 비어 있는 두 필드에만 전달했습니다. 다른 기존 필드는 보존했으며 세 대상의 기존 파일을 서버 외부에 백업한 뒤 직접 수정했습니다. 토큰·역할 ID의 실제 값은 기록하지 않습니다.
+- 개발·로컬 운영·VPS의 `startup-hooks.json`에서 `discord.bot`·`discord.verified-role` 검사의 `severity`를 `WARN`에서 `ERROR`로 변경했습니다. 기존 `non_empty`와 `when_mod: jbro_policy` 조건은 유지했습니다. 설정 파일 존재만으로 준비 완료라고 판단하지 않도록 두 필드의 빈 값도 시작 차단 대상으로 강화한 것입니다.
+- 메인 작업자 보고 기준으로 격리된 scratch 검증에서 누락·빈 값·부분 설정은 차단되고 완전 설정은 통과하는 결과를 세 대상 모두 확인했습니다. VPS에서 Discord API의 봇 로그인 유효성과 인증 역할 존재도 각각 참으로 확인했습니다. 이 결과는 설정·API 검증이며 게임 명령 등록 검증과 구분합니다.
+- 로컬 운영의 전체 `server-startup-hooks.ps1 -DryRun`을 별도 `pwsh` 프로세스로 실행해 `discord.bot`·`discord.verified-role`의 `OK`와 프로세스 exit 0을 확인했습니다. 첫 검증 harness는 현재 셸에 남은 이전 외부 명령의 `LASTEXITCODE`를 잘못 검사해 실패로 표시했으며, 독립 프로세스의 종료 코드 검사로 정정했습니다. 설정 검사 자체의 실패로 기록하지 않습니다.
+- 별도 `servercmd` 배포 채팅에서 모드 JAR 교체와 VPS 정상 저장·종료·재시작을 진행했습니다. 메인 작업자가 `17:24:03 All dimensions are saved`와 TCP 25565 포트 닫힘을 확인한 뒤, `17:25:49 Done (12.780s)`와 TCP 25565 `LISTEN`을 직접 확인했습니다. 본 작업은 설정·시작 훅만 변경했으며 JAR 교체는 별도 작업입니다.
+- 재시작 후 `17:25:51 Discord bot 피츄 봇 is online`과 `registered 7 slash commands`를 확인했습니다. 콘솔에서 `discordverify`·`디코인증` 모두 `A player is required to run this command here`를 반환해 게임 명령 등록을 확인했고, Discord REST guild commands 목록에서도 `verify` 존재가 참이었습니다. 콘솔에는 플레이어가 없어 인증 코드를 발급하지 않았습니다. 재시작 후 `AUTH_ERROR_CHECKS=2`로 필수 검사 수정 유지도 확인했습니다.
+- 사용자 요청에 따라 Git 푸시로 VPS 반영을 대신하지 않고 VPS 파일을 직접 수정했습니다. 모드 소스·JAR 변경은 없습니다. 개발 서버는 기동하지 않았습니다. 실제 플레이어의 인게임 6자리 코드 발급부터 Discord 인증 완료까지의 전체 흐름은 확인하지 못했습니다.
+
 # [2026-10-10 16:43 KST] Windows 바탕화면 서버 콘솔 바로가기 생성
 
 - 빡대리의 Windows 직접 접속 요청에 따라 메인 작업자가 `C:/Users/박주형/Desktop/빡케몬 서버 콘솔.lnk`를 만들었습니다. 설치된 PowerShell 7에서 `NoLogo/NoProfile/NoExit`로 시스템 `ssh.exe`를 실행하고, 기존 로컬 PEM 키로 `ubuntu@210.207.108.196`에 tty 접속해 `env TERM=xterm-256color tmux attach-session -t ppakemon`을 엽니다. 바로가기는 이 PC 로컬 전용이며 원격 운영 저장소·배포 제품에 포함하지 않습니다. 키 내용은 읽거나 복사하지 않았습니다.
