@@ -16,6 +16,14 @@
 - **안 고친 것:** BP 거래 기록 무한 증가는 저장 구조를 바꾸는 큰 작업이라 이번엔 두었다.
 - **미확인:** 이 항목 작성 시점에 빌드·테스트 전.
 
+## [2026-10-11 12:57] MCC 5개 JAR 개발·운영·VPS 배포 (main 96a7c829), 리그 JAR 빈 빌드 사고
+
+- **사용자 지시:** "모든 것에 배포, 개발·운영·VPS". PvP룸 세션 요청으로 코어 API·PvP 패킷 변경이 함께 있어 MCC 5개 JAR(코어·PvP·타워·팩토리·리그)을 같은 커밋으로 함께 배포.
+- **JAR(SHA-256 앞 16자리, F 빌드 `main` 96a7c829):** 코어 `1624508ba71818a3`, PvP `c693eac00f52188e`, 타워 `4bddc695cfe302d7`, 팩토리 `27d845f63fdb773c`, 리그 `81e4e58bae1e0411`.
+- **배포처(모두 해시 일치 확인):** 개발 서버·클라(백업 `develop-product/deployment-backups/20261011-boss-48-worlds/`), 운영 클라 `PPakemon`(백업 `%LOCALAPPDATA%/MinecraftClientPatch/manual-20261011-boss-48-worlds`), `deploy-product/client`·`server`, 로컬 운영 서버(월드 백업 `%LOCALAPPDATA%/MinecraftServerDeploy/manual-20261011-boss-48-worlds/world-snapshot`, 운영 저장소 `9983937`·`092e3e6` 푸시), VPS(HEAD `092e3e6`).
+- **사고:** `--rerun-tasks` 재빌드가 실패한 회차에 리그 JAR이 클래스 0개(리소스만)로 만들어졌는데 압축 검사만 하고 배포했다. VPS가 `jbro-policy`의 `LegendWikiSection`에서 `jbro.cobblemon.mcc.league.ui.LeagueRank` 없음으로 기동 실패, 자바가 월드를 열기 전 상태로 매달림(관리 도구 업데이트 실패·복구 미완료, 백업 `…/manager/20261011-124848-dac91f9a`). 월드 미로딩(로그에 Preparing/Done 0건)을 확인하고 프로세스를 SIGTERM으로 종료, 리그 JAR을 clean 재빌드(클래스 121개)해 6곳 교체·운영 `092e3e6`·VPS 업데이트(백업 `…/manager/20261011-125509-b119a72e`). **재발 방지:** 배포 전 JAR마다 클래스 수를 이전 JAR과 비교한다.
+- **상태:** 사용자 지시로 VPS는 꺼둠(자바 없음·25565 닫힘). 개발·로컬 운영 서버도 꺼진 상태. 고친 JAR로 서버 기동·실게임은 어디서도 확인하지 않았다.
+
 ## [2026-10-11 12:40] 보스 세계 상한 96 → 48, 노드 2만 → 1.5만 적용 (미배포)
 
 - **사용자 결정:** 밤사이 권장안 적용. `NativeInitialProductWorldPlanner.defaultWorldLimit` 보스 16 → 8(선출 6이면 48), `LocalLookaheadBudgetPolicy` 보스 `nativeNodeLimit` 20,000 → 15,000(막판 배수 ×2·×3 → 30,000·45,000).
