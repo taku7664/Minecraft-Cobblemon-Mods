@@ -9,8 +9,12 @@
 
 ## 필수 설정
 
+> [!CAUTION]
+> **Cobbled Level Control의 권한 노드는 반드시 전부 빈 값(`""`)으로 둔다.** 모드 기본값은 이로치·전설·환상·울트라비스트·2단계·최종 진화체마다 권한 노드를 요구한다. 이 서버에는 권한 모드(LuckPerms 등)가 없어서 OP가 아닌 유저는 누구도 이 노드를 갖지 못한다. 기본값을 그대로 두면 유저가 이로치나 진화체를 던져도 `Catch Canceled: You do not have permission to do that!`이 뜨며 포획이 취소되고, 그런 포켓몬과의 배틀·레벨업도 막힌다. 2026-10-11 VPS에서 실제로 유저들이 이로치를 못 잡는 사고가 났다. 포켓몬 제한은 jbro-policy가 맡는다. 모드를 새로 깔거나 올려서 `server.toml`이 다시 만들어지면 기본값이 돌아오므로 그때마다 다시 확인한다.
+
 | 파일 | 키 | 값 | 이유 |
 |---|---|---|---|
+| `config/cobbled_level_control/server.toml` **(필수)** | `battleModule`·`catchingModule`의 `legendary`, `mythical`, `ultraBeast`, `shiny`, `evoStages.*`와 `levelingModule`의 `evoStages.*` | 전부 `""` | 위 경고 참고. 빈 값이 "제한 없음"이다. `restrictBattles`·`restrictCatching`·`restrictLeveling`은 레벨캡 스위치라 `true`로 남긴다(아래 "확인만 할 설정"). 이 파일은 Forge Config API Port의 파일 감시로 실행 중에도 다시 읽히므로 서버를 끄지 않고 고친다(`config/forgeconfigapiport.toml`의 `disableConfigWatcher = false` 전제). 고칠 때는 파일을 같은 자리에 덮어쓰고 CRLF 줄바꿈을 유지한다. `/level-control configure`는 마지막 인자에 빈 값을 넣을 수 없어 이 작업에 못 쓴다. 2026-10-11 VPS·운영 저장소(`9e939d4`)·개발 서버에 반영했다. |
 | `config/pokemontoitem/config.json` | `command.poketoitem`, `command.itemtopoke` | `0` | 기본값 2(OP 전용)면 일반 플레이어가 포켓몬을 아이템으로 바꿀 수 없다. `/pokefusion`은 이 아이템을 재료로 쓰므로 포켓퓨전도 함께 막힌다. 안내 메시지도 두 명령을 소개한다. |
 | `config/pokefusion.json` | `commandPermissionLevel` | `0` | 모든 플레이어가 `/pokefusion`을 쓴다. |
 | `config/more-cobblemon-contents/hub_tabs.json` | `command_permission_level` | `0` | 모든 플레이어가 `/mcc`로 허브(대시보드·상점·PvP)를 연다. `/mcc` 아래 관리 명령은 이 값과 관계없이 OP 전용이다. `[안내]`의 상점·PvP 안내가 `/mcc`를 소개한다. |
@@ -58,7 +62,7 @@
 
 | 파일 | 키 | 값 | 이유 |
 |---|---|---|---|
-| `config/cobbled_level_control/server.toml` | `restrictBattles`, `restrictCatching`, `restrictLeveling` | `true` | 리그 챌린지의 레벨캡이 레벨업·포획·배틀에 적용되는 전제다. 안내 메시지의 레벨캡 설명도 이 값을 기준으로 쓴다. |
+| `config/cobbled_level_control/server.toml` | `restrictBattles`, `restrictCatching`, `restrictLeveling` | `true` | 리그 챌린지의 레벨캡이 레벨업·포획·배틀에 적용되는 전제다. 안내 메시지의 레벨캡 설명도 이 값을 기준으로 쓴다. "제한을 다 푼다"고 이 값을 `false`로 바꾸면 레벨캡까지 사라진다. 풀어야 할 것은 위 "필수 설정"의 권한 노드다. |
 
 ## 서버 경로와 설정 이력
 

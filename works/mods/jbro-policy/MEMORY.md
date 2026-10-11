@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-11 18:30] Cobbled Level Control 권한 노드 전부 비움 (서버 무중단, 유저 포획 미확인)
+
+- **원인:** VPS 유저가 이로치 지그제구리를 던지면 `Catch Canceled: You do not have permission to do that!`. 문구는 `cobbled-level-control` 1.2.0의 `missingPermission`이다. `server.toml` 기본값이 이로치·전설·환상·울트라비스트·2단계·최종 진화체에 권한 노드를 요구하는데, 권한 모드가 없어서 OP가 아니면 아무도 못 가졌다. 사용자 결정: 포켓몬 제한은 jbro-policy가 맡으니 이 모드의 노드 제한은 전부 푼다. 레벨캡 스위치(`restrict*`)는 `true`로 남긴다.
+- **리로드 근거(바이트코드 확인):** 설정은 Forge Config API Port로 등록되고 `ConfigTracker.openConfig`가 `disableConfigWatcher = false`면 파일 감시를 건다. `CatchingConfig.getConfig()`는 매 호출 `ConfigValue.get()`으로 읽는다. `/level-control configure`의 `value`는 `greedyString`이라 빈 값을 못 넣는다.
+- **적용:** VPS `server.toml` 14줄을 백업(`/home/ubuntu/.local/share/ppakemon-backups/manual/20261011-182233-clc-nodes`) 후 같은 파일에 덮어썼다. 서버 PID 18830(18:12 기동, 이 작업과 무관한 재시작)은 그대로이고 이후 WARN/ERROR 없음. 운영 저장소 `9e939d4` 푸시, 로컬 운영 파일 MD5가 VPS와 같다(`6c49f167…`). 개발 서버와 리그 챌린지 `run/` 설정도 같은 값으로 바꿨다(CRLF 유지).
+- **미확인:** 리로드는 디버그 로그라 흔적이 안 남는다. OP 아닌 유저가 이로치·진화체를 실제로 잡는지는 확인하지 못했다. VPS 작업 트리에 같은 내용의 미커밋 수정이 남아 있어, 매니저 update가 `9e939d4`를 받을 때 충돌하면 VPS 쪽 수정을 버리고 받으면 된다(내용 동일).
+- **체크리스트:** `docs/SERVER_OPEN_CHECKLIST.md` 필수 설정 맨 위에 경고와 항목을 추가했다.
+
 ## [2026-10-11 03:24] 숨겨진 특성 1/30 빌드·개발 배포·운영·VPS 반영 (실게임 미검증)
 
 - **빌드:** 커밋된 `origin/main` `5611b7e7`를 `git archive`로 `F:/AI/build/hidden-ability-20261011/src`에 풀어 빌드했다(워크트리 아님, Gradle 쓰기 경로 모두 F). `:jbro-policy:build` 종료 코드 0, unitTest 106개 모두 통과. 리그는 `assemble` 후 `unitTest`를 `WildTrainerDataTest`로 좁혀 11개 통과. 정책 JAR SHA-256 `3B08009542D332FDD481CC9734C06A50E9669E2BD5DC8CE355A705246F322521`, 리그 JAR `DCDA43CF079DA76787F71AF52CB407790958B4FEE0E6CD3E3C4AFD7F53A789A5`, 둘 다 `jar --validate` 통과.
