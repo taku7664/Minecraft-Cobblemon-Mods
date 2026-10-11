@@ -1,5 +1,11 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 05:12] 스킨·PP·I키 아이템화 개발 배포 (실게임 미확인)
+
+- **빌드:** main `184ccf29`과 같은 소스(빌드 뒤에는 README·MEMORY만 수정)로 `:cobblemon-party-sidebar:build -x test`, F 드라이브 경로. 성공. `unzip -t` 통과, 진입점·mixin·EMI·`InventorySkin`·`PokemonItemize` 클래스와 빈 칸 아이콘이 JAR에 있음.
+- **배치:** 마인크래프트 프로세스·25565/25566 수신 없음을 확인. 이전 JAR은 `develop-product/deployment-backups/20261012-051233-party-sidebar-skin/{server,client}`에 두고 교체. 세 곳 SHA-256 `59d61fd20047c538edb84626b04eca41b7b4dddbc8d103c62780d2c333a476a0`. 개발 서버에는 PokemonToItem 0.2.0이 있고 `config/pokemontoitem/config.json`의 `command.poketoitem`이 0이라 일반 플레이어도 I키 아이템화 대상이다.
+- **미확인:** 실게임 전부.
+
 ## [2026-10-12 05:20] 인벤토리 텍스처 스킨·모델 액자·빈 칸 아이콘·PP·I키 아이템화 (구현·빌드만)
 
 - **사용자 피드백(스크린샷):** "레이아웃이 따로 노는 느낌", "아이템 슬롯과 모델 슬롯이란 느낌이 안 남". 개발 클라는 Whimscape 팩이라 인벤토리가 어두운 회색·나무색인데 사이드바는 바닐라 색을 직접 칠하고 있었다. 사용자가 제안(텍스처 스킨·모델 액자·인벤토리에 붙이기·빈 칸 아이콘)에 "아이콘도 넣어서 진행해"라고 답했고, 같이 "PP 현황도 안 나오네", "맨 하단에 회색 글씨로 'i키 눌러 아이템화' 넣고 i키 누르면 아이템화"를 요청했다.
