@@ -623,7 +623,7 @@ internal class LocalTacticalBrain(
             else ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                     ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
-                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed,
+                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments,
                 )
             }
         val drawn = quick?.rank ?: selection.rank

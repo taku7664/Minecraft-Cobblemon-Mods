@@ -60,6 +60,14 @@ class LocalQuickDeciderTest {
         assertEquals("mega", chosen.mechanic?.mechanicId, "${decision.tags}")
     }
 
+    @Test
+    fun `an attack aimed at the expected switch-in is not swapped for the stronger one on the Pokemon in front`() {
+        // Lucario in front of Furfrou, Tapu Bulu behind it: the ranking reads the switch and takes Meteor Mash, which
+        // hits the Fairy for double; Close Combat would be resisted by it.
+        val (context, decision) = decide("lucario-aims-at-expected-tapu-bulu")
+        assertEquals("meteormash", label(context, decision), "${decision.tags}")
+    }
+
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {
         val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }

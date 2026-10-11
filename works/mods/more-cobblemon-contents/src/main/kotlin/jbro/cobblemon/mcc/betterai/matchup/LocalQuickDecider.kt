@@ -45,6 +45,8 @@ internal object LocalQuickDecider {
         tier: BattleTrainerTier,
         excluded: Set<String>,
         seed: Long,
+        /** The ranking's credit per action for the switches it expects the opponent to make ([LocalSwitchPrediction]). */
+        predicted: Map<String, Double> = emptyMap(),
     ): Verdict? {
         val state = context.state
         val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
@@ -61,14 +63,13 @@ internal object LocalQuickDecider {
         val attacks = moves.mapNotNull { rank -> damage(rank)?.let { rank to it } }
         val theirKnockout = stay.opponentMove?.knockoutChanceWithin(1) ?: 0.0
 
-        // 1. A knockout this turn, landed before their hit or survived.
-        attacks.map { (rank, score) ->
+        // 1. A knockout this turn, landed before their hit or survived. Of several, the one the ranking put first: it
+        // has weighed what each does if the opponent switches instead.
+        attacks.firstOrNull { (rank, score) ->
             val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
                 else stay.subjectMovesFirstProbability
-            rank to score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout))
-        }.maxByOrNull { it.second }?.takeIf { it.second >= KNOCKOUT }?.let { (rank, _) ->
-            return Verdict(rank, "knockout")
-        }
+            score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
+        }?.let { (rank, _) -> return Verdict(rank, "knockout") }
 
         // 2. A reason to leave.
         val reasons = buildList {
@@ -166,7 +167,9 @@ internal object LocalQuickDecider {
             moves.mapNotNull { rank -> statusScore(rank)?.let { rank to it } }.maxByOrNull { it.second.score }
                 ?.takeIf { it.second.score >= STATUS_GAIN }?.let { return Verdict(it.first, "status_better") }
             val top = damage(strongest)!!.score
-            return if (chosenDamage.score < WEAK_ATTACK * top) Verdict(strongest, "weak_attack") else null
+            // An attack the ranking chose for the Pokemon it expects to come in is not weak: it was aimed past this one.
+            val aimedAtSwitch = (predicted[chosen.outcome.candidate.actionId] ?: 0.0) > (predicted[strongest.outcome.candidate.actionId] ?: 0.0)
+            return if (!aimedAtSwitch && chosenDamage.score < WEAK_ATTACK * top) Verdict(strongest, "weak_attack") else null
         }
         if (wasted(chosenMove, context)) return Verdict(strongest, "wasted_status")
         statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
