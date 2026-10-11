@@ -117,16 +117,14 @@ class PichuScreen : Screen(Component.literal("피츄")) {
             else Entry("광장 가기", "광장에 가면 간호순 누나가 포켓몬을 회복해 주고, 상점이랑 리그·배틀타워·배틀팩토리 안내원도 다 모여 있어요!", serverHas("plaza")) { command("plaza enter") },
             if (inRoom) Entry("마이룸 나가기", "방에서 나가면 들어오기 전에 있던 자리로 돌아가요.", roomRoot != null) { command("$roomRoot exit") }
             else Entry("마이룸 가기", "나만 쓰는 방이에요! 마음대로 꾸미고 친구를 초대할 수도 있어요. 처음 가면 방부터 만들어 줘요.", roomRoot != null) { command("$roomRoot enter") },
-            Entry("위키 열기", "서버에서 궁금한 건 거의 다 위키에 있어요. 내 진행도에 맞춘 정보도 같이 보여 줘요!", policy) { link(RequestLinkPayload.WIKI) },
-            Entry("디스코드 열기", "디스코드에 오면 공지랑 전설, 이로치 소식을 받을 수 있어요. 들어와서 /디코인증도 꼭 해 줘요!", policy) { link(RequestLinkPayload.DISCORD) },
-            Entry("포켓몬 아이템화", "포켓몬을 아이템으로 바꿔 둘 수 있어요. 합성하려면 먼저 아이템으로 만들어 둬야 해요!", serverHas("poketoitem")) { command("poketoitem") },
-            Entry("포켓몬 합성", "같은 진화 계보의 포켓몬 아이템을 합치면 더 높은 개체값을 이어받아요. 어떤 아이가 나올지 두근두근!", serverHas("pokefusion")) { command("pokefusion") },
             Entry("BP 상점", "모은 BP로 사탕이랑 민트, 배틀 도구를 살 수 있어요. 인벤토리 빈칸은 꼭 챙겨요!", serverHas("mcc")) { hub(SHOP_TAB) },
             Entry("PvP 룸", "다른 트레이너랑 겨루는 곳이에요. 방을 만들거나 열린 방에 들어가 봐요!", serverHas("mcc")) { hub(PVP_TAB) },
             Entry("문의하기", "버그나 건의는 운영자님께 바로 전할 수 있어요. 무슨 일인지 내용까지 같이 써 줘야 해요!", serverHas("문의")) {
                 client.setScreen(ChatScreen("/문의 "))
             },
             Entry("구역 스폰 레벨", "지금 서 있는 곳에서 몇 레벨 야생 포켓몬이 나오는지 알려 줘요. 사냥터 고를 때 써 봐요!", serverHas(SPAWN_LEVEL)) { command(SPAWN_LEVEL) },
+            Entry("위키 열기", "서버에서 궁금한 건 거의 다 위키에 있어요. 내 진행도에 맞춘 정보도 같이 보여 줘요!", policy) { link(RequestLinkPayload.WIKI) },
+            Entry("디스코드 열기", "디스코드에 오면 공지랑 전설, 이로치 소식을 받을 수 있어요. 들어와서 /디코인증도 꼭 해 줘요!", policy) { link(RequestLinkPayload.DISCORD) },
         )
     }
 
