@@ -4,8 +4,8 @@
   "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
   "initial_cap": 16,
   "wild_level": {
-    "below_cap": 6,
-    "spread": 3,
+    "below_cap": 10,
+    "spread": 5,
     "region_chunks": 4,
     "region_min": 10,
     "region_max": 83,

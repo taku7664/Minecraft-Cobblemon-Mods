@@ -14,8 +14,8 @@ internal object WildRolls {
         return result
     }
 
-    /** Cobblemon's alpha level matching, held at the player's League [cap]; no cap leaves Cobblemon's level. */
-    fun alphaLevel(matched: Int, cap: Int?): Int = if (cap == null) matched else minOf(matched, cap)
+    /** Cobblemon's alpha level matching, held inside the League's wild spawn [band] there; no band leaves Cobblemon's level. */
+    fun alphaLevel(matched: Int, band: IntRange?): Int = if (band == null) matched else matched.coerceIn(band)
 
     /** [roll] is uniform in 0 until [oneIn]; odds of 0 never hit. */
     fun hiddenAbility(oneIn: Int, roll: Int): Boolean = oneIn > 0 && roll == 0

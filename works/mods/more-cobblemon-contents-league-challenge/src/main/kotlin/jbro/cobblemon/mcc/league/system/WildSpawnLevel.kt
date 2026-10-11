@@ -4,8 +4,8 @@ import kotlin.math.floor
 
 /** Regional levels are independent of players; the cap limits only the effective level used by a new spawn. */
 data class WildLevelRule(
-    val belowCap: Int = 6,
-    val spread: Int = 3,
+    val belowCap: Int = 10,
+    val spread: Int = 5,
     val regionChunks: Int = 4,
     val regionMin: Int = 10,
     val regionMax: Int = 83,

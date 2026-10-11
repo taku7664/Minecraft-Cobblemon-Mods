@@ -17,6 +17,9 @@ import net.minecraft.server.level.ServerPlayer
  * ([WildSpawnSpecies]), and the moves are learned again for the new level.
  */
 object LeagueWildSpawns {
+    /** The regional level, [player]'s cap and the band a new spawn there draws from. */
+    data class Reading(val regionLevel: Int, val cap: Int, val range: IntRange)
+
     fun register() {
         CobblemonEvents.POKEMON_ENTITY_SPAWN.subscribe(Priority.NORMAL) { event ->
             val player = event.cause.entity as? ServerPlayer ?: return@subscribe
@@ -24,17 +27,12 @@ object LeagueWildSpawns {
             val catalog = LeagueCatalogResources.current ?: return@subscribe
             if (CLCConfig.SERVER_CONFIG.scaling_enableScaling.get() || CLCConfig.getCatchingConfig().doNotRestrictCatching()) return@subscribe
             try {
-                val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
-                val cap = LeagueEngine(catalog).cap(state)
-                LeagueIntegrations.syncCap(player, cap)
                 val level = event.entity.level() as? ServerLevel ?: return@subscribe
                 val chunk = event.entity.chunkPosition()
-                val rule = catalog.wildLevel
-                val origin = WildSpawnOrigin.get(player.server)
-                val regionLevel = WildSpawnRegions.level(level.seed, level.dimension().location().toString(), chunk.x, chunk.z,
-                    rule, origin.chunkX, origin.chunkZ)
+                val reading = read(player, level, chunk.x, chunk.z) ?: return@subscribe
+                LeagueIntegrations.syncCap(player, reading.cap)
                 val pokemon = event.entity.pokemon
-                val spawnLevel = WildSpawnLevel.roll(cap, rule, regionLevel, player.level().random.nextDouble())
+                val spawnLevel = WildSpawnLevel.roll(reading.cap, catalog.wildLevel, reading.regionLevel, player.level().random.nextDouble())
                 WildSpawnSpecies.fit(pokemon, spawnLevel)
                 pokemon.level = spawnLevel
                 // Cobblemon picked the moves for the level it rolled; a level the League moved needs its own.
@@ -43,5 +41,16 @@ object LeagueWildSpawns {
                 Mod.LOGGER.warn("Could not scale League wild spawn for {}: {}", player.uuid, failure.message)
             }
         }
+    }
+
+    /** What a new wild spawn caused by [player] in chunk ([chunkX], [chunkZ]) of [level] would use; null without a League. */
+    fun read(player: ServerPlayer, level: ServerLevel, chunkX: Int, chunkZ: Int): Reading? {
+        val catalog = LeagueCatalogResources.current ?: return null
+        val cap = LeagueEngine(catalog).cap(LeagueSavedData.get(player.server).read(catalog.id, player.uuid))
+        val rule = catalog.wildLevel
+        val origin = WildSpawnOrigin.get(player.server)
+        val regionLevel = WildSpawnRegions.level(level.seed, level.dimension().location().toString(), chunkX, chunkZ,
+            rule, origin.chunkX, origin.chunkZ)
+        return Reading(regionLevel, cap, rule.range(cap, regionLevel))
     }
 }

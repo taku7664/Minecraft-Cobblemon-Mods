@@ -56,10 +56,10 @@ class WildRollsTest {
     }
 
     @Test
-    fun `alpha levels stop at the league cap and pass through without one`() {
-        assertEquals(16, WildRolls.alphaLevel(20, 16))
-        assertEquals(18, WildRolls.alphaLevel(18, 24))
-        assertEquals(24, WildRolls.alphaLevel(24, 24))
+    fun `alpha levels stay inside the league wild band and pass through without one`() {
+        assertEquals(11, WildRolls.alphaLevel(20, 1..11))
+        assertEquals(9, WildRolls.alphaLevel(9, 1..11))
+        assertEquals(9, WildRolls.alphaLevel(5, 9..19))
         assertEquals(36, WildRolls.alphaLevel(36, null))
     }
 

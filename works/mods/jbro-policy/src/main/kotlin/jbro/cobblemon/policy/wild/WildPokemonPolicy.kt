@@ -11,6 +11,7 @@ import jbro.cobblemon.policy.config.IvRange
 import jbro.cobblemon.policy.config.PolicyConfig
 import kotlin.random.Random
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 
 /**
@@ -61,16 +62,20 @@ object WildPokemonPolicy {
 
     /**
      * Called by the alpha level matching mixin. Cobblemon lifts a wild alpha 4 to 20 levels above the nearest
-     * player's strongest party member, so it is held at that player's League level cap.
+     * player's strongest party member, so it is held inside the band an ordinary wild spawn caused by that player
+     * draws from where the alpha stands (League cap and region).
      */
     @JvmStatic
-    fun capAlphaLevel(matched: Int, player: ServerPlayer): Int {
+    fun capAlphaLevel(matched: Int, pokemon: Pokemon, player: ServerPlayer): Int {
         if (!leagueLoaded) return matched
-        val cap = try { LeagueRanks.levelCap(player.server, player.uuid) } catch (failure: RuntimeException) {
-            JbroPolicy.LOGGER.warn("Could not read the League level cap for {}", player.gameProfile.name, failure)
+        val entity = pokemon.entity
+        val level = (entity?.level() ?: player.level()) as? ServerLevel ?: return matched
+        val chunk = entity?.chunkPosition() ?: player.chunkPosition()
+        val band = try { LeagueRanks.wildLevelRange(player, level, chunk.x, chunk.z) } catch (failure: RuntimeException) {
+            JbroPolicy.LOGGER.warn("Could not read the League wild level band for {}", player.gameProfile.name, failure)
             null
         }
-        return WildRolls.alphaLevel(matched, cap)
+        return WildRolls.alphaLevel(matched, band)
     }
 
     private fun rollIvs(pokemon: Pokemon, ranges: List<IvRange>) {

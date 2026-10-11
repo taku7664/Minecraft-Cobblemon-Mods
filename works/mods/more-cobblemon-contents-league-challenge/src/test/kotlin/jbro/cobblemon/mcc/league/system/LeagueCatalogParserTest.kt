@@ -33,7 +33,7 @@ class LeagueCatalogParserTest {
         }
     }
 
-    @Test fun `the bundled league uses fixed ten to eighty three regions and a six plus or minus three spawn band`() {
+    @Test fun `the bundled league uses fixed ten to eighty three regions and a ten plus or minus five spawn band`() {
         assertEquals(WildLevelRule(), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
     }
 

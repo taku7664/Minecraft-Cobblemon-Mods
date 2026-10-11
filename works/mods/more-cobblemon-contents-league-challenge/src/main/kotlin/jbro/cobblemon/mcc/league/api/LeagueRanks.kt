@@ -4,9 +4,12 @@ import java.util.UUID
 import jbro.cobblemon.mcc.league.server.LeagueCatalogResources
 import jbro.cobblemon.mcc.league.server.LeagueSavedData
 import jbro.cobblemon.mcc.league.server.LeagueServer
+import jbro.cobblemon.mcc.league.server.LeagueWildSpawns
 import jbro.cobblemon.mcc.league.system.LeagueEngine
 import jbro.cobblemon.mcc.league.ui.LeagueRank
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 
 /** Server-side read of a player's League rank for other mods. Call on the server thread. */
 object LeagueRanks {
@@ -38,6 +41,13 @@ object LeagueRanks {
         val catalog = LeagueCatalogResources.current ?: return null
         return LeagueEngine(catalog).cap(LeagueSavedData.get(server).read(catalog.id, player))
     }
+
+    /**
+     * The level band a new wild spawn caused by [player] in chunk ([chunkX], [chunkZ]) of [level] draws from;
+     * null while no League catalog is loaded.
+     */
+    fun wildLevelRange(player: ServerPlayer, level: ServerLevel, chunkX: Int, chunkZ: Int): IntRange? =
+        LeagueWildSpawns.read(player, level, chunkX, chunkZ)?.range
 
     /** Whether [player] beat the hard League's Champion; false while no League catalog is loaded. */
     fun isHardChampion(server: MinecraftServer, player: UUID): Boolean {

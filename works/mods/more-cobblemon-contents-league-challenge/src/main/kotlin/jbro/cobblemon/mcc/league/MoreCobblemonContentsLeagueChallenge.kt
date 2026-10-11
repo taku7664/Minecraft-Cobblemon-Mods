@@ -15,6 +15,7 @@ object MoreCobblemonContentsLeagueChallenge : ModInitializer {
         LeagueServer.register()
         jbro.cobblemon.mcc.league.server.LeagueDashboard.register()
         LeagueWildSpawns.register()
+        WildSpawnLevelCommand.register()
         LeagueAdminCommands.register()
         jbro.cobblemon.mcc.league.trainer.WildTrainers.register()
     }
