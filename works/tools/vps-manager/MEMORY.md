@@ -45,6 +45,13 @@
 - **설치:** 사용자 지시로 `explorer.exe`에서 띄운 bat으로 앱 밖에서 `install-vps-manager.ps1`을 실행했다(MSIX 가상화 회피). 실제 `%LOCALAPPDATA%/PPakemonVpsManager`의 두 파일 해시가 원본과 같고 `settings.json`은 그대로이며, 앱 가상 경로에는 사본이 없다.
 - **VPS 확인(SSH 읽기 전용):** `simulation-distance=6`, `view-distance=10`(이미 6이었음). VPS `startup-hooks.json`은 위키 해시만 옛 `df5c…`로 직접 수정돼 있었고 zip은 `90ff…`였다. 상태 파일의 `wiki:df5c…` ONCE 표시 덕에만 기동하던 상태였다. 이대로면 새 관리 도구의 업데이트가 충돌로 멈추므로 `git checkout -- startup-hooks.json`으로 저장소 버전(`90ff…`)으로 되돌렸다. 원본 백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/manual-hooks-20261011-122347/`. 다음 기동 때 위키 ONCE가 한 번 더 돌며 없는 파일만 채운다. VPS HEAD는 `d5b393f`로 원격보다 뒤다(업데이트는 하지 않음).
 
+# [2026-10-11 19:50] `/피츄` 답변 실패 원인: 서버 PATH에 agy 없음 → `/usr/local/bin/agy` 추가 (재시작 없음)
+
+- **증상(사용자 스크린샷):** 19:03·19:11 `/피츄`가 "지금은 답을 만들지 못했어요"만 반환.
+- **원인(직접 확인):** 실패 시각에 `~/.gemini/antigravity-cli/log/`에 agy 실행 로그가 없어 agy가 실행되지도 않았다. 현재 서버 pane(PID 18830)은 이 세션이 띄운 프로세스가 아니라 이후 누군가 `./run.sh`로 다시 켠 것이고(`pane_start_command=./run.sh`), 그 프로세스 PATH에 `~/.local/bin`이 없어 `InquiryReviewSettings.executable()`이 agy를 찾지 못했다. 같은 이유로 문의 검토도 실패했을 것이다. agy 자체·전용 프로필(앞뒤 공백을 자르면 JAR 원본과 같음)·위키 프롬프트는 정상이었다. 배포 JAR로 만든 실제 프롬프트 두 개를 VPS agy에 보내 각각 7~8초에 `SUCCESS`, 도구 호출 없음, 울트라홀 질문에 챔피언 조건을 정확히 답하는 것을 확인했다.
+- **조치:** 사용자가 VPS를 끄지 말라고 해서, 서버가 질문마다 PATH를 다시 뒤진다는 점을 이용해 `/usr/local/bin/agy`(`exec /home/ubuntu/.local/bin/agy "$@"`, 755)를 sudo로 추가했다. 서버와 같은 PATH(`env -i`)에서 `command -v agy`가 이 파일을 찾고 `agy --version` 1.3.3을 확인했다. 디스코드에서 실제 `/피츄` 성공은 아직 확인하지 않았다.
+- **재발 주의:** VPS는 `./run.sh`로 직접 켜도 이제 agy를 찾는다. 다만 피츄·문의 검토 실패 원인이 로그에 남지 않는 코드라 원인 추적이 어렵다(다음 개선 후보: 실패 사유 WARN 로그, `executable()`에 `~/.local/bin` 후보 추가).
+
 # [2026-10-11 05:00] 디스코드 역할 초기화, 개발 서버도 같은 방식으로 초기화
 
 - **디스코드 역할:** 사용자 지시("디코 역할도 전부 초기화"). 봇은 서버 멤버 인텐트가 꺼져 있어 멤버 목록을 못 본다(403). `GET /guilds/{id}/roles/member-counts`로 관리 역할(인증됨 + 등급 5종, 개발·VPS 설정 합침) 보유 인원을 셌더니 인증됨 1명(서버 주인)·등급 0명이었다. VPS 연동 백업의 계정 1개는 이미 서버를 나간 상태. 주인의 인증됨 역할을 `DELETE`(204)한 뒤 다시 세어 모두 0명을 확인했다. 운영자 역할은 건드리지 않았다. 닉네임은 바꾸지 않았다.
