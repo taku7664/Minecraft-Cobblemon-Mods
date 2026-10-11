@@ -47,6 +47,7 @@
   },
   "suggests": {
     "modmenu": "*",
-    "emi": "*"
+    "emi": "*",
+    "pokemontoitem": "*"
   }
 }

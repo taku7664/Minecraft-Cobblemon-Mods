@@ -6,35 +6,46 @@ import com.cobblemon.mod.common.item.PokemonItem
 import com.cobblemon.mod.common.net.messages.server.storage.party.MovePartyPokemonPacket
 import com.cobblemon.mod.common.net.messages.server.storage.party.SwapPartyPokemonPacket
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.mojang.blaze3d.systems.RenderSystem
+import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
+import jbro.cobblemon.partysidebar.network.ItemizePayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
+import net.minecraft.client.renderer.RenderType
+import net.minecraft.network.chat.Component
+import net.minecraft.util.FormattedCharSequence
 import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.item.ItemStack
 import org.joml.Vector4f
 import java.util.UUID
 
 /**
- * The party column left of the survival inventory: one row per party slot, the Pokemon model and then its held item.
+ * The party column docked to the left of the survival inventory: one row per party slot, the Pokemon in a frame like
+ * the player-model box and then its held item in an inventory slot. Both are cut from the active inventory texture
+ * (see [InventorySkin]), so the column matches the inventory under any resource pack.
  *
  * Held-item slots act like inventory slots: a click swaps the slot with the cursor item, shift-click sends the item to
  * the inventory, and an item can be dragged between them and the inventory. The server makes every change (see
  * [HeldItemClickPayload]); without the mod on the server the column only shows the party. Dragging a Pokemon onto
- * another row swaps the two, or moves it into an empty row, through Cobblemon's own party packets.
+ * another row swaps the two, or moves it into an empty row, through Cobblemon's own party packets. The itemize key
+ * over a Pokemon turns it into a PokemonToItem item ([ItemizePayload]); a hint under the rows names the key.
  */
 object PartySidebar {
     private const val ROWS = 6
-    private const val SLOT = 18
+    private const val FRAME = 22
+    private const val SLOT = InventorySkin.SLOT
     private const val PADDING = 7
     private const val COLUMN_GAP = 2
-    private const val ROW_GAP = 2
-    private const val SCREEN_GAP = 2
-    const val WIDTH = PADDING * 2 + SLOT * 2 + COLUMN_GAP
-    const val HEIGHT = PADDING * 2 + SLOT * ROWS + ROW_GAP * (ROWS - 1)
+    private const val HINT_GAP = 3
+    private const val LINE = 9
+    const val WIDTH = PADDING * 2 + FRAME + COLUMN_GAP + SLOT
+    private const val ROWS_HEIGHT = FRAME * ROWS
+    private const val MODEL_SIZE = 20
+    private val EMPTY_HELD_ITEM = CobblemonPartySidebar.id("textures/gui/empty_held_item.png")
 
     // Vanilla's recipe book: its width, how far it shifts left of the centre, and the screen width below which it
     // covers the inventory instead of sitting beside it.
@@ -49,15 +60,21 @@ object PartySidebar {
     internal data class Bounds(val x: Int, val y: Int, val width: Int, val height: Int) {
         fun contains(mouseX: Double, mouseY: Double) = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height
 
-        fun slotX(column: Column) = x + PADDING + if (column == Column.MODEL) 0 else SLOT + COLUMN_GAP
+        fun rowY(row: Int) = y + PADDING + row * FRAME
 
-        fun slotY(row: Int) = y + PADDING + row * (SLOT + ROW_GAP)
+        /** The top-left corner of a cell's frame: the model frame fills the row, the slot sits in its middle. */
+        fun cellX(column: Column) = x + PADDING + if (column == Column.MODEL) 0 else FRAME + COLUMN_GAP
+
+        fun cellY(row: Int, column: Column) = rowY(row) + if (column == Column.MODEL) 0 else (FRAME - SLOT) / 2
+
+        fun cellSize(column: Column) = if (column == Column.MODEL) FRAME else SLOT
 
         fun hit(mouseX: Double, mouseY: Double): Hit? {
             for (row in 0 until ROWS) for (column in Column.entries) {
-                val slotX = slotX(column)
-                val slotY = slotY(row)
-                if (mouseX >= slotX && mouseX < slotX + SLOT && mouseY >= slotY && mouseY < slotY + SLOT) return Hit(row, column)
+                val cellX = cellX(column)
+                val cellY = cellY(row, column)
+                val size = cellSize(column)
+                if (mouseX >= cellX && mouseX < cellX + size && mouseY >= cellY && mouseY < cellY + size) return Hit(row, column)
             }
             return null
         }
@@ -76,6 +93,8 @@ object PartySidebar {
     }
 
     private var press: Press? = null
+    private var mouseX = 0.0
+    private var mouseY = 0.0
     private val modelStacks = HashMap<UUID, Pair<String, ItemStack>>()
 
     /** Where the column goes on [screen], or null when it is off or there is no room for it. */
@@ -86,37 +105,49 @@ object PartySidebar {
             if (screen.width < RECIPE_BOOK_NARROW) return null
             anchor = minOf(anchor, (screen.width - RECIPE_BOOK_WIDTH) / 2 - RECIPE_BOOK_OFFSET)
         }
-        val x = anchor - SCREEN_GAP - WIDTH
-        return if (x < 0) null else Bounds(x, screen.topPos, WIDTH, HEIGHT)
+        val x = anchor - WIDTH
+        if (x < 0) return null
+        val hintLines = hintLines().size
+        val content = PADDING + ROWS_HEIGHT + (if (hintLines > 0) HINT_GAP + hintLines * LINE else 0) + PADDING
+        return Bounds(x, screen.topPos, WIDTH, maxOf(InventorySkin.current().panelHeight, content))
     }
 
     fun contains(screen: InventoryScreen, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
 
     fun renderColumn(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
+        this.mouseX = mouseX.toDouble()
+        this.mouseY = mouseY.toDouble()
         val bounds = bounds(screen) ?: return
-        drawPanel(graphics, bounds)
-        val hovered = bounds.hit(mouseX.toDouble(), mouseY.toDouble())
+        InventorySkin.panel(graphics, bounds.x, bounds.y, bounds.width, bounds.height)
+        val hovered = bounds.hit(this.mouseX, this.mouseY)
         val dragged = (press as? Press.Model)?.row
         for (row in 0 until ROWS) {
             val pokemon = party(row)
             for (column in Column.entries) {
-                val x = bounds.slotX(column)
-                val y = bounds.slotY(row)
-                drawSlot(graphics, x, y)
-                if (pokemon != null) when (column) {
-                    Column.MODEL -> if (row != dragged) graphics.renderItem(modelStack(pokemon), x + 1, y + 1)
+                val x = bounds.cellX(column)
+                val y = bounds.cellY(row, column)
+                val size = bounds.cellSize(column)
+                when (column) {
+                    Column.MODEL -> {
+                        InventorySkin.box(graphics, x, y, size)
+                        if (pokemon != null && row != dragged) drawModel(graphics, pokemon, x + (size - MODEL_SIZE) / 2, y + (size - MODEL_SIZE) / 2)
+                    }
                     Column.HELD -> {
-                        val held = pokemon.heldItem()
+                        InventorySkin.slot(graphics, x, y)
+                        val held = pokemon?.heldItem() ?: ItemStack.EMPTY
                         if (!held.isEmpty) {
                             graphics.renderItem(held, x + 1, y + 1)
                             graphics.renderItemDecorations(Minecraft.getInstance().font, held, x + 1, y + 1)
+                        } else if (pokemon != null) {
+                            drawEmptyHeldItem(graphics, x + 1, y + 1)
                         }
                     }
                 }
                 val highlight = hovered == Hit(row, column) || (dragged != null && hovered?.row == row && row != dragged)
-                if (highlight) AbstractContainerScreen.renderSlotHighlight(graphics, x + 1, y + 1, 0)
+                if (highlight) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + size - 1, y + size - 1, HIGHLIGHT)
             }
         }
+        drawHint(graphics, bounds)
     }
 
     fun renderOverlay(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
@@ -125,7 +156,7 @@ object PartySidebar {
             val pokemon = party(drag.row) ?: return
             graphics.pose().pushPose()
             graphics.pose().translate(0f, 0f, 232f)
-            graphics.renderItem(modelStack(pokemon), mouseX - 8, mouseY - 8)
+            drawModel(graphics, pokemon, mouseX - MODEL_SIZE / 2, mouseY - MODEL_SIZE / 2)
             graphics.pose().popPose()
             return
         }
@@ -195,6 +226,17 @@ object PartySidebar {
         }
     }
 
+    /** The itemize key over a Pokemon itemizes it; returns true when the key was used. */
+    fun keyPressed(screen: InventoryScreen, keyCode: Int, scanCode: Int): Boolean {
+        if (!CobblemonPartySidebarClient.ITEMIZE.matches(keyCode, scanCode) || !canItemize()) return false
+        val bounds = bounds(screen) ?: return false
+        val hit = bounds.hit(mouseX, mouseY)?.takeIf { it.column == Column.MODEL } ?: return false
+        val pokemon = party(hit.row) ?: return false
+        if (press != null || !screen.menu.carried.isEmpty) return true
+        ClientPlayNetworking.send(ItemizePayload(hit.row, pokemon.uuid))
+        return true
+    }
+
     /** Asks the server to act on a held-item slot; false when there is nothing to do or no server half to ask. */
     private fun clickHeld(screen: InventoryScreen, row: Int, pokemon: Pokemon, quickMove: Boolean): Boolean {
         if (!ClientPlayNetworking.canSend(HeldItemClickPayload.TYPE)) return false
@@ -202,6 +244,11 @@ object PartySidebar {
         ClientPlayNetworking.send(HeldItemClickPayload(row, pokemon.uuid, quickMove))
         return true
     }
+
+    /** The server takes the request and has PokemonToItem's command, which it only sends to players allowed to use it. */
+    private fun canItemize(): Boolean =
+        ClientPlayNetworking.canSend(ItemizePayload.TYPE) &&
+            Minecraft.getInstance().connection?.commands?.root?.getChild("poketoitem") != null
 
     private fun reorder(from: Int, to: Int) {
         if (CobblemonClient.battle != null) return
@@ -213,7 +260,39 @@ object PartySidebar {
 
     private fun party(row: Int): Pokemon? = CobblemonClient.storage.party.get(row)
 
-    /** The model as Cobblemon's Pokemon item draws it, greyed out once the Pokemon has fainted. */
+    private fun hintLines(): List<FormattedCharSequence> {
+        if (!canItemize()) return emptyList()
+        val text = Component.translatable("cobblemon_party_sidebar.hint.itemize", CobblemonPartySidebarClient.ITEMIZE.translatedKeyMessage)
+        return Minecraft.getInstance().font.split(text, WIDTH - 8)
+    }
+
+    /** The itemize hint under the rows, centred, in a grey that reads on both light and dark panels. */
+    private fun drawHint(graphics: GuiGraphics, bounds: Bounds) {
+        val font = Minecraft.getInstance().font
+        val color = if (luminance(InventorySkin.current().bodyColor) > 128) 0xFF555555.toInt() else 0xFFA8A8A8.toInt()
+        var y = bounds.rowY(ROWS) + HINT_GAP
+        for (line in hintLines()) {
+            graphics.drawString(font, line, bounds.x + (bounds.width - font.width(line)) / 2, y, color, false)
+            y += LINE
+        }
+    }
+
+    private fun luminance(argb: Int): Int {
+        val r = argb shr 16 and 0xFF
+        val g = argb shr 8 and 0xFF
+        val b = argb and 0xFF
+        return (r * 299 + g * 587 + b * 114) / 1000
+    }
+
+    /** The model as Cobblemon's Pokemon item draws it, [MODEL_SIZE] across, greyed out once the Pokemon has fainted. */
+    private fun drawModel(graphics: GuiGraphics, pokemon: Pokemon, x: Int, y: Int) {
+        graphics.pose().pushPose()
+        graphics.pose().translate(x.toFloat(), y.toFloat(), 0f)
+        graphics.pose().scale(MODEL_SIZE / 16f, MODEL_SIZE / 16f, 1f)
+        graphics.renderItem(modelStack(pokemon), 0, 0)
+        graphics.pose().popPose()
+    }
+
     private fun modelStack(pokemon: Pokemon): ItemStack {
         val fainted = pokemon.currentHealth <= 0
         val key = "${pokemon.species.resourceIdentifier}|${pokemon.aspects.sorted()}|$fainted"
@@ -225,27 +304,14 @@ object PartySidebar {
         return stack
     }
 
-    /** A panel in the inventory's own style: light grey body, bevelled edge and black outline. */
-    private fun drawPanel(graphics: GuiGraphics, bounds: Bounds) {
-        val (x, y, w, h) = bounds
-        val outline = 0xFF000000.toInt()
-        graphics.fill(x + 1, y, x + w - 1, y + 1, outline)
-        graphics.fill(x + 1, y + h - 1, x + w - 1, y + h, outline)
-        graphics.fill(x, y + 1, x + 1, y + h - 1, outline)
-        graphics.fill(x + w - 1, y + 1, x + w, y + h - 1, outline)
-        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFFC6C6C6.toInt())
-        graphics.fill(x + 1, y + 1, x + w - 2, y + 3, 0xFFFFFFFF.toInt())
-        graphics.fill(x + 1, y + 1, x + 3, y + h - 2, 0xFFFFFFFF.toInt())
-        graphics.fill(x + 2, y + h - 3, x + w - 1, y + h - 1, 0xFF555555.toInt())
-        graphics.fill(x + w - 3, y + 2, x + w - 1, y + h - 1, 0xFF555555.toInt())
+    /** A faint berry outline, like the armor slots' empty icons, marking where a held item goes. */
+    private fun drawEmptyHeldItem(graphics: GuiGraphics, x: Int, y: Int) {
+        RenderSystem.enableBlend()
+        graphics.setColor(1f, 1f, 1f, 0.28f)
+        graphics.blit(EMPTY_HELD_ITEM, x, y, 0f, 0f, 16, 16, 16, 16)
+        graphics.setColor(1f, 1f, 1f, 1f)
+        RenderSystem.disableBlend()
     }
 
-    /** An empty inventory slot: dark top-left edge, white bottom-right edge, grey inside. */
-    private fun drawSlot(graphics: GuiGraphics, x: Int, y: Int) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xFF8B8B8B.toInt())
-        graphics.fill(x, y, x + SLOT - 1, y + 1, 0xFF373737.toInt())
-        graphics.fill(x, y, x + 1, y + SLOT - 1, 0xFF373737.toInt())
-        graphics.fill(x + 1, y + SLOT - 1, x + SLOT, y + SLOT, 0xFFFFFFFF.toInt())
-        graphics.fill(x + SLOT - 1, y + 1, x + SLOT, y + SLOT, 0xFFFFFFFF.toInt())
-    }
+    private const val HIGHLIGHT = 0x80FFFFFF.toInt()
 }

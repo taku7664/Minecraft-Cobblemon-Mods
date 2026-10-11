@@ -1,5 +1,17 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 05:20] 인벤토리 텍스처 스킨·모델 액자·빈 칸 아이콘·PP·I키 아이템화 (구현·빌드만)
+
+- **사용자 피드백(스크린샷):** "레이아웃이 따로 노는 느낌", "아이템 슬롯과 모델 슬롯이란 느낌이 안 남". 개발 클라는 Whimscape 팩이라 인벤토리가 어두운 회색·나무색인데 사이드바는 바닐라 색을 직접 칠하고 있었다. 사용자가 제안(텍스처 스킨·모델 액자·인벤토리에 붙이기·빈 칸 아이콘)에 "아이콘도 넣어서 진행해"라고 답했고, 같이 "PP 현황도 안 나오네", "맨 하단에 회색 글씨로 'i키 눌러 아이템화' 넣고 i키 누르면 아이템화"를 요청했다.
+- **스킨(`InventorySkin`):** 색을 칠하지 않고 현재 팩의 `textures/gui/container/inventory.png`를 잘라 쓴다. 리소스 리로드마다 `NativeImage`로 패널 폭·높이(40행/40열의 마지막 불투명 픽셀), 몸통색(`(폭-10, 68)`), 플레이어 모델 칸(`(50,40)` 내부색이 이어지는 범위 + 테두리 1px)을 잰다. Whimscape는 폭 174·칸 (24,8,53,70), 바닐라는 176·(25,7,51,72)로 나왔다. 패널은 4px 9-slice, 측면 테두리는 y 62~78 띠에서 자른다(y 8~40은 Whimscape에서 제작 결과 칸 테두리가 섞여 세로 줄무늬가 생겼다 — 미리보기 합성으로 발견). 아이템 칸은 갑옷 슬롯 `(7,7)` 18px, 모델 칸은 플레이어 모델 칸을 2px 9-slice로 22px 액자로 만든다. 256px가 아니거나 못 읽으면 바닐라 좌표.
+- **배치:** 인벤토리 왼쪽에 간격 없이 붙이고 높이는 인벤토리 높이(필요하면 더 길게). 6줄 × 22px, 모델은 20px로 키워 그리고, 아이템 칸은 줄 가운데. 하이라이트는 `RenderType.guiOverlay()`로 모델 위에 덮는다.
+- **빈 칸 아이콘:** Cobblemon의 지닌 물건 아이콘은 손 모양(32px)이라 안 맞아 16px 열매 실루엣(`textures/gui/empty_held_item.png`, 직접 생성)을 알파 0.28로 그린다. 포켓몬이 있는 줄에만.
+- **PP:** 툴팁 기술 줄을 이름/`남은/최대` 오른쪽 정렬 표(`MoveTable`)로. 0이면 빨강, 1/4 이하 노랑.
+- **I키 아이템화:** PokemonToItem `/poketoitem`은 인자 없이 선택 메뉴만 연다(바이트코드 확인). 메뉴는 `PokemonUtility.INSTANCE.pokemonToItem(pokemon)`으로 만든 아이템을 인벤토리에 넣고(가득 차면 떨굼) `party.remove`한다. 같은 동작을 `ItemizePayload` + `PokemonItemize`로 서버에서 한다. PokemonToItem은 리플렉션으로 부르고(선택 의존), 서버 명령 트리의 `poketoitem` 노드 `canUse`로 그 모드 권한 설정을 그대로 따른다. 배틀 중·엔티티 busy 거부, 내보낸 포켓몬은 `recall()` 후 제거. 클라는 `KeyMapping`(기본 I, 조작 설정에서 변경 가능)을 인벤토리 `keyPressed`에서만 읽고, 모델 칸을 가리킬 때만 보낸다. 안내 문구는 서버가 이 패킷을 받고 클라 명령 트리에 `poketoitem`이 있을 때만 그리며, 몸통 밝기에 따라 짙은/옅은 회색.
+- **주의:** 개발 클라 `options.txt`에서 I는 한글 패치 한/영 전환(`key.koreanpatch.toggle_ime`)에도 묶여 있다. 인벤토리에서 둘이 같이 반응하는지는 미확인.
+- **확인한 것:** 빌드 성공(F 드라이브 경로). 미리보기는 같은 계산을 Python으로 합성해 Whimscape·바닐라에서 봤을 뿐 게임 화면이 아니다.
+- **미확인:** 실게임 전부(텍스처 측정 결과, 20px 모델 크기, 안내 문구 줄바꿈, I키 동작·한글 패치 충돌, 아이템화 후 파티 동기화).
+
 ## [2026-10-12 04:50] 빌드·개발 배포 (실게임 미확인)
 
 - **빌드:** 사용자 지시("빌드해서 배포해"). main `39f45541`(모듈 파일 미수정 상태)에서 `:cobblemon-party-sidebar:build -x test`. `GRADLE_USER_HOME=F:/AI/caches/gradle`, `--project-cache-dir`·TEMP·`java.io.tmpdir`는 `F:/AI/builds/cobblemon-mods-main/`, 출력은 같은 폴더의 `f-build-dirs.init.gradle`로 `out/cobblemon-party-sidebar`. 첫 시도에 성공(1분 46초). `unzip -t` 통과, `fabric.mod.json`의 진입점·mixin·EMI 플러그인 클래스가 모두 JAR에 있음. refmap은 없고 mixin 대상 이름이 intermediary로 직접 리매핑돼 있다(jbro-policy와 같은 방식).

@@ -39,6 +39,11 @@ public abstract class InventoryScreenMixin {
         if (PartySidebar.INSTANCE.mouseReleased(cobblemonPartySidebar$self(), mouseX, mouseY, button)) cir.setReturnValue(true);
     }
 
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+    private void cobblemonPartySidebar$keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
+        if (PartySidebar.INSTANCE.keyPressed(cobblemonPartySidebar$self(), keyCode, scanCode)) cir.setReturnValue(true);
+    }
+
     /** A click on the column is not a click outside the inventory, which would throw the cursor item. */
     @Inject(method = "hasClickedOutside", at = @At("HEAD"), cancellable = true)
     private void cobblemonPartySidebar$hasClickedOutside(double mouseX, double mouseY, int left, int top, int button, CallbackInfoReturnable<Boolean> cir) {

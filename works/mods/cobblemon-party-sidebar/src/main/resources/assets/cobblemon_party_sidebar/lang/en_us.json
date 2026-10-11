@@ -10,5 +10,9 @@
   "config.cobblemon_party_sidebar.title": "Cobblemon Party Sidebar",
   "config.cobblemon_party_sidebar.enabled": "Party column",
   "config.cobblemon_party_sidebar.tooltip": "Pokémon tooltip",
-  "config.cobblemon_party_sidebar.save_failed": "Could not save the settings."
+  "config.cobblemon_party_sidebar.save_failed": "Could not save the settings.",
+  "cobblemon_party_sidebar.hint.itemize": "Press %s to itemize",
+  "cobblemon_party_sidebar.message.itemize_in_battle": "Pokémon can't be itemized during a battle.",
+  "key.cobblemon_party_sidebar.itemize": "Itemize hovered Pokémon",
+  "key.categories.cobblemon_party_sidebar": "Cobblemon Party Sidebar"
 }
