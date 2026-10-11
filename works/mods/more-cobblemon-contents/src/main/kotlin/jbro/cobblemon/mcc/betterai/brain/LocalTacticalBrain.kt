@@ -522,10 +522,12 @@ internal class LocalTacticalBrain(
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
+        // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
+        val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
         // Read from the same table as the rules; the AI's threat weights play no part in it.
         val opponentIntents = if (!rulesApply) emptyList()
             else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel) }.orEmpty().let { intents ->
-                if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
+                if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
@@ -581,7 +583,7 @@ internal class LocalTacticalBrain(
                     intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH && it.switchInId != null }
                         .groupBy { requireNotNull(it.switchInId) }.mapValues { (_, same) -> same.sumOf { it.probability } * tuning.predictedSwitchShare }
                 }.filterValues { it.isNotEmpty() }
-            tuning.readOpponentRepeats && active != null -> active.repeats.expectedSwitches(difficultyContext.state)
+            readRepeats && active != null -> active.repeats.expectedSwitches(difficultyContext.state)
             else -> emptyMap()
         }
         val predictionAdjustments = if (expectedSwitches.isEmpty()) emptyMap() else {
@@ -623,7 +625,7 @@ internal class LocalTacticalBrain(
             else ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                     ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
-                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments,
+                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments, expectedSwitches,
                 )
             }
         val drawn = quick?.rank ?: selection.rank

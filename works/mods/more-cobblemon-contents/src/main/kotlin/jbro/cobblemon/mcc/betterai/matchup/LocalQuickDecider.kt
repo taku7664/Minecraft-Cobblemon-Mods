@@ -47,6 +47,8 @@ internal object LocalQuickDecider {
         seed: Long,
         /** The ranking's credit per action for the switches it expects the opponent to make ([LocalSwitchPrediction]). */
         predicted: Map<String, Double> = emptyMap(),
+        /** Per opposing Pokemon, the chance it switches to each one behind it. */
+        expectedSwitches: Map<java.util.UUID, Map<java.util.UUID, Double>> = emptyMap(),
     ): Verdict? {
         val state = context.state
         val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
@@ -163,6 +165,9 @@ internal object LocalQuickDecider {
             if (heal != null && !healing && self.hpFraction <= HEAL_AT && stay.winProbability < 0.5 && !futile(heal.second)) {
                 return Verdict(heal.first, "heal_in_time")
             }
+            // Not while it can be finished: low, or already in knockout range.
+            val finishing = foe.hpFraction <= FINISH_HP || attacks.any { it.second.knockoutChanceWithin(1) >= FINISH_CHANCE }
+            if (!finishing) freeTurn(moves, self, foe, state, scores, expectedSwitches, theirKnockout)?.let { return it }
             // A status move that turns the exchange (a burn on a physical attacker, paralysis on a faster one).
             moves.mapNotNull { rank -> statusScore(rank)?.let { rank to it } }.maxByOrNull { it.second.score }
                 ?.takeIf { it.second.score >= STATUS_GAIN }?.let { return Verdict(it.first, "status_better") }
@@ -179,6 +184,51 @@ internal object LocalQuickDecider {
             return Verdict(strongest, "unsafe_setup")
         }
         return null
+    }
+
+    /**
+     * A turn the opponent is expected to spend switching (the Emerald AI's free turn): entry hazards while three or
+     * more of its Pokemon are left and that hazard is not up, else a stat raise when the one expected to come in loses
+     * to the raiser. Only when a stay does not cost the user: their hit, if they do not switch, is no knockout.
+     */
+    private fun freeTurn(
+        moves: List<LocalBattleActionRank>,
+        self: BattlePokemonStateView,
+        foe: BattlePokemonStateView,
+        state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
+        scores: MatchupScores,
+        expectedSwitches: Map<java.util.UUID, Map<java.util.UUID, Double>>,
+        theirKnockout: Double,
+    ): Verdict? {
+        val switches = expectedSwitches[foe.battlePokemonId] ?: return null
+        if (switches.values.sum() < FREE_TURN || theirKnockout >= FREE_TURN_RISK) return null
+        val up = state.field.sideConditions[BattleSide.OPPONENT].orEmpty().mapTo(hashSetOf()) { PublicIds.canonical(it.effectId) }
+        if ((state.remainingPokemonBySide[BattleSide.OPPONENT] ?: 0) >= HAZARD_TARGETS) {
+            moves.firstOrNull { rank ->
+                val id = PublicIds.canonical(part(rank).moveId.orEmpty())
+                id in HAZARDS && id !in up && !transformsMove(part(rank)) && hazardTargets(id, state) >= HAZARD_HIT
+            }?.let { return Verdict(it, "free_turn_hazard") }
+        }
+        val incoming = switches.maxByOrNull { it.value }?.key ?: return null
+        val afterSwitch = scores.pokemon(self.battlePokemonId, incoming) ?: return null
+        if (afterSwitch.winProbability < 0.5 || self.hpFraction < FREE_TURN_SETUP_HP) return null
+        return moves.firstOrNull { LocalSetupGate.raisesOwnStats(it.outcome.candidate) && !transformsMove(part(it)) }
+            ?.let { Verdict(it, "free_turn_setup") }
+    }
+
+    /**
+     * The opposing Pokemon still to come that [hazard] would touch: Toxic Spikes not Steel, Poison or Flying ones, Spikes
+     * and Sticky Web not Flying ones, Stealth Rock all. One not seen yet is counted as touched.
+     */
+    private fun hazardTargets(hazard: String, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Int {
+        val immune = when (hazard) {
+            "toxicspikes" -> setOf("steel", "poison", "flying")
+            "spikes", "stickyweb" -> setOf("flying")
+            else -> emptySet()
+        }
+        val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        val unseen = ((state.remainingPokemonBySide[BattleSide.OPPONENT] ?: seen.size) - seen.size).coerceAtLeast(0)
+        return unseen + seen.count { pokemon -> pokemon.knownTypeIds.none { PublicIds.canonical(it) in immune } }
     }
 
     /**
@@ -284,4 +334,20 @@ internal object LocalQuickDecider {
     const val HEAL_STREAK = 2
     /** Status move score (matchup gain over attacking) at which it replaces the attack. */
     const val STATUS_GAIN = 0.25
+    /**
+     * Predicted switch chance at which the turn is spent on hazards or a stat raise. The switch model reads few switches
+     * on a fresh board (365 checks in Boss self-play: 5 at 0.3 or over, 1 at 0.4); a switch seen in the same matchup
+     * before moves it up.
+     */
+    const val FREE_TURN = 0.3
+    /** Their knockout chance on a stay at which the free turn is not risked. */
+    const val FREE_TURN_RISK = 0.5
+    /** Opposing Pokemon left (the one switching included) for hazards to pay. */
+    const val HAZARD_TARGETS = 3
+    const val FREE_TURN_SETUP_HP = 0.5
+    /** Opposing Pokemon a hazard must touch to be worth the turn. */
+    const val HAZARD_HIT = 2
+    /** The opponent is finished rather than given a free turn at this HP or this knockout chance. */
+    const val FINISH_HP = 0.3
+    const val FINISH_CHANCE = 0.3
 }
