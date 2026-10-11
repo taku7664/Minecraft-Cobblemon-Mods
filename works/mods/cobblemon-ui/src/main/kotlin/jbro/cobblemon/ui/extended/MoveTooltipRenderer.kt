@@ -11,6 +11,7 @@ import com.cobblemon.mod.common.client.render.drawScaledText
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.ui.extended.navigation.MoveTooltipMode
+import jbro.cobblemon.ui.extended.ui.shared.BattlePokemonTypes
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphics
@@ -610,35 +611,8 @@ object MoveTooltipRenderer {
 
     private fun getOpponentEffectiveTypes(
         opponent: ClientBattlePokemon
-    ): List<ElementalType> {
-        val pokemonUuid = opponent.uuid
-
-        val teraType = BattleStateTracker.getTeraType(pokemonUuid)
-        if (teraType != null) {
-            val elementalType = ElementalTypes.get(teraType.lowercase())
-            if (elementalType != null) return listOf(elementalType)
-        }
-
-        val dynamicTypes = BattleStateTracker.getDynamicTypes(pokemonUuid)
-        if (dynamicTypes != null) {
-            val types = mutableListOf<ElementalType>()
-            dynamicTypes.primaryType?.let { typeName ->
-                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
-            }
-            dynamicTypes.secondaryType?.let { typeName ->
-                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
-            }
-            for (addedType in dynamicTypes.addedTypes) {
-                ElementalTypes.get(addedType.lowercase())?.let { types.add(it) }
-            }
-            return types
-        }
-
-        val species = opponent.species
-        val aspects = opponent.state.currentAspects
-        val form = species.getForm(aspects)
-        return listOfNotNull(form.primaryType, form.secondaryType)
-    }
+    ): List<ElementalType> =
+        BattlePokemonTypes.current(opponent.uuid, opponent.species, opponent.state.currentAspects)
 
     private fun getPlayerPartyPokemon(): Pokemon? {
         val uuid = activePokemonUuid ?: return null

@@ -1,6 +1,7 @@
 package jbro.cobblemon.ui.extended.ui.champions
 
 import com.cobblemon.mod.common.api.pokemon.status.Status
+import com.cobblemon.mod.common.api.types.ElementalType
 import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.client.battle.ClientBattleSide
 import jbro.cobblemon.ui.extended.BattleStateTracker
@@ -8,6 +9,7 @@ import jbro.cobblemon.ui.extended.TeamIndicatorUI
 import jbro.cobblemon.ui.extended.UIUtils
 import jbro.cobblemon.ui.extended.PanelConfig
 import jbro.cobblemon.ui.extended.ui.shared.BattleCornerCuts
+import jbro.cobblemon.ui.extended.ui.shared.BattlePokemonTypes
 import jbro.cobblemon.ui.extended.ui.shared.BattleStatusPalette
 import jbro.cobblemon.ui.extended.ui.shared.BattleSurface
 import jbro.cobblemon.ui.extended.ui.transcript.TranscriptPortraits
@@ -57,7 +59,8 @@ object ChampionsBattleInfoOverlay {
         val status: Status?,
         val level: Int?,
         val speciesIdentifier: ResourceLocation?,
-        val aspects: Set<String>
+        val aspects: Set<String>,
+        val types: List<ElementalType>
     )
 
     private data class EffectRow(
@@ -210,7 +213,8 @@ object ChampionsBattleInfoOverlay {
         var y = rect.y() + 5
         drawPortrait(context, entry, x, y, 26, opponent)
         drawNameLine(context, entry, x + 30, y + 2, width - 30)
-        drawStatusBadge(context, entry.status, x + 30, y + 15)
+        drawLabelledTypes(context, entry.types, drawStatusBadge(context, entry.status, x + 30, y + 15) + 4, y + 15,
+            x + width)
         y += 31
         drawHp(context, entry.hpPercent, x, y, width)
         y += 12
@@ -230,7 +234,7 @@ object ChampionsBattleInfoOverlay {
         val x = rect.x() + 4
         val width = rect.width() - 8
         drawPortrait(context, entry, x, rect.y() + 3, 18, opponent)
-        drawNameLine(context, entry, x + 21, rect.y() + 3, width - 21)
+        drawNameLine(context, entry, x + 21, rect.y() + 3, width - 21, withTypes = true)
         drawHp(context, entry.hpPercent, x + 21, rect.y() + 13, width - 21)
         val badgeRight = drawStatusBadge(context, entry.status, x, rect.y() + 25)
         val extra = BattleStateTracker.getVolatileStatuses(entry.uuid).map { it.type.displayName }
@@ -257,7 +261,7 @@ object ChampionsBattleInfoOverlay {
         val x = rect.x() + 4
         val width = rect.width() - 8
         drawPortrait(context, entry, x, rect.y() + 3, 18, opponent)
-        drawNameLine(context, entry, x + 21, rect.y() + 3, width - 21)
+        drawNameLine(context, entry, x + 21, rect.y() + 3, width - 21, withTypes = true)
         drawHp(context, entry.hpPercent, x + 21, rect.y() + 13, width - 21)
         if (rect.height() >= 36) drawCompactRankGrid(context, entry, x, rect.y() + 24, width)
     }
@@ -272,12 +276,31 @@ object ChampionsBattleInfoOverlay {
         }
     }
 
-    private fun drawNameLine(context: GuiGraphics, entry: PokemonEntry, x: Int, y: Int, width: Int) {
+    /** Name, then the level at the right end; [withTypes] puts the type icons just before the level. */
+    private fun drawNameLine(context: GuiGraphics, entry: PokemonEntry, x: Int, y: Int, width: Int,
+                             withTypes: Boolean = false) {
         val font = Minecraft.getInstance().font
         val level = entry.level?.let { "Lv.$it" }
         val levelWidth = level?.let { font.width(it) + 4 } ?: 0
-        text(context, font.plainSubstrByWidth(entry.name, (width - levelWidth).coerceAtLeast(0)), x, y, WHITE)
+        val types = if (withTypes) entry.types else emptyList()
+        val typesWidth = if (types.isEmpty()) 0 else BattlePokemonTypes.width(types) + 3
+        text(context, font.plainSubstrByWidth(entry.name, (width - levelWidth - typesWidth).coerceAtLeast(0)), x, y, WHITE)
+        if (types.isNotEmpty()) BattlePokemonTypes.drawIcons(context, types,
+            x + width - levelWidth - typesWidth + 1, y - 1)
         level?.let { text(context, it, x + width - font.width(it), y, TEXT_DIM) }
+    }
+
+    /** Each type's icon and name in a row, stopping before [right]. */
+    private fun drawLabelledTypes(context: GuiGraphics, types: List<ElementalType>, x: Int, y: Int, right: Int) {
+        val font = Minecraft.getInstance().font
+        var typeX = x
+        types.forEach { type ->
+            val label = type.displayName.string
+            if (typeX + BattlePokemonTypes.ICON_STEP + font.width(label) > right) return
+            BattlePokemonTypes.drawIcons(context, listOf(type), typeX, y)
+            text(context, label, typeX + BattlePokemonTypes.ICON_STEP + 1, y + 1, WHITE)
+            typeX += BattlePokemonTypes.ICON_STEP + font.width(label) + 6
+        }
     }
 
     /** A capsule in the status's own color, or a quiet one reading "normal"; returns its right edge. */
@@ -453,7 +476,8 @@ object ChampionsBattleInfoOverlay {
             status = pokemon.status,
             level = pokemon.properties.level,
             speciesIdentifier = pokemon.properties.species?.let { ResourceLocation.fromNamespaceAndPath("cobblemon", it) },
-            aspects = pokemon.state.currentAspects
+            aspects = pokemon.state.currentAspects,
+            types = BattlePokemonTypes.current(pokemon.uuid, pokemon.species, pokemon.state.currentAspects)
         )
     }
 

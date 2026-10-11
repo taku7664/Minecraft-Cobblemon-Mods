@@ -48,6 +48,7 @@ object BattleHudRenderer {
             health = if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
             experience = if (!reversed && pokemonId != null) experienceProgress(pokemonId, level) else null,
             status = status?.showdownName,
+            types = BattlePokemonTypes.current(pokemonId, species, state.currentAspects.toSet()),
             owned = dexState == PokedexEntryProgress.OWNED,
             actorName = actorName,
             selected = selected,

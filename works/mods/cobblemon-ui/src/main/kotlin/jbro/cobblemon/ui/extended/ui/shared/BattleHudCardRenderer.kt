@@ -1,5 +1,6 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
+import com.cobblemon.mod.common.api.types.ElementalType
 import com.cobblemon.mod.common.pokemon.Gender
 import jbro.cobblemon.ui.extended.ui.transcript.TranscriptPortraits
 import jbro.cobblemon.ui.extended.ui.transcript.TranscriptSpeaker
@@ -29,6 +30,7 @@ internal object BattleHudCardRenderer {
         val health: String,
         val experience: Float? = null,
         val status: String? = null,
+        val types: List<ElementalType> = emptyList(),
         val owned: Boolean = false,
         val actorName: Component? = null,
         val selected: Boolean = false,
@@ -81,6 +83,11 @@ internal object BattleHudCardRenderer {
                 BattleStatusPalette.background(status), card.opacity)
             context.drawString(font, label, badgeX + 2, badgeY,
                 BattleSurfaceRenderer.withOpacity(BattleUiTheme.palette.statusInk, card.opacity), false)
+        }
+        // Types sit at the inner end's top, over the status badge's column.
+        if (card.types.isNotEmpty()) {
+            val typesX = if (ally) x + WIDTH - 10 else x + 10 - BattlePokemonTypes.width(card.types)
+            BattlePokemonTypes.drawIcons(context, card.types, typesX, y + 1, card.opacity)
         }
         if (card.owned) {
             val indicatorX = if (ally) x + 2 else x + WIDTH - 10
