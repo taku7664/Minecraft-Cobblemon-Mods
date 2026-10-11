@@ -1,5 +1,18 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-11 13:38] 공식 전투 BGM 30% 증량 및 두 클라이언트 음악팩 적용
+
+- 공식 전투 OGG 61곡만 직전 파일 대비 1.3배로 재인코딩했다. `resource-pack/all-bgm-alert-volume-2026-10-11.json`의 변환 후 해시와 `resource-pack/battle-gain-2026-10-11.json`의 변환 전 해시가 연결되며, 실측 RMS 증가는 +2.229~+2.336dB이다. 필드·화면 BGM, 저체력 경고음, 타격음은 변경하지 않았고 `battleSoundVolume: 0.713`도 유지했다.
+- 초기 피크 안전검사는 두 번 실패했다. `boss/sv_leader_pokemon_battle.ogg`의 입력 파일부터 peak +10.477dBFS여서 절대 0dB 기준이 부적절했고, Vorbis 재인코딩의 피크 편차도 일정하지 않았다. 따라서 곡별 입력·출력 RMS 검증으로 전환했다. 이 검증 함정은 이 항목에 기록한다.
+- 구현 커밋 `3f6b170d75d52489083230ca2364e0e144fec80e`가 `origin/main`에 포함됐다. 커밋된 Music 소스의 F 드라이브 빌드가 48초에 성공했고 JUnit 179/179개가 통과했다. 새 ZIP SHA-256은 `2A389C1BCE4F9E3DC3ADCE20A96BA7075210B9CCE09B1B4CCADB71ECCE20462E`이며, JAR은 이전 SHA-256 `234E1F342AB0EABE4E4B804E99202C45C4781BF20D8560AFCC29836FC1057D21`에서 바뀌지 않았다.
+- 게임 프로세스 0개를 확인한 뒤 Modrinth `PPakemon` 배포 클라이언트와 `cobblemon-dev` 개발 클라이언트의 ZIP을 교체했다. 두 설치 ZIP 해시는 빌드본과 일치하고, 두 프로필의 `options.txt`에서 해당 ZIP 선택을 확인했다. 개발 클라이언트의 압축 해제 팩 폴더 95/95개 파일도 빌드본과 해시가 일치한다. 실게임 재생·청취는 아직 확인하지 않았다.
+
+## [2026-10-11 13:29] 배포 클라이언트 Music 설치본 재확인
+
+- 실제 배포 클라이언트는 Modrinth `PPakemon` 프로필이다. 이 프로필의 Music JAR SHA-256은 `234E1F342AB0EABE4E4B804E99202C45C4781BF20D8560AFCC29836FC1057D21`, `options.txt`에서 선택된 음악팩 ZIP SHA-256은 `5FF780871F16570CCE13E97140713B18EAC9D12516E670E3D4D10C669D87EEC3`으로 개발 클라이언트와 빌드본에 각각 일치한다. 이미 설치돼 있어 재복사하지 않았다.
+- `deploy-product/client`에는 같은 해시의 JAR이 있고, ZIP은 산출물 전용 규칙상 두지 않는다. 이 폴더만 보고 배포 클라이언트의 음악팩이 없다고 판단한 이전 설명은 잘못됐다. 배포 상태 확인 시 실제 `PPakemon` 프로필의 선택 팩과 파일 해시를 확인해야 한다.
+- 설치 파일은 확인했으나 실게임 재생·청취는 아직 확인하지 않았다.
+
 ## [2026-10-11 02:47] 차원곡 복구와 공식 BGM·경고음 음량 조정 및 개발 클라이언트 적용
 
 - 빡대리님 요청대로 현재 `main` 작업본에 울트라스페이스·고대·미래 차원(`cobblemon_dimensions:ultra_space`/`ancient`/`future`)의 `울트라데저트` 매핑과 OGG를 이식했다. 이전 브랜치 `71714d25`의 직접 cherry-pick은 충돌로 중단하고 현재 매핑을 보존했다.
