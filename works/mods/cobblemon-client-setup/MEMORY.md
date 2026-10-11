@@ -9,7 +9,7 @@
 
 - **사용자 지적:** 기존 유저는 상관없고 신규 유저도 R 중복이 났다. 원인은 0.1.18 항목의 팩 기록 파일과 같다(신규 설치에도 그 파일이 들어감).
 - **구현:** 기록·적용 방식과 별개로 `KeybindingSetup.resolveSendOutConflict`가 매 실행 `key_iris.keybind.reload`와 `key_key.cobblemon.throwpartypokemon`을 비교한다(줄이 없으면 둘 다 기본값 R). 같으면 새로고침 키만 `unknown`으로 바꾸고, 다르면 플레이어 선택으로 보고 둔다. main `24e8a699`, 테스트 90개 통과.
-- **배포:** JAR SHA-256 `0AE8F90B53A31510ED9347181F2989AB78F21EC32EE9FB94008B0ABFCEC10686`. 개발 클라이언트와 `deploy-product/client`의 0.1.18을 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.19/`로 옮기고 0.1.19를 넣었다. `PPakemon`은 게임 실행 중(PID 44464)이라 0.1.17 JAR이 잠겨 옮겨지지 않았다. 잘못 함께 복사된 0.1.19는 바로 지워서 0.1.17만 남겼다(중복 모드 방지). 실행 확인 정규식이 틀려 "꺼짐"으로 잘못 판단했었다.
+- **배포:** JAR SHA-256 `0AE8F90B53A31510ED9347181F2989AB78F21EC32EE9FB94008B0ABFCEC10686`. 개발 클라이언트와 `deploy-product/client`의 0.1.18을 `develop-product/deployment-backups/2026-10-11-client-setup-0.1.19/`로 옮기고 0.1.19를 넣었다. `PPakemon`은 게임 실행 중(PID 44464)이라 0.1.17 JAR이 잠겨 옮겨지지 않았다. 잘못 함께 복사된 0.1.19는 바로 지워서 0.1.17만 남겼다(중복 모드 방지). 사용자가 게임을 끈 뒤 0.1.17을 같은 백업 폴더 `ppakemon/`로 옮기고 0.1.19를 넣었다(해시 일치). 실행 확인 정규식이 틀려 "꺼짐"으로 잘못 판단했었다.
 - **미확인:** 새 Modrinth 설치로 실제 실행해 본 결과는 없다. 팩 재업로드 전까지 플레이어에게는 반영되지 않는다.
 
 ## [2026-10-11 14:20] 팩에 실린 완료 기록 무시 0.1.18
