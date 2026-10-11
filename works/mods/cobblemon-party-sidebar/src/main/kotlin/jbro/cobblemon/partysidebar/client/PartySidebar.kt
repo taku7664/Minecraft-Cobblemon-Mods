@@ -18,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.RenderType
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.inventory.ClickType
@@ -38,8 +39,9 @@ import java.util.UUID
  * tooltip names the key. A PokemonToItem item clicked or dropped on an empty Pokemon frame goes back into that party
  * slot ([RestorePayload]).
  *
- * Under the rows a button opens PokeFusion's window, as `/pokefusion` does; it is off when the server has no such
- * command for the player.
+ * Under the rows a slot holding Mega Showdown's DNA Splicers opens PokeFusion's window, as `/pokefusion` does, and
+ * names itself in a tooltip; without Mega Showdown it is a plain labelled button. Either is off when the server has no
+ * such command for the player.
  */
 object PartySidebar {
     private const val ROWS = 6
@@ -51,9 +53,11 @@ object PartySidebar {
     private const val ROWS_HEIGHT = FRAME * ROWS
     private const val MODEL_SIZE = 20
     private const val BUTTON_HEIGHT = 16
-    private const val BUTTON_GAP = 4
+    private const val BUTTON_GAP = 2
     private const val BUTTON_INSET = 4
+    private const val ICON_SIZE = 12
     private const val FUSION_COMMAND = "pokefusion"
+    private val FUSION_ICON = ResourceLocation.fromNamespaceAndPath("mega_showdown", "dna_splicer")
     private val BUTTON = ResourceLocation.withDefaultNamespace("widget/button")
     private val BUTTON_HOVERED = ResourceLocation.withDefaultNamespace("widget/button_highlighted")
     private val BUTTON_DISABLED = ResourceLocation.withDefaultNamespace("widget/button_disabled")
@@ -81,12 +85,13 @@ object PartySidebar {
 
         fun cellSize(column: Column) = if (column == Column.MODEL) FRAME else SLOT
 
-        /** The fusion button: across the column at its foot, below the rows. */
-        fun fusionX() = x + BUTTON_INSET
-        fun fusionY() = y + height - PADDING - BUTTON_HEIGHT
-        fun fusionWidth() = width - BUTTON_INSET * 2
+        /** The fusion button at the column's foot: a slot in the middle with the icon, else a button across it. */
+        fun fusionWidth() = if (fusionIcon() != null) SLOT else width - BUTTON_INSET * 2
+        fun fusionHeight() = if (fusionIcon() != null) SLOT else BUTTON_HEIGHT
+        fun fusionX() = x + (width - fusionWidth()) / 2
+        fun fusionY() = y + height - PADDING - fusionHeight()
         fun overFusion(mouseX: Double, mouseY: Double) =
-            mouseX >= fusionX() && mouseX < fusionX() + fusionWidth() && mouseY >= fusionY() && mouseY < fusionY() + BUTTON_HEIGHT
+            mouseX >= fusionX() && mouseX < fusionX() + fusionWidth() && mouseY >= fusionY() && mouseY < fusionY() + fusionHeight()
 
         fun hit(mouseX: Double, mouseY: Double): Hit? {
             for (row in 0 until ROWS) for (column in Column.entries) {
@@ -127,7 +132,7 @@ object PartySidebar {
         val x = anchor - WIDTH
         if (x < 0) return null
         return Bounds(x, screen.topPos, WIDTH,
-            maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT + BUTTON_GAP + BUTTON_HEIGHT))
+            maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT + BUTTON_GAP + SLOT))
     }
 
     fun contains(screen: InventoryScreen, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
@@ -175,9 +180,22 @@ object PartySidebar {
         val x = bounds.fusionX()
         val y = bounds.fusionY()
         val width = bounds.fusionWidth()
+        fusionIcon()?.let { icon ->
+            // A slot like the held-item ones, the item drawn as the game draws it, so a resource pack restyles it too.
+            InventorySkin.slot(graphics, x, y)
+            // Drawn at 12px: the tool's art fills its whole 16px square and looked larger than the slots beside it.
+            graphics.pose().pushPose()
+            graphics.pose().translate(x + 1f + (16 - ICON_SIZE) / 2f, y + 1f + (16 - ICON_SIZE) / 2f, 0f)
+            graphics.pose().scale(ICON_SIZE / 16f, ICON_SIZE / 16f, 1f)
+            graphics.renderItem(icon, 0, 0)
+            graphics.pose().popPose()
+            if (!enabled) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, DISABLED)
+            else if (hovered) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + SLOT - 1, y + SLOT - 1, HIGHLIGHT)
+            return
+        }
         graphics.blitSprite(if (!enabled) BUTTON_DISABLED else if (hovered) BUTTON_HOVERED else BUTTON, x, y, width, BUTTON_HEIGHT)
         val font = Minecraft.getInstance().font
-        val label = Component.translatableWithFallback("button.cobblemon_party_sidebar.fusion", "포켓몬 합성")
+        val label = fusionLabel()
         val scale = minOf(1f, (width - 4f) / font.width(label))
         graphics.pose().pushPose()
         graphics.pose().translate(x + width / 2f, y + (BUTTON_HEIGHT - font.lineHeight * scale) / 2f + scale, 0f)
@@ -197,6 +215,10 @@ object PartySidebar {
             return
         }
         if (!screen.menu.carried.isEmpty) return
+        if (fusionIcon() != null && bounds.overFusion(mouseX.toDouble(), mouseY.toDouble())) {
+            graphics.renderTooltip(Minecraft.getInstance().font, fusionLabel(), mouseX, mouseY)
+            return
+        }
         val hit = bounds.hit(mouseX.toDouble(), mouseY.toDouble()) ?: return
         val pokemon = party(hit.row) ?: return
         when (hit.column) {
@@ -359,5 +381,18 @@ object PartySidebar {
         RenderSystem.disableBlend()
     }
 
+    private fun fusionLabel(): Component = Component.translatableWithFallback("button.cobblemon_party_sidebar.fusion", "포켓몬 합성")
+
+    private var fusionIconStack: ItemStack? = null
+
+    /** Mega Showdown's DNA Splicers, the games' fusion tool, or null when that mod is not installed. */
+    private fun fusionIcon(): ItemStack? {
+        fusionIconStack?.let { return it.takeUnless(ItemStack::isEmpty) }
+        val stack = BuiltInRegistries.ITEM.getOptional(FUSION_ICON).map { ItemStack(it) }.orElse(ItemStack.EMPTY)
+        fusionIconStack = stack
+        return stack.takeUnless(ItemStack::isEmpty)
+    }
+
     private const val HIGHLIGHT = 0x80FFFFFF.toInt()
+    private const val DISABLED = 0x90303030.toInt()
 }
