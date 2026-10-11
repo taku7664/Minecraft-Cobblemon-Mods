@@ -1,5 +1,11 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 05:24] 아이템화 수정·툴팁 안내·끌어다 놓기 개발 배포 (실게임 미확인)
+
+- **빌드:** main `24e6fe5d`(툴팁 안내 `4a7b316c` 포함)과 같은 소스로 05:22 빌드. `unzip -t` 통과, 진입점·mixin·EMI·`PokemonToItemFormat`·`RestorePayload`·`PokemonItemize` 클래스 확인. `PokemonItemize` 바이트코드에 `saveToNBT` → `PokemonToItemFormat.customData` 첨부와 `pokemonTag` 검사가 들어 있음을 javap로 확인했다.
+- **배치:** 사용자가 "껐어 배포해". 마인크래프트 프로세스·25565/25566 수신 없음 확인. 이전 JAR은 `develop-product/deployment-backups/20261012-052406-party-sidebar-itemize-fix/{server,client}`, 교체 후 세 곳 SHA-256 `4c154231510230f3276ffc6bc32aa4be1596d5105fbdc7bb9c310ffe9d5e92f6`.
+- **미확인:** 실게임 전부. 버그 버전으로 잃은 포켓몬은 아직 복구하지 않았다.
+
 ## [2026-10-12 05:40] I키 아이템화가 포켓몬 데이터를 버리던 버그 수정, 끌어다 놓기 아이템화·빈 칸 복원 (구현·빌드만)
 
 - **버그(사용자 발견):** "I로 아이템화한 건 우클릭으로 엔트리에 안 들어간다". `PokemonUtility.pokemonToItem`은 모델·설명 줄만 만든 보여 주기용 아이템이다. `/poketoitem` 메뉴(`PokeToItemMenu`)는 그 아이템에 `custom_data` `{slot: 파티칸, PTI_NBT: pokemon.saveToNBT(registryAccess)}`를 따로 붙인다(바이트코드 확인). 이전 구현은 앞 단계만 따라 해서 **포켓몬을 파티에서 빼고 데이터 없는 아이템을 줬다 = 그 포켓몬은 사라졌다.** 우클릭 복원은 jbro-policy `PokemonItemRestore`가 `PTI_NBT`로 한다.
