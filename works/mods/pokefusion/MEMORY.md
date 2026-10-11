@@ -6,6 +6,7 @@
 - **확인한 사실(JAR 바이트코드):** Cobblemon 1.8.1 저장 코덱은 크기를 `ScaleModifier`(필수 필드), 우두머리를 `Alpha`(선택, 기본 false)로 저장한다. PokemonToItem 0.2.0과 pokefusion 모두 `saveToNBT`/`loadFromNBT`로 통째로 저장하므로 두 값은 아이템화·합성·복원에서 유지된다. 다만 PokemonToItem 설명(lore)에는 두 값이 없다.
 - **구현:** `client/PokeFusionTooltip`이 Fabric `ItemTooltipCallback`으로 `PTI_NBT`가 있는 아이템에만 이름 아래 `우두머리`(빨강 굵게), `크기: x.xx배`(금색)를 넣는다. 아이템 데이터는 바꾸지 않는다. 표시 값은 저장된 `ScaleModifier`이며 우두머리 배율을 곱한 실제 렌더 크기가 아니다.
 - **검증:** 단위 테스트 39개 통과(크기·우두머리 읽기 테스트 추가), 빌드 성공. 실게임 툴팁은 미확인.
+- **배포:** `56b25481` 빌드본(SHA-256 `6BB4DD84…`)을 개발 서버·개발 클라이언트·로컬 운영 서버·PPakemon 프로필에 설치, 해시 일치. 게임·서버가 모두 꺼진 상태였고 서버는 켜지 않았다. 이로써 PPakemon도 1.3.x가 됐다. 운영 저장소 커밋은 로컬에만 있다(푸시 안 함). `deploy-product/`, VPS는 그대로.
 
 ## [2026-10-11 21:30] 전용 합성 화면으로 칸을 실제로 나눔 (1.3.0)
 
