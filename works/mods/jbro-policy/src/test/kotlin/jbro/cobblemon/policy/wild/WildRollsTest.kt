@@ -55,5 +55,13 @@ class WildRollsTest {
         assertTrue(WildRolls.hiddenAbility(1, 0))
     }
 
+    @Test
+    fun `alpha levels stop at the league cap and pass through without one`() {
+        assertEquals(16, WildRolls.alphaLevel(20, 16))
+        assertEquals(18, WildRolls.alphaLevel(18, 24))
+        assertEquals(24, WildRolls.alphaLevel(24, 24))
+        assertEquals(36, WildRolls.alphaLevel(36, null))
+    }
+
     private fun List<jbro.cobblemon.policy.config.IvRange>.pick(point: Double) = WildRolls.ivRange(this, point).let { it.min..it.max }
 }
