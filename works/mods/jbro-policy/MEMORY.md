@@ -106,6 +106,16 @@
 
 ---
 
+## [2026-10-12] 피츄 화면 배경·입력 차단: InvMove 원인과 대응
+
+- **증상(사용자 스크린샷):** `/피츄` 화면에 블러·어둡게 하기가 없고 핫바가 선명하게 보이며, 화면을 연 채로 움직일 수 있었다.
+- **원인(직접 확인):** 1.21.1 `Screen.render`는 `renderBackground`를 먼저 부르므로 우리 코드 문제가 아니었다. 개발·배포 클라이언트에 InvMove 0.9.3이 있고 `config/invmove.json`의 `movement`·`background`의 `unrecognizedScreenDefault`가 true다. InvMove는 처음 보는 화면에서 이동을 허용하고 `BackgroundMixin`으로 배경을 지운다. 일시정지 화면은 배경을 남기지만(`hideOnPause: Show`), 이동은 게임이 실제로 멈출 때(싱글)만 막아서 멀티에서는 `isPauseScreen`으로 해결되지 않는다.
+- **대응(`311219d3`):** `InvMoveCompat`가 InvMove의 `Module` 인터페이스를 리플렉션 프록시로 구현해 `InvMove.registerModule`로 등록한다(초기화 순서와 무관하게 모듈 목록이나 대기 목록에 들어감). `PichuScreen`이면 이동 `FORCE_DISABLE`·배경 `FORCE_SHOW`, 그 밖에는 `PASS`. InvMove에 컴파일 의존성을 두지 않았다. 앞으로 새 메뉴 화면을 만들면 같은 모듈에 넣어야 한다.
+- **빌드·배포:** 빌드 성공, 테스트 108개 통과, JAR `068A515ED804722CF080ECA0EAA396601A2E1C81881FB0D850DBA2464645EDF2`. 개발 서버·클라·`PPakemon`에 교체, 해시 일치.
+- **미검증:** 실게임에서 블러·이동 차단이 실제로 적용되는지 아직 보지 않았다.
+
+---
+
 ## [2026-10-12] 광장 안내원 구조 정정·/피츄 도우미 화면 (구현·빌드·개발·PPakemon 배포, 실게임 미검증)
 
 - **사용자 지적:** 안내에 "광장의 리그 터미널을 우클릭"이라고 썼는데, 관장 도전은 리그 안내원에게서 한다. 위키 문구를 확인 없이 믿은 실수다.
