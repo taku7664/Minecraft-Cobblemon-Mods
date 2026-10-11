@@ -83,6 +83,13 @@
 
 ---
 
+## [2026-10-11 12:20] 배포 클라이언트·릴리스 폴더 누락 보완
+
+- **누락:** VPS에 넣으면서 플레이어용 배포 클라이언트를 갱신하지 않아 사용자 지적을 받았다. VPS(운영)에 반영하면 같은 JAR을 `deploy-product/client`·`server`와 Modrinth `PPakemon` 프로필에도 넣어야 한다.
+- **보완:** 게임 미실행을 확인하고 세 곳의 `jbro-policy-0.1.3.jar`(이전 `C3A2443D…`)를 `976DDCE9…`로 교체했고 해시가 일치한다. 백업은 제품 폴더 밖 `F:/AI/build/plaza-fix-20261011/deployment-backups/release/`. 두 `VERSION.txt`의 v0.1 아래에 이번 jbro-policy 변경 한 줄을 적었다. 다른 모드 JAR은 건드리지 않았다.
+
+---
+
 ## [2026-10-11 12:12] ESC 메뉴 버튼 개발 서버·VPS 반영 (실게임 미검증)
 
 - **개발 서버:** 사용자 허락 후 PID 30600(25566, `run.bat` 콘솔, `Server console handler` 있음)에 콘솔 Ctrl+C를 보내 정상 종료했다. Java 종료·25566 닫힘·`level.dat` 수정 시각 12:05:48→12:09:29를 확인했다. 서버 JAR을 `976DDCE9…`로 교체해 클라·서버·빌드본 해시가 같다. 사용자가 끄라고만 해서 다시 켜지 않았다.
