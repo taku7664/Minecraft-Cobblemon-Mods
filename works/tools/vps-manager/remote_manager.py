@@ -253,7 +253,9 @@ class Manager:
             return False
         if name.startswith('config/') and (self.root / name).exists():
             return True
-        return name in {'server.properties', 'startup-hooks.json', 'run.sh', 'run.bat'}
+        # startup-hooks.json follows the repository: it carries mod version pins and the wiki bundle hash that must
+        # match the files this update brings. A VPS-side edit still stops the update as a dirty-file conflict.
+        return name in {'server.properties', 'run.sh', 'run.bat'}
 
     def plan_update(self, fetch=True):
         if fetch:
@@ -294,7 +296,7 @@ class Manager:
             if world.is_dir():
                 archive.add(world, arcname='world')
         with tarfile.open(out / 'settings-snapshot.tar', 'w') as archive:
-            for name in ['config', 'server.properties', 'startup-hooks.json', 'run.sh', 'run.bat']:
+            for name in ['config', 'server.properties', 'startup-hooks.json', '.startup-hooks-state.json', 'run.sh', 'run.bat']:
                 p = self.root / name
                 if p.exists():
                     archive.add(p, arcname=name)

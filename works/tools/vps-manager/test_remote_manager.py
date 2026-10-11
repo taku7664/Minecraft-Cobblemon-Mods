@@ -164,7 +164,7 @@ class ManagerTests(unittest.TestCase):
             self.manager.commit(['config/example.json'], 'bad', '0' * 40)
         self.assertEqual(self.runtime.stops, 0)
 
-    def test_update_preserves_world_settings_and_generated_datapack(self):
+    def test_update_preserves_world_settings_and_generated_datapack_but_takes_startup_hooks(self):
         target = self.upstream({'mods/mod.jar': b'new mod', 'config/example.json': b'{"volume":9}',
                                'server.properties': b'max-players=99\n', 'run.sh': b'new runner',
                                'startup-hooks.json': b'{"rules":[9]}',
@@ -179,7 +179,7 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(self.git('rev-parse', 'HEAD').strip(), target)
         for path, expected in {'mods/mod.jar': b'new mod', 'config/example.json': b'{"volume":4}',
                                'server.properties': b'max-players=10\n', 'run.sh': b'#!/bin/sh\n',
-                               'startup-hooks.json': b'{"rules":[]}',
+                               'startup-hooks.json': b'{"rules":[9]}',
                                'world/playerdata/user.dat': b'player progression',
                                'world/dimensions/jbro_policy/plaza/region/r.0.0.mca': b'live plaza',
                                'world/datapacks/cobblemon-startup-hooks.zip': b'generated',
@@ -187,6 +187,14 @@ class ManagerTests(unittest.TestCase):
                                'config/more-cobblemon-contents/wiki/index.html': b'new wiki'}.items():
             self.assertEqual((self.root / path).read_bytes(), expected, path)
         self.assertEqual((self.runtime.stops, self.runtime.starts), (1, 1))
+
+    def test_locally_edited_startup_hooks_stop_the_update(self):
+        target = self.upstream({'startup-hooks.json': b'{"rules":[9]}'})
+        self.write('startup-hooks.json', b'{"rules":[1]}')
+        with self.assertRaises(ManagerError):
+            self.manager.update(self.old, target)
+        self.assertEqual((self.root / 'startup-hooks.json').read_bytes(), b'{"rules":[1]}')
+        self.assertEqual(self.runtime.stops, 0)
 
     def test_dirty_feature_update_is_rejected(self):
         target = self.upstream({'mods/mod.jar': b'new mod'})
