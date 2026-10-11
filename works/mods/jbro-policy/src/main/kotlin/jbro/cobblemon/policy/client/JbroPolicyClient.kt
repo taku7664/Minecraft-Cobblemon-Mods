@@ -30,6 +30,7 @@ object JbroPolicyClient : ClientModInitializer {
     override fun onInitializeClient() {
         PokenavKey.register()
         MccHubTabRequest.register()
+        if (pichuAvailable) InvMoveCompat.register()
         if (pichuAvailable) ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             for (name in listOf("피츄", "pichu")) dispatcher.register(ClientCommandManager.literal(name).executes { context ->
                 // After the chat screen this command came from has closed.
