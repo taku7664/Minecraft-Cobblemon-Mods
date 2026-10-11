@@ -205,7 +205,9 @@ object ShowdownStateWriter {
         "strictChoices", "effect", "effectState", "event", "eventDepth", "hints", "tracer", "missingHooks",
     )
     private val SIDE_SKIP = setOf("battle", "team", "pokemon", "choice", "activeRequest", "name", "n", "id")
-    private val POKEMON_SKIP = setOf("side", "battle", "set", "name", "fullname", "level", "happiness", "baseMoveSlots")
+    private val POKEMON_SKIP = setOf("side", "battle", "set", "name", "fullname", "level", "happiness", "baseMoveSlots",
+        // Lookup caches of Pokemon.getStatus, getItem and getAbility, not battle state.
+        "statusEffectId", "statusEffect", "itemEffectId", "itemEffect", "abilityEffectId", "abilityEffect")
     private val OBJECT_SKIP = setOf("battle")
 
     @Suppress("unused")

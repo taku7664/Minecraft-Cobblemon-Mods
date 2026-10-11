@@ -2,7 +2,6 @@ package jbro.cobblemon.mcc.betterai.simulation
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.security.MessageDigest
@@ -733,16 +732,38 @@ internal class EngineBranchWorker(
         activeSlot = activeSlot,
         level = p.level,
         stats = LinkedHashMap(p.storedStats),
-        sourceSet = NativePokemonSourceSetFrame(
-            species = p.set.species, ability = p.set.ability, item = p.set.item, moves = p.set.moves.toList(),
-            nature = p.set.nature, gender = p.set.gender, evs = LinkedHashMap(p.set.evs), ivs = LinkedHashMap(p.set.ivs),
-            teraType = p.set.teraType ?: "", openingHp = p.set.currentHealth, openingMaxHp = p.maxhp,
-            openingStatus = p.set.status ?: "",
-        ),
+        sourceSet = sourceSetFrame(p),
         baseStabTypes = p.getTypes(false, true),
         terastallizedType = p.terastallized ?: "",
         stellarBoostedTypes = p.stellarBoostedTypes.toList(),
     )
+
+    /** A set and the max HP its frame reports; the set by identity, as forked battles share it. */
+    private class SourceSetKey(val set: PokemonSet, val maxHp: Int) {
+        override fun equals(other: Any?): Boolean = other is SourceSetKey && other.set === set && other.maxHp == maxHp
+        override fun hashCode(): Int = System.identityHashCode(set) * 31 + maxHp
+    }
+
+    /**
+     * Source-set frames, which every frame reports for all twelve Pokemon. A set is never edited once its Pokemon is
+     * built (a changed one is a new set, see [PokemonSet.withMoves]), so its frame is made once instead of copying
+     * the set's moves and spreads at every search node.
+     */
+    private val sourceSetFrames = object : LinkedHashMap<SourceSetKey, NativePokemonSourceSetFrame>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<SourceSetKey, NativePokemonSourceSetFrame>?): Boolean =
+            size > 4096
+    }
+
+    private fun sourceSetFrame(p: Pokemon): NativePokemonSourceSetFrame = synchronized(sourceSetFrames) {
+        sourceSetFrames.getOrPut(SourceSetKey(p.set, p.maxhp)) {
+            NativePokemonSourceSetFrame(
+                species = p.set.species, ability = p.set.ability, item = p.set.item, moves = p.set.moves.toList(),
+                nature = p.set.nature, gender = p.set.gender, evs = LinkedHashMap(p.set.evs), ivs = LinkedHashMap(p.set.ivs),
+                teraType = p.set.teraType ?: "", openingHp = p.set.currentHealth, openingMaxHp = p.maxhp,
+                openingStatus = p.set.status ?: "",
+            )
+        }
+    }
 
     private fun timed(id: String, state: EffectState) = NativeTimedEffectFrame(
         id, state.duration?.takeIf { it > 0 }, state["layers"]?.let { Js.int(it) }?.takeIf { it > 0 },
@@ -763,80 +784,104 @@ internal class EngineBranchWorker(
         },
     )
 
-    /** The parts of Showdown's request JSON the native search reads. */
+    /**
+     * The parts of Showdown's request JSON the native search reads, written as text directly: the same text a Gson
+     * tree printed, without building the tree for both sides at every search node.
+     */
     private fun requestJson(battle: Battle, side: Side): String {
         val request = side.activeRequest ?: return "null"
-        val out = JsonObject()
+        val out = StringBuilder(512).append('{')
         when {
-            request.wait -> out.addProperty("wait", true)
-            request.teamPreview -> out.addProperty("teamPreview", true)
-            request.forceSwitch != null -> out.add("forceSwitch", JsonArray().also { a -> request.forceSwitch.forEach { a.add(it) } })
-            else -> out.add("active", JsonArray().also { active ->
+            request.wait -> out.append("\"wait\":true")
+            request.teamPreview -> out.append("\"teamPreview\":true")
+            request.forceSwitch != null -> {
+                out.append("\"forceSwitch\":[")
+                request.forceSwitch.forEachIndexed { i, forced -> if (i > 0) out.append(','); out.append(forced) }
+                out.append(']')
+            }
+            else -> {
+                out.append("\"active\":[")
                 request.active!!.forEachIndexed { slot, data ->
+                    if (slot > 0) out.append(',')
                     if (data == null) {
-                        active.add(JsonNull.INSTANCE)
+                        out.append("null")
                         return@forEachIndexed
                     }
                     val pokemon = side.active[slot]!!
                     val locked = pokemon.getLockedMove() != null || data.moves.singleOrNull()?.id == "struggle"
-                    active.add(JsonObject().apply {
-                        add("moves", JsonArray().also { moves ->
-                            data.moves.forEach { m ->
-                                moves.add(JsonObject().apply {
-                                    addProperty("move", m.move)
-                                    addProperty("id", m.id)
-                                    battle.dex.move(m.id)?.category?.let { addProperty("category", it) }
-                                    m.pp?.let { addProperty("pp", it) }
-                                    m.maxpp?.let { addProperty("maxpp", it) }
-                                    if (m.target.isNotEmpty()) addProperty("target", m.target)
-                                    addProperty("disabled", Js.truthy(m.disabled))
-                                })
+                    out.append("{\"moves\":[")
+                    data.moves.forEachIndexed { i, m ->
+                        if (i > 0) out.append(',')
+                        out.append("{\"move\":").jsonString(m.move).append(",\"id\":").jsonString(m.id)
+                        battle.dex.move(m.id)?.category?.let { out.append(",\"category\":").jsonString(it) }
+                        m.pp?.let { out.append(",\"pp\":").append(it) }
+                        m.maxpp?.let { out.append(",\"maxpp\":").append(it) }
+                        if (m.target.isNotEmpty()) out.append(",\"target\":").jsonString(m.target)
+                        out.append(",\"disabled\":").append(Js.truthy(m.disabled)).append('}')
+                    }
+                    out.append(']')
+                    if (data.trapped) out.append(",\"trapped\":true")
+                    if (data.maybeTrapped) out.append(",\"maybeTrapped\":true")
+                    // Showdown hides a trap the player cannot see yet (Magnet Pull, Shadow Tag) as maybeTrapped
+                    // and rejects the switch only when it is chosen. The search plays every side with full
+                    // knowledge of its world, so it must not offer a switch the engine will refuse.
+                    if (!data.trapped && Js.truthy(pokemon.trapped)) out.append(",\"trappedHidden\":true")
+                    if (!locked) {
+                        if (pokemon.canMegaEvo != null) out.append(",\"canMegaEvo\":true")
+                        if (data.canDynamax) out.append(",\"canDynamax\":true")
+                        if ((data.canDynamax || pokemon.volatiles.containsKey("dynamax")) && pokemon.getDynamaxRequest(true)) {
+                            out.append(",\"maxMoves\":{\"maxMoves\":[")
+                            var first = true
+                            pokemon.moveSlots.forEach { move ->
+                                battle.actions.getMaxMove(move.id, pokemon)?.let { maxMove ->
+                                    if (!first) out.append(',')
+                                    first = false
+                                    out.append("{\"move\":").jsonString(maxMove.id)
+                                        .append(",\"target\":").jsonString(maxMove.target)
+                                        .append(",\"category\":").jsonString(maxMove.category)
+                                    if (pokemon.maxMoveDisabled(move.id)) out.append(",\"disabled\":true")
+                                    out.append('}')
+                                }
                             }
-                        })
-                        if (data.trapped) addProperty("trapped", true)
-                        if (data.maybeTrapped) addProperty("maybeTrapped", true)
-                        // Showdown hides a trap the player cannot see yet (Magnet Pull, Shadow Tag) as maybeTrapped
-                        // and rejects the switch only when it is chosen. The search plays every side with full
-                        // knowledge of its world, so it must not offer a switch the engine will refuse.
-                        if (!data.trapped && Js.truthy(pokemon.trapped)) addProperty("trappedHidden", true)
-                        if (!locked) {
-                            if (pokemon.canMegaEvo != null) addProperty("canMegaEvo", true)
-                            if (data.canDynamax) addProperty("canDynamax", true)
-                            if ((data.canDynamax || pokemon.volatiles.containsKey("dynamax")) && pokemon.getDynamaxRequest(true)) {
-                                add("maxMoves", JsonObject().apply {
-                                    add("maxMoves", JsonArray().also { maxMoves ->
-                                        pokemon.moveSlots.forEach { move ->
-                                            battle.actions.getMaxMove(move.id, pokemon)?.let { maxMove ->
-                                                maxMoves.add(JsonObject().apply {
-                                                    addProperty("move", maxMove.id)
-                                                    addProperty("target", maxMove.target)
-                                                    addProperty("category", maxMove.category)
-                                                    if (pokemon.maxMoveDisabled(move.id)) addProperty("disabled", true)
-                                                })
-                                            }
-                                        }
-                                    })
-                                })
-                            }
-                            (pokemon.canTerastallize as? String)?.let { addProperty("canTerastallize", it) }
+                            out.append("]}")
                         }
-                    })
+                        (pokemon.canTerastallize as? String)?.let { out.append(",\"canTerastallize\":").jsonString(it) }
+                    }
+                    out.append('}')
                 }
-            })
+                out.append(']')
+            }
         }
-        out.add("side", JsonObject().apply {
-            add("pokemon", JsonArray().also { team ->
-                side.pokemon.forEach { pokemon ->
-                    team.add(JsonObject().apply {
-                        addProperty("uuid", pokemon.uuid)
-                        if (side.slotConditions.getOrNull(pokemon.position)?.containsKey("revivalblessing") == true) {
-                            addProperty("reviving", true)
-                        }
-                    })
-                }
-            })
-        })
-        return out.toString()
+        out.append(",\"side\":{\"pokemon\":[")
+        side.pokemon.forEachIndexed { i, pokemon ->
+            if (i > 0) out.append(',')
+            out.append("{\"uuid\":").jsonString(pokemon.uuid)
+            if (side.slotConditions.getOrNull(pokemon.position)?.containsKey("revivalblessing") == true) {
+                out.append(",\"reviving\":true")
+            }
+            out.append('}')
+        }
+        return out.append("]}}").toString()
+    }
+
+    /** A JSON string as Gson's writer prints it (not HTML-safe): quotes, backslashes and control characters escaped. */
+    private fun StringBuilder.jsonString(value: String?): StringBuilder {
+        if (value == null) return append("null")
+        append('"')
+        for (ch in value) {
+            when {
+                ch == '"' -> append("\\\"")
+                ch == '\\' -> append("\\\\")
+                ch == '\t' -> append("\\t")
+                ch == '\b' -> append("\\b")
+                ch == '\n' -> append("\\n")
+                ch == '\r' -> append("\\r")
+                ch == '\u000C' -> append("\\f")
+                ch < ' ' || ch == '\u2028' || ch == '\u2029' -> append(String.format("\\u%04x", ch.code))
+                else -> append(ch)
+            }
+        }
+        return append('"')
     }
 
     // endregion
@@ -948,3 +993,4 @@ internal class EngineBranchWorker(
 
 private const val STEPS_KEY = "\"steps\":["
 private const val EMPTY_STEPS_END = "\"steps\":[]}"
+

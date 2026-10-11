@@ -25,23 +25,52 @@ internal class LocalBattleStateFingerprint {
     private val byIdentity = IdentityHashMap<BattleStateView, String>()
     private val actionInputsByIdentity = IdentityHashMap<BattleStateView, String>()
 
-    fun of(state: BattleStateView): String = byIdentity.getOrPut(state) { build(state) }
+    fun of(state: BattleStateView): String = byIdentity[state] ?: build(state)
 
     /**
      * [of] with each active Pokemon's HP reduced to what a side's action list reads from it: standing or
      * not, full (Gale Wings), below half (how early a recovery move is listed). Positions a damage roll
      * apart share an action list, and the list is exactly the same for them.
      */
-    fun ofActionInputs(state: BattleStateView): String = actionInputsByIdentity.getOrPut(state) { build(state, activeHpBands = true) }
+    fun ofActionInputs(state: BattleStateView): String =
+        actionInputsByIdentity[state] ?: build(state).let { actionInputsByIdentity.getValue(state) }
 
-    private fun build(state: BattleStateView, activeHpBands: Boolean = false): String = buildString {
+    /**
+     * Both keys of [state] at once, remembered for it; returns [of]'s. A leaf asks for both, and they differ only in
+     * the active Pokemon's HP, so the band form is the full key with those HP values replaced instead of a second
+     * build of every Pokemon's sorted sets and stat text.
+     */
+    private fun build(state: BattleStateView): String {
+        val bands = ArrayList<Int>()
+        val full = buildString { build(state, bands) }
+        val banded = if (bands.isEmpty()) full else buildString(full.length) {
+            var from = 0
+            for (i in bands.indices step 3) {
+                append(full, from, bands[i]).append(bands[i + 2].toChar())
+                from = bands[i + 1]
+            }
+            append(full, from, full.length)
+        }
+        byIdentity[state] = full
+        actionInputsByIdentity[state] = banded
+        return full
+    }
+
+    /** Appends [state]'s full key; [bands] gets start, end and band character of every active Pokemon's HP text. */
+    private fun StringBuilder.build(state: BattleStateView, bands: MutableList<Int>) {
         append(state.battleId).append(':').append(state.format).append(':').append(state.turn).append('|')
         state.pokemon.sortedBy { it.battlePokemonId }.forEach { pokemon ->
             append(pokemon.battlePokemonId).append(':')
             append(pokemon.side.ordinal).append(':')
             append(pokemon.activeSlot ?: -1).append(':')
-            if (activeHpBands && pokemon.activeSlot != null) append(hpBand(pokemon.hpFraction)).append(':')
-            else append(pokemon.hpFraction).append(':')
+            val hpStart = length
+            append(pokemon.hpFraction)
+            if (pokemon.activeSlot != null) {
+                bands.add(hpStart)
+                bands.add(length)
+                bands.add(hpBand(pokemon.hpFraction).code)
+            }
+            append(':')
             append(pokemon.fainted).append(':')
             append(pokemon.speciesId).append(':').append(pokemon.level).append(':')
             append(pokemon.statusId ?: "-").append(':')
@@ -84,20 +113,35 @@ internal class LocalBattleStateFingerprint {
         state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
         // Protect chains, last hits and public ability hypotheses can change mechanics without
         // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
-        state.observedEvents.forEach { event ->
-            append("event:").append(event.sequence).append(':').append(event.turn).append(':').append(event.kind).append(':')
-            append(event.actorPokemonId).append(':').append(event.actorSlot).append(':')
-            append(event.targetPokemonIds).append(':').append(event.publicValueId).append(':').append(event.hpFractionDelta).append(':')
-            append(event.baseMovePriority).append(':').append(event.precedingActionSequence).append(':')
-            append(event.precedingActionActorPokemonId).append(':').append(event.precedingActionMoveId).append(':')
-            append(event.publicSourceEffectId).append(':').append(event.moveOutcome).append(';')
+        append(evidence(state))
+    }
+
+    /**
+     * The observation and inference part of the key. Search positions derived from one another share these lists,
+     * and printing every event again was most of a mid-battle key; the text is kept per list pair.
+     */
+    private val evidenceByEvents = IdentityHashMap<List<*>, Pair<List<*>, String>>()
+
+    private fun evidence(state: BattleStateView): String {
+        evidenceByEvents[state.observedEvents]?.let { (inferences, text) -> if (inferences === state.inferences) return text }
+        val text = buildString {
+            state.observedEvents.forEach { event ->
+                append("event:").append(event.sequence).append(':').append(event.turn).append(':').append(event.kind).append(':')
+                append(event.actorPokemonId).append(':').append(event.actorSlot).append(':')
+                append(event.targetPokemonIds).append(':').append(event.publicValueId).append(':').append(event.hpFractionDelta).append(':')
+                append(event.baseMovePriority).append(':').append(event.precedingActionSequence).append(':')
+                append(event.precedingActionActorPokemonId).append(':').append(event.precedingActionMoveId).append(':')
+                append(event.publicSourceEffectId).append(':').append(event.moveOutcome).append(';')
+            }
+            state.inferences.forEach { inference ->
+                append("inference:").append(inference.subjectPokemonId).append(':').append(inference.categoryId).append(':')
+                append(inference.candidateId).append(':').append(inference.confidence).append(':').append(inference.probabilityRange).append(':')
+                append(inference.basis.sorted()).append(':').append(inference.evidenceEventSequences).append(':')
+                append(inference.relatedPokemonId).append(':').append(inference.abilityAvailability).append(';')
+            }
         }
-        state.inferences.forEach { inference ->
-            append("inference:").append(inference.subjectPokemonId).append(':').append(inference.categoryId).append(':')
-            append(inference.candidateId).append(':').append(inference.confidence).append(':').append(inference.probabilityRange).append(':')
-            append(inference.basis.sorted()).append(':').append(inference.evidenceEventSequences).append(':')
-            append(inference.relatedPokemonId).append(':').append(inference.abilityAvailability).append(';')
-        }
+        evidenceByEvents[state.observedEvents] = state.inferences to text
+        return text
     }
 
     private fun hpBand(hp: Double): Char = when {

@@ -913,7 +913,23 @@ class Pokemon(set: PokemonSet, val side: Side) {
         return true
     }
 
-    fun getStatus(): Effect = battle.dex.conditionById(status)
+    /**
+     * The effects of the current status, item and ability, each kept with the id it was looked up for. Every event
+     * reads them for each Pokemon on the field, and each read searched the dex again. A changed id is a new string,
+     * so it misses and is looked up. A saved state leaves these out (ShowdownStateWriter).
+     */
+    private var statusEffectId: String? = null
+    private var statusEffect: Effect? = null
+    private var itemEffectId: String? = null
+    private var itemEffect: Effect? = null
+    private var abilityEffectId: String? = null
+    private var abilityEffect: Effect? = null
+
+    fun getStatus(): Effect {
+        val id = status
+        statusEffect?.let { if (id === statusEffectId) return it }
+        return battle.dex.conditionById(id).also { statusEffectId = id; statusEffect = it }
+    }
 
     fun eatItem(force: Boolean = false, sourceIn: Pokemon? = null, sourceEffectIn: EffectLike? = null): Boolean {
         if (item.isEmpty() || Js.truthy(itemState["knockedOff"])) return false
@@ -1003,7 +1019,11 @@ class Pokemon(set: PokemonSet, val side: Side) {
         return true
     }
 
-    fun getItem(): Effect = battle.dex.item(item)
+    fun getItem(): Effect {
+        val id = item
+        itemEffect?.let { if (id === itemEffectId) return it }
+        return battle.dex.item(id).also { itemEffectId = id; itemEffect = it }
+    }
 
     fun hasItem(item: String): Boolean {
         if (Js.toID(item) != this.item) return false
@@ -1042,7 +1062,11 @@ class Pokemon(set: PokemonSet, val side: Side) {
         return oldAbility
     }
 
-    fun getAbility(): Effect = battle.dex.ability(ability)
+    fun getAbility(): Effect {
+        val id = ability
+        abilityEffect?.let { if (id === abilityEffectId) return it }
+        return battle.dex.ability(id).also { abilityEffectId = id; abilityEffect = it }
+    }
 
     fun hasAbility(ability: String): Boolean {
         if (Js.toID(ability) != this.ability) return false

@@ -77,10 +77,35 @@ open class Effect(
     override val num: Int = raw.get("num")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
 
     override fun data(field: String): Any? {
-        if (converted.containsKey(field)) return converted[field]
+        // A field the data does not have reads as null; most lookups of an event's order and priority fields are that.
+        if (!mayHave(field)) return null
+        converted[field]?.let { return if (it === NO_HANDLER) null else it }
         val value = JsonValues.convert(raw.get(field))
-        converted[field] = value
+        converted[field] = value ?: NO_HANDLER
         return value
+    }
+
+    /**
+     * One bit per name in this effect's data, declared hooks and registered hooks, picked by eight bits of the name's
+     * hash code. A name whose bit is clear is none of them, so it has no handler and no data field, and the maps behind
+     * [handler] and [data] need not be searched: most events find no handler on most effects.
+     */
+    @Volatile
+    private var nameBits: LongArray? = null
+
+    private fun mayHave(name: String): Boolean {
+        val bits = nameBits ?: LongArray(4).also { bits ->
+            fun add(key: String) {
+                val h = key.hashCode()
+                bits[(h ushr 6) and 3] = bits[(h ushr 6) and 3] or (1L shl h)
+            }
+            for (key in raw.keySet()) add(key)
+            for (key in declaredHooks) add(key)
+            for (key in EngineHooks.implemented(hookKey)) add(key)
+            nameBits = bits
+        }
+        val h = name.hashCode()
+        return bits[(h ushr 6) and 3] and (1L shl h) != 0L
     }
 
     fun has(field: String): Boolean = raw.has(field) && !raw.get(field).isJsonNull
@@ -107,6 +132,7 @@ open class Effect(
         callbackName in declaredHooks || (raw.has(callbackName) && !isPriorityField(callbackName))
 
     override fun handler(callbackName: String): Any? {
+        if (!mayHave(callbackName)) return null
         // One lookup per call: an absent handler is cached as [NO_HANDLER] rather than as null behind containsKey.
         handlerCache[callbackName]?.let { return if (it === NO_HANDLER) null else it }
         val resolved: Any? = when {

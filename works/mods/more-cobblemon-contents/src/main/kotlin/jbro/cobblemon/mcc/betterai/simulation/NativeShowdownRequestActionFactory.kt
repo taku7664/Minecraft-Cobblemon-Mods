@@ -207,24 +207,28 @@ internal object NativeShowdownRequestActionFactory {
             }?.let { PublicSwitchEntryHazardCalculator.hpLoss(publicState, side, it) } ?: 0.0
             return (pokemon.hp.toDouble() / pokemon.maxHp - hazardLoss).coerceAtLeast(0.0)
         }
+        // Each bench Pokemon's ordering value, worked out once instead of at every comparison of the sort.
+        fun order(pokemon: NativePokemonFrame): Double {
+            val revealedThreat = revealedMoves.maxOfOrNull { (opponent, details) ->
+                details.power * StandardTypeEffectiveness.multiplier(
+                    details.typeId, pokemon.types.toSet()) *
+                    (if (opponent.types.any { it.equals(details.typeId.substringAfter(':'), true) }) 1.5 else 1.0)
+            }
+            val worstStab = opposingTypes.maxOfOrNull { attackingType ->
+                StandardTypeEffectiveness.multiplier(attackingType, pokemon.types.toSet())
+            } ?: 1.0
+            val hazardLoss = publicState?.pokemon?.firstOrNull {
+                it.battlePokemonId.toString() == pokemon.uuid && it.side == side
+            }?.let { PublicSwitchEntryHazardCalculator.hpLoss(publicState, side, it) } ?: 0.0
+            val remainingHp = (pokemon.hp.toDouble() / pokemon.maxHp - hazardLoss).coerceAtLeast(0.0)
+            return if (revealedThreat != null) remainingHp / maxOf(40.0, revealedThreat)
+            else remainingHp / maxOf(0.5, worstStab)
+        }
         val bench = fullTeam(side, frame).asSequence()
             .filter { it.activeSlot == null && it.hp > 0 }
-            .sortedWith(compareByDescending<NativePokemonFrame> { pokemon ->
-                val revealedThreat = revealedMoves.maxOfOrNull { (opponent, details) ->
-                    details.power * StandardTypeEffectiveness.multiplier(
-                        details.typeId, pokemon.types.toSet()) *
-                        (if (opponent.types.any { it.equals(details.typeId.substringAfter(':'), true) }) 1.5 else 1.0)
-                }
-                val worstStab = opposingTypes.maxOfOrNull { attackingType ->
-                    StandardTypeEffectiveness.multiplier(attackingType, pokemon.types.toSet())
-                } ?: 1.0
-                val hazardLoss = publicState?.pokemon?.firstOrNull {
-                    it.battlePokemonId.toString() == pokemon.uuid && it.side == side
-                }?.let { PublicSwitchEntryHazardCalculator.hpLoss(publicState, side, it) } ?: 0.0
-                val remainingHp = (pokemon.hp.toDouble() / pokemon.maxHp - hazardLoss).coerceAtLeast(0.0)
-                if (revealedThreat != null) remainingHp / maxOf(40.0, revealedThreat)
-                else remainingHp / maxOf(0.5, worstStab)
-            }.thenBy { it.uuid })
+            .map { it to order(it) }
+            .sortedWith(compareByDescending<Pair<NativePokemonFrame, Double>> { it.second }.thenBy { it.first.uuid })
+            .map { it.first }
             .toList()
         val reserved = mutableSetOf<String>()
         return active.mapIndexedNotNull { slot, element ->
@@ -233,7 +237,9 @@ internal object NativeShowdownRequestActionFactory {
             // The matchup scores' win chance, discounted by the HP it comes in with, ranks the Pokemon they know;
             // the rest follow in the type and HP order above. Type alone sent in a Pokemon that resists the
             // attacker's type but loses to it anyway.
-            val known = bench.associateWith { pokemon -> switchPreference?.invoke(slot, pokemon.uuid)?.times(remainingHp(pokemon)) }
+            // By identity: a frame's own hash walks every field of it, and the bench holds each Pokemon once.
+            val known = java.util.IdentityHashMap<NativePokemonFrame, Double?>()
+            for (pokemon in bench) known[pokemon] = switchPreference?.invoke(slot, pokemon.uuid)?.times(remainingHp(pokemon))
             val ranked = bench.filter { known[it] != null }.sortedByDescending { known.getValue(it) } +
                 bench.filter { known[it] == null }
             // Distinct first choices preserve at least one legal simultaneous double switch.
@@ -312,7 +318,7 @@ internal object NativeShowdownRequestActionFactory {
     )
 
     private fun parseRequest(json: String): JsonObject {
-        val parsed = JsonParser.parseString(json)
+        val parsed = NativeRequestJson.parse(json)
         require(parsed.isJsonObject) { "Native Showdown request is unavailable" }
         return parsed.asJsonObject
     }
@@ -365,5 +371,31 @@ internal object NativeShowdownRequestActionFactory {
         isJsonArray -> asJsonArray.size() > 0
         isJsonObject -> asJsonObject.size() > 0
         else -> false
+    }
+}
+
+/**
+ * A frame's request JSON, parsed once. The action factory and the choice encoder each parsed the same request text
+ * again at every search node. Keyed by the text's identity, which is the frame's own string; the parsed tree is only
+ * read, never changed.
+ */
+internal object NativeRequestJson {
+    private const val SLOTS = 256
+
+    private class Slots {
+        val texts = arrayOfNulls<String>(SLOTS)
+        val parsed = arrayOfNulls<JsonElement>(SLOTS)
+    }
+
+    private val slots = ThreadLocal.withInitial { Slots() }
+
+    fun parse(json: String): JsonElement {
+        val cache = slots.get()
+        val index = System.identityHashCode(json) and (SLOTS - 1)
+        if (cache.texts[index] === json) return cache.parsed[index]!!
+        val parsed = JsonParser.parseString(json)
+        cache.texts[index] = json
+        cache.parsed[index] = parsed
+        return parsed
     }
 }

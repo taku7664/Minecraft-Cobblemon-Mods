@@ -48,13 +48,22 @@ class EngineDex private constructor(
         conditionData = root.getAsJsonObject("conditions").entrySet().associate { (id, value) -> id to value.asJsonObject }
     }
 
+    /**
+     * Whether every key of a table is already an id. Then a name found as it is gives what its id would: Pokemon keep
+     * their ability and item as ids, and every event looked them up again, spelling each one out character by character
+     * before searching the table.
+     */
+    private val moveKeysAreIds = moveTable.keys.all { Js.toID(it) == it }
+    private val abilityKeysAreIds = abilityTable.keys.all { Js.toID(it) == it }
+    private val itemKeysAreIds = itemTable.keys.all { Js.toID(it) == it }
+
     val emptyEffect: Effect = Effect("", "", "Condition", JsonObject(), "", emptySet())
     val emptyAbility: Effect = Effect("", "", "Ability", JsonObject(), "", emptySet())
     val emptyItem: Effect = Effect("", "", "Item", JsonObject(), "", emptySet())
 
     fun species(name: String): Species? = speciesTable[Js.toID(name)]
 
-    fun move(name: String): MoveData? = moveTable[Js.toID(name)]
+    fun move(name: String): MoveData? = (if (moveKeysAreIds) moveTable[name] else null) ?: moveTable[Js.toID(name)]
 
     private val placeholderMoves = HashMap<String, MoveData>()
 
@@ -64,9 +73,10 @@ class EngineDex private constructor(
         MoveData(Js.toID(name), JsonObject().apply { addProperty("name", Js.toID(name)); addProperty("exists", false); addProperty("target", "") })
     }
 
-    fun ability(name: String): Effect = abilityTable[Js.toID(name)] ?: emptyAbility
+    fun ability(name: String): Effect =
+        (if (abilityKeysAreIds) abilityTable[name] else null) ?: abilityTable[Js.toID(name)] ?: emptyAbility
 
-    fun item(name: String): Effect = itemTable[Js.toID(name)] ?: emptyItem
+    fun item(name: String): Effect = (if (itemKeysAreIds) itemTable[name] else null) ?: itemTable[Js.toID(name)] ?: emptyItem
 
     fun abilityOrNull(id: String): Effect? = abilityTable[id]
 

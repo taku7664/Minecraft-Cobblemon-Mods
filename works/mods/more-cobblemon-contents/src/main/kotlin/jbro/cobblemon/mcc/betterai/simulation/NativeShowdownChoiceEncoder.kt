@@ -62,7 +62,7 @@ internal object NativeShowdownChoiceEncoder {
         val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == actorSlot }
         requireNotNull(actor) { "Native active slot $actorSlot does not exist for $side" }
         val requestJson = if (side == BattleSide.ALLY) frame.p1RequestJson else frame.p2RequestJson
-        val request = com.google.gson.JsonParser.parseString(requestJson)
+        val request = NativeRequestJson.parse(requestJson)
         val requestedMoves = request.takeIf { it.isJsonObject }?.asJsonObject
             ?.getAsJsonArray("active")?.let { active -> if (actorSlot < active.size()) active[actorSlot] else null }
             ?.takeIf { it.isJsonObject }?.asJsonObject?.getAsJsonArray("moves")
@@ -117,7 +117,7 @@ internal object NativeShowdownChoiceEncoder {
     ): String {
         action.actorSlot?.let { actorSlot ->
             val requestJson = if (side == BattleSide.ALLY) frame.p1RequestJson else frame.p2RequestJson
-            val request = com.google.gson.JsonParser.parseString(requestJson)
+            val request = NativeRequestJson.parse(requestJson)
                 .takeIf { it.isJsonObject }?.asJsonObject
             val requestSlotCount = request?.getAsJsonArray("active")?.size()
                 ?: request?.getAsJsonArray("forceSwitch")?.size() ?: 0

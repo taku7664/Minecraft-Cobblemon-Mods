@@ -41,13 +41,10 @@ object BattleCopier {
         }.toTypedArray()
     }
 
-    /** [shared] depends only on the class, so it is decided once per class. */
+    /** Classes whose instances are immutable or owned by the dex: copied by reference. Decided once per class. */
     private val sharedByClass = object : ClassValue<Boolean>() {
         override fun computeValue(type: Class<*>): Boolean = sharedClass(type)
     }
-
-    /** Classes whose instances are immutable or owned by the dex: copied by reference. */
-    private fun shared(value: Any): Boolean = sharedByClass.get(value.javaClass)
 
     private fun sharedClass(type: Class<*>): Boolean = when {
         String::class.java.isAssignableFrom(type) || Number::class.java.isAssignableFrom(type) ||
@@ -62,9 +59,17 @@ object BattleCopier {
             !Map::class.java.isAssignableFrom(type)
     }
 
+    /**
+     * How many objects the last copy visited. Battles in one search are about the same size, so the next copy's
+     * identity map starts big enough instead of growing through every power of two from the default.
+     */
+    @Volatile
+    private var lastObjectCount = 32
+
     fun copy(battle: Battle, keepLog: Boolean = false): Battle {
-        val seen = IdentityHashMap<Any, Any>()
+        val seen = IdentityHashMap<Any, Any>(lastObjectCount)
         val copy = clone(battle, seen) as Battle
+        lastObjectCount = seen.size
         if (!keepLog) {
             copy.log.clear()
             setField(copy, "logEnabled", false)
@@ -77,46 +82,84 @@ object BattleCopier {
         field.set(target, value)
     }
 
+    private const val SHARED = 0
+    private const val INT_ARRAY = 1
+    private const val DOUBLE_ARRAY = 2
+    private const val OBJECT_ARRAY = 3
+    private const val LINKED_HASH_MAP = 4
+    private const val HASH_MAP = 5
+    private const val LINKED_HASH_SET = 6
+    private const val HASH_SET = 7
+    private const val ARRAY_LIST = 8
+    private const val LIST = 9
+    private const val MAP = 10
+    private const val OBJECT = 11
+
+    /**
+     * How [clone] copies an instance of a class: by reference, or which branch. Decided once per class, in the order
+     * the branches test it, instead of a chain of type checks for every object of every copy.
+     */
+    private val kinds = object : ClassValue<Int>() {
+        override fun computeValue(type: Class<*>): Int = when {
+            sharedByClass.get(type) -> SHARED
+            type == IntArray::class.java -> INT_ARRAY
+            type == DoubleArray::class.java -> DOUBLE_ARRAY
+            Array<Any?>::class.java.isAssignableFrom(type) -> OBJECT_ARRAY
+            LinkedHashMap::class.java.isAssignableFrom(type) -> LINKED_HASH_MAP
+            HashMap::class.java.isAssignableFrom(type) -> HASH_MAP
+            LinkedHashSet::class.java.isAssignableFrom(type) -> LINKED_HASH_SET
+            HashSet::class.java.isAssignableFrom(type) -> HASH_SET
+            ArrayList::class.java.isAssignableFrom(type) -> ARRAY_LIST
+            List::class.java.isAssignableFrom(type) -> LIST
+            Map::class.java.isAssignableFrom(type) -> MAP
+            else -> OBJECT
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun clone(value: Any?, seen: IdentityHashMap<Any, Any>): Any? {
         if (value == null) return null
-        if (shared(value)) return value
+        val kind = kinds.get(value.javaClass)
+        if (kind == SHARED) return value
         seen[value]?.let { return it }
-        return when (value) {
-            is IntArray -> value.copyOf().also { seen[value] = it }
-            is DoubleArray -> value.copyOf().also { seen[value] = it }
-            is Array<*> -> {
+        return when (kind) {
+            INT_ARRAY -> (value as IntArray).copyOf().also { seen[value] = it }
+            DOUBLE_ARRAY -> (value as DoubleArray).copyOf().also { seen[value] = it }
+            OBJECT_ARRAY -> {
+                value as Array<*>
                 val out = java.lang.reflect.Array.newInstance(value.javaClass.componentType, value.size) as Array<Any?>
                 seen[value] = out
                 for (i in value.indices) out[i] = clone(value[i], seen)
                 out
             }
-            is LinkedHashMap<*, *> -> LinkedHashMap<Any?, Any?>(value.size).also { out ->
+            LINKED_HASH_MAP -> LinkedHashMap<Any?, Any?>((value as LinkedHashMap<*, *>).size).also { out ->
                 seen[value] = out
                 for ((k, v) in value) out[clone(k, seen)] = clone(v, seen)
             }
-            is HashMap<*, *> -> HashMap<Any?, Any?>(value.size).also { out ->
+            HASH_MAP -> HashMap<Any?, Any?>((value as HashMap<*, *>).size).also { out ->
                 seen[value] = out
                 for ((k, v) in value) out[clone(k, seen)] = clone(v, seen)
             }
-            is LinkedHashSet<*> -> LinkedHashSet<Any?>().also { out ->
+            LINKED_HASH_SET -> LinkedHashSet<Any?>().also { out ->
+                value as LinkedHashSet<*>
                 seen[value] = out
                 for (v in value) out.add(clone(v, seen))
             }
-            is HashSet<*> -> HashSet<Any?>().also { out ->
+            HASH_SET -> HashSet<Any?>().also { out ->
+                value as HashSet<*>
                 seen[value] = out
                 for (v in value) out.add(clone(v, seen))
             }
-            is ArrayList<*> -> ArrayList<Any?>(value.size).also { out ->
+            ARRAY_LIST -> ArrayList<Any?>((value as ArrayList<*>).size).also { out ->
                 seen[value] = out
                 for (v in value) out.add(clone(v, seen))
             }
-            is List<*> -> ArrayList<Any?>(value.size).also { out ->
+            LIST -> ArrayList<Any?>((value as List<*>).size).also { out ->
                 // Immutable lists (listOf, map results) are copied as plain lists: they are only ever read.
                 seen[value] = out
                 for (v in value) out.add(clone(v, seen))
             }
-            is Map<*, *> -> LinkedHashMap<Any?, Any?>(value.size).also { out ->
+            MAP -> LinkedHashMap<Any?, Any?>((value as Map<*, *>).size).also { out ->
                 seen[value] = out
                 for ((k, v) in value) out[clone(k, seen)] = clone(v, seen)
             }

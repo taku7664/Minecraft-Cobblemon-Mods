@@ -466,7 +466,8 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
         if (callback != null || (getKey != null && pokemon.statusState.truthy(getKey))) {
             handlers.add(resolvePriority(EventHandler(status, callback, pokemon.statusState, { pokemon.clearStatus() }, pokemon), callbackName))
         }
-        for ((id, volatileState) in pokemon.volatiles.entries.toList()) {
+        // Read only: building a handler changes none of these maps, so they are walked as they are, not copied.
+        for ((id, volatileState) in pokemon.volatiles.entries) {
             val volatile = dex.conditionById(id)
             callback = volatile.handler(callbackName)
             if (callback != null || (getKey != null && volatileState.truthy(getKey))) {
@@ -489,7 +490,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
         }
         val side = pokemon.side
         // A benched Pokemon has no slot: JS reads slotConditions[position] as undefined and finds nothing.
-        for ((id, slotState) in side.slotConditions.getOrNull(pokemon.position)?.entries?.toList().orEmpty()) {
+        for ((id, slotState) in side.slotConditions.getOrNull(pokemon.position)?.entries.orEmpty()) {
             val slotCondition = dex.conditionById(id)
             callback = slotCondition.handler(callbackName)
             if (callback != null || (getKey != null && slotState.truthy(getKey))) {
@@ -508,7 +509,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
 
     fun findFieldEventHandlers(field: Field, callbackName: String, getKey: String? = null, customHolder: Pokemon? = null): List<EventHandler> {
         val handlers = ArrayList<EventHandler>()
-        for ((id, state) in field.pseudoWeather.entries.toList()) {
+        for ((id, state) in field.pseudoWeather.entries) {
             val pseudoWeather = dex.conditionById(id)
             val callback = pseudoWeather.handler(callbackName)
             if (callback != null || (getKey != null && state.truthy(getKey))) {
@@ -533,7 +534,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
 
     fun findSideEventHandlers(side: Side, callbackName: String, getKey: String? = null, customHolder: Pokemon? = null): List<EventHandler> {
         val handlers = ArrayList<EventHandler>()
-        for ((id, state) in side.sideConditions.entries.toList()) {
+        for ((id, state) in side.sideConditions.entries) {
             val sideCondition = dex.conditionById(id)
             val callback = sideCondition.handler(callbackName)
             if (callback != null || (getKey != null && state.truthy(getKey))) {

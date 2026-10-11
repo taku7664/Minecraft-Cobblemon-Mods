@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.simulation
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
@@ -18,26 +19,34 @@ internal object NativeBattleStateAdapter {
     fun adapt(frame: NativeBattleFrame, template: BattleStateView, publicTurnOffset: Int = 0): BattleStateView {
         require(publicTurnOffset in 0..1)
         val publicTurn = frame.turn - publicTurnOffset
-        val nativeById = (frame.p1Team + frame.p2Team).associateBy { UUID.fromString(it.uuid) }
+        val nativeById = (frame.p1Team + frame.p2Team).associateBy { uuid(it.uuid) }
         require(nativeById.keys == template.pokemon.mapTo(linkedSetOf()) { it.battlePokemonId }) {
             "Native hypothesis roster disagrees with the public evaluation roster"
         }
         val pokemon = BattleSide.entries.flatMap { side ->
             fullTeam(side, frame).map { native ->
-                val uuid = UUID.fromString(native.uuid)
+                val uuid = uuid(native.uuid)
                 val source = template.pokemon.single { it.battlePokemonId == uuid }
                 adaptPokemon(native, source, side)
             }
+        }
+        val field = adaptField(frame.field)
+        val remaining = BattleSide.entries.associateWith { side ->
+            pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
+        }
+        // Every search node is adapted from its parent, and no observation lies past the parent's turn. Deriving
+        // keeps the parent's observation and inference lists, the same ones the constructor would copy and check
+        // again, so a state's fingerprint can reuse their text by identity instead of reprinting every event.
+        if (template.observedEvents.all { it.turn <= publicTurn }) {
+            return template.derive(turn = publicTurn, pokemon = pokemon, field = field, remainingPokemonBySide = remaining)
         }
         return BattleStateView(
             battleId = template.battleId,
             format = template.format,
             turn = publicTurn,
             pokemon = pokemon,
-            field = adaptField(frame.field),
-            remainingPokemonBySide = BattleSide.entries.associateWith { side ->
-                pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
-            },
+            field = field,
+            remainingPokemonBySide = remaining,
             observedEvents = template.observedEvents.filter { it.turn <= publicTurn },
             inferences = template.inferences,
         )
@@ -52,16 +61,16 @@ internal object NativeBattleStateAdapter {
         val nativeSpecies = nativeId(native.species)
         val sourceSpecies = nativeId(source.speciesId)
         return BattlePokemonStateView(
-            battlePokemonId = UUID.fromString(native.uuid),
+            battlePokemonId = uuid(native.uuid),
             side = side,
             activeSlot = native.activeSlot.takeUnless { fainted },
-            speciesId = "cobblemon:$nativeSpecies",
+            speciesId = cobblemonId(nativeSpecies),
             formId = if (nativeSpecies == sourceSpecies) source.formId else nativeSpecies,
             level = native.level,
             hpFraction = (native.hp.toDouble() / native.maxHp.toDouble()).coerceIn(0.0, 1.0),
             statusId = native.status.takeIf(String::isNotBlank),
             statStages = native.boosts.filterValues { it != 0 },
-            knownMoveIds = native.moves.mapTo(linkedSetOf()) { "cobblemon:${nativeId(it.id)}" },
+            knownMoveIds = native.moves.mapTo(linkedSetOf()) { cobblemonId(nativeId(it.id)) },
             knownAbilityId = native.ability.takeIf(String::isNotBlank)?.let(::nativeId),
             knownHeldItemId = nativeId(native.item),
             fainted = fainted,
@@ -131,6 +140,22 @@ internal object NativeBattleStateAdapter {
     }
 
     private fun nativeId(value: String): String = PublicIds.canonical(value)
+
+    /**
+     * Every search node adapts all twelve Pokemon; the same few IDs and UUIDs were parsed and spelled out again each
+     * time, and each new string hashed again where the state keeps it in a set.
+     */
+    private const val CACHE_LIMIT = 65_536
+    private val prefixedIds = ConcurrentHashMap<String, String>()
+    private val uuids = ConcurrentHashMap<String, UUID>()
+
+    private fun cobblemonId(id: String): String = prefixedIds[id] ?: "cobblemon:$id".also {
+        if (prefixedIds.size < CACHE_LIMIT) prefixedIds.putIfAbsent(id, it)
+    }
+
+    private fun uuid(text: String): UUID = uuids[text] ?: UUID.fromString(text).also {
+        if (uuids.size < CACHE_LIMIT) uuids.putIfAbsent(text, it)
+    }
 
     private val ROOM_EFFECTS = setOf("trickroom", "wonderroom", "magicroom")
 }
