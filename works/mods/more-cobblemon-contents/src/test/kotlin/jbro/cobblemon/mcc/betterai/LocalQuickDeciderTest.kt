@@ -51,6 +51,15 @@ class LocalQuickDeciderTest {
         assertTrue(label(context, decision) in setOf("lucario", "giratina"), "${label(context, decision)} ${decision.tags}")
     }
 
+    @Test
+    fun `a move drawn without Mega Evolution takes it when the Mega version ranked higher`() {
+        // Garchomp's Mega Earthquake ranked first by 70 points; the draw's 6% roll took plain Earthquake.
+        val (context, decision) = decide("garchomp-mega-earthquake-drawn-plain")
+        val chosen = context.candidates.first { it.actionId == decision.actionId }
+        assertEquals("earthquake", chosen.moveId, "${decision.tags}")
+        assertEquals("mega", chosen.mechanic?.mechanicId, "${decision.tags}")
+    }
+
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {
         val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }

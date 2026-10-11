@@ -626,7 +626,12 @@ internal class LocalTacticalBrain(
                     ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed,
                 )
             }
-        val selected = quick?.rank ?: selection.rank
+        val drawn = quick?.rank ?: selection.rank
+        // The draw chooses between actions, not between a move with its mechanic and the same move without: drawn
+        // without it, the move takes its mechanic twin (Mega Evolution, Terastallization) when the ranking scored that
+        // one higher. A 6% draw once held back a Mega Garchomp whose Mega Earthquake ranked first by 70 points.
+        val twin = mechanicTwin(drawn, ranked, ruleExclusions(ranked.map { it.outcome.candidate }).keys)
+        val selected = twin ?: drawn
         decisionTrace?.resolved("legacy_lookahead", ranked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
@@ -650,6 +655,7 @@ internal class LocalTacticalBrain(
                     "difficulty_${profile.difficulty.tier.name.lowercase()}",
                      ))
                     quick?.let { add("quick_${it.reason}") }
+                    if (twin != null) add("mechanic_twin")
                     if (lookahead == null) add("searchless") else {
                         // Doubles searches one turn whatever the tier asks for.
                         add("lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
@@ -695,6 +701,21 @@ internal class LocalTacticalBrain(
             },
         )
         return choice.leads
+    }
+
+    private fun mechanicTwin(
+        drawn: LocalBattleActionRank,
+        ranked: List<LocalBattleActionRank>,
+        excluded: Set<String>,
+    ): LocalBattleActionRank? {
+        val move = drawn.outcome.candidate
+        if (move.kind != BattleActionKind.USE_MOVE || move.mechanic != null) return null
+        return ranked.asSequence().filter { rank ->
+            val other = rank.outcome.candidate
+            other.kind == BattleActionKind.USE_MOVE && other.mechanic != null && other.actionId !in excluded &&
+                other.actorSlot == move.actorSlot && other.moveSlot == move.moveSlot && other.targets == move.targets &&
+                rank.comparisonValue > drawn.comparisonValue
+        }.maxByOrNull { it.comparisonValue }
     }
 
     private fun decisionDiagnostics(
