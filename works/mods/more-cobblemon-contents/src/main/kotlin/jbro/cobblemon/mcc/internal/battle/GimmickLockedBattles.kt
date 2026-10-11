@@ -1,12 +1,15 @@
 package jbro.cobblemon.mcc.internal.battle
 
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle
+import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.rules.BattleGimmickLocks
 import jbro.cobblemon.mcc.internal.battle.rules.GimmickLockRule
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedActionSubmission
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 
@@ -21,7 +24,17 @@ internal object GimmickLockedBattles {
 
     fun register() {
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> told.remove(handler.player.uuid) }
+        // A battle whose start an event cancels is constructed, so attached here, but never ends to detach. Once a
+        // minute, forget battles Cobblemon no longer runs; by a tick's end every started battle is registered.
+        var ticks = 0
+        ServerTickEvents.END_SERVER_TICK.register {
+            if (++ticks % PRUNE_INTERVAL_TICKS != 0) return@register
+            lockedPlayers.keys.removeIf { BattleRegistry.getBattle(it) == null }
+            MccBattleTags.prune { BattleRegistry.getBattle(it) != null }
+        }
     }
+
+    private const val PRUNE_INTERVAL_TICKS = 1200
 
     /** Called for a battle MCC content does not manage, from its constructor before any request reaches a client. */
     fun attach(battle: PokemonBattle) {

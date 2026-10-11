@@ -28,11 +28,25 @@ internal object ShopPlayNetworking {
         PayloadTypeRegistry.playS2C().register(HomeLeaderboardCatalogPayload.TYPE, HomeLeaderboardCatalogPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(ShopOpenPayload.TYPE, ShopOpenPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(ShopPurchasePayload.TYPE, ShopPurchasePayload.CODEC)
+        // The shop is a hub tab: its packets count only while the player's hub may reach it, the same rule every other
+        // tab gets from the hub, so a terminal-only shop cannot be used from anywhere by a modified client.
         ServerPlayNetworking.registerGlobalReceiver(ShopOpenPayload.TYPE) { _, context ->
-            open(context.player())
+            val player = context.player()
+            if (BattleHubNetworking.reaches(player, BattleHubIds.SHOP)) open(player)
         }
         ServerPlayNetworking.registerGlobalReceiver(ShopPurchasePayload.TYPE) { payload, context ->
-            purchase(context.player(), payload)
+            val player = context.player()
+            // A dead player's inventory is gone at respawn, so goods delivered to it would be lost.
+            if (BattleHubNetworking.reaches(player, BattleHubIds.SHOP) && player.isAlive && !player.isRemoved) {
+                purchase(player, payload)
+            } else {
+                runManagedCleanupActionsSafely(
+                    reportFailure = { failure ->
+                        MoreCobblemonContents.LOGGER.error("BP shop refusal response failed for ${player.uuid}", failure)
+                    },
+                    { sendState(player, BattlePointShopPurchaseStatus.CATALOG_UNAVAILABLE) },
+                )
+            }
         }
     }
 

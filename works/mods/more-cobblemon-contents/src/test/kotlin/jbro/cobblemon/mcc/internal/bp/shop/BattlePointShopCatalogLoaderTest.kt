@@ -49,6 +49,15 @@ class BattlePointShopCatalogLoaderTest {
     }
 
     @Test
+    fun `rejects a catalog the shop state packet could not carry`() {
+        // Each of these loaded before and then disconnected every player who opened the shop or filled the cart.
+        assertRejected(validJson().replace("\"max_cart_lines\": 16", "\"max_cart_lines\": ${ShopWireLimits.CART_LINES + 1}"))
+        assertRejected(validJson().replace("\"max_total_items\": 64", "\"max_total_items\": ${ShopWireLimits.LIMIT + 1}"))
+        assertRejected(validJson().replace("\"entry_id\": \"life_orb\"", "\"entry_id\": \"${"a".repeat(ShopWireLimits.STRING_LENGTH + 1)}\""))
+        loaded(validJson().replace("\"max_cart_lines\": 16", "\"max_cart_lines\": ${ShopWireLimits.CART_LINES}"))
+    }
+
+    @Test
     fun `failed reload preserves the last valid immutable snapshot`() {
         val store = BattlePointShopCatalogStore(existingItems::contains)
         val accepted = store.reload(StringReader(validJson()))

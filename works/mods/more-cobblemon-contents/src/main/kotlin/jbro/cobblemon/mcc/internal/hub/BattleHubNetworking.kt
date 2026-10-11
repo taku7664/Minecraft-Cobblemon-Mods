@@ -37,7 +37,7 @@ object BattleHubNetworking {
                 reportFailure = { failure -> reportFailure(player, "content ${payload.contentId}", failure) },
             ) {
                 // A tab the hub was not opened with stays closed, whatever the client asks for.
-                val session = sessions[player.uuid]?.takeIf { payload.contentId in it.tabs }
+                val session = sessionReaching(player, payload.contentId)
                 session != null && BattleHubEntries.get(payload.contentId)?.open?.invoke(player, session.terminal) == true
             }
             if (!opened) {
@@ -131,6 +131,23 @@ object BattleHubNetworking {
         return card.copy(note = Component.translatable(denied.reasonKey, *denied.arguments.toTypedArray()))
     }
 
+    /** True while [player]'s open hub may still reach [contentId]; contents with packets of their own check this. */
+    fun reaches(player: ServerPlayer, contentId: String): Boolean = sessionReaching(player, contentId) != null
+
+    /**
+     * The hub session that may open [contentId] now. A session opened at a terminal lasts only while the player is
+     * alive and still at it, so a verified use cannot be carried elsewhere and replayed by a modified client.
+     */
+    private fun sessionReaching(player: ServerPlayer, contentId: String): Session? {
+        val session = sessions[player.uuid]?.takeIf { contentId in it.tabs } ?: return null
+        val terminal = session.terminal ?: return session
+        if (player.isAlive && !player.isRemoved && terminalStillInReach(
+                player.serverLevel().dimension().location().toString(), player.x, player.y, player.z, terminal)
+        ) return session
+        sessions.remove(player.uuid, session)
+        return null
+    }
+
     fun clear() = sessions.clear()
 
     /** Development hub captures open the hub on the client alone; this lets the server open [tabs] for it. */
@@ -143,4 +160,22 @@ object BattleHubNetworking {
     private fun reportFailure(player: ServerPlayer, operation: String, failure: Throwable) {
         MoreCobblemonContents.LOGGER.error("Battle Hub $operation failed for ${player.uuid}", failure)
     }
+}
+
+/** How far a player may step from the terminal they opened the hub at and still use it; the use itself allows 8. */
+internal const val HUB_TERMINAL_REACH = 16.0
+
+/** True when a player in [dimensionId] at ([x], [y], [z]) is still within [HUB_TERMINAL_REACH] of [terminal]. */
+internal fun terminalStillInReach(
+    dimensionId: String,
+    x: Double,
+    y: Double,
+    z: Double,
+    terminal: TerminalInteractionResult.Verified,
+): Boolean {
+    if (dimensionId != terminal.dimensionId || !x.isFinite() || !y.isFinite() || !z.isFinite()) return false
+    val dx = x - (terminal.x + 0.5)
+    val dy = y - (terminal.y + 0.5)
+    val dz = z - (terminal.z + 0.5)
+    return dx * dx + dy * dy + dz * dz <= HUB_TERMINAL_REACH * HUB_TERMINAL_REACH
 }

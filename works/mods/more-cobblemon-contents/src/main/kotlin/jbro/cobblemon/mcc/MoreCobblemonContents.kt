@@ -32,6 +32,7 @@ object MoreCobblemonContents : ModInitializer {
     override fun onInitialize() {
         jbro.cobblemon.mcc.api.access.BattleContentAccess.registerLifecycle()
         jbro.cobblemon.mcc.api.battle.ManagedPveBattles.registerLifecycle()
+        jbro.cobblemon.mcc.api.battle.ManagedBattleForfeits.register()
         // The MCC terminal shows what /mcc shows; the League, Tower and Factory each open from a terminal of their own.
         HoloTerminals.register(HoloBattleTerminalIds.id, listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP,
             ManagedBattleContentIds.PVP), HoloTerminalPalette.MCC)

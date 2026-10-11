@@ -291,3 +291,12 @@ private const val MAX_STRING_LENGTH = 160
 private const val MAX_TEXTURE_LENGTH = 256
 private const val MAX_LIMIT = 4096
 private const val MAX_LEADERBOARD_BOARDS = 8
+
+/** What a shop state packet can carry; a catalog beyond it is refused at load instead of failing every send. */
+internal object ShopWireLimits {
+    const val ENTRIES = MAX_ENTRIES
+    const val CART_LINES = MAX_CART_LINES
+    const val STRING_LENGTH = MAX_STRING_LENGTH
+    const val TEXTURE_LENGTH = MAX_TEXTURE_LENGTH
+    const val LIMIT = MAX_LIMIT
+}

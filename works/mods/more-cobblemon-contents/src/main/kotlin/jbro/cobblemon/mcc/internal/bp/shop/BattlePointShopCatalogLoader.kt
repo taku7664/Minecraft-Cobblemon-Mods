@@ -34,6 +34,7 @@ internal object BattlePointShopCatalogLoader {
         val shopkeeper = root.get("shopkeeper")?.let { parseShopkeeper(it.requireObject("$.shopkeeper"), "$.shopkeeper") }
             ?: BattlePointShopkeeperAppearance.DEFAULT
 
+        rejectUnsendable(catalogId, limits, entries, shopkeeper, categories)
         BattlePointShopCatalogLoadResult.Loaded(
             BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper, categories),
         )
@@ -100,6 +101,7 @@ internal object BattlePointShopCatalogLoader {
         rejectDuplicates(entries.map(BattlePointShopEntry::entryId), "$.entries", "entry ID")
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
 
+        rejectUnsendable(catalogId, limits, entries, shopkeeper, categories)
         BattlePointShopCatalogLoadResult.Loaded(
             BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper, categories),
         )
@@ -210,6 +212,48 @@ internal object BattlePointShopCatalogLoader {
     private fun malformed(error: Exception) = BattlePointShopCatalogLoadResult.Rejected(
         listOf(BattlePointShopCatalogIssue(BattlePointShopCatalogIssueCode.MALFORMED_JSON, "$", error.message ?: "Malformed JSON")),
     )
+}
+
+/**
+ * Refuses a catalog the shop state packet cannot carry. Without this a large but otherwise valid catalog would load,
+ * then disconnect every player who opened the shop, or every player who filled a long cart.
+ */
+private fun rejectUnsendable(
+    catalogId: String,
+    limits: BattlePointShopLimits,
+    entries: List<BattlePointShopEntry>,
+    shopkeeper: List<BattlePointShopkeeperAppearance>,
+    categories: List<String>,
+) {
+    fun tooLong(path: String, value: String, maximum: Int = ShopWireLimits.STRING_LENGTH) {
+        if (value.length > maximum) {
+            reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, path, "Longer than the $maximum characters a shop packet carries")
+        }
+    }
+    fun over(path: String, value: Int, maximum: Int) {
+        if (value > maximum) reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, path, "Over the $maximum a shop packet carries: $value")
+    }
+    tooLong("$.catalog_id", catalogId)
+    over("$.limits.max_cart_lines", limits.maxCartLines, ShopWireLimits.CART_LINES)
+    over("$.limits.max_quantity_per_line", limits.maxQuantityPerLine, ShopWireLimits.LIMIT)
+    over("$.limits.max_total_items", limits.maxTotalItems, ShopWireLimits.LIMIT)
+    over("$.entries", entries.size, ShopWireLimits.ENTRIES)
+    entries.forEach { entry ->
+        tooLong("$.entries[${entry.entryId}].id", entry.entryId)
+        tooLong("$.entries[${entry.entryId}].item", entry.itemId)
+        tooLong("$.entries[${entry.entryId}].category", entry.category)
+    }
+    over("$.categories", categories.size, ShopWireLimits.ENTRIES)
+    categories.forEach { tooLong("$.categories", it) }
+    shopkeeper.forEach { appearance ->
+        when (appearance) {
+            is BattlePointShopkeeperAppearance.Skin -> tooLong("$.shopkeeper", appearance.texture, ShopWireLimits.TEXTURE_LENGTH)
+            is BattlePointShopkeeperAppearance.Villager -> {
+                tooLong("$.shopkeeper", appearance.profession)
+                tooLong("$.shopkeeper", appearance.type)
+            }
+        }
+    }
 }
 
 private class ShopCatalogDecodeException(val issue: BattlePointShopCatalogIssue) : RuntimeException(issue.message)

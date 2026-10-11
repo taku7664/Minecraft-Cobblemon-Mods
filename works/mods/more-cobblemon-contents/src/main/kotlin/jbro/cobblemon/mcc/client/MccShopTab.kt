@@ -69,7 +69,9 @@ internal object MccShopClient {
         MccBattleHubClientState.update(next.balanceBp)
         if (MccHubScreen.showing(CONTENT)) {
             MccHubScreen.refresh(CONTENT)
-        } else {
+        } else if (next.result == null) {
+            // Only the shop being opened brings the hub up; a purchase reply that arrives after the viewer left the
+            // shop just updates it.
             openedByServer = true
             MccHubScreen.open(CONTENT)
         }

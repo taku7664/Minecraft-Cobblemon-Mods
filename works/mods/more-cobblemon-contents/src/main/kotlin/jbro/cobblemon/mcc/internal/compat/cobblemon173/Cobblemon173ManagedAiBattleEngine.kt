@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
+import jbro.cobblemon.mcc.api.battle.ManagedBattleForfeits
 import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
 import jbro.cobblemon.mcc.api.rules.BattleMechanicFlags
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
@@ -337,7 +338,8 @@ class Cobblemon173ManagedAiBattleEngine(
                     val outcome = when (playerActor) {
                         in ended.winners -> PveOutcome.WIN
                         in ended.losers -> PveOutcome.LOSS
-                        else -> null
+                        // Dying or logging out mid-battle ends it as a forced tie; that is the player's loss.
+                        else -> if (player.uuid in ManagedBattleForfeits.of(ended.battleId)) PveOutcome.LOSS else null
                     }
                     runManagedCleanupActionsSafely(
                         reportFailure = { failure ->

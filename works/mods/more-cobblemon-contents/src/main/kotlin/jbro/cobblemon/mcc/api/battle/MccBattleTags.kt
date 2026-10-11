@@ -63,6 +63,11 @@ object MccBattleTags {
     internal fun release(battleId: UUID): MccBattleTag? = tags.remove(battleId)
 
     internal fun clear() = tags.clear()
+
+    /** Forgets tags of battles [live] no longer knows, such as one whose start an event cancelled. */
+    internal fun prune(live: (UUID) -> Boolean) {
+        tags.keys.removeIf { !live(it) }
+    }
 }
 
 /** The tag waiting on this thread for the battle a [during] block creates. */
