@@ -5,6 +5,7 @@
 - 사용자 결정(정해 둔 적은 없지만 당연히 그런 줄 알았다고 함): 개인 홀은 열린 플레이어에게만 채팅으로 알린다(좌표 없음, `personal_wormhole`). 거대 홀 서버 공지에 좌표를 붙인다(`great_wormhole_at`, 홀 중심 좌표). 귀환 홀은 요청이 없어 알림 없음 그대로. `/cdim wormhole small|great`도 같은 알림을 띄운다(테스트용 명령이라 맞춤).
 - 사용자 지시로 개발 서버에만 배치하고 클라이언트는 그대로 둔다. 문구는 클라이언트 언어 파일에서 꺼내므로, 키를 새로 만들고 `translatableWithFallback`에 한국어 기본 문구를 넣었다. 옛 클라이언트 JAR에는 두 키가 없어 기본 문구가 뜬다. 옛 키 `great_wormhole`는 지웠다.
 - 위키 `server-wiki/pages/dimensions.html` 홀 표도 맞게 고쳤다(위키 배포는 안 함).
+- `main` dde725d7 기준 빌드(테스트 제외) 성공, JAR 무결성 확인. 서버가 꺼진 상태에서 개발 서버에만 배치(SHA-256 앞자리 633e2f3d, 이전 JAR은 `develop-product/deployment-backups`). 클라이언트는 e05339ec 그대로. 서버는 켜지 않았다. 실게임 미확인.
 
 ## [2026-10-11 13:55] 위키 포탈 틀 블록 이름 정정
 
