@@ -117,15 +117,16 @@ class NpcSkinPickerScreen(private val parent: Screen, current: String, private v
         ObjectSelectionList<SkinEntry>(Minecraft.getInstance(), width, height, y, ITEM) {
         fun show(values: List<String>) {
             replaceEntries(values.map { SkinEntry(it) })
-            val chosen = children().firstOrNull { it.value == selected }
+            val chosen = children().firstOrNull { it.value == this@NpcSkinPickerScreen.selected }
             super.setSelected(chosen)
             if (chosen != null) centerScrollOn(chosen) else setScrollAmount(0.0)
         }
 
+        // The list has a `selected` of its own; the screen's chosen skin is named through the screen.
         override fun setSelected(entry: SkinEntry?) {
             super.setSelected(entry)
-            if (entry != null && entry.value != selected) {
-                selected = entry.value
+            if (entry != null && entry.value != this@NpcSkinPickerScreen.selected) {
+                this@NpcSkinPickerScreen.selected = entry.value
                 refreshPreview()
             }
         }
