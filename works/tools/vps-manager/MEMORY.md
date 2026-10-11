@@ -1,3 +1,9 @@
+# [2026-10-11 13:35] VPS Chunky 프리젠 시작
+
+- **사용자 결정:** 오버월드 스폰 기준 반경 3000(정사각형), 고대·미래·울트라스페이스(`cobblemon_dimensions:ancient`/`future`/`ultra_space`) 각각 중심 0,0 반경 1000. 접속자 0명일 때 시작.
+- **실행:** 13:33 오버월드 시작. 초반 12~22cps, Chunky ETA 2~3시간. 나머지 세 차원은 VPS `~/.local/share/chunky-chain.sh`(로그 `chunky-chain.log`)가 `Task finished for <world>` 로그를 보고 tmux 콘솔로 차례로 시작한다. 서버가 꺼지거나 `Task cancelled`가 나오면 스크립트는 멈춘다. `chunky pause`/`continue`는 그대로 이어진다.
+- **시작 시점:** 디스크 38GB 여유, `world/region` 22MB. 완료 여부·최종 용량·틱 영향은 아직 확인하지 않았다.
+
 # [2026-10-11 13:28] 광장 LFS 캐시 복구, 관리 도구 상태 조회 정상화
 
 - **확인·범위:** 사용자 요청으로 아래 Chunky 작업에서 확인한 LFS 실패를 복구했다. VPS `.git/lfs/objects/6e/ca/6eca08c85ffc8e979deb161dd17b8d91f81ef062f78fb66229408c0344d659ef`가 0바이트였고, 정상 임시 파일 `.git/lfs/tmp/2568781714`는 24,576바이트·SHA-256이 해당 객체 ID와 일치했다.
