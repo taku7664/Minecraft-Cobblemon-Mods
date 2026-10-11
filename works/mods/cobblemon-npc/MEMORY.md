@@ -1,5 +1,15 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-11 13:06] 광장 상점 주인 NPC 추가·개발·운영·VPS 동기화 (VPS 기동 확인, 실게임 미확인)
+
+- **사용자 결정:** 간호순에 이어 오박사 앞에 상점 주인을 둔다. 대화로 MCC 상점 탭을 연다. 스킨은 웹에서 찾았다. minecraftskins.com의 "ORAS Pokemart Male"(24143724)를 사용자가 골랐고, 허브 상점 탭의 상점 주인도 같은 스킨으로 바꿨다.
+- **구현(main `bb014767`):** MCC `/mcc terminal shop [player]`(관리자 전용, `/mcc` 탭 구성을 상점 탭에서 연다), 스킨 `more_cobblemon_contents:textures/npcs/shopkeeper.png`(64×64, 일반 팔), 내장 `mcc-bp-shop.json` 상점 주인 스킨, 대화 `docs/dialogues/plaza_shopkeeper.json`(`@server /mcc terminal shop`). MCC JAR은 다른 세션이 `96a7c829`로 배포한 것에 이 변경이 들어 있다(설치본에서 스킨·명령 클래스 확인).
+- **배치:** 서버를 켜지 않고 광장 엔티티 파일에 직접 썼다. VPS `r.-1.0.mca`(서버 정지 상태)의 청크 (-1,0)에 오박사 NBT를 복제해 상점 주인(UUID `6dc89162-211d-4ebd-a2d9-9e386ecc46ef`, `[-0.5, 80, 11.5]`, yaw 180)을 추가했다. 다른 청크와 기존 엔티티는 그대로임을 확인했다. 세 곳 광장은 NPC 고개 방향만 달라서, 같은 파일을 개발·운영에도 넣어 맞췄다. 개발 기존 파일 백업은 `F:/AI/build/shopkeeper-plaza/dev-backup/`.
+- **설정:** 개발·운영·VPS의 `bp-shop.json`(세 곳 해시 같음)에서 상점 주인 스킨 한 줄만 바꿨다. VPS 매니저 업데이트는 VPS에 이미 있는 `config/`와 `world/` 파일을 보존하므로, 대화 파일만 업데이트(job `365349b2…`)로 넣었다. 상점 설정과 광장 파일은 서버 밖 `~/.local/share/ppakemon-backups/config-edit/20261011-shopkeeper/`에 백업한 뒤 직접 교체했다. 운영 커밋은 `54f9d763`이고, VPS 작업트리도 이 커밋과 같다.
+- **VPS 기동(사용자 지시 "서버 켜놔"):** 13:05:35 `Done`, 25565 LISTEN, 피츄 봇 online, 상점 카탈로그 95개 로드. `data get entity`로 상점 주인 `NpcDialogue=plaza_shopkeeper`를 확인했다. 개발 서버는 켜지 않았다.
+- **주의:** 공유 작업트리에서 `git commit -- <파일>`은 그 파일에 섞인 다른 세션의 미커밋 수정까지 커밋한다. `bb014767`에 허브 터미널 거리 제한이 딸려 들어가 `97bd098b`에서 빼냈다(작업트리는 보존). 이날 Git Bash의 ssh는 한글 홈 경로를 깨뜨려 known_hosts를 못 읽었고, Windows OpenSSH(`C:/Windows/System32/OpenSSH/ssh.exe`)로 접속했다.
+- **미확인:** 실제 게임에서 상점 주인 대화, 상점 탭 열림, 스킨 표시는 확인하지 않았다.
+
 ## [2026-10-11 04:35] 오박사 대사 운영 반영, 기자 디스코드 링크 교체
 
 - **오박사:** 사용자가 VPS에서 직접 고친 `plaza_oak.json`(SHA-256 앞자리 `a2715d44`)을 그대로 가져와 운영 저장소 `ccf20e7`에 커밋하고 개발 서버에도 넣었다(개발 저장소에는 이 대사의 원본이 없다).
