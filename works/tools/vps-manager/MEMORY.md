@@ -2,7 +2,8 @@
 
 - **문제:** `preserve()`가 `startup-hooks.json`을 보존해 VPS의 위키 해시·모드 버전 규칙이 갱신되지 않았다. 기록상 VPS 해시는 옛 값이고 `.startup-hooks-state.json`의 ONCE 표시 덕에만 기동했는데, 이 상태 파일은 백업에도 없었다.
 - **수정:** `25df5a43`. `startup-hooks.json`은 저장소 버전을 받는다. VPS에서 직접 고친 상태면 기존 충돌 검사가 업데이트를 멈춘다(새 테스트). 설정 백업에 `.startup-hooks-state.json`을 넣었다. 테스트 22개 통과(1개 원래 skip).
-- **미적용:** 설치본 `%LOCALAPPDATA%/PPakemonVpsManager`는 갱신하지 않았다(Claude 데스크톱에서 설치하면 MSIX 가상화 경로로 감). 사용자가 `install-vps-manager.ps1`을 직접 실행해야 한다. `server.properties`는 여전히 보존 대상이라 운영 저장소의 `simulation-distance=6`은 VPS에 자동 반영되지 않는다.
+- **설치:** 사용자 지시로 `explorer.exe`에서 띄운 bat으로 앱 밖에서 `install-vps-manager.ps1`을 실행했다(MSIX 가상화 회피). 실제 `%LOCALAPPDATA%/PPakemonVpsManager`의 두 파일 해시가 원본과 같고 `settings.json`은 그대로이며, 앱 가상 경로에는 사본이 없다.
+- **VPS 확인(SSH 읽기 전용):** `simulation-distance=6`, `view-distance=10`(이미 6이었음). VPS `startup-hooks.json`은 위키 해시만 옛 `df5c…`로 직접 수정돼 있었고 zip은 `90ff…`였다. 상태 파일의 `wiki:df5c…` ONCE 표시 덕에만 기동하던 상태였다. 이대로면 새 관리 도구의 업데이트가 충돌로 멈추므로 `git checkout -- startup-hooks.json`으로 저장소 버전(`90ff…`)으로 되돌렸다. 원본 백업 `/home/ubuntu/.local/share/ppakemon-backups/manager/manual-hooks-20261011-122347/`. 다음 기동 때 위키 ONCE가 한 번 더 돌며 없는 파일만 채운다. VPS HEAD는 `d5b393f`로 원격보다 뒤다(업데이트는 하지 않음).
 
 # [2026-10-11 05:00] 디스코드 역할 초기화, 개발 서버도 같은 방식으로 초기화
 

@@ -1,10 +1,10 @@
 # [2026-10-11 12:17] 시작 훅 검토 수정: Discord 검사 복구, 모드 버전 규칙 전달, DryRun·상태 파일
 
-- **Discord 검사:** 10-10 19:48 개발 서버 Discord 연결 해제 때 `develop-product/server/startup-hooks.json`에서 `discord.*` 검사 10개가 빠졌다. 사용자가 "디스코드 검사도 필수야. 의도 아냐"라고 해서 운영 파일과 같은 내용(위키 해시만 개발 값 `df5c…`)으로 되돌렸다. 원래 파일은 `develop-product/deployment-backups/2026-10-11-startup-hooks/`. 개발 서버 `botToken`이 비어 있어 지금 개발 서버 DryRun은 `discord.bot`에서 막힌다(토큰 복구는 사용자 확인 필요).
+- **Discord 검사:** 10-10 19:48 개발 서버 Discord 연결 해제 때 `develop-product/server/startup-hooks.json`에서 `discord.*` 검사 10개가 빠졌다. 사용자 결정: 운영은 Discord 검사가 필수이고, 개발은 Discord를 막아 둔 서버라 검사를 넣지 않는다. 그래서 개발 파일은 운영 파일과 같게 맞추되 `discord.*`만 뺐다(위키 해시는 개발 값 `df5c…`). 개발 DryRun exit 0. 이전 파일은 `develop-product/deployment-backups/2026-10-11-startup-hooks/`. 패쳐는 대상의 검사를 유지하므로 개발 쪽 누락이 운영으로 넘어가지 않는다.
 - **로컬 패쳐(로컬 전용 파일):** 대상 `startup-hooks.json`을 보존하면서 위키 해시만 바꾸던 것을, 개발 서버의 `mod_compatibility` 블록도 텍스트 그대로 옮기도록 바꿨다(나머지 운영 규칙·형식 유지). 대상에 훅 파일이 없으면 개발 규칙으로 시작하되 경고한다. 테스트 26개 그룹 통과, 설치본 `develop-product/tools/patcher/server/server-deployment.psm1` 갱신.
 - **훅 스크립트(운영 `53ed670`, 개발 서버 동일 복사):** DryRun에서 `command` 검사(agy)를 실행하지 않는다. `.startup-hooks-state.json`이 깨지면 예외 대신 복구 방법을 알려 주고 기동을 멈춘다(계속 진행하면 ONCE 규칙이 운영자 변경값을 덮을 수 있어 막는 쪽을 유지). Xaero 설정·waypoint-lock 검사 16개는 WARN으로 바꿨다. `startup-hooks.tests.ps1` 통과, 운영 DryRun exit 0.
 - **MBC 흔적:** 개발 서버 `config/cobblemon-more-battle-content-better-ai/`(openrouter.json 하나)를 같은 백업 폴더로 옮겼다.
-- **미확인:** 로컬 운영 `config/jbro-policy-discord.json`에는 `inquiryChannelId` 등 8개 필드가 없어 WARN이 난다(이번에 바꾸지 않음). 서버는 기동하지 않았다.
+- **참고:** 로컬 운영 사본의 `config/jbro-policy-discord.json`에는 `botToken`·`verifiedRoleId`·`inviteUrl`만 있어 DryRun에서 나머지 8개가 WARN으로 뜬다. 실제 운영인 VPS에는 9개 필드가 모두 채워져 있다(SSH로 키 이름만 확인). 서버는 기동하지 않았다.
 
 # [2026-10-10 17:22 KST] VPS Discord 인증 설정 보완·시작 훅 필수 검사 강화
 
