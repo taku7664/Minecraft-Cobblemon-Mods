@@ -6,9 +6,13 @@ import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.pokemon.OpenSummaryPayload
 import jbro.cobblemon.policy.menu.OpenLinkPayload
 import jbro.cobblemon.policy.menu.OpenPichuPayload
+import jbro.cobblemon.policy.pack.PackCheck
+import jbro.cobblemon.policy.pack.PackCheckReply
+import jbro.cobblemon.policy.pack.PackCheckRequest
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.networking.v1.ClientConfigurationNetworking
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.Screens
@@ -27,6 +31,10 @@ object JbroPolicyClient : ClientModInitializer {
     private val pichuAvailable by lazy { FabricLoader.getInstance().isModLoaded("cobblemon_ui") }
 
     override fun onInitializeClient() {
+        // The server checks the modpack release line while the connection is configuring.
+        ClientConfigurationNetworking.registerGlobalReceiver(PackCheckRequest.TYPE) { _, context ->
+            context.responseSender().sendPacket(PackCheckReply(PackCheck.PACK_VERSION))
+        }
         PokenavKey.register()
         MccHubTabRequest.register()
         if (pichuAvailable) InvMoveCompat.register()

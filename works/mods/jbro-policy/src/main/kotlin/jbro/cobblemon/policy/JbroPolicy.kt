@@ -48,6 +48,7 @@ object JbroPolicy : ModInitializer {
         PokemonSummaryOnInteract.register()
         jbro.cobblemon.policy.menu.MenuLinks.register()
         jbro.cobblemon.policy.menu.PichuHelper.register()
+        jbro.cobblemon.policy.pack.PackCheck.register()
         TestCommand.register()
         ServerCommand.register()
         jbro.cobblemon.policy.support.PendingItems.register()
@@ -69,6 +70,7 @@ object JbroPolicy : ModInitializer {
         val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
         WelcomeKit.inviteUrl = discord.inviteUrl
         jbro.cobblemon.policy.menu.MenuLinks.inviteUrl = discord.inviteUrl
+        jbro.cobblemon.policy.pack.PackCheck.inviteUrl = discord.inviteUrl
         Inquiries.register(discord)
         val aiSettings = InquiryReviewSettings.load(configDir.resolve("jbro-policy-inquiry-review.json")) { message, failure -> LOGGER.warn(message, failure) }
         InquiryReview.register(discord, aiSettings,

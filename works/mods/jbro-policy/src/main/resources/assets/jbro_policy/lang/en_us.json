@@ -56,6 +56,9 @@
 
   "message.jbro_policy.myroom.unavailable": "MyRoom is not available right now.",
   "message.jbro_policy.pichu.unavailable": "Pichu's helper cannot open: the client needs the latest jbro-policy and Cobblemon UI.",
+  "message.jbro_policy.pack.outdated": "Your modpack is out of date. Update to PPakemon modpack %s and join again.",
+  "message.jbro_policy.pack.mismatch": "Your modpack version (%s) does not match the server (%s). Update the modpack and join again.",
+  "message.jbro_policy.pack.download": "Get the new modpack from the Discord announcements: %s",
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
   "message.jbro_policy.inquiry.sent": "Your inquiry was sent. Pichu Bot has it.",
