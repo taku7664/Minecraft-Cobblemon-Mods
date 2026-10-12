@@ -539,7 +539,8 @@ internal object NativeProductRankAdapter {
                 outcome = neutralOutcome(value.action, scaled + setupBonus).let { outcome ->
                     // A move the target is publicly immune to does nothing whatever the search found around it;
                     // the selector drops it as it does for the legacy scorer.
-                    if (context != null && publiclyNullified(value.action, context)) {
+                    if (context != null && (publiclyNullified(value.action, context) ||
+                            jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(value.action, context))) {
                         outcome.copy(publiclyInert = true, executableDamageActions = 0)
                     } else outcome
                 },
