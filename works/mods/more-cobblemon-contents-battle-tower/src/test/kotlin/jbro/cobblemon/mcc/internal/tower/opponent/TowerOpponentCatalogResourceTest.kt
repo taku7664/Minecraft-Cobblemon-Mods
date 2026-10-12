@@ -23,6 +23,36 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogResourceTest {
     @Test
+    fun `all bundled tower sets only retain explicitly approved unevolved species with their required items`() {
+        // Includes the entire catalog, not just one reachable stage or trainer pool.
+        val sets = bundledCatalog().allSets()
+        assertEquals(1_901, sets.size)
+        cobblemonJar().use { jar ->
+            val speciesEntries = jar.entries().asSequence()
+                .filter { it.name.startsWith("data/cobblemon/species/") && it.name.endsWith(".json") }
+                .associateBy { it.name.substringAfterLast('/').removeSuffix(".json") }
+            val violations = sets.mapNotNull { set ->
+                val root = jar.getInputStream(speciesEntries.getValue(set.speciesId.substringAfter(':')))
+                    .reader().use(JsonParser::parseReader).asJsonObject
+                val form = set.formId?.let { id ->
+                    requireNotNull(root.getAsJsonArray("forms")?.map { it.asJsonObject }
+                        ?.firstOrNull { it["name"].asString.equals(id, ignoreCase = true) })
+                }
+                val owner = form?.takeIf { it.has("evolutions") } ?: root
+                if (owner.getAsJsonArray("evolutions")?.isEmpty != false) return@mapNotNull null
+                val approved = when (set.speciesId) {
+                    "cobblemon:chansey", "cobblemon:porygon2" -> set.heldItemId == "cobblemon:eviolite"
+                    "cobblemon:pikachu" -> set.heldItemId == "cobblemon:light_ball"
+                    "cobblemon:ursaring" -> true // User explicitly retains Ursaring.
+                    else -> false
+                }
+                set.setId.takeUnless { approved }
+            }
+            assertTrue(violations.isEmpty(), "Unapproved unevolved tower sets: $violations")
+        }
+    }
+
+    @Test
     fun `every bundled trainer wears an RCT Trainers+ skin instead of the challenger's hologram`() {
         val catalog = bundledCatalog()
         val profiles = TowerStreakStage.entries.flatMap { stage ->

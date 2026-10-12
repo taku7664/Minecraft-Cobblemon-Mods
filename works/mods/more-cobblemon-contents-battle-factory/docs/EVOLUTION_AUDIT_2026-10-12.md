@@ -1,5 +1,7 @@
 # MCC 배틀팩토리·배틀타워 미진화체 전수 검사
 
+이 문서는 수정 전 검사 기록입니다. 현재 수정 결과는 [2026-10-13 후속 기록](EVOLUTION_FIX_2026-10-13.md)을 참조하세요. 원본 소스 링크는 검사 당시 커밋에 고정했습니다.
+
 검사·기록 시각: 2026-10-12 23:40 KST. 검사한 소스: `715e9b6e36baa58f59930a1185830aaaf17b543f`.
 
 ## 결론과 판단 경계
@@ -30,7 +32,7 @@
 
 ## 의도적인 미진화 예외
 
-[팩토리 카탈로그 생성기](../../../../works/mods/more-cobblemon-contents/tools/generate_factory_catalog.mjs)의 `fixedItem`은 럭키·폴리곤2에 진화의휘석(`eviolite`), 피카츄에 전기구슬(`light_ball`)을 명시적으로 고정합니다. 해당 세트의 실제 도구도 일치합니다.
+[팩토리 카탈로그 생성기](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents/tools/generate_factory_catalog.mjs)의 `fixedItem`은 럭키·폴리곤2에 진화의휘석(`eviolite`), 피카츄에 전기구슬(`light_ball`)을 명시적으로 고정합니다. 해당 세트의 실제 도구도 일치합니다.
 
 | 종 | 근거 | 팩토리 | 타워 |
 |---|---|---:|---:|
@@ -63,15 +65,15 @@
 
 | 세트 ID | 파일 |
 |---|---|
-| `dipplin_preset_{1,2,3,4}` | [cobblemon_dipplin.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_dipplin.json) |
-| `dunsparce_preset_{1,2,3,4}` | [cobblemon_dunsparce.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_dunsparce.json) |
-| `duraludon_preset_{1,2,3,4}` | [cobblemon_duraludon.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_duraludon.json) |
-| `girafarig_preset_{1,2,3,4}` | [cobblemon_girafarig.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_girafarig.json) |
-| `gurdurr_preset_{1,2,3,4}` | [cobblemon_gurdurr.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_gurdurr.json) |
-| `misdreavus_preset_{1,2,3,4}` | [cobblemon_misdreavus.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_misdreavus.json) |
-| `qwilfishhisui_preset_{1,2,3,4}` | [cobblemon_qwilfish.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_qwilfish.json) |
-| `rhydon_preset_{1,2,3,4}` | [cobblemon_rhydon.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_rhydon.json) |
-| `ursaring_preset_{1,2,3,4}` | [cobblemon_ursaring.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_ursaring.json) |
+| `dipplin_preset_{1,2,3,4}` | [cobblemon_dipplin.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_dipplin.json) |
+| `dunsparce_preset_{1,2,3,4}` | [cobblemon_dunsparce.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_dunsparce.json) |
+| `duraludon_preset_{1,2,3,4}` | [cobblemon_duraludon.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_duraludon.json) |
+| `girafarig_preset_{1,2,3,4}` | [cobblemon_girafarig.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_girafarig.json) |
+| `gurdurr_preset_{1,2,3,4}` | [cobblemon_gurdurr.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_gurdurr.json) |
+| `misdreavus_preset_{1,2,3,4}` | [cobblemon_misdreavus.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_misdreavus.json) |
+| `qwilfishhisui_preset_{1,2,3,4}` | [cobblemon_qwilfish.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_qwilfish.json) |
+| `rhydon_preset_{1,2,3,4}` | [cobblemon_rhydon.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_rhydon.json) |
+| `ursaring_preset_{1,2,3,4}` | [cobblemon_ursaring.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_ursaring.json) |
 
 ### 타워 세트 ID와 파일
 
@@ -79,18 +81,18 @@
 
 | ID 형식 | 기믹 | 티어 | 파일 |
 |---|---|---|---|
-| `generated_<기믹>_tier<티어>_dipplin` | `dynamax`, `tera` | 1, 2, 3, 4 | [cobblemon_dipplin.json](../../../../works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_dipplin.json) |
-| `generated_<기믹>_tier<티어>_dunsparce` | `dynamax`, `tera` | 2, 3, 4 | [cobblemon_dunsparce.json](../../../../works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_dunsparce.json) |
-| `generated_<기믹>_tier<티어>_duraludon` | `dynamax`, `tera` | 2, 3, 4 | [cobblemon_duraludon.json](../../../../works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_duraludon.json) |
-| `generated_<기믹>_tier<티어>_girafarig` | `dynamax`, `tera` | 1, 2, 3, 4 | [cobblemon_girafarig.json](../../../../works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_girafarig.json) |
-| `generated_<기믹>_tier<티어>_misdreavus` | `dynamax`, `tera` | 1 | [cobblemon_misdreavus.json](../../../../works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_misdreavus.json) |
+| `generated_<기믹>_tier<티어>_dipplin` | `dynamax`, `tera` | 1, 2, 3, 4 | [cobblemon_dipplin.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_dipplin.json) |
+| `generated_<기믹>_tier<티어>_dunsparce` | `dynamax`, `tera` | 2, 3, 4 | [cobblemon_dunsparce.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_dunsparce.json) |
+| `generated_<기믹>_tier<티어>_duraludon` | `dynamax`, `tera` | 2, 3, 4 | [cobblemon_duraludon.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_duraludon.json) |
+| `generated_<기믹>_tier<티어>_girafarig` | `dynamax`, `tera` | 1, 2, 3, 4 | [cobblemon_girafarig.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_girafarig.json) |
+| `generated_<기믹>_tier<티어>_misdreavus` | `dynamax`, `tera` | 1 | [cobblemon_misdreavus.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-tower/src/main/resources/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets/cobblemon_misdreavus.json) |
 
 ## 오류로 확정하지 않은 팩토리 8세트
 
 | 종 | 세트 / 파일 | 판정 유보 근거 |
 |---|---|---|
-| 스라크 | `scyther_preset_{1,2,3,4}` / [cobblemon_scyther.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_scyther.json) | 스라크·핫삼·사마자르는 종족값 합계가 모두 500이고 스피드는 각각 105·65·85입니다. 진화하면 전투 성질이 달라지므로 단순히 상위 종으로 교체할 대상이라고 확정할 수 없습니다. |
-| 발바로 | `vigoroth_preset_{1,2,3,4}` / [cobblemon_vigoroth.json](../../../../works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_vigoroth.json) | 네 세트 모두 의기양양(`vitalspirit`)·벌크업(`bulkup`)·태만함(`slackoff`)을 사용합니다. 진화 후 게을킹의 특성은 게으름(`truant`)이므로 같은 전술을 그대로 비교할 수 없습니다. |
+| 스라크 | `scyther_preset_{1,2,3,4}` / [cobblemon_scyther.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_scyther.json) | 스라크·핫삼·사마자르는 종족값 합계가 모두 500이고 스피드는 각각 105·65·85입니다. 진화하면 전투 성질이 달라지므로 단순히 상위 종으로 교체할 대상이라고 확정할 수 없습니다. |
+| 발바로 | `vigoroth_preset_{1,2,3,4}` / [cobblemon_vigoroth.json](https://github.com/taku7664/Minecraft-Cobblemon-Mods/blob/715e9b6e36baa58f59930a1185830aaaf17b543f/works/mods/more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory/rental-sets/cobblemon_vigoroth.json) | 네 세트 모두 의기양양(`vitalspirit`)·벌크업(`bulkup`)·태만함(`slackoff`)을 사용합니다. 진화 후 게을킹의 특성은 게으름(`truant`)이므로 같은 전술을 그대로 비교할 수 없습니다. |
 
 두 종 모두 진화 가능한 미진화체라는 사실은 확인했습니다. 다만 의도적인 채용이었다는 명시적 근거는 확인하지 못했습니다. 타워 풀에는 두 종의 세트가 없습니다.
 

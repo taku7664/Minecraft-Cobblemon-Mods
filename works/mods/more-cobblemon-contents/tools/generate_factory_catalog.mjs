@@ -13,11 +13,12 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isApprovedFacilitySpecies, UNEVOLVED_ITEM_EXCEPTIONS } from "./facility-species-policy.mjs";
 
 const require = createRequire(import.meta.url);
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = resolve(
-  process.argv[2] ?? join(projectRoot, "src/main/resources/data/more_cobblemon_contents/mcc-battle-factory"),
+  process.argv[2] ?? join(projectRoot, "../more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents/mcc-battle-factory"),
 );
 const trainerDirectory = join(outputRoot, "trainers");
 const rentalSetDirectory = join(outputRoot, "rental-sets");
@@ -46,7 +47,7 @@ try {
   for (const showdownKey of Object.keys(randomSets).sort()) {
     const species = speciesIndex.get(showdownKey);
     if (!species) {
-      skipped.push(`${showdownKey}: no exact implemented final Cobblemon species or form`);
+      skipped.push(`${showdownKey}: no exact implemented and approved Cobblemon species or form`);
       continue;
     }
     const roles = (randomSets[showdownKey].sets ?? [])
@@ -116,11 +117,13 @@ try {
 }
 
 function findCobblemonJar() {
-  const userProfile = process.env.USERPROFILE;
-  if (!userProfile) throw new Error("USERPROFILE is unavailable; pass the Cobblemon JAR as the second argument");
-  const versionRoot = join(userProfile, ".gradle/caches/modules-2/files-2.1/maven.modrinth/cobblemon/1.7.3");
-  const jars = walk(versionRoot).filter((path) => path.endsWith(".jar"));
-  if (jars.length !== 1) throw new Error(`Expected one Cobblemon 1.7.3 JAR, found ${jars.length}; pass an explicit path`);
+  const cacheRoot = process.env.GRADLE_USER_HOME ?? "F:/AI/caches/gradle";
+  const properties = readFileSync(join(projectRoot, "../../gradle.properties"), "utf8");
+  const version = properties.match(/^cobblemon_maven_version=(.+)$/m)?.[1].trim();
+  if (!version) throw new Error("cobblemon_maven_version is missing; pass an explicit Cobblemon JAR path");
+  const jars = walk(join(cacheRoot, "caches/modules-2/files-2.1/com.cobblemon/fabric", version))
+    .filter((path) => path.endsWith(".jar") && !path.endsWith("-sources.jar"));
+  if (jars.length !== 1) throw new Error(`Expected one Cobblemon ${version} JAR, found ${jars.length}; pass an explicit path`);
   return jars[0];
 }
 
@@ -151,6 +154,7 @@ function indexCobblemonSpecies(root) {
 
 function addSpecies(index, key, speciesId, formId, base, form) {
   if (!key || index.has(key)) return;
+  if (!isApprovedFacilitySpecies(speciesId, base, form)) return;
   const learnset = new Set(
     [...(base.moves ?? []), ...(form?.moves ?? [])].map((entry) => toId(entry.split(":").at(-1))).filter(Boolean),
   );
@@ -323,8 +327,8 @@ function spread(first, second, remainder) {
 }
 
 function fixedItem(profile, species, preset, key) {
-  if (key === "porygon2" || key === "chansey") return "cobblemon:eviolite";
-  if (key === "pikachu") return "cobblemon:light_ball";
+  const exceptionItem = UNEVOLVED_ITEM_EXCEPTIONS[key];
+  if (exceptionItem) return exceptionItem;
   const offensive = profile.mainPhysical ? "cobblemon:choice_band" : "cobblemon:choice_specs";
   const palettes = [
     ["cobblemon:sitrus_berry", "cobblemon:expert_belt", "cobblemon:wide_lens", "cobblemon:focus_sash", "cobblemon:assault_vest", "cobblemon:leftovers"],
@@ -362,7 +366,7 @@ function startingWindow(level) {
 
 function validateGeneratedCatalog(catalog) {
   if (catalog.trainers.length < 80) throw new Error(`Expected at least 80 trainers, found ${catalog.trainers.length}`);
-  if (catalog.sets.length < 2000) throw new Error(`Expected at least 2000 complete rental sets, found ${catalog.sets.length}`);
+  if (catalog.sets.length < 1900) throw new Error(`Expected at least 1900 complete rental sets, found ${catalog.sets.length}`);
   const ids = new Set();
   for (const set of catalog.sets) {
     if (ids.has(set.set_id)) throw new Error(`Duplicate set ID: ${set.set_id}`);
