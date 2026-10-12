@@ -288,6 +288,12 @@ internal class EngineBranchWorker(
                     it["time"] = 2
                 }
             }
+            if (state.stallSuccesses > 0 && pokemon.isActive) {
+                // The protection's own volatile, raised as the battle raised it: started by the first, tripled by
+                // each one after. It ran out at the end of last turn but one, so one turn of it is left.
+                repeat(state.stallSuccesses) { pokemon.addVolatile("stall") }
+                pokemon.volatiles["stall"]?.duration = 1
+            }
             if (state.movedSinceSwitchIn && pokemon.isActive) {
                 pokemon.activeTurns = maxOf(pokemon.activeTurns, 1)
                 pokemon.activeMoveActions = maxOf(pokemon.activeMoveActions, 1)

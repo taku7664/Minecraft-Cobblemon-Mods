@@ -179,4 +179,37 @@ class EngineBranchWorkerSituationTest {
         val replayed = EngineBranchWorker().branch(reseeded.snapshotJson, "move 1", "move 1")
         assertEquals(worker.branch(reseeded.snapshotJson, "move 1", "move 1").p1Team.map { it.hp }, replayed.p1Team.map { it.hp })
     }
+
+    @Test
+    fun `a Pokemon that protected last turn is rebuilt with the protection's counter`() {
+        // Rotom-Wash leads and Protected successfully last turn: another Protect now works one time in three.
+        fun rebuilt(successes: Int) = definition.copy(
+            p1Team = definition.p1Team.reversed(),
+            situation = definition.situation!!.copy(pokemon = definition.situation!!.pokemon.map {
+                when (it.uuid) {
+                    uuid(2) -> it.copy(stallSuccesses = successes, movedSinceSwitchIn = true)
+                    uuid(1) -> it.copy(choiceLockedMove = null, movedSinceSwitchIn = false)
+                    else -> it
+                }
+            }),
+        )
+        val worker = EngineBranchWorker()
+        assertTrue("stall" !in worker.createBattle(rebuilt(0)).p1Team.single { it.uuid == uuid(2) }.volatiles)
+        val root = worker.createBattle(rebuilt(1))
+        assertTrue("stall" in root.p1Team.single { it.uuid == uuid(2) }.volatiles)
+        val rotomHp = root.p1Team.single { it.uuid == uuid(2) }.hp
+        // Protect is Rotom's fourth move; Gyarados' Waterfall hits whenever it fails.
+        val held = (1..60).count { salt ->
+            worker.branch(worker.reseed(root.snapshotJson, salt).snapshotJson, "move 4", "move 1")
+                .p1Team.single { it.uuid == uuid(2) }.hp == rotomHp
+        }
+        println("STALL protect held $held of 60 after one success")
+        assertTrue(held in 8..32, "one in three expected, held $held of 60")
+        val fresh = worker.createBattle(rebuilt(0))
+        val freshHeld = (1..20).count { salt ->
+            worker.branch(worker.reseed(fresh.snapshotJson, salt).snapshotJson, "move 4", "move 1")
+                .p1Team.single { it.uuid == uuid(2) }.hp == rotomHp
+        }
+        assertEquals(20, freshHeld, "a first Protect always works")
+    }
 }

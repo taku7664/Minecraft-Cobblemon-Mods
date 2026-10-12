@@ -300,6 +300,8 @@ internal object NativeInitialBattleDefinitionCompiler {
                 forme = NativeInBattleFormes.inBattleForme(pokemon.speciesId),
                 confused = active && pokemon.knownVolatileEffectIds.any { normalizedNativeId(it) == "confusion" },
                 megaEvolved = normalizedNativeId(pokemon.formId.orEmpty()).startsWith("mega"),
+                stallSuccesses = if (!active) 0 else
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(state, pokemon.side, pokemon.activeSlot),
             )
         },
         weather = state.field.weather?.let(::effect),

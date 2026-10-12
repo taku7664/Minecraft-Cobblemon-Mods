@@ -450,6 +450,8 @@ internal data class NativePokemonSituation(
     val confused: Boolean = false,
     /** It shows its Mega forme: it evolves from its set's species, and its side has spent its Mega Evolution. */
     val megaEvolved: Boolean = false,
+    /** Protections in a row that worked up to last turn: the next one succeeds one time in 3^n. */
+    val stallSuccesses: Int = 0,
 ) {
     init {
         UUID.fromString(uuid)
