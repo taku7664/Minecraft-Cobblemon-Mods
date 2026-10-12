@@ -115,9 +115,12 @@ object PokemonTooltip {
         }
         override fun renderImage(font: Font, x: Int, y: Int, graphics: GuiGraphics) {
             val start = x + font.width(label)
+            // Text draws in the top lineHeight - 2 pixels of its line (the rest is descender and spacing); the bars
+            // span exactly that so they sit level with the label instead of hanging below it.
+            val bottom = y + font.lineHeight - 2
             repeat(PokemonSizeCategory.entries.size) { index ->
                 val left = start + index * (BAR_WIDTH + BAR_GAP)
-                graphics.fill(left, y + 1, left + BAR_WIDTH, y + 9, if (index < filled) BAR_FILLED else BAR_EMPTY)
+                graphics.fill(left, y, left + BAR_WIDTH, bottom, if (index < filled) BAR_FILLED else BAR_EMPTY)
             }
         }
         companion object {
