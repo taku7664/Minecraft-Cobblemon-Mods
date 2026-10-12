@@ -8,7 +8,6 @@ import jbro.cobblemon.mcc.internal.ai.BattleDecision
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -62,12 +61,13 @@ class LocalQuickDeciderTest {
     }
 
     @Test
-    fun `an attack aimed at the expected switch-in is not swapped for the stronger one on the Pokemon in front`() {
-        // Lucario in front of Furfrou, Tapu Bulu behind it: the ranking reads the switch, so Close Combat - stronger on
-        // Furfrou but resisted by the Fairy - must not replace what it chose. Meteor Mash or a Swords Dance both pass;
-        // whether to set up here is the setup gate's call, not this test's.
+    fun `a sure knockout is taken when a switch is not expected`() {
+        // Lucario in front of Furfrou, Tapu Bulu behind it. Read at Boss's exact spread (no EVs), Close Combat knocks
+        // Furfrou out for sure, and the switch to Tapu Bulu is predicted at 12.5%, under LocalQuickDecider.FREE_TURN: the
+        // knockout is the choice, not points before the draw (2026-10-13, user decision).
         val (context, decision) = decide("lucario-aims-at-expected-tapu-bulu")
-        assertNotEquals("closecombat", label(context, decision), "${decision.tags}")
+        assertEquals("closecombat", label(context, decision), "${decision.tags}")
+        assertTrue("quick_knockout" in decision.tags, "${decision.tags}")
     }
 
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {

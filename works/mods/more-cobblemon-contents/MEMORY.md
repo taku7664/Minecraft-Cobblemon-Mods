@@ -12,6 +12,8 @@
 - **확인(재생)**: 루카리오 국면의 실제 예측 12.5% → 인파이트 강제 그대로. 예측을 임시로 3배(38%)로 올린 실행에서 인파이트 63%·칼춤 37% 추첨, `quick_plus_knockout_if_stays`·`quick_minus_stay_no_reason` 둘 다 붙음. 임시 코드는 지웠다.
 - **테스트**: `LocalQuickDeciderTest|LocalTacticalBrainSimulationTest|LocalOpponentStatAssumptionTest` 82개 중 81 통과. 실패 1개는 루카리오(실제 예측이 낮아 인파이트 강제, 테스트 기대와 다름).
 - 빌드·배포·실게임 안 함. 테스트는 다른 세션의 미커밋 배틀 진입 코드가 같이 들어간 트리에서 돌았다.
+- **후속(사용자 결정)**: 루카리오 테스트 기대값을 "인파이트 + `quick_knockout`"으로 바꿨다. `LocalQuickDeciderTest|LocalTacticalBrainSimulationTest|LocalOpponentStatAssumptionTest` 82개 모두 통과.
+- **형평성 측정**: 확정 KO 41국면(교체 예측을 바꿀 수 있는 곳 19개)에서 예측 합 0~0.8을 돌렸다. 결과와 0.3 경계의 계단은 `LOCAL_GAPS.md` G-916. 측정 코드는 지웠다.
 
 ## [2026-10-13 02:20] 토게키스-코라이돈 KO 점수 95의 원인: 상대 종 ID 대조 실패 (G-916)
 
