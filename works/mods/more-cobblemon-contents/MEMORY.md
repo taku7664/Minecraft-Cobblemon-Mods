@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-13 02:35] PvP UI·VS 인트로 개발 배포 (빌드·해시 확인, 실게임 미확인)
+
+- **소스·빌드:** main `fa69822f`(origin과 일치, 작업 트리 깨끗)에서 `cobblemon-ui`·MCC·`cobblemon-npc`·PvP·리그 `remapJar`, F 드라이브 경로. JDK 21 `jar --validate` 5개 통과. MCC·NPC 안의 내장 `cobblemon-ui-0.2.0.jar`가 단독 UI JAR과 같은 해시(6255D783…)임을 확인했다(같은 버전 내장 사본이 옛것으로 남지 않게 셋을 함께 교체).
+- **배치:** 개발 클라이언트 5개(UI·MCC·NPC·PvP·리그), 개발 서버 4개(UI 단독 JAR 없음) 교체, 전부 빌드본과 해시 일치. SHA-256 앞자리 MCC 13D06B21, NPC 3ECE2B69, PvP 3507DB84, 리그 7E246F15. 게임·25566 꺼진 상태 확인 후 복사. 백업 `develop-product/deployment-backups/20261013-0235-pvp-ui-versus`.
+- **안 한 것:** 개발 서버 기동, 실게임 확인, `PPakemon` 프로필·운영 서버·`deploy-product` 반영.
+
 ## [2026-10-13 02:35] 리그 VS 인트로 보류, 야생 트레이너 진입 전환 제거
 
 - **사용자 결정:** 관장·사천왕·챔피언 배틀 전에 BW식 VS 화면을 띄운다(연출은 `cobblemon-ui` `BattleVersusIntro`). 음악은 VS가 뜨는 순간부터 나와야 한다. VS 뒤 트레이너 진입 전환은 넣지 않는다. **야생 트레이너 배틀의 진입 전환은 없앤다**(10-03 `d6d23b30`에서 넣었던 것). 챔피언 도입부(암전·조명·"챔피언" 각인)도 넣지 않는다.
