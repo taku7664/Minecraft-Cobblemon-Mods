@@ -50,7 +50,9 @@ internal object EmbeddedTeamBattle {
         /** Sides deciding without any search, and whether the quick decider runs for them. */
         searchlessSides: Map<String, Boolean> = emptyMap(),
         /** Sides that price unpriced status moves in the engine (LocalNativeStatusValue); null leaves the brain's default. */
-        nativeStatusSides: Set<String>? = null): JsonObject {
+        nativeStatusSides: Set<String>? = null,
+        /** Choices played instead of the brain's, by turn then side ("move 1", "switch 2"); forced switches stay the brain's. */
+        scripted: Map<Int, Map<String, String>> = emptyMap()): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -58,6 +60,8 @@ internal object EmbeddedTeamBattle {
         // The last native evaluation per side, so the trace shows whether native search ran and why it did not.
         val nativeEvaluations = java.util.concurrent.ConcurrentHashMap<String, NativeInitialProductDecisionEvaluation>()
         val nativeWorkers = mutableListOf<EngineBranchWorker>()
+        // Each side's last decision broken down by stage, written into its trace row.
+        val stages = java.util.concurrent.ConcurrentHashMap<String, jbro.cobblemon.mcc.betterai.brain.LocalDecisionStages>()
         val brains = tunings.mapValues { (side, tuning) ->
             // The game leases a worker from the server's native runtime; a test has none, so each side owns one.
             val worker = EngineBranchWorker().also(nativeWorkers::add)
@@ -71,6 +75,7 @@ internal object EmbeddedTeamBattle {
                 quickDecider = searchlessSides[side] ?: true,
                 // The engine itself is borrowed through LocalEngineStopProbe.lease, which the caller sets.
                 nativeStatus = nativeStatusSides == null || side in nativeStatusSides,
+                stageTrace = { stages[side] = it },
                 nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
                 evaluator.evaluate(context, profile, localTuning, budget, sessionState, rules).also { evaluation ->
                     nativeEvaluations[side] = evaluation
@@ -158,6 +163,16 @@ internal object EmbeddedTeamBattle {
                             }.filter { it.kind == BattleActionKind.USE_MOVE }
                                 .associate { it.actionId to it.moveDetails?.effects }
                             effectAnnotatedCandidates += effects.values.count { it != null }
+                            val script = scripted[frame["turn"].asInt]?.get(side)
+                                ?.takeUnless { input.getAsJsonObject("request").has("forceSwitch") }
+                            if (script != null) {
+                                val chosen = context.candidates.singleOrNull { it.actionId == script }
+                                    ?: error("Scripted $side '$script' not offered on turn ${frame["turn"]}: ${context.candidates.map { it.actionId }}")
+                                memory.accept(context.state, chosen, null)
+                                choices.addProperty(side, script)
+                                return@forEach
+                            }
+                            stages.remove(side)
                             val decision = brains.getValue(side).decide(sessions.getValue(side), context)
                                 .toCompletableFuture().get(25, TimeUnit.SECONDS)
                             check(decision.requestId == context.requestId && context.candidates.any { it.actionId == decision.actionId })
@@ -173,9 +188,68 @@ internal object EmbeddedTeamBattle {
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))
                                 add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
+                                stages[side]?.let { add("stages", com.google.gson.Gson().toJsonTree(it)) }
+                                // What each candidate is, so a reader of the stages need not decode action ids.
+                                add("candidateMoves", JsonObject().apply { context.candidates.forEach { c ->
+                                    addProperty(c.actionId, c.moveId ?: c.switchPokemonId?.let { id ->
+                                        "switch:" + context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId } ?: c.kind.name)
+                                } })
+                                // The board as this side sees it: both actives' HP, status, stages.
+                                add("board", com.google.gson.JsonArray().apply { context.state.pokemon.filter { it.activeSlot != null }.forEach { p ->
+                                    add("${p.side}:${p.speciesId} hp=${"%.2f".format(p.hpFraction)} status=${p.statusId} stages=${p.statStages} moves=${p.knownMoveIds}")
+                                } })
                                 // Whether a pure self stat raise was on offer and taken (for the weight experiments).
                                 addProperty("setupOffered", context.candidates.any { jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(it) })
                                 addProperty("setupChosen", jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(selected))
+                                // Why each offered stat raise passed or failed the gate (empty array: passed).
+                                val setups = context.candidates.filter { jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(it) }
+                                if (setups.isNotEmpty()) {
+                                    val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context)
+                                    add("setupGate", JsonObject().apply { setups.forEach { setup ->
+                                        val verdict = jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.evaluate(setup, context, scores,
+                                            tier = profiles.getValue(side).difficulty.tier)
+                                        val user = context.state.pokemon.firstOrNull {
+                                            it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == setup.actorSlot && !it.fainted
+                                        }
+                                        val sweep = user?.let { scores.sweeps[it.battlePokemonId] }
+                                        add(setup.actionId, JsonObject().apply {
+                                            add("failures", com.google.gson.JsonArray().apply { verdict?.failures?.forEach(::add) })
+                                            addProperty("move", setup.moveId); addProperty("species", user?.speciesId)
+                                            sweep?.let {
+                                                addProperty("natural", it.naturalSweep); addProperty("boosted", it.boostedSweep)
+                                                it.windowSweep?.let { w -> addProperty("window", w) }
+                                                addProperty("setupMoveId", it.setupMoveId)
+                                                // Every stopping tool the gate reads per opponent on the field: declared, and played out in the engine.
+                                                if (user != null) add("stopTools", JsonObject().apply {
+                                                    context.state.pokemon.filter { foe -> foe.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && foe.activeSlot != null && !foe.fainted }.forEach { foe ->
+                                                        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+                                                        val declared = jbro.cobblemon.mcc.betterai.matchup.LocalStopScoreCalculator.score(context, foe, it, user, scores, cache)
+                                                        val played = jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.tools(context, profiles.getValue(side).difficulty.tier, user, foe,
+                                                            jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Opening.Move(setup), scores)
+                                                        val slots = context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty()
+                                                            .joinToString(",") { slot -> "${slot.moveId}:${slot.knowledge}" }
+                                                        addProperty(foe.speciesId, "declared=${declared?.tools?.map { t -> "${t.kind}:${t.moveId}:${"%.2f".format(t.value)}" }} " +
+                                                            "oneTime=${declared?.oneTimeSurvival} played=${played.map { t -> "${t.kind}:${t.moveId}:${"%.2f".format(t.value)}" }} " +
+                                                            "known=${foe.knownMoveIds} inferred=[$slots]")
+                                                    }
+                                                })
+                                                jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.score(setup, context, scores, tunings.getValue(side).knockoutMaterialScore)?.let { r ->
+                                                    addProperty("winAfterSetup", r.win); addProperty("sweepBonus", r.bonus); addProperty("setupValue", r.value)
+                                                }
+                                                // Why a boosted reading came out empty: per foe, surviving one setup turn and whether the pair could be set up.
+                                                if (it.setupMoveId == null && user != null) addProperty("nullDiag", context.state.pokemon
+                                                    .filter { foe -> foe.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && !foe.fainted && foe.hpFraction > 0.0 }
+                                                    .joinToString(" ") { foe ->
+                                                        val pair = scores.pokemon(user.battlePokemonId, foe.battlePokemonId)
+                                                        val faced = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.face(context, user, foe,
+                                                            jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()) != null
+                                                        val om = pair?.opponentMove
+                                                        "${foe.speciesId}(hp=${"%.2f".format(foe.hpFraction)}):myHp=${"%.2f".format(user.hpFraction)}:move=${om?.moveId}:dmg=${om?.let { m -> "%.2f-%.2f".format(m.minimumDamageFraction, m.maximumDamageFraction) }}:acc=${om?.accuracy}:survive1=${om?.survivalByUses?.getOrNull(1)?.let { s -> "%.2f".format(s) }}:faced=$faced"
+                                                    })
+                                            }
+                                        })
+                                    } })
+                                }
                                 nativeEvaluations[side]?.let { add("native", nativeTrace(it)) }
                             }.toString()).appendLine()
                             trace.flush()
