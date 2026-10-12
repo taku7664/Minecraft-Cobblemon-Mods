@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -18,8 +19,8 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * opponent's best expected hit of the category it covers (Aurora Veil both), over its turns after this one (5, 8 with
  * Light Clay) at [FADE] for the switches and knockouts that cut it short, less the generic value it already has.
  *
- * Aurora Veil fails without snow: it earns nothing and loses the generic value unless snow is up or comes this turn
- * (a Snow Warning Mega Evolution: Mega Froslass, Mega Abomasnow). A screen already up is left to the root's own
+ * Aurora Veil fails without snow: it earns nothing and loses the generic value unless snow is up or a Mega Evolution
+ * this turn brings it (the Mega's ability, read from its form: Snow Warning). A screen already up is left to the root's own
  * refresh penalty.
  */
 internal object LocalScreenCredit {
@@ -30,7 +31,6 @@ internal object LocalScreenCredit {
     ): Map<String, Double> {
         val state = context.state
         val up = state.field.sideConditions[BattleSide.ALLY].orEmpty().mapTo(hashSetOf()) { PublicIds.canonical(it.effectId) }
-        val snow = state.field.weather?.effectId?.let(PublicIds::canonical) in SNOW
         val foes = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         if (foes.isEmpty()) return emptyMap()
         val out = linkedMapOf<String, Double>()
@@ -44,7 +44,9 @@ internal object LocalScreenCredit {
                 val user = state.pokemon.firstOrNull {
                     it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted && it.hpFraction > 0.0
                 } ?: continue
-                if (screen == AURORA_VEIL && !snow && !snowOnMega(part, user)) {
+                // The weather as the move meets it: a Mega Evolution this turn has already set its ability's weather.
+                val weather = LocalMechanicActivationProjector.forMegaCandidate(context, BattleSide.ALLY, part).state.field.weather
+                if (screen == AURORA_VEIL && weather?.effectId?.let(PublicIds::canonical) !in SNOW) {
                     change -= GENERIC_STATUS_VALUE + FAILED_VALUE
                     continue
                 }
@@ -71,11 +73,6 @@ internal object LocalScreenCredit {
             }
         }
 
-    /** A Mega Evolution this turn whose Mega has Snow Warning: the snow is up before the move. */
-    fun snowOnMega(move: BattleActionCandidate, user: BattlePokemonStateView): Boolean =
-        move.mechanic?.mechanicId?.let(PublicIds::canonical) in MEGA &&
-            PublicIds.canonical(user.speciesId.substringAfter(':')) in SNOW_WARNING_MEGAS
-
     /** The foe's best expected hit on [user] among its moves of [categories], as a share of [user]'s maximum HP. */
     private fun bestHit(
         foe: BattlePokemonStateView,
@@ -99,8 +96,6 @@ internal object LocalScreenCredit {
     private const val AURORA_VEIL = "auroraveil"
     private val SCREENS = setOf(REFLECT, LIGHT_SCREEN, AURORA_VEIL)
     private val SNOW = setOf("snow", "snowscape", "hail")
-    private val MEGA = setOf("mega", "megaevolution")
-    private val SNOW_WARNING_MEGAS = setOf("froslass", "abomasnow")
     private const val LIGHT_CLAY = "lightclay"
     private const val TURNS = 5
     private const val CLAY_TURNS = 8

@@ -536,6 +536,9 @@ internal object LocalTacticalSituationalEvaluator {
         }
     }
 
+    private fun fieldAtMove(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide) =
+        jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate).state.field
+
     private fun requirementState(
         requirement: BattleMoveRequirementView,
         candidate: BattleActionCandidate,
@@ -545,17 +548,13 @@ internal object LocalTacticalSituationalEvaluator {
         val actor = actor(candidate, context, actingSide)
         val target = selectedOpponent(candidate, context, actingSide)
         return when (requirement.kind) {
+            // The field as the move meets it: a Mega Evolution this turn has already brought its ability's weather or
+            // terrain (Mega Froslass's snow before its Aurora Veil, Mega Charizard Y's sun before its Solar Beam).
             BattleMoveRequirementKind.WEATHER_ANY_OF -> knownMatch(
-                context.state.field.weather?.effectId,
+                fieldAtMove(candidate, context, actingSide).weather?.effectId,
                 requirement.acceptedValueIds,
-            ).let { state ->
-                // A Snow Warning Mega Evolution this turn brings the snow before the move (Mega Froslass's Aurora Veil).
-                val snowComes = state == RequirementState.UNSATISFIED && actor != null &&
-                    canonical(requirement.acceptedValueIds).any { it == "snow" || it == "hail" } &&
-                    jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.snowOnMega(candidate, actor)
-                if (snowComes) RequirementState.SATISFIED else state
-            }
-            BattleMoveRequirementKind.TERRAIN_PRESENT -> satisfied(context.state.field.terrain != null)
+            )
+            BattleMoveRequirementKind.TERRAIN_PRESENT -> satisfied(fieldAtMove(candidate, context, actingSide).terrain != null)
             BattleMoveRequirementKind.USER_STATUS_ANY_OF -> knownMatch(actor?.statusId, requirement.acceptedValueIds)
             BattleMoveRequirementKind.USER_STATUS_PRESENT -> actor?.let { satisfied(it.statusId != null) }
                 ?: RequirementState.UNKNOWN

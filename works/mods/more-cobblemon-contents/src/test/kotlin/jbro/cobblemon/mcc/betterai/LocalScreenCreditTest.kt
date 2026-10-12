@@ -11,7 +11,11 @@ import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -69,6 +73,43 @@ class LocalScreenCreditTest {
         val ranked = LocalBattleActionPolicy.rank(context.copy(candidates = context.candidates + reflect), null, profile)
         val rank = ranked.first { it.outcome.candidate.actionId == reflect.actionId }
         assertTrue(!rank.outcome.publiclyInert && rank.comparisonValue > 0.0, "reflect ${rank.comparisonValue}")
+    }
+
+    @Test
+    fun `Aurora Veil counts the snow a Mega Evolution brings from its form's ability`() {
+        // No species list: the Mega form carries its ability, and the Mega projection sets that ability's weather.
+        val dry = prepared("milotic-ferrothorn-switch-in")
+        val user = dry.state.pokemon.first { it.side == BattleSide.ALLY && it.activeSlot == 0 }
+        fun withMegaAbility(abilityId: String): BattleDecisionContext {
+            val form = BattlePokemonFormStateView("mega", user.knownTypeIds, requireNotNull(user.combatStats), abilityId)
+            val mega = BattlePokemonStateView(
+                battlePokemonId = user.battlePokemonId, side = user.side, activeSlot = user.activeSlot, speciesId = user.speciesId,
+                formId = user.formId, level = user.level, hpFraction = user.hpFraction, statusId = user.statusId,
+                statStages = user.statStages, knownMoveIds = user.knownMoveIds, knownAbilityId = user.knownAbilityId,
+                knownHeldItemId = user.knownHeldItemId, fainted = user.fainted, knownTypeIds = user.knownTypeIds,
+                combatStats = user.combatStats, knownFormStates = mapOf("mega" to form), actionConstraints = user.actionConstraints,
+                knownVolatileEffectIds = user.knownVolatileEffectIds, knownBaseStabTypeIds = user.knownBaseStabTypeIds,
+                knownBaseAbilityId = user.knownBaseAbilityId,
+            )
+            return dry.copy(state = dry.state.derive(pokemon = dry.state.pokemon.map { if (it.battlePokemonId == user.battlePokemonId) mega else it }))
+        }
+        val template = screen("auroraveil")
+        val veil = BattleActionCandidate(template.actionId, template.kind, template.actorSlot, template.moveSlot, "auroraveil",
+            mechanic = BattleMechanicCandidate("mega", null, null),
+            moveDetails = requireNotNull(template.moveDetails).copy(effects = MOVES.getValue("auroraveil")))
+        val profile = BattleTrainerProfile(skillLevel = 5, personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS)
+        fun read(context: BattleDecisionContext): Pair<Boolean, Double> {
+            val rank = LocalBattleActionPolicy.rank(context.copy(candidates = context.candidates + veil), null, profile)
+                .first { it.outcome.candidate.actionId == veil.actionId }
+            val credit = LocalScreenCredit.adjustments(listOf(veil), context, LocalMatchupScoreCalculator.calculate(context))[veil.actionId] ?: 0.0
+            return rank.outcome.publiclyInert to credit
+        }
+        val (snowInert, snowCredit) = read(withMegaAbility("snowwarning"))
+        val (sunInert, sunCredit) = read(withMegaAbility("drought"))
+        println("MEGA VEIL snowwarning inert=$snowInert credit=$snowCredit drought inert=$sunInert credit=$sunCredit")
+        assertTrue(!snowInert && snowCredit > 0.0, "Snow Warning Mega: inert=$snowInert credit=$snowCredit")
+        assertTrue(sunInert && sunCredit < 0.0, "Drought Mega brings no snow: inert=$sunInert credit=$sunCredit")
     }
 
     private fun screen(moveId: String) = BattleActionCandidate(
