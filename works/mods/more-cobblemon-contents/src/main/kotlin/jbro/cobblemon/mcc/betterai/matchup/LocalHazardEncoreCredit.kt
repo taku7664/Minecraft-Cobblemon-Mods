@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
 import java.util.UUID
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -23,12 +24,15 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * three opponents to come lost to a single 40% hit and Encore was never worth a turn. These rules replace that reading
  * (LocalNativeStatusValue leaves the moves priced here alone).
  *
- * Which moves these are is read by ID (Stealth Rock, Spikes, Encore): a mechanic branch, so hard-coded.
+ * Hazard moves are read from the move data (a side condition on the target's side that is a hazard); Ceaseless Edge and
+ * Stone Axe set theirs in a callback and are named, as is Encore: hard-coded.
  */
 internal object LocalHazardEncoreCredit {
-    /** Moves these rules price; the engine's status reading leaves them alone. */
+    /** Status moves these rules price; the engine's status reading leaves them alone. */
     fun prices(candidate: BattleActionCandidate): Boolean =
-        candidate.kind == BattleActionKind.USE_MOVE && candidate.moveId?.let(PublicIds::canonical) in PRICED
+        candidate.kind == BattleActionKind.USE_MOVE && (hazardOf(candidate) != null &&
+            candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
+            candidate.moveId?.let(PublicIds::canonical) == ENCORE)
 
     fun adjustments(
         candidates: List<BattleActionCandidate>,
@@ -41,9 +45,12 @@ internal object LocalHazardEncoreCredit {
             var change = 0.0
             for (part in parts) {
                 if (part.kind != BattleActionKind.USE_MOVE) continue
-                when (part.moveId?.let(PublicIds::canonical)) {
-                    in HAZARDS -> hazard(part, context, scores)?.let { change += it - GENERIC_STATUS_VALUE }
-                    ENCORE -> change += encore(part, context, scores) - GENERIC_STATUS_VALUE
+                // A status move already holds the generic status value; an attack keeps its own value and the layer adds.
+                val held = if (part.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) GENERIC_STATUS_VALUE else 0.0
+                val hazard = hazardOf(part)
+                when {
+                    hazard != null -> hazard(hazard, context, scores)?.let { change += it - held }
+                    part.moveId?.let(PublicIds::canonical) == ENCORE -> change += encore(part, context, scores) - held
                 }
             }
             if (change != 0.0) out[candidate.actionId] = change
@@ -51,14 +58,25 @@ internal object LocalHazardEncoreCredit {
         return out
     }
 
+    /** The hazard this move lays on the opponent's side: declared by its data, else set in a callback (named). */
+    private fun hazardOf(move: BattleActionCandidate): String? {
+        move.moveDetails?.effects?.effects.orEmpty().firstNotNullOfOrNull { effect ->
+            effect.valueId?.let(PublicIds::canonical)?.takeIf {
+                effect.kind == BattleMoveEffectKind.SIDE_CONDITION && effect.target == BattleMoveEffectTarget.TARGET_SIDE &&
+                    it in MAX_LAYERS
+            }
+        }?.let { return it }
+        return CALLBACK_HAZARDS[move.moveId?.let(PublicIds::canonical)]
+    }
+
     /**
-     * A hazard layer: every opponent left loses its entry ([PublicSwitchEntryHazardCalculator], the game's fractions),
-     * weighted up by how well it sweeps this side ([SweepScore.score]), plus a share for each opponent left. Nothing
-     * when only the Pokemon in front is left or the layer would not stack. A revealed hazard remover halves it.
+     * A hazard layer: what every opponent left loses on entry, weighted up by how well it sweeps this side
+     * ([SweepScore.score]), times a tenth more for each opponent past the first. HP hazards take the game's fractions
+     * ([PublicSwitchEntryHazardCalculator]); Toxic Spikes the status it leaves; Sticky Web a flat share. Nothing when only
+     * the Pokemon in front is left (it cannot switch) or the layer would not stack. A revealed hazard remover halves it.
      */
-    private fun hazard(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double? {
+    private fun hazard(id: String, context: BattleDecisionContext, scores: MatchupScores): Double? {
         val state = context.state
-        val id = move.moveId?.let(PublicIds::canonical) ?: return null
         val current = state.field.sideConditions.getValue(BattleSide.OPPONENT)
         val stacks = current.firstOrNull { PublicIds.canonical(it.effectId) == id }?.stacks ?: 0
         if (stacks >= (MAX_LAYERS[id] ?: 1)) return null
@@ -68,36 +86,47 @@ internal object LocalHazardEncoreCredit {
         val withLayer = BattleFieldStateView(state.field.weather, state.field.terrain, state.field.roomEffects, state.field.globalEffects,
             state.field.sideConditions + (BattleSide.OPPONENT to (current.filter { PublicIds.canonical(it.effectId) != id } +
                 BattleTimedEffectView(id, null, stacks = stacks + 1))))
-        fun gain(pokemon: BattlePokemonStateView): Double {
-            val before = PublicSwitchEntryHazardCalculator.hpLoss(state.field, BattleSide.OPPONENT, pokemon) ?: 0.0
-            val after = PublicSwitchEntryHazardCalculator.hpLoss(withLayer, BattleSide.OPPONENT, pokemon) ?: NEUTRAL_ENTRY
-            return (after - before).coerceAtLeast(0.0)
+        fun entry(pokemon: BattlePokemonStateView): Double = when (id) {
+            TOXIC_SPIKES -> if (!grounded(pokemon) || pokemon.statusId != null ||
+                pokemon.knownTypeIds.any { PublicIds.canonical(it) in TOXIC_IMMUNE_TYPES }) 0.0
+                else if (stacks + 1 >= 2) BADLY_POISONED_VALUE - (if (stacks >= 1) POISONED_VALUE else 0.0) else POISONED_VALUE
+            STICKY_WEB -> if (grounded(pokemon)) STICKY_WEB_VALUE else 0.0
+            else -> {
+                val before = PublicSwitchEntryHazardCalculator.hpLoss(state.field, BattleSide.OPPONENT, pokemon) ?: 0.0
+                val after = PublicSwitchEntryHazardCalculator.hpLoss(withLayer, BattleSide.OPPONENT, pokemon) ?: NEUTRAL_ENTRY
+                (after - before).coerceAtLeast(0.0)
+            }
         }
         val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
         val threats = seen.associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
         val meanThreat = threats.values.takeIf { it.isNotEmpty() }?.average() ?: UNSEEN_THREAT
-        var value = seen.sumOf { foe -> gain(foe) * (1.0 + THREAT_WEIGHT * (threats[foe.battlePokemonId] ?: 0.0)) }
+        var value = seen.sumOf { foe -> entry(foe) * (1.0 + THREAT_WEIGHT * (threats[foe.battlePokemonId] ?: 0.0)) }
         // The rest of the team, not seen yet: the preview's unseen Pokemon on average, else a neutral entry.
         val unseen = (remaining - seen.size).coerceAtLeast(0)
         if (unseen > 0) {
             val seenSpecies = state.pokemon.filter { it.side == BattleSide.OPPONENT }.map { PublicIds.canonical(it.speciesId) }.toSet()
-            val previewGains = context.opponentTeamPreview?.pokemon.orEmpty()
+            val previewEntries = context.opponentTeamPreview?.pokemon.orEmpty()
                 .filter { PublicIds.canonical(it.speciesId) !in seenSpecies && it.knownTypeIds.isNotEmpty() }
                 .map { slot ->
-                    gain(BattlePokemonStateView(UUID.nameUUIDFromBytes("preview:${slot.previewSlotId}".toByteArray()),
+                    entry(BattlePokemonStateView(UUID.nameUUIDFromBytes("preview:${slot.previewSlotId}".toByteArray()),
                         BattleSide.OPPONENT, null, slot.speciesId, slot.formId, slot.level, 1.0, null, emptyMap(), emptySet(),
                         null, null, false, slot.knownTypeIds))
                 }
-            val perUnseen = previewGains.takeIf { it.isNotEmpty() }?.average() ?: NEUTRAL_ENTRY
+            val perUnseen = previewEntries.takeIf { it.isNotEmpty() }?.average() ?: NEUTRAL_ENTRY
             value += unseen * perUnseen * (1.0 + THREAT_WEIGHT * meanThreat)
         }
         val removerShown = seen.any { foe ->
             context.publicActionCatalog.forPokemon(foe.battlePokemonId).any { PublicIds.canonical(it.moveId) in HAZARD_REMOVAL } ||
                 foe.knownMoveIds.any { PublicIds.canonical(it) in HAZARD_REMOVAL }
         }
-        val total = value * BOARD_TO_SCORE + COUNT_BONUS * remaining
+        val total = value * BOARD_TO_SCORE * (1.0 + COUNT_SHARE * (remaining - 1))
         return if (removerShown) total * REMOVER_DISCOUNT else total
     }
+
+    private fun grounded(pokemon: BattlePokemonStateView): Boolean =
+        pokemon.knownTypeIds.none { PublicIds.canonical(it) == "flying" } &&
+            pokemon.knownAbilityId?.let(PublicIds::canonical) != "levitate" &&
+            pokemon.knownHeldItemId?.let(PublicIds::canonical) != "airballoon"
 
     /**
      * Encore locks the target into its last move. Worth the turns of that lock when the move does not hurt this side
@@ -122,15 +151,29 @@ internal object LocalHazardEncoreCredit {
                 effect.statStages.values.any { it > 0 }
         }
         if (raisesItself) return AVOIDED
+        // Only a user that moves first locks the move just seen; a slower one locks whatever the target uses this turn.
+        // Below even odds it is avoided; above, the lock's worth is weighed by the chance it moves first.
+        val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, move.actorSlot, move, opponentPriority = 0)
+            ?: return AVOIDED
+        if (first < 0.5) return AVOIDED
         val hit = scores.moves(user.battlePokemonId, target.battlePokemonId)
             .maxOfOrNull { (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy } ?: 0.0
-        return hit * ENCORE_TURNS * BOARD_TO_SCORE
+        return first * hit * ENCORE_TURNS * BOARD_TO_SCORE
     }
 
     private const val ENCORE = "encore"
-    private val HAZARDS = setOf("stealthrock", "spikes")
-    private val PRICED = HAZARDS + ENCORE
-    private val MAX_LAYERS = mapOf("stealthrock" to 1, "spikes" to 3)
+    private const val TOXIC_SPIKES = "toxicspikes"
+    private const val STICKY_WEB = "stickyweb"
+    /** Hazards a layer of which this rule prices, with how many layers stack. */
+    private val MAX_LAYERS = mapOf("stealthrock" to 1, "spikes" to 3, TOXIC_SPIKES to 2, STICKY_WEB to 1, "gmaxsteelsurge" to 1)
+    /** Attacks that lay a hazard from a callback the move data does not declare (named: hard-coded). */
+    private val CALLBACK_HAZARDS = mapOf("ceaselessedge" to "spikes", "stoneaxe" to "stealthrock")
+    private val TOXIC_IMMUNE_TYPES = setOf("poison", "steel")
+    /** Status burdens as the leaf weighs them (LocalImmediateTurnScorer.statusBurden). */
+    private const val POISONED_VALUE = 0.20
+    private const val BADLY_POISONED_VALUE = 0.35
+    /** A Speed stage lost on entry, as the leaf's flat hazard share. */
+    private const val STICKY_WEB_VALUE = 0.10
     /** Moves that clear hazards (the same set LocalIdleUtilityMoveRules reads). */
     private val HAZARD_REMOVAL = setOf("defog", "rapidspin", "mortalspin", "tidyup", "courtchange")
     /** Board value (one HP bar) to the root's units. */
@@ -141,8 +184,8 @@ internal object LocalHazardEncoreCredit {
     private const val THREAT_WEIGHT = 1.0
     /** The sweep reading for opponents not seen yet when none has been seen. */
     private const val UNSEEN_THREAT = 0.5
-    /** Root points per opponent left: each is another entry to come. */
-    private const val COUNT_BONUS = 5.0
+    /** A tenth more for each opponent left past the first: more entries to come. */
+    private const val COUNT_SHARE = 0.1
     /** A revealed remover can take the hazard away. */
     private const val REMOVER_DISCOUNT = 0.5
     /** Turns Encore locks its target after this one. */

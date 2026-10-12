@@ -184,7 +184,9 @@ internal object LocalQuickDecider {
             val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
             return if (win != null && win < SETUP_WIN) Verdict(strongest, "unsafe_setup") else null
         }
-        statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
+        // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit
+        // when the exchange is won without it; hazards, Encore and the rest are priced by their own rules (2026-10-12).
+        if (debuffs(chosenMove)) statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
         return null
     }
 
@@ -249,6 +251,16 @@ internal object LocalQuickDecider {
         read.filter { (_, matchup) -> (matchup.subjectMove?.knockoutChanceWithin(1) ?: 0.0) * matchup.subjectMovesFirstProbability >= KNOCKOUT }
             .maxByOrNull { it.second.score }?.let { return Verdict(it.first, "replace_revenge") }
         return Verdict(read.maxBy { (_, matchup) -> matchup.score + OFFENSE * (matchup.subjectMove?.score ?: 0.0) }.first, "replace_matchup")
+    }
+
+    /** Whether a status move only weakens its target: a status condition or a stat drop on it, read from its data. */
+    private fun debuffs(move: BattleActionCandidate): Boolean {
+        val effects = move.moveDetails?.effects?.effects.orEmpty()
+        return effects.isNotEmpty() && effects.all { effect ->
+            effect.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET && (
+                effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STATUS ||
+                    effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STAT_STAGE && effect.statStages.values.all { it < 0 })
+        }
     }
 
     private fun transformsMove(move: BattleActionCandidate): Boolean =
