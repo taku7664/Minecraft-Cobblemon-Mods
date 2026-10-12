@@ -2,6 +2,6 @@
   "required": true,
   "package": "jbro.cobblemon.toitem.mixin.client",
   "compatibilityLevel": "JAVA_21",
-  "client": ["InventoryScreenMixin", "GuiGraphicsMixin"],
+  "client": ["InventoryScreenMixin", "GuiGraphicsMixin", "ContainerScreenMixin"],
   "injectors": {"defaultRequire": 1}
 }
