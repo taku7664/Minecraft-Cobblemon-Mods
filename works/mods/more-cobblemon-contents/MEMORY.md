@@ -10,7 +10,9 @@
 - **증상(운영, 10-12 20:55 PPakemon 클라 로그)**: PvP 승패 메시지와 라운지 → 마이룸 이동 직후 `Battle music: PVP keys=[] -> battle.pvp`가 새로 찍히고, 플레이어는 "전투중", 포켓몬 표시와 BGM이 계속 남음.
 - **원인**: Cobblemon `PokemonBattle.end()`는 `BattleEndPacket`을 보낸 뒤 `closeBattle`을 부른다(1.8.1 바이트코드로 확인). 클라 `BattleEndHandlerSceneMixin`은 마무리 대사를 기다리려고 그 처리를 `BattleSceneClient.heldEnd`에 최대 0.5초 보류한다. PvP는 같은 틱 종료 핸들러에서 선수를 라운지 밖으로 텔레포트해 클라에 `AFTER_CLIENT_WORLD_CHANGE` → `MccClientSessionReset`이 걸리고, 리셋 콜백이 `heldEnd = null`로 **실행하지 않고 버렸다**. 그래서 `CobblemonClient.endBattle()`이 끝내 불리지 않아 클라 배틀(음악 모드가 보는 상태)이 남았다.
 - **수정**: 리셋 때 보류한 종료를 버리지 않고 `releaseEnd()`로 바로 끝낸다. 차원을 옮기며 끝나는 다른 관리 배틀(타워·팩토리 등)도 같은 경로라 함께 고쳐진다.
-- **미확인**: 사용자 규칙(요청 시에만 빌드)에 따라 빌드·테스트·배포·실게임 확인을 하지 않았다. 클라 JAR만 바뀌므로 개발·운영 클라이언트(PPakemon 포함)에 MCC JAR을 배치해야 반영된다.
+- **개발 배포(사용자 요청 "개발만")**: 공유 트리에 다른 세션의 미커밋 Better AI 변경이 있어 `main` `3712f247`을 `git archive`로 `F:/AI/build/mcc-battle-end-20261013/src`에 꺼내 F 드라이브 경로로 `:more-cobblemon-contents:build -x unitTest` 성공. JDK 21 `jar --validate`·ZIP CRC 통과, 리셋 람다가 `releaseEnd()`를 부르는 것을 바이트코드로 확인, 테스트 클래스 미포함. 같은 JAR(SHA-256 `f820d9f9…`)을 `develop-product/server/mods`·`develop-product/client/mods`에 배치, 세 해시 일치·`.deploying` 잔여물 없음. 배치 전 25565/25566 리스너 없음, 켜져 있던 게임은 PPakemon 프로필뿐(개발 클라 아님). 이전 JAR(`e0fc5d06…`)은 `develop-product/deployment-backups/20261013-mcc-battle-end-held/{server,client}`.
+- **호환성**: 이전 배치(10-12 20:21) 이후 코어 변경은 Better AI 내부와 이번 수정뿐이라 애드온 JAR은 그대로 뒀다. 새 코어에 `main`의 Better AI 커밋 `7dd77a79`·`d0f679c9`·`c2e7f610`도 함께 들어갔다.
+- **미확인**: 단위 테스트는 돌리지 않았다. 서버를 켜지 않았고 실게임 PvP 종료 확인도 안 했다. PPakemon·`deploy-product`·운영 서버에는 배치하지 않았다(운영 플레이어에게는 아직 버그가 남아 있다).
 
 ## [2026-10-12 23:50] 실게임 로그로 찾은 다단히트 KO·디버프 값 버그
 
