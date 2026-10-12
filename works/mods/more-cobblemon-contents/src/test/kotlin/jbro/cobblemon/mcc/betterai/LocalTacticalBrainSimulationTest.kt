@@ -1488,6 +1488,8 @@ class LocalTacticalBrainSimulationTest {
             id = "add_spikes_layer",
             effectId = "spikes",
             target = BattleMoveEffectTarget.TARGET_SIDE,
+            // As the move data declares it (`effectState.layers >= 3`); undeclared reads as one layer.
+            maximumStacks = 3,
         )
         val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
 
@@ -1496,6 +1498,8 @@ class LocalTacticalBrainSimulationTest {
             decide(
                 candidates = listOf(spikes, chip),
                 field = sideConditionField(BattleSide.OPPONENT, "spikes", stacks = 1),
+                // Two opponents still to come in: only the layer count decides, not an empty bench.
+                opponentUnseenBench = 2,
             ).actionId,
         )
     }
@@ -1685,6 +1689,8 @@ class LocalTacticalBrainSimulationTest {
             decide(
                 candidates = listOf(spikes, chip),
                 field = sideConditionField(BattleSide.OPPONENT, "spikes", stacks = 2),
+                // Two opponents still to come in: only the layer count decides, not an empty bench.
+                opponentUnseenBench = 2,
             ).actionId,
         )
         assertEquals(
@@ -1692,6 +1698,8 @@ class LocalTacticalBrainSimulationTest {
             decide(
                 candidates = listOf(spikes, chip),
                 field = sideConditionField(BattleSide.OPPONENT, "spikes", stacks = 3),
+                // Two opponents still to come in: only the layer count decides, not an empty bench.
+                opponentUnseenBench = 2,
             ).actionId,
         )
     }
@@ -1710,6 +1718,8 @@ class LocalTacticalBrainSimulationTest {
             decide(
                 candidates = listOf(stickyWeb, chip),
                 field = sideConditionField(BattleSide.OPPONENT, "stickyweb", stacks = 1),
+                // Two opponents still to come in: only the layer count decides, not an empty bench.
+                opponentUnseenBench = 2,
             ).actionId,
         )
     }
@@ -2061,11 +2071,12 @@ class LocalTacticalBrainSimulationTest {
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
         selectedSession: BattleBrainSession = session,
         publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
+        opponentUnseenBench: Int = 0,
     ) = brain.decide(selectedSession, contextOf(
         candidates, turn, allyPokemonId, allyHp, opponentHp, opponentPokemonId, allyTypes,
         opponentTypes, format, allyPartnerTypes, allyPartnerHp, opponentPartnerTypes,
         opponentPartnerHp, opponentStatusId, allyAbilityId, opponentAbilityId, allyStatusId,
-        allyStatStages, field, observedEvents, inferences, allyBench, memory, publicActionCatalog,
+        allyStatStages, field, observedEvents, inferences, allyBench, memory, publicActionCatalog, opponentUnseenBench,
     )).toCompletableFuture().join()
 
     /** Same context [decide] builds, exposed so a decision can be inspected instead of only executed. */
@@ -2094,6 +2105,8 @@ class LocalTacticalBrainSimulationTest {
         allyBench: Map<UUID, BenchPokemon> = emptyMap(),
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
         publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
+        /** Opponents still in the team but not seen yet: counted as remaining, absent from [BattleStateView.pokemon]. */
+        opponentUnseenBench: Int = 0,
     ) = BattleDecisionContext(
         requestId = UUID.randomUUID(),
         state = state(
@@ -2118,6 +2131,7 @@ class LocalTacticalBrainSimulationTest {
                 observedEvents,
                 inferences,
                 allyBench,
+                opponentUnseenBench,
             ),
             candidates = candidates,
             deadlineEpochMillis = Long.MAX_VALUE,
@@ -2395,6 +2409,7 @@ class LocalTacticalBrainSimulationTest {
         observedEvents: List<BattleObservedEventView>,
         inferences: List<BattleInferenceView>,
         allyBench: Map<UUID, BenchPokemon>,
+        opponentUnseenBench: Int = 0,
     ): BattleStateView {
         val ally = pokemon(
             BattleSide.ALLY,
@@ -2437,7 +2452,8 @@ class LocalTacticalBrainSimulationTest {
             pokemon = pokemon,
             field = field,
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
-                pokemon.count { it.side == side && !it.fainted }
+                pokemon.count { it.side == side && !it.fainted } +
+                    if (side == BattleSide.OPPONENT) opponentUnseenBench else 0
             },
             observedEvents = observedEvents,
             inferences = inferences,

@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-13 00:10] 압정 겹수 테스트 2개 실패 원인: 픽스처 (코드는 그대로)
+
+- **증상**: `LocalTacticalBrainSimulationTest`의 `stacking side conditions stop at their declared maximum`, `stackable opponent side condition can still add another layer`가 `add_spikes_layer` 대신 `small_damage`를 골랐다(10-12부터 `main`에서 실패).
+- **처음 가설은 틀림**: `LocalHazardEncoreCredit`(장판 값 × (남은 상대 − 1))이 아니다. 테스트 세션은 기본 `balanced()` 프로필 = 입문 등급이라 `rulesApply`(상급·보스만)가 꺼져 크레딧이 돌지 않는다.
+- **실제 원인**: 같은 시각 커밋 `fa5e9ee9`의 `LocalSideConditionFutility`가 두 가지로 장판을 실패 기술(publicly inert)로 처리했다.
+  1. 테스트 `state()`가 상대를 필드 위 한 마리만 두어 `remainingPokemonBySide` = 1 → 들어올 상대 없음. 실제 게임에서도 이때 압정은 실패하므로 코드가 맞다.
+  2. `stackable…` 픽스처의 압정에 최대 겹수 선언(`amountRange`)이 없어 1겹으로 읽혔다. 실제 기술 데이터는 Showdown 조건의 `effectState.layers >= 3`을 파싱해 선언한다(`BattleDeclarativeMoveEffects.kt` `MAXIMUM_LAYERS_PATTERN`).
+- **수정(테스트만)**: `decide`/`contextOf`/`state`에 `opponentUnseenBench`(안 본 상대 수, 남은 수에만 더함)를 추가하고, 겹수 테스트 3개(끈적끈적네트 포함: 전에는 상대 수 때문에 우연히 통과)에 2를 넣었다. `stackable…` 압정에 `maximumStacks = 3`을 넣었다. 이름 하드코딩 없음.
+- **남은 불일치(미수정)**: 기존 `LocalSideConditionRules.maximumStacks`는 선언이 없을 때 알려진 표(압정 3, 독압정 2)를 쓰고, `LocalSideConditionFutility`는 선언만 본다(없으면 1). 실제 데이터에선 차이가 없지만 선언 없는 기술에선 두 규칙이 갈린다.
+- **검증**: F 경로 지정 Gradle로 `LocalTacticalBrainSimulationTest|LocalHazardSwitchAvailabilityTest|PublicSwitchEntryHazardCalculatorTest` 84개 통과. 빌드·배포 안 함.
+
 ## [2026-10-13 00:40] 배틀 종료 경로 재점검 (PvP 종료 버그 후속)
 
 - **계기**: PvP 종료 버그가 10-11 PvP 점검에서 빠졌다. 그 점검은 PvP 애드온 안쪽만 봤고, 원인은 MCC 본체 클라 리셋이었다. 이번엔 모든 모드에서 Cobblemon 배틀 패킷에 끼어드는 믹스인, 패킷 보류·재생 로직, `MccClientSessionReset` 콜백 전체(10개), 서버의 직접 `closeBattle` 경로를 범위로 잡았다.
