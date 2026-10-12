@@ -67,20 +67,10 @@ internal object EmbeddedTeamBattle {
                 reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) },
                     fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
-            val statusPlanner = jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner(
-                worldLimit = { _, _ -> jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.WORLDS })
-            val statusEvaluator = NativeInitialProductDecisionEvaluator(statusPlanner::plan, statusPlanner::planMidBattle, statusPlanner::planLive,
-                searchWorlds = jbro.cobblemon.mcc.betterai.search.NativeInformationSetSearch(lease = { _, action -> action(worker) })::search)
-            val statusSource = jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.Source { c, p, t, b, r ->
-                statusEvaluator.evaluate(c, p, t, b, rules = r)
-            }
             LocalTacticalBrain(tuning = tuning, searchless = side in searchlessSides,
                 quickDecider = searchlessSides[side] ?: true,
-                nativeStatusSource = when {
-                    nativeStatusSides == null -> jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.DEFAULT_SOURCE
-                    side in nativeStatusSides -> statusSource
-                    else -> null
-                },
+                // The engine itself is borrowed through LocalEngineStopProbe.lease, which the caller sets.
+                nativeStatus = nativeStatusSides == null || side in nativeStatusSides,
                 nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
                 evaluator.evaluate(context, profile, localTuning, budget, sessionState, rules).also { evaluation ->
                     nativeEvaluations[side] = evaluation

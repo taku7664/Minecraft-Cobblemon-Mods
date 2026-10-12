@@ -244,6 +244,12 @@ internal data class LocalDecisionTuning(
      * the Pokemon in front; zero prices stages by that pressure alone.
      */
     val leafPersistentStageValue: Double = 0.0,
+    /**
+     * How much of an engine-priced status move's value weighs the opponent's replies by their predicted chance; the
+     * rest is the worst reply. Only the worst read every reply as the one that hurts most, often a switch-out that
+     * drops the opponent's own stages, so wiping them was worth nothing (LocalEngineTurnReadout).
+     */
+    val statusReplyExpectation: Double = 0.7,
     /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
     val leafDuelValue: Double = 0.0,
     /**
@@ -510,6 +516,7 @@ internal data class LocalDecisionTuning(
         require(expectedMoveBestTieTolerance.isFinite() && expectedMoveBestTieTolerance >= 0.0)
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
+        require(statusReplyExpectation in 0.0..1.0)
         require(leafTeamCoverageWeight.isFinite() && leafTeamCoverageWeight >= 0.0)
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
         require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)

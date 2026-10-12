@@ -138,10 +138,9 @@ internal class LocalTacticalBrain(
     private val quickDecider: Boolean = true,
     /**
      * With [searchless], singles at every tier play the status moves the ranking cannot price out in the
-     * native engine ([jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue]); null leaves them at the generic value.
+     * native engine ([jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue]); false leaves them at the generic value.
      */
-    private val nativeStatusSource: jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.Source? =
-        jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.DEFAULT_SOURCE,
+    private val nativeStatus: Boolean = true,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -531,11 +530,9 @@ internal class LocalTacticalBrain(
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
-        val nativeStatus = if (!searchless || difficultyContext.state.format != BattleFormat.SINGLE) null
-            else nativeStatusSource?.let { source ->
-                jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning, source)
-            }
-        val nativeStatusAdjustments = nativeStatus?.adjustments.orEmpty()
+        val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null
+            else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
+        val nativeStatusAdjustments = statusPricing?.adjustments.orEmpty()
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
         // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
@@ -677,7 +674,7 @@ internal class LocalTacticalBrain(
                      ))
                     quick?.let { add("quick_${it.reason}") }
                     if (twin != null) add("mechanic_twin")
-                    nativeStatus?.let {
+                    statusPricing?.let {
                         add("native_status_${it.status}")
                         add("native_status_ms_${it.elapsedMillis}")
                         if (it.plies > 0) add("native_status_plies_${it.plies}")

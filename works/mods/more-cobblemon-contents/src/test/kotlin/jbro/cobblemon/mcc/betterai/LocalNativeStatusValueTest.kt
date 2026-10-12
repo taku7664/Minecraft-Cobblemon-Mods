@@ -39,24 +39,24 @@ class LocalNativeStatusValueTest {
             override fun <T> withWorker(deadlineNanos: Long, action: (jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker) -> T): T? = action(worker)
         }
     }
-    private val planner = NativeInitialProductWorldPlanner(worldLimit = { _, _ -> LocalNativeStatusValue.WORLDS })
-    private val evaluator = NativeInitialProductDecisionEvaluator(planner::plan, planner::planMidBattle, planner::planLive,
-        searchWorlds = NativeInformationSetSearch(lease = { _, action -> action(worker) })::search)
     private val profile = BattleTrainerProfile(skillLevel = 5, personality = BattleTrainerProfile.champion().personality,
         difficulty = BattleDifficultyProfiles.BOSS)
 
     @Test
-    fun `Haze that only wipes this side's boosts goes under every failing action, and wiping a big boost is worth it`() {
+    fun `Haze that only wipes this side's boosts goes under every failing action, and wiping a big boost is worth more`() {
         // Only Milotic boosted: Haze takes its stages and gives nothing, whatever Ferrothorn does. It goes under the
         // level of a move that fails publicly, so it never wins a position where everything else is bad too.
         val selfBoosted = haze { mon(it, BattleSide.ALLY) { p -> p.copyState(statStages = mapOf("spa" to 2, "spd" to 2)) } }
+        // Ferrothorn is burned here, so even +6 Attack does not knock Milotic out: Haze is worth more than with no
+        // boost, not necessarily more than Ice Beam.
+        val plain = haze { it }
         val foeBoosted = haze { mon(it, BattleSide.OPPONENT) { p -> p.copyState(statStages = mapOf("attack" to 6)) } }
-        println("NATIVE STATUS haze: self boosted $selfBoosted foe +6 $foeBoosted")
+        println("NATIVE STATUS haze: self boosted $selfBoosted plain $plain foe +6 $foeBoosted")
         assertEquals("priced", selfBoosted.status)
         assertTrue("haze" in selfBoosted.selfHarm, selfBoosted.toString())
         assertTrue(selfBoosted.hazeValue < jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy.PUBLICLY_INERT_TIER_ADJUSTMENT, selfBoosted.toString())
         assertTrue("haze" !in foeBoosted.selfHarm, foeBoosted.toString())
-        assertTrue(foeBoosted.gap > 0.0, "Haze on a +6 opponent: $foeBoosted")
+        assertTrue(foeBoosted.gap > plain.gap + 10.0, "Haze on a +6 opponent against none: $foeBoosted vs $plain")
     }
 
     @Test
@@ -65,7 +65,8 @@ class LocalNativeStatusValueTest {
         // ones are what Haze really takes. Neither case is self-harm: Ferrothorn's Attack stages go too.
         val both = reading(mapOf("spa" to 2), mapOf("attack" to 2))
         val ourUseless = reading(mapOf("spd" to 2), mapOf("attack" to 2))
-        println("NATIVE STATUS haze both=$both ourUseless=$ourUseless")
+        val theirUseless = reading(mapOf("spa" to 2), mapOf("special_attack" to 2))
+        println("NATIVE STATUS haze both=$both ourUseless=$ourUseless theirUseless=$theirUseless")
         for (case in listOf(both, ourUseless)) assertTrue("haze" !in case.selfHarm, case.toString())
         assertTrue(ourUseless.gap > both.gap, "losing a useless Special Defence costs less: $ourUseless vs $both")
     }
@@ -107,8 +108,7 @@ class LocalNativeStatusValueTest {
         })
         fun gap(maxPlies: Int): Pair<Int, Double> {
             val (context, ranked) = prepared(swapped)
-            val result = requireNotNull(LocalNativeStatusValue.adjustments(ranked, context, profile, LocalDecisionTuning.CURRENT,
-                { c, p, t, b, r -> evaluator.evaluate(c, p, t, b, rules = r) }, maxPlies = maxPlies))
+            val result = requireNotNull(LocalNativeStatusValue.adjustments(ranked, context, profile, LocalDecisionTuning.CURRENT, maxPlies = maxPlies))
             assertEquals("priced", result.status)
             val values = ranked.associate { it.outcome.candidate.actionId to it.comparisonValue + (result.adjustments[it.outcome.candidate.actionId] ?: 0.0) }
             val best = ranked.filter { it.outcome.candidate.actionId != sub.actionId && it.decisionTier > 1 }.maxOf { values.getValue(it.outcome.candidate.actionId) }
@@ -134,10 +134,13 @@ class LocalNativeStatusValueTest {
             LocalOpponentMoveUsage.forFormat(twisted.state.format)))
         val context = PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
         val ranked = LocalBattleActionPolicy.rank(context, null, profile)
-        val result = requireNotNull(LocalNativeStatusValue.adjustments(ranked, context, profile, LocalDecisionTuning.CURRENT,
-            { c, p, t, b, r -> evaluator.evaluate(c, p, t, b, rules = r) }, maxPlies = maxPlies))
+        val intents = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor.predict(context,
+            jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context), scoredSwitches = true)
+        println("NATIVE STATUS intents " + intents.map { it.byAction().entries.sortedByDescending { e -> e.value }.joinToString { e -> "${e.key.take(14)}=%.2f".format(e.value) } })
+        val result = requireNotNull(LocalNativeStatusValue.adjustments(ranked, context, profile, LocalDecisionTuning.CURRENT, maxPlies = maxPlies))
         fun final(moveId: String) = ranked.first { it.outcome.candidate.moveId == moveId && it.outcome.candidate.mechanic == null }
             .let { it.comparisonValue + (result.adjustments[it.outcome.candidate.actionId] ?: 0.0) }
+        println("NATIVE STATUS elapsed ${result.elapsedMillis} ms plies ${result.plies}")
         return HazeReading(result.status, final("haze"), final("haze") - final("icebeam"), result.selfHarm, result.plies)
     }
 
