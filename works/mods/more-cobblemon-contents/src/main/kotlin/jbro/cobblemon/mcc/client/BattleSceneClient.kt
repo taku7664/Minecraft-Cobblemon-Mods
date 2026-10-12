@@ -43,7 +43,9 @@ object BattleSceneClient {
         ClientTickEvents.END_CLIENT_TICK.register { _ -> tick() }
         MccClientSessionReset.onReset("battle scene") {
             pending = null
-            heldEnd = null
+            // A battle that teleports its players out (a PvP lounge) changes world inside the grace wait: dropping the
+            // held end there left Cobblemon's client battle, and its music, running for good.
+            releaseEnd()
             SceneDialogue.stop()
         }
     }
@@ -58,6 +60,13 @@ object BattleSceneClient {
         heldEnd = replay
         heldSince = Util.getMillis()
         return true
+    }
+
+    /** A new battle is opening: the last one's held end finishes now, before it could close the new one. */
+    @JvmStatic
+    fun finishHeldEnd() {
+        if (replaying) return
+        releaseEnd()
     }
 
     private fun tick() {

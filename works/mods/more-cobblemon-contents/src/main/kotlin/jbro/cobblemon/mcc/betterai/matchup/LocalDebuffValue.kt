@@ -42,7 +42,8 @@ internal object LocalDebuffValue {
 
     /**
      * The target's mean exchange score now and with the debuff landed, the rest of the board as it is. Null when it is no
-     * debuff, no opponent is in front, or no exchange can be read for it. A status on a target that already has one adds nothing.
+     * debuff, no opponent is in front, its status is one the exchange does not play, or no exchange can be read for it.
+     * A status on a target that already has one adds nothing.
      */
     fun read(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores, recovery: Boolean = false): Reading? {
         if (!isDebuff(move)) return null
@@ -55,6 +56,10 @@ internal object LocalDebuffValue {
         val before = exchange(scores) ?: return null
         val effects = move.moveDetails?.effects?.effects.orEmpty()
         val status = effects.firstNotNullOfOrNull { effect -> effect.valueId?.takeIf { effect.kind == BattleMoveEffectKind.STATUS } }
+        // A status the exchange does not play (sleep, freeze, poison) reads as no change, which is not what it is worth:
+        // Sleep Powder on a Swampert came to 0 and lost its ranking value to a resisted Sludge Bomb (2026-10-12). No
+        // reading; the move keeps the value the ranking gave it.
+        if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
         val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
             .flatMap { it.statStages.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, changes) -> changes.sum() }
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }

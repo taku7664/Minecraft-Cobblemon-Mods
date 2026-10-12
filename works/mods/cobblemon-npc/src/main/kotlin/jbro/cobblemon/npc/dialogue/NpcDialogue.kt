@@ -24,7 +24,12 @@ data class DialogueNode(
     val next: String? = null,
     /** Run as the node is left: `/command` as the player, `@server /command` as the player with operator rights. */
     val commands: List<String> = emptyList(),
-)
+) {
+    companion object {
+        /** Existing dialogue-show packet limit for pages and visible choices. */
+        const val MAX_ITEMS = 64
+    }
+}
 
 /** An answer the player can pick; hidden while [condition] does not hold. A null [next] ends the talk. */
 data class DialogueChoice(val text: String, val next: String?, val condition: String? = null)
@@ -35,6 +40,11 @@ data class DialogueBranch(val condition: String, val next: String)
 /** A problem found in a dialogue: a translation key under `cobblemon_npc.problem.` and its arguments. */
 data class DialogueProblem(val key: String, val args: List<String> = emptyList()) {
     override fun toString() = if (args.isEmpty()) key else "$key ${args.joinToString()}"
+}
+
+/** Editor location accompanies validation without changing the persisted dialogue or problem translations. */
+data class DialogueIssue(val node: String?, val part: Part, val index: Int, val problem: DialogueProblem) {
+    enum class Part { NODE, START, NEXT, CHOICE, BRANCH, COMMAND }
 }
 
 object DialogueIds {

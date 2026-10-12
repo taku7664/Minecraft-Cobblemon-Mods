@@ -399,6 +399,20 @@ internal object LocalMatchupScoreCalculator {
         val subjectFirst = (first ?: LocalPublicTurnOrder.speedOrderProbability(state, subject, opponent) ?: 0.5).coerceIn(0.0, 1.0)
         var mine = LocalFlinchAvailability.profile(position, opponentMove, subjectMove, 1.0 - subjectFirst)
         var theirs = LocalFlinchAvailability.profile(position, subjectMove, opponentMove, subjectFirst)
+        // The turns each side gets its attack off: a paralysed Pokemon three in four, and a hit landed first that can
+        // flinch takes the other's turn at its chance. The evolving exchange plays these turns out itself. Without them a
+        // paralysed Kyogre facing a Serene Grace Air Slash read as untouched, and Thunder Wave on it came to 4 (2026-10-12).
+        if (!jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups) {
+            fun acts(pokemon: BattlePokemonStateView) =
+                if (PublicIds.canonical(pokemon.statusId.orEmpty()) == PARALYSIS) PARALYSIS_ACTS else 1.0
+            fun flinches(move: ScoredMove?, user: BattlePokemonStateView, target: BattlePokemonStateView, userFirst: Double) =
+                move?.let { jbro.cobblemon.mcc.betterai.evaluation.LocalRootFlinchValue.chance(it.action, user, target, state) *
+                    it.score.accuracy * userFirst * acts(user) } ?: 0.0
+            val subjectActs = acts(subject) * (1.0 - flinches(opponentMove, opponent, subject, 1.0 - subjectFirst))
+            val opponentActs = acts(opponent) * (1.0 - flinches(subjectMove, subject, opponent, subjectFirst))
+            mine = mine?.let { thinned(it, subjectActs) }
+            theirs = theirs?.let { thinned(it, opponentActs) }
+        }
         // Which side cannot get through the other's healing, and how often the healer still attacks.
         var subjectWalled = false
         var opponentWalled = false
@@ -530,6 +544,33 @@ internal object LocalMatchupScoreCalculator {
         )
     }
 
+    /**
+     * [score] from a user that gets its attack off each turn with chance [rate]: after `n` turns it has landed `k` uses
+     * with the binomial chance, and is standing, or has dealt, what `k` uses leave.
+     */
+    private fun thinned(score: MoveMatchupScore, rate: Double): MoveMatchupScore {
+        val acts = rate.coerceIn(0.0, 1.0)
+        if (acts >= 1.0) return score
+        val survival = score.survivalByUses
+        val damage = score.damageWhileStandingByUses
+        fun binomial(n: Int, k: Int): Double {
+            var ways = 1.0
+            for (i in 1..k) ways = ways * (n - k + i) / i
+            return ways * Math.pow(acts, k.toDouble()) * Math.pow(1.0 - acts, (n - k).toDouble())
+        }
+        val standing = survival.indices.map { n -> (0..n).sumOf { k -> binomial(n, k) * survival[k] } }
+        val dealt = survival.indices.map { n ->
+            if (standing[n] <= 0.0) damage.getOrElse(n) { 0.0 }
+            else (0..n).sumOf { k -> binomial(n, k) * survival[k] * damage.getOrElse(k) { 0.0 } } / standing[n]
+        }
+        return score.copy(
+            survivalByUses = standing,
+            damageWhileStandingByUses = dealt,
+            expectedHitsToKnockout = if (acts <= 0.0) Double.POSITIVE_INFINITY else score.expectedHitsToKnockout / acts,
+            score = score.score * acts,
+        )
+    }
+
     /** The chance [score]'s knockout lands exactly on use [n]; the last index takes everything later. */
     private fun knockoutAt(score: MoveMatchupScore?, n: Int): Double {
         val survival = score?.survivalByUses ?: return 0.0
@@ -556,6 +597,9 @@ internal object LocalMatchupScoreCalculator {
 
     /** Uses the knockout profile follows; past it a move counts as "later or never". */
     internal const val MAXIMUM_USES = 6
+    private const val PARALYSIS = "par"
+    /** The share of turns a paralysed Pokemon acts (Showdown: fully paralysed one turn in four). */
+    private const val PARALYSIS_ACTS = 0.75
     private const val MAXIMUM_SETUP_USES = 2
     /**
      * Moves that fail when their user is hit before it moves. An exchange has both sides attacking every

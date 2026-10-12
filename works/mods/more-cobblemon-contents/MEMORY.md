@@ -5,6 +5,36 @@
 
 ---
 
+## [2026-10-13 00:40] 배틀 종료 경로 재점검 (PvP 종료 버그 후속)
+
+- **계기**: PvP 종료 버그가 10-11 PvP 점검에서 빠졌다. 그 점검은 PvP 애드온 안쪽만 봤고, 원인은 MCC 본체 클라 리셋이었다. 이번엔 모든 모드에서 Cobblemon 배틀 패킷에 끼어드는 믹스인, 패킷 보류·재생 로직, `MccClientSessionReset` 콜백 전체(10개), 서버의 직접 `closeBattle` 경로를 범위로 잡았다.
+- **놓치기 쉬운 전제**: `MccClientSessionReset`은 접속·종료뿐 아니라 `AFTER_CLIENT_WORLD_CHANGE`, 즉 **차원 이동마다** 돈다. PvP 라운지·마이룸처럼 진행 중에 차원을 옮기는 콘텐츠에서는 "텔레포트 직전에 받은 상태나 보류한 작업"이 지워진다. 리셋 콜백을 새로 걸 때는 진행 중 차원 이동에서도 안전한지 따질 것.
+- **추가 수정**:
+  - `BattleInitializeHandlerSceneMixin`(신규): 종료를 0.5초 보류하는 사이 새 배틀이 열리면, 뒤늦게 실행된 이전 종료가 새 배틀을 지웠다. 새 배틀 초기화 전에 보류한 종료를 먼저 끝낸다(`BattleSceneClient.finishHeldEnd`).
+  - `Cobblemon173ManagedBattleTermination.closeWithClientEnd`: Cobblemon `end()`는 종료 패킷을 맨 마지막에 보내므로, 중간에 예외가 나서 강제로 닫으면 클라 배틀이 남았다. 강제 닫기·이미 끝난 배틀 닫기·`BattleEntryHold.abandon`이 모두 선수·관전자에게 종료 패킷을 먼저 보낸다.
+- **문제없음으로 확인**: 진입 연출 보류는 서버가 200틱 제한으로 시작시킨다(PvP는 대상 아님). `stop()`은 `end()`로 이어진다. `closeBattle`은 `onEndHandlers`를 먼저 돌리므로 종료 패킷 → PvP 완료·텔레포트 순서다. PvP 완료는 텔레포트 뒤에 방 상태를 보내 리셋에 지워지지 않는다. 시작 때도 차원 이동 뒤 배틀·음악 키가 들어온다(운영 로그 20:53:04~05).
+- **미확인**: 빌드·테스트·배포·실게임 확인 안 함.
+
+## [2026-10-13 00:10] PvP 종료 후 배틀·BGM이 안 끝나던 문제 (클라 종료 보류가 차원 이동에 버려짐)
+
+- **증상(운영, 10-12 20:55 PPakemon 클라 로그)**: PvP 승패 메시지와 라운지 → 마이룸 이동 직후 `Battle music: PVP keys=[] -> battle.pvp`가 새로 찍히고, 플레이어는 "전투중", 포켓몬 표시와 BGM이 계속 남음.
+- **원인**: Cobblemon `PokemonBattle.end()`는 `BattleEndPacket`을 보낸 뒤 `closeBattle`을 부른다(1.8.1 바이트코드로 확인). 클라 `BattleEndHandlerSceneMixin`은 마무리 대사를 기다리려고 그 처리를 `BattleSceneClient.heldEnd`에 최대 0.5초 보류한다. PvP는 같은 틱 종료 핸들러에서 선수를 라운지 밖으로 텔레포트해 클라에 `AFTER_CLIENT_WORLD_CHANGE` → `MccClientSessionReset`이 걸리고, 리셋 콜백이 `heldEnd = null`로 **실행하지 않고 버렸다**. 그래서 `CobblemonClient.endBattle()`이 끝내 불리지 않아 클라 배틀(음악 모드가 보는 상태)이 남았다.
+- **수정**: 리셋 때 보류한 종료를 버리지 않고 `releaseEnd()`로 바로 끝낸다. 차원을 옮기며 끝나는 다른 관리 배틀(타워·팩토리 등)도 같은 경로라 함께 고쳐진다.
+- **개발 배포(사용자 요청 "개발만")**: 공유 트리에 다른 세션의 미커밋 Better AI 변경이 있어 `main` `3712f247`을 `git archive`로 `F:/AI/build/mcc-battle-end-20261013/src`에 꺼내 F 드라이브 경로로 `:more-cobblemon-contents:build -x unitTest` 성공. JDK 21 `jar --validate`·ZIP CRC 통과, 리셋 람다가 `releaseEnd()`를 부르는 것을 바이트코드로 확인, 테스트 클래스 미포함. 같은 JAR(SHA-256 `f820d9f9…`)을 `develop-product/server/mods`·`develop-product/client/mods`에 배치, 세 해시 일치·`.deploying` 잔여물 없음. 배치 전 25565/25566 리스너 없음, 켜져 있던 게임은 PPakemon 프로필뿐(개발 클라 아님). 이전 JAR(`e0fc5d06…`)은 `develop-product/deployment-backups/20261013-mcc-battle-end-held/{server,client}`.
+- **호환성**: 이전 배치(10-12 20:21) 이후 코어 변경은 Better AI 내부와 이번 수정뿐이라 애드온 JAR은 그대로 뒀다. 새 코어에 `main`의 Better AI 커밋 `7dd77a79`·`d0f679c9`·`c2e7f610`도 함께 들어갔다.
+- **미확인**: 단위 테스트는 돌리지 않았다. 서버를 켜지 않았고 실게임 PvP 종료 확인도 안 했다. PPakemon·`deploy-product`·운영 서버에는 배치하지 않았다(운영 플레이어에게는 아직 버그가 남아 있다).
+
+## [2026-10-12 23:50] 실게임 로그로 찾은 다단히트 KO·디버프 값 버그
+
+- **계기**: 사용자 실게임(신오 챔피언 BOSS, 배틀 `636ee961`). 한카리아스가 드래펄트에 비늘샷 대신 지진, 로즈레이드가 대짱이에 수면가루 대신 오물폭탄을 썼다. 로즈레이드의 기가드레인은 드래펄트의 저주받은바디로 사슬묶기 상태여서 후보에 없었다(정상).
+- **원인·수정**: LOCAL_GAPS G-907(KO 판정이 1타만 봄), G-908(교환이 못 읽는 잠듦·독의 디버프 값이 0). 재생 도구를 실게임 경로로 맞췄다.
+- **확인**: 관련 테스트 8개 클래스 94개 통과, 스냅샷 재생으로 두 장면 모두 바뀐 것 확인, 국면 시나리오 39개 확률 변화 없음.
+- **메가 랭크업**: 메가+칼춤을 메가 전 대면표로 판정하던 버그 수정(LOCAL_GAPS G-909). 0턴 하마돈전 칼춤 52.8 → 319점.
+- **남는 판을 메가로, 교환에 마비·풀죽음**: 규칙들이 이번 턴 메가 진화 가능하면 메가 판을 본다(G-909 이어서). 1대1 교환이 마비 25% 행동 불능과 선공 풀죽음을 반영한다(G-910). `LocalTacticalBrainSimulationTest` 압정 층 테스트 2개는 이전부터 실패.
+- **추월 배수**: 사용자 결정으로 `leafSpeedControlValue` 0.15 → 0.25(LOCAL_GAPS G-908 아래 항목). 비늘샷 추첨 확률 76% → 83%, 시나리오 확률 변화 ±1%p 이하.
+- **배포(2026-10-12 23:28)**: `4bc78a80`(이 항목의 수정 `7dd77a79`·`d0f679c9`·`c2e7f610`·`cfefb7ab` 포함) 기준 MCC JAR을 개발 서버·클라이언트에 복사했다. SHA-256 `dcf885d0…c262`, 세 곳 일치. 백업 `develop-product/deployment-backups/20261012-232828-betterai-multihit-mega-flinch`. 개발 서버·클라이언트는 꺼져 있었고 켜지 않았다(PPakemon 프로필 게임만 실행 중이었다).
+- **미확인**: 서버 기동, 실게임.
+
 ## [2026-10-12 23:30] 장판·앵콜·디버프 점수, 빠른 판단기 보너스화
 
 - **상세**: `docs/betterai/engine/LOCAL_GAPS.md` §11, 인계 문서 "이어받은 세션의 추가 작업".

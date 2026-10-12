@@ -18,6 +18,8 @@ Operators with permission level 2 use `/npc wand`. Right-click a block to place 
 
 Dialogue files live on the server at `config/cobblemon_npc/dialogues/<id>.json`. Use `/npc reload` after editing files. `/npc talk <players> <dialogue> [node]` opens a conversation without an NPC; `/npc end <players>` closes it. See the [operator guide](docs/OPERATOR_GUIDE.md) for JSON, conditions and command permissions.
 
+The editor uses vanilla widgets on an opaque panel with a blurred background. Pages and choices have separate forms; search node IDs or dialogue text to choose a link. Advanced tabs contain branches, commands and speaker/skin settings. Undo/Redo (Ctrl+Z/Ctrl+Y) and Ctrl+S are available. Closing unsaved work offers Save, Discard or Cancel. **Draft Preview** inspects pages and links without saving, executing commands or evaluating conditions; conditional choices and branches are selected manually. Opening dialogue editing does not save the NPC's metadata.
+
 Mod Menu opens local client settings. **Dialogue camera** defaults to On and requires Better Cobblemon Battlecam. Done saves `config/cobblemon_npc-client.json`; Cancel leaves the preference unchanged. NPC content is edited with the wand, not in this settings screen. Dialogue controls use the bundled Cobblemon UI key bindings.
 
 ## License and media

@@ -248,8 +248,11 @@ internal data class LocalDecisionTuning(
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
     val leafKnockoutPressure: Double = 0.35,
-    /** Board value of moving first, when the public speed order is resolvable. */
-    val leafSpeedControlValue: Double = 0.15,
+    /**
+     * Board value of moving first, when the public speed order is resolvable. 0.15 capped outspeeding at 30 points
+     * against a knockout's 100, so Scale Shot's Speed +1 over a Dragapult came to 20 (user decision 2026-10-12: 0.25).
+     */
+    val leafSpeedControlValue: Double = 0.25,
     /**
      * Board value of one stage unit of LocalPersistentStageValue, on top of the pressure the stages add against
      * the Pokemon in front; zero prices stages by that pressure alone.

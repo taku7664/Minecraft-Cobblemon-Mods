@@ -10,6 +10,7 @@ import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.client.CobblemonUiThemedButton
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.Screens
 import net.minecraft.client.Minecraft
@@ -25,10 +26,11 @@ internal object PvpLoungeSpectatorControls {
         ClientTickEvents.START_CLIENT_TICK.register(::enforce)
         ClientTickEvents.END_CLIENT_TICK.register(::enforce)
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ -> installExitButton(screen) }
-        MccClientSessionReset.onReset("PvP spectator controls") {
-            setActive(false)
-            PvpPlayClientNetworking.resetLoungeExitRequest()
-        }
+        MccClientSessionReset.onReset("PvP spectator controls") { setActive(false) }
+        // Leaving the lounge changes world before the server answers the exit, so only a new connection may forget
+        // the request; dropping it on that world change left the screen open after an accepted exit.
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> PvpPlayClientNetworking.resetLoungeExitRequest() }
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> PvpPlayClientNetworking.resetLoungeExitRequest() }
     }
 
     fun setActive(value: Boolean) {

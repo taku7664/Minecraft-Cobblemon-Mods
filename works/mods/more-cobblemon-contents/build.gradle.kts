@@ -345,9 +345,13 @@ tasks.register<JavaExec>("replayDecisionSnapshot") {
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass.set("jbro.cobblemon.mcc.betterai.AiDecisionSnapshotReplay")
     doFirst {
-        // -Psnapshot=<file> [-PreplayNative] ; legacy-only by default, which is exact for non-native turns.
-        setArgs(listOf(providers.gradleProperty("snapshot").get()) +
-            if (project.hasProperty("replayNative")) listOf("native") else emptyList())
+        // -Psnapshot=<file> [-PreplayNative | -PreplaySearch] ; the game's searchless brain by default, with every
+        // candidate's value at each step. -PreplaySearch runs the legacy search, -PreplayNative the native one.
+        setArgs(listOf(providers.gradleProperty("snapshot").get()) + when {
+            project.hasProperty("replayNative") -> listOf("native")
+            project.hasProperty("replaySearch") -> listOf("search")
+            else -> emptyList()
+        })
     }
 }
 

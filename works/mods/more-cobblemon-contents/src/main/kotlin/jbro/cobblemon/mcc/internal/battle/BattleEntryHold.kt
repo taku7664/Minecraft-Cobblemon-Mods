@@ -9,6 +9,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.mcc.internal.mixin.BattleRegistryInvoker
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -173,7 +174,7 @@ internal object BattleEntryHold {
             battle.actors.filter { it.type == ActorType.WILD }.forEach { actor ->
                 actor.pokemonList.forEach { pokemon -> pokemon.originalPokemon.entity?.battleId = null }
             }
-            BattleRegistry.closeBattle(battle)
+            Cobblemon173ManagedBattleTermination.closeWithClientEnd(battle)
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.warn("Held battle {} could not be closed cleanly", battle.battleId, failure)
         }

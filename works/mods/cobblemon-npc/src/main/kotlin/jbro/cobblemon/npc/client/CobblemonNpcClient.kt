@@ -30,6 +30,7 @@ object NpcClientState {
 object CobblemonNpcClient : ClientModInitializer {
     override fun onInitializeClient() {
         NpcClientConfig.load()
+        NpcEditorInvMoveCompat.register()
         EntityRendererRegistry.register(CobblemonNpc.NPC, ::NpcEntityRenderer)
         NpcSkins.register()
         NpcSceneCaptureHarness.installFromEnvironment()
@@ -69,7 +70,7 @@ object CobblemonNpcClient : ClientModInitializer {
             context.client().execute {
                 val message = Component.translatable(payload.key, *payload.args.toTypedArray())
                 val open = context.client().screen
-                if (open is NpcEditorScreen) open.showResult(payload.ok, message)
+                if (open is NpcEditorScreen) open.onServerResult(payload.ok, payload.key, payload.args)
                 else context.client().player?.displayClientMessage(message, true)
             }
         }

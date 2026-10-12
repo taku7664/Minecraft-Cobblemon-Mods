@@ -23,18 +23,32 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  */
 internal object LocalRootFlinchValue {
     fun score(candidate: BattleActionCandidate, context: BattleDecisionContext, accuracy: Double, tuning: LocalDecisionTuning): Double {
-        val details = candidate.moveDetails ?: return 0.0
-        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
-        val declared = details.effects?.effects.orEmpty().firstOrNull {
-            it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
-                PublicIds.canonical(it.valueId.orEmpty()) == FLINCH
-        }?.probability?.coerceIn(0.0, 1.0) ?: return 0.0
-        if (declared <= 0.0 || declared >= 1.0) return 0.0
         val state = context.state
         val actor = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
         } ?: return 0.0
         val target = primaryTarget(candidate, context) ?: return 0.0
+        // Fake Out's certain flinch keeps its own first-turn handling.
+        if ((declared(candidate) ?: return 0.0) >= 1.0) return 0.0
+        val chance = chance(candidate, actor, target, state).takeIf { it > 0.0 } ?: return 0.0
+        val facts = candidate.facts ?: return 0.0
+        val movesFirst = facts.actsFirstProbability ?: return 0.0
+        val survives = 1.0 - (facts.standardDamageRollKoProbabilityRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0)
+        return accuracy * movesFirst * chance * survives.coerceIn(0.0, 1.0) * deniedTurn(context, actor, target, tuning) * HP_TO_SCORE
+    }
+
+    /**
+     * The chance one landed hit of [candidate] flinches [target], when it hits before [target] moves: the move's declared
+     * chance, doubled by Serene Grace and gone with Sheer Force, none through Inner Focus, Shield Dust, a Covert Cloak or
+     * a Substitute. Fake Out's certain flinch is a chance of one. Zero for a move that does not flinch.
+     */
+    fun chance(
+        candidate: BattleActionCandidate,
+        actor: BattlePokemonStateView,
+        target: BattlePokemonStateView,
+        state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
+    ): Double {
+        val declared = declared(candidate)?.takeIf { it > 0.0 } ?: return 0.0
         val chance = when (LocalPublicAbilityState.effectiveKnownAbility(state, actor)) {
             "sheerforce" -> return 0.0
             "serenegrace" -> (declared * 2.0).coerceAtMost(1.0)
@@ -44,10 +58,16 @@ internal object LocalRootFlinchValue {
         if (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES) return 0.0
         if (LocalPublicItemState.activeItemId(state, target) == "covertcloak") return 0.0
         if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" }) return 0.0
-        val facts = candidate.facts ?: return 0.0
-        val movesFirst = facts.actsFirstProbability ?: return 0.0
-        val survives = 1.0 - (facts.standardDamageRollKoProbabilityRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0)
-        return accuracy * movesFirst * chance * survives.coerceIn(0.0, 1.0) * deniedTurn(context, actor, target, tuning) * HP_TO_SCORE
+        return chance
+    }
+
+    private fun declared(candidate: BattleActionCandidate): Double? {
+        val details = candidate.moveDetails ?: return null
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return null
+        return details.effects?.effects.orEmpty().firstOrNull {
+            it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
+                PublicIds.canonical(it.valueId.orEmpty()) == FLINCH
+        }?.probability?.coerceIn(0.0, 1.0)
     }
 
     /** The larger of the target's best damage to [actor] and what its revealed recovery would heal. */

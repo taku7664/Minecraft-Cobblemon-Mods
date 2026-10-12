@@ -22,6 +22,25 @@ class ShowdownStandardDamageProjectionTest {
         }
     }
 
+    @Test
+    fun `a multi-hit move knocks out when its hits together reach the hp`() {
+        // Each hit 228-270 of 600 HP: two hits never reach it, three always do.
+        val oneHit = ShowdownStandardDamageProjection.project(
+            level = 50, power = 100, attack = BattleIntegerRange(200, 200), defence = BattleIntegerRange(100, 100),
+            targetMaxHp = BattleIntegerRange(600, 600), targetHpFraction = 1.0, stab = 1.5, typeMultiplier = 2.0,
+        )
+        assertEquals(BattleKnockoutAssessment.IMPOSSIBLE, oneHit.knockoutAssessment)
+        val twoToFive = mapOf(2 to 0.35, 3 to 0.35, 4 to 0.15, 5 to 0.15)
+        val hits = ShowdownStandardDamageProjection.overHits(oneHit, twoToFive, BattleIntegerRange(600, 600), 1.0)
+        assertEquals(BattleKnockoutAssessment.POSSIBLE, hits.knockoutAssessment)
+        assertEquals(0.65, hits.koProbabilityRange.minimum, 1e-9)
+        assertEquals(0.65, hits.koProbabilityRange.maximum, 1e-9)
+        assertEquals(oneHit.damageFractionRange, hits.damageFractionRange, "The damage range stays one hit's")
+        val skillLink = ShowdownStandardDamageProjection.overHits(oneHit, mapOf(5 to 1.0), BattleIntegerRange(600, 600), 1.0)
+        assertEquals(BattleKnockoutAssessment.GUARANTEED, skillLink.knockoutAssessment)
+        assertEquals(oneHit, ShowdownStandardDamageProjection.overHits(oneHit, mapOf(1 to 1.0), BattleIntegerRange(600, 600), 1.0))
+    }
+
     private fun hpBoundaryProjection(fraction: Double) = ShowdownStandardDamageProjection.project(
         level = 100, power = 90, attack = BattleIntegerRange(136, 136), defence = BattleIntegerRange(246, 246),
         targetMaxHp = BattleIntegerRange(362, 362), targetHpFraction = fraction, stab = 1.5, typeMultiplier = 2.0,

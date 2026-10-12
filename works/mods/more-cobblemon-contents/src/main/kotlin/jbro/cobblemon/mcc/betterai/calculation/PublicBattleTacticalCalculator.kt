@@ -287,8 +287,14 @@ internal object PublicBattleTacticalCalculator {
             unknowns += BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS
             if (typeMultiplier == null) unknowns += BattleCalculationUnknown.TARGET_TYPES
         }
+        // The knockout reads every hit of a multi-hit move; the damage range stays one hit's, as the readers expect.
         val rawProjection =
             standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, context.state, spreadMultiplier)
+                ?.let { projection ->
+                    val maxHp = target?.combatStats?.maxHp ?: return@let projection
+                    ShowdownStandardDamageProjection.overHits(projection,
+                        LocalDeclaredMultiHit.countDistribution(candidate, actor, context.state), maxHp, target.hpFraction)
+                }
         // A Focus Sash or Sturdy at full health turns a knockout the rolls call guaranteed into a
         // survivor on one health. The projector has always known that; the facts the ranking is built
         // from did not, so the layer that decides was the one working from the wrong premise. A move

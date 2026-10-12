@@ -54,6 +54,8 @@ internal object LocalQuickDecider {
         debuffGains: Map<String, Double> = emptyMap(),
         /** The verdicts this call may return; a reason left out is passed over and the checks go on. */
         allow: (String) -> Boolean = { true },
+        /** The board and pair table a stat raise is judged on: the Mega's when it Mega Evolves; null when none can be read. */
+        setupView: (jbro.cobblemon.mcc.internal.ai.BattleActionCandidate) -> Pair<BattleDecisionContext, MatchupScores>? = { context to scores },
     ): Verdict? {
         fun pick(rank: LocalBattleActionRank, reason: String): Verdict? = if (allow(reason)) Verdict(rank, reason) else null
         val state = context.state
@@ -187,7 +189,9 @@ internal object LocalQuickDecider {
         // the setup turn's hit paid. Not whether it raises the one-on-one: one already won cannot rise, and a boost
         // that leaves it won is a free one.
         if (LocalSetupGate.raisesOwnStats(chosen.outcome.candidate)) {
-            val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
+            val win = setupView(chosen.outcome.candidate)?.let { (view, table) ->
+                LocalSetupGate.score(chosen.outcome.candidate, view, table, knockoutMaterialScore = 1.0)
+            }?.win
             return if (win != null && win < SETUP_WIN) pick(strongest, "unsafe_setup") else null
         }
         // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit:
