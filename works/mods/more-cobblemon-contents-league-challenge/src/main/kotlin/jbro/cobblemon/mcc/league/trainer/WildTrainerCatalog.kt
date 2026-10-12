@@ -97,14 +97,14 @@ object WildTrainerCatalogParser {
 }
 
 /**
- * How a wild trainer's party follows the level cap of the player who challenges them. Any trainer may bring one to
- * six Pokemon; the more they bring, the further below the cap they stand, so a full party is not a harder fight
- * than a lone Pokemon at the cap. The last Pokemon is the trainer's ace and stands a little above the rest.
+ * How a wild trainer's party follows the level cap of the player who challenges them. Ordinary trainers bring one
+ * to six Pokemon; aces always bring four to six. The more they bring, the further below the cap they stand.
+ * The last Pokemon is the trainer's ace and stands a little above the rest.
  */
 object WildTrainerParty {
     const val MAX_SIZE = 6
 
-    /** Relative chances of bringing 1 to 6 Pokemon in each phase; later phases lean towards fuller parties. */
+    /** Relative chances of bringing 1 to 6 Pokemon; aces exclude sizes below four at every phase. */
     private val sizeWeights = mapOf(
         WildTrainerTier.NORMAL to mapOf(
             WildTrainerPhase.EARLY to intArrayOf(26, 26, 20, 14, 9, 5),
@@ -113,10 +113,10 @@ object WildTrainerParty {
             WildTrainerPhase.END to intArrayOf(8, 12, 17, 21, 21, 21),
         ),
         WildTrainerTier.ACE to mapOf(
-            WildTrainerPhase.EARLY to intArrayOf(12, 22, 24, 20, 13, 9),
-            WildTrainerPhase.MID to intArrayOf(7, 13, 19, 23, 21, 17),
-            WildTrainerPhase.LATE to intArrayOf(4, 9, 15, 22, 25, 25),
-            WildTrainerPhase.END to intArrayOf(3, 6, 12, 20, 27, 32),
+            WildTrainerPhase.EARLY to intArrayOf(0, 0, 0, 20, 13, 9),
+            WildTrainerPhase.MID to intArrayOf(0, 0, 0, 23, 21, 17),
+            WildTrainerPhase.LATE to intArrayOf(0, 0, 0, 22, 25, 25),
+            WildTrainerPhase.END to intArrayOf(0, 0, 0, 20, 27, 32),
         ),
     )
 
