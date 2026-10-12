@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-12 22:49] 엘리트 트레이너 최소 4마리 수정본 개발 배포 (빌드·선택 테스트·해시 확인)
+
+- **사용자 후속 요청·소스:** 개발 환경에 우선 배포한다. 구현은 `4e684eea`로 main에 병합·원격 푸시되었으며, main 스냅샷 `ced66ebb398975c239d94c5f9ddd36ed49f0351b`를 `F:/AI/build/59b1-elite-deploy/src`에 풀어 Gradle 쓰기 경로를 모두 F 드라이브로 지정해 빌드했다.
+- **검증:** 리그 `remapJar`와 선택 `unitTest` 성공(`BUILD SUCCESSFUL in 3m 12s`). `WildTrainerPartyTest`·`WildTrainerDataTest`·`LeagueTeamDataTest` 20개 모두 통과했고 JDK 21 `jar --validate`도 통과했다. 증거는 `F:/AI/build/59b1-elite-deploy/build.log`와 `deployment.json`이다. 빌드 중 main에 추가된 `c2e7f610`은 코어 내부 AI 수정이며 리그·UI·NPC·BattleCam·빌드 설정·코어 API/compat 소스가 빌드 스냅샷과 동일함을 확인했다.
+- **개발 배치:** 기본 저장소 `develop-product/{server,client}/mods`의 리그 `0.1.0.jar`를 교체했다. 빌드본·서버·클라이언트 SHA-256은 `7FD5887905A0671FCB0AB2E0F9FC75DB9C7E1B7ABE5428E8B81D483D401E5EBF`로 일치한다. 이전 해시 `8563EEED…5682EE4E`인 JAR은 `F:/AI/build/59b1-elite-deploy/backups/{server,client}/`에 보관했다. 서버 25566 포트가 닫혀 있고 개발 클라이언트 게임이 없는 상태에서 교체했으며 실행 중인 별도 PPakemon 게임은 건드리지 않았다.
+- **코어 호환 범위:** 코어 JAR은 교체하지 않고 기존 SHA-256 `E0FC5D06AA22616031EBDAE8517D7DCD8CA51F5AB408502434A31DE1B00111A6`를 유지했다. `267608ff`부터 빌드 스냅샷까지 코어 API/compat 변경이 없고 설치본에 `BrainNpcBattles` API가 있음을 확인했다.
+- **미실행·범위:** 운영·VPS·`deploy-product`에는 반영하지 않았다. 서버·클라이언트를 기동하지 않았고 실게임은 검증하지 않았다. JSON 파티 수 설정은 이번 배포에 구현하지 않았다. 이번 배포 기록의 커밋·main 병합·푸시는 기록 시점에 남아 있다.
+
 ## [2026-10-12 22:37] 야생 엘리트 트레이너 파티 최소 4마리 (구현·순수 로직 테스트 확인)
 
 - **사용자 요청:** 엘리트 트레이너가 포켓몬 한 마리만 사용하는 경우를 없애고 최소 4마리를 보장한다.
