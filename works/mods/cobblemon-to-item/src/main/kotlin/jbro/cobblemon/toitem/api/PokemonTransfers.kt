@@ -9,6 +9,10 @@ import jbro.cobblemon.toitem.config.ToItemConfig
 import jbro.cobblemon.toitem.server.MoveTransaction
 import jbro.cobblemon.toitem.server.TransferRules
 import net.minecraft.ChatFormatting
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.inventory.AbstractContainerMenu
+import net.minecraft.world.inventory.InventoryMenu
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.item.ItemEntity
@@ -19,8 +23,18 @@ import java.util.UUID
 object PokemonTransfers {
     const val COMMAND = "poke2item"
 
+    /** Cursor transfers only support the survival inventory and the registered fusion menu. */
+    @JvmStatic fun supportsSidebarMenu(menu: AbstractContainerMenu): Boolean {
+        if (menu is InventoryMenu) return true
+        return try {
+            BuiltInRegistries.MENU.getKey(menu.type) == ResourceLocation.fromNamespaceAndPath("pokefusion", "fusion")
+        } catch (_: UnsupportedOperationException) {
+            false // Unregistered client menus (including creative inventory) have no MenuType.
+        }
+    }
+
     @JvmStatic fun allowed(player: ServerPlayer, inventoryOnly: Boolean = false): Boolean {
-        if (inventoryOnly && player.containerMenu !== player.inventoryMenu) return false
+        if (inventoryOnly && !supportsSidebarMenu(player.containerMenu)) return reject(player, "invalid_slot")
         val battling = BattleRegistry.getBattleByParticipatingPlayer(player) != null
         if (battling) return reject(player, "in_battle")
         val permitted = player.hasPermissions(ToItemConfig.permissionLevel)
@@ -40,14 +54,15 @@ object PokemonTransfers {
     private fun convert(player: ServerPlayer, slot: Int, expectedId: UUID, targetMenuSlot: Int,
                         dropOverflow: Boolean, toCursor: Boolean): Boolean {
         if (!allowed(player, inventoryOnly = !dropOverflow)) return false
-        if (!dropOverflow && !player.inventoryMenu.carried.isEmpty) return reject(player, "changed")
-        if (targetMenuSlot < -1 || targetMenuSlot >= player.inventoryMenu.slots.size) return reject(player, "invalid_slot")
+        val menu = player.containerMenu
+        if (!dropOverflow && !menu.carried.isEmpty) return reject(player, "changed")
+        if (targetMenuSlot < -1 || targetMenuSlot >= menu.slots.size) return reject(player, "invalid_slot")
         val party = Cobblemon.storage.getParty(player)
         if (slot !in 0 until party.size()) return reject(player, "invalid_slot")
         val pokemon = party.get(slot) ?: return reject(player, "empty_slot")
         if (pokemon.uuid != expectedId) return reject(player, "changed")
         if (pokemon.entity?.isBusy == true) return reject(player, "busy")
-        val preferred = player.inventoryMenu.slots.getOrNull(targetMenuSlot)?.takeIf {
+        val preferred = menu.slots.getOrNull(targetMenuSlot)?.takeIf {
             it.container === player.inventory && it.containerSlot in 0 until 36 && !it.hasItem()
         }?.containerSlot
         val destination = if (toCursor) null else preferred ?: (0 until 36).firstOrNull { player.inventory.getItem(it).isEmpty }
@@ -64,8 +79,8 @@ object PokemonTransfers {
                 remove = { party.get(slot)?.uuid == expectedId && party.remove(pokemon) },
                 deliver = {
                     if (toCursor) {
-                        if (!player.inventoryMenu.carried.isEmpty) false
-                        else { player.inventoryMenu.carried = stack; true }
+                        if (player.containerMenu !== menu || !menu.carried.isEmpty) false
+                        else { menu.carried = stack; true }
                     } else if (destination != null) {
                         if (!player.inventory.getItem(destination).isEmpty) false
                         else { player.inventory.setItem(destination, stack); true }
@@ -73,7 +88,7 @@ object PokemonTransfers {
                 },
                 rollback = {
                     dropped?.discard()
-                    if (toCursor && player.inventoryMenu.carried === stack) player.inventoryMenu.carried = ItemStack.EMPTY
+                    if (toCursor && menu.carried === stack) menu.carried = ItemStack.EMPTY
                     if (destination != null && player.inventory.getItem(destination) === stack) {
                         player.inventory.setItem(destination, ItemStack.EMPTY)
                     }
@@ -90,7 +105,8 @@ object PokemonTransfers {
     /** Empty target restores; an occupied target is exchanged onto the cursor like a vanilla slot. */
     @JvmStatic fun restoreCursor(player: ServerPlayer, requestedSlot: Int, expectedId: UUID, expectedTarget: UUID?): Boolean {
         if (!allowed(player, inventoryOnly = true)) return false
-        val stack = player.inventoryMenu.carried
+        val menu = player.containerMenu
+        val stack = menu.carried
         val tag = PokemonItemData.pokemonTag(stack) ?: return reject(player, "invalid_item")
         if (!TransferRules.sourceMatches(stack.count, expectedId, tag.getUUID("UUID"))) return reject(player, "changed")
         val party = Cobblemon.storage.getParty(player)
@@ -111,9 +127,10 @@ object PokemonTransfers {
                 MoveTransaction.execute(
                     remove = { party.get(requestedSlot) === previous && party.remove(previous) },
                     deliver = {
+                        check(player.containerMenu === menu) { "Open menu changed during exchange" }
                         party.set(PartyPosition(requestedSlot), incoming)
                         check(party.get(requestedSlot) === incoming)
-                        player.inventoryMenu.carried = replacement
+                        menu.carried = replacement
                         true
                     },
                     rollback = {
@@ -122,14 +139,14 @@ object PokemonTransfers {
                             check(party.get(requestedSlot) == null) { "Exchange target changed during rollback" }
                             party.set(PartyPosition(requestedSlot), previous)
                         }
-                        player.inventoryMenu.carried = original
+                        menu.carried = original
                     },
                 )
             }
         }
         return restore(player, stack, requestedSlot, allowPc = false,
-            consume = { player.inventoryMenu.carried = ItemStack.EMPTY },
-            restoreSource = { player.inventoryMenu.carried = original })
+            consume = { check(player.containerMenu === menu); menu.carried = ItemStack.EMPTY },
+            restoreSource = { menu.carried = original })
     }
 
     /** Quick-move is only accepted in the survival inventory, for inventory/hotbar slots. */
