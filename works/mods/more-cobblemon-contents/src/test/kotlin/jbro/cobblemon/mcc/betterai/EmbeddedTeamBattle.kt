@@ -173,6 +173,9 @@ internal object EmbeddedTeamBattle {
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))
                                 add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
+                                // Whether a pure self stat raise was on offer and taken (for the weight experiments).
+                                addProperty("setupOffered", context.candidates.any { jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(it) })
+                                addProperty("setupChosen", jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(selected))
                                 nativeEvaluations[side]?.let { add("native", nativeTrace(it)) }
                             }.toString()).appendLine()
                             trace.flush()
