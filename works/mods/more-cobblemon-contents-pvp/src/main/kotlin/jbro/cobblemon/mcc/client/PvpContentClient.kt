@@ -22,5 +22,6 @@ object PvpContentClient : ClientModInitializer {
                 icon = MccHubTabs.itemIcon("cobblemon:link_cable"),
             ),
         )
+        PvpCaptureHarness.installFromEnvironment()
     }
 }

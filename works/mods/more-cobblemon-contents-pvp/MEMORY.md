@@ -1,5 +1,15 @@
 # MEMORY
 
+## [2026-10-13 02:00] 대기방 설정 칩·관전자 얼굴 카드·선출 화면 독립
+
+- **사용자 지시:** 대기방은 허브 탭 안에 두고 룸 옵션 버튼만 줄인다. 관전자에 마우스를 올리면 누군지 보이게 한다. 선출 화면은 허브에서 떼어 경기장 위에 따로 띄우고, 테마는 `cobblemon-ui`의 배틀 UI 테마(`BattleUiTheme`)를 따른다. 왼쪽 나, 오른쪽 상대, 가운데 프레임은 호버 우선이고 호버가 없으면 마지막 선택을 보여준다. 키보드 이동이 돼야 한다. **상대 도구는 절대 보여주지 않는다**(공개 정보는 포켓몬·폼·타입).
+- **대기방:** `MccHubKit.choices`는 MCC 공용 API라 시그니처를 바꾸지 않았다(배포된 애드온 JAR이 깨진다). 대신 `PvpRoomSettingRows`가 라벨 칸 하나에 높이 14 칩을 그린다. 기믹 4개는 폭이 모자라면 2줄이 된다.
+- **관전자:** 얼굴 격자에 마우스를 올리면 32px 얼굴과 이름 카드, "관전자 n명"에는 얼굴과 이름 목록 카드가 뜬다(`PvpSpectatorCard`). 허브 밖 HUD도 이름 앞 점 대신 8px 얼굴을 그린다.
+- **선출 화면:** `PvpSelectionScreen`. `acceptSelection`이 허브 대신 이 화면을 열고, 허브 탭은 "선출 화면 열기" 카드만 둔다. HUD 열기 버튼도 선출 중이면 이 화면을 연다. 화면이 떠 있는 동안 `hideGui`로 핫바·체력을 숨기고 닫을 때 원래 값으로 되돌린다. 능력치는 배틀 레벨 기준으로 종족값·IV·EV·성격 공식으로 계산한다(클라 파티 `Pokemon`의 레벨 값과 다를 수 있어서).
+- **캡처 하네스:** `PvpCaptureHarness`(`MCC_PVP_CAPTURE=room,room_hover_face,room_hover_count,selection,selection_picked,selection_hover_opponent,selection_keys,selection_spectator`, `MCC_PVP_CAPTURE_GUI_SCALES=3,4`). 가짜 상대·관전자를 플레이어 목록 패킷으로 클라에 넣고, 방·선출 상태를 서버 응답처럼 `PvpHubClient`에 넣는다. 서버로는 아무것도 안 간다. `:more-cobblemon-contents-pvp:runClient --args="--width 1920 --height 1080 --quickPlaySingleplayer mcc-hub-capture"`. 실행 폴더 `run/options.txt`는 언어 `ko_kr`, 접근성 첫 화면 끔, 포커스 일시정지 끔.
+- **확인함:** 컴파일·테스트 컴파일 성공. 하네스 캡처로 대기방 칩·두 호버 카드, 선출 화면(미선택·2마리 선택·상대 호버·키보드 커서·관전자 시점)을 GUI 배율 3(640×360)·4(480×270)에서 눈으로 확인했다.
+- **확인 안 함:** 실제 두 플레이어 대전, 서버 왕복(확정·취소·재시도 버튼의 서버 응답), 취소 확인창에서 돌아왔을 때 화면 복귀, 단위 테스트 실행(44개 파일이라 생략).
+
 ## [2026-10-13 00:40] 종료 후 배틀·BGM 잔류 (원인은 MCC 본체) 재점검
 
 - **증상(운영 10-12 20:55)**: PvP가 끝나도 클라 배틀과 배틀 BGM이 남았다. 원인은 MCC 본체 `BattleSceneClient`가 보류한 종료를 라운지 이탈 텔레포트의 클라 리셋이 버린 것이다. 수정·점검 내용은 MCC `MEMORY.md` 같은 시각 항목.

@@ -109,8 +109,10 @@ internal object PvpRoomHudOverlay {
                 theme.colors.textSecondary, true)
         }
         layout.spectatorRows.forEachIndexed { index, row ->
-            val name = font.plainSubstrByWidth(room.spectators[index].name, (row.width - 9).coerceAtLeast(1))
-            graphics.drawString(font, "• $name", row.x + 2, row.y + 1, theme.colors.textPrimary, true)
+            val member = room.spectators[index]
+            val name = font.plainSubstrByWidth(member.name, (row.width - 13).coerceAtLeast(1))
+            PvpSpectatorCard.face(graphics, member, row.x + 2, row.y + 1, 8)
+            graphics.drawString(font, name, row.x + 12, row.y + 1, theme.colors.textPrimary, true)
         }
         if (layout.hiddenSpectatorCount > 0) {
             val lastBottom = layout.spectatorRows.lastOrNull()?.bottom ?: layout.spectatorHeading?.bottom ?: layout.panel.bottom

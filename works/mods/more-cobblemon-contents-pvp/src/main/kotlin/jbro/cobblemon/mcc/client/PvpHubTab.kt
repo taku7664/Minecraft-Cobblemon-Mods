@@ -161,7 +161,13 @@ internal object PvpHubClient {
         if (requestId != null) return
         selection = PvpSelectionScreenController(state, send = { intent -> PvpPlayClientNetworking.send(PvpSelectionIntentPayload(intent)) })
         view = View.SELECTION
-        show()
+        openSelection()
+    }
+
+    /** The team preview opens as its own screen over the arena, not inside the hub. */
+    fun openSelection() {
+        val controller = selection ?: return
+        Minecraft.getInstance().setScreen(PvpSelectionScreen(controller))
     }
 
     fun rejectSelection(requestId: UUID, matchId: UUID, messageKey: String) {
@@ -176,11 +182,16 @@ internal object PvpHubClient {
         if (selection?.state?.matchId != matchId) return
         selection = null
         view = if (room != null) View.ROOM else View.LIST
-        if (MccHubScreen.showing(CONTENT)) Minecraft.getInstance().setScreen(null)
+        val screen = Minecraft.getInstance().screen
+        if (MccHubScreen.showing(CONTENT) || screen is PvpSelectionScreen) Minecraft.getInstance().setScreen(null)
     }
 
     /** The HUD's open control: the last room this client was in, refreshed through the join handshake when shown. */
     fun showLastRoom() {
+        if (view == View.SELECTION && selection != null) {
+            openSelection()
+            return
+        }
         val last = PvpRoomClientState.lastRoom ?: return
         dropStaleSpectatorPreview(last)
         if (room?.state?.roomId != last.roomId) {
@@ -298,67 +309,38 @@ internal class PvpHubTab : MccHubTabContent {
 
         val body = MccHubKit.card(host, settings, room("settings"))
         val editable = isHost && lobby && idle
-        val settingsArea = MccHubKit.settingsArea(body)
         val mechanics = state.settings.immutableEnabledMechanics
-        fun toggleMechanic(mechanic: PvpBattleMechanic) {
-            val next = LinkedHashSet(mechanics)
-            if (!next.add(mechanic)) next.remove(mechanic)
-            updateSettings(controller, state.settings.copy(enabledMechanics = next))
-        }
         val rows = listOf(
-            MccHubKit.ChoiceRow(room("group.visibility"),
-                PvpRoomVisibility.entries.map { MccHubKit.Choice(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
-                state.settings.visibility.name.lowercase(), editable) { id ->
-                updateSettings(controller, state.settings.copy(visibility = PvpRoomVisibility.entries.first { it.name.lowercase() == id }))
+            PvpRoomSettingRows.Row(room("group.visibility"),
+                PvpRoomVisibility.entries.map { PvpRoomSettingRows.Option(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
+                setOf(state.settings.visibility.name.lowercase()), editable) { id ->
+                val next = PvpRoomVisibility.entries.first { it.name.lowercase() == id }
+                if (next != state.settings.visibility) updateSettings(controller, state.settings.copy(visibility = next))
             },
-            MccHubKit.ChoiceRow(room("group.format"),
-                PvpBattleFormat.entries.map { MccHubKit.Choice(it.recordId, room("format.${it.recordId}")) },
-                state.settings.format.recordId, editable) { id ->
-                updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries.first { it.recordId == id }))
+            PvpRoomSettingRows.Row(room("group.format"),
+                PvpBattleFormat.entries.map { PvpRoomSettingRows.Option(it.recordId, room("format.${it.recordId}")) },
+                setOf(state.settings.format.recordId), editable) { id ->
+                val next = PvpBattleFormat.entries.first { it.recordId == id }
+                if (next != state.settings.format) updateSettings(controller, state.settings.copy(format = next))
             },
-            MccHubKit.ChoiceRow(room("group.mechanics"),
-                PvpBattleMechanic.entries.map { MccHubKit.Choice(it.id, room("mechanic.${it.id}")) }, null, editable,
-                selectedIds = mechanics.mapTo(HashSet()) { it.id }) { id ->
-                toggleMechanic(PvpBattleMechanic.entries.first { it.id == id })
+            PvpRoomSettingRows.Row(room("group.mechanics"),
+                PvpBattleMechanic.entries.map { PvpRoomSettingRows.Option(it.id, room("mechanic.${it.id}")) },
+                mechanics.mapTo(HashSet()) { it.id }, editable, room("group.mechanics")) { id ->
+                val next = LinkedHashSet(mechanics)
+                val mechanic = PvpBattleMechanic.entries.first { it.id == id }
+                if (!next.add(mechanic)) next.remove(mechanic)
+                updateSettings(controller, state.settings.copy(enabledMechanics = next))
             },
         )
-        if (MccHubKit.choiceMode(settingsArea.width, settingsArea.height, rows) == MccHubKit.ChoiceMode.COMPACT) {
-            // A short card toggles visibility and format side by side, and lists one mechanic per row below them,
-            // all with small controls so the four mechanics fit without scrolling where they can.
-            val feedback = roomFeedback(controller)
-            val parts = UiLayout.column(gap = MccHubKit.GAP) {
-                fixed(MccHubKit.controlHeight(UiControlSize.SMALL), "toggles")
-                weight("list", min = 1)
-                if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
-            }.solve(body)
-            val toggles = parts["toggles"]
-            val visibility = state.settings.visibility
-            val format = state.settings.format
-            MccHubKit.buttonRow(host, toggles, listOf(
-                MccHubKit.Action(room("visibility.${visibility.name.lowercase()}"), enabled = editable, tooltip = room("group.visibility")) {
-                    updateSettings(controller, state.settings.copy(visibility = PvpRoomVisibility.entries[(visibility.ordinal + 1) % PvpRoomVisibility.entries.size]))
-                },
-                MccHubKit.Action(room("format.${format.recordId}"), enabled = editable, tooltip = room("group.format")) {
-                    updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries[(format.ordinal + 1) % PvpBattleFormat.entries.size]))
-                },
-            ), UiControlSize.SMALL)
-            feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
-            scrollable = MccHubKit.scrollList(host, parts["list"],
-                PvpBattleMechanic.entries.map { mechanic ->
-                    val enabled = mechanic in mechanics
-                    MccHubKit.ListEntry(room("mechanic.${mechanic.id}"), trailing = if (enabled) Component.literal("✓") else null,
-                        selected = enabled, enabled = editable, tooltip = room("group.mechanics")) { toggleMechanic(mechanic) }
-                }, PvpHubClient.mechanicsOffset, UiControlSize.SMALL) { PvpHubClient.mechanicsOffset = it }
-        } else {
-            val feedback = roomFeedback(controller)
-            val parts = UiLayout.column(gap = MccHubKit.GAP) {
-                if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
-                weight("spectators")
-            }.solve(MccHubKit.below(body, MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2))
-            feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
-            val spectators = parts["spectators"]
-            if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
-        }
+        val feedback = roomFeedback(controller)
+        val settingsBottom = PvpRoomSettingRows.place(host, body, rows)
+        val parts = UiLayout.column(gap = MccHubKit.GAP) {
+            if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
+            weight("spectators")
+        }.solve(MccHubKit.below(body, settingsBottom + MccHubKit.GAP + 3))
+        feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
+        val spectators = parts["spectators"]
+        if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
 
         val members = (listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators).distinctBy(PvpRoomMemberView::playerId)
         val manageable = isHost && lobby && idle && (state.inviteCandidates.isNotEmpty() || members.any { it.playerId != state.hostId })
@@ -465,99 +447,15 @@ internal class PvpHubTab : MccHubTabContent {
             listOf(MccHubKit.Action(Component.translatable("gui.back")) { PvpHubClient.navigate(PvpHubClient.View.ROOM) }), emptyList())
     }
 
+    /** The team preview runs in its own screen; the tab only offers the way back to it. */
     private fun buildSelection(host: MccHubContentHost, layout: PvpHubLayout, controller: PvpSelectionScreenController) {
         val state = controller.state
         MccHubKit.strip(host, layout.strip,
             Component.empty().append(pvp("title")).append(" · ").append(pvp("format.${state.format.recordId}")))
-        host.add(LiveLine(UiLayout.inset(UiLayout.leaf("line"), right = 6).solve(layout.strip)["line"], alignEnd = true,
-            color = { it.colors.textPrimary }) { pvp("time_remaining", remainingSeconds(state)) })
-        val (left, right) = MccHubKit.columns(layout.body, 1, 1)
-        if (state.spectatorMode) {
-            publicTeam(host, left, state.leftPlayerName, state.spectatorLeftParty, state, 0, MccHubKit.CardTone.FEATURE)
-            publicTeam(host, right, state.rightPlayerName, state.spectatorRightParty, state, TEAM_SIZE, MccHubKit.CardTone.INFO)
-            MccHubKit.footer(host, layout.footer,
-                listOf(MccHubKit.Action(pvp("return")) { PvpPlayClientNetworking.exitLoungeSpectator() }), emptyList())
-            return
-        }
-        val ownName = (if (state.playerOnLeft) state.leftPlayerName else state.rightPlayerName)
-            .ifBlank { Minecraft.getInstance().player?.scoreboardName.orEmpty() }
-        val opponentName = (if (state.playerOnLeft) state.rightPlayerName else state.leftPlayerName).ifBlank { state.opponentName }
-        val ownRect = if (state.playerOnLeft) left else right
-        val opponentRect = if (state.playerOnLeft) right else left
-        val own = MccHubKit.card(host, ownRect, Component.literal(ownName), MccHubKit.CardTone.FEATURE)
-        val (statusLine, grid) = MccHubKit.lineAbove(own)
-        host.add(LiveLine(statusLine, color = { theme ->
-            if (controller.feedbackKey != null && !controller.isPending) theme.colors.accentDanger else theme.colors.textDim
-        }) { selectionStatus(controller) })
-        val order = controller.selectedPokemonIds.toList()
-        val party = state.ownParty.take(TEAM_SIZE)
-        MccHubPortraitCards.grid(grid, party.size).zip(party).forEach { (cell, slot) ->
-            val position = order.indexOf(slot.pokemonId).takeIf { it >= 0 }?.plus(1)
-            val name = speciesName(slot.speciesId)
-            val card = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(slot.pokemonId, slot.speciesId, slot.formId),
-                if (position == null) name else Component.literal("($position) ").append(name),
-                Component.literal("Lv. ${slot.battleLevel}"), position != null, name) {
-                if (controller.toggle(slot.pokemonId)) host.rebuild()
-            }
-            card.active = !controller.isPending && !state.waitingForOpponent
-            card.setTooltip(Tooltip.create(pvp("party_entry.preview_tooltip", name, slot.originalLevel, slot.battleLevel)))
-            host.add(card)
-        }
-        publicTeam(host, opponentRect, opponentName, state.opponentParty, state, 0, MccHubKit.CardTone.INFO, withCard = true)
-
-        // Retry comes first: after a failed launch both players are ready (waitingForOpponent), and the server refuses
-        // to unready a match that is only waiting for its battle to start.
-        val primary = when {
-            state.battleStartRetryAvailable -> MccHubKit.Action(pvp("retry"), UiButtonVariant.PRIMARY, !controller.isPending, minWidth = 96) {
-                if (controller.retry()) host.rebuild()
-            }
-            state.waitingForOpponent -> MccHubKit.Action(pvp("unready"), enabled = !controller.isPending) {
-                if (controller.unready()) host.rebuild()
-            }
-            else -> MccHubKit.Action(pvp("confirm_selection"), UiButtonVariant.PRIMARY,
-                !controller.isPending && controller.selectedPokemonIds.size == state.requiredSelectionSize, minWidth = 96) {
-                if (controller.submit()) host.rebuild()
-            }
-        }
-        MccHubKit.footer(host, layout.footer, listOf(MccHubKit.Action(pvp("cancel"), UiButtonVariant.DANGER, !controller.isPending) {
-            MccHubKit.confirm(pvp("cancel.confirm.title"), pvp("cancel.confirm.message"), pvp("cancel"), Component.translatable("gui.back")) {
-                if (controller.cancel()) MccHubScreen.refresh(PvpHubClient.CONTENT)
-            }
-        }), listOf(primary))
-    }
-
-    /** A team whose species alone are public: an opponent's preview, or either side for a spectator. */
-    private fun publicTeam(
-        host: MccHubContentHost,
-        rect: UiRect,
-        name: String,
-        party: List<PvpSelectionOpponentSlot>,
-        state: PvpSelectionViewState,
-        keyOffset: Int,
-        tone: MccHubKit.CardTone,
-        withCard: Boolean = true,
-    ) {
-        val body = if (withCard) MccHubKit.card(host, rect, Component.literal(name), tone) else rect
-        val team = party.take(TEAM_SIZE)
-        MccHubPortraitCards.grid(body, team.size).zip(team).forEachIndexed { index, (cell, slot) ->
-            val portrait = MccPokemonPortraits.pokemon("pvp-opponent:${state.matchId}:${keyOffset + index}", slot.speciesId, slot.formId,
-                animate = false) ?: CobblemonUiRenderContent.Empty
-            val species = speciesName(slot.speciesId)
-            val card = MccHubPortraitCards.Button(cell, portrait, species, Component.empty(), false, species) {}
-            card.active = false
-            host.add(card)
-        }
-    }
-
-    private fun selectionStatus(controller: PvpSelectionScreenController): Component {
-        val state = controller.state
-        return when {
-            controller.isPending -> pvp("processing")
-            controller.feedbackKey != null -> Component.translatable(controller.feedbackKey!!)
-            state.battleStartRetryAvailable -> pvp("error.battle_unavailable")
-            state.waitingForOpponent -> pvp("waiting")
-            else -> pvp("selection_summary", controller.selectedPokemonIds.size, state.requiredSelectionSize, remainingSeconds(state))
-        }
+        val body = MccHubKit.card(host, layout.body, pvp("title"), MccHubKit.CardTone.FEATURE)
+        MccHubKit.text(host, body, pvp("select.reopen_hint"))
+        MccHubKit.footer(host, layout.footer, emptyList(),
+            listOf(MccHubKit.Action(pvp("select.reopen"), UiButtonVariant.PRIMARY, minWidth = 96) { PvpHubClient.openSelection() }))
     }
 
     private fun updateSettings(controller: PvpRoomScreenController, settings: PvpRoomSettings) {
@@ -588,6 +486,9 @@ internal class PvpHubTab : MccHubTabContent {
                 graphics.drawString(font, font.plainSubstrByWidth(member.name, slot.nameWidth), slot.nameLeft, slot.bounds.y + 2,
                     MccHubKit.panelText(theme), false)
             }
+            // Hovering a spectator shows their face large with the whole name, for faces too small to tell apart.
+            grid.slots.firstOrNull { mouseX in it.bounds.x until it.bounds.right && mouseY in it.bounds.y until it.bounds.bottom }
+                ?.let { PvpSpectatorCard.drawOne(graphics, mouseX, mouseY, members[it.index]) }
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
@@ -607,12 +508,8 @@ internal class PvpHubTab : MccHubTabContent {
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             if (spectators.isEmpty() || mouseX !in x until x + width || mouseY !in y until y + height) return
             val shown = spectators.take(MAX_LISTED_SPECTATORS)
-            val lines = buildList {
-                add(label.visualOrderText)
-                shown.forEach { add(Component.literal("• ${it.name}").visualOrderText) }
-                if (spectators.size > shown.size) add(room("hud.more_spectators", spectators.size - shown.size).visualOrderText)
-            }
-            Minecraft.getInstance().screen?.setTooltipForNextRenderPass(lines)
+            PvpSpectatorCard.drawList(graphics, mouseX, mouseY, label, shown,
+                if (spectators.size > shown.size) room("hud.more_spectators", spectators.size - shown.size) else null)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
