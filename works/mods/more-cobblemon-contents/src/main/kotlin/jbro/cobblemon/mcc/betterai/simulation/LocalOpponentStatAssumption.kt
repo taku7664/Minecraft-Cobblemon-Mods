@@ -33,10 +33,9 @@ internal object LocalOpponentStatAssumption {
         val changed = context.state.pokemon.map { pokemon ->
             val level = pokemon.level
             if (pokemon.side != BattleSide.OPPONENT || level == null) return@map pokemon
-            val matching = preview.pokemon.filter { slot ->
-                slot.speciesId.equals(pokemon.speciesId, true) &&
-                    (slot.formId == null || slot.formId.equals(pokemon.formId, true))
-            }
+            // A revealed opponent is named `showdown:<id>`, the preview `cobblemon:<species>`: an exact string match
+            // never held in play, so no tier's assumption (Boss's exact spread included) reached the scores (2026-10-13).
+            val matching = preview.pokemon.filter { slot -> NativeInBattleFormes.samePublicIdentity(pokemon, slot) }
             val slot = matching.singleOrNull() ?: return@map pokemon
             val base = slot.buildCandidatePool?.baseStats?.takeIf { it.isNotEmpty() } ?: return@map pokemon
             val exact = context.localOpponentStatSpreads[slot.previewSlotId]

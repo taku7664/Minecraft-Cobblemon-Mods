@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-13 02:20] 토게키스-코라이돈 KO 점수 95의 원인: 상대 종 ID 대조 실패 (G-916)
+
+- **원인**: 공개된 상대는 `showdown:<id>`, 프리뷰는 `cobblemon:<종>`이라 `LocalOpponentStatAssumption.applyToPublicState`가 실게임에서 한 번도 맞지 않았다. 등급별 능력치 가정(보스의 정확한 노력치 포함)이 1턴 점수·대면표에 안 들어가고 공개 종 범위 전체가 남았다. KO 확률이 범위 양 끝(0%·100%)의 중간값 0.5로 잡혀 95점(200 × 0.5 × 0.95)이 됐다. 의심했던 `cfefb7ab`·`7efcf27f`·`7dd77a79`·`e0e6f20b`는 원인이 아니다(에어슬래시는 다단히트도 HP 비례도 아니다).
+- **수정**: `NativeInBattleFormes.samePublicIdentity`(네이티브 컴파일러 두 곳의 대조 규칙을 옮김)를 `applyToPublicState`·`LocalSetupGate`·두 컴파일러가 같이 쓴다. 회귀 테스트 `LocalOpponentStatAssumptionTest` 추가.
+- **영향이 큼**: 이 수정으로 모든 등급의 로컬 점수가 처음으로 가정 능력치를 쓴다. 측정(승률 비교)은 하지 않았다.
+- **테스트**: F 경로 Gradle로 `LocalOpponentStatAssumptionTest|LocalQuickDeciderTest|NativeOpponentRosterHypothesisCompilerTest|NativeOpponentRosterStateMaterializerTest|NativeOpponentPreviewBuildWorldCompilerTest|LocalMatchupScoreTest|LocalBattleReadTest|LocalTacticalBrainSimulationTest` 160개 중 152 통과, 7 선택 실행 건너뜀, 1 실패(루카리오: 인파이트가 확정 KO가 되어 강제 `knockout` 판정, 사용자 결정 대기). 토게키스 통과는 추첨 시드 덕(에어슬래시 85%)이다.
+- 빌드·배포·실게임 안 함.
+
 ## [2026-10-13 00:10] 압정 겹수 테스트 2개 실패 원인: 픽스처 (코드는 그대로)
 
 - **증상**: `LocalTacticalBrainSimulationTest`의 `stacking side conditions stop at their declared maximum`, `stackable opponent side condition can still add another layer`가 `add_spikes_layer` 대신 `small_damage`를 골랐다(10-12부터 `main`에서 실패).

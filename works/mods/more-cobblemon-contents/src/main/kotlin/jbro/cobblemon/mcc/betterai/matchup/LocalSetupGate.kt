@@ -164,7 +164,7 @@ internal object LocalSetupGate {
         val ownTeam = context.exactOwnTeam
         if (preview != null && ownTeam != null) {
             val unseen = preview.pokemon.filter { slot ->
-                seen.none { it.speciesId.equals(slot.speciesId, true) && (slot.formId == null || slot.formId.equals(it.formId, true)) }
+                seen.none { jbro.cobblemon.mcc.betterai.simulation.NativeInBattleFormes.samePublicIdentity(it, slot) }
             }
             val coming = (preview.selectionSize - seen.size).coerceIn(0, unseen.size)
             if (coming > 0) {

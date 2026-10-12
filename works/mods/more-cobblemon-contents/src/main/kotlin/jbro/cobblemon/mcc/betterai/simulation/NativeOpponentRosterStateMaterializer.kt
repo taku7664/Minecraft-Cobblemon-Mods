@@ -271,17 +271,7 @@ internal object NativeOpponentRosterStateMaterializer {
     private fun samePublicIdentity(
         pokemon: BattlePokemonStateView,
         preview: BattleOpponentTeamPreviewPokemonView,
-    ): Boolean {
-        val publicForm = pokemon.formId
-        val previewForm = preview.formId
-        val species = NativeInBattleFormes.startingSpecies(pokemon.speciesId)
-        val baseIdentity = species == normalizedSpeciesId(preview.speciesId) &&
-            (publicForm == null || previewForm == null ||
-                normalizedSpeciesId(publicForm) == normalizedSpeciesId(previewForm))
-        val showdownIdentity = pokemon.speciesId.startsWith("showdown:") &&
-            preview.showdownSpeciesId?.let { species == normalizedSpeciesId(it) } == true
-        return baseIdentity || showdownIdentity
-    }
+    ): Boolean = NativeInBattleFormes.samePublicIdentity(pokemon, preview)
 
     private fun issue(
         code: NativeOpponentRosterMaterializationIssueCode,

@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
@@ -10,6 +12,22 @@ internal object NativeInBattleFormes {
     fun startingSpecies(speciesId: String): String {
         val id = PublicIds.canonical(speciesId)
         return IN_BATTLE[id] ?: id
+    }
+
+    /**
+     * Whether the revealed [pokemon] is the team preview's [preview]. A Showdown switch line names the species as
+     * `showdown:<id>` with the form folded in (Zoroark-Hisui), while the Cobblemon preview names `cobblemon:<species>`
+     * plus a separate form, so the ids are compared canonical, namespace dropped, from the starting forme.
+     */
+    fun samePublicIdentity(pokemon: BattlePokemonStateView, preview: BattleOpponentTeamPreviewPokemonView): Boolean {
+        val publicForm = pokemon.formId
+        val previewForm = preview.formId
+        val species = startingSpecies(pokemon.speciesId)
+        val baseIdentity = species == PublicIds.canonical(preview.speciesId) &&
+            (publicForm == null || previewForm == null || PublicIds.canonical(publicForm) == PublicIds.canonical(previewForm))
+        val showdownIdentity = pokemon.speciesId.startsWith("showdown:") &&
+            preview.showdownSpeciesId?.let { species == PublicIds.canonical(it) } == true
+        return baseIdentity || showdownIdentity
     }
 
     /** The in-battle forme [speciesId] names, or null when it is a starting forme. */

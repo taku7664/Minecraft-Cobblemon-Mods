@@ -228,19 +228,7 @@ internal object NativeOpponentRosterHypothesisCompiler {
     private fun samePublicIdentity(
         revealed: BattlePokemonStateView,
         preview: BattleOpponentTeamPreviewPokemonView,
-    ): Boolean {
-        val revealedForm = revealed.formId
-        val previewForm = preview.formId
-        val species = NativeInBattleFormes.startingSpecies(revealed.speciesId)
-        val baseIdentity = species == normalizedId(preview.speciesId) &&
-            (revealedForm == null || previewForm == null ||
-                normalizedId(revealedForm) == normalizedId(previewForm))
-        // A Showdown switch line names the form (for example Zoroark-Hisui), while the
-        // Cobblemon team preview names the base species plus a separate form.
-        val showdownIdentity = revealed.speciesId.startsWith("showdown:") &&
-            preview.showdownSpeciesId?.let { species == normalizedId(it) } == true
-        return baseIdentity || showdownIdentity
-    }
+    ): Boolean = NativeInBattleFormes.samePublicIdentity(revealed, preview)
 
     /**
      * A cross-identity assignment represents an Illusion-compatible world. At the opening, every
