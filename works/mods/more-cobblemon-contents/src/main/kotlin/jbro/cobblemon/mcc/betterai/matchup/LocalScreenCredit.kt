@@ -72,7 +72,7 @@ internal object LocalScreenCredit {
         }
 
     /** A Mega Evolution this turn whose Mega has Snow Warning: the snow is up before the move. */
-    private fun snowOnMega(move: BattleActionCandidate, user: BattlePokemonStateView): Boolean =
+    fun snowOnMega(move: BattleActionCandidate, user: BattlePokemonStateView): Boolean =
         move.mechanic?.mechanicId?.let(PublicIds::canonical) in MEGA &&
             PublicIds.canonical(user.speciesId.substringAfter(':')) in SNOW_WARNING_MEGAS
 

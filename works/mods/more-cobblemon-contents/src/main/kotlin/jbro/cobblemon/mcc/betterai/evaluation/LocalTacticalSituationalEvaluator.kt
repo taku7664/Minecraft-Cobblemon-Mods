@@ -548,7 +548,13 @@ internal object LocalTacticalSituationalEvaluator {
             BattleMoveRequirementKind.WEATHER_ANY_OF -> knownMatch(
                 context.state.field.weather?.effectId,
                 requirement.acceptedValueIds,
-            )
+            ).let { state ->
+                // A Snow Warning Mega Evolution this turn brings the snow before the move (Mega Froslass's Aurora Veil).
+                val snowComes = state == RequirementState.UNSATISFIED && actor != null &&
+                    canonical(requirement.acceptedValueIds).any { it == "snow" || it == "hail" } &&
+                    jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.snowOnMega(candidate, actor)
+                if (snowComes) RequirementState.SATISFIED else state
+            }
             BattleMoveRequirementKind.TERRAIN_PRESENT -> satisfied(context.state.field.terrain != null)
             BattleMoveRequirementKind.USER_STATUS_ANY_OF -> knownMatch(actor?.statusId, requirement.acceptedValueIds)
             BattleMoveRequirementKind.USER_STATUS_PRESENT -> actor?.let { satisfied(it.statusId != null) }

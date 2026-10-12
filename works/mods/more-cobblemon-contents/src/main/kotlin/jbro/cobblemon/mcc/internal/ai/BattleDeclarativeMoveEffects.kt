@@ -367,7 +367,10 @@ object BattleDeclarativeMoveEffects {
     private val TARGET_LAST_MOVE_PATTERN = Regex("""target\.lastMove""")
     private val TARGET_PENDING_ATTACK_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?category\s*===\s*[\"']Status[\"']""")
     private val USER_SPECIES_PATTERN = Regex("""if\s*\(\s*source\.species\.(?:baseSpecies|name)\s*===\s*[\"']([^\"']+)[\"'](?:\s*\|\|[^)]*)?\s*\)\s*\{?\s*return\s*;""")
-    private val MULTIPLE_ACTIVE_PATTERN = Regex("""activePerHalf\s*(?:>|===)\s*1""")
+    // Only a failure check: a screen's damage modifier also reads activePerHalf (a doubles screen cuts less), and
+    // that reading once made Reflect, Light Screen and Aurora Veil fail in every singles battle.
+    private val MULTIPLE_ACTIVE_PATTERN = Regex(
+        """return\s+this\.activePerHalf\s*>\s*1|activePerHalf\s*===\s*1\s*\)\s*\{?\s*return\s+false""")
     private val OPPOSITE_GENDER_PATTERN = Regex("""target\.gender\s*===\s*[\"']M[\"'][\s\S]*source\.gender\s*===\s*[\"']F[\"']""")
     private val STRING_VALUE_PATTERN = Regex("""[\"']([^\"']+)[\"']""")
     private val MAXIMUM_LAYERS_PATTERN = Regex("""effectState\.layers\s*>=\s*(\d+)""")

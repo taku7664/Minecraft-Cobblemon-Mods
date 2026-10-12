@@ -7,7 +7,12 @@ import jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
 import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
+import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
@@ -48,6 +53,24 @@ class LocalScreenCreditTest {
         assertTrue(veilSnow >= reflect, "Aurora Veil in snow covers both: $veilSnow vs $reflect")
     }
 
+    @Test
+    fun `a singles screen is not read as a doubles-only move`() {
+        // The screens' damage modifier reads activePerHalf; only Follow Me's kind of check means the move fails alone.
+        for (id in listOf("reflect", "lightscreen", "auroraveil"))
+            assertTrue(MOVES.getValue(id).requirements.none { it.kind == BattleMoveRequirementKind.MULTIPLE_ACTIVE_POKEMON }, id)
+        for (id in listOf("followme", "ragepowder", "afteryou", "quash", "spotlight"))
+            assertTrue(MOVES.getValue(id).requirements.any { it.kind == BattleMoveRequirementKind.MULTIPLE_ACTIVE_POKEMON }, id)
+        val context = prepared("milotic-ferrothorn-switch-in")
+        val template = screen("reflect")
+        val reflect = BattleActionCandidate(template.actionId, template.kind, template.actorSlot, template.moveSlot, "reflect",
+            moveDetails = requireNotNull(template.moveDetails).copy(effects = MOVES.getValue("reflect")))
+        val profile = BattleTrainerProfile(skillLevel = 5, personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS)
+        val ranked = LocalBattleActionPolicy.rank(context.copy(candidates = context.candidates + reflect), null, profile)
+        val rank = ranked.first { it.outcome.candidate.actionId == reflect.actionId }
+        assertTrue(!rank.outcome.publiclyInert && rank.comparisonValue > 0.0, "reflect ${rank.comparisonValue}")
+    }
+
     private fun screen(moveId: String) = BattleActionCandidate(
         actionId = "move:0:9:screen:$moveId",
         kind = BattleActionKind.USE_MOVE,
@@ -59,6 +82,15 @@ class LocalScreenCreditTest {
                 listOf(BattleMoveEffectView(BattleMoveEffectKind.SIDE_CONDITION, BattleMoveEffectTarget.USER_SIDE, valueId = moveId)),
                 false)),
     )
+
+    private companion object {
+        val MOVES: Map<String, BattleMoveEffectsView> by lazy {
+            java.util.zip.ZipInputStream(requireNotNull(LocalScreenCreditTest::class.java.getResourceAsStream("/data/cobblemon/showdown.zip"))).use { zip ->
+                generateSequence { zip.nextEntry }.first { it.name == "data/moves.js" }
+                BattleDeclarativeMoveEffects.parse(zip.readBytes().toString(Charsets.UTF_8))
+            }
+        }
+    }
 
     private fun prepared(name: String): BattleDecisionContext {
         val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
