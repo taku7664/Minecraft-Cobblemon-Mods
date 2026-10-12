@@ -45,11 +45,12 @@ class LocalHazardSwitchAvailabilityTest {
     }
 
     @Test
-    fun `own hazards get the same reserve discount while screens retain their old value`() {
+    fun `own hazards cost each own reserve its entry while screens retain their old value`() {
         val source = context(BattleFormat.DOUBLE, 4, 3, "spikes")
         val own = source.state.derive(remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 4),
             pokemon = roster(BattleSide.ALLY, BattleFormat.DOUBLE, 4, 3) + roster(BattleSide.OPPONENT, BattleFormat.DOUBLE, 4, 4))
-        assertEquals(-0.05, LocalImmediateTurnScorer.score(own, withEffect(own, BattleSide.ALLY, "spikes"), source).fieldDelta, 1e-12)
+        // Three left, two in front: one reserve to step on one layer of Spikes.
+        assertEquals(-ENTRY, LocalImmediateTurnScorer.score(own, withEffect(own, BattleSide.ALLY, "spikes"), source).fieldDelta, 1e-12)
         assertEquals(0.15, LocalImmediateTurnScorer.score(own, withEffect(own, BattleSide.ALLY, "reflect"), source).fieldDelta, 1e-12)
     }
 
@@ -61,9 +62,13 @@ class LocalHazardSwitchAvailabilityTest {
             assertEquals(20.0 * expected, LocalNonDamagingMoveEvaluator.pressure(candidate, source, 1.0), 1e-12,
                 "$format $remaining/$size $hazard root")
             val after = withEffect(source.state, BattleSide.OPPONENT, hazard)
-            assertEquals(0.1 * expected, LocalImmediateTurnScorer.score(source.state, after, source).fieldDelta, 1e-12,
+            // Stealth Rock and Spikes cost each reserve its entry (an eighth for one of no known type); the others
+            // keep the flat value discounted by the reserves left.
+            val reserves = (remaining - slots(format)).coerceAtLeast(0)
+            val leaf = if (hazard in HP_HAZARDS) ENTRY * reserves else 0.1 * expected
+            assertEquals(leaf, LocalImmediateTurnScorer.score(source.state, after, source).fieldDelta, 1e-12,
                 "$format $remaining/$size $hazard projected turn")
-            assertEquals(0.1 * expected, LocalImmediateTurnScorer.positionEffectValue(after), 1e-12,
+            assertEquals(leaf, LocalImmediateTurnScorer.positionEffectValue(after), 1e-12,
                 "$format $remaining/$size $hazard native leaf")
         }
     }
@@ -97,4 +102,9 @@ class LocalHazardSwitchAvailabilityTest {
         }))
 
     private fun slots(format: BattleFormat) = if (format == BattleFormat.DOUBLE) 2 else 1
+
+    private companion object {
+        val HP_HAZARDS = setOf("stealthrock", "spikes")
+        const val ENTRY = 1.0 / 8.0
+    }
 }
