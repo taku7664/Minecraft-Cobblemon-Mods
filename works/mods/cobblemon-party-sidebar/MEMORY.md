@@ -5,7 +5,7 @@
 - **구현:** 생존 `InventoryMenu`와 등록 메뉴 `pokefusion:fusion`에 사이드바를 표시한다. `AbstractContainerScreen`의 renderBackground/render/click/release/outside hook을 추가하고 기존 인벤 hook을 유지했다. 실제 Minecraft 메서드를 확인하여 배경은 `renderBackground` TAIL에 연결했다. 패널 경계/높이는 해당 화면 imageHeight에 맞추고 EMI 제외 영역도 일반화했다. 합성창의 합성 재열기 버튼은 비활성화한다. GUI 전송·커서 복원·지닌 물건 교환은 실제 `player.containerMenu` 커서를 쓰며, 합성창 Shift 클릭의 기존 재료 입고는 유지한다. pokefusion 소스는 변경하지 않았다.
 - **소스·검증:** 구현 `e16b32fb`와 아이템 툴팁 `15a67d2b`는 main `d57859fc8059480cc155f4086707041574c72fb3`에 병합·푸시, origin/main 0/0을 확인했다. 관련 src·빌드/루트 설정이 main과 같아 검증 산출물을 재사용했다. 두 모드 build 성공, 신규 아이템 모드 단위 테스트 17/17 통과(사이드바 자체 테스트 없음). ZIP/CRC·JDK `jar --validate`·메타데이터·access widener 검증과 제품 내 검증용 코드 없음도 확인했다.
 - **배치:** 실제 기본 저장소 `develop-product/{server,client}/mods`에 0.2.1 대신 0.2.2를 설치했다(client는 `cobblemon-dev` 정션). 두 설치본 SHA-256은 `f0067efb3d96d6cc59eb59d489b3b4aa6149756fa99ca903bf1bc09e0f31b9f8`이며 신규 아이템 모드 0.1.2도 함께 배치했다. 구 JAR은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-234526`에 백업 후 제거했다. 대상 게임·서버 정지와 25566 미수신을 확인했고 다른 프로필 PPakemon은 종료하지 않았다. 다른 mods 파일 해시는 보존했고 config/world에는 쓰지 않았다.
-- **미확인:** 사용자가 직접 확인하기로 하여 추가 서버·게임 기동과 합성창 실게임 검증은 하지 않았다. 이전 격리 기본 복원 PASS는 실제 사용자 구성의 검증이 아니며, 일반 인벤 빈 엔트리 복원 실패 원인과 해결 여부는 미확정이다. 격리 로그·추가 부트 실패·검증 하네스 보존 범위는 신규 모드의 같은 시각 기록에 남겼다.
+- **미확인:** 사용자가 직접 확인하기로 하여 추가 서버·게임 기동과 합성창 실게임 검증은 하지 않았다. 이전 격리 기본 복원 PASS는 실제 사용자 구성의 검증이 아니다. 격리 로그·추가 부트 실패·검증 하네스 보존 범위는 신규 모드의 같은 시각 기록에 남겼다.
 
 ## [2026-10-12 21:57] 공유 툴팁 호출 수정 빌드·main 반영·개발 설치 (0.2.1, 실게임 미확인)
 
