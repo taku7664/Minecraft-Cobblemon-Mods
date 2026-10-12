@@ -356,6 +356,14 @@ internal class LocalTacticalBrain(
         val screenAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
         }.orEmpty() }
+        // A debuff is worth what it takes off its target's exchanges with this whole team (LocalDebuffValue; singles).
+        val debuffReadings by lazy { if (!rulesApply || difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
+            else ruleScores?.let { scores ->
+                difficultyContext.candidates.mapNotNull { candidate ->
+                    jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.read(candidate, difficultyContext, scores, tuning.matchupRecovery)
+                        ?.let { candidate.actionId to it }
+                }.toMap()
+            }.orEmpty() }
         // Stealth Rock, Spikes and Encore earn what comes after the engine's two turns (LocalHazardEncoreCredit).
         val hazardEncoreAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
@@ -530,7 +538,15 @@ internal class LocalTacticalBrain(
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
         val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null
             else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
-        val nativeStatusAdjustments = statusPricing?.adjustments.orEmpty()
+        // Where the rules run, the moves they price (hazards, Encore, debuffs) take the rules' value, not the engine's
+        // two-turn reading; below that tier the engine's reading is all they have.
+        val nativeStatusAdjustments = statusPricing?.adjustments.orEmpty().let { engine ->
+            if (!rulesApply) engine else engine.filterKeys { id ->
+                val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@filterKeys true
+                !jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.prices(candidate) &&
+                    !jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.isDebuff(candidate)
+            }
+        }
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
         // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
@@ -611,12 +627,20 @@ internal class LocalTacticalBrain(
         val setupAdjustments = setupScores.mapNotNull { (id, value) ->
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to tuning.setupSweepCredit * (value - it.comparisonValue) }
         }.toMap()
+        // A debuff's ranking value becomes what it takes off, in knockout units (the setup score's scale).
+        val debuffAdjustments = debuffReadings.mapNotNull { (id, reading) ->
+            // A debuff that fails publicly (the target already has a status) keeps its failing rank.
+            searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.takeUnless { it.outcome.publiclyInert }?.let {
+                id to (reading.gain * tuning.knockoutMaterialScore - it.comparisonValue)
+            }
+        }.toMap()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
-            hazardEncoreAdjustments.keys + nativeStatusAdjustments.keys).associateWith {
+            hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
-                (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (nativeStatusAdjustments[it] ?: 0.0)
+                (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
+                (nativeStatusAdjustments[it] ?: 0.0)
         }
         val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
@@ -647,6 +671,7 @@ internal class LocalTacticalBrain(
                 if (rulesApply) jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                     ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
                     ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments, expectedSwitches,
+                    debuffReadings.mapValues { it.value.gain },
                 ) else jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(ranked, selection.rank, difficultyContext, scores)
             }
         val drawn = quick?.rank ?: selection.rank
@@ -666,7 +691,7 @@ internal class LocalTacticalBrain(
                 rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
-                    "hazardEncore" to hazardEncoreAdjustments).filterValues { it.isNotEmpty() },
+                    "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),

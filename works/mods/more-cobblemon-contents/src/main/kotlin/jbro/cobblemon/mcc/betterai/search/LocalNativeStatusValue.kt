@@ -63,8 +63,6 @@ internal object LocalNativeStatusValue {
 
     fun unpriced(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean =
         candidate.kind == BattleActionKind.USE_MOVE &&
-            // Priced past the engine's two turns by their own rule instead.
-            !jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.prices(candidate) &&
             candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
             LocalNonDamagingMoveEvaluator.score(candidate, context, 1.0).unpriced
 

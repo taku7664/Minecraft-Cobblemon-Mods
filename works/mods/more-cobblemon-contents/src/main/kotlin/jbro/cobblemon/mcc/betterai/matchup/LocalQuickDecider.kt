@@ -49,6 +49,8 @@ internal object LocalQuickDecider {
         predicted: Map<String, Double> = emptyMap(),
         /** Per opposing Pokemon, the chance it switches to each one behind it. */
         expectedSwitches: Map<java.util.UUID, Map<java.util.UUID, Double>> = emptyMap(),
+        /** Per debuff action, what it takes off its target's exchanges with this team ([LocalDebuffValue]). */
+        debuffGains: Map<String, Double> = emptyMap(),
     ): Verdict? {
         val state = context.state
         val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
@@ -184,13 +186,14 @@ internal object LocalQuickDecider {
             val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
             return if (win != null && win < SETUP_WIN) Verdict(strongest, "unsafe_setup") else null
         }
-        // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit,
-        // and only on a target the hit finishes within two uses: the exchange score reads this one-on-one alone, so a burn
-        // that outlasts it (the target switching out, or coming back later) is worth nothing there. Elsewhere the ranking
-        // decides (2026-10-12).
-        val finishedSoon = (damage(strongest)?.knockoutChanceWithin(2) ?: 0.0) >= STATUS_WORSE_KNOCKOUT
-        if (debuffs(chosenMove) && finishedSoon) {
-            statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
+        // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit:
+        // when it takes nothing off the target's exchanges with this team (LocalDebuffValue), or the hit finishes the
+        // target within two uses so the debuff has no time to matter (2026-10-12). Without a sweep reading, the
+        // one-on-one exchange score decides as before.
+        if (LocalDebuffValue.isDebuff(chosenMove)) {
+            val finishedSoon = (damage(strongest)?.knockoutChanceWithin(2) ?: 0.0) >= STATUS_WORSE_KNOCKOUT
+            val gain = debuffGains[chosen.outcome.candidate.actionId] ?: statusScore(chosen)?.score
+            if (finishedSoon || (gain != null && gain <= 0.0)) return Verdict(strongest, "status_worse")
         }
         return null
     }
@@ -256,16 +259,6 @@ internal object LocalQuickDecider {
         read.filter { (_, matchup) -> (matchup.subjectMove?.knockoutChanceWithin(1) ?: 0.0) * matchup.subjectMovesFirstProbability >= KNOCKOUT }
             .maxByOrNull { it.second.score }?.let { return Verdict(it.first, "replace_revenge") }
         return Verdict(read.maxBy { (_, matchup) -> matchup.score + OFFENSE * (matchup.subjectMove?.score ?: 0.0) }.first, "replace_matchup")
-    }
-
-    /** Whether a status move only weakens its target: a status condition or a stat drop on it, read from its data. */
-    private fun debuffs(move: BattleActionCandidate): Boolean {
-        val effects = move.moveDetails?.effects?.effects.orEmpty()
-        return effects.isNotEmpty() && effects.all { effect ->
-            effect.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET && (
-                effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STATUS ||
-                    effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STAT_STAGE && effect.statStages.values.all { it < 0 })
-        }
     }
 
     private fun transformsMove(move: BattleActionCandidate): Boolean =
