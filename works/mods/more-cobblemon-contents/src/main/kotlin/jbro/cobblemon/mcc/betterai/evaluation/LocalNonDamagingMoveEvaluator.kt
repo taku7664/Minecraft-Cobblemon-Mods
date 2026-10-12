@@ -25,6 +25,11 @@ internal object LocalNonDamagingMoveEvaluator {
         val statStageUtility: Double,
         /** Item value already priced by immediate projection (LocalRootItemEffectEvaluator). */
         val itemUtility: Double = 0.0,
+        /**
+         * No evaluator here priced the move: [total] is the generic status value, or zero from an idle rule.
+         * The searchless brain prices these by playing the turn out instead ([jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue]).
+         */
+        val unpriced: Boolean = false,
     )
 
     fun pressure(
@@ -62,7 +67,7 @@ internal object LocalNonDamagingMoveEvaluator {
             } ?: 0.0
             return Score(best * accuracy, 0.0)
         }
-        if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return Score(0.0, 0.0)
+        if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return Score(0.0, 0.0, unpriced = true)
         val protectionSuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
             LocalStallingProtectionRules.nextSuccessProbability(
                 LocalStallingProtectionRules.consecutiveSuccessfulUses(
@@ -97,6 +102,7 @@ internal object LocalNonDamagingMoveEvaluator {
             }
         }
         var usesSetupPressure = false
+        var generic = false
         val status = when {
             declaresMajorStatus && target?.statusId != null -> 0.0
             statusProbability != null -> {
@@ -114,8 +120,11 @@ internal object LocalNonDamagingMoveEvaluator {
             }
             calloutValue(candidate, context, actor, target) != null ->
                 requireNotNull(calloutValue(candidate, context, actor, target)) * accuracy
-            else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
-                .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
+            else -> {
+                generic = true
+                (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
+                    .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
+            }
         }
         // A pure heal is its own value, the losing-loop penalty included; anything else takes the better reading.
         val usableStatus = if (LocalHazardSwitchAvailability.isHazardMove(candidate)) {
@@ -125,6 +134,7 @@ internal object LocalNonDamagingMoveEvaluator {
         return Score(
             total = total,
             statStageUtility = if (usesSetupPressure && status >= recovery) status else 0.0,
+            unpriced = generic && !declaresPureRecovery && usableStatus >= recovery,
         )
     }
 

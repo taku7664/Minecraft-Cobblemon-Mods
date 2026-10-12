@@ -136,6 +136,12 @@ internal class LocalTacticalBrain(
     private val searchless: Boolean = false,
     /** With [searchless], singles at Advanced and Boss go through [jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider]. */
     private val quickDecider: Boolean = true,
+    /**
+     * With [searchless], singles at every tier play the status moves the ranking cannot price out in the
+     * native engine ([jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue]); null leaves them at the generic value.
+     */
+    private val nativeStatusSource: jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.Source? =
+        jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.DEFAULT_SOURCE,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -524,6 +530,12 @@ internal class LocalTacticalBrain(
             )
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
+        // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
+        val nativeStatus = if (!searchless || difficultyContext.state.format != BattleFormat.SINGLE) null
+            else nativeStatusSource?.let { source ->
+                jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning, source)
+            }
+        val nativeStatusAdjustments = nativeStatus?.adjustments.orEmpty()
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
         // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
@@ -602,10 +614,11 @@ internal class LocalTacticalBrain(
                 difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
         }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
-            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys).associateWith {
+            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
+            nativeStatusAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
-                (screenAdjustments[it] ?: 0.0)
+                (screenAdjustments[it] ?: 0.0) + (nativeStatusAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
@@ -664,6 +677,10 @@ internal class LocalTacticalBrain(
                      ))
                     quick?.let { add("quick_${it.reason}") }
                     if (twin != null) add("mechanic_twin")
+                    nativeStatus?.let {
+                        add("native_status_${it.status}")
+                        add("native_status_ms_${it.elapsedMillis}")
+                    }
                     if (lookahead == null) add("searchless") else {
                         // Doubles searches one turn whatever the tier asks for.
                         add("lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
