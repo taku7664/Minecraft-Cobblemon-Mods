@@ -13,7 +13,10 @@
   - `BattleInitializeHandlerSceneMixin`(신규): 종료를 0.5초 보류하는 사이 새 배틀이 열리면, 뒤늦게 실행된 이전 종료가 새 배틀을 지웠다. 새 배틀 초기화 전에 보류한 종료를 먼저 끝낸다(`BattleSceneClient.finishHeldEnd`).
   - `Cobblemon173ManagedBattleTermination.closeWithClientEnd`: Cobblemon `end()`는 종료 패킷을 맨 마지막에 보내므로, 중간에 예외가 나서 강제로 닫으면 클라 배틀이 남았다. 강제 닫기·이미 끝난 배틀 닫기·`BattleEntryHold.abandon`이 모두 선수·관전자에게 종료 패킷을 먼저 보낸다.
 - **문제없음으로 확인**: 진입 연출 보류는 서버가 200틱 제한으로 시작시킨다(PvP는 대상 아님). `stop()`은 `end()`로 이어진다. `closeBattle`은 `onEndHandlers`를 먼저 돌리므로 종료 패킷 → PvP 완료·텔레포트 순서다. PvP 완료는 텔레포트 뒤에 방 상태를 보내 리셋에 지워지지 않는다. 시작 때도 차원 이동 뒤 배틀·음악 키가 들어온다(운영 로그 20:53:04~05).
-- **미확인**: 빌드·테스트·배포·실게임 확인 안 함.
+- **빌드·테스트**: `main` `d57859fc`를 `git archive`로 `F:/AI/build/mcc-battle-end2-20261013/src`에 꺼내 `:more-cobblemon-contents:build :more-cobblemon-contents-pvp:build -x unitTest` 성공, `ManagedBattleTerminationRecoveryTest` 4개 통과. 두 JAR `jar --validate`·ZIP CRC 통과, 새 믹스인 등록·`closeWithClientEnd`·PvP 접속 이벤트 코드 포함 확인. SHA-256 MCC `e76edde9…`, PvP `7c55ba2a…`.
+- **배치**: `develop-product/server/mods`만 교체(두 해시 일치). **클라는 교체하지 못했다**: 개발 클라(`cobblemon-dev`)가 켜져 있어 파일이 잠겼고, 실행 확인 스크립트가 한글 경로 정규식 때문에 그 게임을 못 잡았다. 남은 `.deploying`은 지웠고 클라에는 이전 JAR(MCC `dcf885d0…`, PvP `16ca85fa…`)이 그대로 있다. 이전 JAR 백업은 `develop-product/deployment-backups/20261013-mcc-battle-end-paths/{server,client}`. 패킷 형식 변경이 없어 서버·클라 버전 차이로 접속이 끊기지는 않는다고 판단(실행 확인 안 함).
+- **재발 방지**: 게임 실행 확인은 명령줄 문자열 매칭 대신 `--gameDir` 값을 직접 뽑아 보고, 복사 실패(`Device or resource busy`)를 배치 실패로 다룬다.
+- **미확인**: 서버 기동·실게임 확인 안 함. 클라는 게임을 끈 뒤 같은 JAR로 교체해야 한다.
 
 ## [2026-10-13 00:10] PvP 종료 후 배틀·BGM이 안 끝나던 문제 (클라 종료 보류가 차원 이동에 버려짐)
 
