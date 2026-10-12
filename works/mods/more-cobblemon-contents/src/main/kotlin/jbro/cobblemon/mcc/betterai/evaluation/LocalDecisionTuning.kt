@@ -157,6 +157,12 @@ internal data class LocalDecisionTuning(
      */
     val setupSweepCredit: Double = 1.0,
     /**
+     * Root points the quick decider's preference verdicts (LocalQuickDecider.HARD aside) add to the action they point
+     * to, before the draw; singles without the search. They used to replace the drawn action outright, which threw away
+     * a debuff the ranking put first by a wide margin (2026-10-12).
+     */
+    val quickVerdictBonus: Double = 50.0,
+    /**
      * Root points a self-heal loses for each turn in a row its user healed and still ended lower
      * (LocalRecoveryLoop): the heal is not keeping up, and another one only spends a turn behind.
      */

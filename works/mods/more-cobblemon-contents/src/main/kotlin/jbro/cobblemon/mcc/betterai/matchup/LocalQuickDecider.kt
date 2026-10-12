@@ -32,7 +32,8 @@ import java.util.Random
  * 4. A move kept: an attack doing well under the best one's damage gives way to it, and a heal at nearly full HP
  *    or entry hazards against a last Pokemon give way to the best attack.
  *
- * Returns null to keep the ranking's choice.
+ * Returns null to keep the ranking's choice. Only the [HARD] verdicts replace the drawn action; the brain adds the rest
+ * to the ranking as a bonus before the draw, reading each candidate as the one chosen (2026-10-12).
  */
 internal object LocalQuickDecider {
     class Verdict(val rank: LocalBattleActionRank, val reason: String)
@@ -51,12 +52,15 @@ internal object LocalQuickDecider {
         expectedSwitches: Map<java.util.UUID, Map<java.util.UUID, Double>> = emptyMap(),
         /** Per debuff action, what it takes off its target's exchanges with this team ([LocalDebuffValue]). */
         debuffGains: Map<String, Double> = emptyMap(),
+        /** The verdicts this call may return; a reason left out is passed over and the checks go on. */
+        allow: (String) -> Boolean = { true },
     ): Verdict? {
+        fun pick(rank: LocalBattleActionRank, reason: String): Verdict? = if (allow(reason)) Verdict(rank, reason) else null
         val state = context.state
         val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             ?: return null
         val self = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-            ?: return replacement(ranked, excluded, scores, foe)
+            ?: return replacement(ranked, excluded, scores, foe)?.takeIf { allow(it.reason) }
         val open = ranked.filter { it.outcome.candidate.actionId !in excluded }
         val moves = open.filter { part(it).kind == BattleActionKind.USE_MOVE }
         val switches = open.filter { part(it).kind == BattleActionKind.SWITCH && part(it).switchPokemonId != null }
@@ -73,7 +77,7 @@ internal object LocalQuickDecider {
             val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
                 else stay.subjectMovesFirstProbability
             score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
-        }?.let { (rank, _) -> return Verdict(rank, "knockout") }
+        }?.let { (rank, _) -> pick(rank, "knockout") }?.let { return it }
 
         // 2. A reason to leave.
         val reasons = buildList {
@@ -125,15 +129,15 @@ internal object LocalQuickDecider {
                 free - entry(rank)!!.score >= LocalSwitchRules.FREE_ENTRY_MARGIN
             })
         if (!sacking && reason != null && best != null && (reason in UNCONDITIONAL || gain(best.first) >= margin)) {
-            return Verdict(best.first, "switch_$reason")
+            pick(best.first, "switch_$reason")?.let { return it }
         }
         if (part(chosen).kind == BattleActionKind.SWITCH) {
-            if (sacking) return bestAttack(attacks)?.let { Verdict(it, "sack") }
+            if (sacking) return bestAttack(attacks)?.let { pick(it, "sack") }
             val gain = viable.firstOrNull { it.first === chosen }?.let { gain(it.first) }
             // A reason the roll let pass still lets the ranking's own switch stand; without one it must be clear.
             if (gain != null && gain >= (if (reasons.isNotEmpty()) margin else CLEAR_GAIN + margin - MARGIN)) return null
             // A switch without a reason, or into a Pokemon that does not take the hit: stay and attack.
-            return bestAttack(attacks)?.let { Verdict(it, "stay_no_reason") }
+            return bestAttack(attacks)?.let { pick(it, "stay_no_reason") }
         }
 
         // 4. The move kept.
@@ -154,8 +158,8 @@ internal object LocalQuickDecider {
         if (chosenHeal > 0.0) {
             // The Emerald AI heals under half HP, or two thirds when it moves first, and not into a hit that undoes it.
             val healBelow = if (stay.subjectMovesFirstProbability >= 0.5) HEAL_BELOW_FIRST else HEAL_BELOW
-            if (self.hpFraction >= healBelow) return Verdict(strongest, "early_heal")
-            if (futile(chosenHeal)) return Verdict(strongest, "futile_heal")
+            if (self.hpFraction >= healBelow) pick(strongest, "early_heal")?.let { return it }
+            if (futile(chosenHeal)) return pick(strongest, "futile_heal")
             return null
         }
         val chosenDamage = damage(chosen)
@@ -165,26 +169,26 @@ internal object LocalQuickDecider {
             val healing = context.memory.lastMoveId?.let { last -> heal?.first?.let { PublicIds.canonical(part(it).moveId.orEmpty()) == PublicIds.canonical(last) } } == true &&
                 context.memory.sameMoveRepeatCount >= HEAL_STREAK
             if (heal != null && !healing && self.hpFraction <= HEAL_AT && stay.winProbability < 0.5 && !futile(heal.second)) {
-                return Verdict(heal.first, "heal_in_time")
+                pick(heal.first, "heal_in_time")?.let { return it }
             }
             // Not while it can be finished: low, or already in knockout range.
             val finishing = foe.hpFraction <= FINISH_HP || attacks.any { it.second.knockoutChanceWithin(1) >= FINISH_CHANCE }
-            if (!finishing) freeTurn(moves, self, foe, state, scores, expectedSwitches, theirKnockout)?.let { return it }
+            if (!finishing) freeTurn(moves, self, foe, state, scores, expectedSwitches, theirKnockout)?.takeIf { allow(it.reason) }?.let { return it }
             // A status move that turns the exchange (a burn on a physical attacker, paralysis on a faster one).
             moves.mapNotNull { rank -> statusScore(rank)?.let { rank to it } }.maxByOrNull { it.second.score }
-                ?.takeIf { it.second.score >= STATUS_GAIN }?.let { return Verdict(it.first, "status_better") }
+                ?.takeIf { it.second.score >= STATUS_GAIN }?.let { pick(it.first, "status_better") }?.let { return it }
             val top = damage(strongest)!!.score
             // An attack the ranking chose for the Pokemon it expects to come in is not weak: it was aimed past this one.
             val aimedAtSwitch = (predicted[chosen.outcome.candidate.actionId] ?: 0.0) > (predicted[strongest.outcome.candidate.actionId] ?: 0.0)
-            return if (!aimedAtSwitch && chosenDamage.score < WEAK_ATTACK * top) Verdict(strongest, "weak_attack") else null
+            return if (!aimedAtSwitch && chosenDamage.score < WEAK_ATTACK * top) pick(strongest, "weak_attack") else null
         }
-        if (wasted(chosenMove, context)) return Verdict(strongest, "wasted_status")
+        if (wasted(chosenMove, context)) pick(strongest, "wasted_status")?.let { return it }
         // A stat raise is judged as LocalSetupGate.score judges it: whether its user still wins the one-on-one after it,
         // the setup turn's hit paid. Not whether it raises the one-on-one: one already won cannot rise, and a boost
         // that leaves it won is a free one.
         if (LocalSetupGate.raisesOwnStats(chosen.outcome.candidate)) {
             val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
-            return if (win != null && win < SETUP_WIN) Verdict(strongest, "unsafe_setup") else null
+            return if (win != null && win < SETUP_WIN) pick(strongest, "unsafe_setup") else null
         }
         // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit:
         // when it takes nothing off the target's exchanges with this team (LocalDebuffValue), or the hit finishes the
@@ -193,7 +197,7 @@ internal object LocalQuickDecider {
         if (LocalDebuffValue.isDebuff(chosenMove)) {
             val finishedSoon = (damage(strongest)?.knockoutChanceWithin(2) ?: 0.0) >= STATUS_WORSE_KNOCKOUT
             val gain = debuffGains[chosen.outcome.candidate.actionId] ?: statusScore(chosen)?.score
-            if (finishedSoon || (gain != null && gain <= 0.0)) return Verdict(strongest, "status_worse")
+            if (finishedSoon || (gain != null && gain <= 0.0)) return pick(strongest, "status_worse")
         }
         return null
     }
@@ -352,6 +356,20 @@ internal object LocalQuickDecider {
     private fun part(rank: LocalBattleActionRank): BattleActionCandidate = rank.outcome.candidate.let {
         if (it.kind == BattleActionKind.COMPOSITE) it.componentActions.first() else it
     }
+
+    /**
+     * The verdicts that replace the drawn action outright: a sure knockout this turn, the replacement after a knockout,
+     * and the senseless choices (staying in with nothing that does anything, a heal the hit undoes, hazards with no one
+     * left to touch). The rest are preferences the brain adds to the ranking as a bonus (2026-10-12).
+     */
+    val HARD = setOf("knockout", "replace_revenge", "replace_matchup", "switch_no_damage", "switch_cannot_act", "futile_heal", "wasted_status")
+
+    /**
+     * The preference verdicts that read the chosen action as the mistake (a weak attack, a switch without a reason, a
+     * heal too early, a stat raise it does not survive, a debuff that does nothing): the points come off that action.
+     * The others point to an action worth taking whatever was chosen, and the points go to it.
+     */
+    val AGAINST_CHOSEN = setOf("stay_no_reason", "sack", "weak_attack", "early_heal", "unsafe_setup", "status_worse")
 
     /** Reasons no roll lets pass and no margin holds back: staying does nothing at all. */
     private val UNCONDITIONAL = setOf("no_damage", "cannot_act")

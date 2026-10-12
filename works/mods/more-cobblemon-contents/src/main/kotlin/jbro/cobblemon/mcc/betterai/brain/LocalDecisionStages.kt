@@ -25,6 +25,11 @@ internal data class LocalDecisionStages(
     val drawProbabilities: Map<String, Double>,
     val drawExclusions: Map<String, String>,
     val drawn: String,
+    /**
+     * The quick decider's preference verdicts by the action they moved: "+reason" gave it the bonus, "-reason" took the
+     * bonus off it (LocalQuickDecider.AGAINST_CHOSEN). The draw saw these on top of [refined].
+     */
+    val quickBonus: Map<String, List<String>> = emptyMap(),
     /** The quick decider's override and its reason, when it changed the draw. */
     val quick: String?,
     val quickReason: String?,

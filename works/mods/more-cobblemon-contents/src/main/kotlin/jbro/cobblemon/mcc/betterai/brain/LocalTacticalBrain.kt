@@ -659,26 +659,55 @@ internal class LocalTacticalBrain(
             ranked = ranked,
             perspectivePokemonIds = perspectivePokemonIds,
         )
-        val selection = actionSelector.choose(
-            ranked,
-            seed,
-            mixingContext(ranked),
-        )
-        // Without the search, singles at the tiers with the rules go through the quick decider on top of the ranking.
-        // Below Advanced only its blunder checks: a lower tier may play weaker, not senselessly.
-        val quick = if (!searchless || !quickDecider || difficultyContext.state.format != BattleFormat.SINGLE) null
-            else ruleScores?.let { scores ->
-                if (rulesApply) jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
-                    ranked, selection.rank, difficultyContext, scores, profile.difficulty.tier,
-                    ruleExclusions(ranked.map { it.outcome.candidate }).keys, seed, predictionAdjustments, expectedSwitches,
-                    debuffReadings.mapValues { it.value.gain },
-                ) else jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(ranked, selection.rank, difficultyContext, scores)
+        // Without the search, singles go through the quick decider on top of the ranking.
+        val quickRuns = searchless && quickDecider && difficultyContext.state.format == BattleFormat.SINGLE
+        val quickExcluded by lazy { ruleExclusions(ranked.map { it.outcome.candidate }).keys }
+        fun quickVerdict(choice: LocalBattleActionRank, from: List<LocalBattleActionRank>, allow: (String) -> Boolean) = ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
+                from, choice, difficultyContext, scores, profile.difficulty.tier, quickExcluded, seed, predictionAdjustments,
+                expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow,
+            )
+        }
+        // At the tiers with the rules its preferences are points before the draw, each candidate read as the one chosen:
+        // the draw still decides, so a choice the ranking put well ahead keeps its place. A verdict against the choice
+        // (a weak attack, a switch without a reason) takes the points off that choice; giving them to the strongest
+        // attack instead credited it in nearly every position, since nearly every one offers a switch or a weaker move.
+        // A verdict for an action (a switch for a reason, a heal in time) gives them to that action, once.
+        val quickBonus: Map<String, List<String>> = if (!quickRuns || !rulesApply || tuning.quickVerdictBonus <= 0.0) emptyMap() else ranked
+            .filter { it.outcome.candidate.actionId !in quickExcluded }
+            .mapNotNull { rank ->
+                quickVerdict(rank, ranked) { it !in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.HARD }?.let { verdict ->
+                    if (verdict.reason in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.AGAINST_CHOSEN) {
+                        rank.outcome.candidate.actionId to "-${verdict.reason}"
+                    } else verdict.rank.outcome.candidate.actionId to "+${verdict.reason}"
+                }
             }
+            .groupBy({ it.first }, { it.second }).mapValues { (_, reasons) -> reasons.distinct() }
+        val drawRanked = if (quickBonus.isEmpty()) ranked else LocalBattleActionPolicy.sort(ranked.map { rank ->
+            quickBonus[rank.outcome.candidate.actionId]?.let { reasons ->
+                val sign = (if (reasons.any { it.startsWith("+") }) 1 else 0) - (if (reasons.any { it.startsWith("-") }) 1 else 0)
+                rank.copy(comparisonValue = rank.comparisonValue + sign * tuning.quickVerdictBonus)
+            } ?: rank
+        })
+        val selection = actionSelector.choose(
+            drawRanked,
+            seed,
+            mixingContext(drawRanked),
+        )
+        // Its hard verdicts (a sure knockout, the senseless choices) replace the draw. Below Advanced only its blunder
+        // checks: a lower tier may play weaker, not senselessly.
+        val quick = if (!quickRuns) null else if (rulesApply) {
+            quickVerdict(selection.rank, drawRanked) { it in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.HARD }
+        } else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(drawRanked, selection.rank, difficultyContext, scores)
+        }
         val drawn = quick?.rank ?: selection.rank
         // The draw chooses between actions, not between a move with its mechanic and the same move without: drawn
         // without it, the move takes its mechanic twin (Mega Evolution, Terastallization) when the ranking scored that
         // one higher. A 6% draw once held back a Mega Garchomp whose Mega Earthquake ranked first by 70 points.
-        val twin = mechanicTwin(drawn, ranked, ruleExclusions(ranked.map { it.outcome.candidate }).keys)
+        // Compared before the quick decider's bonus, which goes to the move without its mechanic as much as with it.
+        val twin = mechanicTwin(ranked.firstOrNull { it.outcome.candidate.actionId == drawn.outcome.candidate.actionId } ?: drawn,
+            ranked, ruleExclusions(ranked.map { it.outcome.candidate }).keys)
         val selected = twin ?: drawn
         stageTrace?.let { sink ->
             fun values(list: List<LocalBattleActionRank>) = list.associate { it.outcome.candidate.actionId to it.comparisonValue }
@@ -701,12 +730,13 @@ internal class LocalTacticalBrain(
                 drawProbabilities = selection.probabilitiesByActionId,
                 drawExclusions = selection.exclusionsByActionId,
                 drawn = drawn.outcome.candidate.actionId,
+                quickBonus = quickBonus,
                 quick = quick?.rank?.outcome?.candidate?.actionId,
                 quickReason = quick?.reason,
                 selected = selected.outcome.candidate.actionId,
             ))
         }
-        decisionTrace?.resolved("legacy_lookahead", ranked, selection)
+        decisionTrace?.resolved("legacy_lookahead", drawRanked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
@@ -729,6 +759,7 @@ internal class LocalTacticalBrain(
                     "difficulty_${profile.difficulty.tier.name.lowercase()}",
                      ))
                     quick?.let { add("quick_${it.reason}") }
+                    quickBonus.values.flatten().distinct().forEach { add("quick_${if (it.startsWith("-")) "minus" else "plus"}_${it.drop(1)}") }
                     if (twin != null) add("mechanic_twin")
                     statusPricing?.let {
                         add("native_status_${it.status}")
