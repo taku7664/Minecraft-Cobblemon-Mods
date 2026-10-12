@@ -210,8 +210,11 @@ internal object LocalTurnCostScoreCalculator {
 
     /** Statuses whose effect the exchange reads: a burn halves physical damage, paralysis halves Speed. */
     private val PLAYED_OUT_STATUSES = setOf("brn", "par")
-    /** Sleep, freeze and poison too when the repeated exchange plays its turns out (Codex 9838243d, under measurement). */
-    private fun playedOutStatuses(): Set<String> =
+    /**
+     * The statuses the exchange reads: a burn and paralysis through the damage and Speed they change, and sleep, freeze
+     * and poison too when the repeated exchange plays its turns out (Codex 9838243d, under measurement).
+     */
+    internal fun playedOutStatuses(): Set<String> =
         if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups) EVOLVED_STATUSES else PLAYED_OUT_STATUSES
     private val EVOLVED_STATUSES = setOf("brn", "par", "slp", "frz", "psn", "tox")
     private const val MINIMUM_STANDING_HP = 0.01

@@ -221,4 +221,45 @@ internal object ShowdownStandardDamageProjection {
 
     private fun knockoutProbability(rolls: List<Int>, currentHp: Int): Double =
         if (currentHp == 0) 1.0 else rolls.count { it >= currentHp }.toDouble() / rolls.size
+
+    /**
+     * [result]'s knockout chance when the move strikes [hitCounts] times (count to probability), each hit rolling its own
+     * damage. The damage range stays one hit's. The knockout read one hit alone, so a Scale Shot whose three hits beat
+     * an Earthquake's one took no knockout credit at all and lost to it by 80 points (2026-10-12).
+     */
+    fun overHits(
+        result: ShowdownStandardDamageProjectionResult,
+        hitCounts: Map<Int, Double>,
+        targetMaxHp: BattleIntegerRange,
+        targetHpFraction: Double,
+    ): ShowdownStandardDamageProjectionResult {
+        if (hitCounts.keys.all { it <= 1 }) return result
+        fun chance(rolls: List<Int>, hp: Int) = hitCounts.entries.sumOf { (hits, probability) -> probability * hitsKnockout(rolls, hits, hp) }
+        val minimum = chance(result.minimumHypothesisRolls, currentHp(targetMaxHp.maximum, targetHpFraction)).coerceIn(0.0, 1.0)
+        val maximum = chance(result.maximumHypothesisRolls, currentHp(targetMaxHp.minimum, targetHpFraction)).coerceIn(0.0, 1.0)
+        return result.copy(
+            koProbabilityRange = BattleFractionRange(minimum, maximum),
+            knockoutAssessment = when {
+                minimum >= 1.0 - CERTAIN_TOLERANCE -> BattleKnockoutAssessment.GUARANTEED
+                maximum == 0.0 -> BattleKnockoutAssessment.IMPOSSIBLE
+                else -> BattleKnockoutAssessment.POSSIBLE
+            },
+        )
+    }
+
+    /** The chance [hits] independent [rolls] add up to [currentHp]; sums past it are kept as it. */
+    private fun hitsKnockout(rolls: List<Int>, hits: Int, currentHp: Int): Double {
+        if (currentHp == 0) return 1.0
+        var sums = mapOf(0 to 1.0)
+        repeat(hits) {
+            val next = HashMap<Int, Double>()
+            sums.forEach { (sum, probability) ->
+                rolls.forEach { roll -> next.merge(minOf(sum + roll, currentHp), probability / rolls.size, Double::plus) }
+            }
+            sums = next
+        }
+        return sums[currentHp] ?: 0.0
+    }
+
+    private const val CERTAIN_TOLERANCE = 1e-9
 }

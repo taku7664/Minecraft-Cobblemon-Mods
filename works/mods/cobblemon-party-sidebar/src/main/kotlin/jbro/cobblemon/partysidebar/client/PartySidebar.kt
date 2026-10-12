@@ -208,8 +208,7 @@ object PartySidebar {
         val hit = bounds.hit(mouseX.toDouble(), mouseY.toDouble()) ?: return
         val pokemon = party(hit.row) ?: return
         when (hit.column) {
-            Column.MODEL -> if (SidebarConfig.showTooltip) PokemonTooltip.render(graphics, pokemon, mouseX, mouseY,
-                if (canItemize()) Component.translatable("cobblemon_party_sidebar.hint.itemize") else null)
+            Column.MODEL -> if (SidebarConfig.showTooltip) PokemonTooltip.render(graphics, pokemon, mouseX, mouseY)
             Column.HELD -> pokemon.heldItem().takeUnless { it.isEmpty }?.let {
                 graphics.renderTooltip(Minecraft.getInstance().font, it, mouseX, mouseY)
             }

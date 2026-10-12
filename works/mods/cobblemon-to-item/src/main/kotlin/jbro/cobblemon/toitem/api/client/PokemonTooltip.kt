@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.pokemon.PokemonSizeCategory
 import jbro.cobblemon.toitem.api.PokemonItemData
+import jbro.cobblemon.toitem.CobblemonToItem
 import jbro.cobblemon.toitem.config.ToItemConfig
 import net.minecraft.world.item.ItemStack
 import net.minecraft.core.component.DataComponents
@@ -26,7 +27,7 @@ import org.joml.Matrix4f
 /**
  * The summary shown over a party Pokemon:
  * level, name and gender; HP; nature and ability; the moves with their PP; IVs and EVs per stat in aligned columns;
- * capture ball, native size category, and a caller-provided action hint.
+ * capture ball, shiny marker and native size category.
  */
 object PokemonTooltip {
     private var cachedLevel: ClientLevel? = null
@@ -38,13 +39,13 @@ object PokemonTooltip {
     private const val RAISED_COLOR = 0xFF8A80
     private const val LOWERED_COLOR = 0x80B0FF
 
-    /** Shared detailed tooltip; callers may append a context-specific action hint. */
+    /** Shared detailed tooltip for party entries and Pokemon items. */
     @JvmStatic @JvmOverloads
-    fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int, hint: Component? = null, extraLines: List<Component> = emptyList()) {
+    fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int, extraLines: List<Component> = emptyList()) {
         if (!ToItemConfig.showTooltip) return
         val font = Minecraft.getInstance().font
         val lines = listOf(TitleRow(pokemon)) + textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } +
-            MoveTable(pokemon) + StatTable(pokemon) + (extraLines + listOfNotNull(hint)).map { ClientTooltipComponent.create(it.visualOrderText) }
+            MoveTable(pokemon) + StatTable(pokemon) + extraLines.map { ClientTooltipComponent.create(it.visualOrderText) }
         graphics.renderTooltipInternal(font, lines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE)
     }
 
@@ -57,16 +58,23 @@ object PokemonTooltip {
         if (!cachedPokemon.containsKey(data)) {
             if (cachedPokemon.size >= 64) cachedPokemon.clear()
             val tag = PokemonItemData.pokemonTag(stack) ?: return false
-            cachedPokemon[data] = try { Pokemon.loadFromNBT(level.registryAccess(), tag) } catch (_: Exception) { null }
+            cachedPokemon[data] = try {
+                TooltipPokemonReader.read(level.registryAccess(), tag)
+            } catch (failure: Exception) {
+                CobblemonToItem.LOGGER.warn("Could not read Pokemon item tooltip for {}", tag.getUUID("UUID"), failure)
+                null
+            }
         }
         val pokemon = cachedPokemon[data] ?: return false
-        render(graphics, pokemon, mouseX, mouseY, key("restore_hint").withStyle(ChatFormatting.GRAY),
-            stack.get(DataComponents.LORE)?.lines().orEmpty())
+        render(graphics, pokemon, mouseX, mouseY, stack.get(DataComponents.LORE)?.lines().orEmpty())
         return true
     }
 
     private fun title(pokemon: Pokemon): Component {
-        val title = key("level", pokemon.level).copy().append(" ").append(pokemon.getDisplayName())
+        val name = pokemon.getDisplayName().copy()
+        if (pokemon.shiny) name.withStyle(ChatFormatting.YELLOW)
+        val title = key("level", pokemon.level).copy().append(" ").append(name)
+        if (pokemon.shiny) title.append(Component.literal(" ★").withStyle(ChatFormatting.YELLOW))
         genderSymbol(pokemon.gender)?.let { title.append(" ").append(it) }
         return title
     }

@@ -5,7 +5,6 @@
   "cobblemon_to_item.tooltip.ability": "특성",
   "cobblemon_to_item.tooltip.iv": "개체값",
   "cobblemon_to_item.tooltip.ev": "노력치",
-  "cobblemon_to_item.tooltip.restore_hint": "우클릭 또는 인벤토리에서 Shift+클릭으로 복원",
   "cobblemon_to_item.message.in_battle": "배틀 중에는 포켓몬을 아이템화하거나 복원할 수 없습니다.",
   "cobblemon_to_item.message.permission": "포켓몬 이동 권한이 없습니다.",
   "cobblemon_to_item.message.invalid_slot": "파티 번호는 1~6이어야 합니다.",

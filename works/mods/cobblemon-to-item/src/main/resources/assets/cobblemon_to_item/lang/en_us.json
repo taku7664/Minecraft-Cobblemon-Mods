@@ -5,7 +5,6 @@
   "cobblemon_to_item.tooltip.ability": "Ability",
   "cobblemon_to_item.tooltip.iv": "IV",
   "cobblemon_to_item.tooltip.ev": "EV",
-  "cobblemon_to_item.tooltip.restore_hint": "Right-click or Shift-click in your inventory to restore",
   "cobblemon_to_item.message.in_battle": "Pokemon cannot be transferred during a battle.",
   "cobblemon_to_item.message.permission": "You do not have permission to transfer Pokemon.",
   "cobblemon_to_item.message.invalid_slot": "Party slot must be between 1 and 6.",
