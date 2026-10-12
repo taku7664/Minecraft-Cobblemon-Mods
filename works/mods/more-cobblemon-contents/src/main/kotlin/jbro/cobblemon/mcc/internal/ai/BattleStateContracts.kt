@@ -80,6 +80,8 @@ enum class BattleObservedEventKind {
     FIELD_EFFECT_CHANGED,
     MOVE_OUTCOME,
     TERA_TYPE_REVEALED,
+    /** A stat stage raised or lowered (Showdown's -boost / -unboost), one event per stat. */
+    STAT_STAGE_CHANGED,
 }
 
 enum class BattleMoveOutcomeKind {
