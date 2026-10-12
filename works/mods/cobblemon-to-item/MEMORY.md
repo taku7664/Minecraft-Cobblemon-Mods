@@ -1,5 +1,13 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-13 00:05] 최대 개체값·노력치 강조, 크기 막대·기술 구분선 (0.1.3 빌드만, 미배포)
+
+- **사용자 요청·구현:** 공유 툴팁에서 IV 31(V)·EV 252의 숫자만 녹색 `0x55FF55`로 표시하고 성격에 따른 능력치 이름 색은 유지한다. 크기는 Cobblemon XS/S/M/L/XL enum으로 3×8px 막대 5개를 2px 간격으로 그려 왼쪽부터 1~5개를 채운다(빈 막대 `0xFF16263D`, 채움 `0xFF3B93ED`), 뒤에는 `(XS)`처럼 단계 문자를 표시한다. 한영 크기 label도 추가했다.
+- **구분선·문서:** 사용자 첨부 이미지로 기술 목록 위·아래 위치를 확인하여 기존 공백을 전체 툴팁 폭의 회색 1px 선(행 높이 5px)으로 대체했다. 기술이 없으면 중복 선을 제거한다. README 기능 설명과 기존 합성창 GUI 설명 오류도 정정했다.
+- **검증:** build 성공(1분), 기존 단위 테스트 17/17 통과. 색·배치 변경으로 새 UI 자동 테스트는 추가하지 않았다. ZIP 전체 읽기/CRC·JDK 21 `jar --validate`·메타데이터 0.1.3·`SizeRow`/`Divider` 클래스·한영 size 키를 확인했다. 로그는 `F:/AI/builds/cobblemon-to-item-28bf/tooltip-bars-build.log`이다.
+- **소스·산출물:** 소스 커밋 `70d4612d`, main 병합 `69991901425ad6638c452fdeaf77f70ba5c2ca0b`, origin/main 0/0 동기화를 확인했다. src·빌드/settings/wrapper는 병합 main과 diff 없이 같다. 빌드본은 `F:/AI/builds/cobblemon-to-item-28bf/out/cobblemon-to-item/libs/cobblemon-to-item-0.1.3.jar`, SHA-256 `bac1fd0435965b5ef90dcf2ea02917c19a2aa207984eadc07c15211d6fc7b2f6`이다.
+- **사용자 결정·미실행:** 빡대리가 "이번에는 빌드만 해두세요"를 선택하여 개발·운영 JAR을 교체하지 않았다. 게임·서버도 기동하지 않았고 실제 색상·배치는 미확인이다.
+
 ## [2026-10-12 23:45] 인벤토리 아이템 툴팁 경로·합성 사이드바 지원 개발 배포 (0.1.2)
 
 - **구현:** `AbstractContainerScreen.renderTooltip`가 `GuiGraphics`의 List overload를 호출해 기존 ItemStack hook을 우회하는 경로를 확인하여, hoveredSlot에서 공유 `PokemonTooltip`을 호출하는 믹스인을 추가했다. `supportsSidebarMenu`는 생존 `InventoryMenu`와 등록 메뉴 `pokefusion:fusion`만 허용한다. 서버 GUI 이동·복원은 실제 `player.containerMenu`의 커서를 사용하며, 인벤 아이템 Shift 복원은 기존 inventoryMenu 검사로 제한해 합성 재료 입고를 유지한다.
