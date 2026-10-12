@@ -5,6 +5,5 @@
   "config.cobblemon_party_sidebar.enabled": "파티 표시",
   "config.cobblemon_party_sidebar.tooltip": "포켓몬 툴팁",
   "config.cobblemon_party_sidebar.save_failed": "설정을 저장하지 못했습니다.",
-  "cobblemon_party_sidebar.hint.itemize": "클릭하여 집기 · Shift+클릭으로 인벤토리 이동",
   "button.cobblemon_party_sidebar.fusion": "포켓몬 합성"
 }

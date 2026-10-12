@@ -14,7 +14,7 @@
 
 ## 툴팁과 공개 API
 
-상세 툴팁의 구현과 번역은 이 모드가 소유합니다. Sidebar의 기존 상세 툴팁을 이관했으며 Sidebar와 아이템이 같은 구현을 호출합니다. 첫 줄은 `[잡은 볼 아이콘] 레벨 이름 성별`입니다. HP, 성격·특성, Cobblemon 자체 XS/S/M/L/XL 단계, 우두머리 여부, 기술·PP 및 개체값·노력치 표를 표시합니다. 아이템의 추가 설명도 유지합니다.
+상세 툴팁의 구현과 번역은 이 모드가 소유합니다. Sidebar의 기존 상세 툴팁을 이관했으며 Sidebar와 아이템이 같은 구현을 호출합니다. 첫 줄은 `[잡은 볼 아이콘] 레벨 이름 성별`이며, 이로치는 이름과 이름 뒤의 `★`를 노란색으로 표시합니다. HP, 성격·특성, Cobblemon 자체 XS/S/M/L/XL 단계, 우두머리 여부, 기술·PP 및 개체값·노력치 표를 표시합니다. 하단 조작 안내는 표시하지 않으며 아이템의 추가 설명은 유지합니다.
 
 공개 Kotlin API(클라이언트용 API를 서버에서 불러오지 마세요):
 
@@ -30,7 +30,7 @@ PokemonTransfers.restoreCursor(player, partySlot, pokemonUuid, expectedTargetUui
 PokemonTransfers.restoreHeld(player, heldStack)
 
 // 클라이언트: 파티 Pokemon 또는 저장된 ItemStack으로 같은 툴팁을 표시합니다.
-PokemonTooltip.render(graphics, pokemon, mouseX, mouseY, actionHint)
+PokemonTooltip.render(graphics, pokemon, mouseX, mouseY)
 PokemonTooltip.renderItemTooltip(graphics, stack, mouseX, mouseY)
 ```
 

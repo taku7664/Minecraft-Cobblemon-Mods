@@ -3,7 +3,7 @@
 ## [2026-10-12 21:18] 신규 아이템 모드 연결 버전 개발 서버·클라이언트 설치 (1.4.0, 실게임 미확인)
 
 - **배치:** 사용자 배포 요청으로 실제 저장소의 `develop-product/{server,client}/mods`에서 `PokemonFusion-fabric-1.3.3.jar`를 1.4.0으로 교체했다. `cobblemon-to-item` 0.1.0을 함께 설치하고 외부 PokemonToItem 0.2.0을 제거했다. 두 설치본 SHA-256은 빌드본 `bc6bae1f8d7d895599feb8ffad0d78850503e4f55155b5d6052fdba6791bd233`과 같다.
-- **보존·근거:** main `5c280c99`와 전체 소스 tree가 같은 검증 빌드본을 재사용했다. 게임·서버 종료 상태에서 교체했으며 구 JAR은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-211852/{server,client}`에 백업했다. world·config·기타 모드의 해시는 유지했다.
+- **보존·근거:** main `5c280c99`와 전체 소스 tree가 같은 검증 빌드본을 재사용했다. 게임·서버 종료 상태에서 교체했으며 구 JAR은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-211852/{server,client}`에 백업했다. world·config에는 쓰기 작업을 하지 않았고, 교체 대상 외 mods 파일의 SHA-256 일치를 확인했다.
 - **미확인:** 서버·클라이언트 기동과 실게임 합성·공유 툴팁 검증은 실행하지 않았다. 기존 `PTI_NBT` 아이템과 저장 입력 마이그레이션은 미구현·미실행이며, 운영/VPS·PPakemon·릴리스는 변경하지 않았다. 배포 전체 안전검사·설치 검증은 신규 모드 MEMORY의 같은 시각 항목에 기록했다.
 
 ## [2026-10-12 20:38] PokemonToItem 의존성을 신규 모드로 교체·툴팁 중복 제거 (1.4.0, 배포·실게임 미확인)
