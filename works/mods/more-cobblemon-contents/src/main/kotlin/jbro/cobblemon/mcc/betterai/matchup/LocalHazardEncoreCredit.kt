@@ -70,8 +70,8 @@ internal object LocalHazardEncoreCredit {
     }
 
     /**
-     * A hazard layer: what every opponent left loses on entry, weighted up by how well it sweeps this side
-     * ([SweepScore.score]), times a tenth more for each opponent past the first. HP hazards take the game's fractions
+     * A hazard layer: the mean over the opponents left of what each loses on entry, weighted up by how well it sweeps
+     * this side ([SweepScore.score]), times a tenth more for each opponent past the first. HP hazards take the game's fractions
      * ([PublicSwitchEntryHazardCalculator]); Toxic Spikes the status it leaves; Sticky Web a flat share. Nothing when only
      * the Pokemon in front is left (it cannot switch) or the layer would not stack. A revealed hazard remover halves it.
      */
@@ -100,7 +100,9 @@ internal object LocalHazardEncoreCredit {
         val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
         val threats = seen.associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
         val meanThreat = threats.values.takeIf { it.isNotEmpty() }?.average() ?: UNSEEN_THREAT
-        var value = seen.sumOf { foe -> entry(foe) * (1.0 + THREAT_WEIGHT * (threats[foe.battlePokemonId] ?: 0.0)) }
+        // Each opponent left: its entry, weighted up by how well it sweeps this side. Their mean is the layer's worth per
+        // Pokemon; how many are left enters once, as the multiplier below (2026-10-12: no sum over them as well).
+        val perFoe = seen.map { foe -> entry(foe) * (1.0 + THREAT_WEIGHT * (threats[foe.battlePokemonId] ?: 0.0)) }.toMutableList()
         // The rest of the team, not seen yet: the preview's unseen Pokemon on average, else a neutral entry.
         val unseen = (remaining - seen.size).coerceAtLeast(0)
         if (unseen > 0) {
@@ -113,13 +115,14 @@ internal object LocalHazardEncoreCredit {
                         null, null, false, slot.knownTypeIds))
                 }
             val perUnseen = previewEntries.takeIf { it.isNotEmpty() }?.average() ?: NEUTRAL_ENTRY
-            value += unseen * perUnseen * (1.0 + THREAT_WEIGHT * meanThreat)
+            repeat(unseen) { perFoe += perUnseen * (1.0 + THREAT_WEIGHT * meanThreat) }
         }
+        val value = perFoe.average()
         val removerShown = seen.any { foe ->
             context.publicActionCatalog.forPokemon(foe.battlePokemonId).any { PublicIds.canonical(it.moveId) in HAZARD_REMOVAL } ||
                 foe.knownMoveIds.any { PublicIds.canonical(it) in HAZARD_REMOVAL }
         }
-        val total = value * BOARD_TO_SCORE * (1.0 + COUNT_SHARE * (remaining - 1))
+        val total = value * LAYER_SCALE * (1.0 + COUNT_SHARE * (remaining - 1))
         return if (removerShown) total * REMOVER_DISCOUNT else total
     }
 
@@ -184,6 +187,11 @@ internal object LocalHazardEncoreCredit {
     private const val THREAT_WEIGHT = 1.0
     /** The sweep reading for opponents not seen yet when none has been seen. */
     private const val UNSEEN_THREAT = 0.5
+    /**
+     * Root points for a mean entry of one full HP bar: three times the board scale, so three opponents left score what
+     * the earlier sum over them did; fewer score more and more score less than that sum.
+     */
+    private const val LAYER_SCALE = 300.0
     /** A tenth more for each opponent left past the first: more entries to come. */
     private const val COUNT_SHARE = 0.1
     /** A revealed remover can take the hazard away. */

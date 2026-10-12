@@ -184,9 +184,14 @@ internal object LocalQuickDecider {
             val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
             return if (win != null && win < SETUP_WIN) Verdict(strongest, "unsafe_setup") else null
         }
-        // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit
-        // when the exchange is won without it; hazards, Encore and the rest are priced by their own rules (2026-10-12).
-        if (debuffs(chosenMove)) statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
+        // Only a debuff (a status condition or a stat drop on the target: Will-O-Wisp, Metal Sound) gives way to the hit,
+        // and only on a target the hit finishes within two uses: the exchange score reads this one-on-one alone, so a burn
+        // that outlasts it (the target switching out, or coming back later) is worth nothing there. Elsewhere the ranking
+        // decides (2026-10-12).
+        val finishedSoon = (damage(strongest)?.knockoutChanceWithin(2) ?: 0.0) >= STATUS_WORSE_KNOCKOUT
+        if (debuffs(chosenMove) && finishedSoon) {
+            statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
+        }
         return null
     }
 
@@ -396,6 +401,8 @@ internal object LocalQuickDecider {
     const val HEAL_STREAK = 2
     /** Status move score (matchup gain over attacking) at which it replaces the attack. */
     const val STATUS_GAIN = 0.25
+    /** The strongest hit's chance to finish the target within two uses at which a debuff gives way to it. */
+    const val STATUS_WORSE_KNOCKOUT = 0.5
     /**
      * Predicted switch chance at which the turn is spent on hazards or a stat raise. The switch model reads few switches
      * on a fresh board (365 checks in Boss self-play: 5 at 0.3 or over, 1 at 0.4); a switch seen in the same matchup
