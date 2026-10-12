@@ -1,5 +1,11 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-13 03:21] 툴팁에 도구(지닌 물건) 줄 추가·개발 배포 (실화면 미확인)
+
+- **사용자 요청:** "툴팁에 도구도 추가해줘". 특성 줄 아래·크기 막대 위에 `도구 <아이템 이름>`, 비어 있으면 `도구 없음`(`tooltip.held_item`, `held_item_none` 한영). 파티 툴팁과 아이템화한 포켓몬 아이템 툴팁이 같은 `PokemonTooltip`이라 둘 다 바뀐다.
+- **빌드·배치:** 커밋 `0b259048`(origin/main 동기화) 소스로 `:cobblemon-to-item:remapJar`(F 드라이브 경로, 테스트 미실행). 버전은 0.1.3 그대로. 게임·서버 프로세스와 25565/25566 수신 없음을 확인하고 이전 JAR을 `develop-product/deployment-backups/20261013-032135-to-item-held-item/{server,client}`에 두고 교체. 세 곳 SHA-256 `da68d475248bf075b3dc982099b6e3668be6bc4f827dd07a32bc998caa5ccfd4`. JAR 안 한국어 키 확인.
+- **미확인:** 실화면, 아이템 툴팁 쪽 `TooltipPokemonReader`가 지닌 물건을 읽는지.
+
 ## [2026-10-13 00:10] 0.1.3 툴팁 UI 수정 개발 서버·클라이언트 설치 (실화면 미확인)
 
 - **사용자 결정·배치:** 빡대리가 "교체해"로 직전 빌드만 결정을 변경했다. 00:10:43 실제 기본 저장소 `develop-product/{server,client}/mods`에 0.1.3을 설치했다(client는 `cobblemon-dev` 정션). 양쪽 SHA-256은 검증 빌드본 `bac1fd0435965b5ef90dcf2ea02917c19a2aa207984eadc07c15211d6fc7b2f6`과 같다. 이전 0.1.2는 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261013-001043/{server,client}`에 백업 후 제거했다.
