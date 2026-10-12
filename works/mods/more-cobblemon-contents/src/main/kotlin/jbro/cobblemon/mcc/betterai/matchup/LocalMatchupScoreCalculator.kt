@@ -187,6 +187,34 @@ internal object LocalMatchupScoreCalculator {
         return best
     }
 
+    /**
+     * [subject]'s win chance against [foe] with [stages] raised once: when [setupTurn], it first takes [foe]'s hit in the
+     * turn it spends raising them (surviving it, and fighting from the HP it left); otherwise it starts boosted from
+     * its current HP, as it would in front of a foe that comes in after the boost. Null when the pair cannot be read.
+     */
+    internal fun boostedWin(
+        context: BattleDecisionContext,
+        subject: BattlePokemonStateView,
+        foe: BattlePokemonStateView,
+        stages: Map<String, Int>,
+        pairs: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+        setupTurn: Boolean,
+    ): Double? {
+        val base = if (setupTurn) pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: return null else null
+        val survives = base?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0
+        val taken = base?.opponentMove?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
+        val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return null
+        val raised = setupState(position.state, subject.battlePokemonId, stages, 1)
+        val worn = raised.copyState(pokemon = raised.pokemon.map {
+            if (it.battlePokemonId != subject.battlePokemonId) it
+            else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
+        })
+        val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+            MatchupSpeedField.CURRENT, cache)?.winProbability ?: return null
+        return survives * win
+    }
+
     private class Boost(
         val moveId: String?,
         val uses: Int,

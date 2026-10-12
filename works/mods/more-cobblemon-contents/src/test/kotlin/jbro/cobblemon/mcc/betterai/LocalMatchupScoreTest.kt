@@ -168,11 +168,12 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `the setup gate refuses a setup that is not a sweeper`() {
+    fun `a setup its user still loses the one-on-one after is worth less than half a knockout`() {
+        // Slower and weaker: after +2 Attack, with the setup turn's hit paid, it still loses to the foe in front.
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 90.0, allySetup = mapOf("atk" to 2))
-        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
-        assertFalse(verdict.passes)
-        assertTrue("sweep" in verdict.failures) { verdict.failures.toString() }
+        val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
+        assertTrue(reading.win < 0.5) { reading.toString() }
+        assertTrue(reading.value < 100.0 * reading.bonus) { reading.toString() }
     }
 
     @Test

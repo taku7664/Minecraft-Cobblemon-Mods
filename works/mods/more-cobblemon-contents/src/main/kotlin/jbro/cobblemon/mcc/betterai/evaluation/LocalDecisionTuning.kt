@@ -149,8 +149,13 @@ internal data class LocalDecisionTuning(
      * rest of the opposing team does not let it be (Toxapex into Weavile with Garchomp behind: -1.79 played out).
      */
     val matchupRecovery: Boolean = false,
-    /** Weight of the credit a stat raise that passes the setup gate gets for the sweep it adds (LocalSetupGate.credit); singles. */
-    val setupSweepCredit: Double = 0.0,
+    /**
+     * Weight of the credit a stat raise that passes the setup gate gets for the knockouts in a row it adds
+     * (LocalSetupGate.credit); singles. Off (0) from 2026-09-30, when the credit read one-on-one win chances: it picked
+     * Volcarona's Quiver Dance and Garchomp's Swords Dance in puzzles where they rolled out worst. On again with the
+     * knockout chain (2026-10-12): without it a setup move was picked about 1% of the times it was on offer.
+     */
+    val setupSweepCredit: Double = 1.0,
     /**
      * Root points a self-heal loses for each turn in a row its user healed and still ended lower
      * (LocalRecoveryLoop): the heal is not keeping up, and another one only spends a turn behind.

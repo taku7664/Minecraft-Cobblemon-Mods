@@ -12,15 +12,14 @@ import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
 import jbro.cobblemon.mcc.internal.ai.PublicIds
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /**
- * The path a stat-raising status move has to pass before the AI may pick it.
+ * A stat-raising status move: what it is worth ([score]) and what rules it out ([evaluate]).
  *
- * All of these, read from [MatchupScores]:
- * - the user is a sweeper: its [SweepScore] reaches [SWEEP_PASS], and through the setup, not in spite of it;
- * - after setting up it wins against every opponent on the field, the setup turns paid for ([DUEL_PASS]);
- * - the opponents on the field do not knock it out this turn ([SURVIVAL_PASS]);
- * - no opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
+ * Its worth is whether the user still wins the one-on-one after boosting, times a sweep bonus of at least 1 for the
+ * opponents still to come that the boosted user finds easy. It is ruled out only when, read from [MatchupScores],
+ * an opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
  *   its side a turn and a hit; the next decision judges it once it is in front of the boosted user.
  *   - What each opponent move does to the boosted sweeper is played out in the engine ([LocalEngineStopProbe]),
  *     from the deciding tier's view of the opponent's moves; a move's data alone decides only declared effects.
@@ -28,7 +27,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  *     a sweeper's boosts not counting or both fainting together, it should not stay at all: see [retreatReasons].
  *   - A reset (Haze's kind), Perish Song's count and a block of the setup move (Taunt's kind) do not: the boost is
  *     traded for the opponent's own turn, or is already up ([NEVER_STOPS]).
- *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is the sweeper and duel checks'.
+ *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is [score]'s: the win chance falls.
  */
 internal object LocalSetupGate {
     data class Verdict(val passes: Boolean, val failures: List<String>)
@@ -58,6 +57,13 @@ internal object LocalSetupGate {
         return details.damageCategory == BattleMoveDamageCategory.STATUS && BattleStatusMoveCategories.isPureSelfSetup(details)
     }
 
+    /** The moves [opponent] is known to hold: revealed in battle, or read as confirmed by the deciding tier. */
+    private fun knownMoves(opponent: BattlePokemonStateView, context: BattleDecisionContext): Set<String> =
+        opponent.knownMoveIds.mapTo(hashSetOf(), PublicIds::canonical) +
+            context.publicActionCatalog.inferredMovesForPokemon(opponent.battlePokemonId)?.slots.orEmpty()
+                .filter { it.knowledge == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge.CONFIRMED }
+                .mapNotNull { it.moveId?.let(PublicIds::canonical) }
+
     /** Null when [candidate] is not a stat-raising status move of an active ally. */
     fun evaluate(
         candidate: BattleActionCandidate,
@@ -72,25 +78,15 @@ internal object LocalSetupGate {
         val user = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(false, listOf("no_sweep_score"))
+        // Whether it still wins after boosting is [score]'s; here only what stops the boost once it is up. The stoppers
+        // are read against the user as the sweeper, so without a sweep reading there is nothing to read them against.
+        val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(true, emptyList())
         val failures = mutableListOf<String>()
-        // Read from the window it has: boosted in front of the Pokemon it faces, then against every opponent.
-        val windowBoost = sweeper.windowSweep ?: sweeper.boostedSweep
-        if (maxOf(sweeper.naturalSweep, windowBoost) < SWEEP_PASS || windowBoost <= sweeper.naturalSweep) failures += "sweep"
-        val onField = state.pokemon.filter {
-            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
-        }
-        for (opponent in onField) {
-            val boosted = sweeper.boostedByOpponent[opponent.battlePokemonId] ?: 0.0
-            if (boosted < DUEL_PASS) failures += "duel:${opponent.speciesId}"
-        }
-        // Every attacker on the field may pick the user this turn, if it gets to act at all.
-        val survival = onField.fold(1.0) { chance, opponent ->
-            val hitSurvival = scores.pokemon(user.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0
-            chance * (1.0 - actingChance(opponent) * (1.0 - hitSurvival))
-        }
-        if (survival < SURVIVAL_PASS) failures += "knockout"
-        for ((opponent, anti) in fieldStoppers(user, sweeper, context, scores, cache, tier, LocalEngineStopProbe.Opening.Move(candidate))) {
+        for ((opponent, read) in fieldStoppers(user, sweeper, context, scores, cache, tier, LocalEngineStopProbe.Opening.Move(candidate))) {
+            // Only a move the opponent is known to hold stops it: revealed, or confirmed by what the tier reads. A move
+            // assumed from usage or the learnset is a guess, and a guess does not rule a setup out (2026-10-12).
+            val known = knownMoves(opponent, context)
+            val anti = read.copy(tools = read.tools.filter { tool -> tool.moveId == null || PublicIds.canonical(tool.moveId) in known })
             // Played out, a lock or a forced switch counts only where it stopped the sweeper in the engine.
             anti.tools.firstOrNull { it.kind in ALWAYS_STOPS && (!it.playedOut || it.value > 0.0) }?.let {
                 failures += "stopper:${opponent.speciesId}:${it.kind.name.lowercase()}"
@@ -105,31 +101,83 @@ internal object LocalSetupGate {
         return Verdict(failures.isEmpty(), failures)
     }
 
+    /** What [score] read: the one-on-one win chance after boosting, the sweep bonus, and the value in the root's units. */
+    data class Reading(val win: Double, val bonus: Double, val value: Double)
+
     /**
-     * What a stat raise that passes the gate is worth over attacking now, in the root's units: the sweep it adds
-     * ((windowSweep or boostedSweep) - naturalSweep, a mean win chance over the living opponents) times those
-     * opponents, the knockouts it is expected to add, at [LocalDecisionTuning.knockoutMaterialScore] each, times
-     * [weight]. The gate only rules a setup out; passed, it still ranked by the one boosted hit the search sees,
-     * below any attack with a chance to knock out, and a sweeper that should boost kept attacking.
+     * A stat raise's value in the root's units: the chance the user still wins the one-on-one after raising its stats
+     * in front of the Pokemon it faces (the weakest such chance in doubles), the setup turn's hit paid, at
+     * [knockoutMaterialScore] for a sure win, times [sweepBonus]. No turn is searched; the exchange is the pair table's.
+     * Whether the boost raises the win chance is not asked: one that already wins without it still wins with it, which
+     * is when a free turn to boost is safest. Null when [candidate] is not a stat-raising status move of an active ally
+     * or the pair cannot be read.
      */
-    fun credit(
+    fun score(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         scores: MatchupScores,
-        weight: Double,
         knockoutMaterialScore: Double,
-        tier: BattleTrainerTier? = null,
-    ): Double {
-        if (weight <= 0.0 || candidate.kind != BattleActionKind.USE_MOVE) return 0.0
-        if (evaluate(candidate, context, scores, tier = tier)?.passes != true) return 0.0
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+    ): Reading? {
+        if (!isSetupMove(candidate)) return null
         val user = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
-        } ?: return 0.0
-        val sweeper = scores.sweeps[user.battlePokemonId] ?: return 0.0
-        val gain = (sweeper.windowSweep ?: sweeper.boostedSweep) - sweeper.naturalSweep
-        if (gain <= 0.0) return 0.0
-        val opponents = context.state.pokemon.count { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
-        return weight * gain * opponents * knockoutMaterialScore
+        } ?: return null
+        val moveId = PublicIds.canonical(candidate.moveId ?: return null)
+        val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
+        val facing = context.state.pokemon.filter {
+            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }
+        if (facing.isEmpty()) return null
+        val win = facing.minOf { foe ->
+            // A foe that will not act this turn (recharging, asleep, frozen) lands its setup-turn hit only when it does.
+            val hit = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = true) ?: return null
+            val free = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false) ?: return null
+            actingChance(foe) * hit + (1.0 - actingChance(foe)) * free
+        }
+        val bonus = sweepBonus(context, user, facing, stages, scores, cache)
+        return Reading(win, bonus, win * knockoutMaterialScore * bonus)
+    }
+
+    /**
+     * At least 1, and [SWEEP_BONUS_STEP] more for each opponent still to come that the boosted user finds easy: a
+     * benched one already seen by the boosted user's win chance against it from its current HP, one known only from
+     * the team preview by the lead choice's edge ([jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice.matchup], one
+     * doubling of damage in the user's favour counting as fully easy). Without a preview only the seen ones count.
+     */
+    fun sweepBonus(
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        facing: List<BattlePokemonStateView>,
+        stages: Map<String, Int>,
+        scores: MatchupScores,
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+    ): Double {
+        val seen = context.state.pokemon.filter { it.side == BattleSide.OPPONENT }
+        val benched = seen.filter { foe ->
+            foe.activeSlot == null && !foe.fainted && foe.hpFraction > 0.0 && facing.none { it.battlePokemonId == foe.battlePokemonId }
+        }
+        var easy = benched.sumOf { foe ->
+            LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false) ?: 0.0
+        }
+        val preview = context.opponentTeamPreview
+        val ownTeam = context.exactOwnTeam
+        if (preview != null && ownTeam != null) {
+            val unseen = preview.pokemon.filter { slot ->
+                seen.none { it.speciesId.equals(slot.speciesId, true) && (slot.formId == null || slot.formId.equals(it.formId, true)) }
+            }
+            val coming = (preview.selectionSize - seen.size).coerceIn(0, unseen.size)
+            if (coming > 0) {
+                val lead = jbro.cobblemon.mcc.internal.ai.BattleLeadChoiceContext(context.state.format,
+                    context.state.pokemon.filter { it.side == BattleSide.ALLY }.map { it.copyState(activeSlot = null) },
+                    context.publicActionCatalog, ownTeam, preview)
+                val benchedUser = user.copyState(activeSlot = null)
+                easy += coming * unseen.map { foe ->
+                    jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice.matchup(benchedUser, foe, lead, detailed = true).coerceIn(0.0, 1.0)
+                }.average()
+            }
+        }
+        return 1.0 + SWEEP_BONUS_STEP * easy
     }
 
     /**
@@ -161,7 +209,9 @@ internal object LocalSetupGate {
         // Only a sweeper on the field can be played out against the opponent there; on the bench the declared effects decide.
         val opening = if (user.activeSlot != null) LocalEngineStopProbe.Opening.Attack else null
         return fieldStoppers(user, sweeper, context, scores, cache, tier, opening).flatMap { (opponent, anti) ->
-            anti.tools.filter { it.kind in RETREATS_FROM && (!it.playedOut || it.value > 0.0) }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
+            val known = knownMoves(opponent, context)
+            anti.tools.filter { it.kind in RETREATS_FROM && (!it.playedOut || it.value > 0.0) &&
+                (it.moveId == null || PublicIds.canonical(it.moveId) in known) }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
         }.distinct()
     }
 
@@ -192,8 +242,8 @@ internal object LocalSetupGate {
     private const val FROZEN_ACTS = 0.2
     const val REASON = "setup_gate"
     const val SWEEP_PASS = 0.5
-    const val DUEL_PASS = 0.5
-    const val SURVIVAL_PASS = 0.8
+    /** The sweep bonus each fully easy opponent still to come adds over 1. */
+    const val SWEEP_BONUS_STEP = 0.15
     const val STOPPER_PASS = 0.5
     val ALWAYS_STOPS = setOf(StopToolKind.ENCORE, StopToolKind.FORCES_SWITCH,
         StopToolKind.IGNORES_BOOSTS, StopToolKind.DESTINY_BOND)

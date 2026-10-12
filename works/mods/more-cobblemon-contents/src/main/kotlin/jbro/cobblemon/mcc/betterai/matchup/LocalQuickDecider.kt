@@ -177,12 +177,14 @@ internal object LocalQuickDecider {
             return if (!aimedAtSwitch && chosenDamage.score < WEAK_ATTACK * top) Verdict(strongest, "weak_attack") else null
         }
         if (wasted(chosenMove, context)) return Verdict(strongest, "wasted_status")
-        statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
-        // A stat raise in a one-on-one it loses, or in front of a two-hit knockout, is a turn given away.
-        if (LocalSetupGate.raisesOwnStats(chosen.outcome.candidate) &&
-            (stay.winProbability < 0.5 || (theirs?.knockoutChanceWithin(2) ?: 0.0) >= 0.5)) {
-            return Verdict(strongest, "unsafe_setup")
+        // A stat raise is judged as LocalSetupGate.score judges it: whether its user still wins the one-on-one after it,
+        // the setup turn's hit paid. Not whether it raises the one-on-one: one already won cannot rise, and a boost
+        // that leaves it won is a free one.
+        if (LocalSetupGate.raisesOwnStats(chosen.outcome.candidate)) {
+            val win = LocalSetupGate.score(chosen.outcome.candidate, context, scores, knockoutMaterialScore = 1.0)?.win
+            return if (win != null && win < SETUP_WIN) Verdict(strongest, "unsafe_setup") else null
         }
+        statusScore(chosen)?.takeIf { it.score <= 0.0 }?.let { return Verdict(strongest, "status_worse") }
         return null
     }
 
@@ -397,5 +399,7 @@ internal object LocalQuickDecider {
     const val HAZARD_HIT = 2
     /** The opponent is finished rather than given a free turn at this HP or this knockout chance. */
     const val FINISH_HP = 0.3
+    /** A stat raise whose user wins the one-on-one after it less often than this gives the turn away. */
+    const val SETUP_WIN = 0.5
     const val FINISH_CHANCE = 0.3
 }

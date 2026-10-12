@@ -65,8 +65,6 @@ import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
 import jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
@@ -142,6 +140,8 @@ internal class LocalTacticalBrain(
      * native engine ([jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue]); false leaves them at the generic value.
      */
     private val nativeStatus: Boolean = true,
+    /** Receives every candidate's value at each step of a searchless decision (diagnostics only; null in the game). */
+    private val stageTrace: ((LocalDecisionStages) -> Unit)? = null,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -174,15 +174,8 @@ internal class LocalTacticalBrain(
             externalDeadlineMillis = context.deadlineEpochMillis,
             budgetMillis = lookaheadBudget(profile.difficulty.tier).timeMillis,
         ))
-        // Name the opponent status moves this tier believes in before anything reads the catalog, so
-        // the legacy search, the native worlds and the session reconciliation all see the same slots.
-        val boundContext = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(
-            context.state,
-            context.publicActionCatalog,
-            profile.difficulty.tier,
-            LocalOpponentMoveUsage.forFormat(context.state.format),
-        ))
-        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(boundContext, profile.difficulty.tier)
+        // An opponent's unrevealed status moves stay unnamed: no tier guesses them (2026-10-12, user decision).
+        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
         val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext, observedBoard = true)
             .forPlanOwner(jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.LOCAL_BRAIN)
         val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
@@ -220,7 +213,7 @@ internal class LocalTacticalBrain(
                 recovery = tuning.matchupRecovery,
             ).takeIf { it.complete }
         }
-        val setupGatePasses = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+        val setupGateVerdicts = java.util.concurrent.ConcurrentHashMap<String, LocalSetupGate.Verdict>()
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
         val rulesApply = profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS
@@ -250,10 +243,9 @@ internal class LocalTacticalBrain(
             val scores = ruleScores ?: return plainExclusions
             return plainExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
-                    val passes = setupGatePasses.getOrPut(part.actionId) {
-                        LocalSetupGate.evaluate(part, difficultyContext, scores, tier = profile.difficulty.tier)?.passes ?: true
+                    setupGateVerdicts.getOrPut(part.actionId) {
+                        LocalSetupGate.evaluate(part, difficultyContext, scores, tier = profile.difficulty.tier) ?: LocalSetupGate.Verdict(true, emptyList())
                     }
-                    LocalSetupGate.Verdict(passes, emptyList())
                 }
                 when {
                     gated -> candidate.actionId to LocalSetupGate.REASON
@@ -350,13 +342,14 @@ internal class LocalTacticalBrain(
         // The rules' credits and debits for what the search does not see; both paths add them to the search's values.
         val gimmickAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
             else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
-        // A stat raise the gate lets through is credited for the sweep it adds (singles).
-        val setupAdjustments by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
+        // A stat raise is valued by whether its user still wins the one-on-one after it, times the sweep bonus
+        // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
+        val setupScores by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
             difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
         else ruleScores?.let { scores ->
-            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).associate { candidate ->
-                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore, profile.difficulty.tier)
-            }.filterValues { it > 0.0 }
+            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).mapNotNull { candidate ->
+                LocalSetupGate.score(candidate, difficultyContext, scores, tuning.knockoutMaterialScore)?.let { candidate.actionId to it.value }
+            }.toMap()
         }.orEmpty() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
         // A screen earns the hits it halves while it lasts (LocalScreenCredit).
@@ -402,7 +395,7 @@ internal class LocalTacticalBrain(
                     val extra = LocalTacticalScorer.simulationBlindAdjustment(
                         calculated[id] ?: rank.outcome.candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn,
                     ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickAdjustments[id] ?: 0.0) +
-                        (setupAdjustments[id] ?: 0.0) + (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0)
+                        (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0)
                     if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
                 })
                 // Only the re-entry veto: the setup one reads the HP a stay keeps, which native ranks do not carry.
@@ -611,6 +604,9 @@ internal class LocalTacticalBrain(
             jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
                 difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
         }.orEmpty()
+        val setupAdjustments = setupScores.mapNotNull { (id, value) ->
+            searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to tuning.setupSweepCredit * (value - it.comparisonValue) }
+        }.toMap()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             nativeStatusAdjustments.keys).associateWith {
@@ -655,6 +651,31 @@ internal class LocalTacticalBrain(
         // one higher. A 6% draw once held back a Mega Garchomp whose Mega Earthquake ranked first by 70 points.
         val twin = mechanicTwin(drawn, ranked, ruleExclusions(ranked.map { it.outcome.candidate }).keys)
         val selected = twin ?: drawn
+        stageTrace?.let { sink ->
+            fun values(list: List<LocalBattleActionRank>) = list.associate { it.outcome.candidate.actionId to it.comparisonValue }
+            sink(LocalDecisionStages(
+                turn = difficultyContext.state.turn,
+                base = values(baseRanked),
+                tiers = ranked.associate { it.outcome.candidate.actionId to it.decisionTier },
+                nativeStatus = nativeStatusAdjustments,
+                nativeStatusStatus = statusPricing?.status,
+                rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
+                    "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
+                    "healRace" to healRaceAdjustments, "screen" to screenAdjustments).filterValues { it.isNotEmpty() },
+                afterRules = values(ruleAdjusted),
+                afterKindWeights = values(switchAdjusted),
+                refined = values(ranked),
+                ruleExclusions = ruleExclusions(ranked.map { it.outcome.candidate }).mapValues { (id, reason) ->
+                    setupGateVerdicts[id]?.failures?.takeIf { it.isNotEmpty() }?.let { "$reason$it" } ?: reason
+                },
+                drawProbabilities = selection.probabilitiesByActionId,
+                drawExclusions = selection.exclusionsByActionId,
+                drawn = drawn.outcome.candidate.actionId,
+                quick = quick?.rank?.outcome?.candidate?.actionId,
+                quickReason = quick?.reason,
+                selected = selected.outcome.candidate.actionId,
+            ))
+        }
         decisionTrace?.resolved("legacy_lookahead", ranked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
