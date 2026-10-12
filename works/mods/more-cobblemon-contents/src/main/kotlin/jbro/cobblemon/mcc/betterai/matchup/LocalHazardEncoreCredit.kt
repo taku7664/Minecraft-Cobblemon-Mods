@@ -71,7 +71,7 @@ internal object LocalHazardEncoreCredit {
 
     /**
      * A hazard layer: the mean over the opponents left of what each loses on entry, weighted up by how well it sweeps
-     * this side ([SweepScore.score]), times a tenth more for each opponent past the first. HP hazards take the game's fractions
+     * this side ([SweepScore.score]), times the opponents left to come in. HP hazards take the game's fractions
      * ([PublicSwitchEntryHazardCalculator]); Toxic Spikes the status it leaves; Sticky Web a flat share. Nothing when only
      * the Pokemon in front is left (it cannot switch) or the layer would not stack. A revealed hazard remover halves it.
      */
@@ -82,6 +82,7 @@ internal object LocalHazardEncoreCredit {
         if (stacks >= (MAX_LAYERS[id] ?: 1)) return null
         val remaining = state.remainingPokemonBySide.getValue(BattleSide.OPPONENT)
         val active = state.pokemon.count { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        // No one left to come in: the move fails outright (LocalSideConditionFutility) and earns nothing here.
         if (remaining - active <= 0) return 0.0
         val withLayer = BattleFieldStateView(state.field.weather, state.field.terrain, state.field.roomEffects, state.field.globalEffects,
             state.field.sideConditions + (BattleSide.OPPONENT to (current.filter { PublicIds.canonical(it.effectId) != id } +
@@ -122,7 +123,8 @@ internal object LocalHazardEncoreCredit {
             context.publicActionCatalog.forPokemon(foe.battlePokemonId).any { PublicIds.canonical(it.moveId) in HAZARD_REMOVAL } ||
                 foe.knownMoveIds.any { PublicIds.canonical(it) in HAZARD_REMOVAL }
         }
-        val total = value * LAYER_SCALE * (1.0 + COUNT_SHARE * (remaining - 1))
+        // Times the opponents that can still come in: none left, nothing (2026-10-12).
+        val total = value * LAYER_SCALE * (remaining - 1)
         return if (removerShown) total * REMOVER_DISCOUNT else total
     }
 
@@ -188,12 +190,11 @@ internal object LocalHazardEncoreCredit {
     /** The sweep reading for opponents not seen yet when none has been seen. */
     private const val UNSEEN_THREAT = 0.5
     /**
-     * Root points for a mean entry of one full HP bar: three times the board scale, so three opponents left score what
-     * the earlier sum over them did; fewer score more and more score less than that sum.
+     * Root points for one opponent to come in with a mean entry of one full HP bar. Set on six positions (three, two and
+     * six opponents left, Rock-weak and Rock-resistant benches): from 188 up every one comes out as expected, below 127
+     * the six-Pokemon opening attacks instead of laying Stealth Rock. 2026-10-12.
      */
-    private const val LAYER_SCALE = 300.0
-    /** A tenth more for each opponent left past the first: more entries to come. */
-    private const val COUNT_SHARE = 0.1
+    private const val LAYER_SCALE = 200.0
     /** A revealed remover can take the hazard away. */
     private const val REMOVER_DISCOUNT = 0.5
     /** Turns Encore locks its target after this one. */
