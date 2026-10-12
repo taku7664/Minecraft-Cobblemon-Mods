@@ -619,10 +619,10 @@ class BattleOpponentTeamPreviewView(
     }
 }
 
+// A max HP of 1 is what the public formula gives for a base HP of 1 at any spread, so it reveals nothing.
 private fun BattleCombatStatRangesView.hasExactComponent(): Boolean =
-    listOf(maxHp, attack, defence, specialAttack, specialDefence, speed).any {
-        it.minimum == it.maximum
-    }
+    maxHp.minimum == maxHp.maximum && maxHp.maximum != 1 ||
+        listOf(attack, defence, specialAttack, specialDefence, speed).any { it.minimum == it.maximum }
 
 class BattleStateView private constructor(
     val battleId: UUID,
