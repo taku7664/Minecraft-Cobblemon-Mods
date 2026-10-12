@@ -281,7 +281,7 @@ internal object LocalLookaheadStateEvaluator {
         memory = BattleTacticalMemoryView.empty(),
     )
 
-    private fun battleEnded(state: BattleStateView): Boolean = BattleSide.entries.any { side ->
+    internal fun battleEnded(state: BattleStateView): Boolean = BattleSide.entries.any { side ->
         state.remainingPokemonBySide.getValue(side) <= 0
     }
 

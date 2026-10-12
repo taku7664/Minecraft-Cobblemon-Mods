@@ -52,7 +52,9 @@ internal object EmbeddedTeamBattle {
         /** Sides that price unpriced status moves in the engine (LocalNativeStatusValue); null leaves the brain's default. */
         nativeStatusSides: Set<String>? = null,
         /** Choices played instead of the brain's, by turn then side ("move 1", "switch 2"); forced switches stay the brain's. */
-        scripted: Map<Int, Map<String, String>> = emptyMap()): JsonObject {
+        scripted: Map<Int, Map<String, String>> = emptyMap(),
+        /** Trainer persona per side; an `ai_test:` one saves each decision as a replayable snapshot, as in the game. */
+        trainerPersonaIds: Map<String, String> = emptyMap()): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -92,7 +94,7 @@ internal object EmbeddedTeamBattle {
             })
         }
         val openContexts = brains.keys.associateWith { side ->
-            BattleBrainOpenContext(battleId, format, trainerProfile = profiles.getValue(side))
+            BattleBrainOpenContext(battleId, format, trainerProfile = profiles.getValue(side), trainerPersonaId = trainerPersonaIds[side])
         }
         val sessions = brains.mapValues { (side, brain) -> brain.openSession(openContexts.getValue(side)) }
         val memories = openContexts.mapValues { (_, context) -> BattleTacticalMemoryLedger(context) }

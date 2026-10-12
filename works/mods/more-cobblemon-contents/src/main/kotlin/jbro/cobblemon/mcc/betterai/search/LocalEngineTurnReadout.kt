@@ -235,8 +235,14 @@ internal object LocalEngineTurnReadout {
         return next to NativeBattleStateAdapter.adapt(next, template)
     }
 
+    /**
+     * The search's leaf without its finished-battle bonus: the Pokemon a finished battle took are already in the material.
+     * Moved into the ranking's units the ±1000 of a won or lost battle swamped everything, so a Yanmega left last, whose
+     * attacks lost within two turns, read Protect at 31,000 points and used it every turn (2026-10-13).
+     */
     private fun leaf(state: BattleStateView, source: BattleDecisionContext, cache: LocalProjectedActionCalculationCache, tuning: LocalDecisionTuning) =
-        LocalLookaheadStateEvaluator.evaluate(state, source, cache, tuning = tuning, includePositionEffects = true)
+        LocalLookaheadStateEvaluator.evaluate(state, source, cache, tuning = tuning, includePositionEffects = true) -
+            if (LocalLookaheadStateEvaluator.battleEnded(state)) jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(state) else 0.0
 
     /** The side's standing beyond HP. */
     private data class Assets(val stages: Int, val field: Double, val status: Double, val hp: Double)

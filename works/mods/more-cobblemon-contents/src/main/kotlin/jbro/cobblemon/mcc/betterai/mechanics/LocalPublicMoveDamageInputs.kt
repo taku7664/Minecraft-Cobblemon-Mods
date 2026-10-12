@@ -341,7 +341,17 @@ internal object LocalPublicMoveDamageInputs {
     ): Set<Int>? {
         if (id !in HP_DEPENDENT_MOVES) return null
         val hypotheses = LocalHpArithmetic.exactHpHypotheses(actor)
-        if (hypotheses.isEmpty()) return null
+        // No integer HP round-trips the public share (a percentage shown for an opponent, or a maximum HP the tier
+        // assumes): the share itself sets the power. Without it the move had no damage at all, and a known Water Spout
+        // from a rain Kyogre read as weaker than its Ice Beam on an Excadrill it knocks out (2026-10-13).
+        if (hypotheses.isEmpty()) {
+            val share = actor.hpFraction.coerceIn(0.0, 1.0)
+            return setOf(when (id) {
+                "eruption", "waterspout", "dragonenergy" -> ((printedPower ?: return null) * share).toInt().coerceAtLeast(1)
+                "flail", "reversal" -> flailPower((share * HP_SHARE_SCALE).toInt(), HP_SHARE_SCALE)
+                else -> error("Unhandled HP-dependent move: $id")
+            })
+        }
         return hypotheses.mapTo(linkedSetOf()) { hp ->
             when (id) {
                 "eruption", "waterspout", "dragonenergy" -> {
@@ -372,7 +382,8 @@ internal object LocalPublicMoveDamageInputs {
     ): Set<Int>? {
         if (id !in TARGET_HP_DEPENDENT_MOVES) return null
         val hypotheses = LocalHpArithmetic.exactHpHypotheses(target)
-        if (hypotheses.isEmpty()) return null
+        // As for the user's HP: no integer pair round-trips the public share, so the share sets the power.
+        if (hypotheses.isEmpty()) return setOf(crushGripPower((target.hpFraction.coerceIn(0.0, 1.0) * HP_SHARE_SCALE).toInt(), HP_SHARE_SCALE))
         return hypotheses.mapTo(linkedSetOf()) { hp -> crushGripPower(hp.current, hp.maximum) }
     }
 
@@ -491,6 +502,8 @@ internal object LocalPublicMoveDamageInputs {
     private val MEGA_STONE = Regex("(?!eviolite).+ite[xyz]?")
 
     private val SPEED_RATIO_MOVES = setOf("electroball", "gyroball")
+    /** The integer scale a public HP share is read on when no exact HP pair round-trips it. */
+    private const val HP_SHARE_SCALE = 4800
     private val HP_DEPENDENT_MOVES = setOf(
         "eruption", "waterspout", "dragonenergy", "flail", "reversal",
     )

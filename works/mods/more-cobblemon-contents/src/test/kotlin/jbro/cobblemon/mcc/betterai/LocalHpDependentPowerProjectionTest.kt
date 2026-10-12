@@ -4,7 +4,6 @@ import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class LocalHpDependentPowerProjectionTest {
@@ -36,7 +35,9 @@ class LocalHpDependentPowerProjectionTest {
     }
 
     @Test
-    fun `modeled fractional hp without an integer public hypothesis stays unresolved`() {
+    fun `hp share without an integer public hypothesis sets the power from the share`() {
+        // No integer HP pair round-trips 0.123456789. Left unresolved, the move had no damage at all, so a known Water
+        // Spout disappeared from an opponent whose maximum HP the tier assumes (2026-10-13). The share sets the power.
         val state = state(
             hpFraction = 0.123456789,
             maxHp = BattleIntegerRange(200, 220),
@@ -45,8 +46,8 @@ class LocalHpDependentPowerProjectionTest {
         val actor = state.pokemon.single { it.side == BattleSide.ALLY }
         val target = state.pokemon.single { it.side == BattleSide.OPPONENT }
 
-        assertNull(LocalPublicMoveDamageInputs.resolve(move("eruption", 150), actor, target, state))
-        assertNull(LocalPublicMoveDamageInputs.resolve(move("flail", 0), actor, target, state))
+        assertEquals(setOf(18), LocalPublicMoveDamageInputs.resolve(move("eruption", 150), actor, target, state)?.powers)
+        assertEquals(setOf(100), LocalPublicMoveDamageInputs.resolve(move("flail", 0), actor, target, state)?.powers)
 
         val targetModeledState = state(
             hpFraction = 1.0,
@@ -57,13 +58,14 @@ class LocalHpDependentPowerProjectionTest {
         )
         val targetModeledActor = targetModeledState.pokemon.single { it.side == BattleSide.ALLY }
         val modeledTarget = targetModeledState.pokemon.single { it.side == BattleSide.OPPONENT }
-        assertNull(
+        assertEquals(
+            setOf(14),
             LocalPublicMoveDamageInputs.resolve(
                 move("crushgrip", 0),
                 targetModeledActor,
                 modeledTarget,
                 targetModeledState,
-            ),
+            )?.powers,
         )
     }
 
