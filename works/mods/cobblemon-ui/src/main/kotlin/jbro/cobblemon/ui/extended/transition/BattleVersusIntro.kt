@@ -280,10 +280,11 @@ object BattleVersusIntro {
         val vsIn = ((t - (impactAt - 200)) / 200f).coerceIn(0f, 1f)
         if (vsIn > 0) {
             // Slammed down once, then held still.
-            val scale = h / 40f * (3.2f - 2.2f * easeIn(vsIn))
+            val scale = h / 40f * (1.8f - .8f * easeIn(vsIn))
             // The screen shakes under it; the letters themselves stay put.
-            drawBig(context, Component.literal("VS").withStyle(ChatFormatting.BOLD, ChatFormatting.ITALIC), w / 2f - sx, h / 2f - sy, scale,
-                0xFFFFFFFF.toInt(), mix(current.accent, 0xFF000000.toInt(), .45f), vsIn)
+            // Always opaque: the outline is the text drawn eight times, and see-through copies stack into stripes.
+            drawBig(context, Component.literal("VS").withStyle(ChatFormatting.BOLD), w / 2f - sx, h / 2f - sy, scale,
+                0xFFFFFFFF.toInt(), mix(current.accent, 0xFF000000.toInt(), .45f), 1f)
         }
         pose.popPose()
 
