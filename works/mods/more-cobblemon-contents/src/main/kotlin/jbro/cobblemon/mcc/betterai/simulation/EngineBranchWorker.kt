@@ -204,6 +204,28 @@ internal class EngineBranchWorker(
         }
     }
 
+    override fun turnTrace(snapshotJson: String, p1Choice: String, p2Choice: String, salt: Int): NativeTurnTrace {
+        val battle = resolve(snapshotJson).forkLogging()
+        if (salt != 0) reseed(battle, salt)
+        step(battle, p1Choice, p2Choice, emptyMap())
+        val all = battle.sides.flatMap { it.pokemon }
+        val sources = HashMap<String, MutableSet<String>>()
+        for (line in battle.log) {
+            val parts = line.split('|')
+            if (parts.getOrNull(1) != "-damage" && parts.getOrNull(1) != "-heal") continue
+            val uuid = all.firstOrNull { parts.getOrNull(2)?.endsWith(it.uuid) == true }?.uuid ?: continue
+            // "[from] item: Life Orb" -> lifeorb, "[from] Recoil" -> recoil, "[from] psn" -> psn.
+            val from = parts.firstOrNull { it.startsWith("[from] ") }?.removePrefix("[from] ")?.substringAfter(": ") ?: continue
+            sources.getOrPut(uuid) { linkedSetOf() } += Js.toID(from)
+        }
+        return NativeTurnTrace(
+            hpSources = sources,
+            boosts = all.associate { it.uuid to it.boosts.filterValues { v -> v != 0 } },
+            statuses = all.associate { it.uuid to it.status },
+            interrupted = battle.ended || battle.requestState != "move",
+        )
+    }
+
     override fun close() {
         synchronized(cache) { cache.clear() }
     }

@@ -738,6 +738,15 @@ internal class LocalTacticalBrain(
         }
         decisionTrace?.resolved("legacy_lookahead", drawRanked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
+        // Worlds to replay this turn on at the next decision, one per ability the opposing Pokemon in front may have.
+        val worldsStarted = System.nanoTime()
+        if (searchless && active != null) active.abilityWorlds = try {
+            jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.open(difficultyContext, profile.difficulty.tier, selected.outcome.candidate)
+        } catch (e: RuntimeException) {
+            logger.error("[BetterAI] The engine could not build the worlds to replay this turn on", e)
+            null
+        }
+        val worldsMillis = (System.nanoTime() - worldsStarted) / 1_000_000L
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
             BattleDecision(
@@ -764,6 +773,8 @@ internal class LocalTacticalBrain(
                     difficultyContext.state.inferences.filter {
                         it.categoryId == "ability" && it.confidence == jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence.RULED_OUT
                     }.forEach { add("ability_ruled_out_${it.candidateId}") }
+                    active?.lastAbilityReplay?.let(::add)
+                    active?.abilityWorlds?.let { add("ability_worlds_${it.abilities.size}_ms_$worldsMillis") }
                     statusPricing?.let {
                         add("native_status_${it.status}")
                         add("native_status_ms_${it.elapsedMillis}")
@@ -899,8 +910,12 @@ internal class LocalTacticalBrain(
         val repeats = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentRepeats()
         /** Each opposing Pokemon's entries already read for silent abilities, by its latest switch event. */
         val checkedEntries: MutableSet<Pair<UUID, Long>> = java.util.concurrent.ConcurrentHashMap.newKeySet()
-        /** The abilities each opposing Pokemon's silent entries ruled out ([withSilentEntries]). */
+        /** The abilities each opposing Pokemon's silent entries and played turns ruled out ([withSilentEntries]). */
         val silentAbilities = java.util.concurrent.ConcurrentHashMap<UUID, Set<String>>()
+        /** The last decision's worlds, one per ability of the opposing Pokemon in front, to replay the turn on. */
+        @Volatile var abilityWorlds: jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.Pending? = null
+        /** Diagnostics for the decision's tags: what the last replay took and ruled out. */
+        @Volatile var lastAbilityReplay: String? = null
     }
 
     /**
@@ -911,6 +926,23 @@ internal class LocalTacticalBrain(
      */
     private fun withSilentEntries(session: Session, context: BattleDecisionContext, tier: BattleTrainerTier): BattleDecisionContext {
         val state = context.state
+        // The turn just played, replayed on the last decision's worlds (LocalAbilityPosterior).
+        session.lastAbilityReplay = null
+        session.abilityWorlds?.let { pending ->
+            session.abilityWorlds = null
+            val started = System.nanoTime()
+            val reading = try {
+                jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.read(pending, context)
+            } catch (e: RuntimeException) {
+                logger.error("[BetterAI] The engine could not replay the last turn; the opponent's abilities stay as they are", e)
+                null
+            }
+            val ruled = reading?.ruledOut
+            ruled?.takeIf { it.isNotEmpty() }?.let { abilities -> session.silentAbilities.merge(pending.subject, abilities) { a, b -> a + b } }
+            session.lastAbilityReplay = "ability_replay_ms_${(System.nanoTime() - started) / 1_000_000L}_" +
+                (ruled?.joinToString("_").takeUnless { it.isNullOrEmpty() }?.let { "ruled_$it" } ?: if (ruled == null) "unread" else "none") +
+                "_" + (reading?.status ?: "error") + (reading?.detail?.let { "_$it" } ?: "")
+        }
         fun entry(id: UUID) = id to (state.observedEvents.lastOrNull {
             it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == id
         }?.sequence ?: -1L)

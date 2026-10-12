@@ -57,6 +57,10 @@ internal interface NativeBranchWorker : AutoCloseable {
     fun entryAnnouncingAbilities(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Set<String> =
         throw UnsupportedOperationException("This native worker cannot replay an entry")
 
+    /** One turn played from [snapshotJson] with these choices on stream [salt] (0: the snapshot's own), read from its log. */
+    fun turnTrace(snapshotJson: String, p1Choice: String, p2Choice: String, salt: Int): NativeTurnTrace =
+        throw UnsupportedOperationException("This native worker cannot trace a turn")
+
     /**
      * Replays an already-observed public turn and asks Showdown for the complete 16-roll support
      * of each attributable direct hit. Product search must keep using [branch] so this diagnostic
@@ -569,6 +573,15 @@ internal data class NativeForcedDamageRoll(
         require(percent in 85..100)
     }
 }
+
+/** What a turn did that an ability can change, per Pokemon UUID: the named sources of its HP changes, its stages, its status. */
+internal data class NativeTurnTrace(
+    val hpSources: Map<String, Set<String>>,
+    val boosts: Map<String, Map<String, Int>>,
+    val statuses: Map<String, String>,
+    /** The turn stopped on a replacement request or ended the battle. */
+    val interrupted: Boolean,
+)
 
 internal data class NativePokemonFrame(
     val uuid: String,
