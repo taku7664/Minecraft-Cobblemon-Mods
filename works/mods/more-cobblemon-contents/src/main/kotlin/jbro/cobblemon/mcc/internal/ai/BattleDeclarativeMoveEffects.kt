@@ -293,7 +293,9 @@ object BattleDeclarativeMoveEffects {
             requirements += requirement(BattleMoveRequirementKind.TARGET_LAST_MOVE_PRESENT)
         }
         if (TARGET_PENDING_ATTACK_PATTERN.containsMatchIn(rawObject)) {
-            requirements += requirement(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE)
+            // Upper Hand also asks the pending attack to have priority (`move.priority <= 0.1` fails it).
+            requirements += requirement(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE,
+                if (TARGET_PENDING_PRIORITY_PATTERN.containsMatchIn(rawObject)) setOf(PENDING_PRIORITY) else emptySet())
         }
         USER_SPECIES_PATTERN.findAll(rawObject).mapTo(linkedSetOf()) {
             it.groupValues[1].lowercase().filter(Char::isLetterOrDigit)
@@ -365,6 +367,10 @@ object BattleDeclarativeMoveEffects {
     private val OTHER_MOVES_USED_PATTERN = Regex("""moveSlot\.used""")
     private val STOCKPILE_PATTERN = Regex("""return\s+!!source\.volatiles\[[\"']stockpile[\"']]""")
     private val TARGET_LAST_MOVE_PATTERN = Regex("""target\.lastMove""")
+    private val TARGET_PENDING_PRIORITY_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?\.priority\s*<=""")
+
+    /** The accepted value of a pending-attack requirement that the attack must also have priority. */
+    const val PENDING_PRIORITY = "priority"
     private val TARGET_PENDING_ATTACK_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?category\s*===\s*[\"']Status[\"']""")
     private val USER_SPECIES_PATTERN = Regex("""if\s*\(\s*source\.species\.(?:baseSpecies|name)\s*===\s*[\"']([^\"']+)[\"'](?:\s*\|\|[^)]*)?\s*\)\s*\{?\s*return\s*;""")
     // Only a failure check: a screen's damage modifier also reads activePerHalf (a doubles screen cuts less), and

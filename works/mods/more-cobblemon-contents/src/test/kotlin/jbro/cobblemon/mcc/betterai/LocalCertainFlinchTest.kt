@@ -29,6 +29,14 @@ class LocalCertainFlinchTest {
         assertEquals(listOf("fakeout"), certain)
     }
 
+    @Test
+    fun `upper hand waits for an attack with priority, sucker punch for any attack`() {
+        fun pending(id: String) = effects.getValue(id).requirements
+            .single { it.kind == BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE }.acceptedValueIds
+        assertEquals(setOf(BattleDeclarativeMoveEffects.PENDING_PRIORITY), pending("upperhand"))
+        assertEquals(emptySet<String>(), pending("suckerpunch"))
+    }
+
     private fun move(id: String) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,

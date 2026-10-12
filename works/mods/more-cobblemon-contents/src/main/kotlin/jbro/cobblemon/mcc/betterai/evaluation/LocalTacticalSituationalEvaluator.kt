@@ -373,14 +373,24 @@ internal object LocalTacticalSituationalEvaluator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
     ): Double {
-        val requiresPendingDamage = candidate.moveDetails?.effects?.requirements.orEmpty().any {
+        val requirement = candidate.moveDetails?.effects?.requirements.orEmpty().firstOrNull {
             it.kind == BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE
-        }
-        if (!requiresPendingDamage) return 0.0
+        } ?: return 0.0
         val opponent = selectedOpponent(candidate, context) ?: context.state.pokemon.singleOrNull {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return CONDITIONAL_MOVE_UNKNOWN_RISK_PENALTY
         val knownMoves = context.publicActionCatalog.forPokemon(opponent.battlePokemonId)
+        // Upper Hand: only into an attack with priority. Without one revealed or confirmed it is read as failing; a
+        // guessed one does not count (2026-10-13, kept rough at the user's word: few use it).
+        if (jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects.PENDING_PRIORITY in requirement.acceptedValueIds) {
+            val confirmed = context.publicActionCatalog.inferredMovesForPokemon(opponent.battlePokemonId)?.slots.orEmpty()
+                .filter { it.knowledge == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge.CONFIRMED }
+                .mapNotNull { it.details }
+            val priorityAttack = (knownMoves.map { it.details } + confirmed).any {
+                it.damageCategory != BattleMoveDamageCategory.STATUS && it.priority > 0
+            }
+            if (!priorityAttack) return CONDITIONAL_MOVE_CERTAIN_FAILURE_PENALTY
+        }
         val complete = context.publicActionCatalog.isMoveSetComplete(opponent.battlePokemonId)
         val damagingMoves = knownMoves.count { it.details.damageCategory != BattleMoveDamageCategory.STATUS }
         val hasNonDamagingMove = knownMoves.any { it.details.damageCategory == BattleMoveDamageCategory.STATUS }
