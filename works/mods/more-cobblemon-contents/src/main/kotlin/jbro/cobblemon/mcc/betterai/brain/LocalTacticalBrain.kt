@@ -32,6 +32,7 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.policy.LocalActionChoiceSeed
 import jbro.cobblemon.mcc.betterai.policy.LocalActionKindWeights
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
@@ -174,6 +175,7 @@ internal class LocalTacticalBrain(
             externalDeadlineMillis = context.deadlineEpochMillis,
             budgetMillis = lookaheadBudget(profile.difficulty.tier).timeMillis,
         )).let { timed -> active?.let { withSilentEntries(it, timed, profile.difficulty.tier) } ?: timed }
+            .let(::withSettledAbilities)
         // An opponent's unrevealed status moves stay unnamed: no tier guesses them (2026-10-12, user decision).
         val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
         val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext, observedBoard = true)
@@ -1022,6 +1024,23 @@ internal class LocalTacticalBrain(
         if (extra.isEmpty()) return context
         return context.copy(state = jbro.cobblemon.mcc.internal.ai.BattleStateView(state.battleId, state.format, state.turn, state.pokemon,
             state.field, state.remainingPokemonBySide, state.observedEvents, state.inferences + extra))
+    }
+
+    /**
+     * An opposing Pokemon that can only have one ability - its species has one, or the others were ruled out -
+     * is read as having revealed it, so the one-turn scoring (which reads only known abilities) sees it too.
+     * The engine's worlds already hold it (2026-10-13, user decision).
+     */
+    private fun withSettledAbilities(context: BattleDecisionContext): BattleDecisionContext {
+        val state = context.state
+        val settled = state.pokemon.associate { pokemon ->
+            pokemon.battlePokemonId to (if (pokemon.side != BattleSide.OPPONENT || pokemon.knownAbilityId != null) null
+            else jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(state, pokemon).singleOrNull())
+        }.filterValues { it != null }
+        if (settled.isEmpty()) return context
+        return context.copy(state = state.copyState(pokemon = state.pokemon.map { pokemon ->
+            settled[pokemon.battlePokemonId]?.let { pokemon.copyState(knownAbilityId = it) } ?: pokemon
+        }))
     }
 
     private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(
