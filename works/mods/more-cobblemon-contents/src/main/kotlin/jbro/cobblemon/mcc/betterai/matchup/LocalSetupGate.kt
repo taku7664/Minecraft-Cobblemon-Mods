@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -10,6 +11,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
@@ -46,6 +48,19 @@ internal object LocalSetupGate {
         val parts = if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
         return parts.any(::isSetupMove)
     }
+
+    /** Whether [candidate], a stat raise, still raises a stat of [user] once its ability (Contrary, Simple) reshapes it. */
+    fun raisesFor(candidate: BattleActionCandidate, state: BattleStateView, user: BattlePokemonStateView): Boolean {
+        if (!isSetupMove(candidate)) return false
+        val stages = candidate.moveDetails!!.effects!!.effects.fold(mutableMapOf<String, Int>()) { stages, effect ->
+            effect.statStages.forEach { (stat, delta) -> stages.merge(stat, delta, Int::plus) }
+            stages
+        }
+        return raisesFor(stages, state, user)
+    }
+
+    private fun raisesFor(stages: Map<String, Int>, state: BattleStateView, user: BattlePokemonStateView): Boolean =
+        LocalStatStageChange.reshape(state, user, user.battlePokemonId, stages).values.any { it > 0 }
 
     /**
      * A status move that only raises its user's stats. An attack with a self-boost (Flame Charge,
@@ -125,6 +140,9 @@ internal object LocalSetupGate {
         } ?: return null
         val moveId = PublicIds.canonical(candidate.moveId ?: return null)
         val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
+        // A raise its user's ability turns into drops (Contrary Bulk Up, a Mega Staraptor's included) raises nothing:
+        // no win is bought with it. Read as won, it took the full setup value beside the attack (2026-10-13).
+        if (!raisesFor(stages, context.state, user)) return Reading(0.0, 1.0, 0.0)
         val facing = context.state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }

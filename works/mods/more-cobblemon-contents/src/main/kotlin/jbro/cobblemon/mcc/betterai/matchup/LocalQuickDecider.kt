@@ -237,7 +237,7 @@ internal object LocalQuickDecider {
         val incoming = switches.maxByOrNull { it.value }?.key ?: return null
         val afterSwitch = scores.pokemon(self.battlePokemonId, incoming) ?: return null
         if (afterSwitch.winProbability < 0.5 || self.hpFraction < FREE_TURN_SETUP_HP) return null
-        return moves.firstOrNull { LocalSetupGate.raisesOwnStats(it.outcome.candidate) && !transformsMove(part(it)) }
+        return moves.firstOrNull { !transformsMove(part(it)) && LocalSetupGate.raisesFor(part(it), state, self) }
             ?.let { Verdict(it, "free_turn_setup") }
     }
 

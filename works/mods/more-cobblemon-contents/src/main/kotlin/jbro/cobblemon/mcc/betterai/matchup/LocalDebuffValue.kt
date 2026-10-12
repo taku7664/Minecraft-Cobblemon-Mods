@@ -32,7 +32,9 @@ internal object LocalDebuffValue {
         if (move.kind != BattleActionKind.USE_MOVE) return false
         val details = move.moveDetails ?: return false
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) return false
-        val effects = details.effects?.effects.orEmpty()
+        // A pivot that weakens on its way out (Parting Shot) is a debuff too; its switch is LocalSwitchRules' credit.
+        // Read as no debuff, its drops were worth nothing and only the switch was scored (2026-10-13).
+        val effects = details.effects?.effects.orEmpty().filter { it.kind != BattleMoveEffectKind.SWITCH_USER }
         return effects.isNotEmpty() && effects.all { effect ->
             effect.target == BattleMoveEffectTarget.SELECTED_TARGET && (
                 effect.kind == BattleMoveEffectKind.STATUS ||

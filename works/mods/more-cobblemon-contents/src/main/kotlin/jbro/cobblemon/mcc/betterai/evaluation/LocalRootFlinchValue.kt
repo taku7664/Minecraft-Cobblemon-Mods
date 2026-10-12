@@ -19,7 +19,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * cost the slower target its move - scored below Dazzling Gleam for five points of base power, and the
  * Boss drew between them evenly. A flinch only lands when the user moves first and the target survives
  * the hit; what it denies is the target's best play that turn, its damage to the user or the HP a
- * revealed recovery move would restore. Fake Out's certain flinch keeps its own first-turn handling.
+ * revealed recovery move would restore. Fake Out's certain flinch counts the same on its first turn out.
  */
 internal object LocalRootFlinchValue {
     fun score(candidate: BattleActionCandidate, context: BattleDecisionContext, accuracy: Double, tuning: LocalDecisionTuning): Double {
@@ -28,8 +28,11 @@ internal object LocalRootFlinchValue {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted
         } ?: return 0.0
         val target = primaryTarget(candidate, context) ?: return 0.0
-        // Fake Out's certain flinch keeps its own first-turn handling.
-        if ((declared(candidate) ?: return 0.0) >= 1.0) return 0.0
+        // A certain flinch (Fake Out) counts like any other while it can land; once its first turn is spent it fails and
+        // keeps only its own penalty. Left out entirely, it took no turn from anything and lost to any harder hit
+        // (2026-10-13).
+        if ((declared(candidate) ?: return 0.0) >= 1.0 &&
+            LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0) return 0.0
         val chance = chance(candidate, actor, target, state).takeIf { it > 0.0 } ?: return 0.0
         val facts = candidate.facts ?: return 0.0
         val movesFirst = facts.actsFirstProbability ?: return 0.0
