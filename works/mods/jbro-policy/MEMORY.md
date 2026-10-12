@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-13 03:30] 1.2.0 릴리스 반영 — PPakemon·로컬 운영 서버·deploy-product (VPS 제외)
+
+- **소스·빌드:** origin/main `b0b65557`(사용자 툴팁 지닌 물건 커밋 포함)을 F 드라이브에 풀어 우리 모드 17개를 `assemble`, 모든 JAR `jar --validate` 통과. 테스트는 돌리지 않았다.
+- **설치:** 개발 서버·클라이언트에 바뀐 모드만 교체(백업 `develop-product/deployment-backups/<시각>-release-1.2.0/`). 개발 클라이언트가 켜져 있던 동안은 PPakemon 패치 기준을 개발 클라이언트 복사본(`F:/AI/build/plaza-fix-20261011/client-stage`)으로 잡았다. 클라이언트 패쳐의 실행 검사는 모든 마인크래프트 클라이언트를 막아서, PPakemon 프로세스 없음·PPakemon 모드 잠금 0을 직접 확인하고 `-SkipProcessCheck`로 적용했다.
+- **결과:** PPakemon 15+1개(PokemonToItem 제거), 로컬 운영 서버 15개(운영 저장소 `8d7b7e9` 푸시), `deploy-product/server` 48개는 운영 서버와 같고 `client`는 우리 모드 17개. 모든 설치본 해시가 빌드본과 같다. `VERSION.txt` 두 곳에 1.2.0 기록.
+- **기존 PokemonToItem 아이템:** VPS 월드 전체(배낭 `sophisticatedbackpacks.dat`, 청크, 엔티티, 플레이어·합성 데이터)와 개발 월드에서 `PTI_NBT` 0건(10-13 02시대). VPS 반영 때 서버를 내린 뒤 다시 검색한다.
+- **미실행:** VPS 반영, 실게임 확인.
+
 ## [2026-10-12 23:40] 포켓 내비 레어도 순서 고정 — 개발 서버·클라이언트 배치 (0.1.5, 실게임 미확인)
 
 - **원인(바이트코드 확인):** Cobblenav 2.4.1 `RequestLocationScreenInitDataHandler`가 `BestSpawner.config.worldBuckets.keySet()` 순서를 그대로 레어도 목록으로 보낸다. Cobblemon 1.8.1은 버킷을 맵(boss 포함)으로 읽어 순서가 보장되지 않고, 실제로 boss→흔함→매우 희귀→희귀→드묾으로 보였다(사용자 제보).
