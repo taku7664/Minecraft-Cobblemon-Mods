@@ -77,6 +77,12 @@ object BattleCopier {
         return copy
     }
 
+    fun copyLogging(battle: Battle): Battle {
+        val copy = copy(battle, keepLog = false)
+        setField(copy, "logEnabled", true)
+        return copy
+    }
+
     private fun setField(target: Any, name: String, value: Any?) {
         val field = fieldsOf(target.javaClass).first { it.name == name }
         field.set(target, value)
@@ -204,3 +210,6 @@ object BattleCopier {
 
 /** An independent copy of this battle that can be played on without touching the original. */
 fun Battle.fork(keepLog: Boolean = false): Battle = BattleCopier.copy(this, keepLog)
+
+/** A copy that writes its log from here on, whatever the original did: for reading what one event says. */
+fun Battle.forkLogging(): Battle = BattleCopier.copyLogging(this)

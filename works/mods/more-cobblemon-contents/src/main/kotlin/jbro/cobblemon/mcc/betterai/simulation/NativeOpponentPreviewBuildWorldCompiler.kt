@@ -55,6 +55,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         revealedAbilitiesBySlot: Map<Int, String> = emptyMap(),
         /** Items already revealed (Leftovers, an eaten berry): those slots hold only that item. */
         revealedItemsBySlot: Map<Int, String> = emptyMap(),
+        /** Abilities a slot cannot have: its entry would have announced them (LocalEntryAbilityCheck). */
+        ruledOutAbilitiesBySlot: Map<Int, Set<String>> = emptyMap(),
     ): NativeOpponentBuildWorldCompilation {
         val selectedSlots = selectedPreviewSlotIds.distinct().sorted()
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
@@ -77,6 +79,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 return@forEach
             }
             val legal = requireNotNull(pool).abilities.map { canonical(it.abilityId) }.filter(String::isNotBlank).distinct()
+                .let { all -> all.filterNot { it in ruledOutAbilitiesBySlot[slot].orEmpty() }.ifEmpty { all } }
             val abilities = revealedAbilitiesBySlot[slot]?.let(::canonical)?.let(::listOf) ?: legal.sorted()
             if (abilities.isEmpty() || (revealedAbilitiesBySlot[slot] == null && legal.isEmpty())) {
                 issues += NativeOpponentBuildWorldIssue(NativeOpponentBuildWorldIssueCode.LEGAL_ABILITY_MISSING, slot)

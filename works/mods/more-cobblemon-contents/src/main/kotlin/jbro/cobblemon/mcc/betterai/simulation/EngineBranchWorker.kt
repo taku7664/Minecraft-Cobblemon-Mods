@@ -21,6 +21,7 @@ import jbro.cobblemon.mcc.betterai.engine.sim.ShowdownStateReader
 import jbro.cobblemon.mcc.betterai.engine.sim.Side
 import jbro.cobblemon.mcc.betterai.engine.sim.activeMove
 import jbro.cobblemon.mcc.betterai.engine.sim.fork
+import jbro.cobblemon.mcc.betterai.engine.sim.forkLogging
 
 /**
  * The native search's branch worker, played on the Kotlin AI engine instead of Showdown in GraalJS.
@@ -183,6 +184,24 @@ internal class EngineBranchWorker(
                                         forcedDamageRolls: List<NativeForcedDamageRoll>): NativeBattleFrame {
         require(forcedDamageRolls.isNotEmpty()) { "At least one observed damage roll is required" }
         return play(snapshotJson, p1Choice, p2Choice, captureDamageRolls = true, forced = forcedDamageRolls)
+    }
+
+    override fun entryAnnouncingAbilities(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Set<String> {
+        val root = resolve(snapshotJson)
+        return abilityIds.filterTo(linkedSetOf()) { abilityId ->
+            val battle = root.forkLogging()
+            val pokemon = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == pokemonUuid } ?: return@filterTo false
+            val ability = battle.dex.ability(abilityId)
+            if (!ability.exists || pokemon.fainted) return@filterTo false
+            pokemon.baseAbility = ability.id
+            pokemon.ability = ability.id
+            pokemon.abilityState = EffectState(ability.id).also { it.target = pokemon }
+            battle.runEvent("SwitchIn", pokemon)
+            if (!pokemon.fainted) battle.singleEvent("Start", pokemon.getAbility(), pokemon.abilityState, pokemon)
+            // "-ability|p2a: Kingambit|Pressure", or another line "[from] ability: Drizzle".
+            battle.log.any { line -> line.startsWith("|-ability|") && line.split('|').getOrNull(3) == ability.name ||
+                line.contains("[from] ability: ${ability.name}") }
+        }
     }
 
     override fun close() {

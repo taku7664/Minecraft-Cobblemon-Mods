@@ -173,7 +173,7 @@ internal class LocalTacticalBrain(
             startMillis = System.currentTimeMillis(),
             externalDeadlineMillis = context.deadlineEpochMillis,
             budgetMillis = lookaheadBudget(profile.difficulty.tier).timeMillis,
-        ))
+        )).let { timed -> active?.let { withSilentEntries(it, timed, profile.difficulty.tier) } ?: timed }
         // An opponent's unrevealed status moves stay unnamed: no tier guesses them (2026-10-12, user decision).
         val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
         val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext, observedBoard = true)
@@ -761,6 +761,9 @@ internal class LocalTacticalBrain(
                     quick?.let { add("quick_${it.reason}") }
                     quickBonus.values.flatten().distinct().forEach { add("quick_${if (it.startsWith("-")) "minus" else "plus"}_${it.drop(1)}") }
                     if (twin != null) add("mechanic_twin")
+                    difficultyContext.state.inferences.filter {
+                        it.categoryId == "ability" && it.confidence == jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence.RULED_OUT
+                    }.forEach { add("ability_ruled_out_${it.candidateId}") }
                     statusPricing?.let {
                         add("native_status_${it.status}")
                         add("native_status_ms_${it.elapsedMillis}")
@@ -894,6 +897,46 @@ internal class LocalTacticalBrain(
         @Volatile var aceOpponentIds: Set<UUID> = emptySet()
         /** What the opponent did in each matchup so far; see [LocalOpponentRepeats]. */
         val repeats = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentRepeats()
+        /** Each opposing Pokemon's entries already read for silent abilities, by its latest switch event. */
+        val checkedEntries: MutableSet<Pair<UUID, Long>> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+        /** The abilities each opposing Pokemon's silent entries ruled out ([withSilentEntries]). */
+        val silentAbilities = java.util.concurrent.ConcurrentHashMap<UUID, Set<String>>()
+    }
+
+    /**
+     * The decision's state with the abilities opposing Pokemon cannot have, because they entered without the message
+     * those abilities give on entry (LocalEntryAbilityCheck), added as ruled-out inferences: every reader of the
+     * candidate abilities (LocalEntryAbilityProjector.publicPossibleAbilities, the engine's worlds) leaves them out.
+     * Read once per entry, at the first decision after it, on the board it entered on.
+     */
+    private fun withSilentEntries(session: Session, context: BattleDecisionContext, tier: BattleTrainerTier): BattleDecisionContext {
+        val state = context.state
+        fun entry(id: UUID) = id to (state.observedEvents.lastOrNull {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == id
+        }?.sequence ?: -1L)
+        val due = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+            it.knownAbilityId == null && entry(it.battlePokemonId) !in session.checkedEntries }
+        if (due.isNotEmpty()) {
+            val ruled = try {
+                jbro.cobblemon.mcc.betterai.search.LocalEntryAbilityCheck.ruledOut(context, tier, due.mapTo(hashSetOf()) { it.battlePokemonId })
+            } catch (e: RuntimeException) {
+                logger.error("[BetterAI] The engine could not replay the opponent's entry; its abilities stay as they are", e)
+                null
+            }
+            if (ruled != null) {
+                due.forEach { session.checkedEntries += entry(it.battlePokemonId) }
+                ruled.forEach { (id, abilities) -> session.silentAbilities.merge(id, abilities) { a, b -> a + b } }
+            }
+        }
+        val present = state.inferences.filter { it.confidence == jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence.RULED_OUT }
+            .mapTo(hashSetOf()) { it.subjectPokemonId to it.candidateId }
+        val extra = session.silentAbilities.flatMap { (id, abilities) ->
+            abilities.filter { (id to it) !in present && state.pokemon.any { pokemon -> pokemon.battlePokemonId == id && pokemon.knownAbilityId == null } }
+                .map { jbro.cobblemon.mcc.internal.ai.BattleInferenceView(id, "ability", it, jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence.RULED_OUT) }
+        }
+        if (extra.isEmpty()) return context
+        return context.copy(state = jbro.cobblemon.mcc.internal.ai.BattleStateView(state.battleId, state.format, state.turn, state.pokemon,
+            state.field, state.remainingPokemonBySide, state.observedEvents, state.inferences + extra))
     }
 
     private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(

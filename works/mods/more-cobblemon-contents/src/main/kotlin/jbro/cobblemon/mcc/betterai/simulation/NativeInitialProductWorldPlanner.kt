@@ -169,6 +169,14 @@ internal class NativeInitialProductWorldPlanner(
                 context.localOpponentStatSpreads,
                 firstRevealedBySlot(BattleObservedEventKind.ABILITY_REVEALED),
                 firstRevealedBySlot(BattleObservedEventKind.HELD_ITEM_REVEALED),
+                context.state.inferences.asSequence()
+                    .filter { it.categoryId == "ability" && it.confidence == jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence.RULED_OUT }
+                    .mapNotNull { inference ->
+                        val slot = roster.opponentPreviewSlotByPokemonId[inference.subjectPokemonId]
+                        val ability = inference.candidateId?.let(PublicIds::canonical)
+                        if (slot == null || ability.isNullOrEmpty()) null else slot to ability
+                    }
+                    .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() },
             )
             if (buildCompilation.issues.isNotEmpty()) {
                 return failure(

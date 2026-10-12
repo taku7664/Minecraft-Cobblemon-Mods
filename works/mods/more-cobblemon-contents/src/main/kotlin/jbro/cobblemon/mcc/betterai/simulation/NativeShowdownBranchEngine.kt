@@ -51,6 +51,13 @@ internal interface NativeBranchWorker : AutoCloseable {
     fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
 
     /**
+     * Of [abilityIds], the ones that would announce themselves were [pokemonUuid] to enter on this board: each is lent
+     * to it on a copy and its entry events (`SwitchIn`, the ability's `Start`) run there, no turn played.
+     */
+    fun entryAnnouncingAbilities(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Set<String> =
+        throw UnsupportedOperationException("This native worker cannot replay an entry")
+
+    /**
      * Replays an already-observed public turn and asks Showdown for the complete 16-roll support
      * of each attributable direct hit. Product search must keep using [branch] so this diagnostic
      * replay cost is paid only while conditioning retained worlds on public evidence.
