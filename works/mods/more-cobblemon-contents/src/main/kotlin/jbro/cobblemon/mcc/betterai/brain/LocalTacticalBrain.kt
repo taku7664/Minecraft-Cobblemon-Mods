@@ -205,21 +205,32 @@ internal class LocalTacticalBrain(
         )
         // Built once per decision on Advanced and Boss (the rules and the opponent-intent prediction read it),
         // then shared: the search asks for mixing contexts from its own threads.
-        val ruleScores by lazy {
+        fun pairTable(position: BattleDecisionContext): jbro.cobblemon.mcc.betterai.matchup.MatchupScores? {
             val started = System.nanoTime()
-            LocalMatchupScoreCalculator.calculate(
-                difficultyContext,
+            return LocalMatchupScoreCalculator.calculate(
+                position,
                 shouldContinue = { System.nanoTime() - started < RULE_SCORES_TIME_LIMIT_NANOS },
                 recovery = tuning.matchupRecovery,
             ).takeIf { it.complete }
         }
-        // A stat raise with a Mega Evolution is judged on the Mega: its board and its pair table. On the base form's a Mega
-        // Garchomp's Swords Dance read as a 19% win against a Hippowdon it beats outright, and lost to a switch (2026-10-12).
+        // The board the rules read staying on (singles): the Pokemon in front Mega Evolved when one of its moves can
+        // Mega Evolve it this turn, since staying and attacking does. On the base form's table a lead Garchomp that can
+        // Mega Evolve read as losing to a Hippowdon it beats as a Mega, and the switching rules took it out (2026-10-12).
+        val rulesContext: BattleDecisionContext by lazy {
+            if (difficultyContext.state.format != BattleFormat.SINGLE) difficultyContext
+            else difficultyContext.candidates.asSequence().filter { it.kind == BattleActionKind.USE_MOVE }
+                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
+                .firstOrNull { it !== difficultyContext } ?: difficultyContext
+        }
+        val baseRuleScores by lazy { pairTable(difficultyContext) }
+        val ruleScores by lazy { if (rulesContext === difficultyContext) baseRuleScores else pairTable(rulesContext) }
+        // A stat raise is judged on the board it is used on: the Mega's with a Mega Evolution, the base form's without.
+        // On the base form's a Mega Garchomp's Swords Dance read as a 19% win against a Hippowdon it beats outright.
         val megaSetupViews = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>>>()
         fun setupView(candidate: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>? {
-            val scores = ruleScores ?: return null
             val mega = jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, candidate)
-            if (mega === difficultyContext) return difficultyContext to scores
+            if (mega === difficultyContext) return baseRuleScores?.let { difficultyContext to it }
+            if (rulesContext !== difficultyContext) return ruleScores?.let { rulesContext to it }
             return megaSetupViews.computeIfAbsent(candidate.actionId) {
                 val started = System.nanoTime()
                 LocalMatchupScoreCalculator.calculate(
@@ -240,7 +251,7 @@ internal class LocalTacticalBrain(
                     .any { it.kind == BattleActionKind.SWITCH }
             }
             if (!rulesApply || !switching) LocalSwitchRules.Judgement.NONE
-            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, difficultyContext, it, profile.difficulty.tier) }
+            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, rulesContext, it, profile.difficulty.tier) }
                 ?: LocalSwitchRules.Judgement.NONE
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
@@ -266,7 +277,7 @@ internal class LocalTacticalBrain(
                 }
                 when {
                     gated -> candidate.actionId to LocalSetupGate.REASON
-                    LocalStatusMoveTriage.wasted(candidate, difficultyContext, scores) -> candidate.actionId to LocalStatusMoveTriage.REASON
+                    LocalStatusMoveTriage.wasted(candidate, rulesContext, scores) -> candidate.actionId to LocalStatusMoveTriage.REASON
                     else -> null
                 }
             }.toMap()
@@ -370,22 +381,22 @@ internal class LocalTacticalBrain(
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
         // A screen earns the hits it halves while it lasts (LocalScreenCredit).
         val screenAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
+            jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(difficultyContext.candidates, rulesContext, scores)
         }.orEmpty() }
         // A debuff is worth what it takes off its target's exchanges with this whole team (LocalDebuffValue; singles).
         val debuffReadings by lazy { if (!rulesApply || difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
             else ruleScores?.let { scores ->
                 difficultyContext.candidates.mapNotNull { candidate ->
-                    jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.read(candidate, difficultyContext, scores, tuning.matchupRecovery)
+                    jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.read(candidate, rulesContext, scores, tuning.matchupRecovery)
                         ?.let { candidate.actionId to it }
                 }.toMap()
             }.orEmpty() }
         // Stealth Rock, Spikes and Encore earn what comes after the engine's two turns (LocalHazardEncoreCredit).
         val hazardEncoreAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
+            jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, rulesContext, scores)
         }.orEmpty() }
         val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
+            jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, rulesContext, scores, tuning)
         }.orEmpty() }
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
         // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
@@ -569,7 +580,7 @@ internal class LocalTacticalBrain(
         val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
         // Read from the same table as the rules; the AI's threat weights play no part in it.
         val opponentIntents = if (!rulesApply) emptyList()
-            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier) }.orEmpty().let { intents ->
+            else ruleScores?.let { LocalOpponentIntentPredictor.predict(rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier) }.orEmpty().let { intents ->
                 if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
@@ -632,13 +643,13 @@ internal class LocalTacticalBrain(
         val predictionAdjustments = if (expectedSwitches.isEmpty()) emptyMap() else {
             ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalSwitchPrediction.adjustments(
-                    difficultyContext.candidates, difficultyContext, scores, expectedSwitches, tuning)
+                    difficultyContext.candidates, rulesContext, scores, expectedSwitches, tuning)
             }.orEmpty()
         }
         // A doubles Protect is credited for the hits the opponents are predicted to aim at its user.
         val protectAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
-                difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
+                difficultyContext.candidates, rulesContext, scores, opponentIntents, tuning)
         }.orEmpty()
         val setupAdjustments = setupScores.mapNotNull { (id, value) ->
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to tuning.setupSweepCredit * (value - it.comparisonValue) }
@@ -680,7 +691,7 @@ internal class LocalTacticalBrain(
         val quickExcluded by lazy { ruleExclusions(ranked.map { it.outcome.candidate }).keys }
         fun quickVerdict(choice: LocalBattleActionRank, from: List<LocalBattleActionRank>, allow: (String) -> Boolean) = ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
-                from, choice, difficultyContext, scores, profile.difficulty.tier, quickExcluded, seed, predictionAdjustments,
+                from, choice, rulesContext, scores, profile.difficulty.tier, quickExcluded, seed, predictionAdjustments,
                 expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow, ::setupView,
             )
         }
@@ -715,7 +726,7 @@ internal class LocalTacticalBrain(
         val quick = if (!quickRuns) null else if (rulesApply) {
             quickVerdict(selection.rank, drawRanked) { it in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.HARD }
         } else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(drawRanked, selection.rank, difficultyContext, scores)
+            jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.blunders(drawRanked, selection.rank, rulesContext, scores)
         }
         val drawn = quick?.rank ?: selection.rank
         // The draw chooses between actions, not between a move with its mechanic and the same move without: drawn
