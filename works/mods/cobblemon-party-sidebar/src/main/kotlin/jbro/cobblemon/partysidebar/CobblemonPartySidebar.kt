@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory
 
 /**
  * The server half: Cobblemon has no packet that lets a client change a held item, so the sidebar's held-item slots
- * send [HeldItemClickPayload] and the server makes the swap. [ItemizePayload] turns a Pokemon into a PokemonToItem
- * item and [RestorePayload] puts one back into a party slot. Reordering uses Cobblemon's own party packets.
+ * send [HeldItemClickPayload] and the server makes the swap. [ItemizePayload] turns a Pokemon into a Cobblemon To Item
+ * item and [RestorePayload] places or exchanges one in a party slot. Cobblemon To Item owns both operations.
  */
 object CobblemonPartySidebar : ModInitializer {
     const val MOD_ID = "cobblemon_party_sidebar"

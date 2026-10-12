@@ -1,14 +1,12 @@
 package kr.parkjh.pokefusion
 
 import com.cobblemon.mod.common.pokemon.Pokemon
-import net.minecraft.ChatFormatting
+import jbro.cobblemon.toitem.api.PokemonItemData
 import net.minecraft.core.component.DataComponents
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.CustomData
-import net.minecraft.world.item.component.ItemLore
 import org.slf4j.LoggerFactory
 
 object PokeFusionService {
@@ -29,9 +27,7 @@ object PokeFusionService {
     }
 
     fun isPokemonItem(stack: ItemStack): Boolean {
-        if (stack.isEmpty || stack.count != 1) return false
-        val customData = stack.get(DataComponents.CUSTOM_DATA) ?: return false
-        return PokemonToItemFormat.hasPokemonData(customData.copyTag())
+        return PokemonItemData.isPokemonItem(stack)
     }
 
     fun createResult(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): Result {
@@ -60,9 +56,8 @@ object PokeFusionService {
 
         val result = baseStack.copy()
         val existing = result.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: CompoundTag()
-        PokemonToItemFormat.putPokemonData(existing, PokeFusionCobblemonBridge.savePokemon(base, player.registryAccess()))
+        PokemonItemFormat.putPokemonData(existing, PokeFusionCobblemonBridge.savePokemon(base, player.registryAccess()))
         result.set(DataComponents.CUSTOM_DATA, CustomData.of(existing))
-        updateIvLore(result, base)
         result.count = 1
         return Result.Success(result, PokeFusionCobblemonBridge.heldItems(materials))
     }
@@ -109,39 +104,11 @@ object PokeFusionService {
         )
     }
 
-    private fun updateIvLore(stack: ItemStack, pokemon: Pokemon) {
-        val ivs = PokeFusionCobblemonBridge.ivs(pokemon)
-        val replacement = listOf(
-            Component.literal("IVs: ").withStyle(ChatFormatting.LIGHT_PURPLE),
-            Component.literal("  HP: ").withStyle(ChatFormatting.RED)
-                .append(Component.literal(ivs[0].toString()).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("  Atk: ").withStyle(ChatFormatting.DARK_RED))
-                .append(Component.literal(ivs[1].toString()).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("  Def: ").withStyle(ChatFormatting.BLUE))
-                .append(Component.literal(ivs[2].toString()).withStyle(ChatFormatting.GRAY)),
-            Component.literal("  SpAtk: ").withStyle(ChatFormatting.AQUA)
-                .append(Component.literal(ivs[3].toString()).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("  SpDef: ").withStyle(ChatFormatting.YELLOW))
-                .append(Component.literal(ivs[4].toString()).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("  Spd: ").withStyle(ChatFormatting.GREEN))
-                .append(Component.literal(ivs[5].toString()).withStyle(ChatFormatting.GRAY))
-        )
-        val lines = stack.get(DataComponents.LORE)?.lines()?.toMutableList() ?: mutableListOf()
-        val knownBlock = PokemonToItemFormat.findIvLoreBlock(lines.map { it.string })
-        if (knownBlock != null) {
-            lines.subList(knownBlock.first, knownBlock.last + 1).clear()
-            lines.addAll(knownBlock.first, replacement)
-        } else {
-            lines.addAll(replacement)
-        }
-        stack.set(DataComponents.LORE, ItemLore(lines))
-    }
-
     private fun loadPokemon(player: ServerPlayer, stack: ItemStack): Pokemon? {
         return try {
             val customData = stack.get(DataComponents.CUSTOM_DATA) ?: return null
             val root = customData.copyTag()
-            val pokemonData = PokemonToItemFormat.pokemonData(root) ?: return null
+            val pokemonData = PokemonItemFormat.pokemonData(root) ?: return null
             PokeFusionCobblemonBridge.loadPokemon(player.registryAccess(), pokemonData)
         } catch (_: Exception) {
             null

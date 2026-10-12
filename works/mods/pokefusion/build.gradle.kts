@@ -12,6 +12,7 @@ version = property("pokefusion_version")!!
 base { archivesName.set("PokemonFusion-fabric") }
 
 dependencies {
+    implementation(project(path = ":cobblemon-to-item", configuration = "namedElements"))
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")

@@ -3,7 +3,7 @@
   "id": "cobblemon_party_sidebar",
   "version": "${version}",
   "name": "Cobblemon Party Sidebar",
-  "description": "Shows the Cobblemon party beside the survival inventory. Drag held items in and out, and drag Pokemon to reorder the party.",
+  "description": "Shows the Cobblemon party beside the survival inventory. Click Pokemon slots to pick up, place or exchange Pokemon items; shift-click to quick-move.",
   "authors": [
     "jbro"
   ],
@@ -39,7 +39,8 @@
     "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
     "minecraft": "~1.21.1",
     "java": ">=21",
-    "cobblemon": ">=1.8.1 <1.9.0"
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "cobblemon_to_item": ">=0.1.0"
   },
   "contact": {
     "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/cobblemon-party-sidebar",
@@ -47,7 +48,6 @@
   },
   "suggests": {
     "modmenu": "*",
-    "emi": "*",
-    "pokemontoitem": "*"
+    "emi": "*"
   }
 }

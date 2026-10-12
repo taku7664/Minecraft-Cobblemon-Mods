@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Hooks the party column into the survival inventory. The column is drawn with the background, under the slots'
- * highlights and the cursor item; its tooltip and a dragged Pokemon go on top once the screen has drawn.
+ * highlights and the cursor item; its tooltip is drawn once the screen has drawn.
  */
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenMixin {
@@ -37,11 +37,6 @@ public abstract class InventoryScreenMixin {
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
     private void cobblemonPartySidebar$mouseReleased(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         if (PartySidebar.INSTANCE.mouseReleased(cobblemonPartySidebar$self(), mouseX, mouseY, button)) cir.setReturnValue(true);
-    }
-
-    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
-    private void cobblemonPartySidebar$keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
-        if (PartySidebar.INSTANCE.keyPressed(cobblemonPartySidebar$self(), keyCode, scanCode)) cir.setReturnValue(true);
     }
 
     /** A click on the column is not a click outside the inventory, which would throw the cursor item. */

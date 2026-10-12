@@ -7,7 +7,7 @@ See LICENSE (LICENSE_pokefusion in distributed JARs) for the unmodified text.
 The module-specific CC0 declaration is separate from the repository root's
 MIT license. It does not relicense other modules or dependencies.
 
-Minecraft, Fabric, Cobblemon and PokemonToItem are separate projects and
+Minecraft, Fabric, Cobblemon and Cobblemon To Item are separate projects and
 remain subject to their respective licenses. Dependency JARs are not bundled
 by this module's build configuration. Names and trademarks remain with their
 respective owners. CC0 does not grant trademark or patent rights.

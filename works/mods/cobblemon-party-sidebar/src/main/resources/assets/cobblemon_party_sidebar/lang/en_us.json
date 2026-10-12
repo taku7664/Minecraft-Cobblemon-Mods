@@ -1,19 +1,10 @@
 {
-  "cobblemon_party_sidebar.tooltip.level": "Lv.%s",
-  "cobblemon_party_sidebar.tooltip.hp": "HP %s/%s",
-  "cobblemon_party_sidebar.tooltip.nature": "Nature",
-  "cobblemon_party_sidebar.tooltip.ability": "Ability",
-  "cobblemon_party_sidebar.tooltip.iv": "IV",
-  "cobblemon_party_sidebar.tooltip.ev": "EV",
   "cobblemon_party_sidebar.message.in_battle": "Held items can't be changed during a battle.",
   "cobblemon_party_sidebar.message.inventory_full": "Your inventory is full.",
   "config.cobblemon_party_sidebar.title": "Cobblemon Party Sidebar",
   "config.cobblemon_party_sidebar.enabled": "Party column",
   "config.cobblemon_party_sidebar.tooltip": "Pokémon tooltip",
   "config.cobblemon_party_sidebar.save_failed": "Could not save the settings.",
-  "cobblemon_party_sidebar.hint.itemize": "Press %s to itemize",
-  "cobblemon_party_sidebar.message.itemize_in_battle": "Pokémon can't be itemized or restored during a battle.",
-  "key.cobblemon_party_sidebar.itemize": "Itemize hovered Pokémon",
-  "key.categories.cobblemon_party_sidebar": "Cobblemon Party Sidebar",
+  "cobblemon_party_sidebar.hint.itemize": "Click to pick up · Shift-click to move to inventory",
   "button.cobblemon_party_sidebar.fusion": "Pokemon Fusion"
 }

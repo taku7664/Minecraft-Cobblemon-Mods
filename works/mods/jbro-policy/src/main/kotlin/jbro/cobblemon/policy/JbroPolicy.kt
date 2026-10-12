@@ -10,7 +10,6 @@ import jbro.cobblemon.policy.legend.LegendPolicy
 import jbro.cobblemon.policy.legend.SpawnForCommand
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
-import jbro.cobblemon.policy.pokemon.PokemonItemRestore
 import jbro.cobblemon.policy.pokemon.PokemonSummaryOnInteract
 import jbro.cobblemon.policy.pokemon.PokenavCommand
 import jbro.cobblemon.policy.support.DiscordBot
@@ -46,7 +45,6 @@ object JbroPolicy : ModInitializer {
         WelcomeKit.register()
         PartyRelease.register()
         PokenavCommand.register()
-        PokemonItemRestore.register()
         PokemonSummaryOnInteract.register()
         jbro.cobblemon.policy.menu.MenuLinks.register()
         jbro.cobblemon.policy.menu.PichuHelper.register()
