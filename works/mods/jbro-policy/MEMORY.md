@@ -11,7 +11,9 @@
 - **설치:** 개발 서버·클라이언트에 바뀐 모드만 교체(백업 `develop-product/deployment-backups/<시각>-release-1.2.0/`). 개발 클라이언트가 켜져 있던 동안은 PPakemon 패치 기준을 개발 클라이언트 복사본(`F:/AI/build/plaza-fix-20261011/client-stage`)으로 잡았다. 클라이언트 패쳐의 실행 검사는 모든 마인크래프트 클라이언트를 막아서, PPakemon 프로세스 없음·PPakemon 모드 잠금 0을 직접 확인하고 `-SkipProcessCheck`로 적용했다.
 - **결과:** PPakemon 15+1개(PokemonToItem 제거), 로컬 운영 서버 15개(운영 저장소 `8d7b7e9` 푸시), `deploy-product/server` 48개는 운영 서버와 같고 `client`는 우리 모드 17개. 모든 설치본 해시가 빌드본과 같다. `VERSION.txt` 두 곳에 1.2.0 기록.
 - **기존 PokemonToItem 아이템:** VPS 월드 전체(배낭 `sophisticatedbackpacks.dat`, 청크, 엔티티, 플레이어·합성 데이터)와 개발 월드에서 `PTI_NBT` 0건(10-13 02시대). VPS 반영 때 서버를 내린 뒤 다시 검색한다.
-- **미실행:** VPS 반영, 실게임 확인.
+- **VPS (10-13 06:04):** 사용자가 06:00에 정상 종료해 둔 상태에서 반영했다. 종료 후 최종 월드에서도 `PTI_NBT` 0건이라 변환은 하지 않았다. 관리자 update로 `8d7b7e9` 적용(15개, 설정·월드 보존, 백업 `~/.local/share/ppakemon-backups/manager/20261013-060443-ea73bd7c`), 모드 48개 해시가 `deploy-product/server`와 같다. 서버는 켜지 않았다(사용자가 07시에 연다). update RPC는 `head`·`target`을 같이 넘겨야 하며, 빠뜨리면 `'head'` 오류로 아무것도 바꾸지 않고 끝난다.
+- **모드팩:** `Downloads/PPakemon 1.2.0.mrpack`(220MB)은 1.1.0 팩의 Modrinth 목록(70개, 해시 일치)에 우리 모드 등 20개와 리소스팩·셰이더·`servers.dat`을 넣어 직접 만들었다. 사용자 결정으로 `config`는 통째로 뺐고 데이터팩(`ATM x MSD`)은 목록으로 들어간다.
+- **미실행:** 실게임 확인, 구글 드라이브 업로드(커넥터가 회사 계정이고 10MB 한계).
 
 ## [2026-10-12 23:40] 포켓 내비 레어도 순서 고정 — 개발 서버·클라이언트 배치 (0.1.5, 실게임 미확인)
 
