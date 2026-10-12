@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-12 14:20] 변화기 세부 가중치 실험
+
+- **사용자 요청:** 변화기 안에 랭크업·회복 등 세부 가중치를 두고, 변화기 가중치는 1.0, 랭크업만 0.6으로 낮춰 본다.
+- **구현:** 세부 가중치는 `setupMoveWeight`, `recoveryMoveWeight`, `protectionMoveWeight`, `statusInflictionMoveWeight`, `disruptionMoveWeight`, `fieldMoveWeight`, `hazardMoveWeight`, `otherStatusMoveWeight`다.
+  - 분류는 기존 `BattleStatusMoveCategories`로 한다. 랭크업은 `isPureSelfSetup`이다.
+  - 최종 가중치는 변화기 가중치 × 세부 가중치다. 기본값은 모두 1.0이다.
+- **결과:** 랭크업 0.6 대 1.0, 197판에서 103승 94패(0.523, 95% 범위 약 0.45~0.59)다. 오늘 실험 중 처음으로 이득 쪽이지만 아직 판별할 수 없다. 변화기 평가 오류 13건(0.6%)이 났고, 원인은 확인하지 않았다.
+- **판단 대기:** 기본값을 0.6으로 바꿀지, 판수를 늘려 확인할지는 사용자가 정한다.
+
 ## [2026-10-12 14:05] 분류별 글로벌 가중치 실험 (`LocalActionKindWeights`)
 
 - **사용자 요청:** 공격기·변화기·교체 등 분류별 글로벌 가중치를 두고, 변화기를 0.8로 낮춰 본다.
