@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -18,7 +19,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * back later, as worth nothing. The win chance against the whole team ([SweepScore]) was tried first: a burned Garchomp
  * still beat both of a Rotom team's Pokemon, so the burn read as 2% of a knockout. The exchange score also reads the HP
  * the target leaves its winner with, so a burn that halves what it deals counts even where it still wins. Read from the
- * move data; no move is named.
+ * move data; no move is named. Drops applied raw once read Charm on a Defiant Kingambit as a gain (2026-10-12).
  */
 internal object LocalDebuffValue {
     data class Reading(val before: Double, val after: Double, val accuracy: Double) {
@@ -54,17 +55,27 @@ internal object LocalDebuffValue {
         val before = exchange(scores) ?: return null
         val effects = move.moveDetails?.effects?.effects.orEmpty()
         val status = effects.firstNotNullOfOrNull { effect -> effect.valueId?.takeIf { effect.kind == BattleMoveEffectKind.STATUS } }
-        val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }.flatMap { it.statStages.entries }
-        val stages = target.statStages.toMutableMap()
-        drops.forEach { (stat, change) -> stages[stat] = ((stages[stat] ?: 0) + change).coerceIn(-6, 6) }
-        val debuffed = target.copyState(
-            statusId = if (status != null && target.statusId == null) status else target.statusId,
-            statStages = stages,
-        )
-        val after = LocalMatchupScoreCalculator.calculate(
-            context.copy(state = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == target.battlePokemonId) debuffed else it })),
-            recovery = recovery,
-        ).takeIf { it.complete }?.let(::exchange) ?: return null
+        val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
+            .flatMap { it.statStages.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, changes) -> changes.sum() }
+        val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        val statused = state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId && status != null && it.statusId == null) it.copyState(statusId = status) else it
+        })
+        // The drops resolve as Showdown's boost does (LocalStatStageChange: Contrary, Clear Body, Mirror Armor, Defiant,
+        // Competitive...), once per ability the target may have, all alike; the ability is only lent for that.
+        val abilities: List<String?> = if (drops.isEmpty() || target.knownAbilityId != null) listOf(null)
+            else jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(state, target).ifEmpty { listOf(null) }
+        val after = abilities.mapNotNull { ability ->
+            val lent = if (ability == null) statused else statused.copyState(pokemon = statused.pokemon.map {
+                if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownAbilityId = ability) else it
+            })
+            val dropped = if (drops.isEmpty()) lent
+                else LocalStatStageChange.apply(lent, target.battlePokemonId, user?.battlePokemonId, drops)
+            val board = if (ability == null) dropped else dropped.copyState(pokemon = dropped.pokemon.map {
+                if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownAbilityId = target.knownAbilityId) else it
+            })
+            LocalMatchupScoreCalculator.calculate(context.copy(state = board), recovery = recovery).takeIf { it.complete }?.let(::exchange)
+        }.takeIf { it.size == abilities.size }?.average() ?: return null
         val accuracy = move.moveDetails?.accuracy?.takeIf { it > 0.0 }?.let { (it / 100.0).coerceAtMost(1.0) } ?: 1.0
         return Reading(before, after, accuracy)
     }

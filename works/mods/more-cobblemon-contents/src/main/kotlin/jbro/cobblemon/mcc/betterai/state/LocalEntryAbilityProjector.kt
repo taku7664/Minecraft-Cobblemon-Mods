@@ -116,7 +116,8 @@ internal object LocalEntryAbilityProjector {
         return branches
     }
 
-    private fun publicPossibleAbilities(state: BattleStateView, foe: BattlePokemonStateView): List<String> {
+    /** The abilities [foe] may have: the revealed one, else the inferred ones, else its species' abilities, all alike. */
+    fun publicPossibleAbilities(state: BattleStateView, foe: BattlePokemonStateView): List<String> {
         canonical(foe.knownAbilityId)?.takeIf { it.isNotEmpty() }?.let { return listOf(it) }
         val knownInferences = state.inferences.filter { it.subjectPokemonId == foe.battlePokemonId && it.categoryId == "ability" }
         val ruledOut = knownInferences.filter { it.confidence == BattleInferenceConfidence.RULED_OUT }.mapNotNull { canonical(it.candidateId) }.toSet()
