@@ -15,6 +15,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector
 
 internal data class LocalStatStageMarginalValue(
     /** Realizable outgoing minus incoming attack-pressure change, in HP-bar units. */
@@ -99,18 +100,46 @@ internal object LocalStatStageMarginalEvaluator {
                 applyStages(current, setOf(id), LocalStatStageChange.reshape(current, target, actorId, effect.statStages))
             }
             appliedAny = true
-            val resolvedScore = scoreWithUnknownFallback(
-                state,
-                applied,
-                context,
-                calculationCache,
-                tuning,
-            )
+            // An opposing target whose ability is still hidden takes the change once per ability it may have, all alike
+            // (no weight for hidden abilities, user decision), as the debuff value reads it. The ability is only lent to
+            // the reshaping; the board keeps it unknown.
+            val worlds = abilityWorlds(state, targetIds)
+            val resolvedScore = if (worlds == null) {
+                scoreWithUnknownFallback(state, applied, context, calculationCache, tuning)
+            } else worlds.map { lent ->
+                val after = targetIds.fold(state) { current, id ->
+                    val target = current.pokemon.firstOrNull { it.battlePokemonId == id } ?: return@fold current
+                    val ability = lent[id] ?: return@fold applyStages(current, setOf(id),
+                        LocalStatStageChange.reshape(current, target, actorId, effect.statStages))
+                    val borrowed = current.copyState(pokemon = current.pokemon.map {
+                        if (it.battlePokemonId == id) it.copyState(knownAbilityId = ability) else it
+                    })
+                    val holder = borrowed.pokemon.first { it.battlePokemonId == id }
+                    applyStages(current, setOf(id), LocalStatStageChange.reshape(borrowed, holder, actorId, effect.statStages))
+                }
+                scoreWithUnknownFallback(state, after, context, calculationCache, tuning)
+            }.average()
             val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
             score += resolvedScore * probability
             if (probability >= CERTAIN_PROBABILITY) state = applied
         }
         return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) else null
+    }
+
+    /**
+     * Every combination of the abilities the opposing [targetIds] with a hidden ability may have, or null when none is
+     * in doubt (every target's ability is known, or it can only have one).
+     */
+    private fun abilityWorlds(state: BattleStateView, targetIds: Collection<UUID>): List<Map<UUID, String>>? {
+        val doubtful = targetIds.mapNotNull { id ->
+            val target = state.pokemon.firstOrNull { it.battlePokemonId == id && it.side == BattleSide.OPPONENT && it.knownAbilityId == null }
+                ?: return@mapNotNull null
+            LocalEntryAbilityProjector.publicPossibleAbilities(state, target).takeIf { it.size >= 2 }?.let { id to it }
+        }
+        if (doubtful.isEmpty()) return null
+        return doubtful.fold(listOf(emptyMap())) { worlds, (id, abilities) ->
+            worlds.flatMap { world -> abilities.map { world + (id to it) } }
+        }
     }
 
     /**
