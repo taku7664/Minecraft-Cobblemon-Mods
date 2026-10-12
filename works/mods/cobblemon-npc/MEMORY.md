@@ -1,5 +1,14 @@
 # cobblemon-npc 작업 기록
 
+## [2026-10-12 22:40] NPC 편집 개선 JAR 빌드·개발 클라이언트/서버 배포 (파일 검증 완료, 실화면은 사용자 확인)
+
+- **사용자 요청:** “빌드해서 개발 클라랑 서버에 배포해줘. 화면은 내가 직접 확인할게.” 아래 구현 항목에서 배포하지 않았던 개선본을 이번 요청으로 개발 제품에 설치했다. 실제 화면은 사용자가 직접 확인하며 자동 UI 검증은 수행하지 않았다.
+- **커밋된 main 빌드:** main·origin/main `09b34240c0308c6b9e5425b322df00ec1c471628` 동기화 확인 후 `git archive main` 전체를 `F:/AI/build/npc-editor-2edf/src`에 추출했다. QA fixture가 없는 소스로 빌드했다. `GRADLE_USER_HOME=F:/AI/caches/gradle`, 작업별 프로젝트 캐시·모듈 출력·TEMP/TMP·JVM 임시 경로 등 모든 Gradle 쓰기를 F 드라이브로 지정했다. `build-deploy.log`의 `:cobblemon-npc:build`는 `BUILD SUCCESSFUL in 45s`, 단위 테스트 25/25 성공·0개 실패다.
+- **산출물 확인:** 버전 `0.1.0`, JAR은 `F:/AI/build/npc-editor-2edf/modules/cobblemon-npc/libs/cobblemon-npc-0.1.0.jar`다. 메인 작업자가 Java 21 `jar --validate`, ZIP CRC, 새 편집/초안/InvMove 클래스·ko/en 문구·UI 내장 포함과 `EditorQaFixture` 부재를 확인했다.
+- **배포 대상·안전 확인:** 실제 primary 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/client/mods`와 `develop-product/server/mods`의 `cobblemon-npc-0.1.0.jar` 두 파일을 교체했다. 직전 대상 개발 클라이언트/서버 Java와 25566 수신이 없음을 확인했다. 실행 중 게임 PID 45864는 PPakemon 프로필이라 변경하지 않았다. 이전 JAR 백업은 제품 밖 `F:/AI/build/npc-editor-2edf/deployment-backup-20261012-2240/{client,server}/`에 보관했다.
+- **배치 해시 대조:** 빌드본과 개발 클라이언트/서버 두 설치본 SHA-256을 직접 확인했으며 모두 `a40c46a40e4a178e3bbce06414b0d8daffd6984e75c0893f9114882f6578ce19`로 같다.
+- **미실행·미확인:** 개발/운영 서버 기동·클라이언트 기동·자동 화면 검증은 하지 않았다. 운영/VPS/PPakemon/deploy-product는 변경하지 않았다. 실화면·InvMove 런타임·실제 저장/편집 흐름은 사용자 확인 전이므로 미확인으로 남긴다. 이 배포 기록 자체의 커밋·푸시는 메인 작업자가 별도로 처리한다.
+
 ## [2026-10-12 22:17] NPC 편집 화면 정리와 초안 편집 환경 개선 (구현·단위 검증·main 병합/푸시, 실화면 미확인)
 
 - **사용자 요청·범위:** 배경이 선명하게 남고 설명·버튼이 겹치는 완드 설정/대화 편집 화면을 정리하고, 페이지·선택지·연결 대상을 쉽게 편집하도록 개선한다. 개발 중 발견한 개선점도 선조치 후보고하도록 승인했다. 대상은 `cobblemon-npc` 편집 화면이며 기존 플레이용 대화창과 JSON/패킷 형식은 유지한다.
