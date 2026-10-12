@@ -74,12 +74,14 @@ internal object LocalQuickDecider {
         val theirKnockout = stay.opponentMove?.knockoutChanceWithin(1) ?: 0.0
 
         // 1. A knockout this turn, landed before their hit or survived. Of several, the one the ranking put first: it
-        // has weighed what each does if the opponent switches instead.
+        // has weighed what each does if the opponent switches instead. When a switch is expected the knockout only holds
+        // if it stays, so it is points before the draw rather than the choice (2026-10-13, user decision).
+        val switchExpected = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0) >= FREE_TURN
         attacks.firstOrNull { (rank, score) ->
             val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
                 else stay.subjectMovesFirstProbability
             score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
-        }?.let { (rank, _) -> pick(rank, "knockout") }?.let { return it }
+        }?.let { (rank, _) -> pick(rank, if (switchExpected) KNOCKOUT_IF_STAYS else "knockout") }?.let { return it }
 
         // 2. A reason to leave.
         val reasons = buildList {
@@ -366,6 +368,12 @@ internal object LocalQuickDecider {
      * and the senseless choices (staying in with nothing that does anything, a heal the hit undoes, hazards with no one
      * left to touch). The rest are preferences the brain adds to the ranking as a bonus (2026-10-12).
      */
+    /**
+     * The sure knockout while the opponent is expected to switch ([FREE_TURN] or more): points before the draw, asked for
+     * on its own so the other verdicts are still read.
+     */
+    const val KNOCKOUT_IF_STAYS = "knockout_if_stays"
+
     val HARD = setOf("knockout", "replace_revenge", "replace_matchup", "switch_no_damage", "switch_cannot_act", "futile_heal", "wasted_status")
 
     /**

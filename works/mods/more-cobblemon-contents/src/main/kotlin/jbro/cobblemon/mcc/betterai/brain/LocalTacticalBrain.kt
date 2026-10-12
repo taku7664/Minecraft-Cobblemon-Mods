@@ -705,12 +705,20 @@ internal class LocalTacticalBrain(
         val quickBonus: Map<String, List<String>> = if (!quickRuns || !rulesApply || tuning.quickVerdictBonus <= 0.0) emptyMap() else ranked
             .filter { it.outcome.candidate.actionId !in quickExcluded }
             .mapNotNull { rank ->
-                quickVerdict(rank, ranked) { it !in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.HARD }?.let { verdict ->
+                quickVerdict(rank, ranked) {
+                    it !in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.HARD &&
+                        it != jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.KNOCKOUT_IF_STAYS
+                }?.let { verdict ->
                     if (verdict.reason in jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.AGAINST_CHOSEN) {
                         rank.outcome.candidate.actionId to "-${verdict.reason}"
                     } else verdict.rank.outcome.candidate.actionId to "+${verdict.reason}"
                 }
             }
+            // A sure knockout the expected switch may dodge: the draw decides, the knockout ahead by the bonus.
+            .plus(listOfNotNull(ranked.firstOrNull()?.let { first ->
+                quickVerdict(first, ranked) { it == jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.KNOCKOUT_IF_STAYS }
+                    ?.let { it.rank.outcome.candidate.actionId to "+${it.reason}" }
+            }))
             .groupBy({ it.first }, { it.second }).mapValues { (_, reasons) -> reasons.distinct() }
         val drawRanked = if (quickBonus.isEmpty()) ranked else LocalBattleActionPolicy.sort(ranked.map { rank ->
             quickBonus[rank.outcome.candidate.actionId]?.let { reasons ->
