@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-13 00:40] 배틀 종료 경로 재점검 (PvP 종료 버그 후속)
+
+- **계기**: PvP 종료 버그가 10-11 PvP 점검에서 빠졌다. 그 점검은 PvP 애드온 안쪽만 봤고, 원인은 MCC 본체 클라 리셋이었다. 이번엔 모든 모드에서 Cobblemon 배틀 패킷에 끼어드는 믹스인, 패킷 보류·재생 로직, `MccClientSessionReset` 콜백 전체(10개), 서버의 직접 `closeBattle` 경로를 범위로 잡았다.
+- **놓치기 쉬운 전제**: `MccClientSessionReset`은 접속·종료뿐 아니라 `AFTER_CLIENT_WORLD_CHANGE`, 즉 **차원 이동마다** 돈다. PvP 라운지·마이룸처럼 진행 중에 차원을 옮기는 콘텐츠에서는 "텔레포트 직전에 받은 상태나 보류한 작업"이 지워진다. 리셋 콜백을 새로 걸 때는 진행 중 차원 이동에서도 안전한지 따질 것.
+- **추가 수정**:
+  - `BattleInitializeHandlerSceneMixin`(신규): 종료를 0.5초 보류하는 사이 새 배틀이 열리면, 뒤늦게 실행된 이전 종료가 새 배틀을 지웠다. 새 배틀 초기화 전에 보류한 종료를 먼저 끝낸다(`BattleSceneClient.finishHeldEnd`).
+  - `Cobblemon173ManagedBattleTermination.closeWithClientEnd`: Cobblemon `end()`는 종료 패킷을 맨 마지막에 보내므로, 중간에 예외가 나서 강제로 닫으면 클라 배틀이 남았다. 강제 닫기·이미 끝난 배틀 닫기·`BattleEntryHold.abandon`이 모두 선수·관전자에게 종료 패킷을 먼저 보낸다.
+- **문제없음으로 확인**: 진입 연출 보류는 서버가 200틱 제한으로 시작시킨다(PvP는 대상 아님). `stop()`은 `end()`로 이어진다. `closeBattle`은 `onEndHandlers`를 먼저 돌리므로 종료 패킷 → PvP 완료·텔레포트 순서다. PvP 완료는 텔레포트 뒤에 방 상태를 보내 리셋에 지워지지 않는다. 시작 때도 차원 이동 뒤 배틀·음악 키가 들어온다(운영 로그 20:53:04~05).
+- **미확인**: 빌드·테스트·배포·실게임 확인 안 함.
+
 ## [2026-10-13 00:10] PvP 종료 후 배틀·BGM이 안 끝나던 문제 (클라 종료 보류가 차원 이동에 버려짐)
 
 - **증상(운영, 10-12 20:55 PPakemon 클라 로그)**: PvP 승패 메시지와 라운지 → 마이룸 이동 직후 `Battle music: PVP keys=[] -> battle.pvp`가 새로 찍히고, 플레이어는 "전투중", 포켓몬 표시와 BGM이 계속 남음.

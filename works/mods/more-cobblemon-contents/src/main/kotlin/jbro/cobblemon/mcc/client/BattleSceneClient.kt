@@ -62,6 +62,13 @@ object BattleSceneClient {
         return true
     }
 
+    /** A new battle is opening: the last one's held end finishes now, before it could close the new one. */
+    @JvmStatic
+    fun finishHeldEnd() {
+        if (replaying) return
+        releaseEnd()
+    }
+
     private fun tick() {
         val now = Util.getMillis()
         if (heldEnd != null && (now - heldSince > HOLD_LIMIT_MILLIS ||

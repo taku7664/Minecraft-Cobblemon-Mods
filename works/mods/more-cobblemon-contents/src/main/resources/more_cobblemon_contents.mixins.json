@@ -20,6 +20,7 @@
   ],
   "client": [
     "client.BattleEndHandlerSceneMixin",
+    "client.BattleInitializeHandlerSceneMixin",
     "client.BattleMoveSelectionMixin",
     "client.LevelRendererLateHologramMixin"
   ],
