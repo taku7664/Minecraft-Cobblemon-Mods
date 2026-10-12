@@ -356,6 +356,10 @@ internal class LocalTacticalBrain(
         val screenAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
         }.orEmpty() }
+        // Stealth Rock, Spikes and Encore earn what comes after the engine's two turns (LocalHazardEncoreCredit).
+        val hazardEncoreAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
+        }.orEmpty() }
         val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
         }.orEmpty() }
@@ -395,7 +399,7 @@ internal class LocalTacticalBrain(
                     val extra = LocalTacticalScorer.simulationBlindAdjustment(
                         calculated[id] ?: rank.outcome.candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn,
                     ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickAdjustments[id] ?: 0.0) +
-                        (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0)
+                        (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0) + (hazardEncoreAdjustments[id] ?: 0.0)
                     if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
                 })
                 // Only the re-entry veto: the setup one reads the HP a stay keeps, which native ranks do not carry.
@@ -609,10 +613,10 @@ internal class LocalTacticalBrain(
         }.toMap()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
-            nativeStatusAdjustments.keys).associateWith {
+            hazardEncoreAdjustments.keys + nativeStatusAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
-                (screenAdjustments[it] ?: 0.0) + (nativeStatusAdjustments[it] ?: 0.0)
+                (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (nativeStatusAdjustments[it] ?: 0.0)
         }
         val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
@@ -661,7 +665,8 @@ internal class LocalTacticalBrain(
                 nativeStatusStatus = statusPricing?.status,
                 rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
-                    "healRace" to healRaceAdjustments, "screen" to screenAdjustments).filterValues { it.isNotEmpty() },
+                    "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
+                    "hazardEncore" to hazardEncoreAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
