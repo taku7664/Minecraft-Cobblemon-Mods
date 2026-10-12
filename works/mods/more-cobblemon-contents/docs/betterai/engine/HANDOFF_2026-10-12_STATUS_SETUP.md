@@ -104,7 +104,7 @@
 ## 테스트 상태
 
 - 2026-10-12 이어받은 세션에서 9개 클래스를 다시 돌려 117개 모두 통과했다(F 드라이브 Gradle).
-  - `LocalQuickDeciderTest` 루카리오: 사용자 결정에 따라 "인파이트만 아니면 통과"로 바꿨다(칼춤·메탕크래시 모두 통과).
+  - `LocalQuickDeciderTest` 루카리오: 사용자 결정에 따라 "인파이트만 아니면 통과"로 바꿨다(칼춤·코멧펀치 모두 통과).
   - `NativeOpponentPreviewMoveCatalogMaterializerTest`: 캐시 키 수정 뒤 5개 통과.
   - `LocalRecursiveLookaheadTest` 3개: 10-09 전 등급 2턴·노드 40만 변경 때 기대값을 안 고친 것이었다. 현재 정책을 읽도록 고쳤다.
 - `LocalNativeStatusValueTest` 흑안개 테스트는 전제를 바꿨다. 특성 균등 가중으로 상대 교체 시 랭크가 오르는 세계가 생겨 자해 판정 대신 "냉동빔보다 40점 이상 낮음"을 본다. 그래서 자해 하한을 직접 검증하는 테스트는 지금 없다.
