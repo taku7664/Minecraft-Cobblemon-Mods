@@ -31,8 +31,10 @@ internal object LocalRootFlinchValue {
         // A certain flinch (Fake Out) counts like any other while it can land; once its first turn is spent it fails and
         // keeps only its own penalty. Left out entirely, it took no turn from anything and lost to any harder hit
         // (2026-10-13).
-        if ((declared(candidate) ?: return 0.0) >= 1.0 &&
-            LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0) return 0.0
+        // A certain flinch on a condition its data does not declare (Upper Hand: only into a priority move) is left out,
+        // as every certain flinch was before.
+        if ((declared(candidate) ?: return 0.0) >= 1.0 && (!certain(candidate) ||
+            LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0)) return 0.0
         val chance = chance(candidate, actor, target, state).takeIf { it > 0.0 } ?: return 0.0
         val facts = candidate.facts ?: return 0.0
         val movesFirst = facts.actsFirstProbability ?: return 0.0
@@ -70,8 +72,13 @@ internal object LocalRootFlinchValue {
         return chance
     }
 
-    /** Whether [candidate]'s data declares a flinch on every hit (Fake Out), before the target's ability or item. */
-    fun certain(candidate: BattleActionCandidate): Boolean = (declared(candidate) ?: 0.0) >= 1.0
+    /**
+     * Whether [candidate]'s data declares a flinch on every hit, before the target's ability or item, and the one
+     * condition it may fail on is a declared one: its user's first turn out (Fake Out). Upper Hand flinches as surely but
+     * only into a priority move, a condition its data does not declare; read as certain, it freed every turn.
+     */
+    fun certain(candidate: BattleActionCandidate): Boolean = (declared(candidate) ?: 0.0) >= 1.0 &&
+        candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.FIRST_ACTIVE_TURN_ONLY }
 
     private fun declared(candidate: BattleActionCandidate): Double? {
         val details = candidate.moveDetails ?: return null
