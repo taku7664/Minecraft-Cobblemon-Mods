@@ -11,8 +11,6 @@ import jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe
 import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -114,8 +112,7 @@ class LocalEngineStopProbeTest {
                 })
                 }
             })
-        val bound = twisted.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(twisted.state, catalog, tier,
-            LocalOpponentMoveUsage.forFormat(twisted.state.format)))
+        val bound = twisted.copy(publicActionCatalog = catalog)
         val context = PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
         val scores = LocalMatchupScoreCalculator.calculate(context)
         val sweeper = context.state.pokemon.first { it.side == BattleSide.ALLY && it.activeSlot == 0 }

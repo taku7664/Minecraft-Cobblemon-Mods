@@ -41,7 +41,7 @@ internal object LocalOpponentStatAssumption {
             val base = slot.buildCandidatePool?.baseStats?.takeIf { it.isNotEmpty() } ?: return@map pokemon
             val exact = context.localOpponentStatSpreads[slot.previewSlotId]
             val stats = BattlePublicStatRanges.fromAssumedSpread(
-                level, base, ivs(tier, exact), evs(tier, base, exact),
+                level, base, ivs(tier, exact), evs(tier, base, exact), offensiveNature = true,
             )
             pokemon.copyState(combatStats = stats)
         }

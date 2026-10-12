@@ -13,10 +13,6 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsage
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
 
 internal enum class NativeInitialProductWorldPlanIssueCode {
     OPPONENT_PREVIEW_MISSING,
@@ -84,10 +80,6 @@ internal data class NativeInitialProductWorldPlan(
  * bounded and renormalized.
  */
 internal class NativeInitialProductWorldPlanner(
-    private val moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup? =
-        LocalOpponentMoveUsage::forFormat,
-    private val buildUsageForFormat: (BattleFormat) -> LocalOpponentBuildUsageLookup =
-        LocalOpponentBuildUsage::forFormat,
     private val worldLimit: (BattleTrainerTier, Int) -> Int = ::defaultWorldLimit,
 ) {
     /** Rebuilds the posterior from a mid-battle public board ([NativeMidBattleStateRules]) instead of the opening. */
@@ -150,7 +142,6 @@ internal class NativeInitialProductWorldPlanner(
                 preview,
                 context.publicActionCatalog,
                 tier,
-                moveUsageForFormat(context.state.format),
             )
             if (moveMaterialization.issues.isNotEmpty()) return failure(
                 NativeInitialProductWorldPlanIssueCode.MOVE_CATALOG_MATERIALIZATION_FAILED,
@@ -175,7 +166,6 @@ internal class NativeInitialProductWorldPlanner(
                 preview,
                 rosterHypothesis.selectedPreviewSlotIds,
                 tier,
-                buildUsageForFormat(context.state.format),
                 context.localOpponentStatSpreads,
                 firstRevealedBySlot(BattleObservedEventKind.ABILITY_REVEALED),
                 firstRevealedBySlot(BattleObservedEventKind.HELD_ITEM_REVEALED),

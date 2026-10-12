@@ -11,8 +11,6 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
@@ -43,7 +41,7 @@ class LocalNativeStatusValueTest {
         difficulty = BattleDifficultyProfiles.BOSS)
 
     @Test
-    fun `Haze that only wipes this side's boosts goes under every failing action, and wiping a big boost is worth more`() {
+    fun `Haze that only wipes this side's boosts ranks far under an attack, and wiping a big boost is worth more`() {
         // Only Milotic boosted: Haze takes its stages and gives nothing, whatever Ferrothorn does. It goes under the
         // level of a move that fails publicly, so it never wins a position where everything else is bad too.
         val selfBoosted = haze { mon(it, BattleSide.ALLY) { p -> p.copyState(statStages = mapOf("spa" to 2, "spd" to 2)) } }
@@ -53,8 +51,11 @@ class LocalNativeStatusValueTest {
         val foeBoosted = haze { mon(it, BattleSide.OPPONENT) { p -> p.copyState(statStages = mapOf("attack" to 6)) } }
         println("NATIVE STATUS haze: self boosted $selfBoosted plain $plain foe +6 $foeBoosted")
         assertEquals("priced", selfBoosted.status)
-        assertTrue("haze" in selfBoosted.selfHarm, selfBoosted.toString())
-        assertTrue(selfBoosted.hazeValue < jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy.PUBLICLY_INERT_TIER_ADJUSTMENT, selfBoosted.toString())
+        // Not held as self-harm here: with every legal ability weighed alike (no usage, 2026-10-12) one of the
+        // opponent's switch-ins raises its own stats on entry, and Haze would wipe those too. It still ranks far
+        // under Ice Beam and under the same Haze without the boost it throws away.
+        assertTrue(selfBoosted.gap < -40.0, selfBoosted.toString())
+        assertTrue(selfBoosted.hazeValue < plain.hazeValue, "$selfBoosted vs $plain")
         assertTrue("haze" !in foeBoosted.selfHarm, foeBoosted.toString())
         assertTrue(foeBoosted.gap > plain.gap + 10.0, "Haze on a +6 opponent against none: $foeBoosted vs $plain")
     }
@@ -130,8 +131,7 @@ class LocalNativeStatusValueTest {
             .use { it.readBytes().toString(Charsets.UTF_8) }.let(AiTestDecisionSnapshot::fromJson).context
         val twisted = twist(raw).copy(deadlineEpochMillis = System.currentTimeMillis() + 60_000L)
         val tier = BattleTrainerTier.BOSS
-        val bound = twisted.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(twisted.state, twisted.publicActionCatalog, tier,
-            LocalOpponentMoveUsage.forFormat(twisted.state.format)))
+        val bound = twisted.copy(publicActionCatalog = twisted.publicActionCatalog)
         val context = PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
         val ranked = LocalBattleActionPolicy.rank(context, null, profile)
         val intents = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor.predict(context,
@@ -147,8 +147,7 @@ class LocalNativeStatusValueTest {
     private fun prepared(raw: BattleDecisionContext): Pair<BattleDecisionContext, List<jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank>> {
         val twisted = raw.copy(deadlineEpochMillis = System.currentTimeMillis() + 60_000L)
         val tier = BattleTrainerTier.BOSS
-        val bound = twisted.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(twisted.state, twisted.publicActionCatalog, tier,
-            LocalOpponentMoveUsage.forFormat(twisted.state.format)))
+        val bound = twisted.copy(publicActionCatalog = twisted.publicActionCatalog)
         val context = PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
         return context to LocalBattleActionPolicy.rank(context, null, profile)
     }

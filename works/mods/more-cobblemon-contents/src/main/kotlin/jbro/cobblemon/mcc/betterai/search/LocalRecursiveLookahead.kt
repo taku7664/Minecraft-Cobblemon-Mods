@@ -25,8 +25,6 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicMoveOutcomeBranchProjector
 import jbro.cobblemon.mcc.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.mcc.betterai.state.PublicTurnProjection
 import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.mcc.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.mcc.betterai.state.RecursiveSnapshotActionConstraints
 import jbro.cobblemon.mcc.betterai.state.LocalBranchMoveInputs
@@ -96,7 +94,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         /** The actual production decision represented by a completed depth, for conservative convergence stops. */
         decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)? = null,
         /** Override only for synthetic fixtures; production selects the bundled table by battle format. */
-        moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup? = LocalOpponentMoveUsage::forFormat,
         /** Per-opponent threat multipliers for the AI's own root evaluation; see [LocalOpponentThreat]. */
         opponentThreatWeights: Map<UUID, Double> = emptyMap(),
         /**
@@ -113,7 +110,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         // The search's own projections branch on the tuning's chance model; the root ranking keeps its own.
         return PublicMoveOutcomeBranchProjector.withChanceModel(tuning.chanceModel) {
             evaluateUnderChanceModel(ranked, context, profile, tuning, clockMillis, strategy, budget, rootChoicePool,
-                decisionSignature, moveUsageForFormat, opponentThreatWeights, excludedActionIds, opponentIntents)
+                decisionSignature, opponentThreatWeights, excludedActionIds, opponentIntents)
         }
     }
 
@@ -127,7 +124,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         budget: LocalLookaheadBudget,
         rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)?,
         decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)?,
-        moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup?,
         opponentThreatWeights: Map<UUID, Double>,
         excludedActionIds: Set<String>,
         opponentIntents: List<OpponentIntent>,
@@ -136,7 +132,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         // not fit a decision's budget, and when it was forced in, narrowed or not, it played no better.
         val requestedDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
             else profile.difficulty.lookaheadPlies.coerceAtLeast(1)
-        val moveUsage = moveUsageForFormat(context.state.format)
         val searchStartedAt = clockMillis()
         val localDeadline = LocalLookaheadBudgetPolicy.deadline(
             startMillis = searchStartedAt,
@@ -232,7 +227,6 @@ internal object LocalRecursiveLookaheadEvaluator {
                 initialStateUtility = baseline,
                 actionCalculationCache = actionCalculationCache,
                 clockMillis = clockMillis,
-                moveUsage = moveUsage,
                 opponentThreatWeights = opponentThreatWeights,
                 opponentIntents = opponentIntents,
                 narrow = narrowed,
@@ -588,7 +582,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         initialStateUtility: Double,
         private val actionCalculationCache: LocalProjectedActionCalculationCache,
         private val clockMillis: () -> Long,
-        private val moveUsage: LocalMoveUsageLookup?,
         private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
         private val opponentIntents: List<OpponentIntent> = emptyList(),
         /** Search the second turn narrowed; see [LocalNarrowSecondTurn]. */
@@ -1206,7 +1199,6 @@ internal object LocalRecursiveLookaheadEvaluator {
                 includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
                 hypotheticalMoveLimitPerSlot = tuning.hypotheticalMoveLimitPerSlot,
                 hypotheticalPriorityReservation = tuning.hypotheticalPriorityReservation,
-                moveUsage = moveUsage,
             )
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true

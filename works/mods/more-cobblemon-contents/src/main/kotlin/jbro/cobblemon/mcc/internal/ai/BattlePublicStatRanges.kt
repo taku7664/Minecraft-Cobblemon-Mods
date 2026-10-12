@@ -11,6 +11,12 @@ object BattlePublicStatRanges {
         baseStats: Map<String, Int>,
         ivs: Map<String, Int>,
         evs: Map<String, Int>,
+        /**
+         * The nature is not known, so the range covers every one (a tenth lower to a tenth higher). True instead
+         * takes Better AI's fixed assumption for an opponent: Attack, Special Attack and Speed raised a tenth,
+         * nothing lowered (the engine's OFFENSIVE_ASSUMPTION_NATURE).
+         */
+        offensiveNature: Boolean = false,
     ): BattleCombatStatRangesView {
         val stats = setOf("hp", "atk", "def", "spa", "spd", "spe")
         require(level in 1..100 && baseStats.keys == stats && baseStats.values.all { it > 0 })
@@ -18,6 +24,10 @@ object BattlePublicStatRanges {
         require(evs.keys == stats && evs.values.all { it in 0..252 } && evs.values.sum() <= 510)
         fun nonHp(id: String): BattleIntegerRange {
             val neutral = nonHpStat(baseStats.getValue(id), level, ivs.getValue(id), evs.getValue(id))
+            if (offensiveNature) {
+                val value = if (id in OFFENSIVE_STATS) neutral * 110 / 100 else neutral
+                return BattleIntegerRange(value, value)
+            }
             return BattleIntegerRange(neutral * 90 / 100, neutral * 110 / 100)
         }
         val hp = if (baseStats.getValue("hp") == SHEDINJA_BASE_HP) 1 else
@@ -75,4 +85,5 @@ object BattlePublicStatRanges {
     private const val MINIMUM_EV = 0
     private const val MAXIMUM_EV = 252
     private const val SHEDINJA_BASE_HP = 1
+    private val OFFENSIVE_STATS = setOf("atk", "spa", "spe")
 }

@@ -13,7 +13,6 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewMoveCatalogIs
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewMoveCatalogMaterializer
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonBuildHypothesis
 import jbro.cobblemon.mcc.betterai.simulation.NativePublicPokemonIdentity
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -28,12 +27,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             preview = preview(),
             sourceCatalog = BattlePublicActionCatalogView(emptyList()),
             tier = BattleTrainerTier.BOSS,
-            usage = LocalMoveUsageLookup { _, _, move ->
-                when (move) {
-                    "moonblast", "shadowball" -> 0.5
-                    else -> 0.4
-                }
-            },
         )
 
         assertTrue(result.issues.isEmpty())
@@ -91,9 +84,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             preview = preview(),
             sourceCatalog = source,
             tier = BattleTrainerTier.STANDARD,
-            usage = LocalMoveUsageLookup { _, _, move ->
-                mapOf("moonblast" to 0.9, "shadowball" to 0.8, "powergem" to 0.7)[move]
-            },
         )
 
         assertTrue(result.issues.isEmpty())
@@ -113,10 +103,8 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             it.group == BattleOpponentMoveGroup.COVERAGE_ATTACK &&
                 it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
         })
-        assertEquals(1, bench.slots.count {
-            it.group == BattleOpponentMoveGroup.STATUS_OTHER &&
-                it.knowledge == BattleOpponentMoveKnowledge.GUESS
-        })
+        // No status slot is assumed at all (2026-10-12): status moves are never guessed.
+        assertEquals(0, bench.slots.count { it.group == BattleOpponentMoveGroup.STATUS_OTHER })
         assertEquals(
             listOf("moonblast", "powergem"),
             NativeMoveHypothesisCompiler.compile(
@@ -171,7 +159,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             preview = preview(),
             sourceCatalog = source,
             tier = BattleTrainerTier.STANDARD,
-            usage = null,
         )
 
         assertTrue(result.worlds.isEmpty())
@@ -191,7 +178,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             )),
             BattleFormat.SINGLE,
             BattleTrainerTier.BOSS,
-            usage = null,
         )
         val oneStab = NativeOpponentPreviewMoveCatalogMaterializer.infer(
             pokemon(BENCH_A, null, "one-stab", setOf("ghost", "fairy")),
@@ -201,7 +187,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             )),
             BattleFormat.SINGLE,
             BattleTrainerTier.BOSS,
-            usage = null,
         )
         val twoStab = NativeOpponentPreviewMoveCatalogMaterializer.infer(
             pokemon(BENCH_A, null, "two-stab", setOf("ghost", "fairy")),
@@ -212,7 +197,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             )),
             BattleFormat.SINGLE,
             BattleTrainerTier.BOSS,
-            usage = null,
         )
 
         assertEquals(0, noStab.slots.count { it.group == BattleOpponentMoveGroup.STAB_ATTACK })
@@ -238,7 +222,6 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             preview,
             BattlePublicActionCatalogView(emptyList()),
             BattleTrainerTier.STANDARD,
-            null,
         )
 
         assertTrue(result.worlds.isEmpty())

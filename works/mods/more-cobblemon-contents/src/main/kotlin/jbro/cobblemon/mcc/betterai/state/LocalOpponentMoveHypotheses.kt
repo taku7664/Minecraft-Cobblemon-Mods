@@ -4,7 +4,7 @@ import java.util.Collections
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.*
 
-/** Lazy moveset hypotheses. Usage is a move-presence prior, never a turn-choice distribution. */
+/** Lazy moveset hypotheses from public facts; no usage statistics (2026-10-12). */
 internal object LocalOpponentMoveHypotheses {
     data class InferredOption(
         val details: BattleMoveCandidateView,
@@ -43,24 +43,14 @@ internal object LocalOpponentMoveHypotheses {
         }
     }
 
-    /** Keep only publicly sourced moves and order them by marginal set presence. */
-    fun usageRankedOptions(
-        pokemon: BattlePokemonStateView,
-        catalog: BattlePublicActionCatalogView,
-        history: RecursiveActionHistory,
-        usage: LocalMoveUsageLookup,
-    ): Map<String, BattleMoveCandidateView> = options(pokemon, catalog, history).entries.mapNotNull { entry ->
-        usage.rate(pokemon.speciesId, pokemon.formId, entry.key)?.let { rate -> Triple(entry.key, entry.value, rate) }
-    }.sortedWith(compareByDescending<Triple<String, BattleMoveCandidateView, Double>> { it.third }
-        .thenBy { canonical(it.first) })
-        .associateTo(linkedMapOf()) { (move, details) -> move to details }
-
-    /** Normalized slots are already ranked. Usage remains only as a compatibility fallback. */
+    /**
+     * Normalized slots are already ranked. Without them, the public pool's attacks by their own strength
+     * ([LocalMoveThreatScore]); status moves are never assumed (2026-10-12).
+     */
     fun inferredOptions(
         pokemon: BattlePokemonStateView,
         catalog: BattlePublicActionCatalogView,
         history: RecursiveActionHistory,
-        usage: LocalMoveUsageLookup?,
     ): Map<String, InferredOption> {
         val inference = catalog.inferredMovesForPokemon(pokemon.battlePokemonId)
         if (inference != null) {
@@ -72,11 +62,12 @@ internal object LocalOpponentMoveHypotheses {
                 }
             }.associateTo(linkedMapOf()) { it }
         }
-        val legacy = usage?.let { usageRankedOptions(pokemon, catalog, history, it) }
-            ?: options(pokemon, catalog, history)
-        return legacy.mapValuesTo(linkedMapOf()) { (_, details) ->
-            InferredOption(details, BattleOpponentMoveKnowledge.EXPECTED)
-        }
+        return options(pokemon, catalog, history).entries
+            .filter { (_, details) -> details.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
+            .sortedWith(compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (move, details) ->
+                LocalMoveThreatScore.of(move, details)
+            }.thenBy { canonical(it.key) })
+            .associateTo(linkedMapOf()) { (move, details) -> move to InferredOption(details, BattleOpponentMoveKnowledge.EXPECTED) }
     }
 
     fun assumeAction(state: BattleStateView, catalog: BattlePublicActionCatalogView,

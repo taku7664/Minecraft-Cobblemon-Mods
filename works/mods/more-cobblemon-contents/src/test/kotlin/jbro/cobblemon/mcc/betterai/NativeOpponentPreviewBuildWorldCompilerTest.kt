@@ -6,153 +6,68 @@ import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewBuildPoolView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.betterai.engine.sim.OFFENSIVE_ASSUMPTION_NATURE
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentBuildWorldIssueCode
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewBuildWorldCompiler
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentSpreadUsage
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
+/** The opponent's build worlds come from public facts and fixed assumptions only (2026-10-12): no usage statistics. */
 class NativeOpponentPreviewBuildWorldCompilerTest {
     @Test
-    fun `intersects public legal abilities applies item clause and normalizes a bounded team beam`() {
+    fun `unrevealed abilities split the worlds evenly and nothing else is guessed`() {
+        val result = NativeOpponentPreviewBuildWorldCompiler.compile(preview(), listOf(0, 1), BattleTrainerTier.BOSS)
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        // Two legal abilities each: four team worlds of equal weight.
+        assertEquals(4, result.worlds.size)
+        result.worlds.forEach { assertEquals(0.25, it.probability, 1e-12) }
+        val builds = result.worlds.flatMap { it.builds }
+        assertEquals(setOf("multiscale", "innerfocus", "mirrorarmor", "pressure"), builds.map { it.abilityId }.toSet())
+        // No item, the offensive stand-in nature, the species' own first type as Tera.
+        assertTrue(builds.all { it.itemId == null }, builds.toString())
+        assertTrue(builds.all { it.natureId == OFFENSIVE_ASSUMPTION_NATURE })
+        assertEquals(setOf("dragon"), builds.filter { it.previewSlotId == 0 }.map { it.teraTypeId }.toSet())
+        assertEquals(setOf("flying"), builds.filter { it.previewSlotId == 1 }.map { it.teraTypeId }.toSet())
+        // Deterministic.
+        assertEquals(result.worlds.map { it.hypothesisId },
+            NativeOpponentPreviewBuildWorldCompiler.compile(preview(), listOf(0, 1), BattleTrainerTier.BOSS).worlds.map { it.hypothesisId })
+    }
+
+    @Test
+    fun `a revealed ability and item fix that slot`() {
+        val result = NativeOpponentPreviewBuildWorldCompiler.compile(preview(), listOf(0, 1), BattleTrainerTier.BOSS,
+            revealedAbilitiesBySlot = mapOf(0 to "multiscale"), revealedItemsBySlot = mapOf(1 to "leftovers"))
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        assertEquals(2, result.worlds.size)
+        val builds = result.worlds.flatMap { it.builds }
+        assertEquals(setOf("multiscale"), builds.filter { it.previewSlotId == 0 }.map { it.abilityId }.toSet())
+        assertEquals(setOf("leftovers"), builds.filter { it.previewSlotId == 1 }.map { it.itemId }.toSet())
+        assertEquals(setOf<String?>(null), builds.filter { it.previewSlotId == 0 }.map { it.itemId }.toSet())
+    }
+
+    @Test
+    fun `the evs follow the tier's assumption from the dex's base stats`() {
+        val build = NativeOpponentPreviewBuildWorldCompiler.compile(
+            BattleOpponentTeamPreviewView(1, listOf(preview().pokemon.first())), listOf(0), BattleTrainerTier.STANDARD,
+        ).worlds.first().builds.single()
+        // Dragonite: Attack 134, then Special Attack 100 (tied with Special Defence, taken in stat order).
+        assertEquals(mapOf("hp" to 0, "atk" to 252, "def" to 0, "spa" to 252, "spd" to 0, "spe" to 0), build.evs)
+        assertEquals(31, build.ivs.getValue("spe"))
+    }
+
+    @Test
+    fun `missing public build pool is explicit failure`() {
+        val pokemon = preview().pokemon.first()
         val result = NativeOpponentPreviewBuildWorldCompiler.compile(
-            preview = preview(),
-            selectedPreviewSlotIds = listOf(0, 1),
-            tier = BattleTrainerTier.BOSS,
-            usage = usage(),
+            BattleOpponentTeamPreviewView(1, listOf(BattleOpponentTeamPreviewPokemonView(
+                pokemon.previewSlotId, pokemon.speciesId, pokemon.formId, pokemon.level, pokemon.knownTypeIds,
+            ))),
+            listOf(0), BattleTrainerTier.BOSS,
         )
-
-        assertTrue(result.issues.isEmpty())
-        assertTrue(result.worlds.isNotEmpty())
-        assertTrue(result.worlds.size <= 32)
-        assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-12)
-        assertTrue(result.worlds.all { it.builds.map { build -> build.previewSlotId } == listOf(0, 1) })
-        assertFalse(result.worlds.flatMap { it.builds }.any { it.abilityId == "levitate" })
-        // Trainer teams may repeat an item, so the item clause only makes a shared item unlikely.
-        fun distinctItems(world: jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewBuildWorld): Boolean {
-            val heldItems = world.builds.mapNotNull { it.itemId }
-            return heldItems.distinct().size == heldItems.size
-        }
-        assertTrue(distinctItems(result.worlds.maxBy { it.probability }))
-        assertTrue(result.worlds.filterNot(::distinctItems).all { shared ->
-            result.worlds.filter(::distinctItems).any { it.probability > shared.probability }
-        })
-        assertEquals(
-            result.worlds.map { it.hypothesisId },
-            NativeOpponentPreviewBuildWorldCompiler.compile(
-                preview(), listOf(0, 1), BattleTrainerTier.BOSS, usage(),
-            ).worlds.map { it.hypothesisId },
-        )
-    }
-
-    @Test
-    fun `difficulty caps complete per-pokemon worlds without fabricating neutral spreads`() {
-        val counts = BattleTrainerTier.entries.associateWith { tier ->
-            NativeOpponentPreviewBuildWorldCompiler.compile(
-                preview = BattleOpponentTeamPreviewView(1, listOf(preview().pokemon.first())),
-                selectedPreviewSlotIds = listOf(0),
-                tier = tier,
-                usage = usage(),
-            ).worlds
-        }
-
-        assertTrue(counts.getValue(BattleTrainerTier.INTRODUCTORY).size <= 3)
-        assertTrue(counts.getValue(BattleTrainerTier.STANDARD).size <= 6)
-        assertTrue(counts.getValue(BattleTrainerTier.ADVANCED).size <= 10)
-        assertTrue(counts.getValue(BattleTrainerTier.BOSS).size <= 16)
-        assertTrue(counts.values.zipWithNext().all { (left, right) -> left.size <= right.size })
-        val bossBuilds = counts.getValue(BattleTrainerTier.BOSS).flatMap { it.builds }
-        assertTrue(bossBuilds.all { it.natureId in setOf("adamant", "jolly") })
-        assertTrue(bossBuilds.any { it.ivs.getValue("atk") == 0 })
-        assertTrue(bossBuilds.any { it.ivs.getValue("spe") == 0 })
-        assertTrue(bossBuilds.any { it.itemId == null })
-        assertTrue(bossBuilds.all { it.teraTypeId in setOf("normal", "flying") })
-        // Neither the Tera type nor the gender branches the worlds (2026-10-11 user decision).
-        assertEquals(1, bossBuilds.map { it.teraTypeId }.distinct().size)
-        assertEquals(1, bossBuilds.map { it.gender }.distinct().size)
-    }
-
-    @Test
-    fun `missing public build knowledge still fails closed`() {
-        val missingPool = NativeOpponentPreviewBuildWorldCompiler.compile(
-            preview = BattleOpponentTeamPreviewView(1, listOf(
-                BattleOpponentTeamPreviewPokemonView(0, "addon:unknown", null, 50),
-            )),
-            selectedPreviewSlotIds = listOf(0),
-            tier = BattleTrainerTier.BOSS,
-            usage = usage(),
-        )
-
-        assertTrue(missingPool.worlds.isEmpty())
-        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.PUBLIC_BUILD_POOL_MISSING),
-            missingPool.issues.map { it.code })
-    }
-
-    @Test
-    fun `species absent from dated usage keeps legal public build worlds with explicit generic provenance`() {
-        val tapuBulu = previewPokemon(
-            0, "tapubulu",
-            listOf(BattleOpponentPreviewAbilityView("grassysurge", BattleAbilityAvailability.REGULAR)),
-            mapOf("N" to 1.0),
-            types = setOf("grass", "fairy"),
-        )
-        val missingUsage = NativeOpponentPreviewBuildWorldCompiler.compile(
-            preview = BattleOpponentTeamPreviewView(1, listOf(tapuBulu)),
-            selectedPreviewSlotIds = listOf(0),
-            tier = BattleTrainerTier.BOSS,
-            usage = LocalOpponentBuildUsageLookup { _, _ -> null },
-        )
-
-        assertTrue(missingUsage.issues.isEmpty())
-        assertTrue(missingUsage.worlds.isNotEmpty())
-        assertTrue(missingUsage.worlds.size <= 16)
-        assertEquals(1.0, missingUsage.worlds.sumOf { it.probability }, 1e-12)
-        assertTrue(missingUsage.worlds.all { "generic-public-prior" in it.hypothesisId })
-        assertTrue(missingUsage.worlds.flatMap { it.builds }.all {
-            it.abilityId == "grassysurge" && it.teraTypeId in setOf("grass", "fairy") &&
-                it.evs.values.sum() <= 510
-        })
-    }
-
-    @Test
-    fun `missing usage for non-base form remains explicit instead of inventing required form items`() {
-        val unusual = BattleOpponentTeamPreviewPokemonView(
-            previewSlotId = 0, speciesId = "cobblemon:giratina", formId = "origin", level = 50,
-            knownTypeIds = setOf("ghost", "dragon"),
-            buildCandidatePool = BattleOpponentPreviewBuildPoolView(
-                speciesId = "cobblemon:giratina", formId = "origin",
-                abilities = listOf(BattleOpponentPreviewAbilityView("levitate", BattleAbilityAvailability.REGULAR)),
-                genderRates = mapOf("N" to 1.0), sourceId = "fixture:origin",
-            ),
-        )
-        val result = NativeOpponentPreviewBuildWorldCompiler.compile(
-            BattleOpponentTeamPreviewView(1, listOf(unusual)), listOf(0), BattleTrainerTier.BOSS,
-            LocalOpponentBuildUsageLookup { _, _ -> null },
-        )
-
-        assertTrue(result.worlds.isEmpty())
-        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING), result.issues.map { it.code })
-    }
-
-    @Test
-    fun `fails closed rather than accepting a usage ability illegal for the public form`() {
-        val result = NativeOpponentPreviewBuildWorldCompiler.compile(
-            preview = BattleOpponentTeamPreviewView(1, listOf(preview().pokemon.first())),
-            selectedPreviewSlotIds = listOf(0),
-            tier = BattleTrainerTier.BOSS,
-            usage = LocalOpponentBuildUsageLookup { _, _ ->
-                buildUsage(abilities = mapOf("levitate" to 1.0))
-            },
-        )
-
-        assertTrue(result.worlds.isEmpty())
-        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.LEGAL_ABILITY_USAGE_MISSING),
-            result.issues.map { it.code })
+        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.PUBLIC_BUILD_POOL_MISSING), result.issues.map { it.code })
     }
 
     private fun preview() = BattleOpponentTeamPreviewView(
@@ -161,11 +76,11 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
             previewPokemon(0, "dragonite", listOf(
                 BattleOpponentPreviewAbilityView("multiscale", BattleAbilityAvailability.HIDDEN),
                 BattleOpponentPreviewAbilityView("innerfocus", BattleAbilityAvailability.REGULAR),
-            ), mapOf("M" to 0.5, "F" to 0.5)),
+            ), setOf("dragon", "flying")),
             previewPokemon(1, "corviknight", listOf(
                 BattleOpponentPreviewAbilityView("mirrorarmor", BattleAbilityAvailability.HIDDEN),
                 BattleOpponentPreviewAbilityView("pressure", BattleAbilityAvailability.REGULAR),
-            ), mapOf("M" to 0.5, "F" to 0.5)),
+            ), setOf("flying", "steel")),
         ),
     )
 
@@ -173,8 +88,7 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         slot: Int,
         species: String,
         abilities: List<BattleOpponentPreviewAbilityView>,
-        genders: Map<String, Double>,
-        types: Set<String> = emptySet(),
+        types: Set<String>,
     ) = BattleOpponentTeamPreviewPokemonView(
         previewSlotId = slot,
         speciesId = "cobblemon:$species",
@@ -185,49 +99,8 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
             speciesId = "cobblemon:$species",
             formId = "normal",
             abilities = abilities,
-            genderRates = genders,
+            genderRates = mapOf("M" to 0.5, "F" to 0.5),
             sourceId = "fixture:public-form",
         ),
     )
-
-    private fun usage() = LocalOpponentBuildUsageLookup { species, _ ->
-        when (species.substringAfter(':')) {
-            "dragonite" -> buildUsage(
-                abilities = mapOf("multiscale" to 0.75, "innerfocus" to 0.2, "levitate" to 0.05),
-                teraTypes = mapOf("normal" to 0.7, "flying" to 0.3),
-            )
-            "corviknight" -> buildUsage(
-                abilities = mapOf("mirrorarmor" to 0.8, "pressure" to 0.2),
-                items = mapOf("leftovers" to 0.8, "safetygoggles" to 0.15),
-                noItem = 0.05,
-            )
-            else -> null
-        }
-    }
-
-    private fun buildUsage(
-        abilities: Map<String, Double>,
-        items: Map<String, Double> = mapOf("leftovers" to 0.8, "focussash" to 0.15),
-        noItem: Double = 0.05,
-        teraTypes: Map<String, Double> = mapOf("steel" to 1.0),
-    ) = LocalOpponentBuildUsageEntry(
-        abilityRates = abilities,
-        itemRates = items,
-        noItemRate = noItem,
-        spreads = listOf(
-            LocalOpponentSpreadUsage("adamant", spread(atk = 252, spe = 252), 0.7),
-            LocalOpponentSpreadUsage("jolly", spread(hp = 252), 0.3),
-        ),
-        unresolvedSpreadRate = 0.0,
-        teraTypeRates = teraTypes,
-    )
-
-    private fun spread(
-        hp: Int = 0,
-        atk: Int = 0,
-        def: Int = 0,
-        spa: Int = 0,
-        spd: Int = 0,
-        spe: Int = 0,
-    ) = mapOf("hp" to hp, "atk" to atk, "def" to def, "spa" to spa, "spd" to spd, "spe" to spe)
 }

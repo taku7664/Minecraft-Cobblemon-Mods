@@ -49,10 +49,6 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownSearchTree
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentSpreadUsage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -79,7 +75,7 @@ class NativeInitialProductWorldPlannerTest {
         @TempDir directory: Path,
     ) {
         val preview = dualTypePreview()
-        val planner = planner(moveUsage = LocalMoveUsageLookup { _, _, _ -> 0.5 })
+        val planner = planner()
 
         val result = planner.plan(context(preview = preview), BattleTrainerTier.BOSS)
 
@@ -147,8 +143,6 @@ class NativeInitialProductWorldPlannerTest {
     fun `bounded plan retains the exhaustive top worlds and their normalized probabilities`() {
         val source = context(preview = dualTypePreview())
         fun withLimit(limit: Int) = NativeInitialProductWorldPlanner(
-            moveUsageForFormat = { LocalMoveUsageLookup { _, _, _ -> 0.5 } },
-            buildUsageForFormat = { LocalOpponentBuildUsageLookup { _, _ -> BUILD_USAGE } },
             worldLimit = { _, _ -> limit },
         ).plan(source, BattleTrainerTier.STANDARD)
 
@@ -264,18 +258,14 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
-    fun `a roster with missing ordinary build usage keeps complete generic-prior worlds`() {
-        val result = planner(
-            buildUsage = LocalOpponentBuildUsageLookup { species, _ ->
-                if (species.endsWith("mewtwo")) null else BUILD_USAGE
-            },
-        ).plan(context(), BattleTrainerTier.INTRODUCTORY)
+    fun `every roster gets complete worlds from public facts and the fixed build assumption`() {
+        val result = planner().plan(context(), BattleTrainerTier.INTRODUCTORY)
 
         assertTrue(result.issues.isEmpty())
         assertTrue(result.worlds.isNotEmpty())
         assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
         assertTrue(result.worlds.all { it.definition.p2Team.size == 3 })
-        assertTrue(result.worlds.any { "generic-public-prior" in it.hypothesisId })
+        assertTrue(result.worlds.any { "public-build-assumption-v2" in it.hypothesisId })
     }
 
     @Test
@@ -301,15 +291,13 @@ class NativeInitialProductWorldPlannerTest {
             ),
             showdownSpeciesId = "tapubulu",
         )
-        val result = planner(
-            buildUsage = LocalOpponentBuildUsageLookup { _, _ -> null },
-        ).plan(context(preview = BattleOpponentTeamPreviewView(1, listOf(tapuBulu))), BattleTrainerTier.BOSS)
+        val result = planner().plan(context(preview = BattleOpponentTeamPreviewView(1, listOf(tapuBulu))), BattleTrainerTier.BOSS)
 
         assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
         assertTrue(result.worlds.isNotEmpty())
         assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
         val world = result.worlds.first()
-        assertTrue("generic-public-prior" in world.hypothesisId)
+        assertTrue("public-build-assumption-v2" in world.hypothesisId)
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
             val frame = engine.createBattle(world.definition)
@@ -342,14 +330,12 @@ class NativeInitialProductWorldPlannerTest {
             turn = 0,
             ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120),
         )
-        val result = planner(
-            buildUsage = LocalOpponentBuildUsageLookup { _, _ -> null },
-        ).plan(openingContext, BattleTrainerTier.BOSS)
+        val result = planner().plan(openingContext, BattleTrainerTier.BOSS)
 
         assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
         assertTrue(result.worlds.isNotEmpty())
         assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
-        assertTrue(result.worlds.all { "generic-public-prior" in it.hypothesisId })
+        assertTrue(result.worlds.all { "public-build-assumption-v2" in it.hypothesisId })
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
             val world = result.worlds.first()
@@ -438,13 +424,7 @@ class NativeInitialProductWorldPlannerTest {
         }
     }
 
-    private fun planner(
-        buildUsage: LocalOpponentBuildUsageLookup = LocalOpponentBuildUsageLookup { _, _ -> BUILD_USAGE },
-        moveUsage: LocalMoveUsageLookup = LocalMoveUsageLookup { _, _, _ -> 1.0 },
-    ) = NativeInitialProductWorldPlanner(
-        moveUsageForFormat = { moveUsage },
-        buildUsageForFormat = { buildUsage },
-    )
+    private fun planner() = NativeInitialProductWorldPlanner()
 
     private fun context(
         format: BattleFormat = BattleFormat.SINGLE,
@@ -732,17 +712,5 @@ class NativeInitialProductWorldPlannerTest {
         )
         val ZERO_EVS = setOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 0 }
         val PERFECT_IVS = ZERO_EVS.mapValues { 31 }
-        val BUILD_USAGE = LocalOpponentBuildUsageEntry(
-            abilityRates = mapOf("synchronize" to 1.0),
-            itemRates = emptyMap(),
-            noItemRate = 1.0,
-            spreads = listOf(LocalOpponentSpreadUsage(
-                natureId = "adamant",
-                evs = mapOf("hp" to 0, "atk" to 252, "def" to 0, "spa" to 0, "spd" to 4, "spe" to 252),
-                rate = 1.0,
-            )),
-            unresolvedSpreadRate = 0.0,
-            teraTypeRates = mapOf("normal" to 1.0),
-        )
     }
 }

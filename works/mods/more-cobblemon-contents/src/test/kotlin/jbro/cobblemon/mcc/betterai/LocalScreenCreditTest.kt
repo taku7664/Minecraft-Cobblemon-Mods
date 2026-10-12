@@ -5,8 +5,6 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects
@@ -137,8 +135,7 @@ class LocalScreenCreditTest {
         val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }.let(AiTestDecisionSnapshot::fromJson).context
         val tier = BattleTrainerTier.BOSS
-        val bound = raw.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(raw.state, raw.publicActionCatalog, tier,
-            LocalOpponentMoveUsage.forFormat(raw.state.format)))
+        val bound = raw.copy(publicActionCatalog = raw.publicActionCatalog)
         return PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
     }
 }

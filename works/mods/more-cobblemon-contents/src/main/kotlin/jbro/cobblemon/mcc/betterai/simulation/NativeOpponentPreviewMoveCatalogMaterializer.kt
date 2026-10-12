@@ -20,8 +20,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
+import jbro.cobblemon.mcc.betterai.state.LocalMoveThreatScore
 
 internal enum class NativeOpponentPreviewMoveCatalogIssueCode {
     SELECTED_PREVIEW_SLOT_MISSING,
@@ -68,9 +67,9 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         preview: BattleOpponentTeamPreviewView,
         sourceCatalog: BattlePublicActionCatalogView,
         tier: BattleTrainerTier,
-        usage: LocalMoveUsageLookup?,
     ): NativeOpponentPreviewMoveCatalogMaterialization {
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
+        val team = threatenedTeam(roster.state)
         val issues = mutableListOf<NativeOpponentPreviewMoveCatalogIssue>()
         val candidatesByPokemon = linkedMapOf<UUID, List<WeightedInference>>()
         roster.state.pokemon.asSequence()
@@ -123,7 +122,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                     previewPokemon,
                     roster.state.format,
                     tier,
-                    usage,
+                    team,
                 )
                 if (candidates.isEmpty()) {
                     issues += issue(
@@ -188,14 +187,15 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         preview: BattleOpponentTeamPreviewPokemonView,
         format: BattleFormat,
         tier: BattleTrainerTier,
-        usage: LocalMoveUsageLookup?,
+        /** The types of the AI's living Pokemon, which break ties between equally strong coverage attacks. */
+        team: List<Set<String>> = emptyList(),
     ): BattleOpponentMoveInferenceView {
         require(pokemon.side == BattleSide.OPPONENT)
         requireNotNull(preview.moveCandidatePool) {
             "A public preview move pool is required before inference"
         }
         val policy = policy(tier)
-        val ranked = rankedMoves(preview, format, usage)
+        val ranked = rankedMoves(preview, format, team)
         val stab = ranked.filter { (_, details) -> group(preview, details) == BattleOpponentMoveGroup.STAB_ATTACK }
             .distinctBy { (_, details) -> canonical(details.typeId) }
         val coverage = ranked.filter { (_, details) ->
@@ -212,33 +212,24 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
             slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
         }
         while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
-        return bindStatus(BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots), preview, tier, usage)
+        return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
     }
 
-    private fun bindStatus(
-        inference: BattleOpponentMoveInferenceView,
-        preview: BattleOpponentTeamPreviewPokemonView,
-        tier: BattleTrainerTier,
-        usage: LocalMoveUsageLookup?,
-    ): BattleOpponentMoveInferenceView = LocalStatusMoveBinder.bind(
-        inference,
-        preview.speciesId,
-        preview.formId,
-        requireNotNull(preview.moveCandidatePool).moveDetails,
-        tier,
-        usage,
-    )
+    /** The types of the AI's living Pokemon in [state]. */
+    private fun threatenedTeam(state: jbro.cobblemon.mcc.internal.ai.BattleStateView): List<Set<String>> =
+        state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }
+            .map { pokemon -> pokemon.knownTypeIds.mapTo(linkedSetOf(), ::canonical) }
 
     private fun inferenceCandidates(
         pokemon: BattlePokemonStateView,
         preview: BattleOpponentTeamPreviewPokemonView,
         format: BattleFormat,
         tier: BattleTrainerTier,
-        usage: LocalMoveUsageLookup?,
+        team: List<Set<String>>,
     ): List<WeightedInference> {
         val policy = policy(tier)
         if (!policy.variableStabShapes) {
-            val inference = infer(pokemon, preview, format, tier, usage)
+            val inference = infer(pokemon, preview, format, tier, team)
             return if (inference.slots.any { it.knowledge != BattleOpponentMoveKnowledge.GUESS }) {
                 listOf(WeightedInference(inference, 1.0, inferenceId(inference)))
             } else {
@@ -246,7 +237,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
             }
         }
 
-        val ranked = rankedMoves(preview, format, usage)
+        val ranked = rankedMoves(preview, format, team)
         val stab = ranked.filter { (_, details) -> group(preview, details) == BattleOpponentMoveGroup.STAB_ATTACK }
             .distinctBy { (_, details) -> canonical(details.typeId) }
             .take(policy.stabSlots)
@@ -265,33 +256,40 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                 slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
             }
             while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
-            val inference = bindStatus(BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots), preview, tier, usage)
+            val inference = BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
             val selectedIds = selectedStab.mapTo(hashSetOf()) { (moveId, _) -> canonical(moveId) }
+            // Without usage statistics every STAB move is as likely carried as not.
             val weight = stab.fold(1.0) { product, (moveId, _) ->
-                val rate = (usage?.rate(preview.speciesId, preview.formId, moveId) ?: DEFAULT_PRESENCE_RATE)
-                    .coerceIn(MIN_PRESENCE_RATE, MAX_PRESENCE_RATE)
-                product * if (canonical(moveId) in selectedIds) rate else 1.0 - rate
+                product * if (canonical(moveId) in selectedIds) PRESENCE_RATE else 1.0 - PRESENCE_RATE
             }
             candidates.putIfAbsent(inferenceId(inference), WeightedInference(inference, weight, inferenceId(inference)))
         }
         return candidates.values.sortedWith(INFERENCE_ORDER)
     }
 
+    /**
+     * The preview's attacks, strongest first: by [LocalMoveThreatScore] (power x accuracy x secondary effect), a
+     * doubles spread move counting half again; a tie goes to the type more threatening to the AI's [team].
+     */
     private fun rankedMoves(
         preview: BattleOpponentTeamPreviewPokemonView,
         format: BattleFormat,
-        usage: LocalMoveUsageLookup?,
+        team: List<Set<String>>,
     ): List<Map.Entry<String, BattleMoveCandidateView>> {
         val pool = requireNotNull(preview.moveCandidatePool)
         return pool.moveDetails.entries
             .filter { (moveId, details) -> moveId in pool.moveIds && details.currentPp > 0 }
             .sortedWith(
-                compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, _) ->
-                    usage?.rate(preview.speciesId, preview.formId, moveId) ?: -1.0
-                }.thenByDescending { (_, details) -> attackScore(details, format) }
+                compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, details) ->
+                    LocalMoveThreatScore.of(moveId, details) * spreadValue(details, format)
+                }.thenByDescending { (_, details) -> LocalMoveThreatScore.typeThreat(canonical(details.typeId), team) }
+                    .thenByDescending { (_, details) -> attackScore(details, format) }
                     .thenBy { (moveId, _) -> canonical(moveId) },
             )
     }
+
+    private fun spreadValue(details: BattleMoveCandidateView, format: BattleFormat): Double =
+        if (format == BattleFormat.DOUBLE && details.targetPattern == BattleMoveTargetPattern.ALL_OPPONENTS) 1.5 else 1.0
 
     private fun subsets(
         candidates: List<Map.Entry<String, BattleMoveCandidateView>>,
@@ -370,9 +368,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
 
     private fun policy(tier: BattleTrainerTier): PublicPreviewPolicy = when (tier) {
         BattleTrainerTier.INTRODUCTORY -> PublicPreviewPolicy(1, 0, 0, false)
-        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(1, 1, 1, false)
-        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(1, 2, 1, true)
-        BattleTrainerTier.BOSS -> PublicPreviewPolicy(2, 1, 1, true)
+        // Coverage: the strongest two or three non-STAB attacks (2026-10-12). No status slot is guessed by name, so
+        // the attacks take the slots it held.
+        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(1, 3, 0, false)
+        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(1, 3, 0, true)
+        BattleTrainerTier.BOSS -> PublicPreviewPolicy(2, 2, 0, true)
     }
 
     private fun teamWorldCap(tier: BattleTrainerTier, pokemonCount: Int): Int = when (tier) {
@@ -436,9 +436,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     )
 
     private const val MAX_MOVE_SLOTS = 4
-    private const val DEFAULT_PRESENCE_RATE = 0.5
-    private const val MIN_PRESENCE_RATE = 1e-6
-    private const val MAX_PRESENCE_RATE = 1.0 - MIN_PRESENCE_RATE
+    private const val PRESENCE_RATE = 0.5
     private const val MOVE_POLICY_ID = "public-move-shape-prior-v1"
     private val INFERENCE_ORDER = compareByDescending<WeightedInference> { it.weight }.thenBy { it.id }
     private val TEAM_ORDER = compareByDescending<WeightedInferenceTeam> { it.weight }.thenBy { it.id }

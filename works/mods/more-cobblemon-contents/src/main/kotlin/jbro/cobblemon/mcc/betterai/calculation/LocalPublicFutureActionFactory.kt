@@ -15,7 +15,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.mcc.betterai.state.RecursiveMoveUseKey
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveHypotheses
-import jbro.cobblemon.mcc.betterai.state.LocalMoveUsageLookup
+import jbro.cobblemon.mcc.betterai.state.LocalMoveThreatScore
 
 /** Builds complete public-information turns for one or two active slots. */
 internal object PublicFutureActionFactory {
@@ -29,7 +29,6 @@ internal object PublicFutureActionFactory {
         includeMoveHypotheses: Boolean = false,
         hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
         hypotheticalPriorityReservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.NONE,
-        moveUsage: LocalMoveUsageLookup? = null,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
         require(hypotheticalMoveLimitPerSlot > 0)
@@ -42,12 +41,10 @@ internal object PublicFutureActionFactory {
                 state,
                 side,
                 pokemon,
-                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses,
-                    moveUsage),
+                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
                 candidateLimitPerSlot,
                 hypotheticalMoveLimitPerSlot,
                 hypotheticalPriorityReservation,
-                moveUsage,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
@@ -73,8 +70,8 @@ internal object PublicFutureActionFactory {
         val bySlot = active.map { pokemon ->
             limitPrimitiveActions(
                 state, side, pokemon,
-                primitiveActions(state, side, pokemon, catalog, RecursiveActionHistory(), emptySet(), includeMoveHypotheses, null),
-                Int.MAX_VALUE, Int.MAX_VALUE, LocalHypothesisPriorityReservation.NONE, null,
+                primitiveActions(state, side, pokemon, catalog, RecursiveActionHistory(), emptySet(), includeMoveHypotheses),
+                Int.MAX_VALUE, Int.MAX_VALUE, LocalHypothesisPriorityReservation.NONE,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) {
@@ -123,7 +120,6 @@ internal object PublicFutureActionFactory {
         limit: Int,
         hypotheticalMoveLimit: Int,
         hypotheticalPriorityReservation: LocalHypothesisPriorityReservation,
-        moveUsage: LocalMoveUsageLookup?,
     ): List<BattleActionCandidate> {
         // A move the public state already rules out has no value this turn or later, so no search
         // turn spends budget on it; a slot left with nothing keeps its original list.
@@ -148,19 +144,18 @@ internal object PublicFutureActionFactory {
         }.take(hypotheticalMoveLimit).toList()
         val selectedHypotheses = linkedSetOf<String>()
         priorityResponses.forEach { action -> action.moveId?.let { selectedHypotheses.add(canonicalId(it)) } }
-        if (moveUsage != null) {
-            ordered.asSequence().filter { it.isInferredMove() }
-                .distinctBy { canonicalId(requireNotNull(it.moveId)) }
-                .sortedWith(compareByDescending<BattleActionCandidate> {
-                    moveUsage.rate(actor.speciesId, actor.formId, requireNotNull(it.moveId)) ?: -1.0
-                }.thenByDescending { primitivePriority(state, side, actor, it) }
-                    .thenBy(BattleActionCandidate::actionId))
-                .forEach { action ->
-                    if (selectedHypotheses.size < hypotheticalMoveLimit) {
-                        selectedHypotheses.add(canonicalId(requireNotNull(action.moveId)))
-                    }
+        // The rest by the move's own strength (power x accuracy x secondary effect), not by usage (2026-10-12).
+        ordered.asSequence().filter { it.isInferredMove() }
+            .distinctBy { canonicalId(requireNotNull(it.moveId)) }
+            .sortedWith(compareByDescending<BattleActionCandidate> {
+                it.moveDetails?.let { details -> LocalMoveThreatScore.of(requireNotNull(it.moveId), details) } ?: 0.0
+            }.thenByDescending { primitivePriority(state, side, actor, it) }
+                .thenBy(BattleActionCandidate::actionId))
+            .forEach { action ->
+                if (selectedHypotheses.size < hypotheticalMoveLimit) {
+                    selectedHypotheses.add(canonicalId(requireNotNull(action.moveId)))
                 }
-        }
+            }
         val ranked = ordered.filter { action ->
             // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
             // variant of a selected move; known moves, switches and unknown responses do not count.
@@ -313,7 +308,6 @@ internal object PublicFutureActionFactory {
         history: RecursiveActionHistory,
         unknownMovePokemonIds: Set<java.util.UUID>,
         includeMoveHypotheses: Boolean = false,
-        moveUsage: LocalMoveUsageLookup? = null,
     ): List<BattleActionCandidate> {
         val actorSlot = requireNotNull(active.activeSlot)
         if (active.actionConstraints.mustRecharge || active.battlePokemonId in history.rechargingPokemonIds) {
@@ -344,7 +338,7 @@ internal object PublicFutureActionFactory {
             FutureMoveOption(it.moveId, it.details)
         }
         val hypotheses = if (includeMoveHypotheses) LocalOpponentMoveHypotheses
-            .inferredOptions(active, currentCatalog, history, moveUsage)
+            .inferredOptions(active, currentCatalog, history)
             .filterKeys { move -> knownOptions.none { canonicalId(it.moveId) == canonicalId(move) } }
             .map { (move, option) -> FutureMoveOption(move, option.details, option.knowledge) } else emptyList()
         // A lock onto a move this list does not hold (unrevealed, out of PP) is no evidence about the others.

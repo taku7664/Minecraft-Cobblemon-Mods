@@ -20,8 +20,6 @@ import jbro.cobblemon.mcc.betterai.matchup.MatchupScores
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
 import jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore
-import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
-import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
@@ -223,8 +221,7 @@ internal object EngineReplayAiReview {
     /** The matchup scores the brain would see: the same catalog binding and opponent stat assumption. */
     private fun ruleView(context: BattleDecisionContext, profile: BattleTrainerProfile): RuleView {
         val tier = profile.difficulty.tier
-        val bound = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(context.state, context.publicActionCatalog,
-            tier, LocalOpponentMoveUsage.forFormat(context.state.format)))
+        val bound = context.copy(publicActionCatalog = context.publicActionCatalog)
         val assumed = LocalOpponentStatAssumption.applyToPublicState(bound, tier)
         val started = System.nanoTime()
         val scores = LocalMatchupScoreCalculator.calculate(assumed)
