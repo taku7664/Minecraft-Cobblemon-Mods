@@ -1,5 +1,13 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-12 21:18] 개발 서버·클라이언트 설치와 기존 PokemonToItem 제거 (0.1.0, 실게임 미확인)
+
+- **대상·배치:** 사용자 "배포 적용해" 요청으로 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/{server,client}/mods`에 0.1.0을 신규 설치했다. client는 Modrinth `cobblemon-dev` 프로필로 연결된 정션이다. 양쪽에서 `PokemonToItem-fabric-0.2.0.jar`를 제거하고 사이드바·pokefusion·jbro-policy를 함께 교체했다.
+- **빌드 근거:** `main`·원격이 `5c280c99`로 같고 구현 커밋 `e0d9bc47`가 선조임을 확인했다. 작업 HEAD `02f8af91`의 전체 Git tree도 main과 같아 앞서 검증한 산출물을 재사용했으며, 빌드·테스트를 다시 실행하지 않았다. 신규 모드 양쪽 설치본 SHA-256은 빌드본 `566be8ac2cc1038c52fef8a4799024279e5d2f7e771043c1e98ca95a1b7a7b16`과 같다.
+- **안전·보존:** 첫 안전검사에서 게임 PID 35148을 감지하여 파일 변경 전에 중단했다. 이후 프로세스 종료와 25565/25566 미수신을 재확인한 뒤 복사했다. 이전 JAR 4개씩은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-211852/{server,client}`에 백업했다. world·config·기타 모드의 해시는 유지했다.
+- **설치 검증:** 두 대상의 설치 JAR 8개 모두 빌드본과 해시가 같다. ZIP·버전·필수 의존성, 중복 mod ID 없음, PokemonToItem ID·legacy 의존성·`.deploying` 잔여물 없음을 확인했다.
+- **미실행:** 코사원은 서버·게임을 기동하지 않았고 실게임 입출고·교환·툴팁은 미확인이다. 기존 데이터 마이그레이션은 사용자 결정대로 미구현·미실행이며, 운영 서버·VPS·PPakemon·릴리스 폴더는 변경하지 않았다.
+
 ## [2026-10-12 20:38] 포켓몬 아이템화·복원과 공유 툴팁 신규 소유권 (0.1.0, 배포·실게임 미확인)
 
 - **사용자 결정·범위:** 외부 PokemonToItem을 대체한다. 기존 `PTI_NBT` 아이템은 이번 구현에서 자동으로 읽거나 변환하지 않는다. 마이그레이션은 나중에 `jbro-policy`가 서버 데이터를 한 번 훑어 일괄 변환하는 별도 작업이며, 접속·아이템 획득 시 자동 변환은 넣지 않는다. 이번 작업에서 설치된 구버전 JAR을 삭제하지 않았다.
