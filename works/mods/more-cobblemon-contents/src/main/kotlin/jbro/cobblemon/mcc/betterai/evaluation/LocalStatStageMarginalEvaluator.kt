@@ -146,7 +146,18 @@ internal object LocalStatStageMarginalEvaluator {
                 tuning,
             ).score
         }
-        val fallback = fallbackScore(before, applyStageChanges(before, unresolved))
+        // An opposing attacking stat whose attacks are all still hidden is priced on the attacks it is expected to carry
+        // (the move hypotheses: its STAB and coverage attacks, never a guessed status move). The flat reserve read the
+        // Attack +2 a Defiant Annihilape takes from Icy Wind as 8 points, against 30 for the Speed drop (2026-10-12).
+        fun hypothesisPressure(state: BattleStateView) = LocalLookaheadStateEvaluator.attackPressure(
+            state, BattleSide.OPPONENT, source, calculationCache, tuning = tuning,
+            capDamageToRemainingHp = true, includeMoveHypotheses = true,
+        )
+        val hypothesised = unresolved.filter { it.side == BattleSide.OPPONENT && (it.stat == ATTACK || it.stat == SPECIAL_ATTACK) }
+            .takeIf { it.isNotEmpty() && hypothesisPressure(before) > 0.0 }.orEmpty()
+        val hypothesisScore = if (hypothesised.isEmpty()) 0.0
+            else -(hypothesisPressure(applyStageChanges(before, hypothesised)) - hypothesisPressure(before)) * SCORE_PER_BOARD_POINT
+        val fallback = fallbackScore(before, applyStageChanges(before, unresolved - hypothesised.toSet())) + hypothesisScore
         // An unknown opposing physical set does not make our own Body Press unknowable.
         // Preserve that calculable offensive part while the fallback covers only the
         // unresolved defensive part of the same Defense stage change.
