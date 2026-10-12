@@ -111,7 +111,9 @@ internal object LocalEngineStopProbe {
         val live = context.showdownState
         val plan = when {
             live != null -> planner.planLive(context, tier)
-            context.state.turn <= 1 -> planner.plan(context, tier)
+            // The opening plan only where the native evaluator takes it (NativeInitialProductDecisionEvaluator.isOpeningCandidate).
+            context.state.turn in 0..1 && jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules.acceptsObservations(context.state) ->
+                planner.plan(context, tier)
             else -> planner.planMidBattle(context, tier)
         }
         if (plan.issues.isNotEmpty() || plan.worlds.isEmpty()) {

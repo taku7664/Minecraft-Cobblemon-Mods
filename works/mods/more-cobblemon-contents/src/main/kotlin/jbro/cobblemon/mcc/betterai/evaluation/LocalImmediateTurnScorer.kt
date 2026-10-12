@@ -90,7 +90,7 @@ internal object LocalImmediateTurnScorer {
     private fun positionStatus(state: BattleStateView): Double =
         sideStatusBurden(state, BattleSide.OPPONENT) - sideStatusBurden(state, BattleSide.ALLY)
 
-    private fun sideStatusBurden(state: BattleStateView, side: BattleSide): Double = state.pokemon
+    internal fun sideStatusBurden(state: BattleStateView, side: BattleSide): Double = state.pokemon
         .asSequence()
         .filter { it.side == side && !it.fainted && it.hpFraction > 0.0 }
         .sumOf { statusBurden(it.statusId) }
@@ -107,7 +107,7 @@ internal object LocalImmediateTurnScorer {
     private fun positionField(state: BattleStateView, source: BattleDecisionContext?): Double =
         sideFieldValue(state, BattleSide.ALLY, source) - sideFieldValue(state, BattleSide.OPPONENT, source)
 
-    private fun sideFieldValue(state: BattleStateView, side: BattleSide, source: BattleDecisionContext?): Double =
+    internal fun sideFieldValue(state: BattleStateView, side: BattleSide, source: BattleDecisionContext?): Double =
         state.field.sideConditions.getValue(side).sumOf { effect ->
             val stacks = effect.stacks ?: 1
             when (canonicalId(effect.effectId)) {

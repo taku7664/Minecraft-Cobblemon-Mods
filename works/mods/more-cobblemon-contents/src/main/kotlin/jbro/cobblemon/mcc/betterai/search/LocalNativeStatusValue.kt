@@ -11,13 +11,14 @@ import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
  * Prices the status moves the one-turn ranking has no evaluator for by playing the turn out in the native engine.
  *
  * The ranking gives such a move the generic status value (20) whatever it does: Defog scored the same clearing the
  * opponent's hazards as clearing this side's own, Trick Room the same setting the room as ending it. The engine runs
- * every move's real effect, so these moves and the ranking's best three other actions go through a
+ * every move's real effect, so these moves and the user's three best attacks (by the ranking) go through a
  * one-turn native search over the opponent's three likeliest worlds, scored by the search's own leaf
  * ([jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator]). Each move is moved to where the engine puts
  * it against those: its ranking value becomes the engine's value moved by the three actions' mean offset between the
@@ -29,10 +30,19 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
  * as an error to fix.
  */
 internal object LocalNativeStatusValue {
-    data class Result(val adjustments: Map<String, Double>, val status: String, val elapsedMillis: Long, val plies: Int = 0)
+    data class Result(
+        val adjustments: Map<String, Double>,
+        val status: String,
+        val elapsedMillis: Long,
+        val plies: Int = 0,
+        /** The moves held under every publicly failing action ([LocalEngineTurnReadout.Reading.selfHarm]). */
+        val selfHarm: Set<String> = emptySet(),
+    )
 
     /** The opponent's likeliest worlds the engine plays the turn in. */
     const val WORLDS = 3
+    /** How far under the publicly failing actions' level a self-harming move goes. */
+    private const val SELF_HARM_MARGIN = 100.0
     /** The opponent's replies followed past the first turn when a move is played two turns. */
     private const val SECOND_TURN_REPLIES = 3
     /** Declared effects whose value comes after the turn they are made in. */
@@ -44,7 +54,7 @@ internal object LocalNativeStatusValue {
     fun lasting(candidate: BattleActionCandidate): Boolean =
         candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind in LASTING }
 
-    /** The ranking's best actions besides these moves that anchor the engine's values to the ranking's. */
+    /** The ranking's best attacks (else other actions) that anchor the engine's values to the ranking's. */
     private const val REFERENCES = 3
     /** Far above a one-turn search's need (80 to 221 nodes over eight to twelve actions): the turn always completes. */
     private const val NODE_LIMIT = 20_000
@@ -84,17 +94,26 @@ internal object LocalNativeStatusValue {
         val open = ranked.filter { it.decisionTier > LocalBattleActionPolicy.TIER_PUBLICLY_BAD }
         val status = open.filter { unpriced(it.outcome.candidate, context) }
         if (status.isEmpty()) return null
-        // The anchors in the ranking's units: its best few actions that are not among these moves. One anchor carried
-        // every disagreement between the ranking and the engine about it into the moves (a switch the ranking liked
-        // 30 points more than the engine did lifted Haze by as much); the mean over several evens that out.
-        val references = open.filter { rank -> status.none { it === rank } }.sortedByDescending { it.comparisonValue }
-            .take(REFERENCES).ifEmpty { return null }
+        // The anchors in the ranking's units: the user's best attacks, what a status move displaces. Attacks are priced
+        // by their damage on both scales; a switch is not (the ranking and the engine disagreed by 30 points on one, and
+        // a two-turn engine value set against it lifted Haze over Ice Beam). Other actions only when it has no attack.
+        val others = open.filter { rank -> status.none { it === rank } }.sortedByDescending { it.comparisonValue }
+        val attacks = others.filter {
+            it.outcome.candidate.kind == BattleActionKind.USE_MOVE &&
+                it.outcome.candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
+        }
+        val references = attacks.ifEmpty { others }.take(REFERENCES).ifEmpty { return null }
         val started = System.nanoTime()
         // A move that leaves something behind (a volatile, a side, slot or field condition, weather, terrain) pays off on
         // the turn after: Substitute takes the next hit, Taunt blocks the next status move, Leech Seed drains at the
         // next end of turn. The leaf reads none of those, so such moves are played one turn further, where this side
         // attacks and the opponent's three likeliest replies answer. The rest settle in the turn itself.
-        val plies = if (status.any { lasting(it.outcome.candidate) }) minOf(2, maxPlies) else 1
+        // Read off the engine's board as well: a move whose effect lives in a script (Haze) declares nothing, but what
+        // it left behind shows there. The same reading finds the moves that only cost this side something.
+        val reading = LocalEngineTurnReadout.read(context, profile.difficulty.tier, status.map { it.outcome.candidate },
+            references.first().outcome.candidate)
+        val leavesSomething = status.any { lasting(it.outcome.candidate) } || reading?.changed?.isNotEmpty() == true
+        val plies = if (leavesSomething) minOf(2, maxPlies) else 1
         val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
             // No clock of its own: the decision's deadline (45 s) is the only limit, so the turn is never cut short.
             .copy(nativePlies = plies, nativeNodeLimit = NODE_LIMIT, timeMillis = LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS,
@@ -126,10 +145,20 @@ internal object LocalNativeStatusValue {
         }
         // The engine's value moved into the ranking's units by the references' mean offset.
         val offset = offsets.average()
+        val selfHarm = reading?.selfHarm.orEmpty()
         val out = status.mapNotNull { rank ->
             val id = rank.outcome.candidate.actionId
-            native[id]?.let { value -> id to (value + offset) - rank.comparisonValue }
+            native[id]?.let { value ->
+                var final = value + offset
+                // A move that only costs this side something is worse than a turn that does nothing at all: it goes
+                // under every publicly failing action (which the ranking puts near PUBLICLY_INERT_TIER_ADJUSTMENT),
+                // so it never wins a position where everything else is bad too.
+                if (rank.outcome.candidate.moveId?.let(PublicIds::canonical) in selfHarm) {
+                    final = minOf(final, LocalBattleActionPolicy.PUBLICLY_INERT_TIER_ADJUSTMENT - SELF_HARM_MARGIN + minOf(0.0, final))
+                }
+                id to final - rank.comparisonValue
+            }
         }.toMap()
-        return Result(out, "priced", elapsed, plies)
+        return Result(out, "priced", elapsed, plies, selfHarm)
     }
 }

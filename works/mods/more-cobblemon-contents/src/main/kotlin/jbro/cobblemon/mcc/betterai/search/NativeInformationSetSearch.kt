@@ -306,10 +306,14 @@ internal class NativeInformationSetSearch(
                 tree.root.state.format, request.productActions, tree.actions(tree.root, BattleSide.ALLY))
             // A rebuilt mid-battle root does not carry every move restriction (Disable, Torment), so it may offer
             // more than the battle does; the product candidates are the legal ones, and every one must still map.
+            // An action the request excludes is neither searched nor valued, so it need not map: a world can hold an
+            // opponent that traps (an ability the battle has not shown), offering no switch the product still has.
+            val unmatchedSearched = mapping.unmatchedProductActionIds.filter { it !in request.excludedRootActionIds }
             val accepted = if (input.definition.situation != null) {
-                mapping.unmatchedProductActionIds.isEmpty() && mapping.ambiguousProductActionIds.isEmpty()
+                unmatchedSearched.isEmpty() && mapping.ambiguousProductActionIds.isEmpty()
             } else {
-                mapping.complete
+                unmatchedSearched.isEmpty() && mapping.ambiguousProductActionIds.isEmpty() &&
+                    mapping.unmatchedNativeActionIds.isEmpty() && mapping.ambiguousNativeActionIds.isEmpty()
             }
             if (!accepted) {
                 throw Abort(failure(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, input, nodesVisited,

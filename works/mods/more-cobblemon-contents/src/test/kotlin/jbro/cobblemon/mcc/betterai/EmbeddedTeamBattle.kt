@@ -48,7 +48,9 @@ internal object EmbeddedTeamBattle {
         /** Sides whose native session does not correct hidden stats from observed damage. */
         withoutStatFitting: Set<String> = emptySet(),
         /** Sides deciding without any search, and whether the quick decider runs for them. */
-        searchlessSides: Map<String, Boolean> = emptyMap()): JsonObject {
+        searchlessSides: Map<String, Boolean> = emptyMap(),
+        /** Sides that price unpriced status moves in the engine (LocalNativeStatusValue); null leaves the brain's default. */
+        nativeStatusSides: Set<String>? = null): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -65,8 +67,21 @@ internal object EmbeddedTeamBattle {
                 reconcileSession = NativeProductSessionReconciler(lease = { _, action -> action(worker) },
                     fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
+            val statusPlanner = jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner(
+                worldLimit = { _, _ -> jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.WORLDS })
+            val statusEvaluator = NativeInitialProductDecisionEvaluator(statusPlanner::plan, statusPlanner::planMidBattle, statusPlanner::planLive,
+                searchWorlds = jbro.cobblemon.mcc.betterai.search.NativeInformationSetSearch(lease = { _, action -> action(worker) })::search)
+            val statusSource = jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.Source { c, p, t, b, r ->
+                statusEvaluator.evaluate(c, p, t, b, rules = r)
+            }
             LocalTacticalBrain(tuning = tuning, searchless = side in searchlessSides,
-                quickDecider = searchlessSides[side] ?: true, nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
+                quickDecider = searchlessSides[side] ?: true,
+                nativeStatusSource = when {
+                    nativeStatusSides == null -> jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.DEFAULT_SOURCE
+                    side in nativeStatusSides -> statusSource
+                    else -> null
+                },
+                nativeInitialDecision = { context, profile, localTuning, budget, sessionState, rules ->
                 evaluator.evaluate(context, profile, localTuning, budget, sessionState, rules).also { evaluation ->
                     nativeEvaluations[side] = evaluation
                     // A failed native decision is kept whole, so the planner can be replayed on it.
