@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-13 02:48] G-916·확정 KO 추첨 개발 배포 (빌드·해시 확인, 실게임 미확인)
+
+- **소스·빌드:** main `ea8c0f13`(origin과 일치, 작업 트리 깨끗, 다른 세션의 VS 인트로 `fa69822f` 포함)에서 `:more-cobblemon-contents:remapJar`, F 드라이브 경로. `jar --validate`·CRC 통과, 진입점 2개 있음, `knockout_if_stays`·`samePublicIdentity` 포함, 임시 측정 코드 없음. 내장 `cobblemon-ui-0.2.0.jar`는 직전 배포와 같은 해시(6255D783…).
+- **배치:** MCC 본체만 개발 서버·클라 `mods` 교체(애드온 API 변경 없음). SHA-256 `8528BBBF…`, 빌드본·서버·클라 일치. 게임·25566 꺼진 상태 확인 후 복사. 백업 `develop-product/deployment-backups/20261013-024755-betterai-g916-knockout`(이전 MCC `13D06B21…`).
+- **안 한 것:** 개발 서버 기동, 실게임 확인, 등급별 승률 재측정, `PPakemon` 프로필·운영 서버·VPS·`deploy-product` 반영.
+
 ## [2026-10-13 02:35] PvP UI·VS 인트로 개발 배포 (빌드·해시 확인, 실게임 미확인)
 
 - **소스·빌드:** main `fa69822f`(origin과 일치, 작업 트리 깨끗)에서 `cobblemon-ui`·MCC·`cobblemon-npc`·PvP·리그 `remapJar`, F 드라이브 경로. JDK 21 `jar --validate` 5개 통과. MCC·NPC 안의 내장 `cobblemon-ui-0.2.0.jar`가 단독 UI JAR과 같은 해시(6255D783…)임을 확인했다(같은 버전 내장 사본이 옛것으로 남지 않게 셋을 함께 교체).
