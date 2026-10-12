@@ -213,6 +213,22 @@ internal class LocalTacticalBrain(
                 recovery = tuning.matchupRecovery,
             ).takeIf { it.complete }
         }
+        // A stat raise with a Mega Evolution is judged on the Mega: its board and its pair table. On the base form's a Mega
+        // Garchomp's Swords Dance read as a 19% win against a Hippowdon it beats outright, and lost to a switch (2026-10-12).
+        val megaSetupViews = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>>>()
+        fun setupView(candidate: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>? {
+            val scores = ruleScores ?: return null
+            val mega = jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, candidate)
+            if (mega === difficultyContext) return difficultyContext to scores
+            return megaSetupViews.computeIfAbsent(candidate.actionId) {
+                val started = System.nanoTime()
+                LocalMatchupScoreCalculator.calculate(
+                    mega,
+                    shouldContinue = { System.nanoTime() - started < RULE_SCORES_TIME_LIMIT_NANOS },
+                    recovery = tuning.matchupRecovery,
+                ).takeIf { it.complete }.let { table -> java.util.Optional.ofNullable(table?.let { mega to it }) }
+            }.orElse(null)
+        }
         val setupGateVerdicts = java.util.concurrent.ConcurrentHashMap<String, LocalSetupGate.Verdict>()
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
@@ -244,7 +260,8 @@ internal class LocalTacticalBrain(
             return plainExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
                     setupGateVerdicts.getOrPut(part.actionId) {
-                        LocalSetupGate.evaluate(part, difficultyContext, scores, tier = profile.difficulty.tier) ?: LocalSetupGate.Verdict(true, emptyList())
+                        setupView(part)?.let { (view, table) -> LocalSetupGate.evaluate(part, view, table, tier = profile.difficulty.tier) }
+                            ?: LocalSetupGate.Verdict(true, emptyList())
                     }
                 }
                 when {
@@ -346,11 +363,10 @@ internal class LocalTacticalBrain(
         // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
         val setupScores by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
             difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
-        else ruleScores?.let { scores ->
-            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).mapNotNull { candidate ->
-                LocalSetupGate.score(candidate, difficultyContext, scores, tuning.knockoutMaterialScore)?.let { candidate.actionId to it.value }
-            }.toMap()
-        }.orEmpty() }
+        else difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).mapNotNull { candidate ->
+            setupView(candidate)?.let { (view, table) -> LocalSetupGate.score(candidate, view, table, tuning.knockoutMaterialScore) }
+                ?.let { candidate.actionId to it.value }
+        }.toMap() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
         // A screen earns the hits it halves while it lasts (LocalScreenCredit).
         val screenAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
@@ -665,7 +681,7 @@ internal class LocalTacticalBrain(
         fun quickVerdict(choice: LocalBattleActionRank, from: List<LocalBattleActionRank>, allow: (String) -> Boolean) = ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                 from, choice, difficultyContext, scores, profile.difficulty.tier, quickExcluded, seed, predictionAdjustments,
-                expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow,
+                expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow, ::setupView,
             )
         }
         // At the tiers with the rules its preferences are points before the draw, each candidate read as the one chosen:
