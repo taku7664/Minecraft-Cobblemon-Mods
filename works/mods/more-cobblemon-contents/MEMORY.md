@@ -16,6 +16,12 @@
 - **남은 불일치(미수정)**: 기존 `LocalSideConditionRules.maximumStacks`는 선언이 없을 때 알려진 표(압정 3, 독압정 2)를 쓰고, `LocalSideConditionFutility`는 선언만 본다(없으면 1). 실제 데이터에선 차이가 없지만 선언 없는 기술에선 두 규칙이 갈린다.
 - **검증**: F 경로 지정 Gradle로 `LocalTacticalBrainSimulationTest|LocalHazardSwitchAvailabilityTest|PublicSwitchEntryHazardCalculatorTest` 84개 통과. 빌드·배포 안 함.
 
+## [2026-10-13 00:04] 팩토리 생성기의 진화 데이터 필터 추가 (구현·도구 검증)
+
+- **사용자 결정·소유권:** 링곰과 기존 아이템 예외(럭키·폴리곤2·피카츄)를 유지하고 나머지 미진화 후보를 제외한다. 팩토리·타워 애드온이 각 세트 데이터를 소유하고, core는 `tools/generate_factory_catalog.mjs`와 새 `facility-species-policy.mjs`로 생성 시 실제 종·폼 `evolutions`를 검사한다. 기본 출력도 팩토리 애드온으로 옮겼으며 고정 1.7.3 JAR 조회를 현재 gradle.properties 버전·F 캐시 조회로 바꿨다. 정상 규모 1,964에 맞춰 최소 세트 수 검사를 2,000→1,900으로 조정했다.
+- **검증·범위:** Node 정책 검사 3개 통과. 실제 Cobblemon 1.8.1 CLI 생성 결과 1,964세트·491종폼이며 기존 세트에서 대상 40개만 빠졌고 남은 JSON 값은 동일했다. 두 애드온 리소스 검사도 실제 Cobblemon JAR 진화 데이터를 전수 검사하도록 보강했다. 팩토리 build·unitTest 124/124, 타워는 기존 2턴 구현에 맞춘 검사 기대값 정정(`62f07c47`) 뒤 build·unitTest 198/198 통과했다. 설치 JAR 교체·서버 조작·실게임은 하지 않았다.
+- **상세:** [미진화체 수정 후속 기록](../more-cobblemon-contents-battle-factory/docs/EVOLUTION_FIX_2026-10-13.md). 이 항목은 생성 도구 변경 기록이며 core 게임 실행 동작 변경은 아니다.
+
 ## [2026-10-13 00:40] 배틀 종료 경로 재점검 (PvP 종료 버그 후속)
 
 - **계기**: PvP 종료 버그가 10-11 PvP 점검에서 빠졌다. 그 점검은 PvP 애드온 안쪽만 봤고, 원인은 MCC 본체 클라 리셋이었다. 이번엔 모든 모드에서 Cobblemon 배틀 패킷에 끼어드는 믹스인, 패킷 보류·재생 로직, `MccClientSessionReset` 콜백 전체(10개), 서버의 직접 `closeBattle` 경로를 범위로 잡았다.
@@ -27,7 +33,8 @@
 - **빌드·테스트**: `main` `d57859fc`를 `git archive`로 `F:/AI/build/mcc-battle-end2-20261013/src`에 꺼내 `:more-cobblemon-contents:build :more-cobblemon-contents-pvp:build -x unitTest` 성공, `ManagedBattleTerminationRecoveryTest` 4개 통과. 두 JAR `jar --validate`·ZIP CRC 통과, 새 믹스인 등록·`closeWithClientEnd`·PvP 접속 이벤트 코드 포함 확인. SHA-256 MCC `e76edde9…`, PvP `7c55ba2a…`.
 - **배치**: `develop-product/server/mods`만 교체(두 해시 일치). **클라는 교체하지 못했다**: 개발 클라(`cobblemon-dev`)가 켜져 있어 파일이 잠겼고, 실행 확인 스크립트가 한글 경로 정규식 때문에 그 게임을 못 잡았다. 남은 `.deploying`은 지웠고 클라에는 이전 JAR(MCC `dcf885d0…`, PvP `16ca85fa…`)이 그대로 있다. 이전 JAR 백업은 `develop-product/deployment-backups/20261013-mcc-battle-end-paths/{server,client}`. 패킷 형식 변경이 없어 서버·클라 버전 차이로 접속이 끊기지는 않는다고 판단(실행 확인 안 함).
 - **재발 방지**: 게임 실행 확인은 명령줄 문자열 매칭 대신 `--gameDir` 값을 직접 뽑아 보고, 복사 실패(`Device or resource busy`)를 배치 실패로 다룬다.
-- **미확인**: 서버 기동·실게임 확인 안 함. 클라는 게임을 끈 뒤 같은 JAR로 교체해야 한다.
+- **클라 교체(10-13, 사용자 요청)**: 개발 클라가 꺼진 것을 `--gameDir`로 확인한 뒤 같은 빌드본으로 `develop-product/client/mods` 교체. 빌드본·서버·클라 해시 일치(MCC `e76edde9…`, PvP `7c55ba2a…`), `.deploying` 잔여물 없음, 각 JAR 하나씩.
+- **미확인**: 서버 기동·실게임 확인 안 함.
 
 ## [2026-10-13 00:10] PvP 종료 후 배틀·BGM이 안 끝나던 문제 (클라 종료 보류가 차원 이동에 버려짐)
 

@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test
 
 class TowerBattleDifficultyPolicyTest {
     @Test
-    fun `regular opponents use the approved one one two two lookahead ladder`() {
+    fun `regular opponents retain their tier while every tier uses two turn lookahead`() {
         val expected = mapOf(
-            TowerStreakStage.INTRODUCTORY to (BattleTrainerTier.INTRODUCTORY to 1),
-            TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 1),
+            TowerStreakStage.INTRODUCTORY to (BattleTrainerTier.INTRODUCTORY to 2),
+            TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 2),
             TowerStreakStage.ADVANCED to (BattleTrainerTier.ADVANCED to 2),
             TowerStreakStage.PRO to (BattleTrainerTier.ADVANCED to 2),
         )

@@ -16,6 +16,35 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FactoryCatalogResourceTest {
+    @Test
+    fun `bundled rentals only retain explicitly approved unevolved species with their required items`() {
+        val sets = approvedPools(bundledCatalog()).values.flatten()
+        cobblemonJar().use { jar ->
+            val speciesEntries = jar.entries().asSequence()
+                .filter { it.name.startsWith("data/cobblemon/species/") && it.name.endsWith(".json") }
+                .associateBy { it.name.substringAfterLast('/').removeSuffix(".json") }
+            val violations = sets.mapNotNull { set ->
+                val root = jar.getInputStream(speciesEntries.getValue(set.speciesId.substringAfter(':')))
+                    .reader().use(JsonParser::parseReader).asJsonObject
+                val form = set.formId?.let { id ->
+                    requireNotNull(root.getAsJsonArray("forms")?.map { it.asJsonObject }
+                        ?.firstOrNull { it["name"].asString.equals(id, ignoreCase = true) })
+                }
+                val owner = form?.takeIf { it.has("evolutions") } ?: root
+                if (owner.getAsJsonArray("evolutions")?.isEmpty != false) return@mapNotNull null
+                val approved = when (set.speciesId) {
+                    "cobblemon:chansey", "cobblemon:porygon2" -> set.heldItemId == "cobblemon:eviolite"
+                    "cobblemon:pikachu" -> set.heldItemId == "cobblemon:light_ball"
+                    "cobblemon:ursaring" -> true // User explicitly retains Ursaring.
+                    else -> false
+                }
+                set.setId.takeUnless { approved }
+            }
+            assertTrue(violations.isEmpty(), "Unapproved unevolved rentals: $violations")
+        }
+        assertEquals(4, sets.count { it.speciesId == "cobblemon:ursaring" })
+    }
+
     private val deterministicRandom = object : FactoryCatalogRandom {
         override fun nextLong(bound: Long): Long = 0
         override fun nextInt(bound: Int): Int = 0
@@ -48,15 +77,15 @@ class FactoryCatalogResourceTest {
     }
 
     @Test
-    fun `bundled schema four catalog contains two thousand complete fixed presets`() {
+    fun `bundled schema four catalog contains all approved complete fixed presets`() {
         val catalog = bundledCatalog()
         val pools = approvedPools(catalog)
         val allSets = pools.values.flatten()
 
         assertEquals("merged_factory_catalog", catalog.catalogId)
         assertEquals(EXPECTED_POOL_SIZES, pools.mapValues { it.value.size })
-        assertEquals(2_004, allSets.map(FactoryRentalTemplate::setId).distinct().size)
-        assertEquals(501, allSets.groupBy { it.speciesId to it.formId }.size)
+        assertEquals(1_964, allSets.map(FactoryRentalTemplate::setId).distinct().size)
+        assertEquals(491, allSets.groupBy { it.speciesId to it.formId }.size)
         assertTrue(allSets.groupBy { it.speciesId to it.formId }.values.all { it.size == 4 })
         assertTrue(allSets.all { it.moveIds.size == 4 && it.moveIds.distinct().size == 4 })
         assertTrue(allSets.all { it.preferredMoveIds.all(it.moveIds::contains) })
@@ -306,12 +335,12 @@ class FactoryCatalogResourceTest {
         const val RENTAL_SET_DIRECTORY = "/data/more_cobblemon_contents/mcc-battle-factory/rental-sets"
         val RENT_AND_TRADE_COUNTS = listOf(1, 7, 14, 21, 28, 35)
         val EXPECTED_POOL_SIZES = mapOf(
-            "starter-1" to 120,
-            "intermediate-1" to 210,
-            "intermediate-2" to 320,
-            "advanced-1" to 397,
-            "advanced-2" to 320,
-            "advanced-3" to 268,
+            "starter-1" to 117,
+            "intermediate-1" to 203,
+            "intermediate-2" to 310,
+            "advanced-1" to 387,
+            "advanced-2" to 313,
+            "advanced-3" to 265,
             "advanced-4" to 369,
         )
     }
