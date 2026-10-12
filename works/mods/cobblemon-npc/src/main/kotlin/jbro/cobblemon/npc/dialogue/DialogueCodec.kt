@@ -50,28 +50,46 @@ object DialogueCodec {
 
     /** What is wrong with [dialogue]: unknown nodes, unreadable conditions or commands. */
     fun validate(dialogue: NpcDialogue): List<DialogueProblem> {
-        val problems = mutableListOf<DialogueProblem>()
-        if (dialogue.nodes.isEmpty()) problems += DialogueProblem("no_nodes")
-        if (dialogue.start !in dialogue.nodes) problems += DialogueProblem("start", listOf(dialogue.start))
-        dialogue.nodes.forEach { (id, node) ->
-            if (!DialogueIds.isNodeId(id)) problems += DialogueProblem("node_id", listOf(id))
-            fun target(next: String?) {
-                if (next != null && next !in dialogue.nodes) problems += DialogueProblem("next", listOf(id, next))
-            }
-            target(node.next)
-            node.choices.forEach { choice ->
-                if (choice.text.isBlank()) problems += DialogueProblem("choice_text", listOf(id))
-                target(choice.next)
-                choice.condition?.let { DialogueCondition.parse(it, problems) }
-            }
-            node.branches.forEach { branch ->
-                target(branch.next)
-                DialogueCondition.parse(branch.condition, problems)
-            }
-            if (node.choices.isNotEmpty() && node.lines.isEmpty()) problems += DialogueProblem("choices_without_lines", listOf(id))
-            node.commands.forEach { if (DialogueCommand.parse(it) == null) problems += DialogueProblem("command", listOf(id, it)) }
+        return validateLocated(dialogue).map { it.problem }
+    }
+
+    fun validateLocated(dialogue: NpcDialogue): List<DialogueIssue> {
+        val issues = mutableListOf<DialogueIssue>()
+        fun add(node: String?, part: DialogueIssue.Part, index: Int = -1, problem: DialogueProblem) {
+            issues += DialogueIssue(node, part, index, problem)
         }
-        return problems
+        if (dialogue.nodes.isEmpty()) add(null, DialogueIssue.Part.NODE, problem = DialogueProblem("no_nodes"))
+        if (dialogue.start !in dialogue.nodes) add(null, DialogueIssue.Part.START, problem = DialogueProblem("start", listOf(dialogue.start)))
+        dialogue.nodes.forEach { (id, node) ->
+            if (!DialogueIds.isNodeId(id)) add(id, DialogueIssue.Part.NODE, problem = DialogueProblem("node_id", listOf(id)))
+            if (node.lines.size > DialogueNode.MAX_ITEMS) add(id, DialogueIssue.Part.NEXT,
+                problem = DialogueProblem("page_limit", listOf(id, DialogueNode.MAX_ITEMS.toString())))
+            if (node.choices.size > DialogueNode.MAX_ITEMS) add(id, DialogueIssue.Part.CHOICE, 0,
+                DialogueProblem("choice_limit", listOf(id, DialogueNode.MAX_ITEMS.toString())))
+            fun target(next: String?, part: DialogueIssue.Part, index: Int = -1) {
+                if (next != null && next !in dialogue.nodes) add(id, part, index, DialogueProblem("next", listOf(id, next)))
+            }
+            fun condition(text: String, part: DialogueIssue.Part, index: Int) {
+                val problems = mutableListOf<DialogueProblem>()
+                DialogueCondition.parse(text, problems)
+                problems.forEach { add(id, part, index, it) }
+            }
+            target(node.next, DialogueIssue.Part.NEXT)
+            node.choices.forEachIndexed { index, choice ->
+                if (choice.text.isBlank()) add(id, DialogueIssue.Part.CHOICE, index, DialogueProblem("choice_text", listOf(id)))
+                target(choice.next, DialogueIssue.Part.CHOICE, index)
+                choice.condition?.let { condition(it, DialogueIssue.Part.CHOICE, index) }
+            }
+            node.branches.forEachIndexed { index, branch ->
+                target(branch.next, DialogueIssue.Part.BRANCH, index)
+                condition(branch.condition, DialogueIssue.Part.BRANCH, index)
+            }
+            if (node.choices.isNotEmpty() && node.lines.isEmpty()) add(id, DialogueIssue.Part.NEXT, problem = DialogueProblem("choices_without_lines", listOf(id)))
+            node.commands.forEachIndexed { index, command ->
+                if (DialogueCommand.parse(command) == null) add(id, DialogueIssue.Part.COMMAND, index, DialogueProblem("command", listOf(id, command)))
+            }
+        }
+        return issues
     }
 
     fun encode(dialogue: NpcDialogue): String {

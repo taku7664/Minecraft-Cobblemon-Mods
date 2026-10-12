@@ -1,6 +1,7 @@
 package jbro.cobblemon.npc.network
 
 import jbro.cobblemon.npc.CobblemonNpc
+import jbro.cobblemon.npc.dialogue.DialogueNode
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -11,7 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 
 private const val TEXT = 1024
 private const val JSON = 262_144
-private const val MAX_ITEMS = 64
+private const val MAX_ITEMS = DialogueNode.MAX_ITEMS
 
 private fun <T : CustomPacketPayload> type(path: String) = CustomPacketPayload.Type<T>(CobblemonNpc.id(path))
 
