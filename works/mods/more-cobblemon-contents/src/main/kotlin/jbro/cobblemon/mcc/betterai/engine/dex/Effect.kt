@@ -136,7 +136,8 @@ open class Effect(
         // One lookup per call: an absent handler is cached as [NO_HANDLER] rather than as null behind containsKey.
         handlerCache[callbackName]?.let { return if (it === NO_HANDLER) null else it }
         val resolved: Any? = when {
-            callbackName in declaredHooks -> EngineHooks.get(hookKey, callbackName) ?: MissingHook(hookKey, callbackName)
+            callbackName in declaredHooks -> EngineHooks.get(hookKey, callbackName) ?: EngineHooks.shared(this, callbackName)
+                ?: MissingHook(hookKey, callbackName)
             raw.has(callbackName) && !isPriorityField(callbackName) -> JsonValues.convert(raw.get(callbackName))
             else -> EngineHooks.get(hookKey, callbackName)
         }

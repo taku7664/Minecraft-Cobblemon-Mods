@@ -77,6 +77,26 @@ object EngineHooks {
 
     val keys: Set<String> get() = ensureLoaded().let { table.keys }
 
+    /**
+     * A handler every effect of one kind shares, for an effect whose data declares it but no port names it: a Mega
+     * Stone's `onTakeItem`. Mega Showdown adds stones (the Z-A and Champions ones, Staraptite) the per-stone ports never
+     * listed; missing, the engine let Knock Off take them and powered it up for it (2026-10-13).
+     */
+    fun shared(effect: EffectLike, callbackName: String): HookFn? =
+        if (callbackName == "onTakeItem" && effect.hookKey.startsWith("item:") && effect.data("megaStone") != null) MEGA_STONE_TAKE_ITEM
+        else null
+
+    /** `return !item.megaStone?.[source.baseSpecies.baseSpecies]`, or the older `megaEvolves` spelling of the same rule. */
+    private val MEGA_STONE_TAKE_ITEM: HookFn = {
+        val item = relay as EffectLike
+        val base = pokemon.baseSpecies.baseSpecies
+        val evolves = when (val stones = item.data("megaStone")) {
+            is Map<*, *> -> Js.truthy(stones[base])
+            else -> item.data("megaEvolves") == base
+        }
+        !evolves
+    }
+
     internal fun register(key: String, callbackName: String, fn: HookFn) {
         val existing = table.getOrPut(key) { HashMap() }
         check(callbackName !in existing) { "Duplicate engine hook $key.$callbackName" }
