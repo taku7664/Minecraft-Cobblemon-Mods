@@ -1,5 +1,12 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-13 03:30] 크기 막대 세로 위치 수정·개발 배포 (실화면 미확인)
+
+- **사용자 지적:** "크기 막대기둥이 아래로 치우쳤다", "개맘에 안들어". 원인은 `SizeRow.renderImage`의 고정값: 막대를 y+1~y+9에 그려 글자(줄 위쪽 7px)보다 1px 늦게 시작하고 2px 더 내려갔다.
+- **수정:** 막대를 `y`~`y + font.lineHeight - 2`(바닐라 9 → y~y+7)로. `lineHeight`는 바닐라에서 9 고정이라 글꼴별로 달라지지 않는다. 개발 클라 Galmuri 팩은 TTF size 8·shift 0이라 같은 칸을 쓴다고 보지만, 한글 글리프의 실제 픽셀 위치는 미확인.
+- **빌드·배치:** 커밋 `cf789b4e`(origin/main 동기화) 소스로 `:cobblemon-to-item:remapJar`. 게임·서버 꺼짐 확인 후 이전 JAR을 `develop-product/deployment-backups/20261013-062626-to-item-size-bars/{server,client}`에 두고 교체. 세 곳 SHA-256 `28f06f37cbd2bdd6127066a9c2f60096b89373a95b9402b58598f1878792e2b5`.
+- **미확인:** 실화면.
+
 ## [2026-10-13 03:21] 툴팁에 도구(지닌 물건) 줄 추가·개발 배포 (실화면 미확인)
 
 - **사용자 요청:** "툴팁에 도구도 추가해줘". 특성 줄 아래·크기 막대 위에 `도구 <아이템 이름>`, 비어 있으면 `도구 없음`(`tooltip.held_item`, `held_item_none` 한영). 파티 툴팁과 아이템화한 포켓몬 아이템 툴팁이 같은 `PokemonTooltip`이라 둘 다 바뀐다.
