@@ -123,7 +123,7 @@ internal object EmbeddedTeamBattle {
                             frame.add("policyTuning", com.google.gson.Gson().toJsonTree(tunings))
                             frame.add("trainerProfiles", com.google.gson.Gson().toJsonTree(profiles))
                             frame.addProperty("evidence", "NATIVE_LOCAL_BRAIN_TEAMS_PARTIAL_INPUT_ADAPTER_NOT_QUALITY_PROOF")
-                            frame.addProperty("adapterLimits", "PARTIAL_DECLARATIVE_EFFECTS_NO_CALLBACK_EXECUTION;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;NO_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
+                            frame.addProperty("adapterLimits", "PARTIAL_DECLARATIVE_EFFECTS_NO_CALLBACK_EXECUTION;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;MEGA_ONLY_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
                             Files.writeString(directory.resolve("result.json"), frame.toString(), CREATE_NEW)
                             return frame
                         }

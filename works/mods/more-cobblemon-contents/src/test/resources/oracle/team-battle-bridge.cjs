@@ -131,12 +131,16 @@ function snapshot() {
       if (!request.side.pokemon[slot]) throw new Error('Own request roster is incomplete');
       request.side.pokemon[slot].ident = `${side.id}: ${pokemon.uuid}`;
     }
-    const ownTypes = {}, ownAbilities = {}, ownItems = {}, ownCurrentPp = {}, species = {}, moves = {}, publicLearnsets = {};
+    const ownTypes = {}, ownAbilities = {}, ownItems = {}, ownCurrentPp = {}, ownMegaForms = {}, species = {}, moves = {}, publicLearnsets = {};
     const registerSpecies = name => {
       const value = dex.species.get(name);
       if (!value.exists) throw new Error(`Unknown revealed species ${name}`);
       if (species[value.id]) return;
-      species[value.id] = { types: value.types.map(type => type.toLowerCase()), baseStats: value.baseStats };
+      // The Mega forms are public species data, as Cobblemon publishes every battle form on the Pokemon.
+      const megaForms = (value.otherFormes || []).map(name => dex.species.get(name)).filter(form => form.exists && form.isMega)
+        .map(form => ({ formId: toId(form.forme), types: form.types.map(type => type.toLowerCase()), baseStats: form.baseStats,
+          ability: toId(form.abilities[0]) }));
+      species[value.id] = { types: value.types.map(type => type.toLowerCase()), baseStats: value.baseStats, megaForms };
       // Public species rules only: no opponent Pokemon object, move slots or referee team access.
       // Every generation, like the Cobblemon FormData learnsets the game reads (and the team preview here):
       // a species absent from Gen 9 (Cherrim) would otherwise have no candidates at all.
@@ -156,6 +160,12 @@ function snapshot() {
       ownAbilities[ident] = pokemon.ability;
       ownItems[ident] = pokemon.item;
       ownCurrentPp[ident] = Object.fromEntries(pokemon.moveSlots.map(slot => [slot.id, slot.pp]));
+      // The trainer's own Mega form, exact: the stone decides the form, the set the spread, and HP is kept.
+      const mega = pokemon.canMegaEvo && dex.species.get(pokemon.canMegaEvo);
+      if (mega?.exists) {
+        ownMegaForms[ident] = { formId: toId(mega.forme), types: mega.types.map(type => type.toLowerCase()),
+          stats: { ...battle.spreadModify(mega.baseStats, pokemon.set), hp: pokemon.maxhp }, ability: toId(mega.abilities[0]) };
+      }
     }
     for (const pokemon of request.side.pokemon) {
       registerSpecies(pokemon.details.split(',')[0]);
@@ -190,9 +200,12 @@ function snapshot() {
           const metadata = moveInfo(move.id);
           const target = move.target || metadata.target;
           targetLocations(target, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
-            choices.push({ command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
+            const choice = { command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
               kind: 'move', slot: moveSlot, moveId: move.id, target,
-              targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null });
+              targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null };
+            choices.push(choice);
+            // Mega Evolution is the one gimmick offered: the game offers it with every move, as here.
+            if (active.canMegaEvo) choices.push({ ...choice, command: `${choice.command} mega`, mechanic: 'mega' });
           });
           moves[move.id] = metadata;
         });
@@ -207,6 +220,8 @@ function snapshot() {
       for (const components of combine(choicesBySlot)) {
         const switchSlots = components.filter(component => component.kind === 'switch').map(component => component.slot);
         if (new Set(switchSlots).size !== switchSlots.length) continue;
+        // A side Mega Evolves once per battle, so never two in one turn.
+        if (components.filter(component => component.mechanic).length > 1) continue;
         const command = components.map(component => component.command).join(', ');
         if (battleFormat === 'SINGLE') actions.push({ ...components[0], id: command });
         else actions.push({ id: command, kind: 'composite', components });
@@ -228,7 +243,7 @@ function snapshot() {
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
     const nativeInputs = input.teamPreview ? teamPreviewInputs(side) : {};
-    requests.push({ format: battleFormat, side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
+    requests.push({ format: battleFormat, side: side.id, request, ownTypes, ownAbilities, ownItems, ownMegaForms, actions,
       publicLog: log, species, moves, publicLearnsets, ownCurrentPp, ownActiveSlots, ...nativeInputs });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');

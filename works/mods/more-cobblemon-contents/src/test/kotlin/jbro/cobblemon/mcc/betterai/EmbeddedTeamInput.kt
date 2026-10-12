@@ -301,6 +301,14 @@ internal object EmbeddedTeamInput {
                 privateMap("ownTypes", ident)?.asJsonArray?.map { it.asString }?.toSet().orEmpty(),
                 combatStats = if (maxHp > 0) BattleCombatStatRangesView.exact(maxHp, stats["atk"].asInt,
                     stats["def"].asInt, stats["spa"].asInt, stats["spd"].asInt, stats["spe"].asInt) else null,
+                knownFormStates = privateMap("ownMegaForms", ident)?.asJsonObject?.let { form ->
+                    val mega = form.getAsJsonObject("stats")
+                    mapOf(form["formId"].asString to BattlePokemonFormStateView(form["formId"].asString,
+                        form.getAsJsonArray("types").map { it.asString }.toSet(),
+                        BattleCombatStatRangesView.exact(mega["hp"].asInt, mega["atk"].asInt, mega["def"].asInt,
+                            mega["spa"].asInt, mega["spd"].asInt, mega["spe"].asInt),
+                        form["ability"]?.asString?.takeIf { it.isNotEmpty() }))
+                }.orEmpty(),
                 actionConstraints = constraints.forPokemon(ident),
                 knownVolatileEffectIds = if (pokemon["active"].asBoolean && hp.first > 0.0)
                     seen[identity(ident)]?.volatileEffects.orEmpty() else emptySet())
@@ -316,6 +324,15 @@ internal object EmbeddedTeamInput {
                 knownBaseStabTypeIds = baseTypes(pokemon.species),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
                     it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) },
+                knownFormStates = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonArray("megaForms")
+                    ?.map { it.asJsonObject }?.associate { form ->
+                        val base = form.getAsJsonObject("baseStats")
+                        form["formId"].asString to BattlePokemonFormStateView(form["formId"].asString,
+                            form.getAsJsonArray("types").map { it.asString }.toSet(),
+                            BattlePublicStatRanges.fromBaseStats(pokemon.level, base["hp"].asInt, base["atk"].asInt,
+                                base["def"].asInt, base["spa"].asInt, base["spd"].asInt, base["spe"].asInt),
+                            form["ability"]?.asString?.takeIf { it.isNotEmpty() })
+                    }.orEmpty(),
                 actionConstraints = constraints.forPokemon(pokemon.ident),
                 knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) pokemon.volatileEffects else emptySet())
         }
@@ -375,6 +392,8 @@ internal object EmbeddedTeamInput {
                 val details = moveDetails(moveId, moveRequest["pp"]?.asInt ?: 1)
                 BattleActionCandidate(actionId, BattleActionKind.USE_MOVE, actorSlot = actorSlot, moveSlot = slot,
                     moveId = moveId, targets = targets(details, actorSlot, action["targetLoc"]?.takeUnless { it.isJsonNull }?.asInt),
+                    // The form itself is read from the actor's knownFormStates, as in the game.
+                    mechanic = action["mechanic"]?.asString?.let { BattleMechanicCandidate(it, target = null, publicCost = null) },
                     moveDetails = details)
             }
         }
