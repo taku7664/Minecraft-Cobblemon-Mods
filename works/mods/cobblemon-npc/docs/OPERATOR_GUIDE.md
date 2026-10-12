@@ -33,11 +33,26 @@ and goes on both the client and the server. Unit tests: `gradlew :cobblemon-npc:
 
 ## Dialogue files
 
-`config/cobblemon_npc/dialogues/<id>.json`, written by the in-game editor or by hand. In the editor, branches
-and commands are rows: a branch picks its condition kind (tag, permission, command or free text), and command
-rows and command conditions complete as they are typed, like a command block; a command row's **OP** switch is
-the `@server` prefix. The first start writes the
-example `tower_guide.json`.
+`config/cobblemon_npc/dialogues/<id>.json`, written by the in-game editor or by hand. The first start writes
+the example `tower_guide.json`.
+
+The editor's basic tabs are **Pages** and **Choices**. One page fills one text box; Enter adds a line break
+within that page. Use the arrows to navigate items and +/× to add/remove them. A choice has separate text,
+target and condition controls. Click a target to search node IDs and their text, or choose **End conversation**.
+**Advanced** exposes branches, commands and details. Conditions offer tag, permission, command and raw modes;
+raw preserves compound expressions. Command text and command conditions retain server-provided completion.
+The command **OP** switch is the `@server` prefix.
+
+The node list includes its first page and marks the start with ★. Renaming a node carries its references.
+Deleting a node requires confirmation with its reference count: incoming next/choice links become end links,
+and incoming branches are removed. Undo restores the entire change. Ctrl+Z/Ctrl+Y undo/redo; Ctrl+S saves.
+The editor marks a save complete only after the server acknowledges it, and closing a modified draft offers
+Save, Discard or Cancel. NPC metadata is saved separately; entering dialogue editing does not save it.
+
+**Draft Preview** opens from the selected node and can restart from the dialogue start. It does not save,
+send gameplay packets, execute commands or evaluate conditions (including command conditions). Conditional
+choices and branches are visible for manual inspection. This previews text and links; it does not prove
+player eligibility, command effects, NPC models or dialogue camera behavior.
 
 ```json
 {

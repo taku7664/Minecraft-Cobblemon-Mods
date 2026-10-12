@@ -49,9 +49,10 @@ object NpcEditorService {
     private fun allowed(player: ServerPlayer) = player.hasPermissions(CobblemonNpc.EDIT_PERMISSION)
 
     private fun saveNpc(player: ServerPlayer, payload: NpcSavePayload) {
-        if (!allowed(player)) return
-        val npc = player.serverLevel().getEntity(payload.entityId) as? NpcEntity ?: return
-        if (npc.distanceTo(player) > REACH) return
+        if (!allowed(player)) { result(player, false, "operator_only"); return }
+        val npc = player.serverLevel().getEntity(payload.entityId) as? NpcEntity
+        if (npc == null) { result(player, false, "npc_missing"); return }
+        if (npc.distanceTo(player) > REACH) { result(player, false, "npc_too_far"); return }
         if (payload.remove) {
             npc.remove(Entity.RemovalReason.DISCARDED)
             result(player, true, "removed")
@@ -71,7 +72,7 @@ object NpcEditorService {
     }
 
     private fun saveDialogue(player: ServerPlayer, payload: DialogueStorePayload) {
-        if (!allowed(player)) return
+        if (!allowed(player)) { result(player, false, "operator_only"); return }
         if (!DialogueIds.isDialogueId(payload.id)) {
             result(player, false, "dialogue_id", payload.id)
             return
@@ -83,7 +84,13 @@ object NpcEditorService {
             ServerPlayNetworking.send(player, EditorResultPayload(false, "cobblemon_npc.problem.${problem.key}", problem.args))
             return
         }
-        DialogueStore.save(payload.id, dialogue)
+        try {
+            DialogueStore.save(payload.id, dialogue)
+        } catch (failure: java.io.IOException) {
+            CobblemonNpc.LOGGER.warn("Could not save NPC dialogue {}", payload.id, failure)
+            result(player, false, "save_failed")
+            return
+        }
         result(player, true, "dialogue_saved", payload.id)
         if (payload.preview) DialogueSessions.start(player, payload.id)
     }
