@@ -127,7 +127,10 @@ object BattleEntryTransition {
 
     /** The battle has started: show it. */
     @JvmStatic
-    fun onBattleInitialize() = reveal()
+    fun onBattleInitialize() {
+        reveal()
+        BattleVersusIntro.reveal()
+    }
 
     /** Ends at once, for a battle that will not come. */
     @JvmStatic

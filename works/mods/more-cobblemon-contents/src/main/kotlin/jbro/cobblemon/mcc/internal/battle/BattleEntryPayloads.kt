@@ -86,6 +86,7 @@ internal object BattleEntryNetworking {
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(BattleEntryHoldPayload.TYPE, BattleEntryHoldPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleEntryCancelPayload.TYPE, BattleEntryCancelPayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(BattleVersusPayload.TYPE, BattleVersusPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(BattleEntryReadyPayload.TYPE, BattleEntryReadyPayload.CODEC)
     }
 }

@@ -1,5 +1,9 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 02:35] 장면 하네스에 단계 태그 옵션
+
+- `TrainerSceneCaptureHarness`에 `MCC_SCENE_CAPTURE_STAGE=<gym|elite_four|champion>`을 추가했다. 첫 배틀을 그 리그 단계로 태그해 VS 인트로 → 배틀 시작 흐름을 확인한다(`trainer-scene-0-versus-<틱>.png`, `SCENE CHECK battle opened ...`). VS 인트로 자체는 MCC·`cobblemon-ui` `MEMORY.md` 같은 시각 항목. 리그 코드는 바꾸지 않았다(단계 태그는 원래 `LeagueEngine.stage`가 넣고 있었다).
+
 ## [2026-10-12 22:49] 엘리트 트레이너 최소 4마리 수정본 개발 배포 (빌드·선택 테스트·해시 확인)
 
 - **사용자 후속 요청·소스:** 개발 환경에 우선 배포한다. 구현은 `4e684eea`로 main에 병합·원격 푸시되었으며, main 스냅샷 `ced66ebb398975c239d94c5f9ddd36ed49f0351b`를 `F:/AI/build/59b1-elite-deploy/src`에 풀어 Gradle 쓰기 경로를 모두 F 드라이브로 지정해 빌드했다.

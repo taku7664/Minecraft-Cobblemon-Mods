@@ -211,12 +211,18 @@ class Cobblemon173ManagedAiBattleEngine(
                 terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 Cobblemon173PartyRecall.recallSentOut(player)
-                BattleRegistry.startBattle(
-                    prepared.format.toCobblemonFormat(),
-                    BattleSide(playerActor),
-                    BattleSide(trainerActor),
-                    true,
-                )
+                // The entry hold reads who the trainer is while the battle starts, for the League's versus intro.
+                jbro.cobblemon.mcc.internal.battle.BattleVersusIntros.prepare(player.uuid, prepared.trainerDisplayNameKey, prepared.appearance)
+                try {
+                    BattleRegistry.startBattle(
+                        prepared.format.toCobblemonFormat(),
+                        BattleSide(playerActor),
+                        BattleSide(trainerActor),
+                        true,
+                    )
+                } finally {
+                    jbro.cobblemon.mcc.internal.battle.BattleVersusIntros.clear(player.uuid)
+                }
             }
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.error("{} battle creation failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
@@ -325,7 +331,8 @@ class Cobblemon173ManagedAiBattleEngine(
                 PveLaunchResult.Unavailable
             } else {
                 Cobblemon173TrainerBody.battleStarted(player.uuid, battle.battleId)
-                sceneDirector.battleStarted()
+                // A battle held for its versus intro opens later; the trainer speaks when it does.
+                jbro.cobblemon.mcc.internal.battle.BattleEntryHold.whenStarted(battle.battleId) { sceneDirector.battleStarted() }
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)

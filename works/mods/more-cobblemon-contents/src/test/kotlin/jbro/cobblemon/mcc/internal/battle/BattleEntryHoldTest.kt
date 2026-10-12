@@ -25,9 +25,9 @@ class BattleEntryHoldTest {
     }
 
     @Test
-    fun `MCC's wild trainers are held but its other content is not`() {
-        assertEquals(BattleEntryStyle.TRAINER, classify(listOf(ActorType.NPC), stage = "wild_trainer", tagged = true))
-        assertEquals(BattleEntryStyle.TRAINER, classify(listOf(ActorType.NPC), stage = "wild_trainer_ace", tagged = true))
+    fun `MCC's content, its wild trainers included, is not held`() {
+        assertNull(classify(listOf(ActorType.NPC), stage = "wild_trainer", tagged = true))
+        assertNull(classify(listOf(ActorType.NPC), stage = "wild_trainer_ace", tagged = true))
         assertNull(classify(listOf(ActorType.NPC), stage = "gym", tagged = true))
         assertNull(classify(listOf(ActorType.NPC), stage = null, tagged = true))
     }

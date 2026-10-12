@@ -25,7 +25,8 @@ import net.minecraft.server.MinecraftServer
  * screen, and starts the moment the client says it is covered. A refused battle never shows a transition.
  *
  * MCC's own content (Tower, Factory, League, PvP), battles with more than one player, and clients without the
- * transition start at once. A client that never answers is waited for [TIMEOUT_TICKS] at most.
+ * transition start at once, except League gym, Elite Four and Champion battles, which play the versus intro and then
+ * the trainer transition ([BattleVersusIntros]). A client that never answers is waited for [TIMEOUT_TICKS] at most.
  */
 internal object BattleEntryHold {
     /** About twice the longest transition (five seconds to the start), for a slow or stalled client. */
@@ -52,6 +53,14 @@ internal object BattleEntryHold {
             MoreCobblemonContents.LOGGER.warn("Battle {} could not be held for its entry transition", battle.battleId, failure)
             false
         }
+    }
+
+    /** What waits for a held battle's Showdown start, such as the trainer's opening lines. Server thread only. */
+    private val afterStart = mutableMapOf<UUID, MutableList<() -> Unit>>()
+
+    /** Runs [action] once [battleId] has really started: now when it is not held, else when its hold ends in a start. */
+    fun whenStarted(battleId: UUID, action: () -> Unit) {
+        if (battleId in held) afterStart.getOrPut(battleId) { mutableListOf() } += action else action()
     }
 
     /** [battle] is being stopped; a held one starts first so Cobblemon ends it the usual way. */
@@ -92,12 +101,18 @@ internal object BattleEntryHold {
     private fun hold(server: MinecraftServer, battle: PokemonBattle): Boolean {
         val players = battle.actors.filterIsInstance<PlayerBattleActor>()
         val player = players.singleOrNull()?.entity ?: return false
-        if (Cobblemon173BattleRuleHooks.isRegisteredBattle(battle.battleId)) return false
         val side = players.single().getSide()
         val opponents = side.getOppositeSide().actors.toList()
         val lead = opponents.firstOrNull()?.pokemonList?.firstOrNull()?.effectedPokemon
         val tag = MccBattleTags.of(battle.battleId)
-        val entry = classify(
+        // A League gym, Elite Four or Champion battle opens with the versus intro before its trainer transition.
+        val trainer = BattleVersusIntros.take(player.uuid)
+        val versus = BattleVersusIntros.tierOf(tag?.stage)?.takeIf {
+            trainer != null && players.size == 1 && side.actors.size == 1 && opponents.all { it.type == ActorType.NPC }
+        }
+        // Other battles under MCC's own rules start at once, as before.
+        if (versus == null && Cobblemon173BattleRuleHooks.isRegisteredBattle(battle.battleId)) return false
+        val entry = (if (versus != null) BattleEntryStyle.TRAINER else null) ?: classify(
             playerCount = players.size,
             playerSideSize = side.actors.size,
             opponentTypes = opponents.map { it.type },
@@ -106,6 +121,11 @@ internal object BattleEntryHold {
             leadLabels = lead?.let(::labelsOf).orEmpty(),
         ) ?: return false
         if (!ServerPlayNetworking.canSend(player, BattleEntryHoldPayload.TYPE)) return false
+        if (versus != null && trainer != null && ServerPlayNetworking.canSend(player, BattleVersusPayload.TYPE)) {
+            val skin = trainer.skin?.texture?.let(net.minecraft.resources.ResourceLocation::tryParse)
+            ServerPlayNetworking.send(player, BattleVersusPayload(battle.battleId, versus.first, versus.second, trainer.nameKey,
+                skin, trainer.skin?.slim == true))
+        }
         held[battle.battleId] = Held(battle, player.uuid, server.tickCount + TIMEOUT_TICKS)
         ServerPlayNetworking.send(player, BattleEntryHoldPayload(
             battleId = battle.battleId,
@@ -126,8 +146,7 @@ internal object BattleEntryHold {
 
     /**
      * Which transition a battle gets, or null to start it at once: one player alone on their side, against wild
-     * Pokémon (legendary when the lead is legendary, mythical or an Ultra Beast) or trainers, outside MCC's content
-     * except its wild trainers.
+     * Pokémon (legendary when the lead is legendary, mythical or an Ultra Beast) or trainers, outside MCC's content.
      */
     fun classify(
         playerCount: Int,
@@ -138,7 +157,8 @@ internal object BattleEntryHold {
         leadLabels: Set<String>,
     ): BattleEntryStyle? {
         if (playerCount != 1 || playerSideSize != 1 || opponentTypes.isEmpty()) return null
-        if (contentTagged && contentStage?.startsWith("wild_trainer") != true) return null
+        // MCC's own content, its wild trainers included, starts without the transition (user decision 2026-10-13).
+        if (contentTagged) return null
         return when {
             opponentTypes.all { it == ActorType.WILD } ->
                 if (leadLabels.any { it == "legendary" || it == "ultra_beast" }) BattleEntryStyle.LEGENDARY else BattleEntryStyle.WILD
@@ -156,13 +176,22 @@ internal object BattleEntryHold {
             return
         }
         starting = battle.battleId
+        val waitingActions = afterStart.remove(battle.battleId).orEmpty()
         try {
             (BattleRegistry as Any as BattleRegistryInvoker).`mcc$startShowdown`(battle)
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.error("Held battle {} failed to start", battle.battleId, failure)
             if (cancelOnFailure) abandon(waiting)
+            return
         } finally {
             starting = null
+        }
+        waitingActions.forEach { action ->
+            try {
+                action()
+            } catch (failure: RuntimeException) {
+                MoreCobblemonContents.LOGGER.warn("Held battle {} start action failed", battle.battleId, failure)
+            }
         }
     }
 
@@ -182,6 +211,7 @@ internal object BattleEntryHold {
     }
 
     private fun cancel(waiting: Held) {
+        afterStart.remove(waiting.battle.battleId)
         val player = server?.playerList?.getPlayer(waiting.playerId) ?: return
         if (ServerPlayNetworking.canSend(player, BattleEntryCancelPayload.TYPE)) {
             ServerPlayNetworking.send(player, BattleEntryCancelPayload(waiting.battle.battleId))

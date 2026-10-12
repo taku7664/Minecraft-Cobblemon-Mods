@@ -39,6 +39,12 @@ internal object TrainerSceneCaptureHarness {
     private const val TAG = "mcc_managed_trainer"
     /** `MCC_SCENE_CAPTURE_LEAVES=1` walls the battle in with leaves, to see the shader pack's see-through. */
     private val LEAVES = System.getenv("MCC_SCENE_CAPTURE_LEAVES") == "1"
+    /**
+     * `MCC_SCENE_CAPTURE_STAGE=<gym|elite_four|champion>` tags the first battle as that League stage, so it opens with
+     * the versus intro; the intro is captured as `trainer-scene-0-versus-<n>.png` and the log reports when the battle
+     * opened after it.
+     */
+    private val STAGE = System.getenv("MCC_SCENE_CAPTURE_STAGE")?.trim()?.takeIf { it.isNotEmpty() }
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -100,7 +106,15 @@ internal object TrainerSceneCaptureHarness {
                     server.execute { startBattle(server.playerList.getPlayer(player.uuid)!!, logger, playScene = true) }
                     next(1)
                 }
-                1 -> if (CobblemonClient.battle != null && since(10)) {
+                1 -> if (CobblemonClient.battle == null) {
+                    val waited = ticks - phaseTick
+                    if (jbro.cobblemon.ui.extended.transition.BattleVersusIntro.active && waited % 12 == 0) shot("0-versus-$waited")
+                    if (STAGE != null && waited == 1) logger.info("SCENE CHECK waiting for the {} versus intro", STAGE)
+                } else if (since(10)) {
+                    if (STAGE != null && !versusLogged) {
+                        versusLogged = true
+                        logger.info("SCENE CHECK battle opened {} ticks after the start request", ticks - phaseTick)
+                    }
                     countBodies()
                     shot("1-start")
                     next(if (LEAVES) 2 else 3)
@@ -169,6 +183,7 @@ internal object TrainerSceneCaptureHarness {
     }
 
     private var captured = false
+    private var versusLogged = false
 
     /**
      * Two walls of leaves along the battle, four blocks to either side of the line from the player to where the
@@ -205,6 +220,7 @@ internal object TrainerSceneCaptureHarness {
             lockedParty = ManagedPveBattles.snapshotParty(player, 100),
             opponentProperties = listOf("magikarp level=5 moves=splash", "magikarp level=5 moves=splash"),
             appearance = SKIN,
+            stage = if (playScene) STAGE else null,
             scenes = if (playScene) CYNTHIA_SCENES else TrainerScenes.NONE,
         )
         val id = ManagedPveBattles.start(player, request) { outcome -> logger.info("SCENE CHECK battle outcome {}", outcome) }

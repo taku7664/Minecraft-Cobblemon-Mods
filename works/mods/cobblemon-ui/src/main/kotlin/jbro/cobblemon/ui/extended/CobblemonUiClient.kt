@@ -32,6 +32,8 @@ object CobblemonUiClient : ClientModInitializer {
         CinematicLetterbox.register()
         SceneDialogue.register()
         jbro.cobblemon.ui.extended.transition.BattleEntryTransition.install()
+        // After the entry transition, so the versus intro draws over it as it hands over.
+        jbro.cobblemon.ui.extended.transition.BattleVersusIntro.install()
         verifyBattleUiMixinTargets()
         BattleUiCaptureHarness.installFromEnvironment()
 

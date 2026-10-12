@@ -1,5 +1,11 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-13 02:35] 리그 VS 인트로 `BattleVersusIntro` (하네스 캡처·실제 흐름 확인, 배포 안 함)
+
+- **무엇:** 관장·사천왕·챔피언 배틀 전 VS 화면. 사선으로 갈라진 두 면이 좌우에서 들어오고 속도선, 두 트레이너 전신, 이름판(도전자 왼쪽 아래, 상대 오른쪽 위), "VS"가 한 번 꽂히며 섬광·흔들림. 사천왕은 교차 슬래시, 챔피언은 금색 면과 불꽃 입자. 흰 화면으로 끝나고 배틀이 열리면 걷힌다. `/battleentry versus <gym|elite_four|champion>`으로 미리 볼 수 있다.
+- **사용자 지적으로 뺀 것:** 챔피언 도입부(암전·조명·"챔피언" 큰 글씨 각인), VS 글자 맥동(꿀렁임), VS 글자 흔들림(화면만 흔들리고 글자는 고정), VS 뒤 트레이너 진입 전환.
+- **캡처:** PvP 하네스 `MCC_PVP_CAPTURE=versus_<tier>@<ms>`가 `frozenAt`으로 시점을 고정해 찍는다.
+
 ## [2026-10-11] 배틀 HUD 카드와 TAB 현황판에 타입 아이콘 (빌드·개발 클라이언트 배치 확인, 실게임 미확인)
 
 - **빌드·배치 [2026-10-12 03:33]:** 빡대리님 지시로 개발 쪽만. `:cobblemon-ui:build -x test -x unitTest`(F 경로, `F:/AI/builds/cobblemon-mods-main` 설정) 성공. 다른 세션이 같은 소스로 02:39에 이미 컴파일해 둬서 결과가 그대로였고, JAR에 `BattlePokemonTypes`가 들어 있는 것을 확인했다. SHA-256 앞자리 858d2acd. 개발 클라이언트(꺼진 상태)의 `cobblemon-ui-0.2.0.jar`와 `cobblemon-npc` 내장 사본을 이 JAR로 바꿨다. MCC는 클라이언트·서버 모두 이미 같은 해시를 품고 있었다. 백업 `develop-product/deployment-backups/20261012-0333-ui-type-icons`.

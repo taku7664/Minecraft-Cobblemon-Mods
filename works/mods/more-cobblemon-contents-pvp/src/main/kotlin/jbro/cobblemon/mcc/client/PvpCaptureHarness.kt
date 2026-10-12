@@ -132,6 +132,8 @@ internal object PvpCaptureHarness {
             }
             val next = steps.removeFirstOrNull()
             if (next == null) {
+                jbro.cobblemon.ui.extended.transition.BattleVersusIntro.frozenAt = null
+                jbro.cobblemon.ui.extended.transition.BattleVersusIntro.cancel()
                 client.setScreen(null)
                 client.stop()
                 return@EndTick
@@ -227,7 +229,22 @@ internal object PvpCaptureHarness {
                 picked.forEach { PvpHubClient.selection?.toggle(it) }
                 MccHubScreen.refresh(PvpHubClient.CONTENT)
             }
-            else -> error("Unknown PvP capture step $step")
+            else -> {
+                // `versus_<tier>@<ms>`: the League versus intro held still that far in.
+                val match = Regex("versus_(\\w+)@(\\d+)").matchEntire(step) ?: error("Unknown PvP capture step $step")
+                val tier = checkNotNull(jbro.cobblemon.ui.extended.transition.VersusTier.fromId(match.groupValues[1])) { "Unknown tier in $step" }
+                val client = Minecraft.getInstance()
+                if (client.screen != null) client.setScreen(null)
+                val framing = jbro.cobblemon.uikit.UiModelFraming.FULL_BODY
+                val me = jbro.cobblemon.ui.extended.transition.VersusSide(Component.literal(myName),
+                    Component.translatable("cobblemon_ui.versus.challenger"),
+                    jbro.cobblemon.uikit.client.CobblemonUiRenderContent.PlayerProfile(checkNotNull(client.player).gameProfile, framing))
+                val rival = jbro.cobblemon.ui.extended.transition.VersusSide(Component.literal("난천"),
+                    Component.translatable("cobblemon_ui.versus.${tier.id}"),
+                    jbro.cobblemon.uikit.client.CobblemonUiRenderContent.PlayerProfile(GameProfile(OPPONENT.playerId, OPPONENT.name), framing))
+                jbro.cobblemon.ui.extended.transition.BattleVersusIntro.frozenAt = match.groupValues[2].toLong()
+                jbro.cobblemon.ui.extended.transition.BattleVersusIntro.play(tier, me, rival, 0xFFE0602A.toInt(), false, null)
+            }
         }
     }
 }

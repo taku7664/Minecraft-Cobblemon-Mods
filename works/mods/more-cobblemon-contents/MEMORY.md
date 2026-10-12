@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-13 02:35] 리그 VS 인트로 보류, 야생 트레이너 진입 전환 제거
+
+- **사용자 결정:** 관장·사천왕·챔피언 배틀 전에 BW식 VS 화면을 띄운다(연출은 `cobblemon-ui` `BattleVersusIntro`). 음악은 VS가 뜨는 순간부터 나와야 한다. VS 뒤 트레이너 진입 전환은 넣지 않는다. **야생 트레이너 배틀의 진입 전환은 없앤다**(10-03 `d6d23b30`에서 넣었던 것). 챔피언 도입부(암전·조명·"챔피언" 각인)도 넣지 않는다.
+- **서버:** `BattleVersusIntros`(내부 객체, 공개 API 변경 없음). 관리 엔진이 `startBattle` 직전에 트레이너 이름 키·스킨을 넣고, `BattleEntryHold.hold`가 꺼낸다. 태그 단계가 `gym`/`elite_four`/`champion`(`hard_` 접두 포함)이면 MCC 규칙 배틀이어도 보류하고 `BattleVersusPayload`를 보류 패킷보다 먼저 보낸다. 그 밖의 MCC 규칙 배틀은 전처럼 바로 시작한다. `classify`는 태그 붙은 MCC 콘텐츠를 모두 제외한다(야생 트레이너 포함).
+- **함정(고침):** 보류된 관리 배틀은 엔진이 `startBattle` 직후 부르는 시작 대사(`BATTLE_START`)가 클라 배틀이 없어 버려졌다. `BattleEntryHold.whenStarted`로 실제 시작 뒤에 실행한다.
+- **클라:** VS 패킷을 받은 배틀은 진입 전환 대신 VS를 틀고, VS가 흰 화면으로 끝나면 바로 시작 신호를 보낸다. 흰 화면은 배틀 초기화(`BattleEntryTransition.onBattleInitialize`) 때 걷힌다(최대 4초). 음악: 보류 시작 때 `MccPendingBattles`가 잡히고, 콘텐츠 태그는 배틀 생성 시점(`attachConstructed`)에 먼저 가므로 음악 모드가 VS 시작부터 리그 곡을 고를 수 있다.
+- **확인함:** 리그 개발 실행 `MCC_SCENE_CAPTURE=1 MCC_SCENE_CAPTURE_STAGE=champion`(난천 관리 배틀)에서 보류 3.27초 뒤 시작, 진입 전환 로그 없음, 대사 3/3, 단계 없는 두 번째 배틀은 즉시 시작. `BattleEntryHoldTest` 3/3 통과.
+- **확인 안 함:** 음악 모드가 들어간 실행에서 곡이 VS부터 나오는지(리그 개발 실행에 음악 모드 없음), 실제 리그 터미널 경로, 하드 루트, 배포.
+
+
 ## [2026-10-13 02:50] 교체 예측이 높으면 확정 KO도 추첨 (사용자 결정)
 
 - **사용자 결정**: 토게키스-코라이돈은 지금 동작(에어슬래시 85%)으로 둔다. 확정 KO는 교체 예측이 높으면 레거시처럼 가중치를 둔 추첨으로 고른다.
