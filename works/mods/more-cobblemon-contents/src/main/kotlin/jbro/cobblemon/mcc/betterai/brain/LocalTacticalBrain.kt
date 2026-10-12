@@ -33,6 +33,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.mcc.betterai.policy.LocalActionChoiceSeed
+import jbro.cobblemon.mcc.betterai.policy.LocalActionKindWeights
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
@@ -617,11 +618,15 @@ internal class LocalTacticalBrain(
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (nativeStatusAdjustments[it] ?: 0.0)
         }
-        val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
+        val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
                 adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
             })
         } ?: searchedRanked
+        // Each kind of action's global weight (singles): a status move's value is shrunk toward worse by
+        // statusMoveWeight, so it has to beat an attack by more before it is chosen.
+        val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) ruleAdjusted
+            else LocalActionKindWeights.apply(ruleAdjusted, tuning)
         val rootDecision = LocalRootDecisionPolicy.refine(switchAdjusted, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(

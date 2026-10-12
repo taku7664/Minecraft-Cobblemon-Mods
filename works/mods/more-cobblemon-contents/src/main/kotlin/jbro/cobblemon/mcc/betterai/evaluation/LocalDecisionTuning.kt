@@ -250,6 +250,13 @@ internal data class LocalDecisionTuning(
      * drops the opponent's own stages, so wiping them was worth nothing (LocalEngineTurnReadout).
      */
     val statusReplyExpectation: Double = 0.7,
+    /**
+     * Global weights on each kind of action's final value in singles (LocalActionKindWeights): a positive value is
+     * multiplied by its weight and a negative one divided, so a weight under one always makes the kind look worse.
+     */
+    val attackMoveWeight: Double = 1.0,
+    val statusMoveWeight: Double = 1.0,
+    val switchWeight: Double = 1.0,
     /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
     val leafDuelValue: Double = 0.0,
     /**
@@ -517,6 +524,7 @@ internal data class LocalDecisionTuning(
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
         require(statusReplyExpectation in 0.0..1.0)
+        require(attackMoveWeight > 0.0 && statusMoveWeight > 0.0 && switchWeight > 0.0)
         require(leafTeamCoverageWeight.isFinite() && leafTeamCoverageWeight >= 0.0)
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
         require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)
