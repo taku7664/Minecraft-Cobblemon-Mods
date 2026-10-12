@@ -13,6 +13,7 @@ object PvpContentClient : ClientModInitializer {
         PvpLoungeSpectatorControls.register()
         PvpRoomHudOverlay.register()
         PvpPlayClientNetworking.register()
+        PvpVersusClient.register()
         MccHubTabs.register(
             MccHubTab(
                 ManagedBattleContentIds.PVP,

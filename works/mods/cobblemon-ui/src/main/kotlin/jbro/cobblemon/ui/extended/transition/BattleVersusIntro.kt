@@ -30,7 +30,9 @@ import kotlin.math.sin
 enum class VersusTier(val id: String, val millis: Long) {
     GYM("gym", 2_600),
     ELITE_FOUR("elite_four", 3_000),
-    CHAMPION("champion", 3_200);
+    CHAMPION("champion", 3_200),
+    /** Over a PvP battle that is already open, so kept short. */
+    PVP("pvp", 2_400);
 
     companion object {
         fun fromId(id: String): VersusTier? = entries.firstOrNull { it.id == id }
