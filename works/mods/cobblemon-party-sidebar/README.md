@@ -1,6 +1,6 @@
 # Cobblemon Party Sidebar
 
-Shows your Cobblemon party in a column docked to the survival inventory. Each row is a party slot: the Pokemon in a
+Shows your Cobblemon party in a column docked to the survival inventory and the Pokemon fusion screen. Each row is a party slot: the Pokemon in a
 frame like the player-model box, then the item it holds in an inventory slot. The column is cut from the active
 inventory texture, so it matches the inventory under any resource pack.
 
@@ -15,7 +15,7 @@ inventory texture, so it matches the inventory under any resource pack.
   If both are full, the Pokemon stays in the party. Ordinary pickup only requires an empty cursor.
   Shift-click a Pokemon item in the survival inventory or hotbar to restore it to the lowest empty party slot.
   A full party refuses quick restoration; right-clicking a held item can overflow to the PC instead.
-  Chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.
+  Inventory items in chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.
 - **Fusion:** the slot at the foot of the column, holding Mega Showdown's DNA Splicers, opens PokeFusion's window, as
   `/pokefusion` does; hover it for its name. Without Mega Showdown it is a labelled button. It is greyed out when the
   server has no such command for you.
@@ -28,7 +28,7 @@ installed, EMI keeps its side panels clear of the column.
 
 Install the same version on **both client and server**. Requires Minecraft 1.21.1, Java 21, Fabric Loader 0.19.5+,
 Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+ and Cobblemon 1.8.1 (below 1.9.0). Mod Menu and EMI
-are optional; Cobblemon To Item 0.1.1+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
+are optional; Cobblemon To Item 0.1.2+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
 server without this mod the column only shows the party; slot interactions need the server half.
 
 ## Settings

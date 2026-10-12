@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.core.registries.BuiltInRegistries
@@ -118,21 +119,21 @@ object PartySidebar {
 
     /** Where the column goes on [screen], or null when it is off or there is no room for it. */
     internal fun bounds(screen: Screen): Bounds? {
-        if (!SidebarConfig.enabled || screen !is InventoryScreen) return null
+        if (!SidebarConfig.enabled || screen !is AbstractContainerScreen<*> || !PokemonTransfers.supportsSidebarMenu(screen.menu)) return null
         var anchor = screen.leftPos
-        if (screen.getRecipeBookComponent().isVisible) {
+        if (screen is InventoryScreen && screen.getRecipeBookComponent().isVisible) {
             if (screen.width < RECIPE_BOOK_NARROW) return null
             anchor = minOf(anchor, (screen.width - RECIPE_BOOK_WIDTH) / 2 - RECIPE_BOOK_OFFSET)
         }
         val x = anchor - WIDTH
         if (x < 0) return null
         return Bounds(x, screen.topPos, WIDTH,
-            maxOf(InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT + BUTTON_GAP + SLOT))
+            maxOf(screen.imageHeight, InventorySkin.current().panelHeight, PADDING * 2 + ROWS_HEIGHT + BUTTON_GAP + SLOT))
     }
 
-    fun contains(screen: InventoryScreen, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
+    fun contains(screen: AbstractContainerScreen<*>, mouseX: Double, mouseY: Double) = bounds(screen)?.contains(mouseX, mouseY) == true
 
-    fun renderColumn(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
+    fun renderColumn(screen: AbstractContainerScreen<*>, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
         this.mouseX = mouseX.toDouble()
         this.mouseY = mouseY.toDouble()
         val bounds = bounds(screen) ?: return
@@ -164,12 +165,12 @@ object PartySidebar {
                 if (highlight) graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + size - 1, y + size - 1, HIGHLIGHT)
             }
         }
-        drawFusionButton(graphics, bounds)
+        drawFusionButton(graphics, bounds, screen is InventoryScreen)
     }
 
     /** A vanilla button from the active resource pack, its label shrunk to fit the narrow column. */
-    private fun drawFusionButton(graphics: GuiGraphics, bounds: Bounds) {
-        val enabled = serverHas(FUSION_COMMAND)
+    private fun drawFusionButton(graphics: GuiGraphics, bounds: Bounds, inventory: Boolean) {
+        val enabled = inventory && serverHas(FUSION_COMMAND)
         val hovered = enabled && bounds.overFusion(mouseX, mouseY)
         val x = bounds.fusionX()
         val y = bounds.fusionY()
@@ -198,7 +199,7 @@ object PartySidebar {
         graphics.pose().popPose()
     }
 
-    fun renderOverlay(screen: InventoryScreen, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
+    fun renderOverlay(screen: AbstractContainerScreen<*>, graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
         val bounds = bounds(screen) ?: return
         if (!screen.menu.carried.isEmpty) return
         if (fusionIcon() != null && bounds.overFusion(mouseX.toDouble(), mouseY.toDouble())) {
@@ -216,7 +217,7 @@ object PartySidebar {
     }
 
     /** Returns true when the column took the click, so the inventory does not see it. */
-    fun mouseClicked(screen: InventoryScreen, mouseX: Double, mouseY: Double, button: Int): Boolean {
+    fun mouseClicked(screen: AbstractContainerScreen<*>, mouseX: Double, mouseY: Double, button: Int): Boolean {
         press = null
         val bounds = bounds(screen) ?: return false
         if (!bounds.contains(mouseX, mouseY)) {
@@ -224,7 +225,7 @@ object PartySidebar {
             return false
         }
         if (bounds.overFusion(mouseX, mouseY)) {
-            if (button == 0 && serverHas(FUSION_COMMAND)) {
+            if (button == 0 && screen is InventoryScreen && serverHas(FUSION_COMMAND)) {
                 Minecraft.getInstance().player?.connection?.sendCommand(FUSION_COMMAND)
             }
             return true
@@ -248,7 +249,7 @@ object PartySidebar {
     }
 
     /** Returns true when the column finished the drag, so the inventory does not see the release. */
-    fun mouseReleased(screen: InventoryScreen, mouseX: Double, mouseY: Double, button: Int): Boolean {
+    fun mouseReleased(screen: AbstractContainerScreen<*>, mouseX: Double, mouseY: Double, button: Int): Boolean {
         val started = press
         press = null
         val bounds = bounds(screen) ?: return false
@@ -280,21 +281,21 @@ object PartySidebar {
     }
 
     /** Asks the server to itemize the Pokemon in [row], placing the item on the cursor or directly in the inventory. */
-    private fun itemize(screen: InventoryScreen, row: Int, toCursor: Boolean) {
+    private fun itemize(screen: AbstractContainerScreen<*>, row: Int, toCursor: Boolean) {
         val pokemon = party(row) ?: return
         if (!canItemize() || !screen.menu.carried.isEmpty || CobblemonClient.battle != null) return
         ClientPlayNetworking.send(ItemizePayload(row, pokemon.uuid, toCursor))
     }
 
     /** Asks the server to put the itemized Pokemon on the cursor into party [row], exchanging any occupant onto the cursor. */
-    private fun restore(screen: InventoryScreen, row: Int) {
+    private fun restore(screen: AbstractContainerScreen<*>, row: Int) {
         if (!canRestore() || !PokemonItemData.isPokemonItem(screen.menu.carried) || CobblemonClient.battle != null) return
         val pokemonTag = PokemonItemData.pokemonTag(screen.menu.carried) ?: return
         ClientPlayNetworking.send(RestorePayload(row, pokemonTag.getUUID("UUID"), party(row)?.uuid))
     }
 
     /** Asks the server to act on a held-item slot; false when there is nothing to do or no server half to ask. */
-    private fun clickHeld(screen: InventoryScreen, row: Int, pokemon: Pokemon, quickMove: Boolean): Boolean {
+    private fun clickHeld(screen: AbstractContainerScreen<*>, row: Int, pokemon: Pokemon, quickMove: Boolean): Boolean {
         if (!ClientPlayNetworking.canSend(HeldItemClickPayload.TYPE)) return false
         if (pokemon.heldItem().isEmpty && (quickMove || screen.menu.carried.isEmpty)) return false
         ClientPlayNetworking.send(HeldItemClickPayload(row, pokemon.uuid, quickMove))

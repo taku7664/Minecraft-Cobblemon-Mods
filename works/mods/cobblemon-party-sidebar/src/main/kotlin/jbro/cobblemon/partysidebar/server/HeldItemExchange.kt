@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.api.tags.CobblemonItemTags
 import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
+import jbro.cobblemon.toitem.api.PokemonTransfers
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
@@ -12,12 +13,12 @@ import net.minecraft.world.item.ItemStack
 
 /**
  * Swaps a party Pokemon's held item with the item on the player's cursor, the way the inventory does with a slot.
- * Only while the player inventory is the open menu, the cursor item lives there. Follows Cobblemon's rules for
+ * Only while the player inventory or fusion menu is open; use that menu's cursor. Follows Cobblemon's rules for
  * handing an item to a Pokemon: not in battle, not while its entity is busy, and the held-item tags apply.
  */
 object HeldItemExchange {
     fun handle(player: ServerPlayer, payload: HeldItemClickPayload) {
-        if (player.isSpectator || player.containerMenu !== player.inventoryMenu) return
+        if (!player.isAlive || player.isSpectator || !PokemonTransfers.supportsSidebarMenu(player.containerMenu)) return
         val pokemon = Cobblemon.storage.getParty(player).get(payload.slot) ?: return
         if (pokemon.uuid != payload.pokemonId || pokemon.entity?.isBusy == true) return
         if (BattleRegistry.getBattleByParticipatingPlayer(player) != null) {
@@ -26,6 +27,7 @@ object HeldItemExchange {
         }
         if (payload.quickMove) moveToInventory(player, pokemon) else swapWithCursor(player, pokemon)
         player.inventoryMenu.broadcastChanges()
+        if (player.containerMenu !== player.inventoryMenu) player.containerMenu.broadcastChanges()
     }
 
     private fun moveToInventory(player: ServerPlayer, pokemon: Pokemon) {
@@ -43,7 +45,7 @@ object HeldItemExchange {
     }
 
     private fun swapWithCursor(player: ServerPlayer, pokemon: Pokemon) {
-        val menu = player.inventoryMenu
+        val menu = player.containerMenu
         val carried = menu.carried
         val held = pokemon.heldItem()
         if (carried.isEmpty) {
