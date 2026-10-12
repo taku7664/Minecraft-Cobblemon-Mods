@@ -26,7 +26,7 @@ import org.joml.Matrix4f
 
 /**
  * The summary shown over a party Pokemon:
- * level, name and gender; HP; nature and ability; the moves with their PP; IVs and EVs per stat in aligned columns;
+ * level, name and gender; HP; nature, ability and held item; the moves with their PP; IVs and EVs per stat in aligned columns;
  * capture ball, shiny marker and native size category.
  */
 object PokemonTooltip {
@@ -96,6 +96,8 @@ object PokemonTooltip {
         add(key("hp", pokemon.currentHealth, pokemon.maxHealth).copy().withStyle { it.withColor(hpColor(pokemon)) })
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
+        val held = pokemon.heldItem()
+        add(labelled("held_item", if (held.isEmpty) key("held_item_none") else held.hoverName))
     }
 
     /** Five upright bars, filled from XS (one) through XL (five), followed by the native category. */
