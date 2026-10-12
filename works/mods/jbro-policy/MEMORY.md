@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-12 23:40] 포켓 내비 레어도 순서 고정 — 개발 서버·클라이언트 배치 (0.1.5, 실게임 미확인)
+
+- **원인(바이트코드 확인):** Cobblenav 2.4.1 `RequestLocationScreenInitDataHandler`가 `BestSpawner.config.worldBuckets.keySet()` 순서를 그대로 레어도 목록으로 보낸다. Cobblemon 1.8.1은 버킷을 맵(boss 포함)으로 읽어 순서가 보장되지 않고, 실제로 boss→흔함→매우 희귀→희귀→드묾으로 보였다(사용자 제보).
+- **구현:** `BestSpawnerBucketOrderMixin`이 `BestSpawner.loadConfig` 끝에서 `SpawnBucketOrder.apply`를 부른다. world·fishing 버킷을 서식지·포켓스낵 설정에도 있는 등급(확률 높은 순) 다음에 월드 전용 버킷(boss)을 두는 `LinkedHashMap`으로 바꾼다(`BestSpawnerConfigAccessor`). 버킷 이름 목록 없이 설정에서 순서를 뽑는다. 가중치 추첨은 순서와 무관해 스폰 확률은 그대로다.
+- **빌드·배치:** main `cdbcde3d`. `:jbro-policy:build` 성공, 단위 테스트 109개 통과. JAR SHA-256 `1afdc7f2d6f1915f1cb08e43bd69e8bb8adf50753c418efa4b65c5bb56dc88d8`, `develop-product/{server,client}/mods` 설치본 일치. 서버 꺼짐·cobblemon-dev 클라 꺼짐 상태에서 교체, 0.1.4는 `develop-product/deployment-backups/20261012-pokenav-bucket/`에 백업.
+- **미확인:** 서버 기동·포켓 내비 화면 실확인 안 함. 운영/VPS·PPakemon·릴리스 미반영.
+
 ## [2026-10-12 21:18] 우클릭 복원 이관 버전 개발 서버·클라이언트 설치 (0.1.4, 실게임 미확인)
 
 - **배치:** 사용자 배포 요청으로 실제 저장소의 `develop-product/{server,client}/mods`에서 0.1.3을 0.1.4로 교체했다. 우클릭 복원 소유권을 맡은 `cobblemon-to-item` 0.1.0을 함께 설치했다. 두 정책 설치본 SHA-256은 빌드본 `2489d47ca36526a29182701ac7a2e7a1efed51f171734a3ee9aeb961e21b874f`과 같다.

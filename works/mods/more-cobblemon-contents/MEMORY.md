@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-10-13 00:10] 압정 겹수 테스트 2개 실패 원인: 픽스처 (코드는 그대로)
+
+- **증상**: `LocalTacticalBrainSimulationTest`의 `stacking side conditions stop at their declared maximum`, `stackable opponent side condition can still add another layer`가 `add_spikes_layer` 대신 `small_damage`를 골랐다(10-12부터 `main`에서 실패).
+- **처음 가설은 틀림**: `LocalHazardEncoreCredit`(장판 값 × (남은 상대 − 1))이 아니다. 테스트 세션은 기본 `balanced()` 프로필 = 입문 등급이라 `rulesApply`(상급·보스만)가 꺼져 크레딧이 돌지 않는다.
+- **실제 원인**: 같은 시각 커밋 `fa5e9ee9`의 `LocalSideConditionFutility`가 두 가지로 장판을 실패 기술(publicly inert)로 처리했다.
+  1. 테스트 `state()`가 상대를 필드 위 한 마리만 두어 `remainingPokemonBySide` = 1 → 들어올 상대 없음. 실제 게임에서도 이때 압정은 실패하므로 코드가 맞다.
+  2. `stackable…` 픽스처의 압정에 최대 겹수 선언(`amountRange`)이 없어 1겹으로 읽혔다. 실제 기술 데이터는 Showdown 조건의 `effectState.layers >= 3`을 파싱해 선언한다(`BattleDeclarativeMoveEffects.kt` `MAXIMUM_LAYERS_PATTERN`).
+- **수정(테스트만)**: `decide`/`contextOf`/`state`에 `opponentUnseenBench`(안 본 상대 수, 남은 수에만 더함)를 추가하고, 겹수 테스트 3개(끈적끈적네트 포함: 전에는 상대 수 때문에 우연히 통과)에 2를 넣었다. `stackable…` 압정에 `maximumStacks = 3`을 넣었다. 이름 하드코딩 없음.
+- **남은 불일치(미수정)**: 기존 `LocalSideConditionRules.maximumStacks`는 선언이 없을 때 알려진 표(압정 3, 독압정 2)를 쓰고, `LocalSideConditionFutility`는 선언만 본다(없으면 1). 실제 데이터에선 차이가 없지만 선언 없는 기술에선 두 규칙이 갈린다.
+- **검증**: F 경로 지정 Gradle로 `LocalTacticalBrainSimulationTest|LocalHazardSwitchAvailabilityTest|PublicSwitchEntryHazardCalculatorTest` 84개 통과. 빌드·배포 안 함.
+
 ## [2026-10-13 00:40] 배틀 종료 경로 재점검 (PvP 종료 버그 후속)
 
 - **계기**: PvP 종료 버그가 10-11 PvP 점검에서 빠졌다. 그 점검은 PvP 애드온 안쪽만 봤고, 원인은 MCC 본체 클라 리셋이었다. 이번엔 모든 모드에서 Cobblemon 배틀 패킷에 끼어드는 믹스인, 패킷 보류·재생 로직, `MccClientSessionReset` 콜백 전체(10개), 서버의 직접 `closeBattle` 경로를 범위로 잡았다.
@@ -13,7 +24,10 @@
   - `BattleInitializeHandlerSceneMixin`(신규): 종료를 0.5초 보류하는 사이 새 배틀이 열리면, 뒤늦게 실행된 이전 종료가 새 배틀을 지웠다. 새 배틀 초기화 전에 보류한 종료를 먼저 끝낸다(`BattleSceneClient.finishHeldEnd`).
   - `Cobblemon173ManagedBattleTermination.closeWithClientEnd`: Cobblemon `end()`는 종료 패킷을 맨 마지막에 보내므로, 중간에 예외가 나서 강제로 닫으면 클라 배틀이 남았다. 강제 닫기·이미 끝난 배틀 닫기·`BattleEntryHold.abandon`이 모두 선수·관전자에게 종료 패킷을 먼저 보낸다.
 - **문제없음으로 확인**: 진입 연출 보류는 서버가 200틱 제한으로 시작시킨다(PvP는 대상 아님). `stop()`은 `end()`로 이어진다. `closeBattle`은 `onEndHandlers`를 먼저 돌리므로 종료 패킷 → PvP 완료·텔레포트 순서다. PvP 완료는 텔레포트 뒤에 방 상태를 보내 리셋에 지워지지 않는다. 시작 때도 차원 이동 뒤 배틀·음악 키가 들어온다(운영 로그 20:53:04~05).
-- **미확인**: 빌드·테스트·배포·실게임 확인 안 함.
+- **빌드·테스트**: `main` `d57859fc`를 `git archive`로 `F:/AI/build/mcc-battle-end2-20261013/src`에 꺼내 `:more-cobblemon-contents:build :more-cobblemon-contents-pvp:build -x unitTest` 성공, `ManagedBattleTerminationRecoveryTest` 4개 통과. 두 JAR `jar --validate`·ZIP CRC 통과, 새 믹스인 등록·`closeWithClientEnd`·PvP 접속 이벤트 코드 포함 확인. SHA-256 MCC `e76edde9…`, PvP `7c55ba2a…`.
+- **배치**: `develop-product/server/mods`만 교체(두 해시 일치). **클라는 교체하지 못했다**: 개발 클라(`cobblemon-dev`)가 켜져 있어 파일이 잠겼고, 실행 확인 스크립트가 한글 경로 정규식 때문에 그 게임을 못 잡았다. 남은 `.deploying`은 지웠고 클라에는 이전 JAR(MCC `dcf885d0…`, PvP `16ca85fa…`)이 그대로 있다. 이전 JAR 백업은 `develop-product/deployment-backups/20261013-mcc-battle-end-paths/{server,client}`. 패킷 형식 변경이 없어 서버·클라 버전 차이로 접속이 끊기지는 않는다고 판단(실행 확인 안 함).
+- **재발 방지**: 게임 실행 확인은 명령줄 문자열 매칭 대신 `--gameDir` 값을 직접 뽑아 보고, 복사 실패(`Device or resource busy`)를 배치 실패로 다룬다.
+- **미확인**: 서버 기동·실게임 확인 안 함. 클라는 게임을 끈 뒤 같은 JAR로 교체해야 한다.
 
 ## [2026-10-13 00:10] PvP 종료 후 배틀·BGM이 안 끝나던 문제 (클라 종료 보류가 차원 이동에 버려짐)
 
