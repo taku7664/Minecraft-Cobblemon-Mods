@@ -74,9 +74,12 @@ internal object LocalQuickDecider {
         val theirKnockout = stay.opponentMove?.knockoutChanceWithin(1) ?: 0.0
 
         // 1. A knockout this turn, landed before their hit or survived. Of several, the one the ranking put first: it
-        // has weighed what each does if the opponent switches instead. When a switch is expected the knockout only holds
-        // if it stays, so it is points before the draw rather than the choice (2026-10-13, user decision).
-        val switchExpected = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0) >= FREE_TURN
+        // has weighed what each does if the opponent switches instead. The knockout only holds if the opponent stays, so
+        // it is the choice as often as a stay is expected and points before the draw otherwise: no threshold for a
+        // small change in the prediction to cross (2026-10-13, user decision). The roll is the decision's seed, so every
+        // call within one decision reads it the same.
+        val switchShare = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0).coerceIn(0.0, 1.0)
+        val switchExpected = switchShare > 0.0 && Random(seed xor 0x6B0C_2F5A_91D3_47E1L).nextDouble() < switchShare
         attacks.firstOrNull { (rank, score) ->
             val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
                 else stay.subjectMovesFirstProbability
@@ -369,8 +372,8 @@ internal object LocalQuickDecider {
      * left to touch). The rest are preferences the brain adds to the ranking as a bonus (2026-10-12).
      */
     /**
-     * The sure knockout while the opponent is expected to switch ([FREE_TURN] or more): points before the draw, asked for
-     * on its own so the other verdicts are still read.
+     * The sure knockout on the share of decisions the predicted switch takes (the decision's roll under the predicted
+     * switch chance): points before the draw, asked for on its own so the other verdicts are still read.
      */
     const val KNOCKOUT_IF_STAYS = "knockout_if_stays"
 

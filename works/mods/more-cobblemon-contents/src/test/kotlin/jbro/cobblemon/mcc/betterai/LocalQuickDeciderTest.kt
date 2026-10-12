@@ -63,11 +63,11 @@ class LocalQuickDeciderTest {
     @Test
     fun `a sure knockout is taken when a switch is not expected`() {
         // Lucario in front of Furfrou, Tapu Bulu behind it. Read at Boss's exact spread (no EVs), Close Combat knocks
-        // Furfrou out for sure, and the switch to Tapu Bulu is predicted at 12.5%, under LocalQuickDecider.FREE_TURN: the
-        // knockout is the choice, not points before the draw (2026-10-13, user decision).
+        // Furfrou out for sure, and the switch to Tapu Bulu is predicted at 12.5%: the knockout is the choice seven times
+        // in eight, and points before a draw it still wins otherwise (2026-10-13, user decision).
         val (context, decision) = decide("lucario-aims-at-expected-tapu-bulu")
         assertEquals("closecombat", label(context, decision), "${decision.tags}")
-        assertTrue("quick_knockout" in decision.tags, "${decision.tags}")
+        assertTrue(decision.tags.any { it == "quick_knockout" || it == "quick_plus_knockout_if_stays" }, "${decision.tags}")
     }
 
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {
