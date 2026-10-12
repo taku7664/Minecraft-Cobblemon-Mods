@@ -1,5 +1,21 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-13 00:05] 최대 개체값·노력치 강조, 크기 막대·기술 구분선 (0.1.3 빌드만, 미배포)
+
+- **사용자 요청·구현:** 공유 툴팁에서 IV 31(V)·EV 252의 숫자만 녹색 `0x55FF55`로 표시하고 성격에 따른 능력치 이름 색은 유지한다. 크기는 Cobblemon XS/S/M/L/XL enum으로 3×8px 막대 5개를 2px 간격으로 그려 왼쪽부터 1~5개를 채운다(빈 막대 `0xFF16263D`, 채움 `0xFF3B93ED`), 뒤에는 `(XS)`처럼 단계 문자를 표시한다. 한영 크기 label도 추가했다.
+- **구분선·문서:** 사용자 첨부 이미지로 기술 목록 위·아래 위치를 확인하여 기존 공백을 전체 툴팁 폭의 회색 1px 선(행 높이 5px)으로 대체했다. 기술이 없으면 중복 선을 제거한다. README 기능 설명과 기존 합성창 GUI 설명 오류도 정정했다.
+- **검증:** build 성공(1분), 기존 단위 테스트 17/17 통과. 색·배치 변경으로 새 UI 자동 테스트는 추가하지 않았다. ZIP 전체 읽기/CRC·JDK 21 `jar --validate`·메타데이터 0.1.3·`SizeRow`/`Divider` 클래스·한영 size 키를 확인했다. 로그는 `F:/AI/builds/cobblemon-to-item-28bf/tooltip-bars-build.log`이다.
+- **소스·산출물:** 소스 커밋 `70d4612d`, main 병합 `69991901425ad6638c452fdeaf77f70ba5c2ca0b`, origin/main 0/0 동기화를 확인했다. src·빌드/settings/wrapper는 병합 main과 diff 없이 같다. 빌드본은 `F:/AI/builds/cobblemon-to-item-28bf/out/cobblemon-to-item/libs/cobblemon-to-item-0.1.3.jar`, SHA-256 `bac1fd0435965b5ef90dcf2ea02917c19a2aa207984eadc07c15211d6fc7b2f6`이다.
+- **사용자 결정·미실행:** 빡대리가 "이번에는 빌드만 해두세요"를 선택하여 개발·운영 JAR을 교체하지 않았다. 게임·서버도 기동하지 않았고 실제 색상·배치는 미확인이다.
+
+## [2026-10-12 23:45] 인벤토리 아이템 툴팁 경로·합성 사이드바 지원 개발 배포 (0.1.2)
+
+- **구현:** `AbstractContainerScreen.renderTooltip`가 `GuiGraphics`의 List overload를 호출해 기존 ItemStack hook을 우회하는 경로를 확인하여, hoveredSlot에서 공유 `PokemonTooltip`을 호출하는 믹스인을 추가했다. `supportsSidebarMenu`는 생존 `InventoryMenu`와 등록 메뉴 `pokefusion:fusion`만 허용한다. 서버 GUI 이동·복원은 실제 `player.containerMenu`의 커서를 사용하며, 인벤 아이템 Shift 복원은 기존 inventoryMenu 검사로 제한해 합성 재료 입고를 유지한다.
+- **소스·검증:** 구현 `15a67d2b`·`e16b32fb`를 main `d57859fc8059480cc155f4086707041574c72fb3`에 병합·푸시하고 origin/main 0/0을 확인했다. 관련 src·빌드/루트 설정이 main과 같아 빌드본을 재사용했다. 두 모드 build 성공, 신규 모드 단위 테스트 17/17 통과(사이드바 자체 테스트 없음). ZIP 전체 읽기/CRC·JDK `jar --validate`·메타데이터·access widener·검증용 코드 제품 미포함을 확인했다.
+- **배치·보존:** 실제 기본 저장소 `develop-product/{server,client}/mods`에 설치(client는 `cobblemon-dev` 정션), 두 설치본 SHA-256은 빌드본 `9946505d6f4ca69397af0188ac72de50c0e49f69a2d6c1fd6915ce9195d58b35`과 같다. 이전 0.1.1/사이드바 0.2.1은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-234526`에 백업 후 설치 폴더에서 제거했다. 다른 mods 전체 파일 해시는 같고 config/world에는 쓰지 않았다. 대상 게임·서버 종료와 25566 미수신을 확인했다. 최초 검사에서 다른 프로필 PPakemon을 감지하여 복사 전에 중단했고, 실제 대상 개발 프로필 검사로 좁혀 통과했다(PPakemon 종료 안 함). mod ID 중복 없음도 확인했다(서버 48·클라이언트 84개).
+- **게임 검증 한계:** 이전 격리 `smoke-runtime-6.log`에서 기본 클릭→커서→빈 엔트리 복원과 네트워크 데이터·네이티브 툴팁 캡처 PASS를 확인했다. 실제 사용자 모드 구성의 검증은 아니다. 추가 inputmods 격리 부트는 `team_reborn_energy` 누락으로 실패했으며 사용자 월드/설치 오류로 판단하지 않는다. 검증 하네스는 `F:/AI/builds/cobblemon-to-item-28bf/paused-smoke-20261012`에 보존하고 제품에서 제외했다. 사용자가 직접 확인하기로 하여 추가 서버·게임 기동과 합성창 실게임 검증은 하지 않았다. 실제 일반 인벤 빈 엔트리 복원 실패의 원인은 미확정이며 해결을 보장하지 않는다.
+- **추가 미확인:** 이전 격리 화면에서 같은 Koko가 사이드바 HP 282/282, 아이템 HP 282/302로 다르게 표시됐으나 원인은 미확정이다. 이번 배포에는 HP 계산 수정이 없으며, 전체 툴팁 정확성을 확인한 것으로 확대하지 않는다.
+
 ## [2026-10-12 21:57] 툴팁 수정 빌드·main 반영·개발 설치 (0.1.1, 실게임 미확인)
 
 - **검증·소스:** `:build` 성공, 단위 테스트 17개 모두 통과(복원 원본 보존 회귀 3개 포함). ZIP 전체 항목 읽기/CRC·JDK 21 `jar --validate`·메타데이터·access widener 검증을 통과했다. 구현 `7265623f`를 main `88ee52bac9e52825d89d7e8c26f07776b5b304f9`에 병합했고 origin/main과 0/0 동기화를 확인했다. 최초 push의 GitHub `commit_refs` 오류 후 원격 상태를 확인하고 같은 커밋을 재시도하여 성공했다. 두 모드 src·빌드 설정과 루트 Gradle/settings/wrapper가 병합 main과 같아 검증 빌드본을 재사용했다.
