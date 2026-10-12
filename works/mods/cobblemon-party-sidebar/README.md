@@ -6,13 +6,16 @@ inventory texture, so it matches the inventory under any resource pack.
 
 - **Held items:** the held-item slot works like an inventory slot. Click to swap it with the item on your cursor,
   shift-click to send it to the inventory, or drag an item between the slot and the inventory.
-- **Party order:** drag a Pokemon onto another row to swap the two, or onto an empty row to move it there.
+- **Pokemon slots:** clicking a model immediately converts that Pokemon into an item on the cursor.
+  Click an empty Pokemon slot to restore it. Click an occupied Pokemon slot to place the cursor Pokemon there
+  and pick up the previous Pokemon as an item. Inventory slots work like normal Minecraft item slots.
 - **Tooltip:** hover a Pokemon to see its level, name and gender, HP, nature and ability, moves with their PP, and the
-  IVs and EVs of each stat. Stats its nature raises are red, lowered ones blue.
-- **Itemize:** with PokemonToItem on the server, drag a Pokemon onto the inventory (or onto an empty slot there), or
-  press **I** (rebindable) over it, to turn it into a PokemonToItem item, as `/poketoitem` would. Drop or click such an
-  item on an empty Pokemon frame to put the Pokemon back in that party slot, as `/itemtopoke` would. Each needs
-  permission for the matching command; the Pokemon tooltip names the key.
+  IVs and EVs of each stat, its capture-ball icon and native XS/S/M/L/XL size category. The shared tooltip belongs to Cobblemon To Item. Stats its nature raises are red, lowered ones blue.
+- **Quick move:** shift-click a Pokemon to itemize it directly into the inventory or hotbar.
+  If both are full, the Pokemon stays in the party. Ordinary pickup only requires an empty cursor.
+  Shift-click a Pokemon item in the survival inventory or hotbar to restore it to the lowest empty party slot.
+  A full party refuses quick restoration; right-clicking a held item can overflow to the PC instead.
+  Chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.
 - **Fusion:** the slot at the foot of the column, holding Mega Showdown's DNA Splicers, opens PokeFusion's window, as
   `/pokefusion` does; hover it for its name. Without Mega Showdown it is a labelled button. It is greyed out when the
   server has no such command for you.
@@ -24,9 +27,9 @@ installed, EMI keeps its side panels clear of the column.
 ## Installation
 
 Install the same version on **both client and server**. Requires Minecraft 1.21.1, Java 21, Fabric Loader 0.19.5+,
-Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+ and Cobblemon 1.8.1 (below 1.9.0). Mod Menu, EMI and
-PokemonToItem are optional. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
-server without this mod the column only shows the party and reordering still works.
+Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+ and Cobblemon 1.8.1 (below 1.9.0). Mod Menu and EMI
+are optional; Cobblemon To Item 0.1.0+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
+server without this mod the column only shows the party; slot interactions need the server half.
 
 ## Settings
 

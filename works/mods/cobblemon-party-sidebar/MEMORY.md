@@ -1,5 +1,16 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-12 20:38] 신규 아이템 모드 연결·클릭 시점 아이템화·슬롯 교환 (0.2.0, 배포·실게임 미확인)
+
+- **최종 사용자 결정:** 엔트리를 일반 클릭하는 순간 아이템화하고 커서에 든다. 커서 A로 B가 있는 엔트리를 클릭하면 A를 엔트리에 넣고 B를 아이템화하여 커서에 든다. 원래 엔트리로 자동 반환하지 않는 마크 슬롯 방식이다. 처음에는 드래그 유지였으나 사용자 후속 요청으로 클릭 시점 아이템화로 변경했으며, 모델 ghost 드래그와 별도의 NativeParty 파티 재정렬 경로를 제거했다. I키 아이템화도 제거한다.
+- **공간 부족:** 일반 클릭은 빈 커서만 필요하므로 인벤토리가 가득 차도 집을 수 있다. Shift 클릭으로 직접 인벤토리·퀵슬롯에 넣을 때만 빈칸이 필요하며, 없으면 거부하고 포켓몬을 유지한다. 명령의 공간 부족 시 바닥 드롭은 그대로다.
+- **소유권:** 외부 PokemonToItem 연결과 자체 상세 툴팁/아이템 데이터 생성은 제거했다. `cobblemon-to-item` 0.1.0+를 필수로 연결하고 공개 `PokemonTransfers`·`PokemonItemData`·`PokemonTooltip` API를 사용한다. 잡은 볼 아이콘을 레벨 앞에 표시하고, 크기는 Cobblemon의 XS/S/M/L/XL 단계로 표시한다.
+- **복원:** 일반 인벤토리 화면에서 포켓몬 아이템을 인벤토리·퀵슬롯에서 Shift 클릭하면 가장 낮은 번호의 빈 엔트리로 들어간다(처리는 신규 모드 소유). 커서 아이템으로 엔트리를 클릭하거나 들고 있는 아이템을 놓는 기존 release 경로는 공통 `restoreCursor`로 지정 칸 복원/교환을 처리한다. Shift 복원은 파티가 가득 차면 거부하지만 일반 클릭은 점유 칸과 교환할 수 있다. 우클릭의 PC 넘김은 신규 모드가 담당한다. 상자·합성 화면은 기존 Shift 동작을 유지한다.
+- **예외 처리:** 신규 모드 서버 API의 배틀·권한·생존·관전자 검사, 화면/슬롯·UUID 재확인, 원본 보존과 실패 롤백을 공유한다. `RestorePayload`에 대상 엔트리 UUID(빈칸은 `null`)를 포함하여 서버에서 대상 변경을 거부한다. 교환 실패 시 양쪽 원본을 복구한다. 마지막 한 마리 아이템화도 허용한다.
+- **검증:** 클릭 시점 아이템화·커서 교환 최종 변경 이후 `build`와 최종 `assemble`·`validateAccessWidener`를 통과했다. 불필요해진 `renderTooltipInternal` access-widener 항목을 제거했다. JAR CRC·진입점·번역키·`jar --validate` 검증도 통과했으며 SHA-256은 `2b48f9a057ec86c76858c9df6a02b46504d4e0afdfd11b6adeb884428c9000cd`. Gradle 쓰기 경로는 F 드라이브로 분리했다.
+- **미실행·미확인:** JAR 설치·교체, 서버 기동, 실게임 클릭/Shift 입출고·툴팁 렌더링은 실행하지 않았다. 기존 `PTI_NBT` 마이그레이션은 이번 범위에서 제외했다.
+- **API 의존성:** 신규 모드는 `implementation(project(path = ":cobblemon-to-item", configuration = "namedElements"))`로 연결한다. 기본 프로젝트 의존성의 remapJar가 개발/테스트 실행에 들어가면 매핑이 달라 API 호출이 실패할 수 있다(pokefusion에서 실제 확인).
+
 ## [2026-10-12 05:24] 아이템화 수정·툴팁 안내·끌어다 놓기 개발 배포 (실게임 미확인)
 
 - **빌드:** main `24e6fe5d`(툴팁 안내 `4a7b316c` 포함)과 같은 소스로 05:22 빌드. `unzip -t` 통과, 진입점·mixin·EMI·`PokemonToItemFormat`·`RestorePayload`·`PokemonItemize` 클래스 확인. `PokemonItemize` 바이트코드에 `saveToNBT` → `PokemonToItemFormat.customData` 첨부와 `pokemonTag` 검사가 들어 있음을 javap로 확인했다.

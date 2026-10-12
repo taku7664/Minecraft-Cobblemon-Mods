@@ -1,9 +1,17 @@
-package jbro.cobblemon.partysidebar.client
+package jbro.cobblemon.toitem.api.client
 
 import com.cobblemon.mod.common.api.pokemon.stats.Stat
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.cobblemon.mod.common.pokemon.PokemonSizeCategory
+import jbro.cobblemon.toitem.api.PokemonItemData
+import jbro.cobblemon.toitem.config.ToItemConfig
+import net.minecraft.world.item.ItemStack
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.item.component.CustomData
+import net.minecraft.client.multiplayer.ClientLevel
+import java.util.IdentityHashMap
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -18,36 +26,74 @@ import org.joml.Matrix4f
 /**
  * The summary shown over a party Pokemon:
  * level, name and gender; HP; nature and ability; the moves with their PP; IVs and EVs per stat in aligned columns;
- * and, where the server allows it, the key that itemizes the Pokemon.
+ * capture ball, native size category, and a caller-provided action hint.
  */
-internal object PokemonTooltip {
+object PokemonTooltip {
+    private var cachedLevel: ClientLevel? = null
+    private val cachedPokemon = IdentityHashMap<CustomData, Pokemon?>()
+
     private const val MALE_COLOR = 0x5DA9FF
     private const val FEMALE_COLOR = 0xFF7DAE
     private const val LABEL_COLOR = 0xAAAAAA
     private const val RAISED_COLOR = 0xFF8A80
     private const val LOWERED_COLOR = 0x80B0FF
 
-    fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int) {
+    /** Shared detailed tooltip; callers may append a context-specific action hint. */
+    @JvmStatic @JvmOverloads
+    fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int, hint: Component? = null, extraLines: List<Component> = emptyList()) {
+        if (!ToItemConfig.showTooltip) return
         val font = Minecraft.getInstance().font
-        val lines = textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } + MoveTable(pokemon) + StatTable(pokemon) +
-            listOfNotNull(itemizeHint()).map { ClientTooltipComponent.create(it.visualOrderText) }
+        val lines = listOf(TitleRow(pokemon)) + textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } +
+            MoveTable(pokemon) + StatTable(pokemon) + (extraLines + listOfNotNull(hint)).map { ClientTooltipComponent.create(it.visualOrderText) }
         graphics.renderTooltipInternal(font, lines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE)
     }
 
-    private fun textLines(pokemon: Pokemon): List<Component> = buildList {
+    @JvmStatic fun renderItemTooltip(graphics: GuiGraphics, stack: ItemStack, mouseX: Int, mouseY: Int): Boolean {
+        if (!ToItemConfig.showTooltip) return false
+        if (stack.isEmpty || stack.count != 1 || stack.item !is com.cobblemon.mod.common.item.PokemonItem) return false
+        val data = stack.get(DataComponents.CUSTOM_DATA) ?: return false
+        val level = Minecraft.getInstance().level ?: return false
+        if (cachedLevel !== level) { cachedPokemon.clear(); cachedLevel = level }
+        if (!cachedPokemon.containsKey(data)) {
+            if (cachedPokemon.size >= 64) cachedPokemon.clear()
+            val tag = PokemonItemData.pokemonTag(stack) ?: return false
+            cachedPokemon[data] = try { Pokemon.loadFromNBT(level.registryAccess(), tag) } catch (_: Exception) { null }
+        }
+        val pokemon = cachedPokemon[data] ?: return false
+        render(graphics, pokemon, mouseX, mouseY, key("restore_hint").withStyle(ChatFormatting.GRAY),
+            stack.get(DataComponents.LORE)?.lines().orEmpty())
+        return true
+    }
+
+    private fun title(pokemon: Pokemon): Component {
         val title = key("level", pokemon.level).copy().append(" ").append(pokemon.getDisplayName())
         genderSymbol(pokemon.gender)?.let { title.append(" ").append(it) }
-        add(title)
+        return title
+    }
+
+    private fun textLines(pokemon: Pokemon): List<Component> = buildList {
         add(key("hp", pokemon.currentHealth, pokemon.maxHealth).copy().withStyle { it.withColor(hpColor(pokemon)) })
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
+        add(Component.translatable("cobblemon.size_category.prefix", Component.translatable(PokemonSizeCategory.translationKey(pokemon.getSizeCategory()))))
+        if (pokemon.isAlpha) add(Component.translatable("cobblemon.ui.pokemon.alpha").withStyle(ChatFormatting.GOLD))
     }
 
-    /** The itemize key, in grey under the stats, when the server lets this player itemize. */
-    private fun itemizeHint(): Component? {
-        if (!PartySidebar.canItemize()) return null
-        return Component.translatable("cobblemon_party_sidebar.hint.itemize", CobblemonPartySidebarClient.ITEMIZE.translatedKeyMessage)
-            .withStyle(ChatFormatting.GRAY)
+    private class TitleRow(pokemon: Pokemon) : ClientTooltipComponent {
+        private val label = title(pokemon)
+        private val ball = pokemon.caughtBall.stack()
+        override fun getHeight() = 14
+        override fun getWidth(font: Font) = 16 + font.width(label)
+        override fun renderText(font: Font, x: Int, y: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
+            draw(font, label, x + 16, y + 2, 0xFFFFFF, matrix, buffer)
+        }
+        override fun renderImage(font: Font, x: Int, y: Int, graphics: GuiGraphics) {
+            graphics.pose().pushPose()
+            graphics.pose().translate(x.toFloat(), y.toFloat(), 0f)
+            graphics.pose().scale(0.75f, 0.75f, 1f)
+            graphics.renderItem(ball, 0, 0)
+            graphics.pose().popPose()
+        }
     }
 
     private fun genderSymbol(gender: Gender): Component? = when (gender) {
@@ -69,7 +115,7 @@ internal object PokemonTooltip {
         key(name).copy().withStyle(ChatFormatting.GRAY).append(" ").append(value.copy().withStyle(ChatFormatting.WHITE))
 
     private fun key(name: String, vararg args: Any): MutableComponent =
-        Component.translatable("cobblemon_party_sidebar.tooltip.$name", *args)
+        Component.translatable("cobblemon_to_item.tooltip.$name", *args)
 
     private fun draw(font: Font, text: Component, x: Int, y: Int, color: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
         font.drawInBatch(text, x.toFloat(), y.toFloat(), color or OPAQUE, true, matrix, buffer, Font.DisplayMode.NORMAL, 0, FULL_BRIGHT)

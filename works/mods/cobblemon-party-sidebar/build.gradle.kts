@@ -11,6 +11,7 @@ base { archivesName.set("cobblemon-party-sidebar") }
 repositories { maven("https://maven.terraformersmc.com/releases/") }
 
 dependencies {
+    implementation(project(path = ":cobblemon-to-item", configuration = "namedElements"))
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")

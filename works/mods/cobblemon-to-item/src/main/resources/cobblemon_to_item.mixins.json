@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "jbro.cobblemon.toitem.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["InventoryScreenMixin", "GuiGraphicsMixin"],
+  "injectors": {"defaultRequire": 1}
+}

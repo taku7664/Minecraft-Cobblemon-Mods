@@ -2,11 +2,11 @@
 
 ## Short description
 
-Improve a base Pokémon's IVs using up to nine PokémonToItem materials from its evolution family, with a preview before fusion.
+Improve a base Pokémon's IVs using up to nine Cobblemon To Item materials from its evolution family, with a preview before fusion.
 
 ## Full description
 
-**Keep your favorite Pokémon and improve its IVs.** PokemonFusion is a Fabric addon for Cobblemon that uses Pokémon items created by PokémonToItem. Pick one base Pokémon, add up to nine compatible materials, and preview the result before confirming.
+**Keep your favorite Pokémon and improve its IVs.** PokemonFusion is a Fabric addon for Cobblemon that uses Pokémon items created by Cobblemon To Item. Pick one base Pokémon, add up to nine compatible materials, and preview the result before confirming.
 
 Each of the six IVs takes the highest value among the base and the materials. The base keeps its species, form, nature, ability and other Pokémon data. **Confirming fusion consumes every material Pokémon**, including materials that do not improve the result. Held items from the materials are returned.
 
@@ -24,9 +24,9 @@ Each of the six IVs takes the highest value among the base and the materials. Th
 
 ### Requirements
 
-Minecraft Java **1.21.1**, Java **21+**, Fabric Loader **0.19.5+**, Fabric API, Fabric Language Kotlin, Cobblemon **1.8.1–1.8.x**, and PokémonToItem **0.2.0+**. Mod Menu is optional.
+Minecraft Java **1.21.1**, Java **21+**, Fabric Loader **0.19.5+**, Fabric API, Fabric Language Kotlin, Cobblemon **1.8.1–1.8.x**, and Cobblemon To Item **0.1.0+**. Mod Menu is optional.
 
-PokémonToItem 0.2.0 is the directly verified version. Later versions must retain the compatible `PTI_NBT` format. Install the addon on the server for multiplayer; installing it on clients is recommended for translations and the Mod Menu screen. For singleplayer, install it on the client.
+This version uses the public Cobblemon To Item format. Install the addon and its required mods on both server and client for multiplayer, or on the client for singleplayer.
 
 ### Configuration and item delivery
 
@@ -48,11 +48,11 @@ This description and the current icon concept were prepared with AI assistance. 
 
 ## 짧은 설명
 
-같은 진화 계보의 PokemonToItem 재료를 최대 9마리 사용해 베이스 포켓몬의 IV를 높이고, 합성 전에 결과를 확인하세요.
+같은 진화 계보의 Cobblemon To Item 재료를 최대 9마리 사용해 베이스 포켓몬의 IV를 높이고, 합성 전에 결과를 확인하세요.
 
 ## 본문
 
-**마음에 드는 포켓몬은 그대로, 개체값은 더 높게.** PokemonFusion은 PokemonToItem으로 아이템화한 포켓몬을 사용하는 Cobblemon용 Fabric 애드온입니다. 베이스 1마리와 호환되는 재료 최대 9마리를 넣고, 미리보기를 확인한 뒤 합성을 확정하세요.
+**마음에 드는 포켓몬은 그대로, 개체값은 더 높게.** PokemonFusion은 Cobblemon To Item으로 아이템화한 포켓몬을 사용하는 Cobblemon용 Fabric 애드온입니다. 베이스 1마리와 호환되는 재료 최대 9마리를 넣고, 미리보기를 확인한 뒤 합성을 확정하세요.
 
 6개 능력치의 IV는 베이스와 재료 중 각각 가장 높은 값을 가져옵니다. 베이스의 종·폼·성격·특성 등은 유지됩니다. **합성을 확정하면 결과에 기여하지 않는 재료까지 모두 소모됩니다.** 재료의 지닌 아이템은 반환됩니다.
 
@@ -70,9 +70,9 @@ This description and the current icon concept were prepared with AI assistance. 
 
 ### 설치와 설정
 
-Minecraft Java **1.21.1**, Java **21 이상**, Fabric Loader **0.19.5 이상**, Fabric API, Fabric Language Kotlin, Cobblemon **1.8.1~1.8.x**, PokemonToItem **0.2.0 이상**이 필요합니다. Mod Menu는 선택 사항입니다.
+Minecraft Java **1.21.1**, Java **21 이상**, Fabric Loader **0.19.5 이상**, Fabric API, Fabric Language Kotlin, Cobblemon **1.8.1~1.8.x**, Cobblemon To Item **0.1.0 이상**이 필요합니다. Mod Menu는 선택 사항입니다.
 
-직접 검증한 PokemonToItem 버전은 0.2.0이며, 이후 버전은 호환되는 `PTI_NBT` 형식을 유지해야 합니다. 멀티플레이에서는 서버에 설치하고 번역과 Mod Menu 화면을 위해 클라이언트에도 설치하는 것을 권장합니다. 싱글플레이에서는 클라이언트에 설치합니다.
+Cobblemon To Item의 공개 데이터 형식을 사용합니다. 멀티플레이에서는 서버와 클라이언트 모두에 설치하며, 싱글플레이에서는 클라이언트에 설치합니다.
 
 `config/pokefusion.json`의 `commandPermissionLevel`은 정수 `0~4`이며 기본값 `0`은 모든 플레이어를 허용합니다. 잘못되거나 읽을 수 없는 설정은 원본을 보존하고 권한 `4`로 실행합니다. Mod Menu는 로컬/통합 서버에 적용되며, 전용 서버는 서버 파일을 변경한 뒤 재시작해야 합니다.
 

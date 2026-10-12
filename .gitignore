@@ -31,6 +31,8 @@ mods/
 # `mods/` is meant for game folders; it must not swallow new sources under works/mods.
 !works/mods/
 config/
+!works/mods/cobblemon-to-item/src/main/kotlin/jbro/cobblemon/toitem/config/
+!works/mods/cobblemon-to-item/src/main/kotlin/jbro/cobblemon/toitem/config/**
 !works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/
 !works/mods/cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
 !works/mods/cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/

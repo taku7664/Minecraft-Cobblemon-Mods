@@ -2,12 +2,7 @@ accessWidener v2 named
 # The party column sits beside the inventory and follows where the screen puts it.
 accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen leftPos I
 accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen topPos I
-# A Pokemon dropped on the inventory itself, not only on a slot, becomes an item.
-accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageWidth I
-accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageHeight I
 accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen hoveredSlot Lnet/minecraft/world/inventory/Slot;
 # A drag that leaves an inventory slot and lands on a held-item slot ends vanilla's drag-split there.
 accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen isQuickCrafting Z
 mutable field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen isQuickCrafting Z
-# The Pokemon tooltip mixes text lines with an aligned stat table.
-accessible method net/minecraft/client/gui/GuiGraphics renderTooltipInternal (Lnet/minecraft/client/gui/Font;Ljava/util/List;IILnet/minecraft/client/gui/screens/inventory/tooltip/ClientTooltipPositioner;)V
