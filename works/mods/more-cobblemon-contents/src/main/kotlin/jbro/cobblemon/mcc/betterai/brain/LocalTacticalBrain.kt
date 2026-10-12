@@ -680,7 +680,14 @@ internal class LocalTacticalBrain(
         // statusMoveWeight, so it has to beat an attack by more before it is chosen.
         val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) ruleAdjusted
             else LocalActionKindWeights.apply(ruleAdjusted, tuning)
-        val rootDecision = LocalRootDecisionPolicy.refine(switchAdjusted, difficultyContext)
+        // A certain flinch that goes first frees the turn: it is worth its hit plus the best other action, still there
+        // next turn (LocalFreeTurnCredit). Read after every other value, since it is priced against them.
+        val freeTurnAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalFreeTurnCredit.adjustments(
+            switchAdjusted, difficultyContext, expectedSwitches, ruleExclusions(switchAdjusted.map { it.outcome.candidate }).keys, tuning)
+        val freeTurnAdjusted = if (freeTurnAdjustments.isEmpty()) switchAdjusted else LocalBattleActionPolicy.sort(switchAdjusted.map { rank ->
+            freeTurnAdjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
+        })
+        val rootDecision = LocalRootDecisionPolicy.refine(freeTurnAdjusted, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(
             battleId = battleId,
@@ -757,7 +764,8 @@ internal class LocalTacticalBrain(
                 rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
-                    "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments).filterValues { it.isNotEmpty() },
+                    "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
+                    "freeTurn" to freeTurnAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),

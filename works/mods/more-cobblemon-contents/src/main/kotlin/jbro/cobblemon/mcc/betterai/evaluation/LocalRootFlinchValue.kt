@@ -61,8 +61,17 @@ internal object LocalRootFlinchValue {
         if (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES) return 0.0
         if (LocalPublicItemState.activeItemId(state, target) == "covertcloak") return 0.0
         if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" }) return 0.0
+        // An unrevealed ability counts at the share of the possible ones that let the flinch through, all alike (as the
+        // drops of G-915): a Mudsdale may be the Inner Focus one. Read as none, Fake Out was a certain flinch into it.
+        if (!ignoresAbility && target.knownAbilityId == null) {
+            val possible = jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(state, target)
+            if (possible.isNotEmpty()) return chance * possible.count { it !in FLINCH_IMMUNE_ABILITIES } / possible.size
+        }
         return chance
     }
+
+    /** Whether [candidate]'s data declares a flinch on every hit (Fake Out), before the target's ability or item. */
+    fun certain(candidate: BattleActionCandidate): Boolean = (declared(candidate) ?: 0.0) >= 1.0
 
     private fun declared(candidate: BattleActionCandidate): Double? {
         val details = candidate.moveDetails ?: return null

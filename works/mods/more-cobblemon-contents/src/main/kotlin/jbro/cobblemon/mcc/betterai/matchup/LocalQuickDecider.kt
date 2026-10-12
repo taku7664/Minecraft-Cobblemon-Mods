@@ -187,7 +187,12 @@ internal object LocalQuickDecider {
             val top = damage(strongest)!!.score
             // An attack the ranking chose for the Pokemon it expects to come in is not weak: it was aimed past this one.
             val aimedAtSwitch = (predicted[chosen.outcome.candidate.actionId] ?: 0.0) > (predicted[strongest.outcome.candidate.actionId] ?: 0.0)
-            return if (!aimedAtSwitch && chosenDamage.score < WEAK_ATTACK * top) pick(strongest, "weak_attack") else null
+            // Nor one that frees the turn with a certain flinch (Fake Out): it is chosen for the turn, not the damage
+            // (LocalFreeTurnCredit).
+            val freesTurn = jbro.cobblemon.mcc.betterai.evaluation.LocalRootFlinchValue.certain(chosenMove) &&
+                jbro.cobblemon.mcc.betterai.evaluation.LocalRootFlinchValue.chance(chosenMove, self, foe, state) > 0.0 &&
+                jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(chosenMove, context) <= 0.0
+            return if (!aimedAtSwitch && !freesTurn && chosenDamage.score < WEAK_ATTACK * top) pick(strongest, "weak_attack") else null
         }
         if (wasted(chosenMove, context)) pick(strongest, "wasted_status")?.let { return it }
         // A stat raise is judged as LocalSetupGate.score judges it: whether its user still wins the one-on-one after it,
