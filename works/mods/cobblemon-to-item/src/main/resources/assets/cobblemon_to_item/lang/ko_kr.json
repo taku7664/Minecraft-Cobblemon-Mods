@@ -21,5 +21,6 @@
   "config.cobblemon_to_item.tooltip": "상세 포켓몬 툴팁",
   "config.cobblemon_to_item.permission": "명령·입출고 권한: %s",
   "config.cobblemon_to_item.scope": "멀티플레이 권한은 서버 설정을 따릅니다.",
-  "config.cobblemon_to_item.save_failed": "설정을 저장하지 못했습니다."
+  "config.cobblemon_to_item.save_failed": "설정을 저장하지 못했습니다.",
+  "cobblemon_to_item.tooltip.size": "크기"
 }

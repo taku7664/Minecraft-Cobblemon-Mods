@@ -21,5 +21,6 @@
   "config.cobblemon_to_item.tooltip": "Detailed Pokemon tooltip",
   "config.cobblemon_to_item.permission": "Command and transfer permission: %s",
   "config.cobblemon_to_item.scope": "Multiplayer permissions follow the server settings.",
-  "config.cobblemon_to_item.save_failed": "Could not save settings."
+  "config.cobblemon_to_item.save_failed": "Could not save settings.",
+  "cobblemon_to_item.tooltip.size": "Size"
 }

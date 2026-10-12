@@ -38,14 +38,27 @@ object PokemonTooltip {
     private const val LABEL_COLOR = 0xAAAAAA
     private const val RAISED_COLOR = 0xFF8A80
     private const val LOWERED_COLOR = 0x80B0FF
+    private const val MAX_STAT_COLOR = 0x55FF55
 
     /** Shared detailed tooltip for party entries and Pokemon items. */
     @JvmStatic @JvmOverloads
     fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int, extraLines: List<Component> = emptyList()) {
         if (!ToItemConfig.showTooltip) return
         val font = Minecraft.getInstance().font
-        val lines = listOf(TitleRow(pokemon)) + textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } +
-            MoveTable(pokemon) + StatTable(pokemon) + extraLines.map { ClientTooltipComponent.create(it.visualOrderText) }
+        val summary = listOf(TitleRow(pokemon)) + textLines(pokemon).map { ClientTooltipComponent.create(it.visualOrderText) } +
+            SizeRow(pokemon) + if (pokemon.isAlpha) listOf(ClientTooltipComponent.create(
+                Component.translatable("cobblemon.ui.pokemon.alpha").withStyle(ChatFormatting.GOLD).visualOrderText)) else emptyList()
+        val moves = MoveTable(pokemon)
+        val stats = StatTable(pokemon)
+        val extra = extraLines.map { ClientTooltipComponent.create(it.visualOrderText) }
+        val width = (summary + moves + stats + extra).maxOf { it.getWidth(font) }
+        val lines = buildList {
+            addAll(summary)
+            if (moves.getHeight() > 0) { add(Divider(width)); add(moves) }
+            add(Divider(width))
+            add(stats)
+            addAll(extra)
+        }
         graphics.renderTooltipInternal(font, lines, mouseX, mouseY, DefaultTooltipPositioner.INSTANCE)
     }
 
@@ -83,8 +96,43 @@ object PokemonTooltip {
         add(key("hp", pokemon.currentHealth, pokemon.maxHealth).copy().withStyle { it.withColor(hpColor(pokemon)) })
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
-        add(Component.translatable("cobblemon.size_category.prefix", Component.translatable(PokemonSizeCategory.translationKey(pokemon.getSizeCategory()))))
-        if (pokemon.isAlpha) add(Component.translatable("cobblemon.ui.pokemon.alpha").withStyle(ChatFormatting.GOLD))
+    }
+
+    /** Five upright bars, filled from XS (one) through XL (five), followed by the native category. */
+    private class SizeRow(pokemon: Pokemon) : ClientTooltipComponent {
+        private val category = pokemon.getSizeCategory()
+        private val label = key("size").append(": ").withStyle(ChatFormatting.GRAY)
+        private val suffix = Component.literal("(${category.name})")
+        private val filled = category.ordinal + 1
+        private val barsWidth = PokemonSizeCategory.entries.size * BAR_WIDTH + (PokemonSizeCategory.entries.size - 1) * BAR_GAP
+        override fun getHeight() = LINE
+        override fun getWidth(font: Font) = font.width(label) + barsWidth + 2 + font.width(suffix)
+        override fun renderText(font: Font, x: Int, y: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
+            draw(font, label, x, y, 0xFFFFFF, matrix, buffer)
+            draw(font, suffix, x + font.width(label) + barsWidth + 2, y, 0xFFFFFF, matrix, buffer)
+        }
+        override fun renderImage(font: Font, x: Int, y: Int, graphics: GuiGraphics) {
+            val start = x + font.width(label)
+            repeat(PokemonSizeCategory.entries.size) { index ->
+                val left = start + index * (BAR_WIDTH + BAR_GAP)
+                graphics.fill(left, y + 1, left + BAR_WIDTH, y + 9, if (index < filled) BAR_FILLED else BAR_EMPTY)
+            }
+        }
+        companion object {
+            private const val BAR_WIDTH = 3
+            private const val BAR_GAP = 2
+            private val BAR_FILLED = 0xFF3B93ED.toInt()
+            private val BAR_EMPTY = 0xFF16263D.toInt()
+        }
+    }
+
+    /** The same full-width grey rule above and below the move list. */
+    private class Divider(private val width: Int) : ClientTooltipComponent {
+        override fun getHeight() = 5
+        override fun getWidth(font: Font) = width
+        override fun renderImage(font: Font, x: Int, y: Int, graphics: GuiGraphics) {
+            graphics.fill(x, y + 2, x + width, y + 3, 0xFF808080.toInt())
+        }
     }
 
     private class TitleRow(pokemon: Pokemon) : ClientTooltipComponent {
@@ -146,13 +194,13 @@ object PokemonTooltip {
 
         private fun ppWidth(font: Font) = rows.maxOfOrNull { font.width(it.pp) } ?: 0
 
-        override fun getHeight() = if (rows.isEmpty()) 0 else TOP_GAP + rows.size * LINE
+        override fun getHeight() = rows.size * LINE
 
         override fun getWidth(font: Font) = if (rows.isEmpty()) 0 else nameWidth(font) + COLUMN_GAP + ppWidth(font)
 
         override fun renderText(font: Font, x: Int, y: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
             val ppRight = x + nameWidth(font) + COLUMN_GAP + ppWidth(font)
-            var lineY = y + TOP_GAP
+            var lineY = y
             for (row in rows) {
                 draw(font, row.name, x, lineY, 0xFFFFFF, matrix, buffer)
                 draw(font, Component.literal(row.pp), ppRight - font.width(row.pp), lineY, row.color, matrix, buffer)
@@ -163,7 +211,7 @@ object PokemonTooltip {
 
     /** Stat names on the left, IVs and EVs right-aligned under their headings; nature-raised and lowered stats tinted. */
     private class StatTable(pokemon: Pokemon) : ClientTooltipComponent {
-        private data class Row(val label: Component, val iv: String, val ev: String, val color: Int)
+        private data class Row(val label: Component, val iv: String, val ev: String, val color: Int, val ivColor: Int, val evColor: Int)
 
         private val ivHeading = key("iv")
         private val evHeading = key("ev")
@@ -174,7 +222,10 @@ object PokemonTooltip {
                 nature.decreasedStat -> LOWERED_COLOR
                 else -> 0xFFFFFF
             }
-            Row(stat.displayName, (pokemon.ivs[stat] ?: 0).toString(), pokemon.evs.getOrDefault(stat).toString(), color)
+            val iv = pokemon.ivs[stat] ?: 0
+            val ev = pokemon.evs.getOrDefault(stat)
+            Row(stat.displayName, iv.toString(), ev.toString(), color,
+                if (iv == 31) MAX_STAT_COLOR else 0xFFFFFF, if (ev == 252) MAX_STAT_COLOR else 0xFFFFFF)
         }
 
         private fun labelWidth(font: Font) = rows.maxOf { font.width(it.label) }
@@ -183,21 +234,21 @@ object PokemonTooltip {
 
         private fun evWidth(font: Font) = maxOf(font.width(evHeading), rows.maxOf { font.width(it.ev) })
 
-        override fun getHeight() = TOP_GAP + (rows.size + 1) * LINE
+        override fun getHeight() = (rows.size + 1) * LINE
 
         override fun getWidth(font: Font) = labelWidth(font) + COLUMN_GAP + ivWidth(font) + COLUMN_GAP + evWidth(font)
 
         override fun renderText(font: Font, x: Int, y: Int, matrix: Matrix4f, buffer: MultiBufferSource.BufferSource) {
             val ivRight = x + labelWidth(font) + COLUMN_GAP + ivWidth(font)
             val evRight = ivRight + COLUMN_GAP + evWidth(font)
-            var lineY = y + TOP_GAP
+            var lineY = y
             draw(font, ivHeading, ivRight - font.width(ivHeading), lineY, LABEL_COLOR, matrix, buffer)
             draw(font, evHeading, evRight - font.width(evHeading), lineY, LABEL_COLOR, matrix, buffer)
             for (row in rows) {
                 lineY += LINE
                 draw(font, row.label, x, lineY, row.color, matrix, buffer)
-                draw(font, Component.literal(row.iv), ivRight - font.width(row.iv), lineY, 0xFFFFFF, matrix, buffer)
-                draw(font, Component.literal(row.ev), evRight - font.width(row.ev), lineY, 0xFFFFFF, matrix, buffer)
+                draw(font, Component.literal(row.iv), ivRight - font.width(row.iv), lineY, row.ivColor, matrix, buffer)
+                draw(font, Component.literal(row.ev), evRight - font.width(row.ev), lineY, row.evColor, matrix, buffer)
             }
         }
 
@@ -206,7 +257,6 @@ object PokemonTooltip {
         }
     }
 
-    private const val TOP_GAP = 4
     private const val LINE = 10
     private const val COLUMN_GAP = 8
     private const val OPAQUE = 0xFF000000.toInt()
