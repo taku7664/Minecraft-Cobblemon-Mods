@@ -353,6 +353,10 @@ internal class LocalTacticalBrain(
             }.filterValues { it > 0.0 }
         }.orEmpty() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
+        // A screen earns the hits it halves while it lasts (LocalScreenCredit).
+        val screenAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(difficultyContext.candidates, difficultyContext, scores)
+        }.orEmpty() }
         val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, difficultyContext, scores, tuning)
         }.orEmpty() }
@@ -392,7 +396,7 @@ internal class LocalTacticalBrain(
                     val extra = LocalTacticalScorer.simulationBlindAdjustment(
                         calculated[id] ?: rank.outcome.candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn,
                     ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickAdjustments[id] ?: 0.0) +
-                        (setupAdjustments[id] ?: 0.0) + (healRaceAdjustments[id] ?: 0.0)
+                        (setupAdjustments[id] ?: 0.0) + (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0)
                     if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
                 })
                 // Only the re-entry veto: the setup one reads the HP a stay keeps, which native ranks do not carry.
@@ -598,9 +602,10 @@ internal class LocalTacticalBrain(
                 difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
         }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
-            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys).associateWith {
+            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0)
+                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
+                (screenAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->

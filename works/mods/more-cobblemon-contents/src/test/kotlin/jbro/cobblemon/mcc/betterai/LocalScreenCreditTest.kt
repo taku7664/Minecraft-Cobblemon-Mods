@@ -1,0 +1,71 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
+import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit
+import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
+import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
+import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectCoverage
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/** Screens priced by the hits they halve, on a recorded Boss position: Milotic in front of Ferrothorn. */
+class LocalScreenCreditTest {
+    @Test
+    fun `a screen earns by the hits of its category and Aurora Veil only in snow`() {
+        val context = prepared("milotic-ferrothorn-switch-in")
+        fun credit(ctx: BattleDecisionContext, moveId: String): Double {
+            val candidate = screen(moveId)
+            val scores = LocalMatchupScoreCalculator.calculate(ctx)
+            return LocalScreenCredit.adjustments(listOf(candidate), ctx, scores)[candidate.actionId] ?: 0.0
+        }
+        val reflect = credit(context, "reflect")
+        val lightScreen = credit(context, "lightscreen")
+        val veilDry = credit(context, "auroraveil")
+        val snowy = context.copy(state = context.state.derive(field = BattleFieldStateView(
+            BattleTimedEffectView("snow", 5), context.state.field.terrain, context.state.field.roomEffects,
+            context.state.field.globalEffects, context.state.field.sideConditions)))
+        val veilSnow = credit(snowy, "auroraveil")
+        println("SCREENS reflect=$reflect lightscreen=$lightScreen auroraveil(dry)=$veilDry auroraveil(snow)=$veilSnow")
+        // Ferrothorn hits with Power Whip, physical.
+        assertTrue(reflect > lightScreen, "reflect $reflect light screen $lightScreen")
+        assertTrue(veilDry < 0.0, "Aurora Veil without snow fails: $veilDry")
+        assertTrue(veilSnow >= reflect, "Aurora Veil in snow covers both: $veilSnow vs $reflect")
+    }
+
+    private fun screen(moveId: String) = BattleActionCandidate(
+        actionId = "move:0:9:screen:$moveId",
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = 0,
+        moveSlot = 3,
+        moveId = moveId,
+        moveDetails = BattleMoveCandidateView("Psychic", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 20,
+            BattleMoveTargetPattern.SIDE, BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                listOf(BattleMoveEffectView(BattleMoveEffectKind.SIDE_CONDITION, BattleMoveEffectTarget.USER_SIDE, valueId = moveId)),
+                false)),
+    )
+
+    private fun prepared(name: String): BattleDecisionContext {
+        val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
+            .use { it.readBytes().toString(Charsets.UTF_8) }.let(AiTestDecisionSnapshot::fromJson).context
+        val tier = BattleTrainerTier.BOSS
+        val bound = raw.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(raw.state, raw.publicActionCatalog, tier,
+            LocalOpponentMoveUsage.forFormat(raw.state.format)))
+        return PublicBattleTacticalCalculator.calculate(LocalOpponentStatAssumption.applyToPublicState(bound, tier), observedBoard = true)
+    }
+}
