@@ -22,6 +22,52 @@ internal object LocalEntryAbilityCheck {
     private val planner = NativeInitialProductWorldPlanner(worldLimit = { _, _ -> 1 })
 
     /**
+     * When this side's Pokemon in front is offered no switch with others left (singles): the opposing Pokemon's
+     * candidate abilities that would not hold it in, provided some would (Shadow Tag, Arena Trap, Magnet Pull, read
+     * from the engine's TrapPokemon event on this board). A trap with a visible cause (Mean Look, a binding move) holds
+     * it in every world and rules nothing out. Null when there is nothing to read or the engine could not play it.
+     */
+    fun trapRuledOut(context: BattleDecisionContext, tier: BattleTrainerTier): Pair<UUID, Set<String>>? {
+        val state = context.state
+        if (state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) return null
+        val kinds = context.candidates.map { it.kind }
+        if (jbro.cobblemon.mcc.internal.ai.BattleActionKind.USE_MOVE !in kinds || jbro.cobblemon.mcc.internal.ai.BattleActionKind.SWITCH in kinds) return null
+        fun active(side: BattleSide) = state.pokemon.singleOrNull { it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        val ally = active(BattleSide.ALLY) ?: return null
+        val foe = active(BattleSide.OPPONENT)?.takeIf { it.knownAbilityId == null } ?: return null
+        if (state.pokemon.none { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }) return null
+        val abilities = LocalEntryAbilityProjector.publicPossibleAbilities(state, foe).takeIf { it.size >= 2 } ?: return null
+        val root = root(context, tier) ?: return null
+        val trapping = LocalEngineStopProbe.lease.withWorker(deadline(context)) { worker ->
+            root(worker, context, root).let { frame ->
+                worker.trappingAbilities(frame.snapshotJson, foe.battlePokemonId.toString(), ally.battlePokemonId.toString(), abilities)
+            }
+        } ?: return null
+        if (trapping.isEmpty() || trapping.size == abilities.size) return foe.battlePokemonId to emptySet()
+        return foe.battlePokemonId to abilities.filterTo(linkedSetOf()) { it !in trapping }
+    }
+
+    private fun root(context: BattleDecisionContext, tier: BattleTrainerTier): jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition? {
+        val state = context.state
+        val plan = when {
+            context.showdownState != null -> planner.planLive(context, tier)
+            state.turn in 0..1 && jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules.acceptsObservations(state) ->
+                planner.plan(context, tier)
+            else -> planner.planMidBattle(context, tier)
+        }
+        return plan.worlds.firstOrNull()?.definition
+    }
+
+    private fun root(
+        worker: jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker,
+        context: BattleDecisionContext,
+        definition: jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition,
+    ) = context.showdownState?.let { worker.createLiveBattle(it, definition) } ?: worker.createBattle(definition)
+
+    private fun deadline(context: BattleDecisionContext) = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+        (context.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L))
+
+    /**
      * Per Pokemon of [subjects] (opposing, on the field, ability unknown, two or more candidates), the candidate
      * abilities its entry would have announced. Null when the engine could not play this board.
      */

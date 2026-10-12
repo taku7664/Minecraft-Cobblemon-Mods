@@ -57,6 +57,14 @@ internal interface NativeBranchWorker : AutoCloseable {
     fun entryAnnouncingAbilities(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Set<String> =
         throw UnsupportedOperationException("This native worker cannot replay an entry")
 
+    /** Per ability of [abilityIds] lent to [pokemonUuid] on this board, what leaving the field leaves it with (Regenerator's heal). */
+    fun departureOutcomes(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Map<String, NativeDepartureOutcome> =
+        throw UnsupportedOperationException("This native worker cannot replay a departure")
+
+    /** Of [abilityIds] lent to [holderUuid] on this board, the ones that keep [targetUuid] from switching out. */
+    fun trappingAbilities(snapshotJson: String, holderUuid: String, targetUuid: String, abilityIds: List<String>): Set<String> =
+        throw UnsupportedOperationException("This native worker cannot read a trap")
+
     /** One turn played from [snapshotJson] with these choices on stream [salt] (0: the snapshot's own), read from its log. */
     fun turnTrace(snapshotJson: String, p1Choice: String, p2Choice: String, salt: Int): NativeTurnTrace =
         throw UnsupportedOperationException("This native worker cannot trace a turn")
@@ -573,6 +581,9 @@ internal data class NativeForcedDamageRoll(
         require(percent in 85..100)
     }
 }
+
+/** A Pokemon's HP share and status once it has left the field, and whether its ability said so. */
+internal data class NativeDepartureOutcome(val hpFraction: Double, val status: String, val announced: Boolean)
 
 /** What a turn did that an ability can change, per Pokemon UUID: the named sources of its HP changes, its stages, its status. */
 internal data class NativeTurnTrace(

@@ -914,6 +914,8 @@ internal class LocalTacticalBrain(
         val silentAbilities = java.util.concurrent.ConcurrentHashMap<UUID, Set<String>>()
         /** The last decision's worlds, one per ability of the opposing Pokemon in front, to replay the turn on. */
         @Volatile var abilityWorlds: jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.Pending? = null
+        /** Opposing Pokemon that left the field, with what leaving left them under each ability, until they come back. */
+        val departures = java.util.concurrent.ConcurrentHashMap<UUID, jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.Departure>()
         /** Diagnostics for the decision's tags: what the last replay took and ruled out. */
         @Volatile var lastAbilityReplay: String? = null
     }
@@ -939,6 +941,7 @@ internal class LocalTacticalBrain(
             }
             val ruled = reading?.ruledOut
             ruled?.takeIf { it.isNotEmpty() }?.let { abilities -> session.silentAbilities.merge(pending.subject, abilities) { a, b -> a + b } }
+            reading?.departure?.let { session.departures[it.subject] = it }
             session.lastAbilityReplay = "ability_replay_ms_${(System.nanoTime() - started) / 1_000_000L}_" +
                 (ruled?.joinToString("_").takeUnless { it.isNullOrEmpty() }?.let { "ruled_$it" } ?: if (ruled == null) "unread" else "none") +
                 "_" + (reading?.status ?: "error") + (reading?.detail?.let { "_$it" } ?: "")
@@ -946,6 +949,29 @@ internal class LocalTacticalBrain(
         fun entry(id: UUID) = id to (state.observedEvents.lastOrNull {
             it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == id
         }?.sequence ?: -1L)
+        // A Pokemon back from the bench, against what leaving left it with (Regenerator's heal).
+        session.departures.values.toList().forEach { departure ->
+            val ruled = try {
+                jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.arrival(departure, context)
+            } catch (e: RuntimeException) {
+                logger.error("[BetterAI] The opponent's return could not be read; its abilities stay as they are", e)
+                emptySet()
+            } ?: return@forEach
+            session.departures.remove(departure.subject)
+            if (ruled.isNotEmpty()) session.silentAbilities.merge(departure.subject, ruled) { a, b -> a + b }
+            session.lastAbilityReplay = (session.lastAbilityReplay?.let { "${it}_" } ?: "") + "ability_return_" +
+                (ruled.joinToString("_").ifEmpty { "none" })
+        }
+        // No switch offered: whether the opponent's ability is what holds this side in.
+        try {
+            jbro.cobblemon.mcc.betterai.search.LocalEntryAbilityCheck.trapRuledOut(context, tier)
+        } catch (e: RuntimeException) {
+            logger.error("[BetterAI] The engine could not read the trap; the opponent's abilities stay as they are", e)
+            null
+        }?.let { (id, ruled) ->
+            if (ruled.isNotEmpty()) session.silentAbilities.merge(id, ruled) { a, b -> a + b }
+            session.lastAbilityReplay = (session.lastAbilityReplay?.let { "${it}_" } ?: "") + "ability_trapped_" + (ruled.joinToString("_").ifEmpty { "none" })
+        }
         val due = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
             it.knownAbilityId == null && entry(it.battlePokemonId) !in session.checkedEntries }
         if (due.isNotEmpty()) {

@@ -191,17 +191,54 @@ internal class EngineBranchWorker(
         return abilityIds.filterTo(linkedSetOf()) { abilityId ->
             val battle = root.forkLogging()
             val pokemon = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == pokemonUuid } ?: return@filterTo false
-            val ability = battle.dex.ability(abilityId)
-            if (!ability.exists || pokemon.fainted) return@filterTo false
-            pokemon.baseAbility = ability.id
-            pokemon.ability = ability.id
-            pokemon.abilityState = EffectState(ability.id).also { it.target = pokemon }
+            val ability = lend(battle, pokemon, abilityId) ?: return@filterTo false
             battle.runEvent("SwitchIn", pokemon)
             if (!pokemon.fainted) battle.singleEvent("Start", pokemon.getAbility(), pokemon.abilityState, pokemon)
             // "-ability|p2a: Kingambit|Pressure", or another line "[from] ability: Drizzle".
             battle.log.any { line -> line.startsWith("|-ability|") && line.split('|').getOrNull(3) == ability.name ||
                 line.contains("[from] ability: ${ability.name}") }
         }
+    }
+
+    override fun departureOutcomes(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Map<String, NativeDepartureOutcome> {
+        val root = resolve(snapshotJson)
+        return abilityIds.mapNotNull { abilityId ->
+            val battle = root.forkLogging()
+            val pokemon = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == pokemonUuid } ?: return@mapNotNull null
+            val ability = lend(battle, pokemon, abilityId) ?: return@mapNotNull null
+            battle.runEvent("SwitchOut", pokemon)
+            abilityId to NativeDepartureOutcome(
+                hpFraction = if (pokemon.maxhp > 0) pokemon.hp.toDouble() / pokemon.maxhp else 0.0,
+                status = pokemon.status,
+                announced = battle.log.any { it.contains("[from] ability: ${ability.name}") || it.startsWith("|-ability|") && it.split('|').getOrNull(3) == ability.name },
+            )
+        }.toMap()
+    }
+
+    override fun trappingAbilities(snapshotJson: String, holderUuid: String, targetUuid: String, abilityIds: List<String>): Set<String> {
+        val root = resolve(snapshotJson)
+        return abilityIds.filterTo(linkedSetOf()) { abilityId ->
+            val battle = root.fork()
+            val all = battle.sides.flatMap { it.pokemon }
+            val holder = all.singleOrNull { it.uuid == holderUuid } ?: return@filterTo false
+            val target = all.singleOrNull { it.uuid == targetUuid } ?: return@filterTo false
+            lend(battle, holder, abilityId) ?: return@filterTo false
+            // As the end of a turn reads it for the next one (Battle's residual step).
+            target.trapped = false
+            target.maybeTrapped = false
+            battle.runEvent("TrapPokemon", target)
+            Js.truthy(target.trapped)
+        }
+    }
+
+    /** [abilityId] given to [pokemon] on [battle] without its start: the hypothesis it always had. */
+    private fun lend(battle: Battle, pokemon: Pokemon, abilityId: String): jbro.cobblemon.mcc.betterai.engine.dex.Effect? {
+        val ability = battle.dex.ability(abilityId)
+        if (!ability.exists || pokemon.fainted) return null
+        pokemon.baseAbility = ability.id
+        pokemon.ability = ability.id
+        pokemon.abilityState = EffectState(ability.id).also { it.target = pokemon }
+        return ability
     }
 
     override fun turnTrace(snapshotJson: String, p1Choice: String, p2Choice: String, salt: Int): NativeTurnTrace {

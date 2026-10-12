@@ -36,6 +36,8 @@ import java.util.UUID
 internal object LocalAbilityPosterior {
     data class Pending(
         val subject: UUID,
+        /** This side's Pokemon in front when the worlds were built. */
+        val ally: UUID,
         val roots: Map<String, NativeBattleFrame>,
         val taken: BattleActionCandidate,
         val knownMoves: Set<String>,
@@ -44,15 +46,22 @@ internal object LocalAbilityPosterior {
         val abilities: Set<String> get() = roots.keys
     }
 
-    data class Reading(val status: String, val ruledOut: Set<String>?, val detail: String? = null)
+    data class Reading(val status: String, val ruledOut: Set<String>?, val detail: String? = null, val departure: Departure? = null)
+
+    /** What leaving the field left [subject] with under each ability, to compare when it comes back (Regenerator). */
+    data class Departure(val subject: UUID, val afterSequence: Long, val outcomes: Map<String, jbro.cobblemon.mcc.betterai.simulation.NativeDepartureOutcome>)
 
     private val planner = NativeInitialProductWorldPlanner(worldLimit = { _, _ -> 1 })
     private const val SALTS = 8
+    /** The public HP share is a rounded percentage. */
+    private const val HP_TOLERANCE = 0.02
 
     fun open(context: BattleDecisionContext, tier: BattleTrainerTier, taken: BattleActionCandidate): Pending? {
         val state = context.state
         if (state.format != BattleFormat.SINGLE) return null
         val foe = state.pokemon.singleOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+            ?: return null
+        val ally = state.pokemon.singleOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             ?: return null
         if (foe.knownAbilityId != null) return null
         val abilities = LocalEntryAbilityProjector.publicPossibleAbilities(state, foe)
@@ -70,6 +79,7 @@ internal object LocalAbilityPosterior {
         return LocalEngineStopProbe.lease.withWorker(deadline(context)) { worker ->
             Pending(
                 subject = foe.battlePokemonId,
+                ally = ally.battlePokemonId,
                 roots = abilities.associateWith { ability ->
                     val definition = withAbility(world.definition, uuid, ability)
                     live?.let { worker.createLiveBattle(it, definition) } ?: worker.createBattle(definition)
@@ -88,7 +98,61 @@ internal object LocalAbilityPosterior {
         val opponents = state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
         // A knockout or an opposing switch ends the comparison: the replacement and its entry are another board.
         if (window.any { it.kind == BattleObservedEventKind.FAINTED }) return Reading("fainted", null)
-        if (window.any { it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId in opponents }) return Reading("opponent_switched", null)
+        val opposingSwitch = window.firstOrNull { it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId in opponents }
+        if (opposingSwitch != null) {
+            // It left at the start of the turn, nothing done to it first: what leaving does under each ability is
+            // read on the board it left from, for when it comes back.
+            val left = state.pokemon.none { it.battlePokemonId == pending.subject && it.activeSlot != null }
+            val touched = window.any { it.actorPokemonId == pending.subject && it.sequence < opposingSwitch.sequence &&
+                (it.kind == BattleObservedEventKind.MOVE_USED || it.kind == BattleObservedEventKind.HP_CHANGED || it.kind == BattleObservedEventKind.STATUS_CHANGED) }
+            if (!left || touched) return Reading("opponent_switched", null)
+            val root = pending.roots.values.first()
+            val outcomes = LocalEngineStopProbe.lease.withWorker(deadline(context)) { worker ->
+                worker.departureOutcomes(root.snapshotJson, pending.subject.toString(), pending.abilities.toList())
+            } ?: return Reading("no_worker", null)
+            // An ability that would have said so on leaving, while it left in silence, is out at once.
+            val silent = window.none { it.kind == BattleObservedEventKind.ABILITY_REVEALED && it.actorPokemonId == pending.subject }
+            val announced = if (silent) outcomes.filterValues { it.announced }.keys else emptySet()
+            return Reading("departed", announced.takeIf { it.size < outcomes.size }.orEmpty(),
+                departure = Departure(pending.subject, opposingSwitch.sequence, outcomes.filterKeys { it !in announced }))
+        }
+        // This side switched out: an ability that would have held it in is out.
+        val trapRuled = if (pending.taken.kind == BattleActionKind.SWITCH && window.any {
+                it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId == pending.taken.switchPokemonId
+            }) {
+            LocalEngineStopProbe.lease.withWorker(deadline(context)) { worker ->
+                worker.trappingAbilities(pending.roots.values.first().snapshotJson, pending.subject.toString(), pending.ally.toString(), pending.abilities.toList())
+            }.orEmpty().takeIf { it.size < pending.abilities.size }.orEmpty()
+        } else emptySet()
+        val replayed = replay(pending, context, window)
+        if (trapRuled.isEmpty()) return replayed
+        return replayed.copy(status = replayed.status + "_trap", ruledOut = replayed.ruledOut.orEmpty() + trapRuled)
+    }
+
+    /**
+     * When [departure]'s Pokemon is back in front: the abilities whose departure leaves another HP share or status than
+     * it came back with (before anything the turn did to it after its entry). Null while it has not come back.
+     */
+    fun arrival(departure: Departure, context: BattleDecisionContext): Set<String>? {
+        val state = context.state
+        val pokemon = state.pokemon.firstOrNull { it.battlePokemonId == departure.subject } ?: return emptySet()
+        if (pokemon.activeSlot == null || pokemon.fainted) return null
+        val entry = state.observedEvents.lastOrNull {
+            it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId == departure.subject && it.sequence > departure.afterSequence
+        } ?: return emptySet()
+        val after = state.observedEvents.filter { it.sequence > entry.sequence && it.actorPokemonId == departure.subject }
+        val hpAtEntry = pokemon.hpFraction - after.filter { it.kind == BattleObservedEventKind.HP_CHANGED }.sumOf { it.hpFractionDelta ?: 0.0 }
+        val statusKnown = after.none { it.kind == BattleObservedEventKind.STATUS_CHANGED }
+        val status = PublicIds.canonical(pokemon.statusId.orEmpty())
+        val fits = departure.outcomes.filterValues { outcome ->
+            kotlin.math.abs(outcome.hpFraction - hpAtEntry) <= HP_TOLERANCE && (!statusKnown || PublicIds.canonical(outcome.status) == status)
+        }.keys
+        if (fits.isEmpty() || fits.size == departure.outcomes.size) return emptySet()
+        return departure.outcomes.keys - fits
+    }
+
+    private fun replay(pending: Pending, context: BattleDecisionContext, window: List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView>): Reading {
+        val state = context.state
         val used = window.firstOrNull { it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId == pending.subject }
             ?.publicValueId?.let(PublicIds::canonical) ?: return Reading("no_opponent_move", null)
         val subject = state.pokemon.firstOrNull { it.battlePokemonId == pending.subject } ?: return Reading("subject_gone", null)
