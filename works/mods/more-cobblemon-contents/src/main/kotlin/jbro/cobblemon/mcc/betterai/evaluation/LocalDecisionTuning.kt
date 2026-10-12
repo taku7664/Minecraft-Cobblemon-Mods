@@ -257,6 +257,19 @@ internal data class LocalDecisionTuning(
     val attackMoveWeight: Double = 1.0,
     val statusMoveWeight: Double = 1.0,
     val switchWeight: Double = 1.0,
+    /**
+     * Weights inside the status moves, multiplied into [statusMoveWeight] by the move's kind
+     * (BattleStatusMoveCategories): a pure self stat raise, recovery, protection, status infliction, disruption, field,
+     * hazards and the rest.
+     */
+    val setupMoveWeight: Double = 1.0,
+    val recoveryMoveWeight: Double = 1.0,
+    val protectionMoveWeight: Double = 1.0,
+    val statusInflictionMoveWeight: Double = 1.0,
+    val disruptionMoveWeight: Double = 1.0,
+    val fieldMoveWeight: Double = 1.0,
+    val hazardMoveWeight: Double = 1.0,
+    val otherStatusMoveWeight: Double = 1.0,
     /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
     val leafDuelValue: Double = 0.0,
     /**
@@ -525,6 +538,8 @@ internal data class LocalDecisionTuning(
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
         require(statusReplyExpectation in 0.0..1.0)
         require(attackMoveWeight > 0.0 && statusMoveWeight > 0.0 && switchWeight > 0.0)
+        require(listOf(setupMoveWeight, recoveryMoveWeight, protectionMoveWeight, statusInflictionMoveWeight,
+            disruptionMoveWeight, fieldMoveWeight, hazardMoveWeight, otherStatusMoveWeight).all { it > 0.0 })
         require(leafTeamCoverageWeight.isFinite() && leafTeamCoverageWeight >= 0.0)
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
         require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)
