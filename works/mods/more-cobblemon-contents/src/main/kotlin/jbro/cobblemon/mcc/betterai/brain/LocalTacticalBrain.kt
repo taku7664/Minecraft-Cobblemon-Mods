@@ -680,6 +680,7 @@ internal class LocalTacticalBrain(
                     nativeStatus?.let {
                         add("native_status_${it.status}")
                         add("native_status_ms_${it.elapsedMillis}")
+                        if (it.plies > 0) add("native_status_plies_${it.plies}")
                     }
                     if (lookahead == null) add("searchless") else {
                         // Doubles searches one turn whatever the tier asks for.

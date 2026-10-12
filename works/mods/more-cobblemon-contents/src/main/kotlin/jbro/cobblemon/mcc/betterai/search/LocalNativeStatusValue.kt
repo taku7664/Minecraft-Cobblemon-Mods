@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 
 /**
@@ -28,10 +29,21 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
  * as an error to fix.
  */
 internal object LocalNativeStatusValue {
-    data class Result(val adjustments: Map<String, Double>, val status: String, val elapsedMillis: Long)
+    data class Result(val adjustments: Map<String, Double>, val status: String, val elapsedMillis: Long, val plies: Int = 0)
 
     /** The opponent's likeliest worlds the engine plays the turn in. */
     const val WORLDS = 3
+    /** The opponent's replies followed past the first turn when a move is played two turns. */
+    private const val SECOND_TURN_REPLIES = 3
+    /** Declared effects whose value comes after the turn they are made in. */
+    private val LASTING = setOf(
+        BattleMoveEffectKind.VOLATILE_STATUS, BattleMoveEffectKind.SIDE_CONDITION, BattleMoveEffectKind.SLOT_CONDITION,
+        BattleMoveEffectKind.FIELD_CONDITION, BattleMoveEffectKind.WEATHER, BattleMoveEffectKind.TERRAIN,
+    )
+
+    fun lasting(candidate: BattleActionCandidate): Boolean =
+        candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind in LASTING }
+
     /** The ranking's best actions besides these moves that anchor the engine's values to the ranking's. */
     private const val REFERENCES = 3
     /** Far above a one-turn search's need (80 to 221 nodes over eight to twelve actions): the turn always completes. */
@@ -65,6 +77,8 @@ internal object LocalNativeStatusValue {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
         source: Source,
+        /** The deepest the moves are played; one keeps every move to its own turn (for comparing the two). */
+        maxPlies: Int = 2,
     ): Result? {
         // A move the ranking already rules out (it fails publicly) stays out.
         val open = ranked.filter { it.decisionTier > LocalBattleActionPolicy.TIER_PUBLICLY_BAD }
@@ -76,9 +90,15 @@ internal object LocalNativeStatusValue {
         val references = open.filter { rank -> status.none { it === rank } }.sortedByDescending { it.comparisonValue }
             .take(REFERENCES).ifEmpty { return null }
         val started = System.nanoTime()
+        // A move that leaves something behind (a volatile, a side, slot or field condition, weather, terrain) pays off on
+        // the turn after: Substitute takes the next hit, Taunt blocks the next status move, Leech Seed drains at the
+        // next end of turn. The leaf reads none of those, so such moves are played one turn further, where this side
+        // attacks and the opponent's three likeliest replies answer. The rest settle in the turn itself.
+        val plies = if (status.any { lasting(it.outcome.candidate) }) minOf(2, maxPlies) else 1
         val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
             // No clock of its own: the decision's deadline (45 s) is the only limit, so the turn is never cut short.
-            .copy(nativePlies = 1, nativeNodeLimit = NODE_LIMIT, timeMillis = LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS)
+            .copy(nativePlies = plies, nativeNodeLimit = NODE_LIMIT, timeMillis = LocalLookaheadBudgetPolicy.MAX_TIME_MILLIS,
+                opponentResponseLimit = SECOND_TURN_REPLIES, finalPlyAttacksOnly = true)
         val evaluation = try {
             // Every candidate goes in, so a live root's actions all map; only these moves and the references are searched.
             val searched = (status + references).mapTo(hashSetOf()) { it.outcome.candidate.actionId }
@@ -110,6 +130,6 @@ internal object LocalNativeStatusValue {
             val id = rank.outcome.candidate.actionId
             native[id]?.let { value -> id to (value + offset) - rank.comparisonValue }
         }.toMap()
-        return Result(out, "priced", elapsed)
+        return Result(out, "priced", elapsed, plies)
     }
 }
