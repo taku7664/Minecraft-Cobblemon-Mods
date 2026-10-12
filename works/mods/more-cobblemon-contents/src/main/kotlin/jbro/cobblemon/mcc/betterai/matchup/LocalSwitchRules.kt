@@ -51,7 +51,8 @@ internal object LocalSwitchRules {
         }
     }
 
-    fun judge(candidates: List<BattleActionCandidate>, context: BattleDecisionContext, scores: MatchupScores): Judgement {
+    fun judge(candidates: List<BattleActionCandidate>, context: BattleDecisionContext, scores: MatchupScores,
+        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null): Judgement {
         val state = context.state
         val opponents = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
@@ -64,7 +65,7 @@ internal object LocalSwitchRules {
         // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
         val retreatCredits = HashMap<java.util.UUID, Double>()
         fun retreats(pokemon: BattlePokemonStateView): Double = retreatCredits.getOrPut(pokemon.battlePokemonId) {
-            if (LocalSetupGate.retreatReasons(pokemon, context, scores).isEmpty()) 0.0
+            if (LocalSetupGate.retreatReasons(pokemon, context, scores, tier = tier).isEmpty()) 0.0
             else scores.sweeps[pokemon.battlePokemonId]?.score ?: 0.0
         }
         // A slot that may not move is being asked for a replacement.

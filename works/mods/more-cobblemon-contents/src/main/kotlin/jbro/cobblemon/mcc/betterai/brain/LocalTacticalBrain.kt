@@ -231,7 +231,7 @@ internal class LocalTacticalBrain(
                     .any { it.kind == BattleActionKind.SWITCH }
             }
             if (!rulesApply || !switching) LocalSwitchRules.Judgement.NONE
-            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, difficultyContext, it) }
+            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, difficultyContext, it, profile.difficulty.tier) }
                 ?: LocalSwitchRules.Judgement.NONE
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
@@ -251,7 +251,7 @@ internal class LocalTacticalBrain(
             return plainExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
                     val passes = setupGatePasses.getOrPut(part.actionId) {
-                        LocalSetupGate.evaluate(part, difficultyContext, scores)?.passes ?: true
+                        LocalSetupGate.evaluate(part, difficultyContext, scores, tier = profile.difficulty.tier)?.passes ?: true
                     }
                     LocalSetupGate.Verdict(passes, emptyList())
                 }
@@ -355,7 +355,7 @@ internal class LocalTacticalBrain(
             difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
         else ruleScores?.let { scores ->
             difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).associate { candidate ->
-                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
+                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore, profile.difficulty.tier)
             }.filterValues { it > 0.0 }
         }.orEmpty() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
@@ -542,7 +542,7 @@ internal class LocalTacticalBrain(
         val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
         // Read from the same table as the rules; the AI's threat weights play no part in it.
         val opponentIntents = if (!rulesApply) emptyList()
-            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel) }.orEmpty().let { intents ->
+            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier) }.orEmpty().let { intents ->
                 if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
             }
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(

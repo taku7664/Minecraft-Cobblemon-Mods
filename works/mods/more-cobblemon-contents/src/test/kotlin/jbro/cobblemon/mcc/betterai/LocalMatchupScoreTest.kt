@@ -132,7 +132,7 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `haze stops a dragon dance sweeper that beats the plain attacker`() {
+    fun `the matchup table does not name Haze as a stopper`() {
         val haze = BattlePublicMoveOptionView("haze", BattleMoveCandidateView(typeId = "ice",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
             targetPattern = BattleMoveTargetPattern.ALL_ACTIVE), BattlePublicMoveKnowledge.EXACT_OWN)
@@ -144,8 +144,9 @@ class LocalMatchupScoreTest {
         val anti = scores.stops.getValue(ALLY)
         assertEquals(FOE, anti.sweeperId)
         assertEquals(0.0, anti.tools.single { it.kind == StopToolKind.OUTLASTS }.value, 1e-9)
-        assertEquals(StopToolKind.RESETS_BOOSTS, anti.bestTool!!.kind)
-        assertEquals(1.0, anti.score, 1e-9)
+        // Haze's effect lives in a script, not in its data: the matchup table no longer names it. What it does to a
+        // boosted sweeper is played out in the engine where it decides anything (LocalEngineStopProbeTest).
+        assertTrue(anti.tools.none { it.moveId == "haze" }, anti.tools.toString())
     }
 
     @Test
@@ -180,31 +181,6 @@ class LocalMatchupScoreTest {
             allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("haze", BattleMoveTargetPattern.ALL_ACTIVE)))
         val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
         assertTrue(verdict.failures.none { it.startsWith("stopper:") }) { verdict.failures.toString() }
-    }
-
-    @Test
-    fun `encore on the field always stops the setup`() {
-        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
-            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("encore")))
-        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
-        assertFalse(verdict.passes)
-        assertTrue(verdict.failures.any { it.startsWith("stopper:") && it.endsWith(":encore") }) { verdict.failures.toString() }
-    }
-
-    @Test
-    fun `a sweeper facing destiny bond does not set up and retreats`() {
-        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, benchPower = 65.0,
-            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("destinybond", BattleMoveTargetPattern.SELF)))
-        val scores = LocalMatchupScoreCalculator.calculate(context)
-        val verdict = LocalSetupGate.evaluate(setupAction(context), context, scores)!!
-        assertTrue(verdict.failures.any { it.endsWith(":destiny_bond") }) { verdict.failures.toString() }
-        val ally = context.state.pokemon.first { it.battlePokemonId == ALLY }
-        assertTrue(LocalSetupGate.retreatReasons(ally, context, scores).isNotEmpty())
-        val withoutBond = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, benchPower = 65.0,
-            allySetup = mapOf("atk" to 1, "spe" to 1))
-        fun switchCredit(position: BattleDecisionContext) = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), position,
-            LocalMatchupScoreCalculator.calculate(position)).adjustments["switch"] ?: 0.0
-        assertTrue(switchCredit(context) > switchCredit(withoutBond)) { "${switchCredit(context)} vs ${switchCredit(withoutBond)}" }
     }
 
     @Test

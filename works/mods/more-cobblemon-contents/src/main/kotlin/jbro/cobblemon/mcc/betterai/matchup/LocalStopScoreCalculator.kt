@@ -61,37 +61,21 @@ internal object LocalStopScoreCalculator {
         val boostedSweeper = boosted.state.pokemon.first { it.battlePokemonId == sweeperId }
         val oneTimeSurvival = oneTimeSurvival(boosted.state, boostedSubject)
         val first = LocalPublicTurnOrder.speedOrderProbability(boosted.state, boostedSubject, boostedSweeper) ?: 0.5
-        val firstBeforeSetup = position.state.pokemon.first { it.battlePokemonId == subjectId }.let { unboostedSubject ->
-            LocalPublicTurnOrder.speedOrderProbability(position.state, unboostedSubject,
-                position.state.pokemon.first { it.battlePokemonId == sweeperId }) ?: 0.5
-        }
         val survivesHit = if (oneTimeSurvival != null) 1.0 else againstBoosted.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0
         val actsBeforeKnockout = first + (1.0 - first) * survivesHit
-        val unboostedWin = pairs.pokemon(subjectId, sweeperId)?.winProbability ?: 0.0
         val sweeperStatusFree = boostedSweeper.statusId == null
 
         val tools = mutableListOf(StopTool(StopToolKind.OUTLASTS, againstBoosted.subjectMove?.moveId, againstBoosted.winProbability))
-        if (unaware(boosted.state, boostedSubject)) {
-            // Unaware reads the sweeper's attack and defence stages as zero; Speed stages still apply.
-            val speedOnly = withSweeper { it.copyState(statStages = it.statStages.filterKeys { key -> PublicIds.canonical(key) in SPEED_KEYS }) }
-            tools += StopTool(StopToolKind.IGNORES_BOOSTS, null, win(speedOnly))
-        }
         for ((moveId, details) in moves(context, subject)) {
             val accuracy = (details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
             val effects = details.effects?.effects.orEmpty()
             val status = details.damageCategory == BattleMoveDamageCategory.STATUS
+            // Only what the move's data declares. Moves whose effect lives in a script (Haze, Encore, Taunt, Trick Room,
+            // Perish Song, Destiny Bond, Unaware's ability) are played out in the engine where they decide anything:
+            // LocalEngineStopProbe, from the setup gate and the switch prediction.
             when {
-                moveId in RESETS -> tools += StopTool(StopToolKind.RESETS_BOOSTS, moveId, actsBeforeKnockout * unboostedWin)
-                moveId in FORCED_SWITCHES || effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET } ->
+                effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET } ->
                     tools += StopTool(StopToolKind.FORCES_SWITCH, moveId, actsBeforeKnockout * FORCED_SWITCH_VALUE)
-                moveId == ENCORE -> tools += StopTool(StopToolKind.ENCORE, moveId, actsBeforeKnockout * ENCORE_VALUE)
-                moveId == TAUNT -> tools += StopTool(StopToolKind.TAUNT, moveId, firstBeforeSetup * TAUNT_VALUE)
-                // Trick Room moves last, so the boosted sweeper swings first.
-                moveId == TRICK_ROOM -> tools += StopTool(StopToolKind.TRICK_ROOM, moveId,
-                    survivesHit * win(field = MatchupSpeedField.TRICK_ROOM_TOGGLED))
-                moveId == PERISH_SONG -> tools += StopTool(StopToolKind.PERISH_SONG, moveId, actsBeforeKnockout * PERISH_SONG_VALUE)
-                // Destiny Bond has to be up before the sweeper attacks.
-                moveId == DESTINY_BOND -> tools += StopTool(StopToolKind.DESTINY_BOND, moveId, first * DESTINY_BOND_VALUE)
                 status && sweeperStatusFree && effects.any { it.certainStatus(BURN) } -> tools += StopTool(StopToolKind.BURN, moveId,
                     actsBeforeKnockout * accuracy * win(withSweeper { it.copyState(statusId = BURN) }))
                 status && sweeperStatusFree && effects.any { it.certainStatus(PARALYSIS) } -> tools += StopTool(StopToolKind.PARALYSIS, moveId,
@@ -152,9 +136,6 @@ internal object LocalStopScoreCalculator {
         }
     }
 
-    private fun unaware(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean =
-        LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == UNAWARE
-
     private fun BattleMoveEffectView.certain(): Boolean = (probability ?: 1.0) >= 1.0
 
     private fun BattleMoveEffectView.certainStatus(status: String): Boolean =
@@ -165,14 +146,6 @@ internal object LocalStopScoreCalculator {
         kind == BattleMoveEffectKind.STAT_STAGE && target == BattleMoveEffectTarget.SELECTED_TARGET && certain() &&
             statStages.values.any { it < 0 }
 
-    private val RESETS = setOf("haze", "clearsmog", "topsyturvy", "spectralthief")
-    private val FORCED_SWITCHES = setOf("roar", "whirlwind", "dragontail", "circlethrow")
-    private val SPEED_KEYS = setOf("speed", "spe")
-    private const val ENCORE = "encore"
-    private const val TAUNT = "taunt"
-    private const val TRICK_ROOM = "trickroom"
-    private const val PERISH_SONG = "perishsong"
-    private const val DESTINY_BOND = "destinybond"
     private const val BURN = "brn"
     private const val PARALYSIS = "par"
     private const val FOCUS_SASH = "focussash"
@@ -180,10 +153,5 @@ internal object LocalStopScoreCalculator {
     private const val DISGUISE = "disguise"
     private const val BUSTED = "busted"
     private const val MULTISCALE = "multiscale"
-    private const val UNAWARE = "unaware"
     private const val FORCED_SWITCH_VALUE = 0.8
-    private const val ENCORE_VALUE = 0.7
-    private const val TAUNT_VALUE = 0.6
-    private const val DESTINY_BOND_VALUE = 0.6
-    private const val PERISH_SONG_VALUE = 0.5
 }

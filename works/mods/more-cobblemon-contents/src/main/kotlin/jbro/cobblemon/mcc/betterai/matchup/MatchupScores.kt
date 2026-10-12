@@ -138,16 +138,17 @@ internal data class SweepScore(
 internal enum class StopToolKind {
     /** Beats the boosted sweeper with attacks alone. */
     OUTLASTS,
-    /** Unaware: the sweeper's attack and defence stages stop counting; its Speed still does. */
+    /** The sweeper's attack and defence stages stop counting (Unaware's kind); its Speed still does. */
     IGNORES_BOOSTS,
-    /** Haze, Clear Smog, Topsy-Turvy, Spectral Thief. */
+    /** The sweeper's raised stages are gone (Haze's kind). */
     RESETS_BOOSTS,
-    /** Roar, Whirlwind, Dragon Tail, Circle Throw: the sweeper leaves and its stages with it. */
+    /** The sweeper leaves the field without fainting, and its stages with it (Roar's kind). */
     FORCES_SWITCH,
-    /** Locks the sweeper into the setup move it just used. */
+    /** Every move but one becomes unusable for the sweeper (Encore's kind). */
     ENCORE,
-    /** Stops the setup before it happens, so it counts only when the subject moves first. */
+    /** The sweeper's setup move becomes unusable (Taunt's kind). */
     TAUNT,
+    /** The field's speed order flips. */
     TRICK_ROOM,
     BURN,
     PARALYSIS,
@@ -156,11 +157,18 @@ internal enum class StopToolKind {
     /** A priority attack that knocks the boosted sweeper out in one hit. */
     PRIORITY_FINISH,
     PERISH_SONG,
+    /** The sweeper and the subject faint on the same turn. */
     DESTINY_BOND,
+    /** The engine's play of the move stops the sweeper some other way (a countdown, a drain, a priority hit). */
+    PLAYED_OUT,
 }
 
-/** One tool and what it is worth against this sweeper, 0..1. */
-internal data class StopTool(val kind: StopToolKind, val moveId: String?, val value: Double)
+/**
+ * One tool and what it is worth against this sweeper, 0..1. A [playedOut] tool was found by playing the move out in
+ * the engine ([jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe]); its value is the chance it stopped the
+ * sweeper there, survival items and abilities included.
+ */
+internal data class StopTool(val kind: StopToolKind, val moveId: String?, val value: Double, val playedOut: Boolean = false)
 
 /**
  * How well [subjectId] stops [sweeperId], the opposing side's best [SweepScore], once the sweeper has set up as its

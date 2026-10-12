@@ -1,7 +1,10 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
@@ -19,10 +22,12 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * - the opponents on the field do not knock it out this turn ([SURVIVAL_PASS]);
  * - no opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
  *   its side a turn and a hit; the next decision judges it once it is in front of the boosted user.
- *   - Encore, a forced switch, Unaware and Destiny Bond stop it whenever an opponent has them
- *     ([ALWAYS_STOPS]). Against the last two the sweeper should not stay at all: see [retreatReasons].
- *   - Haze, Clear Smog, Perish Song and Taunt do not: the boost is traded for the opponent's own turn, or
- *     is already up ([NEVER_STOPS]).
+ *   - What each opponent move does to the boosted sweeper is played out in the engine ([LocalEngineStopProbe]),
+ *     from the deciding tier's view of the opponent's moves; a move's data alone decides only declared effects.
+ *   - A lock (Encore's kind) or a forced switch stops it whenever an opponent has one ([ALWAYS_STOPS]). Against
+ *     a sweeper's boosts not counting or both fainting together, it should not stay at all: see [retreatReasons].
+ *   - A reset (Haze's kind), Perish Song's count and a block of the setup move (Taunt's kind) do not: the boost is
+ *     traded for the opponent's own turn, or is already up ([NEVER_STOPS]).
  *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is the sweeper and duel checks'.
  */
 internal object LocalSetupGate {
@@ -59,6 +64,8 @@ internal object LocalSetupGate {
         context: BattleDecisionContext,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        /** The deciding tier; null leaves the engine out and reads only the moves' declared effects. */
+        tier: BattleTrainerTier? = null,
     ): Verdict? {
         if (!isSetupMove(candidate)) return null
         val state = context.state
@@ -83,14 +90,16 @@ internal object LocalSetupGate {
             chance * (1.0 - actingChance(opponent) * (1.0 - hitSurvival))
         }
         if (survival < SURVIVAL_PASS) failures += "knockout"
-        for ((opponent, anti) in fieldStoppers(user, sweeper, context, scores, cache)) {
-            anti.tools.firstOrNull { it.kind in ALWAYS_STOPS }?.let {
+        for ((opponent, anti) in fieldStoppers(user, sweeper, context, scores, cache, tier, LocalEngineStopProbe.Opening.Move(candidate))) {
+            // Played out, a lock or a forced switch counts only where it stopped the sweeper in the engine.
+            anti.tools.firstOrNull { it.kind in ALWAYS_STOPS && (!it.playedOut || it.value > 0.0) }?.let {
                 failures += "stopper:${opponent.speciesId}:${it.kind.name.lowercase()}"
                 continue
             }
             val stopper = anti.tools.filter { it.kind != StopToolKind.OUTLASTS && it.kind !in NEVER_STOPS }
                 .maxByOrNull { it.value } ?: continue
-            val value = stopper.value + if (anti.oneTimeSurvival != null) StopScore.ONE_TIME_SURVIVAL_BONUS else 0.0
+            // A tool played out in the engine already met the survival item or ability there.
+            val value = stopper.value + if (anti.oneTimeSurvival != null && !stopper.playedOut) StopScore.ONE_TIME_SURVIVAL_BONUS else 0.0
             if (value >= STOPPER_PASS) failures += "stopper:${opponent.speciesId}:${stopper.kind.name.lowercase()}"
         }
         return Verdict(failures.isEmpty(), failures)
@@ -109,9 +118,10 @@ internal object LocalSetupGate {
         scores: MatchupScores,
         weight: Double,
         knockoutMaterialScore: Double,
+        tier: BattleTrainerTier? = null,
     ): Double {
         if (weight <= 0.0 || candidate.kind != BattleActionKind.USE_MOVE) return 0.0
-        if (evaluate(candidate, context, scores)?.passes != true) return 0.0
+        if (evaluate(candidate, context, scores, tier = tier)?.passes != true) return 0.0
         val user = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return 0.0
@@ -145,10 +155,13 @@ internal object LocalSetupGate {
         context: BattleDecisionContext,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        tier: BattleTrainerTier? = null,
     ): List<String> {
         val sweeper = scores.sweeps[user.battlePokemonId]?.takeIf { it.score >= SWEEP_PASS && it.setupMoveId != null } ?: return emptyList()
-        return fieldStoppers(user, sweeper, context, scores, cache).flatMap { (opponent, anti) ->
-            anti.tools.filter { it.kind in RETREATS_FROM }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
+        // Only a sweeper on the field can be played out against the opponent there; on the bench the declared effects decide.
+        val opening = if (user.activeSlot != null) LocalEngineStopProbe.Opening.Attack else null
+        return fieldStoppers(user, sweeper, context, scores, cache, tier, opening).flatMap { (opponent, anti) ->
+            anti.tools.filter { it.kind in RETREATS_FROM && (!it.playedOut || it.value > 0.0) }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
         }.distinct()
     }
 
@@ -159,13 +172,19 @@ internal object LocalSetupGate {
         context: BattleDecisionContext,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
+        tier: BattleTrainerTier?,
+        opening: LocalEngineStopProbe.Opening?,
     ): List<Pair<BattlePokemonStateView, StopScore>> = context.state.pokemon.filter {
         it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
     }.mapNotNull { opponent ->
         // Scored against this user as the sweeper, which is not always the side's best one.
         val anti = scores.stops[opponent.battlePokemonId]?.takeIf { it.sweeperId == user.battlePokemonId }
             ?: LocalStopScoreCalculator.score(context, opponent, sweeper, user, scores, cache)
-        anti?.let { opponent to it }
+        // What the opponent's moves do that their data does not declare, played out in the engine.
+        val played = if (tier == null || opening == null || context.state.format != BattleFormat.SINGLE) emptyList()
+            else LocalEngineStopProbe.tools(context, tier, user, opponent, opening, scores)
+        anti?.let { opponent to if (played.isEmpty()) it else it.copy(tools = (it.tools + played).sortedByDescending { tool -> tool.value },
+            score = maxOf(it.score, played.maxOf { tool -> tool.value })) }
     }
 
     private const val RECHARGE = "mustrecharge"

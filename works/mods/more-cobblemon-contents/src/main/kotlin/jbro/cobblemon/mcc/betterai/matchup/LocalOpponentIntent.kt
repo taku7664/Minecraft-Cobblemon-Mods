@@ -63,6 +63,8 @@ internal object LocalOpponentIntentPredictor {
         scoredSwitches: Boolean = false,
         /** Doubles reads the switch model too, with the singles weights. */
         scoredInDoubles: Boolean = false,
+        /** The deciding tier, which plays a switch-in's moves out in the engine; null reads their declared effects only. */
+        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null,
     ): List<OpponentIntent> {
         val state = context.state
         val allies = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }
@@ -72,7 +74,7 @@ internal object LocalOpponentIntentPredictor {
         // the one softmax predicted 32% (Brier 0.29, the base rate alone 0.038), the singles weights 7% (0.034); a
         // doubles fit on its 35 switches did no better (0.035 cross-validated).
         val scored = scoredSwitches && (state.format == BattleFormat.SINGLE || scoredInDoubles)
-        val features = if (scored) switchFeatures(context, scores) else emptyMap()
+        val features = if (scored) switchFeatures(context, scores, tier) else emptyMap()
         return state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }.map { user ->
             val moves = context.publicActionCatalog.forPokemon(user.battlePokemonId)
                 .distinctBy { PublicIds.canonical(it.moveId) }
@@ -123,7 +125,8 @@ internal object LocalOpponentIntentPredictor {
     )
 
     /** [SwitchFeatures] for each opposing active Pokemon with a seen bench behind it. */
-    fun switchFeatures(context: BattleDecisionContext, scores: MatchupScores): Map<UUID, SwitchFeatures> {
+    fun switchFeatures(context: BattleDecisionContext, scores: MatchupScores,
+        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null): Map<UUID, SwitchFeatures> {
         val state = context.state
         val allies = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }
         if (allies.isEmpty()) return emptyMap()
@@ -134,7 +137,7 @@ internal object LocalOpponentIntentPredictor {
             val gains = bench.mapNotNull { incoming -> entryGain(user, incoming, allies, scores)?.let { incoming.battlePokemonId to it } }
             val best = gains.maxByOrNull { it.second }
             val free = bench.mapNotNull { incoming -> switchOption(user, incoming, allies, scores) }.maxByOrNull { it.value }
-            val stop = bench.maxOfOrNull { incoming -> stopCredit(incoming, allies, scores) } ?: 0.0
+            val stop = bench.maxOfOrNull { incoming -> stopCredit(incoming, allies, scores, context, tier) } ?: 0.0
             val bestAttack = allies.flatMap { ally ->
                 scores.moves(user.battlePokemonId, ally.battlePokemonId).map { attackValue(it, ally) }
             }.maxOrNull() ?: 0.0
@@ -182,11 +185,23 @@ internal object LocalOpponentIntentPredictor {
     }.takeIf { it.isNotEmpty() }?.average()
 
     /** The incoming Pokemon's [StopScore] against a boosted ally, scaled by how far that ally has set up. */
-    private fun stopCredit(incoming: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores): Double =
+    private fun stopCredit(
+        incoming: BattlePokemonStateView,
+        allies: List<BattlePokemonStateView>,
+        scores: MatchupScores,
+        context: BattleDecisionContext,
+        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier?,
+    ): Double =
         allies.maxOfOrNull { ally ->
             val boost = ally.statStages.values.filter { it > 0 }.sum()
             if (boost <= 0) return@maxOfOrNull 0.0
-            val stopper = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score ?: 0.0
+            val declared = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score ?: 0.0
+            // What its moves do once in, played out in the engine against the boosted ally (singles).
+            val played = if (tier == null || context.state.format != BattleFormat.SINGLE) 0.0 else
+                jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.tools(context, tier, ally, incoming,
+                    jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Opening.SwitchIn(incoming.battlePokemonId), scores)
+                    .maxOfOrNull { it.value } ?: 0.0
+            val stopper = maxOf(declared, played)
             stopper * minOf(1.0, boost / FULL_BOOST)
         } ?: 0.0
 
