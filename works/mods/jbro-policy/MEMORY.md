@@ -11,6 +11,7 @@
 - **구현:** `pack/PackCheck.kt`. `PACK_VERSION` 상수(릴리스마다 올린다). 서버 `ServerConfigurationConnectionEvents.CONFIGURE`에서 `pack_check_request` 채널을 못 받는 클라이언트(옛 팩, jbro-policy 없음)는 바로 끊고, 받는 클라이언트에는 구성 작업으로 요청을 보내 `pack_check_reply`의 버전을 비교한다. 거절 문구는 `KoreanText.message`라 옛 클라이언트에도 한국어로 보이며, 디스코드 초대 링크(`inviteUrl`)를 붙인다. 운영자 예외는 없다.
 - **검증:** 커밋 `098ed1c5`, `:jbro-policy:assemble :jbro-policy:unitTest` 성공, 111개 중 110개 통과·실패 0(`PackCheckTest` 2개 포함). 실제 서버 접속 테스트(새 클라 통과, 1.1.0 클라 거절)는 하지 않았다.
 - **배치:** 개발 서버·클라이언트, PPakemon, 로컬 운영(`fa4dcbc`), `deploy-product`, VPS(`fa4dcbc`, 백업 `20261013-062439-9157bb4d`) 모두 0.1.6, 해시 일치. VPS 서버는 꺼진 그대로. `Downloads/PPakemon 1.2.0.mrpack`을 0.1.6으로 다시 만들었고, 먼저 만든 팩은 `Downloads/old/PPakemon 1.2.0 (버전검사 전).mrpack`.
+- **06:40 모드팩만 갱신:** `cf789b4e`(to-item 툴팁 크기 막대 정렬, 클라이언트 코드만)를 `cf0bf895`에서 to-item만 다시 빌드해 PPakemon·`deploy-product/client`·`.mrpack`에 넣었다. 사용자 결정으로 서버(로컬 운영·VPS·`deploy-product/server`)는 그대로라, to-item 0.1.3이 서버와 클라이언트에서 해시만 다르다. 직전 팩은 `Downloads/old/PPakemon 1.2.0 (툴팁 막대 수정 전).mrpack`.
 - **문제가 생기면:** 모두가 막히면 VPS 관리자 백업이나 0.1.5로 되돌린다(0.1.5는 검사가 없다). 끄는 설정은 없다.
 
 ## [2026-10-13 03:30] 1.2.0 릴리스 반영 — PPakemon·로컬 운영 서버·deploy-product (VPS 제외)
