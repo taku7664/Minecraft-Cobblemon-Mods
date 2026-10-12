@@ -1,5 +1,13 @@
 # PokemonFusion MEMORY
 
+## [2026-10-12 20:38] PokemonToItem 의존성을 신규 모드로 교체·툴팁 중복 제거 (1.4.0, 배포·실게임 미확인)
+
+- **소유권·연결:** 외부 PokemonToItem 대신 `cobblemon-to-item` 0.1.0+를 필수 의존성으로 연결한다. 합성 입력·결과의 Pokemon NBT는 신규 `PokemonItemData` API와 버전 1 데이터 형식으로 읽고 갱신한다. 합성 기능과 플레이어 저장/미지급 반환 책임은 계속 pokefusion에 있다.
+- **툴팁:** 자체 `ScaleModifier` 배율·우두머리 툴팁 추가와 기존 IV lore 갱신을 제거했다. 상세 툴팁은 신규 모드가 저장된 Pokemon 데이터로 제공하며, 사이드바와 같은 볼 아이콘·XS/S/M/L/XL 크기 단계를 사용한다. 합성 화면 Shift 클릭은 재료 입고 동작을 유지한다.
+- **사용자 결정·미구현:** 기존 `PTI_NBT` 아이템/저장된 합성 입력의 변환은 이번 범위에서 제외했다. 나중에 `jbro-policy`가 서버 데이터를 일괄 변환하며, 접속·획득 시 자동 마이그레이션은 넣지 않는다. 기존 설치본은 아직 교체하지 않았다.
+- **검증:** 신규 모드 최종 변경 이후 `build`와 단위 테스트 37개 모두 통과했다(실패·중단 0). 최종 JAR CRC·진입점·번역키·구클래스 제거·`jar --validate` 검증을 통과했으며 SHA-256은 `bc6bae1f8d7d895599feb8ffad0d78850503e4f55155b5d6052fdba6791bd233`. JAR 배치, 구버전 JAR 제거, 서버 기동과 실게임 합성·툴팁 검증은 미실행이다.
+- **재발 주의:** 단순 `implementation(project(":cobblemon-to-item"))`는 테스트 실행에 배포용 remapJar를 가져와 API 테스트에서 `NoSuchMethodError`로 37개 중 1개가 실패했다. `implementation(project(path = ":cobblemon-to-item", configuration = "namedElements"))`로 명명된 개발 산출물을 연결한 뒤 37개 모두 통과했다. 프로젝트 간 API 의존성을 연결할 때 테스트 실행 클래스의 매핑도 확인한다.
+
 ## [2026-10-12 03:50] 재료 칸을 제작대처럼 아무 칸에나 (1.3.3)
 
 - **사용자 지적:** 재료를 원하는 칸에 넣을 수 없고 앞에서부터 채워졌다. 제작대처럼 아무 데나 넣게 해 달라.
