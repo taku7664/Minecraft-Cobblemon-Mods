@@ -1,5 +1,20 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-12 09:10] 하드 관장 에이스 교체 (동관·자두·무청)
+
+- **사용자 결정:**
+  - 하드 동관 에이스를 메가 보스로라에서 메가 메타그로스로 바꾼다.
+  - 하드 자두 에이스를 메가 루카리오 Z로 바꾸고 기술도 맞춘다.
+  - 하드 무청 메가 눈여아의 도깨비불을 오로라베일로 바꾼다.
+- **변경:**
+  - 동관: 메타그로스가 Lv83 에이스가 됐다. `mega_showdown:metagrossite`, 명랑, 코멧펀치·사념의박치기·냉동펀치·불릿펀치. 보스로라는 Lv82가 됐고 약점보험을 든다. 하드 팀 테스트에 따라 메가스톤은 에이스 하나만, 에이스가 최고 레벨이고, 도구 중복은 금지된다.
+  - 자두: `mega_showdown:lucarionite_z`(Mega Showdown 1.2.0의 `Lucario-Mega-Z`, 특성 auraguard, 특공 164·스피드 151)를 쓴다. 특수형 겁쟁이 CS에 공격 개체값 0이고, 나쁜음모·파동탄·러스터캐논·진공파를 쓴다.
+- **테스트:** 리그 unitTest 101건 중 99건 통과했다. `LeagueTeamDataTest`도 통과했다. 실패한 2건은 이번 변경과 관계없다.
+  - `WildTrainerDataTest`의 퀴즈 위키 검사: 빌드용 압축에 `server-wiki`를 넣지 않아서 실패했다.
+  - `WildTrainerBuildTest`의 pvn 검사: `BrainNpcBattles` 전환 뒤 낡은 문자열 검사가 남아 있다. main에서도 실패한다.
+- **개발 배포:** main `4be8cdd5`로 빌드한 리그 JAR `8563eeedf0aa3e64`를 개발 서버·클라에 넣었고 해시 일치를 확인했다. 코어는 바꾸지 않았다(`fe2ad5a3` 이후 코어 변경은 문서뿐이다). 백업은 `develop-product/deployment-backups/20261012-hard-gym-aces/`에 있다. 서버·클라가 꺼진 상태에서 교체했고, 켜지 않았다.
+- **미확인:** 실게임에서 메가 루카리오 Z 진화와 오로라베일 동작은 확인하지 않았다. 운영·VPS·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-12 06:50] 야생 트레이너를 Better AI로 전환
 
 - **사용자 결정:** 야생 트레이너도 Better AI를 쓴다. 일반 트레이너는 입문, 에이스 트레이너는 표준이다.
