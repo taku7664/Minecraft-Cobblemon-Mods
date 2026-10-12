@@ -150,7 +150,13 @@ internal object EmbeddedTeamBattle {
                                 baseContext.publicActionCatalog.withOpponentMoveInferences(inferences),
                             ).let { built ->
                                 EmbeddedTeamInput.nativeInputs(input)?.let { (preview, own) ->
-                                    built.copy(opponentTeamPreview = preview, exactOwnTeam = own)
+                                    // As the game hands them over (Cobblemon173BrainTrainerBattleActor): the
+                                    // opponent's real EVs and IVs for the advanced and boss tiers only.
+                                    val spreads = if (profiles.getValue(side).difficulty.tier in setOf(
+                                            BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS)) {
+                                        opponentSpreads(pair, if (side == "p1") "p2" else "p1", preview)
+                                    } else emptyMap()
+                                    built.copy(opponentTeamPreview = preview, exactOwnTeam = own, localOpponentStatSpreads = spreads)
                                 } ?: built
                             }
                             nativeEvaluations.remove(side)
@@ -194,6 +200,25 @@ internal object EmbeddedTeamBattle {
                                     addProperty(c.actionId, c.moveId ?: c.switchPokemonId?.let { id ->
                                         "switch:" + context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId } ?: c.kind.name)
                                 } })
+                                // What this side assumes of the foe in front (stats) and each move's damage both ways,
+                                // read on the same assumed board the brain uses. Only on request (BETTERAI_MATCHUP_VIEW):
+                                // it scores every pair again, which a long measurement does not need.
+                                if (System.getenv("BETTERAI_MATCHUP_VIEW") != null) add("matchupView", JsonObject().apply {
+                                    val tier = profiles.getValue(side).difficulty.tier
+                                    val assumed = jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption.applyToPublicState(context, tier)
+                                    val ally = assumed.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
+                                    val foe = assumed.state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+                                    if (ally != null && foe != null) {
+                                        addProperty("foeStats", foe.combatStats.toString())
+                                        addProperty("foeItem", foe.knownHeldItemId); addProperty("foeAbility", foe.knownAbilityId)
+                                        val scores = runCatching { jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(assumed) }.getOrNull()
+                                        fun moves(from: java.util.UUID, to: java.util.UUID) = com.google.gson.JsonArray().apply {
+                                            scores?.moves(from, to)?.forEach { m -> add("${m.moveId} dmg=${"%.2f".format(m.minimumDamageFraction)}-${"%.2f".format(m.maximumDamageFraction)} ko1=${"%.2f".format(m.knockoutChanceWithin(1))} ko2=${"%.2f".format(m.knockoutChanceWithin(2))} acc=${"%.2f".format(m.accuracy)}") }
+                                        }
+                                        add("ours", moves(ally.battlePokemonId, foe.battlePokemonId))
+                                        add("theirs", moves(foe.battlePokemonId, ally.battlePokemonId))
+                                    }
+                                })
                                 // The board as this side sees it: both actives' HP, status, stages.
                                 add("board", com.google.gson.JsonArray().apply { context.state.pokemon.filter { it.activeSlot != null }.forEach { p ->
                                     add("${p.side}:${p.speciesId} hp=${"%.2f".format(p.hpFraction)} status=${p.statusId} stages=${p.statStages} moves=${p.knownMoveIds}")
@@ -357,5 +382,24 @@ internal object EmbeddedTeamBattle {
             readerExecutor.shutdownNow()
             reader.close(); writer.close()
         }
+    }
+
+    /** The opposing side's real EVs and IVs by preview slot, matched by species; a repeated species is left out. */
+    private fun opponentSpreads(
+        pair: JsonObject,
+        opponentSide: String,
+        preview: jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView,
+    ): Map<Int, jbro.cobblemon.mcc.internal.ai.BattleLocalOpponentStatSpreadView> {
+        val stats = listOf("hp", "atk", "def", "spa", "spd", "spe")
+        fun id(value: String) = value.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+        val sets = pair.getAsJsonObject(opponentSide)?.getAsJsonArray("sets")?.map { it.asJsonObject }.orEmpty()
+        return preview.pokemon.mapNotNull { slot ->
+            val matching = sets.filter { id(it["species"].asString) == id(slot.speciesId) }
+            val set = matching.singleOrNull() ?: return@mapNotNull null
+            fun spread(name: String, default: Int) = stats.associateWith { stat ->
+                set.getAsJsonObject(name)?.get(stat)?.asInt ?: default
+            }
+            slot.previewSlotId to jbro.cobblemon.mcc.internal.ai.BattleLocalOpponentStatSpreadView(spread("ivs", 31), spread("evs", 0))
+        }.toMap()
     }
 }
