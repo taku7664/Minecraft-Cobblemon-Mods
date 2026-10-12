@@ -14,7 +14,7 @@
 
 ## 툴팁과 공개 API
 
-상세 툴팁의 구현과 번역은 이 모드가 소유합니다. Sidebar의 기존 상세 툴팁을 이관했으며 Sidebar와 아이템이 같은 구현을 호출합니다. 첫 줄은 `[잡은 볼 아이콘] 레벨 이름 성별`이며, 이로치는 이름과 이름 뒤의 `★`를 노란색으로 표시합니다. HP, 성격·특성, Cobblemon 자체 XS/S/M/L/XL 단계, 우두머리 여부, 기술·PP 및 개체값·노력치 표를 표시합니다. 하단 조작 안내는 표시하지 않으며 아이템의 추가 설명은 유지합니다.
+상세 툴팁의 구현과 번역은 이 모드가 소유합니다. Sidebar의 기존 상세 툴팁을 이관했으며 Sidebar와 아이템이 같은 구현을 호출합니다. 첫 줄은 `[잡은 볼 아이콘] 레벨 이름 성별`이며, 이로치는 이름과 이름 뒤의 `★`를 노란색으로 표시합니다. HP, 성격·특성, Cobblemon 자체 XS/S/M/L/XL 단계, 우두머리 여부, 기술·PP 및 개체값·노력치 표를 표시합니다. 개체값이 31(V)인 숫자와 노력치가 252인 숫자는 녹색입니다. 크기는 흑청색 세로 막대 5개 중 XS부터 XL까지 1~5개를 푸른색으로 채우고 뒤에 `(XS)` 같은 단계 문자를 붙입니다. 기술 목록 위·아래에는 회색 구분선을 표시합니다. 하단 조작 안내는 표시하지 않으며 아이템의 추가 설명은 유지합니다.
 
 공개 Kotlin API(클라이언트용 API를 서버에서 불러오지 마세요):
 
@@ -34,7 +34,7 @@ PokemonTooltip.render(graphics, pokemon, mouseX, mouseY)
 PokemonTooltip.renderItemTooltip(graphics, stack, mouseX, mouseY)
 ```
 
-`PokemonItemData`·`PokemonTransfers`는 `jbro.cobblemon.toitem.api`, `PokemonTooltip`은 `jbro.cobblemon.toitem.api.client`에 있습니다. 전송 API는 서버 스레드에서 호출해야 합니다. GUI 경로는 플레이어의 일반 인벤토리 메뉴에서만 실행합니다. 명령 경로만 `dropOverflow = true`를 사용합니다.
+`PokemonItemData`·`PokemonTransfers`는 `jbro.cobblemon.toitem.api`, `PokemonTooltip`은 `jbro.cobblemon.toitem.api.client`에 있습니다. 전송 API는 서버 스레드에서 호출해야 합니다. 사이드바 GUI 경로는 일반 인벤토리와 합성 메뉴에서 실행합니다. 인벤토리 아이템의 Shift 복원은 일반 인벤토리 메뉴에서만 실행합니다. 명령 경로만 `dropOverflow = true`를 사용합니다.
 
 아이템 데이터는 `custom_data.cobblemon_to_item`의 `version: 1`, `pokemon: <전체 Cobblemon NBT>`로 저장합니다. 알 수 없는 버전은 읽지 않습니다. 기존 `PTI_NBT` 아이템 마이그레이션은 이 모드에 포함하지 않으며, 추후 `jbro-policy`의 서버 데이터 일괄 변환 작업으로 처리합니다. 마이그레이션 전에 구버전 아이템을 새 아이템으로 취급하지 않습니다.
 
