@@ -52,21 +52,6 @@ object ManagedPveBattles {
     }
     private val servers = java.util.IdentityHashMap<MinecraftServer, State>()
 
-    // The trainer's native search starts only from a known opponent roster. Every locked
-    // party member enters the battle, so the preview is the whole party in party order.
-    private fun playerTeamPreview(team: List<BattlePokemon>) = BattleOpponentTeamPreviewView(
-        selectionSize = team.size,
-        pokemon = team.mapIndexed { slot, battlePokemon ->
-            val pokemon = battlePokemon.effectedPokemon
-            BattleOpponentTeamPreviewPokemonView(
-                previewSlotId = slot,
-                speciesId = pokemon.species.resourceIdentifier.toString(),
-                formId = pokemon.form.name.takeUnless { pokemon.form == pokemon.species.standardForm },
-                level = pokemon.level,
-            )
-        },
-    )
-
     fun snapshotParty(player: ServerPlayer, levelCap: Int): List<String> {
         check(player.server.isSameThread)
         require(levelCap in 1..100)
@@ -118,7 +103,7 @@ object ManagedPveBattles {
                     protectManagedOpponent(it)
                 }
             }, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
-            preview = playerTeamPreview(playerTeam), appearance = request.appearance, scenes = request.scenes)
+            preview = jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PlayerTeamPreview.of(playerTeam), appearance = request.appearance, scenes = request.scenes)
         val tag = request.clientTag ?: MccBattleTag(request.contentId, request.stage, request.trainerId)
         return when (val result = MccBattleTags.during(setOf(player.uuid), tag) { runtime.startManaged(prepared) }) {
             is PveLaunchResult.Started -> result.battleId.also {

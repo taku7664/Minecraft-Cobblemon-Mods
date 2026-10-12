@@ -50,6 +50,7 @@ internal object Cobblemon173BrainNpcBattles {
             primaryBrain = Cobblemon173BrainProviderResolver.create(registry, BrainCapability.SINGLE, BattleBrainProviderRole.PRIMARY, selection),
             localBrain = Cobblemon173BrainProviderResolver.create(registry, BrainCapability.SINGLE, BattleBrainProviderRole.LOCAL, selection),
             cobblemonNpc = true,
+            opponentTeamPreview = Cobblemon173PublicTeamPreviewKnowledge.enrich(Cobblemon173PlayerTeamPreview.of(playerTeam)),
         )
         playerActor.battleTheme = npc.getBattleTheme()
         val result = BattleRegistry.startBattle(
