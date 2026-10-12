@@ -1,5 +1,18 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-12 21:57] 툴팁 수정 빌드·main 반영·개발 설치 (0.1.1, 실게임 미확인)
+
+- **검증·소스:** `:build` 성공, 단위 테스트 17개 모두 통과(복원 원본 보존 회귀 3개 포함). ZIP 전체 항목 읽기/CRC·JDK 21 `jar --validate`·메타데이터·access widener 검증을 통과했다. 구현 `7265623f`를 main `88ee52bac9e52825d89d7e8c26f07776b5b304f9`에 병합했고 origin/main과 0/0 동기화를 확인했다. 최초 push의 GitHub `commit_refs` 오류 후 원격 상태를 확인하고 같은 커밋을 재시도하여 성공했다. 두 모드 src·빌드 설정과 루트 Gradle/settings/wrapper가 병합 main과 같아 검증 빌드본을 재사용했다.
+- **배치:** 21:57:53 실제 기본 저장소 `develop-product/{server,client}/mods`에 0.1.0 대신 0.1.1을 설치했다(client는 `cobblemon-dev` 정션). 서버·클라이언트 설치본 SHA-256은 빌드본 `f9e3e0bd6030d9c5b484e2eb55de78987c0b72156d7a15bf375476c715d3e7ee`과 같다. 이전 두 모드 JAR은 `F:/AI/builds/cobblemon-to-item-28bf/deployment-backups/20261012-215753/{server,client}`에 백업하고 설치 폴더에서 제거했다.
+- **보존·검사 한계:** 배치 직전 게임·서버 프로세스 없음과 25566 미수신을 확인했다. 교체 대상 외 mods 전체 파일 SHA-256 일치를 확인했고 config/world에는 쓰지 않았다. 외부 Debugify/MegaShowdown 메타데이터 description의 literal newline으로 Python strict JSON 검사가 실패하여 외부 JAR 수정 없이 `strict=False`로 mod ID 중복 검사를 통과했다(서버 48·클라이언트 84개).
+- **미확인·범위:** 코사원은 서버·게임을 기동하지 않았으며, 기존 상세 툴팁 부재의 정확한 런타임 예외와 실제 해결 여부는 미확인이다. fusion/policy와 기존 아이템 마이그레이션은 변경하지 않았다. 운영/VPS·릴리스는 건드리지 않았다.
+
+## [2026-10-12 21:38] 상세 툴팁 읽기 경로·조작 안내·이로치 색상 수정 (소스 수정만)
+
+- **구현:** 공유 `PokemonTooltip` 하단 조작 hint와 한영 번역키를 제거하고, 이로치 이름과 ★를 `ChatFormatting.YELLOW`로 표시하도록 수정했다. 아이템 툴팁의 서버 `Pokemon.loadFromNBT` 호출은 `TooltipPokemonReader`의 공개 `Pokemon.CLIENT_CODEC` 읽기로 바꿨다. 서버 저장에서 생략 가능한 클라이언트 필수 컨테이너는 복사본에만 보완하고 서버 Evolution controller는 그 복사본에서 제외한다. 저장된 form과 실제 복원에 사용하는 원본 NBT는 유지한다. 캐시된 읽기 실패에 로그를 추가했다.
+- **확인된 범위:** JSON 파싱·`git diff --check`만 통과했다. 원본 복원 데이터 보존·생략 기본값 보완·기존 값 유지 회귀테스트 3개를 추가했지만 실행하지 않았다. 빌드·테스트·배포·서버/게임 기동·실게임 확인은 전혀 하지 않았다. 빡대리에게 빌드·배포 전 수정 내용을 설명하기 위한 소스 수정 단계이며 main 병합·푸시도 하지 않았다.
+- **진단 한계:** 첨부 이미지에서 상세 툴팁이 표시되지 않는 현상은 관찰했다. 기존 코드가 예외를 삼켜 정확한 런타임 예외는 증명하지 못했으며, 이번 수정이 실제 현상을 해결했는지는 미확인이다.
+
 ## [2026-10-12 21:18] 개발 서버·클라이언트 설치와 기존 PokemonToItem 제거 (0.1.0, 실게임 미확인)
 
 - **대상·배치:** 사용자 "배포 적용해" 요청으로 실제 저장소 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/{server,client}/mods`에 0.1.0을 신규 설치했다. client는 Modrinth `cobblemon-dev` 프로필로 연결된 정션이다. 양쪽에서 `PokemonToItem-fabric-0.2.0.jar`를 제거하고 사이드바·pokefusion·jbro-policy를 함께 교체했다.
