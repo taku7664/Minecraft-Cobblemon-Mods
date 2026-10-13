@@ -891,8 +891,12 @@ class BattleMoveEffectView(
         }
         require(valueId == null || valueId.isNotBlank()) { "Move effect value ID cannot be blank" }
         require(this.statStages.keys.all { it.isNotBlank() }) { "Move effect stat IDs cannot be blank" }
-        require(this.statStages.values.all { it in -6..6 && it != 0 }) {
-            "Move effect stat stages must be non-zero values between -6 and 6"
+        // Belly Drum's stage is what takes the stat to +6: from an Intimidated -1 that is 7, and Showdown boosts it
+        // by 12. Only that marked effect goes past 6; the stage appliers clamp the result (league mock battle,
+        // 2026-10-13: Snorlax at -1 failed every decision).
+        val limit = if (valueId == BattleDeclarativeMoveEffects.MAXIMISE_STAGE) 12 else 6
+        require(this.statStages.values.all { it in -limit..limit && it != 0 }) {
+            "Move effect stat stages must be non-zero values between -$limit and $limit"
         }
     }
 }

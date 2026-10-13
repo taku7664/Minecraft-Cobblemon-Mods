@@ -79,6 +79,24 @@ class LocalCallbackMoveEffectsTest {
     }
 
     @Test
+    fun `Belly Drum from a lowered Attack adds more than six and still reaches plus six`() {
+        // An Intimidated Snorlax at -1: the stage to +6 is 7, which the effect view refused, and every decision failed
+        // (league mock battle, 2026-10-13).
+        val user = mon(BattleSide.ALLY, "normal", hp = 1.0, stages = mapOf("atk" to -1))
+        val foe = mon(BattleSide.OPPONENT, "normal")
+        val state = state(user, foe)
+        val drum = move("bellydrum", BattleMoveTargetPattern.SELF)
+        val calculated = PublicBattleTacticalCalculator.calculate(context(state, drum))
+        val raise = calculated.candidates.single().moveDetails!!.effects!!.effects.single { it.kind == BattleMoveEffectKind.STAT_STAGE }
+        assertEquals(mapOf("atk" to 7), raise.statStages)
+        PublicSingleTurnProjector.project(
+            state, calculated.candidates.single(), BattleActionCandidate("wait", BattleActionKind.WAIT), calculated,
+        ).forEach { outcome ->
+            assertEquals(6, outcome.stateBeforeResidual.pokemon.single { it.battlePokemonId == user.battlePokemonId }.statStages["atk"])
+        }
+    }
+
+    @Test
     fun `Moonlight heals in search`() {
         val user = mon(BattleSide.ALLY, "fairy", hp = 0.3)
         val foe = mon(BattleSide.OPPONENT, "normal")
