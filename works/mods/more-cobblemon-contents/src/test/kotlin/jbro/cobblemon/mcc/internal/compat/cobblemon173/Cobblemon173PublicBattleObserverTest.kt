@@ -1477,6 +1477,16 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `a move an ability called is not the user's own move`() {
+        fun called(line: String) = Cobblemon173ShowdownObservationAdapter.abilityCalledMove(BattleMessage(line))
+        assertTrue(called("|move|p2a: test|Stealth Rock|p1a: target|[from]ability: Magic Bounce"))
+        assertTrue(called("|move|p1a: test|Fiery Dance|p2a: target|[from]ability: Dancer"))
+        assertFalse(called("|move|p1a: test|Tackle|p2a: target|[from]move: Sleep Talk"))
+        assertFalse(called("|move|p1a: test|Outrage|p2a: target|[from]lockedmove"))
+        assertFalse(called("|move|p1a: test|Tackle|p2a: target"))
+    }
+
+    @Test
     fun `locked continuation preserves execution evidence without spending PP again`() {
         val observer = Cobblemon173PublicBattleObserver(3)
         val actor = publicPokemon(BattleSide.ALLY, 0)

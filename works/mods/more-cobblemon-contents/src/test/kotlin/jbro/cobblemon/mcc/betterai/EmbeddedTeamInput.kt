@@ -201,16 +201,18 @@ internal object EmbeddedTeamInput {
                 }
                 "faint" -> current?.let { it.hp = 0.0; it.volatileEffects.clear(); event(BattleObservedEventKind.FAINTED) }
                 "move" -> current?.let {
+                    // A move its ability called (Magic Bounce's reflection, Dancer's copy) only reveals the ability, as
+                    // the game's observer reads it: not its move, PP or action.
+                    val abilitySource = p.drop(4).firstOrNull { tag -> tag.startsWith("[from]") }?.removePrefix("[from]")?.trim()
+                        ?.takeIf { source -> source.startsWith("ability:") }
+                    if (abilitySource != null) {
+                        it.ability = id(abilitySource); event(BattleObservedEventKind.ABILITY_REVEALED, id(abilitySource))
+                        return@let
+                    }
                     it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3]))
                     val targets = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
                     actionWindow = ActionWindow(eventTurn, index.toLong() * 2, uuid(it.ident), id(p[3]), targets)
-                    // A move from an ability (Magic Bounce's reflection) reveals it, as the game's observer reads
-                    // every line's [from] source.
-                    p.drop(4).firstOrNull { tag -> tag.startsWith("[from]") }?.removePrefix("[from]")?.trim()
-                        ?.takeIf { source -> source.startsWith("ability: ") }?.let { source ->
-                            it.ability = id(source); event(BattleObservedEventKind.ABILITY_REVEALED, id(source))
-                        }
                 }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
@@ -218,6 +220,16 @@ internal object EmbeddedTeamInput {
                 "-ability" -> current?.let {
                     it.ability = id(p[3]); it.abilityEnded = false
                     event(BattleObservedEventKind.ABILITY_REVEALED, id(p[3]))
+                    // Trace also reveals the copied Pokemon's ability, as the game's observer reads it.
+                    if (p.drop(4).any { tag -> tag.removePrefix("[from]").trim() == "ability: Trace" }) {
+                        p.drop(4).singleOrNull { tag -> tag.startsWith("[of] ") }?.let { tag -> seen[identity(tag.removePrefix("[of] "))] }
+                            ?.takeIf { source -> source !== it }?.let { source ->
+                                source.ability = id(p[3])
+                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                                    BattleObservedEventKind.ABILITY_REVEALED, uuid(source.ident), publicValueId = id(p[3]),
+                                    actorSlot = if (nativeInputs && source.active) activeSlot(source.ident) else null)
+                            }
+                    }
                 }
                 "-endability" -> current?.let { it.abilityEnded = true }
                 // Both reveal the item as the game's observer records it.

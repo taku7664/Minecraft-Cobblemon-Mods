@@ -165,6 +165,12 @@ class Cobblemon173ShowdownObservationAdapter(
             }
 
             "move" -> {
+                // A move its holder's ability makes it use (Magic Bounce's reflection, Dancer's copy) is not its own:
+                // Showdown runs it outside the holder's action, spending no PP and leaving its last move as it was. Read
+                // as used, a reflected Stealth Rock joined the bouncer's moves, cost it PP, stood as its last move for
+                // Encore and as turn-order evidence (2026-10-13). The ability is revealed from the same line's [from]
+                // source (revealOptionalSource).
+                if (abilityCalledMove(message)) return
                 val actor = resolvePokemon(activeBattle, message, 0) ?: return
                 val moveId = effectId(message.argumentAt(1)).takeIf(String::isNotBlank) ?: return
                 val ppCaller = ppCallerMove(message, lastMoveByPokemon[actor.battlePokemonId])
@@ -315,10 +321,19 @@ class Cobblemon173ShowdownObservationAdapter(
         val pokemon = resolvePokemon(activeBattle, message, 0) ?: return
         val id = effectId(message.argumentAt(1)).takeIf(String::isNotBlank) ?: return
         when (kind) {
-            ResourceKind.ABILITY -> observer.observe(
-                Cobblemon173PublicObservation.AbilityRevealed(observedTurn, pokemon, id,
-                    baseAbilityId = "trace".takeIf { message.effect("from")?.id == "trace" }),
-            )
+            ResourceKind.ABILITY -> {
+                val traced = message.effect("from")?.id == "trace"
+                observer.observe(
+                    Cobblemon173PublicObservation.AbilityRevealed(observedTurn, pokemon, id,
+                        baseAbilityId = "trace".takeIf { traced }),
+                )
+                // Trace copies the ability its `[of]` Pokemon holds, so the line reveals that one's too. Read only for
+                // the copier, an opponent traced by this side kept every possible ability (2026-10-13).
+                if (traced) compatibilityCallOrNull { message.battlePokemonFromOptional(activeBattle, "of") }
+                    ?.toPublicSnapshot()?.takeIf { it.battlePokemonId != pokemon.battlePokemonId }?.let { source ->
+                        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(observedTurn, source, id))
+                    }
+            }
 
             ResourceKind.ITEM -> observer.observe(
                 Cobblemon173PublicObservation.HeldItemRevealed(observedTurn, pokemon, id,
@@ -471,6 +486,10 @@ class Cobblemon173ShowdownObservationAdapter(
 
         fun ppLockedContinuation(message: BattleMessage): Boolean =
             message.id == "move" && message.optionalArgument("from")?.trim() == "lockedmove"
+
+        /** Whether [message] is a move line its user's ability called (`[from]ability: Magic Bounce`, `Dancer`). */
+        fun abilityCalledMove(message: BattleMessage): Boolean =
+            message.id == "move" && message.optionalArgument("from")?.trim()?.startsWith("ability:") == true
 
         fun ppCallerMove(message: BattleMessage, previousMoveId: String?): String? {
             if (message.id != "move") return null
