@@ -120,9 +120,11 @@ internal object LocalSetupGate {
     data class Reading(val win: Double, val bonus: Double, val value: Double)
 
     /**
-     * A stat raise's value in the root's units: the chance the user still wins the one-on-one after raising its stats
-     * in front of the Pokemon it faces (the weakest such chance in doubles), the setup turn's hit paid, at
-     * [knockoutMaterialScore] for a sure win, times [sweepBonus]. No turn is searched; the exchange is the pair table's.
+     * A stat raise's value in the root's units: whether the user still wins the one-on-one after raising its stats
+     * in front of the Pokemon it faces (the weakest such chance in doubles), the setup turn's hit paid. A win chance of
+     * [WIN_PASS] or more is a win, worth [knockoutMaterialScore] times [sweepBonus]; anything less is worth nothing. The
+     * question is yes or no: read as a share, a coin flip took half a knockout and, with the bonus, three times the
+     * attack beside it (a Lucario's Nasty Plot at 0.5, 2026-10-13). No turn is searched; the exchange is the pair table's.
      * Whether the boost raises the win chance is not asked: one that already wins without it still wins with it, which
      * is when a free turn to boost is safest. Null when [candidate] is not a stat-raising status move of an active ally
      * or the pair cannot be read.
@@ -160,7 +162,8 @@ internal object LocalSetupGate {
             actingChance(foe) * hit + (1.0 - actingChance(foe)) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
-        return Reading(win, bonus, win * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)))
+        val won = if (win >= WIN_PASS) 1.0 else 0.0
+        return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)))
     }
 
     /**
@@ -268,6 +271,8 @@ internal object LocalSetupGate {
     private const val FROZEN_ACTS = 0.2
     const val REASON = "setup_gate"
     const val SWEEP_PASS = 0.5
+    /** The win chance after boosting that [score] reads as a win (user decision, 2026-10-13). */
+    const val WIN_PASS = 0.7
     /** The sweep bonus each fully easy opponent still to come adds over 1. */
     const val SWEEP_BONUS_STEP = 0.15
     const val STOPPER_PASS = 0.5

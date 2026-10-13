@@ -168,12 +168,20 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `a setup its user still loses the one-on-one after is worth less than half a knockout`() {
+    fun `a setup its user still loses the one-on-one after is worth nothing`() {
         // Slower and weaker: after +2 Attack, with the setup turn's hit paid, it still loses to the foe in front.
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 90.0, allySetup = mapOf("atk" to 2))
         val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
-        assertTrue(reading.win < 0.5) { reading.toString() }
-        assertTrue(reading.value < 100.0 * reading.bonus) { reading.toString() }
+        assertTrue(reading.win < LocalSetupGate.WIN_PASS) { reading.toString() }
+        assertEquals(0.0, reading.value, 1e-9)
+    }
+
+    @Test
+    fun `a setup its user wins the one-on-one after is worth a full knockout times the bonus`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, allySetup = mapOf("atk" to 1, "spe" to 1))
+        val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
+        assertTrue(reading.win >= LocalSetupGate.WIN_PASS) { reading.toString() }
+        assertEquals(200.0 * reading.bonus, reading.value, 1e-9)
     }
 
     @Test
