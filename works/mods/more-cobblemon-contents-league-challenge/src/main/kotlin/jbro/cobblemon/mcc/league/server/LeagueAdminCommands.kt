@@ -90,9 +90,11 @@ object LeagueAdminCommands {
                     .executes { context -> setProgress(context, StringArgumentType.getString(context, "challenge")) })))
             .then(literal("reset").then(argument("player", EntityArgument.player()).executes { context -> setProgress(context, null) })))
         .then(literal("test").then(argument("player", EntityArgument.player())
+            // Korean names first (강석, 강석-하드): Brigadier's unquoted words are ASCII only, so each is its own literal.
+            .apply { KOREAN_TARGETS.forEach { (name, id) -> then(literal(name).apply { testDifficulties { id } }) } }
             .then(argument("challenge", StringArgumentType.word())
                 .suggests { _, builder -> SharedSuggestionProvider.suggest(progressTargets().filter { it != ALL }, builder) }
-                .apply { TEST_DIFFICULTIES.forEach { (name, skill) -> then(literal(name).executes { testBattle(it, name, skill) }) } })))
+                .apply { testDifficulties { StringArgumentType.getString(it, "challenge") } })))
         .then(literal("cap").then(literal("sync").then(argument("player", EntityArgument.player()).executes { context ->
             val player = EntityArgument.getPlayer(context, "player")
             val catalog = catalog(context.source) ?: return@executes 0
@@ -188,16 +190,35 @@ object LeagueAdminCommands {
     /** The AI levels `test` takes, named as `/mcc test` names them, and the trainer skill each stands for. */
     private val TEST_DIFFICULTIES = listOf("ai-입문" to 1, "ai-표준" to 2, "ai-상급" to 4, "ai-보스" to 5)
 
+    private fun <T : com.mojang.brigadier.builder.ArgumentBuilder<CommandSourceStack, T>> T.testDifficulties(
+        target: (CommandContext<CommandSourceStack>) -> String,
+    ): T = apply { TEST_DIFFICULTIES.forEach { (name, skill) -> then(literal(name).executes { testBattle(it, target(it), name, skill) }) } }
+
+    /**
+     * The challenges by their Korean trainer names, for `test`: each bundled `trainer.<mod>.<id>` name in `ko_kr`
+     * stands for `<id>`, and `<name>-하드` for `<id>_hard`. Read from the mod's own language file, since the command
+     * tree is built before the League's data loads; `test` still checks the name against the loaded route.
+     */
+    private val KOREAN_TARGETS: Map<String, String> by lazy {
+        val stream = LeagueAdminCommands::class.java.classLoader.getResourceAsStream("assets/${Mod.MOD_ID}/lang/ko_kr.json")
+            ?: return@lazy emptyMap()
+        val names = stream.reader(Charsets.UTF_8).use { com.google.gson.JsonParser.parseReader(it).asJsonObject }
+        val trainer = Regex("""trainer\.${Regex.escape(Mod.MOD_ID)}\.([a-z]+)""")
+        names.entrySet().mapNotNull { (key, value) -> trainer.matchEntire(key)?.let { value.asString to it.groupValues[1] } }
+            .flatMap { (name, id) -> listOf(name to id, "$name-하드" to "${id}_hard") }
+            .filter { (name, _) -> name.none(Char::isWhitespace) }
+            .toMap()
+    }
+
     /**
      * Starts a test battle between an online player's party (any size, at its own levels) and one League challenge's
      * team as the League fields it (Mega Evolution, skin), at the AI level [difficulty] names. It is an AI test
      * battle: no progress, reward or record (a League run in progress stays as it was), and
      * `/mcc battle end <player> void` ends it.
      */
-    private fun testBattle(context: CommandContext<CommandSourceStack>, difficulty: String, skill: Int): Int {
+    private fun testBattle(context: CommandContext<CommandSourceStack>, target: String, difficulty: String, skill: Int): Int {
         val player = EntityArgument.getPlayer(context, "player")
         val catalog = catalog(context.source) ?: return 0
-        val target = StringArgumentType.getString(context, "challenge")
         val engine = LeagueEngine(catalog)
         val challengeId = engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
             context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
