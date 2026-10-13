@@ -45,6 +45,12 @@ internal object TrainerSceneCaptureHarness {
      * opened after it.
      */
     private val STAGE = System.getenv("MCC_SCENE_CAPTURE_STAGE")?.trim()?.takeIf { it.isNotEmpty() }
+    /**
+     * `MCC_SCENE_CAPTURE_TEAM=<team>` fights the first battle against a bundled League team (`cynthia_hard`) instead of
+     * two Magikarp, and logs the opponents' levels on the server and as the client shows them: a check that a team
+     * above Cobblemon's maximum level keeps its levels into the battle.
+     */
+    private val TEAM = System.getenv("MCC_SCENE_CAPTURE_TEAM")?.trim()?.takeIf { it.isNotEmpty() }
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -116,6 +122,8 @@ internal object TrainerSceneCaptureHarness {
                         logger.info("SCENE CHECK battle opened {} ticks after the start request", ticks - phaseTick)
                     }
                     countBodies()
+                    if (TEAM != null) logger.info("SCENE CHECK client opponent levels {}", CobblemonClient.battle!!.side2.actors
+                        .flatMap { it.activePokemon }.mapNotNull { it.battlePokemon }.map { "${it.species.showdownId()}=${it.level}" })
                     shot("1-start")
                     next(if (LEAVES) 2 else 3)
                 }
@@ -218,12 +226,28 @@ internal object TrainerSceneCaptureHarness {
             trainerId = "more_cobblemon_contents_league_challenge:scene_capture",
             trainerNameKey = "trainer.more_cobblemon_contents_league_challenge.cynthia",
             lockedParty = ManagedPveBattles.snapshotParty(player, 100),
-            opponentProperties = listOf("magikarp level=5 moves=splash", "magikarp level=5 moves=splash"),
+            opponentProperties = TEAM?.takeIf { playScene }?.let(::bundledTeam)
+                ?: listOf("magikarp level=5 moves=splash", "magikarp level=5 moves=splash"),
             appearance = SKIN,
             stage = if (playScene) STAGE else null,
             scenes = if (playScene) CYNTHIA_SCENES else TrainerScenes.NONE,
         )
         val id = ManagedPveBattles.start(player, request) { outcome -> logger.info("SCENE CHECK battle outcome {}", outcome) }
         logger.info("SCENE CHECK managed battle started: {}", id)
+        if (TEAM != null && playScene) {
+            val battle = com.cobblemon.mod.common.battles.BattleRegistry.getBattleByParticipatingPlayer(player)
+            logger.info("SCENE CHECK server opponent levels {} (Cobblemon maximum {})", battle?.actors
+                ?.filter { it.uuid != player.uuid }?.flatMap { it.pokemonList }
+                ?.map { "${it.effectedPokemon.species.showdownId()}=${it.effectedPokemon.level}" },
+                Cobblemon.config.maxPokemonLevel)
+        }
+    }
+
+    /** A bundled League team's members, as the League hands them to [ManagedPveBattles]. */
+    private fun bundledTeam(name: String): List<String> {
+        val path = "data/more_cobblemon_contents_league_challenge/league-challenge/teams/$name.json"
+        val stream = checkNotNull(TrainerSceneCaptureHarness::class.java.classLoader.getResourceAsStream(path)) { "No bundled team $name" }
+        return stream.reader(Charsets.UTF_8).use { com.google.gson.JsonParser.parseReader(it) }
+            .asJsonObject.getAsJsonArray("pokemon").map { it.asString }
     }
 }

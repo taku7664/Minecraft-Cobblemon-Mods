@@ -15,6 +15,7 @@ object Cobblemon173OpponentLevelScope {
     @JvmStatic
     fun limit(): Int? = limit.get()
 
+    @JvmStatic
     fun <T> during(max: Int, block: () -> T): T {
         val previous = limit.get()
         limit.set(max)

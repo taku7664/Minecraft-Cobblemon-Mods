@@ -21,6 +21,7 @@
   ],
   "client": [
     "client.BattleEndHandlerSceneMixin",
+    "client.BattlePokemonDtoLevelMixin",
     "client.BattleInitializeHandlerSceneMixin",
     "client.BattleMoveSelectionMixin",
     "client.LevelRendererLateHologramMixin"
