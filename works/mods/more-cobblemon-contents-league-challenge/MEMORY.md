@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 17:40] 하드 관장 레벨을 모두 80 남짓으로 올림 (데이터·테스트, 미배포)
+
+- **이유:** MCC 하드 관장 240판 모의 전투(Lv80 엔트리 6개 × 시드 5개)에서 관장 승수가 팀 레벨을 따라갔다. 강석(75~78) 5/30, 자두(78~81) 7/30, 유채(76~79) 9/30, 맥실러·무청·전진(79~85) 19~20/30. 하드 관장 동안 레벨캡이 80 고정이라 앞쪽 관장이 플레이어보다 약했다. 판단 습관(공격·변화기·교체 비율, 낮은 확률 수 비율)은 관장끼리 차이가 없었다. 분석은 MCC `docs/betterai/engine/LOCAL_GAPS.md` 관장 240판 항목.
+- **사용자 결정:** 순서대로 강해지는 흐름은 두고 모든 에이스가 80을 넘게 한다. 강석·유채 79~81, 멜리사·자두 80~82, 맥실러·동관 81~83, 무청 82~84, 전진 83~85. 각 팀은 최저 1마리, 중간 4마리(+1), 에이스(+2) 순서다. 최고 85·레벨캡 80·에이스 최고 레벨 규칙은 그대로다.
+- **확인:** 리그 `unitTest` 104개 중 103개 통과(`LeagueTeamDataTest` 전부 통과). 실패 1개 `WildTrainerBuildTest`의 `BattleBuilder.pvn(...)` 문자열 검사는 `WildTrainers.kt`가 pvn 호출을 바꾼 뒤부터 실패하던 것으로 이번 변경과 무관하다.
+- **미확인:** 바뀐 레벨로 모의 전투를 다시 돌리지 않았다. 빌드·배포 안 함.
+
 ## [2026-10-13 02:35] 장면 하네스에 단계 태그 옵션
 
 - `TrainerSceneCaptureHarness`에 `MCC_SCENE_CAPTURE_STAGE=<gym|elite_four|champion>`을 추가했다. 첫 배틀을 그 리그 단계로 태그해 VS 인트로 → 배틀 시작 흐름을 확인한다(`trainer-scene-0-versus-<틱>.png`, `SCENE CHECK battle opened ...`). VS 인트로 자체는 MCC·`cobblemon-ui` `MEMORY.md` 같은 시각 항목. 리그 코드는 바꾸지 않았다(단계 태그는 원래 `LeagueEngine.stage`가 넣고 있었다).
