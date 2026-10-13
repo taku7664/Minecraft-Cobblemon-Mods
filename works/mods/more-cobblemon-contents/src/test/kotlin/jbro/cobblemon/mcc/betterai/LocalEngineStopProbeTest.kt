@@ -28,11 +28,20 @@ import org.junit.jupiter.api.TestInstance
 class LocalEngineStopProbeTest {
     private val worker = EngineBranchWorker()
 
+    private var previousLease: LocalEngineStopProbe.Lease? = null
+
     @BeforeAll
     fun engine() {
+        previousLease = LocalEngineStopProbe.lease
         LocalEngineStopProbe.lease = object : LocalEngineStopProbe.Lease {
             override fun <T> withWorker(deadlineNanos: Long, action: (NativeBranchWorker) -> T): T? = action(worker)
         }
+    }
+
+    // The lease is global: left in place, every later test class in the run decided with an engine it never asked for.
+    @org.junit.jupiter.api.AfterAll
+    fun releaseEngine() {
+        previousLease?.let { LocalEngineStopProbe.lease = it }
     }
 
     @Test

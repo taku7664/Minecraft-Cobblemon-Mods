@@ -219,6 +219,10 @@ internal object EmbeddedTeamBattle {
                                         }
                                         add("ours", moves(ally.battlePokemonId, foe.battlePokemonId))
                                         add("theirs", moves(foe.battlePokemonId, ally.battlePokemonId))
+                                        scores?.pokemon(ally.battlePokemonId, foe.battlePokemonId)?.let { duel ->
+                                            addProperty("win", duel.winProbability); addProperty("duelScore", duel.score)
+                                            addProperty("firstMove", duel.subjectMovesFirstProbability)
+                                        }
                                     }
                                 })
                                 // The board as this side sees it: both actives' HP, status, stages.

@@ -11,14 +11,40 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** The searchless Boss decision on recorded positions where the one-turn ranking alone went wrong. */
+/**
+ * The searchless Boss decision on recorded positions where the one-turn ranking alone went wrong. The game decides with
+ * the engine (status pricing, ability checks, setup stop probes), so these decide with one too: without it the class
+ * passed or failed by which test class ran before it and left its engine in the global lease.
+ */
+@org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class LocalQuickDeciderTest {
+    private val worker = jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker()
+    private var previousLease: jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Lease? = null
+
+    @org.junit.jupiter.api.BeforeAll
+    fun engine() {
+        previousLease = jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease
+        jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease = object : jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Lease {
+            override fun <T> withWorker(deadlineNanos: Long, action: (jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker) -> T): T? = action(worker)
+        }
+    }
+
+    @org.junit.jupiter.api.AfterAll
+    fun releaseEngine() {
+        previousLease?.let { jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease = it }
+    }
+
     @Test
     fun `a switch-in that also hits the opponent hard comes before one that only walls it`() {
         // Burned Milotic in front of Ferrothorn: every Pokemon behind it reads as not losing, Roserade by a hair the
-        // most. Roserade has nothing that hurts Ferrothorn; Lucario's Close Combat does.
+        // most. Roserade has nothing that hurts Ferrothorn; Lucario's Close Combat does. The draw keeps an 11% Scald and
+        // an 8% Ice Beam, and its seed follows the board (an ability ruled out by the engine changes it), so this reads
+        // the likeliest choice rather than one draw.
         val (context, decision) = decide("milotic-ferrothorn-switch-in")
-        assertTrue(label(context, decision) in setOf("lucario", "giratina"), "${label(context, decision)} ${decision.tags}")
+        val stages = requireNotNull(lastStages)
+        val likeliest = stages.quick ?: stages.drawProbabilities.maxBy { it.value }.key
+        assertTrue(label(context, likeliest) in setOf("lucario", "giratina"),
+            "${label(context, likeliest)} ${stages.drawProbabilities} ${decision.tags}")
     }
 
     @Test
@@ -78,6 +104,7 @@ class LocalQuickDeciderTest {
         val brain = LocalTacticalBrain(
             nativeInitialDecision = { _, _, _, _, _, _ -> error("the native search must not run") },
             searchless = true,
+            stageTrace = { lastStages = it },
         )
         val session = brain.openSession(BattleBrainOpenContext(
             battleId = context.state.battleId,
@@ -87,8 +114,12 @@ class LocalQuickDeciderTest {
         return context to brain.decide(session, context).toCompletableFuture().get()
     }
 
-    private fun label(context: BattleDecisionContext, decision: BattleDecision): String {
-        val candidate = context.candidates.first { it.actionId == decision.actionId }
+    private var lastStages: jbro.cobblemon.mcc.betterai.brain.LocalDecisionStages? = null
+
+    private fun label(context: BattleDecisionContext, decision: BattleDecision): String = label(context, decision.actionId)
+
+    private fun label(context: BattleDecisionContext, actionId: String): String {
+        val candidate = context.candidates.first { it.actionId == actionId }
         val part = if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions.first() else candidate
         return part.switchPokemonId?.let { id -> context.state.pokemon.first { it.battlePokemonId == id }.speciesId.substringAfter(':') }
             ?: part.moveId.orEmpty()

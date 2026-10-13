@@ -31,11 +31,20 @@ import org.junit.jupiter.api.Test
 class LocalNativeStatusValueTest {
     private val worker = EngineBranchWorker()
 
+    private var previousLease: jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Lease? = null
+
     @org.junit.jupiter.api.BeforeAll
     fun engine() {
+        previousLease = jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease
         jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease = object : jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Lease {
             override fun <T> withWorker(deadlineNanos: Long, action: (jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker) -> T): T? = action(worker)
         }
+    }
+
+    // The lease is global: left in place, every later test class in the run decided with an engine it never asked for.
+    @org.junit.jupiter.api.AfterAll
+    fun releaseEngine() {
+        previousLease?.let { jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.lease = it }
     }
     private val profile = BattleTrainerProfile(skillLevel = 5, personality = BattleTrainerProfile.champion().personality,
         difficulty = BattleDifficultyProfiles.BOSS)
