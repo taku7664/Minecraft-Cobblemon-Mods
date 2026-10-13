@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.matchup
 
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -134,9 +135,9 @@ internal object LocalHazardEncoreCredit {
             pokemon.knownHeldItemId?.let(PublicIds::canonical) != "airballoon"
 
     /**
-     * Encore locks the target into its last move. Worth the turns of that lock when the move does not hurt this side
-     * and does not raise the target's own stats: this side's best expected hit on it each locked turn. Locking an
-     * attack, a stat raise, or a target with no move to lock into is avoided outright.
+     * Encore locks the target into its last move. Worth the turns of that lock when the move does not hurt this side:
+     * this side's best expected hit on it each locked turn. A stat raise counts only when those hits knock it out within
+     * the lock ([lockedRaise]). Locking an attack, or a target with no move to lock into, is avoided outright.
      */
     private fun encore(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double {
         val state = context.state
@@ -151,22 +152,75 @@ internal object LocalHazardEncoreCredit {
         val details = context.publicActionCatalog.forPokemon(target.battlePokemonId)
             .firstOrNull { PublicIds.canonical(it.moveId) == lastMove }?.details ?: return AVOIDED
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) return AVOIDED
-        val raisesItself = details.effects?.effects.orEmpty().any { effect ->
-            effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER &&
-                effect.statStages.values.any { it > 0 }
+        val raise = details.effects?.effects.orEmpty().filter { effect ->
+            effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER
+        }.fold(mutableMapOf<String, Int>()) { stages, effect ->
+            effect.statStages.forEach { (stat, delta) -> stages.merge(stat, delta, Int::plus) }
+            stages
         }
-        if (raisesItself) return AVOIDED
         // Only a user that moves first locks the move just seen; a slower one locks whatever the target uses this turn.
         // Below even odds it is avoided; above, the lock's worth is weighed by the chance it moves first.
         val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, move.actorSlot, move, opponentPriority = 0)
             ?: return AVOIDED
         if (first < 0.5) return AVOIDED
+        if (raise.values.any { it > 0 }) {
+            return lockedRaise(user, target, raise, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
+        }
         val hit = scores.moves(user.battlePokemonId, target.battlePokemonId)
             .maxOfOrNull { (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy } ?: 0.0
         return first * hit * ENCORE_TURNS * BOARD_TO_SCORE
     }
 
+    /**
+     * A stat raise locked in: the target raises again on every locked turn and walks out boosted, so the lock is worth
+     * this side's hits only when they knock it out first. The hits, as one HP bar, or null when they fall short.
+     *
+     * The target raises on the Encore turn and on the two locked turns after it; this side, moving first, hits on each
+     * of those two and once more before the freed target acts, each hit against the defences raised so far (its
+     * ability reshaping the raise: Contrary, Simple). A raise that includes Speed may let it act first once freed, so
+     * then only the locked turns count. Read as never worth a turn, Encore stayed unused after a Swords Dance, the play
+     * it is best known for (2026-10-13, decided with the user).
+     */
+    private fun lockedRaise(
+        user: BattlePokemonStateView,
+        target: BattlePokemonStateView,
+        raise: Map<String, Int>,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+    ): Double? {
+        val gain = LocalStatStageChange.reshape(context.state, target, target.battlePokemonId, raise).entries
+            .groupingBy { LocalStatStageChange.normalise(it.key) }.fold(0) { total, entry -> total + entry.value }
+        val current = target.statStages.entries.associate { LocalStatStageChange.normalise(it.key) to it.value }
+        val categories = (context.candidates.filter { it.actorSlot == user.activeSlot }.mapNotNull { candidate ->
+            candidate.moveId?.let { id -> candidate.moveDetails?.let { PublicIds.canonical(id) to it.damageCategory } }
+        } + context.publicActionCatalog.forPokemon(user.battlePokemonId).map { PublicIds.canonical(it.moveId) to it.details.damageCategory })
+            .distinctBy { it.first }.toMap()
+        val hits = if ((gain[SPEED] ?: 0) > 0) ENCORE_TURNS.toInt() - 1 else ENCORE_TURNS.toInt()
+        var dealt = 0.0
+        for (raised in 1..hits) {
+            dealt += scores.moves(user.battlePokemonId, target.battlePokemonId).maxOfOrNull { hit ->
+                // The defence the move meets; one of unknown kind meets whichever was raised more.
+                val stats = when (categories[PublicIds.canonical(hit.moveId)]) {
+                    BattleMoveDamageCategory.PHYSICAL -> listOf(DEFENCE)
+                    BattleMoveDamageCategory.SPECIAL -> listOf(SPECIAL_DEFENCE)
+                    else -> listOf(DEFENCE, SPECIAL_DEFENCE)
+                }
+                val scale = stats.minOf { stat ->
+                    val now = current[stat] ?: 0
+                    stageMultiplier(now) / stageMultiplier((now + raised * (gain[stat] ?: 0)).coerceIn(-6, 6))
+                }
+                (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0 * hit.accuracy * scale
+            } ?: 0.0
+        }
+        return dealt.takeIf { it >= target.hpFraction }
+    }
+
+    private fun stageMultiplier(stage: Int): Double = if (stage >= 0) (2.0 + stage) / 2.0 else 2.0 / (2.0 - stage)
+
     private const val ENCORE = "encore"
+    private const val SPEED = "speed"
+    private const val DEFENCE = "defence"
+    private const val SPECIAL_DEFENCE = "special_defence"
     private const val TOXIC_SPIKES = "toxicspikes"
     private const val STICKY_WEB = "stickyweb"
     /** Hazards a layer of which this rule prices, with how many layers stack. */
@@ -199,7 +253,7 @@ internal object LocalHazardEncoreCredit {
     private const val REMOVER_DISCOUNT = 0.5
     /** Turns Encore locks its target after this one. */
     private const val ENCORE_TURNS = 3.0
-    /** Locking an attack or a stat raise: never chosen. */
+    /** Locking an attack, or a stat raise this side cannot knock out within the lock: never chosen. */
     private const val AVOIDED = -999.0
     /** What the root already gives any status move (LocalNonDamagingMoveEvaluator's generic value). */
     private const val GENERIC_STATUS_VALUE = 20.0
