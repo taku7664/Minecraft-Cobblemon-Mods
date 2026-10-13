@@ -205,6 +205,12 @@ internal object EmbeddedTeamInput {
                     val targets = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
                     actionWindow = ActionWindow(eventTurn, index.toLong() * 2, uuid(it.ident), id(p[3]), targets)
+                    // A move from an ability (Magic Bounce's reflection) reveals it, as the game's observer reads
+                    // every line's [from] source.
+                    p.drop(4).firstOrNull { tag -> tag.startsWith("[from]") }?.removePrefix("[from]")?.trim()
+                        ?.takeIf { source -> source.startsWith("ability: ") }?.let { source ->
+                            it.ability = id(source); event(BattleObservedEventKind.ABILITY_REVEALED, id(source))
+                        }
                 }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
