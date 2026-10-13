@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 19:40] 한국어 관장 이름 테스트 명령, 자두 팀 교체 개발 배포
+
+- **사용자 요청:** `/league test`에서 관장을 한국어로 고르기. Brigadier `word()`는 영문만 받아서, 리그 `ko_kr`의 `trainer.<mod>.<id>` 이름마다 명령어 단어를 만든다(`강석`, `강석-하드`). 명령 트리가 리그 데이터보다 먼저 만들어져 번들 언어 파일을 읽고, 실행 때 로드된 경로로 다시 확인한다. 영문 id 인자도 그대로(`60bc2dc6`).
+- **개발 배포:** main `60bc2dc6`으로 리그 JAR만 빌드(`677a9989…`), 서버·클라 해시 일치. MCC는 `fe01c106` 이후 게임 코드 변경이 없어 설치본(`cde66521…`) 유지. 들어간 것: 자두 팀 교체, 한국어 테스트 명령, 장면 하네스 옵션. 백업 `develop-product/deployment-backups/20261013-league-maylene-korean-test`. 서버·클라는 꺼진 상태에서 교체, 켜지 않음.
+- **미확인:** 한국어 명령을 실게임에서 입력해 보지 않았다(컴파일·리그 테스트만).
+
 ## [2026-10-13 18:30] 하드 자두 루카리오 메가Z: 실게임은 진화, 모의 전투 하네스만 못 함
 
 - **발견:** 새 자두 팀 30판에서 루카리오가 메가진화 0회(쓰러뜨림 10, 팀 최저). 240판에서도 Z-A 메가스톤 에이스(자두 루카리오·무청 눈여아·전진 라이츄)는 모두 0회, 기존 메가(마기라스·메타그로스 등)는 매 판 진화. 모의 전투 하네스(MCC `EmbeddedTeamBattle` + `team-battle-bridge.cjs`)는 `develop-product/server/showdown`을 `Dex.mod('cobblemon')`로 읽을 뿐, Mega Showdown이 실행 중에 넣는 메가스톤(`data/mega_showdown/mega_showdown/showdown/held_items/*`)과 Cobblemon 종 추가 폼(`species_additions/*_mega_z.json`)이 없어 `canMegaEvo`가 안 나온다. 그래서 자두·무청·전진의 모의 전투 승수는 실제보다 낮게 나왔을 것이다.
