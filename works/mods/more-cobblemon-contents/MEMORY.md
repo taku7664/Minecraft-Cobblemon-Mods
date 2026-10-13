@@ -13,8 +13,10 @@
 - **개발 배포:** main `6cebe14e` 기준 MCC `87ccec6e…`를 개발 서버·클라에, cobblemon-ui `f4955d73…`를 개발 클라에 복사, 해시 일치. 이 MCC에는 다른 세션의 `38ee3f88`(능력 단계 동기화)이 들어 있고, 그 MCC 클라 코드가 새 cobblemon-ui 함수(`applyServerStatStages`)를 불러서 14:38 cobblemon-ui로는 패킷을 받을 때 깨진다. 그래서 UI도 같이 바꿨다. 백업 `develop-product/deployment-backups/20261013-2050-mcc-g943`.
 - **안 한 것:** 실게임(특히 메가와 나쁜음모를 같은 턴에 고르는 2턴 장면의 엔진 판정), 더블, 개발 서버 기동.
 
-## [2026-10-13 20:40] 배틀 능력 단계를 Showdown에서 읽어 클라이언트 UI로 보낸다 (단위·실제 Showdown 테스트 확인, 빌드·배치·실게임 미확인)
+## [2026-10-13 20:40] 배틀 능력 단계를 Showdown에서 읽어 클라이언트 UI로 보낸다 (단위·실제 Showdown 테스트 확인·개발 배포, 실게임 미확인)
 
+- **개발 배포 [21:06]:** 20:54 배포(`7f3ad073` 기준 MCC `9dea30fe…`)가 20:50의 G-943 MCC를 덮어써 G-943이 빠져 있었다. main `21d2548f`(코드는 `6cebe14e`와 같음)를 `F:/AI/build/mcc-deploy-20261013-statsync`에 꺼내 MCC·UI·NPC `remapJar`. UI `f4955d73…`·NPC `bdb47a3e…`는 설치본과 같아 그대로 두고, MCC `6975a530…`(능력 단계 동기화·G-943 둘 다 포함, `jar --validate`·CRC 통과)만 개발 서버·클라에 교체, 해시 일치. MCC·NPC 내장 UI도 `f4955d73`. 서버·게임 꺼진 상태 확인. 백업 `develop-product/deployment-backups/20261013-2106-mcc-statsync-g943`.
+- **주의:** 첫 빌드 두 번은 다른 세션 빌드와 동시에 돌아 공용 Loom 캐시(`minecraft-merged…jar`)를 서로 잡아 실패했다. 공유 F 캐시를 쓰는 빌드는 동시에 돌리지 않는다.
 - **계기:** 하양허브가 위협·인파이트 하락을 되돌려도 UI에 -1이 남았다. Showdown이 `-clearnegativeboost`를 `[silent]`로 보내고 Cobblemon은 silent 메시지를 클라이언트에 넘기지 않는다. 빡대리님 결정으로 클라 계산 대신 서버 값을 쓴다.
 - **구현:** `Cobblemon173ShowdownBoosts`가 Graal 컨텍스트의 `battleMap`에서 활성 포켓몬 `boosts`를 읽는다(일루전은 보이는 포켓몬 UUID로, 기절은 뺀다, Showdown 로그가 다 나가기 전 `sentLogPos < log.length`이면 null). `BattleStatStageSync`가 서버 틱마다 플레이어 배틀을 보고, `dispatches`가 비고 `showdownMessages`가 늘었을 때 한 번 읽어 참가자·관전자에게 `mcc:battle_stat_stages`를 보낸다. 클라 `BattleStatStageClient`가 진행 중 배틀 ID가 맞으면 Cobblemon UI에 넘긴다.
 - **보내는 시점 이유:** Showdown은 턴을 한 번에 계산하고 Cobblemon은 연출을 큐로 나눠 보낸다. 큐가 비기 전에 보내면 아직 안 보낸 메시지가 서버 값 위에 다시 더해진다.
