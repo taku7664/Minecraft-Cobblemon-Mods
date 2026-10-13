@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-13 20:40] 배틀 능력 단계를 Showdown에서 읽어 클라이언트 UI로 보낸다 (단위·실제 Showdown 테스트 확인, 빌드·배치·실게임 미확인)
+
+- **계기:** 하양허브가 위협·인파이트 하락을 되돌려도 UI에 -1이 남았다. Showdown이 `-clearnegativeboost`를 `[silent]`로 보내고 Cobblemon은 silent 메시지를 클라이언트에 넘기지 않는다. 빡대리님 결정으로 클라 계산 대신 서버 값을 쓴다.
+- **구현:** `Cobblemon173ShowdownBoosts`가 Graal 컨텍스트의 `battleMap`에서 활성 포켓몬 `boosts`를 읽는다(일루전은 보이는 포켓몬 UUID로, 기절은 뺀다, Showdown 로그가 다 나가기 전 `sentLogPos < log.length`이면 null). `BattleStatStageSync`가 서버 틱마다 플레이어 배틀을 보고, `dispatches`가 비고 `showdownMessages`가 늘었을 때 한 번 읽어 참가자·관전자에게 `mcc:battle_stat_stages`를 보낸다. 클라 `BattleStatStageClient`가 진행 중 배틀 ID가 맞으면 Cobblemon UI에 넘긴다.
+- **보내는 시점 이유:** Showdown은 턴을 한 번에 계산하고 Cobblemon은 연출을 큐로 나눠 보낸다. 큐가 비기 전에 보내면 아직 안 보낸 메시지가 서버 값 위에 다시 더해진다.
+- **테스트:** `Cobblemon173ShowdownBoostsTest`(개발 서버 Showdown으로 위협 → 하양허브 silent 초기화 → 칼춤·용의춤, 로그에 silent 줄 확인), `ShowdownStateCaptureTest` 각 1/1. `-Ptests`에 `|`를 쓰면 `gradlew.bat`이 파이프로 읽어 깨진다. 클래스마다 따로 돌린다.
+- **안 한 것:** 빌드·배치, 실게임(틱 훅·패킷 전달·연출 끝 시점은 테스트로 못 본다), 더블 배틀, 관전.
+
 ## [2026-10-13 17:20] 관리 전투 상대를 Cobblemon 최대 레벨 위로 (구현·하네스 실게임 확인·개발 배포)
 
 - **사용자 요청:** 하드 난천을 100~105로(한카리아스 105, 기라티나 103). 서버의 Cobblemon `maxPokemonLevel`(100)은 바꾸지 않는다.

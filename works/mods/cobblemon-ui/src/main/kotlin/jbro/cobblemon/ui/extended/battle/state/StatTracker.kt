@@ -116,6 +116,13 @@ object StatTracker {
         CobblemonUi.LOGGER.debug("StatTracker: Swapped ${statsToSwap.map { it.abbr }} between $pokemon1Name and $pokemon2Name")
     }
 
+    /** Replaces [uuid]'s stages with [stages] as a whole; stats it leaves out are at 0. */
+    fun replaceStats(uuid: UUID, stages: Map<BattleStat, Int>) {
+        val pokemonStats = statChanges.computeIfAbsent(uuid) { ConcurrentHashMap() }
+        pokemonStats.clear()
+        stages.forEach { (stat, stage) -> if (stage != 0) pokemonStats[stat] = stage.coerceIn(-6, 6) }
+    }
+
     fun clearNegativeStatsByName(pokemonName: String, preferAlly: Boolean? = null) {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return
         val pokemonStats = statChanges[uuid] ?: return

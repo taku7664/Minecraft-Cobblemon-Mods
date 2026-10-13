@@ -262,6 +262,27 @@ object BattleStateTracker {
     fun clearPokemonStatsByName(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.clearPokemonStatsByName(pokemonName, preferAlly)
     fun clearNegativeStatsByName(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.clearNegativeStatsByName(pokemonName, preferAlly)
     fun clearAllStatsForAll() = StatTracker.clearAllStatsForAll()
+
+    /**
+     * Stages a server read from Showdown itself, keyed by Pokemon UUID and Showdown stat id (`atk`, `def`, `spa`,
+     * `spd`, `spe`, `accuracy`, `evasion`). They replace what the battle messages built up for each listed Pokemon,
+     * which misses effects Showdown reports silently (White Herb). Unknown stat ids are ignored.
+     */
+    fun applyServerStatStages(stages: Map<UUID, Map<String, Int>>) {
+        stages.forEach { (uuid, byId) ->
+            StatTracker.replaceStats(uuid, byId.mapNotNull { (id, stage) -> SHOWDOWN_STAT_IDS[id]?.let { it to stage } }.toMap())
+        }
+    }
+
+    private val SHOWDOWN_STAT_IDS = mapOf(
+        "atk" to BattleStat.ATTACK,
+        "def" to BattleStat.DEFENSE,
+        "spa" to BattleStat.SPECIAL_ATTACK,
+        "spd" to BattleStat.SPECIAL_DEFENSE,
+        "spe" to BattleStat.SPEED,
+        "accuracy" to BattleStat.ACCURACY,
+        "evasion" to BattleStat.EVASION
+    )
     fun invertStats(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.invertStats(pokemonName, preferAlly)
     fun copyStats(sourceName: String, targetName: String, sourceIsAlly: Boolean? = null, targetIsAlly: Boolean? = null) = StatTracker.copyStats(sourceName, targetName, sourceIsAlly, targetIsAlly)
     fun swapStats(pokemon1Name: String, pokemon2Name: String, pokemon1IsAlly: Boolean? = null, pokemon2IsAlly: Boolean? = null) = StatTracker.swapStats(pokemon1Name, pokemon2Name, pokemon1IsAlly, pokemon2IsAlly)

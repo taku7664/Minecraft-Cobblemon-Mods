@@ -411,6 +411,23 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void serverStatStagesReplaceTheMessageCount() {
+        UUID sneasler = UUID.randomUUID();
+        UUID gyarados = UUID.randomUUID();
+        BattleStateTracker.INSTANCE.setStatStage(sneasler, BattleStateTracker.BattleStat.DEFENSE, -1);
+        BattleStateTracker.INSTANCE.setStatStage(gyarados, BattleStateTracker.BattleStat.SPEED, 1);
+
+        BattleStateTracker.INSTANCE.applyServerStatStages(java.util.Map.of(
+            sneasler, java.util.Map.of("atk", 2, "unknown", 3)
+        ));
+
+        var stats = BattleStateTracker.INSTANCE.getStatChanges(sneasler);
+        assertEquals(java.util.Map.of(BattleStateTracker.BattleStat.ATTACK, 2), stats);
+        // Pokemon the server did not list keep what the messages gave them.
+        assertEquals(1, BattleStateTracker.INSTANCE.getStatChanges(gyarados).get(BattleStateTracker.BattleStat.SPEED));
+    }
+
+    @Test
     void clearNegativeBoostMessageKeepsRaisedStats() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Eevee", false);
