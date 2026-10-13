@@ -155,7 +155,7 @@ internal object LocalHazardEncoreCredit {
             ?.publicValueId?.let(PublicIds::canonical) ?: return AVOIDED
         val details = context.publicActionCatalog.forPokemon(target.battlePokemonId)
             .firstOrNull { PublicIds.canonical(it.moveId) == lastMove }?.details ?: return AVOIDED
-        if (details.damageCategory != BattleMoveDamageCategory.STATUS) return AVOIDED
+        val attack = details.damageCategory != BattleMoveDamageCategory.STATUS
         val raise = details.effects?.effects.orEmpty().filter { effect ->
             effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER
         }.fold(mutableMapOf<String, Int>()) { stages, effect ->
@@ -167,6 +167,7 @@ internal object LocalHazardEncoreCredit {
         val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, move.actorSlot, move, opponentPriority = 0)
             ?: return AVOIDED
         if (first < 0.5) return AVOIDED
+        if (attack) return lockedAttack(lastMove, target, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         if (raise.values.any { it > 0 }) {
             return lockedRaise(user, target, raise, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         }
@@ -219,9 +220,35 @@ internal object LocalHazardEncoreCredit {
         return dealt.takeIf { it >= target.hpFraction }
     }
 
+    /**
+     * An attack locked in is worth the turns this side gets while it lands on whoever takes it least: the Pokemon in
+     * front or one behind it (2026-10-13, decided with the user). The least share of HP that Pokemon loses to three
+     * locked hits; under [LIGHT_LOCK] the lock is worth what it keeps, over the locked turns, unless the target simply
+     * switches out of it (the fitted switch model, [LocalOpponentIntentPredictor.switchChance]). As one HP bar per
+     * turn, or null when every Pokemon takes it too hard.
+     */
+    private fun lockedAttack(
+        lockedMoveId: String,
+        target: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+    ): Double? {
+        val taken = context.state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }.mapNotNull { ally ->
+            scores.moves(target.battlePokemonId, ally.battlePokemonId).firstOrNull { PublicIds.canonical(it.moveId) == lockedMoveId }?.let { hit ->
+                (ENCORE_TURNS * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0 * hit.accuracy / ally.hpFraction).coerceAtMost(1.0)
+            }
+        }.minOrNull() ?: return null
+        if (taken >= LIGHT_LOCK) return null
+        val leaves = LocalOpponentIntentPredictor.switchFeatures(context, scores)[target.battlePokemonId]
+            ?.let(LocalOpponentIntentPredictor::switchChance) ?: 0.0
+        return (1.0 - taken) * ENCORE_TURNS * (1.0 - leaves)
+    }
+
     private fun stageMultiplier(stage: Int): Double = if (stage >= 0) (2.0 + stage) / 2.0 else 2.0 / (2.0 - stage)
 
     private const val ENCORE = "encore"
+    /** The most of a Pokemon's HP three locked hits may take for the lock to be worth it. */
+    private const val LIGHT_LOCK = 0.5
     private const val SPEED = "speed"
     private const val DEFENCE = "defence"
     private const val SPECIAL_DEFENCE = "special_defence"
