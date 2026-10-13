@@ -133,6 +133,11 @@ internal object LocalSetupGate {
         scores: MatchupScores,
         knockoutMaterialScore: Double,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        /**
+         * The chance a waiting opponent copies the raise on entry ([jbro.cobblemon.mcc.betterai.search.LocalEntryCopyRisk]).
+         * It takes from the value, not from the win: the one-on-one is still won, the boost just changes hands.
+         */
+        copyRisk: Double = 0.0,
     ): Reading? {
         if (!isSetupMove(candidate)) return null
         val user = context.state.pokemon.firstOrNull {
@@ -155,7 +160,7 @@ internal object LocalSetupGate {
             actingChance(foe) * hit + (1.0 - actingChance(foe)) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
-        return Reading(win, bonus, win * knockoutMaterialScore * bonus)
+        return Reading(win, bonus, win * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)))
     }
 
     /**

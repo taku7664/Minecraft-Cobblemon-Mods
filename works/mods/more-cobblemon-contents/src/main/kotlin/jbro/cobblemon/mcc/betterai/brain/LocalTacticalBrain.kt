@@ -374,10 +374,17 @@ internal class LocalTacticalBrain(
             else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
         // A stat raise is valued by whether its user still wins the one-on-one after it, times the sweep bonus
         // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
+        // A waiting opponent that turns into the raised Pokemon on entry takes the raise with it (LocalEntryCopyRisk).
+        val copyRisk by lazy { try {
+            jbro.cobblemon.mcc.betterai.search.LocalEntryCopyRisk.chance(context, profile.difficulty.tier)
+        } catch (e: RuntimeException) {
+            logger.error("[BetterAI] The engine could not read an entry copy; raises are valued without it", e)
+            0.0
+        } }
         val setupScores by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
             difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
         else difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).mapNotNull { candidate ->
-            setupView(candidate)?.let { (view, table) -> LocalSetupGate.score(candidate, view, table, tuning.knockoutMaterialScore) }
+            setupView(candidate)?.let { (view, table) -> LocalSetupGate.score(candidate, view, table, tuning.knockoutMaterialScore, copyRisk = copyRisk) }
                 ?.let { candidate.actionId to it.value }
         }.toMap() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.

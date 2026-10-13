@@ -47,7 +47,7 @@ internal object LocalEntryAbilityCheck {
         return foe.battlePokemonId to abilities.filterTo(linkedSetOf()) { it !in trapping }
     }
 
-    private fun root(context: BattleDecisionContext, tier: BattleTrainerTier): jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition? {
+    internal fun root(context: BattleDecisionContext, tier: BattleTrainerTier): jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition? {
         val state = context.state
         val plan = when {
             context.showdownState != null -> planner.planLive(context, tier)
@@ -58,13 +58,13 @@ internal object LocalEntryAbilityCheck {
         return plan.worlds.firstOrNull()?.definition
     }
 
-    private fun root(
+    internal fun root(
         worker: jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker,
         context: BattleDecisionContext,
         definition: jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition,
     ) = context.showdownState?.let { worker.createLiveBattle(it, definition) } ?: worker.createBattle(definition)
 
-    private fun deadline(context: BattleDecisionContext) = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+    internal fun deadline(context: BattleDecisionContext) = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
         (context.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L))
 
     /**

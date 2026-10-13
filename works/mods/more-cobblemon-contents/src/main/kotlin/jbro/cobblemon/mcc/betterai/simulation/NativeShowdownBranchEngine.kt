@@ -61,6 +61,14 @@ internal interface NativeBranchWorker : AutoCloseable {
     fun departureOutcomes(snapshotJson: String, pokemonUuid: String, abilityIds: List<String>): Map<String, NativeDepartureOutcome> =
         throw UnsupportedOperationException("This native worker cannot replay a departure")
 
+    /**
+     * For each Pokemon waiting on the side of [activeUuid], the share of its possible abilities ([knownAbilities] for
+     * it, else its species' own) under which, sent in on this board, it turns into the Pokemon it faces and so takes
+     * that Pokemon's stat stages (Imposter). Each ability is lent to it on a copy and it is dragged in there.
+     */
+    fun entryCopyShares(snapshotJson: String, activeUuid: String, knownAbilities: Map<String, List<String>>): List<Double> =
+        throw UnsupportedOperationException("This native worker cannot replay an entry")
+
     /** Of [abilityIds] lent to [holderUuid] on this board, the ones that keep [targetUuid] from switching out. */
     fun trappingAbilities(snapshotJson: String, holderUuid: String, targetUuid: String, abilityIds: List<String>): Set<String> =
         throw UnsupportedOperationException("This native worker cannot read a trap")

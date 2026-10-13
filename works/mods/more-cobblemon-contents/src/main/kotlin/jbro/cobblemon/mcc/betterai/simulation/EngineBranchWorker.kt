@@ -215,6 +215,24 @@ internal class EngineBranchWorker(
         }.toMap()
     }
 
+    override fun entryCopyShares(snapshotJson: String, activeUuid: String, knownAbilities: Map<String, List<String>>): List<Double> {
+        val root = resolve(snapshotJson)
+        val active = root.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == activeUuid } ?: return emptyList()
+        val position = active.position
+        return active.side.pokemon.filter { !it.isActive && !it.fainted && it.hp > 0 }.map { waiting ->
+            val abilities = knownAbilities[waiting.uuid] ?: waiting.baseSpecies.abilities.values.filter { it.isNotEmpty() }.distinct()
+            if (abilities.isEmpty()) return@map 0.0
+            abilities.count { abilityId ->
+                val battle = root.fork()
+                val incoming = battle.sides.flatMap { it.pokemon }.singleOrNull { it.uuid == waiting.uuid } ?: return@count false
+                lend(battle, incoming, abilityId) ?: return@count false
+                // Dragged in, its entry runs at once (BattleActions.switchIn) rather than waiting in the queue.
+                battle.actions.switchIn(incoming, position, null, isDrag = true)
+                incoming.transformed
+            }.toDouble() / abilities.size
+        }
+    }
+
     override fun trappingAbilities(snapshotJson: String, holderUuid: String, targetUuid: String, abilityIds: List<String>): Set<String> {
         val root = resolve(snapshotJson)
         return abilityIds.filterTo(linkedSetOf()) { abilityId ->
