@@ -7,6 +7,71 @@ const { Battle, extractChannelMessages } = require(path.join(process.argv[2], 's
 const { Dex } = require(path.join(process.argv[2], 'sim/dex.js'));
 const dex = Dex.mod('cobblemon');
 dex.includeData(); // getMovePool reads dex.gen before lazily loading species data.
+// What Mega Showdown registers when the game starts (process.argv[4], unpacked by the harness): its held items and
+// abilities, and the battle forms its Mega Stones turn into, which Cobblemon sends Showdown as species
+// (receiveSpeciesData). A form is built from the Cobblemon form data only where the stone names a forme Showdown lacks.
+if (process.argv[4]) {
+  const msd = process.argv[4];
+  const msdId = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); // toId is declared further down
+  const { Cobblemon } = require(path.join(process.argv[2], 'sim/cobblemon/cobblemon.js'));
+  const scripts = dir => !fs.existsSync(dir) ? [] : fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
+    entry.isDirectory() ? scripts(path.join(dir, entry.name)) : entry.name.endsWith('.js') ? [path.join(dir, entry.name)] : []).sort();
+  // Each entry is an object literal, some already parenthesised; Cobblemon wraps it the same way.
+  const entry = file => (0, eval)('(' + fs.readFileSync(file, 'utf8').trim().replace(/;$/, '') + ')');
+  // The bridge plays on Cobblemon's own Showdown, which reads a Mega Stone as one `megaEvolves` species and one
+  // `megaStone` forme; Mega Showdown's patched Showdown reads a map of species to forme. A one-entry map is given in
+  // the shape this Showdown reads, with the stone kept on its holder the way this Showdown's own stones are.
+  const stones = [];
+  const items = scripts(path.join(msd, 'showdown', 'held_items')).map(file => {
+    const data = entry(file);
+    const pairs = data.megaStone && typeof data.megaStone === 'object' ? Object.entries(data.megaStone) : [];
+    if (pairs.length === 1) {
+      [data.megaEvolves, data.megaStone] = pairs[0];
+      data.onTakeItem = (item, source) => item.megaEvolves !== source.baseSpecies.baseSpecies;
+    }
+    const item = Cobblemon.registries.heldItem.register(data, path.basename(file, '.js'));
+    stones.push([item, pairs]);
+    return item;
+  });
+  for (const file of scripts(path.join(msd, 'showdown', 'abilities'))) {
+    Cobblemon.registries.ability.register(entry(file), path.basename(file, '.js'));
+  }
+  const additions = {};
+  const additionsDir = path.join(msd, 'species_additions');
+  for (const name of fs.existsSync(additionsDir) ? fs.readdirSync(additionsDir) : []) {
+    const data = JSON.parse(fs.readFileSync(path.join(additionsDir, name), 'utf8'));
+    if (typeof data.target === 'string' && Array.isArray(data.forms)) {
+      (additions[msdId(data.target.split(':').pop())] ||= []).push(...data.forms);
+    }
+  }
+  const STATS = { hp: 'hp', attack: 'atk', defence: 'def', special_attack: 'spa', special_defence: 'spd', speed: 'spe' };
+  const titled = value => value.charAt(0).toUpperCase() + value.slice(1);
+  for (const [item, pairs] of stones) {
+    for (const [baseName, target] of pairs) {
+      const base = dex.data.Pokedex[msdId(baseName)];
+      if (!base || dex.data.Pokedex[msdId(target)] || Cobblemon.registries.species.has(msdId(target))) continue;
+      const forme = target.slice(base.name.length + 1);
+      const form = (additions[msdId(baseName)] || []).find(candidate => candidate.name === forme);
+      if (!form) continue;
+      const abilities = {};
+      (form.abilities || []).forEach((id, index) => {
+        const hidden = id.startsWith('h:');
+        const ability = dex.abilities.get(hidden ? id.slice(2) : id);
+        abilities[hidden ? 'H' : String(index)] = ability.exists ? ability.name : id;
+      });
+      Cobblemon.registries.species.register({
+        num: base.num, name: target, baseSpecies: base.name, forme, battleOnly: base.name, requiredItem: item.name,
+        types: [form.primaryType, form.secondaryType].filter(Boolean).map(titled),
+        baseStats: Object.fromEntries(Object.entries(form.baseStats).map(([key, value]) => [STATS[key], value])),
+        abilities, heightm: (form.height ?? base.heightm * 10) / 10, weightkg: (form.weight ?? base.weightkg * 10) / 10,
+        gender: base.gender, genderRatio: base.genderRatio, eggGroups: base.eggGroups,
+      });
+      base.otherFormes = [...(base.otherFormes || []), target];
+    }
+  }
+  process.stderr.write(`Mega Showdown data: ${items.length} held items, forms ${Cobblemon.registries.species.contents.size}
+`);
+}
 if (dex.gen !== 9) throw new Error('Public learnset export requires the declared Gen 9 engine');
 const input = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
 const battleFormat = input.battleFormat || 'SINGLE';

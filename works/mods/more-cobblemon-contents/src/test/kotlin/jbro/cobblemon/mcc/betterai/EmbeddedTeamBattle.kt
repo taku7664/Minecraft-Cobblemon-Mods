@@ -369,7 +369,9 @@ internal object EmbeddedTeamBattle {
             stderr = directory.resolve("stderr.txt").toAbsolutePath()
             Files.write(script, requireNotNull(javaClass.getResourceAsStream("/oracle/team-battle-bridge.cjs")).use { it.readBytes() }, CREATE_NEW)
             Files.writeString(input, pair.deepCopy().apply { addProperty("maxTurns", maxTurns) }.toString(), CREATE_NEW)
-            val builder = ProcessBuilder("node", "--unhandled-rejections=strict", script.toString(), engine.toAbsolutePath().toString(), input.toString())
+            val command = mutableListOf("node", "--unhandled-rejections=strict", script.toString(), engine.toAbsolutePath().toString(), input.toString())
+            megaShowdownData?.let { command += it.toString() }
+            val builder = ProcessBuilder(command)
                 .redirectError(stderr.toFile())
             builder.environment().remove("NODE_OPTIONS"); builder.environment().remove("NODE_PATH")
             process = builder.start()
@@ -393,6 +395,32 @@ internal object EmbeddedTeamBattle {
             readerExecutor.shutdownNow()
             reader.close(); writer.close()
         }
+    }
+
+    /**
+     * What Mega Showdown registers on top of Showdown when the game starts, unpacked from its jar beside the dev
+     * server's Showdown (`aiengine.showdown`/../mods): its held items and abilities (`showdown/`) and the Cobblemon
+     * forms it adds (`species_additions/`). Without them a Z-A Mega Stone (Lucarionite Z) never offers Mega Evolution.
+     * Null when no jar is there; the bridge then plays on Showdown alone.
+     */
+    private val megaShowdownData: Path? by lazy {
+        val mods = System.getProperty("aiengine.showdown")?.let { Path.of(it).parent?.resolve("mods") }
+            ?.takeIf { Files.isDirectory(it) } ?: return@lazy null
+        val jar = Files.list(mods).use { files -> files.filter { it.fileName.toString().startsWith("mega_showdown-") }.findFirst().orElse(null) }
+            ?: return@lazy null
+        val out = Files.createTempDirectory("mega-showdown-data")
+        Runtime.getRuntime().addShutdownHook(Thread { out.toFile().deleteRecursively() })
+        val prefixes = mapOf("data/mega_showdown/mega_showdown/showdown/" to "showdown/", "data/cobblemon/species_additions/" to "species_additions/")
+        java.util.zip.ZipFile(jar.toFile()).use { zip ->
+            for (entry in zip.entries()) {
+                if (entry.isDirectory) continue
+                val (prefix, folder) = prefixes.entries.firstOrNull { entry.name.startsWith(it.key) } ?: continue
+                val target = out.resolve(folder + entry.name.removePrefix(prefix))
+                Files.createDirectories(target.parent)
+                zip.getInputStream(entry).use { Files.copy(it, target) }
+            }
+        }
+        out
     }
 
     /** The opposing side's real EVs and IVs by preview slot, matched by species; a repeated species is left out. */
