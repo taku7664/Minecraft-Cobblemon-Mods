@@ -11,7 +11,8 @@
 - **결과**: 사천왕 12판 중 9승(대엽만 엔트리 2승). 이상한 판단 3개 중 2개를 고쳤다(G-936 하네스 메가 특성, G-937 회복 헛수 판정). 자세한 내용은 `LOCAL_GAPS.md`.
 - **회귀**: 단위 10개 클래스, 시나리오 131개(직전 실행과 가장 확률 높은 수 전부 같음), 모의 전투 12판 재실행. 토게키스 테스트 기대값을 바꿨다(비행 테라스탈이라 회복이 헛수).
 - **주의**: 다른 세션이 `LocalQuickDeciderTest`의 import를 지운 직후라 제 커밋이 한 번 컴파일이 깨졌고 바로 고쳤다. 공유 체크아웃에서 테스트 파일을 고칠 땐 커밋 직전 컴파일을 다시 확인한다.
-- **안 한 것**: 빌드·배포, 실게임 확인.
+- **개발 배포(2026-10-13 14:38, 사용자 요청)**: main `03ca9ad7`(origin과 일치)을 `git archive`로 `F:/AI/build/mcc-deploy-20261013-g937`에 꺼내 F 드라이브 경로로 `:more-cobblemon-contents`·`:cobblemon-ui`·`:cobblemon-npc` `remapJar`. JDK 21 `jar --validate`·ZIP CRC 통과, 오늘 수정(`LocalEntryCopyRisk`, `faintsFirst`, `reaskAfterRejection`) 포함, 임시 테스트 클래스 없음. 설치돼 있던 UI(`54B20735`, `c58489cc` 빌드)는 VS 글자 수정(`70795ec8`) 전이라 MCC·NPC 내장본과 단독 UI를 함께 교체했다(셋 다 `BAA41D39`). SHA-256 앞자리 MCC `48948ff1`, NPC `c6ff36f1`, UI `baa41d39`. 서버 MCC·NPC, 클라 MCC·NPC·UI 교체, 해시 일치, `.deploying` 없음. 복사 전 25565/25566 리스너 없음·게임 없음 확인. 백업 `develop-product/deployment-backups/20261013-143825-betterai-g937-heal-encore-copy`.
+- **안 한 것**: 서버·클라이언트 기동, 실게임 확인.
 
 ## [2026-10-13 12:20] G-925 멸망 가두기 (구현·시나리오 확인, 미배포)
 
