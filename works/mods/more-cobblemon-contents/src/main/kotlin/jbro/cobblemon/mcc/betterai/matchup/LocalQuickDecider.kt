@@ -93,7 +93,8 @@ internal object LocalQuickDecider {
             if (cannotAct(self)) add("cannot_act")
             if (stay.winProbability < LOSING) add("loses_one_on_one")
             if (attackStage(self) <= -2) add("attack_dropped")
-            if (self.knownVolatileEffectIds.any { PublicIds.canonical(it) in DRAINING }) add("draining_effect")
+            // The observer keeps a Perish Song count as `perishsong:<count>`; canonical alone reads only the count.
+            if (self.knownVolatileEffectIds.any { PublicIds.canonical(it.substringBefore(':')) in DRAINING }) add("draining_effect")
         }
         val random = Random(seed xor 0x5157_1C4E_D3C1_DE11L)
         val reason = reasons.firstOrNull()?.takeUnless { it !in UNCONDITIONAL && random.nextDouble() < stayRoll(tier) }

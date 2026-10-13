@@ -112,14 +112,16 @@ internal object LocalMatchupScoreCalculator {
         if (matchups.isEmpty()) return null
         val natural = matchups.map { it.winProbability }.average()
         var best = Boost(null, 0, 0.0, 1.0, emptyMap(), emptyMap())
+        val costs = setupHpCosts(context, subject)
         for ((moveId, stages) in setupMoves(context, subject)) for (uses in 1..MAXIMUM_SETUP_USES) {
+            val cost = costs[moveId] ?: 0.0
             // Each foe attacks through the setup turns; the boosted exchange starts from what is left.
             val outcomes = foes.mapNotNull { foe ->
                 val base = pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: return@mapNotNull null
-                val survives = base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0
                 val taken = base.opponentMove?.damageWhileStandingByUses?.getOrNull(uses) ?: 0.0
+                val survives = survivesCost(subject, cost, uses, base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0, taken)
                 val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
-                val raised = setupState(position.state, subject.battlePokemonId, stages, uses)
+                val raised = setupState(position.state, subject.battlePokemonId, stages, uses, cost)
                 val worn = raised.copyState(pokemon = raised.pokemon.map {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
@@ -161,7 +163,9 @@ internal object LocalMatchupScoreCalculator {
         val facing = foes.filter { it.activeSlot != null }
         if (facing.isEmpty()) return null
         var best: Pair<Double, Map<UUID, Double>>? = null
-        for ((_, stages) in setupMoves(context, subject)) for (uses in 1..MAXIMUM_SETUP_USES) {
+        val costs = setupHpCosts(context, subject)
+        for ((moveId, stages) in setupMoves(context, subject)) for (uses in 1..MAXIMUM_SETUP_USES) {
+            val cost = costs[moveId] ?: 0.0
             var survives = 1.0
             var taken = 0.0
             for (foe in facing) {
@@ -169,9 +173,10 @@ internal object LocalMatchupScoreCalculator {
                 survives *= base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0
                 taken += base.opponentMove?.damageWhileStandingByUses?.getOrNull(uses) ?: 0.0
             }
+            survives = survivesCost(subject, cost, uses, survives, taken)
             val byOpponent = foes.mapNotNull { foe ->
                 val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
-                val raised = setupState(position.state, subject.battlePokemonId, stages, uses)
+                val raised = setupState(position.state, subject.battlePokemonId, stages, uses, cost)
                 val worn = raised.copyState(pokemon = raised.pokemon.map {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
@@ -200,12 +205,16 @@ internal object LocalMatchupScoreCalculator {
         pairs: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
         setupTurn: Boolean,
+        /** The share of maximum HP the raise costs (Belly Drum's half). */
+        hpCost: Double = 0.0,
     ): Double? {
+        // A raise it cannot pay for fails: nothing is bought with it.
+        if (hpCost > 0.0 && subject.hpFraction <= hpCost) return 0.0
         val base = if (setupTurn) pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: return null else null
-        val survives = base?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0
         val taken = base?.opponentMove?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
+        val survives = survivesCost(subject, hpCost, 1, base?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0, taken)
         val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return null
-        val raised = setupState(position.state, subject.battlePokemonId, stages, 1)
+        val raised = setupState(position.state, subject.battlePokemonId, stages, 1, hpCost)
         val worn = raised.copyState(pokemon = raised.pokemon.map {
             if (it.battlePokemonId != subject.battlePokemonId) it
             else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
@@ -280,11 +289,46 @@ internal object LocalMatchupScoreCalculator {
             }
     }
 
-    /** Each use resolves abilities, caps and item consumption before the next setup use. */
-    internal fun setupState(state: BattleStateView, subjectId: UUID, stages: Map<String, Int>, uses: Int): BattleStateView =
-        (0 until uses).fold(state) { current, _ ->
-            LocalStatStageChange.apply(current, subjectId, subjectId, stages)
+    /** The share of maximum HP one use of each of [subject]'s setup moves costs it (Belly Drum's half), where it costs any. */
+    internal fun setupHpCosts(context: BattleDecisionContext, subject: BattlePokemonStateView): Map<String, Double> {
+        val catalog = context.publicActionCatalog
+        val known = catalog.forPokemon(subject.battlePokemonId).map { it.moveId to it.details }
+        val inferred = if (subject.side != BattleSide.OPPONENT) emptyList() else
+            catalog.inferredMovesForPokemon(subject.battlePokemonId)?.slots.orEmpty()
+                .mapNotNull { slot -> slot.moveId?.let { id -> slot.details?.let { id to it } } }
+        return (known + inferred).associate { (moveId, details) -> PublicIds.canonical(moveId) to BattleStatusMoveCategories.setupHpCost(details) }
+            .filterValues { it > 0.0 }
+    }
+
+    /**
+     * Each use resolves abilities, caps and item consumption before the next setup use, and pays [hpCost] of the
+     * user's maximum HP first. A use it cannot pay (HP at or below the cost, as Belly Drum fails) does nothing, nor do
+     * any after it.
+     */
+    internal fun setupState(state: BattleStateView, subjectId: UUID, stages: Map<String, Int>, uses: Int, hpCost: Double = 0.0): BattleStateView {
+        var current = state
+        repeat(uses) {
+            if (hpCost > 0.0) {
+                val subject = current.pokemon.firstOrNull { it.battlePokemonId == subjectId } ?: return current
+                if (subject.hpFraction <= hpCost) return current
+                current = current.copyState(pokemon = current.pokemon.map {
+                    if (it.battlePokemonId == subjectId) it.copyState(hpFraction = it.hpFraction - hpCost) else it
+                })
+            }
+            current = LocalStatStageChange.apply(current, subjectId, subjectId, stages)
         }
+        return current
+    }
+
+    /**
+     * The chance [subject] lives through the setup turns' hits once it has paid [hpCost] per use: a cost that leaves it
+     * at or below the damage it takes meanwhile ends it. [survives] and [taken] were read from its HP before the cost.
+     */
+    private fun survivesCost(subject: BattlePokemonStateView, hpCost: Double, uses: Int, survives: Double, taken: Double): Double {
+        if (hpCost <= 0.0) return survives
+        val paid = (1..uses).takeWhile { subject.hpFraction - hpCost * (it - 1) > hpCost }.count()
+        return if (taken >= subject.hpFraction - hpCost * paid) 0.0 else survives
+    }
 
     /** A scored move and the action it was scored from, which turn order needs. */
     internal class ScoredMove(val score: MoveMatchupScore, val action: BattleActionCandidate)

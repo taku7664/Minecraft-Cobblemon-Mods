@@ -71,15 +71,29 @@ object BattleStatusMoveCategories {
         }
     }
 
-    /** The same pure setup definition the move inference uses for [BattleOpponentMoveGroup.PURE_SETUP]. */
+    /**
+     * The same pure setup definition the move inference uses for [BattleOpponentMoveGroup.PURE_SETUP]: raises of the
+     * user's own stats, paid for at most with its own HP. Belly Drum's half was read as something more than a raise, so
+     * it was no setup at all and lost to a weak hit in front of a wall that cannot attack (2026-10-13).
+     */
     @JvmStatic
     fun isPureSelfSetup(details: BattleMoveCandidateView): Boolean {
         val effects = details.effects?.effects.orEmpty()
         return effects.isNotEmpty() && effects.all { effect ->
             effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER &&
-                effect.statStages.isNotEmpty()
+                effect.statStages.isNotEmpty() || isHpCost(effect)
         } && effects.any { effect -> effect.statStages.values.any { it > 0 } }
     }
+
+    /** The share of its maximum HP a setup move costs its user (Belly Drum's half); zero for most. */
+    @JvmStatic
+    fun setupHpCost(details: BattleMoveCandidateView): Double =
+        details.effects?.effects.orEmpty().filter(::isHpCost).sumOf { it.fractionRange?.minimum ?: 0.0 }
+
+    /** A flat cost in the user's own HP with no condition attached (a Ghost's Curse carries its type condition). */
+    private fun isHpCost(effect: BattleMoveEffectView): Boolean =
+        effect.kind == BattleMoveEffectKind.MAX_HP_RECOIL && effect.target == BattleMoveEffectTarget.USER &&
+            effect.valueId == null && effect.fractionRange != null
 
     private fun canonical(value: String): String =
         PublicIds.canonical(value)

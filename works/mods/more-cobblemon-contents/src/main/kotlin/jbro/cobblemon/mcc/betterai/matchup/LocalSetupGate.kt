@@ -147,13 +147,14 @@ internal object LocalSetupGate {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
         if (facing.isEmpty()) return null
+        val cost = LocalMatchupScoreCalculator.setupHpCosts(context, user)[moveId] ?: 0.0
         val win = facing.minOf { foe ->
             // A foe that will not act this turn (recharging, asleep, frozen) lands its setup-turn hit only when it does.
-            val hit = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = true) ?: return null
-            val free = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false) ?: return null
+            val hit = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = true, hpCost = cost) ?: return null
+            val free = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false, hpCost = cost) ?: return null
             actingChance(foe) * hit + (1.0 - actingChance(foe)) * free
         }
-        val bonus = sweepBonus(context, user, facing, stages, scores, cache)
+        val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         return Reading(win, bonus, win * knockoutMaterialScore * bonus)
     }
 
@@ -170,13 +171,15 @@ internal object LocalSetupGate {
         stages: Map<String, Int>,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        /** The share of maximum HP the raise costs (Belly Drum's half). */
+        hpCost: Double = 0.0,
     ): Double {
         val seen = context.state.pokemon.filter { it.side == BattleSide.OPPONENT }
         val benched = seen.filter { foe ->
             foe.activeSlot == null && !foe.fainted && foe.hpFraction > 0.0 && facing.none { it.battlePokemonId == foe.battlePokemonId }
         }
         var easy = benched.sumOf { foe ->
-            LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false) ?: 0.0
+            LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false, hpCost = hpCost) ?: 0.0
         }
         val preview = context.opponentTeamPreview
         val ownTeam = context.exactOwnTeam

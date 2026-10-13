@@ -209,7 +209,9 @@ function snapshot() {
           });
           moves[move.id] = metadata;
         });
-        if (!active.trapped) {
+        // A trap the player cannot see yet (Shadow Tag) comes as maybeTrapped; Showdown rejects the switch and asks
+        // again with the trap shown, so a switch it would refuse is not offered.
+        if (!active.trapped && !(active.maybeTrapped && side.active[actorSlot].trapped)) {
           request.side.pokemon.forEach((pokemon, slot) => {
             if (pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition)) return;
             choices.push({ command: `switch ${slot + 1}`, actorSlot, kind: 'switch', slot });

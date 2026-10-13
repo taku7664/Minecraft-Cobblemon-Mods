@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
 import java.util.UUID
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
@@ -50,6 +51,9 @@ internal object LocalHazardEncoreCredit {
                 val held = if (part.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) GENERIC_STATUS_VALUE else 0.0
                 val hazard = hazardOf(part)
                 when {
+                    // A hazard the target publicly stops (a revealed Magic Bounce sends it back) lays nothing; priced
+                    // anyway, a reflected Stealth Rock kept +62.7 (2026-10-13).
+                    hazard != null && LocalPublicMechanicsKernel.projectMove(part, context).publiclyNullified -> Unit
                     hazard != null -> hazard(hazard, context, scores)?.let { change += it - held }
                     part.moveId?.let(PublicIds::canonical) == ENCORE -> change += encore(part, context, scores) - held
                 }

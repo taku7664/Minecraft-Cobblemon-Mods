@@ -246,6 +246,11 @@ internal object EmbeddedTeamInput {
                 "-start" -> current?.let {
                     if (id(p[3]) == "gastroacid") it.gastroAcid = true
                     if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
+                    // A Perish Song count, as the game's observer keeps it (perishsong:<count>).
+                    Regex("perish([0-3])").matchEntire(id(p[3]))?.let { count ->
+                        it.volatileEffects.removeAll { effect -> effect.startsWith("perishsong:") }
+                        it.volatileEffects += "perishsong:${count.groupValues[1]}"
+                    }
                     when (p[3]) {
                         "typechange" -> { it.types = p.getOrNull(4)?.takeUnless { value -> value.startsWith('[') || value == "???" }
                             ?.lowercase()?.split('/')?.toSet().orEmpty(); it.added = null }
@@ -301,8 +306,9 @@ internal object EmbeddedTeamInput {
         val request = input.getAsJsonObject("request")
         val own = request.getAsJsonObject("side").getAsJsonArray("pokemon").map { it.asJsonObject }
         val ownActiveSlots = input.getAsJsonObject("ownActiveSlots") ?: JsonObject()
-        fun privateMap(name: String, ident: String) = input.getAsJsonObject(name).entrySet()
-            .firstOrNull { identity(it.key) == identity(ident) }?.value
+        // A recorded input from before a map existed (ownMegaForms) has none.
+        fun privateMap(name: String, ident: String) = input.getAsJsonObject(name)?.entrySet()
+            ?.firstOrNull { identity(it.key) == identity(ident) }?.value
         val allies = own.map { pokemon ->
             val ident = pokemon["ident"].asString
             val details = pokemon["details"].asString.split(',').map(String::trim)

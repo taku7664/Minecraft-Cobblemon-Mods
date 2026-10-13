@@ -44,8 +44,9 @@ internal object LocalStopScoreCalculator {
         val position = LocalMatchupPosition.face(context, subject, sweeperPokemon, cache) ?: return null
         val sweeperStages = sweeper.setupMoveId?.let { LocalMatchupScoreCalculator.setupMoves(context, sweeperPokemon)[it] }
             .orEmpty()
+        val sweeperCost = sweeper.setupMoveId?.let { LocalMatchupScoreCalculator.setupHpCosts(context, sweeperPokemon)[it] } ?: 0.0
         val boosted = position.copy(state = LocalMatchupScoreCalculator.setupState(position.state,
-            sweeperId, sweeperStages, sweeper.setupUses))
+            sweeperId, sweeperStages, sweeper.setupUses, sweeperCost))
         fun exchange(state: BattleStateView = boosted.state, field: MatchupSpeedField = MatchupSpeedField.CURRENT): PokemonMatchupScore? {
             val faced = boosted.copy(state = state)
             val read = if (field == MatchupSpeedField.CURRENT) faced else LocalMatchupScoreCalculator.withTrickRoomToggled(faced)
