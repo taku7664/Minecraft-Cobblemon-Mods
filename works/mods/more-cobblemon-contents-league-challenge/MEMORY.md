@@ -1,5 +1,10 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 20:54] 대사·VS 글자 수정 개발 배포
+
+- 공유 트리에 다른 세션의 미커밋 MCC 수정이 있어, main `7f3ad073`을 `git -C <저장소 루트> archive`로 `F:/AI/builds/deploy-7f3ad073/src`에 풀어 빌드했다(하위 폴더에서 `git archive`를 돌리면 그 폴더로 범위가 좁아져 빈 파일이 나온다). UI·MCC·NPC·리그 `remapJar`, `jar --validate` 통과, MCC·NPC 내장 UI가 단독 UI(F4955D73…)와 같고 MCC에 미커밋 파일 없음.
+- 개발 클라 4개·서버 3개 교체, 해시 일치. 리그 F9F5B7DA…, MCC 9DEA30FE…, NPC BDB47A3E…. 백업 `develop-product/deployment-backups/20261013-2054-versus-text-league-lines`. 서버 기동·실게임 확인은 안 했다.
+
 ## [2026-10-13 07:10] 관장·사천왕 대사 추가
 
 - **사용자 요청:** 배틀 시작 대사가 난천에게만 있어서, 웹 검색으로 관장·사천왕 대사도 전부 넣는다.
