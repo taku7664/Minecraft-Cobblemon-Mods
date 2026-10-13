@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.league.trainer.WildTrainerMoveCategory.SPECIAL
 import jbro.cobblemon.mcc.league.trainer.WildTrainerMoveCategory.STATUS
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -162,7 +163,11 @@ class WildTrainerBuildTest {
         val source = java.nio.file.Files.readString(
             java.nio.file.Path.of("src/main/kotlin/jbro/cobblemon/mcc/league/trainer/WildTrainers.kt"),
         )
-        assertTrue(source.contains("npc.party = party"))
-        assertTrue(source.contains("BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false)"))
+        // The battle opens through the Better AI, set up as Cobblemon's pvn sets it up: the trainer's side is read from
+        // the NPC, so the party goes on it before the battle starts, and nothing calls pvn directly any more.
+        val party = source.indexOf("npc.party = party")
+        val start = source.indexOf("BrainNpcBattles.start(player, npc, lead.uuid, skill, WILD_TRAINER_CONTENT)")
+        assertTrue(party >= 0 && start > party) { "the party must go on the NPC before the battle starts" }
+        assertFalse(source.contains("BattleBuilder.pvn("))
     }
 }
