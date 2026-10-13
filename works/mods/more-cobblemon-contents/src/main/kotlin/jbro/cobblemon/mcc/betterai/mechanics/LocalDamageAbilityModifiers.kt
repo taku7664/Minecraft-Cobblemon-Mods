@@ -80,7 +80,7 @@ internal object LocalDamageAbilityModifiers {
             "defeatist" -> if (actor.hpFraction <= 0.5) 0.5 else 1.0
             "protosynthesis" -> paradox(actor, item, weather in SUN, physical, special, offence = true)
             "quarkdrive" -> paradox(actor, item, terrain == "electricterrain", physical, special, offence = true)
-            else -> 1.0
+            else -> declared(ability, details, defender = false)
         }
         if (type == "electric" && actor.knownVolatileEffectIds.any { canonical(it) == "charge" }) multiplier *= 2.0
         // Plus and Minus raise Special Attack by half beside an active partner with either ability.
@@ -135,7 +135,7 @@ internal object LocalDamageAbilityModifiers {
             "grasspelt" -> if (physical && terrain == "grassyterrain") 2.0 / 3.0 else 1.0
             "protosynthesis" -> paradox(target, LocalPublicItemState.activeItemId(state, target), weather in SUN, physical, special, offence = false)
             "quarkdrive" -> paradox(target, LocalPublicItemState.activeItemId(state, target), terrain == "electricterrain", physical, special, offence = false)
-            else -> 1.0
+            else -> declared(ability, details, defender = true)
         }
         // Cherrim's Flower Gift raises its side's Special Defence by half in sun.
         if (special && weather in SUN && flowerGift(state, target.side)) multiplier /= 1.5
@@ -157,6 +157,21 @@ internal object LocalDamageAbilityModifiers {
                     !it.fainted && LocalPublicAbilityState.effectiveKnownAbility(state, it) == "friendguard"
             }) multiplier *= 0.75
         return multiplier
+    }
+
+    /**
+     * An ability the AI has no port for, read from its script in the game ([jbro.cobblemon.mcc.betterai.simulation.RuntimeAbilityScripts]):
+     * Mega Showdown's Aura Guard halving contact moves, Fire Mane's Fire boost.
+     */
+    private fun declared(ability: String?, details: BattleMoveCandidateView, defender: Boolean): Double {
+        val script = jbro.cobblemon.mcc.betterai.simulation.RuntimeAbilityScripts.ability(ability) ?: return 1.0
+        val category = when (details.damageCategory) {
+            BattleMoveDamageCategory.PHYSICAL -> "Physical"
+            BattleMoveDamageCategory.SPECIAL -> "Special"
+            else -> return 1.0
+        }
+        val flags = details.effects?.mechanicFlags.orEmpty().mapTo(hashSetOf(), ::canonical)
+        return script.damageFactor(defender, DeclaredAbilityScripts.MoveFacts(details.typeId, category, flags))
     }
 
     /** Blaze and its kind: half again the power of their type at a third of HP or less. */

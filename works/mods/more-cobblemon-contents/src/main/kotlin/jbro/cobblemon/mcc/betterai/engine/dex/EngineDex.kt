@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import jbro.cobblemon.mcc.betterai.engine.Js
+import jbro.cobblemon.mcc.betterai.engine.hooks.EngineHooks
 
 /**
  * The engine's copy of Showdown's data tables, loaded from the exported `ai-engine/dex.json.gz`
@@ -15,6 +16,8 @@ class EngineDex private constructor(
     private val root: JsonObject,
     /** Species the game registered at runtime, looked up before the exported ones as Showdown does. */
     private val runtimeSpecies: Map<String, Species> = emptyMap(),
+    /** Abilities only the game has, read from their scripts ([withAbilities]). */
+    private val runtimeAbilities: Map<String, Effect> = emptyMap(),
 ) {
     val typeNames: List<String>
     private val damageTaken: Map<String, Map<String, Int>>
@@ -41,7 +44,7 @@ class EngineDex private constructor(
         moveTable = root.getAsJsonObject("moves").entrySet().associate { (id, value) -> id to MoveData(id, value.asJsonObject) }
         abilityTable = root.getAsJsonObject("abilities").entrySet().associate { (id, value) ->
             id to effect(id, value.asJsonObject, "Ability", "ability:$id", "")
-        }
+        } + runtimeAbilities.filterKeys { it !in root.getAsJsonObject("abilities").keySet() }
         itemTable = root.getAsJsonObject("items").entrySet().associate { (id, value) ->
             id to effect(id, value.asJsonObject, "Item", "item:$id", "")
         }
@@ -108,7 +111,31 @@ class EngineDex private constructor(
             val built = Species(ShowdownSpeciesData.construct(copy))
             species[built.id] = built
         }
-        return EngineDex(root, runtimeSpecies + species)
+        return EngineDex(root, runtimeSpecies + species, runtimeAbilities)
+    }
+
+    /**
+     * This dex with the damage steps of ability scripts the engine has no port for
+     * ([jbro.cobblemon.mcc.betterai.mechanics.DeclaredAbilityScripts]). An exported ability keeps its data and takes
+     * the script's handler for a step it declares without a port; one the export lacks is built from the script's name,
+     * flags and priorities.
+     */
+    internal fun withAbilities(abilities: Collection<jbro.cobblemon.mcc.betterai.mechanics.DeclaredAbilityScripts.Ability>): EngineDex {
+        val built = LinkedHashMap<String, Effect>()
+        for (ability in abilities) {
+            val key = "ability:${ability.id}"
+            ability.handlers.forEach { EngineHooks.declare(key, it) }
+            // An exported ability keeps its data; a handler it declares without a port now finds the script's.
+            if (abilityTable[ability.id] != null && ability.id !in runtimeAbilities) continue
+            val raw = JsonObject().apply {
+                addProperty("name", ability.name)
+                ability.num?.let { addProperty("num", it) }
+                add("flags", JsonObject().apply { ability.flags.forEach { (flag, value) -> addProperty(flag, value) } })
+                ability.priorities.forEach { (key, value) -> addProperty(key, value) }
+            }
+            built[ability.id] = Effect(ability.id, ability.name, "Ability", raw, key, ability.handlers.mapTo(hashSetOf()) { it.step.callback })
+        }
+        return EngineDex(root, runtimeSpecies, runtimeAbilities + built)
     }
 
     val runtimeSpeciesCount: Int get() = runtimeSpecies.size

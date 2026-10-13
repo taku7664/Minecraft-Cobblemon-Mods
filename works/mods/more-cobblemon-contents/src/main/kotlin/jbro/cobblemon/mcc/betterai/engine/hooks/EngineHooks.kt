@@ -84,7 +84,26 @@ object EngineHooks {
      */
     fun shared(effect: EffectLike, callbackName: String): HookFn? =
         if (callbackName == "onTakeItem" && effect.hookKey.startsWith("item:") && effect.data("megaStone") != null) MEGA_STONE_TAKE_ITEM
-        else null
+        else declared["${effect.hookKey}.$callbackName"]
+
+    /** Handlers read from a runtime ability's script, by `<hook key>.<callback>` ([declare]). */
+    private val declared = java.util.concurrent.ConcurrentHashMap<String, HookFn>()
+
+    /**
+     * Installs [handler], read from a runtime ability's script, under [key]: it multiplies the event's value when the
+     * move matches, as `return this.chainModify(x)` does, and otherwise leaves it alone.
+     */
+    internal fun declare(key: String, handler: jbro.cobblemon.mcc.betterai.mechanics.DeclaredAbilityScripts.Handler) {
+        declared["$key.${handler.step.callback}"] = {
+            val move = activeMove
+            if (move == null) Unit else {
+                val facts = jbro.cobblemon.mcc.betterai.mechanics.DeclaredAbilityScripts.MoveFacts(
+                    move.type, move.category, move.flags.filterValues { Js.truthy(it) }.keys)
+                val branch = handler.branches.firstOrNull { it.matches(facts) }
+                if (branch == null) Unit else chainModify(branch.factor)
+            }
+        }
+    }
 
     /** `return !item.megaStone?.[source.baseSpecies.baseSpecies]`, or the older `megaEvolves` spelling of the same rule. */
     private val MEGA_STONE_TAKE_ITEM: HookFn = {

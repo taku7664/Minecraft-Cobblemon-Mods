@@ -18,17 +18,27 @@ internal object EngineRuntimeDex {
     @Volatile
     private var cached: Pair<String, EngineDex>? = null
 
-    /** The dex with the current Cobblemon species, and a digest of that species data. */
+    /**
+     * The dex with the current Cobblemon species and the runtime abilities ([RuntimeAbilityScripts]), and a digest of
+     * that data ("bundled" when there is none).
+     */
     fun current(): Pair<String, EngineDex> {
-        val data = cobblemonSpecies() ?: return "bundled" to EngineDex.bundled()
-        val digest = digest(data)
+        val abilityDigest = RuntimeAbilityScripts.refresh()
+        val abilities = RuntimeAbilityScripts.current()
+        val data = cobblemonSpecies()
+        if (data == null && abilities.isEmpty()) return "bundled" to EngineDex.bundled()
+        val digest = (data?.let(::digest) ?: "bundled") + if (abilities.isEmpty()) "" else "+abilities=$abilityDigest"
         cached?.takeIf { it.first == digest }?.let { return it }
         return synchronized(this) {
-            cached?.takeIf { it.first == digest } ?: (digest to EngineDex.bundled().withSpecies(data.map { JsonParser.parseString(it).asJsonObject }))
-                .also {
+            cached?.takeIf { it.first == digest } ?: run {
+                var dex = EngineDex.bundled()
+                if (data != null) dex = dex.withSpecies(data.map { JsonParser.parseString(it).asJsonObject })
+                if (abilities.isNotEmpty()) dex = dex.withAbilities(abilities.values)
+                (digest to dex).also {
                     cached = it
-                    logger.info("AI engine dex overlaid with {} Cobblemon species", data.size)
+                    logger.info("AI engine dex overlaid with {} Cobblemon species and {} runtime abilities", data?.size ?: 0, abilities.size)
                 }
+            }
         }
     }
 

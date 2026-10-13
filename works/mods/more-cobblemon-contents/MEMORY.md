@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-13 21:00] Mega Showdown 특성의 피해 보정을 스크립트에서 읽는다, G-943 (구현·단위·스냅샷 재생 확인, 빌드·배치·실게임 미확인)
+
+- **계기:** 사용자 실게임(자두 하드)에서 메가 루카리오Z가 보만다 앞에서 나쁜음모를 안 썼다. 오라가드(접촉 피해 절반)를 AI가 몰라 받는 피해를 두 배로 읽고 승률 0으로 봤다. 처음에 노력치 가정 탓이라고 잘못 보고했다가 사용자 화면(공격 252)으로 정정했다.
+- **구현:** `DeclaredAbilityScripts`가 특성 JS에서 "조건이 맞으면 `this.chainModify(x)`" 꼴의 피해 단계 핸들러만 읽는다(특성 이름 목록 없음). `RuntimeAbilityScripts`가 `showdown/data/abilities.js`와 Mega Showdown 데이터팩 스크립트를 5초에 한 번 다시 보고, 엔진 포트가 없는 단계만 남긴다. `EngineRuntimeDex`가 이것을 엔진 도감(`withAbilities`)에 얹고, `LocalDamageAbilityModifiers`가 이름표에 없는 특성에 쓴다. 포트된 특성은 그대로라 기존 계산은 안 바뀐다.
+- **확인:** `DeclaredAbilityScriptsTest` 3/3, 관련 10개 클래스 101/109(8 건너뜀). 스냅샷 재생은 LOCAL_GAPS G-943.
+- **안 한 것:** 빌드·배치, 실게임(특히 메가와 나쁜음모를 같은 턴에 고르는 2턴 장면의 엔진 판정), 더블.
+
 ## [2026-10-13 20:40] 배틀 능력 단계를 Showdown에서 읽어 클라이언트 UI로 보낸다 (단위·실제 Showdown 테스트 확인, 빌드·배치·실게임 미확인)
 
 - **계기:** 하양허브가 위협·인파이트 하락을 되돌려도 UI에 -1이 남았다. Showdown이 `-clearnegativeboost`를 `[silent]`로 보내고 Cobblemon은 silent 메시지를 클라이언트에 넘기지 않는다. 빡대리님 결정으로 클라 계산 대신 서버 값을 쓴다.
