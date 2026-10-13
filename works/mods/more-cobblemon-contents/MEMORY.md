@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-13 17:20] 관리 전투 상대를 Cobblemon 최대 레벨 위로 (구현·하네스 실게임 확인·개발 배포)
+
+- **사용자 요청:** 하드 난천을 100~105로(한카리아스 105, 기라티나 103). 서버의 Cobblemon `maxPokemonLevel`(100)은 바꾸지 않는다.
+- **막던 곳(1.8.1 바이트코드 확인):** `PokemonProperties.parse`(level을 최대로 자름), `Pokemon.setLevel`(자름), 배틀 복사 `BattlePokemon.safeCopyOf` → `Pokemon.clone`의 저장 코덱(레벨 범위 밖이면 복사 실패), 클라이언트 배틀 패킷 `ActiveBattlePokemonDTO.loadFromBuffer`의 `parse`(클라 최대로 자름). Showdown(`sim/pokemon.js`)은 받은 레벨을 그대로 쓴다.
+- **구현:** `Cobblemon173OpponentLevelScope.during(limit)` 동안 `CobblemonConfigMixin`이 최대 레벨을 limit 이상으로 읽게 한다(스레드 한정). `ManagedPveBattles.start`가 상대 팀 생성·복사만 이 구간에서 하고(`MAX_OPPONENT_LEVEL` 120), 복사 뒤 레벨이 그대로인지 확인한다. 클라 `client.BattlePokemonDtoLevelMixin`이 배틀 포켓몬 속성 읽기만 같은 구간으로 감싼다. 플레이어·야생 포켓몬은 구간 밖이라 100 그대로.
+- **확인:** 리그 장면 하네스(`MCC_SCENE_CAPTURE_TEAM=cynthia_hard`) 개발 클라 싱글플레이 2회. 1회차(클라 수정 전) 서버 6마리 101~105·Cobblemon 최대 100, 클라 기라티나 100. 2회차 서버 같음, 클라 한카리아스 105, 배틀 HUD `Lv.105`. 단위 `Cobblemon173OpponentLevelScopeTest`·`CoreModuleContractTest`·`BattleMechanicFlagsTest` 7/7.
+- **개발 배포:** main `fe01c106` 기준 MCC `cde66521…`·리그 `4db8be86…`를 개발 서버·클라에 복사, 세 곳 해시 일치. 이 배포에 G-939·G-941·하드 관장 레벨도 들어갔다. 백업 `develop-product/deployment-backups/20261013-1650-mcc-league-lv105`(오늘 14:38 배포본). 16:50에 확인용으로 개발 서버를 켰다가 하네스로 대신 확인하고 콘솔 Ctrl+C로 정상 종료(17:06 `level.dat` 저장).
+- **안 한 것:** 멀티플레이 서버 접속 상태의 실게임(하네스는 내장 서버), 리그 진행 경로로 들어간 난천전, VPS·운영 배포.
+
 ## [2026-10-13 16:40] 하드 관장 240판 모의 전투, G-939·G-940 (구현·회귀 확인, G-939 미배포)
 
 - **모의 전투**: 하드 관장 8명 × 엔트리 6개(Lv80) × 시드 5개. 관장 승수와 판단 점검은 `LOCAL_GAPS.md`. 팀 파일 세션 scratchpad `gym-teams-80.json`, 판 기록 `F:/AI/builds/cobblemon-mods-main/out/gym-mock80/*/decisions.jsonl.gz`.

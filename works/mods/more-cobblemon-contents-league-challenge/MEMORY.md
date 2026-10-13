@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 17:20] 하드 난천 101~105 (데이터·하네스 확인·개발 배포)
+
+- **사용자 결정:** 기라티나 103, 로즈레이드 101, 밀로틱 101, 토게키스 102, 루카리오 102, 한카리아스(메가 에이스) 105. Cobblemon 최대 레벨 100은 그대로 두고 MCC가 상대만 그 위로 만든다(MCC `MEMORY.md` 같은 시각).
+- **바뀐 검사:** `LeagueIntegrations.validateCaps`의 상대 레벨 상한을 Cobblemon 설정 대신 `ManagedPveBattles.MAX_OPPONENT_LEVEL`(120)로. 안내 문구도 바꿨다. `LeagueTeamDataTest`는 난천 에이스 105, 전원 101~120을 보고, 파서 검사는 MCC처럼 최대 레벨을 올린 상태에서 읽는다.
+- **하네스:** `TrainerSceneCaptureHarness`에 `MCC_SCENE_CAPTURE_TEAM=<번들 팀>`(첫 전투 상대를 리그 팀으로, 서버·클라 상대 레벨을 `SCENE CHECK`로 기록). 결과는 MCC `MEMORY.md`.
+- **테스트:** 리그 `unitTest` 103/104(실패 1개는 원래 깨진 `WildTrainerBuildTest` pvn 문자열 검사, 별도 작업으로 넘김).
+- **개발 배포:** 리그 `4db8be86…`(main `fe01c106`), 서버·클라 해시 일치. 운영 미배포.
+
 ## [2026-10-13 17:40] 하드 관장 레벨을 모두 80 남짓으로 올림 (데이터·테스트, 미배포)
 
 - **이유:** MCC 하드 관장 240판 모의 전투(Lv80 엔트리 6개 × 시드 5개)에서 관장 승수가 팀 레벨을 따라갔다. 강석(75~78) 5/30, 자두(78~81) 7/30, 유채(76~79) 9/30, 맥실러·무청·전진(79~85) 19~20/30. 하드 관장 동안 레벨캡이 80 고정이라 앞쪽 관장이 플레이어보다 약했다. 판단 습관(공격·변화기·교체 비율, 낮은 확률 수 비율)은 관장끼리 차이가 없었다. 분석은 MCC `docs/betterai/engine/LOCAL_GAPS.md` 관장 240판 항목.
