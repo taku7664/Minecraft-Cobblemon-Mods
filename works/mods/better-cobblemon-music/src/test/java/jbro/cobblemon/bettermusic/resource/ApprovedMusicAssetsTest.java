@@ -26,7 +26,7 @@ final class ApprovedMusicAssetsTest {
         JsonObject playlists = catalog.getAsJsonObject("playlists");
         Set<String> approved = new HashSet<>(read(module.resolve("resource-pack/catalog-layout.json"))
             .getAsJsonObject("trackTitles").keySet());
-        assertEquals(88, approved.size());
+        assertEquals(90, approved.size());
         assertEquals(approved, catalog.getAsJsonObject("tracks").keySet(), "Unrequested BGM must not be packaged");
 
         Set<String> mapped = new HashSet<>();
@@ -61,7 +61,7 @@ final class ApprovedMusicAssetsTest {
                 assertEquals(false, sound.has("volume"), entry.getKey());
             }
         }
-        assertEquals(61, attenuated, "Only the official battle BGMs should be attenuated");
+        assertEquals(63, attenuated, "Only the official battle BGMs should be attenuated");
     }
 
     private static JsonObject read(Path file) throws Exception {

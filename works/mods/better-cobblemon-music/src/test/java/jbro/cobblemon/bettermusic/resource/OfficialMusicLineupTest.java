@@ -105,7 +105,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(88, eventTitles.size());
+        assertEquals(90, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -165,6 +165,7 @@ final class OfficialMusicLineupTest {
     void ordinaryWildUsesDiamondPearlAndLugiaKeepsItsStableTrackId() {
         assertEquals(List.of("better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle"), battle.wild().tracks());
         expect("lugia", "legendary/hgss_lugia_battle");
+        expect("phione manaphy", "wild/sinnoh_wild_pokemon_battle_mythical");
         assertEquals(List.of("better_cobblemon_music:battle/trainer/sinnoh_trainer_battle"), battle.trainer().tracks());
         assertEquals(List.of("better_cobblemon_music:battle/pvp/pokemon_champions_arena_battle"), battle.pvp().tracks());
     }
@@ -180,6 +181,8 @@ final class OfficialMusicLineupTest {
         Set<String> expected = trackEvents.keySet().stream()
             .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
             .collect(Collectors.toSet());
+        expected.remove("music/battle/trainer/sinnoh_trainer_battle_facility.ogg");
+        expected.remove("music/battle/wild/sinnoh_wild_pokemon_battle_mythical.ogg");
         expected.add("battle/low_hp/alert.ogg");
         Set<String> reported = new java.util.HashSet<>();
         Path soundRoot = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
@@ -235,6 +238,8 @@ final class OfficialMusicLineupTest {
             assertEquals(20 * Math.log10(0.6),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.3, name);
         }
+        actual.remove("trainer/sinnoh_trainer_battle_facility.ogg");
+        actual.remove("wild/sinnoh_wild_pokemon_battle_mythical.ogg");
         assertEquals(actual, reported);
     }
 
@@ -252,6 +257,15 @@ final class OfficialMusicLineupTest {
             .filter(id -> id.startsWith("better_cobblemon_music:battle/"))
             .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
             .collect(Collectors.toSet());
+        expected.remove("music/battle/trainer/sinnoh_trainer_battle_facility.ogg");
+        expected.remove("music/battle/wild/sinnoh_wild_pokemon_battle_mythical.ogg");
+        var extra = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/core-battle-gain-2026-10-13.json"))).getAsJsonObject();
+        Map<String, String> changed = new java.util.HashMap<>();
+        extra.getAsJsonArray("tracks").forEach(element -> {
+            var entry = element.getAsJsonObject();
+            changed.put(entry.get("target").getAsString(), entry.get("afterSha256").getAsString());
+        });
         Set<String> reported = new java.util.HashSet<>();
         Path soundRoot = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
         for (var element : tracks) {
@@ -263,13 +277,61 @@ final class OfficialMusicLineupTest {
                 .filter(item -> item.get("target").getAsString().equals(name))
                 .findFirst().orElseThrow();
             assertEquals(prior.get("afterSha256").getAsString(), track.get("beforeSha256").getAsString(), name);
-            assertEquals(track.get("afterSha256").getAsString(),
+            assertEquals(changed.getOrDefault(name, track.get("afterSha256").getAsString()),
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
                     Files.readAllBytes(soundRoot.resolve(name)))), name);
             assertEquals(20 * Math.log10(1.3),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
         }
         assertEquals(expected, reported);
+    }
+
+    @Test
+    void onlyFiveCoreBattleThemesGainAgainAndSharedNonTargetsKeepTheirOriginalAudio() throws Exception {
+        Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
+        var previous = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/battle-gain-2026-10-11.json"))).getAsJsonObject();
+        var current = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/core-battle-gain-2026-10-13.json"))).getAsJsonObject();
+        assertEquals(1.3, current.get("multiplier").getAsDouble());
+        assertEquals(5, current.getAsJsonArray("tracks").size());
+        Set<String> expected = Set.of(
+            "music/battle/champion/sinnoh_cynthia_battle.ogg",
+            "music/battle/elite/sinnoh_elite_four_battle.ogg",
+            "music/battle/gym/sinnoh_gym_leader_battle.ogg",
+            "music/battle/trainer/sinnoh_trainer_battle.ogg",
+            "music/battle/wild/sinnoh_wild_pokemon_battle.ogg");
+        Set<String> reported = new java.util.HashSet<>();
+        Path sounds = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
+        for (var element : current.getAsJsonArray("tracks")) {
+            var track = element.getAsJsonObject();
+            String name = track.get("target").getAsString();
+            assertTrue(reported.add(name), "duplicate: " + name);
+            var prior = java.util.stream.StreamSupport.stream(previous.getAsJsonArray("tracks").spliterator(), false)
+                .map(item -> item.getAsJsonObject())
+                .filter(item -> item.get("target").getAsString().equals(name))
+                .findFirst().orElseThrow();
+            assertEquals(prior.get("afterSha256").getAsString(), track.get("beforeSha256").getAsString(), name);
+            assertEquals(track.get("afterSha256").getAsString(),
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(sounds.resolve(name)))), name);
+            assertEquals(20 * Math.log10(1.3),
+                track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
+        }
+        assertEquals(expected, reported);
+        var preserved = current.getAsJsonObject("preserved");
+        for (String source : Set.of(
+            "music/battle/trainer/sinnoh_trainer_battle.ogg",
+            "music/battle/wild/sinnoh_wild_pokemon_battle.ogg")) {
+            String copy = preserved.get(source).getAsString();
+            var prior = java.util.stream.StreamSupport.stream(previous.getAsJsonArray("tracks").spliterator(), false)
+                .map(item -> item.getAsJsonObject())
+                .filter(item -> item.get("target").getAsString().equals(source))
+                .findFirst().orElseThrow();
+            assertEquals(prior.get("afterSha256").getAsString(),
+                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(sounds.resolve(copy)))), copy);
+        }
     }
 
     @Test
@@ -347,7 +409,7 @@ final class OfficialMusicLineupTest {
         expect("giratina", "legendary/dppt_giratina_battle", "legendary/bdsp_giratina_battle");
         expect("arceus", "legendary/dppt_arceus_battle", "legendary/bdsp_arceus_battle");
         expect("heatran regigigas darkrai shaymin cresselia", "legendary/dppt_legendary_pokemon_battle", "legendary/bdsp_legendary_pokemon_battle");
-        expect("phione manaphy", "wild/sinnoh_wild_pokemon_battle");
+        expect("phione manaphy", "wild/sinnoh_wild_pokemon_battle_mythical");
         expect("reshiram zekrom", "legendary/bw_reshiram_zekrom_battle");
         expect("kyurem", "legendary/bw_kyurem_battle");
         expect("cobalion terrakion virizion keldeo tornadus thundurus landorus genesect enamorus", "legendary/bw_legendary_pokemon_battle");

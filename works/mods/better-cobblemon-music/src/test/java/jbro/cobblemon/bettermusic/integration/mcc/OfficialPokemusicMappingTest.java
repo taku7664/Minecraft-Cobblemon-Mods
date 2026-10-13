@@ -97,7 +97,7 @@ final class OfficialPokemusicMappingTest {
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg")));
         assertScaledImport(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg"),
             "battle/low_hp/alert.ogg", "b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad");
-        assertEquals(88, compiled.trackEvents().size());
+        assertEquals(90, compiled.trackEvents().size());
     }
 
     @Test
@@ -254,7 +254,7 @@ final class OfficialPokemusicMappingTest {
             Set.of(), Set.of(), pvpKeys)).playlist(), "battle/pvp/pokemon_champions_arena_battle");
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/champion"));
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/hard_champion"));
-        expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_tower"), "battle/trainer/sinnoh_trainer_battle");
+        expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_tower"), "battle/trainer/sinnoh_trainer_battle_facility");
     }
 
     private static void expectBattle(BattlePlaylistResolver resolver, String stage, String opponent, String path) {

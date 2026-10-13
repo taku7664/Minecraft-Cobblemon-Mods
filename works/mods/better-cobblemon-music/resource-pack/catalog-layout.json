@@ -62,12 +62,14 @@
     "better_cobblemon_music:battle/legendary/za_darkrai_battle": "다크라이 전투 (PLZA)",
     "better_cobblemon_music:battle/pvp/pokemon_champions_arena_battle": "아레나 배틀 (PC)",
     "better_cobblemon_music:battle/trainer/sinnoh_trainer_battle": "전투! 트레이너 (D·P)",
+    "better_cobblemon_music:battle/trainer/sinnoh_trainer_battle_facility": "전투! 트레이너 (D·P)",
     "better_cobblemon_music:battle/ultra_beast/alola_ultra_beast_battle": "전투! 울트라비스트 (S·M)",
     "better_cobblemon_music:battle/wild/bw_strong_wild_pokemon_battle": "전투! 강한 야생 포켓몬 (B·W)",
     "better_cobblemon_music:battle/wild/gs_johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도·낮, G·S)",
     "better_cobblemon_music:battle/wild/hoenn_wild_pokemon_battle": "전투! 야생 포켓몬 (R·S)",
     "better_cobblemon_music:battle/wild/johto_wild_pokemon_battle": "전투! 야생 포켓몬 (성도, HG·SS)",
     "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle": "전투! 야생 포켓몬 (D·P)",
+    "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle_mythical": "전투! 야생 포켓몬 (D·P)",
     "better_cobblemon_music:battle/wild/sm_wild_pokemon_battle": "전투! 야생 포켓몬 (S·M)",
     "better_cobblemon_music:battle/wild/swsh_wild_pokemon_battle": "전투! 야생 포켓몬 (Sw·Sh)",
     "better_cobblemon_music:battle/wild/xy_wild_pokemon_battle": "전투! 야생 포켓몬 (X·Y)",
@@ -291,8 +293,8 @@
       "trainer": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
       "pvp": "better_cobblemon_music:track/battle/pvp/pokemon_champions_arena_battle",
       "content": {
-        "more_cobblemon_contents:battle_tower": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
-        "more_cobblemon_contents:battle_factory": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:battle_tower": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle_facility",
+        "more_cobblemon_contents:battle_factory": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle_facility",
         "more_cobblemon_contents:pvp": "better_cobblemon_music:track/battle/pvp/pokemon_champions_arena_battle",
         "more_cobblemon_contents:league_challenge/wild_trainer": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
         "more_cobblemon_contents:league_challenge/wild_trainer_ace": "better_cobblemon_music:track/battle/trainer/sinnoh_trainer_battle",
@@ -395,7 +397,7 @@
         {
           "species": ["phione", "manaphy"],
           "only": ["wild"],
-          "playlist": "better_cobblemon_music:track/battle/wild/sinnoh_wild_pokemon_battle"
+          "playlist": "better_cobblemon_music:track/battle/wild/sinnoh_wild_pokemon_battle_mythical"
         },
         {
           "species": ["reshiram", "zekrom"],
