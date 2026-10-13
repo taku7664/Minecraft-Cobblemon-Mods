@@ -339,8 +339,13 @@ internal object EmbeddedTeamBattle {
                 val set = setValue.asJsonObject
                 canonical(set["species"].asString) to set.getAsJsonArray("moves").map { canonical(it.asString) }.toSet()
             }
+        // The game matches the real set by the Pokemon itself; here only by species, so a battle forme (Mega Gengar,
+        // Mimikyu-Busted) is matched to the set of the species it came from. Missed, a Boss read no attack at all for it.
+        fun actual(species: String): Set<String>? = movesBySpecies[species]
+            ?: movesBySpecies.entries.filter { (base, _) -> species.length > base.length && species.startsWith(base) }
+                .maxByOrNull { it.key.length }?.value
         return state.pokemon.asSequence().filter { it.side == BattleSide.OPPONENT }.mapNotNull { pokemon ->
-            movesBySpecies[canonical(pokemon.speciesId)]?.let { pokemon.battlePokemonId to it }
+            actual(canonical(pokemon.speciesId))?.let { pokemon.battlePokemonId to it }
         }.toMap()
     }
 
