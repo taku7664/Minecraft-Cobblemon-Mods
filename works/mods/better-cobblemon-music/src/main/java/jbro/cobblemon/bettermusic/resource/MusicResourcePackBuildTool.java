@@ -97,6 +97,10 @@ public final class MusicResourcePackBuildTool {
             ? requiredObject(catalog, "legacyAliases", "catalog layout")
             : new JsonObject();
         catalog.remove("legacyAliases");
+        JsonObject trackAudioAliases = catalog.has("trackAudioAliases")
+            ? requiredObject(catalog, "trackAudioAliases", "catalog layout")
+            : new JsonObject();
+        catalog.remove("trackAudioAliases");
         JsonObject configuredTitles = catalog.has("trackTitles")
             ? requiredObject(catalog, "trackTitles", "catalog layout") : new JsonObject();
         catalog.remove("trackTitles");
@@ -145,6 +149,53 @@ public final class MusicResourcePackBuildTool {
         }
         if (musicCount == 0) {
             throw new IOException("Resource pack contains no music OGG files under " + MUSIC_PREFIX);
+        }
+        for (var entry : trackAudioAliases.entrySet()) {
+            String aliasId = entry.getKey();
+            if (!aliasId.startsWith(NAMESPACE + ":") || !entry.getValue().isJsonPrimitive()
+                || !entry.getValue().getAsJsonPrimitive().isString()) {
+                throw new IOException("Invalid trackAudioAliases entry " + aliasId);
+            }
+            String sourceId = entry.getValue().getAsString();
+            if (!sourceId.startsWith(NAMESPACE + ":") || !tracks.has(sourceId) || tracks.has(aliasId)) {
+                throw new IOException("trackAudioAliases must point from a new key to a physical track: " + aliasId);
+            }
+            String aliasPath = aliasId.substring(NAMESPACE.length() + 1);
+            String sourcePath = sourceId.substring(NAMESPACE.length() + 1);
+            if (!Files.isRegularFile(sourceDirectory.resolve(MUSIC_PREFIX + sourcePath + ".ogg"))) {
+                throw new IOException("trackAudioAliases references missing audio: " + sourceId);
+            }
+            String eventPath = "music.track." + aliasPath.replace('/', '.');
+            if (sounds.has(eventPath)) {
+                throw new IOException("trackAudioAliases event conflicts with existing event " + eventPath);
+            }
+            String eventId = NAMESPACE + ":" + eventPath;
+            JsonObject track = new JsonObject();
+            track.addProperty("event", eventId);
+            track.addProperty("title", configuredTitle(configuredTitles, aliasId, aliasPath));
+            JsonArray legacyPaths = new JsonArray();
+            legacyPaths.add(aliasPath + ".ogg");
+            if (legacyAliases.has(aliasId)) {
+                if (!legacyAliases.get(aliasId).isJsonArray()) {
+                    throw new IOException("legacyAliases." + aliasId + " must be an array");
+                }
+                for (var legacy : legacyAliases.getAsJsonArray(aliasId)) {
+                    legacyPaths.add(legacy.getAsString());
+                }
+            }
+            track.add("legacyPaths", legacyPaths);
+            tracks.add(aliasId, track);
+            sounds.add(eventPath, soundDefinition(NAMESPACE + ":music/" + sourcePath, true,
+                sourcePath.startsWith("battle/") ? battleSoundVolume : 1.0));
+            String playlistId = NAMESPACE + ":track/" + aliasPath;
+            if (playlists.has(playlistId)) {
+                throw new IOException("Catalog layout conflicts with implicit playlist " + playlistId);
+            }
+            JsonObject playlist = new JsonObject();
+            JsonArray trackList = new JsonArray();
+            trackList.add(aliasId);
+            playlist.add("tracks", trackList);
+            playlists.add(playlistId, playlist);
         }
         for (String trackId : legacyAliases.keySet()) {
             if (!tracks.has(trackId)) {

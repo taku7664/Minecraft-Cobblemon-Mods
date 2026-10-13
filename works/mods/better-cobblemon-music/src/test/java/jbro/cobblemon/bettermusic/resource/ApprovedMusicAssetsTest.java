@@ -24,8 +24,8 @@ final class ApprovedMusicAssetsTest {
             module.resolve("resource-pack/catalog-layout.json"), pack);
         JsonObject catalog = read(pack.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"));
         JsonObject playlists = catalog.getAsJsonObject("playlists");
-        Set<String> approved = new HashSet<>(read(module.resolve("resource-pack/catalog-layout.json"))
-            .getAsJsonObject("trackTitles").keySet());
+        JsonObject layout = read(module.resolve("resource-pack/catalog-layout.json"));
+        Set<String> approved = new HashSet<>(layout.getAsJsonObject("trackTitles").keySet());
         assertEquals(90, approved.size());
         assertEquals(approved, catalog.getAsJsonObject("tracks").keySet(), "Unrequested BGM must not be packaged");
 
@@ -34,7 +34,13 @@ final class ApprovedMusicAssetsTest {
         assertEquals(approved, mapped, "Every packaged BGM must have an active default mapping");
 
         Set<String> expectedAudio = new HashSet<>();
-        approved.forEach(id -> expectedAudio.add("assets/better_cobblemon_music/sounds/music/" + id.substring("better_cobblemon_music:".length()) + ".ogg"));
+        JsonObject aliases = layout.getAsJsonObject("trackAudioAliases");
+        approved.forEach(id -> {
+            String physicalId = aliases.has(id) ? aliases.get(id).getAsString() : id;
+            expectedAudio.add("assets/better_cobblemon_music/sounds/music/"
+                + physicalId.substring("better_cobblemon_music:".length()) + ".ogg");
+        });
+        assertEquals(88, expectedAudio.size(), "Track aliases must reuse existing OGG files");
         for (String effect : Set.of("hit/normal", "hit/super_effective", "hit/not_very_effective", "low_hp/alert")) {
             expectedAudio.add("assets/better_cobblemon_music/sounds/battle/" + effect + ".ogg");
         }

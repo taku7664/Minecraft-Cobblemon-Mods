@@ -255,6 +255,7 @@ final class OfficialPokemusicMappingTest {
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/champion"));
         assertTrue(!compiled.snapshot().battle().content().containsKey("more_cobblemon_contents:league_challenge/hard_champion"));
         expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_tower"), "battle/trainer/sinnoh_trainer_battle_facility");
+        expectTracks(compiled.snapshot().battle().content().get("more_cobblemon_contents:battle_factory"), "battle/trainer/sinnoh_trainer_battle_facility");
     }
 
     private static void expectBattle(BattlePlaylistResolver resolver, String stage, String opponent, String path) {

@@ -86,6 +86,44 @@ final class MusicResourcePackBuildToolTest {
     }
 
     @Test
+    void differentTrackKeysCanShareOnePhysicalOgg() throws IOException {
+        Path source = temporaryDirectory.resolve("alias-source");
+        Path output = temporaryDirectory.resolve("alias-output");
+        write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
+        for (String file : java.util.List.of("music/battle/wild/theme.ogg", "battle/low_hp/alert.ogg",
+            "battle/hit/normal.ogg", "battle/hit/super_effective.ogg", "battle/hit/not_very_effective.ogg")) {
+            writeOgg(source.resolve("assets/better_cobblemon_music/sounds/" + file));
+        }
+        var layout = JsonParser.parseString(layoutJson().replace("field/plains/theme", "battle/wild/theme"))
+            .getAsJsonObject();
+        layout.addProperty("battleSoundVolume", 0.713);
+        var aliases = new com.google.gson.JsonObject();
+        aliases.addProperty("better_cobblemon_music:battle/wild/mythical", "better_cobblemon_music:battle/wild/theme");
+        layout.add("trackAudioAliases", aliases);
+        Path layoutPath = temporaryDirectory.resolve("alias-layout.json");
+        write(layoutPath, layout.toString());
+
+        MusicResourcePackBuildTool.build(source, layoutPath, output);
+
+        var sounds = JsonParser.parseString(Files.readString(
+            output.resolve("assets/better_cobblemon_music/sounds.json"))).getAsJsonObject();
+        var original = sounds.getAsJsonObject("music.track.battle.wild.theme").getAsJsonArray("sounds").get(0);
+        var alias = sounds.getAsJsonObject("music.track.battle.wild.mythical").getAsJsonArray("sounds").get(0);
+        assertEquals(original, alias);
+        assertTrue(Files.notExists(output.resolve(
+            "assets/better_cobblemon_music/sounds/music/battle/wild/mythical.ogg")));
+        var catalog = MusicCatalogParser.parse(new StringReader(Files.readString(
+            output.resolve("assets/better_cobblemon_music/catalogs/base/better_cobblemon_music.json"))));
+        assertEquals("better_cobblemon_music:music.track.battle.wild.mythical",
+            catalog.tracks().get("better_cobblemon_music:battle/wild/mythical").eventId());
+        assertTrue(catalog.playlists().containsKey("better_cobblemon_music:track/battle/wild/mythical"));
+
+        aliases.addProperty("better_cobblemon_music:battle/wild/mythical", "better_cobblemon_music:battle/wild/missing");
+        write(layoutPath, layout.toString());
+        assertThrows(IOException.class, () -> MusicResourcePackBuildTool.build(source, layoutPath, output));
+    }
+
+    @Test
     void customTrackTitlesReachTheCatalogAndInvalidTitlesCannotReplaceAGoodPack() throws IOException {
         Path source = temporaryDirectory.resolve("title-source");
         Path output = temporaryDirectory.resolve("title-output");

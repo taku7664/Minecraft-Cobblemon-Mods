@@ -238,8 +238,6 @@ final class OfficialMusicLineupTest {
             assertEquals(20 * Math.log10(0.6),
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.3, name);
         }
-        actual.remove("trainer/sinnoh_trainer_battle_facility.ogg");
-        actual.remove("wild/sinnoh_wild_pokemon_battle_mythical.ogg");
         assertEquals(actual, reported);
     }
 
@@ -287,7 +285,7 @@ final class OfficialMusicLineupTest {
     }
 
     @Test
-    void onlyFiveCoreBattleThemesGainAgainAndSharedNonTargetsKeepTheirOriginalAudio() throws Exception {
+    void onlyFiveCoreBattleThemesGainAgainAndSharedUsesKeepTheSameTracks() throws Exception {
         Path module = Files.isDirectory(Path.of("resource-pack")) ? Path.of(".") : Path.of("mods/better-cobblemon-music");
         var previous = JsonParser.parseString(Files.readString(
             module.resolve("resource-pack/battle-gain-2026-10-11.json"))).getAsJsonObject();
@@ -319,19 +317,24 @@ final class OfficialMusicLineupTest {
                 track.get("afterRmsDb").getAsDouble() - track.get("beforeRmsDb").getAsDouble(), 0.26, name);
         }
         assertEquals(expected, reported);
-        var preserved = current.getAsJsonObject("preserved");
-        for (String source : Set.of(
-            "music/battle/trainer/sinnoh_trainer_battle.ogg",
-            "music/battle/wild/sinnoh_wild_pokemon_battle.ogg")) {
-            String copy = preserved.get(source).getAsString();
-            var prior = java.util.stream.StreamSupport.stream(previous.getAsJsonArray("tracks").spliterator(), false)
-                .map(item -> item.getAsJsonObject())
-                .filter(item -> item.get("target").getAsString().equals(source))
-                .findFirst().orElseThrow();
-            assertEquals(prior.get("afterSha256").getAsString(),
-                HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
-                    Files.readAllBytes(sounds.resolve(copy)))), copy);
+        assertTrue(!current.has("preserved"));
+        assertEquals(List.of("better_cobblemon_music:battle/trainer/sinnoh_trainer_battle_facility"),
+            battle.content().get("more_cobblemon_contents:battle_tower").tracks());
+        assertEquals(battle.content().get("more_cobblemon_contents:battle_tower").tracks(),
+            battle.content().get("more_cobblemon_contents:battle_factory").tracks());
+        var soundDefinitions = JsonParser.parseString(Files.readString(
+            temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds.json"))).getAsJsonObject();
+        for (String[] pair : List.of(
+            new String[] {"battle.trainer.sinnoh_trainer_battle_facility", "battle.trainer.sinnoh_trainer_battle"},
+            new String[] {"battle.wild.sinnoh_wild_pokemon_battle_mythical", "battle.wild.sinnoh_wild_pokemon_battle"})) {
+            String alias = "music.track." + pair[0];
+            String original = "music.track." + pair[1];
+            assertTrue(soundDefinitions.has(alias));
+            assertEquals(soundDefinitions.getAsJsonObject(original).getAsJsonArray("sounds").get(0),
+                soundDefinitions.getAsJsonObject(alias).getAsJsonArray("sounds").get(0));
         }
+        assertTrue(Files.notExists(sounds.resolve("music/battle/trainer/sinnoh_trainer_battle_facility.ogg")));
+        assertTrue(Files.notExists(sounds.resolve("music/battle/wild/sinnoh_wild_pokemon_battle_mythical.ogg")));
     }
 
     @Test

@@ -1,8 +1,7 @@
-"""Raise five ordinary battle themes while preserving shared non-target uses.
+"""Raise five ordinary battle themes, including every use of each shared track.
 
-Run once against the outputs pinned by battle-gain-2026-10-11.json. The two
-unchanged copies keep mythical encounters and battle facilities at their old
-level; the resulting report makes repeated runs validation-only.
+Run once against the outputs pinned by battle-gain-2026-10-11.json.
+The resulting report makes repeated runs validation-only.
 """
 
 import argparse
@@ -24,12 +23,6 @@ TRACKS = (
     "music/battle/trainer/sinnoh_trainer_battle.ogg",
     "music/battle/wild/sinnoh_wild_pokemon_battle.ogg",
 )
-PRESERVED = {
-    "music/battle/trainer/sinnoh_trainer_battle.ogg":
-        "music/battle/trainer/sinnoh_trainer_battle_facility.ogg",
-    "music/battle/wild/sinnoh_wild_pokemon_battle.ogg":
-        "music/battle/wild/sinnoh_wild_pokemon_battle_mythical.ogg",
-}
 REPORT_NAME = "core-battle-gain-2026-10-13.json"
 
 
@@ -55,28 +48,21 @@ def main():
         report = json.loads(report_path.read_text(encoding="utf-8"))
         recorded = {track["target"]: track for track in report["tracks"]}
         if report.get("multiplier") != GAIN or set(recorded) != set(TRACKS) \
-                or report.get("preserved") != PRESERVED:
+                or "preserved" in report:
             raise ValueError("Existing report has another scope")
         for name in TRACKS:
             if recorded[name]["beforeSha256"] != prior[name] \
                     or sha256(sounds / name) != recorded[name]["afterSha256"]:
                 raise ValueError(f"Current audio differs from recorded result: {name}")
-        for source, copy in PRESERVED.items():
-            if sha256(sounds / copy) != prior[source]:
-                raise ValueError(f"Preserved audio differs from original: {copy}")
-        print("Already raised five tracks and verified both preserved copies")
+        print("Already raised five shared tracks")
         return
 
     for name in TRACKS:
         if sha256(sounds / name) != prior[name]:
             raise ValueError(f"Input differs from previous approved output: {name}")
-    for copy in PRESERVED.values():
-        if (sounds / copy).exists():
-            raise ValueError(f"Preserved copy already exists without report: {copy}")
-
     report = {"schemaVersion": 1, "multiplier": GAIN,
-              "scope": "five ordinary battle themes; legendary, mythical, facility, PvP, other battle and field audio unchanged",
-              "codec": "Ogg Vorbis", "quality": 4, "preserved": PRESERVED, "tracks": []}
+              "scope": "five shared battle tracks; other battle and field audio files unchanged",
+              "codec": "Ogg Vorbis", "quality": 4, "tracks": []}
     with tempfile.TemporaryDirectory(prefix="bcm-core-battle-gain-", dir=args.scratch) as temporary:
         stage = Path(temporary)
         for name in TRACKS:
@@ -112,18 +98,11 @@ def main():
                                      "inputGain": round(input_gain, 8), "channels": channels,
                                      "inputSampleRate": sample_rate, "outputSampleRate": 44100,
                                      "durationSeconds": round(out_duration, 3)})
-        # Stage both the gained outputs and the bit-identical originals first.
-        for source, copy in PRESERVED.items():
-            target = stage / copy
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(sounds / source, target)
         # A partial copy must fail validation rather than apply gain a second time.
         report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         for track in report["tracks"]:
             shutil.copyfile(stage / track["target"], sounds / track["target"])
-        for copy in PRESERVED.values():
-            shutil.copyfile(stage / copy, sounds / copy)
-    print("Raised five core battle themes and preserved two non-target shared uses")
+    print("Raised five shared battle themes")
 
 
 if __name__ == "__main__":

@@ -1,13 +1,9 @@
 {
   "schemaVersion": 1,
   "multiplier": 1.3,
-  "scope": "five ordinary battle themes; legendary, mythical, facility, PvP, other battle and field audio unchanged",
+  "scope": "five shared battle tracks; other battle and field audio files unchanged",
   "codec": "Ogg Vorbis",
   "quality": 4,
-  "preserved": {
-    "music/battle/trainer/sinnoh_trainer_battle.ogg": "music/battle/trainer/sinnoh_trainer_battle_facility.ogg",
-    "music/battle/wild/sinnoh_wild_pokemon_battle.ogg": "music/battle/wild/sinnoh_wild_pokemon_battle_mythical.ogg"
-  },
   "tracks": [
     {
       "target": "music/battle/champion/sinnoh_cynthia_battle.ogg",

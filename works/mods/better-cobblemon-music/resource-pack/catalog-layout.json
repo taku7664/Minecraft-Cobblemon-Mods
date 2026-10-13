@@ -8,6 +8,10 @@
       "battle/legendary/frlg_deoxys_battle.ogg"
     ]
   },
+  "trackAudioAliases": {
+    "better_cobblemon_music:battle/trainer/sinnoh_trainer_battle_facility": "better_cobblemon_music:battle/trainer/sinnoh_trainer_battle",
+    "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle_mythical": "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle"
+  },
   "trackTitles": {
     "better_cobblemon_music:field/ultra_space/ultra_desert": "울트라데저트",
     "better_cobblemon_music:battle/boss/pla_boss_battle": "승부: 우두머리 포켓몬 (PLA)",
