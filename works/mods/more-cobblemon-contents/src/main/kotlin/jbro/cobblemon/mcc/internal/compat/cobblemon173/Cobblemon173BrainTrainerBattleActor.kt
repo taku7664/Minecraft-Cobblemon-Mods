@@ -111,11 +111,46 @@ internal class Cobblemon173BrainTrainerBattleActor(
 
     override fun sendUpdate(packet: com.cobblemon.mod.common.api.net.NetworkPacket<*>) {
         super.sendUpdate(packet)
+        reaskAfterRejection(packet)
         if (!cobblemonNpc || packet !is com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket) return
         val npc = trainerEntity as? com.cobblemon.mod.common.entity.npc.NPCEntity ?: return
         val battleId = battle.battleId
         if (npc.isAlive) pokemonList.mapNotNull { it.entity }.forEach { it.recallWithAnimation() }
         npc.entityData.set(com.cobblemon.mod.common.entity.npc.NPCEntity.BATTLE_IDS, npc.battleIds - battleId)
+    }
+
+    /** Rejected choices since the last turn's own request; past [MAX_REASKS] the baseline answers instead. */
+    @Volatile private var rejections = 0
+    @Volatile private var reaskOnNextRequest = false
+
+    /**
+     * Showdown turns a choice down (a switch out of a trap it only hinted at as `maybeTrapped`, which Cobblemon drops
+     * when it reads the request) with `|error|` and a fresh `|request|`. Cobblemon sets `mustChoose` and sends
+     * [com.cobblemon.mod.common.net.messages.client.battle.BattleMadeInvalidChoicePacket], which only a player's client
+     * acts on: an AI actor is never asked again and the battle waits forever (Cobblemon 1.8.1, read from its bytecode
+     * 2026-10-13). The new request is stored by the next dispatched instruction, after its own
+     * [com.cobblemon.mod.common.net.messages.client.battle.BattleQueueRequestPacket], so the question goes behind it.
+     */
+    private fun reaskAfterRejection(packet: com.cobblemon.mod.common.api.net.NetworkPacket<*>) {
+        when (packet) {
+            is com.cobblemon.mod.common.net.messages.client.battle.BattleMakeChoicePacket -> rejections = 0
+            is com.cobblemon.mod.common.net.messages.client.battle.BattleMadeInvalidChoicePacket -> {
+                rejections++
+                reaskOnNextRequest = true
+                MoreCobblemonContents.LOGGER.warn("Battle {}: Showdown rejected the AI's choice ({} in a row); asking again",
+                    battle.battleId, rejections)
+            }
+            is com.cobblemon.mod.common.net.messages.client.battle.BattleQueueRequestPacket -> {
+                if (!reaskOnNextRequest) return
+                reaskOnNextRequest = false
+                battle.dispatchGo {
+                    val current = request
+                    if (battle.ended || current == null || !mustChoose || responses.isNotEmpty() || pendingRequest.get() != null) return@dispatchGo
+                    if (rejections <= MAX_REASKS) onChoiceRequested()
+                    else if (pendingRequest.compareAndSet(null, current)) submitBaselineOrEmergency(current, null)
+                }
+            }
+        }
     }
 
     override fun onChoiceRequested() {
@@ -598,6 +633,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
         )
         val fallbackChain = BattleDecisionFallbackChain(coordinator)
         const val LIVE_STATE_WAIT_MILLIS = 2_000L
+        const val MAX_REASKS = 2
     }
 }
 
