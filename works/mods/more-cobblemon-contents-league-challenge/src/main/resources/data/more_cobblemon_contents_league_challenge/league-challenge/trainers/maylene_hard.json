@@ -6,18 +6,18 @@
   "appearance": "more_cobblemon_contents_league_challenge:maylene",
   "scenes": {
     "battle_start": [
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.battle_start.0"
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.battle_start.0"
     ],
     "last_pokemon": [
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.last_pokemon.0",
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.last_pokemon.1"
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.last_pokemon.0",
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.last_pokemon.1"
     ],
     "player_won": [
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.player_won.0",
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.player_won.1"
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.player_won.0",
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.player_won.1"
     ],
     "player_lost": [
-      "trainer.more_cobblemon_contents_league_challenge.maylene.scene.player_lost.0"
+      "trainer.more_cobblemon_contents_league_challenge.maylene.scene_hard.player_lost.0"
     ]
   }
 }
