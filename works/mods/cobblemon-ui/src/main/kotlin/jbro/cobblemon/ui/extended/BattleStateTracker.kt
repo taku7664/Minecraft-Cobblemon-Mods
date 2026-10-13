@@ -260,6 +260,7 @@ object BattleStateTracker {
     fun setStatStage(uuid: UUID, stat: BattleStat, stage: Int) = StatTracker.setStatStage(uuid, stat, stage)
     fun clearPokemonStats(uuid: UUID) = StatTracker.clearPokemonStats(uuid)
     fun clearPokemonStatsByName(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.clearPokemonStatsByName(pokemonName, preferAlly)
+    fun clearNegativeStatsByName(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.clearNegativeStatsByName(pokemonName, preferAlly)
     fun clearAllStatsForAll() = StatTracker.clearAllStatsForAll()
     fun invertStats(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.invertStats(pokemonName, preferAlly)
     fun copyStats(sourceName: String, targetName: String, sourceIsAlly: Boolean? = null, targetIsAlly: Boolean? = null) = StatTracker.copyStats(sourceName, targetName, sourceIsAlly, targetIsAlly)

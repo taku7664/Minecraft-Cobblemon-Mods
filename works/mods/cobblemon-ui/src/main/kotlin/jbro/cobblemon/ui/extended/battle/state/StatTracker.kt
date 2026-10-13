@@ -116,6 +116,16 @@ object StatTracker {
         CobblemonUi.LOGGER.debug("StatTracker: Swapped ${statsToSwap.map { it.abbr }} between $pokemon1Name and $pokemon2Name")
     }
 
+    fun clearNegativeStatsByName(pokemonName: String, preferAlly: Boolean? = null) {
+        val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return
+        val pokemonStats = statChanges[uuid] ?: return
+        for (stat in BattleStat.entries) {
+            if ((pokemonStats[stat] ?: 0) < 0) {
+                pokemonStats[stat] = 0
+            }
+        }
+    }
+
     fun clearPositiveStats(uuid: UUID) {
         val pokemonStats = statChanges[uuid] ?: return
         for (stat in BattleStat.entries) {

@@ -1,5 +1,13 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-13 20:05] 하양허브 발동 후에도 능력 하락이 남던 문제 (단위 테스트 확인, 빌드·배치·실게임 미확인)
+
+- **빡대리님 신고:** 상대 포푸니크가 인파이트를 쓰고 하양허브가 발동했는데 상대 정보 패널에 방어·특방 -1이 그대로 남았다.
+- **원인(Showdown·Cobblemon 1.8.1 바이트코드로 확인):** Showdown 하양허브는 `-enditem|...|White Herb` 다음 `-clearnegativeboost|...|[silent]`를 보낸다. Cobblemon `ClearNegativeBoostInstruction`은 `silent`면 채팅 메시지를 보내지 않아 클라이언트 UI가 초기화를 받을 길이 없다. 또 `enditem.whiteherb`는 인자가 하나뿐인데 `ITEM_CONSUMED_KEYS`(인자 2개 필요)에 있어서 아이템 소모 표시도 안 됐다.
+- **수정:** `enditem.whiteherb`를 `ITEM_SINGLE_ARG_EVENTS`로 옮겨 소모 처리하고, 같은 메시지에서 그 포켓몬의 하락 단계만 0으로 돌린다(`StatTracker.clearNegativeStatsByName`). 조용하지 않은 `clearallnegativeboost`(·`.zeffect`)도 같은 함수로 처리한다. 올라간 능력은 그대로 둔다.
+- **테스트:** `BattleStateRegressionTest` 한 클래스(39개) 통과. 새 테스트 2개.
+- **남은 것:** 하양허브를 상대에게 던지기(fling)한 경우는 대상 쪽 하양허브 메시지가 없어 여전히 놓친다. 같은 단일 인자 키(`mentalherb`·`powerherb`·`airballoon` 등)도 `ITEM_CONSUMED_KEYS`에 남아 소모 표시가 안 될 수 있는데, Cobblemon이 실제로 인자를 몇 개 보내는지 확인하지 않아 손대지 않았다.
+
 ## [2026-10-13 02:35] 리그 VS 인트로 `BattleVersusIntro` (하네스 캡처·실제 흐름 확인, 배포 안 함)
 
 - **무엇:** 관장·사천왕·챔피언 배틀 전 VS 화면. 사선으로 갈라진 두 면이 좌우에서 들어오고 속도선, 두 트레이너 전신, 이름판(도전자 왼쪽 아래, 상대 오른쪽 위), "VS"가 한 번 꽂히며 섬광·흔들림. 사천왕은 교차 슬래시, 챔피언은 금색 면과 불꽃 입자. 흰 화면으로 끝나고 배틀이 열리면 걷힌다. `/battleentry versus <gym|elite_four|champion>`으로 미리 볼 수 있다.

@@ -61,6 +61,15 @@ object StateUpdater {
         BattleStateTracker.clearPokemonStatsByName(pokemonName)
     }
 
+    // White Herb / Z-Power: reset only the lowered stats
+    fun extractClearNegativeBoost(args: Array<out Any>) {
+        if (args.isEmpty()) return
+
+        val pokemonName = MessageParser.extractPokemonName(args[0])
+        CobblemonUi.LOGGER.debug("StateUpdater: Clearing negative stats for $pokemonName")
+        BattleStateTracker.clearNegativeStatsByName(pokemonName)
+    }
+
     // Topsy-Turvy: invert all stat changes
     fun extractInvertBoost(args: Array<out Any>) {
         if (args.isEmpty()) return

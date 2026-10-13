@@ -137,7 +137,6 @@ object TranslationKeys {
         "cobblemon.battle.enditem.mentalherb",
         "cobblemon.battle.enditem.powerherb",
         "cobblemon.battle.enditem.mirrorherb",
-        "cobblemon.battle.enditem.whiteherb",
         "cobblemon.battle.enditem.cellbattery",
         "cobblemon.battle.enditem.ejectbutton",
         "cobblemon.battle.enditem.snowball",
@@ -154,7 +153,18 @@ object TranslationKeys {
         "cobblemon.battle.enditem.focussash" to
             Pair("item.cobblemon.focus_sash", ItemStatus.CONSUMED),
         "cobblemon.battle.enditem.focusband" to
-            Pair("item.cobblemon.focus_band", ItemStatus.HELD)
+            Pair("item.cobblemon.focus_band", ItemStatus.HELD),
+        "cobblemon.battle.enditem.whiteherb" to
+            Pair("item.cobblemon.white_herb", ItemStatus.CONSUMED)
+    )
+
+    // Cobblemon sends nothing for White Herb's own reset: Showdown marks it
+    // `-clearnegativeboost|...|[silent]`, so the item message is the only signal.
+    const val WHITE_HERB_KEY = "cobblemon.battle.enditem.whiteherb"
+
+    val CLEAR_NEGATIVE_BOOST_KEYS = setOf(
+        "cobblemon.battle.clearallnegativeboost",
+        "cobblemon.battle.clearallnegativeboost.zeffect"
     )
 
     val BERRY_DAMAGE_KEYS = setOf(

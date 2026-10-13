@@ -170,6 +170,11 @@ object BattleMessageInterceptor {
                 return
             }
 
+            if (key in TranslationKeys.CLEAR_NEGATIVE_BOOST_KEYS) {
+                StateUpdater.extractClearNegativeBoost(args)
+                return
+            }
+
             if (key == "cobblemon.battle.invertboost") {
                 StateUpdater.extractInvertBoost(args)
                 return
@@ -334,6 +339,9 @@ object BattleMessageInterceptor {
 
             TranslationKeys.ITEM_SINGLE_ARG_EVENTS[key]?.let { (itemTranslationKey, status) ->
                 StateUpdater.extractItemSingleArg(args, itemTranslationKey, status)
+                if (key == TranslationKeys.WHITE_HERB_KEY) {
+                    StateUpdater.extractClearNegativeBoost(args)
+                }
                 return
             }
 

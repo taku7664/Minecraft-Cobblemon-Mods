@@ -386,6 +386,48 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void whiteHerbMessageClearsOnlyLoweredStats() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Sneasler", false);
+        BattleStateTracker.INSTANCE.setStatStage(uuid, BattleStateTracker.BattleStat.ATTACK, 1);
+        BattleStateTracker.INSTANCE.setStatStage(uuid, BattleStateTracker.BattleStat.DEFENSE, -1);
+        BattleStateTracker.INSTANCE.setStatStage(uuid, BattleStateTracker.BattleStat.SPECIAL_DEFENSE, -1);
+
+        // Showdown follows this with a silent -clearnegativeboost that never reaches the client.
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
+            TranslationKeys.WHITE_HERB_KEY,
+            "Sneasler"
+        )));
+
+        var stats = BattleStateTracker.INSTANCE.getStatChanges(uuid);
+        assertEquals(1, stats.get(BattleStateTracker.BattleStat.ATTACK));
+        assertFalse(stats.containsKey(BattleStateTracker.BattleStat.DEFENSE));
+        assertFalse(stats.containsKey(BattleStateTracker.BattleStat.SPECIAL_DEFENSE));
+        assertEquals(
+            Component.translatable("item.cobblemon.white_herb").getString(),
+            AbilityItemTracker.INSTANCE.getItem(uuid).getName()
+        );
+        assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
+    void clearNegativeBoostMessageKeepsRaisedStats() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Eevee", false);
+        BattleStateTracker.INSTANCE.setStatStage(uuid, BattleStateTracker.BattleStat.SPEED, 2);
+        BattleStateTracker.INSTANCE.setStatStage(uuid, BattleStateTracker.BattleStat.ATTACK, -2);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Component.translatable(
+            "cobblemon.battle.clearallnegativeboost.zeffect",
+            "Eevee"
+        )));
+
+        var stats = BattleStateTracker.INSTANCE.getStatChanges(uuid);
+        assertEquals(2, stats.get(BattleStateTracker.BattleStat.SPEED));
+        assertFalse(stats.containsKey(BattleStateTracker.BattleStat.ATTACK));
+    }
+
+    @Test
     void courtChangeRevealUsesItsStableMoveId() {
         UUID attacker = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(attacker, "Cinderace", false);
