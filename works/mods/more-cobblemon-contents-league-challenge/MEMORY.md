@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-13 18:30] 하드 자두 루카리오 메가Z: 실게임은 진화, 모의 전투 하네스만 못 함
+
+- **발견:** 새 자두 팀 30판에서 루카리오가 메가진화 0회(쓰러뜨림 10, 팀 최저). 240판에서도 Z-A 메가스톤 에이스(자두 루카리오·무청 눈여아·전진 라이츄)는 모두 0회, 기존 메가(마기라스·메타그로스 등)는 매 판 진화. 모의 전투 하네스(MCC `EmbeddedTeamBattle` + `team-battle-bridge.cjs`)는 `develop-product/server/showdown`을 `Dex.mod('cobblemon')`로 읽을 뿐, Mega Showdown이 실행 중에 넣는 메가스톤(`data/mega_showdown/mega_showdown/showdown/held_items/*`)과 Cobblemon 종 추가 폼(`species_additions/*_mega_z.json`)이 없어 `canMegaEvo`가 안 나온다. 그래서 자두·무청·전진의 모의 전투 승수는 실제보다 낮게 나왔을 것이다.
+- **실게임 확인:** 장면 하네스 `MCC_SCENE_CAPTURE_TEAM=maylene_hard MCC_SCENE_CAPTURE_MEMBERS=lucario MCC_SCENE_CAPTURE_MECHANIC=MEGA`(새 옵션 둘)로 개발 클라 싱글 1회. 루카리오가 첫 턴에 `form=normal` → `form=megaz`. 실제 서버의 AI 엔진은 Cobblemon 종 데이터를 덮어써(`EngineRuntimeDex`) Z-A 메가를 안다.
+- **에이스:** AI에 에이스를 마지막에 내는 규칙은 없다. "에이스"는 한 판 한 번 기믹을 누구에게 아낄지(`LocalAceScore`)에만 쓴다. 30판 중 아군이 하나도 안 쓰러졌을 때 나온 판 9, 4~5마리 쓰러진 뒤 3.
+- **남은 일:** 모의 전투 하네스에 Mega Showdown 메가스톤·종 추가 폼 넣기(별도 작업).
+
 ## [2026-10-13 18:10] 하드 자두 팀: 카포에라·괴력몬 → 포푸니크·저승갓숭 (데이터·테스트, 미배포)
 
 - **이유:** 재측정에서도 자두가 10/30으로 약했다. 6마리 모두 격투라 엔트리 36마리 중 순수 격투 셋의 자속기를 반감 이하로 받는 상대가 39%였다(자속 타입만 센 값, MCC `LOCAL_GAPS.md` 관장 240판 항목과 같은 방식).

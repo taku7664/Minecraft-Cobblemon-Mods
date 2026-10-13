@@ -51,6 +51,11 @@ internal object TrainerSceneCaptureHarness {
      * above Cobblemon's maximum level keeps its levels into the battle.
      */
     private val TEAM = System.getenv("MCC_SCENE_CAPTURE_TEAM")?.trim()?.takeIf { it.isNotEmpty() }
+    /** `MCC_SCENE_CAPTURE_MEMBERS=<species,...>` keeps only those members of [TEAM]. */
+    private val MEMBERS = System.getenv("MCC_SCENE_CAPTURE_MEMBERS")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+    /** `MCC_SCENE_CAPTURE_MECHANIC=<MEGA|TERA|...>` allows that battle mechanic, as the League's challenge would. */
+    private val MECHANIC = System.getenv("MCC_SCENE_CAPTURE_MECHANIC")?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let(jbro.cobblemon.mcc.api.rules.MajorBattleMechanic::valueOf)
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -186,6 +191,8 @@ internal object TrainerSceneCaptureHarness {
             captured = true
             Screenshot.grab(client.gameDirectory, "trainer-scene-2-battle.png", client.mainRenderTarget) {}
         }
+        if (TEAM != null) logger.info("SCENE CHECK opponent before pick {}", battle.side2.actors.flatMap { it.activePokemon }
+            .mapNotNull { it.battlePokemon }.map { "${it.species.showdownId()} ${it.properties.asString()}" })
         gui.selectAction(request, MoveActionResponse(move.id, target?.getPNX(), null))
         logger.info("SCENE CHECK picked {} at {}", move.id, target?.getPNX())
         return true
@@ -228,7 +235,9 @@ internal object TrainerSceneCaptureHarness {
             trainerNameKey = "trainer.more_cobblemon_contents_league_challenge.cynthia",
             lockedParty = ManagedPveBattles.snapshotParty(player, 100),
             opponentProperties = TEAM?.takeIf { playScene }?.let(::bundledTeam)
+                ?.filter { member -> MEMBERS == null || member.substringBefore(' ') in MEMBERS }
                 ?: listOf("magikarp level=5 moves=splash", "magikarp level=5 moves=splash"),
+            mechanicFlags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(MECHANIC.takeIf { playScene }),
             appearance = SKIN,
             stage = if (playScene) STAGE else null,
             scenes = if (playScene) CYNTHIA_SCENES else TrainerScenes.NONE,
