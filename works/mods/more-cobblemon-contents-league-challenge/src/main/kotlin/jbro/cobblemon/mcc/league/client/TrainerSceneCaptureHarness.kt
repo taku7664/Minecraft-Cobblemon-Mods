@@ -124,6 +124,7 @@ internal object TrainerSceneCaptureHarness {
                     countBodies()
                     if (TEAM != null) logger.info("SCENE CHECK client opponent levels {}", CobblemonClient.battle!!.side2.actors
                         .flatMap { it.activePokemon }.mapNotNull { it.battlePokemon }.map { "${it.species.showdownId()}=${it.level}" })
+                    if (TEAM != null) server.execute { logOpponentStats(server.playerList.getPlayer(player.uuid)!!, logger) }
                     shot("1-start")
                     next(if (LEAVES) 2 else 3)
                 }
@@ -241,6 +242,24 @@ internal object TrainerSceneCaptureHarness {
                 ?.map { "${it.effectedPokemon.species.showdownId()}=${it.effectedPokemon.level}" },
                 Cobblemon.config.maxPokemonLevel)
         }
+    }
+
+    /**
+     * The opponents' stats as Cobblemon holds them and the maximum HP Showdown fights with (from the trainer's own
+     * request), to see a level above Cobblemon's maximum carried into the numbers and not only the label.
+     */
+    private fun logOpponentStats(player: ServerPlayer, logger: org.slf4j.Logger) {
+        val battle = com.cobblemon.mod.common.battles.BattleRegistry.getBattleByParticipatingPlayer(player) ?: return
+        val trainer = battle.actors.firstOrNull { it.uuid != player.uuid } ?: return
+        trainer.pokemonList.forEach { battlePokemon ->
+            val pokemon = battlePokemon.effectedPokemon
+            logger.info("SCENE CHECK cobblemon stats {} L{} hp={} atk={} spa={} spe={}", pokemon.species.showdownId(), pokemon.level,
+                pokemon.maxHealth, pokemon.getStat(com.cobblemon.mod.common.api.pokemon.stats.Stats.ATTACK),
+                pokemon.getStat(com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_ATTACK),
+                pokemon.getStat(com.cobblemon.mod.common.api.pokemon.stats.Stats.SPEED))
+        }
+        trainer.request?.side?.pokemon?.forEach { logger.info("SCENE CHECK showdown {} condition={}", it.details, it.condition) }
+            ?: logger.info("SCENE CHECK showdown request not in yet")
     }
 
     /** A bundled League team's members, as the League hands them to [ManagedPveBattles]. */
