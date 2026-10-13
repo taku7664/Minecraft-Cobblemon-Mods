@@ -56,6 +56,11 @@ internal object LocalQuickDecider {
         allow: (String) -> Boolean = { true },
         /** The board and pair table a stat raise is judged on: the Mega's when it Mega Evolves; null when none can be read. */
         setupView: (jbro.cobblemon.mcc.internal.ai.BattleActionCandidate) -> Pair<BattleDecisionContext, MatchupScores>? = { context to scores },
+        /**
+         * Per status move a rule found worth playing on this board (a trapping Perish Song, a Trick Room that turns the
+         * order this team's way): staying to play one is not staying for nothing.
+         */
+        stayCredits: Map<String, Double> = emptyMap(),
     ): Verdict? {
         fun pick(rank: LocalBattleActionRank, reason: String): Verdict? = if (allow(reason)) Verdict(rank, reason) else null
         val state = context.state
@@ -89,7 +94,10 @@ internal object LocalQuickDecider {
         // 2. A reason to leave.
         val reasons = buildList {
             // Nothing to hit with, and no status to land either: a status move on a foe that already has one is no use.
-            if (attacks.isEmpty() && (foe.statusId != null || moves.none { inflictsStatus(part(it)) })) add("no_damage")
+            // A move a rule credits is something to do: Perish Song in front of a trapped Chansey was read as nothing and
+            // the Mega Gengar switched out (2026-10-13).
+            if (attacks.isEmpty() && (foe.statusId != null || moves.none { inflictsStatus(part(it)) }) &&
+                moves.none { (stayCredits[it.outcome.candidate.actionId] ?: 0.0) > 0.0 }) add("no_damage")
             if (cannotAct(self)) add("cannot_act")
             if (stay.winProbability < LOSING) add("loses_one_on_one")
             if (attackStage(self) <= -2) add("attack_dropped")
