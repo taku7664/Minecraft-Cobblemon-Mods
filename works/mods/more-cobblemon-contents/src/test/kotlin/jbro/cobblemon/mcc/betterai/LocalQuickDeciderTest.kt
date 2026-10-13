@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleDecision
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
