@@ -573,7 +573,8 @@ internal class LocalTacticalBrain(
             if (!rulesApply) engine else engine.filterKeys { id ->
                 val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@filterKeys true
                 !jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.prices(candidate) &&
-                    !jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.isDebuff(candidate)
+                    !jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.isDebuff(candidate) &&
+                    !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)
             }
         }
         val threatStartedAtNanos = System.nanoTime()
@@ -663,16 +664,24 @@ internal class LocalTacticalBrain(
                 id to (reading.gain * tuning.knockoutMaterialScore - it.comparisonValue)
             }
         }.toMap()
+        // Trick Room's value becomes how much turning the speed order over changes both teams' matchups (LocalTrickRoomCredit).
+        val trickRoomValue by lazy { ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.value(rulesContext, it, tuning) } }
+        val trickRoomAdjustments = if (!rulesApply) emptyMap() else searchedRanked.mapNotNull { rank ->
+            val candidate = rank.outcome.candidate
+            if (rank.outcome.publiclyInert || !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
+            else trickRoomValue?.let { candidate.actionId to (it - rank.comparisonValue) }
+        }.toMap()
         // A Pokemon on its last Perish Song count faints this turn unless it leaves (LocalPerishCount).
         val perishAdjustments = if (!rulesApply) emptyMap() else
             jbro.cobblemon.mcc.betterai.matchup.LocalPerishCount.adjustments(difficultyContext.candidates, rulesContext, tuning)
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
-            hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys).associateWith {
+            hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
+            trickRoomAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
-                (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0)
+                (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0)
         }
         val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
@@ -768,7 +777,8 @@ internal class LocalTacticalBrain(
                     "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
-                    "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments).filterValues { it.isNotEmpty() },
+                    "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
+                    "trickRoom" to trickRoomAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
