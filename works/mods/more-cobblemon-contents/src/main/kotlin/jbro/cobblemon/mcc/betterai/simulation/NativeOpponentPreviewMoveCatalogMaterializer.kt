@@ -208,6 +208,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
             ranked.firstOrNull { (_, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS }
                 ?.let { candidate -> addExpected(slots, listOf(candidate), group(preview, candidate.value)) }
         }
+        if (slots.isEmpty()) wholePool(ranked)?.forEach { addExpected(slots, listOf(it), group(preview, it.value)) }
         repeat(minOf(policy.statusGuessSlots, MAX_MOVE_SLOTS - slots.size)) {
             slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
         }
@@ -264,6 +265,13 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
             }
             candidates.putIfAbsent(inferenceId(inference), WeightedInference(inference, weight, inferenceId(inference)))
         }
+        if (candidates.isEmpty()) wholePool(ranked)?.let { pool ->
+            val slots = mutableListOf<BattleOpponentMoveSlotView>()
+            pool.forEach { addExpected(slots, listOf(it), group(preview, it.value)) }
+            while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
+            val inference = BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+            candidates[inferenceId(inference)] = WeightedInference(inference, 1.0, inferenceId(inference))
+        }
         return candidates.values.sortedWith(INFERENCE_ORDER)
     }
 
@@ -287,6 +295,16 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                     .thenBy { (moveId, _) -> canonical(moveId) },
             )
     }
+
+    /**
+     * A species that learns no attack holds what it learns, when that fits in one set: Ditto's only move is Transform.
+     * Nothing is guessed then, so it is not the status guess the slots otherwise leave out (2026-10-12); without it
+     * the worlds could not be planned at all with such a Pokemon on the other side. Null when the pool has an attack or
+     * more moves than a set holds.
+     */
+    private fun wholePool(ranked: List<Map.Entry<String, BattleMoveCandidateView>>): List<Map.Entry<String, BattleMoveCandidateView>>? =
+        ranked.takeIf { pool -> pool.isNotEmpty() && pool.size <= MAX_MOVE_SLOTS &&
+            pool.all { (_, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS } }
 
     private fun spreadValue(details: BattleMoveCandidateView, format: BattleFormat): Double =
         if (format == BattleFormat.DOUBLE && details.targetPattern == BattleMoveTargetPattern.ALL_OPPONENTS) 1.5 else 1.0
