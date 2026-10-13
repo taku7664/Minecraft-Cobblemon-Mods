@@ -265,7 +265,14 @@ internal object EmbeddedTeamInput {
                     if (id(p[3]) == "substitute") current?.volatileEffects?.remove("substitute")
                 }
                 "detailschange", "-formechange" -> current?.let {
-                    it.species = id(p[3].substringBefore(',')); it.types = baseTypes(it.species); it.added = null
+                    val next = id(p[3].substringBefore(','))
+                    // A visible Mega form has one public ability, which the game's observer sets on it
+                    // (observeActivePresence). Left as the base form's, Mega Salamence's Double-Edge read as Normal.
+                    speciesData.getAsJsonObject(it.species)?.getAsJsonArray("megaForms")?.map { form -> form.asJsonObject }
+                        ?.firstOrNull { form -> it.species + id(form["formId"].asString) == next }
+                        ?.get("ability")?.asString?.takeIf(String::isNotEmpty)
+                        ?.let { ability -> it.ability = id(ability); it.abilityEnded = false }
+                    it.species = next; it.types = baseTypes(it.species); it.added = null
                 }
                 "-transform" -> current?.let {
                     if (it.originalMoves == null) it.originalMoves = it.moves.toSet()
