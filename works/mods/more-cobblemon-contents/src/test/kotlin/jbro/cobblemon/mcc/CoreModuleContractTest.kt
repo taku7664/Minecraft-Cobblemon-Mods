@@ -44,6 +44,8 @@ class CoreModuleContractTest {
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("PokemonBattleMixin"))
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("PokemonMixin"))
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("EntityManagedBattlePersistenceMixin"))
+        // Managed opponents above Cobblemon's maxPokemonLevel (Cobblemon173OpponentLevelScope).
+        assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("CobblemonConfigMixin"))
 
         assertDoesNotThrow { Class.forName(main["value"].asString) }
         assertDoesNotThrow { Class.forName(client["value"].asString) }

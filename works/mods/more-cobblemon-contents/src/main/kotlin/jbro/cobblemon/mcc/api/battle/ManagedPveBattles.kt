@@ -24,6 +24,12 @@ import net.minecraft.server.level.ServerPlayer
 
 /** Experimental single PvE API. The caller owns progression; MCC owns battle lifecycle and clones. */
 object ManagedPveBattles {
+    /**
+     * The highest level an opponent may have, above Cobblemon's `maxPokemonLevel` if need be: a post-game boss can
+     * outlevel a party capped at 100. Only the opponent is built above the server's maximum
+     * ([Cobblemon173OpponentLevelScope]); players' Pokemon keep it.
+     */
+    const val MAX_OPPONENT_LEVEL = 120
     enum class Format { SINGLE, DOUBLE }
     enum class Outcome { WIN, LOSS, CANCELLED }
     data class Request(
@@ -92,17 +98,22 @@ object ManagedPveBattles {
             BattlePokemon.Companion.safeCopyOf(Pokemon().loadFromJSON(player.registryAccess(), JsonParser.parseString(raw).asJsonObject))
                 .also { it.effectedPokemon.heal() }
         }
-        val prepared = ManagedPvePrepared(player.uuid, request.contentId, request.trainerId, request.trainerNameKey,
-            PveFormat.valueOf(request.format.name), request.mechanicFlags,
-            playerTeam, request.opponentProperties.map { raw ->
+        // Built and copied above the server's maximum level if the content asks for it; nothing else is built in here.
+        val opponentTeam = Cobblemon173OpponentLevelScope.during(MAX_OPPONENT_LEVEL) {
+            request.opponentProperties.map { raw ->
                 val properties = PokemonProperties.Companion.parse(raw)
                 require(properties.species != null && properties.species != "random") { "Unknown or random opponent species" }
-                require(properties.level in 1..Cobblemon.config.maxPokemonLevel) { "Opponent level must be explicit and within Cobblemon's maximum" }
+                require(properties.level in 1..MAX_OPPONENT_LEVEL) { "Opponent level must be explicit and within MCC's maximum" }
                 require(!properties.moves.isNullOrEmpty()) { "Opponent moves must be explicit" }
                 BattlePokemon.Companion.safeCopyOf(Cobblemon173CatalogPokemonCreator.create(properties, properties.form)).also {
+                    check(it.effectedPokemon.level == properties.level) { "Opponent level ${properties.level} did not survive the copy" }
                     protectManagedOpponent(it)
                 }
-            }, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
+            }
+        }
+        val prepared = ManagedPvePrepared(player.uuid, request.contentId, request.trainerId, request.trainerNameKey,
+            PveFormat.valueOf(request.format.name), request.mechanicFlags,
+            playerTeam, opponentTeam, profile, BattleBrainSelectionContext(request.contentId, BattleEncounterRole.BOSS, profile.difficulty.tier), request.transactionId,
             preview = jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PlayerTeamPreview.of(playerTeam), appearance = request.appearance, scenes = request.scenes)
         val tag = request.clientTag ?: MccBattleTag(request.contentId, request.stage, request.trainerId)
         return when (val result = MccBattleTags.during(setOf(player.uuid), tag) { runtime.startManaged(prepared) }) {

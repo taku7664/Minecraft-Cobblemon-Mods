@@ -70,6 +70,21 @@ class LeagueTeamDataTest {
 
     private fun level(line: String) = fields(line).getValue("level").toInt()
 
+    /**
+     * Parses as MCC builds a managed opponent: Cobblemon's maximum level raised to MCC's limit, as its mixin does in game
+     * (`Cobblemon173OpponentLevelScope`). Without it the parser clamps the hard Champion's levels to 100.
+     */
+    private fun <T> asManagedOpponent(block: () -> T): T {
+        val config = com.cobblemon.mod.common.Cobblemon.config
+        val previous = config.maxPokemonLevel
+        config.maxPokemonLevel = jbro.cobblemon.mcc.api.battle.ManagedPveBattles.MAX_OPPONENT_LEVEL
+        try {
+            return block()
+        } finally {
+            config.maxPokemonLevel = previous
+        }
+    }
+
     @Test
     fun `every team member names only species, moves, abilities, natures and items the game has`() {
         (normal + hard).forEach { name ->
@@ -97,7 +112,7 @@ class LeagueTeamDataTest {
         (normal + hard).forEach { name ->
             team(name).forEach { line ->
                 val fields = fields(line)
-                val properties = PokemonProperties.parse(line)
+                val properties = asManagedOpponent { PokemonProperties.parse(line) }
                 val at = "$name: $line"
                 assertEquals(line.substringBefore(' '), properties.species, at)
                 assertEquals(fields.getValue("level").toInt(), properties.level, at)
@@ -159,8 +174,10 @@ class LeagueTeamDataTest {
         }
         assertEquals(85, gyms.maxOf { team("${it}_hard").maxOf(::level) })
         assertEquals(95, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
-        // Cobblemon's default maximum level; the hard Champion stays within it.
-        assertEquals(100, level(team("cynthia_hard").last()))
+        // The hard Champion outlevels a party capped at 100 (user decision 2026-10-13): MCC builds it above Cobblemon's
+        // maximum, within its own limit.
+        assertEquals(105, level(team("cynthia_hard").last()))
+        assertTrue(team("cynthia_hard").all { level(it) in 101..jbro.cobblemon.mcc.api.battle.ManagedPveBattles.MAX_OPPONENT_LEVEL })
         // The hard Champion leads with Origin Forme Giratina, which its Griseous Core keeps in that form.
         val giratina = team("cynthia_hard").first()
         assertEquals("giratina", giratina.substringBefore(' '))

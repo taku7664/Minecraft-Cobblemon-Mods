@@ -9,6 +9,7 @@
     "BattleRegistryInvoker",
     "BattleRegistryMixin",
     "CantInstructionMixin",
+    "CobblemonConfigMixin",
     "EntityManagedBattlePersistenceMixin",
     "PlayerBattleActorMixin",
     "PokemonBattleMixin",
