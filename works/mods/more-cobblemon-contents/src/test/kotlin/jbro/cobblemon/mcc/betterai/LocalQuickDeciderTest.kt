@@ -64,10 +64,13 @@ class LocalQuickDeciderTest {
     }
 
     @Test
-    fun `a low Pokemon whose heal outpaces the hit heals instead of attacking`() {
-        // Togekiss at 14% in front of Koraidon, whose Breaking Swipe cannot touch a Fairy: Roost, not Air Slash.
+    fun `a low Pokemon a faster hit knocks out does not heal`() {
+        // Togekiss at 14% in front of Koraidon. It has Terastallized into a pure Flying type, so Breaking Swipe hits it
+        // and knocks it out, and Koraidon moves first: Roost would never land. The test first read it as a Fairy that
+        // Breaking Swipe cannot touch and expected Roost, which held only while the heal check ignored move order
+        // (corrected 2026-10-13, league mock battle).
         val (context, decision) = decide("togekiss-low-heals-against-koraidon")
-        assertEquals("roost", label(context, decision), "${decision.tags}")
+        assertNotEquals("roost", label(context, decision), "${decision.tags}")
     }
 
     @Test

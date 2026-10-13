@@ -169,7 +169,11 @@ internal object LocalQuickDecider {
         val theirs = stay.opponentMove
         val theirHit = theirs?.let { (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy } ?: 0.0
         val hitCapped = theirs != null && theirs.maximumDamageFraction >= self.hpFraction - 1e-6
-        fun futile(heal: Double) = (hitCapped && self.hpFraction >= heal) || (!hitCapped && theirHit >= heal * FUTILE_HEAL)
+        // A faster foe whose hit all but surely knocks it out lands before any heal: a Gholdengo at 18% chose Recover
+        // in front of a faster Landorus that had shown Earth Power (league mock battle, 2026-10-13).
+        val faintsFirst = theirs != null && stay.subjectMovesFirstProbability < 0.5 &&
+            theirs.knockoutChanceWithin(1) * theirs.accuracy >= FAINTS_FIRST
+        fun futile(heal: Double) = faintsFirst || (hitCapped && self.hpFraction >= heal) || (!hitCapped && theirHit >= heal * FUTILE_HEAL)
         val chosenHeal = healShare(chosenMove)
         if (chosenHeal > 0.0) {
             // The Emerald AI heals under half HP, or two thirds when it moves first, and not into a hit that undoes it.
@@ -379,6 +383,9 @@ internal object LocalQuickDecider {
     private fun part(rank: LocalBattleActionRank): BattleActionCandidate = rank.outcome.candidate.let {
         if (it.kind == BattleActionKind.COMPOSITE) it.componentActions.first() else it
     }
+
+    /** How sure a faster foe's knockout must be for a heal to come too late. */
+    private const val FAINTS_FIRST = 0.9
 
     /**
      * The verdicts that replace the drawn action outright: a sure knockout this turn, the replacement after a knockout,
