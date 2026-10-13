@@ -58,12 +58,11 @@ class LeagueCatalogParserTest {
         assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
     }
 
-    @Test fun `Cynthia speaks at every scene moment in both difficulties`() {
+    @Test fun `every gym leader, Elite Four member and Champion speaks at every scene moment in both difficulties`() {
         val catalog = LeagueCatalogParser.parse(resources(), "$ns:active")
-        listOf("cynthia", "cynthia_hard").forEach { id ->
-            assertEquals(SCENE_MOMENTS, catalog.challenges.getValue("$ns:$id").scenes.keys, id)
-        }
-        assertEquals(emptyMap<String, List<String>>(), catalog.challenges.getValue("$ns:roark").scenes)
+        val route = catalog.gyms + catalog.finals + catalog.hardGyms + catalog.hardFinals
+        assertEquals(26, route.size)
+        route.forEach { id -> assertEquals(SCENE_MOMENTS, catalog.challenges.getValue(id).scenes.keys, id) }
     }
 
     @Test fun `an unknown scene moment or an empty one rejects the catalog`() {

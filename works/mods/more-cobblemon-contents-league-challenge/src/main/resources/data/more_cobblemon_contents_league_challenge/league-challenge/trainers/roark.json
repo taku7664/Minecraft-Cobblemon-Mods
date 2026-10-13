@@ -3,5 +3,21 @@
   "ai_skill": 2,
   "name_key": "trainer.more_cobblemon_contents_league_challenge.roark",
   "team": "more_cobblemon_contents_league_challenge:roark",
-  "appearance": "more_cobblemon_contents_league_challenge:roark"
+  "appearance": "more_cobblemon_contents_league_challenge:roark",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.battle_start.0"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.last_pokemon.0",
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.last_pokemon.1"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.player_won.0",
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.player_won.1"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.roark.scene.player_lost.0"
+    ]
+  }
 }
