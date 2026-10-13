@@ -246,9 +246,10 @@ internal object EmbeddedTeamInput {
                 "-start" -> current?.let {
                     if (id(p[3]) == "gastroacid") it.gastroAcid = true
                     if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
-                    // A Perish Song count, as the game's observer keeps it (perishsong:<count>).
+                    // A Perish Song count, as the game's observer keeps it: the family and perishsong:<count>.
                     Regex("perish([0-3])").matchEntire(id(p[3]))?.let { count ->
                         it.volatileEffects.removeAll { effect -> effect.startsWith("perishsong:") }
+                        it.volatileEffects += "perishsong"
                         it.volatileEffects += "perishsong:${count.groupValues[1]}"
                     }
                     when (p[3]) {

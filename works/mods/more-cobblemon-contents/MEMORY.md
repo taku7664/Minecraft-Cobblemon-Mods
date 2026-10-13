@@ -23,7 +23,7 @@
 ## [2026-10-13 11:00] G-922 배북, G-924 멸망 카운트, 반사 장판 값 (구현·시나리오 확인, 미배포)
 
 - **고침:** 배북을 셋업으로 보고 HP 비용을 셋업 계산 전체에 반영, 멸망 카운트 1이면 남는 행동에 KO 한 번 감점(`LocalPerishCount`), 공개 실패하는 장판에 장판 값 안 줌. 자세한 내용은 `LOCAL_GAPS.md` G-922·G-923·G-924.
-- **같이 찾은 실게임 버그:** 빠른 판단기가 `perishsong:1`을 `canonical`로 비교해 멸망 카운트를 한 번도 못 읽었다. 고쳤다.
+- **빠른 판단기 비교:** `perishsong:1`을 계열 이름으로 비교하게 바꿨다. (정정: 처음에 "실게임에서 한 번도 못 읽었다"고 적었으나, 관찰기가 계열 이름 `perishsong`도 남겨서 실게임은 원래 읽었다. 테스트 입력만 달랐고 맞췄다.)
 - **하네스:** 멸망 카운트 기록, 숨은 트랩에서 교체 안 내놓기(브리지), 옛 기록 입력에 `ownMegaForms`가 없으면 NPE 나던 문제(오전 메가 작업 `1729e56e`에서 생김, `LocalHealthCostFailureTest` 3건이 그때부터 실패) 수정.
 - **테스트:** AI 4개 클래스 + 임시 시나리오 11/12(17개 중 나머지는 실행 안 됨으로 집계). 실패 1개는 원래 있던 `LocalQuickDeciderTest` 순서 의존. core `BattleOpponentMoveInferenceNormalizerTest`·`BattleStatusMoveCategoriesTest` 16/16. 첫 묶음에서 `LocalCallbackMoveEffectsTest`·`LocalInferredMoveGuessScorerTest`·`NativeMoveHypothesisCompilerTest`·`LocalMatchupScoreTest`·`LocalPuzzleSuiteTest`도 통과.
 - **안 한 것:** 빌드·배포, 실게임.
