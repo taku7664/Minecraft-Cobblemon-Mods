@@ -264,6 +264,12 @@ final class OfficialMusicLineupTest {
             var entry = element.getAsJsonObject();
             changed.put(entry.get("target").getAsString(), entry.get("afterSha256").getAsString());
         });
+        var latest = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/gym-elite-gain-2026-10-13.json"))).getAsJsonObject();
+        latest.getAsJsonArray("tracks").forEach(element -> {
+            var entry = element.getAsJsonObject();
+            changed.put(entry.get("target").getAsString(), entry.get("afterSha256").getAsString());
+        });
         Set<String> reported = new java.util.HashSet<>();
         Path soundRoot = temporaryDirectory.resolve("pack/assets/better_cobblemon_music/sounds");
         for (var element : tracks) {
@@ -291,6 +297,13 @@ final class OfficialMusicLineupTest {
             module.resolve("resource-pack/battle-gain-2026-10-11.json"))).getAsJsonObject();
         var current = JsonParser.parseString(Files.readString(
             module.resolve("resource-pack/core-battle-gain-2026-10-13.json"))).getAsJsonObject();
+        var latest = JsonParser.parseString(Files.readString(
+            module.resolve("resource-pack/gym-elite-gain-2026-10-13.json"))).getAsJsonObject();
+        Map<String, String> latestHashes = new java.util.HashMap<>();
+        latest.getAsJsonArray("tracks").forEach(element -> {
+            var entry = element.getAsJsonObject();
+            latestHashes.put(entry.get("target").getAsString(), entry.get("afterSha256").getAsString());
+        });
         assertEquals(1.3, current.get("multiplier").getAsDouble());
         assertEquals(5, current.getAsJsonArray("tracks").size());
         Set<String> expected = Set.of(
@@ -310,7 +323,7 @@ final class OfficialMusicLineupTest {
                 .filter(item -> item.get("target").getAsString().equals(name))
                 .findFirst().orElseThrow();
             assertEquals(prior.get("afterSha256").getAsString(), track.get("beforeSha256").getAsString(), name);
-            assertEquals(track.get("afterSha256").getAsString(),
+            assertEquals(latestHashes.getOrDefault(name, track.get("afterSha256").getAsString()),
                 HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
                     Files.readAllBytes(sounds.resolve(name)))), name);
             assertEquals(20 * Math.log10(1.3),

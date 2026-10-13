@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "scope": "Only the gym and Elite Four battle OGG files after the five-track gain pass",
+  "tracks": [
+    {
+      "target": "music/battle/gym/sinnoh_gym_leader_battle.ogg",
+      "inputGain": 1.3,
+      "beforeSha256": "f06fc69bbc22f678a707784d514eada55e25897a9fc92dd06d09e56cfe9cb9da",
+      "afterSha256": "3bc961253b41a97288fe064e4233e35ff3e0b680b1531aab36a228b13193f885",
+      "beforeRmsDb": -20.060989,
+      "afterRmsDb": -17.822077,
+      "afterPeakDb": -3.570707
+    },
+    {
+      "target": "music/battle/elite/sinnoh_elite_four_battle.ogg",
+      "inputGain": 1.40301658,
+      "beforeSha256": "328153d1575cacf45f5a7595a993641c3803010b93a7d37f087e434e8edb9558",
+      "afterSha256": "d668bc251a6be050c5d890ad63c6b4f3c646fff6ba0cf1fb4f4f2d9152268468",
+      "beforeRmsDb": -20.723378,
+      "afterRmsDb": -17.780668,
+      "afterPeakDb": -1.226428
+    }
+  ]
+}
