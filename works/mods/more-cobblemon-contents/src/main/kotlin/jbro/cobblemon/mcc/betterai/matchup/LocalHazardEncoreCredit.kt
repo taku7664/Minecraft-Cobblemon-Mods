@@ -167,7 +167,7 @@ internal object LocalHazardEncoreCredit {
         val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, move.actorSlot, move, opponentPriority = 0)
             ?: return AVOIDED
         if (first < 0.5) return AVOIDED
-        if (attack) return lockedAttack(lastMove, target, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
+        if (attack) return lockedAttack(lastMove, details, target, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         if (raise.values.any { it > 0 }) {
             return lockedRaise(user, target, raise, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         }
@@ -229,6 +229,7 @@ internal object LocalHazardEncoreCredit {
      */
     private fun lockedAttack(
         lockedMoveId: String,
+        lockedMove: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView,
         target: BattlePokemonStateView,
         context: BattleDecisionContext,
         scores: MatchupScores,
@@ -236,6 +237,11 @@ internal object LocalHazardEncoreCredit {
         val taken = context.state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }.mapNotNull { ally ->
             scores.moves(target.battlePokemonId, ally.battlePokemonId).firstOrNull { PublicIds.canonical(it.moveId) == lockedMoveId }?.let { hit ->
                 (ENCORE_TURNS * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0 * hit.accuracy / ally.hpFraction).coerceAtMost(1.0)
+            } ?: 0.0.takeIf {
+                // The pair table leaves out a move it reads no damage for: one the type chart (or a revealed ability)
+                // makes nothing, as Draco Meteor into a Fairy, is the lightest lock of all.
+                jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness.multiplierAgainst(
+                    lockedMove.typeId, ally.knownTypeIds, ally.knownAbilityId, moveId = lockedMoveId) == 0.0
             }
         }.minOrNull() ?: return null
         if (taken >= LIGHT_LOCK) return null
