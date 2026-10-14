@@ -1,5 +1,6 @@
 package jbro.cobblemon.toitem.api.client
 
+import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.util.DataKeys
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
@@ -23,6 +24,13 @@ class TooltipPokemonReaderTest {
         assertEquals(13, client.getInt(DataKeys.POKEMON_HEALTH))
         client.getCompound("IVs").putInt("hp", 0)
         assertEquals(original, saved)
+    }
+
+    @Test fun `saved gender is read back for reapplying after client initialization`() {
+        val female = CompoundTag().apply { putString(DataKeys.POKEMON_GENDER, "FEMALE") }
+        assertEquals(Gender.FEMALE, TooltipPokemonReader.savedGender(female))
+        assertNull(TooltipPokemonReader.savedGender(CompoundTag()))
+        assertNull(TooltipPokemonReader.savedGender(CompoundTag().apply { putString(DataKeys.POKEMON_GENDER, "unknown") }))
     }
 
     @Test fun `omitted server defaults become valid client containers`() {

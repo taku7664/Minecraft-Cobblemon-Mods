@@ -1,5 +1,6 @@
 package jbro.cobblemon.toitem.api.client
 
+import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.util.DataKeys
 import net.minecraft.core.RegistryAccess
@@ -23,8 +24,14 @@ internal object TooltipPokemonReader {
             view.form = savedForm
             view.currentHealth = stored.getInt(DataKeys.POKEMON_HEALTH)
         }
+        // The client codec ends with initialize(), which re-picks the form from forced aspects only. For species whose
+        // forms are gender-locked (Basculegion), checkGender then rolls a random gender. Reapply the saved gender last.
+        savedGender(stored)?.let { if (view.gender != it) view.gender = it }
         return view
     }
+
+    internal fun savedGender(stored: CompoundTag): Gender? =
+        Gender.entries.firstOrNull { it.name == stored.getString(DataKeys.POKEMON_GENDER) }
 
     internal fun clientTag(stored: CompoundTag): CompoundTag = stored.copy().apply {
         // Server evolution controllers have a different codec and are irrelevant to this tooltip.
