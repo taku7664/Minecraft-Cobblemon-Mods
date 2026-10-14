@@ -1,8 +1,10 @@
 # [2026-10-14 19:18] 관리 도구의 월드 백업을 Google Drive로 전송
 
 - **문제:** 예약된 서버 전체 Google Drive 백업과 별도로 VPS 관리 도구가 업데이트·커밋마다 압축하지 않은 `world-snapshot.tar`를 VPS의 `~/.local/share/ppakemon-backups/manager/`에 누적했다. 2026-10-14 확인 시 이 폴더는 약 24.6GB로 VPS 디스크 사용량의 주원인이었다. 사용자는 월드 백업을 Google Drive로 보내라고 지시한 상태였으므로 관리 도구 경로도 포함해야 한다.
-- **구현:** 관리 작업이 끝나고 서버가 다시 켜진 후 백업 폴더 전체를 `gdrive:VPS-backups/PPakemon/manager/<작업번호>/`에 `rclone copy`로 전송하고 `rclone check --checksum --one-way` 성공 시에만 VPS 사본을 지운다. 전송·검증 실패 시 VPS 원본을 남기고 GUI에 경고한다. Drive 인증은 VPS의 기존 root 전용 `/var/lib/ppakemon-gdrive/rclone.conf`를 사용하며 비밀값은 기록하거나 설치본에 복사하지 않는다.
-- **검증:** Python 전체 `unittest` 25개 통과, 1개 건너뜀. Drive 검증 성공 시 로컬 정리, 실패 시 보존, 커밋 작업의 서버 재기동 후 업로드 순서를 테스트했다. 후속 점검에서 전송 진행 상태 기록 실패가 성공한 작업의 롤백을 유발하지 않도록 수정하고 관련 4개 테스트를 통과했다. 실제 VPS 관리 작업의 전체 경로와 과거 백업 이전·정리는 별도로 확인해야 한다. 이번 코드 작업에서 운영 서버를 종료하거나 재시작하지 않았다.
+- **구현:** 관리 작업이 끝나고 서버가 다시 켜진 후 백업 폴더 전체를 `gdrive:VPS-backups/PPakemon/manager/<백업 ID>/`에 `rclone copy`로 전송하고 `rclone check --checksum --one-way` 성공 시에만 VPS 사본을 지운다. 전송·검증 실패 시 VPS 원본을 남기고 GUI에 경고한다. Drive 인증은 VPS의 기존 root 전용 `/var/lib/ppakemon-gdrive/rclone.conf`를 사용하며 비밀값은 기록하거나 설치본에 복사하지 않는다.
+- **검증:** Python 전체 `unittest` 25개 중 24개 통과, 1개 건너뜀. Drive 검증 성공 시 로컬 정리, 실패 시 보존, 커밋 작업의 서버 재기동 후 업로드 순서를 테스트했다. 후속 점검에서 전송 진행 상태 기록 실패가 성공한 작업의 롤백을 유발하지 않도록 수정하고 관련 4개 테스트를 통과했다. 실제 VPS에서 새 `_archive_backup`에 작은 검증 파일을 넣어 Drive 일치 확인과 VPS 사본 정리를 확인했고 검증용 Drive 폴더도 제거했다. 실제 GUI 업데이트·커밋의 전체 경로는 서버 중단 동의가 없어 실행하지 않았다.
+- **기존 백업 이전·정리:** 관리 도구 백업 26개 폴더의 파일 618개, 총 24,569,278,857바이트를 Drive로 업로드했다. `rclone check --checksum --one-way`를 두 번 실행해 차이 0개와 618개 일치를 확인한 뒤, 관리 작업 잠금 안에서 VPS의 해당 26개 폴더만 정리했다. 디스크 사용률 81%→29%, 백업 루트 4KiB, 서버 25565 LISTEN 확인. 예약된 서버 전체 백업이 유지하는 최신 로컬 스냅샷은 별도 기능으로 그대로 있다. 운영 서버 종료·재시작 없음.
+- **설치·Git:** 두 수정 커밋 `4d2e4f3d`, `a90634af`를 `main`에 병합·`origin/main`에 푸시했다. PC 설치본의 `remote_manager.py`·`vps-manager.ps1` 해시가 `main`과 같고 연결 설정 파일은 보존했다.
 
 # [2026-10-11 14:22] VPS 월드 스폰을 초원으로 이동, Chunky 재시작
 
