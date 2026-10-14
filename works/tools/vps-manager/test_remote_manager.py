@@ -125,6 +125,21 @@ class ManagerTests(unittest.TestCase):
         self.assertEqual(result['backup_status'], 'local_upload_failed')
         self.assertTrue((backup / 'world-snapshot.tar').is_file())
 
+    def test_failed_progress_write_preserves_successful_commit_and_backup(self):
+        self.write('config/example.json', b'{"volume":2}')
+        self.manager.backup_remote = 'gdrive:VPS-backups/PPakemon/manager'
+        self.manager.backup_config = Path('/var/lib/ppakemon-gdrive/rclone.conf')
+        def progress(message):
+            if 'Google Drive' in message:
+                raise OSError('disk full')
+
+        self.manager.progress = progress
+        result = self.manager.commit(['config/example.json'], 'settings', self.old)
+        self.assertEqual(result['backup_status'], 'local_upload_failed')
+        self.assertNotEqual(self.manager.head(), self.old)
+        self.assertTrue(self.runtime.running)
+        self.assertTrue(Path(result['backup']).is_dir())
+
     def test_commit_upload_runs_after_server_restart(self):
         self.write('config/example.json', b'{"volume":2}')
         self.manager.backup_remote = 'gdrive:VPS-backups/PPakemon/manager'

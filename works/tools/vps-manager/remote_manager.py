@@ -334,14 +334,14 @@ class Manager:
             return {'backup': str(backup), 'backup_status': 'local'}
         local = {'backup': str(backup), 'backup_status': 'local_upload_failed',
                  'backup_warning': 'Drive 백업 검증에 실패해 VPS 원본을 보존했습니다.'}
-        if (backup.is_symlink() or not backup.is_dir()
-                or backup.resolve().parent != self.backup_root.resolve()):
-            return local
-        destination = self.backup_remote.rstrip('/') + '/' + backup.name
-        command = ['sudo', '-n', 'ionice', '-c', '3', 'nice', '-n', '15', '/usr/bin/rclone']
-        config = ['--config', str(self.backup_config)]
-        self.progress('월드 백업을 Google Drive로 보내고 파일 일치를 확인하고 있습니다.')
         try:
+            if (backup.is_symlink() or not backup.is_dir()
+                    or backup.resolve().parent != self.backup_root.resolve()):
+                return local
+            destination = self.backup_remote.rstrip('/') + '/' + backup.name
+            command = ['sudo', '-n', 'ionice', '-c', '3', 'nice', '-n', '15', '/usr/bin/rclone']
+            config = ['--config', str(self.backup_config)]
+            self.progress('월드 백업을 Google Drive로 보내고 파일 일치를 확인하고 있습니다.')
             for args in (
                     ['copy', str(backup), destination, *config, '--checksum',
                      '--transfers', '2', '--checkers', '4', '--bwlimit', '8M'],
@@ -349,12 +349,12 @@ class Manager:
                 done = subprocess.run([*command, *args], capture_output=True, text=True, timeout=7200)
                 if done.returncode:
                     return local
-        except (OSError, subprocess.TimeoutExpired):
+        except Exception:
             return local
         verified = {'backup': destination, 'backup_status': 'drive_verified'}
         try:
             shutil.rmtree(backup)
-        except OSError:
+        except Exception:
             verified['backup_status'] = 'drive_verified_local_retained'
             verified['backup_warning'] = 'Drive 백업은 검증됐지만 VPS 원본 정리에 실패했습니다: ' + str(backup)
         return verified
