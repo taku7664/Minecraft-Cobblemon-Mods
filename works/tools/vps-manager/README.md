@@ -40,9 +40,12 @@ pwsh -NoProfile -File .\works\tools\vps-manager\install-vps-manager.ps1
 SSH 호스트·키 파일 경로·서버 루트·tmux 세션·Git 작성자 정보를 바꾼 뒤 프로그램을 다시 열면 적용됩니다.
 키 파일의 내용과 계정 토큰을 설정에 복사하지 않습니다. 설치기 재실행은 기존 설정을 보존합니다.
 
-백업은 VPS의 `~/.local/share/ppakemon-backups/manager/<작업번호>/`에 있습니다.
+관리 작업은 먼저 VPS의 `~/.local/share/ppakemon-backups/manager/<작업번호>/`에 백업을 만듭니다.
 `world-snapshot.tar`는 정상 종료 시점의 월드 전체이고 `settings-snapshot.tar`는 설정·실행 옵션입니다.
-교체한 기능 파일은 `files/`에 보관합니다. 백업을 자동 삭제하지 않으므로 필요에 따라 용량을 관리하세요.
+교체한 기능 파일은 `files/`에 보관합니다. 작업이 끝나고 서버가 다시 켜진 뒤 전체 백업을
+`gdrive:VPS-backups/PPakemon/manager/<작업번호>/`에 올리고 파일 일치를 확인한 다음 VPS 사본을 정리합니다.
+업로드나 검증이 실패하면 VPS 백업을 남기고 관리 창에 경고와 위치를 표시합니다.
+Drive 전송에는 VPS의 `/var/lib/ppakemon-gdrive/rclone.conf`가 필요합니다.
 원격 작업 결과는 `~/.local/share/ppakemon-manager/jobs/`에 보관합니다.
 
 ## 검증

@@ -189,10 +189,13 @@ class TmuxRuntime:
 
 
 class Manager:
-    def __init__(self, root, runtime=None, backup_root=None, author_name='', author_email=''):
+    def __init__(self, root, runtime=None, backup_root=None, author_name='', author_email='',
+                 backup_remote=None, backup_config=None):
         self.root = Path(root).resolve()
         self.runtime = runtime or TmuxRuntime(self.root)
         self.backup_root = Path(backup_root or Path.home() / '.local/share/ppakemon-backups/manager')
+        self.backup_remote = backup_remote
+        self.backup_config = Path(backup_config) if backup_config else None
         self.author_name, self.author_email = author_name, author_email
         self.progress = lambda message: None
 
@@ -326,6 +329,36 @@ class Manager:
         # --mixed advances only Git metadata; preserved runtime files are never reset.
         self.git('reset', '--mixed', manifest['head'])
 
+    def _archive_backup(self, backup):
+        if not self.backup_remote:
+            return {'backup': str(backup), 'backup_status': 'local'}
+        local = {'backup': str(backup), 'backup_status': 'local_upload_failed',
+                 'backup_warning': 'Drive 백업 검증에 실패해 VPS 원본을 보존했습니다.'}
+        if (backup.is_symlink() or not backup.is_dir()
+                or backup.resolve().parent != self.backup_root.resolve()):
+            return local
+        destination = self.backup_remote.rstrip('/') + '/' + backup.name
+        command = ['sudo', '-n', 'ionice', '-c', '3', 'nice', '-n', '15', '/usr/bin/rclone']
+        config = ['--config', str(self.backup_config)]
+        self.progress('월드 백업을 Google Drive로 보내고 파일 일치를 확인하고 있습니다.')
+        try:
+            for args in (
+                    ['copy', str(backup), destination, *config, '--checksum',
+                     '--transfers', '2', '--checkers', '4', '--bwlimit', '8M'],
+                    ['check', str(backup), destination, *config, '--checksum', '--one-way']):
+                done = subprocess.run([*command, *args], capture_output=True, text=True, timeout=7200)
+                if done.returncode:
+                    return local
+        except (OSError, subprocess.TimeoutExpired):
+            return local
+        verified = {'backup': destination, 'backup_status': 'drive_verified'}
+        try:
+            shutil.rmtree(backup)
+        except OSError:
+            verified['backup_status'] = 'drive_verified_local_retained'
+            verified['backup_warning'] = 'Drive 백업은 검증됐지만 VPS 원본 정리에 실패했습니다: ' + str(backup)
+        return verified
+
     def _target_bytes(self, target, name):
         mode = self.git('ls-tree', target, '--', name).split(' ', 1)[0]
         if mode not in {'100644', '100755'}:
@@ -393,8 +426,10 @@ class Manager:
             if running:
                 self.progress('서버를 다시 시작하고 기동 완료를 확인하고 있습니다.')
                 self.runtime.start()
-            return {'message': '기능 업데이트를 완료했습니다. 기존 설정과 월드·플레이어·광장을 보존했습니다.',
-                    'head': self.head(), 'backup': str(backup), 'applied': plan['apply'], 'preserved': plan['preserve']}
+            result = {'message': '기능 업데이트를 완료했습니다. 기존 설정과 월드·플레이어·광장을 보존했습니다.',
+                      'head': self.head(), 'applied': plan['apply'], 'preserved': plan['preserve']}
+            result.update(self._archive_backup(backup))
+            return result
         except Exception as error:
             try:
                 if backup:
@@ -429,6 +464,7 @@ class Manager:
                 validate_content(name, p.read_bytes())
         running = self.runtime.is_running()
         committed = None
+        backup = None
         try:
             if running:
                 self.progress('월드를 저장하고 서버를 정상 종료하고 있습니다.')
@@ -444,18 +480,19 @@ class Manager:
             if not staged.issubset(set(names)):
                 raise ManagerError('선택 외 파일이 스테이징돼 작업을 중단합니다.')
             if not staged:
-                return {'message': '저장·종료 후 커밋할 변경이 없어 커밋하지 않았습니다.'}
-            self.git('diff', '--cached', '--check')
-            self.progress('선택한 파일만 커밋하고 있습니다.')
-            self.git('-c', 'user.name=' + self.author_name, '-c', 'user.email=' + self.author_email,
-                     'commit', '-m', message.strip(), '--only', '--', *sorted(staged))
-            committed = self.head()
-            actual = set(p for p in self.git('diff-tree', '--no-commit-id', '--name-only', '-r', '-z', committed).split('\0') if p)
-            if actual != staged:
-                raise ManagerError('커밋 파일 범위가 선택과 다릅니다. 푸시를 중단합니다.')
-            self.progress('커밋·LFS 파일을 푸시하고 원격 동기화를 확인하고 있습니다.')
-            self._push()
-            return {'message': '선택 파일만 커밋·푸시했습니다.', 'commit': committed, 'files': sorted(actual), 'backup': str(backup)}
+                result = {'message': '저장·종료 후 커밋할 변경이 없어 커밋하지 않았습니다.'}
+            else:
+                self.git('diff', '--cached', '--check')
+                self.progress('선택한 파일만 커밋하고 있습니다.')
+                self.git('-c', 'user.name=' + self.author_name, '-c', 'user.email=' + self.author_email,
+                         'commit', '-m', message.strip(), '--only', '--', *sorted(staged))
+                committed = self.head()
+                actual = set(p for p in self.git('diff-tree', '--no-commit-id', '--name-only', '-r', '-z', committed).split('\0') if p)
+                if actual != staged:
+                    raise ManagerError('커밋 파일 범위가 선택과 다릅니다. 푸시를 중단합니다.')
+                self.progress('커밋·LFS 파일을 푸시하고 원격 동기화를 확인하고 있습니다.')
+                self._push()
+                result = {'message': '선택 파일만 커밋·푸시했습니다.', 'commit': committed, 'files': sorted(actual)}
         except Exception as error:
             if not committed:
                 self.git('reset', '-q', 'HEAD', '--', *names, check=False)
@@ -465,11 +502,15 @@ class Manager:
             if running and not self.runtime.is_running():
                 self.progress('서버를 다시 시작하고 기동 완료를 확인하고 있습니다.')
                 self.runtime.start()
+        result.update(self._archive_backup(backup))
+        return result
 
 
 def dispatch(request):
     root = Path(request['root']).resolve()
-    m = Manager(root, author_name=request.get('author_name', ''), author_email=request.get('author_email', ''))
+    m = Manager(root, author_name=request.get('author_name', ''), author_email=request.get('author_email', ''),
+                backup_remote='gdrive:VPS-backups/PPakemon/manager',
+                backup_config='/var/lib/ppakemon-gdrive/rclone.conf')
     if m.git('rev-parse', '--show-toplevel').strip() != str(root):
         raise ManagerError('서버 저장소 경로가 올바르지 않습니다.')
     if m.git('remote', 'get-url', 'origin').strip() not in {

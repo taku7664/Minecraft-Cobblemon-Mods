@@ -96,6 +96,49 @@ class ManagerTests(unittest.TestCase):
         self.assertIn('startup-hooks.json', self.git('status', '--short'))
         self.assertEqual((self.runtime.stops, self.runtime.starts), (1, 1))
 
+    def test_verified_drive_backup_replaces_local_copy(self):
+        backup = self.manager._backup([])
+        self.manager.backup_remote = 'gdrive:VPS-backups/PPakemon/manager'
+        self.manager.backup_config = Path('/var/lib/ppakemon-gdrive/rclone.conf')
+        calls = []
+
+        def run(args, **kwargs):
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 0, '', '')
+
+        with patch('remote_manager.subprocess.run', side_effect=run):
+            result = self.manager._archive_backup(backup)
+        self.assertEqual(result['backup'], self.manager.backup_remote + '/' + backup.name)
+        self.assertEqual(result['backup_status'], 'drive_verified')
+        self.assertFalse(backup.exists())
+        self.assertEqual([args[9] for args in calls], ['copy', 'check'])
+
+    def test_failed_drive_check_preserves_local_backup(self):
+        backup = self.manager._backup([])
+        self.manager.backup_remote = 'gdrive:VPS-backups/PPakemon/manager'
+        self.manager.backup_config = Path('/var/lib/ppakemon-gdrive/rclone.conf')
+        with patch('remote_manager.subprocess.run', side_effect=[
+                subprocess.CompletedProcess([], 0, '', ''),
+                subprocess.CompletedProcess([], 1, '', 'mismatch')]):
+            result = self.manager._archive_backup(backup)
+        self.assertEqual(result['backup'], str(backup))
+        self.assertEqual(result['backup_status'], 'local_upload_failed')
+        self.assertTrue((backup / 'world-snapshot.tar').is_file())
+
+    def test_commit_upload_runs_after_server_restart(self):
+        self.write('config/example.json', b'{"volume":2}')
+        self.manager.backup_remote = 'gdrive:VPS-backups/PPakemon/manager'
+
+        def archive(backup):
+            self.assertTrue(self.runtime.running)
+            return {'backup': 'gdrive:VPS-backups/PPakemon/manager/' + backup.name,
+                    'backup_status': 'drive_verified'}
+
+        with patch.object(self.manager, '_archive_backup', side_effect=archive):
+            result = self.manager.commit(['config/example.json'], 'settings', self.old)
+        self.assertEqual(result['backup_status'], 'drive_verified')
+        self.assertEqual((self.runtime.stops, self.runtime.starts), (1, 1))
+
     def test_literal_path_does_not_stage_matching_other_file(self):
         self.write('config/[a].json', b'{}')
         self.write('config/a.json', b'{}')

@@ -233,6 +233,7 @@ $timer.Add_Tick({
                         Add-Log $data.result.data.message
                         if($data.result.data.commit){Add-Log ('커밋: ' + $data.result.data.commit)}
                         if($data.result.data.backup){Add-Log ('백업: ' + $data.result.data.backup)}
+                        if($data.result.data.backup_warning){Add-Log $data.result.data.backup_warning}
                         $script:plan=$null
                         Refresh-Status
                     } else { $state.Text=$data.message;$script:nextPoll=[DateTime]::Now.AddSeconds(3) }
