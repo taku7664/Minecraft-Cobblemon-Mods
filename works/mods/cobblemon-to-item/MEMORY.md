@@ -1,5 +1,11 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-14 09:25] 툴팁 성별 수정 개발 서버·클라이언트 배포 (실게임 미확인)
+
+- **빌드:** main `25ddceac` 소스로 F 경로(`F:/AI/builds/cobblemon-mods-main`, init 스크립트로 build 출력 이동)에서 `:cobblemon-to-item:remapJar` 성공. `unitTest` 18/18 통과(`test` 태스크는 비활성이라 `unitTest`로 돌려야 한다). JAR CRC 정상, `savedGender` 포함 확인. 버전은 0.1.3 그대로.
+- **배치:** 게임·서버 프로세스 없음(Gradle·Kotlin 데몬만)과 25565/25566 미수신을 확인하고, 이전 JAR(SHA-256 `28f06f37…`)을 `develop-product/deployment-backups/20261014-092521-to-item-tooltip-gender/{server,client}`에 두고 교체. 두 곳 SHA-256 `e1a56ab512073e9d07878f7d16a3a14d366c428cd634edd220deae8197c67186`, 빌드본과 같다.
+- **미확인:** 실게임에서 합성 칸·인벤토리 툴팁 성별. 운영·VPS·PPakemon·deploy-product는 그대로.
+
 ## [2026-10-14 09:30] 툴팁 성별이 무작위로 바뀌는 문제 수정 (소스만, 빌드·실게임 미확인)
 
 - **사용자 신고:** 아이템화한 암컷 대쓰여너가 인벤토리에서는 ♀, PokeFusion 재료 칸에서는 ♂로 보였다(스크린샷). Claude가 처음에 "바뀌는 지점이 없다"고 두 번 단정했다가 틀렸다. 서버 경로만 보고 클라이언트 읽기 경로를 덜 봤다.
