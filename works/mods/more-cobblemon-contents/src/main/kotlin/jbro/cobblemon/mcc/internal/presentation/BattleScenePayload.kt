@@ -13,12 +13,13 @@ import net.minecraft.resources.ResourceLocation
 
 /**
  * [speaker] says [lines] to the client while its battle camera looks at the entity [focusEntityId] ([NO_FOCUS] leaves
- * the camera alone).
+ * the camera alone). An [interject] scene starts at once, in the middle of a turn, and holds the narration until done.
  */
 internal data class BattleScenePayload(
     val focusEntityId: Int,
     val speaker: Component?,
     val lines: List<Component>,
+    val interject: Boolean = false,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<BattleScenePayload> = TYPE
 
@@ -33,7 +34,8 @@ internal data class BattleScenePayload(
             ByteBufCodecs.VAR_INT, BattleScenePayload::focusEntityId,
             SPEAKER, { Optional.ofNullable(it.speaker) },
             LINES, BattleScenePayload::lines,
-        ) { focus, speaker, lines -> BattleScenePayload(focus, speaker.orElse(null), lines) }
+            ByteBufCodecs.BOOL, BattleScenePayload::interject,
+        ) { focus, speaker, lines, interject -> BattleScenePayload(focus, speaker.orElse(null), lines, interject) }
     }
 }
 

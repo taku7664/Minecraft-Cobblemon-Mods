@@ -47,6 +47,7 @@ object MoreCobblemonContents : ModInitializer {
         ManagedBattleContentNetworking.registerServer()
         jbro.cobblemon.mcc.internal.battle.BattleEntryNetworking.registerServer()
         jbro.cobblemon.mcc.internal.battle.BattleStatStageSync.registerServer()
+        jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173TrainerSceneDirector.registerServer()
         jbro.cobblemon.mcc.internal.presentation.BattleSceneNetworking.registerServer()
         jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173TrainerBody.register()
         jbro.cobblemon.mcc.internal.battle.BattleEntryHold.registerServer()

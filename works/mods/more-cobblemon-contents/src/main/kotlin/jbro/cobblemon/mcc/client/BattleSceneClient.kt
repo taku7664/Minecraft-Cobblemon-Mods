@@ -77,7 +77,8 @@ object BattleSceneClient {
             releaseEnd()
         }
         val scene = pending ?: return
-        if (BattleDialogue.hasPending() && now - pendingSince < NARRATION_WAIT_MILLIS) return
+        // Words said mid-turn (a Dynamax) come in at once; the narration under them waits (BattleDialogue).
+        if (!scene.interject && BattleDialogue.hasPending() && now - pendingSince < NARRATION_WAIT_MILLIS) return
         pending = null
         play(scene)
     }

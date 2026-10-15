@@ -93,13 +93,13 @@ object BattleDialogue {
     fun hasPending(): Boolean = queue.hasPending()
 
     fun confirm(keyCode: Int, scanCode: Int): Boolean {
-        if (!CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) return false
+        if (!CobblemonUiClient.selectActionKey.matches(keyCode, scanCode) || SceneDialogue.isActive()) return false
         return press(NO_MOUSE_BUTTON)
     }
 
     /** A left click on the battle screen does what the confirm key does, holding included. */
     fun click(button: Int): Boolean {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !queue.hasPending()) return false
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !queue.hasPending() || SceneDialogue.isActive()) return false
         return press(button)
     }
 
@@ -202,6 +202,8 @@ object BattleDialogue {
         // Checked with nothing to say too, so a release missed meanwhile cannot eat the next press in the menus.
         if (hold.isHeld() && !confirmKeyDown()) releaseHold()
         val message = queue.current() ?: return
+        // A trainer speaking mid-turn (a Dynamax) has the floor; the narration waits under it.
+        if (SceneDialogue.isActive()) return
         val battle = CobblemonClient.battle ?: return
         val client = Minecraft.getInstance()
         if (battle.minimised || client.options.hideGui || BattleInfoPanel.isExpanded ||

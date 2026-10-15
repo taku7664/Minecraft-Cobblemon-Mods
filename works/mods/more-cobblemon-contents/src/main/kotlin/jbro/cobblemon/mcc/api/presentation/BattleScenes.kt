@@ -16,7 +16,17 @@ object BattleScenes {
     const val MAX_LINES = BattleScenePayload.MAX_LINES
 
     /** [speaker] (no name plate when null) says [lines] to [player] while the camera looks at [focus], when given. */
-    fun play(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>) {
+    fun play(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>) =
+        send(player, focus, speaker, lines, interject = false)
+
+    /**
+     * Like [play], for words said in the middle of a turn: the lines start at once instead of after the battle
+     * narration on screen, and that narration waits until they are over.
+     */
+    fun interject(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>) =
+        send(player, focus, speaker, lines, interject = true)
+
+    private fun send(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>, interject: Boolean) {
         require(lines.size in 1..MAX_LINES) { "A scene has 1 to $MAX_LINES lines" }
         if (!ServerPlayNetworking.canSend(player, BattleScenePayload.TYPE)) {
             lines.forEach { line ->
@@ -26,6 +36,6 @@ object BattleScenes {
         }
         // The client only knows entities it is tracking in its own level.
         val focusId = focus?.takeIf { it.level() === player.level() && !it.isRemoved }?.id ?: BattleScenePayload.NO_FOCUS
-        ServerPlayNetworking.send(player, BattleScenePayload(focusId, speaker, lines))
+        ServerPlayNetworking.send(player, BattleScenePayload(focusId, speaker, lines, interject))
     }
 }

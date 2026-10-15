@@ -14,7 +14,11 @@ data class TrainerScenes(val lines: Map<Moment, List<String>> = emptyMap()) {
         /** The player won; the battle closes after the lines. */
         PLAYER_WON("player_won"),
         /** The player lost; the battle closes after the lines. */
-        PLAYER_LOST("player_lost");
+        PLAYER_LOST("player_lost"),
+        /** One of the trainer's Pokemon Dynamaxes, as it happens; the turn's narration waits for the lines. */
+        DYNAMAX("dynamax"),
+        /** One of the trainer's Pokemon Mega Evolves, as it happens; the turn's narration waits for the lines. */
+        MEGA_EVOLUTION("mega");
 
         companion object {
             fun fromId(id: String): Moment? = entries.firstOrNull { it.id == id }

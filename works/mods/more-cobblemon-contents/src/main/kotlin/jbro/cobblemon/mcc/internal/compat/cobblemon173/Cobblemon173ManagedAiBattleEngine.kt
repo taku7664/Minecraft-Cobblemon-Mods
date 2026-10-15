@@ -333,6 +333,7 @@ class Cobblemon173ManagedAiBattleEngine(
                 Cobblemon173TrainerBody.battleStarted(player.uuid, battle.battleId)
                 // A battle held for its versus intro opens later; the trainer speaks when it does.
                 jbro.cobblemon.mcc.internal.battle.BattleEntryHold.whenStarted(battle.battleId) { sceneDirector.battleStarted() }
+                sceneDirector.watch(battle, trainerActor.showdownId)
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
