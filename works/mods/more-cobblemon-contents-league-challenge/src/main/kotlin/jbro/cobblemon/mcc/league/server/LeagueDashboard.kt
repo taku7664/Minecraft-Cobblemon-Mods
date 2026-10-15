@@ -7,14 +7,17 @@ import jbro.cobblemon.mcc.api.hub.MccDashboardSections
 import jbro.cobblemon.mcc.api.hub.MccDashboardStat
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
+import jbro.cobblemon.mcc.league.system.LeagueCatalog
 import jbro.cobblemon.mcc.league.system.LeagueEngine
+import jbro.cobblemon.mcc.league.system.LeagueProgress
+import jbro.cobblemon.mcc.league.system.LeagueWorldRules
 import jbro.cobblemon.mcc.league.trainer.WildTrainers
 import jbro.cobblemon.mcc.league.ui.LeagueRank
 import net.minecraft.network.chat.Component
 
 /**
- * The League's dashboard card: badges, level cap and rank, who is next, how far the hard route is, and the
- * wild trainer record.
+ * The League's dashboard card: badges, level cap and rank, each region's normal and hard league, and the wild
+ * trainer record.
  */
 object LeagueDashboard {
     private const val KEY = "screen.${Mod.MOD_ID}.dashboard"
@@ -28,32 +31,14 @@ object LeagueDashboard {
             val badges = engine.badgeCount(state)
             val rank = LeagueRank.fromProgress(badges, state.champion && badges == catalog.gymStages.size)
             val rows = ArrayList<MccDashboardRow>()
-            // The first stage not yet passed; a stage of two gyms to pick from names both.
-            val nextStage = catalog.gymStages.firstOrNull { stage -> stage.none { it in state.cleared } }
-            rows += MccDashboardRow(Component.translatable("$KEY.next"), when {
-                nextStage != null -> nextStage.map { Component.translatable(catalog.challenges.getValue(it).nameKey) }
-                    .reduce { names, name -> names.copy().append(" / ").append(name) }
-                !state.champion -> Component.translatable("$KEY.elite_four")
-                else -> Component.translatable("$KEY.champion")
-            })
-            if (catalog.hasHard) {
-                val hardBadges = catalog.hardGymStages.count { stage -> stage.any { it in state.cleared } }
-                rows += MccDashboardRow(Component.translatable("$KEY.hard"), when {
-                    !engine.hardUnlocked(state) -> Component.translatable("$KEY.hard_locked")
-                    state.hardChampion -> Component.translatable("$KEY.hard_champion")
-                    else -> Component.translatable("$KEY.hard_progress", hardBadges, catalog.hardGymStages.size)
-                })
-            }
-            // The other regions the player has opened, by their own progress.
+            // One line per region, the primary first: its normal league, the hard league under it, or what opens it.
             val states = LeagueProgressQueries.states(context.server, context.playerId)
-            LeagueCatalogResources.catalogs.values.filter { it.id != catalog.id && jbro.cobblemon.mcc.league.system.LeagueWorldRules.unlocked(it, states) }
-                .forEach { region ->
-                    val progress = states[region.id] ?: LeagueSavedData.get(context.server).read(region.id, context.playerId)
-                    val regionBadges = LeagueEngine(region).badgeCount(progress)
-                    rows += MccDashboardRow(Component.translatable(region.nameKey),
-                        if (progress.champion) Component.translatable("$KEY.champion")
-                        else Component.translatable("$KEY.hard_progress", regionBadges, region.gymStages.size))
-                }
+            val regions = (listOf(catalog) + LeagueCatalogResources.catalogs.values.filter { it.id != catalog.id })
+                .sortedBy { region -> generateSequence(region.unlockLeague) { LeagueCatalogResources.find(it)?.unlockLeague }.count() }
+            regions.forEach { region ->
+                val progress = states[region.id] ?: LeagueSavedData.get(context.server).read(region.id, context.playerId)
+                rows += regionRow(region, progress, LeagueWorldRules.unlocked(region, states))
+            }
             val records = context.records(CONTENT)
             records.firstOrNull { it.formatId == WildTrainers.RECORD_FORMAT }?.let { wild ->
                 rows += MccDashboardRow(Component.translatable("$KEY.wild_trainers"), MccDashboardCards.record(wild.wins, wild.losses),
@@ -72,5 +57,25 @@ object LeagueDashboard {
                 rows = rows.take(MccDashboardCard.MAX_ROWS),
             )
         }
+    }
+
+    /** [region]'s normal league as the value, its hard league as the dim line under it. */
+    private fun regionRow(region: LeagueCatalog, progress: LeagueProgress, unlocked: Boolean): MccDashboardRow {
+        val name = Component.translatable(region.nameKey)
+        if (!unlocked) {
+            val prerequisite = region.unlockLeague?.let(LeagueCatalogResources::find)
+            return MccDashboardRow(name, Component.translatable("$KEY.locked",
+                prerequisite?.let { Component.translatable(it.nameKey) } ?: Component.empty()))
+        }
+        val engine = LeagueEngine(region)
+        val normal = if (progress.champion) Component.translatable("$KEY.champion")
+            else Component.translatable("$KEY.progress", engine.badgeCount(progress), region.gymStages.size)
+        val hard = if (!region.hasHard) null else Component.translatable("$KEY.hard", when {
+            !engine.hardUnlocked(progress) -> Component.translatable("$KEY.hard_locked")
+            progress.hardChampion -> Component.translatable("$KEY.champion")
+            else -> Component.translatable("$KEY.progress",
+                region.hardGymStages.count { stage -> stage.any { it in progress.cleared } }, region.hardGymStages.size)
+        })
+        return MccDashboardRow(name, normal, hard)
     }
 }
