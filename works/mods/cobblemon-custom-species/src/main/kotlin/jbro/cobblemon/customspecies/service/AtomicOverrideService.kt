@@ -1,6 +1,7 @@
 package jbro.cobblemon.customspecies.service
 
 import jbro.cobblemon.customspecies.config.CustomSpeciesConfig
+import jbro.cobblemon.customspecies.config.MoveOverride
 
 class AtomicOverrideService(private val catalog: SpeciesCatalog) {
     private val baseline = mutableMapOf<SpeciesTargetKey, SpeciesTargetState>()
@@ -10,6 +11,7 @@ class AtomicOverrideService(private val catalog: SpeciesCatalog) {
     fun apply(config: CustomSpeciesConfig): Int {
         val candidate = mutableMapOf<SpeciesTargetKey, SpeciesTargetState>()
         val touchedKeys = linkedSetOf<SpeciesTargetKey>()
+        val explicitFormMoves = mutableSetOf<SpeciesTargetKey>()
         try {
             for (override in config.overrides) {
                 val targets = catalog.resolve(override.species, override.form)
@@ -25,6 +27,7 @@ class AtomicOverrideService(private val catalog: SpeciesCatalog) {
                 }
                 for (target in targets) {
                     touchedKeys += target
+                    if (target.form != "base" && override.moves != MoveOverride()) explicitFormMoves += target
                     val original = baseline.getOrPut(target) { catalog.read(target).deepCopy() }
                     val state = candidate[target]?.deepCopy() ?: original.deepCopy()
                     override.baseStats.forEach { (stat, amount) -> state.baseStats[stat.jsonName] = amount }
@@ -56,7 +59,10 @@ class AtomicOverrideService(private val catalog: SpeciesCatalog) {
                 val original = baseline.getValue(key)
                 val state = candidate[key]
                 // A key published by the previous apply is rewritten in full so every earlier change is undone.
-                val fields = if (state == null || key in appliedKeys) TargetField.ALL else state.changedFields(original)
+                // Even a no-op explicit form edit must detach its learnset: the base may be
+                // expanded in this same transaction, after the form baseline was captured.
+                val fields = if (state == null || key in appliedKeys) TargetField.ALL else
+                    state.changedFields(original) + if (key in explicitFormMoves) setOf(TargetField.MOVES) else emptySet()
                 if (fields.isNotEmpty()) catalog.write(key, (state ?: original).deepCopy(), fields)
             }
         } catch (error: Exception) {

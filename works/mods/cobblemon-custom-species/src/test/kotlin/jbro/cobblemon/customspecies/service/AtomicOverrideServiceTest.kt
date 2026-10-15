@@ -8,6 +8,38 @@ import org.junit.jupiter.api.Test
 
 class AtomicOverrideServiceTest {
     @Test
+    fun `explicit no-op form moves block new base moves from leaking into an inherited form`() {
+        val backing = FakeSpeciesCatalog.rotomWithInheritedWashForm()
+        val baseKey = SpeciesTargetKey("cobblemon:rotom", "base")
+        val formKey = SpeciesTargetKey("cobblemon:rotom", "wash")
+        var detachedForm: SpeciesTargetState? = null
+        val catalog = object : SpeciesCatalog by backing {
+            override fun read(key: SpeciesTargetKey): SpeciesTargetState =
+                if (key == formKey) detachedForm ?: backing.read(baseKey) else backing.read(key)
+
+            override fun write(key: SpeciesTargetKey, state: SpeciesTargetState, fields: Set<TargetField>) {
+                if (key == formKey && TargetField.MOVES in fields) detachedForm = state.deepCopy()
+                backing.write(key, state, fields)
+            }
+        }
+        val service = AtomicOverrideService(catalog)
+        val config = CustomSpeciesConfigParser().parse(
+            """{"schema":1,"overrides":[
+                {"species":"cobblemon:rotom","form":"base","moves":{"add":["tm:surf"]}},
+                {"species":"cobblemon:rotom","form":"wash","moves":{"remove":["tm:surf"]}}
+            ]}"""
+        )
+
+        service.apply(config)
+
+        assertEquals(setOf("1:thundershock", "tm:surf"), catalog.read(baseKey).moves)
+        assertEquals(setOf("1:thundershock"), catalog.read(formKey).moves)
+        service.apply(CustomSpeciesConfigParser().parse("""{"schema":1,"overrides":[]}"""))
+        assertEquals(setOf("1:thundershock"), catalog.read(baseKey).moves)
+        assertEquals(setOf("1:thundershock"), catalog.read(formKey).moves)
+    }
+
+    @Test
     fun `specific inherited form receives independent collections`() {
         val catalog = FakeSpeciesCatalog.rotomWithInheritedWashForm()
         val service = AtomicOverrideService(catalog)
