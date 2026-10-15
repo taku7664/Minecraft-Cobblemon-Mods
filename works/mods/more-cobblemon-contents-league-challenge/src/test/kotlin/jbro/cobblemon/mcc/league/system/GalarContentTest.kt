@@ -64,6 +64,8 @@ class GalarContentTest {
         fun ace(id: String) = c.challenges.getValue(id).team.maxOf { fields(it).getValue("level").toInt() }
         c.gyms.forEach { assertEquals(ace(it) + 2, e.battleCap(it), it) }
         assertEquals(c.finals.maxOf(::ace) + 2, e.battleCap(c.finals.first()))
+        // Every Galar trainer Dynamaxes, so each says something as it does.
+        c.challenges.values.forEach { assertTrue("dynamax" in it.scenes, it.id) }
         assertTrue(c.finals.zipWithNext().all { (a, b) -> ace(a) < ace(b) })
     }
 

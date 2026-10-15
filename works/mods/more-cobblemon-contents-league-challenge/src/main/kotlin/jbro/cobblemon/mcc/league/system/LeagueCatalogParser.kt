@@ -58,7 +58,7 @@ private fun JsonObject.choices(): Map<String, List<String>> = if (!has("final_ch
     }
 
 /** The moments a trainer's `scenes` may name; the same ids as MCC's `TrainerScenes.Moment`. */
-internal val SCENE_MOMENTS = setOf("battle_start", "last_pokemon", "player_won", "player_lost")
+internal val SCENE_MOMENTS = setOf("battle_start", "last_pokemon", "player_won", "player_lost", "dynamax", "mega")
 
 /** A trainer's optional `scenes` object: moment id to its lines' translation keys (1 to 8 each). */
 private fun JsonObject.scenes(): Map<String, List<String>> {

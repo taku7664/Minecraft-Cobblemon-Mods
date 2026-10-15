@@ -18,6 +18,9 @@
     ],
     "player_lost": [
       "trainer.more_cobblemon_contents_league_challenge.aaron.scene_hard.player_lost.0"
+    ],
+    "mega": [
+      "trainer.more_cobblemon_contents_league_challenge.aaron.scene_hard.mega.0"
     ]
   }
 }

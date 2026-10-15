@@ -16,6 +16,9 @@
     ],
     "player_lost": [
       "trainer.more_cobblemon_contents_league_challenge.galar.milo.player_lost"
+    ],
+    "dynamax": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.milo.dynamax"
     ]
   }
 }

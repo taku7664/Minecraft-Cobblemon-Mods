@@ -62,7 +62,12 @@ class LeagueCatalogParserTest {
         val catalog = LeagueCatalogParser.parse(resources(), "$ns:active")
         val route = catalog.gyms + catalog.finals + catalog.hardGyms + catalog.hardFinals
         assertEquals(26, route.size)
-        route.forEach { id -> assertEquals(SCENE_MOMENTS, catalog.challenges.getValue(id).scenes.keys, id) }
+        // Every trainer has the four battle moments; the hard teams, whose aces Mega Evolve, also speak as they do.
+        val core = SCENE_MOMENTS - setOf("dynamax", "mega")
+        route.forEach { id ->
+            val expected = if (id in catalog.hardGyms + catalog.hardFinals) core + "mega" else core
+            assertEquals(expected, catalog.challenges.getValue(id).scenes.keys, id)
+        }
     }
 
     @Test fun `an unknown scene moment or an empty one rejects the catalog`() {
