@@ -332,6 +332,16 @@ object CobblemonUiThemePresets {
      * so content in a pixel frame sits beside the hub's DS rail as one look. Drawings of their own (tabs, route nodes,
      * check boxes) read the shape from the theme's panels.
      */
+    /** [from] moved [amount] of the way to [to], channel by channel, opaque. */
+    private fun blend(from: Int, to: Int, amount: Float): Int {
+        fun channel(shift: Int): Int {
+            val a = (from ushr shift) and 0xFF
+            val b = (to ushr shift) and 0xFF
+            return (a + (b - a) * amount).toInt().coerceIn(0, 255)
+        }
+        return (0xFF shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
+    }
+
     // Getters: the presets object composes its themes while it initialises, before stored values would be set.
     val PIXEL_CORNER: UiShape get() = UiShape.RoundedRectangle(4)
     val PIXEL_CONTROL_CORNER: UiShape get() = UiShape.RoundedRectangle(3)
@@ -345,11 +355,14 @@ object CobblemonUiThemePresets {
         val styles = buildMap {
             addPixelVariant(UiButtonVariant.PRIMARY, c.primary, c.primaryHover, c.primaryPressed, c.selected, c.primaryText,
                 cardFrame, selector, c.disabled, c.selectedText)
-            addPixelVariant(UiButtonVariant.SECONDARY, c.secondary, c.secondaryHover, c.secondaryPressed, c.selected,
+            // The palettes' secondary hover is a near-white step from near-white: tint it toward the selection
+            // colour so a pointed-at button, row or tab visibly answers.
+            val secondaryHover = blend(c.secondary, c.selected, 0.35f)
+            addPixelVariant(UiButtonVariant.SECONDARY, c.secondary, secondaryHover, c.secondaryPressed, c.selected,
                 c.secondaryText, cardFrame, selector, c.disabled, c.selectedText)
             addPixelVariant(UiButtonVariant.DANGER, c.danger, c.dangerHover, c.dangerPressed, c.selected, 0xFFFFFFFF.toInt(),
                 cardFrame, selector, c.disabled, c.selectedText)
-            addPixelVariant(UiButtonVariant.ICON, c.secondary, c.secondaryHover, c.secondaryPressed, c.selected,
+            addPixelVariant(UiButtonVariant.ICON, c.secondary, secondaryHover, c.secondaryPressed, c.selected,
                 c.secondaryText, cardFrame, selector, c.disabled, c.selectedText)
             addPixelGhost(colors, selector)
         }

@@ -84,7 +84,12 @@ object CobblemonUiListRows {
                 else -> UiWidgetState.NORMAL
             }
             val actionStyle = theme.style(UiButtonVariant.SECONDARY, actionState)
-            UiSurfaceRenderer.draw(graphics, action.x, action.y, action.width, action.height, actionStyle.surface)
+            // Small row controls stand bare on the row; the one under the mouse fills with the selection colour.
+            if (actionState == UiWidgetState.HOVER) {
+                val chosen = theme.style(UiButtonVariant.SECONDARY, UiWidgetState.SELECTED).surface
+                UiSurfaceRenderer.draw(graphics, action.x, action.y, action.width, action.height,
+                    chosen.copy(border = jbro.cobblemon.uikit.UiBorder.None))
+            }
             UiTextRenderer.draw(graphics, font, control.label, action.x + (action.width - font.width(control.label) + 1) / 2,
                 UiTextRenderer.centeredY(font, control.label, action.y, action.height), actionStyle.text, actionStyle.textShadowColor)
         }

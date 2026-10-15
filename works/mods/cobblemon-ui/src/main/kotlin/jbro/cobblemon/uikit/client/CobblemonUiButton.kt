@@ -68,9 +68,10 @@ class CobblemonUiButton private constructor(
     private fun displayedState(): UiWidgetState = forcedState ?: when {
         !active -> UiWidgetState.DISABLED
         Util.getMillis() < pressedUntil -> UiWidgetState.PRESSED
+        // A chosen option stays marked under the mouse; hover and focus show on the others.
+        spec.selected -> UiWidgetState.SELECTED
         isFocused -> UiWidgetState.FOCUS
         isHovered -> UiWidgetState.HOVER
-        spec.selected -> UiWidgetState.SELECTED
         else -> UiWidgetState.NORMAL
     }
 

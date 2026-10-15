@@ -93,7 +93,7 @@ class CobblemonUiRenderSlot private constructor(
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
-        UiSurfaceRenderer.draw(graphics, x, y, width, height, theme.surfaces.panelAlt)
+        if (spec.framed) UiSurfaceRenderer.draw(graphics, x, y, width, height, theme.surfaces.panelAlt)
         val inner = UiLayout.inset(UiLayout.leaf("inner"), spec.padding, spec.padding, spec.padding, spec.padding, min = 1)
             .solve(UiRect(x, y, width, height))["inner"]
         drawContent(graphics, inner, content, partialTick, spec.fallbackIcon)

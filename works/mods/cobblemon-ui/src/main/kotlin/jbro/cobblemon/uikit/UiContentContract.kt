@@ -106,7 +106,9 @@ data class UiCalloutSpec(
 data class UiRenderSlotSpec(
     val accessibleLabel: Component,
     val fallbackIcon: UiIcon? = null,
-    val padding: Int = 2
+    val padding: Int = 2,
+    /** Draws the slot's panel behind the content; a full-body model on a card reads better standing bare. */
+    val framed: Boolean = true
 ) {
     init {
         require(accessibleLabel.string.isNotBlank()) { "Render slot label must not be blank" }
