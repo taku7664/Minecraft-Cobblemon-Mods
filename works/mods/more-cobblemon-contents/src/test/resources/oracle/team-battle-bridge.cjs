@@ -170,6 +170,7 @@ function teamPreviewInputs(side) {
     ability: pokemon.baseAbility, item: pokemon.set.item ? dex.items.get(pokemon.set.item).id : '',
     nature: dex.natures.get(pokemon.set.nature || 'serious').id || 'serious', gender: pokemon.gender || 'N',
     evs: pokemon.set.evs, ivs: pokemon.set.ivs, teraType: pokemon.teraType ? toId(pokemon.teraType) : null,
+    gigantamax: !!pokemon.set.gigantamax,
     species: pokemon.baseSpecies.id }));
   return { foePreview, ownBuilds };
 }
@@ -259,6 +260,8 @@ function snapshot() {
           return [{ command: 'pass', actorSlot, kind: 'pass' }];
         }
         const choices = [];
+        // Showdown lists the Max Moves with canDynamax, and alone while the Pokemon is already Dynamaxed.
+        const maxMoves = active.maxMoves?.maxMoves;
         active.moves.forEach((move, moveSlot) => {
           if (move.disabled || move.pp === 0) return;
           // Recharge and Struggle can omit PP; they are still native legal requests.
@@ -268,11 +271,17 @@ function snapshot() {
             const choice = { command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
               kind: 'move', slot: moveSlot, moveId: move.id, target,
               targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null };
+            // Already Dynamaxed: the move is its Max Move, as the game reads it (currentMaxMove).
+            if (!active.canDynamax && maxMoves?.[moveSlot]) choice.maxMoveId = toId(maxMoves[moveSlot].move);
             choices.push(choice);
-            // Mega Evolution is the one gimmick offered: the game offers it with every move, as here.
+            // The game offers each gimmick with every move, as here.
             if (active.canMegaEvo) choices.push({ ...choice, command: `${choice.command} mega`, mechanic: 'mega' });
+            if (active.canDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
+              choices.push({ ...choice, command: `${choice.command} dynamax`, mechanic: 'dynamax', maxMoveId: toId(maxMoves[moveSlot].move) });
+            }
           });
           moves[move.id] = metadata;
+          if (maxMoves?.[moveSlot]) moves[toId(maxMoves[moveSlot].move)] = moveInfo(maxMoves[moveSlot].move);
         });
         // A trap the player cannot see yet (Shadow Tag) comes as maybeTrapped; Showdown rejects the switch and asks
         // again with the trap shown, so a switch it would refuse is not offered.
@@ -287,7 +296,7 @@ function snapshot() {
       for (const components of combine(choicesBySlot)) {
         const switchSlots = components.filter(component => component.kind === 'switch').map(component => component.slot);
         if (new Set(switchSlots).size !== switchSlots.length) continue;
-        // A side Mega Evolves once per battle, so never two in one turn.
+        // A side Mega Evolves (or Dynamaxes) once per battle, so never two in one turn.
         if (components.filter(component => component.mechanic).length > 1) continue;
         const command = components.map(component => component.command).join(', ');
         if (battleFormat === 'SINGLE') actions.push({ ...components[0], id: command });

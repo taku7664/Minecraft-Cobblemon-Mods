@@ -120,7 +120,18 @@ internal object EmbeddedTeamInput {
             }
             if (kind in setOf("turn", "upkeep", "switch", "drag")) actionWindow = null
             when (kind) {
-                "turn" -> eventTurn = actor.toInt()
+                "turn" -> {
+                    eventTurn = actor.toInt()
+                    // A new turn: one turn less of Dynamax, as the game's observer counts it (advance).
+                    seen.values.forEach { entry ->
+                        val marker = entry.volatileEffects.firstOrNull { it.startsWith(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.TURNS) }
+                        if (marker != null) {
+                            val left = marker.removePrefix(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.TURNS).toInt() - 1
+                            entry.volatileEffects.remove(marker)
+                            if (left > 0) entry.volatileEffects += jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.TURNS + left
+                        }
+                    }
+                }
                 "teamsize" -> sizes[side(actor)] = p[3].toInt()
                 "switch", "drag", "replace" -> {
                     // A broken Illusion is announced by "replace" without a condition: the HP is the disguise's.
@@ -244,6 +255,13 @@ internal object EmbeddedTeamInput {
                 "-clearboost" -> current?.stages?.clear()
                 "-clearallboost" -> seen.values.forEach { it.stages.clear() }
                 "-start" -> current?.let {
+                    if (id(p[3]) == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE) {
+                        val effect = if (id(p.getOrNull(4).orEmpty()) == "gmax") jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START
+                            else jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE
+                        val next = jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicPersistentMoveState.afterVolatile(
+                            it.volatileEffects.toSet(), effect, true, null, null)
+                        it.volatileEffects.clear(); it.volatileEffects += next
+                    }
                     if (id(p[3]) == "gastroacid") it.gastroAcid = true
                     if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
                     // A Perish Song count, as the game's observer keeps it: the family and perishsong:<count>.
@@ -263,6 +281,11 @@ internal object EmbeddedTeamInput {
                     if (id(p[3]) == "neutralizinggas") current?.abilityEnded = true
                     if (p[3] == "typeadd") current?.added = null
                     if (id(p[3]) == "substitute") current?.volatileEffects?.remove("substitute")
+                    if (id(p[3]) == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE) current?.let {
+                        val next = jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicPersistentMoveState.afterVolatile(
+                            it.volatileEffects.toSet(), jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE, false, null, null)
+                        it.volatileEffects.clear(); it.volatileEffects += next
+                    }
                 }
                 "detailschange", "-formechange" -> current?.let {
                     val next = id(p[3].substringBefore(','))
@@ -421,11 +444,16 @@ internal object EmbeddedTeamInput {
                 val moveId = id(action["moveId"].asString)
                 val moveRequest = request.getAsJsonArray("active")[actorSlot].asJsonObject
                     .getAsJsonArray("moves")[slot].asJsonObject
-                val details = moveDetails(moveId, moveRequest["pp"]?.asInt ?: 1)
+                val maxMoveId = action["maxMoveId"]?.asString
+                val baseDetails = moveDetails(moveId, moveRequest["pp"]?.asInt ?: 1)
+                // As the game's adapter hands a Dynamax move over: the base move's id, the Max Move's details.
+                val details = maxMoveId?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.maxMoveDetails(moveId, baseDetails, it) } ?: baseDetails
                 BattleActionCandidate(actionId, BattleActionKind.USE_MOVE, actorSlot = actorSlot, moveSlot = slot,
                     moveId = moveId, targets = targets(details, actorSlot, action["targetLoc"]?.takeUnless { it.isJsonNull }?.asInt),
                     // The form itself is read from the actor's knownFormStates, as in the game.
-                    mechanic = action["mechanic"]?.asString?.let { BattleMechanicCandidate(it, target = null, publicCost = null) },
+                    mechanic = action["mechanic"]?.asString?.let {
+                        BattleMechanicCandidate(it, target = null, publicCost = null, transformedMoveId = maxMoveId.takeIf { _ -> it == "dynamax" })
+                    },
                     moveDetails = details)
             }
         }
@@ -591,6 +619,7 @@ internal object EmbeddedTeamInput {
                 evs = spread(build.getAsJsonObject("evs")),
                 ivs = spread(build.getAsJsonObject("ivs")),
                 teraTypeId = build["teraType"]?.takeUnless { it.isJsonNull }?.asString,
+                gigantamax = build["gigantamax"]?.asBoolean == true,
                 showdownSpeciesId = build["species"].asString,
             )
         })
