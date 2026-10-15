@@ -1,0 +1,17 @@
+Galar trainer skins, by their Planet Minecraft authors (https://www.planetminecraft.com/skin/<page>/):
+
+milo.png      bawn            milo-pokemon-swsh
+nessa.png     Halbrave        nessa-pok-mon-sword-and-shield
+kabu.png      7iqdoq          poke-1
+bea.png       icetray         bea-pokemon-4350289
+allister.png  SmolCryptid     allister
+gordie.png    puffle2041      gordie
+melony.png    bawn            melony-pokemon-shield
+piers.png     captain_redd    piers-4466118
+raihan.png    WormWeeps       raihan-pokemon-sword-shield
+leon.png      HydraMaigon     champion-leon
+marnie.png    Kenn_AloneGoat  marnie-pok-mon-swsh
+hop.png       Jentex          hop-5859193
+bede.png      lapislazuline   bede-pokemon-sw-sh
+
+opal.png is drawn by works/tools/league-content/generate_galar_skins.py.

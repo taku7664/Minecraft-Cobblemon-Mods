@@ -106,7 +106,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.difficulty_hard": "하드",
   "screen.more_cobblemon_contents_league_challenge.live.show_hard": "하드 도전",
   "screen.more_cobblemon_contents_league_challenge.live.show_normal": "노말 도전",
-  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "챔피언이 되면 열리는 하드 리그와 노말 리그를 오갑니다. 하드는 메가진화를 쓰는 실전 육성 팀과 싸웁니다.",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "일반 리그와, 그 지방 챔피언이 되면 열리는 하드 리그를 오갑니다. 하드는 실전 육성 팀과 싸우며, 쓸 수 있는 기믹은 사용 가능 기믹 목록에 나옵니다.",
   "message.more_cobblemon_contents_league_challenge.hard_locked": "노말 리그 챔피언이 되어야 하드 리그에 도전할 수 있습니다.",
   "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "상대 레벨이 MCC가 허용하는 최대 레벨보다 높습니다. 리그 팀 데이터를 확인해 주세요.",
   "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "리그 챔피언이 되기 전에는 메가진화·다이맥스·테라스탈·Z기술을 쓸 수 없습니다. 플레이어끼리의 배틀에서는 쓸 수 있습니다.",
@@ -1184,7 +1184,7 @@
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_won.0": "…졌어. 정말 대단해, 너.",
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_won.1": "챔피언이라는 이름, 너한테 더 잘 어울리는 것 같네.",
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_lost.0": "좋은 승부였어. 하지만 이번엔 내가 이겼네. 다시 와.",
-  "league.more_cobblemon_contents_league_challenge.galar": "가라르지방",
+  "league.more_cobblemon_contents_league_challenge.galar": "가라르 포켓몬리그",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo": "아킬",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo.battle_start": "좋아요! 멋진 승부를 해 봅시다!",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo.last_pokemon": "승부는 아직 끝나지 않았습니다!",
@@ -1322,7 +1322,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.challenge_cap": "도전 Lv.%s",
   "screen.more_cobblemon_contents_league_challenge.live.format.single": "싱글 배틀",
   "screen.more_cobblemon_contents_league_challenge.live.format.double": "더블 배틀",
-  "screen.more_cobblemon_contents_league_challenge.live.clear_rewards": "클리어 시",
+  "screen.more_cobblemon_contents_league_challenge.live.clear_rewards": "클리어 보상",
   "screen.more_cobblemon_contents_league_challenge.live.first_reward_claimed": "초회 보상 수령 완료",
   "screen.more_cobblemon_contents_league_challenge.live.reward_badge": "배지 획득",
   "screen.more_cobblemon_contents_league_challenge.live.reward_bp": "%s BP",
@@ -1343,5 +1343,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.route_previous": "이전 단계 보기",
   "screen.more_cobblemon_contents_league_challenge.live.mechanics_short": "사용 기믹",
   "screen.more_cobblemon_contents_league_challenge.live.cup_short": "컵",
-  "screen.more_cobblemon_contents_league_challenge.live.league_short": "리그"
+  "screen.more_cobblemon_contents_league_challenge.live.league_short": "리그",
+  "screen.more_cobblemon_contents_league_challenge.live.challenger": "도전 상대",
+  "screen.more_cobblemon_contents_league_challenge.live.status_line": "배지 %s/8 · 레벨캡 %s"
 }

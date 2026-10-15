@@ -96,7 +96,7 @@ object LeagueAdminCommands {
             .then(literal("reset").then(argument("player", EntityArgument.player()).executes { context -> setProgress(context, null) })))
         .then(literal("test").then(argument("player", EntityArgument.player())
             // Korean names first (강석, 강석-하드): Brigadier's unquoted words are ASCII only, so each is its own literal.
-            .apply { KOREAN_TARGETS.forEach { (name, id) -> then(literal(name).apply { testDifficulties { id } }) } }
+            .apply { KOREAN_TARGETS.forEach { (name, target) -> then(literal(name).apply { testDifficulties { target.word } }) } }
             .then(argument("challenge", StringArgumentType.word())
                 .suggests { _, builder -> SharedSuggestionProvider.suggest(progressTargets().filter { it != ALL }, builder) }
                 .apply { testDifficulties { StringArgumentType.getString(it, "challenge") } })))
@@ -146,9 +146,33 @@ object LeagueAdminCommands {
             1
         }))
 
-    /** The challenges `progress set` takes, by the last part of their ID (`cynthia_hard`), and `all`. */
+    /**
+     * The challenges `progress set` and `test` take, by their ID without the namespace, and `all`. A region's `/`
+     * reads as `.` (`galar.cup_marnie`): Brigadier's unquoted words take no `/`.
+     */
     private fun progressTargets(): List<String> =
-        LeagueCatalogResources.catalogs.values.flatMap { catalog -> LeagueEngine(catalog).route().map { it.substringAfter(':') } }.distinct() + ALL
+        LeagueCatalogResources.catalogs.values.flatMap { catalog -> LeagueEngine(catalog).route().map { word(it) } }.distinct() + ALL
+
+    private fun word(challengeId: String): String = challengeId.substringAfter(':').replace('/', '.')
+
+    /**
+     * The catalog and challenge ID [target] names: a [progressTargets] word, or a Korean name's word. A `region`
+     * argument picks the catalog; without one, the catalog whose route holds it, the primary League first.
+     */
+    private fun route(context: CommandContext<CommandSourceStack>, target: String): Pair<LeagueCatalog, String>? {
+        val explicit = runCatching { StringArgumentType.getString(context, "region") }.getOrNull() != null
+        val primary = LeagueCatalogResources.current
+        val catalogs = if (explicit) listOfNotNull(catalog(context))
+            else listOfNotNull(primary) + LeagueCatalogResources.catalogs.values.filter { it != primary }
+        val named = KOREAN_TARGETS.values.firstOrNull { it.word == target }
+        catalogs.forEach { catalog ->
+            val route = LeagueEngine(catalog).route()
+            val found = named?.find(catalog, route) ?: route.firstOrNull { word(it) == target }.takeIf { named == null }
+            if (found != null) return catalog to found
+        }
+        context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
+        return null
+    }
 
     /**
      * Sets an online player's progress for testing: everything before [target] beaten, everything with `all`, nothing
@@ -157,16 +181,13 @@ object LeagueAdminCommands {
      */
     private fun setProgress(context: CommandContext<CommandSourceStack>, target: String?): Int {
         val player = EntityArgument.getPlayer(context, "player")
-        val catalog = catalog(context) ?: return 0
-        val engine = LeagueEngine(catalog)
-        val challengeId = when (target) {
-            null -> engine.route().first()
-            ALL -> null
-            else -> engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
-                context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
-                return 0
+        val (catalog, challengeId) = when (target) {
+            null, ALL -> (catalog(context) ?: return 0).let { catalog ->
+                catalog to if (target == null) LeagueEngine(catalog).route().first() else null
             }
+            else -> route(context, target) ?: return 0
         }
+        val engine = LeagueEngine(catalog)
         val before = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
         if (before.run != null) {
             context.source.sendFailure(Component.translatable("message.${Mod.MOD_ID}.run_active"))
@@ -200,19 +221,36 @@ object LeagueAdminCommands {
     ): T = apply { TEST_DIFFICULTIES.forEach { (name, skill) -> then(literal(name).executes { testBattle(it, target(it), name, skill) }) } }
 
     /**
-     * The challenges by their Korean trainer names, for `test`: each bundled `trainer.<mod>.<id>` name in `ko_kr`
-     * stands for `<id>`, and `<name>-하드` for `<id>_hard`. Read from the mod's own language file, since the command
-     * tree is built before the League's data loads; `test` still checks the name against the loaded route.
+     * A Korean `test` name: the trainer name key it stands for, whether it asks for the hard route and whether for the
+     * Champion Cup's rematch, which shares its gym leader's name. [word] is what the literal hands to [route].
      */
-    private val KOREAN_TARGETS: Map<String, String> by lazy {
+    private class KoreanTarget(val nameKey: String, val hard: Boolean, val cup: Boolean, val word: String) {
+        /** This trainer's challenge in [route]; a name met only in the Cup (마리) finds its Cup challenge. */
+        fun find(catalog: LeagueCatalog, route: List<String>): String? {
+            fun match(cup: Boolean) = route.firstOrNull { id ->
+                catalog.challenges.getValue(id).nameKey == nameKey && id.endsWith("_hard") == hard &&
+                    id.substringAfter(':').substringAfterLast('/').startsWith("cup_") == cup
+            }
+            return match(cup) ?: if (!cup) match(true) else null
+        }
+    }
+
+    /**
+     * The challenges by their Korean trainer names, for `test`: `강석`, `강석-하드`, and for a gym leader met again in
+     * the Champion Cup `야청-컵`, `야청-컵-하드`. Read from the mod's own language file, since the command tree is built
+     * before the League's data loads; each name finds its challenge in the loaded routes when it runs.
+     */
+    private val KOREAN_TARGETS: Map<String, KoreanTarget> by lazy {
         val stream = LeagueAdminCommands::class.java.classLoader.getResourceAsStream("assets/${Mod.MOD_ID}/lang/ko_kr.json")
             ?: return@lazy emptyMap()
         val names = stream.reader(Charsets.UTF_8).use { com.google.gson.JsonParser.parseReader(it).asJsonObject }
-        val trainer = Regex("""trainer\.${Regex.escape(Mod.MOD_ID)}\.((?:galar\.)?[a-z]+)""")
-        names.entrySet().mapNotNull { (key, value) -> trainer.matchEntire(key)?.let { value.asString to it.groupValues[1].replace('.', '/') } }
-            .flatMap { (name, id) -> listOf(name to id, "$name-하드" to "${id}_hard") }
-            .filter { (name, _) -> name.none(Char::isWhitespace) }
-            .toMap()
+        val trainer = Regex("""trainer\.${Regex.escape(Mod.MOD_ID)}\.(?:galar\.)?[a-z_]+""")
+        names.entrySet().filter { (key, value) -> trainer.matches(key) && value.asString.none(Char::isWhitespace) }
+            .flatMap { (key, value) ->
+                val name = value.asString
+                listOf("" to (false to false), "-하드" to (true to false), "-컵" to (false to true), "-컵-하드" to (true to true))
+                    .map { (suffix, flags) -> "$name$suffix" to KoreanTarget(key, flags.first, flags.second, "ko:$name$suffix") }
+            }.toMap()
     }
 
     /**
@@ -223,13 +261,11 @@ object LeagueAdminCommands {
      */
     private fun testBattle(context: CommandContext<CommandSourceStack>, target: String, difficulty: String, skill: Int): Int {
         val player = EntityArgument.getPlayer(context, "player")
-        val catalog = catalog(context) ?: return 0
+        val (catalog, challengeId) = route(context, target) ?: return 0
         val engine = LeagueEngine(catalog)
-        val challengeId = engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
-            context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
-            return 0
-        }
         val challenge = catalog.challenges.getValue(challengeId)
+        // The gimmick a real run of this League allows the player now, as LeagueServer starts one with.
+        val mechanic = engine.mechanic(LeagueSavedData.get(player.server).read(catalog.id, player.uuid))
         val opponent = Component.translatable(challenge.nameKey)
         val name = player.name.string
         val id = try {
@@ -238,7 +274,7 @@ object LeagueAdminCommands {
                 BattleBrainContentIds.AI_TEST_PERSONA_PREFIX + challengeId.substringAfter(':'), challenge.nameKey, ManagedPveBattles.snapshotParty(player, MAX_LEVEL), challenge.team,
                 ManagedPveBattles.Format.valueOf(challenge.format),
                 jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(
-                    challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = skill,
+                    mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = skill,
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
                 stage = engine.stage(challengeId),
                 // The brain logs under the AI test id; the clients still hear and see the league battle.

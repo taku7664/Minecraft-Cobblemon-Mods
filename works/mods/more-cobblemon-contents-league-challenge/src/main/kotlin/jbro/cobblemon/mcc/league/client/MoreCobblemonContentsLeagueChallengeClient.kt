@@ -40,6 +40,22 @@ object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
         }
 
         LeagueLiveCaptureHarness.installFromEnvironment()
+        // `hook league <catalog id|primary> <fresh|gyms <n>|champion>` rewrites this player's progress in the dev world.
+        jbro.cobblemon.mcc.client.hub.MccHubDriveHarness.registerHook("league") { client, args ->
+            val server = checkNotNull(client.singleplayerServer)
+            val id = checkNotNull(client.player).uuid
+            val catalog = checkNotNull(if (args[0] == "primary") jbro.cobblemon.mcc.league.server.LeagueCatalogResources.current
+                else jbro.cobblemon.mcc.league.server.LeagueCatalogResources.find(args[0])) { "unknown league ${args[0]}" }
+            val progress = when (args[1]) {
+                "fresh" -> jbro.cobblemon.mcc.league.system.LeagueProgress()
+                "gyms" -> jbro.cobblemon.mcc.league.system.LeagueProgress(cleared = catalog.gyms.take(args[2].toInt()).toSet())
+                "champion" -> jbro.cobblemon.mcc.league.system.LeagueProgress(cleared = (catalog.gyms + catalog.finals).toSet(),
+                    champion = true, championAt = System.currentTimeMillis())
+                else -> error("unknown progress ${args[1]}")
+            }
+            server.execute { jbro.cobblemon.mcc.league.server.LeagueSavedData.get(server).write(catalog.id, id, progress) }
+            "${catalog.id} gyms=${catalog.gyms.size}"
+        }
         TrainerSceneCaptureHarness.installFromEnvironment()
         WildNpcRoleCheckHarness.installFromEnvironment()
     }

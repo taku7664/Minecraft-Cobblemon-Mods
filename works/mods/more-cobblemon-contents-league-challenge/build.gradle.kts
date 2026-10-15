@@ -26,6 +26,13 @@ dependencies {
     testImplementation(project(path = ":cobblemon-npc", configuration = "namedElements")) { isTransitive = false }
     // Development runs only: the battle camera that closing scenes turn.
     runtimeOnly(project(path = ":better-cobblemon-battlecam", configuration = "namedElements")) { isTransitive = false }
+    // `-PdevAllAddons` runs the other hub contents in the same development client, to check every hub tab in one launch.
+    if (providers.gradleProperty("devAllAddons").isPresent) {
+        listOf(":more-cobblemon-contents-battle-tower", ":more-cobblemon-contents-battle-factory", ":more-cobblemon-contents-pvp").forEach {
+            runtimeOnly(project(path = it, configuration = "namedElements")) { isTransitive = false }
+        }
+        runtimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
+    }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")

@@ -230,7 +230,11 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         require(state.run == null) { "run_active" }
         val route = route()
         val count = if (challengeId == null) route.size else route.indexOf(challengeId).also { require(it >= 0) { "unknown_challenge" } }
-        val cleared = route.take(count).toSet()
+        // A stage of two gyms to pick from is passed by beating one: before [challengeId] only its first counts as
+        // beaten, as a player who went that way would have it; the whole route (null) beats both.
+        val passedBy = if (challengeId == null) emptySet() else (catalog.gymStages + catalog.hardGymStages)
+            .filter { it.size > 1 && it.all { gym -> route.indexOf(gym) < count } }.flatMap { it.drop(1) }.toSet()
+        val cleared = route.take(count).toSet() - passedBy
         val champion = catalog.finals.last() in cleared
         return state.copy(revision = state.revision + 1, cleared = cleared, champion = champion,
             championAt = if (champion) state.championAt ?: now else null,

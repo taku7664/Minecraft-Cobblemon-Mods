@@ -28,9 +28,11 @@ object LeagueDashboard {
             val badges = engine.badgeCount(state)
             val rank = LeagueRank.fromProgress(badges, state.champion && badges == catalog.gymStages.size)
             val rows = ArrayList<MccDashboardRow>()
-            val nextGym = catalog.gyms.firstOrNull { it !in state.cleared }?.let(catalog.challenges::get)
+            // The first stage not yet passed; a stage of two gyms to pick from names both.
+            val nextStage = catalog.gymStages.firstOrNull { stage -> stage.none { it in state.cleared } }
             rows += MccDashboardRow(Component.translatable("$KEY.next"), when {
-                nextGym != null -> Component.translatable(nextGym.nameKey)
+                nextStage != null -> nextStage.map { Component.translatable(catalog.challenges.getValue(it).nameKey) }
+                    .reduce { names, name -> names.copy().append(" / ").append(name) }
                 !state.champion -> Component.translatable("$KEY.elite_four")
                 else -> Component.translatable("$KEY.champion")
             })
@@ -42,6 +44,16 @@ object LeagueDashboard {
                     else -> Component.translatable("$KEY.hard_progress", hardBadges, catalog.hardGymStages.size)
                 })
             }
+            // The other regions the player has opened, by their own progress.
+            val states = LeagueProgressQueries.states(context.server, context.playerId)
+            LeagueCatalogResources.catalogs.values.filter { it.id != catalog.id && jbro.cobblemon.mcc.league.system.LeagueWorldRules.unlocked(it, states) }
+                .forEach { region ->
+                    val progress = states[region.id] ?: LeagueSavedData.get(context.server).read(region.id, context.playerId)
+                    val regionBadges = LeagueEngine(region).badgeCount(progress)
+                    rows += MccDashboardRow(Component.translatable(region.nameKey),
+                        if (progress.champion) Component.translatable("$KEY.champion")
+                        else Component.translatable("$KEY.hard_progress", regionBadges, region.gymStages.size))
+                }
             val records = context.records(CONTENT)
             records.firstOrNull { it.formatId == WildTrainers.RECORD_FORMAT }?.let { wild ->
                 rows += MccDashboardRow(Component.translatable("$KEY.wild_trainers"), MccDashboardCards.record(wild.wins, wild.losses),
@@ -52,7 +64,7 @@ object LeagueDashboard {
                 contentId = CONTENT,
                 title = MccDashboardCards.contentName(CONTENT),
                 stats = listOf(
-                    MccDashboardStat(Component.translatable("$KEY.badges"), Component.literal("$badges/${catalog.gyms.size}")),
+                    MccDashboardStat(Component.translatable("$KEY.badges"), Component.literal("$badges/${catalog.gymStages.size}")),
                     MccDashboardStat(Component.translatable("$KEY.cap"), Component.literal((context.server.playerList.getPlayer(context.playerId)?.let { LeagueProgressQueries.cap(it) } ?: LeagueProgressQueries.earnedCap(context.server, context.playerId)).toString())),
                     MccDashboardStat(Component.translatable("$KEY.rank"),
                         Component.translatable("screen.${Mod.MOD_ID}.home.rank.${rank.name.lowercase()}")),

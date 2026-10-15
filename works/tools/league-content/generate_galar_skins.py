@@ -1,9 +1,14 @@
-"""Author the module's original 64x64 Minecraft Galar-inspired skins (Pillow)."""
+"""Author the module's own 64x64 skin for Opal (Pillow).
+
+The other Galar trainers use Planet Minecraft skins (textures/npcs/galar/CREDITS.txt); only names listed in DRAWN
+are written, so a rerun never overwrites them.
+"""
 from pathlib import Path
 from PIL import Image, ImageDraw
 ROOT=Path(__file__).resolve().parents[3]
 OUT=ROOT/'works/mods/more-cobblemon-contents-league-challenge/src/main/resources/assets/more_cobblemon_contents_league_challenge/textures/npcs/galar'
 # name, skin, hair, jersey, accent, trousers, eyes
+DRAWN={'opal'}
 PEOPLE=[
 ('milo','#e9b393','#e79591','#74ac56','#fff9df','#667554','#6e9e63'),
 ('nessa','#986446','#173b56','#f9f5ed','#42b8c8','#f0f1e9','#36bad2'),
@@ -74,5 +79,6 @@ def make(person):
 
 if __name__=='__main__':
     OUT.mkdir(parents=True,exist_ok=True)
-    for p in PEOPLE:make(p).save(OUT/(p[0]+'.png'))
+    for p in PEOPLE:
+        if p[0] in DRAWN: make(p).save(OUT/(p[0]+'.png'))
     print('Wrote 14 original 64x64 Galar-inspired skins to',OUT)

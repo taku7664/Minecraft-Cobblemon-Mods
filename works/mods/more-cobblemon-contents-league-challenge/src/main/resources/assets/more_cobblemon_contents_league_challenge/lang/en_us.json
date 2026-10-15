@@ -106,7 +106,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.difficulty_hard": "Hard",
   "screen.more_cobblemon_contents_league_challenge.live.show_hard": "Hard League",
   "screen.more_cobblemon_contents_league_challenge.live.show_normal": "Normal League",
-  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "Switch between the normal League and the hard League the Champion title opens. Hard trainers field fully trained teams that Mega Evolve.",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "Switch between the normal League and the hard League its Champion title opens. Hard trainers field fully trained teams; the gimmick list shows what battles allow.",
   "message.more_cobblemon_contents_league_challenge.hard_locked": "Become the normal League Champion to challenge the hard League.",
   "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "An opponent is above the highest level MCC allows. Check the League's team data.",
   "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "Mega Evolution, Dynamax, Terastallization and Z-Moves open once you become the League Champion. Battles between players allow them.",
@@ -1184,7 +1184,7 @@
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_won.0": "…I lost. You're truly amazing.",
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_won.1": "The title of Champion suits you better than me.",
   "trainer.more_cobblemon_contents_league_challenge.cynthia.scene_hard.player_lost.0": "A great battle. But this time, I won. Come again.",
-  "league.more_cobblemon_contents_league_challenge.galar": "Galar",
+  "league.more_cobblemon_contents_league_challenge.galar": "Galar League",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo": "Milo",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo.battle_start": "Let us make this a great battle!",
   "trainer.more_cobblemon_contents_league_challenge.galar.milo.last_pokemon": "The battle is not over yet!",
@@ -1322,7 +1322,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.challenge_cap": "Battle Lv.%s",
   "screen.more_cobblemon_contents_league_challenge.live.format.single": "Single battle",
   "screen.more_cobblemon_contents_league_challenge.live.format.double": "Double battle",
-  "screen.more_cobblemon_contents_league_challenge.live.clear_rewards": "On victory",
+  "screen.more_cobblemon_contents_league_challenge.live.clear_rewards": "Clear rewards",
   "screen.more_cobblemon_contents_league_challenge.live.first_reward_claimed": "First reward claimed",
   "screen.more_cobblemon_contents_league_challenge.live.reward_badge": "Gym Badge",
   "screen.more_cobblemon_contents_league_challenge.live.reward_bp": "%s BP",
@@ -1343,5 +1343,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.route_previous": "Show previous stages",
   "screen.more_cobblemon_contents_league_challenge.live.mechanics_short": "Mechanics",
   "screen.more_cobblemon_contents_league_challenge.live.cup_short": "Cup",
-  "screen.more_cobblemon_contents_league_challenge.live.league_short": "League"
+  "screen.more_cobblemon_contents_league_challenge.live.league_short": "League",
+  "screen.more_cobblemon_contents_league_challenge.live.challenger": "Challenger",
+  "screen.more_cobblemon_contents_league_challenge.live.status_line": "Badges %s/8 · Lv cap %s"
 }

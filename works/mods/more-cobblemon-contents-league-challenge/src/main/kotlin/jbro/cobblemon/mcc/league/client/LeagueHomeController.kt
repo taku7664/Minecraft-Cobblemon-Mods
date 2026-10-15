@@ -66,11 +66,11 @@ internal object LeagueHomeController {
         refresh()
     }
 
-    fun cycleRegion() {
+    /** Shows the League of region [id]; the server answers with its view, or keeps the current one when it is locked. */
+    fun selectRegion(id: String) {
         val view = state.view ?: return
+        val next = view.regions.firstOrNull { it.id == id && it.unlocked && it.id != view.leagueId } ?: return
         if (!state.begin(LeagueAction.SELECT_LEAGUE)) return
-        val index = view.regions.indexOfFirst { it.id == view.leagueId }
-        val next = view.regions.getOrNull((index + 1) % view.regions.size.coerceAtLeast(1)) ?: return
         pendingUntil = tick + 100
         if (!LeagueClientSession.send(LeagueAction.SELECT_LEAGUE, leagueId = next.id))
             state.accept(view.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))

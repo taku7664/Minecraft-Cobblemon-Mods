@@ -52,7 +52,11 @@ class LeagueLiveHomeState {
     }
 
     private fun selectFirst() {
-        selectedId = challenges.firstOrNull { it.status == "AVAILABLE" }?.id
+        // The next stage to pass: an open gym whose stage nobody has passed yet, before the other way of a stage
+        // that is already passed.
+        val passed = challenges.filter { it.status == "CLEARED" && it.stage > 0 }.map { it.stage }.toSet()
+        selectedId = challenges.firstOrNull { it.status == "AVAILABLE" && it.stage !in passed }?.id
+            ?: challenges.firstOrNull { it.status == "AVAILABLE" }?.id
             ?: challenges.lastOrNull { it.status == "CLEARED" }?.id
             ?: challenges.firstOrNull()?.id
     }

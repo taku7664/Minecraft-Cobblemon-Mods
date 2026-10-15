@@ -4,51 +4,82 @@ import jbro.cobblemon.mcc.league.network.LeagueChallengeView
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
-/** Route geometry stays fixed; three square information cards and the original 26px actions follow it. */
-data class LeagueHubLayout(val summary: UiRect, val route: UiRect, val detail: UiRect,
-    val status: UiRect, val footer: UiRect, val mechanics: UiRect) {
-    val body: UiRect get() = UiRect(detail.x, detail.y, status.right - detail.x, detail.height)
-    val panel: UiRect get() = UiRect(summary.x, summary.bottom + 3, summary.width, body.bottom - summary.bottom - 3)
-    val mapPanel: UiRect get() = UiRect(summary.x, summary.bottom + 3, summary.width, route.bottom - summary.bottom - 4)
-    val routeCapacity: Int get() = (if (route.width >= 270) route.width / 30 else (route.width - 28) / 30).coerceAtLeast(1)
-    fun routeCenters(count: Int): List<Int> {
-        val gutter = if (routeCapacity < 9) 29 else 15
-        return UiLayout.spread(route.x + gutter, route.right - gutter, count)
-    }
-    fun nodeRects(entries: List<LeagueChallengeView>, firstStage: Int = 0): Map<String, UiRect> {
-        val groups = entries.withIndex().groupBy { (index, entry) -> entry.stage.takeIf { it > 0 } ?: (index + 1) }
-        val visible = groups.values.drop(firstStage.coerceIn(0, (groups.size - routeCapacity).coerceAtLeast(0))).take(routeCapacity)
-        val centers = routeCenters(visible.size)
-        val width = 30.coerceAtMost((route.width - 28).coerceAtLeast(1))
+/**
+ * The League tab: region tabs over a route page, three titled cards under it (the challenger, the battle gimmicks,
+ * what a win gives) and a footer. Route nodes are an icon box with the trainer's name under it; a stage with two
+ * gyms to pick from stacks them.
+ */
+data class LeagueHubLayout(val tabs: UiRect, val page: UiRect, val route: UiRect, val challenger: UiRect,
+    val mechanics: UiRect, val rewards: UiRect, val footer: UiRect,
+    /** A short hub drops the names under the nodes; their tooltips still name them. */
+    val nodeHeight: Int = NODE_HEIGHT) {
+    val captions: Boolean get() = nodeHeight > BOX
+
+    /** Stages the route shows side by side; more page with arrows at the page's edges. */
+    val routeCapacity: Int get() = (route.width / STAGE_WIDTH).coerceAtLeast(1)
+
+    /** The route without its paging arrows, when [paged]. */
+    fun routeArea(paged: Boolean): UiRect =
+        if (!paged) route else UiRect(route.x + ARROW_WIDTH, route.y, (route.width - ARROW_WIDTH * 2).coerceAtLeast(1), route.height)
+
+    /** Stages shown when the route pages: the arrows take room from both ends. */
+    fun pagedCapacity(): Int = (routeArea(true).width / STAGE_WIDTH).coerceAtLeast(1)
+
+    /** Node rectangles of the stages from [firstStage] on that fit [area], keyed by challenge id. */
+    fun nodeRects(entries: List<LeagueChallengeView>, firstStage: Int = 0, area: UiRect = route): Map<String, UiRect> {
+        val groups = entries.withIndex().groupBy { (index, entry) -> entry.stage.takeIf { it > 0 } ?: (index + 1) }.values.toList()
+        val capacity = (area.width / STAGE_WIDTH).coerceAtLeast(1)
+        val visible = groups.drop(firstStage.coerceIn(0, (groups.size - capacity).coerceAtLeast(0))).take(capacity)
+        val step = area.width / visible.size.coerceAtLeast(1)
         return buildMap {
             visible.forEachIndexed { column, alternatives ->
-                val height = minOf(24, (route.height - 6) / 2).coerceAtLeast(1)
-                alternatives.forEachIndexed { branch, (_, entry) ->
-                    val y = if (alternatives.size > 1) route.y + 2 + branch * (height + 2) else route.y + (route.height - height) / 2
-                    put(entry.id, UiRect(centers[column] - width / 2, y, width, height.coerceAtLeast(1)))
+                val left = area.x + column * step + (step - NODE_WIDTH) / 2
+                val rows = alternatives.size
+                val total = rows * nodeHeight + (rows - 1) * BRANCH_GAP
+                val top = area.y + (area.height - total) / 2
+                alternatives.forEachIndexed { row, (_, entry) ->
+                    put(entry.id, UiRect(left, top + row * (nodeHeight + BRANCH_GAP), NODE_WIDTH, nodeHeight))
                 }
             }
         }
     }
+
     companion object {
-        const val ROUTE_HEIGHT = 56
+        const val TAB_HEIGHT = 15
+        const val FOOTER_HEIGHT = 26
+        const val GAP = 3
+        const val NODE_WIDTH = 30
+        const val BOX = 18
+        /** The icon box and the name line under it. */
+        const val NODE_HEIGHT = BOX + 1 + 9
+        const val BRANCH_GAP = 3
+        const val STAGE_WIDTH = 33
+        const val ARROW_WIDTH = 12
+        /** Rows the page keeps around its stacked nodes. */
+        const val PAGE_MARGIN = 3
+        /** The smallest content height that still gets node names; the 427x240 hub's area is 184 tall. */
+        const val CAPTION_MIN_HEIGHT = 180
+
+        fun pageHeight(nodeHeight: Int) = nodeHeight * 2 + BRANCH_GAP + PAGE_MARGIN * 2
+
         fun calculate(bounds: UiRect): LeagueHubLayout {
             require(bounds.width > 0 && bounds.height > 0)
-            val gap = 3
-            val control = minOf(18, (bounds.height / 6).coerceAtLeast(1))
-            val routeHeight = minOf(ROUTE_HEIGHT, (bounds.height - control * 2 - gap * 2 - 15 - 65).coerceAtLeast(24))
-            val summary = UiRect(bounds.x, bounds.y, bounds.width, control)
-            val route = UiRect(bounds.x + 6, summary.bottom + gap + 5, bounds.width - 12, routeHeight)
-            val footer = UiRect(bounds.x, bounds.bottom - 26, bounds.width, 26)
-            val top = route.bottom + 1
-            val height = (footer.y - gap - top).coerceAtLeast(1)
-            val room = bounds.width - gap * 2
-            val left = room * 30 / 100
-            val middle = room * 34 / 100
-            return LeagueHubLayout(summary, route,
-                UiRect(bounds.x, top, left, height),
-                UiRect(bounds.x + left + middle + gap * 2, top, room - left - middle, height), footer,
-                UiRect(bounds.x + left + gap, top, middle, height))
+            val nodeHeight = if (bounds.height >= CAPTION_MIN_HEIGHT) NODE_HEIGHT else BOX
+            val parts = UiLayout.column(gap = GAP) {
+                fixed(TAB_HEIGHT + pageHeight(nodeHeight), UiLayout.column {
+                    fixed(TAB_HEIGHT, "tabs")
+                    weight("page", min = 1)
+                })
+                weight(UiLayout.row(gap = GAP) {
+                    weight("challenger", 35, min = 1)
+                    weight("mechanics", 29, min = 1)
+                    weight("rewards", 36, min = 1)
+                }, min = 1)
+                fixed(FOOTER_HEIGHT, "footer")
+            }.solve(bounds)
+            val page = parts["page"]
+            val route = UiRect(page.x + 3, page.y + PAGE_MARGIN, (page.width - 6).coerceAtLeast(1), (page.height - PAGE_MARGIN * 2).coerceAtLeast(1))
+            return LeagueHubLayout(parts["tabs"], page, route, parts["challenger"], parts["mechanics"], parts["rewards"], parts["footer"], nodeHeight)
         }
     }
 }
