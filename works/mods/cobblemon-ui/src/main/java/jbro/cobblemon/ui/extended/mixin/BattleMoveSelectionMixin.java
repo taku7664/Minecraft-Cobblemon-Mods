@@ -1,6 +1,7 @@
 package jbro.cobblemon.ui.extended.mixin;
 
 import com.cobblemon.mod.common.client.battle.SingleActionRequest;
+import com.cobblemon.mod.common.api.moves.Moves;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection.MoveTile;
@@ -93,7 +94,8 @@ public class BattleMoveSelectionMixin {
                 BattleScreenGeometry.MOVE_HEIGHT,
                 tile.getMoveTemplate(),
                 tile.getMove().getPp(),
-                tile.getMove().getMaxpp()
+                tile.getMove().getMaxpp(),
+                Moves.getByName(tile.getMove().getId())
             );
         }
 

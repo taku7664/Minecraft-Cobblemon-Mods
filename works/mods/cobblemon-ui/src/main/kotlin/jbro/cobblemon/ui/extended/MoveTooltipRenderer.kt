@@ -71,7 +71,8 @@ object MoveTooltipRenderer {
 
     data class MoveTileBounds(
         val x: Float, val y: Float, val width: Int, val height: Int,
-        val moveTemplate: MoveTemplate, val currentPp: Int, val maxPp: Int
+        val moveTemplate: MoveTemplate, val currentPp: Int, val maxPp: Int,
+        val originalMoveTemplate: MoveTemplate? = null
     )
 
     private val moveTileBounds = mutableListOf<MoveTileBounds>()
@@ -119,11 +120,13 @@ object MoveTooltipRenderer {
         mixinActiveLastFrame = false
     }
 
+    @JvmOverloads
     fun registerMoveTile(
         x: Float, y: Float, width: Int, height: Int,
-        moveTemplate: MoveTemplate, currentPp: Int, maxPp: Int
+        moveTemplate: MoveTemplate, currentPp: Int, maxPp: Int,
+        originalMoveTemplate: MoveTemplate? = null
     ) {
-        moveTileBounds.add(MoveTileBounds(x, y, width, height, moveTemplate, currentPp, maxPp))
+        moveTileBounds.add(MoveTileBounds(x, y, width, height, moveTemplate, currentPp, maxPp, originalMoveTemplate))
     }
 
     fun updateHoverState(mouseX: Int, mouseY: Int) {
@@ -338,7 +341,12 @@ object MoveTooltipRenderer {
 
         // ── Power + modifiers ──
         var powerText = "--"
-        if (template.power > 0) {
+        if (MaxMovePowerPreview.isMaxMove(template.name)) {
+            val original = move.originalMoveTemplate
+            powerText = MaxMovePowerPreview.power(template.name, original?.name,
+                original?.power ?: -1.0, original?.elementalType?.name)
+                ?.takeIf { it > 0 }?.toString() ?: "--"
+        } else if (template.power > 0) {
             val basePower = template.power.toInt()
             val dynamicPowerInfo = getDynamicPowerInfo(template)
             powerText = when {
