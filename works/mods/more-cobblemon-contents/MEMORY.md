@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-15 15:00] 다이맥스: 다이맥스기 부가효과·HP 2배·3턴, 콜백 이름 표 축소, G-944 (구현·단위 확인, 빌드·배치·실게임 미확인)
+
+- **사용자 결정:** 다이맥스기 부가효과를 `onHit` 모양 읽기로 넣고, 모양으로 못 읽는 본가 기술만 이름 표(**하드코딩**)로 남긴다. 못 읽는 거다이맥스 예외 6개는 뺀다. HP 2배·3턴 지속을 같이 넣는다.
+- **구현:** LOCAL_GAPS G-944. 파서(`BattleDeclarativeMoveEffects.shapedHandlers`), `LocalDynamax`(휘발 상태·남은 턴·피해 비율 절반), 관찰기 `TRACKED_VOLATILES`·`Cobblemon173PublicPersistentMoveState`, 투영 `LocalPersistentMoveState.afterResidual`, `LocalMechanicActivationProjector`(다이맥스 시작), `LocalPublicMechanicsKernel`·`PublicBattleTacticalCalculator`(피해 비율), `PublicSingleTurnProjector`(대타출동 이중 소모 방지).
+- **바뀐 수치:** 소울비트 HP 소모 1/3 → 0.33(Showdown `maxhp * 33 / 100`). 지난 답변에서 이름 표를 "10개로" 줄인다고 했지만 저주가 `onTryHit` 때문에 남아 11개다.
+- **확인:** `LocalDynamaxTest` 5/5, `LocalCallbackMoveEffectsTest` 15/15(대타출동 0.75 추가), 관련 20개 클래스 304/305(1 비활성) 실패 0.
+- **안 한 것:** 빌드·배치(공유 작업 트리에 다른 세션의 커밋 안 된 UI 수정이 있어 지금 트리로 빌드하면 그것까지 들어간다), 실게임, 시나리오·관장 모의 전투 재측정, 더블.
+
 ## [2026-10-15 17:39] UI 합격 오보고 재발·작업 중지 상태 정정
 
 - **재발한 오류:** 사용자가 두 번째로 시각 합격 판단을 거절했다. 115개 단위 테스트·좌표 검사 통과를 UI 합격처럼 보고한 오류가 반복됐다. 해당 검사 결과와 실제 화면 품질·사용자 승인은 별개이며 League UI는 미완료·불합격 상태다.

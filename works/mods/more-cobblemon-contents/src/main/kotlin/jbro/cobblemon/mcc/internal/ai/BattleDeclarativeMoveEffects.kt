@@ -70,6 +70,7 @@ object BattleDeclarativeMoveEffects {
         properties["secondaries"]?.takeIf { it.startsWith('[') }?.let { rawArray ->
             arrayObjects(trimContainer(rawArray, '[', ']')).forEach { addSecondaryEffects(effects, it) }
         }
+        if (moveId !in CALLBACK_EFFECTS) effects += shapedCallbackEffects(properties, directTarget)
 
         if (booleanLike(properties["selfSwitch"])) {
             effects += effect(BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectTarget.USER)
@@ -405,12 +406,240 @@ object BattleDeclarativeMoveEffects {
     }
 
     /**
-     * Effects Showdown applies from a callback that are nonetheless fixed facts of the move. Parting Shot
+     * The effects of a move's `onHit` handlers (on the move, in `self`, in a `secondary`) that are written in a few plain
+     * shapes: a stat change, a weather, terrain, field or side condition, a volatile or a status, an HP cost, a roll
+     * between statuses, and loops over the user's side or the foes. A Max Move's effects live there
+     * (`for (const pokemon of source.alliesAndSelf()) this.boost({ spe: 1 }, pokemon)`). A handler with any other
+     * statement is left out whole: a half-read handler is a wrong number, and no number is better.
+     *
+     * The side loops read as the user and the selected target: the projector applies stat changes to one Pokemon, which
+     * is the whole side in singles; a doubles partner or second foe is not reached.
+     */
+    private fun shapedCallbackEffects(properties: Map<String, String>, directTarget: BattleMoveEffectTarget): List<BattleMoveEffectView> =
+        shapedHandlers(properties, directTarget).flatMap { it.orEmpty() }
+
+    /** Each `onHit` handler of a move read as shapes, null for one that is not. */
+    private fun shapedHandlers(properties: Map<String, String>, directTarget: BattleMoveEffectTarget): List<List<BattleMoveEffectView>?> {
+        val out = arrayListOf<List<BattleMoveEffectView>?>()
+        // `onHit(target, source)`: on a self-targeted move the first is the user.
+        properties["onHit"]?.let { out += handlerEffects(it, listOf(directTarget, BattleMoveEffectTarget.USER), 1.0) }
+        properties["self"]?.takeIf { it.startsWith('{') }?.let { self ->
+            objectProperties(trimContainer(self, '{', '}'))["onHit"]?.let {
+                // In `self`, the user is both the hit Pokemon and the source.
+                out += handlerEffects(it, listOf(BattleMoveEffectTarget.USER, BattleMoveEffectTarget.USER), 1.0)
+            }
+        }
+        val secondaries = listOfNotNull(properties["secondary"]?.takeIf { it.startsWith('{') }) +
+            properties["secondaries"]?.takeIf { it.startsWith('[') }?.let { arrayObjects(trimContainer(it, '[', ']')) }.orEmpty()
+        for (raw in secondaries) {
+            val secondary = objectProperties(trimContainer(raw, '{', '}'))
+            val chance = secondary["chance"]?.trim()?.toDoubleOrNull()?.div(100.0) ?: 1.0
+            secondary["onHit"]?.let {
+                out += handlerEffects(it, listOf(BattleMoveEffectTarget.SELECTED_TARGET, BattleMoveEffectTarget.USER), chance)
+            }
+        }
+        return out
+    }
+
+    /** Whether every `onHit` handler of each move in [source] is one [shapedCallbackEffects] reads; for tests. */
+    internal fun shapedHandlersReadable(source: String): Map<String, Boolean> {
+        val marker = source.indexOf(MOVES_MARKER).takeIf { it >= 0 } ?: return emptyMap()
+        val start = source.indexOf('{', marker + MOVES_MARKER.length)
+        val end = matchingDelimiter(source, start, '{', '}') ?: return emptyMap()
+        return objectProperties(source.substring(start + 1, end)).mapNotNull { (moveId, raw) ->
+            if (!raw.startsWith('{')) return@mapNotNull null
+            val properties = objectProperties(trimContainer(raw, '{', '}'))
+            val handlers = shapedHandlers(properties, directTarget(properties))
+            if (handlers.isEmpty()) null else canonicalMoveId(moveId) to handlers.all { it != null }
+        }.toMap()
+    }
+
+    private fun directTarget(properties: Map<String, String>): BattleMoveEffectTarget =
+        if (stringValue(properties["target"]) == "self") BattleMoveEffectTarget.USER else BattleMoveEffectTarget.SELECTED_TARGET
+
+    /** A method value `(a, b) { body }` read with its parameters standing for [roles], or null when a statement is not understood. */
+    private fun handlerEffects(method: String, roles: List<BattleMoveEffectTarget>, probability: Double): List<BattleMoveEffectView>? {
+        val open = method.indexOf('(').takeIf { it == 0 } ?: return null
+        val close = matchingDelimiter(method, open, '(', ')') ?: return null
+        val names = method.substring(open + 1, close).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        val brace = skipTrivia(method, close + 1).takeIf { it < method.length && method[it] == '{' } ?: return null
+        val end = matchingDelimiter(method, brace, '{', '}') ?: return null
+        val scope = names.zip(roles).toMap()
+        return statements(method.substring(brace + 1, end), scope, roles.first(), probability)
+    }
+
+    /**
+     * The effects of [body], each name in [scope] standing for a Pokemon (or its side); `this.boost` without a target
+     * means [eventTarget]. Null when any statement is not one of the plain shapes.
+     */
+    private fun statements(
+        body: String,
+        scope: Map<String, BattleMoveEffectTarget>,
+        eventTarget: BattleMoveEffectTarget,
+        probability: Double,
+    ): List<BattleMoveEffectView>? {
+        val out = arrayListOf<BattleMoveEffectView>()
+        var chance = probability
+        var rest = body
+        fun role(name: String): BattleMoveEffectTarget? = scope[name.trim()]
+        while (true) {
+            val at = skipTrivia(rest, 0)
+            if (at >= rest.length) break
+            rest = rest.substring(at)
+            // A Max Move does nothing more when it was not used by a Dynamaxed Pokemon; the AI uses it only Dynamaxed.
+            DYNAMAX_GUARD.find(rest)?.let { rest = rest.substring(it.range.last + 1); continue }
+            // `if (this.random(2) === 0) return;`: the rest happens with the other chance.
+            RANDOM_GATE.find(rest)?.let {
+                val sides = it.groupValues[1].toDouble()
+                chance *= (sides - 1.0) / sides
+                rest = rest.substring(it.range.last + 1); continue
+            }
+            SKIPPED_CALL.find(rest)?.let { m ->
+                val close = matchingDelimiter(rest, m.range.last, '(', ')') ?: return null
+                rest = rest.substring(close + 1).let { it.substring(skipTrivia(it, 0)).removePrefix(";") }; continue
+            }
+            if (rest.startsWith("return;")) { rest = rest.substring(7); continue }
+            LOOP.find(rest)?.let { m ->
+                val owner = role(m.groupValues[2]) ?: return null
+                val brace = m.range.last
+                val close = matchingDelimiter(rest, brace, '{', '}') ?: return null
+                val loopRole = when (m.groupValues[3]) {
+                    "alliesAndSelf" -> owner
+                    // Allies other than the user: none in singles, which this reads.
+                    "allies" -> null
+                    else -> opposite(owner)
+                }
+                if (loopRole != null) {
+                    out += statements(rest.substring(brace + 1, close), scope + (m.groupValues[1] to loopRole), loopRole, chance) ?: return null
+                } else if (statements(rest.substring(brace + 1, close), scope + (m.groupValues[1] to BattleMoveEffectTarget.USER),
+                        BattleMoveEffectTarget.USER, chance) == null) return null
+                rest = rest.substring(close + 1); continue
+            }
+            SIDE_LOOP.find(rest)?.let { m ->
+                val owner = role(m.groupValues[2]) ?: return null
+                val close = matchingDelimiter(rest, m.range.last, '{', '}') ?: return null
+                val inner = rest.substring(m.range.last + 1, close).trim()
+                val condition = Regex("""^${Regex.escape(m.groupValues[1])}\.addSideCondition\(\s*["'](\w+)["']\s*\);?$""").matchEntire(inner)
+                    ?: return null
+                out += effect(BattleMoveEffectKind.SIDE_CONDITION, sideOf(opposite(owner)), chance, valueId = condition.groupValues[1])
+                rest = rest.substring(close + 1); continue
+            }
+            ROLL.find(rest)?.let { m ->
+                val sides = m.groupValues[2].toInt()
+                var after = rest.substring(m.range.last + 1)
+                val branches = arrayListOf<String>()
+                while (true) {
+                    val head = Regex("""^\s*(?:else\s+)?if\s*\(\s*${Regex.escape(m.groupValues[1])}\s*===\s*\d+\s*\)\s*""").find(after)
+                        ?: Regex("""^\s*else\s*""").find(after)?.takeIf { branches.isNotEmpty() } ?: break
+                    after = after.substring(head.range.last + 1)
+                    val (block, next) = blockOrStatement(after) ?: return null
+                    branches += block
+                    after = next
+                    if (head.value.trim() == "else") break
+                }
+                if (branches.size != sides) return null
+                for (branch in branches) out += statements(branch, scope, eventTarget, chance / sides) ?: return null
+                rest = after; continue
+            }
+            BOOST.find(rest)?.let { m ->
+                val target = m.groupValues[2].takeIf { it.isNotBlank() }?.let { role(it) ?: return null } ?: eventTarget
+                val stages = statStages("{${m.groupValues[1]}}")?.takeIf { it.isNotEmpty() } ?: return null
+                out += BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, target, chance, statStages = stages)
+                rest = rest.substring(m.range.last + 1); continue
+            }
+            FIELD_CALL.find(rest)?.let { m ->
+                val kind = when (m.groupValues[1]) {
+                    "setWeather" -> BattleMoveEffectKind.WEATHER
+                    "setTerrain" -> BattleMoveEffectKind.TERRAIN
+                    else -> BattleMoveEffectKind.FIELD_CONDITION
+                }
+                out += effect(kind, BattleMoveEffectTarget.FIELD, chance, valueId = m.groupValues[2])
+                rest = rest.substring(m.range.last + 1); continue
+            }
+            SIDE_CALL.find(rest)?.let { m ->
+                val owner = role(m.groupValues[1]) ?: return null
+                val side = if (m.groupValues[2].isNotEmpty()) opposite(owner) else owner
+                out += effect(BattleMoveEffectKind.SIDE_CONDITION, sideOf(side), chance, valueId = m.groupValues[3])
+                rest = rest.substring(m.range.last + 1); continue
+            }
+            POKEMON_CALL.find(rest)?.let { m ->
+                val target = role(m.groupValues[1]) ?: return null
+                // The other arguments (the source, the move that binds) do not change what is applied.
+                val close = matchingDelimiter(rest, rest.indexOf('(', m.range.first), '(', ')') ?: return null
+                // Protect's kind adds the stall counter, already read as a flag (STALL_COUNTER_ADVANCE_PATTERN).
+                if (!STALL_COUNTER_ADVANCE_PATTERN.containsMatchIn(m.value)) {
+                    val kind = if (m.groupValues[2] == "addVolatile") BattleMoveEffectKind.VOLATILE_STATUS else BattleMoveEffectKind.STATUS
+                    out += effect(kind, target, chance, valueId = m.groupValues[3])
+                }
+                rest = rest.substring(close + 1).let { it.substring(skipTrivia(it, 0)).removePrefix(";") }; continue
+            }
+            HEAL.find(rest)?.let { m ->
+                // A heal of a share of maximum HP: only the user's own is read.
+                if (role(m.groupValues[1]) != BattleMoveEffectTarget.USER ||
+                    m.groupValues[3].isNotEmpty() && role(m.groupValues[3]) != BattleMoveEffectTarget.USER) return null
+                val close = matchingDelimiter(rest, rest.indexOf('('), '(', ')') ?: return null
+                val fraction = 1.0 / m.groupValues[2].toDouble()
+                out += BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER, chance,
+                    fractionRange = BattleFractionRange(fraction, fraction))
+                rest = rest.substring(close + 1).let { it.substring(skipTrivia(it, 0)).removePrefix(";") }; continue
+            }
+            DIRECT_DAMAGE.find(rest)?.let { m ->
+                // An HP cost: only the user paying it is read.
+                if (role(m.groupValues[1]) != BattleMoveEffectTarget.USER) return null
+                val fraction = if (m.groupValues[2].isNotEmpty()) m.groupValues[2].toDouble() / m.groupValues[3].toDouble()
+                    else 1.0 / m.groupValues[4].toDouble()
+                out += BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, chance,
+                    fractionRange = BattleFractionRange(fraction, fraction))
+                rest = rest.substring(m.range.last + 1); continue
+            }
+            return null
+        }
+        return out
+    }
+
+    /** A `{ block }` or a single statement up to its `;`, and what follows it. */
+    private fun blockOrStatement(text: String): Pair<String, String>? {
+        val at = skipTrivia(text, 0)
+        if (at < text.length && text[at] == '{') {
+            val close = matchingDelimiter(text, at, '{', '}') ?: return null
+            return text.substring(at + 1, close) to text.substring(close + 1)
+        }
+        val semicolon = text.indexOf(';', at).takeIf { it >= 0 } ?: return null
+        return text.substring(at, semicolon + 1) to text.substring(semicolon + 1)
+    }
+
+    private fun opposite(target: BattleMoveEffectTarget): BattleMoveEffectTarget =
+        if (target == BattleMoveEffectTarget.USER) BattleMoveEffectTarget.SELECTED_TARGET else BattleMoveEffectTarget.USER
+
+    private fun sideOf(target: BattleMoveEffectTarget): BattleMoveEffectTarget =
+        if (target == BattleMoveEffectTarget.USER) BattleMoveEffectTarget.USER_SIDE else BattleMoveEffectTarget.TARGET_SIDE
+
+    private val DYNAMAX_GUARD = Regex("""^if\s*\(\s*!\w+\.volatiles\[\s*["']dynamax["']\s*]\s*\)\s*return\s*;?""")
+    private val RANDOM_GATE = Regex("""^if\s*\(\s*this\.random\((\d+)\)\s*===\s*0\s*\)\s*return\s*;?""")
+    private val SKIPPED_CALL = Regex("""^this\.(?:add|debug|hint)\s*\(""")
+    private val LOOP = Regex("""^for\s*\(\s*const\s+(\w+)\s+of\s+(\w+)\.(alliesAndSelf|allies|foes)\(\)\s*\)\s*\{""")
+    private val SIDE_LOOP = Regex("""^for\s*\(\s*const\s+(\w+)\s+of\s+(\w+)\.side\.foeSidesWithConditions\(\)\s*\)\s*\{""")
+    private val ROLL = Regex("""^const\s+(\w+)\s*=\s*this\.random\((\d+)\)\s*;""")
+    private val BOOST = Regex("""^this\.boost\(\s*\{([^{}]*)}\s*(?:,\s*(\w+)\s*)?(?:,\s*\w+\s*)*\)\s*;?""")
+    private val FIELD_CALL = Regex("""^this\.field\.(setWeather|setTerrain|addPseudoWeather)\(\s*["'](\w+)["']\s*\)\s*;?""")
+    private val SIDE_CALL = Regex("""^(\w+)\.side\.(foe\.)?addSideCondition\(\s*["'](\w+)["']\s*\)\s*;?""")
+    private val POKEMON_CALL = Regex("""^(\w+)\.(addVolatile|trySetStatus)\(\s*["'](\w+)["']""")
+    /** `this.heal(holder.maxhp / n[, target, ...])`: the holder, the divisor, the target named. */
+    private val HEAL = Regex("""^this\.heal\(\s*(\w+)\.maxhp\s*/\s*(\d+)\s*(?:,\s*(\w+))?""")
+    private val DIRECT_DAMAGE = Regex("""^this\.directDamage\(\s*(\w+)\.maxhp\s*(?:\*\s*(\d+)\s*/\s*(\d+)|/\s*(\d+))\s*(?:,\s*\w+\s*)*\)\s*;?""")
+
+    /**
+     * Effects Showdown applies from a callback that are nonetheless fixed facts of the move, for the moves whose
+     * callbacks are logic rather than one of [shapedCallbackEffects]'s shapes: a success that gates another effect,
+     * an amount read from the board, a change made in `onTryHit`. Only such moves belong here (user decision,
+     * 2026-10-15); `BattleDeclarativeMoveEffectsTest` fails when a listed move's `onHit` reads as a shape. Parting Shot
      * lowers the target's Attack and Special Attack in `onHit`, because whether the user switches out
      * depends on that drop succeeding; read statically it was only a pivot. Rest heals in full and puts its
      * user to sleep in `onHit`, so read statically it did nothing at all; when it fails (full HP, already
      * asleep, an ability that keeps sleep off) is the projector's call (PublicSingleTurnProjector).
      */
+    internal val CALLBACK_EFFECT_MOVES: Set<String> get() = CALLBACK_EFFECTS.keys
+
     private val CALLBACK_EFFECTS: Map<String, List<BattleMoveEffectView>> = mapOf(
         "partingshot" to listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, 1.0,
             statStages = mapOf("atk" to -1, "spa" to -1))),
@@ -450,11 +679,6 @@ object BattleDeclarativeMoveEffects {
             BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, 1.0,
                 valueId = GHOST_CURSE, fractionRange = BattleFractionRange(0.5, 0.5)),
         ),
-        "filletaway" to listOf(hpCost(0.5)),
-        "clangoroussoul" to listOf(hpCost(1.0 / 3.0)),
-        // Tri Attack and Dire Claw roll one status out of three in onHit; each is declared at its share of the chance.
-        "triattack" to randomStatus(0.2, "brn", "par", "frz"),
-        "direclaw" to randomStatus(0.5, "psn", "par", "slp"),
         "tidyup" to listOf(
             BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
                 statStages = mapOf("atk" to 1, "spe" to 1)),
@@ -473,10 +697,6 @@ object BattleDeclarativeMoveEffects {
 
     private fun halfHeal(marker: String) = BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION,
         BattleMoveEffectTarget.USER, 1.0, valueId = marker, fractionRange = BattleFractionRange(0.5, 0.5))
-
-    private fun randomStatus(chance: Double, vararg statuses: String) = statuses.map {
-        BattleMoveEffectView(BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, chance / statuses.size, valueId = it)
-    }
 
     private fun hpCost(fraction: Double) = BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL,
         BattleMoveEffectTarget.USER, 1.0, fractionRange = BattleFractionRange(fraction, fraction))

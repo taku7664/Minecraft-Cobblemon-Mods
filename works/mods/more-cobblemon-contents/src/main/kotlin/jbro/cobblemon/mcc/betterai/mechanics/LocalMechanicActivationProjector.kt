@@ -10,13 +10,13 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
- * Leaves Terastallization and Mega Evolution on the Pokemon after the turn they are used.
+ * Leaves Terastallization, Mega Evolution and Dynamax on the Pokemon after the turn they are used.
  *
  * The legacy projector applied a mechanic only to the damage of the move it was attached to; the
  * next projected turn saw the original types and form again, so a defensive Tera or a Mega's new
  * typing never existed past its first attack. Showdown resolves both before any move of the turn, so
  * they are applied once here, after switches and before moves, from facts the candidate already
- * carries. Dynamax is not projected: its HP, Max Moves and duration live in the native path only.
+ * carries. Dynamax starts its doubled HP and turn count here ([LocalDynamax]); the Max Move itself arrives resolved.
  */
 internal object LocalMechanicActivationProjector {
     /**
@@ -58,6 +58,7 @@ internal object LocalMechanicActivationProjector {
         val updated = when (mechanicKind(mechanic.mechanicId)) {
             TERA -> terastallize(actor, action)
             MEGA -> megaEvolve(actor, action)
+            DYNAMAX -> LocalDynamax.start(actor).takeUnless { it === actor }
             else -> null
         } ?: return state
         val evolved = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it })
@@ -113,6 +114,7 @@ internal object LocalMechanicActivationProjector {
     private fun mechanicKind(value: String): String = when (val id = canonical(value)) {
         "tera", "terastallize", "terastallization" -> TERA
         "mega", "megaevolution" -> MEGA
+        "dynamax", "max" -> DYNAMAX
         else -> id
     }
 
@@ -121,5 +123,6 @@ internal object LocalMechanicActivationProjector {
 
     private const val TERA = "tera"
     private const val MEGA = "mega"
+    private const val DYNAMAX = "dynamax"
     private const val STELLAR = "stellar"
 }

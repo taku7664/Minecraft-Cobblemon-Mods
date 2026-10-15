@@ -1823,6 +1823,8 @@ internal object PublicSingleTurnProjector {
                 effect.target in PROJECTED_EFFECT_TARGETS &&
                 !(shielded && effect.target == BattleMoveEffectTarget.SELECTED_TARGET && (effect.probability ?: 1.0) < CERTAIN_PROBABILITY)
         }
+        // An HP cost the move declares (Substitute's quarter, read from its onHit) is charged with the move's recoil.
+        val hpCostPaid = effects.any { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL && it.target == BattleMoveEffectTarget.USER }
         var branches = listOf(WeightedState(initial, 1.0, setOf(executedSide)))
         val actorAbility = initial.pokemon.firstOrNull { it.battlePokemonId == actorId }
             ?.let { LocalPublicAbilityState.effectiveKnownAbility(initial, it) }
@@ -1840,7 +1842,7 @@ internal object PublicSingleTurnProjector {
             branches = branches.flatMap { branch ->
                 val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide, branch.state,
                     bypassesDecoy, ignoresAbility)
-                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy, ignoresAbility)
+                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy, ignoresAbility, hpCostPaid)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
                         branch.copy(
@@ -1954,6 +1956,8 @@ internal object PublicSingleTurnProjector {
         bypassesDecoy: Boolean = false,
         /** Mold Breaker and its kind: a drop on another Pokemon gets past Clear Body, Contrary or Flower Veil. */
         ignoresAbility: Boolean = false,
+        /** The move's own HP cost was already charged: a Substitute takes it as the decoy's HP without charging it again. */
+        hpCostPaid: Boolean = false,
     ): BattleStateView {
         if (effect.kind in FIELD_EFFECT_KINDS) {
             return LocalFieldEffectProjector.apply(state, executedSide, effect, actorId)
@@ -2003,10 +2007,10 @@ internal object PublicSingleTurnProjector {
             affectedId == actorId
         ) {
             val cost = LocalPersistentMoveState.substituteCost(affected)
-            if (affected.hpFraction <= cost || affected.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return state
+            if (!hpCostPaid && affected.hpFraction <= cost || affected.knownVolatileEffectIds.any { canonicalId(it) == SUBSTITUTE }) return state
             return state.copyState(pokemon = state.pokemon.map {
                 if (it.battlePokemonId != affectedId) it else LocalPersistentMoveState.withSubstitute(it.copyState(
-                    hpFraction = it.hpFraction - cost), cost)
+                    hpFraction = if (hpCostPaid) it.hpFraction else it.hpFraction - cost), cost)
             })
         }
         val updated = when (effect.kind) {

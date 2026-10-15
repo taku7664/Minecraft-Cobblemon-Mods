@@ -79,6 +79,16 @@ class LocalCallbackMoveEffectsTest {
     }
 
     @Test
+    fun `Substitute costs a quarter of the user's HP once`() {
+        // Its onHit HP cost now reads as a shape; the projector's own Substitute cost must not be charged beside it.
+        project(mon(BattleSide.ALLY, "normal", hp = 1.0), move("substitute", BattleMoveTargetPattern.SELF)).forEach { outcome ->
+            val after = outcome.stateBeforeResidual.pokemon.single { it.side == BattleSide.ALLY }
+            assertEquals(0.75, after.hpFraction, 1e-9)
+            assertTrue(after.knownVolatileEffectIds.any { it == "substitute" }, after.knownVolatileEffectIds.toString())
+        }
+    }
+
+    @Test
     fun `Belly Drum from a lowered Attack adds more than six and still reaches plus six`() {
         // An Intimidated Snorlax at -1: the stage to +6 is 7, which the effect view refused, and every decision failed
         // (league mock battle, 2026-10-13).
@@ -112,7 +122,8 @@ class LocalCallbackMoveEffectsTest {
     @Test
     fun `Fillet Away and Clangorous Soul charge their HP`() {
         assertEquals(0.5, effects("filletaway").single { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL }.fractionRange!!.minimum, 1e-9)
-        assertEquals(1.0 / 3.0, effects("clangoroussoul").single { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL }.fractionRange!!.minimum, 1e-9)
+        // Read from its onHit now: Showdown charges `maxhp * 33 / 100`, not a third.
+        assertEquals(0.33, effects("clangoroussoul").single { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL }.fractionRange!!.minimum, 1e-9)
         assertNull(effects("recover").singleOrNull { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL })
     }
 

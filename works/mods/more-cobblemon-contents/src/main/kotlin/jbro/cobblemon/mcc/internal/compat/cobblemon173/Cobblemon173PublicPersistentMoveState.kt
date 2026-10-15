@@ -12,6 +12,7 @@ internal object Cobblemon173PublicPersistentMoveState {
     private const val LASER_FOCUS_TURNS = "laserfocusturns:"
     private const val DISABLE_MOVE = "disablemove:"
     private const val DISABLE_TURNS = "disableturns:"
+    private val DYNAMAX_TURNS = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.TURNS
     private const val LEECH_SEED_SOURCE = "leechseedsource:"
     private const val BINDING_SOURCE = "partiallytrappedsource:"
     private val RAMPAGE_MOVES = setOf("outrage", "thrash", "petaldance", "ragingfury")
@@ -43,6 +44,7 @@ internal object Cobblemon173PublicPersistentMoveState {
                 family == "leechseed" && it.startsWith(LEECH_SEED_SOURCE) ||
                 family == "partiallytrapped" && it.startsWith(BINDING_SOURCE) ||
                 family == "slowstart" && it.startsWith(LocalReactiveAbilityState.SLOW_START_TURNS) ||
+                family == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE && it.startsWith(DYNAMAX_TURNS) ||
                 family == "confusion" && active && it.startsWith(PUBLIC_RAMPAGE)
         }.toSet() - family
         if (!active) return cleared
@@ -65,6 +67,8 @@ internal object Cobblemon173PublicPersistentMoveState {
             "partiallytrapped" -> if (sourcePokemonId != null && PublicIds.canonical(sourceMoveId.orEmpty()) in BINDING_MOVES)
                 cleared + (BINDING_SOURCE + sourcePokemonId) else cleared
             "slowstart" -> cleared + (LocalReactiveAbilityState.SLOW_START_TURNS + "5")
+            jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE ->
+                cleared + (DYNAMAX_TURNS + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION)
             else -> cleared
         }
     }
@@ -79,7 +83,8 @@ internal object Cobblemon173PublicPersistentMoveState {
     fun advance(effects: Set<String>, elapsed: Int): Set<String> {
         if (elapsed <= 0) return effects
         val timers = listOf(HEAL_BLOCK_TURNS to "healblock", LASER_FOCUS_TURNS to "laserfocus",
-            DISABLE_TURNS to "disable", LocalReactiveAbilityState.SLOW_START_TURNS to "slowstart")
+            DISABLE_TURNS to "disable", LocalReactiveAbilityState.SLOW_START_TURNS to "slowstart",
+            DYNAMAX_TURNS to jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE)
         val expired = timers.filter { (prefix, _) -> effects.any {
             it.startsWith(prefix) && (it.substringAfter(prefix).toIntOrNull() ?: 0) <= elapsed
         } }.map { it.second }.toSet()

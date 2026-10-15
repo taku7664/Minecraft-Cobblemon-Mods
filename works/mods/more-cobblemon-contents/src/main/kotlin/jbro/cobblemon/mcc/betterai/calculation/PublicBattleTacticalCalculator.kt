@@ -167,7 +167,22 @@ internal object PublicBattleTacticalCalculator {
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
         val targetHp = target?.hpFraction ?: return null
         if (mechanics.publiclyNullified) return listOf(0.0)
+        // A Dynamaxed target takes half the share of a set amount, Showdown counting its undoubled HP for Super Fang's
+        // kind, and no one-hit knockout lands on it (LocalDynamax).
+        val dynamaxShare = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.damageShare(target)
+        return declaredDamageShares(candidate, actor, target, effects, targetHp, state)?.map { (it * dynamaxShare).coerceAtMost(targetHp) }
+    }
+
+    private fun declaredDamageShares(
+        candidate: BattleActionCandidate,
+        actor: BattlePokemonStateView?,
+        target: BattlePokemonStateView,
+        effects: List<BattleMoveEffectView>,
+        targetHp: Double,
+        state: BattleStateView,
+    ): List<Double>? {
         effects.firstOrNull { it.kind == BattleMoveEffectKind.ONE_HIT_KO }?.let {
+            if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)) return listOf(0.0)
             val actorLevel = actor?.level
             val targetLevel = target.level
             val levelBlocked = actorLevel != null && targetLevel != null && targetLevel > actorLevel

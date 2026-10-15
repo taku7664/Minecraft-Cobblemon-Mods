@@ -566,6 +566,8 @@ class Cobblemon173ShowdownObservationAdapter(
         private val TRACKED_VOLATILES = setOf(
             "leechseed", "confusion", "yawn", "curse", "saltcure", "partiallytrapped", "perishsong", "focusenergy",
             "disable", "torment", "healblock", "attract", "magnetrise", "aquaring", "ingrain", "dragoncheer", "throatchop", "slowstart", "charge", "flashfire", "laserfocus", "destinybond", "endure",
+            // Showdown starts and ends it publicly (`-start|...|Dynamax`); its turns are counted from the start.
+            "dynamax",
         )
 
         fun publicSwitchTransferMove(message: BattleMessage): String? =

@@ -148,7 +148,8 @@ internal object LocalPersistentMoveState {
             updated = updated.copyState(knownVolatileEffectIds = if (remaining <= 0) cleared - "healblock"
                 else cleared + "healblockturns:$remaining")
         }
-        for ((timer, effect) in listOf("laserfocusturns:" to "laserfocus", "disableturns:" to "disable")) {
+        for ((timer, effect) in listOf("laserfocusturns:" to "laserfocus", "disableturns:" to "disable",
+                LocalDynamax.TURNS to LocalDynamax.VOLATILE)) {
             val marker = pokemon.knownVolatileEffectIds.firstOrNull { it.startsWith(timer) } ?: continue
             val remaining = marker.substringAfter(':').toIntOrNull()?.minus(1) ?: 0
             val cleared = updated.knownVolatileEffectIds - marker

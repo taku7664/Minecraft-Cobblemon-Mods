@@ -219,8 +219,9 @@ internal object LocalPublicMechanicsKernel {
         val defence = LocalDamageAbilityModifiers.defender(candidate, details, actor, target,
             if (ignoresAbility) null else targetAbility, publicTypeMultiplier, context)
         return LocalPublicMoveProjection(
+            // A Dynamaxed target's maximum HP is doubled: each hit is half the share it would be (LocalDynamax).
             knownDamageMultiplier = abilityMultiplier * weatherMultiplier * terrainMultiplier * screenMultiplier *
-                offence * defence,
+                offence * defence * LocalDynamax.damageShare(target),
             targetHpFraction = target.hpFraction,
             publiclyNullified = false,
         )
