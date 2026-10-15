@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
@@ -95,6 +96,63 @@ class LocalDynamaxTest {
         assertNotEquals(null, state.pokemon[1])
     }
 
+    @Test
+    fun `a Dynamaxed Pokemon's attack is read as the Max Move of its type`() {
+        val flamethrower = BattleActionCandidate("flamethrower", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "flamethrower", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+            moveDetails = BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 15,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+        val user = mon(BattleSide.ALLY)
+        assertTrue(LocalDynamax.asMaxMove(flamethrower, user) === flamethrower)
+        val max = LocalDynamax.asMaxMove(flamethrower, LocalDynamax.start(user))
+        assertEquals("maxflare", max.moveId)
+        assertEquals(130.0, max.moveDetails!!.power, 1e-9)
+        assertTrue(max.moveDetails!!.effects!!.effects.any { it.kind == BattleMoveEffectKind.WEATHER && it.valueId == "sunnyday" })
+        assertEquals("flamethrower", LocalDynamax.baseMoveId(max))
+    }
+
+    @Test
+    fun `species data decides who can Dynamax`() {
+        assertTrue(LocalDynamax.canDynamax(mon(BattleSide.ALLY, "cobblemon:snorlax")))
+        assertFalse(LocalDynamax.canDynamax(mon(BattleSide.ALLY, "cobblemon:zacian")))
+    }
+
+    @Test
+    fun `Dynamax is held back only for an ally that gains by it and can use it`() {
+        val boss = BattleTrainerProfile.boss()
+        val able = LocalMechanicOptionValue.cost(dynamaxTackle(), duel("cobblemon:snorlax"), boss)
+        val unable = LocalMechanicOptionValue.cost(dynamaxTackle(), duel("cobblemon:zacian"), boss)
+        // The benched Snorlax loses the duel unless it Dynamaxes; a Zacian cannot, so nothing is kept for it.
+        assertTrue(able > 0.0, "able=$able")
+        assertEquals(0.0, unable, 1e-9)
+    }
+
+    /** The active ally, a benched [benchSpecies] that loses to the faster foe unless Dynamaxed, and that foe. */
+    private fun duel(benchSpecies: String): BattleDecisionContext {
+        val active = mon(BattleSide.ALLY, "cobblemon:charizard")
+        val bench = mon(BattleSide.ALLY, benchSpecies).copyState(activeSlot = null)
+        val foe = mon(BattleSide.OPPONENT, speed = 120)
+        val tackle = dynamaxTackle().moveDetails!!
+        val catalog = BattlePublicActionCatalogView(listOf(active, bench, foe).map {
+            BattlePokemonActionCatalogView(it.battlePokemonId,
+                listOf(BattlePublicMoveOptionView("tackle", tackle, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), moveSetComplete = true)
+        })
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 3, pokemon = listOf(active, bench, foe),
+            field = BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),
+            remainingPokemonBySide = mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1),
+            observedEvents = emptyList(), inferences = emptyList(),
+        )
+        return BattleDecisionContext(UUID.randomUUID(), state, listOf(dynamaxTackle()), Long.MAX_VALUE,
+            BattleTacticalMemoryView.empty(), publicActionCatalog = catalog)
+    }
+
+    private fun dynamaxTackle() = BattleActionCandidate("tackle-max", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+        moveId = "tackle", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+        mechanic = BattleMechanicCandidate("dynamax", null, null),
+        moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL, 40.0, 100.0, 0, 35,
+            targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+
     private fun rolls(candidate: BattleActionCandidate, user: BattlePokemonStateView, foe: BattlePokemonStateView): List<Double> {
         val context = context(state(user, foe), candidate)
         val calculated = PublicBattleTacticalCalculator.calculate(context)
@@ -126,14 +184,14 @@ class LocalDynamaxTest {
         observedEvents = emptyList(), inferences = emptyList(),
     )
 
-    private fun mon(side: BattleSide) = BattlePokemonStateView(
-        battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0, speciesId = "showdown:probe", formId = null,
+    private fun mon(side: BattleSide, species: String = "showdown:probe", speed: Int = 100) = BattlePokemonStateView(
+        battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0, speciesId = species, formId = null,
         level = 50, hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
         knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = setOf("water"),
         combatStats = BattleCombatStatRangesView(
             maxHp = BattleIntegerRange(300, 300), attack = BattleIntegerRange(150, 150),
             defence = BattleIntegerRange(100, 100), specialAttack = BattleIntegerRange(100, 100),
-            specialDefence = BattleIntegerRange(100, 100), speed = BattleIntegerRange(100, 100),
+            specialDefence = BattleIntegerRange(100, 100), speed = BattleIntegerRange(speed, speed),
             knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
         ),
         knownVolatileEffectIds = emptySet(), knownBaseStabTypeIds = setOf("water"),

@@ -3,6 +3,20 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-15 16:30] 다이맥스 가중치로 아껴 둘 값 계산, 대면 계산이 다이맥스기를 씀, G-945 (구현·단위 확인, 빌드·배치·실게임 미확인)
+
+- **사용자 결정:** 다이맥스를 아껴 두는 기준을 "다이맥스할 수 있는 동료 중 다이맥스로 얻는 게 큰 동료"(다이맥스 가중치)로 바꾼다. 메가·테라의 에이스 비교는 그대로 둔다.
+- **구현:** LOCAL_GAPS G-945. `LocalDynamax.asMaxMove`·`canDynamax`·`baseMoveId`, `LocalMechanicOptionValue`(다이맥스 가중치·`optionValue`·`carrierTilt` 일반화), `LocalGimmickReserve`(다이맥스 제외), `LocalMatchupScoreCalculator.moveMatchups`, `LocalRepeatedMoveMechanics`(기본 기술로 짝짓기). Showdown 기술 효과 조회를 `internal.ai.BattleShowdownMoveEffects`로 옮기고 compat 객체는 위임만 한다.
+- **확인:** `LocalDynamaxTest` 8/8, 관련 10개 클래스 135/135.
+- **안 한 것:** 빌드·배치(공유 트리에 다른 세션의 커밋 안 된 UI 수정이 남아 있음), 실게임, 모의 전투, 판단 시간 측정.
+
+## [2026-10-15 22:20] 허브 콘텐츠 영역을 콘텐츠 테마로, 개발 전용 원격 조작 하네스 (단위 테스트·개발 클라 캡처 확인, 빌드·배치 안 함)
+
+- **허브:** `MccHubScreen`은 탭 콘텐츠와 왼쪽 레일 패널을 `CobblemonUiSharedTheme.contentSnapshot()`으로 그린다(위젯마다 테마를 바꿔 끼우는 drawer). 헤더·레일 행·닫기 버튼은 공용 테마. 헤더는 위쪽 모서리만 둥글다. 요약 띠(`MccHubKit.strip`)는 테두리 있는 둥근 박스. 레일 행 아이콘은 호버 시 흔들림(`MccHubKit.row`만).
+- **킷:** `CardTone.GOOD`(초록 띠), `Action.selected`, `panelDim`, `placeholder(onCard)`(셸 위/카드 위 글자색 구분), 넘치는 `text`는 마지막 줄 말줄임과 전체 툴팁. 대시보드·타워·팩토리 카드 위 흐린 글자를 `panelDim`으로. 팩토리 첫 화면 카드는 본문을 채운다.
+- **`MccHubDriveHarness`(개발 환경 + `MCC_HUB_DRIVE` 전용):** 클라이언트 하나를 띄운 채 명령 파일에 `cmd/tab/shot/press/click/move/scale/theme/hook/quit` 줄을 추가하면 매 틱 실행하고 `<파일>.out`에 결과를 남긴다. 리그는 `hook league <catalog|primary> <fresh|gyms n|champion>`. 리그 모듈 `-PdevAllAddons`로 타워·팩토리·PvP를 같은 개발 클라에 올린다. `/mcc`는 대시보드·상점·PvP만 열고, 리그·타워·팩토리는 `mcc terminal league|tower|factory`로 연다.
+- **확인:** `-Ptests=MccHub` 10/10, 타워·팩토리·PvP 컴파일. 실캡처는 F 사본 `F:/AI/builds/hub-ui-claude`. 빌드·배치 안 함.
+
 ---
 
 ## [2026-10-15 15:00] 다이맥스: 다이맥스기 부가효과·HP 2배·3턴, 콜백 이름 표 축소, G-944 (구현·단위 확인, 빌드·배치·실게임 미확인)

@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
+
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
@@ -74,11 +76,12 @@ internal object LocalRepeatedMoveMechanics {
                 val defender = branch.state.pokemon.first { it.battlePokemonId == targetId }
                 if (defender.fainted || defender.hpFraction <= 0.0) continue
                 val selected = if (actor.fainted || actor.hpFraction <= 0.0) wait else {
+                    // The same move by its base: a Max Move while the user is Dynamaxed, the move again once it ends.
                     PublicFutureActionFactory.primitiveActionsForPokemon(branch.state, actor.side, userId,
                         context.publicActionCatalog, branch.history, includeMoveHypotheses = actor.side == BattleSide.OPPONENT).firstOrNull {
-                        it.kind == BattleActionKind.USE_MOVE && PublicIds.canonical(it.moveId.orEmpty()) == PublicIds.canonical(action.moveId.orEmpty()) &&
+                        it.kind == BattleActionKind.USE_MOVE && PublicIds.canonical(it.moveId.orEmpty()) == LocalDynamax.baseMoveId(action) &&
                             (it.targets.isEmpty() || it.targets.any { slot -> slot.side == defender.side && slot.slot == defender.activeSlot })
-                    } ?: wait
+                    }?.let { LocalDynamax.asMaxMove(it, actor) } ?: wait
                 }
                 val available = (availabilityByUse.getOrNull(use) ?: 1.0).coerceIn(0.0, 1.0)
                 val choices = if (selected === wait || available >= 1.0) listOf(selected to 1.0)

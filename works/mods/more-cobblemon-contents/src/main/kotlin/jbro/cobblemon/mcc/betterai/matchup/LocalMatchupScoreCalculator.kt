@@ -355,6 +355,8 @@ internal object LocalMatchupScoreCalculator {
             .asSequence()
             .filter { it.kind == BattleActionKind.USE_MOVE && it.actorSlot == user.activeSlot }
             .filter { it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS }
+            // A Dynamaxed user's attacks are its Max Moves.
+            .map { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(it, user) }
             .mapNotNull { original ->
                 fun calculate(action: BattleActionCandidate) = cache.getOrCalculate(state, side, action, position.publicActionCatalog) {
                     PublicBattleTacticalCalculator.calculate(position.copy(state = state, candidates = listOf(action)), side)

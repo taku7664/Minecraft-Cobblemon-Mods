@@ -31,7 +31,8 @@ internal object LocalAceScore {
  * score the best other living ally able to use the same mechanic has over the user. The ace itself pays
  * nothing, and a large gain this turn can still outweigh the cost, so a Pokemon that is not the ace uses it
  * only when the moment is worth that much. Two Mega Stone holders are compared with each other; Tera with
- * the allies that have a Tera type; Dynamax and other mechanics with every living ally.
+ * the allies that have a Tera type; other mechanics with every living ally. Dynamax is not kept here: its option
+ * value already weighs which ally gains most by Dynamaxing (LocalMechanicOptionValue).
  */
 internal object LocalGimmickReserve {
     fun adjustments(
@@ -57,6 +58,8 @@ internal object LocalGimmickReserve {
                     it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted && it.hpFraction > 0.0
                 } ?: continue
                 val kind = kind(mechanic.mechanicId)
+                // Dynamax is kept for the ally with the most to gain by its own weight (LocalMechanicOptionValue).
+                if (kind == DYNAMAX) continue
                 val best = state.pokemon.filter {
                     it.side == BattleSide.ALLY && it.battlePokemonId != user.battlePokemonId && !it.fainted &&
                         it.hpFraction > 0.0 && eligible(it, kind)
@@ -77,6 +80,7 @@ internal object LocalGimmickReserve {
     private fun kind(mechanicId: String): String = when (val id = PublicIds.canonical(mechanicId)) {
         "tera", "terastallize", "terastallization" -> TERA
         "mega", "megaevolution" -> MEGA
+        "dynamax", "max" -> DYNAMAX
         else -> id
     }
 
@@ -84,5 +88,6 @@ internal object LocalGimmickReserve {
     const val RESERVE_SCALE = 100.0
     private const val TERA = "tera"
     private const val MEGA = "mega"
+    private const val DYNAMAX = "dynamax"
     private const val EVIOLITE = "eviolite"
 }
