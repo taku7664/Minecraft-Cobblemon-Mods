@@ -58,7 +58,7 @@ internal object LocalMechanicActivationProjector {
         val updated = when (mechanicKind(mechanic.mechanicId)) {
             TERA -> terastallize(actor, action)
             MEGA -> megaEvolve(actor, action)
-            DYNAMAX -> LocalDynamax.start(actor).takeUnless { it === actor }
+            DYNAMAX -> LocalDynamax.start(actor, LocalDynamax.isGMaxMove(mechanic.transformedMoveId)).takeUnless { it === actor }
             else -> null
         } ?: return state
         val evolved = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it })

@@ -24,6 +24,7 @@ internal object Cobblemon173ExactOwnTeamView {
                 ivs = statSpread(source.ivs) { getEffectiveBattleIV(it) },
                 teraTypeId = source.teraType.name,
                 showdownSpeciesId = source.form.showdownId(),
+                gigantamax = source.gmaxFactor,
             )
         },
     )

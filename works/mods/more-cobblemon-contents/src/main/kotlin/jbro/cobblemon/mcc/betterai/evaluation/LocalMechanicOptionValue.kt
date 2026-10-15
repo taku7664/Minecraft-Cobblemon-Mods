@@ -164,7 +164,8 @@ internal object LocalMechanicOptionValue {
         val plain = LocalMatchupScoreCalculator.pairMatchup(position, ally.battlePokemonId, foe.battlePokemonId,
             MatchupSpeedField.CURRENT, cache)?.winProbability ?: return 0.0
         val dynamaxed = position.copy(state = position.state.copyState(pokemon = position.state.pokemon.map {
-            if (it.battlePokemonId == ally.battlePokemonId) LocalDynamax.start(it) else it
+            if (it.battlePokemonId != ally.battlePokemonId) it
+            else LocalDynamax.start(it, context.exactOwnTeam?.buildFor(it.battlePokemonId)?.gigantamax == true || LocalDynamax.gigantamax(it))
         }))
         val boosted = LocalMatchupScoreCalculator.pairMatchup(dynamaxed, ally.battlePokemonId, foe.battlePokemonId,
             MatchupSpeedField.CURRENT, cache)?.winProbability ?: return 0.0

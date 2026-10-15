@@ -31,11 +31,20 @@ internal object LocalDynamax {
     /** [DAMAGE_SHARE] while [pokemon] is Dynamaxed, otherwise 1. */
     fun damageShare(pokemon: BattlePokemonStateView?): Double = if (active(pokemon)) DAMAGE_SHARE else 1.0
 
-    /** [pokemon] Dynamaxed from now, for [DURATION] turns; unchanged when it already is. */
-    fun start(pokemon: BattlePokemonStateView): BattlePokemonStateView =
+    /** Whether [pokemon] is known to have the Gigantamax factor: its own build says so, or it Gigantamaxed in public. */
+    fun gigantamax(pokemon: BattlePokemonStateView?): Boolean = pokemon?.knownVolatileEffectIds?.contains(GIGANTAMAX) == true
+
+    /** [pokemon] Dynamaxed from now, for [DURATION] turns, Gigantamaxed when [gigantamax]; unchanged when it already is. */
+    fun start(pokemon: BattlePokemonStateView, gigantamax: Boolean = false): BattlePokemonStateView =
         if (active(pokemon)) pokemon
         else pokemon.copyState(knownVolatileEffectIds = pokemon.knownVolatileEffectIds.filterNot { it.startsWith(TURNS) }.toSet() +
-            VOLATILE + "$TURNS$DURATION")
+            VOLATILE + "$TURNS$DURATION" + if (gigantamax) setOf(GIGANTAMAX) else emptySet())
+
+    /** Whether [moveId] is a G-Max Move: Showdown names the species on it (`isMax: "Charizard"`), a Max Move has `true`. */
+    fun isGMaxMove(moveId: String?): Boolean {
+        val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return false
+        return dex.move(PublicIds.canonical(moveId ?: return false))?.data("isMax") is String
+    }
 
     /**
      * Whether [pokemon] can Dynamax at all, from its species data: a species or form that cannot (Showdown's
@@ -49,8 +58,9 @@ internal object LocalDynamax {
     /**
      * [action] as the Max Move it becomes while its user is Dynamaxed: the Max Move of its type (Showdown's table, as the
      * engine ports it), the power its data gives (`maxMove.basePower`), the Max Move's own effects and flags, and no miss.
-     * A status move, a Max Move already, or an attack without that data is left as it is. A Gigantamax user's G-Max Move
-     * is read as the plain Max Move of its type.
+     * A Gigantamax user's attack of its G-Max Move's type is that G-Max Move instead (Showdown's `getActiveMaxMove`), at
+     * the same power unless the G-Max Move's data sets its own (the ones Showdown keeps at 160). A status move, a Max Move
+     * already, or an attack without that data is left as it is.
      */
     fun asMaxMove(action: BattleActionCandidate, user: BattlePokemonStateView): BattleActionCandidate {
         if (!active(user)) return action
@@ -60,12 +70,16 @@ internal object LocalDynamax {
         val base = dex.move(PublicIds.canonical(action.moveId ?: return action)) ?: return action
         if (Js.truthy(base.data("isMax"))) return action
         val power = (base.data("maxMove") as? Map<*, *>)?.get("basePower")?.let { Js.num(it) }?.takeIf { it > 0.0 } ?: return action
-        val maxId = BattleActions.MAX_MOVES[base.type]?.let(Js::toID) ?: return action
+        val gMax = if (!gigantamax(user)) null else LocalPublicSpeciesData.species(user)?.let { BattleActions.GMAX_MAP[Js.toID(it.name)] }
+            ?.let(dex::move)?.takeIf { it.type == base.type }
+        val maxId = gMax?.id ?: BattleActions.MAX_MOVES[base.type]?.let(Js::toID) ?: return action
         val effects = BattleShowdownMoveEffects.resolve(maxId) ?: return action
+        // A G-Max Move's own power in its data is a placeholder (10) unless it is one Showdown keeps fixed.
+        val gMaxPower = gMax?.let { Js.num(it.data("basePower") ?: 0) }?.takeIf { it > G_MAX_PLACEHOLDER_POWER }
         return BattleActionCandidate(
             actionId = "${action.actionId}:max", kind = action.kind, actorSlot = action.actorSlot, moveSlot = action.moveSlot,
             moveId = maxId, targets = action.targets, mechanic = action.mechanic,
-            moveDetails = details.copy(power = power, accuracy = 100.0, effects = effects),
+            moveDetails = details.copy(power = gMaxPower ?: power, accuracy = 100.0, effects = effects),
             tags = action.tags + "$BASE_MOVE_TAG${PublicIds.canonical(action.moveId)}",
         )
     }
@@ -75,4 +89,9 @@ internal object LocalDynamax {
         action.tags.firstOrNull { it.startsWith(BASE_MOVE_TAG) }?.removePrefix(BASE_MOVE_TAG) ?: action.moveId?.let(PublicIds::canonical)
 
     private const val BASE_MOVE_TAG = "maxmovebase:"
+    private const val G_MAX_PLACEHOLDER_POWER = 10.0
+    /** Kept on a Pokemon once its Gigantamax factor is known. */
+    const val GIGANTAMAX = "gigantamax"
+    /** The observer's id for a `-start|...|Dynamax|Gmax` message. */
+    const val GIGANTAMAX_START = "dynamax:gmax"
 }

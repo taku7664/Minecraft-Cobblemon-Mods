@@ -112,6 +112,36 @@ class LocalDynamaxTest {
     }
 
     @Test
+    fun `a Gigantamax Pokemon's attack of its G-Max Move's type is that G-Max Move`() {
+        fun fire(id: String, power: Double) = BattleActionCandidate(id, BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = id, targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+            moveDetails = BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL, power, 100.0, 0, 15,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+        val charizard = mon(BattleSide.ALLY, "cobblemon:charizard")
+        // Without the factor, the plain Max Move.
+        assertEquals("maxflare", LocalDynamax.asMaxMove(fire("flamethrower", 90.0), LocalDynamax.start(charizard)).moveId)
+        val wildfire = LocalDynamax.asMaxMove(fire("flamethrower", 90.0), LocalDynamax.start(charizard, gigantamax = true))
+        assertEquals("gmaxwildfire", wildfire.moveId)
+        assertEquals(130.0, wildfire.moveDetails!!.power, 1e-9, "the move's own Max power, not the G-Max placeholder")
+        assertTrue(wildfire.moveDetails!!.effects!!.effects.any { it.kind == BattleMoveEffectKind.SIDE_CONDITION &&
+            it.target == BattleMoveEffectTarget.TARGET_SIDE && it.valueId == "gmaxwildfire" })
+        // A G-Max Move Showdown keeps at its own power.
+        val fireball = LocalDynamax.asMaxMove(fire("pyroball", 120.0),
+            LocalDynamax.start(mon(BattleSide.ALLY, "cobblemon:cinderace"), gigantamax = true))
+        assertEquals("gmaxfireball", fireball.moveId)
+        assertEquals(160.0, fireball.moveDetails!!.power, 1e-9)
+        assertTrue(LocalDynamax.isGMaxMove("gmaxwildfire"))
+        assertFalse(LocalDynamax.isGMaxMove("maxflare"))
+    }
+
+    @Test
+    fun `a public Gigantamax start is remembered past its end`() {
+        val started = Cobblemon173PublicPersistentMoveState.afterVolatile(emptySet(), LocalDynamax.GIGANTAMAX_START, true, null, null)
+        assertEquals(setOf("dynamax", "dynamaxturns:3", "gigantamax"), started)
+        assertEquals(setOf("gigantamax"), Cobblemon173PublicPersistentMoveState.afterVolatile(started, "dynamax", false, null, null))
+    }
+
+    @Test
     fun `species data decides who can Dynamax`() {
         assertTrue(LocalDynamax.canDynamax(mon(BattleSide.ALLY, "cobblemon:snorlax")))
         assertFalse(LocalDynamax.canDynamax(mon(BattleSide.ALLY, "cobblemon:zacian")))

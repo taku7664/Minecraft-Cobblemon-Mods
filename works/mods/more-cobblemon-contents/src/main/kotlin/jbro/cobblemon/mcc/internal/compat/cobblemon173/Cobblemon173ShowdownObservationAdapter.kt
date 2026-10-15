@@ -547,6 +547,9 @@ class Cobblemon173ShowdownObservationAdapter(
                 if (moveId.isNotBlank()) return "disablemove:$moveId" to true
             }
             if (message.id == "-end" && raw in setOf("futuresight", "doomdesire")) return raw to false
+            // `-start|POKEMON|Dynamax|Gmax`: a Gigantamax, whose G-Max Moves replace the Max Moves of their type.
+            if (message.id == "-start" && raw == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE &&
+                effectId(message.argumentAt(2)) == "gmax") return jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START to true
             if (raw.matches(Regex("perish[0-3]"))) return "perishsong:${raw.last()}" to (message.id == "-start")
             val id = when {
                 raw.startsWith("perish") -> "perishsong"

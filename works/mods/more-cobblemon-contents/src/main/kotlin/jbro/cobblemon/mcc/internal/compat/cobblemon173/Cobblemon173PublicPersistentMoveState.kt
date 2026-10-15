@@ -34,6 +34,7 @@ internal object Cobblemon173PublicPersistentMoveState {
         val family = when {
             effectId.startsWith(PERISH) -> "perishsong"
             effectId.startsWith(DISABLE_MOVE) -> "disable"
+            effectId == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START -> jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE
             else -> PublicIds.canonical(effectId)
         }
         var cleared = effects.filterNot {
@@ -67,8 +68,11 @@ internal object Cobblemon173PublicPersistentMoveState {
             "partiallytrapped" -> if (sourcePokemonId != null && PublicIds.canonical(sourceMoveId.orEmpty()) in BINDING_MOVES)
                 cleared + (BINDING_SOURCE + sourcePokemonId) else cleared
             "slowstart" -> cleared + (LocalReactiveAbilityState.SLOW_START_TURNS + "5")
+            // The Gigantamax marker stays after it ends: the factor is the Pokemon's, and now public.
             jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE ->
-                cleared + (DYNAMAX_TURNS + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION)
+                cleared + (DYNAMAX_TURNS + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION) +
+                    setOfNotNull(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX.takeIf {
+                        effectId == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START })
             else -> cleared
         }
     }
