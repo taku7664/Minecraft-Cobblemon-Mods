@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-16 01:30] 플레이 피드백 수정: 가라르 스킨 variation, 새로고침 멈춤, 지방 이름 (단위 테스트·허브 캡처 확인, 배포 안 함)
+
+- **가라르 스킨이 전투에서 스티브로 보이던 원인:** 전투 트레이너 몸체는 텍스처 경로가 아니라 `TrainerResourceSkin.aspect`로 스킨을 고르고, 이를 텍스처로 바꾸는 `bedrock/npcs/variations/managed_trainer/10_*.json`에 가라르 항목이 없었다. 스킨을 바꾸거나 추가하면 `python works/tools/generate_managed_trainer_variations.py`를 다시 돌려야 한다(`--check`로 검사). 이번에 28개(가라르 14, 슬림 4)로 재생성.
+- **설계 사실관계:** 리그·관장 정의는 모드 JAR 내장 데이터팩(`data/.../league-challenge`)이고 외부 데이터팩으로 덮어쓰기·추가가 가능하다. 단 스킨 PNG와 variation은 클라이언트 에셋이라 데이터팩만으로는 안 되고 리소스팩(또는 모드 JAR)이 필요하다.
+- **새로고침 연타:** 서버가 3틱 안의 요청을 응답 없이 버려 클라이언트가 5초간 대기 상태로 멈췄다. 이제 현재 뷰로 응답한다(`openFromHub`도 세션이 있으면 같은 처리).
+- **문구:** 지방 이름 `신오`·`가라르`, 도전 상대 이름 굵게 제거(갈무리 굵게는 1px 겹친 두 겹처럼 보임).
+
 ## [2026-10-16 00:20] main `ab74cd57` 개발 클라이언트·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - **범위:** 같은 `main` 스냅샷(`git archive` → `F:/AI/builds/deploy-ab74cd57`)에서 cobblemon-ui·cobblemon-npc·MCC·리그·타워·팩토리·PvP `remapJar` 빌드 성공, 7개 모두 `unzip -t` 통과. MCC `Action`/`placeholder` 시그니처와 리그 패킷(`state_v2`/`intent_v2`, 코덱스 개편분)이 바뀌어 애드온 전부를 함께 교체했다.
