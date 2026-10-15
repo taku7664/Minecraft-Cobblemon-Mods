@@ -100,7 +100,12 @@ object LeagueServer {
      * that terminal, so the player has to stay by it; the hub itself is already on screen.
      */
     fun openFromHub(player: ServerPlayer, terminal: TerminalInteractionResult.Verified?): Boolean = guarded(player) {
-        if (!requestAllowed(player)) return@guarded
+        // Too soon after the last request: answer with the open session's view, never with silence, which left the
+        // tab waiting on a reply; with no session yet, open one anyway, opening twice changes nothing.
+        if (!requestAllowed(player) && sessions[player.uuid] != null) {
+            send(player)
+            return@guarded
+        }
         val anchor = terminal?.let { TerminalAnchor(it.terminalId, it.dimensionId, it.x, it.y, it.z) }
         start(player, Session(anchor, touched = player.server.tickCount.toLong()))
     }
@@ -123,7 +128,11 @@ object LeagueServer {
     }
 
     private fun handle(player: ServerPlayer, intent: LeagueIntentPayload) {
-        if (!requestAllowed(player)) return
+        if (!requestAllowed(player)) {
+            // Answered rather than dropped: the client holds its controls until a view comes back.
+            guarded(player) { send(player) }
+            return
+        }
         guarded(player) {
             val session = sessions[player.uuid] ?: error("terminal_invalid")
             validate(player, session)

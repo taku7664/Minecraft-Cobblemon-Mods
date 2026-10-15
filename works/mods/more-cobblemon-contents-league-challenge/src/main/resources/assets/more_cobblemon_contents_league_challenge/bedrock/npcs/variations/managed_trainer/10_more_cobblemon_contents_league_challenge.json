@@ -13,6 +13,132 @@
   },
   {
    "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_allister_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/allister.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_bea_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/bea.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_bede_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/bede.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_gordie_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/gordie.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_hop_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/hop.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_kabu_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/kabu.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_leon_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/leon.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_marnie_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/marnie.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_melony_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/melony.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_milo_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/milo.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_nessa_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/nessa.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_opal_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/opal.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_piers_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/piers.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_league_challenge_textures_npcs_galar_raihan_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_league_challenge:textures/npcs/galar/raihan.png"
+  },
+  {
+   "aspects": [
     "mcc_skin_rctmod_textures_trainers_single_champion_cynthia_03a5_png"
    ],
    "layers": [],

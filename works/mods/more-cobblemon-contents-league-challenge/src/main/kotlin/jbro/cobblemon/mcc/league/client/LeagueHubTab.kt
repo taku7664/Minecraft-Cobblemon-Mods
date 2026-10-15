@@ -221,7 +221,8 @@ internal class LeagueHubTab : MccHubTabContent {
             val left = x + size + 5
             val room = x + width - left
             val type = s.type?.let(ElementalTypes::get)
-            val name = MccHubKit.fitted(Component.translatable(s.nameKey).withStyle(ChatFormatting.BOLD), room - if (type == null) 0 else 12)
+            // Plain weight: the pixel font draws bold as a second copy one pixel over, which reads as a doubled name.
+            val name = MccHubKit.fitted(Component.translatable(s.nameKey), room - if (type == null) 0 else 12)
             val lines = 4
             var lineY = y + (height - lines * 10) / 2 + 1
             g.drawString(font, name, left, lineY, color, false)
