@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-16 00:20] main `ab74cd57` 개발 클라이언트·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- **범위:** 같은 `main` 스냅샷(`git archive` → `F:/AI/builds/deploy-ab74cd57`)에서 cobblemon-ui·cobblemon-npc·MCC·리그·타워·팩토리·PvP `remapJar` 빌드 성공, 7개 모두 `unzip -t` 통과. MCC `Action`/`placeholder` 시그니처와 리그 패킷(`state_v2`/`intent_v2`, 코덱스 개편분)이 바뀌어 애드온 전부를 함께 교체했다.
+- **배치:** 개발 클라이언트(cobblemon-dev 프로필) 7개, 개발 서버 6개(UI 키트 단독 JAR은 서버에 없음). 해시: ui 3188C753, npc 308496CB, MCC 1FB61DAE, 리그 D83A78D6, 타워 04762614, 팩토리 4E3FE80D, PvP 3F8AB4E7. 백업 `develop-product/deployment-backups/20261016-hub-content-theme-league-ab74cd57`.
+- **서버 상태:** 배포 시점에 개발 서버는 이미 꺼져 있었다(직접 내리지 않음, 마지막 월드 저장 23:47, 종료 로그 없음). 켜지 않았다. 대화창 선택지 이음매 1px 수정은 빡대리님 지시로 실행 확인 없이 반영했다.
+
 ## [2026-10-15 23:35] 가라르 스킨 13종을 Planet Minecraft 팬 스킨으로 교체 (개발 클라 캡처 확인, 빌드·배치 안 함)
 
 - **빡대리님 결정:** RCT Trainers+ v2.2에는 가라르 관장·챔피언이 없다. 코덱스가 그린 자체 스킨 대신 Planet Minecraft에서 인물별로 고른 추천 스킨을 쓴다. 포플러는 쓸 만한 후보가 없어 코덱스 스킨 유지.
