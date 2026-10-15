@@ -207,12 +207,11 @@ internal object EmbeddedTeamBattle {
                                     val profile = profiles.getValue(side)
                                     add("cost", JsonObject().apply { context.candidates.filter { it.mechanic?.mechanicId == "dynamax" }.forEach { c ->
                                         addProperty(c.actionId, jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(c, context, profile)) } })
-                                    add("weights", JsonObject().apply {
-                                        jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxFits(context).forEach { (id, fit) ->
-                                            addProperty(context.state.pokemon.first { it.battlePokemonId == id }.speciesId, fit) } })
-                                    add("ace", JsonObject().apply {
-                                        jbro.cobblemon.mcc.betterai.matchup.LocalAceScore.calculate(context).forEach { (id, ace) ->
-                                            addProperty(context.state.pokemon.first { it.battlePokemonId == id }.speciesId, ace) } })
+                                    fun named(values: Map<java.util.UUID, Double>) = JsonObject().apply { values.forEach { (id, value) ->
+                                        addProperty(context.state.pokemon.first { it.battlePokemonId == id }.speciesId, value) } }
+                                    add("weights", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxWeights(context)))
+                                    add("ace", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxAce(context)))
+                                    add("share", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxFits(context)))
                                 })
                                 // What this side assumes of the foe in front (stats) and each move's damage both ways,
                                 // read on the same assumed board the brain uses. Only on request (BETTERAI_MATCHUP_VIEW):

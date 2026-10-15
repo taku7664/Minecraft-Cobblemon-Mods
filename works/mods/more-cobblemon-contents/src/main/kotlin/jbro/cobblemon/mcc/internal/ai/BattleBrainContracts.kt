@@ -357,6 +357,8 @@ class BattleExactPokemonBuildView private constructor(
     val showdownSpeciesId: String?,
     /** Whether it has the Gigantamax factor: Dynamaxed, its species' G-Max Move replaces the Max Move of that type. */
     val gigantamax: Boolean,
+    /** Whether its trainer lets it Dynamax at all (a managed team may allow some members only). */
+    val dynamaxAllowed: Boolean,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val evs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(evs))
@@ -390,9 +392,10 @@ class BattleExactPokemonBuildView private constructor(
         teraTypeId: String?,
         showdownSpeciesId: String?,
         gigantamax: Boolean = false,
+        dynamaxAllowed: Boolean = true,
     ) : this(
         battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs,
-        teraTypeId, showdownSpeciesId, gigantamax, Unit,
+        teraTypeId, showdownSpeciesId, gigantamax, dynamaxAllowed, Unit,
     )
 
     constructor(
@@ -406,7 +409,7 @@ class BattleExactPokemonBuildView private constructor(
         teraTypeId: String?,
     ) : this(
         battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs,
-        teraTypeId, null, false, Unit,
+        teraTypeId, null, false, true, Unit,
     )
 
     constructor(
@@ -417,7 +420,7 @@ class BattleExactPokemonBuildView private constructor(
         gender: String,
         evs: Map<String, Int>,
         ivs: Map<String, Int>,
-    ) : this(battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs, null, null, false, Unit)
+    ) : this(battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs, null, null, false, true, Unit)
 
     private companion object {
         val STAT_IDS = setOf("hp", "atk", "def", "spa", "spd", "spe")

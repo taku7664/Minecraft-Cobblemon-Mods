@@ -620,6 +620,7 @@ internal object EmbeddedTeamInput {
                 ivs = spread(build.getAsJsonObject("ivs")),
                 teraTypeId = build["teraType"]?.takeUnless { it.isJsonNull }?.asString,
                 gigantamax = build["gigantamax"]?.asBoolean == true,
+                dynamaxAllowed = build["dynamaxAllowed"]?.asBoolean != false,
                 showdownSpeciesId = build["species"].asString,
             )
         })

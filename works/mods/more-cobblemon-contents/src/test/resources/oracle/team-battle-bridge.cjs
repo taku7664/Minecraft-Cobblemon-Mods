@@ -171,6 +171,7 @@ function teamPreviewInputs(side) {
     nature: dex.natures.get(pokemon.set.nature || 'serious').id || 'serious', gender: pokemon.gender || 'N',
     evs: pokemon.set.evs, ivs: pokemon.set.ivs, teraType: pokemon.teraType ? toId(pokemon.teraType) : null,
     gigantamax: !!pokemon.set.gigantamax,
+    dynamaxAllowed: !side.pokemon.some(other => other.set.dynamax) || ['normal', 'gmax'].includes(pokemon.set.dynamax),
     species: pokemon.baseSpecies.id }));
   return { foePreview, ownBuilds };
 }
@@ -276,7 +277,10 @@ function snapshot() {
             choices.push(choice);
             // The game offers each gimmick with every move, as here.
             if (active.canMegaEvo) choices.push({ ...choice, command: `${choice.command} mega`, mechanic: 'mega' });
-            if (active.canDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
+            // A team that marks any member (set.dynamax: none|normal|gmax) lets only its normal and gmax ones Dynamax.
+            const dynamaxMarked = side.pokemon.some(pokemon => pokemon.set.dynamax);
+            const mayDynamax = !dynamaxMarked || ['normal', 'gmax'].includes(side.active[actorSlot].set.dynamax);
+            if (active.canDynamax && mayDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
               choices.push({ ...choice, command: `${choice.command} dynamax`, mechanic: 'dynamax', maxMoveId: toId(maxMoves[moveSlot].move) });
             }
           });

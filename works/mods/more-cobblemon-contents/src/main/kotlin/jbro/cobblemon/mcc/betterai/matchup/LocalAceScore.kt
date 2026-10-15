@@ -24,6 +24,27 @@ internal object LocalAceScore {
         return fresh.pokemon.filter { it.side == BattleSide.ALLY }
             .associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
     }
+
+    /**
+     * Each of the AI's Pokemon's standing as a battler, 0..1: its one-on-one win chance against every opponent seen, on
+     * the same fresh board, weighted by [weights] (the opponents' threat). Unlike [calculate] it does not ask for a setup
+     * move, so an attacker without one (a Gigantamax Copperajah) still reads as the ace it is (user decision 2026-10-15,
+     * for Dynamax; Mega Evolution and Tera keep [calculate]).
+     */
+    fun matchup(context: BattleDecisionContext, weights: Map<UUID, Double>): Map<UUID, Double> {
+        val fresh = context.state.copyState(pokemon = context.state.pokemon.map {
+            it.copyState(hpFraction = 1.0, statusId = null, statStages = emptyMap(), fainted = false)
+        })
+        val foes = fresh.pokemon.filter { it.side == BattleSide.OPPONENT }
+        if (foes.isEmpty()) return emptyMap()
+        val scores = LocalMatchupScoreCalculator.calculate(context.copy(state = fresh))
+        val total = foes.sumOf { weights[it.battlePokemonId] ?: 1.0 }
+        return fresh.pokemon.filter { it.side == BattleSide.ALLY }.associate { ally ->
+            ally.battlePokemonId to foes.sumOf { foe ->
+                (weights[foe.battlePokemonId] ?: 1.0) * (scores.pokemon(ally.battlePokemonId, foe.battlePokemonId)?.winProbability ?: 0.0)
+            } / total
+        }
+    }
 }
 
 /**

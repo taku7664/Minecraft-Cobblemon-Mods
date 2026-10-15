@@ -107,7 +107,10 @@ internal object Cobblemon173ActionCandidateAdapter {
     internal fun allowedGimmicks(
         moveset: ShowdownMoveset,
         policy: Cobblemon173MechanicPolicy,
+        /** The Pokemon choosing; a managed trainer may allow Dynamax to some members only (ManagedDynamax). */
+        pokemon: com.cobblemon.mod.common.pokemon.Pokemon? = null,
     ): List<ShowdownMoveset.Gimmick> = moveset.getGimmicks().filter { gimmick ->
+        if (gimmick == ShowdownMoveset.Gimmick.DYNAMAX && !jbro.cobblemon.mcc.api.battle.ManagedDynamax.permits(pokemon)) return@filter false
         val flag = when (gimmick) {
             ShowdownMoveset.Gimmick.MEGA_EVOLUTION -> BattleMechanicFlags.MEGA
             ShowdownMoveset.Gimmick.DYNAMAX -> BattleMechanicFlags.DYNAMAX
@@ -172,7 +175,7 @@ internal object Cobblemon173ActionCandidateAdapter {
         }
         if (allowReplacementPass) add(pass)
         if (!forceSwitch && moveset != null) {
-            val gimmicks = allowedGimmicks(moveset, mechanicPolicy)
+            val gimmicks = allowedGimmicks(moveset, mechanicPolicy, active.battlePokemon?.effectedPokemon)
             moveset.moves.forEachIndexed { moveSlot, move ->
                 val currentMaxMove = currentMaxMove(moveset, moveSlot)
                 addMoveChoices(active, moveset, forceSwitch, slot, moveSlot, move, null, currentMaxMove)

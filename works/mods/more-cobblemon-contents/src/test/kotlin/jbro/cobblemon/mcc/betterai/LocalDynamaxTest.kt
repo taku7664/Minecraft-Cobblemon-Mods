@@ -157,6 +157,19 @@ class LocalDynamaxTest {
         assertEquals(0.0, unable, 1e-9)
     }
 
+    @Test
+    fun `nothing is held back for an ally its trainer does not let Dynamax`() {
+        val boss = BattleTrainerProfile.boss()
+        val context = duel("cobblemon:snorlax")
+        val bench = context.state.pokemon.first { it.side == BattleSide.ALLY && it.activeSlot == null }
+        fun build(id: UUID, allowed: Boolean) = BattleExactPokemonBuildView(id, "thickfat", null, "cobblemon:hardy", "N",
+            EVS, EVS.mapValues { 31 }, null, null, dynamaxAllowed = allowed)
+        val active = context.state.pokemon.first { it.side == BattleSide.ALLY && it.activeSlot == 0 }
+        val barred = context.copy(exactOwnTeam = BattleExactOwnTeamView(listOf(build(active.battlePokemonId, true), build(bench.battlePokemonId, false))))
+        assertTrue(LocalMechanicOptionValue.cost(dynamaxTackle(), context, boss) > 0.0)
+        assertEquals(0.0, LocalMechanicOptionValue.cost(dynamaxTackle(), barred, boss), 1e-9)
+    }
+
     /** The active ally, a benched [benchSpecies] that loses to the faster foe unless Dynamaxed, and that foe. */
     private fun duel(benchSpecies: String): BattleDecisionContext {
         val active = mon(BattleSide.ALLY, "cobblemon:charizard")
@@ -228,6 +241,7 @@ class LocalDynamaxTest {
     )
 
     private companion object {
+        val EVS = listOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 0 }
         val SOURCE: String by lazy {
             ZipInputStream(requireNotNull(LocalDynamaxTest::class.java.getResourceAsStream("/data/cobblemon/showdown.zip"))).use { zip ->
                 generateSequence { zip.nextEntry }.first { it.name == "data/moves.js" }

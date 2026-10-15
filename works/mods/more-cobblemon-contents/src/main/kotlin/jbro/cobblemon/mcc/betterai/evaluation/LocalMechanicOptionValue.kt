@@ -14,6 +14,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.matchup.LocalAceScore
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
@@ -28,10 +29,13 @@ import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
  *   it only happens when this turn's projection shows the new typing or ability is worse.
  * - Terastallization costs the best Tera gain another living ally could still get against the
  *   visible opponents, weighted by their threat, times the chance that ally gets to use it.
- * - Dynamax costs the best Dynamax weight another living ally that can Dynamax still has: how much Dynamaxing raises
- *   its matchup win chance against the visible opponents (doubled HP for three turns, Max Moves), weighted by their
- *   threat, times the chance that ally gets to use it. It leans toward the ally with the most to gain as Tera leans
- *   toward its carrier (user decision, 2026-10-15; it replaced a flat share per healthy ally).
+ * - Dynamax costs the best Dynamax share another living ally that can Dynamax still has, times the chance that ally
+ *   gets to use it, at [DYNAMAX_SCALE]. An ally's share is the larger of its Dynamax weight (how much Dynamaxing
+ *   raises its matchup win chance against the visible opponents: doubled HP for three turns, Max Moves) and its
+ *   standing as the team's ace ([LocalAceScore.matchup], its fresh-board win chance against them), both weighted by
+ *   the opponents' threat. Only allies that can and may Dynamax count (a managed team may allow some only). It leans
+ *   toward the ally with the largest share as Tera leans toward its carrier (user decisions, 2026-10-15/16; it
+ *   replaced a flat share per healthy ally, and the ace part was added after a lead kept taking it from the ace).
  * - A Z-Move and any other one-shot mechanic cost a flat share per healthy ally left to use it.
  *
  * The cost is scaled by tier (an Introductory trainer spends on impulse) and by personality (a
@@ -74,7 +78,7 @@ internal object LocalMechanicOptionValue {
             MEGA -> 0.0
             TERA -> teraOptionValue(others, context) * carrierTilt(actor, others, profile, tierScale) { teraFit(it, context) }
             DYNAMAX -> {
-                val able = others.filter(LocalDynamax::canDynamax)
+                val able = others.filter { dynamaxAllowed(it, context) }
                 if (able.isEmpty()) 0.0 else {
                     val fits = dynamaxFits(context)
                     optionValue(able, context, DYNAMAX_SCALE) { fits[it.battlePokemonId] ?: 0.0 } *
@@ -130,12 +134,38 @@ internal object LocalMechanicOptionValue {
     }
 
     /**
-     * Every ally's Dynamax weight, 0..1: how much Dynamaxing raises its one-on-one win chance against each visible
-     * living opponent (doubled HP for three turns and Max Moves, as the matchup calculation reads a Dynamaxed Pokemon),
-     * weighted by the opponents' threat. Worked out once per decision.
+     * Every ally's Dynamax share, 0..1: the larger of its Dynamax weight ([dynamaxWeights]) and its standing as the
+     * ace ([LocalAceScore.matchup]), so an ace keeps it whether or not Dynamax itself adds much to its matchups (user
+     * decision, 2026-10-16: the mean halved the hold-back and a lead still took it). Worked out once per decision.
      */
     internal fun dynamaxFits(context: BattleDecisionContext): Map<java.util.UUID, Double> {
         synchronized(dynamaxFitMemo) { dynamaxFitMemo[context]?.let { return it } }
+        val weights = dynamaxWeights(context)
+        val threat = LocalOpponentThreat.weights(context, BattleTrainerTier.STANDARD)
+        val ace = LocalAceScore.matchup(context, threat)
+        val fits = weights.mapValues { (id, weight) ->
+            // One that cannot or may not Dynamax keeps nothing back, whatever kind of ace it is.
+            if (context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.let { dynamaxAllowed(it, context) } == false) 0.0
+            else maxOf(weight, ace[id] ?: 0.0)
+        }
+        synchronized(dynamaxFitMemo) { dynamaxFitMemo[context] = fits }
+        return fits
+    }
+
+    /** Whether [pokemon] can Dynamax (its species and form) and its trainer lets it (ManagedDynamax, via the build). */
+    private fun dynamaxAllowed(pokemon: BattlePokemonStateView, context: BattleDecisionContext): Boolean =
+        LocalDynamax.canDynamax(pokemon) && context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxAllowed != false
+
+    /** Every ally's standing as the ace ([LocalAceScore.matchup]); for the measurement trace. */
+    internal fun dynamaxAce(context: BattleDecisionContext): Map<java.util.UUID, Double> =
+        LocalAceScore.matchup(context, LocalOpponentThreat.weights(context, BattleTrainerTier.STANDARD))
+
+    /**
+     * Every ally's Dynamax weight, 0..1: how much Dynamaxing raises its one-on-one win chance against each visible
+     * living opponent (doubled HP for three turns and Max Moves, as the matchup calculation reads a Dynamaxed Pokemon),
+     * weighted by the opponents' threat.
+     */
+    internal fun dynamaxWeights(context: BattleDecisionContext): Map<java.util.UUID, Double> {
         val foes = context.state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
         val allies = context.state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }
         val fits = if (foes.isEmpty()) emptyMap() else {
@@ -147,7 +177,6 @@ internal object LocalMechanicOptionValue {
                     foes.sumOf { foe -> (weights[foe.battlePokemonId] ?: 1.0) * dynamaxGain(ally, foe, context, cache) } / weightTotal
             }
         }
-        synchronized(dynamaxFitMemo) { dynamaxFitMemo[context] = fits }
         return fits
     }
 
@@ -226,8 +255,11 @@ internal object LocalMechanicOptionValue {
 
     /** A fully realized future Tera (a saved KO or a dodged one) is worth most of an HP bar. */
     private const val TERA_SCALE = 80.0
-    /** A fully realized future Dynamax (a matchup turned from lost to won) is worth as much as a Tera. */
-    private const val DYNAMAX_SCALE = TERA_SCALE
+    /**
+     * A Dynamax kept for an ally with a full share. A lead's Dynamax gains it 30 to 40 points at once; at 120 an ace's
+     * share of 0.75 with two allies left holds it back by 60 (user decision, 2026-10-16).
+     */
+    private const val DYNAMAX_SCALE = 120.0
     private const val ONE_SHOT_SCALE = 40.0
 
     /** Largest share the carrier lean moves a Tera cost, at full tier scale and plan persistence. */

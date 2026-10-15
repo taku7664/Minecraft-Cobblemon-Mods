@@ -111,14 +111,18 @@ object ManagedPveBattles {
                 .also { it.effectedPokemon.heal() }
         }
         // Built and copied above the server's maximum level if the content asks for it; nothing else is built in here.
+        // Which members may Dynamax (`dynamax=none|normal|gmax`); a team that marks any leaves the rest at none.
+        val lines = request.opponentProperties.map(ManagedDynamax::split)
+        val dynamaxMarked = lines.any { it.second != null }
         val opponentTeam = Cobblemon173OpponentLevelScope.during(MAX_OPPONENT_LEVEL) {
-            request.opponentProperties.map { raw ->
+            lines.map { (raw, dynamax) ->
                 val properties = PokemonProperties.Companion.parse(raw)
                 require(properties.species != null && properties.species != "random") { "Unknown or random opponent species" }
                 require(properties.level in 1..MAX_OPPONENT_LEVEL) { "Opponent level must be explicit and within MCC's maximum" }
                 require(!properties.moves.isNullOrEmpty()) { "Opponent moves must be explicit" }
                 BattlePokemon.Companion.safeCopyOf(Cobblemon173CatalogPokemonCreator.create(properties, properties.form)).also {
                     check(it.effectedPokemon.level == properties.level) { "Opponent level ${properties.level} did not survive the copy" }
+                    if (dynamaxMarked) ManagedDynamax.mark(it.effectedPokemon, dynamax ?: ManagedDynamax.Permission.NONE)
                     protectManagedOpponent(it)
                 }
             }

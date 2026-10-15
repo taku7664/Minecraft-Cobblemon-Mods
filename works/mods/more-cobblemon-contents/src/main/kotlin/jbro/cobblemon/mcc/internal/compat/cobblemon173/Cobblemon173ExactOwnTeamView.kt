@@ -25,6 +25,7 @@ internal object Cobblemon173ExactOwnTeamView {
                 teraTypeId = source.teraType.name,
                 showdownSpeciesId = source.form.showdownId(),
                 gigantamax = source.gmaxFactor,
+                dynamaxAllowed = jbro.cobblemon.mcc.api.battle.ManagedDynamax.permits(source),
             )
         },
     )
