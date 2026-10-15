@@ -54,7 +54,10 @@ public class BattleHealthChangeHandlerMixin {
 
             if (pokemon != null) {
                 UUID uuid = pokemon.getUuid();
-                float maxHp = pokemon.getMaxHp();
+                // A packet that also changes max HP (Dynamax starting or ending doubles or halves it) carries the new
+                // max; this runs before Cobblemon applies it, so the old one would turn the same HP into a false 200%.
+                Float packetMax = packet.getNewMaxHealth();
+                float maxHp = packetMax != null ? packetMax : pokemon.getMaxHp();
                 float newHpValue = packet.getNewHealth();
                 boolean isFlat = pokemon.isHpFlat();
 

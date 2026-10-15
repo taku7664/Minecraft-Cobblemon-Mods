@@ -31,6 +31,14 @@ object BattlePokemonTypes {
 
     fun width(types: List<ElementalType>): Int = if (types.isEmpty()) 0 else types.size * ICON_STEP - 1
 
+    /** Icons top to bottom from [y], one column at [x]; returns the bottom edge of the last one. */
+    fun drawIconsDown(context: GuiGraphics, types: List<ElementalType>, x: Int, y: Int, opacity: Float = 1f): Int {
+        types.forEachIndexed { index, type ->
+            TypeIcon(x = x, y = y + index * ICON_STEP, type = type, small = true, opacity = opacity).render(context)
+        }
+        return y + width(types)
+    }
+
     /** Icons left to right from [x]; returns the right edge of the last one. */
     fun drawIcons(context: GuiGraphics, types: List<ElementalType>, x: Int, y: Int, opacity: Float = 1f): Int {
         types.forEachIndexed { index, type ->

@@ -199,6 +199,12 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         if (navigationKey) {
             KeyboardTileFocus.useKeyboard();
         }
+        // A confirm key held down since before the menu appeared (advancing the last line) repeats into it: the menu
+        // waits for it to be let go and pressed again.
+        if (CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)
+                && !jbro.cobblemon.ui.extended.BattleConfirmGate.getPressedForMenu()) {
+            return true;
+        }
 
         if (currentSelection instanceof ForfeitConfirmationSelection confirmation
                 && cobblemonBattleUi$handleForfeitKeys(confirmation, keyCode, scanCode)) {

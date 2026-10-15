@@ -26,12 +26,11 @@ import net.minecraft.resources.ResourceLocation
 /**
  * The battle information window: the player's side, the field and the opponent's side in three columns. It is laid
  * out at the GUI's own scale by [ChampionsInfoLayout], so text is drawn on whole pixels and stays sharp; a single
- * active Pokemon gets a detailed card, two or three get compact ones. The window rises into place when it opens.
+ * active Pokemon gets a detailed card, two or three get compact ones.
  */
 object ChampionsBattleInfoOverlay {
     private const val MAX_ACTIVE_PER_SIDE = 3
     private const val LINE = 10
-    private const val OPEN_SECONDS = 0.18
     private const val MEDIUM_CARD_HEIGHT = 66
     /** In front of a party chip's portrait model, which Cobblemon draws a few dozen units toward the viewer. */
     private const val PORTRAIT_FRONT_Z = 100.0
@@ -78,10 +77,8 @@ object ChampionsBattleInfoOverlay {
         effects = emptyList()
     }
 
-    private var openedNanos = 0L
 
     fun onOpened() {
-        openedNanos = System.nanoTime()
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -114,11 +111,9 @@ object ChampionsBattleInfoOverlay {
     fun render(context: GuiGraphics) {
         val mc = Minecraft.getInstance()
         val layout = ChampionsInfoLayout.calculate(mc.window.guiScaledWidth, mc.window.guiScaledHeight)
-        val opened = ((System.nanoTime() - openedNanos) / 1e9 / OPEN_SECONDS).toFloat().coerceIn(0f, 1f)
-        // Whole-pixel rise, so the text never sits between pixels while the window settles.
-        val rise = ((1f - opened) * (1f - opened) * 10f).toInt()
+        // The window stands in place at once; it used to rise into place, which only delayed reading it.
         context.pose().pushPose()
-        context.pose().translate(0.0, rise.toDouble(), UIUtils.MODAL_Z_OFFSET)
+        context.pose().translate(0.0, 0.0, UIUtils.MODAL_Z_OFFSET)
         drawWindow(context, layout)
         drawSide(context, layout.ally, activeAllies, allyTeam, opponent = false)
         drawField(context, layout.field)

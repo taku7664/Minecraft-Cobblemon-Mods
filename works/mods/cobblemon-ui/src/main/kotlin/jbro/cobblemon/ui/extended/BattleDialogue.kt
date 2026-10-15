@@ -63,6 +63,8 @@ object BattleDialogue {
                 (message.contents as? TranslatableContents)?.key != TranslationKeys.TURN_KEY
         }
         if (shown.isEmpty()) return
+        // A key held on from the last menu is not for the next one: the turn's lines come between them.
+        BattleConfirmGate.released()
         // A spectator is never waited for, so lines still unread give way to the newest ones.
         if (isSpectating()) queue.replace(shown) else queue.enqueue(shown)
     }

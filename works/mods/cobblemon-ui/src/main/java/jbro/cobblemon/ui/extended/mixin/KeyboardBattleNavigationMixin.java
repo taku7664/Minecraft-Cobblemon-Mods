@@ -21,6 +21,16 @@ public class KeyboardBattleNavigationMixin {
             int modifiers,
             CallbackInfo ci
     ) {
+        boolean confirm = jbro.cobblemon.ui.extended.CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode);
+        if (action == GLFW.GLFW_PRESS && confirm) {
+            // Remember whether this press was made for the menu, before the screen sees it.
+            boolean menuShown = Minecraft.getInstance().screen instanceof BattleGUI gui
+                    && gui.getCurrentActionSelection() != null && !BattleDialogue.INSTANCE.hasPending();
+            jbro.cobblemon.ui.extended.BattleConfirmGate.pressed(menuShown);
+        }
+        if (action == GLFW.GLFW_RELEASE && confirm) {
+            jbro.cobblemon.ui.extended.BattleConfirmGate.released();
+        }
         if (action == GLFW.GLFW_RELEASE && Minecraft.getInstance().screen instanceof BattleGUI) {
             BattleDialogue.INSTANCE.releaseConfirm(keyCode, scanCode);
         }

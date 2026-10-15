@@ -77,17 +77,19 @@ internal object BattleHudCardRenderer {
             val key = status.takeIf { it in setOf("brn", "par", "psn", "tox", "slp", "frz") } ?: "other"
             val label = Component.translatable("cobblemon_ui.switch.status.$key").string
             val badgeWidth = font.width(label) + 4
-            val badgeX = if (ally) x + WIDTH - 8 else x - badgeWidth + 8
+            // Beside a column of two type icons rather than over the lower one.
+            val clear = if (card.types.size > 1) BattlePokemonTypes.ICON_STEP + 1 else 0
+            val badgeX = if (ally) x + WIDTH - 8 + clear else x - badgeWidth + 8 - clear
             val badgeY = y + HEIGHT - 9
             BattleSurfaceRenderer.capsule(context, badgeX - 2, badgeY, badgeWidth + 4, 9,
                 BattleStatusPalette.background(status), card.opacity)
             context.drawString(font, label, badgeX + 2, badgeY,
                 BattleSurfaceRenderer.withOpacity(BattleUiTheme.palette.statusInk, card.opacity), false)
         }
-        // Types sit at the inner end's top, over the status badge's column.
+        // Types stand in one column at the inner end, inside the card: a second type goes under the first.
         if (card.types.isNotEmpty()) {
-            val typesX = if (ally) x + WIDTH - 10 else x + 10 - BattlePokemonTypes.width(card.types)
-            BattlePokemonTypes.drawIcons(context, card.types, typesX, y + 1, card.opacity)
+            val typesX = if (ally) x + WIDTH - 10 else x + 1
+            BattlePokemonTypes.drawIconsDown(context, card.types, typesX, y + 1, card.opacity)
         }
         if (card.owned) {
             val indicatorX = if (ally) x + 2 else x + WIDTH - 10
