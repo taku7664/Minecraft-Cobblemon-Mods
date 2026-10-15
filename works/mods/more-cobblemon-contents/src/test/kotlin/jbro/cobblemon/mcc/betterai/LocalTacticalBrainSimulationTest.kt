@@ -1823,18 +1823,12 @@ class LocalTacticalBrainSimulationTest {
         )
         val chip = move("small_damage", power = 60.0, facts = damageFacts(0.20))
 
-        assertEquals(
-            "protect",
-            decide(
-                candidates = listOf(protect, chip),
-                allyPokemonId = actorId,
-                memory = BattleTacticalMemoryView(
-                    lastMoveId = "cobblemon:protect",
-                    sameMoveRepeatCount = 1,
-                ),
-            ).actionId,
-            "a failed Protect resets the shared counter, so the next attempt is certain again",
-        )
+        // A failed Protect resets the shared counter, so the next attempt is certain again. (Whether it is then chosen is
+        // the turn's return now, LocalSinglesProtectReturn: with nothing to gain it no longer beats a hit.)
+        val reset = contextOf(listOf(protect, chip), allyPokemonId = actorId,
+            memory = BattleTacticalMemoryView(lastMoveId = "cobblemon:protect", sameMoveRepeatCount = 1))
+        assertEquals(1.0, jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.nextSuccessProbability(
+            jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(reset.state, BattleSide.ALLY, 0)))
 
         assertEquals(
             "small_damage",

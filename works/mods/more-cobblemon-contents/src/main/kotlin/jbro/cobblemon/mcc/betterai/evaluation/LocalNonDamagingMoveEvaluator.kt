@@ -79,6 +79,9 @@ internal object LocalNonDamagingMoveEvaluator {
         } else {
             1.0
         }
+        val singlesProtect = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
+            LocalSinglesProtectReturn.value(candidate, context, tuning)
+        } else null
         val selectedTarget = selectedTarget(candidate, context)
         val declaresMajorStatus = selectedTarget?.side == BattleSide.OPPONENT && effects.any {
             it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
@@ -103,6 +106,7 @@ internal object LocalNonDamagingMoveEvaluator {
         }
         var usesSetupPressure = false
         var generic = false
+        var protectReturn = false
         val status = when {
             declaresMajorStatus && target?.statusId != null -> 0.0
             statusProbability != null -> {
@@ -120,6 +124,11 @@ internal object LocalNonDamagingMoveEvaluator {
             }
             calloutValue(candidate, context, actor, target) != null ->
                 requireNotNull(calloutValue(candidate, context, actor, target)) * accuracy
+            // A singles Protect is worth the turn it buys, not the flat value (LocalSinglesProtectReturn).
+            singlesProtect != null -> {
+                protectReturn = true
+                tuning.board(singlesProtect) * protectionSuccessProbability
+            }
             else -> {
                 generic = true
                 (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
@@ -130,7 +139,8 @@ internal object LocalNonDamagingMoveEvaluator {
         val usableStatus = if (LocalHazardSwitchAvailability.isHazardMove(candidate)) {
             status * LocalHazardSwitchAvailability.fraction(context.state, BattleSide.OPPONENT, context)
         } else status
-        val total = if (declaresPureRecovery) recovery else maxOf(recovery, usableStatus)
+        // A Protect's return may be a loss (its own Dynamax or poison running down); it is not floored at no healing.
+        val total = if (declaresPureRecovery) recovery else if (protectReturn) usableStatus else maxOf(recovery, usableStatus)
         return Score(
             total = total,
             statStageUtility = if (usesSetupPressure && status >= recovery) status else 0.0,

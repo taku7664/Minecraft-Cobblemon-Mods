@@ -225,8 +225,10 @@ internal object EmbeddedTeamInput {
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
                     actionWindow = ActionWindow(eventTurn, index.toLong() * 2, uuid(it.ident), id(p[3]), targets)
                 }
-                "-status" -> current?.let { it.status = id(p[3]) }
-                "-curestatus" -> current?.let { it.status = null }
+                // As the game's observer records them: without the event, Toxic's counter ran from the last switch-in
+                // (six where the game had three) and a Protect read the opponent as poisoned out.
+                "-status" -> current?.let { it.status = id(p[3]); event(BattleObservedEventKind.STATUS_CHANGED, id(p[3])) }
+                "-curestatus" -> current?.let { it.status = null; event(BattleObservedEventKind.STATUS_CHANGED) }
                 // The game's observer records every ability reveal as an event; the native opening pins it to the set.
                 "-ability" -> current?.let {
                     it.ability = id(p[3]); it.abilityEnded = false

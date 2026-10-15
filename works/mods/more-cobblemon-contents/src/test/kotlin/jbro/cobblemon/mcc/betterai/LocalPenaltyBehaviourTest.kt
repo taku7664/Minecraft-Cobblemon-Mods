@@ -30,6 +30,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalNonDamagingMoveEvaluator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
@@ -242,11 +243,17 @@ class LocalPenaltyBehaviourTest {
         )
         val calculated = PublicBattleTacticalCalculator.calculate(context)
         val protect = calculated.candidates.single { it.actionId == "protect_again" }
+        // A singles Protect is worth the turn it buys (LocalSinglesProtectReturn): an opponent's poison ticking here.
+        fun poisoned(source: BattleDecisionContext) = source.copy(state = source.state.copyState(pokemon = source.state.pokemon.map {
+            if (it.side == BattleSide.OPPONENT) it.copyState(statusId = "psn") else it
+        }))
+        val fresh = LocalNonDamagingMoveEvaluator.pressure(protect, poisoned(context(actorId = actorId, candidates = context.candidates)), accuracy = 1.0)
+        assertTrue(fresh > 0.0, "a turn of the opponent's poison is worth something")
         assertEquals(
-            20.0 / 3.0,
-            LocalNonDamagingMoveEvaluator.pressure(protect, context, accuracy = 1.0),
+            fresh / 3.0,
+            LocalNonDamagingMoveEvaluator.pressure(protect, poisoned(context), accuracy = 1.0),
             1e-9,
-            "the nominal Protect value must be multiplied by its one-third success chance",
+            "the Protect's return must be multiplied by its one-third success chance",
         )
         assertEquals(
             10.0 / 9.0,
@@ -255,7 +262,7 @@ class LocalPenaltyBehaviourTest {
             "the one-third branch keeps a small Bernoulli uncertainty reserve",
         )
         assertEquals(
-            74.0 / 9.0,
+            LocalNonDamagingMoveEvaluator.pressure(protect, context, accuracy = 1.0) + 4 * 2.0 / 3.0 - 10.0 / 9.0,
             LocalTacticalScorer.score(protect, context),
             1e-9,
             "the Protect priority benefit must be probability-weighted with its base value",
