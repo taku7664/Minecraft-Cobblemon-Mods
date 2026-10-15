@@ -134,7 +134,7 @@ internal object LocalMechanicOptionValue {
      * living opponent (doubled HP for three turns and Max Moves, as the matchup calculation reads a Dynamaxed Pokemon),
      * weighted by the opponents' threat. Worked out once per decision.
      */
-    private fun dynamaxFits(context: BattleDecisionContext): Map<java.util.UUID, Double> {
+    internal fun dynamaxFits(context: BattleDecisionContext): Map<java.util.UUID, Double> {
         synchronized(dynamaxFitMemo) { dynamaxFitMemo[context]?.let { return it } }
         val foes = context.state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
         val allies = context.state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }

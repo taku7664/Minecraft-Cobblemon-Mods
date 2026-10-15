@@ -78,7 +78,16 @@ internal object LocalNativeStatusValue {
     ): Result? {
         // A move the ranking already rules out (it fails publicly) stays out.
         val open = ranked.filter { it.decisionTier > LocalBattleActionPolicy.TIER_PUBLICLY_BAD }
-        val status = open.filter { unpriced(it.outcome.candidate, context) }
+        // A move a mechanic turns into another (Max Guard from a Dynamax Recover, a Z-Move) is not the move the engine
+        // reads under that id: priced so, a Dynamax Recover took Recover's heal and spent the Dynamax on Max Guard
+        // (G-947). It keeps the ranking's value.
+        val status = open.filter { rank ->
+            val candidate = rank.outcome.candidate
+            // A Dynamaxed user's move is its Max Move in the same way, with no mechanic left on the candidate.
+            val user = context.state.pokemon.firstOrNull { it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == candidate.actorSlot }
+            unpriced(candidate, context) && candidate.mechanic?.transformedMoveId == null &&
+                !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)
+        }
         if (status.isEmpty()) return null
         // The anchors in the ranking's units: the user's best attacks, what a status move displaces. Attacks are priced
         // by their damage on both scales; a switch is not (the ranking and the engine disagreed by 30 points on one, and
