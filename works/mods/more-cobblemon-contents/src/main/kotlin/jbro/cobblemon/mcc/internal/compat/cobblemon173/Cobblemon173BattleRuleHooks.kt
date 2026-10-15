@@ -26,14 +26,14 @@ object Cobblemon173BattleRuleHooks {
 
     @JvmStatic
     fun rejectionMessage(actor: BattleActor, responses: List<ShowdownActionResponse>): String? {
-        val submission = inspect(responses)
+        val submission = inspect(responses, actor)
         return registry.rejectionReason(actor.battle.battleId, actor.uuid, submission)?.message
             ?: GimmickLockedBattles.rejection(actor.battle.battleId, actor.uuid, submission)
     }
 
     @JvmStatic
     fun recordAccepted(actor: BattleActor, responses: List<ShowdownActionResponse>) {
-        registry.recordAccepted(actor.battle.battleId, actor.uuid, inspect(responses))
+        registry.recordAccepted(actor.battle.battleId, actor.uuid, inspect(responses, actor))
     }
 
     fun register(battleId: UUID, mechanic: MajorBattleMechanic?, actorIds: Set<UUID>): Boolean =
@@ -120,9 +120,18 @@ object Cobblemon173BattleRuleHooks {
             Cobblemon173MechanicPolicy(mechanics.fold(0) { flags, mechanic -> flags or mechanic.flag })
         }
 
-    internal fun inspect(responses: List<ShowdownActionResponse>) = ManagedActionSubmission(
+    /**
+     * What [responses] spend. A Max move chosen while its Pokemon is already Dynamaxed carries "max" too (Cobblemon's
+     * move tiles send the gimmick on every Max move), but spends nothing new: Showdown lists Max moves without
+     * canDynamax only then, so [actor]'s request tells those apart.
+     */
+    internal fun inspect(responses: List<ShowdownActionResponse>, actor: BattleActor? = null) = ManagedActionSubmission(
         hasBagItem = responses.any { it is BagItemActionResponse },
-        mechanics = responses.mapNotNull { (it as? MoveActionResponse)?.gimmickID }.map { gimmickId ->
+        mechanics = responses.mapIndexedNotNull { slot, response ->
+            val gimmickId = (response as? MoveActionResponse)?.gimmickID ?: return@mapIndexedNotNull null
+            val active = actor?.request?.active?.getOrNull(slot)
+            gimmickId.takeUnless { it == "max" && active != null && active.maxMoves != null && !active.canDynamax }
+        }.map { gimmickId ->
             when (gimmickId) {
                 "mega" -> ManagedSubmittedMechanic.MEGA
                 "max" -> ManagedSubmittedMechanic.DYNAMAX
