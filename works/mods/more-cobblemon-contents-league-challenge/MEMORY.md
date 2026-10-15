@@ -1,5 +1,15 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-15 18:25] 사용자 지시에 따른 UI 동결·기능 검토 인계
+
+- **사용자 결정:** UI 추가 작업을 중단하고 현재 상태를 유지한다. 기능 검토만 마친 상태 그대로 작업 브랜치 커밋·푸시로 보존하여 Claude에게 넘기며, `main` 병합·제품 배포는 하지 않는다. 사용자 UI 최종 승인은 없다.
+- **동결 UI:** League 내부에만 `pixel_frame.tower_lobby` 고정 카드·제목 띠·버튼을 사용한다. 공유 탭·헤더·`RouteNode` 렌더 코드는 보존했다. 아래 17:58 단일 정보창 검토본은 이전 단계의 기록이다.
+- **확인한 기능·빌드:** `F:/AI/builds/league-galar-c7fe/ui-reference-cards1.log`에서 League 119/119·`remapJar`·빌드 성공을 확인했다. 일회용 복사 월드의 실제 지방/노드/페이지/새로고침/닫기 하네스, 성장·포획 100 유지, 원본 레벨 `[100,10]`→전투 복사본 `[22,10]` 및 원본 파티 JSON 전체 동일, 모든 차원 저장·클라이언트 자동 종료도 확인했다. 기능 검사 성공을 시각 합격으로 해석하지 않는다.
+- **확정 P2·수정 없이 인계:** `LeagueAdminCommands.kt:207-216`의 `KOREAN_TARGETS`가 `trainer.galar.marnie/hop/bede`를 `galar/marnie`, `galar/hop`, `galar/bede`로 매핑하지만 실제 catalog route는 `galar/cup_marnie`, `galar/cup_hop`, `galar/cup_bede`다. 따라서 228행 route 조회가 세 한국어 테스트 명령과 하드형을 `unknown`으로 거절한다. main 담당자의 Python 읽기 검증에서 milo/leon은 route 일치, marnie/hop/bede는 불일치였다. 명령을 실게임에서 실행한 결과는 아니다.
+- **추가 확정 P2·수정 없이 인계:** `LeagueAdminCommands.kt:93`의 progress challenge 인수와 100행의 test challenge 인수는 `StringArgumentType.word()`이지만, `progressTargets()`와 실제 가라르 ID에는 `galar/milo`, `galar/cup_marnie`처럼 `/`가 들어간다. main 담당자가 실제 사용 Brigadier 1.3.10 JAR를 `javap`로 확인한 결과 `SINGLE_WORD.parse`는 `readUnquotedString`을 호출하며 허용 문자는 ASCII 영숫자와 `_ - . +`뿐이라 `/`(47)를 읽지 못한다. 따라서 제시되는 가라르 슬래시 ID로 `progress set`·raw-ID `test` 명령을 끝까지 파싱하지 못한다. 한국어 관장 별칭은 literal이므로 이 결함과 별개이며, 마리/호브/비트 컵 별칭은 앞 P2로 실패한다. 실제 Minecraft 명령 실행은 하지 않았다.
+- **읽기 검토 범위:** 위 로그 이후 소스를 수정하지 않고 기본 진행·기믹 권한·복사 레벨·보상 경로를 읽어 검토했으며, 두 관리자 명령 결함 외 기본 진행 경로에서 추가 확정 결함을 찾지 못했다. 가라르 배지 10개 item resource가 실제 PokeBadges JAR에 있음을 main 담당자가 확인했다. 이는 전체 무결함 선언이 아니다.
+- **남은 검증·문제:** 7연전 실제 완주·상대 Dmax 기술 실제 사용·AI 승률/밸런스·음원 청취는 미검증이다. 앞서 관측한 기존 Core 종료 FBO wrong-thread 오류도 미해결로 남긴다.
+
 ## [2026-10-15 17:58] 단일 정보창 3열 UI 재배치 검토본 (기능 확인, 사용자 시각 승인 없음)
 
 - **사용자 지적·판단 정정:** HTML 시안/참고 화면과 실제 UI의 품질 격차가 반복 지적됐다. 색상값·공용 위젯 사용·단위 검사만으로 디자인을 합격 처리하지 않는다. 원래 HTML 시안은 single-window였으며, 아래의 “공용 카드 제목 띠 누락이 원인”이라는 해석은 시안의 계약이 아니다.

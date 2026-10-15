@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.league.client
 
 import com.cobblemon.mod.common.client.gui.snapshots.SnapshotWarningScreen
-import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.mcc.league.server.LeagueTerminal
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Screenshot
@@ -134,7 +133,7 @@ internal object LeagueLiveCaptureHarness {
                 20 -> if (captured.get()) {
                     val screen = checkNotNull(client.screen)
                     val view = checkNotNull(LeagueClientSession.current)
-                    val region = screen.children().filterIsInstance<CobblemonUiButton>()
+                    val region = screen.children().filterIsInstance<AbstractButton>()
                         .single { it.message.string == Component.translatable(view.nameKey).string }
                     check(screen.mouseClicked(region.x + region.width / 2.0, region.y + region.height / 2.0, 0))
                     phase = 21; phaseTick = ticks
@@ -170,7 +169,7 @@ internal object LeagueLiveCaptureHarness {
                     val screen = checkNotNull(client.screen)
                     var moved = 0
                     repeat(12) {
-                        screen.children().filterIsInstance<CobblemonUiButton>().single { it.message.string == ">" }
+                        screen.children().filterIsInstance<AbstractButton>().single { it.message.string == ">" }
                             .takeIf { it.active }?.let { arrow ->
                                 check(screen.mouseClicked(arrow.x + arrow.width / 2.0, arrow.y + arrow.height / 2.0, 0)); moved++
                             }
@@ -191,7 +190,7 @@ internal object LeagueLiveCaptureHarness {
                 26 -> if (captured.get()) {
                     val screen = checkNotNull(client.screen)
                     repeat(12) {
-                        screen.children().filterIsInstance<CobblemonUiButton>().single { it.message.string == "<" }
+                        screen.children().filterIsInstance<AbstractButton>().single { it.message.string == "<" }
                             .takeIf { it.active }?.let { arrow ->
                                 check(screen.mouseClicked(arrow.x + arrow.width / 2.0, arrow.y + arrow.height / 2.0, 0))
                             }
@@ -220,7 +219,7 @@ internal object LeagueLiveCaptureHarness {
                 }
                 5 -> if (captured.get()) {
                     val screen = checkNotNull(client.screen)
-                    val refresh = screen.children().filterIsInstance<CobblemonUiButton>()
+                    val refresh = screen.children().filterIsInstance<AbstractButton>()
                         .single { it.message.string == leagueCopy("refresh").string }
                     check(screen.mouseClicked(refresh.x + refresh.width / 2.0, refresh.y + refresh.height / 2.0, 0))
                     check(LeagueHomeController.state.pending)

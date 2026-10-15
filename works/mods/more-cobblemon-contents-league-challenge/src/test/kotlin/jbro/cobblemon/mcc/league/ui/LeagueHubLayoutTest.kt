@@ -13,12 +13,14 @@ class LeagueHubLayoutTest {
             val layout = LeagueHubLayout.calculate(bounds)
             assertTrue(layout.summary.bottom <= layout.route.y, "$bounds")
             assertTrue(layout.route.bottom <= layout.detail.y, "$bounds")
-            assertTrue(layout.detail.right == layout.mechanics.x && layout.mechanics.right == layout.status.x, "$bounds")
+            assertTrue(layout.detail.right < layout.mechanics.x && layout.mechanics.right < layout.status.x, "$bounds")
             assertTrue(layout.detail.bottom <= layout.footer.y, "$bounds")
-            assertEquals(bounds.right - 6, layout.status.right, "$bounds")
+            assertEquals(bounds.right, layout.status.right, "$bounds")
             assertEquals(bounds.x, layout.panel.x)
             assertEquals(bounds.right, layout.panel.right)
-            assertTrue(layout.body.bottom < layout.panel.bottom && layout.panel.bottom < layout.footer.y)
+            assertEquals(layout.body.bottom, layout.panel.bottom)
+            assertTrue(layout.panel.bottom < layout.footer.y)
+            assertEquals(26, layout.footer.height)
             assertEquals(bounds.bottom, layout.footer.bottom, "$bounds")
         }
     }
@@ -31,6 +33,10 @@ class LeagueHubLayoutTest {
 
     @Test fun `ordinary game width shows all nine stages without route paging`() {
         assertTrue(LeagueHubLayout.calculate(sizes.first()).routeCapacity >= 9)
+    }
+
+    @Test fun `restyled lower cards preserve the approved stage map rectangle`() {
+        assertEquals(UiRect(116, 72, 293, 56), LeagueHubLayout.calculate(sizes.first()).route)
     }
 
     @Test fun `route viewport keeps names apart and reserves gutters on small screens`() {

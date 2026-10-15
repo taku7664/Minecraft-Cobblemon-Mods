@@ -18,10 +18,11 @@ class LeagueLayoutEquivalenceTest {
             val l = LeagueHubLayout.calculate(bounds)
             assertTrue(l.summary.bottom <= l.route.y)
             assertTrue(l.route.bottom <= l.body.y)
-            assertEquals(l.detail.right, l.mechanics.x)
-            assertEquals(l.mechanics.right, l.status.x)
+            assertTrue(l.detail.right < l.mechanics.x)
+            assertTrue(l.mechanics.right < l.status.x)
             assertTrue(l.body.bottom <= l.footer.y)
             assertTrue(l.mechanics.height >= 65, bounds.toString())
+            assertTrue(l.mechanics.height - 21 >= 45, "Five complete checklist rows need 45px: $bounds")
             val reached = mutableSetOf<String>()
             for (offset in 0..9) {
             val rectangles = l.nodeRects(route, offset)

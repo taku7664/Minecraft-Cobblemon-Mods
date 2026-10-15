@@ -8,7 +8,6 @@ import jbro.cobblemon.mcc.league.network.*
 import jbro.cobblemon.mcc.league.ui.*
 import jbro.cobblemon.uikit.*
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
-import jbro.cobblemon.uikit.client.CobblemonUiButton
 import net.minecraft.client.Minecraft
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
@@ -45,35 +44,30 @@ internal class LeagueHubTab : MccHubTabContent {
         routeStart = routeStart.coerceIn(0, lastStart)
         val rects = layout.nodeRects(entries, routeStart)
         val visible = entries.filter { it.id in rects }
-        host.add(Canvas(layout, visible, rects))
+        host.add(Canvas(layout, visible, rects, presentation.focused))
         if (lastStart > 0) {
             listOf(false, true).forEach { next ->
                 val r = UiRect(if (next) layout.route.right - 12 else layout.route.x,
                     layout.route.y + (layout.route.height - 18) / 2, 12, 18)
-                host.add(CobblemonUiButton.create(r.x, r.y, r.width,
-                    UiButtonSpec(Component.literal(if (next) ">" else "<"), variant = UiButtonVariant.SECONDARY,
-                        size = UiControlSize.SMALL, width = UiWidthPolicy.Fixed(r.width)), press = {
+                host.add(LeagueHubButton(r, MccHubKit.Action(Component.literal(if (next) ">" else "<"),
+                    enabled = if (next) routeStart < lastStart else routeStart > 0,
+                    tooltip = leagueCopy(if (next) "route_next" else "route_previous")) {
                     routeStart = (routeStart + if (next) 1 else -1).coerceIn(0, lastStart); host.rebuild()
-                }).also {
-                    it.active = if (next) routeStart < lastStart else routeStart > 0
-                    it.tooltip = Tooltip.create(leagueCopy(if (next) "route_next" else "route_previous"))
-                })
+                }))
             }
         }
         val regionWidth = 72
         val selectorWidth = regionWidth + 3 + 62
-        MccHubKit.buttonRow(host, UiRect(layout.summary.x, layout.summary.y, regionWidth, layout.summary.height), listOf(
+        host.add(LeagueHubButton(UiRect(layout.summary.x, layout.summary.y, regionWidth, layout.summary.height),
             MccHubKit.Action(Component.translatable(view.nameKey), enabled = !state.pending && view.runChallenge == null && view.regions.size > 1,
-                tooltip = leagueCopy("select_region")) { LeagueHomeController.cycleRegion() }), UiControlSize.SMALL)
+                tooltip = leagueCopy("select_region")) { LeagueHomeController.cycleRegion() }))
         listOf(false, true).forEachIndexed { index, hard ->
-            host.add(CobblemonUiButton.create(layout.summary.x + regionWidth + 3 + index * 31, layout.summary.y, 31,
-                UiButtonSpec(leagueCopy(if (hard) "difficulty_hard" else "difficulty_normal"),
-                    variant = UiButtonVariant.SECONDARY, size = UiControlSize.SMALL, width = UiWidthPolicy.Fixed(31), selected = state.hard == hard), press = {
+            host.add(LeagueHubButton(UiRect(layout.summary.x + regionWidth + 3 + index * 31, layout.summary.y, 31, layout.summary.height),
+                MccHubKit.Action(leagueCopy(if (hard) "difficulty_hard" else "difficulty_normal"),
+                    enabled = !state.pending && view.runChallenge == null && (!hard || view.hardUnlocked),
+                    tooltip = leagueCopy(if (hard && !view.hardUnlocked) "hard_locked" else "difficulty_tooltip")) {
                     if (state.hard != hard && state.toggleHard()) host.rebuild()
-                }).also {
-                it.active = !state.pending && view.runChallenge == null && (!hard || view.hardUnlocked)
-                it.tooltip = Tooltip.create(leagueCopy(if (hard && !view.hardUnlocked) "hard_locked" else "difficulty_tooltip"))
-            })
+                }, selected = state.hard == hard))
         }
         host.add(Info(UiRect(layout.summary.x + selectorWidth + 3, layout.summary.y,
             (layout.summary.width - selectorWidth - 3).coerceAtLeast(1), layout.summary.height),
@@ -82,10 +76,9 @@ internal class LeagueHubTab : MccHubTabContent {
             if (entry.stage == 9) leagueCopy(if (view.leagueId.endsWith(":galar")) "cup_short" else "league_short") else Component.translatable(entry.nameKey)) {
             state.select(entry.id); host.rebuild()
         }) }
-        host.add(Trainer(layout.detail, presentation.focused))
-        fun column(r: UiRect) = UiRect(r.x + 5, r.y, r.width - 10, r.height)
-        host.add(Gimmicks(column(layout.mechanics), presentation.focused))
-        rewardList = host.add(Rewards(column(layout.status), view, presentation.focused))
+        host.add(Trainer(LeagueHubStyle.body(layout.detail), presentation.focused))
+        host.add(Gimmicks(LeagueHubStyle.body(layout.mechanics), presentation.focused))
+        rewardList = host.add(Rewards(LeagueHubStyle.body(layout.status), view, presentation.focused))
         val primary = MccHubKit.Action(leagueCopy(if (view.runChallenge != null) "next" else "challenge"), UiButtonVariant.PRIMARY,
             if (view.runChallenge != null) state.canNext else state.canStart) {
             LeagueHomeController.send(if (view.runChallenge != null) LeagueAction.NEXT else LeagueAction.START)
@@ -108,22 +101,23 @@ internal class LeagueHubTab : MccHubTabContent {
         val primaryWidth = (bounds.width * 2 / 5).coerceIn(84, 120)
         val secondaryWidth = if (presentation.focused?.stage == 9 && state.finalBranches.size > 1)
             bounds.width - primaryWidth - 3 else minOf(64, bounds.width / 3)
-        MccHubKit.buttonRow(host, UiRect(layout.footer.x, layout.footer.y, secondaryWidth, layout.footer.height), listOf(secondary), UiControlSize.SMALL)
-        MccHubKit.buttonRow(host, UiRect(layout.footer.right - primaryWidth, layout.footer.y, primaryWidth, layout.footer.height), listOf(primary), UiControlSize.SMALL)
+        host.add(LeagueHubButton(UiRect(layout.footer.x, layout.footer.y, secondaryWidth, layout.footer.height), secondary))
+        host.add(LeagueHubButton(UiRect(layout.footer.right - primaryWidth, layout.footer.y, primaryWidth, layout.footer.height), primary))
     }
 
-    private class Canvas(val layout: LeagueHubLayout, val entries: List<LeagueChallengeView>, val rects: Map<String, UiRect>) :
+    private class Canvas(val layout: LeagueHubLayout, val entries: List<LeagueChallengeView>, val rects: Map<String, UiRect>, val focused: LeagueChallengeView?) :
         AbstractWidget(layout.panel.x, layout.panel.y, layout.panel.width, layout.panel.height, Component.empty()) {
         init { active = false }
         override fun renderWidget(g: GuiGraphics, mx: Int, my: Int, delta: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            UiSurfaceRenderer.draw(g, x, y, width, height, theme.surfaces.panel)
+            val theme = LeagueHubStyle.theme
+            UiSurfaceRenderer.draw(g, layout.mapPanel.x, layout.mapPanel.y, layout.mapPanel.width, layout.mapPanel.height,
+                UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(checkNotNull(theme.pixelDecorations).titleBar), UiBorder.Solid(theme.colors.borderBright, 2)))
+            LeagueHubStyle.card(g, layout.detail,
+                if (focused?.format == "DOUBLE") leagueCopy("format.double") else leagueCopy("dashboard_challenge"), featured = true)
+            LeagueHubStyle.card(g, layout.mechanics, leagueCopy(if (layout.mechanics.width < 90) "mechanics_short" else "mechanics"))
+            LeagueHubStyle.card(g, layout.status, leagueCopy("clear_rewards"))
             val border = theme.colors.borderBright
             g.enableScissor(x + 2, y + 2, x + width - 2, y + height - 2)
-            g.fill(layout.route.x, layout.body.y - 3, layout.route.right, layout.body.y - 2, border)
-            listOf(layout.mechanics.x, layout.status.x).forEach {
-                g.fill(it, layout.body.y + 1, it + 1, layout.body.bottom - 1, border)
-            }
             val stages = entries.groupBy { it.stage }
             stages.keys.sorted().zipWithNext().forEach { (a, b) ->
                 stages.getValue(a).forEach { from -> stages.getValue(b).forEach { to ->
@@ -194,28 +188,30 @@ internal class LeagueHubTab : MccHubTabContent {
         init { active = false }
         override fun renderWidget(g: GuiGraphics, mx: Int, my: Int, delta: Float) {
             val s = selected ?: return
-            val theme = CobblemonUiThemes.registry.snapshot(); val color = MccHubKit.panelText(theme)
+            val theme = LeagueHubStyle.theme; val color = MccHubKit.panelText(theme)
             g.enableScissor(x, y, x + width, y + height)
-            val size = ((height - 37) / 8 * 8).coerceIn(8, 48).coerceAtMost((width - 4).coerceAtLeast(8))
+            val size = ((height - 25) / 8 * 8).coerceIn(8, 48).coerceAtMost((width - 4).coerceAtLeast(8))
             val faceX = x + (width - size) / 2; val top = y
-            UiSurfaceRenderer.draw(g, faceX - 1, top, size + 2, size + 1,
-                UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(theme.colors.panelAlt), UiBorder.Solid(theme.colors.borderBright)))
-            faceTexture(s.skin)?.let { PlayerFaceRenderer.draw(g, it, faceX, top, size) }
-                ?: badgeStack(s.badgeId)?.let { scaledItem(g, it, faceX, top, size) }
+            UiSurfaceRenderer.draw(g, faceX - 1, top, size + 2, size + 2,
+                UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(theme.colors.borderBright), UiBorder.Solid(theme.colors.borderBright)))
+            faceTexture(s.skin)?.let { PlayerFaceRenderer.draw(g, it, faceX, top + 1, size) }
+                ?: badgeStack(s.badgeId)?.let { scaledItem(g, it, faceX, top + 1, size) }
             val font = Minecraft.getInstance().font; val type = s.type?.let(ElementalTypes::get)
-            val nameScale = 1.5f
-            val name = MccHubKit.fitted(Component.translatable(s.nameKey).withStyle(ChatFormatting.BOLD),
+            val fullName = Component.translatable(s.nameKey).withStyle(ChatFormatting.BOLD)
+            val nameScale = minOf(1.5f, (width - if (type == null) 4 else 16).toFloat() / font.width(fullName).coerceAtLeast(1)).coerceAtLeast(1f)
+            val name = MccHubKit.fitted(fullName,
                 ((width - if (type == null) 4 else 16) / nameScale).toInt().coerceAtLeast(1))
             val textWidth = (font.width(name) * nameScale).toInt()
             val nameWidth = textWidth + if (type == null) 0 else 12
             val nameX = x + (width - nameWidth) / 2
-            g.pose().pushPose(); g.pose().translate(nameX.toFloat(), (top + size + 3).toFloat(), 0f); g.pose().scale(nameScale, nameScale, 1f)
+            g.pose().pushPose(); g.pose().translate(nameX.toFloat(), (top + size + 2).toFloat(), 0f); g.pose().scale(nameScale, nameScale, 1f)
             g.drawString(font, name, 0, 0, color, false); g.pose().popPose()
-            type?.let { TypeIcon(x = nameX + textWidth + 3, y = top + size + 5, type = it, small = true).render(g) }
-            centeredLine(g, leagueCopy("challenge_cap", s.battleCap), x + 3, top + size + 18, width - 6, color)
+            type?.let { TypeIcon(x = nameX + textWidth + 3, y = top + size + 4, type = it, small = true).render(g) }
+            centeredLine(g, leagueCopy("challenge_cap", s.battleCap), x + 1, top + size + 17, width - 2, color)
             if (top + size + 37 <= y + height)
                 centeredLine(g, leagueCopy("format." + s.format.lowercase(Locale.ROOT)), x + 3, top + size + 28, width - 6, color)
-            tooltip = Tooltip.create(Component.empty().append(Component.translatable(s.nameKey)).append("\n").append(leagueCopy("challenge_cap", s.battleCap)))
+            tooltip = Tooltip.create(Component.empty().append(Component.translatable(s.nameKey)).append("\n").append(leagueCopy("challenge_cap", s.battleCap))
+                .append("\n").append(leagueCopy("format." + s.format.lowercase(Locale.ROOT))))
             g.disableScissor()
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
@@ -224,16 +220,15 @@ internal class LeagueHubTab : MccHubTabContent {
     private class Gimmicks(r: UiRect, val selected: LeagueChallengeView?) : AbstractWidget(r.x, r.y, r.width, r.height, Component.empty()) {
         init { active = false }
         override fun renderWidget(g: GuiGraphics, mx: Int, my: Int, delta: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot(); val color = MccHubKit.panelText(theme)
+            val theme = LeagueHubStyle.theme; val color = MccHubKit.panelText(theme)
             val flags = selected?.mechanicFlags ?: 0
             tooltip = Tooltip.create(leagueCopy("mechanics"))
             g.enableScissor(x, y, x + width, y + height)
-            line(g, leagueCopy(if (width < 70) "mechanics_short" else "mechanics"), x, y + 1, width, color)
-            val rowHeight = ((height - 14) / 5).coerceIn(9, 15)
+            val rowHeight = (height / 5).coerceIn(9, 15)
             listOf("mega" to BattleMechanicFlags.MEGA, "z_move" to BattleMechanicFlags.Z_MOVE,
                 "dynamax" to BattleMechanicFlags.DYNAMAX, "gigantamax" to BattleMechanicFlags.DYNAMAX,
                 "tera" to BattleMechanicFlags.TERA).forEachIndexed { index, (name, bit) ->
-                val top = y + 14 + index * rowHeight; val yes = flags and bit != 0
+                val top = y + index * rowHeight; val yes = flags and bit != 0
                 UiSurfaceRenderer.draw(g, x, top, 8, 9, UiSurfaceStyle(UiShape.Rectangle,
                     UiFill.Solid(theme.colors.panel), UiBorder.Solid(if (yes) theme.colors.accentGood else theme.colors.borderBright)))
                 g.drawString(Minecraft.getInstance().font, if (yes) "V" else "X", x + 1, top,
@@ -254,8 +249,7 @@ internal class LeagueHubTab : MccHubTabContent {
             scroll = (scroll - vertical.toInt()).coerceIn(0, maxScroll); return true
         }
         override fun renderWidget(g: GuiGraphics, mx: Int, my: Int, delta: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot(); val color = MccHubKit.panelText(theme)
-            line(g, leagueCopy("clear_rewards"), x, y + 1, width, color)
+            val theme = LeagueHubStyle.theme; val color = MccHubKit.panelText(theme)
             val rows = buildList<Component> {
                 view.errorKey?.let { add(Component.translatable(it)) }
                 if (!view.leagueUnlocked) add(leagueCopy("league_locked"))
@@ -274,10 +268,10 @@ internal class LeagueHubTab : MccHubTabContent {
             }
             val font = Minecraft.getInstance().font
             val lines = rows.flatMap { font.split(it, (width - 3).coerceAtLeast(1)) }
-            val maxRows = ((height - 14) / 10).coerceAtLeast(1)
+            val maxRows = (height / 10).coerceAtLeast(1)
             maxScroll = (lines.size - maxRows).coerceAtLeast(0); scroll = scroll.coerceIn(0, maxScroll)
-            g.enableScissor(x, y + 14, x + width, y + height)
-            lines.drop(scroll).take(maxRows).forEachIndexed { index, value -> g.drawString(font, value, x, y + 14 + index * 10, color, false) }
+            g.enableScissor(x, y, x + width, y + height)
+            lines.drop(scroll).take(maxRows).forEachIndexed { index, value -> g.drawString(font, value, x, y + index * 10, color, false) }
             if (maxScroll > 0) g.fill(x + width - 1, y + scroll * (height - 4) / maxScroll, x + width, y + scroll * (height - 4) / maxScroll + 4, theme.colors.borderBright)
             g.disableScissor()
             tooltip = Tooltip.create(rows.fold(Component.empty()) { text, row -> text.append(row).append("\n") })

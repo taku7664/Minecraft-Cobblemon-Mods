@@ -4,11 +4,12 @@ import jbro.cobblemon.mcc.league.network.LeagueChallengeView
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
-/** One information window, with the route above three unframed columns. All sizes are GUI pixels. */
+/** Route geometry stays fixed; three square information cards and the original 26px actions follow it. */
 data class LeagueHubLayout(val summary: UiRect, val route: UiRect, val detail: UiRect,
     val status: UiRect, val footer: UiRect, val mechanics: UiRect) {
     val body: UiRect get() = UiRect(detail.x, detail.y, status.right - detail.x, detail.height)
-    val panel: UiRect get() = UiRect(route.x - 6, route.y - 5, route.width + 12, body.bottom - route.y + 10)
+    val panel: UiRect get() = UiRect(summary.x, summary.bottom + 3, summary.width, body.bottom - summary.bottom - 3)
+    val mapPanel: UiRect get() = UiRect(summary.x, summary.bottom + 3, summary.width, route.bottom - summary.bottom - 4)
     val routeCapacity: Int get() = (if (route.width >= 270) route.width / 30 else (route.width - 28) / 30).coerceAtLeast(1)
     fun routeCenters(count: Int): List<Int> {
         val gutter = if (routeCapacity < 9) 29 else 15
@@ -38,15 +39,16 @@ data class LeagueHubLayout(val summary: UiRect, val route: UiRect, val detail: U
             val routeHeight = minOf(ROUTE_HEIGHT, (bounds.height - control * 2 - gap * 2 - 15 - 65).coerceAtLeast(24))
             val summary = UiRect(bounds.x, bounds.y, bounds.width, control)
             val route = UiRect(bounds.x + 6, summary.bottom + gap + 5, bounds.width - 12, routeHeight)
-            val footer = UiRect(bounds.x, bounds.bottom - control, bounds.width, control)
-            val top = route.bottom + 5
-            val height = (footer.y - gap - 5 - top).coerceAtLeast(1)
-            val left = route.width * 30 / 100
-            val middle = route.width * 34 / 100
+            val footer = UiRect(bounds.x, bounds.bottom - 26, bounds.width, 26)
+            val top = route.bottom + 1
+            val height = (footer.y - gap - top).coerceAtLeast(1)
+            val room = bounds.width - gap * 2
+            val left = room * 30 / 100
+            val middle = room * 34 / 100
             return LeagueHubLayout(summary, route,
-                UiRect(route.x, top, left, height),
-                UiRect(route.x + left + middle, top, route.width - left - middle, height), footer,
-                UiRect(route.x + left, top, middle, height))
+                UiRect(bounds.x, top, left, height),
+                UiRect(bounds.x + left + middle + gap * 2, top, room - left - middle, height), footer,
+                UiRect(bounds.x + left + gap, top, middle, height))
         }
     }
 }
