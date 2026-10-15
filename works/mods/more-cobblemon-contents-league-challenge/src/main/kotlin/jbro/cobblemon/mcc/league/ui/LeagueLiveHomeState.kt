@@ -18,7 +18,7 @@ class LeagueLiveHomeState {
         private set
     val finalBranches: List<LeagueFinalBranchView> get() = view?.let { if (hard) it.hardFinalBranches else it.finalBranches }.orEmpty()
 
-    /** The shown route's stages: the gyms and challengers, with one entry for the whole finals. */
+    /** The shown route: its gym stages, with one entry for the whole finals. */
     val route: List<LeagueChallengeView> get() = view?.let { if (hard) it.hardChallenges else it.challenges }.orEmpty()
 
     /**

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "frosmoth level=40 moves=icywind,featherdance,bugbuzz,hail ability=shielddust nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "darmanitan level=40 moves=iciclecrash,headbutt,taunt,firefang ability=zenmode nature=jolly dmax_level=10 gmax_factor=false form=galar hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "eiscue level=41 moves=amnesia,freezedry,hail,icywind ability=iceface nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "lapras level=42 moves=icywind,icebeam,surf,sing ability=shellarmor nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
+    "frosmoth level=39 moves=icywind,featherdance,bugbuzz,hail ability=shielddust nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "darmanitan level=39 moves=iciclecrash,headbutt,taunt,firefang ability=zenmode nature=jolly dmax_level=10 gmax_factor=false form=galar hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "eiscue level=40 moves=amnesia,freezedry,hail,icywind ability=iceface nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "lapras level=41 moves=icywind,icebeam,surf,sing ability=shellarmor nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
   ]
 }

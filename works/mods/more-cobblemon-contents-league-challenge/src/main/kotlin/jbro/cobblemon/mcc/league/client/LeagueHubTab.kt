@@ -207,9 +207,7 @@ internal class LeagueHubTab : MccHubTabContent {
                 locked -> theme.colors.textDim
                 else -> theme.colors.textSecondary
             }
-            // A full-width node lends its name two pixels a side; a narrowed one keeps it inside, clear of its neighbours.
-            val spill = if (width >= LeagueHubLayout.NODE_WIDTH) 2 else 0
-            if (height > box.height) centeredLine(g, caption, x - spill, box.bottom + 2, width + spill * 2, color)
+            if (height > box.height) centeredLine(g, caption, x - 2, box.bottom + 2, width + 4, color)
         }
     }
 

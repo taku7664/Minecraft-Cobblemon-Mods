@@ -22,12 +22,11 @@
     "more_cobblemon_contents_league_challenge:galar/piers",
     "more_cobblemon_contents_league_challenge:galar/raihan"
   ],
-  "challengers": [
-    "more_cobblemon_contents_league_challenge:galar/cup_marnie",
-    "more_cobblemon_contents_league_challenge:galar/cup_hop"
-  ],
   "finals": [
+    "more_cobblemon_contents_league_challenge:galar/cup_marnie",
+    "more_cobblemon_contents_league_challenge:galar/cup_hop",
     "more_cobblemon_contents_league_challenge:galar/cup_bede",
+    "more_cobblemon_contents_league_challenge:galar/cup_raihan",
     "more_cobblemon_contents_league_challenge:galar/leon"
   ],
   "hard": {
@@ -47,12 +46,11 @@
       "more_cobblemon_contents_league_challenge:galar/piers_hard",
       "more_cobblemon_contents_league_challenge:galar/raihan_hard"
     ],
-    "challengers": [
-      "more_cobblemon_contents_league_challenge:galar/cup_marnie_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_hop_hard"
-    ],
     "finals": [
+      "more_cobblemon_contents_league_challenge:galar/cup_marnie_hard",
+      "more_cobblemon_contents_league_challenge:galar/cup_hop_hard",
       "more_cobblemon_contents_league_challenge:galar/cup_bede_hard",
+      "more_cobblemon_contents_league_challenge:galar/cup_raihan_hard",
       "more_cobblemon_contents_league_challenge:galar/leon_hard"
     ]
   }

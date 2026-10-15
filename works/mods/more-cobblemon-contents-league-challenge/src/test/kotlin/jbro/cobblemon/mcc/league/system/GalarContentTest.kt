@@ -19,17 +19,16 @@ class GalarContentTest {
     }, "$ns:galar")
     private fun fields(line: String) = line.split(' ').drop(1).associate { it.substringBefore('=') to it.substringAfter('=') }
 
-    @Test fun `bundled routes have eight stages ten leaders two rivals alone and a two battle final`() {
+    @Test fun `bundled routes have eight stages ten leaders and a five battle final like the Elite Four`() {
         val c = catalog()
-        assertEquals(28, c.challenges.size)
+        assertEquals(30, c.challenges.size)
         assertEquals(8, c.gymStages.size)
         assertEquals(10, c.gyms.size)
         assertEquals(listOf("bea", "allister"), c.gymStages[3].map { it.substringAfterLast('/') })
         assertEquals(listOf("gordie", "melony"), c.gymStages[5].map { it.substringAfterLast('/') })
-        assertEquals(listOf("cup_marnie", "cup_hop"), c.challengers.map { it.substringAfterLast('/') })
-        assertEquals(listOf("cup_bede", "leon"), c.finals.map { it.substringAfterLast('/') })
-        assertEquals(listOf("cup_marnie_hard", "cup_hop_hard"), c.hardChallengers.map { it.substringAfterLast('/') })
-        assertEquals(listOf("cup_bede_hard", "leon_hard"), c.hardFinals.map { it.substringAfterLast('/') })
+        val finals = listOf("cup_marnie", "cup_hop", "cup_bede", "cup_raihan", "leon")
+        assertEquals(finals, c.finals.map { it.substringAfterLast('/') })
+        assertEquals(finals.map { "${it}_hard" }, c.hardFinals.map { it.substringAfterLast('/') })
         assertTrue(c.finalChoices.isEmpty() && c.hardFinalChoices.isEmpty())
         assertEquals("$ns:sinnoh", c.unlockLeague)
         assertEquals("DYNAMAX", LeagueEngine(c).mechanic(LeagueProgress()))
@@ -37,14 +36,14 @@ class GalarContentTest {
             assertEquals("DYNAMAX", ch.mechanic)
             assertEquals(if (ch.id.substringAfter(':') in listOf("galar/raihan", "galar/raihan_hard")) "DOUBLE" else "SINGLE", ch.format)
         }
-        assertEquals(listOf(22, 26, 29, 38, 40, 44, 48, 50), c.gymStages.map { LeagueEngine(c).battleCap(it.first()) })
-        assertEquals(67, LeagueEngine(c).battleCap(c.finals.first()))
+        assertEquals(listOf(22, 24, 30, 36, 39, 43, 46, 52), c.gymStages.map { LeagueEngine(c).battleCap(it.first()) })
+        assertEquals(64, LeagueEngine(c).battleCap(c.finals.first()))
     }
 
-    @Test fun `normal gym parties preserve original levels abilities moves and empty held items`() {
+    @Test fun `normal gym parties follow the Sinnoh level curve and keep abilities moves and empty held items`() {
         val c = catalog()
-        val expected = listOf(listOf(19,20), listOf(22,23,24), listOf(25,25,27), listOf(34,34,35,36), listOf(34,34,35,36),
-            listOf(36,36,37,38), listOf(40,40,41,42), listOf(40,40,41,42), listOf(44,45,45,46), listOf(46,47,46,48))
+        val expected = listOf(listOf(19,20), listOf(20,21,22), listOf(26,26,28), listOf(32,32,33,34), listOf(32,32,33,34),
+            listOf(35,35,36,37), listOf(39,39,40,41), listOf(39,39,40,41), listOf(42,43,43,44), listOf(48,49,48,50))
         c.gyms.forEachIndexed { i, id ->
             val team = c.challenges.getValue(id).team
             assertEquals(expected[i], team.map { fields(it).getValue("level").toInt() })
@@ -58,6 +57,14 @@ class GalarContentTest {
         assertEquals("magicalleaf,round,rapidspin", fields(c.challenges.getValue("$ns:galar/milo").team.first())["moves"])
         assertEquals("zenmode", fields(c.challenges.getValue("$ns:galar/melony").team[1])["ability"])
         assertEquals("false", fields(c.challenges.getValue("$ns:galar/nessa").team.last())["gmax_factor"])
+    }
+
+    @Test fun `every battle cap is two over the strongest trainer it covers, as in Sinnoh`() {
+        val c = catalog(); val e = LeagueEngine(c)
+        fun ace(id: String) = c.challenges.getValue(id).team.maxOf { fields(it).getValue("level").toInt() }
+        c.gyms.forEach { assertEquals(ace(it) + 2, e.battleCap(it), it) }
+        assertEquals(c.finals.maxOf(::ace) + 2, e.battleCap(c.finals.first()))
+        assertTrue(c.finals.zipWithNext().all { (a, b) -> ace(a) < ace(b) })
     }
 
     @Test fun `hard teams use six trained members with role based evs and no assault vest status move`() {

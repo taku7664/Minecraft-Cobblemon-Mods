@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "gigalith level=46 moves=stealthrock,sandtomb,rockblast,bodypress ability=sandstream nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "flygon level=47 moves=thunderpunch,breakingswipe,crunch,steelwing ability=levitate nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "sandaconda level=46 moves=protect,glare,firefang,earthpower ability=sandspit nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "duraludon level=48 moves=breakingswipe,bodypress,stoneedge,ironhead ability=heavymetal nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
+    "gigalith level=48 moves=stealthrock,sandtomb,rockblast,bodypress ability=sandstream nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "flygon level=49 moves=thunderpunch,breakingswipe,crunch,steelwing ability=levitate nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "sandaconda level=48 moves=protect,glare,firefang,earthpower ability=sandspit nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "duraludon level=50 moves=breakingswipe,bodypress,stoneedge,ironhead ability=heavymetal nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
   ]
 }
