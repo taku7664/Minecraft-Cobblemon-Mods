@@ -1,0 +1,15 @@
+{
+  "moveName": "ragepowder",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:bug_gem"
+    }
+  ],
+  "type": "bug"
+}

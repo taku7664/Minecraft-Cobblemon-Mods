@@ -1,0 +1,15 @@
+{
+  "moveName": "burnup",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:fire_gem"
+    }
+  ],
+  "type": "fire"
+}

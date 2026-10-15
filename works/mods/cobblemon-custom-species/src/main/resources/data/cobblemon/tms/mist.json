@@ -1,0 +1,15 @@
+{
+  "moveName": "mist",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:ice_gem"
+    }
+  ],
+  "type": "ice"
+}

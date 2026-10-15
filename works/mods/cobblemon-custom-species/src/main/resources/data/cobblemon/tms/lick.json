@@ -1,0 +1,15 @@
+{
+  "moveName": "lick",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:ghost_gem"
+    }
+  ],
+  "type": "ghost"
+}

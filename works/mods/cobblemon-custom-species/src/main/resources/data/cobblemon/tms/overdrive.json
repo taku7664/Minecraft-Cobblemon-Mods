@@ -1,0 +1,15 @@
+{
+  "moveName": "overdrive",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:electric_gem"
+    }
+  ],
+  "type": "electric"
+}

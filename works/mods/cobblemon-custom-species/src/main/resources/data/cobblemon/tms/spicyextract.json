@@ -1,0 +1,15 @@
+{
+  "moveName": "spicyextract",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:grass_gem"
+    }
+  ],
+  "type": "grass"
+}

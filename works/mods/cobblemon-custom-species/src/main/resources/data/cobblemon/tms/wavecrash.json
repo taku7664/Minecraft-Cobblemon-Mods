@@ -1,0 +1,15 @@
+{
+  "moveName": "wavecrash",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:water_gem"
+    }
+  ],
+  "type": "water"
+}

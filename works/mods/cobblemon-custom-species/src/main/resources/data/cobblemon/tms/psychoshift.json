@@ -1,0 +1,15 @@
+{
+  "moveName": "psychoshift",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:psychic_gem"
+    }
+  ],
+  "type": "psychic"
+}

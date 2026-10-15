@@ -1,0 +1,15 @@
+{
+  "moveName": "saltcure",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:rock_gem"
+    }
+  ],
+  "type": "rock"
+}
