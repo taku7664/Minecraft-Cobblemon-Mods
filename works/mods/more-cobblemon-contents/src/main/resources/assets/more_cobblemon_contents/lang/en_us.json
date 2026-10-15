@@ -51,6 +51,8 @@
   "screen.more_cobblemon_contents.shop.cart": "Cart",
   "screen.more_cobblemon_contents.shop.loading": "Loading the shop catalog…",
   "screen.more_cobblemon_contents.shop.purchase": "Purchase",
+  "screen.more_cobblemon_contents.shop.purchase.confirm.title": "Confirm purchase",
+  "screen.more_cobblemon_contents.shop.purchase.confirm.message": "Buy %s items for %s? You will have %s left.",
   "screen.more_cobblemon_contents.shop.selection_empty": "Select an item to purchase",
   "screen.more_cobblemon_contents.shop.selection_summary": "%s items · %s BP total",
   "screen.more_cobblemon_contents.shop.result.applied": "Purchase complete.",

@@ -51,6 +51,8 @@
   "screen.more_cobblemon_contents.shop.cart": "장바구니",
   "screen.more_cobblemon_contents.shop.loading": "상점 데이터를 불러오는 중…",
   "screen.more_cobblemon_contents.shop.purchase": "구매",
+  "screen.more_cobblemon_contents.shop.purchase.confirm.title": "구매 확인",
+  "screen.more_cobblemon_contents.shop.purchase.confirm.message": "아이템 %s개를 %s에 삽니다. 구매 후 %s가 남습니다.",
   "screen.more_cobblemon_contents.shop.selection_empty": "구매할 상품을 선택하세요",
   "screen.more_cobblemon_contents.shop.selection_summary": "수량 %s개 · 합계 %s BP",
   "screen.more_cobblemon_contents.shop.result.applied": "구매를 완료했습니다.",

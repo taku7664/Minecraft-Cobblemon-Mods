@@ -22,6 +22,7 @@ import jbro.cobblemon.uikit.UiIcon
 import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiLayoutResult
 import jbro.cobblemon.uikit.UiModelFraming
+import jbro.cobblemon.uikit.UiOverlayTone
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiRenderSlotSpec
 import jbro.cobblemon.uikit.UiWidthPolicy
@@ -154,7 +155,7 @@ internal class MccShopTab : MccHubTabContent {
                 itemName(entry),
                 trailing = Component.literal(bp(entry.priceBp)),
                 enabled = idle && MccShopClient.cart.canAdd(entry, state.limits, state.entries),
-                tooltip = itemTooltip(entry, shop("add_tooltip", itemName(entry))),
+                liveTooltip = { itemTooltip(entry, shop("add_tooltip", itemName(entry))) },
                 icon = CobblemonUiRenderContent.Item(itemStack(entry)),
             ) {
                 if (MccShopClient.cart.add(entry, state.limits, state.entries)) host.rebuild()
@@ -195,7 +196,7 @@ internal class MccShopTab : MccHubTabContent {
                 itemName(entry),
                 trailing = Component.literal("×$quantity"),
                 enabled = idle,
-                tooltip = itemTooltip(entry, shop("line_tooltip", itemName(entry), quantity, bp(entry.priceBp * quantity))),
+                liveTooltip = { itemTooltip(entry, shop("line_tooltip", itemName(entry), quantity, bp(entry.priceBp * quantity))) },
                 icon = CobblemonUiRenderContent.Item(itemStack(entry)),
                 actions = listOf(
                     MccHubKit.RowAction(Component.literal("-"), idle) { if (cart.remove(entry.entryId)) host.rebuild() },
@@ -212,8 +213,12 @@ internal class MccShopTab : MccHubTabContent {
         val buy = CobblemonUiButton.create(button.x, button.y, button.width,
             UiButtonSpec(shop("purchase"), variant = UiButtonVariant.PRIMARY, size = UiControlSize.MEDIUM,
                 width = UiWidthPolicy.Fixed(button.width))) {
-            MccShopClient.buy()
-            host.rebuild()
+            MccHubKit.confirm(shop("purchase.confirm.title"),
+                shop("purchase.confirm.message", cart.totalItems(state.entries), bp(total), bp(after)),
+                shop("purchase"), Component.translatable("gui.back"), UiOverlayTone.INFO) {
+                MccShopClient.buy()
+                host.rebuild()
+            }
         }
         buy.active = idle && !cart.isEmpty && after >= 0 && state.catalogId.isNotEmpty()
         host.add(buy)
@@ -349,7 +354,10 @@ private fun itemName(entry: ShopEntryView): Component {
     return if (entry.itemCount > 1) Component.empty().append(name).append(" ×${entry.itemCount}") else name
 }
 
-/** The item's own tooltip (its name, description and the like) with [hint] under it in gray. */
+/**
+ * The item's own tooltip (its name, description and the like) with [hint] under it in gray. Built while hovered,
+ * so details an item shows only while Shift is held follow the key.
+ */
 private fun itemTooltip(entry: ShopEntryView, hint: Component): Component {
     val stack = itemStack(entry)
     if (stack.isEmpty) return hint

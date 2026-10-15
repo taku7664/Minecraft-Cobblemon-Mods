@@ -369,7 +369,9 @@ object MccHubKit {
 
     /**
      * One row of a [pagedList]. An [icon] is drawn by the UI kit at the row's start; [actions] sit at its end and
-     * take their own clicks, while a press anywhere else on the row runs [press].
+     * take their own clicks, while a press anywhere else on the row runs [press]. A [liveTooltip] is built again
+     * every frame the row is hovered, for text that follows held keys such as an item's Shift details; it wins
+     * over [tooltip].
      */
     class ListEntry(
         val title: Component,
@@ -380,8 +382,12 @@ object MccHubKit {
         val tooltip: Component? = null,
         val icon: CobblemonUiRenderContent? = null,
         val actions: List<RowAction> = emptyList(),
+        val liveTooltip: (() -> Component)? = null,
         val press: () -> Unit,
-    )
+    ) {
+        /** The tooltip to show this frame. */
+        fun tooltipNow(): Component? = liveTooltip?.invoke() ?: tooltip
+    }
 
     /**
      * [entries] as full-width list rows down [rect], a page at a time. When they overflow, the bottom line holds
@@ -405,7 +411,7 @@ object MccHubKit {
         entries.drop(plan.page * plan.perPage).take(plan.perPage).zip(plan.layout.list("row")).forEach { (entry, bounds) ->
             val item = Row(bounds, entry)
             item.active = entry.enabled
-            entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
+            if (entry.liveTooltip == null) entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
             host.add(item)
         }
         if (plan.pages <= 1) return
@@ -455,14 +461,22 @@ object MccHubKit {
     }
 
     /**
-     * Asks before an irreversible action in a dialog over the hub; the hub comes back when it closes.
-     * [confirm] runs only on the confirming button.
+     * Asks before an action in a dialog over the hub, such as giving up a run or paying for a cart; the hub comes
+     * back when it closes. [tone] colors the dialog, red for what cannot be undone. [confirm] runs only on the
+     * confirming button.
      */
-    fun confirm(title: Component, body: Component, confirmLabel: Component, backLabel: Component, confirm: () -> Unit) {
+    fun confirm(
+        title: Component,
+        body: Component,
+        confirmLabel: Component,
+        backLabel: Component,
+        tone: UiOverlayTone = UiOverlayTone.DANGER,
+        confirm: () -> Unit,
+    ) {
         val client = Minecraft.getInstance()
         val parent = client.screen ?: return
         client.setScreen(CobblemonUiDialogScreen(parent,
-            UiDialogSpec(title, body, confirmLabel, backLabel, UiOverlayTone.DANGER),
+            UiDialogSpec(title, body, confirmLabel, backLabel, tone),
             confirm = confirm,
             themeOverride = CobblemonUiSharedTheme.contentSnapshot()))
     }
@@ -716,7 +730,7 @@ object MccHubKit {
     /** One [entry] as a clickable list row over [rect], drawn by the UI kit in the theme's row style. */
     fun row(rect: UiRect, entry: ListEntry): AbstractWidget = Row(rect, entry, UiHoverWiggle()).also { row ->
         row.active = entry.enabled
-        entry.tooltip?.let { row.setTooltip(Tooltip.create(it)) }
+        if (entry.liveTooltip == null) entry.tooltip?.let { row.setTooltip(Tooltip.create(it)) }
     }
 
     /** A list row with a UI kit icon and trailing actions, drawn by the UI kit's list rows. */
@@ -739,8 +753,10 @@ object MccHubKit {
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
 
-        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) =
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             CobblemonUiListRows.draw(graphics, rect, entry.content(), active, isHovered, mouseX, mouseY, partialTick, wiggle)
+            if (isHovered) entry.liveTooltip?.let { Minecraft.getInstance().screen?.setTooltipForNextRenderPass(it()) }
+        }
     }
 
     /**
@@ -790,7 +806,7 @@ object MccHubKit {
                     if (bounds.bottom < rect.y || bounds.y > rect.bottom) return@forEachIndexed
                     val hovered = rect.contains(mouseX.toDouble(), mouseY.toDouble()) && bounds.contains(mouseX.toDouble(), mouseY.toDouble())
                     CobblemonUiListRows.draw(graphics, bounds, entry.content(), entry.enabled, hovered, mouseX, mouseY, partialTick)
-                    if (hovered) entry.tooltip?.let { Minecraft.getInstance().screen?.setTooltipForNextRenderPass(it) }
+                    if (hovered) entry.tooltipNow()?.let { Minecraft.getInstance().screen?.setTooltipForNextRenderPass(it) }
                 }
             } finally {
                 graphics.disableScissor()
