@@ -3,5 +3,7 @@
   "trainer": "more_cobblemon_contents_league_challenge:lucian_hard",
   "reward": "more_cobblemon_contents_league_challenge:lucian_hard",
   "format": "SINGLE",
-  "mechanic": "MEGA"
+  "mechanic": "MEGA",
+  "battle_cap": 100,
+  "type": "psychic"
 }

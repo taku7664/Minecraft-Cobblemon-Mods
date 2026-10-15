@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 4,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.opal",
+  "team": "more_cobblemon_contents_league_challenge:galar/opal_hard",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/opal",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.opal.hard.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.opal.hard.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.opal.hard.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.opal.hard.player_lost"
+    ]
+  }
+}

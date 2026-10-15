@@ -44,7 +44,12 @@ object LeagueAdminCommands {
         MccAdminSources.register(source)
     }
 
-    fun build(): LiteralArgumentBuilder<CommandSourceStack> = literal("league")
+    fun build(): LiteralArgumentBuilder<CommandSourceStack> = operations().then(literal("region").then(
+        argument("region", StringArgumentType.word()).suggests { _, builder ->
+            SharedSuggestionProvider.suggest(LeagueCatalogResources.catalogs.keys.map { it.substringAfter(':') }, builder)
+        }.apply { operations().build().children.forEach { then(it) } }))
+
+    private fun operations(): LiteralArgumentBuilder<CommandSourceStack> = literal("league")
         .requires(BattleProgressCommands::isAdmin)
         .then(check())
         .then(literal("inspect").then(profileArgument().executes { withProgress(it) { catalog, id, name, state -> inspect(it.source, catalog, name, state) } }))
@@ -97,8 +102,8 @@ object LeagueAdminCommands {
                 .apply { testDifficulties { StringArgumentType.getString(it, "challenge") } })))
         .then(literal("cap").then(literal("sync").then(argument("player", EntityArgument.player()).executes { context ->
             val player = EntityArgument.getPlayer(context, "player")
-            val catalog = catalog(context.source) ?: return@executes 0
-            val cap = LeagueEngine(catalog).cap(LeagueSavedData.get(player.server).read(catalog.id, player.uuid))
+            val catalog = catalog(context) ?: return@executes 0
+            val cap = LeagueProgressQueries.earnedCap(player.server, player.uuid)
             try {
                 LeagueIntegrations.syncCap(player, cap)
             } catch (failure: RuntimeException) {
@@ -109,7 +114,7 @@ object LeagueAdminCommands {
             1
         })))
         .then(literal("validate").executes { context ->
-            val catalog = catalog(context.source) ?: return@executes 0
+            val catalog = catalog(context) ?: return@executes 0
             val problem = validation(catalog)
             if (problem != null) {
                 context.source.sendFailure(Component.translatable("$KEY.validate.failed", problem))
@@ -125,7 +130,7 @@ object LeagueAdminCommands {
         })
         .then(literal("import-badges").then(argument("player", EntityArgument.player()).executes { context ->
             val target = EntityArgument.getPlayer(context, "player")
-            val catalog = catalog(context.source) ?: return@executes 0
+            val catalog = catalog(context) ?: return@executes 0
             val before = LeagueSavedData.get(target.server).read(catalog.id, target.uuid)
             if (before.run != null) {
                 context.source.sendFailure(Component.translatable("message.${Mod.MOD_ID}.run_active"))
@@ -143,7 +148,7 @@ object LeagueAdminCommands {
 
     /** The challenges `progress set` takes, by the last part of their ID (`cynthia_hard`), and `all`. */
     private fun progressTargets(): List<String> =
-        LeagueCatalogResources.current?.let { catalog -> LeagueEngine(catalog).route().map { it.substringAfter(':') } + ALL }.orEmpty()
+        LeagueCatalogResources.catalogs.values.flatMap { catalog -> LeagueEngine(catalog).route().map { it.substringAfter(':') } }.distinct() + ALL
 
     /**
      * Sets an online player's progress for testing: everything before [target] beaten, everything with `all`, nothing
@@ -152,7 +157,7 @@ object LeagueAdminCommands {
      */
     private fun setProgress(context: CommandContext<CommandSourceStack>, target: String?): Int {
         val player = EntityArgument.getPlayer(context, "player")
-        val catalog = catalog(context.source) ?: return 0
+        val catalog = catalog(context) ?: return 0
         val engine = LeagueEngine(catalog)
         val challengeId = when (target) {
             null -> engine.route().first()
@@ -203,22 +208,22 @@ object LeagueAdminCommands {
         val stream = LeagueAdminCommands::class.java.classLoader.getResourceAsStream("assets/${Mod.MOD_ID}/lang/ko_kr.json")
             ?: return@lazy emptyMap()
         val names = stream.reader(Charsets.UTF_8).use { com.google.gson.JsonParser.parseReader(it).asJsonObject }
-        val trainer = Regex("""trainer\.${Regex.escape(Mod.MOD_ID)}\.([a-z]+)""")
-        names.entrySet().mapNotNull { (key, value) -> trainer.matchEntire(key)?.let { value.asString to it.groupValues[1] } }
+        val trainer = Regex("""trainer\.${Regex.escape(Mod.MOD_ID)}\.((?:galar\.)?[a-z]+)""")
+        names.entrySet().mapNotNull { (key, value) -> trainer.matchEntire(key)?.let { value.asString to it.groupValues[1].replace('.', '/') } }
             .flatMap { (name, id) -> listOf(name to id, "$name-하드" to "${id}_hard") }
             .filter { (name, _) -> name.none(Char::isWhitespace) }
             .toMap()
     }
 
     /**
-     * Starts a test battle between an online player's party (any size, at its own levels) and one League challenge's
-     * team as the League fields it (Mega Evolution, skin), at the AI level [difficulty] names. It is an AI test
+     * Starts a test battle using an online player's party and one League challenge's team, cap, gimmick and skin,
+     * at the AI level [difficulty] names. It is an AI test
      * battle: no progress, reward or record (a League run in progress stays as it was), and
      * `/mcc battle end <player> void` ends it.
      */
     private fun testBattle(context: CommandContext<CommandSourceStack>, target: String, difficulty: String, skill: Int): Int {
         val player = EntityArgument.getPlayer(context, "player")
-        val catalog = catalog(context.source) ?: return 0
+        val catalog = catalog(context) ?: return 0
         val engine = LeagueEngine(catalog)
         val challengeId = engine.route().firstOrNull { it.substringAfter(':') == target } ?: run {
             context.source.sendFailure(Component.translatable("$KEY.progress.unknown", target))
@@ -237,7 +242,7 @@ object LeagueAdminCommands {
                 appearance = challenge.skin?.let { TrainerResourceSkin(it, challenge.slim) },
                 stage = engine.stage(challengeId),
                 // The brain logs under the AI test id; the clients still hear and see the league battle.
-                clientTag = MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, engine.stage(challengeId), challengeId), scenes = trainerScenes(challenge))) { outcome ->
+                clientTag = MccBattleTag(ManagedBattleContentIds.LEAGUE_CHALLENGE, engine.stage(challengeId), challengeId), scenes = trainerScenes(challenge)), playerLevelCap = engine.battleCap(challengeId)) { outcome ->
                 player.server.playerList.getPlayer(player.uuid)?.sendSystemMessage(
                     Component.translatable("$KEY.test.${outcome.name.lowercase()}", opponent, target))
             }
@@ -267,12 +272,11 @@ object LeagueAdminCommands {
         }
 
         override fun pending(server: MinecraftServer): List<MccPendingResult> {
-            val catalog = LeagueCatalogResources.current ?: return emptyList()
-            return LeagueSavedData.get(server).all(catalog.id).flatMap { (id, state) ->
+            return LeagueCatalogResources.catalogs.values.flatMap { catalog -> LeagueSavedData.get(server).all(catalog.id).flatMap { (id, state) ->
                 state.rewards.filter { !it.badgeDone || !it.bpDone }.map { reward ->
                     MccPendingResult(id, null, "${reward.challengeId} badge=${reward.badgeDone} bp=${reward.bpDone}")
                 }
-            }
+            } }
         }
 
         override fun retryPending(server: MinecraftServer, playerId: UUID?): Int =
@@ -280,12 +284,11 @@ object LeagueAdminCommands {
                 .mapNotNull(server.playerList::getPlayer).count { LeagueServer.adminReconcile(it) == null }
 
         override fun dropPending(server: MinecraftServer, playerId: UUID?): Int {
-            val catalog = LeagueCatalogResources.current ?: return 0
-            return LeagueSavedData.get(server).all(catalog.id).filter { (id, _) -> playerId == null || id == playerId }.sumOf { (id, state) ->
+            return LeagueCatalogResources.catalogs.values.sumOf { catalog -> LeagueSavedData.get(server).all(catalog.id).filter { (id, _) -> playerId == null || id == playerId }.sumOf { (id, state) ->
                 val count = state.rewards.count { !it.badgeDone || !it.bpDone }
                 if (count > 0) LeagueServer.adminCommit(server, catalog, id, markDelivered(state))
                 count
-            }
+            } }
         }
 
         override fun busy(server: MinecraftServer, playerId: UUID): Boolean = false
@@ -295,7 +298,7 @@ object LeagueAdminCommands {
         .then(checkTarget(literal("champion")) { _, state -> state.champion })
         .then(checkTarget(literal("hard")) { _, state -> state.hardChampion })
         .then(literal("badges").then(checkTarget(argument("min", IntegerArgumentType.integer(0, 8))) { context, state ->
-            LeagueEngine(LeagueCatalogResources.current ?: return@checkTarget false).badgeCount(state) >=
+            LeagueEngine(catalog(context) ?: return@checkTarget false).badgeCount(state) >=
                 IntegerArgumentType.getInteger(context, "min")
         }))
 
@@ -313,7 +316,7 @@ object LeagueAdminCommands {
         player: net.minecraft.server.level.ServerPlayer,
         holds: (CommandContext<CommandSourceStack>, LeagueProgress) -> Boolean,
     ): Int {
-        val catalog = catalog(context.source) ?: return 0
+        val catalog = catalog(context) ?: return 0
         val state = try {
             LeagueSavedData.get(context.source.server).read(catalog.id, player.uuid)
         } catch (failure: RuntimeException) {
@@ -335,7 +338,7 @@ object LeagueAdminCommands {
         action: (LeagueCatalog, UUID, String, LeagueProgress) -> Int,
     ): Int {
         val profile = MccAdminArguments.profile(context) ?: return 0
-        val catalog = catalog(context.source) ?: return 0
+        val catalog = catalog(context) ?: return 0
         val state = try {
             LeagueSavedData.get(context.source.server).read(catalog.id, profile.id)
         } catch (failure: RuntimeException) {
@@ -379,6 +382,16 @@ object LeagueAdminCommands {
     /** Every undelivered reward marked delivered, so the player can challenge again; nothing is awarded. */
     private fun markDelivered(state: LeagueProgress) = state.copy(revision = state.revision + 1,
         rewards = state.rewards.map { it.copy(badgeDone = true, bpDone = true) })
+
+    private fun catalog(context: CommandContext<CommandSourceStack>): LeagueCatalog? {
+        val selected = runCatching { StringArgumentType.getString(context, "region") }.getOrNull()
+            ?: return catalog(context.source)
+        val id = if (':' in selected) selected else Mod.MOD_ID + ":" + selected
+        return LeagueCatalogResources.find(id) ?: run {
+            context.source.sendFailure(Component.translatable("$KEY.catalog.missing", id))
+            null
+        }
+    }
 
     private fun catalog(source: CommandSourceStack): LeagueCatalog? = LeagueCatalogResources.current ?: run {
         source.sendFailure(Component.translatable("$KEY.catalog.missing", LeagueCatalogResources.lastFailure ?: "-"))

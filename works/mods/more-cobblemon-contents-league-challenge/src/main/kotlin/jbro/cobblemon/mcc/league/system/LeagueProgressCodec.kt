@@ -36,7 +36,9 @@ object LeagueProgressCodec {
         }
         state.run?.let { run ->
             requireNotNull(run.token); requireNotNull(run.battleToken)
-            require(run.encounters.size == 1 || run.encounters.size == 5)
+            require(run.encounters.size in 1..16)
+            require(run.battleCap == null || run.battleCap in 1..100)
+            require(run.mechanic == null || run.mechanic in setOf("NONE", "MEGA", "DYNAMAX", "TERA"))
             require(run.index in run.encounters.indices)
             require(!run.awaitingNext || run.index < run.encounters.lastIndex)
             require(run.party.size in 1..6 &&run.party.all { it.isNotBlank() && it.length <= 524288 })
@@ -48,6 +50,9 @@ object LeagueProgressCodec {
                 require(it.format in setOf("SINGLE", "DOUBLE"))
                 require(it.skill in 0..5)
                 require(it.mechanic in setOf("NONE", "MEGA", "DYNAMAX", "TERA"))
+                require(it.battleCap in 0..100)
+                require(it.type == null || it.type in POKEMON_TYPES)
+                require(it.stage == null || it.stage in setOf("gym", "hard_gym", "elite_four", "hard_elite_four", "tournament", "hard_tournament", "champion", "hard_champion"))
                 it.badge?.let(::requireId); it.skin?.let(::requireId)
             }
         }

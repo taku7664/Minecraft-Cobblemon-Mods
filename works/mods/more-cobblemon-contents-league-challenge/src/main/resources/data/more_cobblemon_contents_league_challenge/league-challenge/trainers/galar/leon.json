@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 5,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.leon",
+  "team": "more_cobblemon_contents_league_challenge:galar/leon",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/leon",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.leon.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.leon.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.leon.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.leon.player_lost"
+    ]
+  }
+}

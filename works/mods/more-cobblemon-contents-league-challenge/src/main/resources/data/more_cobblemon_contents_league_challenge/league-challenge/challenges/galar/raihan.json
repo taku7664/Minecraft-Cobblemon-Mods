@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/raihan",
+  "reward": "more_cobblemon_contents_league_challenge:galar/raihan",
+  "badge": "pokebadges:dragon_galar_badge",
+  "mechanic": "DYNAMAX",
+  "format": "DOUBLE",
+  "battle_cap": 50,
+  "type": "dragon"
+}

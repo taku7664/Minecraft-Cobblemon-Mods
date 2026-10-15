@@ -149,5 +149,6 @@
   "screen.more_cobblemon_contents.dashboard.format.single_normal": "Single · Normal",
   "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal",
   "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
-  "modmenu.descriptionTranslation.more_cobblemon_contents": "The shared foundation for Cobblemon battle facilities: managed battles, tactical AI, Battle Points, a reward shop, records, the battle hub and hologram terminals. Add content with MCC addons."
+  "modmenu.descriptionTranslation.more_cobblemon_contents": "The shared foundation for Cobblemon battle facilities: managed battles, tactical AI, Battle Points, a reward shop, records, the battle hub and hologram terminals. Add content with MCC addons.",
+  "screen.more_cobblemon_contents.versus.tournament": "Champion Cup"
 }

@@ -87,7 +87,7 @@ class LeagueTeamDataTest {
 
     @Test
     fun `every team member names only species, moves, abilities, natures and items the game has`() {
-        (normal + hard).forEach { name ->
+        (normal + hard + galarTeams).forEach { name ->
             team(name).forEach { line ->
                 val species = line.substringBefore(' ')
                 val fields = fields(line)
@@ -109,7 +109,7 @@ class LeagueTeamDataTest {
 
     @Test
     fun `Cobblemon's parser keeps every value of every team member`() {
-        (normal + hard).forEach { name ->
+        (normal + hard + galarTeams).forEach { name ->
             team(name).forEach { line ->
                 val fields = fields(line)
                 val properties = asManagedOpponent { PokemonProperties.parse(line) }
@@ -218,6 +218,9 @@ class LeagueTeamDataTest {
 
     companion object {
         private lateinit var data: GameData
+        internal val galarPeople = listOf("milo", "nessa", "kabu", "bea", "allister", "opal", "gordie", "melony", "piers", "raihan", "marnie", "hop", "bede", "leon")
+        internal val galarNames = galarPeople.take(10) + listOf("cup_marnie", "cup_hop", "cup_bede", "cup_nessa", "cup_bea", "cup_allister", "cup_raihan", "leon")
+        internal val galarTeams = galarNames.flatMap { listOf("galar/$it", "galar/${it}_hard") }
 
         /** Mega Showdown is not on the test classpath; the unitTest task passes where its jar is. */
         private fun megaShowdownJar(): JarFile = JarFile(File(requireNotNull(System.getProperty("league.megaShowdownJar")) {
@@ -275,7 +278,7 @@ class LeagueTeamDataTest {
             ExperienceGroups.registerDefaults()
             if (Abilities.count() == 0) Abilities.register(Abilities.DUMMY)
             val names = listOf("roark", "gardenia", "fantina", "maylene", "wake", "byron", "candice", "volkner", "aaron", "bertha",
-                "flint", "lucian", "cynthia").flatMap { listOf(it, "${it}_hard") }
+                "flint", "lucian", "cynthia").flatMap { listOf(it, "${it}_hard") } + galarTeams
             val lines = names.flatMap { name ->
                 JsonParser.parseString(LeagueTeamDataTest::class.java
                     .getResourceAsStream("/data/more_cobblemon_contents_league_challenge/league-challenge/teams/$name.json")!!

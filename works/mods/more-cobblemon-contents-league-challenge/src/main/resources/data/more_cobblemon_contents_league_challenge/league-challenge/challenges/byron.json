@@ -4,5 +4,7 @@
   "reward": "more_cobblemon_contents_league_challenge:byron",
   "badge": "pokebadges:mine_sinnoh_badge",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 43,
+  "type": "steel"
 }

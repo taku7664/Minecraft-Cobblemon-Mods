@@ -20,7 +20,7 @@ internal object BattleVersusIntros {
     private val pending = ConcurrentHashMap<UUID, Trainer>()
 
     /** The League stages that play a versus intro, as `gym`, `elite_four` or `champion`, prefixed `hard_` on the hard route. */
-    private val ROLES = setOf("gym", "elite_four", "champion")
+    private val ROLES = setOf("gym", "elite_four", "tournament", "champion")
 
     fun prepare(playerId: UUID, nameKey: String, skin: TrainerResourceSkin?) {
         pending[playerId] = Trainer(nameKey, skin)

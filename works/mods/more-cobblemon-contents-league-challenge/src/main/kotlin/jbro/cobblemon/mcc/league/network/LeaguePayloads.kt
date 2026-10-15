@@ -7,24 +7,33 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-enum class LeagueAction { START, NEXT, CANCEL, REFRESH }
+enum class LeagueAction { START, NEXT, CANCEL, REFRESH, SELECT_LEAGUE }
 data class LeagueChallengeView(val id: String, val nameKey: String, val status: String, val unlockCap: Int,
     val badgeId: String? = null,
     /** The trainer skin the terminal draws a face from; for the League entry, the finals trainer faced next. */
-    val skin: String? = null)
+    val skin: String? = null,
+    val stage: Int = 0, val branch: Int = 0, val battleCap: Int = 0,
+    val mechanicFlags: Int = 0, val type: String? = null, val format: String = "SINGLE",
+    val bp: Long = 0, val unlockKeys: List<String> = emptyList())
+
+data class LeagueRegionView(val id: String, val nameKey: String, val unlocked: Boolean)
+data class LeagueFinalBranchView(val id: String, val nameKey: String)
 data class LeagueView(val nonce: UUID, val revision: Long, val catalogRevision: Long, val nameKey: String,
     val badges: Int, val rank: String, val cap: Int, val champion: Boolean, val bp: Long,
     val challenges: List<LeagueChallengeView>, val runChallenge: String?, val awaitingNext: Boolean,
     val pendingRewards: Boolean, val errorKey: String? = null,
     val openScreen: Boolean = false, val runNameKey: String? = null,
-    /** The hard route, sent once the normal Champion opened it; [runHard] tells which route a run is on. */
+    /** The hard route and its unlock state; [runHard] tells which route a run is on. */
     val hardUnlocked: Boolean = false, val hardChampion: Boolean = false,
-    val hardChallenges: List<LeagueChallengeView> = emptyList(), val runHard: Boolean = false)
+    val hardChallenges: List<LeagueChallengeView> = emptyList(), val runHard: Boolean = false,
+    val leagueId: String = "", val regions: List<LeagueRegionView> = emptyList(), val leagueUnlocked: Boolean = true,
+    val finalBranches: List<LeagueFinalBranchView> = emptyList(), val hardFinalBranches: List<LeagueFinalBranchView> = emptyList(),
+    val runEntry: LeagueChallengeView? = null)
 
 data class LeagueStatePayload(val json: String) : CustomPacketPayload {
     override fun type() = TYPE
     companion object {
-        val TYPE = CustomPacketPayload.Type<LeagueStatePayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "state_v1"))
+        val TYPE = CustomPacketPayload.Type<LeagueStatePayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "state_v2"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, LeagueStatePayload> = StreamCodec.of(
             { buffer, payload -> buffer.writeUtf(payload.json, 32767) }, { LeagueStatePayload(it.readUtf(32767)) })
     }
@@ -41,13 +50,14 @@ data class LeagueRankPayload(val rank: String) : CustomPacketPayload {
 }
 
 data class LeagueIntentPayload(val nonce: UUID, val requestId: UUID, val revision: Long,
-    val catalogRevision: Long, val action: LeagueAction, val challengeId: String = "") : CustomPacketPayload {
+    val catalogRevision: Long, val action: LeagueAction, val challengeId: String = "",
+    val leagueId: String = "", val finalChoiceId: String = "") : CustomPacketPayload {
     override fun type() = TYPE
     companion object {
-        val TYPE = CustomPacketPayload.Type<LeagueIntentPayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "intent_v1"))
+        val TYPE = CustomPacketPayload.Type<LeagueIntentPayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "intent_v2"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, LeagueIntentPayload> = StreamCodec.of(
             { b, p -> b.writeUUID(p.nonce); b.writeUUID(p.requestId); b.writeLong(p.revision); b.writeLong(p.catalogRevision)
-                b.writeEnum(p.action); b.writeUtf(p.challengeId, 256) },
-            { b -> LeagueIntentPayload(b.readUUID(), b.readUUID(), b.readLong(), b.readLong(), b.readEnum(LeagueAction::class.java), b.readUtf(256)) })
+                b.writeEnum(p.action); b.writeUtf(p.challengeId, 256); b.writeUtf(p.leagueId, 256); b.writeUtf(p.finalChoiceId, 256) },
+            { b -> LeagueIntentPayload(b.readUUID(), b.readUUID(), b.readLong(), b.readLong(), b.readEnum(LeagueAction::class.java), b.readUtf(256), b.readUtf(256), b.readUtf(256)) })
     }
 }

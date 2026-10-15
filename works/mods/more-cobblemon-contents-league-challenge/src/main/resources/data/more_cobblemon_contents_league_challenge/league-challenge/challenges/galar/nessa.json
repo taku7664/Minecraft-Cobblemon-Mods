@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/nessa",
+  "reward": "more_cobblemon_contents_league_challenge:galar/nessa",
+  "badge": "pokebadges:water_galar_badge",
+  "mechanic": "DYNAMAX",
+  "format": "SINGLE",
+  "battle_cap": 26,
+  "type": "water"
+}

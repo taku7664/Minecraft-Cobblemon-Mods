@@ -27,6 +27,21 @@ final class MccMusicKeysTest {
     }
 
     @Test
+    void galarMusicKeepsRegionDifficultyAndTrainerWithoutFallingBackToSinnoh() {
+        for (String difficulty : List.of("", "hard_")) {
+            String suffix = difficulty.isEmpty() ? "" : "_hard";
+            for (String pair : List.of("gym:piers", "tournament:cup_marnie", "tournament:cup_hop", "tournament:cup_bede", "champion:leon")) {
+                String[] parts = pair.split(":");
+                String stage = difficulty + parts[0];
+                String trainer = parts[1].replaceFirst("^cup_", "");
+                List<String> keys = MccMusicKeys.battle(LEAGUE, stage, "league:galar/" + parts[1] + suffix);
+                assertEquals(List.of(LEAGUE + "/galar/" + stage + "/" + trainer, LEAGUE + "/galar/" + stage, LEAGUE), keys);
+                assertTrue(MccMusicKeys.KNOWN_BATTLE_KEYS.containsAll(keys));
+            }
+        }
+    }
+
+    @Test
     void hubKeysNameTheTabThenTheHub() {
         assertEquals(List.of("more_cobblemon_contents:hub/shop", "more_cobblemon_contents:hub"),
             MccMusicKeys.hub("more_cobblemon_contents:shop"));

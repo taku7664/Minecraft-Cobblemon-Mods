@@ -9,8 +9,11 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 object LeagueCatalogResources : SimpleSynchronousResourceReloadListener {
-    @Volatile var current: LeagueCatalog? = null
-        private set
+    private data class Loaded(val primary: LeagueCatalog, val catalogs: Map<String, LeagueCatalog>)
+    @Volatile private var loaded: Loaded? = null
+    val current: LeagueCatalog? get() = loaded?.primary
+    val catalogs: Map<String, LeagueCatalog> get() = loaded?.catalogs.orEmpty()
+    fun find(id: String): LeagueCatalog? = catalogs[id]
     @Volatile var revision: Long = 0
         private set
     /** Why the last reload was rejected, or null when it was accepted; the previous catalog stays in use. */
@@ -18,7 +21,7 @@ object LeagueCatalogResources : SimpleSynchronousResourceReloadListener {
         private set
     override fun getFabricId(): ResourceLocation = ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "league_catalog")
     fun register() = ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(this)
-    fun clear() { current = null; revision = 0; lastFailure = null }
+    fun clear() { loaded = null; revision = 0; lastFailure = null }
 
     override fun onResourceManagerReload(manager: ResourceManager) {
         try {
@@ -40,7 +43,19 @@ object LeagueCatalogResources : SimpleSynchronousResourceReloadListener {
                 }.toMap()
             }
             val next = LeagueCatalogParser.parse(input, "${Mod.MOD_ID}:active")
-            current = next
+            val all = input.getValue("leagues").keys.map { LeagueCatalogParser.parse(input, it) }
+            require(all.map { it.id }.distinct().size == all.size) { "Duplicate league progress ID" }
+            val byId = all.associateBy { it.id }
+            require(all.all { it.unlockLeague == null || it.unlockLeague in byId && it.unlockLeague != it.id }) { "Unknown league prerequisite" }
+            all.forEach { candidate ->
+                val seen = mutableSetOf(candidate.id)
+                var parent = candidate.unlockLeague
+                while (parent != null) {
+                    require(seen.add(parent)) { "Cyclic league prerequisite" }
+                    parent = byId.getValue(parent).unlockLeague
+                }
+            }
+            loaded = Loaded(next, byId)
             revision++
             lastFailure = null
             Mod.LOGGER.info("Loaded League {} at revision {}", next.id, revision)

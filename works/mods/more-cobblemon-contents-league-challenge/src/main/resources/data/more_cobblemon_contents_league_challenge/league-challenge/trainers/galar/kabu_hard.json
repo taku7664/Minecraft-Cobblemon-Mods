@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 4,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.kabu",
+  "team": "more_cobblemon_contents_league_challenge:galar/kabu_hard",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/kabu",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.kabu.hard.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.kabu.hard.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.kabu.hard.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.kabu.hard.player_lost"
+    ]
+  }
+}

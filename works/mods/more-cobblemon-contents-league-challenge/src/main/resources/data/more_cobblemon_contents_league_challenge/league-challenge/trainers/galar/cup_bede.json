@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 4,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.bede",
+  "team": "more_cobblemon_contents_league_challenge:galar/cup_bede",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/bede",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.bede.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.bede.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.bede.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.bede.player_lost"
+    ]
+  }
+}

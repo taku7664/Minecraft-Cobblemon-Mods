@@ -4,5 +4,7 @@
   "reward": "more_cobblemon_contents_league_challenge:candice",
   "badge": "pokebadges:icicle_sinnoh_badge",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 46,
+  "type": "ice"
 }

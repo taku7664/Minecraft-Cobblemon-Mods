@@ -33,18 +33,28 @@ object LeagueIntegrations {
         check(leveling.doRestrictLeveling()) { "cap_disabled" }
         check(!catching.doNotRestrictCatching()) { "catching_cap_disabled" }
         check(!CLCConfig.SERVER_CONFIG.scaling_enableScaling.get()) { "spawn_scaling_conflict" }
-        val levelingTier = LevelCapMapping.resolve(leveling.tiers(), setOf(cap)).getValue(cap)
-        val catchingTier = LevelCapMapping.resolve(catching.tiers(), setOf(cap)).getValue(cap)
         val mod = CobbledLevelControl.INSTANCE
         val store = requireNotNull(mod.storedPlayerAccountRecords) { "cap_unavailable" }
         if (!store.hasPlayerAccountRecord(player.uuid)) store.createNewPlayerAccountRecord(player.uuid)
         val current = store.getPlayerAccountRecord(player.uuid)
+        val levelingTier = LevelCapMapping.nonDecreasingTier(leveling.tiers(), current.leveling, cap)
+        val catchingTier = LevelCapMapping.nonDecreasingTier(catching.tiers(), current.catching, cap)
         if (current.leveling != levelingTier || current.catching != catchingTier) {
             store.editPlayerAccountRecord(player.uuid) { it.setLeveling(levelingTier); it.setCatching(catchingTier) }
             mod.sendHudSnapshot(player)
         }
         val updated = store.getPlayerAccountRecord(player.uuid)
-        check(updated.leveling == levelingTier && updated.catching == catchingTier) { "cap_sync_failed" }
+        check(LevelCapMapping.level(leveling.tiers(), updated.leveling) >= cap &&
+            LevelCapMapping.level(catching.tiers(), updated.catching) >= cap) { "cap_sync_failed" }
+    }
+
+    /** Existing CLC caps can be raised by something outside League and must remain authoritative. */
+    fun currentCap(player: ServerPlayer, catching: Boolean = false): Int {
+        val store = CobbledLevelControl.INSTANCE.storedPlayerAccountRecords ?: return 0
+        if (!store.hasPlayerAccountRecord(player.uuid)) return 0
+        val record = store.getPlayerAccountRecord(player.uuid)
+        return if (catching) LevelCapMapping.level(CLCConfig.getCatchingConfig().tiers(), record.catching)
+        else LevelCapMapping.level(CLCConfig.getLevelingConfig().tiers(), record.leveling)
     }
 
     fun awardBadge(player: ServerPlayer, badge: String): Boolean =

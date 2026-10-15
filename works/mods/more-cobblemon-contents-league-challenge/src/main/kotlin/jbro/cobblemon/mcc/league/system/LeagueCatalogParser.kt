@@ -13,16 +13,20 @@ object LeagueCatalogParser {
             val raw = requireNotNull(resources[kind]?.get(id)) { "Missing $kind/$id" }
             require(raw.length <= 262144) { "Resource too large: $kind/$id" }
             return JsonParser.parseString(raw).asJsonObject.also {
-                require(it.number("schema_version") == 1L) { "Unsupported schema: $kind/$id" }
+                require(it.number("schema_version") in if (kind == "leagues") 1L..2L else 1L..1L) { "Unsupported schema: $kind/$id" }
             }
         }
         val league = document("leagues", activeLeague)
-        val gyms = league.strings("gyms")
+        val gymStages = league.stages("gyms")
+        val gyms = gymStages.flatten()
         val finals = league.strings("finals")
         val hard = if (league.has("hard") && !league.get("hard").isJsonNull) league.getAsJsonObject("hard") else null
-        val hardGyms = hard?.strings("gyms").orEmpty()
+        val hardGymStages = hard?.stages("gyms").orEmpty()
+        val hardGyms = hardGymStages.flatten()
         val hardFinals = hard?.strings("finals").orEmpty()
-        val challenges = (gyms + finals + hardGyms + hardFinals).associateWith { id ->
+        val finalChoices = league.choices()
+        val hardFinalChoices = hard?.choices().orEmpty()
+        val challenges = (gyms + finals + hardGyms + hardFinals + finalChoices.values.flatten() + hardFinalChoices.values.flatten()).distinct().associateWith { id ->
             val source = document("challenges", id)
             val trainer = document("trainers", source.string("trainer"))
             val team = document("teams", trainer.string("team"))
@@ -32,12 +36,26 @@ object LeagueCatalogParser {
                 reward.number("unlock_cap").toInt(), reward.number("first_bp"), reward.number("repeat_bp"),
                 source.string("mechanic"), source.string("format"), appearance?.optionalString("skin"),
                 appearance?.string("model")?.also { require(it in setOf("default", "slim")) } == "slim",
-                trainer.number("ai_skill").toInt(), trainer.scenes())
+                trainer.number("ai_skill").toInt(), trainer.scenes(),
+                if (source.has("battle_cap")) source.number("battle_cap").toInt().also { require(it in 1..100) } else 0,
+                source.optionalString("type"))
         }
         return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
-            wildLevel(league), hardGyms, hardFinals)
+            wildLevel(league), hardGyms, hardFinals, gymStages, hardGymStages, finalChoices, hardFinalChoices,
+            league.optionalString("unlock_league"), league.optionalString("player_mechanic") ?: "MEGA",
+            league.get("lock_mechanics_until_champion")?.asBoolean ?: true)
     }
 }
+
+private fun JsonObject.stages(key: String): List<List<String>> = getAsJsonArray(key).map { entry ->
+    (if (entry.isJsonArray) entry.asJsonArray.toList() else listOf(entry)).map { it.asString.also(::requireId) }
+}
+
+private fun JsonObject.choices(): Map<String, List<String>> = if (!has("final_choices")) emptyMap() else
+    getAsJsonObject("final_choices").entrySet().associate { (id, value) ->
+        requireId(id)
+        id to value.asJsonArray.map { it.asString.also(::requireId) }
+    }
 
 /** The moments a trainer's `scenes` may name; the same ids as MCC's `TrainerScenes.Moment`. */
 internal val SCENE_MOMENTS = setOf("battle_start", "last_pokemon", "player_won", "player_lost")

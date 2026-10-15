@@ -25,14 +25,32 @@ final class MccMusicKeys {
     private static final String FACTORY = NAMESPACE + ":battle_factory";
     private static final String PVP = NAMESPACE + ":pvp";
 
-    /** The keys MCC's contents can produce, offered in the settings screen. Opponent keys are left out. */
-    static final Set<String> KNOWN_BATTLE_KEYS = known(
-        LEAGUE, List.of("gym", "elite_four", "champion", "hard_gym", "hard_elite_four", "hard_champion",
-            "wild_trainer", "wild_trainer_ace"),
-        TOWER, List.of("regular", "tier_boss", "master_ball_boss"),
-        FACTORY, List.of("regular", "factory_head"),
-        PVP, List.of("single", "double")
-    );
+    /** The settings offer content/stage keys and Galar's named trainer keys. */
+    static final Set<String> KNOWN_BATTLE_KEYS = battleKeys();
+
+    private static Set<String> battleKeys() {
+        Set<String> keys = new LinkedHashSet<>(known(
+            LEAGUE, List.of("gym", "elite_four", "champion", "hard_gym", "hard_elite_four", "hard_champion",
+                "wild_trainer", "wild_trainer_ace"),
+            TOWER, List.of("regular", "tier_boss", "master_ball_boss"),
+            FACTORY, List.of("regular", "factory_head"),
+            PVP, List.of("single", "double")
+        ));
+        for (String difficulty : List.of("", "hard_")) {
+            String base = LEAGUE + "/galar/" + difficulty;
+            keys.add(base + "gym");
+            keys.add(base + "tournament");
+            keys.add(base + "champion");
+            for (String trainer : List.of("milo", "nessa", "kabu", "bea", "allister", "opal", "gordie", "melony", "piers", "raihan")) {
+                keys.add(base + "gym/" + trainer);
+            }
+            for (String trainer : List.of("marnie", "hop", "bede", "nessa", "bea", "allister", "raihan")) {
+                keys.add(base + "tournament/" + trainer);
+            }
+            keys.add(base + "champion/leon");
+        }
+        return Set.copyOf(keys);
+    }
 
     static final Set<String> KNOWN_SCREEN_KEYS = Set.copyOf(List.of(
         HUB, HUB + "/dashboard", HUB + "/shop", HUB + "/league_challenge", HUB + "/battle_tower",
@@ -46,6 +64,13 @@ final class MccMusicKeys {
     static List<String> battle(String contentId, String stage, String opponentId) {
         if (contentId == null || !KEY.matcher(contentId).matches()) {
             return List.of();
+        }
+        // Region precedes the stage: a missing Galar track must not select Sinnoh's gym music.
+        String opponent = opponentId == null ? "" : opponentId.substring(opponentId.lastIndexOf(':') + 1);
+        if (LEAGUE.equals(contentId) && opponent.startsWith("galar/") && stage != null) {
+            String trainer = opponent.substring("galar/".length()).replaceFirst("_hard$", "").replaceFirst("^cup_", "");
+            return List.of(LEAGUE + "/galar/" + stage + "/" + trainer, LEAGUE + "/galar/" + stage, LEAGUE)
+                .stream().filter(key -> KEY.matcher(key).matches()).toList();
         }
         List<String> keys = new ArrayList<>();
         if (stage != null) {

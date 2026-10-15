@@ -4,5 +4,7 @@
   "reward": "more_cobblemon_contents_league_challenge:wake",
   "badge": "pokebadges:fen_sinnoh_badge",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 39,
+  "type": "water"
 }

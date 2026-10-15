@@ -24,11 +24,11 @@ object LeagueClientSession {
         return AutoCloseable { listeners -= listener }
     }
 
-    fun send(action: LeagueAction, challengeId: String = ""): Boolean {
+    fun send(action: LeagueAction, challengeId: String = "", leagueId: String? = null, finalChoiceId: String? = null): Boolean {
         val state = current ?: return false
         if (!ClientPlayNetworking.canSend(LeagueIntentPayload.TYPE)) return false
         ClientPlayNetworking.send(LeagueIntentPayload(state.nonce, UUID.randomUUID(), state.revision,
-            state.catalogRevision, action, challengeId))
+            state.catalogRevision, action, challengeId, leagueId ?: state.leagueId, finalChoiceId.orEmpty()))
         return true
     }
 

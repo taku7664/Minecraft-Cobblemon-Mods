@@ -3,5 +3,7 @@
   "trainer": "more_cobblemon_contents_league_challenge:aaron",
   "reward": "more_cobblemon_contents_league_challenge:aaron",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 64,
+  "type": "bug"
 }

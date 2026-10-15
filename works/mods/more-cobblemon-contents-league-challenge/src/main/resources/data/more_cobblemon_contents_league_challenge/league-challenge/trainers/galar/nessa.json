@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 2,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.nessa",
+  "team": "more_cobblemon_contents_league_challenge:galar/nessa",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/nessa",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.nessa.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.nessa.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.nessa.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.nessa.player_lost"
+    ]
+  }
+}

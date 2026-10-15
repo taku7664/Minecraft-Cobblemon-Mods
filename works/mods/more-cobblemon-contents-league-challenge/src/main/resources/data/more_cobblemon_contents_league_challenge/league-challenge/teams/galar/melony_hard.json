@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "frosmoth level=81 moves=quiverdance,icebeam,bugbuzz,gigadrain ability=icescales nature=timid dmax_level=10 gmax_factor=false held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "darmanitan level=82 moves=iciclecrash,flareblitz,uturn,superpower ability=gorillatactics nature=jolly dmax_level=10 gmax_factor=false form=galar held_item=cobblemon:choice_scarf hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "eiscue level=82 moves=bellydrum,iciclecrash,liquidation,zenheadbutt ability=iceface nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "mamoswine level=82 moves=earthquake,iciclecrash,iceshard,stealthrock ability=oblivious nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "weavile level=82 moves=tripleaxel,knockoff,iceshard,swordsdance ability=pressure nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:expert_belt hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "lapras level=83 moves=hydropump,freezedry,thunderbolt,icebeam ability=waterabsorb nature=modest dmax_level=10 gmax_factor=true held_item=cobblemon:light_clay hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=4 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=0"
+  ]
+}

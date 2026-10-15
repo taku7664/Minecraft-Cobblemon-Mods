@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 5,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.marnie",
+  "team": "more_cobblemon_contents_league_challenge:galar/cup_marnie_hard",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/marnie",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.marnie.hard.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.marnie.hard.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.marnie.hard.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.marnie.hard.player_lost"
+    ]
+  }
+}

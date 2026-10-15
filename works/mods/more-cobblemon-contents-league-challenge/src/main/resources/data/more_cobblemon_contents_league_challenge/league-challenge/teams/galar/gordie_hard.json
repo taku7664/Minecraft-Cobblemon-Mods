@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "barbaracle level=81 moves=shellsmash,liquidation,stoneedge,earthquake ability=toughclaws nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "shuckle level=82 moves=stickyweb,stealthrock,toxic,encore ability=sturdy nature=relaxed dmax_level=10 gmax_factor=false held_item=cobblemon:mental_herb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "stonjourner level=82 moves=rockslide,earthquake,heatcrash,heavyslam ability=powerspot nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "tyranitar level=82 moves=rockslide,crunch,icepunch,lowkick ability=sandstream nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "lycanroc level=82 moves=accelerock,stoneedge,closecombat,swordsdance ability=keeneye nature=jolly dmax_level=10 gmax_factor=false held_item=cobblemon:expert_belt hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "coalossal level=83 moves=heatwave,meteorbeam,earthpower,protect ability=steamengine nature=timid dmax_level=10 gmax_factor=true held_item=cobblemon:power_herb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}
