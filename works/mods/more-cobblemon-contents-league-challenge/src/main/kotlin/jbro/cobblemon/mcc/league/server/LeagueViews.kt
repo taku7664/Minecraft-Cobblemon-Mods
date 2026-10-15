@@ -20,46 +20,75 @@ internal object LeagueViews {
         val engine = LeagueEngine(catalog)
         val unlocked = LeagueWorldRules.unlocked(catalog, states)
         fun flags(mechanic: String): Int = BattleMechanicFlags.fromMajor(mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf))
+        /** What becoming this route's Champion opens. */
+        fun championUnlocks(hard: Boolean): List<String> = if (hard) emptyList() else
+            listOf(LIVE + "unlock.hard") + if (catalog.id == primary.id) listOf(LIVE + "unlock.galar", LIVE + "unlock.gimmicks") else emptyList()
         fun entry(id: String, hard: Boolean, stage: Int, branch: Int, run: LeagueRun? = null): LeagueChallengeView {
             val challenge = run?.encounters?.firstOrNull() ?: catalog.challenges.getValue(id)
-            val final = stage == 9
-            val finals = if (hard) catalog.hardFinals else catalog.finals
+            val stages = catalog.routeStages(hard)
+            val final = stage > stages.size
+            val finals = catalog.finals(hard)
             val reward = if (final) run?.encounters?.lastOrNull() ?: catalog.challenges.getValue(finals.last()) else challenge
             val won = if (final) (if (hard) state.hardChampion else state.champion) else id in state.cleared
             val available = unlocked && engine.available(state, id)
             val facing = run?.let { it.encounters[if (it.awaitingNext) minOf(it.index + 1, it.encounters.lastIndex) else it.index] } ?: challenge
-            val stages = if (hard) catalog.hardGymStages else catalog.gymStages
+            val cap = facing.battleCap.takeIf { it > 0 } ?: run?.battleCap ?: engine.battleCap(id)
             val unlocks = if (won) emptyList() else when {
-                !final && stage < 8 -> stages[stage].map { catalog.challenges.getValue(it).nameKey }
+                !final && stage < stages.size -> stages[stage].map { catalog.challenges.getValue(it).nameKey }
                 !final -> listOf(LIVE + if (catalog.unlockLeague == null) "unlock.league" else "unlock.cup")
-                !hard -> listOf(LIVE + "unlock.hard") + if (catalog.id == primary.id)
-                    listOf(LIVE + "unlock.galar", LIVE + "unlock.gimmicks") else emptyList()
-                else -> emptyList()
+                else -> championUnlocks(hard)
             }
             // A displayed reward must be awarded by this challenge; hard rematches do not grant another badge.
             val badge = challenge.badge
             return LeagueChallengeView(id, facing.nameKey, if (won) "CLEARED" else if (available) "AVAILABLE" else "LOCKED",
-                reward.unlockCap, badge, facing.skin, stage, branch, run?.battleCap ?: engine.battleCap(id),
+                reward.unlockCap, badge, facing.skin, stage, branch, cap,
                 flags(run?.mechanic ?: engine.mechanic(state)), facing.type, facing.format,
-                if (won) reward.repeatBp else reward.firstBp, unlocks)
+                if (won) reward.repeatBp else reward.firstBp, unlocks, final)
         }
         fun route(hard: Boolean): List<LeagueChallengeView> {
-            val stages = if (hard) catalog.hardGymStages else catalog.gymStages
-            val finals = if (hard) catalog.hardFinals else catalog.finals
+            val stages = catalog.routeStages(hard)
+            val finals = catalog.finals(hard)
             if (stages.isEmpty()) return emptyList()
             return stages.flatMapIndexed { index, alternatives -> alternatives.mapIndexed { branch, id -> entry(id, hard, index + 1, branch) } } +
-                entry(finals.first(), hard, 9, 0, state.run?.takeIf { it.encounters.first().id == finals.first() })
+                entry(finals.first(), hard, stages.size + 1, 0, state.run?.takeIf { it.encounters.first().id == finals.first() })
+        }
+        /** The finals' trainers in order; a run on them marks who is beaten and who is faced now. */
+        fun finalists(hard: Boolean): List<LeagueChallengeView> {
+            val finals = catalog.finals(hard)
+            if (finals.isEmpty()) return emptyList()
+            val run = state.run?.takeIf { it.encounters.first().id == finals.first() }
+            val encounters = run?.encounters ?: finals.map { catalog.challenges.getValue(it) }
+            val current = run?.let { if (it.awaitingNext) it.index + 1 else it.index }
+            val won = if (hard) state.hardChampion else state.champion
+            val open = unlocked && engine.available(state, finals.first())
+            val mechanic = flags(run?.mechanic ?: engine.mechanic(state))
+            val cap = run?.battleCap ?: engine.battleCap(finals.first())
+            return encounters.mapIndexed { index, challenge ->
+                val status = when {
+                    current != null -> if (index < current) "CLEARED" else if (index == current) "AVAILABLE" else "LOCKED"
+                    won -> "CLEARED"
+                    open && index == 0 -> "AVAILABLE"
+                    else -> "LOCKED"
+                }
+                val beaten = challenge.id in state.cleared
+                val last = index == encounters.lastIndex
+                LeagueChallengeView(challenge.id, challenge.nameKey, status, challenge.unlockCap, null, challenge.skin,
+                    index + 1, 0, challenge.battleCap.takeIf { it > 0 } ?: cap, mechanic, challenge.type, challenge.format,
+                    if (beaten) challenge.repeatBp else challenge.firstBp,
+                    if (last && !won) championUnlocks(hard) else emptyList(), true)
+            }
         }
         fun branches(hard: Boolean): List<LeagueFinalBranchView> =
             (if (hard) catalog.hardFinalChoices else catalog.finalChoices).values.flatten().distinct().map {
                 LeagueFinalBranchView(it, catalog.challenges.getValue(it).nameKey)
             }
-        val hard = state.run?.let { it.hard ?: (it.encounters.first().id in catalog.hardGyms + catalog.hardFinals) } ?: false
+        val hard = state.run?.let { it.hard ?: catalog.isHard(it.encounters.first().id) } ?: false
         val runEntry = state.run?.let { run ->
             val first = run.encounters.first().id
-            val stages = if (hard) catalog.hardGymStages else catalog.gymStages
-            val stage = stages.indexOfFirst { first in it }.let { if (it < 0) 9 else it + 1 }
-            entry(first, hard, stage, if (stage <= 8) stages[stage - 1].indexOf(first) else 0, run)
+            val stages = catalog.routeStages(hard)
+            val index = stages.indexOfFirst { first in it }
+            if (index >= 0) entry(first, hard, index + 1, stages[index].indexOf(first), run)
+            else entry(first, hard, stages.size + 1, 0, run)
         }
         return LeagueView(nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
             engine.badgeCount(state), LeagueServer.rank(primary, states.getValue(primary.id)).name,
@@ -69,6 +98,6 @@ internal object LeagueViews {
             state.run?.let { it.encounters[it.index].nameKey }, engine.hardUnlocked(state), state.hardChampion,
             route(true), hard, catalog.id,
             LeagueCatalogResources.catalogs.values.map { LeagueRegionView(it.id, it.nameKey, LeagueWorldRules.unlocked(it, states)) },
-            unlocked, branches(false), branches(true), runEntry)
+            unlocked, branches(false), branches(true), runEntry, finalists(false), finalists(true))
     }
 }

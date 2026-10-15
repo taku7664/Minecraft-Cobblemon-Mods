@@ -15,30 +15,37 @@ data class LeagueHubLayout(val tabs: UiRect, val page: UiRect, val route: UiRect
     val nodeHeight: Int = NODE_HEIGHT) {
     val captions: Boolean get() = nodeHeight > BOX
 
-    /** Stages the route shows side by side; more page with arrows at the page's edges. */
-    val routeCapacity: Int get() = (route.width / STAGE_WIDTH).coerceAtLeast(1)
+    /**
+     * Stages the route shows side by side, narrowed down to [MIN_STAGE_WIDTH] each before it pages; more page with
+     * arrows at the page's edges.
+     */
+    val routeCapacity: Int get() = (route.width / MIN_STAGE_WIDTH).coerceAtLeast(1)
 
     /** The route without its paging arrows, when [paged]. */
     fun routeArea(paged: Boolean): UiRect =
         if (!paged) route else UiRect(route.x + ARROW_WIDTH, route.y, (route.width - ARROW_WIDTH * 2).coerceAtLeast(1), route.height)
 
     /** Stages shown when the route pages: the arrows take room from both ends. */
-    fun pagedCapacity(): Int = (routeArea(true).width / STAGE_WIDTH).coerceAtLeast(1)
+    fun pagedCapacity(): Int = (routeArea(true).width / MIN_STAGE_WIDTH).coerceAtLeast(1)
 
-    /** Node rectangles of the stages from [firstStage] on that fit [area], keyed by challenge id. */
+    /**
+     * Node rectangles of the stages from [firstStage] on that fit [area], keyed by challenge id. Each stage gets an
+     * equal share of the width; a share under [STAGE_WIDTH] narrows the node to it.
+     */
     fun nodeRects(entries: List<LeagueChallengeView>, firstStage: Int = 0, area: UiRect = route): Map<String, UiRect> {
         val groups = entries.withIndex().groupBy { (index, entry) -> entry.stage.takeIf { it > 0 } ?: (index + 1) }.values.toList()
-        val capacity = (area.width / STAGE_WIDTH).coerceAtLeast(1)
+        val capacity = (area.width / MIN_STAGE_WIDTH).coerceAtLeast(1)
         val visible = groups.drop(firstStage.coerceIn(0, (groups.size - capacity).coerceAtLeast(0))).take(capacity)
         val step = area.width / visible.size.coerceAtLeast(1)
+        val nodeWidth = minOf(NODE_WIDTH, step - 1).coerceAtLeast(BOX)
         return buildMap {
             visible.forEachIndexed { column, alternatives ->
-                val left = area.x + column * step + (step - NODE_WIDTH) / 2
+                val left = area.x + column * step + (step - nodeWidth) / 2
                 val rows = alternatives.size
                 val total = rows * nodeHeight + (rows - 1) * BRANCH_GAP
                 val top = area.y + (area.height - total) / 2
                 alternatives.forEachIndexed { row, (_, entry) ->
-                    put(entry.id, UiRect(left, top + row * (nodeHeight + BRANCH_GAP), NODE_WIDTH, nodeHeight))
+                    put(entry.id, UiRect(left, top + row * (nodeHeight + BRANCH_GAP), nodeWidth, nodeHeight))
                 }
             }
         }
@@ -54,6 +61,8 @@ data class LeagueHubLayout(val tabs: UiRect, val page: UiRect, val route: UiRect
         const val NODE_HEIGHT = BOX + 1 + 9
         const val BRANCH_GAP = 3
         const val STAGE_WIDTH = 33
+        /** The narrowest a stage gets before the route pages: eleven stages fit the smallest hub's route. */
+        const val MIN_STAGE_WIDTH = 27
         const val ARROW_WIDTH = 12
         /** Rows the page keeps around its stacked nodes. */
         const val PAGE_MARGIN = 3

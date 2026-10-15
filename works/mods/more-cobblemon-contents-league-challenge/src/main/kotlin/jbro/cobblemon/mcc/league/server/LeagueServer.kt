@@ -213,7 +213,8 @@ object LeagueServer {
                 appearance = jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(
                     challenge.skin ?: "minecraft:textures/entity/player/wide/steve.png", challenge.slim),
                 stage = LeagueEngine(catalog).stage(run), scenes = trainerScenes(challenge)),
-                playerLevelCap = run.battleCap ?: LeagueEngine(catalog).battleCap(challenge.id)) { outcome ->
+                // Each trainer of a run keeps the cap its own data gives; the run's cap covers the ones without.
+                playerLevelCap = challenge.battleCap.takeIf { it > 0 } ?: run.battleCap ?: LeagueEngine(catalog).battleCap(challenge.id)) { outcome ->
                 val storage = LeagueSavedData.get(player.server)
                 val latest = storage.read(catalog.id, player.uuid)
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())

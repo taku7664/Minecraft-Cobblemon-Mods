@@ -18,8 +18,21 @@ class LeagueLiveHomeState {
         private set
     val finalBranches: List<LeagueFinalBranchView> get() = view?.let { if (hard) it.hardFinalBranches else it.finalBranches }.orEmpty()
 
-    /** The route shown: the normal one, or the hard one once the normal Champion opened it. */
-    val challenges: List<LeagueChallengeView> get() = view?.let { if (hard) it.hardChallenges else it.challenges }.orEmpty()
+    /** The shown route's stages: the gyms and challengers, with one entry for the whole finals. */
+    val route: List<LeagueChallengeView> get() = view?.let { if (hard) it.hardChallenges else it.challenges }.orEmpty()
+
+    /**
+     * Whether the finals' trainers replace the route: while the finals run on the shown route, and while they are
+     * next on it, open and not yet won.
+     */
+    val finalsView: Boolean get() = view?.let { current ->
+        if (current.runChallenge != null) current.runEntry?.finalStage == true && current.runHard == hard
+        else route.any { it.finalStage && it.status == "AVAILABLE" }
+    } == true
+
+    /** What the page lists and selects from: the finals' trainers in the finals view, the route otherwise. */
+    val challenges: List<LeagueChallengeView> get() =
+        if (finalsView) view?.let { if (hard) it.hardFinalists else it.finalists }.orEmpty() else route
 
     fun accept(next: LeagueView?) {
         val newSession = next?.nonce != view?.nonce || next?.leagueId != view?.leagueId

@@ -26,7 +26,10 @@ object LeagueCatalogParser {
         val hardFinals = hard?.strings("finals").orEmpty()
         val finalChoices = league.choices()
         val hardFinalChoices = hard?.choices().orEmpty()
-        val challenges = (gyms + finals + hardGyms + hardFinals + finalChoices.values.flatten() + hardFinalChoices.values.flatten()).distinct().associateWith { id ->
+        val challengers = league.optionalStrings("challengers")
+        val hardChallengers = hard?.optionalStrings("challengers").orEmpty()
+        val challenges = (gyms + challengers + finals + hardGyms + hardChallengers + hardFinals + finalChoices.values.flatten() +
+            hardFinalChoices.values.flatten()).distinct().associateWith { id ->
             val source = document("challenges", id)
             val trainer = document("trainers", source.string("trainer"))
             val team = document("teams", trainer.string("team"))
@@ -43,13 +46,16 @@ object LeagueCatalogParser {
         return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
             wildLevel(league), hardGyms, hardFinals, gymStages, hardGymStages, finalChoices, hardFinalChoices,
             league.optionalString("unlock_league"), league.optionalString("player_mechanic") ?: "MEGA",
-            league.get("lock_mechanics_until_champion")?.asBoolean ?: true)
+            league.get("lock_mechanics_until_champion")?.asBoolean ?: true, challengers, hardChallengers)
     }
 }
 
 private fun JsonObject.stages(key: String): List<List<String>> = getAsJsonArray(key).map { entry ->
     (if (entry.isJsonArray) entry.asJsonArray.toList() else listOf(entry)).map { it.asString.also(::requireId) }
 }
+
+private fun JsonObject.optionalStrings(key: String): List<String> =
+    if (!has(key) || get(key).isJsonNull) emptyList() else strings(key).onEach(::requireId)
 
 private fun JsonObject.choices(): Map<String, List<String>> = if (!has("final_choices")) emptyMap() else
     getAsJsonObject("final_choices").entrySet().associate { (id, value) ->

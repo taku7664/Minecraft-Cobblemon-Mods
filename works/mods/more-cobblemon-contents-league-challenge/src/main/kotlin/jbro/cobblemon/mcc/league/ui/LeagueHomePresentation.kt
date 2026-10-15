@@ -14,8 +14,8 @@ internal data class LeagueHomePresentation(
             val route = if (hard) view.hardChallenges else view.challenges
             val focusedId = view.runChallenge ?: selectedId
             val structured = route.any { it.stage > 0 }
-            return LeagueHomePresentation(if (structured) route.filter { it.stage < 9 } else route.take(8),
-                if (structured) route.filter { it.stage == 9 } else route.drop(8),
+            return LeagueHomePresentation(if (structured) route.filter { !it.finalStage } else route.take(8),
+                if (structured) route.filter { it.finalStage } else route.drop(8),
                 view.runEntry ?: route.firstOrNull { it.id == focusedId })
         }
     }

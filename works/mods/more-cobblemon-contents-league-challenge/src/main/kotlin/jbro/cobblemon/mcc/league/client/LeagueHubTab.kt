@@ -44,8 +44,13 @@ internal class LeagueHubTab : MccHubTabContent {
         val presentation = LeagueHomePresentation.from(view, state.selectedId, state.hard)
         val running = view.runChallenge != null
         addRegions(host, layout, view, running)
-        addRoute(host, layout, view, presentation.gyms + presentation.finals, presentation.focused)
-        val focused = presentation.focused
+        // Once the finals are next or running, their trainers take the route's place, the one faced now in focus.
+        val finalsView = state.finalsView
+        val entries = if (finalsView) state.challenges else presentation.gyms + presentation.finals
+        val focused = if (!finalsView) presentation.focused
+            else if (running) entries.firstOrNull { it.status == "AVAILABLE" } ?: presentation.focused
+            else entries.firstOrNull { it.id == state.selectedId }
+        addRoute(host, layout, view, entries, focused, finalsView)
         host.add(Challenger(MccHubKit.card(host, layout.challenger, leagueCopy("challenger"), MccHubKit.CardTone.FEATURE), focused))
         host.add(Gimmicks(MccHubKit.card(host, layout.mechanics,
             leagueCopy(if (layout.mechanics.width < 90) "mechanics_short" else "mechanics")), focused))
@@ -70,8 +75,9 @@ internal class LeagueHubTab : MccHubTabContent {
     }
 
     private fun addRoute(host: MccHubContentHost, layout: LeagueHubLayout, view: LeagueView,
-        entries: List<LeagueChallengeView>, focused: LeagueChallengeView?) {
-        if (routeLeague != view.leagueId + state.hard) { routeStart = 0; routeLeague = view.leagueId + state.hard }
+        entries: List<LeagueChallengeView>, focused: LeagueChallengeView?, finalsView: Boolean) {
+        val shown = view.leagueId + state.hard + finalsView
+        if (routeLeague != shown) { routeStart = 0; routeLeague = shown }
         val stages = entries.map { it.stage }.distinct().size
         val paged = stages > layout.routeCapacity
         val area = layout.routeArea(paged)
@@ -81,7 +87,7 @@ internal class LeagueHubTab : MccHubTabContent {
         val visible = entries.filter { it.id in rects }
         host.add(Connectors(layout.page, visible, rects))
         visible.forEach { entry ->
-            val caption = if (entry.stage == 9) leagueCopy(if (view.leagueId.endsWith(":galar")) "cup_short" else "league_short")
+            val caption = if (entry.finalStage && !finalsView) leagueCopy(if (view.leagueId.endsWith(":galar")) "cup_short" else "league_short")
                 else Component.translatable(entry.nameKey)
             host.add(RouteNode(rects.getValue(entry.id), entry, entry.id == focused?.id, !state.pending && view.runChallenge == null, caption) {
                 state.select(entry.id); host.rebuild()
@@ -109,7 +115,7 @@ internal class LeagueHubTab : MccHubTabContent {
                     LeagueHomeController.send(LeagueAction.CANCEL)
                 }
             }) else add(MccHubKit.Action(leagueCopy("refresh"), enabled = !state.pending) { LeagueHomeController.send(LeagueAction.REFRESH) })
-            if (!running && focused?.stage == 9 && state.finalBranches.size > 1) {
+            if (!running && focused?.finalStage == true && state.finalBranches.size > 1) {
                 val branch = state.finalBranches.firstOrNull { it.id == state.finalChoiceId }
                 add(MccHubKit.Action(leagueCopy("cup_branch", branch?.let { Component.translatable(it.nameKey) } ?: Component.empty()),
                     enabled = !state.pending, tooltip = leagueCopy("cup_branch_hint")) { if (state.cycleFinalBranch()) host.rebuild() })
@@ -201,7 +207,9 @@ internal class LeagueHubTab : MccHubTabContent {
                 locked -> theme.colors.textDim
                 else -> theme.colors.textSecondary
             }
-            if (height > box.height) centeredLine(g, caption, x - 2, box.bottom + 2, width + 4, color)
+            // A full-width node lends its name two pixels a side; a narrowed one keeps it inside, clear of its neighbours.
+            val spill = if (width >= LeagueHubLayout.NODE_WIDTH) 2 else 0
+            if (height > box.height) centeredLine(g, caption, x - spill, box.bottom + 2, width + spill * 2, color)
         }
     }
 

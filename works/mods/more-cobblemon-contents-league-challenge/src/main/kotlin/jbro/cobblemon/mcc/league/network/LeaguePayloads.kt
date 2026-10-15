@@ -14,7 +14,9 @@ data class LeagueChallengeView(val id: String, val nameKey: String, val status: 
     val skin: String? = null,
     val stage: Int = 0, val branch: Int = 0, val battleCap: Int = 0,
     val mechanicFlags: Int = 0, val type: String? = null, val format: String = "SINGLE",
-    val bp: Long = 0, val unlockKeys: List<String> = emptyList())
+    val bp: Long = 0, val unlockKeys: List<String> = emptyList(),
+    /** The finals: on a route, the one entry standing for the whole run; among the finalists, each of its trainers. */
+    val finalStage: Boolean = false)
 
 data class LeagueRegionView(val id: String, val nameKey: String, val unlocked: Boolean)
 data class LeagueFinalBranchView(val id: String, val nameKey: String)
@@ -28,7 +30,12 @@ data class LeagueView(val nonce: UUID, val revision: Long, val catalogRevision: 
     val hardChallenges: List<LeagueChallengeView> = emptyList(), val runHard: Boolean = false,
     val leagueId: String = "", val regions: List<LeagueRegionView> = emptyList(), val leagueUnlocked: Boolean = true,
     val finalBranches: List<LeagueFinalBranchView> = emptyList(), val hardFinalBranches: List<LeagueFinalBranchView> = emptyList(),
-    val runEntry: LeagueChallengeView? = null)
+    val runEntry: LeagueChallengeView? = null,
+    /**
+     * The finals' trainers one by one, in the order they are fought, for the view that replaces the route once the
+     * finals are next or running: beaten ones cleared, the one faced now open, the rest locked.
+     */
+    val finalists: List<LeagueChallengeView> = emptyList(), val hardFinalists: List<LeagueChallengeView> = emptyList())
 
 data class LeagueStatePayload(val json: String) : CustomPacketPayload {
     override fun type() = TYPE

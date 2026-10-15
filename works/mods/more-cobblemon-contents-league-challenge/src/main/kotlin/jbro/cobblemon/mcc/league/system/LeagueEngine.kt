@@ -41,18 +41,36 @@ data class LeagueCatalog(
     val unlockLeague: String? = null,
     val playerMechanic: String = "MEGA",
     val lockMechanicsUntilChampion: Boolean = true,
+    /**
+     * Trainers fought one at a time after the gyms and before the finals, each a stage of its own like a gym but
+     * giving no badge, such as Galar's rivals. The finals open once they are all beaten.
+     */
+    val challengers: List<String> = emptyList(),
+    val hardChallengers: List<String> = emptyList(),
 ) {
     val hasHard: Boolean get() = hardGyms.isNotEmpty()
+
+    /** Every stage before the finals, in order: the gym stages, then one stage per challenger. */
+    val routeStages: List<List<String>> get() = gymStages + challengers.map { listOf(it) }
+    val hardRouteStages: List<List<String>> get() = hardGymStages + hardChallengers.map { listOf(it) }
+
+    fun routeStages(hard: Boolean): List<List<String>> = if (hard) hardRouteStages else routeStages
+    fun finals(hard: Boolean): List<String> = if (hard) hardFinals else finals
+
+    /** Whether [challengeId] belongs to the hard route. */
+    fun isHard(challengeId: String): Boolean = challengeId in hardGyms || challengeId in hardChallengers ||
+        challengeId in hardFinals || challengeId in hardFinalChoices.values.flatten()
 
     init {
         requireId(id)
         require(initialCap in 1..100)
         require(gymStages.size == 8 && gymStages.flatten() == gyms && gymStages.all { it.size in 1..2 })
         require(finals.size in 1..16)
-        require((hardGyms.isEmpty() && hardFinals.isEmpty()) ||
+        require((hardGyms.isEmpty() && hardFinals.isEmpty() && hardChallengers.isEmpty()) ||
             (hardGymStages.size == 8 && hardGymStages.flatten() == hardGyms && hardGymStages.all { it.size in 1..2 } && hardFinals.size in 1..16))
+        require(challengers.size <= 8 && hardChallengers.size <= 8)
         val alternatives = (finalChoices.values + hardFinalChoices.values).flatten()
-        val route = gyms + finals + hardGyms + hardFinals
+        val route = gyms + challengers + finals + hardGyms + hardChallengers + hardFinals
         require(route.distinct().size == route.size)
         require((route + alternatives).all { it in challenges })
         listOf(finals to finalChoices, hardFinals to hardFinalChoices).forEach { (sequence, choices) ->
@@ -65,7 +83,7 @@ data class LeagueCatalog(
         require(gyms.all { challenges.getValue(it).badge != null })
         require(gyms.map { challenges.getValue(it).badge }.distinct().size == gyms.size)
         // Badges come from the normal gyms; the hard route only replays them.
-        require((finals + hardGyms + hardFinals + alternatives).all { challenges.getValue(it).badge == null })
+        require((challengers + finals + hardGyms + hardChallengers + hardFinals + alternatives).all { challenges.getValue(it).badge == null })
         val caps = listOf(initialCap) + route.map { challenges.getValue(it).unlockCap }
         require(caps.zipWithNext().all { (a, b) -> a <= b }) { "Level caps must never decrease" }
         challenges.forEach { (id, challenge) ->
@@ -134,10 +152,10 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         (state.cleared.mapNotNull { catalog.challenges[it]?.unlockCap } + catalog.initialCap).max()
 
     fun available(state: LeagueProgress, challengeId: String): Boolean {
-        val hard = challengeId in catalog.hardGyms || challengeId in catalog.hardFinals || challengeId in catalog.hardFinalChoices.values.flatten()
+        val hard = catalog.isHard(challengeId)
         if (hard && !hardUnlocked(state)) return false
-        val stages = if (hard) catalog.hardGymStages else catalog.gymStages
-        val finals = if (hard) catalog.hardFinals else catalog.finals
+        val stages = catalog.routeStages(hard)
+        val finals = catalog.finals(hard)
         val index = stages.indexOfFirst { challengeId in it }
         return if (index >= 0) stages.take(index).all { stage -> stage.any { it in state.cleared } }
         else challengeId == finals.firstOrNull() && stages.all { stage -> stage.any { it in state.cleared } }
@@ -147,8 +165,8 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
     fun battleCap(challengeId: String): Int {
         val challenge = catalog.challenges.getValue(challengeId)
         if (challenge.battleCap > 0) return challenge.battleCap
-        val hard = challengeId in catalog.hardGyms || challengeId in catalog.hardFinals
-        val stages = if (hard) catalog.hardGymStages else catalog.gymStages
+        val hard = catalog.isHard(challengeId)
+        val stages = catalog.routeStages(hard)
         val index = stages.indexOfFirst { challengeId in it }
         return if (hard) { if (index >= 0) 80 else 100 }
         else if (index == 0) catalog.initialCap
@@ -161,13 +179,12 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         require(state.run == null) { "run_active" }
         require(party.size in 1..6 && party.all { it.isNotBlank() }) { "party_required" }
         require(state.rewards.all { it.badgeDone && it.bpDone }) { "rewards_pending" }
-        val hard = challengeId in catalog.hardGyms || challengeId in catalog.hardFinals
+        val hard = catalog.isHard(challengeId)
         if (hard) require(hardUnlocked(state)) { "hard_locked" }
-        val gyms = if (hard) catalog.hardGyms else catalog.gyms
-        val finals = if (hard) catalog.hardFinals else catalog.finals
-        val stages = if (hard) catalog.hardGymStages else catalog.gymStages
-        val gymIndex = gyms.indexOf(challengeId)
-        val encounters = if (gymIndex >= 0) {
+        val finals = catalog.finals(hard)
+        val stages = catalog.routeStages(hard)
+        // A gym or a challenger is one battle; the finals are one run.
+        val encounters = if (stages.any { challengeId in it }) {
             require(finalChoiceId == null) { "invalid_branch" }
             require(available(state, challengeId)) { "prerequisite" }
             listOf(catalog.challenges.getValue(challengeId))
@@ -193,20 +210,22 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         val id = run.challengeId
         val role = when {
             id in catalog.gyms || id in catalog.hardGyms -> "gym"
+            id in catalog.challengers || id in catalog.hardChallengers -> "tournament"
             run.index == run.encounters.lastIndex -> "champion"
             else -> "elite_four"
         }
-        return if (id in catalog.hardGyms || id in catalog.hardFinals) "hard_$role" else role
+        return if (catalog.isHard(id)) "hard_$role" else role
     }
 
     /** Where [challengeId] stands on its own, as [stage] names a run's battle: a Champion is the last of its finals. */
     fun stage(challengeId: String): String {
         val role = when (challengeId) {
             in catalog.gyms, in catalog.hardGyms -> "gym"
+            in catalog.challengers, in catalog.hardChallengers -> "tournament"
             catalog.finals.last(), catalog.hardFinals.lastOrNull() -> "champion"
             else -> if (catalog.unlockLeague != null) "tournament" else "elite_four"
         }
-        return if (challengeId in catalog.hardGyms || challengeId in catalog.hardFinals || challengeId in catalog.hardFinalChoices.values.flatten()) "hard_$role" else role
+        return if (catalog.isHard(challengeId)) "hard_$role" else role
     }
 
     fun next(state: LeagueProgress): LeagueProgress {
@@ -217,8 +236,9 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
             run = run.copy(index = run.index + 1, battleToken = UUID.randomUUID(), awaitingNext = false))
     }
 
-    /** Every challenge in the order it is played: normal gyms, normal finals, hard gyms, hard finals. */
-    fun route(): List<String> = catalog.gyms + catalog.finals + catalog.hardGyms + catalog.hardFinals
+    /** Every challenge in the order it is played: normal gyms, challengers and finals, then the hard ones. */
+    fun route(): List<String> =
+        catalog.gyms + catalog.challengers + catalog.finals + catalog.hardGyms + catalog.hardChallengers + catalog.hardFinals
 
     /**
      * Progress as an operator sets it: every challenge on the [route] before [challengeId] beaten and none from it on,
@@ -252,7 +272,7 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         require(now >= 0)
         val challenge = run.encounters[run.index]
         val first = challenge.id !in state.cleared
-        val hardRun = run.hard ?: (run.encounters.first().id in catalog.hardFinals)
+        val hardRun = run.hard ?: catalog.isHard(run.encounters.first().id)
         val finalWin = run.index == run.encounters.lastIndex &&
             (challenge.stage?.endsWith("champion") ?: (challenge.id ==
                 (if (hardRun) catalog.hardFinals.lastOrNull() else catalog.finals.last())))

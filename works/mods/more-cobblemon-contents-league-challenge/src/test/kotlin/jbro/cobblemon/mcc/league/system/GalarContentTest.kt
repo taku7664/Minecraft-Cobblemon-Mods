@@ -19,15 +19,18 @@ class GalarContentTest {
     }, "$ns:galar")
     private fun fields(line: String) = line.split(' ').drop(1).associate { it.substringBefore('=') to it.substringAfter('=') }
 
-    @Test fun `bundled routes have eight stages ten leaders seven cup encounters and both version choices`() {
+    @Test fun `bundled routes have eight stages ten leaders two rivals alone and a two battle final`() {
         val c = catalog()
-        assertEquals(36, c.challenges.size)
+        assertEquals(28, c.challenges.size)
         assertEquals(8, c.gymStages.size)
         assertEquals(10, c.gyms.size)
         assertEquals(listOf("bea", "allister"), c.gymStages[3].map { it.substringAfterLast('/') })
         assertEquals(listOf("gordie", "melony"), c.gymStages[5].map { it.substringAfterLast('/') })
-        assertEquals(7, c.finals.size)
-        assertEquals(listOf("$ns:galar/cup_bea", "$ns:galar/cup_allister"), c.finalChoices["$ns:galar/cup_bea"])
+        assertEquals(listOf("cup_marnie", "cup_hop"), c.challengers.map { it.substringAfterLast('/') })
+        assertEquals(listOf("cup_bede", "leon"), c.finals.map { it.substringAfterLast('/') })
+        assertEquals(listOf("cup_marnie_hard", "cup_hop_hard"), c.hardChallengers.map { it.substringAfterLast('/') })
+        assertEquals(listOf("cup_bede_hard", "leon_hard"), c.hardFinals.map { it.substringAfterLast('/') })
+        assertTrue(c.finalChoices.isEmpty() && c.hardFinalChoices.isEmpty())
         assertEquals("$ns:sinnoh", c.unlockLeague)
         assertEquals("DYNAMAX", LeagueEngine(c).mechanic(LeagueProgress()))
         c.challenges.values.forEach { ch ->
@@ -55,7 +58,6 @@ class GalarContentTest {
         assertEquals("magicalleaf,round,rapidspin", fields(c.challenges.getValue("$ns:galar/milo").team.first())["moves"])
         assertEquals("zenmode", fields(c.challenges.getValue("$ns:galar/melony").team[1])["ability"])
         assertEquals("false", fields(c.challenges.getValue("$ns:galar/nessa").team.last())["gmax_factor"])
-        assertEquals("true", fields(c.challenges.getValue("$ns:galar/cup_nessa").team.last())["gmax_factor"])
     }
 
     @Test fun `hard teams use six trained members with role based evs and no assault vest status move`() {

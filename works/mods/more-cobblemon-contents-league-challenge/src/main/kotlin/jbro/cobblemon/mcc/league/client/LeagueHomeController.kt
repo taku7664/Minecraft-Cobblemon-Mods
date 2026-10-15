@@ -59,7 +59,7 @@ internal object LeagueHomeController {
     fun send(action: LeagueAction) {
         if (!state.begin(action)) return
         pendingUntil = tick + 100
-        val branch = state.finalChoiceId.takeIf { state.challenges.any { it.id == state.selectedId && it.stage == 9 } }
+        val branch = state.finalChoiceId.takeIf { state.challenges.any { it.id == state.selectedId && it.finalStage } }
         if (!LeagueClientSession.send(action, state.selectedId.orEmpty(), finalChoiceId = branch)) {
             state.accept(state.view?.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))
         }

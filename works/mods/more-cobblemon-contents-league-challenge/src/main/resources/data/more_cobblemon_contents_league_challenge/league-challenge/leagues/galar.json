@@ -22,21 +22,14 @@
     "more_cobblemon_contents_league_challenge:galar/piers",
     "more_cobblemon_contents_league_challenge:galar/raihan"
   ],
-  "finals": [
+  "challengers": [
     "more_cobblemon_contents_league_challenge:galar/cup_marnie",
-    "more_cobblemon_contents_league_challenge:galar/cup_hop",
+    "more_cobblemon_contents_league_challenge:galar/cup_hop"
+  ],
+  "finals": [
     "more_cobblemon_contents_league_challenge:galar/cup_bede",
-    "more_cobblemon_contents_league_challenge:galar/cup_nessa",
-    "more_cobblemon_contents_league_challenge:galar/cup_bea",
-    "more_cobblemon_contents_league_challenge:galar/cup_raihan",
     "more_cobblemon_contents_league_challenge:galar/leon"
   ],
-  "final_choices": {
-    "more_cobblemon_contents_league_challenge:galar/cup_bea": [
-      "more_cobblemon_contents_league_challenge:galar/cup_bea",
-      "more_cobblemon_contents_league_challenge:galar/cup_allister"
-    ]
-  },
   "hard": {
     "gyms": [
       "more_cobblemon_contents_league_challenge:galar/milo_hard",
@@ -54,20 +47,13 @@
       "more_cobblemon_contents_league_challenge:galar/piers_hard",
       "more_cobblemon_contents_league_challenge:galar/raihan_hard"
     ],
-    "finals": [
+    "challengers": [
       "more_cobblemon_contents_league_challenge:galar/cup_marnie_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_hop_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_bede_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_nessa_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_bea_hard",
-      "more_cobblemon_contents_league_challenge:galar/cup_raihan_hard",
-      "more_cobblemon_contents_league_challenge:galar/leon_hard"
+      "more_cobblemon_contents_league_challenge:galar/cup_hop_hard"
     ],
-    "final_choices": {
-      "more_cobblemon_contents_league_challenge:galar/cup_bea_hard": [
-        "more_cobblemon_contents_league_challenge:galar/cup_bea_hard",
-        "more_cobblemon_contents_league_challenge:galar/cup_allister_hard"
-      ]
-    }
+    "finals": [
+      "more_cobblemon_contents_league_challenge:galar/cup_bede_hard",
+      "more_cobblemon_contents_league_challenge:galar/leon_hard"
+    ]
   }
 }
