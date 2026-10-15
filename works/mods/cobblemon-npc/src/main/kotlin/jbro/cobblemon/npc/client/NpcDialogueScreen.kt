@@ -11,6 +11,7 @@ import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
+import jbro.cobblemon.uikit.UiFill
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
@@ -18,6 +19,7 @@ import jbro.cobblemon.uikit.client.CobblemonUiListRows
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiListRowContent
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiDialogueStyle
 import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.gui.GuiGraphics
@@ -70,7 +72,8 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
 
     override fun init() {
         if (restoreTheme == null) {
-            restoreTheme = CobblemonUiSharedTheme.install()
+            // Its box, plate and choices are cards of the hub's content theme, as every message box is.
+            restoreTheme = CobblemonUiSharedTheme.installContent()
             // Once per opening (init also runs on resize): the battle camera looks at the speaker while the box is up.
             if (show.npcEntityId != DialogueShowPayload.NO_NPC) NpcDialogueCamera.focus(show.npcEntityId)
             CinematicLetterbox.show(LETTERBOX_OWNER)
@@ -169,13 +172,16 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         click()
     }
 
-    /** The window that holds the answers, right-aligned just above the message box. */
+    /**
+     * The window that holds the answers, standing on the message box's top edge near its right end (as the name plate
+     * stands near its left), joined to it as a tab is to its page.
+     */
     private fun choicesRect(): UiRect {
         val font = minecraft!!.font
         val box = boxRect()
         val width = (choices.maxOf(font::width) + ROW_TEXT_ROOM + CHOICES_INSET * 2).coerceIn(80, box.width / 2)
         val height = choices.size * CHOICE_ROW + (choices.size - 1) * CHOICE_GAP + CHOICES_INSET * 2
-        return UiRect(box.right - width, box.y - 4 - height, width, height)
+        return UiRect(box.right - CHOICES_EDGE - width, box.y - height, width, height)
     }
 
     private fun choiceRow(index: Int): UiRect {
@@ -192,7 +198,24 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     private fun drawChoices(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
         val window = choicesRect()
-        UiSurfaceRenderer.draw(graphics, window.x, window.y, window.width, window.height, theme.surfaces.panel)
+        val box = boxRect()
+        val surface = UiDialogueStyle.box(theme)
+        val fill = (surface.fill as? UiFill.Solid)?.color ?: theme.colors.panelAlt
+        // Drawn on past the box's top edge so only its top corners round, without a shadow of its own; then the part
+        // inside the box is painted back as the box, and the box's top frame opens under it.
+        val reach = 8
+        val frame = (surface.border as? UiBorder.PixelFrame)?.copy(shadowOffset = 0) ?: surface.border
+        UiSurfaceRenderer.draw(graphics, window.x, window.y, window.width, window.height + reach, surface.copy(border = frame))
+        val open = UiDialogueStyle.inset(theme)
+        graphics.fill(window.x, box.y + open, window.right, box.y + reach, fill)
+        graphics.fill(window.x + open, box.y, window.right - open, box.y + open, fill)
+        (surface.border as? UiBorder.PixelFrame)?.let { pixel ->
+            // The window's side lines stop on the box's outer line; below it the box's highlight runs on unbroken,
+            // and the right side's shade ends where the opening starts.
+            graphics.fill(window.x, box.y + 1, window.x + 1, box.y + 2, pixel.highlightColor)
+            graphics.fill(window.right - 1, box.y + 1, window.right, box.y + 2, pixel.highlightColor)
+            graphics.fill(window.right - 2, box.y, window.right - 1, box.y + 2, fill)
+        }
         choices.forEachIndexed { index, text ->
             // Rows in the theme's list style: unframed lines, the cursor's ring on the chosen one only.
             CobblemonUiListRows.draw(graphics, choiceRow(index), UiListRowContent(Component.literal(text), selected = index == cursor),
@@ -220,14 +243,14 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     private fun drawBox(graphics: GuiGraphics, partialTick: Float) {
         val font = minecraft!!.font
         val theme = CobblemonUiThemes.registry.snapshot()
-        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
-        val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
+        val ink = UiDialogueStyle.ink(theme)
+        val shadow = UiDialogueStyle.inkShadow(theme)
         val box = boxRect()
-        UiSurfaceRenderer.draw(graphics, box.x, box.y, box.width, box.height, theme.surfaces.panel)
-        val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
+        UiSurfaceRenderer.draw(graphics, box.x, box.y, box.width, box.height, UiDialogueStyle.box(theme))
+        val inset = UiDialogueStyle.inset(theme)
         // The message window's bars at both ends, as the battle dialogue box draws them.
-        graphics.fill(box.x + inset, box.y + inset, box.x + inset + END_BAR, box.bottom - inset, theme.colors.borderBright)
-        graphics.fill(box.right - inset - END_BAR, box.y + inset, box.right - inset, box.bottom - inset, theme.colors.borderBright)
+        graphics.fill(box.x + inset, box.y + inset + 2, box.x + inset + END_BAR, box.bottom - inset - 2, UiDialogueStyle.bar(theme))
+        graphics.fill(box.right - inset - END_BAR, box.y + inset + 2, box.right - inset, box.bottom - inset - 2, UiDialogueStyle.bar(theme))
 
         val textLeft = box.x + PADDING
         val hasFace = show.skin.isNotBlank()
@@ -237,10 +260,10 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
             val faceWidth = if (hasFace) FACE + if (speaker.isNotBlank()) FACE_GAP else 0 else 0
             val plateLeft = box.x + 8
             val plateWidth = faceWidth + font.width(name) + 16
-            val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
-            UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, plate.surface)
+            UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, UiDialogueStyle.plate(theme))
             if (hasFace) drawFace(graphics, plateLeft + 8, box.y - 12, partialTick)
-            UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, box.y - 10, plate.text, plate.textShadowColor)
+            UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, UiTextRenderer.centeredY(font, name, box.y - 14, 14),
+                UiDialogueStyle.plateText(theme), null)
         }
 
         val line = lines.getOrElse(page) { "" }
@@ -257,7 +280,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         val arrowX = box.right - 20
         val baseY = box.bottom - 14 + (sin(System.nanoTime() / 180_000_000.0) * 1.5).toInt()
         for (row in 0 until 4) {
-            graphics.fill(arrowX + row, baseY + row, arrowX + 7 - row, baseY + row + 1, theme.colors.accentPrimary)
+            graphics.fill(arrowX + row, baseY + row, arrowX + 7 - row, baseY + row + 1, UiDialogueStyle.arrow(theme))
         }
     }
 
@@ -284,6 +307,8 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         private const val LINE_HEIGHT = 12
         // The answers' window keeps the hub rail's room around its rows.
         private const val CHOICES_INSET = 6
+        // How far in from the box's right end the answers' window stands, as the name plate does from its left.
+        private const val CHOICES_EDGE = 8
         private const val CHOICE_ROW = 18
         private const val CHOICE_GAP = 3
         // A row's text starts 6 in and needs a little room after it.
