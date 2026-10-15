@@ -4,6 +4,6 @@
     "yamask level=34 moves=brutalswing,hex,disable ability=wanderingspirit nature=jolly dmax_level=10 gmax_factor=false form=galar hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "mimikyu level=34 moves=shadowsneak,babydolleyes,honeclaws,slash ability=disguise nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "cursola level=35 moves=ancientpower,curse,hex ability=weakarmor nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "gengar level=36 moves=venoshock,hex,hypnosis,payback ability=cursedbody nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0"
+    "gengar level=36 moves=venoshock,hex,hypnosis,payback ability=cursedbody nature=timid dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
   ]
 }

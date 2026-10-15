@@ -5,6 +5,6 @@
     "grapploct level=52 moves=drainpunch,liquidation,icepunch,bulkup ability=limber nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "sirfetchd level=53 moves=closecombat,bravebird,leafblade,knockoff ability=steadfast nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "falinks level=53 moves=noretreat,closecombat,throatchop,rockslide ability=battlearmor nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "machamp level=54 moves=dynamicpunch,stoneedge,knockoff,bulletpunch ability=noguard nature=jolly dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0"
+    "machamp level=54 moves=dynamicpunch,stoneedge,knockoff,bulletpunch ability=noguard nature=jolly dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
   ]
 }

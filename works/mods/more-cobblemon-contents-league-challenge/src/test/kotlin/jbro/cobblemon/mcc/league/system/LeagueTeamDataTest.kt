@@ -108,9 +108,23 @@ class LeagueTeamDataTest {
     }
 
     @Test
+    fun `every Galar team lets exactly one member Dynamax, its Gigantamax one when it has one`() {
+        galarTeams.forEach { name ->
+            val marks = team(name).map { jbro.cobblemon.mcc.api.battle.ManagedDynamax.split(it) }
+            val allowed = marks.filter { it.second != null && it.second != jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.NONE }
+            assertEquals(1, allowed.size, name)
+            if (marks.any { it.first.contains("gmax_factor=true") }) {
+                assertEquals(jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.GMAX, allowed.single().second, name)
+            }
+        }
+    }
+
+    @Test
     fun `Cobblemon's parser keeps every value of every team member`() {
         (normal + hard + galarTeams).forEach { name ->
-            team(name).forEach { line ->
+            team(name).forEach { marked ->
+                // The Dynamax mark is MCC's, read off before Cobblemon parses the rest (ManagedDynamax).
+                val line = jbro.cobblemon.mcc.api.battle.ManagedDynamax.split(marked).first
                 val fields = fields(line)
                 val properties = asManagedOpponent { PokemonProperties.parse(line) }
                 val at = "$name: $line"

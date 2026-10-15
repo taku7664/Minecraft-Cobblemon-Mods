@@ -5,6 +5,6 @@
     "pelipper level=51 moves=hurricane,hydropump,tailwind,icebeam ability=drizzle nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "barraskewda level=52 moves=liquidation,closecombat,psychicfangs,flipturn ability=swiftswim nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
     "seaking level=52 moves=waterfall,megahorn,drillrun,knockoff ability=swiftswim nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "drednaw level=53 moves=liquidation,rockslide,superpower,swordsdance ability=swiftswim nature=jolly dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0"
+    "drednaw level=53 moves=liquidation,rockslide,superpower,swordsdance ability=swiftswim nature=jolly dmax_level=10 gmax_factor=true hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=gmax"
   ]
 }

@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-16 03:30] 가라르 팀에 다이맥스 허용 표시 (데이터·단위 확인, 빌드·배치·실게임 미확인)
+
+- **사용자 결정:** 관장·트레이너는 정한 포켓몬만 다이맥스. 표시는 MCC `ManagedDynamax`(`dynamax=none|normal|gmax`).
+- **데이터:** `teams/galar/*.json` 36개. 거다이맥스 인자(`gmax_factor=true`)가 있는 에이스만 `dynamax=gmax`, 없으면 마지막 포켓몬(에이스)만 `dynamax=normal`(야청 백솜모카, 두송 가로막구리, 호브 컵 고릴타, 일반 난이도 야청 갈가부기). 나머지는 표시가 없어 `none`.
+- **검사:** `LeagueTeamDataTest`가 표시를 떼고 파싱하고, 가라르 팀마다 허용이 정확히 하나이며 거다이맥스 인자가 있으면 그게 `gmax`인지 본다. 리그 단위 115/115.
+- **배포 주의:** 이 데이터는 G-948 이후 MCC가 있어야 한다(옛 MCC는 `dynamax=` 토큰을 Cobblemon에 그대로 넘긴다).
+
 ## [2026-10-16 01:30] 플레이 피드백 수정: 가라르 스킨 variation, 새로고침 멈춤, 지방 이름 (단위 테스트·허브 캡처 확인, 배포 안 함)
 
 - **가라르 스킨이 전투에서 스티브로 보이던 원인:** 전투 트레이너 몸체는 텍스처 경로가 아니라 `TrainerResourceSkin.aspect`로 스킨을 고르고, 이를 텍스처로 바꾸는 `bedrock/npcs/variations/managed_trainer/10_*.json`에 가라르 항목이 없었다. 스킨을 바꾸거나 추가하면 `python works/tools/generate_managed_trainer_variations.py`를 다시 돌려야 한다(`--check`로 검사). 이번에 28개(가라르 14, 슬림 4)로 재생성.
