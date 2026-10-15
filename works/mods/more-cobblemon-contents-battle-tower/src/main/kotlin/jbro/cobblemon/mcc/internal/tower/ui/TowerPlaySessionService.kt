@@ -892,7 +892,7 @@ private fun List<UUID>.keptIn(party: Collection<TowerPlayPartySlot>): List<UUID>
     return filter(ids::contains)
 }
 
-private val DEFAULT_TOWER_MECHANIC = MajorBattleMechanic.DYNAMAX
+private val DEFAULT_TOWER_MECHANIC = MajorBattleMechanic.MEGA
 
 private fun registrationErrors(party: Collection<TowerPlayPartySlot>): List<String> =
     when (val result = TowerTeamRules.register(party.map(TowerPlayPartySlot::asRegistration))) {

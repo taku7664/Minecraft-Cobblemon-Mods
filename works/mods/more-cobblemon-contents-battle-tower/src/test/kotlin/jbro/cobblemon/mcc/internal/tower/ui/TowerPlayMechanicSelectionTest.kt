@@ -41,9 +41,9 @@ class TowerPlayMechanicSelectionTest {
             TowerPlayIntent.LockTeam(UUID(0, 10), contextId, state.revision),
         ))
 
-        assertEquals(MajorBattleMechanic.DYNAMAX, state.selectedMechanic)
+        assertEquals(MajorBattleMechanic.MEGA, state.selectedMechanic)
         assertFalse(state.runStarted)
-        assertEquals(MajorBattleMechanic.DYNAMAX, result.selectedMechanic)
+        assertEquals(MajorBattleMechanic.MEGA, result.selectedMechanic)
         assertFalse(result.runStarted)
         assertEquals(TowerPlayPhase.TEAM_LOCKED, service.current(playerId)?.phase)
     }
