@@ -51,6 +51,10 @@ internal object LocalHazardEncoreCredit {
                 val held = if (part.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) GENERIC_STATUS_VALUE else 0.0
                 val hazard = hazardOf(part)
                 when {
+                    // A move the ranking already reads as changing nothing (an Encore on a target already locked, a full
+                    // hazard) gets no credit here: priced from the target's last move anyway, a Whimsicott's failing
+                    // Encore came out first three turns running (Milo, 2026-10-16).
+                    jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules.isIdle(part, context) -> Unit
                     // A hazard the target publicly stops (a revealed Magic Bounce sends it back) lays nothing; priced
                     // anyway, a reflected Stealth Rock kept +62.7 (2026-10-13).
                     hazard != null && LocalPublicMechanicsKernel.projectMove(part, context).publiclyNullified -> Unit
