@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/cup_bede_hard",
+  "reward": "more_cobblemon_contents_league_challenge:galar/cup_bede_hard",
+  "mechanic": "DYNAMAX",
+  "format": "SINGLE",
+  "battle_cap": 100,
+  "type": "fairy"
+}

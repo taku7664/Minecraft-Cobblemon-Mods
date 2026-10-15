@@ -30,7 +30,7 @@ object LeagueWildSpawns {
                 val level = event.entity.level() as? ServerLevel ?: return@subscribe
                 val chunk = event.entity.chunkPosition()
                 val reading = read(player, level, chunk.x, chunk.z) ?: return@subscribe
-                LeagueIntegrations.syncCap(player, reading.cap)
+                LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
                 val pokemon = event.entity.pokemon
                 val spawnLevel = WildSpawnLevel.roll(reading.cap, catalog.wildLevel, reading.regionLevel, player.level().random.nextDouble())
                 WildSpawnSpecies.fit(pokemon, spawnLevel)
@@ -46,7 +46,7 @@ object LeagueWildSpawns {
     /** What a new wild spawn caused by [player] in chunk ([chunkX], [chunkZ]) of [level] would use; null without a League. */
     fun read(player: ServerPlayer, level: ServerLevel, chunkX: Int, chunkZ: Int): Reading? {
         val catalog = LeagueCatalogResources.current ?: return null
-        val cap = LeagueEngine(catalog).cap(LeagueSavedData.get(player.server).read(catalog.id, player.uuid))
+        val cap = LeagueProgressQueries.cap(player, catching = true)
         val rule = catalog.wildLevel
         val origin = WildSpawnOrigin.get(player.server)
         val regionLevel = WildSpawnRegions.level(level.seed, level.dimension().location().toString(), chunkX, chunkZ,

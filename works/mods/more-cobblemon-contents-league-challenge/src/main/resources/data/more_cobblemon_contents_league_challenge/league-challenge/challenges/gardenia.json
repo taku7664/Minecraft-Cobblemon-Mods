@@ -4,5 +4,7 @@
   "reward": "more_cobblemon_contents_league_challenge:gardenia",
   "badge": "pokebadges:forest_sinnoh_badge",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 24,
+  "type": "grass"
 }

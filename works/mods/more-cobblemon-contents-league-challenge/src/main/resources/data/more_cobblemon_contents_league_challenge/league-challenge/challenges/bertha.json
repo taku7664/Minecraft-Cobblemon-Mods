@@ -3,5 +3,7 @@
   "trainer": "more_cobblemon_contents_league_challenge:bertha",
   "reward": "more_cobblemon_contents_league_challenge:bertha",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 64,
+  "type": "ground"
 }

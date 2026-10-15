@@ -32,7 +32,7 @@ import net.minecraft.server.level.ServerPlayer
 object LeagueServer {
     /** [terminal] is the hologram terminal the hub was opened from, or null for a hub opened by command. */
     private data class Session(val terminal: TerminalAnchor?,
-        val nonce: UUID = UUID.randomUUID(), var touched: Long = 0,
+        val nonce: UUID = UUID.randomUUID(), var touched: Long = 0, var leagueId: String? = null,
         val requests: LinkedHashMap<UUID, LeagueIntentPayload> = linkedMapOf())
     private val sessions = mutableMapOf<UUID, Session>()
     private val lastRequestTick = mutableMapOf<UUID, Int>()
@@ -86,11 +86,12 @@ object LeagueServer {
     }
 
     private fun cancelDisconnectedRun(server: MinecraftServer, playerId: UUID) {
-        val catalog = LeagueCatalogResources.current ?: return
         try {
             val storage = LeagueSavedData.get(server)
-            val state = storage.read(catalog.id, playerId)
-            storage.write(catalog.id, playerId, LeagueEngine(catalog).cancel(state))
+            LeagueCatalogResources.catalogs.values.forEach { catalog ->
+                val state = storage.read(catalog.id, playerId)
+                if (state.run != null) storage.write(catalog.id, playerId, LeagueEngine(catalog).cancel(state))
+            }
         } catch (failure: RuntimeException) { Mod.LOGGER.error("Could not cancel disconnected League run", failure) }
     }
 
@@ -107,6 +108,8 @@ object LeagueServer {
     private fun start(player: ServerPlayer, session: Session) {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
+        session.leagueId = LeagueProgressQueries.states(player.server, player.uuid).entries.firstOrNull { it.value.run != null }?.key
+            ?: LeagueCatalogResources.current?.id
         sessions[player.uuid] = session
         // Send before reconciling, so an integration setup error can still be displayed.
         send(player)
@@ -125,7 +128,8 @@ object LeagueServer {
                 send(player)
                 return@guarded
             }
-            val catalog = requireNotNull(LeagueCatalogResources.current) { "catalog_unavailable" }
+            val catalog = requireNotNull(session.leagueId?.let(LeagueCatalogResources::find)) { "catalog_unavailable" }
+            if (intent.action != LeagueAction.SELECT_LEAGUE) check(intent.leagueId == catalog.id) { "stale_revision" }
             val storage = LeagueSavedData.get(player.server)
             val state = storage.read(catalog.id, player.uuid)
             check(intent.catalogRevision == LeagueCatalogResources.revision && intent.revision == state.revision) { "stale_revision" }
@@ -136,6 +140,10 @@ object LeagueServer {
             val engine = LeagueEngine(catalog)
             when (intent.action) {
                 LeagueAction.REFRESH -> reconcile(player)
+                LeagueAction.SELECT_LEAGUE -> {
+                    check(LeagueProgressQueries.states(player.server, player.uuid).values.none { it.run != null }) { "run_active" }
+                    session.leagueId = requireNotNull(LeagueCatalogResources.find(intent.leagueId)) { "catalog_unavailable" }.id
+                }
                 LeagueAction.CANCEL -> {
                     commit(player.server, catalog.id, player.uuid, engine.cancel(state))
                     ManagedPveBattles.cancel(player.server, player.uuid)
@@ -143,10 +151,11 @@ object LeagueServer {
                 LeagueAction.START, LeagueAction.NEXT -> {
                     LeagueIntegrations.validateCaps(catalog)
                     reconcile(player)
+                    LeagueWorldRules.requireCanChallenge(catalog, LeagueProgressQueries.states(player.server, player.uuid))
                     val current = storage.read(catalog.id, player.uuid)
-                    LeagueIntegrations.syncCap(player, engine.cap(current))
+                    LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
                     val next = if (intent.action == LeagueAction.START) engine.begin(current, intent.challengeId,
-                        ManagedPveBattles.snapshotParty(player, engine.cap(current))) else engine.next(current)
+                        ManagedPveBattles.snapshotParty(player, 100), intent.finalChoiceId.takeIf { it.isNotEmpty() }) else engine.next(current)
                     commit(player.server, catalog.id, player.uuid, next)
                     launch(player, catalog, next)
                 }
@@ -185,10 +194,11 @@ object LeagueServer {
             val id = ManagedPveBattles.start(player, ManagedPveBattles.Request(run.battleToken, CONTENT,
                 challenge.id, challenge.nameKey, run.party, challenge.team, ManagedPveBattles.Format.valueOf(challenge.format),
                 jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.fromMajor(
-                    challenge.mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = challenge.skill,
+                    (run.mechanic ?: engineMechanic(catalog, state)).takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf)), skill = challenge.skill,
                 appearance = jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(
                     challenge.skin ?: "minecraft:textures/entity/player/wide/steve.png", challenge.slim),
-                stage = LeagueEngine(catalog).stage(run), scenes = trainerScenes(challenge))) { outcome ->
+                stage = LeagueEngine(catalog).stage(run), scenes = trainerScenes(challenge)),
+                playerLevelCap = run.battleCap ?: LeagueEngine(catalog).battleCap(challenge.id)) { outcome ->
                 val storage = LeagueSavedData.get(player.server)
                 val latest = storage.read(catalog.id, player.uuid)
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
@@ -236,14 +246,19 @@ object LeagueServer {
         check(reason == null) { requireNotNull(reason) }
     }
 
+    private fun engineMechanic(catalog: LeagueCatalog, state: LeagueProgress): String = LeagueEngine(catalog).mechanic(state)
+
     private fun reconcile(player: ServerPlayer) {
-        val catalog = requireNotNull(LeagueCatalogResources.current) { "catalog_unavailable" }
+        val primary = requireNotNull(LeagueCatalogResources.current) { "catalog_unavailable" }
+        val storage = LeagueSavedData.get(player.server)
+        syncRank(player, rank(primary, storage.read(primary.id, player.uuid)).name)
+        LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
+        for (catalog in LeagueCatalogResources.catalogs.values) reconcileRewards(player, catalog)
+    }
+
+    private fun reconcileRewards(player: ServerPlayer, catalog: LeagueCatalog) {
         val storage = LeagueSavedData.get(player.server)
         var state = storage.read(catalog.id, player.uuid)
-        // Before the integration steps below, which can fail and must not keep the header's rank stale.
-        syncRank(player, rank(catalog, state).name)
-        LeagueIntegrations.syncCap(player, LeagueEngine(catalog).cap(state))
-        // Player data and world SavedData do not share one disk transaction. Repair badges from wins.
         for (id in catalog.gyms.filter { it in state.cleared }) {
             val badge = requireNotNull(catalog.challenges.getValue(id).badge)
             if (!LeagueIntegrations.hasBadge(player, badge)) check(LeagueIntegrations.awardBadge(player, badge)) { "badge_failed" }
@@ -321,33 +336,11 @@ object LeagueServer {
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
         val session = sessions[player.uuid] ?: return
-        val catalog = LeagueCatalogResources.current ?: return
-        val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
-        val engine = LeagueEngine(catalog)
-        val badges = engine.badgeCount(state)
-        val rank = rank(catalog, state).name
-        fun route(gyms: List<String>, finals: List<String>) = (gyms + finals.first()).map { id ->
-            val index = gyms.indexOf(id)
-            val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }
-            val challenge = catalog.challenges.getValue(id)
-            // The League entry shows whoever of its finals the player faces next: the run's next battle, or the first.
-            val facing = state.run?.takeIf { index < 0 && it.encounters.first().id == id }
-                ?.let { it.encounters[if (it.awaitingNext) it.index + 1 else it.index] } ?: challenge
-            LeagueChallengeView(id, challenge.nameKey,
-                if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", challenge.unlockCap,
-                challenge.badge ?: gyms.indexOf(id).takeIf { it >= 0 }?.let { catalog.challenges.getValue(catalog.gyms[it]).badge },
-                facing.skin)
-        }
-        val views = route(catalog.gyms, catalog.finals)
-        val hardUnlocked = engine.hardUnlocked(state)
-        val view = LeagueView(session.nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
-            badges, rank, engine.cap(state), state.champion, BattlePointRewards.balance(player.server, player.uuid), views,
-            state.run?.challengeId, state.run?.awaitingNext ?: false, state.rewards.any { !it.badgeDone || !it.bpDone }, errorKey,
-            openScreen && runCatching { validate(player, session) }.isSuccess,
-            state.run?.let { it.encounters[it.index].nameKey },
-            hardUnlocked, state.hardChampion, if (hardUnlocked) route(catalog.hardGyms, catalog.hardFinals) else emptyList(),
-            state.run?.let { run -> run.encounters.first().id in catalog.hardGyms + catalog.hardFinals } ?: false)
-        if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) ServerPlayNetworking.send(player, LeagueStatePayload(gson.toJson(view)))
+        val catalog = session.leagueId?.let(LeagueCatalogResources::find) ?: LeagueCatalogResources.current ?: return
+        val view = LeagueViews.build(player, session.nonce, catalog, errorKey,
+            openScreen && runCatching { validate(player, session) }.isSuccess)
+        if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE))
+            ServerPlayNetworking.send(player, LeagueStatePayload(gson.toJson(view)))
     }
 
     private fun guarded(player: ServerPlayer, action: () -> Unit): Boolean = try { action(); true } catch (failure: RuntimeException) {
@@ -355,7 +348,7 @@ object LeagueServer {
         val reason = failure.message?.substringBefore(':')
         val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
             "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
-            "opponent_level_unsupported",
+            "opponent_level_unsupported", "league_locked", "invalid_branch",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"

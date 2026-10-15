@@ -29,6 +29,7 @@ internal object LeagueLiveCaptureHarness {
         val placed = AtomicBoolean(false)
         val captured = AtomicBoolean(false)
         val captureId = System.currentTimeMillis()
+        val galar = System.getenv("MCC_LEAGUE_CAPTURE_GALAR") == "1"
         var pos: BlockPos? = null
         var phase = 0
         var ticks = 0
@@ -37,6 +38,9 @@ internal object LeagueLiveCaptureHarness {
         var revision = -1L
         var waitingScreen: String? = null
         var tutorialCleared = false
+        val cappedBattleStarted = AtomicBoolean(false)
+        val cappedBattleChecked = AtomicBoolean(false)
+        var originalParty = emptyList<String>()
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             ticks++
             if (ticks == 1) client.options.pauseOnLostFocus = false
@@ -70,13 +74,29 @@ internal object LeagueLiveCaptureHarness {
             check(server.getWorldPath(LevelResource.ROOT).normalize().fileName.toString() == "league-wiring-smoke") {
                 "Live capture may modify only the copied league-wiring-smoke world"
             }
+            // Terminals open the hub dashboard; select the embedded League tab through its public rail action.
+            if (phase == 2) (client.screen as? jbro.cobblemon.mcc.client.hub.MccHubScreen)?.let { hub ->
+                if (hub.selectedTabId != LeagueHomeController.CONTENT) hub.selectTab(LeagueHomeController.CONTENT)
+            }
             when (phase) {
                 0 -> {
                     if (client.screen != null) return@EndTick
-                    client.options.guiScale().set(2)
+                    client.options.guiScale().set(System.getenv("MCC_LEAGUE_CAPTURE_GUI_SCALE")?.toIntOrNull() ?: 2)
                     client.resizeDisplay()
                     server.execute {
                         val serverPlayer = checkNotNull(server.playerList.getPlayer(player.uuid))
+                        if (galar) {
+                            // This branch is still behind the disposable-world check above. Never touches a user's save.
+                            val primary = checkNotNull(jbro.cobblemon.mcc.league.server.LeagueCatalogResources.current)
+                            val storage = jbro.cobblemon.mcc.league.server.LeagueSavedData.get(server)
+                            storage.write(primary.id, player.uuid, jbro.cobblemon.mcc.league.system.LeagueProgress(
+                                cleared = (primary.gyms + primary.finals).toSet(), champion = true, championAt = System.currentTimeMillis()))
+                            jbro.cobblemon.mcc.league.server.LeagueIntegrations.syncCap(serverPlayer, 100)
+                            jbro.cobblemon.mcc.league.server.LeagueIntegrations.syncCap(serverPlayer, 80)
+                            check(jbro.cobblemon.mcc.league.server.LeagueIntegrations.currentCap(serverPlayer) == 100)
+                            check(jbro.cobblemon.mcc.league.server.LeagueIntegrations.currentCap(serverPlayer, true) == 100)
+                            logger.info("PASS live global cap: growth=100 catching=100 after entitlement=80")
+                        }
                         // The first client world tick can precede its initial position packet.
                         pos = (0..2).asSequence().flatMap { dy ->
                             Direction.Plane.HORIZONTAL.asSequence().map { serverPlayer.blockPosition().relative(it).above(dy) }
@@ -98,6 +118,7 @@ internal object LeagueLiveCaptureHarness {
                 2 -> if (leagueTabShown(client) && LeagueHomeController.state.view != null && ticks > phaseTick + 20) {
                     if (!tutorialCleared) {
                         client.toasts.clear()
+                        GLFW.glfwSetCursorPos(client.window.window, 0.0, 0.0)
                         tutorialCleared = true
                         phaseTick = ticks
                         return@EndTick
@@ -105,8 +126,77 @@ internal object LeagueLiveCaptureHarness {
                     if (ticks <= phaseTick + 4) return@EndTick
                     val view = checkNotNull(LeagueClientSession.current)
                     revision = view.revision
-                    logger.info("Production home received nonce={} badges={} cap={} error={}", view.nonce, view.badges, view.cap, view.errorKey)
+                    logger.info("Production home received gui={}x{} nonce={} badges={} cap={} error={}",
+                        client.window.guiScaledWidth, client.window.guiScaledHeight, view.nonce, view.badges, view.cap, view.errorKey)
                     Screenshot.grab(client.gameDirectory, "league-live-$captureId-top.png", client.mainRenderTarget) { captured.set(true) }
+                    phase = if (galar) 20 else 3
+                }
+                20 -> if (captured.get()) {
+                    val screen = checkNotNull(client.screen)
+                    val view = checkNotNull(LeagueClientSession.current)
+                    val region = screen.children().filterIsInstance<CobblemonUiButton>()
+                        .single { it.message.string == Component.translatable(view.nameKey).string }
+                    check(screen.mouseClicked(region.x + region.width / 2.0, region.y + region.height / 2.0, 0))
+                    phase = 21; phaseTick = ticks
+                }
+                21 -> if (!LeagueHomeController.state.pending && ticks > phaseTick + 10) {
+                    val view = checkNotNull(LeagueClientSession.current)
+                    check(view.leagueId.endsWith(":galar") && view.leagueUnlocked) { "Region selection failed: ${view.leagueId}" }
+                    check(view.challenges.size == 11 && view.challenges.count { it.stage == 4 } == 2)
+                    check(view.challenges.first().battleCap == 22 && view.cap >= 80)
+                    check(view.challenges.first().mechanicFlags == jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.DYNAMAX)
+                    revision = view.revision
+                    captured.set(false)
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-galar.png", client.mainRenderTarget) { captured.set(true) }
+                    logger.info("PASS Galar selection: regions={} branches={} battleCap={} worldCap={}", view.regions.size, view.challenges.size, view.challenges.first().battleCap, view.cap)
+                    phase = 22
+                }
+                22 -> if (captured.get()) {
+                    GLFW.glfwSetWindowSize(client.window.window, 640, 480)
+                    client.resizeDisplay()
+                    phase = 23; phaseTick = ticks
+                }
+                23 -> if (ticks > phaseTick + 10) {
+                    check(client.window.guiScaledWidth == 320 && client.window.guiScaledHeight == 240) {
+                        "Compact GUI was ${client.window.guiScaledWidth}x${client.window.guiScaledHeight}"
+                    }
+                    captured.set(false)
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-galar-compact.png", client.mainRenderTarget) { captured.set(true) }
+                    logger.info("PASS compact GUI 320x240")
+                    phase = 24
+                }
+                24 -> if (captured.get()) {
+                    val selection = LeagueHomeController.state.selectedId
+                    val screen = checkNotNull(client.screen)
+                    var moved = 0
+                    repeat(12) {
+                        screen.children().filterIsInstance<CobblemonUiButton>().single { it.message.string == ">" }
+                            .takeIf { it.active }?.let { arrow ->
+                                check(screen.mouseClicked(arrow.x + arrow.width / 2.0, arrow.y + arrow.height / 2.0, 0)); moved++
+                            }
+                    }
+                    check(moved > 0)
+                    check(screen.children().filterIsInstance<AbstractButton>().any {
+                        it.message.string == Component.translatable(checkNotNull(LeagueClientSession.current).challenges.last().nameKey).string
+                    }) { "Last route stage is unreachable" }
+                    check(LeagueHomeController.state.selectedId == selection)
+                    check(LeagueClientSession.current?.revision == revision)
+                    phase = 25; phaseTick = ticks
+                }
+                25 -> if (ticks > phaseTick + 3) {
+                    captured.set(false)
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-route-end.png", client.mainRenderTarget) { captured.set(true) }
+                    phase = 26
+                }
+                26 -> if (captured.get()) {
+                    val screen = checkNotNull(client.screen)
+                    repeat(12) {
+                        screen.children().filterIsInstance<CobblemonUiButton>().single { it.message.string == "<" }
+                            .takeIf { it.active }?.let { arrow ->
+                                check(screen.mouseClicked(arrow.x + arrow.width / 2.0, arrow.y + arrow.height / 2.0, 0))
+                            }
+                    }
+                    logger.info("PASS route viewport: last stage reached and returned without changing selection or progress")
                     phase = 3
                 }
                 3 -> if (captured.get()) {
@@ -145,8 +235,44 @@ internal object LeagueLiveCaptureHarness {
                 7 -> if (ticks > phaseTick + 10) {
                     check(!leagueTabShown(client)) { "Background state reopened dismissed home" }
                     logger.info("PASS terminal packet -> hub League tab -> route selection/focus -> server refresh -> close; progression unchanged")
-                    client.stop()
-                    phase = 8
+                    if (!galar) { client.stop(); phase = 8 }
+                    else {
+                        server.execute {
+                            val sp = checkNotNull(server.playerList.getPlayer(player.uuid))
+                            val party = com.cobblemon.mod.common.Cobblemon.storage.getParty(sp)
+                            party.clearParty()
+                            listOf("mewtwo level=100 moves=psychic", "magikarp level=10 moves=splash").forEach {
+                                party.add(com.cobblemon.mod.common.api.pokemon.PokemonProperties.parse(it).create())
+                            }
+                            val catalog = checkNotNull(jbro.cobblemon.mcc.league.server.LeagueCatalogResources.find("more_cobblemon_contents_league_challenge:galar"))
+                            val milo = catalog.challenges.getValue(catalog.gyms.first())
+                            originalParty = jbro.cobblemon.mcc.api.battle.ManagedPveBattles.snapshotParty(sp, 100)
+                            val request = jbro.cobblemon.mcc.api.battle.ManagedPveBattles.Request(java.util.UUID.randomUUID(),
+                                LeagueHomeController.CONTENT, milo.id, milo.nameKey, originalParty, milo.team,
+                                mechanicFlags = jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.DYNAMAX,
+                                appearance = jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin(checkNotNull(milo.skin), false), stage = "gym")
+                            checkNotNull(jbro.cobblemon.mcc.api.battle.ManagedPveBattles.start(sp, request, 22) {})
+                            cappedBattleStarted.set(true)
+                        }
+                        phase = 30; phaseTick = ticks
+                    }
+                }
+                30 -> if (cappedBattleStarted.get() && com.cobblemon.mod.common.client.CobblemonClient.battle != null && ticks > phaseTick + 20) {
+                    server.execute {
+                        val sp = checkNotNull(server.playerList.getPlayer(player.uuid))
+                        val battle = checkNotNull(com.cobblemon.mod.common.battles.BattleRegistry.getBattleByParticipatingPlayer(sp))
+                        val levels = battle.actors.filter { it.uuid == sp.uuid }.flatMap { it.pokemonList }.map { it.effectedPokemon.level }
+                        check(levels == listOf(22, 10)) { "Wrong materialized levels: $levels" }
+                        val party = com.cobblemon.mod.common.Cobblemon.storage.getParty(sp)
+                        check(party.map { it.saveToJSON(sp.registryAccess()).toString() } == originalParty) { "Original party changed during clone battle" }
+                        logger.info("PASS live cap: original=[100,10] battle={} original JSON unchanged", levels)
+                        jbro.cobblemon.mcc.api.battle.ManagedPveBattles.cancel(server, sp.uuid)
+                        cappedBattleChecked.set(true)
+                    }
+                    phase = 31
+                }
+                31 -> if (cappedBattleChecked.get() && com.cobblemon.mod.common.client.CobblemonClient.battle == null) {
+                    client.stop(); phase = 8
                 }
             }
         })

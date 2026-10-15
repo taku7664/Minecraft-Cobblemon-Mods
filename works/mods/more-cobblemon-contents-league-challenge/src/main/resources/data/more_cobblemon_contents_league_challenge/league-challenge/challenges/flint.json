@@ -3,5 +3,7 @@
   "trainer": "more_cobblemon_contents_league_challenge:flint",
   "reward": "more_cobblemon_contents_league_challenge:flint",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 64,
+  "type": "fire"
 }

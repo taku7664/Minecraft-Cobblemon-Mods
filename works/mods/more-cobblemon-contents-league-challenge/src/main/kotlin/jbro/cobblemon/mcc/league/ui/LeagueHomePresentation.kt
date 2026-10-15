@@ -13,7 +13,10 @@ internal data class LeagueHomePresentation(
         fun from(view: LeagueView, selectedId: String?, hard: Boolean = false): LeagueHomePresentation {
             val route = if (hard) view.hardChallenges else view.challenges
             val focusedId = view.runChallenge ?: selectedId
-            return LeagueHomePresentation(route.take(8), route.drop(8), route.firstOrNull { it.id == focusedId })
+            val structured = route.any { it.stage > 0 }
+            return LeagueHomePresentation(if (structured) route.filter { it.stage < 9 } else route.take(8),
+                if (structured) route.filter { it.stage == 9 } else route.drop(8),
+                view.runEntry ?: route.firstOrNull { it.id == focusedId })
         }
     }
 }

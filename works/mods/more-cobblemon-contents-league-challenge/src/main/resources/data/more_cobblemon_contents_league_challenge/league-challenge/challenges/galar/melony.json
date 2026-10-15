@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/melony",
+  "reward": "more_cobblemon_contents_league_challenge:galar/melony",
+  "badge": "pokebadges:ice_galar_badge",
+  "mechanic": "DYNAMAX",
+  "format": "SINGLE",
+  "battle_cap": 44,
+  "type": "ice"
+}

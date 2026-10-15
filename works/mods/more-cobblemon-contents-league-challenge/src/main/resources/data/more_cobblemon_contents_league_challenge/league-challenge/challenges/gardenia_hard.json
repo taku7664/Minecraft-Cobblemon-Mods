@@ -3,5 +3,7 @@
   "trainer": "more_cobblemon_contents_league_challenge:gardenia_hard",
   "reward": "more_cobblemon_contents_league_challenge:gardenia_hard",
   "format": "SINGLE",
-  "mechanic": "MEGA"
+  "mechanic": "MEGA",
+  "battle_cap": 80,
+  "type": "grass"
 }

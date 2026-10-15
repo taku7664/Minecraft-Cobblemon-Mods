@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 5,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.raihan",
+  "team": "more_cobblemon_contents_league_challenge:galar/cup_raihan_hard",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/raihan",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.raihan.hard.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.raihan.hard.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.raihan.hard.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.raihan.hard.player_lost"
+    ]
+  }
+}

@@ -13,27 +13,35 @@ class LeagueHubLayoutTest {
             val layout = LeagueHubLayout.calculate(bounds)
             assertTrue(layout.summary.bottom <= layout.route.y, "$bounds")
             assertTrue(layout.route.bottom <= layout.detail.y, "$bounds")
-            assertTrue(layout.detail.right < layout.status.x, "$bounds")
+            assertTrue(layout.detail.right == layout.mechanics.x && layout.mechanics.right == layout.status.x, "$bounds")
             assertTrue(layout.detail.bottom <= layout.footer.y, "$bounds")
-            assertEquals(bounds.right, layout.status.right, "$bounds")
+            assertEquals(bounds.right - 6, layout.status.right, "$bounds")
+            assertEquals(bounds.x, layout.panel.x)
+            assertEquals(bounds.right, layout.panel.right)
+            assertTrue(layout.body.bottom < layout.panel.bottom && layout.panel.bottom < layout.footer.y)
             assertEquals(bounds.bottom, layout.footer.bottom, "$bounds")
         }
     }
 
     @Test fun `smallest hub content area still fits the compact challenge card`() {
         val layout = LeagueHubLayout.calculate(sizes.first())
-        // The compact challenge card needs 86 rows for its badge, name, state and reward lines.
-        assertTrue(layout.detail.height >= 86, "detail height ${layout.detail.height}")
+        // Five compact mechanic rows and a title fit within the same body as the portrait and rewards.
+        assertTrue(layout.detail.height >= 65, "detail height ${layout.detail.height}")
     }
 
-    @Test fun `nine route nodes stay inside the route and keep room for their badge boxes`() {
+    @Test fun `ordinary game width shows all nine stages without route paging`() {
+        assertTrue(LeagueHubLayout.calculate(sizes.first()).routeCapacity >= 9)
+    }
+
+    @Test fun `route viewport keeps names apart and reserves gutters on small screens`() {
         sizes.forEach { bounds ->
             val layout = LeagueHubLayout.calculate(bounds)
-            val centers = layout.routeCenters(9)
-            assertEquals(9, centers.size)
-            assertTrue(centers.first() - 14 >= layout.route.x)
-            assertTrue(centers.last() + 14 <= layout.route.right)
-            assertTrue(centers.zipWithNext().all { (a, b) -> b - a >= 28 })
+            val count = layout.routeCapacity.coerceAtMost(9)
+            val centers = layout.routeCenters(count)
+            assertEquals(count, centers.size)
+            assertTrue(centers.first() - 15 >= layout.route.x)
+            assertTrue(centers.last() + 15 <= layout.route.right)
+            assertTrue(centers.zipWithNext().all { (a, b) -> b - a >= 30 })
         }
     }
 

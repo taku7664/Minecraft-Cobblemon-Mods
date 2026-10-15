@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "goldeen level=22 moves=waterpulse,whirlpool,hornattack,agility ability=swiftswim nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "arrokuda level=23 moves=aquajet,bite,whirlpool,furyattack ability=swiftswim nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
+    "drednaw level=24 moves=razorshell,watergun,bite,headbutt ability=swiftswim nature=jolly dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0"
+  ]
+}

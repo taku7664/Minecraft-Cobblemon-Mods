@@ -26,7 +26,7 @@ object LeagueDashboard {
             val state = LeagueSavedData.get(context.server).read(catalog.id, context.playerId)
             val engine = LeagueEngine(catalog)
             val badges = engine.badgeCount(state)
-            val rank = LeagueRank.fromProgress(badges, state.champion && badges == catalog.gyms.size)
+            val rank = LeagueRank.fromProgress(badges, state.champion && badges == catalog.gymStages.size)
             val rows = ArrayList<MccDashboardRow>()
             val nextGym = catalog.gyms.firstOrNull { it !in state.cleared }?.let(catalog.challenges::get)
             rows += MccDashboardRow(Component.translatable("$KEY.next"), when {
@@ -35,11 +35,11 @@ object LeagueDashboard {
                 else -> Component.translatable("$KEY.champion")
             })
             if (catalog.hasHard) {
-                val hardBadges = catalog.hardGyms.count { it in state.cleared }
+                val hardBadges = catalog.hardGymStages.count { stage -> stage.any { it in state.cleared } }
                 rows += MccDashboardRow(Component.translatable("$KEY.hard"), when {
                     !engine.hardUnlocked(state) -> Component.translatable("$KEY.hard_locked")
                     state.hardChampion -> Component.translatable("$KEY.hard_champion")
-                    else -> Component.translatable("$KEY.hard_progress", hardBadges, catalog.hardGyms.size)
+                    else -> Component.translatable("$KEY.hard_progress", hardBadges, catalog.hardGymStages.size)
                 })
             }
             val records = context.records(CONTENT)
@@ -53,7 +53,7 @@ object LeagueDashboard {
                 title = MccDashboardCards.contentName(CONTENT),
                 stats = listOf(
                     MccDashboardStat(Component.translatable("$KEY.badges"), Component.literal("$badges/${catalog.gyms.size}")),
-                    MccDashboardStat(Component.translatable("$KEY.cap"), Component.literal(engine.cap(state).toString())),
+                    MccDashboardStat(Component.translatable("$KEY.cap"), Component.literal((context.server.playerList.getPlayer(context.playerId)?.let { LeagueProgressQueries.cap(it) } ?: LeagueProgressQueries.earnedCap(context.server, context.playerId)).toString())),
                     MccDashboardStat(Component.translatable("$KEY.rank"),
                         Component.translatable("screen.${Mod.MOD_ID}.home.rank.${rank.name.lowercase()}")),
                 ),

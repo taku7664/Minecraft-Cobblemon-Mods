@@ -349,7 +349,7 @@ object WildTrainers {
         val catalog = LeagueCatalogResources.current
         if (catalog != null) {
             try {
-                return LeagueEngine(catalog).cap(LeagueSavedData.get(player.server).read(catalog.id, player.uuid))
+                return jbro.cobblemon.mcc.league.server.LeagueProgressQueries.cap(player)
             } catch (failure: RuntimeException) {
                 Mod.LOGGER.warn("Wild trainer could not read {}'s level cap: {}", player.uuid, failure.message)
             }

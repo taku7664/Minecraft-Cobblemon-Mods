@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/allister",
+  "reward": "more_cobblemon_contents_league_challenge:galar/allister",
+  "badge": "pokebadges:ghost_galar_badge",
+  "mechanic": "DYNAMAX",
+  "format": "SINGLE",
+  "battle_cap": 38,
+  "type": "ghost"
+}

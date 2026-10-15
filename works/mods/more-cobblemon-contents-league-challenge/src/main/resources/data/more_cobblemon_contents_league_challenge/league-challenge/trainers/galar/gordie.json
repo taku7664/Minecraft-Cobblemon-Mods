@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ai_skill": 2,
+  "name_key": "trainer.more_cobblemon_contents_league_challenge.galar.gordie",
+  "team": "more_cobblemon_contents_league_challenge:galar/gordie",
+  "appearance": "more_cobblemon_contents_league_challenge:galar/gordie",
+  "scenes": {
+    "battle_start": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.gordie.battle_start"
+    ],
+    "last_pokemon": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.gordie.last_pokemon"
+    ],
+    "player_won": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.gordie.player_won"
+    ],
+    "player_lost": [
+      "trainer.more_cobblemon_contents_league_challenge.galar.gordie.player_lost"
+    ]
+  }
+}

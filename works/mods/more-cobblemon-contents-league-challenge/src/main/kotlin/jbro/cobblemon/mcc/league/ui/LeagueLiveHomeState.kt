@@ -14,12 +14,15 @@ class LeagueLiveHomeState {
     /** Whether the hard route is shown; only a view that unlocked it can show it, and a hard run always does. */
     var hard = false
         private set
+    var finalChoiceId: String? = null
+        private set
+    val finalBranches: List<LeagueFinalBranchView> get() = view?.let { if (hard) it.hardFinalBranches else it.finalBranches }.orEmpty()
 
     /** The route shown: the normal one, or the hard one once the normal Champion opened it. */
     val challenges: List<LeagueChallengeView> get() = view?.let { if (hard) it.hardChallenges else it.challenges }.orEmpty()
 
     fun accept(next: LeagueView?) {
-        val newSession = next?.nonce != view?.nonce
+        val newSession = next?.nonce != view?.nonce || next?.leagueId != view?.leagueId
         view = next
         pending = false
         hard = when {
@@ -28,6 +31,7 @@ class LeagueLiveHomeState {
             else -> hard
         }
         if (newSession || challenges.none { it.id == selectedId }) selectFirst()
+        if (finalBranches.none { it.id == finalChoiceId }) finalChoiceId = finalBranches.firstOrNull()?.id
     }
 
     /** Shows the other route and focuses its next challenge; a run keeps its own route. */
@@ -36,6 +40,14 @@ class LeagueLiveHomeState {
         if (pending || !current.hardUnlocked || current.runChallenge != null) return false
         hard = !hard
         selectFirst()
+        finalChoiceId = finalBranches.firstOrNull()?.id
+        return true
+    }
+
+    fun cycleFinalBranch(): Boolean {
+        if (pending || view?.runChallenge != null || finalBranches.size < 2) return false
+        val index = finalBranches.indexOfFirst { it.id == finalChoiceId }
+        finalChoiceId = finalBranches[(index + 1) % finalBranches.size].id
         return true
     }
 
@@ -49,7 +61,7 @@ class LeagueLiveHomeState {
         if (!pending && challenges.any { it.id == id }) selectedId = id
     }
 
-    val canStart: Boolean get() = view?.let { !pending && it.runChallenge == null && !it.pendingRewards &&
+    val canStart: Boolean get() = view?.let { !pending && it.leagueUnlocked && it.runChallenge == null && !it.pendingRewards &&
         challenges.any { entry -> entry.id == selectedId && entry.status in setOf("AVAILABLE", "CLEARED") } } == true
     val canNext: Boolean get() = view?.let { !pending && it.runChallenge != null && it.awaitingNext && !it.pendingRewards } == true
     val canCancel: Boolean get() = !pending && view?.runChallenge != null
@@ -60,6 +72,7 @@ class LeagueLiveHomeState {
             LeagueAction.NEXT -> canNext
             LeagueAction.CANCEL -> canCancel
             LeagueAction.REFRESH -> view != null && !pending
+            LeagueAction.SELECT_LEAGUE -> view != null && !pending && view?.runChallenge == null
         }
         if (allowed) pending = true
         return allowed

@@ -20,7 +20,8 @@ class LeagueEngineTest {
         val hardFinals = (1..5).map { "test:hf$it" }
         val hard = (hardGyms + hardFinals).associateWith { id -> Challenge(id, "trainer.name", listOf("pikachu level=10"), null,
             if (id == hardGyms.last() || id in hardFinals) 100 else 100, 30, 0, "MEGA", "SINGLE", null, false, 5) }
-        return base.copy(challenges = base.challenges + hard, hardGyms = hardGyms, hardFinals = hardFinals)
+        return base.copy(challenges = base.challenges + hard, hardGyms = hardGyms, hardFinals = hardFinals,
+            hardGymStages = hardGyms.map { listOf(it) })
     }
     private fun win(engine: LeagueEngine, state: LeagueProgress, id: String): LeagueProgress {
         var next = engine.begin(state, id, party())

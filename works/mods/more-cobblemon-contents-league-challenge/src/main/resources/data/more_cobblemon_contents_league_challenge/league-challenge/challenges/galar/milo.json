@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:galar/milo",
+  "reward": "more_cobblemon_contents_league_challenge:galar/milo",
+  "badge": "pokebadges:grass_galar_badge",
+  "mechanic": "DYNAMAX",
+  "format": "SINGLE",
+  "battle_cap": 22,
+  "type": "grass"
+}

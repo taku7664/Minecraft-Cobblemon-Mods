@@ -3,5 +3,6 @@
   "trainer": "more_cobblemon_contents_league_challenge:cynthia",
   "reward": "more_cobblemon_contents_league_challenge:cynthia",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 64
 }

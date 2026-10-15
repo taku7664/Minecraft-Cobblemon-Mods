@@ -4,5 +4,7 @@
   "reward": "more_cobblemon_contents_league_challenge:volkner",
   "badge": "pokebadges:beacon_sinnoh_badge",
   "format": "SINGLE",
-  "mechanic": "NONE"
+  "mechanic": "NONE",
+  "battle_cap": 52,
+  "type": "electric"
 }

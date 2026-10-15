@@ -59,9 +59,21 @@ internal object LeagueHomeController {
     fun send(action: LeagueAction) {
         if (!state.begin(action)) return
         pendingUntil = tick + 100
-        if (!LeagueClientSession.send(action, state.selectedId.orEmpty())) {
+        val branch = state.finalChoiceId.takeIf { state.challenges.any { it.id == state.selectedId && it.stage == 9 } }
+        if (!LeagueClientSession.send(action, state.selectedId.orEmpty(), finalChoiceId = branch)) {
             state.accept(state.view?.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))
         }
+        refresh()
+    }
+
+    fun cycleRegion() {
+        val view = state.view ?: return
+        if (!state.begin(LeagueAction.SELECT_LEAGUE)) return
+        val index = view.regions.indexOfFirst { it.id == view.leagueId }
+        val next = view.regions.getOrNull((index + 1) % view.regions.size.coerceAtLeast(1)) ?: return
+        pendingUntil = tick + 100
+        if (!LeagueClientSession.send(LeagueAction.SELECT_LEAGUE, leagueId = next.id))
+            state.accept(view.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))
         refresh()
     }
 
