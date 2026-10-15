@@ -6,7 +6,7 @@
 - `MaxMovePowerPreview`가 Cobblemon 1.8.1의 Showdown 18 규칙으로 위력을 구한다. 격투/독의 별도 변환표, 명시적 maxMove.basePower 예외 50개, 거다이난타·화염구·저격의 고정 160, 다이월의 위력 없음 등을 처리한다. 원래 기술 정보가 없으면 정의값 10을 대신 보여 주지 않고 기존 표기 `--`를 사용한다. 일반 기술과 기존 동적 위력 표시는 유지한다.
 - 실제 번들 Showdown `Dex.mod('cobblemon').moves.all()`에서 공격 기술 595개의 maxMove.basePower를 직접 추출한 비교 fixture와 회귀 검사를 추가했다. 단순 공식 복사본끼리 비교하는 검사가 아니다. 원래 registerMoveTile 호출 시그니처는 오버로드로 유지한다.
 - 첫 Gradle 빌드는 C2 컴파일러의 native malloc 2MB 할당 실패로 JVM이 종료됐다. F 드라이브 hs_err 로그로 메모리 부족을 확인한 뒤 worker 1개, 힙 1GB, CPU 2개, 테스트 힙 384MB로 낮춰 재실행했다. 재실행 `F:/AI/builds/max-tooltip-c7fe/ui-build-verified.log`에서 53초 build 성공 및 282/282 테스트 통과를 확인했다. 공격 기술 595개의 위력이 실제 번들 Showdown 값과 일치했다. 모든 Gradle 출력·캐시·임시 경로는 F 드라이브다.
-- 현재 개발 클라이언트가 실행 중이므로 설치 JAR은 교체하지 않았다. 커밋/main 병합과 실게임 툴팁 확인은 아직 완료하지 않았다. 가라르 리그의 레벨 데이터는 사용자가 먼저 표를 검토하겠다고 했으므로 변경하지 않았다.
+- 현재 개발 클라이언트가 실행 중이므로 설치 JAR은 교체하지 않았다. 소스 커밋 `b20decb6`을 main 및 작업 브랜치에 푸시하고 origin/main 일치를 확인했다. 실게임 툴팁 확인은 하지 않았다. 빌드 JAR은 `F:/AI/builds/galar-music-c7fe/out/cobblemon-ui/libs/cobblemon-ui-0.2.0.jar`, SHA-256 `04983bf92faf2e37ad6f64eeae25293a8d464187acc6d6233cb922dbb4177fac`이며 커밋된 변경 소스와 빌드 입력 3개 파일이 일치한다. 가라르 리그의 레벨 데이터는 사용자가 먼저 표를 검토하겠다고 했으므로 변경하지 않았다.
 
 ## [2026-10-16 01:30] 플레이 피드백 수정: 선택 우선·호버 색·전투 키·다이맥스 % (단위 테스트·허브 캡처 확인, 전투 실게임 미확인, 배포 안 함)
 
