@@ -1,5 +1,13 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-16 00:55] 가라르 음악 main 병합·개발 클라이언트 설치 검증
+
+- 소스 커밋 `256fa96d`를 최신 main과 병합한 `23fcdb82`를 `origin/main` 및 `origin/codex/galar-league-music`에 푸시했다. 기본 체크아웃의 관련 없는 UI/AI 미커밋 작업은 포함하지 않았다.
+- 병합된 커밋의 소스·의존 소스를 F 드라이브 미러에 반영하고 `:better-cobblemon-music:build`를 다시 실행했다. `F:/AI/builds/galar-music-c7fe/build-main.log`에서 46초 빌드 성공과 183/183 테스트 통과를 확인했다. Gradle 홈·프로젝트 캐시·모든 build 출력·임시 경로는 F 드라이브를 사용했다.
+- 게임 클라이언트가 꺼진 상태에서 기본 체크아웃의 `develop-product/client`에 있는 Music JAR과 options.txt에서 선택된 `better-cobblemon-music-resourcepack-1.3.18.zip`만 교체했다. JAR SHA-256 `5fd41e18f44d5f25e3f2c938d516b6ac85a0d5e3795bf8da5ecfbc021e3cec6d`, ZIP SHA-256 `eeb54103092c0a96295e9bd187a0db44d1795346eb3d2ec46e9d56fc8bcbc1bf`로 빌드본과 설치본이 각각 일치한다.
+- 설치된 JAR을 대상으로 별도 Java 실행을 해 일반/하드 36전투의 가라르 키 생성을 확인했고, 설치 ZIP의 새 OGG 7개 SHA-256이 변환 보고서와 일치한다. 선택된 팩 이름은 유지했다. 비활성 팩·다른 프로필·서버·UI 소스는 이 음악 작업에서 수정하지 않았다.
+- 실게임을 실행해 청취하거나 전투 중 소리 재생을 확인한 것은 아니다. 이 항목의 완료 범위는 변환·전체 디코딩·음량 계측·팩/선곡 연결·빌드·설치 파일 및 설치 JAR 키 처리 검증이다.
+
 ## [2026-10-16 00:53] 가라르 BGM 7곡 변환·단일 파일 공유 매핑 (소스·빌드 검증)
 
 - 사용자 지정 MP3 7곡을 `Downloads/pokemusic`에서 읽어 OGG Vorbis q4·스테레오·44.1kHz로 변환했다. 관장·두송·마리·호브·비트·파이널 토너먼트·단델의 물리 OGG는 정확히 7개이며, 가라르 일반/하드·역할·트레이너별 콘텐츠 키 42개가 같은 7개 플레이리스트/파일을 참조한다. 같은 곡의 별도 사본은 만들지 않았다.
