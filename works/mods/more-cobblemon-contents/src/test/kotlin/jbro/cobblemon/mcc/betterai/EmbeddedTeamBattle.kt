@@ -202,6 +202,18 @@ internal object EmbeddedTeamBattle {
                                     addProperty(c.actionId, c.moveId ?: c.switchPokemonId?.let { id ->
                                         "switch:" + context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId } ?: c.kind.name)
                                 } })
+                                // The Dynamax hold-back each Dynamax candidate pays and every ally's Dynamax weight behind it.
+                                if (context.candidates.any { it.mechanic?.mechanicId == "dynamax" }) add("dynamax", JsonObject().apply {
+                                    val profile = profiles.getValue(side)
+                                    add("cost", JsonObject().apply { context.candidates.filter { it.mechanic?.mechanicId == "dynamax" }.forEach { c ->
+                                        addProperty(c.actionId, jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(c, context, profile)) } })
+                                    add("weights", JsonObject().apply {
+                                        jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxFits(context).forEach { (id, fit) ->
+                                            addProperty(context.state.pokemon.first { it.battlePokemonId == id }.speciesId, fit) } })
+                                    add("ace", JsonObject().apply {
+                                        jbro.cobblemon.mcc.betterai.matchup.LocalAceScore.calculate(context).forEach { (id, ace) ->
+                                            addProperty(context.state.pokemon.first { it.battlePokemonId == id }.speciesId, ace) } })
+                                })
                                 // What this side assumes of the foe in front (stats) and each move's damage both ways,
                                 // read on the same assumed board the brain uses. Only on request (BETTERAI_MATCHUP_VIEW):
                                 // it scores every pair again, which a long measurement does not need.
