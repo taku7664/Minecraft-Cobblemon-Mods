@@ -54,7 +54,7 @@ class CobblemonUiThemedButton(
             val text = UiTextRenderer.fitted(font, label, (bounds.width - 6).coerceAtLeast(1))
             val offset = if (state == UiWidgetState.PRESSED) style.pressedOffsetY else 0
             UiTextRenderer.draw(graphics, font, text, bounds.x + (bounds.width - font.width(text)) / 2,
-                bounds.y + (bounds.height - font.lineHeight) / 2 + 1 + offset, style.text, style.textShadowColor)
+                UiTextRenderer.centeredY(font, text, bounds.y, bounds.height) + offset, style.text, style.textShadowColor)
             UiSurfaceRenderer.drawSelection(graphics, bounds.x, bounds.y, bounds.width, bounds.height, style.surface.shape,
                 style.selectionIndicator)
         }

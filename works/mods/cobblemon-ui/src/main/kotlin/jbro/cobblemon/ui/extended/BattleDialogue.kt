@@ -13,6 +13,7 @@ import jbro.cobblemon.ui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
+import jbro.cobblemon.uikit.client.UiDialogueStyle
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
@@ -209,16 +210,16 @@ object BattleDialogue {
     }
 
     /**
-     * The message box in the shared look ([CobblemonUiSharedTheme]), the window the MCC hub's cards use: its frame,
-     * its panel text and that text's shadow, so narration reads like the hub around it. [shown] characters are written
+     * The message box in [UiDialogueStyle]'s look, a card of the MCC hub's content theme: its frame, its text and
+     * the bars at its ends, so narration reads like the hub around it. [shown] characters are written
      * out; the box's rectangle is returned so a caller can set things against it.
      */
     internal fun renderMessage(context: GuiGraphics, message: Component, shown: Int = revealed(message)): UiRect {
         val client = Minecraft.getInstance()
         val font = client.font
-        val theme = CobblemonUiSharedTheme.snapshot()
-        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
-        val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
+        val theme = UiDialogueStyle.theme()
+        val ink = UiDialogueStyle.ink(theme)
+        val shadow = UiDialogueStyle.inkShadow(theme)
         val screenWidth = client.window.guiScaledWidth
         val screenHeight = client.window.guiScaledHeight
         // A message box with room on both sides, not edge to edge.
@@ -242,11 +243,11 @@ object BattleDialogue {
                 cornerCuts = BattleCornerCuts(topLeft = BAND_CUT, bottomRight = BAND_CUT), rounded = false))
             context.fill(left + BAND_CUT, top + 3, left + width - 3, top + 4, BAND_RULE)
         } else {
-            UiSurfaceRenderer.draw(context, left, top, width, height, theme.surfaces.panel)
+            UiSurfaceRenderer.draw(context, left, top, width, height, UiDialogueStyle.box(theme))
             // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
-            val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
-            context.fill(left + inset, top + inset, left + inset + END_BAR, top + height - inset, theme.colors.borderBright)
-            context.fill(left + width - inset - END_BAR, top + inset, left + width - inset, top + height - inset, theme.colors.borderBright)
+            val inset = UiDialogueStyle.inset(theme)
+            context.fill(left + inset, top + inset + 2, left + inset + END_BAR, top + height - inset - 2, UiDialogueStyle.bar(theme))
+            context.fill(left + width - inset - END_BAR, top + inset + 2, left + width - inset, top + height - inset - 2, UiDialogueStyle.bar(theme))
         }
         val box = UiRect(left, top, width, height)
         var budget = shown
@@ -272,7 +273,7 @@ object BattleDialogue {
             UiSurfaceRenderer.draw(context, arrowX - 6 - keyWidth, baseY - 2, keyWidth, 13, key.surface)
             UiTextRenderer.draw(context, font, keyName, arrowX - 6 - keyWidth + 5, baseY + 1, key.text, key.textShadowColor)
         }
-        val arrow = if (band) BAND_TEXT else theme.colors.accentPrimary
+        val arrow = if (band) BAND_TEXT else UiDialogueStyle.arrow(theme)
         val bob = (BattleFocusMotion.pulse() * 2f).toInt()
         for (row in 0 until 4) {
             context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, arrow)

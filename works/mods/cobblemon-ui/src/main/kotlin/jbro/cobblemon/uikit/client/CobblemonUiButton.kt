@@ -110,7 +110,9 @@ class CobblemonUiButton private constructor(
                 graphics,
                 spec.title,
                 textCenter,
-                y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2 + contentOffsetY,
+                // At full size the title centres on its glyphs' ink; a scaled title on its scaled line.
+                (if (metrics.titleScale == 1f) UiTextRenderer.centeredY(font, spec.title, y, height)
+                    else y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2) + contentOffsetY,
                 metrics.titleScale,
                 style.text,
                 textShadow,

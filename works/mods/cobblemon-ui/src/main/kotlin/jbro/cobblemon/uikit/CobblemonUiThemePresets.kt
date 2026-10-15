@@ -327,11 +327,20 @@ object CobblemonUiThemePresets {
         )
     }
 
+    /**
+     * The pixel frames' corners, rounded and smoothed as the DS windows' are (their windows take 4, their controls 3),
+     * so content in a pixel frame sits beside the hub's DS rail as one look. Drawings of their own (tabs, route nodes,
+     * check boxes) read the shape from the theme's panels.
+     */
+    // Getters: the presets object composes its themes while it initialises, before stored values would be set.
+    val PIXEL_CORNER: UiShape get() = UiShape.RoundedRectangle(4)
+    val PIXEL_CONTROL_CORNER: UiShape get() = UiShape.RoundedRectangle(3)
+
     /** [c] in Pixel League's frames and control sizes, under the theme id [id]. */
     internal fun framedPixel(id: String, c: UiThemePalette): UiThemeSnapshot {
         val colors = c.colors()
-        val shellFrame = UiBorder.PixelFrame(c.border, c.trim, c.frameShade, 0xC8080B0F.toInt(), 2)
-        val cardFrame = UiBorder.PixelFrame(c.border, c.frameHighlight, c.frameShade, 0xA8080B0F.toInt(), 1)
+        val shellFrame = UiBorder.PixelFrame(c.border, c.trim, c.frameShade, 0x64080B0F, 2)
+        val cardFrame = UiBorder.PixelFrame(c.border, c.frameHighlight, c.frameShade, 0x54080B0F, 1)
         val selector = UiSelectionIndicator.Sprite(UiIcon("cobblemon_ui", "textures/gui/pixel/selector.png"))
         val styles = buildMap {
             addPixelVariant(UiButtonVariant.PRIMARY, c.primary, c.primaryHover, c.primaryPressed, c.selected, c.primaryText,
@@ -350,11 +359,12 @@ object CobblemonUiThemePresets {
             typography = UiTypography(titleScale = 1f, bodyScale = 1f, supportingScale = 0.75f),
             spacing = UiSpacing(xs = 2, small = 4, medium = 6, large = 10),
             surfaces = UiSurfaceTokens(
-                shell = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.shell), shellFrame),
-                panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panel), cardFrame),
-                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panelAlt), cardFrame),
+                shell = UiSurfaceStyle(PIXEL_CORNER, UiFill.Solid(c.shell), shellFrame),
+                panel = UiSurfaceStyle(PIXEL_CORNER, UiFill.Solid(c.panel), cardFrame),
+                panelAlt = UiSurfaceStyle(PIXEL_CORNER, UiFill.Solid(c.panelAlt), cardFrame),
                 panelText = c.panelText,
                 panelAltText = c.panelText,
+                panelTextDim = c.panelTextDim,
                 panelTitle = UiPanelTitleStyle.BAND
             ),
             metrics = UiPixelMetrics.sizes,
@@ -399,7 +409,7 @@ object CobblemonUiThemePresets {
             pressedOffsetY: Int = 0
         ) = UiButtonStyle(
             surface = UiSurfaceStyle(
-                shape = UiShape.Rectangle,
+                shape = PIXEL_CONTROL_CORNER,
                 fill = UiFill.Solid(fill),
                 border = frame
             ),
@@ -411,10 +421,11 @@ object CobblemonUiThemePresets {
 
         put(variant to UiWidgetState.NORMAL, pixelStyle(normal))
         put(variant to UiWidgetState.HOVER, pixelStyle(hover))
-        put(variant to UiWidgetState.FOCUS, pixelStyle(hover, indicator = selector))
+        // Focus and selection are told by colour alone; no cursor sprite beside the label.
+        put(variant to UiWidgetState.FOCUS, pixelStyle(hover))
         put(variant to UiWidgetState.PRESSED, pixelStyle(pressed, pressedOffsetY = 1))
         put(variant to UiWidgetState.DISABLED, pixelStyle(disabled, 0xFF4E5659.toInt()))
-        put(variant to UiWidgetState.SELECTED, pixelStyle(selected, selectedText, indicator = selector))
+        put(variant to UiWidgetState.SELECTED, pixelStyle(selected, selectedText))
     }
 
     internal fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
@@ -428,7 +439,7 @@ object CobblemonUiThemePresets {
             pressedOffsetY: Int = 0
         ) = UiButtonStyle(
             surface = UiSurfaceStyle(
-                shape = UiShape.Rectangle,
+                shape = PIXEL_CONTROL_CORNER,
                 fill = UiFill.Solid(fill),
                 border = UiBorder.None,
                 backgroundOpacity = opacity
@@ -441,10 +452,10 @@ object CobblemonUiThemePresets {
 
         put(UiButtonVariant.GHOST to UiWidgetState.NORMAL, ghost(colors.shell, 0f))
         put(UiButtonVariant.GHOST to UiWidgetState.HOVER, ghost(colors.panelAlt, 0.75f))
-        put(UiButtonVariant.GHOST to UiWidgetState.FOCUS, ghost(colors.panelAlt, 0.85f, selector))
+        put(UiButtonVariant.GHOST to UiWidgetState.FOCUS, ghost(colors.panelAlt, 0.85f))
         put(UiButtonVariant.GHOST to UiWidgetState.PRESSED, ghost(colors.border, 0.7f, pressedOffsetY = 1))
         put(UiButtonVariant.GHOST to UiWidgetState.DISABLED, ghost(colors.shell, 0f))
-        put(UiButtonVariant.GHOST to UiWidgetState.SELECTED, ghost(colors.accentPrimary, 1f, selector))
+        put(UiButtonVariant.GHOST to UiWidgetState.SELECTED, ghost(colors.accentPrimary, 1f))
     }
 
     private fun buttonRecipes(

@@ -174,7 +174,7 @@ class CobblemonUiToastLayer {
             height,
             theme.surfaces.panel.copy(border = UiBorder.Solid(toneColor(active.spec.tone)))
         )
-        graphics.drawString(font, active.message, x + 10, y + (height - font.lineHeight) / 2 + 1, theme.colors.textPrimary, false)
+        graphics.drawString(font, active.message, x + 10, UiTextRenderer.centeredY(font, active.message, y, height), theme.colors.textPrimary, false)
     }
 }
 

@@ -141,13 +141,14 @@ object SceneDialogue {
         current.speaker?.let { speaker ->
             // The speaker's name on a tab over the box's left edge.
             val font = client.font
-            val plate = CobblemonUiSharedTheme.snapshot().style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
+            val theme = jbro.cobblemon.uikit.client.UiDialogueStyle.theme()
             val width = font.width(speaker) + 16
             val height = font.lineHeight + 8
             val left = box.x + 10
             val top = box.y - height + 2
-            UiSurfaceRenderer.draw(context, left, top, width, height, plate.surface)
-            UiTextRenderer.draw(context, font, speaker, left + 8, top + 5, plate.text, plate.textShadowColor)
+            UiSurfaceRenderer.draw(context, left, top, width, height, jbro.cobblemon.uikit.client.UiDialogueStyle.plate(theme))
+            UiTextRenderer.draw(context, font, speaker, left + 8, UiTextRenderer.centeredY(font, speaker, top, height - 2),
+                jbro.cobblemon.uikit.client.UiDialogueStyle.plateText(theme), null)
         }
         context.pose().popPose()
     }

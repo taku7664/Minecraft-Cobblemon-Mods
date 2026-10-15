@@ -1,5 +1,20 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-15 23:55] 대화창(전투·장면·NPC)을 콘텐츠 테마로 (단위 테스트·개발 클라 캡처 확인, 빌드·배치 안 함)
+
+- **빡대리님 결정:** 대화창도 허브 콘텐츠 테마로. 위치·크기·레터박스 위 배치는 그대로, 테두리·색만 바꾼다.
+- **구현:** `UiDialogueStyle`(`uikit/client`)에 대화창 규칙을 모았다. 상자는 콘텐츠 테마 카드(`panelAlt`, 픽셀 프레임), 이름표는 버튼 프레임에 카드 제목 띠 색(`accentCaution`), 양 끝 막대는 정보 띠 색, 글자 그림자 없음. `BattleDialogue.renderMessage`(전투 메시지·장면 대화가 함께 씀), `SceneDialogue` 이름표, `NpcDialogueScreen`이 이를 쓴다. 양 끝 막대는 둥근 모서리와 겹치지 않게 위아래 2px씩 안쪽에서 시작.
+- **확인:** `/mcc scene test`, `/npc talk @s tower_guide` 실캡처. 전투 중 메시지 상자는 같은 함수지만 실전투로는 미확인.
+
+## [2026-10-15 22:20] 콘텐츠 테마(pixel_frame) 분리, 공용 탭 바·색 띠 패널·글리프 기준 세로 정렬 (단위 테스트·개발 클라 캡처 확인, 빌드·배치 안 함)
+
+- **빡대리님 결정:** 허브 콘텐츠는 1번째 레퍼런스(`pixel_frame.tower_lobby`) 모양, 허브 헤더·왼쪽 탭 행은 기존 공용 테마(`ds_window`) 그대로. 픽셀 프레임도 DS 창처럼 둥근 모서리(창 4, 버튼 3)와 안티에일리어싱을 쓴다. 선택 표시는 세모 커서 없이 배경색만. 카드·버튼 그림자 알파는 절반(0xA8→0x54, 셸 0xC8→0x64).
+- **추가:** `CobblemonUiSharedTheme.contentSnapshot()/installContent()`(공용 팔레트 + PIXEL_FRAME), `CobblemonUiTabBar`(브라우저형 탭, 선택 탭이 페이지와 이어지고 나머지 탭도 페이지 윗선에 붙음, 잠긴 탭은 자물쇠), `UiPanelSpec.band`/`UiPanelBand`(제목 띠 색 지정), `UiPixelBox`(직접 그리는 작은 박스도 테마 모서리 모양·`UiSurfaceRenderer` 경로로), `UiHoverWiggle`(호버 시 아이콘 흔들림+확대), `UiSurfaceTokens.panelTextDim`(밝은 카드 위 흐린 글자).
+- **렌더러:** `PixelFrame`도 부드러운 모서리 경로를 탄다(외곽선→하이라이트→채움 + 아래·오른쪽 음영, 그림자도 같은 경로). 둥근 패널의 제목 띠 윗모서리는 패널 안쪽 반경을 따른다. `PIXEL_CORNER`는 게터다. 저장 값으로 두면 프리셋 객체 초기화 중 null이 되어 클라이언트가 시작 시 크래시했다.
+- **세로 정렬:** `(h - lineHeight)/2 + 1` 같은 보정값 대신 `UiTextRenderer.centeredY`가 실제 글리프 잉크 범위(`BakedGlyph.up/down`, access widener로 연 `Font.getFontSet`)로 가운데를 잡는다. 버튼·리스트 행·체크박스·드롭다운·토스트·패널 제목·탭에 적용.
+- **확인:** `cobblemon-ui:unitTest` 278/278(픽셀 테마 선택 상태 테스트를 "커서 없음, 채움 색이 다름"으로 갱신). 개발 클라이언트 실캡처 427×240에서 모양 확인. 빌드 산출물 배치와 실서버 확인은 하지 않았다.
+- **교훈:** 개발 실행 폴더(`run/`)는 리소스팩이 실제 프로필과 다르다. 갈무리 폰트·Whimscape 없이 찍으면 글자 정렬을 잘못 판단한다. 캡처 전에 프로필 `resourcePacks`와 맞춘다.
+
 ## [2026-10-13 20:40] 능력 단계를 서버(Showdown) 값으로 덮어쓴다 (단위 테스트 확인, 빌드·배치·실게임 미확인)
 
 - **빡대리님 결정:** 능력 단계는 서버에 정확한 값이 있으니 그걸 쓴다. 클라이언트 계산을 고집할 이유가 없다.

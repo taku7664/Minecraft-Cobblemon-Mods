@@ -60,7 +60,9 @@ data class UiSurfaceTokens(
     val shellText: Int? = null,
     val panelText: Int? = null,
     val panelAltText: Int? = null,
-    val panelTitle: UiPanelTitleStyle = UiPanelTitleStyle.TEXT
+    val panelTitle: UiPanelTitleStyle = UiPanelTitleStyle.TEXT,
+    /** Quieter text on panels (labels, hints); null when the theme has none and the chrome's dim text reads there. */
+    val panelTextDim: Int? = null
 )
 
 /** How a titled panel shows its title. */

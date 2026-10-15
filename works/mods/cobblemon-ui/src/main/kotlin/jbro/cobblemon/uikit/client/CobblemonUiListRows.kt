@@ -52,7 +52,9 @@ object CobblemonUiListRows {
         hovered: Boolean,
         mouseX: Int,
         mouseY: Int,
-        partialTick: Float
+        partialTick: Float,
+        /** Rocks the icon as the mouse arrives, for rows that stand for places to go (a tab rail). */
+        iconWiggle: UiHoverWiggle? = null
     ) {
         val theme = CobblemonUiThemes.registry.snapshot()
         val font = Minecraft.getInstance().font
@@ -67,7 +69,9 @@ object CobblemonUiListRows {
         var left = bounds.x + 6
         row.icon?.let { icon ->
             val size = (bounds.height - 6).coerceAtMost(16)
-            CobblemonUiRenderSlot.drawContent(graphics, UiRect(left, bounds.y + (bounds.height - size) / 2, size, size), icon, partialTick)
+            val iconRect = UiRect(left, bounds.y + (bounds.height - size) / 2, size, size)
+            if (iconWiggle == null) CobblemonUiRenderSlot.drawContent(graphics, iconRect, icon, partialTick)
+            else iconWiggle.draw(graphics, iconRect, hovered && enabled) { CobblemonUiRenderSlot.drawContent(graphics, iconRect, icon, partialTick) }
             left += size + 5
         }
         val actions = actionBounds(bounds, row.actions.size)
@@ -82,17 +86,18 @@ object CobblemonUiListRows {
             val actionStyle = theme.style(UiButtonVariant.SECONDARY, actionState)
             UiSurfaceRenderer.draw(graphics, action.x, action.y, action.width, action.height, actionStyle.surface)
             UiTextRenderer.draw(graphics, font, control.label, action.x + (action.width - font.width(control.label) + 1) / 2,
-                action.y + (action.height - font.lineHeight) / 2 + 1, actionStyle.text, actionStyle.textShadowColor)
+                UiTextRenderer.centeredY(font, control.label, action.y, action.height), actionStyle.text, actionStyle.textShadowColor)
         }
         row.trailing?.let { trailing ->
             val width = font.width(trailing)
-            UiTextRenderer.draw(graphics, font, trailing, right - width, bounds.y + (bounds.height - font.lineHeight) / 2 + 1,
+            UiTextRenderer.draw(graphics, font, trailing, right - width, UiTextRenderer.centeredY(font, trailing, bounds.y, bounds.height),
                 style.supportingText, style.textShadowColor)
             right -= width + 6
         }
         val room = right - left
         if (row.supporting == null) {
-            UiTextRenderer.draw(graphics, font, UiTextRenderer.fitted(font, row.title, room), left, bounds.y + (bounds.height - font.lineHeight) / 2 + 1,
+            val title = UiTextRenderer.fitted(font, row.title, room)
+            UiTextRenderer.draw(graphics, font, title, left, UiTextRenderer.centeredY(font, title, bounds.y, bounds.height),
                 style.text, style.textShadowColor)
         } else {
             UiTextRenderer.draw(graphics, font, UiTextRenderer.fitted(font, row.title, room), left, bounds.y + 4, style.text, style.textShadowColor)

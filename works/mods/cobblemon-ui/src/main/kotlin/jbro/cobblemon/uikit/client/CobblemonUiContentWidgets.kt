@@ -108,13 +108,13 @@ class CobblemonUiPanel private constructor(
         UiSurfaceRenderer.draw(graphics, x, y, width, height, surface)
         val title = spec.title ?: return
         val font = Minecraft.getInstance().font
-        val accent = if (spec.featured) theme.colors.accentCaution else theme.colors.borderBright
+        val accent = spec.band?.color(theme) ?: if (spec.featured) theme.colors.accentCaution else theme.colors.borderBright
         when (theme.surfaces.panelTitle) {
             UiPanelTitleStyle.TEXT -> graphics.drawString(font, title, x + spec.padding.left, y + spec.padding.top, textColor, false)
             UiPanelTitleStyle.BAND -> {
                 val inset = frameInset(surface)
-                graphics.fill(x + inset, y + inset, x + width - inset, y + inset + TITLE_BAND_HEIGHT, accent)
-                drawTitle(graphics, title, y + inset + (TITLE_BAND_HEIGHT - font.lineHeight) / 2, onColor(theme, accent), null, partialTick)
+                drawBand(graphics, surface, inset, accent)
+                drawTitle(graphics, title, UiTextRenderer.centeredY(font, title, y + inset, TITLE_BAND_HEIGHT), onColor(theme, accent), null, partialTick)
             }
             UiPanelTitleStyle.RULE -> {
                 val inset = frameInset(surface)
@@ -123,6 +123,21 @@ class CobblemonUiPanel private constructor(
                 drawTitle(graphics, title, ruleTop - font.lineHeight - 1, textColor, theme.surfaces.panelTitleShadow(), partialTick)
             }
         }
+    }
+
+    /** The title band inside the frame; under a rounded frame its top corners follow the frame's inner curve. */
+    private fun drawBand(graphics: GuiGraphics, surface: UiSurfaceStyle, inset: Int, color: Int) {
+        val left = x + inset
+        val top = y + inset
+        val bandWidth = width - inset * 2
+        val radius = ((surface.shape as? UiShape.RoundedRectangle)?.radiusPixels ?: 0) - inset
+        if (radius <= 0 || bandWidth <= radius * 2) {
+            graphics.fill(left, top, left + bandWidth, top + TITLE_BAND_HEIGHT, color)
+            return
+        }
+        UiSurfaceRenderer.draw(graphics, left, top, bandWidth, radius * 2 + 1,
+            UiSurfaceStyle(UiShape.RoundedRectangle(radius), UiFill.Solid(color), UiBorder.None))
+        graphics.fill(left, top + radius, left + bandWidth, top + TITLE_BAND_HEIGHT, color)
     }
 
     private fun drawTitle(graphics: GuiGraphics, title: Component, top: Int, color: Int, shadow: Int?, partialTick: Float) {

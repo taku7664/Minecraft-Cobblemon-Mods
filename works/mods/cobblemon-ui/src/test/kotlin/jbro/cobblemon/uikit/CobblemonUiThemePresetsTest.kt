@@ -96,8 +96,10 @@ class CobblemonUiThemePresetsTest {
 
             assertTrue(normal.surface.border is UiBorder.PixelFrame, variant.name)
             assertTrue(normal.surface.fill is UiFill.Solid, variant.name)
-            assertNotEquals(UiSelectionIndicator.None, focused.selectionIndicator, variant.name)
-            assertNotEquals(UiSelectionIndicator.None, selected.selectionIndicator, variant.name)
+            // Focus and selection show by fill colour alone, with no cursor sprite beside the label.
+            assertEquals(UiSelectionIndicator.None, focused.selectionIndicator, variant.name)
+            assertEquals(UiSelectionIndicator.None, selected.selectionIndicator, variant.name)
+            assertNotEquals(normal.surface.fill, selected.surface.fill, variant.name)
         }
 
         assertNotNull(snapshot.pixelDecorations)

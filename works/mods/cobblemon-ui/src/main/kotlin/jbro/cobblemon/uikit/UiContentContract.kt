@@ -29,7 +29,9 @@ data class UiPanelSpec(
     val tone: UiPanelTone = UiPanelTone.PANEL,
     val padding: UiInsets = UiInsets.all(6),
     /** The panel the screen is about; a band or rule title takes the theme's caution colour. */
-    val featured: Boolean = false
+    val featured: Boolean = false,
+    /** The title band's colour, over what [featured] picks. */
+    val band: UiPanelBand? = null
 ) {
     init {
         require(title == null || title.string.isNotBlank()) { "Panel title must not be blank" }
@@ -39,6 +41,28 @@ data class UiPanelSpec(
         require(titleHeight >= 0) { "Panel title height must not be negative" }
         return UiLayout.inset(UiLayout.leaf("content"), padding.left, padding.top + titleHeight, padding.right, padding.bottom)
             .solve(bounds)["content"]
+    }
+}
+
+/** Theme colours a titled panel's band can take. */
+enum class UiPanelBand {
+    /** The caution colour [UiPanelSpec.featured] also picks: what the screen is about. */
+    FEATURE,
+    /** The neutral band of supporting information. */
+    INFO,
+    /** Something gained: rewards, unlocks. */
+    GOOD,
+    /** The theme's primary accent. */
+    PRIMARY,
+    /** Losses and warnings. */
+    DANGER;
+
+    fun color(theme: UiThemeSnapshot): Int = when (this) {
+        FEATURE -> theme.colors.accentCaution
+        INFO -> theme.colors.borderBright
+        GOOD -> theme.colors.accentGood
+        PRIMARY -> theme.colors.accentPrimary
+        DANGER -> theme.colors.accentDanger
     }
 }
 

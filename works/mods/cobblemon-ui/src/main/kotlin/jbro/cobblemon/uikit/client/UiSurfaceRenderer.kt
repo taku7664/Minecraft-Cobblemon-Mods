@@ -39,16 +39,12 @@ object UiSurfaceRenderer {
     ) {
         val border = style.border
         if (border is UiBorder.PixelFrame && border.shadowOffset > 0) {
-            drawFill(
-                graphics,
-                x + border.shadowOffset,
-                y + border.shadowOffset,
-                width,
-                height,
-                style.shape,
-                UiFill.Solid(border.shadowColor),
-                style.backgroundOpacity
-            )
+            val shadow = UiFill.Solid(border.shadowColor)
+            val sx = x + border.shadowOffset
+            val sy = y + border.shadowOffset
+            if (!drawSmooth(graphics, sx, sy, width, height, style.shape, shadow, style.backgroundOpacity, UiBorder.None)) {
+                drawFill(graphics, sx, sy, width, height, style.shape, shadow, style.backgroundOpacity)
+            }
         }
         if (drawSmooth(graphics, x, y, width, height, style.shape, style.fill, style.backgroundOpacity, border)) return
         drawFill(graphics, x, y, width, height, style.shape, style.fill, style.backgroundOpacity)
@@ -126,7 +122,8 @@ object UiSurfaceRenderer {
                 border.innerColor?.let { inner -> add(Layer(1 + border.bandWidth) { inner }) }
                 add(Layer(border.thickness, fillColor))
             }
-            is UiBorder.PixelFrame -> return false
+            // Outline, then the highlight ring; the shade goes over the highlight's bottom and right runs below.
+            is UiBorder.PixelFrame -> listOf(Layer(0) { border.outerColor }, Layer(1) { border.highlightColor }, Layer(2, fillColor))
         }
         val insets = layers.map { it.inset }
         val corners = listOf(UiCorner.TOP_LEFT, UiCorner.TOP_RIGHT, UiCorner.BOTTOM_LEFT, UiCorner.BOTTOM_RIGHT)
@@ -158,6 +155,12 @@ object UiSurfaceRenderer {
                 drawCornerPixel(graphics, x + width - 1 - px, y + row, layers, row,
                     corners.getValue(if (top) UiCorner.TOP_RIGHT else UiCorner.BOTTOM_RIGHT), px, py, size)
             }
+        }
+        if (border is UiBorder.PixelFrame && width > 4 && height > 4) {
+            // The pixel frame's shade along the inside of the bottom and right edges, between the corners.
+            val run = maxOf(size, 2)
+            graphics.fill(x + run, y + height - 2, x + width - run, y + height - 1, border.shadeColor)
+            graphics.fill(x + width - 2, y + run, x + width - 1, y + height - run, border.shadeColor)
         }
         return true
     }
@@ -242,7 +245,8 @@ object UiSurfaceRenderer {
             innerShape,
             UiBorder.Solid(frame.highlightColor)
         )
-        if (shape is UiShape.Rectangle) {
+        // The shade runs along the inside of the bottom and right edges; a one-pixel cut corner leaves that row free.
+        if (shape is UiShape.Rectangle || (shape is UiShape.Chamfer && shape.cutPixels == 1)) {
             graphics.fill(x + 2, y + height - 2, x + width - 1, y + height - 1, frame.shadeColor)
             graphics.fill(x + width - 2, y + 2, x + width - 1, y + height - 1, frame.shadeColor)
         }

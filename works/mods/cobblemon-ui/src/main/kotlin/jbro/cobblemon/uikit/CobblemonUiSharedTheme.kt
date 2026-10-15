@@ -20,6 +20,20 @@ object CobblemonUiSharedTheme {
     fun snapshot(): UiThemeSnapshot = CobblemonUiThemeComposer.compose(style, palette)
 
     /**
+     * What screens of content draw their bodies in: the square pixel frames in the shared [palette], whatever [style]
+     * the surrounding chrome (the hub's shell, header and tab rail) takes.
+     */
+    fun contentSnapshot(): UiThemeSnapshot = CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, palette)
+
+    /** Installs [contentSnapshot] like [install] does the shared theme. */
+    fun installContent(registry: UiThemeRegistry = CobblemonUiThemes.registry): () -> Unit {
+        val previous = registry.snapshot()
+        val content = contentSnapshot()
+        registry.install(content)
+        return { if (registry.snapshot().id == content.id) registry.install(previous) }
+    }
+
+    /**
      * Selects the theme by its id, `style.palette` (for example `ds_window.tower_lobby`); false if either part is
      * unknown. A screen that has it installed in [registry] switches to the new one at once.
      */

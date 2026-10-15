@@ -381,6 +381,7 @@ object CobblemonUiThemeComposer {
                 panelAlt = UiSurfaceStyle(window, UiFill.Solid(c.panelAlt), frame),
                 panelText = c.panelText,
                 panelAltText = c.panelText,
+                panelTextDim = c.panelTextDim,
                 panelTitle = UiPanelTitleStyle.RULE
             ),
             metrics = UiPixelMetrics.sizes,

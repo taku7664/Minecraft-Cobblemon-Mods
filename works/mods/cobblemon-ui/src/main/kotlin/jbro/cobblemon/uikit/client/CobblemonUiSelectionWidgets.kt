@@ -71,7 +71,7 @@ class CobblemonUiCheckbox private constructor(
             Minecraft.getInstance().font,
             spec.label,
             x + boxSize + 5,
-            y + (height - Minecraft.getInstance().font.lineHeight) / 2 + 1,
+            UiTextRenderer.centeredY(Minecraft.getInstance().font, spec.label, y, height),
             style.text,
             false
         )
@@ -124,7 +124,7 @@ class CobblemonUiRadioButton private constructor(
             Minecraft.getInstance().font,
             spec.option.label,
             x + size + 5,
-            y + (height - Minecraft.getInstance().font.lineHeight) / 2 + 1,
+            UiTextRenderer.centeredY(Minecraft.getInstance().font, spec.option.label, y, height),
             theme.colors.textPrimary,
             false
         )
@@ -197,7 +197,7 @@ class CobblemonUiComboBox private constructor(
         val style = theme.style(UiButtonVariant.SECONDARY, widgetState(active, isFocused, isHovered, expanded))
         UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
         val font = Minecraft.getInstance().font
-        graphics.drawString(font, state.selected.label, x + 7, y + (height - font.lineHeight) / 2 + 1, style.text, false)
+        graphics.drawString(font, state.selected.label, x + 7, UiTextRenderer.centeredY(font, state.selected.label, y, height), style.text, false)
         graphics.drawString(font, if (expanded) "▲" else "▼", x + width - 13, y + (height - font.lineHeight) / 2, style.text, false)
         if (expanded) renderOptions(graphics, mouseX, mouseY)
     }
@@ -228,7 +228,7 @@ class CobblemonUiComboBox private constructor(
             }
             val style = theme.style(UiButtonVariant.SECONDARY, state)
             UiSurfaceRenderer.draw(graphics, x, top, width, OPTION_HEIGHT, style.surface)
-            graphics.drawString(font, option.label, x + 7, top + (OPTION_HEIGHT - font.lineHeight) / 2 + 1, style.text, false)
+            graphics.drawString(font, option.label, x + 7, UiTextRenderer.centeredY(font, option.label, top, OPTION_HEIGHT), style.text, false)
         }
     }
 
