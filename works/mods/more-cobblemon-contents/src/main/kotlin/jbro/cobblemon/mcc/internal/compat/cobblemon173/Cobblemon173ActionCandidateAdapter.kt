@@ -267,6 +267,9 @@ internal object Cobblemon173ActionCandidateAdapter {
                     active.actor.request?.side?.pokemon?.firstOrNull { it.uuid == targetId }?.ability
                 })) return
         val variantId = gimmick?.id ?: "base"
+        // A Dynamax status move is Max Guard: ranked under that id, not the move it replaces (LocalDynamax.choiceIdentity).
+        val maxMoveId = transformed?.move?.takeIf { gimmick == ShowdownMoveset.Gimmick.DYNAMAX || gimmick == null }
+        val (moveId, tags) = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.choiceIdentity(move.id, details, maxMoveId)
         add(
             Cobblemon173ActionChoice(
                 candidate = BattleActionCandidate(
@@ -274,9 +277,10 @@ internal object Cobblemon173ActionCandidateAdapter {
                     kind = BattleActionKind.USE_MOVE,
                     actorSlot = actorSlot,
                     moveSlot = moveSlot,
-                    moveId = move.id,
+                    moveId = moveId,
                     moveDetails = details,
                     targets = listOfNotNull(targetView),
+                    tags = tags,
                     mechanic = gimmick?.let {
                         BattleMechanicCandidate(
                             mechanicId = mechanicId(it),

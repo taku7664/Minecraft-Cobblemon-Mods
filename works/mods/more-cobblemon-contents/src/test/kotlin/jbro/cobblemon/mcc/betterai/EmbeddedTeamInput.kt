@@ -448,8 +448,10 @@ internal object EmbeddedTeamInput {
                 val baseDetails = moveDetails(moveId, moveRequest["pp"]?.asInt ?: 1)
                 // As the game's adapter hands a Dynamax move over: the base move's id, the Max Move's details.
                 val details = maxMoveId?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.maxMoveDetails(moveId, baseDetails, it) } ?: baseDetails
+                val (choiceId, tags) = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.choiceIdentity(moveId, details, maxMoveId)
                 BattleActionCandidate(actionId, BattleActionKind.USE_MOVE, actorSlot = actorSlot, moveSlot = slot,
-                    moveId = moveId, targets = targets(details, actorSlot, action["targetLoc"]?.takeUnless { it.isJsonNull }?.asInt),
+                    moveId = choiceId, tags = tags,
+                    targets = targets(details, actorSlot, action["targetLoc"]?.takeUnless { it.isJsonNull }?.asInt),
                     // The form itself is read from the actor's knownFormStates, as in the game.
                     mechanic = action["mechanic"]?.asString?.let {
                         BattleMechanicCandidate(it, target = null, publicCost = null, transformedMoveId = maxMoveId.takeIf { _ -> it == "dynamax" })

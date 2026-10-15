@@ -99,7 +99,18 @@ internal object LocalDynamax {
         return details.copy(power = power, accuracy = 100.0, effects = effects)
     }
 
-    /** The move [action] was before it became a Max Move ([asMaxMove]), or its own. */
+    /**
+     * The id and tags a Dynamax choice of [baseMoveId] is ranked under, its details [details] already the Max Move
+     * [maxMoveId]'s (null when the choice is no Max Move). A status move is Max Guard and nothing of itself: ranked under
+     * its own id, a Dynamax Leech Seed took Leech Seed's drain (31.25) and a Dynamax Stealth Rock with the rocks up was
+     * idle, both as Max Guard (G-948 ①). An attack keeps its base id: the matchup table turns it into its Max Move itself
+     * ([asMaxMove]) and keys its scores by the base move (G-946).
+     */
+    fun choiceIdentity(baseMoveId: String, details: BattleMoveCandidateView?, maxMoveId: String?): Pair<String, Set<String>> =
+        if (maxMoveId == null || details?.damageCategory != BattleMoveDamageCategory.STATUS) baseMoveId to emptySet()
+        else PublicIds.canonical(maxMoveId) to setOf("$BASE_MOVE_TAG${PublicIds.canonical(baseMoveId)}")
+
+    /** The move [action] was before it became a Max Move ([asMaxMove], [choiceIdentity]), or its own. */
     fun baseMoveId(action: BattleActionCandidate): String? =
         action.tags.firstOrNull { it.startsWith(BASE_MOVE_TAG) }?.removePrefix(BASE_MOVE_TAG) ?: action.moveId?.let(PublicIds::canonical)
 

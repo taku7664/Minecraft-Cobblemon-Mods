@@ -112,6 +112,26 @@ class LocalDynamaxTest {
     }
 
     @Test
+    fun `a Dynamax status move is ranked as Max Guard, not as the move it replaces`() {
+        val guard = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 4, 10,
+            BattleMoveTargetPattern.SELF, effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(
+                BattleMoveEffectView(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER, probability = 1.0)), false))
+        val (id, tags) = LocalDynamax.choiceIdentity("cobblemon:leechseed", guard, "Max Guard")
+        assertEquals("maxguard", id)
+        val user = mon(BattleSide.ALLY).copyState(knownVolatileEffectIds = setOf(LocalDynamax.VOLATILE))
+        val foe = mon(BattleSide.OPPONENT)
+        val candidate = BattleActionCandidate("move:0:3", BattleActionKind.USE_MOVE, 0, 3, id, moveDetails = guard, tags = tags)
+        assertEquals("leechseed", LocalDynamax.baseMoveId(candidate))
+        // Ranked under Leech Seed's id it took Leech Seed's drain (2.5 turns of an eighth, 31.25).
+        val context = BattleDecisionContext(UUID.randomUUID(), state(user, foe), listOf(candidate), Long.MAX_VALUE)
+        assertNotEquals(31.25, jbro.cobblemon.mcc.betterai.evaluation.LocalNonDamagingMoveEvaluator.pressure(candidate, context, 1.0))
+        // An attack keeps its base id (the matchup table turns it into its Max Move itself, G-946).
+        val attack = guard.copy(damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 120.0)
+        assertEquals("cobblemon:powerwhip" to emptySet<String>(), LocalDynamax.choiceIdentity("cobblemon:powerwhip", attack, "maxovergrowth"))
+        assertEquals("cobblemon:leechseed" to emptySet<String>(), LocalDynamax.choiceIdentity("cobblemon:leechseed", guard, null))
+    }
+
+    @Test
     fun `a Gigantamax Pokemon's attack of its G-Max Move's type is that G-Max Move`() {
         fun fire(id: String, power: Double) = BattleActionCandidate(id, BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
             moveId = id, targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
