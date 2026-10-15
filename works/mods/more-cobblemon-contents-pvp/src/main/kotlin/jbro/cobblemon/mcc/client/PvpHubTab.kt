@@ -311,20 +311,20 @@ internal class PvpHubTab : MccHubTabContent {
         val editable = isHost && lobby && idle
         val mechanics = state.settings.immutableEnabledMechanics
         val rows = listOf(
-            PvpRoomSettingRows.Row(room("group.visibility"),
-                PvpRoomVisibility.entries.map { PvpRoomSettingRows.Option(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.visibility"),
+                PvpRoomVisibility.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
                 setOf(state.settings.visibility.name.lowercase()), editable) { id ->
                 val next = PvpRoomVisibility.entries.first { it.name.lowercase() == id }
                 if (next != state.settings.visibility) updateSettings(controller, state.settings.copy(visibility = next))
             },
-            PvpRoomSettingRows.Row(room("group.format"),
-                PvpBattleFormat.entries.map { PvpRoomSettingRows.Option(it.recordId, room("format.${it.recordId}")) },
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.format"),
+                PvpBattleFormat.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.recordId, room("format.${it.recordId}")) },
                 setOf(state.settings.format.recordId), editable) { id ->
                 val next = PvpBattleFormat.entries.first { it.recordId == id }
                 if (next != state.settings.format) updateSettings(controller, state.settings.copy(format = next))
             },
-            PvpRoomSettingRows.Row(room("group.mechanics"),
-                PvpBattleMechanic.entries.map { PvpRoomSettingRows.Option(it.id, room("mechanic.${it.id}")) },
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.mechanics"),
+                PvpBattleMechanic.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.id, room("mechanic.${it.id}")) },
                 mechanics.mapTo(HashSet()) { it.id }, editable, room("group.mechanics")) { id ->
                 val next = LinkedHashSet(mechanics)
                 val mechanic = PvpBattleMechanic.entries.first { it.id == id }
@@ -333,7 +333,7 @@ internal class PvpHubTab : MccHubTabContent {
             },
         )
         val feedback = roomFeedback(controller)
-        val settingsBottom = PvpRoomSettingRows.place(host, body, rows)
+        val settingsBottom = jbro.cobblemon.mcc.client.hub.MccHubChipRows.place(host, body, rows)
         val parts = UiLayout.column(gap = MccHubKit.GAP) {
             if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
             weight("spectators")
@@ -390,7 +390,7 @@ internal class PvpHubTab : MccHubTabContent {
         if (occupant == null || profile == null) {
             MccHubKit.placeholder(host, model, if (occupant == null) Component.literal("+") else Component.literal(occupant.name))
         } else {
-            host.add(CobblemonUiRenderSlot.create(model.x, model.y, model.width, model.height, UiRenderSlotSpec(Component.literal(occupant.name)),
+            host.add(CobblemonUiRenderSlot.create(model.x, model.y, model.width, model.height, UiRenderSlotSpec(Component.literal(occupant.name), framed = false),
                 CobblemonUiRenderContent.PlayerProfile(profile, UiModelFraming.FULL_BODY)))
         }
         if (occupant != null) {

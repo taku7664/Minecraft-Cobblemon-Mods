@@ -126,10 +126,10 @@ internal class MccShopTab : MccHubTabContent {
         val keeper = shopkeeper(state.shopkeeper, if (layout.keeper != null) UiModelFraming.FULL_BODY else UiModelFraming.PORTRAIT)
         val viewer = Minecraft.getInstance().let { client -> client.player?.gameProfile ?: client.gameProfile }
         layout.keeper?.let { rect ->
-            host.add(CobblemonUiRenderSlot.create(rect.x, rect.y, rect.width, rect.height, UiRenderSlotSpec(shop("shopkeeper")), keeper))
+            host.add(CobblemonUiRenderSlot.create(rect.x, rect.y, rect.width, rect.height, UiRenderSlotSpec(shop("shopkeeper"), framed = false), keeper))
         }
         layout.viewer?.let { rect ->
-            host.add(CobblemonUiRenderSlot.create(rect.x, rect.y, rect.width, rect.height, UiRenderSlotSpec(Component.literal(viewer.name)),
+            host.add(CobblemonUiRenderSlot.create(rect.x, rect.y, rect.width, rect.height, UiRenderSlotSpec(Component.literal(viewer.name), framed = false),
                 CobblemonUiRenderContent.PlayerProfile(viewer, UiModelFraming.FULL_BODY)))
         }
         addCatalog(host, layout, state, if (layout.keeper == null) keeper else null)

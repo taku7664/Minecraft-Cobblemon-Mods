@@ -33,6 +33,7 @@
   "screen.more_cobblemon_contents.tower.party_entry.available": "선출 가능 | %s | Lv. %s",
   "screen.more_cobblemon_contents.tower.party_entry.order_name": "(%s) %s",
   "screen.more_cobblemon_contents.tower.party_entry.details": "Lv. %s · %s",
+  "screen.more_cobblemon_contents.tower.party_entry.level": "Lv. %s",
   "screen.more_cobblemon_contents.tower.party_entry.narration.available": "미선택, %s, 배틀 레벨 %s, 지닌도구 %s",
   "screen.more_cobblemon_contents.tower.party_entry.narration.selected": "출전 %s번, %s, 배틀 레벨 %s, 지닌도구 %s",
   "screen.more_cobblemon_contents.tower.party_entry.tooltip": "%s\n현재 레벨 %s · 배틀 레벨 %s\n지닌도구: %s",

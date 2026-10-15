@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.client.hub.MccHubContentHost
+import jbro.cobblemon.mcc.client.hub.MccHubChipRows
 import jbro.cobblemon.mcc.client.hub.MccHubKit
 import jbro.cobblemon.mcc.client.hub.MccHubPortraitCards
 import jbro.cobblemon.mcc.client.hub.MccHubScreen
@@ -12,7 +13,6 @@ import jbro.cobblemon.mcc.client.hub.MccHubTabs
 import jbro.cobblemon.mcc.client.hub.MccPokemonPortraits
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerMode
-import jbro.cobblemon.mcc.internal.tower.TOWER_BOSS_INTERVAL
 import jbro.cobblemon.mcc.internal.tower.TOWER_NORMAL_CLEAR_WINS
 import jbro.cobblemon.mcc.internal.tower.network.TowerPlayIntentPayload
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayInteractionPolicy
@@ -86,7 +86,7 @@ internal class TowerHubTab : MccHubTabContent {
                 TowerMode.ENDLESS -> tower("progress", tower("stage.${state.streakStage.serializedId}"), state.currentWinStreak,
                     state.bestWinStreak, state.bpPerWin)
             },
-            tower("phase.${state.phase.name.lowercase()}"), progress = state.winsIntoSet to TOWER_BOSS_INTERVAL)
+            tower("phase.${state.phase.name.lowercase()}"))
         addParty(host, layout, controller)
         addSetup(host, layout, controller)
         addFooter(host, layout, controller)
@@ -110,7 +110,7 @@ internal class TowerHubTab : MccHubTabContent {
             val blocked = pokemon.legendaryClass
             val button = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId),
                 if (order == null) speciesName else tower("party_entry.order_name", order, speciesName),
-                if (blocked) tower("party_entry.blocked") else tower("party_entry.details", pokemon.battleLevel, heldItem), order != null,
+                if (blocked) tower("party_entry.blocked") else tower("party_entry.level", pokemon.battleLevel), order != null,
                 when {
                     blocked -> tower("party_entry.narration.blocked", speciesName)
                     order == null -> tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
@@ -132,29 +132,29 @@ internal class TowerHubTab : MccHubTabContent {
         val body = MccHubKit.card(host, layout.setup, tower("section.status"))
         // The mode, the format and the rules are the run's: they change only while no team is registered.
         val rulesOpen = TowerPlayInteractionPolicy.rulesOpen(state) && !controller.isPending
-        // The settings keep at least one summary line below them; a tall card lets them take title lines.
-        val y = MccHubKit.choices(host, MccHubKit.settingsArea(body), listOf(
+        // Short chips beside one label column, as the PvP room lays its settings out.
+        val y = MccHubChipRows.place(host, body, listOf(
             // A locked Endless still shows, marked, so a challenger learns what clearing Normal opens.
-            MccHubKit.ChoiceRow(tower("section.mode"),
+            MccHubChipRows.Row(tower("section.mode"),
                 TowerMode.entries.map { mode ->
                     val locked = mode == TowerMode.ENDLESS && !state.endlessUnlocked
-                    MccHubKit.Choice(mode.id, tower(if (locked) "mode.${mode.id}.locked" else "mode.${mode.id}"))
+                    MccHubChipRows.Option(mode.id, tower(if (locked) "mode.${mode.id}.locked" else "mode.${mode.id}"))
                 },
-                state.mode.id, rulesOpen, tower("mode.tooltip.${state.mode.id}")) { id ->
+                setOf(state.mode.id), rulesOpen, tower("mode.tooltip.${state.mode.id}")) { id ->
                 if (controller.changeMode(TowerMode.entries.first { it.id == id })) host.rebuild()
             },
-            MccHubKit.ChoiceRow(tower("section.format"),
-                TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
-                state.format.recordId, rulesOpen, tower("format.tooltip", state.format.selectionSize)) { id ->
+            MccHubChipRows.Row(tower("section.format"),
+                TowerBattleFormat.entries.map { MccHubChipRows.Option(it.recordId, tower("format.${it.recordId}")) },
+                setOf(state.format.recordId), rulesOpen, tower("format.tooltip", state.format.selectionSize)) { id ->
                 if (controller.changeFormat(TowerBattleFormat.entries.first { it.recordId == id })) host.rebuild()
             },
-            MccHubKit.ChoiceRow(tower("section.mechanic"),
-                MajorBattleMechanic.entries.map { MccHubKit.Choice(it.id, tower("mechanic.${it.id}")) },
-                state.selectedMechanic?.id, rulesOpen,
+            MccHubChipRows.Row(tower("section.mechanic"),
+                MajorBattleMechanic.entries.map { MccHubChipRows.Option(it.id, tower("mechanic.${it.id}")) },
+                setOfNotNull(state.selectedMechanic?.id), rulesOpen,
                 state.selectedMechanic?.let { tower("mechanic.tooltip", tower("mechanic.${it.id}")) }) { id ->
                 if (controller.changeMechanic(MajorBattleMechanic.entries.first { it.id == id })) host.rebuild()
             },
-        )) + MccHubKit.GAP + 2
+        )) + MccHubKit.GAP + 4
         val feedback = controller.fieldFeedbackKeys.firstOrNull() ?: controller.feedbackKey ?: state.errorKeys.firstOrNull()
         val summary = when {
             controller.isPending -> tower("processing")

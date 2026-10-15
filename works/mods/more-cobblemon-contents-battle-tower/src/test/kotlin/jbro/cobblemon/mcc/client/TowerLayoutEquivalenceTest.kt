@@ -26,7 +26,7 @@ class TowerLayoutEquivalenceTest {
         val footer = UiRect(bounds.x, bounds.bottom - 30, bounds.width, 30)
         val body = UiRect(bounds.x, strip.bottom + 3, bounds.width, (footer.y - 3 - strip.bottom - 3).coerceAtLeast(1))
         val room = body.width - 3
-        val partyWidth = room * 58 / 100
+        val partyWidth = room * 50 / 100
         val party = UiRect(body.x, body.y, partyWidth.coerceAtLeast(1), body.height)
         val setupX = body.x + partyWidth + 3
         val setup = UiRect(setupX, body.y, (body.right - setupX).coerceAtLeast(1), body.height)

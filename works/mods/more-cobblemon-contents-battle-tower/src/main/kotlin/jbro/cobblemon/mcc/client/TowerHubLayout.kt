@@ -19,8 +19,8 @@ internal data class TowerHubLayout(
 
         fun calculate(bounds: UiRect): TowerHubLayout {
             val layout = MccHubKit.tabFrame(UiLayout.row(gap = MccHubKit.GAP) {
-                weight("party", 58, min = 1)
-                weight("setup", 42, min = 1)
+                weight("party", 50, min = 1)
+                weight("setup", 50, min = 1)
             }).solve(bounds)
             return TowerHubLayout(layout["strip"], layout["party"], layout["setup"], layout["footer"])
         }

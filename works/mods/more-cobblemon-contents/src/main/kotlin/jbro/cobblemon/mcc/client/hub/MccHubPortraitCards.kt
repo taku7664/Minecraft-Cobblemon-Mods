@@ -105,8 +105,8 @@ object MccHubPortraitCards {
             val theme = CobblemonUiThemes.registry.snapshot()
             val state = when {
                 !active && !marked -> UiWidgetState.DISABLED
-                isHoveredOrFocused -> UiWidgetState.HOVER
                 marked -> UiWidgetState.SELECTED
+                isHoveredOrFocused -> UiWidgetState.HOVER
                 else -> UiWidgetState.NORMAL
             }
             val style = theme.style(UiButtonVariant.SECONDARY, state)

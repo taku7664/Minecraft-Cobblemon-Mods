@@ -33,6 +33,7 @@
   "screen.more_cobblemon_contents.tower.party_entry.available": "Available | %s | Lv. %s",
   "screen.more_cobblemon_contents.tower.party_entry.order_name": "(%s) %s",
   "screen.more_cobblemon_contents.tower.party_entry.details": "Lv. %s · %s",
+  "screen.more_cobblemon_contents.tower.party_entry.level": "Lv. %s",
   "screen.more_cobblemon_contents.tower.party_entry.narration.available": "Not selected, %s, battle level %s, held item %s",
   "screen.more_cobblemon_contents.tower.party_entry.narration.selected": "Battle position %s, %s, battle level %s, held item %s",
   "screen.more_cobblemon_contents.tower.party_entry.tooltip": "%s\nCurrent level %s · battle level %s\nHeld item: %s",

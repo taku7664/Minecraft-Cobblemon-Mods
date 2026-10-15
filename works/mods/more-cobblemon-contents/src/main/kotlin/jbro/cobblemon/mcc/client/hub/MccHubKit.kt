@@ -588,7 +588,7 @@ object MccHubKit {
                 right -= total * (segment + 2) - 2
                 (0 until total).forEach { index ->
                     val x = right + index * (segment + 2)
-                    val top = rect.y + (rect.height - 1 - 6) / 2
+                    val top = rect.y + (rect.height - 6) / 2
                     graphics.fill(x, top, x + segment, top + 6, theme.colors.border)
                     graphics.fill(x + 1, top + 1, x + segment - 1, top + 5,
                         if (index < done) theme.colors.accentCaution else theme.colors.shell)

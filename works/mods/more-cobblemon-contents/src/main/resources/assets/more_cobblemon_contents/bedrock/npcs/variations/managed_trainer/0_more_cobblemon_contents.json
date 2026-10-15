@@ -8,6 +8,15 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "minecraft:textures/entity/player/wide/steve.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_textures_npcs_shopkeeper_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents:textures/npcs/shopkeeper.png"
   }
  ]
 }

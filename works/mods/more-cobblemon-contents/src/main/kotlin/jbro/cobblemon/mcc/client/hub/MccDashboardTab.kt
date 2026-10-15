@@ -36,7 +36,7 @@ class MccDashboardTab : MccHubTabContent {
         host.add(TrainerName(layout))
         val client = Minecraft.getInstance()
         host.add(CobblemonUiRenderSlot.create(layout.model.x, layout.model.y, layout.model.width, layout.model.height,
-            UiRenderSlotSpec(Component.literal(viewerName())),
+            UiRenderSlotSpec(Component.literal(viewerName()), framed = false),
             CobblemonUiRenderContent.PlayerProfile(client.player?.gameProfile ?: client.gameProfile, UiModelFraming.FULL_BODY)))
         MccHubKit.card(host, layout.records, dashboardText("records"))
         records = host.add(RecordsList(layout, presentation, scrollOffset) { scrollOffset = it })
