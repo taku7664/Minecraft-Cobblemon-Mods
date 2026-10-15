@@ -1,0 +1,15 @@
+{
+  "moveName": "doublekick",
+  "obtainMethods": [
+    {
+      "variant": "cobblemon:default"
+    }
+  ],
+  "recipe": [
+    {
+      "count": 1,
+      "item": "cobblemon:fighting_gem"
+    }
+  ],
+  "type": "fighting"
+}

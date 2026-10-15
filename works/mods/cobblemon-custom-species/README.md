@@ -32,6 +32,30 @@ Cobblemon 포켓몬의 종족값, 특성 후보, 기술 습득 목록을 JSON �
 
 `/customspecies status`는 권한 레벨 2 이상인 관리자만 사용할 수 있습니다.
 
+## 챔피언스·마지막 본가 세대 기술머신 프리셋
+
+`presets/champions-mainline-eggs/species-overrides.json`은 개발 서버의 활성 종 데이터에 맞춘 프리셋입니다.
+
+- 챔피언스 등장 종·폼: 챔피언스에서 사용 가능한 전체 습득 기술을 기술머신 목록에 추가합니다. 게임 데이터에서 비활성화된 기술은 제외합니다.
+- 챔피언스 미등장 종·폼: 마지막으로 등장한 본가 세대의 알기술을 추가합니다. 9세대를 우선하며, 진화 전 포켓몬의 같은 세대 알기술도 포함합니다. 거다이맥스 폼은 원종의 9세대 재등장과 구분해 8세대를 사용합니다. BDSP는 포함하고 ZA·아르세우스 등 외전 데이터는 사용하지 않습니다.
+- 기존 학습 기술, 종족값, 특성은 보존합니다. 폼별 목록은 구분하므로 원종에만 추가한 기술이 목록을 공유하던 다른 폼으로 넘어가지 않습니다.
+- 2026-10-15 기준 추가 TM 학습 항목은 6,267개이며, 설정 대상은 1,097개 종·폼입니다. 변경할 항목이 없는 종·폼은 설정에서 생략합니다.
+
+0.1.1부터 JAR에는 기존 Cobblemon에 없는 TM 제작 데이터 281개가 포함됩니다. 새 TM은 기본 해금이며 해당 타입 주얼 1개를 재료로 사용합니다. 기존 TM 제작법은 변경하지 않습니다. 기술명과 타입 표시는 Cobblemon의 기존 번역을 사용합니다.
+
+현재 설정이 비어 있는 서버는 프리셋을 `config/cobblemon-custom-species/species-overrides.json`으로 복사하고 `/reload`로 적용합니다. 기존 사용자 설정이 있다면 종·폼별 작업을 먼저 병합해야 합니다. 프리셋을 그대로 덮어쓰면 기존 사용자 설정이 사라집니다. 설정을 비우면 학습 목록 변경은 해제되지만 JAR에 포함된 TM 제작 데이터는 유지됩니다.
+
+원본 자료는 [Project Pokémon의 챔피언스 추출 데이터](https://github.com/projectpokemon/champout)와 [Pokémon Showdown의 본가 습득 데이터](https://github.com/smogon/pokemon-showdown)입니다. `sources.json`은 원본 커밋과 서버 입력 해시, `coverage.json`은 전체 1,445개 종·폼의 기준 세대와 추가 항목을 기록합니다. 비비용 무늬처럼 서버에서 별도 폼으로 등록하지 않는 외형은, 챔피언스의 기술 목록이 원종과 같음을 확인해 같은 대상으로 처리합니다.
+
+다른 서버 구성이나 새 자료에 맞춰 다시 생성하려면 원본 저장소를 `sources.json`에 기록된 커밋으로 준비하고 아래 명령을 사용합니다. 생성기는 서버 설정을 직접 수정하지 않습니다. 원본 JSON과 텍스트 목록, 별도 Showdown 챔피언스 목록의 불일치나 미등록 기술·대상이 있으면 생성을 중단합니다.
+
+```powershell
+python -B tools/generate_tm_preset.py --server <서버_루트> --champions-repo <champout_체크아웃> --showdown-repo <pokemon-showdown_체크아웃> --output <새_출력_폴더>
+python -B -m unittest discover -s tools -p 'test_*.py'
+```
+
+출력의 `species-overrides.json`은 설정 프리셋, `tms/*.json`은 JAR에 포함할 추가 제작 데이터입니다. 재생성할 때는 빈 출력 폴더를 사용하고, TM 파일 목록을 검토한 뒤 `src/main/resources/data/cobblemon/tms/`에 반영합니다.
+
 ## 설정 예시
 
 ```json
