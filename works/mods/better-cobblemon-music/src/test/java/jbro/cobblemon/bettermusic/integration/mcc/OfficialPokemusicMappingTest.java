@@ -97,7 +97,7 @@ final class OfficialPokemusicMappingTest {
             sha256(pack.resolve("assets/better_cobblemon_music/sounds/battle/hit/super_effective.ogg")));
         assertScaledImport(pack.resolve("assets/better_cobblemon_music/sounds/battle/low_hp/alert.ogg"),
             "battle/low_hp/alert.ogg", "b2628913d17ee549a3dd8d3b75034892d4d5746bef419d9e9f91a0e93b1494ad");
-        assertEquals(90, compiled.trackEvents().size());
+        assertEquals(97, compiled.trackEvents().size());
     }
 
     @Test

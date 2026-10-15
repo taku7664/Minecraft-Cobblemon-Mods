@@ -105,7 +105,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(90, eventTitles.size());
+        assertEquals(97, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -179,6 +179,7 @@ final class OfficialMusicLineupTest {
         var tracks = report.getAsJsonArray("tracks");
         assertEquals(89, tracks.size());
         Set<String> expected = trackEvents.keySet().stream()
+            .filter(id -> !id.contains("/galar_"))
             .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
             .collect(Collectors.toSet());
         expected.remove("music/battle/trainer/sinnoh_trainer_battle_facility.ogg");
@@ -222,6 +223,7 @@ final class OfficialMusicLineupTest {
         Set<String> actual;
         try (var files = Files.walk(battleDirectory)) {
             actual = files.filter(path -> path.toString().endsWith(".ogg"))
+                .filter(path -> !path.getFileName().toString().startsWith("galar_"))
                 .map(path -> battleDirectory.relativize(path).toString().replace('\\', '/'))
                 .collect(Collectors.toSet());
         }
@@ -252,6 +254,7 @@ final class OfficialMusicLineupTest {
         var tracks = current.getAsJsonArray("tracks");
         assertEquals(61, tracks.size());
         Set<String> expected = trackEvents.keySet().stream()
+            .filter(id -> !id.contains("/galar_"))
             .filter(id -> id.startsWith("better_cobblemon_music:battle/"))
             .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
             .collect(Collectors.toSet());

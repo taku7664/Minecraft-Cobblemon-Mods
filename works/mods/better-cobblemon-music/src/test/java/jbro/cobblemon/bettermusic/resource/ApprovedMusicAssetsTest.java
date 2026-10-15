@@ -26,7 +26,7 @@ final class ApprovedMusicAssetsTest {
         JsonObject playlists = catalog.getAsJsonObject("playlists");
         JsonObject layout = read(module.resolve("resource-pack/catalog-layout.json"));
         Set<String> approved = new HashSet<>(layout.getAsJsonObject("trackTitles").keySet());
-        assertEquals(90, approved.size());
+        assertEquals(97, approved.size());
         assertEquals(approved, catalog.getAsJsonObject("tracks").keySet(), "Unrequested BGM must not be packaged");
 
         Set<String> mapped = new HashSet<>();
@@ -40,7 +40,7 @@ final class ApprovedMusicAssetsTest {
             expectedAudio.add("assets/better_cobblemon_music/sounds/music/"
                 + physicalId.substring("better_cobblemon_music:".length()) + ".ogg");
         });
-        assertEquals(88, expectedAudio.size(), "Track aliases must reuse existing OGG files");
+        assertEquals(95, expectedAudio.size(), "Track aliases must reuse existing OGG files");
         for (String effect : Set.of("hit/normal", "hit/super_effective", "hit/not_very_effective", "low_hp/alert")) {
             expectedAudio.add("assets/better_cobblemon_music/sounds/battle/" + effect + ".ogg");
         }
@@ -67,7 +67,7 @@ final class ApprovedMusicAssetsTest {
                 assertEquals(false, sound.has("volume"), entry.getKey());
             }
         }
-        assertEquals(63, attenuated, "Only the official battle BGMs should be attenuated");
+        assertEquals(70, attenuated, "Only the official battle BGMs should be attenuated");
     }
 
     private static JsonObject read(Path file) throws Exception {
