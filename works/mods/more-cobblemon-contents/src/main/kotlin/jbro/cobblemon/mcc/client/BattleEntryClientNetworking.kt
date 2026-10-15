@@ -68,7 +68,7 @@ object BattleEntryClientNetworking {
     private fun playVersus(payload: BattleEntryHoldPayload, then: Runnable): Boolean {
         val intro = versus?.takeIf { it.battleId == payload.battleId } ?: return false
         versus = null
-        val tier = VersusTier.fromId(intro.tier) ?: return false
+        val tier = VersusTier.fromId(if (intro.tier == "tournament") "elite_four" else intro.tier) ?: return false
         val client = Minecraft.getInstance()
         val profile = client.player?.gameProfile ?: return false
         val framing = UiModelFraming.FULL_BODY
@@ -76,7 +76,8 @@ object BattleEntryClientNetworking {
             CobblemonUiRenderContent.PlayerProfile(profile, framing))
         val skin = intro.skin?.let { CobblemonUiRenderContent.PlayerSkin(UiIcon(it.namespace, it.path), intro.slim, framing) }
             ?: CobblemonUiRenderContent.Empty
-        val opponent = VersusSide(Component.translatable(intro.nameKey), Component.translatable("cobblemon_ui.versus.${tier.id}"), skin)
+        val title = if (intro.tier == "tournament") "screen.more_cobblemon_contents.versus.tournament" else "cobblemon_ui.versus.${tier.id}"
+        val opponent = VersusSide(Component.translatable(intro.nameKey), Component.translatable(title), skin)
         // The opponent's colour is their lead's type, as the trainer transition colours itself.
         val accent = payload.species?.let(PokemonSpecies::getByIdentifier)?.let { UIUtils.getTypeColor(it.primaryType) }
         return BattleVersusIntro.play(tier, me, opponent, accent, intro.hard, then)

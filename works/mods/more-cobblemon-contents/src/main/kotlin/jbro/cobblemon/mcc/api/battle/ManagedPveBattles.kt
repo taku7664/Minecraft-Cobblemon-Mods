@@ -69,6 +69,12 @@ object ManagedPveBattles {
     }
 
     fun start(player: ServerPlayer, request: Request, complete: (Outcome) -> Unit): UUID? {
+        return start(player, request, null, complete)
+    }
+
+    /** Caps only materialized player copies. Keeps Request and the original start ABI intact for other addons. */
+    fun start(player: ServerPlayer, request: Request, playerLevelCap: Int?, complete: (Outcome) -> Unit): UUID? {
+        require(playerLevelCap == null || playerLevelCap in 1..100)
         check(player.server.isSameThread)
         require(ManagedBattleContentIds.isValid(request.contentId) && ManagedBattleContentIds.isValid(request.trainerId))
         require(request.trainerNameKey.isNotBlank() && request.trainerNameKey.length <= 256)
@@ -95,7 +101,13 @@ object ManagedPveBattles {
         )
         val profile = BattleTrainerProfile.balanced(request.skill)
         val playerTeam = request.lockedParty.map { raw ->
-            BattlePokemon.Companion.safeCopyOf(Pokemon().loadFromJSON(player.registryAccess(), JsonParser.parseString(raw).asJsonObject))
+            val snapshot = Pokemon().loadFromJSON(player.registryAccess(), JsonParser.parseString(raw).asJsonObject)
+            val level = ManagedPlayerLevel.forBattle(snapshot.level, playerLevelCap)
+            if (snapshot.level != level) {
+                snapshot.level = level
+                snapshot.heal()
+            }
+            BattlePokemon.Companion.safeCopyOf(snapshot)
                 .also { it.effectedPokemon.heal() }
         }
         // Built and copied above the server's maximum level if the content asks for it; nothing else is built in here.
