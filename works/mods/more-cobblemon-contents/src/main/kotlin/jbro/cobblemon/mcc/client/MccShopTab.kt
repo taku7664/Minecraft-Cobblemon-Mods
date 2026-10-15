@@ -119,7 +119,7 @@ internal class MccShopTab : MccHubTabContent {
         catalog = null
         val state = MccShopClient.state
         if (state == null) {
-            MccHubKit.placeholder(host, bounds, shop("loading"))
+            MccHubKit.placeholder(host, bounds, shop("loading"), onCard = false)
             return
         }
         val layout = MccShopLayout.calculate(bounds)

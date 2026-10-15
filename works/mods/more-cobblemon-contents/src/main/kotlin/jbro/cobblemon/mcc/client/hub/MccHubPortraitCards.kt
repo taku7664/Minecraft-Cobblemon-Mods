@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.client.hub
 
+import jbro.cobblemon.uikit.client.UiPixelBox
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiCrossAlignment
@@ -111,7 +112,7 @@ object MccHubPortraitCards {
             val style = theme.style(UiButtonVariant.SECONDARY, state)
             UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
             val frame = cell.portrait
-            graphics.fill(frame.x, frame.y, frame.right, frame.bottom, theme.colors.shell)
+            UiPixelBox.draw(graphics, theme, frame.x, frame.y, frame.width, frame.height, theme.colors.shell, theme.colors.shell)
             CobblemonUiRenderSlot.drawContent(graphics, frame, animated(portrait, isHoveredOrFocused), partialTick)
             val font = Minecraft.getInstance().font
             val text = cell.text
@@ -131,8 +132,7 @@ object MccHubPortraitCards {
             UiSurfaceRenderer.drawSelection(graphics, x, y, width, height, style.surface.shape, indicator)
             if (blocked) {
                 val danger = theme.colors.accentDanger and 0xFFFFFF
-                graphics.fill(x, y, x + width, y + height, BLOCKED_WASH_ALPHA or danger)
-                graphics.renderOutline(x, y, width, height, OPAQUE or danger)
+                UiPixelBox.draw(graphics, theme, x, y, width, height, OPAQUE or danger, BLOCKED_WASH_ALPHA or danger)
             }
         }
 

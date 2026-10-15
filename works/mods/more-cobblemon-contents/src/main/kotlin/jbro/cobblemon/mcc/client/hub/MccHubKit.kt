@@ -13,6 +13,7 @@ import jbro.cobblemon.uikit.UiLayoutResult
 import jbro.cobblemon.uikit.UiLength
 import jbro.cobblemon.uikit.UiListItemSpec
 import jbro.cobblemon.uikit.UiOverlayTone
+import jbro.cobblemon.uikit.UiPanelBand
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
@@ -30,6 +31,9 @@ import jbro.cobblemon.uikit.client.UiListRowContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiTextRenderer
+import jbro.cobblemon.uikit.client.UiPixelBox
+import jbro.cobblemon.uikit.client.UiHoverWiggle
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -70,6 +74,9 @@ object MccHubKit {
 
         /** Supporting information: a neutral title band. */
         INFO,
+
+        /** Something gained: rewards and unlocks. */
+        GOOD,
     }
 
     /** One footer control. [minWidth] widens a short label, typically the tab's primary action. */
@@ -79,6 +86,8 @@ object MccHubKit {
         val enabled: Boolean = true,
         val tooltip: Component? = null,
         val minWidth: Int = 0,
+        /** Shown picked, for an action that toggles a setting. */
+        val selected: Boolean = false,
         val press: () -> Unit,
     )
 
@@ -93,7 +102,8 @@ object MccHubKit {
         icon: CobblemonUiRenderContent? = null,
     ): UiRect {
         host.add(CobblemonUiPanel.create(rect.x, rect.y, rect.width, rect.height,
-            UiPanelSpec(title = title, tone = UiPanelTone.RAISED, featured = tone == CardTone.FEATURE), icon))
+            UiPanelSpec(title = title, tone = UiPanelTone.RAISED, featured = tone == CardTone.FEATURE,
+                band = if (tone == CardTone.GOOD) UiPanelBand.GOOD else null), icon))
         return cardBody(rect)
     }
 
@@ -440,8 +450,8 @@ object MccHubKit {
     }
 
     /** A quiet centered line for a tab still waiting for its server state, or with nothing to show. */
-    fun placeholder(host: MccHubContentHost, rect: UiRect, text: Component) {
-        host.add(Placeholder(rect, text))
+    fun placeholder(host: MccHubContentHost, rect: UiRect, text: Component, onCard: Boolean = true) {
+        host.add(Placeholder(rect, text, onCard))
     }
 
     /**
@@ -454,7 +464,7 @@ object MccHubKit {
         client.setScreen(CobblemonUiDialogScreen(parent,
             UiDialogSpec(title, body, confirmLabel, backLabel, UiOverlayTone.DANGER),
             confirm = confirm,
-            themeOverride = CobblemonUiSharedTheme.snapshot()))
+            themeOverride = CobblemonUiSharedTheme.contentSnapshot()))
     }
 
     /** A titled paragraph of a [document]. */
@@ -477,13 +487,16 @@ object MccHubKit {
         offsetChanged: (Int) -> Unit,
     ): Scrollable = host.add(Document(rect, sections, offset, offsetChanged))
 
-    /** Wrapped text inside [rect]; lines that do not fit are dropped from the end. */
+    /** Wrapped text inside [rect]; when lines do not fit, the last one shown ends in an ellipsis and the rest drop. */
     fun text(host: MccHubContentHost, rect: UiRect, text: Component, color: (UiThemeSnapshot) -> Int = ::panelText) {
         host.add(TextBlock(rect, text, color))
     }
 
     /** The text colour for a raised card body. */
     fun panelText(theme: UiThemeSnapshot): Int = theme.surfaces.panelAltText ?: theme.colors.textPrimary
+
+    /** Quieter text on a card body: labels and hints. The chrome's dim text is for dark surfaces. */
+    fun panelDim(theme: UiThemeSnapshot): Int = theme.surfaces.panelTextDim ?: theme.colors.textDim
 
     /** [text] cut to [width] pixels, for labels whose room is decided by the layout. */
     fun fitted(text: Component, width: Int): Component {
@@ -537,7 +550,8 @@ object MccHubKit {
             UiWidthPolicy.Content
         }
         val button = CobblemonUiButton.create(x, y, availableWidth,
-            UiButtonSpec(action.label, variant = action.variant, size = UiControlSize.MEDIUM, width = width), press = action.press)
+            UiButtonSpec(action.label, variant = action.variant, size = UiControlSize.MEDIUM, width = width, selected = action.selected),
+            press = action.press)
         button.active = action.enabled
         action.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
         return button
@@ -554,9 +568,10 @@ object MccHubKit {
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
             val font = Minecraft.getInstance().font
-            graphics.fill(rect.x, rect.y, rect.right, rect.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
-            graphics.fill(rect.x, rect.bottom - 1, rect.right, rect.bottom, theme.colors.border)
-            val textY = rect.y + (rect.height - 1 - font.lineHeight) / 2 + 1
+            // Framed and rounded as the tab bar's page is, so the strip reads as the same kind of surface.
+            UiPixelBox.draw(graphics, theme, rect.x, rect.y, rect.width, rect.height,
+                theme.pixelDecorations?.titleBarShade ?: theme.colors.border, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
+            fun textY(text: Component) = UiTextRenderer.centeredY(font, text, rect.y, rect.height)
             var left = rect.x + 6
             if (icon != null) {
                 graphics.renderItem(icon, rect.x + 3, rect.y + (rect.height - 16) / 2)
@@ -565,7 +580,7 @@ object MccHubKit {
             var right = rect.right - 6
             end?.let {
                 right -= font.width(it)
-                graphics.drawString(font, it, right, textY, theme.colors.textPrimary, false)
+                graphics.drawString(font, it, right, textY(it), theme.colors.textPrimary, false)
                 right -= 6
             }
             progress?.let { (done, total) ->
@@ -580,7 +595,7 @@ object MccHubKit {
                 }
                 right -= 6
             }
-            drawLine(graphics, start, left, textY, right - left, theme.colors.textPrimary)
+            drawLine(graphics, start, left, textY(start), right - left, theme.colors.textPrimary)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
             output.add(NarratedElementType.TITLE, start)
@@ -593,7 +608,7 @@ object MccHubKit {
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
             val font = Minecraft.getInstance().font
-            val y = if (rect.height <= font.lineHeight + 2) rect.y else rect.y + (rect.height - font.lineHeight) / 2 + 1
+            val y = if (rect.height <= font.lineHeight + 2) rect.y else UiTextRenderer.centeredY(font, label, rect.y, rect.height)
             drawLine(graphics, label, rect.x, y, rect.width, panelText(theme))
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -611,8 +626,22 @@ object MccHubKit {
             val font = Minecraft.getInstance().font
             val lineHeight = font.lineHeight + 1
             val colour = color(CobblemonUiThemes.registry.snapshot())
-            font.split(text, rect.width.coerceAtLeast(1)).take((rect.height / lineHeight).coerceAtLeast(1))
-                .forEachIndexed { index, line -> graphics.drawString(font, line, rect.x, rect.y + index * lineHeight, colour, false) }
+            val width = rect.width.coerceAtLeast(1)
+            val lines = font.split(text, width)
+            val room = (rect.height / lineHeight).coerceAtLeast(1)
+            lines.take(room).forEachIndexed { index, line ->
+                val y = rect.y + index * lineHeight
+                if (index == room - 1 && lines.size > room) {
+                    // The last line that fits takes what is left of the text, cut with an ellipsis.
+                    val rest = font.splitter.splitLines(text, width, net.minecraft.network.chat.Style.EMPTY)
+                        .drop(room - 1).joinToString(" ") { it.string.trim() }
+                    graphics.drawString(font, fitted(Component.literal(rest), width), rect.x, y, colour, false)
+                } else {
+                    graphics.drawString(font, line, rect.x, y, colour, false)
+                }
+            }
+            // Cut text keeps its whole wording under the mouse.
+            if (lines.size > room && tooltip == null) setTooltip(Tooltip.create(text))
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
             output.add(NarratedElementType.TITLE, text)
@@ -685,13 +714,13 @@ object MccHubKit {
     }
 
     /** One [entry] as a clickable list row over [rect], drawn by the UI kit in the theme's row style. */
-    fun row(rect: UiRect, entry: ListEntry): AbstractWidget = Row(rect, entry).also { row ->
+    fun row(rect: UiRect, entry: ListEntry): AbstractWidget = Row(rect, entry, UiHoverWiggle()).also { row ->
         row.active = entry.enabled
         entry.tooltip?.let { row.setTooltip(Tooltip.create(it)) }
     }
 
     /** A list row with a UI kit icon and trailing actions, drawn by the UI kit's list rows. */
-    private class Row(private val rect: UiRect, private val entry: ListEntry) :
+    private class Row(private val rect: UiRect, private val entry: ListEntry, private val wiggle: UiHoverWiggle? = null) :
         AbstractButton(rect.x, rect.y, rect.width, rect.height, entry.title) {
         private val actionRects = CobblemonUiListRows.actionBounds(rect, entry.actions.size)
 
@@ -711,7 +740,7 @@ object MccHubKit {
         override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) =
-            CobblemonUiListRows.draw(graphics, rect, entry.content(), active, isHovered, mouseX, mouseY, partialTick)
+            CobblemonUiListRows.draw(graphics, rect, entry.content(), active, isHovered, mouseX, mouseY, partialTick, wiggle)
     }
 
     /**
@@ -784,14 +813,15 @@ object MccHubKit {
             val font = Minecraft.getInstance().font
             val line = fitted(text, rect.width)
             graphics.drawString(font, line, rect.x + (rect.width - font.width(line)) / 2, rect.y + (rect.height - font.lineHeight) / 2 + 1,
-                CobblemonUiThemes.registry.snapshot().colors.textDim, false)
+                panelDim(CobblemonUiThemes.registry.snapshot()), false)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
             output.add(NarratedElementType.TITLE, text)
         }
     }
 
-    private class Placeholder(private val rect: UiRect, private val text: Component) :
+    /** [onCard]: on a card body's light fill, which takes the panel's dim text; off it, on the dark shell. */
+    private class Placeholder(private val rect: UiRect, private val text: Component, private val onCard: Boolean) :
         AbstractWidget(rect.x, rect.y, rect.width, rect.height, text) {
         init { active = false }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
@@ -801,7 +831,7 @@ object MccHubKit {
             val top = rect.y + (rect.height - lines.size * (font.lineHeight + 1)) / 2
             lines.forEachIndexed { index, line ->
                 graphics.drawString(font, line, rect.x + (rect.width - font.width(line)) / 2,
-                    top + index * (font.lineHeight + 1), theme.colors.textDim, false)
+                    top + index * (font.lineHeight + 1), if (onCard) panelDim(theme) else theme.colors.textSecondary, false)
             }
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {

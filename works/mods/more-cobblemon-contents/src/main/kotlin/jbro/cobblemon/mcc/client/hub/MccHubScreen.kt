@@ -15,12 +15,18 @@ import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
+import jbro.cobblemon.uikit.UiShape
+import jbro.cobblemon.uikit.UiFill
+import jbro.cobblemon.uikit.UiBorder
+import jbro.cobblemon.uikit.UiSurfaceStyle
+import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.client.gui.components.Renderable
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
@@ -37,6 +43,9 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     private val contents = HashMap<String, MccHubTabContent>()
     private var activeContent: MccHubTabContent? = null
     private var shownContent: MccHubTabContent? = null
+    /** Set while the active tab builds: what it adds draws in the content theme, the hub's own chrome in the shared one. */
+    private var buildingContent = false
+    private val contentDrawers = HashMap<AbstractWidget, Renderable>()
 
     override fun isPauseScreen() = false
 
@@ -47,10 +56,26 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         rebuild()
     }
 
-    override fun <T : AbstractWidget> add(widget: T): T = addRenderableWidget(widget)
+    override fun <T : AbstractWidget> add(widget: T): T = if (buildingContent) addInContentTheme(widget) else addRenderableWidget(widget)
+
+    /** Adds [widget] drawn in the content theme, as the active tab's widgets are. */
+    private fun <T : AbstractWidget> addInContentTheme(widget: T): T {
+        addWidget(widget)
+        lateinit var drawer: Renderable
+        drawer = Renderable { graphics, mouseX, mouseY, partialTick ->
+            // A widget taken off again (a tab that failed to lay out) leaves its drawer behind, drawing nothing.
+            if (contentDrawers[widget] !== drawer) return@Renderable
+            val restore = CobblemonUiSharedTheme.installContent()
+            try { widget.render(graphics, mouseX, mouseY, partialTick) } finally { restore() }
+        }
+        contentDrawers[widget] = drawer
+        addRenderableOnly(drawer)
+        return widget
+    }
 
     override fun rebuild() {
         clearWidgets()
+        contentDrawers.clear()
         if (!MccHubLayout.fits(width, height)) {
             buildTooSmall()
             return
@@ -64,7 +89,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         addRenderableWidget(HubHeader(layout, badges.minOfOrNull { it.x - 6 } ?: layout.balance.x))
         // After the header, whose fill would otherwise cover their labels.
         badges.forEach(::addRenderableWidget)
-        addRenderableWidget(CobblemonUiPanel.create(layout.rail.x, layout.rail.y, layout.rail.width, layout.rail.height,
+        // The rail's panel is framed as the content's cards are; its tab rows keep the shared theme's look.
+        addInContentTheme(CobblemonUiPanel.create(layout.rail.x, layout.rail.y, layout.rail.width, layout.rail.height,
             UiPanelSpec(tone = UiPanelTone.PANEL)))
         addTabs(layout)
         addRenderableWidget(
@@ -91,12 +117,21 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     private fun buildContent(tab: MccHubTab?, bounds: UiRect) {
         val content = activeContent ?: return
         val before = children().toSet()
+        // Layout reads the content theme's control metrics, as drawing does.
+        val restore = CobblemonUiSharedTheme.installContent()
+        buildingContent = true
         try {
             content.build(this, bounds)
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.error("Hub tab {} failed to lay out in {}x{}", tab?.id, bounds.width, bounds.height, failure)
-            children().filter { it !in before }.forEach(::removeWidget)
-            MccHubKit.placeholder(this, bounds, hubText("tab_failed"))
+            children().filter { it !in before }.forEach { added ->
+                removeWidget(added)
+                contentDrawers.remove(added)
+            }
+            MccHubKit.placeholder(this, bounds, hubText("tab_failed"), onCard = false)
+        } finally {
+            buildingContent = false
+            restore()
         }
     }
 
@@ -110,7 +145,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         val closeHeight = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.SMALL).height
         val closeWidth = (shell.width - 16).coerceIn(1, 80)
         val closeY = shell.bottom - closeHeight - 6
-        MccHubKit.placeholder(this, UiRect(shell.x, shell.y, shell.width, (closeY - shell.y).coerceAtLeast(1)), hubText("too_small"))
+        MccHubKit.placeholder(this, UiRect(shell.x, shell.y, shell.width, (closeY - shell.y).coerceAtLeast(1)), hubText("too_small"), onCard = false)
         if (closeY > shell.y) {
             addRenderableWidget(CobblemonUiButton.create(shell.x + (shell.width - closeWidth) / 2, closeY, closeWidth,
                 UiButtonSpec(hubText("close"), variant = UiButtonVariant.SECONDARY, size = UiControlSize.SMALL,
@@ -213,7 +248,11 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
             val theme = CobblemonUiThemes.registry.snapshot()
             val font = Minecraft.getInstance().font
             val header = layout.header
-            graphics.fill(header.x, header.y, header.right, header.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
+            // Rounded at the top only, following the shell's corners; square where the trim rule closes it below.
+            val fill = theme.pixelDecorations?.titleBar ?: theme.colors.panel
+            UiSurfaceRenderer.draw(graphics, header.x, header.y, header.width, header.height,
+                UiSurfaceStyle(UiShape.RoundedRectangle(HEADER_RADIUS), UiFill.Solid(fill), UiBorder.None))
+            graphics.fill(header.x, header.bottom - HEADER_RADIUS - 2, header.right, header.bottom, fill)
             graphics.fill(header.x, header.bottom - 2, header.right, header.bottom, theme.colors.accentSecondary)
 
             val brand = hubText("brand")
@@ -244,6 +283,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     }
 
     companion object {
+        private const val HEADER_RADIUS = 3
         private const val BADGE_ICON = 16
         private const val BADGE_ICON_GAP = 3
         private const val BADGE_GAP = 8

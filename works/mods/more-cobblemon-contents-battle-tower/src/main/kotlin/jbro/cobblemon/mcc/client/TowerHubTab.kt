@@ -74,7 +74,7 @@ internal class TowerHubTab : MccHubTabContent {
     override fun build(host: MccHubContentHost, bounds: UiRect) {
         val controller = TowerHubClient.controller
         if (controller == null) {
-            MccHubKit.placeholder(host, bounds, tower("processing"))
+            MccHubKit.placeholder(host, bounds, tower("processing"), onCard = false)
             return
         }
         val state = controller.state
@@ -181,7 +181,7 @@ internal class TowerHubTab : MccHubTabContent {
                 if (index > 0) text.append(Component.literal("\n"))
                 text.append(tower(key))
             }
-            MccHubKit.text(host, rules, text) { theme -> theme.colors.textDim }
+            MccHubKit.text(host, rules, text) { theme -> MccHubKit.panelDim(theme) }
         }
     }
 

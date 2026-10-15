@@ -129,7 +129,7 @@ class MccDashboardTab : MccHubTabContent {
             cells.forEachIndexed { index, (label, value) ->
                 val left = summary.x + index * cellWidth
                 if (index > 0) graphics.fill(left - 1, summary.y + 2, left, summary.bottom - 2, theme.colors.border)
-                drawFitted(graphics, label, left + 4, summary.y + 1, cellWidth - 8, theme.colors.textDim)
+                drawFitted(graphics, label, left + 4, summary.y + 1, cellWidth - 8, panelDim(theme))
                 drawFitted(graphics, value, left + 4, summary.y + 12, cellWidth - 8, panelText(theme))
             }
             graphics.fill(summary.x, summary.bottom + 1, summary.right, summary.bottom + 2, theme.colors.border)
@@ -142,7 +142,7 @@ class MccDashboardTab : MccHubTabContent {
             val top = rows.y + (rows.height - lines.size * (font.lineHeight + 1)) / 2
             lines.forEachIndexed { index, line ->
                 graphics.drawString(font, line, rows.x + (rows.width - font.width(line)) / 2,
-                    top + index * (font.lineHeight + 1), theme.colors.textDim, false)
+                    top + index * (font.lineHeight + 1), panelDim(theme), false)
             }
         }
 
@@ -150,7 +150,7 @@ class MccDashboardTab : MccHubTabContent {
         private fun drawCard(graphics: GuiGraphics, theme: UiThemeSnapshot, card: MccDashboardCard, bounds: UiRect, partialTick: Float) {
             val font = Minecraft.getInstance().font
             val text = panelText(theme)
-            val dim = theme.colors.textDim
+            val dim = panelDim(theme)
             graphics.fill(bounds.x, bounds.y, bounds.right, bounds.bottom, theme.colors.panelAlt)
             graphics.fill(bounds.x, bounds.y, bounds.x + 2, bounds.bottom, theme.colors.accentPrimary)
             var y = bounds.y
@@ -201,6 +201,8 @@ class MccDashboardTab : MccHubTabContent {
         fun number(value: Long): Component = Component.literal(NumberFormat.getIntegerInstance().format(value))
 
         fun panelText(theme: UiThemeSnapshot): Int = MccHubKit.panelText(theme)
+
+        fun panelDim(theme: UiThemeSnapshot): Int = MccHubKit.panelDim(theme)
     }
 }
 

@@ -24,6 +24,7 @@ object MoreCobblemonContentsClient : ClientModInitializer {
             order = 10, kind = MccHubTabKind.Embedded(::MccShopTab), accessContentId = null,
             icon = MccHubTabs.itemIcon("cobblemon:relic_coin")))
         MccHubCaptureHarness.installFromEnvironment()
+        jbro.cobblemon.mcc.client.hub.MccHubDriveHarness.installFromEnvironment()
         ShopPlayClientNetworking.register()
         ManagedBattleMechanicVisibilityClient.register()
         ManagedBattleContentClientNetworking.register()

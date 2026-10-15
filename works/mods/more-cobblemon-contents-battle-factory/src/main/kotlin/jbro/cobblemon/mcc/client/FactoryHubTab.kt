@@ -80,7 +80,7 @@ internal class FactoryHubTab : MccHubTabContent {
     override fun build(host: MccHubContentHost, bounds: UiRect) {
         val controller = FactoryHubClient.controller
         if (controller == null) {
-            MccHubKit.placeholder(host, bounds, factory("processing"))
+            MccHubKit.placeholder(host, bounds, factory("processing"), onCard = false)
             return
         }
         val state = controller.state
@@ -104,13 +104,9 @@ internal class FactoryHubTab : MccHubTabContent {
             if (index > 0) steps.append(Component.literal("\n"))
             steps.append(Component.literal("${index + 1}. ")).append(factory(key, controller.chosenFormat.selectionSize))
         }
-        // A run is singles at open level (Lv. 100), so nothing is chosen before it: the card states the rule and walks through the
-        // run ahead, only as tall as that, centered in a taller body.
-        val inner = MccHubKit.cardBody(layout.body)
-        val stepsHeight = Minecraft.getInstance().font.split(steps, inner.width).size * 10
-        val wanted = MccHubKit.CARD_CHROME_HEIGHT + 10 + 8 + stepsHeight
-        val card = UiLayout.align(UiLayout.leaf("card"), height = wanted, fit = true).solve(layout.body)["card"]
-        val body = MccHubKit.card(host, card, factory("section.rules"), MccHubKit.CardTone.FEATURE)
+        // A run is singles at open level (Lv. 100), so nothing is chosen before it: the card fills the body as every
+        // other phase's does, states the rule and walks through the run ahead.
+        val body = MccHubKit.card(host, layout.body, factory("section.rules"), MccHubKit.CardTone.FEATURE)
         val parts = UiLayout.column {
             fixed(10, "instruction")
             space(8)
@@ -204,7 +200,7 @@ internal class FactoryHubTab : MccHubTabContent {
         if (rect.height < 9) return
         val feedback = feedback(controller)
         MccHubKit.text(host, rect, feedback ?: instructionText(controller.state)) { theme ->
-            if (feedback != null && !controller.isPending) theme.colors.accentDanger else theme.colors.textDim
+            if (feedback != null && !controller.isPending) theme.colors.accentDanger else MccHubKit.panelDim(theme)
         }
     }
 
