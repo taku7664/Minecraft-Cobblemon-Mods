@@ -380,7 +380,9 @@ internal object LocalMatchupScoreCalculator {
                     PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side)
                 } ?: return@mapNotNull null
                 val accuracy = LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
-                val moveId = PublicIds.canonical(candidate.moveId ?: action.actionId)
+                // A Max Move is scored under the move it came from: the battle's candidates keep that id (the game's adapter
+                // hands a Dynamax move over as the base move with the Max Move's details), and every reader matches by it.
+                val moveId = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(original) ?: PublicIds.canonical(candidate.moveId ?: action.actionId)
                 val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
                 ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile), original)
             }

@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.betterai.engine.Js
 import jbro.cobblemon.mcc.betterai.engine.sim.BattleActions
 import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects
@@ -69,19 +70,33 @@ internal object LocalDynamax {
         val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return action
         val base = dex.move(PublicIds.canonical(action.moveId ?: return action)) ?: return action
         if (Js.truthy(base.data("isMax"))) return action
-        val power = (base.data("maxMove") as? Map<*, *>)?.get("basePower")?.let { Js.num(it) }?.takeIf { it > 0.0 } ?: return action
         val gMax = if (!gigantamax(user)) null else LocalPublicSpeciesData.species(user)?.let { BattleActions.GMAX_MAP[Js.toID(it.name)] }
             ?.let(dex::move)?.takeIf { it.type == base.type }
         val maxId = gMax?.id ?: BattleActions.MAX_MOVES[base.type]?.let(Js::toID) ?: return action
-        val effects = BattleShowdownMoveEffects.resolve(maxId) ?: return action
-        // A G-Max Move's own power in its data is a placeholder (10) unless it is one Showdown keeps fixed.
-        val gMaxPower = gMax?.let { Js.num(it.data("basePower") ?: 0) }?.takeIf { it > G_MAX_PLACEHOLDER_POWER }
+        val maxDetails = maxMoveDetails(base.id, details, maxId) ?: return action
         return BattleActionCandidate(
             actionId = "${action.actionId}:max", kind = action.kind, actorSlot = action.actorSlot, moveSlot = action.moveSlot,
             moveId = maxId, targets = action.targets, mechanic = action.mechanic,
-            moveDetails = details.copy(power = gMaxPower ?: power, accuracy = 100.0, effects = effects),
+            moveDetails = maxDetails,
             tags = action.tags + "$BASE_MOVE_TAG${PublicIds.canonical(action.moveId)}",
         )
+    }
+
+    /**
+     * [details] of [baseMoveId] as the Max or G-Max Move [maxMoveId] it turns into: the Max Move's own effects and flags,
+     * no miss, and Showdown's power rule (`getActiveMaxMove`): the base move's `maxMove.basePower`, unless the G-Max
+     * Move's data keeps its own (the ones Showdown fixes at 160). A status move becomes Max Guard and keeps no power.
+     * Null when the data for either move is missing.
+     */
+    fun maxMoveDetails(baseMoveId: String, details: BattleMoveCandidateView, maxMoveId: String): BattleMoveCandidateView? {
+        val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return null
+        val base = dex.move(PublicIds.canonical(baseMoveId)) ?: return null
+        val max = dex.move(PublicIds.canonical(maxMoveId)) ?: return null
+        val effects = BattleShowdownMoveEffects.resolve(max.id) ?: return null
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return details.copy(power = 0.0, accuracy = 100.0, effects = effects)
+        val power = Js.num(max.data("basePower") ?: 0).takeIf { it > G_MAX_PLACEHOLDER_POWER && max.data("isMax") is String }
+            ?: (base.data("maxMove") as? Map<*, *>)?.get("basePower")?.let { Js.num(it) }?.takeIf { it > 0.0 } ?: return null
+        return details.copy(power = power, accuracy = 100.0, effects = effects)
     }
 
     /** The move [action] was before it became a Max Move ([asMaxMove]), or its own. */
