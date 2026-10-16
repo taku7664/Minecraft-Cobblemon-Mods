@@ -83,7 +83,9 @@ internal object PvpRoomHudOverlay {
         layout: PvpRoomHudLayout,
         interactive: Boolean,
     ) {
+        // The window and its title bar are the hub's chrome; what sits in them is the hub's content, as in the hub.
         val theme = CobblemonUiSharedTheme.snapshot()
+        val content = CobblemonUiSharedTheme.contentSnapshot()
         val font = client.font
         val panel = layout.panel
         UiSurfaceRenderer.draw(graphics, panel.x, panel.y, panel.width, panel.height,
@@ -94,16 +96,16 @@ internal object PvpRoomHudOverlay {
             theme.colors.textPrimary, false)
         // Over the chat the buttons are widgets of the chat screen and draw themselves.
         if (!interactive) {
-            CobblemonUiThemedButton.draw(graphics, theme, layout.openButton, openLabel(), UiButtonVariant.PRIMARY, opacity = CONTROL_OPACITY)
-            CobblemonUiThemedButton.draw(graphics, theme, layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY,
+            CobblemonUiThemedButton.draw(graphics, content, layout.openButton, openLabel(), UiButtonVariant.PRIMARY, opacity = CONTROL_OPACITY)
+            CobblemonUiThemedButton.draw(graphics, content, layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY,
                 opacity = CONTROL_OPACITY)
         }
         val phaseRow = layout.phaseRow ?: return
 
         val phase = Component.translatable(key("phase.${room.phase.name.lowercase()}"))
         graphics.drawCenteredString(font, phase, phaseRow.x + phaseRow.width / 2, phaseRow.y + 1, phaseColor(theme, room.phase))
-        drawSide(graphics, theme, layout.leftSide, Component.translatable(key("side.left_short")), room.leftPlayer?.name, featured = true)
-        drawSide(graphics, theme, layout.rightSide, Component.translatable(key("side.right_short")), room.rightPlayer?.name, featured = false)
+        drawSide(graphics, content, layout.leftSide, Component.translatable(key("side.left_short")), room.leftPlayer?.name, featured = true)
+        drawSide(graphics, content, layout.rightSide, Component.translatable(key("side.right_short")), room.rightPlayer?.name, featured = false)
         layout.spectatorHeading?.let { heading ->
             graphics.drawString(font, Component.translatable(key("hud.spectators"), room.spectators.size), heading.x, heading.y + 1,
                 theme.colors.textSecondary, true)
@@ -161,11 +163,11 @@ internal object PvpRoomHudOverlay {
         val layout = PvpRoomHudLayout.calculate(screen.width, screen.height, expanded, room.spectators.size)
         val open = CobblemonUiThemedButton(layout.openButton, openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
             openRoom(Minecraft.getInstance())
-        }
+        }.apply { theme = CobblemonUiSharedTheme::contentSnapshot }
         val toggle = CobblemonUiThemedButton(layout.toggleButton, toggleButtonLabel(layout), UiButtonVariant.SECONDARY, CONTROL_OPACITY) {
             expanded = !expanded
             installChatControls(screen)
-        }
+        }.apply { theme = CobblemonUiSharedTheme::contentSnapshot }
         Screens.getButtons(screen).add(open)
         Screens.getButtons(screen).add(toggle)
         installedButtons[screen] = listOf(open, toggle)

@@ -3,6 +3,8 @@ package jbro.cobblemon.npc.client
 import jbro.cobblemon.npc.dialogue.DialoguePreviewCursor
 import jbro.cobblemon.npc.dialogue.DialogueText
 import jbro.cobblemon.npc.dialogue.NpcDialogue
+import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.client.UiDialogueStyle
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
@@ -59,15 +61,17 @@ class DialogueDraftPreviewScreen(private val parent: Screen, dialogue: NpcDialog
         super.render(graphics, mouseX, mouseY, partialTick)
         if (cursor.node == null) return
         val bottom = textBottom.coerceAtLeast(100)
-        graphics.fill(20, 74, width - 20, bottom, 0xFF252730.toInt())
-        graphics.renderOutline(20, 74, width - 40, bottom - 74, 0xFF90949F.toInt())
+        // In the message box players see, so the draft reads as it will in game.
+        val theme = UiDialogueStyle.theme()
+        UiDialogueStyle.drawBox(graphics, theme, UiRect(20, 74, width - 40, bottom - 74))
+        val ink = UiDialogueStyle.ink(theme)
         val lines = font.split(Component.literal(text()), (width - 64).coerceAtLeast(1))
         val visible = ((bottom - 86) / 11).coerceAtLeast(1)
         textOffset = textOffset.coerceIn(0, (lines.size - visible).coerceAtLeast(0))
         graphics.enableScissor(24, 78, width - 24, bottom - 2)
-        lines.drop(textOffset).take(visible).forEachIndexed { index, line -> graphics.drawString(font, line, 30, 82 + index * 11, 0xFFFFFF) }
+        lines.drop(textOffset).take(visible).forEachIndexed { index, line -> graphics.drawString(font, line, 30, 82 + index * 11, ink, false) }
         graphics.disableScissor()
-        if (lines.size > visible) graphics.drawString(font, Component.literal("↕"), width - 34, 80, 0xFFFFFF)
+        if (lines.size > visible) graphics.drawString(font, Component.literal("↕"), width - 34, 80, ink, false)
         if (mouseY in 74..bottom && mouseX in 20..(width - 20)) setTooltipForNextRenderPass(tr("preview_hint"))
     }
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {

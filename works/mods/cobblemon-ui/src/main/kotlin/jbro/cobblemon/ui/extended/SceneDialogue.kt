@@ -3,9 +3,9 @@ package jbro.cobblemon.ui.extended
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
-import jbro.cobblemon.uikit.client.UiSurfaceRenderer
-import jbro.cobblemon.uikit.client.UiTextRenderer
+import jbro.cobblemon.uikit.client.UiDialogueStyle
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -141,14 +141,12 @@ object SceneDialogue {
         current.speaker?.let { speaker ->
             // The speaker's name on a tab over the box's left edge.
             val font = client.font
-            val theme = jbro.cobblemon.uikit.client.UiDialogueStyle.theme()
+            val theme = UiDialogueStyle.theme()
             val width = font.width(speaker) + 16
             val height = font.lineHeight + 8
             val left = box.x + 10
             val top = box.y - height + 2
-            UiSurfaceRenderer.draw(context, left, top, width, height, jbro.cobblemon.uikit.client.UiDialogueStyle.plate(theme))
-            UiTextRenderer.draw(context, font, speaker, left + 8, UiTextRenderer.centeredY(font, speaker, top, height - 2),
-                jbro.cobblemon.uikit.client.UiDialogueStyle.plateText(theme), null)
+            UiDialogueStyle.drawPlate(context, theme, font, UiRect(left, top, width, height), speaker, left + 8)
         }
         context.pose().popPose()
     }

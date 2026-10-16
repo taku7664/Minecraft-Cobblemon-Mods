@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.WeakHashMap
 import jbro.cobblemon.mcc.internal.pvp.PvpSpectatorInputPolicy
+import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiCrossAlignment
 import jbro.cobblemon.uikit.UiLayout
@@ -106,6 +107,7 @@ internal object PvpLoungeSpectatorControls {
             Component.translatable("screen.more_cobblemon_contents.pvp.return"),
             UiButtonVariant.SECONDARY,
         ) { PvpPlayClientNetworking.exitLoungeSpectator() }
+        button.theme = CobblemonUiSharedTheme::contentSnapshot
         button.active = !exitPending
         Screens.getButtons(screen).add(button)
         exitButtons[screen] = button

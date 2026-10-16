@@ -37,7 +37,6 @@ import org.lwjgl.glfw.GLFW
 object BattleDialogue {
     private val queue = BattleDialogueQueue<Component>()
     private const val CHARACTERS_PER_SECOND = 75.0
-    private const val END_BAR = 4
     private const val BAND_CUT = 10
     private const val BAND_TOP = 0xE6262626.toInt()
     private const val BAND_BOTTOM = 0xE6161616.toInt()
@@ -247,11 +246,8 @@ object BattleDialogue {
                 cornerCuts = BattleCornerCuts(topLeft = BAND_CUT, bottomRight = BAND_CUT), rounded = false))
             context.fill(left + BAND_CUT, top + 3, left + width - 3, top + 4, BAND_RULE)
         } else {
-            UiSurfaceRenderer.draw(context, left, top, width, height, UiDialogueStyle.box(theme))
             // A message window, not a menu: Platinum's text windows carry a bar at each end inside the frame.
-            val inset = UiDialogueStyle.inset(theme)
-            context.fill(left + inset, top + inset + 2, left + inset + END_BAR, top + height - inset - 2, UiDialogueStyle.bar(theme))
-            context.fill(left + width - inset - END_BAR, top + inset + 2, left + width - inset, top + height - inset - 2, UiDialogueStyle.bar(theme))
+            UiDialogueStyle.drawBox(context, theme, UiRect(left, top, width, height))
         }
         val box = UiRect(left, top, width, height)
         var budget = shown
@@ -279,9 +275,7 @@ object BattleDialogue {
         }
         val arrow = if (band) BAND_TEXT else UiDialogueStyle.arrow(theme)
         val bob = (BattleFocusMotion.pulse() * 2f).toInt()
-        for (row in 0 until 4) {
-            context.fill(arrowX + row, baseY + bob + row, arrowX + 7 - row, baseY + bob + row + 1, arrow)
-        }
+        UiDialogueStyle.drawArrow(context, theme, arrowX, baseY + bob, arrow)
         return box
     }
 }

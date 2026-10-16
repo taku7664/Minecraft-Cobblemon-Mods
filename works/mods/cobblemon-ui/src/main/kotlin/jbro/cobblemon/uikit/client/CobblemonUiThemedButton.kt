@@ -14,7 +14,8 @@ import net.minecraft.network.chat.Component
 /**
  * A button in the shared look ([CobblemonUiSharedTheme]) on a screen that does not install it: over the chat, or on
  * the battle screen. The UI kit's own widgets read the installed theme, so this one draws from the shared theme
- * itself. [opacity] thins the button's fill over the world; its frame stays.
+ * itself. [opacity] thins the button's fill over the world; its frame stays. A screen in another look, such as the
+ * content theme, sets [theme].
  */
 class CobblemonUiThemedButton(
     bounds: UiRect,
@@ -23,6 +24,9 @@ class CobblemonUiThemedButton(
     private val opacity: Float = 1f,
     private val press: () -> Unit,
 ) : AbstractButton(bounds.x, bounds.y, bounds.width, bounds.height, label) {
+    /** Where the button's look comes from, read on every frame. */
+    var theme: () -> UiThemeSnapshot = CobblemonUiSharedTheme::snapshot
+
     override fun onPress() = press()
 
     override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
@@ -33,7 +37,7 @@ class CobblemonUiThemedButton(
             isHoveredOrFocused -> UiWidgetState.HOVER
             else -> UiWidgetState.NORMAL
         }
-        draw(graphics, CobblemonUiSharedTheme.snapshot(), UiRect(x, y, width, height), message, variant, state, opacity)
+        draw(graphics, theme(), UiRect(x, y, width, height), message, variant, state, opacity)
     }
 
     companion object {

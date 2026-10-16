@@ -6,13 +6,10 @@ import com.cobblemon.mod.common.client.gui.summary.widgets.ModelWidget
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import jbro.cobblemon.policy.menu.RequestLinkPayload
 import jbro.cobblemon.policy.plaza.Plaza
-import jbro.cobblemon.uikit.CobblemonUiSharedTheme
-import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.CobblemonUiThemedButton
-import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiDialogueStyle
 import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.gui.GuiGraphics
@@ -26,7 +23,7 @@ import kotlin.math.sin
  * `/피츄`: Pichu's help screen. The world blurs behind it as under the pause menu; Pichu stands in the left 30% and
  * follows the cursor with its head, as the summary's portrait does; the shortcuts sit in two columns, centred in the
  * rest; and the message box below speaks for Pichu: what a hovered button does, otherwise a remark on the player's
- * state or one of its own.
+ * state or one of its own. The buttons and the box are in the content theme, as every message box is.
  */
 class PichuScreen : Screen(Component.literal("피츄")) {
     private class Entry(val label: String, val hint: String, val available: Boolean, val action: () -> Unit)
@@ -70,6 +67,7 @@ class PichuScreen : Screen(Component.literal("피츄")) {
             val bounds = UiRect(gridLeft + column * (columnWidth + COLUMN_GAP), gridTop + row * (BUTTON_HEIGHT + ROW_GAP),
                 columnWidth, BUTTON_HEIGHT)
             val button = CobblemonUiThemedButton(bounds, Component.literal(entry.label), UiButtonVariant.PRIMARY) { entry.action() }
+            button.theme = UiDialogueStyle::theme
             button.active = entry.available
             buttons += addRenderableWidget(button) to entry
         }
@@ -157,20 +155,14 @@ class PichuScreen : Screen(Component.literal("피츄")) {
 
     private fun drawBox(graphics: GuiGraphics) {
         val font = minecraft!!.font
-        val theme = CobblemonUiSharedTheme.snapshot()
-        val ink = theme.surfaces.panelText ?: theme.colors.textPrimary
-        val shadow = theme.listRowStyle(UiWidgetState.NORMAL).textShadowColor
+        val theme = UiDialogueStyle.theme()
+        val ink = UiDialogueStyle.ink(theme)
+        val shadow = UiDialogueStyle.inkShadow(theme)
         val box = boxRect()
-        UiSurfaceRenderer.draw(graphics, box.x, box.y, box.width, box.height, theme.surfaces.panel)
-        val inset = (theme.surfaces.panel.border as? UiBorder.WindowFrame)?.thickness ?: 2
-        // The message window's bars at both ends, as the NPC and battle message boxes draw them.
-        graphics.fill(box.x + inset, box.y + inset, box.x + inset + END_BAR, box.bottom - inset, theme.colors.borderBright)
-        graphics.fill(box.right - inset - END_BAR, box.y + inset, box.right - inset, box.bottom - inset, theme.colors.borderBright)
-
+        // The same message box the NPC and battle lines speak in.
+        UiDialogueStyle.drawBox(graphics, theme, box)
         val name = Component.literal("피츄")
-        val plate = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
-        UiSurfaceRenderer.draw(graphics, box.x + 8, box.y - 14, font.width(name) + 16, 16, plate.surface)
-        UiTextRenderer.draw(graphics, font, name, box.x + 16, box.y - 10, plate.text, plate.textShadowColor)
+        UiDialogueStyle.drawPlate(graphics, theme, font, UiRect(box.x + 8, box.y - 14, font.width(name) + 16, 16), name, box.x + 16)
 
         val textLeft = box.x + PADDING
         val wrapped = font.splitter.splitLines(shown, box.right - PADDING - 12 - textLeft, Style.EMPTY).map { it.string }
@@ -185,7 +177,7 @@ class PichuScreen : Screen(Component.literal("피츄")) {
         // The whole line is out: Pichu's little bobbing arrow, as in a talk.
         val arrowX = box.right - 20
         val baseY = box.bottom - 14 + (sin(System.nanoTime() / 180_000_000.0) * 1.5).toInt()
-        for (row in 0 until 4) graphics.fill(arrowX + row, baseY + row, arrowX + 7 - row, baseY + row + 1, theme.colors.accentPrimary)
+        UiDialogueStyle.drawArrow(graphics, theme, arrowX, baseY)
     }
 
     companion object {
@@ -201,7 +193,6 @@ class PichuScreen : Screen(Component.literal("피츄")) {
         private const val BUTTON_MAX_WIDTH = 150
         private const val BOX_HEIGHT = 66
         private const val PADDING = 14
-        private const val END_BAR = 4
         private const val LINE_HEIGHT = 12
         private const val MAX_LINES = 4
         private const val CHARACTERS_PER_SECOND = 45.0

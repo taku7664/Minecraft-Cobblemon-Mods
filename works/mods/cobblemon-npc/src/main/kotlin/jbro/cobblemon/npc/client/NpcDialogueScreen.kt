@@ -246,11 +246,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         val ink = UiDialogueStyle.ink(theme)
         val shadow = UiDialogueStyle.inkShadow(theme)
         val box = boxRect()
-        UiSurfaceRenderer.draw(graphics, box.x, box.y, box.width, box.height, UiDialogueStyle.box(theme))
-        val inset = UiDialogueStyle.inset(theme)
-        // The message window's bars at both ends, as the battle dialogue box draws them.
-        graphics.fill(box.x + inset, box.y + inset + 2, box.x + inset + END_BAR, box.bottom - inset - 2, UiDialogueStyle.bar(theme))
-        graphics.fill(box.right - inset - END_BAR, box.y + inset + 2, box.right - inset, box.bottom - inset - 2, UiDialogueStyle.bar(theme))
+        UiDialogueStyle.drawBox(graphics, theme, box)
 
         val textLeft = box.x + PADDING
         val hasFace = show.skin.isNotBlank()
@@ -260,10 +256,8 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
             val faceWidth = if (hasFace) FACE + if (speaker.isNotBlank()) FACE_GAP else 0 else 0
             val plateLeft = box.x + 8
             val plateWidth = faceWidth + font.width(name) + 16
-            UiSurfaceRenderer.draw(graphics, plateLeft, box.y - 14, plateWidth, 16, UiDialogueStyle.plate(theme))
+            UiDialogueStyle.drawPlate(graphics, theme, font, UiRect(plateLeft, box.y - 14, plateWidth, 16), name, plateLeft + 8 + faceWidth)
             if (hasFace) drawFace(graphics, plateLeft + 8, box.y - 12, partialTick)
-            UiTextRenderer.draw(graphics, font, name, plateLeft + 8 + faceWidth, UiTextRenderer.centeredY(font, name, box.y - 14, 14),
-                UiDialogueStyle.plateText(theme), null)
         }
 
         val line = lines.getOrElse(page) { "" }
@@ -279,9 +273,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         // The line is complete: a bobbing arrow says there is more to read.
         val arrowX = box.right - 20
         val baseY = box.bottom - 14 + (sin(System.nanoTime() / 180_000_000.0) * 1.5).toInt()
-        for (row in 0 until 4) {
-            graphics.fill(arrowX + row, baseY + row, arrowX + 7 - row, baseY + row + 1, UiDialogueStyle.arrow(theme))
-        }
+        UiDialogueStyle.drawArrow(graphics, theme, arrowX, baseY)
     }
 
     private fun lastPage() = page >= lines.size - 1
@@ -303,7 +295,6 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         private const val PADDING = 14
         private const val FACE = 12
         private const val FACE_GAP = 4
-        private const val END_BAR = 4
         private const val LINE_HEIGHT = 12
         // The answers' window keeps the hub rail's room around its rows.
         private const val CHOICES_INSET = 6
