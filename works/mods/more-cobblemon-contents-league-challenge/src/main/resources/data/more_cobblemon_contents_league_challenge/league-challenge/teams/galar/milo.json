@@ -2,6 +2,6 @@
   "schema_version": 1,
   "pokemon": [
     "gossifleur level=19 moves=magicalleaf,round,rapidspin ability=regenerator nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0",
-    "eldegoss level=20 moves=magicalleaf,leafage,round ability=regenerator nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 dynamax=normal"
+    "eldegoss level=20 moves=magicalleaf,leafage,round ability=regenerator nature=timid dmax_level=10 gmax_factor=false hp_iv=20 hp_ev=0 attack_iv=20 attack_ev=0 defence_iv=20 defence_ev=0 special_attack_iv=20 special_attack_ev=0 special_defence_iv=20 special_defence_ev=0 speed_iv=20 speed_ev=0 canDynamax=normal dynamaxPriority=1"
   ]
 }

@@ -108,13 +108,14 @@ class LeagueTeamDataTest {
     }
 
     @Test
-    fun `every Galar team lets exactly one member Dynamax, its Gigantamax one when it has one`() {
+    fun `every Galar team puts one member first for its Dynamax, its Gigantamax one when it has one`() {
         galarTeams.forEach { name ->
             val marks = team(name).map { jbro.cobblemon.mcc.api.battle.ManagedDynamax.split(it) }
-            val allowed = marks.filter { it.second != null && it.second != jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.NONE }
-            assertEquals(1, allowed.size, name)
+            val first = marks.filter { it.second.priority == 1 }
+            assertEquals(1, first.size, name)
+            assertTrue(marks.none { it.second.permission == jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.NONE }, name)
             if (marks.any { it.first.contains("gmax_factor=true") }) {
-                assertEquals(jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.GMAX, allowed.single().second, name)
+                assertEquals(jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission.GMAX, first.single().second.permission, name)
             }
         }
     }
@@ -123,7 +124,7 @@ class LeagueTeamDataTest {
     fun `Cobblemon's parser keeps every value of every team member`() {
         (normal + hard + galarTeams).forEach { name ->
             team(name).forEach { marked ->
-                // The Dynamax mark is MCC's, read off before Cobblemon parses the rest (ManagedDynamax).
+                // The Dynamax marks are MCC's, read off before Cobblemon parses the rest (ManagedDynamax).
                 val line = jbro.cobblemon.mcc.api.battle.ManagedDynamax.split(marked).first
                 val fields = fields(line)
                 val properties = asManagedOpponent { PokemonProperties.parse(line) }

@@ -33,7 +33,8 @@ import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
  *   gets to use it, at [DYNAMAX_SCALE]. An ally's share is the larger of its Dynamax weight (how much Dynamaxing
  *   raises its matchup win chance against the visible opponents: doubled HP for three turns, Max Moves) and its
  *   standing as the team's ace ([LocalAceScore.matchup], its fresh-board win chance against them), both weighted by
- *   the opponents' threat. Only allies that can and may Dynamax count (a managed team may allow some only). It leans
+ *   the opponents' threat. Only allies that can and may Dynamax count (a managed team may allow some only), and not
+ *   one its trainer's order puts after the actor (it gets the Dynamax only once the actor is gone). It leans
  *   toward the ally with the largest share as Tera leans toward its carrier (user decisions, 2026-10-15/16; it
  *   replaced a flat share per healthy ally, and the ace part was added after a lead kept taking it from the ace).
  * - A Z-Move and any other one-shot mechanic cost a flat share per healthy ally left to use it.
@@ -78,7 +79,10 @@ internal object LocalMechanicOptionValue {
             MEGA -> 0.0
             TERA -> teraOptionValue(others, context) * carrierTilt(actor, others, profile, tierScale) { teraFit(it, context) }
             DYNAMAX -> {
-                val able = others.filter { dynamaxAllowed(it, context) }
+                // One its trainer puts after the actor gets it only once the actor is gone (ManagedDynamax's order),
+                // so the actor spending it takes nothing from that one's turn.
+                val actorRank = dynamaxRank(actor, context)
+                val able = others.filter { dynamaxAllowed(it, context) && dynamaxRank(it, context) <= actorRank }
                 if (able.isEmpty()) 0.0 else {
                     val fits = dynamaxFits(context)
                     optionValue(able, context, DYNAMAX_SCALE) { fits[it.battlePokemonId] ?: 0.0 } *
@@ -155,6 +159,10 @@ internal object LocalMechanicOptionValue {
     /** Whether [pokemon] can Dynamax (its species and form) and its trainer lets it (ManagedDynamax, via the build). */
     private fun dynamaxAllowed(pokemon: BattlePokemonStateView, context: BattleDecisionContext): Boolean =
         LocalDynamax.canDynamax(pokemon) && context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxAllowed != false
+
+    /** [pokemon]'s place in its trainer's Dynamax order; members without one come after every numbered one. */
+    private fun dynamaxRank(pokemon: BattlePokemonStateView, context: BattleDecisionContext): Int =
+        context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxPriority ?: Int.MAX_VALUE
 
     /** Every ally's standing as the ace ([LocalAceScore.matchup]); for the measurement trace. */
     internal fun dynamaxAce(context: BattleDecisionContext): Map<java.util.UUID, Double> =

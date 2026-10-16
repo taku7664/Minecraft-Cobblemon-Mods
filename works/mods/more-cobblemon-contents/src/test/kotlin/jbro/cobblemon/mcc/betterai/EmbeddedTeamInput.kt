@@ -625,6 +625,7 @@ internal object EmbeddedTeamInput {
                 teraTypeId = build["teraType"]?.takeUnless { it.isJsonNull }?.asString,
                 gigantamax = build["gigantamax"]?.asBoolean == true,
                 dynamaxAllowed = build["dynamaxAllowed"]?.asBoolean != false,
+                dynamaxPriority = build["dynamaxPriority"]?.takeUnless { it.isJsonNull }?.asInt,
                 showdownSpeciesId = build["species"].asString,
             )
         })

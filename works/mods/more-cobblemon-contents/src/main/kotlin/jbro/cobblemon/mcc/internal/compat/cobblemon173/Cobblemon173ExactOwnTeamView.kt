@@ -26,6 +26,7 @@ internal object Cobblemon173ExactOwnTeamView {
                 showdownSpeciesId = source.form.showdownId(),
                 gigantamax = source.gmaxFactor,
                 dynamaxAllowed = jbro.cobblemon.mcc.api.battle.ManagedDynamax.permits(source),
+                dynamaxPriority = jbro.cobblemon.mcc.api.battle.ManagedDynamax.priority(source),
             )
         },
     )

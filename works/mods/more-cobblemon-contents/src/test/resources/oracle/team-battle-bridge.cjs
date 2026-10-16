@@ -171,7 +171,7 @@ function teamPreviewInputs(side) {
     nature: dex.natures.get(pokemon.set.nature || 'serious').id || 'serious', gender: pokemon.gender || 'N',
     evs: pokemon.set.evs, ivs: pokemon.set.ivs, teraType: pokemon.teraType ? toId(pokemon.teraType) : null,
     gigantamax: !!pokemon.set.gigantamax,
-    dynamaxAllowed: !side.pokemon.some(other => other.set.dynamax) || ['normal', 'gmax'].includes(pokemon.set.dynamax),
+    dynamaxAllowed: pokemon.set.canDynamax !== 'none', dynamaxPriority: pokemon.set.dynamaxPriority ?? null,
     species: pokemon.baseSpecies.id }));
   return { foePreview, ownBuilds };
 }
@@ -277,9 +277,13 @@ function snapshot() {
             choices.push(choice);
             // The game offers each gimmick with every move, as here.
             if (active.canMegaEvo) choices.push({ ...choice, command: `${choice.command} mega`, mechanic: 'mega' });
-            // A team that marks any member (set.dynamax: none|normal|gmax) lets only its normal and gmax ones Dynamax.
-            const dynamaxMarked = side.pokemon.some(pokemon => pokemon.set.dynamax);
-            const mayDynamax = !dynamaxMarked || ['normal', 'gmax'].includes(side.active[actorSlot].set.dynamax);
+            // As ManagedDynamax: set.canDynamax none keeps a member out, and a living member that may comes first by
+            // set.dynamaxPriority (1 first, unmarked last) holds the Dynamax.
+            const rank = pokemon => pokemon.set.dynamaxPriority ?? Infinity;
+            const mayAtAll = pokemon => pokemon.set.canDynamax !== 'none';
+            const self = side.active[actorSlot];
+            const mayDynamax = mayAtAll(self) && !side.pokemon.some(other =>
+              other !== self && other.hp > 0 && mayAtAll(other) && rank(other) < rank(self));
             if (active.canDynamax && mayDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
               choices.push({ ...choice, command: `${choice.command} dynamax`, mechanic: 'dynamax', maxMoveId: toId(maxMoves[moveSlot].move) });
             }
