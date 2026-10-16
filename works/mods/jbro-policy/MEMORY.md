@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-16 11:30] /release 확인을 콘텐츠 테마 팝업으로 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 요청:** 채팅 [예] 클릭 대신 확인 팝업.
+- **구현:** `PartyRelease.request`가 `ReleaseAskPayload`(토큰, 슬롯, 이름 Component, 레벨)를 받을 수 있는 클라이언트에는 이것을 보내고, 받을 수 없으면 기존 채팅 확인을 보낸다. 클라이언트 `ReleasePopup`은 `CobblemonUiDialogScreen` 빨간(DANGER) 팝업을 콘텐츠 테마로 띄우고, 확인하면 `/release confirm <token>`을 보낸다. 그만두기·Esc는 아무것도 보내지 않고 토큰이 2분 뒤 만료된다. 수신기는 `cobblemon_ui`가 있을 때만 등록하므로, 없으면 서버가 채팅으로 되돌아간다.
+- **주의:** 이름을 서버에서 `.string`으로 바꾸면 종 이름이 서버 언어(영어)로 굳는다. 그래서 Component 그대로 `ComponentSerialization.STREAM_CODEC`으로 보낸다.
+- **확인:** 커밋 `89a4f353`. Codex가 F 복사본에서 컴파일, `jbro-policy:unitTest` 111/111 통과(로그는 Claude가 확인). Codex 리뷰 지적 없음. 방출 팝업을 다루는 단위 테스트는 없다. 빌드 배치와 실게임 팝업은 확인하지 않았다.
+- **테스트 태스크:** 이 모듈은 `tasks.test`가 꺼져 있다. 테스트는 `:jbro-policy:unitTest`로 돌린다(`test`는 SKIPPED로 끝난다).
+
 ## [2026-10-14 10:00] 1.3.0 릴리스 — 개발 설치본을 운영으로 (실접속 미확인)
 
 - **사용자 결정:** 1.3.0(앞 두 자리 변경으로 1.2.x 팩 접속 차단). 배포 원본은 개발 서버·클라이언트에 설치된 JAR이며, 개발에 없던 것은 `PACK_VERSION` 1.3.0뿐이라 jbro-policy 0.1.7만 새로 빌드해 개발 서버·클라에 넣었다(0.1.6 백업 `develop-product/deployment-backups/20261014-094538-release-1.3.0`). to-item 0.1.4 승격은 되돌렸다(`f2bd5e4d`).

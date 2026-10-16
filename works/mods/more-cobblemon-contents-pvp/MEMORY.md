@@ -1,5 +1,13 @@
 # MEMORY
 
+## [2026-10-16 11:30] PvP 초대를 콘텐츠 테마 팝업으로 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 요청:** 채팅 [입장]/[거절] 대신 초대 팝업.
+- **구현:** `PvpInvitePopup.show`를 초대 수신 때 부른다. 화면이 비었거나 `MccHubScreen`일 때만 띄우고, 전투·상자·채팅 입력 등 다른 화면 중에는 띄우지 않는다. 채팅 줄은 항상 같이 남는다. 입장·거절은 채팅 클릭과 같은 `PvpInviteChatClickHandler` 경로로 보낸다. Esc는 `CobblemonUiDialogScreen.dismiss`로 답하지 않고 닫는다(나중에 채팅으로 답할 수 있게).
+- **확인:** 커밋 `89a4f353`. Codex가 F 복사본에서 컴파일, PvP `unitTest` 239/239 통과(로그는 Claude가 확인). Codex 리뷰 지적 없음. 초대 팝업을 다루는 단위 테스트는 없다. 빌드 배치와 실게임 팝업은 확인하지 않았다.
+- **배포 주의:** `cobblemon-ui`의 `CobblemonUiDialogScreen.dismiss`를 쓰므로 이 PvP JAR은 같은 커밋 이후의 cobblemon-ui와 같이 배포한다. 위 기록대로 UI가 바뀌면 MCC·NPC 내장 사본도 같이 다시 넣는다.
+- **테스트 태스크:** 이 모듈은 `tasks.test`가 꺼져 있다. 테스트는 `:more-cobblemon-contents-pvp:unitTest`로 돌린다.
+
 ## [2026-10-13 03:05] PvP VS 인트로와 개발 배포
 
 - **사용자 요청:** PvP에도 VS 연출. 빠르게 넣는 쪽을 골랐다.
