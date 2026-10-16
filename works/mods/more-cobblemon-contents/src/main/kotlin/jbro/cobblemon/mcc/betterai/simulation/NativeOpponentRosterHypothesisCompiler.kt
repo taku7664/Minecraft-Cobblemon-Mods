@@ -55,6 +55,19 @@ internal data class NativeOpponentRosterCompilation(
     }
 }
 
+/** Selection shapes that can be reconstructed without private roster information. */
+internal object NativeOpponentSelectionRules {
+    fun supports(format: BattleFormat, preview: BattleOpponentTeamPreviewView): Boolean = when (format) {
+        BattleFormat.SINGLE -> true
+        BattleFormat.DOUBLE ->
+            preview.selectionSize == preview.pokemon.size ||
+                (preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
+                    preview.selectionSize == STANDARD_DOUBLE_SELECTION_SIZE)
+    }
+
+    private const val STANDARD_DOUBLE_SELECTION_SIZE = 4
+}
+
 /** Deterministically enumerates private selection worlds from an opaque public team preview. */
 internal object NativeOpponentRosterHypothesisCompiler {
     fun compile(
@@ -69,12 +82,7 @@ internal object NativeOpponentRosterHypothesisCompiler {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
             .sortedBy { it.battlePokemonId.toString() }
-        val selectionRuleSupported = when (state.format) {
-            BattleFormat.SINGLE -> true
-            BattleFormat.DOUBLE ->
-                preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
-                    preview.selectionSize in setOf(4, preview.pokemon.size)
-        }
+        val selectionRuleSupported = NativeOpponentSelectionRules.supports(state.format, preview)
         val expectedActiveSlots = when (state.format) {
             BattleFormat.SINGLE -> setOf(0)
             BattleFormat.DOUBLE -> setOf(0, 1)

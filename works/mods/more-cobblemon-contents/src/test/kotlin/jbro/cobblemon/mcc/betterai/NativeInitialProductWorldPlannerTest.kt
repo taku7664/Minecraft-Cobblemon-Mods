@@ -182,6 +182,29 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
+    fun `compiles a doubles world when the live adapter preview is the complete four member team`() {
+        val selectedTeam = preview(selectionSize = 4).pokemon.take(4)
+        val liveAdapterPreview = BattleOpponentTeamPreviewView(
+            selectionSize = selectedTeam.size,
+            pokemon = selectedTeam,
+        )
+
+        val result = planner().plan(
+            context(format = BattleFormat.DOUBLE, preview = liveAdapterPreview),
+            BattleTrainerTier.BOSS,
+        )
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        assertEquals(1, result.worlds.size)
+        result.worlds.forEach { world ->
+            assertEquals("cobblemondoubles", world.definition.formatId)
+            assertEquals(4, world.definition.p1Team.size)
+            assertEquals(4, world.definition.p2Team.size)
+            assertEquals(4, world.publicContext.publicActionCatalog.opponentMoveInferences.size)
+        }
+    }
+
+    @Test
     fun `compiles a complete six on six singles test battle without selection hypotheses`() {
         val result = planner().plan(
             context(preview = preview(selectionSize = 6)),

@@ -84,12 +84,7 @@ internal object NativeOpponentRosterStateMaterializer {
         live: Boolean = false,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
-        val selectionRuleSupported = when (state.format) {
-            BattleFormat.SINGLE -> true
-            BattleFormat.DOUBLE ->
-                preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
-                    preview.selectionSize in setOf(4, preview.pokemon.size)
-        }
+        val selectionRuleSupported = NativeOpponentSelectionRules.supports(state.format, preview)
         val faintedCount = state.pokemon.count { it.side == BattleSide.OPPONENT && it.fainted }
         if (!selectionRuleSupported ||
             hypothesis.selectedPreviewSlotIds.size != preview.selectionSize ||
