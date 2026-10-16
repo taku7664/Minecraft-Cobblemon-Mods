@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection.
 import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.PanelConfig;
+import jbro.cobblemon.ui.extended.UIUtils;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
@@ -17,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -79,24 +81,32 @@ public class BattleMoveSelectionMixin {
         List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(
                 Minecraft.getInstance().getWindow().getGuiScaledWidth(),
                 Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth());
+        if (!gimmickBounds.isEmpty()) {
+            MoveTooltipRenderer.INSTANCE.registerGimmickColumn(gimmickBounds.getFirst().x());
+        }
+        if (PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
+            cobblemonBattleUi$moveTooltip(context, mouseX, mouseY);
+        }
+
+        // Over the tooltip: a tooltip wider than the room left of the column (large tooltip text) must not hide
+        // which gimmick is armed while a move is chosen.
+        context.pose().pushPose();
+        context.pose().translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET + 10.0);
         for (int index = 0; index < gimmicks.size(); index++) {
             BattleGimmickButton button = gimmicks.get(index);
             UiRect bound = gimmickBounds.get(index);
             boolean emphasized = KeyboardTileFocus.allowsMouseHover()
                     ? bound.contains(mouseX, mouseY)
                     : KeyboardTileFocus.isFocused(button);
-            if (index == 0) {
-                MoveTooltipRenderer.INSTANCE.registerGimmickColumn(bound.x());
-            }
             BattleControlRenderer.gimmick(context, selection, button,
                     ((BattleGimmickButtonAccessor) button).cobblemonBattleUi$getTextureId(),
                     bound, emphasized, selection.getOpacity());
         }
+        context.pose().popPose();
+    }
 
-        if (!PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
-            return;
-        }
-
+    @Unique
+    private void cobblemonBattleUi$moveTooltip(GuiGraphics context, int mouseX, int mouseY) {
         // Identify which Pokemon is selecting a move (critical for doubles)
         SingleActionRequest request = ((BattleActionSelection) (Object) this).getRequest();
         UUID pokemonUuid = null;

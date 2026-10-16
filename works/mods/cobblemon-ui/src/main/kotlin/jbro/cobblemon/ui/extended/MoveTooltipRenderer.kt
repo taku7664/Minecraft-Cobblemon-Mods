@@ -218,12 +218,11 @@ object MoveTooltipRenderer {
             UIUtils.CELL_GAP + headTotalH + pairedCellH + descTotalH + effectTotalH + UIUtils.FRAME_INSET
 
         // The tooltip stays beside the entire move column as focus/hover changes.
-        val moveLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
-        val columnLeft = gimmickColumnLeft?.let { minOf(it, moveLeft) } ?: moveLeft
+        val columnLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
         val columnBottom = moveTileBounds.maxOfOrNull { (it.y + it.height).toInt() }
             ?: (move.y + move.height).toInt()
         val anchor = MoveTooltipAnchor.position(
-            columnLeft, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
+            columnLeft, gimmickColumnLeft ?: Int.MAX_VALUE, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
         )
         val px = anchor.x()
         val py = anchor.y()

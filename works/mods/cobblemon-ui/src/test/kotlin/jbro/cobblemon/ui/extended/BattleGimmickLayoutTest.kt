@@ -22,13 +22,21 @@ class BattleGimmickLayoutTest {
 
     @Test
     fun `where the move tooltip would not fit beside named tiles the column turns icon-only`() {
-        // 1280x720 at GUI scale 3: the default 210 wide tooltip does not fit left of 90 wide tiles.
+        // 1280x720 at GUI scale 3 and 1920x1080 at scale 4: the default tooltip does not fit left of named tiles.
         assertEquals(listOf(UiRect(253, 118, 26, 26), UiRect(253, 148, 26, 26)),
             BattleScreenGeometry.gimmickTiles(427, 240, 2, TOOLTIP))
-        // 1920x1080 at GUI scale 4: it does, so the tiles keep their names.
         BattleScreenGeometry.gimmickTiles(480, 270, 2, TOOLTIP).forEach {
-            assertEquals(242, it.x())
+            assertEquals(306, it.x())
+            assertEquals(BattleScreenGeometry.GIMMICK_COMPACT_WIDTH, it.width())
+        }
+        // 1920x1080 at GUI scale 3: it does, so the tiles keep their names.
+        BattleScreenGeometry.gimmickTiles(640, 360, 2, TOOLTIP).forEach {
+            assertEquals(402, it.x())
             assertEquals(BattleScreenGeometry.GIMMICK_WIDTH, it.width())
+        }
+        // Large tooltip text (twice the size) fits nowhere at 427; the column stays icon-only and draws over it.
+        BattleScreenGeometry.gimmickTiles(427, 240, 2, TOOLTIP * 2).forEach {
+            assertEquals(BattleScreenGeometry.GIMMICK_COMPACT_WIDTH, it.width())
         }
     }
 
@@ -36,9 +44,11 @@ class BattleGimmickLayoutTest {
     fun `the move tooltip anchored left of the column clears it on the screen`() {
         for ((width, height) in listOf(427 to 240, 480 to 270, 640 to 360)) {
             val column = BattleScreenGeometry.gimmickTiles(width, height, 3, TOOLTIP)
-            val anchor = MoveTooltipAnchor.position(column.first().x(), 200, TOOLTIP, 150, width, height)
+            // As the renderer registers it: the move column from its tiles' focus-protruded left edge.
+            val moveLeft = BattleScreenGeometry.moveTiles(width, height, 4).first().x() - BattleScreenGeometry.FOCUS_PROTRUSION
+            val anchor = MoveTooltipAnchor.position(moveLeft, column.first().x(), 200, TOOLTIP, 150, width, height)
             assertTrue(anchor.x() >= MoveTooltipAnchor.SCREEN_MARGIN, "tooltip off screen at $width")
-            assertTrue(anchor.x() + TOOLTIP <= column.first().x() - BattleScreenGeometry.FOCUS_PROTRUSION,
+            assertTrue(anchor.x() + TOOLTIP <= column.first().x() - MoveTooltipAnchor.GIMMICK_CLEARANCE,
                 "tooltip over the gimmicks at $width")
         }
     }
@@ -111,8 +121,8 @@ class BattleGimmickLayoutTest {
     }
 
     private companion object {
-        /** The move tooltip's width at the default font scale. */
-        const val TOOLTIP = 210
+        /** The move tooltip's width at the default font scale: 210 at a text size rounded from 0.85 up to 1. */
+        const val TOOLTIP = 247
         // ABGR, as NativeImage holds pixels.
         const val FACE = 0xFF676767.toInt()
         const val LIGHT = 0xFFC6C6C6.toInt()

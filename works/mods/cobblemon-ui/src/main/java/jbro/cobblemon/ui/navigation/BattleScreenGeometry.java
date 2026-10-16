@@ -46,7 +46,7 @@ public final class BattleScreenGeometry {
         int availableWidth = Math.max(0, moveLeft - GIMMICK_MOVE_GAP - FOCUS_PROTRUSION);
         int fullLeft = moveLeft - GIMMICK_MOVE_GAP - GIMMICK_WIDTH;
         boolean named = tooltipWidth <= 0
-                || fullLeft - MoveTooltipAnchor.VISUAL_CLEARANCE - tooltipWidth >= MoveTooltipAnchor.SCREEN_MARGIN;
+                || fullLeft - MoveTooltipAnchor.GIMMICK_CLEARANCE - tooltipWidth >= MoveTooltipAnchor.SCREEN_MARGIN;
         int width = Math.min(named ? GIMMICK_WIDTH : GIMMICK_COMPACT_WIDTH, availableWidth);
         int x = Math.max(FOCUS_PROTRUSION, moveLeft - GIMMICK_MOVE_GAP - width);
 
