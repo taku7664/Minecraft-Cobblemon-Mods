@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.client
 import jbro.cobblemon.battlecam.api.BattlecamScenes
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.presentation.BattleScenePayload
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneAwaitPayload
 import jbro.cobblemon.mcc.internal.presentation.BattleSceneCancelPayload
 import jbro.cobblemon.mcc.internal.presentation.BattleSceneFinishedPayload
 import jbro.cobblemon.ui.extended.BattleDialogue
@@ -11,6 +12,23 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.Util
+import net.minecraft.network.chat.Component
+
+internal class BattleScenePlaybackState {
+    class Token internal constructor(val completionId: java.util.UUID?)
+
+    private var current: Token? = null
+    val playing: Boolean get() = current != null
+    val completionId: java.util.UUID? get() = current?.completionId
+
+    fun begin(completionId: java.util.UUID?): Token = Token(completionId).also { current = it }
+
+    fun finish(token: Token): Boolean {
+        if (current !== token) return false
+        current = null
+        return true
+    }
+}
 
 /**
  * Plays the server's battle scenes: the lines in Cobblemon UI's message box and, with Better Cobblemon Battlecam
@@ -24,9 +42,16 @@ object BattleSceneClient {
     /** The camera is let go when the lines end; this only bounds it if that never comes. */
     private const val CAMERA_LIMIT_MILLIS = 120_000L
 
-    private var pending: BattleScenePayload? = null
-    private var playing = false
-    private var playingCompletionId: java.util.UUID? = null
+    private data class ClientScene(
+        val focusEntityId: Int,
+        val speaker: Component?,
+        val lines: List<Component>,
+        val interject: Boolean,
+        val completionId: java.util.UUID?,
+    )
+
+    private var pending: ClientScene? = null
+    private val playback = BattleScenePlaybackState()
     private var heldEnd: Runnable? = null
     private var heldSince = 0L
     private var replaying = false
@@ -35,13 +60,19 @@ object BattleSceneClient {
         ClientPlayNetworking.registerGlobalReceiver(BattleScenePayload.TYPE) { payload, context ->
             context.client().execute {
                 pending?.completionId?.let(::acknowledge)
-                pending = payload
+                pending = ClientScene(payload.focusEntityId, payload.speaker, payload.lines, payload.interject, null)
+            }
+        }
+        ClientPlayNetworking.registerGlobalReceiver(BattleSceneAwaitPayload.TYPE) { payload, context ->
+            context.client().execute {
+                pending?.completionId?.let(::acknowledge)
+                pending = ClientScene(payload.focusEntityId, payload.speaker, payload.lines, false, payload.completionId)
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(BattleSceneCancelPayload.TYPE) { payload, context ->
             context.client().execute {
                 if (pending?.completionId == payload.completionId) pending = null
-                if (playingCompletionId == payload.completionId) SceneDialogue.stop()
+                if (playback.completionId == payload.completionId) SceneDialogue.stop()
             }
         }
         ClientTickEvents.END_CLIENT_TICK.register { _ -> tick() }
@@ -76,7 +107,7 @@ object BattleSceneClient {
 
     private fun tick() {
         val now = Util.getMillis()
-        if (heldEnd != null && pending == null && !playing && now - heldSince > SCENE_GRACE_MILLIS) {
+        if (heldEnd != null && pending == null && !playback.playing && now - heldSince > SCENE_GRACE_MILLIS) {
             releaseEnd()
         }
         val scene = pending ?: return
@@ -86,17 +117,18 @@ object BattleSceneClient {
         play(scene)
     }
 
-    private fun play(scene: BattleScenePayload) {
+    private fun play(scene: ClientScene) {
+        // SceneDialogue.play() stops the previous scene synchronously. Let that callback finish while it still owns
+        // the playback state, then install this scene's token so a stale callback can never clear the new scene.
+        SceneDialogue.stop()
+        val token = playback.begin(scene.completionId)
         var focused = false
-        playing = true
-        playingCompletionId = scene.completionId
-        SceneDialogue.play(scene.speaker, scene.lines) {
+        SceneDialogue.play(scene.speaker, scene.lines, onFinish@{
+            if (!playback.finish(token)) return@onFinish
             if (focused) Battlecam.release()
-            playing = false
-            playingCompletionId = null
             scene.completionId?.let(::acknowledge)
             releaseEnd()
-        }
+        })
         if (scene.focusEntityId != BattleScenePayload.NO_FOCUS && SceneDialogue.isActive()) {
             focused = Battlecam.focus(scene.focusEntityId, CAMERA_LIMIT_MILLIS)
         }

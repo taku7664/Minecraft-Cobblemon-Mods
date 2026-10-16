@@ -1,11 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-16 21:52] 리그 보류 전투·오류 팝업·툴팁·야생 역할 NPC 퇴장 수정 (컴파일·단위 확인, 실게임 미확인)
+## [2026-10-16 21:52] 리그 보류 전투·오류 팝업·툴팁·야생 역할 NPC 퇴장 수정과 리뷰 보완 (컴파일·단위 확인, 실게임 미확인)
 
 - **원인과 수정:** 리그 전투 시작이 클라이언트 장면 준비로 보류된 동안 MCC가 초기화 전 `BattleActor.showdownId`를 읽어 요청 전체가 실패했다. 해당 읽기와 장면 감시 등록을 실제 전투 시작 콜백 안으로 옮기고, 시작 도중 예외가 나도 생성한 트레이너 본체를 정리하게 했다. 전용 서버도 장면 보류를 지원하는 클라이언트면 같은 경로이며, 확인된 런타임 로그는 싱글플레이뿐이다.
-- **오류·화면:** 서버는 최신 리그 상태를 먼저 보낸 뒤 공통 UI 위험 팝업 하나만 보내며, 팝업 패킷을 지원하지 않는 클라이언트만 채팅을 받는다. `errorKey`를 클리어 보상 칸에서 제거했다. 도전 상대·클리어 보상 툴팁은 위젯 고정 `Tooltip` 대신 현재 마우스 좌표의 `setTooltipForNextRenderPass`를 쓴다.
-- **퇴장:** 야생 트레이너의 고정 15초 타이머를 없앴다. 마무리 장면 또는 역할 NPC 대화를 사용자가 끝냈다는 서버 확인 뒤 퇴장한다. 접속 종료, 차원 변경, 32블록 초과, NPC 제거는 시간 제한 없이 안전 종료로 처리하고, 장면 미지원 클라이언트는 채팅 대체 직후 퇴장한다. `DEFEATED_TAG`는 재시작 뒤 남은 NPC 정리에 계속 사용한다.
-- **확인:** 리그 회귀 테스트 3/3 성공, 네 변경 모듈의 `compileKotlin`·`compileTestKotlin` 성공. JAR 빌드·배치·서버/클라이언트 실행·전용 서버·실게임 UI/전투 확인은 하지 않았다. 커밋·푸시도 하지 않았다.
+- **오류·화면:** 서버는 최신 리그 상태를 먼저 보낸 뒤 공통 UI 위험 팝업 하나만 보내며, 팝업 패킷을 지원하지 않는 클라이언트만 채팅을 받는다. `LeagueErrorPayload`만 온 경우에도 수신기가 `LeagueHomeController.receiveError`를 거쳐 `pending`과 timeout 기한을 먼저 풀고 팝업 하나를 띄우므로 버튼 잠금과 100틱 timeout 팝업 중첩이 남지 않는다. `errorKey`를 클리어 보상 칸에서 제거했다. 도전 상대·클리어 보상 툴팁은 위젯 고정 `Tooltip` 대신 현재 마우스 좌표의 `setTooltipForNextRenderPass`를 쓴다.
+- **퇴장·호환성:** 야생 트레이너의 고정 15초 타이머를 없앴다. 마무리 장면 또는 역할 NPC 대화를 사용자가 끝냈다는 서버 확인 뒤 퇴장한다. 접속 종료, 차원 변경, 32블록 초과, NPC 제거는 시간 제한 없이 안전 종료로 처리한다. 완료 대기 장면은 기존 `battle_scene` 코덱이 아니라 새 `battle_scene_await` 채널과 완료 C2S 채널을 모두 지원할 때만 쓰며, 구버전 클라이언트에는 채팅을 보낸 뒤 즉시 완료한다. `finishLeaving`과 역할 대화 콜백은 해당 NPC UUID를 캡처하므로 다른 NPC를 지우지 않으며, `DEFEATED_TAG`는 재시작 뒤 남은 NPC 정리에 계속 사용한다.
+- **확인:** `LeagueRegressionPolicyTest` 4/4와 MCC `BattleSceneLifecyclePolicyTest` 5/5 성공, MCC·리그·cobblemon-ui·cobblemon-npc의 `compileKotlin`·`compileTestKotlin` 성공. 최종 검증에서는 모든 JAR 작업을 비활성화했다. 첫 컴파일 시도에서 Gradle 의존성 때문에 battlecam·cobblemon-ui·cobblemon-npc·MCC·리그 dev JAR과 Loom 중간 JAR이 F 격리 빌드 경로에 생성되어 즉시 중단했으며 배치·서버/클라이언트 실행·전용 서버·실게임 UI/전투 확인은 하지 않았다. 생성물은 임의 삭제하지 않았고 커밋·푸시도 하지 않았다.
 
 ## [2026-10-16 10:00] 68e408b2 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
 

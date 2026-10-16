@@ -80,6 +80,9 @@ internal object LeagueHomeController {
 
     fun dismiss() { openRequest.dismiss() }
 
+    /** A server rejection completes the in-flight intent before its one popup is shown. */
+    fun receiveError(key: String) = fail(key)
+
     private fun showingLeague(): Boolean {
         val hub = MccHubScreen.current ?: return false
         return Minecraft.getInstance().screen === hub && hub.selectedTabId == CONTENT
@@ -90,7 +93,8 @@ internal object LeagueHomeController {
     }
 
     private fun fail(key: String) {
-        state.accept(state.view)
+        pendingUntil = 0L
+        state.reject()
         refresh()
         LeagueErrorPopup.show(key)
     }

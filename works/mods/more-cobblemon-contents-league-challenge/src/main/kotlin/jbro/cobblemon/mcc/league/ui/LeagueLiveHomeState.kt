@@ -94,4 +94,9 @@ class LeagueLiveHomeState {
         if (allowed) pending = true
         return allowed
     }
+
+    /** The server answered an in-flight intent with an error rather than a replacement view. */
+    fun reject() {
+        pending = false
+    }
 }

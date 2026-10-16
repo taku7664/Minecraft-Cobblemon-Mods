@@ -3,7 +3,8 @@
 ## [2026-10-16 21:52] 장면 대사 수동 종료 유지 (컴파일·단위 확인, 실게임 미확인)
 
 - `SceneDialogue`의 페이지 자동 진행과 마지막 페이지 시간 제한 종료를 없앴다. 장면 대사는 사용자의 확인 입력으로만 다음 페이지·종료로 진행하며, 기존 `expectedMillis` 공개 시그니처는 호환을 위해 유지하고 타이핑 예상 시간만 계산한다.
-- `SceneDialogueManualAdvanceTest` 1/1과 `compileKotlin`·`compileTestKotlin`이 성공했다. JAR 빌드·배치·클라이언트 실행·실화면 확인은 하지 않았고 커밋·푸시도 하지 않았다.
+- `SceneDialogue.play()`는 새 장면을 넣기 전에 `stop()`으로 이전 장면의 완료 콜백을 동기 실행한다. MCC 소비자는 이전 장면을 먼저 멈춘 뒤 새 재생 토큰을 설치하고, 완료 콜백도 자기 토큰일 때만 현재 상태를 지우도록 보완했다.
+- 기존 `SceneDialogueManualAdvanceTest` 1/1에 더해 MCC `BattleSceneLifecyclePolicyTest` 5/5가 성공했고, `compileKotlin`·`compileTestKotlin`도 성공했다. 첫 컴파일 시도에서 Gradle 의존성 때문에 cobblemon-ui 중간 JAR이 F 격리 빌드 경로에 생성되어 즉시 중단했으며, 최종 검증에서는 JAR 작업을 비활성화했다. JAR 배치·클라이언트 실행·실화면 확인·커밋·푸시는 하지 않았다.
 
 ## [2026-10-16 16:00] 1cb6bc1c 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
 

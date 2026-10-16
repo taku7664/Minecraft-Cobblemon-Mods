@@ -3,7 +3,8 @@
 ## [2026-10-16 21:52] 대화 종료 콜백과 역할 NPC 안전 퇴장 조건 (컴파일·단위 확인, 실게임 미확인)
 
 - 기존 `NpcTalks.open(player, talk)` 시그니처를 유지하면서 대화가 끝날 때 정확히 한 번 호출되는 콜백 오버로드를 추가했다. 마지막 답변, 클라이언트 닫기, 명시 종료, 대화 교체, 접속 종료와 NPC 제거·차원 변경·32블록 초과를 종료로 처리하며 시간 경과만으로 대화를 넘기지 않는다.
-- `NpcTalkCompletionPolicyTest` 1/1과 `compileKotlin`·`compileTestKotlin`이 성공했다. JAR 빌드·배치·서버/클라이언트 실행·실게임 대화 확인은 하지 않았고 커밋·푸시도 하지 않았다.
+- 후속 교차 종료 점검에서 `DialogueSessions.close`는 맵의 현재 값이 같은 세션 객체일 때만 제거하고, 대화 교체도 이전 세션 콜백을 다음 세션 설치 전에 끝낸다. 리그 역할 NPC 콜백도 플레이어의 현재 대화가 아니라 해당 NPC UUID를 캡처하므로 새 NPC나 새 대화를 지우는 같은 유형의 문제는 확인되지 않았다.
+- 기존 `NpcTalkCompletionPolicyTest` 1/1과 리그 `LeagueRegressionPolicyTest` 4/4가 성공했고, `compileKotlin`·`compileTestKotlin`도 성공했다. 첫 컴파일 시도에서 Gradle 의존성 때문에 cobblemon-npc 중간 JAR이 F 격리 빌드 경로에 생성되어 즉시 중단했으며, 최종 검증에서는 JAR 작업을 비활성화했다. JAR 배치·서버/클라이언트 실행·실게임 대화 확인·커밋·푸시는 하지 않았다.
 
 ## [2026-10-15 23:55] 대화창 콘텐츠 테마, 선택지 창을 대화창에 탭처럼 붙임 (개발 클라 캡처 확인, 빌드·배치 안 함)
 

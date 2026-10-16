@@ -21,7 +21,6 @@ internal data class BattleScenePayload(
     val speaker: Component?,
     val lines: List<Component>,
     val interject: Boolean = false,
-    val completionId: UUID? = null,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<BattleScenePayload> = TYPE
 
@@ -32,23 +31,47 @@ internal data class BattleScenePayload(
             ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_scene"))
         private val SPEAKER = ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC)
         private val LINES = ComponentSerialization.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LINES))
-        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleScenePayload> = StreamCodec.of({ buffer, payload ->
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleScenePayload> = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, BattleScenePayload::focusEntityId,
+            SPEAKER, { Optional.ofNullable(it.speaker) },
+            LINES, BattleScenePayload::lines,
+            ByteBufCodecs.BOOL, BattleScenePayload::interject,
+        ) { focus, speaker, lines, interject -> BattleScenePayload(focus, speaker.orElse(null), lines, interject) }
+    }
+}
+
+/** Closing scene protocol added after [BattleScenePayload]; its separate ID keeps the legacy codec byte-for-byte. */
+internal data class BattleSceneAwaitPayload(
+    val focusEntityId: Int,
+    val speaker: Component?,
+    val lines: List<Component>,
+    val completionId: UUID,
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<BattleSceneAwaitPayload> = TYPE
+
+    companion object {
+        val TYPE = CustomPacketPayload.Type<BattleSceneAwaitPayload>(
+            ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_scene_await"))
+        private val SPEAKER = ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC)
+        private val LINES = ComponentSerialization.STREAM_CODEC.apply(ByteBufCodecs.list(BattleScenePayload.MAX_LINES))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleSceneAwaitPayload> = StreamCodec.of({ buffer, payload ->
             buffer.writeVarInt(payload.focusEntityId)
             SPEAKER.encode(buffer, Optional.ofNullable(payload.speaker))
             LINES.encode(buffer, payload.lines)
-            buffer.writeBoolean(payload.interject)
-            buffer.writeBoolean(payload.completionId != null)
-            payload.completionId?.let(buffer::writeUUID)
+            buffer.writeUUID(payload.completionId)
         }, { buffer ->
-            BattleScenePayload(
+            BattleSceneAwaitPayload(
                 buffer.readVarInt(),
                 SPEAKER.decode(buffer).orElse(null),
                 LINES.decode(buffer),
-                buffer.readBoolean(),
-                if (buffer.readBoolean()) buffer.readUUID() else null,
+                buffer.readUUID(),
             )
         })
     }
+}
+
+internal object BattleSceneAwaitPolicy {
+    fun supported(sceneChannel: Boolean, completionChannel: Boolean): Boolean = sceneChannel && completionChannel
 }
 
 internal data class BattleSceneFinishedPayload(val completionId: UUID) : CustomPacketPayload {
@@ -80,6 +103,7 @@ internal data class BattleSceneCancelPayload(val completionId: UUID) : CustomPac
 internal object BattleSceneNetworking {
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(BattleScenePayload.TYPE, BattleScenePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(BattleSceneAwaitPayload.TYPE, BattleSceneAwaitPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleSceneCancelPayload.TYPE, BattleSceneCancelPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(BattleSceneFinishedPayload.TYPE, BattleSceneFinishedPayload.CODEC)
         BattleSceneCompletions.registerServer()

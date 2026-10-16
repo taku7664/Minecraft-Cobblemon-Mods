@@ -51,7 +51,7 @@ object LeagueClientSession {
             context.client().execute { updateRank(payload.rank) }
         }
         ClientPlayNetworking.registerGlobalReceiver(LeagueErrorPayload.TYPE) { payload, context ->
-            context.client().execute { LeagueErrorPopup.show(payload.translationKey) }
+            context.client().execute { LeagueHomeController.receiveError(payload.translationKey) }
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, client ->
             client.execute { current = null; rank = null; listeners.toList().forEach { it(null) } }

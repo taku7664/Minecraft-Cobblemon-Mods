@@ -25,7 +25,7 @@ import net.minecraft.world.entity.Entity
 internal object Cobblemon173TrainerBody {
     val NPC_CLASS: ResourceLocation = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "managed_trainer")
     private const val TAG = "mcc_managed_trainer"
-    private class Body(val npc: NPCEntity)
+    private class Body(val npc: NPCEntity, var battleId: UUID? = null)
 
     private val bodies = HashMap<UUID, Body>()
 
@@ -84,15 +84,18 @@ internal object Cobblemon173TrainerBody {
 
     /** Marks the trainer as in [battleId], which Cobblemon's poser reads for the battle stance. */
     fun battleStarted(playerId: UUID, battleId: UUID) {
-        val npc = bodies[playerId]?.npc ?: return
+        val body = bodies[playerId] ?: return
+        body.battleId = battleId
+        val npc = body.npc
         npc.entityData.set(NPCEntity.BATTLE_IDS, npc.battleIds + battleId)
     }
 
     /** The client finished the battle's closing words: the trainer stands down and leaves now. */
     fun battleEnded(playerId: UUID, battleId: UUID) {
         val body = bodies[playerId] ?: return
+        if (!TrainerBodyBattleOwnership.matches(body.battleId, battleId)) return
         body.npc.entityData.set(NPCEntity.BATTLE_IDS, body.npc.battleIds - battleId)
-        dismiss(playerId)
+        if (bodies.remove(playerId, body)) body.npc.discard()
     }
 
     /** The trainer standing in [playerId]'s battle, if one is. */
@@ -102,4 +105,8 @@ internal object Cobblemon173TrainerBody {
     fun dismiss(playerId: UUID) {
         bodies.remove(playerId)?.npc?.discard()
     }
+}
+
+internal object TrainerBodyBattleOwnership {
+    fun matches(activeBattleId: UUID?, endedBattleId: UUID): Boolean = activeBattleId == endedBattleId
 }

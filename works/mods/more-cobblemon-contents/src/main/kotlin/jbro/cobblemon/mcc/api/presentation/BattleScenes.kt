@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.api.presentation
 
 import jbro.cobblemon.mcc.internal.presentation.BattleScenePayload
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneAwaitPayload
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneAwaitPolicy
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneFinishedPayload
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
@@ -33,7 +36,11 @@ object BattleScenes {
      */
     fun playUntilFinished(player: ServerPlayer, focus: Entity, speaker: Component?, lines: List<Component>, finished: Runnable) {
         require(lines.size in 1..MAX_LINES) { "A scene has 1 to $MAX_LINES lines" }
-        if (!ServerPlayNetworking.canSend(player, BattleScenePayload.TYPE)) {
+        val supportsAwaiting = BattleSceneAwaitPolicy.supported(
+            ServerPlayNetworking.canSend(player, BattleSceneAwaitPayload.TYPE),
+            BattleSceneFinishedPayload.TYPE.id() in ServerPlayNetworking.getReceived(player),
+        )
+        if (!supportsAwaiting) {
             chat(player, speaker, lines)
             finished.run()
             return
@@ -41,7 +48,7 @@ object BattleScenes {
         val completionId = jbro.cobblemon.mcc.internal.presentation.BattleSceneCompletions.await(player, focus, finished)
         try {
             val focusId = focus.takeIf { it.level() === player.level() && !it.isRemoved }?.id ?: BattleScenePayload.NO_FOCUS
-            ServerPlayNetworking.send(player, BattleScenePayload(focusId, speaker, lines, interject = false, completionId))
+            ServerPlayNetworking.send(player, BattleSceneAwaitPayload(focusId, speaker, lines, completionId))
         } catch (failure: RuntimeException) {
             jbro.cobblemon.mcc.internal.presentation.BattleSceneCompletions.cancel(completionId)
             throw failure
