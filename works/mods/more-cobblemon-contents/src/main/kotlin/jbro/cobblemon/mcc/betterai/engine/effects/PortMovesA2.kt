@@ -651,6 +651,9 @@ object PortMovesA2 : HookSet() {
                 }
             }
         }
+        // King's Shield and Obstruct, as Showdown's data/moves.ts: Silk Trap's shape with their own drop on contact.
+        contactDropProtect("kingsshield", "King's Shield", mapOf("atk" to -1))
+        contactDropProtect("obstruct", "Obstruct", mapOf("def" to -2))
         move("flail") {
             callback("basePowerCallback") {
                 val p = pokemon
@@ -1415,4 +1418,34 @@ object PortMovesA2 : HookSet() {
     }
 
     // endregion
+
+    /** A Protect that lets status moves through and lowers a contact attacker's [drop] (King's Shield, Obstruct). */
+    private fun HookRegistrar.contactDropProtect(id: String, name: String, drop: Map<String, Int>) = move(id) {
+        on("PrepareHit") { battle.queue.willAct() != null && Js.truthy(battle.runEvent("StallMove", pokemon)) }
+        on("Hit") { pokemon.addVolatile("stall"); Unit }
+        condition {
+            on("Start") { add("-singleturn", target, "Protect"); Unit }
+            on("TryHit") {
+                val t = pokemon
+                val s = sourceMon!!
+                val m = move
+                if (!m.flag("protect") || m.category == "Status") {
+                    if (m.id in listOf("gmaxoneblow", "gmaxrapidflow")) return@on Unit
+                    if (Js.truthy(m.isZ) || Js.truthy(m.isMax)) t.getMoveHitData(m).zBrokeProtect = true
+                    return@on Unit
+                }
+                if (m.smartTarget == true) m.smartTarget = false else add("-activate", t, "move: Protect")
+                dropLockedMove(s)
+                if (battle.checkMoveMakesContact(m, s, t)) battle.boost(drop, s, t, dex.activeMove(name))
+                NOT_FAIL
+            }
+            on("Hit") {
+                val s = sourceMon!!
+                if (move.isZOrMaxPowered && battle.checkMoveMakesContact(move, s, pokemon)) {
+                    battle.boost(drop, s, pokemon, dex.activeMove(name))
+                }
+                Unit
+            }
+        }
+    }
 }

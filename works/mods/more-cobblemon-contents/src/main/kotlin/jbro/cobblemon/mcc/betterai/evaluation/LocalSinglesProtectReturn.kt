@@ -34,6 +34,11 @@ import java.util.UUID
  *   its last turn came out worth a knockout (a Max Guard at 212 against attacks at 7).
  *
  * Null outside singles or without both Pokemon in front; the caller weighs it by the chance the Protect works.
+ *
+ * The turn's end is played here with the opponent waiting. Where the engine runs, the brain plays it against the
+ * opponent's likely replies instead ([jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.protectTurns]) and
+ * moves this value by the difference ([turnEnd]): a contact move into Spiky Shield or Baneful Bunker, or the opponent
+ * raising its stats while the user hides, is part of what the turn brought.
  */
 internal object LocalSinglesProtectReturn {
     fun value(candidate: BattleActionCandidate, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double? {
@@ -43,16 +48,7 @@ internal object LocalSinglesProtectReturn {
         val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && alive(it) } ?: return null
         val cache = LocalProjectedActionCalculationCache()
         val shouldContinue = { System.currentTimeMillis() < context.deadlineEpochMillis }
-        val projections = PublicSingleTurnProjector.project(state, candidate, BattleActionCandidate("protect:wait", BattleActionKind.WAIT),
-            context, RecursiveSnapshotActionConstraints.seed(state), calculationCache = cache, shouldContinue = shouldContinue)
-        val mass = projections.sumOf { it.probability * it.orderProbability }
-        if (mass <= 0.0) return null
-        // The win bonus left out: the attacks it is weighed against carry none, so a residual knockout of the last opponent
-        // put a Max Guard at 100180 (its knockout stays, as material).
-        val turn = projections.sumOf {
-            it.probability * it.orderProbability * (LocalImmediateTurnScorer.score(state, it.state, context, cache, tuning, shouldContinue).total -
-                LocalTerminalOutcomeValue.evaluate(it.state) + LocalTerminalOutcomeValue.evaluate(state))
-        } / mass
+        val (turn, projections) = turnEnd(candidate, context, tuning, cache) ?: return null
         val fieldTurns = -timedEffects(state.field).sumOf { (effect, without) ->
             val left = remaining(effect)?.takeIf { it >= 2.0 } ?: return@sumOf 0.0
             LocalImmediateTurnScorer.score(state.derive(field = without), state, context, cache, tuning, shouldContinue).total / left
@@ -70,6 +66,30 @@ internal object LocalSinglesProtectReturn {
             -(with - without)
         }
         return turn + fieldTurns + dynamaxTurns
+    }
+
+    /**
+     * The turn's end with the opponent waiting, in board units, and the projections it was read from: residual damage
+     * on either side, healing, Speed Boost and the like. Null when nothing could be projected.
+     */
+    fun turnEnd(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+    ): Pair<Double, List<jbro.cobblemon.mcc.betterai.state.PublicTurnProjection>>? {
+        val state = context.state
+        val shouldContinue = { System.currentTimeMillis() < context.deadlineEpochMillis }
+        val projections = PublicSingleTurnProjector.project(state, candidate, BattleActionCandidate("protect:wait", BattleActionKind.WAIT),
+            context, RecursiveSnapshotActionConstraints.seed(state), calculationCache = cache, shouldContinue = shouldContinue)
+        val mass = projections.sumOf { it.probability * it.orderProbability }
+        if (mass <= 0.0) return null
+        // The win bonus left out: the attacks it is weighed against carry none, so a residual knockout of the last opponent
+        // put a Max Guard at 100180 (its knockout stays, as material).
+        return projections.sumOf {
+            it.probability * it.orderProbability * (LocalImmediateTurnScorer.score(state, it.state, context, cache, tuning, shouldContinue).total -
+                LocalTerminalOutcomeValue.evaluate(it.state) + LocalTerminalOutcomeValue.evaluate(state))
+        } / mass to projections
     }
 
     /** One exchange of [user] and [foe], the user's best expected hit less the foe's, with [pokemonId]'s volatiles set to [volatiles]. */

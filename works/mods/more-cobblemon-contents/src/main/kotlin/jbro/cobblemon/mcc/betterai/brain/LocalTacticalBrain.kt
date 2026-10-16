@@ -579,7 +579,11 @@ internal class LocalTacticalBrain(
             else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
         // Where the rules run, the moves they price (hazards, Encore, debuffs) take the rules' value, not the engine's
         // two-turn reading; below that tier the engine's reading is all they have.
-        val nativeStatusAdjustments = statusPricing?.adjustments.orEmpty().let { engine ->
+        // A singles Protect's turn, played against the opponent's likely replies instead of a waiting opponent: what a
+        // contact move into it and the opponent's own raise or switch bring (LocalSinglesProtectReturn.turnEnd).
+        val protectTurns = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap()
+            else protectTurnAdjustments(difficultyContext, decidingProfile, tuning)
+        val nativeStatusAdjustments = protectTurns + statusPricing?.adjustments.orEmpty().let { engine ->
             if (!rulesApply) engine else engine.filterKeys { id ->
                 val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@filterKeys true
                 !jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.prices(candidate) &&
@@ -912,6 +916,42 @@ internal class LocalTacticalBrain(
             },
         )
         return choice.leads
+    }
+
+    /**
+     * Each singles Protect's turn as the engine plays it against the opponent's likely replies, less the turn's end with
+     * the opponent waiting that its ranking value already holds, in score units.
+     * A Max Guard and a Dynamaxed user's move stay out: the engine does not read them under their own IDs.
+     */
+    private fun protectTurnAdjustments(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+    ): Map<String, Double> {
+        val user = context.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
+        if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) return emptyMap()
+        // Only a Protect sure to work: the engine draws one random stream, so a second one in a row came out failed
+        // whole (a knockout, -80) or not at all.
+        val protects = context.candidates.filter {
+            it.kind == BattleActionKind.USE_MOVE && it.mechanic == null &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.isStallingProtection(it) &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(
+                    context.state, BattleSide.ALLY, it.actorSlot) == 0
+        }
+        if (protects.isEmpty()) return emptyMap()
+        val engine = try {
+            val intents = LocalOpponentIntentPredictor.predict(context, jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context), scoredSwitches = true)
+            jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.protectTurns(context, profile.difficulty.tier, protects, intents, tuning)
+        } catch (e: RuntimeException) {
+            logger.error("[BetterAI] Protect turns could not be played out in the engine; they keep the waiting reading", e)
+            return emptyMap()
+        }
+        return protects.mapNotNull { protect ->
+            val played = engine[protect.actionId] ?: return@mapNotNull null
+            val waiting = jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.turnEnd(protect, context, tuning)?.first
+                ?: return@mapNotNull null
+            protect.actionId to tuning.board(played - waiting)
+        }.toMap()
     }
 
     private fun mechanicTwin(

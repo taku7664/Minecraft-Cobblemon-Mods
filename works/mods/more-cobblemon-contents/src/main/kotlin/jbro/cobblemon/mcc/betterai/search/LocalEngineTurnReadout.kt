@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleStateAdapter
 import jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker
@@ -17,23 +18,26 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.ai.PublicIds
+import java.util.UUID
 
 /**
  * Status moves and the attacks they displace, played against the opponent's replies in the engine and read off its
  * board. Nothing is read from a move's name.
  *
- * Each action is played against every reply the opponent has, in its three likeliest worlds, and the board after it
- * is valued by the search's leaf ([LocalLookaheadStateEvaluator]). The replies are weighed by how likely the
- * opponent is to make them ([OpponentIntent], the same prediction the switching rules use), with a share of the
+ * Each action is played against every public reply the opponent has, in its three likeliest worlds, and the board
+ * after it is valued by the search's leaf ([LocalLookaheadStateEvaluator]). An unrevealed status move is not a public
+ * reply; inferred attacks, switches and moves whose category is unknown remain. The replies are weighed by how likely
+ * the opponent is to make them ([OpponentIntent], the same prediction the switching rules use), with a share of the
  * worst one mixed in ([LocalDecisionTuning.statusReplyExpectation] is the likely part). Taking only the worst read
  * every reply as the one that hurts most, often the opponent switching out, which drops its own stages and so made
  * wiping them worth nothing. Each first turn is drawn on three random streams. A move whose data declares a lasting
  * effect is played a second turn instead (on one stream): this side's best attack against the opponent's three
- * likeliest replies, weighed the same way.
+ * likeliest public replies, weighed the same way.
  *
  * The same boards, compared side by side against the reference attack under each reply, give:
  * - [Reading.selfHarm]: in every reply the move dealt nothing, took something from this side (its stages, a condition
@@ -42,6 +46,9 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  *   side's conditions, weather, terrain, rooms). Reported only; it does not send a move to a second turn.
  */
 internal object LocalEngineTurnReadout {
+    /** Test-only measurement switch; false restores inferred unrevealed status replies. */
+    internal var publicRepliesOnly: Boolean = true
+
     data class Reading(
         val selfHarm: Set<String>,
         val changed: Set<String>,
@@ -52,7 +59,7 @@ internal object LocalEngineTurnReadout {
 
     private const val WORLDS = 3
     private const val EPSILON = 1e-6
-    /** The least chance a reply the prediction does not name gets (a hypothesised move, an unseen switch-in). */
+    /** The least chance an unnamed public reply gets (an inferred attack, an unseen switch-in). */
     private const val UNNAMED_REPLY = 0.02
     private const val SECOND_TURN_REPLIES = 3
     /** Random streams each first turn is drawn on. */
@@ -87,6 +94,7 @@ internal object LocalEngineTurnReadout {
         val ids = moves.mapNotNull { it.moveId?.let(PublicIds::canonical) }.distinct()
         val likely = intents.flatMap { intent -> intent.byAction().entries }.associate { (key, p) -> canonicalKey(key) to p }
         val expectation = tuning.statusReplyExpectation
+        val knownOpponentMoves = knownOpponentMoveIdsBySlot(context)
         return LocalEngineStopProbe.lease.withWorker(deadline) { worker ->
             val worlds = plan.worlds.mapNotNull { world ->
                 val root = live?.let { worker.createLiveBattle(it, world.definition) } ?: worker.createBattle(world.definition)
@@ -99,9 +107,13 @@ internal object LocalEngineTurnReadout {
             val harmedEverywhere = ids.associateWith { true }.toMutableMap()
             val seen = hashSetOf<String>()
             val changed = hashSetOf<String>()
-            val firstTurns = worlds.map { played ->
+            val firstTurns = worlds.mapNotNull { played ->
                 val template = played.world.publicContext.state
-                val replies = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, played.root, allowedMechanics = emptySet())
+                val replies = publicReplies(
+                    NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, played.root, allowedMechanics = emptySet()),
+                    knownOpponentMoves,
+                )
+                if (replies.isEmpty()) return@mapNotNull null
                 val chances = chances(replies, likely)
                 val boards = linkedMapOf<String, List<Pair<NativeBattleFrame, BattleStateView>>>()
                 val actions = linkedMapOf<String, BattleActionCandidate>()
@@ -123,34 +135,165 @@ internal object LocalEngineTurnReadout {
                 }
                 FirstTurn(played, replies, chances, boards, actions)
             }
+            if (firstTurns.isEmpty()) return@withWorker null
             // Two turns only for a move whose data declares a lasting effect: read off the board instead, nearly every
             // status move qualified and a decision took up to 1.5 s on a desktop. A scripted move (Haze) stays one turn.
             val plies = if (lastingDeclared && maxPlies >= 2) 2 else 1
             val seeds = if (plies == 2) 1 else SEEDS
             val values = linkedMapOf<String, Double>()
-            val weight = worlds.sumOf { it.world.probability }
+            val weights = linkedMapOf<String, Double>()
             for (turn in firstTurns) {
                 val cache = LocalProjectedActionCalculationCache()
                 val source = turn.played.world.publicContext
-                for ((key, boards) in turn.boards) {
+                actionLoop@ for ((key, boards) in turn.boards) {
                     // Each first turn drawn on SEEDS random streams (a miss, a critical hit, a secondary effect); the
                     // comparison above reads the first draw only.
                     val action = turn.actions.getValue(key)
-                    val perReply = turn.replies.mapIndexed { r, reply ->
-                        (0 until seeds).map { seed ->
+                    val perReply = mutableListOf<Double>()
+                    for ((r, reply) in turn.replies.withIndex()) {
+                        var total = 0.0
+                        for (seed in 0 until seeds) {
                             val (frame, state) = if (seed == 0) boards[r] else play(worker,
                                 worker.reseed(turn.played.root.snapshotJson, seed), action, reply, turn.played.world.publicContext.state)
-                            if (plies == 1 || frame.ended || frame.requestState != "move") leaf(state, source, cache, tuning)
-                            else secondTurn(worker, frame, turn.played.world, source, cache, tuning, likely, expectation)
-                        }.average()
+                            total += if (plies == 1 || frame.ended || frame.requestState != "move") leaf(state, source, cache, tuning)
+                            else secondTurn(worker, frame, turn.played.world, source, cache, tuning, likely, expectation) ?:
+                                continue@actionLoop
+                        }
+                        perReply += total / seeds
                     }
                     val value = blend(perReply, turn.chances, expectation)
-                    values.merge(key, turn.played.world.probability / weight * value, Double::plus)
+                    values.merge(key, turn.played.world.probability * value, Double::plus)
+                    weights.merge(key, turn.played.world.probability, Double::plus)
                 }
             }
-            Reading(harmedEverywhere.filter { (id, harmed) -> harmed && id in seen }.keys, changed, values, plies)
+            Reading(
+                harmedEverywhere.filter { (id, harmed) -> harmed && id in seen }.keys,
+                changed,
+                values.mapValues { (key, value) -> value / weights.getValue(key) },
+                plies,
+            )
         }
     }
+
+    /**
+     * What a turn spent on each of [protects] brings, played in the engine against the opponent's replies, worlds and
+     * replies weighed as [read] weighs them: the turn's score ([LocalImmediateTurnScorer], the finished-battle value
+     * left out), keyed by action ID. A hit the Protect blocks leaves nothing on the board, so what is left is what the
+     * turn changed: a contact move punished (Spiky Shield's damage, Baneful Bunker's poison, King's Shield's drop, all
+     * as the engine runs them, no move named), the opponent's own raise or switch, the turn's end. Missing for a move
+     * the engine could not play. This Protect-only readout excludes unrevealed status replies so a hypothesised status
+     * move cannot suppress or determine protection; inferred attacks and switches remain.
+     */
+    fun protectTurns(
+        context: BattleDecisionContext,
+        tier: BattleTrainerTier,
+        protects: List<BattleActionCandidate>,
+        intents: List<OpponentIntent>,
+        tuning: LocalDecisionTuning,
+    ): Map<String, Double> {
+        if (protects.isEmpty()) return emptyMap()
+        val live = context.showdownState
+        val plan = when {
+            live != null -> planner.planLive(context, tier)
+            context.state.turn in 0..1 && NativeOpeningStateRules.acceptsObservations(context.state) -> planner.plan(context, tier)
+            else -> planner.planMidBattle(context, tier)
+        }
+        if (plan.issues.isNotEmpty() || plan.worlds.isEmpty()) {
+            logger.error("[BetterAI] Protect readout could not plan the opponent's worlds: {}", plan.issues.map { it.code.name + ":" + it.detailCode })
+            return emptyMap()
+        }
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+            (context.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L))
+        val likely = intents.flatMap { intent -> intent.byAction().entries }.associate { (key, p) -> canonicalKey(key) to p }
+        val expectation = tuning.statusReplyExpectation
+        val knownOpponentMoves = knownOpponentMoveIdsBySlot(context)
+        return LocalEngineStopProbe.lease.withWorker(deadline) { worker ->
+            val values = linkedMapOf<String, Double>()
+            val weights = linkedMapOf<String, Double>()
+            for (world in plan.worlds) {
+                val root = live?.let { worker.createLiveBattle(it, world.definition) } ?: worker.createBattle(world.definition)
+                val ally = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root, allowedMechanics = emptySet())
+                val replies = publicReplies(
+                    NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root, allowedMechanics = emptySet()),
+                    knownOpponentMoves,
+                )
+                if (replies.isEmpty()) continue
+                val chances = chances(replies, likely)
+                val source = world.publicContext
+                val cache = LocalProjectedActionCalculationCache()
+                for (protect in protects) {
+                    val move = ally.firstOrNull { same(it, protect) } ?: continue
+                    val turns = replies.map { reply ->
+                        val after = play(worker, root, move, reply, source.state).second
+                        LocalImmediateTurnScorer.score(source.state, after, source, cache, tuning).total -
+                            jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(after) +
+                            jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(source.state)
+                    }
+                    values.merge(protect.actionId, world.probability * blend(turns, chances, expectation), Double::plus)
+                    weights.merge(protect.actionId, world.probability, Double::plus)
+                }
+            }
+            values.mapValues { (id, value) -> value / weights.getValue(id) }
+        } ?: emptyMap()
+    }
+
+    internal fun publicReplies(
+        replies: List<BattleActionCandidate>,
+        knownMoveIdsBySlot: Map<Int, Set<String>>?,
+    ): List<BattleActionCandidate> {
+        if (!publicRepliesOnly || knownMoveIdsBySlot == null) return replies
+        val known = knownMoveIdsBySlot.mapValues { (_, ids) -> ids.mapTo(hashSetOf(), PublicIds::canonical) }
+        return replies.filter { reply ->
+            parts(reply).all { part ->
+                if (part.kind != BattleActionKind.USE_MOVE) return@all true
+                val moveId = part.moveId ?: return@all true
+                if (replyDamageCategory(part) != BattleMoveDamageCategory.STATUS) return@all true
+                val actorKnown = part.actorSlot?.let(known::get) ?: return@all true
+                PublicIds.canonical(moveId) in actorKnown
+            }
+        }
+    }
+
+    /** Compatibility helper for focused single-slot tests. */
+    internal fun publicReplies(replies: List<BattleActionCandidate>, knownMoveIds: Set<String>?): List<BattleActionCandidate> =
+        publicReplies(replies, knownMoveIds?.let { mapOf(0 to it) })
+
+    private fun knownOpponentMoveIdsBySlot(context: BattleDecisionContext): Map<Int, Set<String>>? =
+        context.state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+            .associate { requireNotNull(it.activeSlot) to it.knownMoveIds }
+            .takeIf { it.isNotEmpty() }
+
+    internal fun knownOpponentMoveIds(
+        activeOpponentId: UUID?,
+        pokemon: List<BattlePokemonStateView>,
+    ): Set<String>? {
+        if (activeOpponentId == null) return null
+        return pokemon.singleOrNull {
+            it.side == BattleSide.OPPONENT && it.battlePokemonId == activeOpponentId
+        }?.knownMoveIds ?: emptySet()
+    }
+
+    internal fun knownOpponentMoveIds(
+        activeOpponentIds: Map<Int, UUID>,
+        pokemon: List<BattlePokemonStateView>,
+    ): Map<Int, Set<String>>? = activeOpponentIds.mapValues { (_, id) ->
+        knownOpponentMoveIds(id, pokemon).orEmpty()
+    }.takeIf { it.isNotEmpty() }
+
+    private fun activeOpponentIds(frame: NativeBattleFrame): Map<Int, UUID> = frame.p2Active.mapNotNull { active ->
+        val slot = active.activeSlot?.takeIf { active.hp > 0 } ?: return@mapNotNull null
+        runCatching { UUID.fromString(active.uuid) }.getOrNull()?.let { slot to it }
+    }.toMap()
+
+    private fun replyDamageCategory(reply: BattleActionCandidate): BattleMoveDamageCategory? {
+        reply.moveDetails?.damageCategory?.let { return it }
+        val moveId = reply.moveId?.let(PublicIds::canonical) ?: return null
+        val category = runCatching { EngineRuntimeDex.current().second.move(moveId)?.category }.getOrNull() ?: return null
+        return BattleMoveDamageCategory.entries.firstOrNull { it.name.equals(category, ignoreCase = true) }
+    }
+
+    private fun parts(candidate: BattleActionCandidate): List<BattleActionCandidate> =
+        if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
 
     private data class Played(
         val world: NativeInitialProductWorld,
@@ -167,7 +310,7 @@ internal object LocalEngineTurnReadout {
         val actions: Map<String, BattleActionCandidate>,
     )
 
-    /** This side's best attack on the second turn, against the opponent's three likeliest replies. */
+    /** This side's best attack on the second turn, against the opponent's three likeliest public replies. */
     private fun secondTurn(
         worker: NativeBranchWorker,
         frame: NativeBattleFrame,
@@ -177,12 +320,16 @@ internal object LocalEngineTurnReadout {
         tuning: LocalDecisionTuning,
         likely: Map<String, Double>,
         expectation: Double,
-    ): Double {
+    ): Double? {
         val template = world.publicContext.state
         val ours = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, frame, allowedMechanics = emptySet())
         val attacks = ours.filter { it.kind == BattleActionKind.USE_MOVE && it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS }
             .ifEmpty { ours.filter { it.kind == BattleActionKind.USE_MOVE } }.ifEmpty { ours }
-        val all = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, frame, allowedMechanics = emptySet())
+        val all = publicReplies(
+            NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, frame, allowedMechanics = emptySet()),
+            knownOpponentMoveIds(activeOpponentIds(frame), source.state.pokemon),
+        )
+        if (all.isEmpty()) return null
         val allChances = chances(all, likely)
         val top = all.indices.sortedByDescending { allChances[it] }.take(SECOND_TURN_REPLIES)
         if (attacks.isEmpty() || top.isEmpty()) return leaf(NativeBattleStateAdapter.adapt(frame, template), source, cache, tuning)
