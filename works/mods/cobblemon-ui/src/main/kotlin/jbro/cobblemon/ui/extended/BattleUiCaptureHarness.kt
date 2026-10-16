@@ -3,6 +3,7 @@ package jbro.cobblemon.ui.extended
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import com.cobblemon.mod.common.api.npc.NPCClasses
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
+import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.entity.npc.NPCEntity
@@ -11,6 +12,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
@@ -18,6 +20,7 @@ import net.minecraft.client.gui.screens.BackupConfirmScreen
 import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,6 +35,8 @@ import java.util.concurrent.atomic.AtomicReference
  * space|esc` presses a key on the battle screen, `mouse:x,y` moves the cursor to GUI coordinates, `fight` and `switch`
  * open those menus as their tiles would, and `info` toggles the information overlay. Then the client stops.
  * `confirm` presses the bound select key, `log` toggles the battle log, `tile:N` presses the Nth command.
+ * `window:WxH` resizes the GLFW window and waits until Minecraft reports that framebuffer size; `scale:N` changes
+ * GUI scale and waits for the resized UI; `tooltipscale:N` changes the move-tooltip text scale in memory only.
  * `settings` opens the mod's settings screen; only `wait` and `cap` steps may follow it.
  * `entry:<kind>` (`legendary`, `wild`, `trainer`) or `entry:<species>` plays the battle entry transition over the
  * battle without blocking input, and `reveal` clears it. `BATTLE_UI_CAPTURE_CHALLENGE=1` challenges the wild Pokemon
@@ -40,6 +45,11 @@ import java.util.concurrent.atomic.AtomicReference
  * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
  * `BATTLE_UI_CAPTURE_THEME` picks a battle theme by id for the run, without saving it.
+ * `BATTLE_UI_CAPTURE_GIMMICKS=1` replaces the disposable world's party with a four-move Lucario lead holding
+ * `mega_showdown:lucarionite`, gives the player `mega_showdown:omni_ring` in the off hand, and logs the number of
+ * gimmick buttons that the server's move request actually offered. Mega Showdown must be on the dev runtime path.
+ * `BATTLE_UI_CAPTURE_SETUP` runs server commands (`;`-separated, `{player}` for the player's name) before the party is
+ * set up, for whatever other mods need first, such as progress that unlocks gimmicks or raises a level cap.
  */
 object BattleUiCaptureHarness {
     private val logger = CobblemonUi.LOGGER
@@ -47,6 +57,13 @@ object BattleUiCaptureHarness {
     private const val DEFAULT_STEPS = "ready,wait:20,cap:general,key:down,wait:15,cap:focus,key:down,wait:2,cap:moving," +
         "wait:15,key:up,wait:10,fight,wait:10,key:down,wait:15,cap:moves,key:esc,ready,switch,wait:10,key:right," +
         "wait:15,cap:switch,key:esc,ready,info,wait:30,cap:info,info,wait:5"
+
+    private val GIMMICK_PARTY = listOf(
+        "lucario level=10 moves=aurasphere,flashcannon,extremespeed,swordsdance held_item=mega_showdown:lucarionite",
+        "charizard level=10 moves=flamethrower,airslash,dragonpulse,roost",
+        "gardevoir level=10 moves=psychic,moonblast,thunderbolt,calmmind",
+        "pikachu level=10 moves=thunderbolt,quickattack,irontail,agility",
+    )
 
     fun installFromEnvironment() {
         val wild = System.getenv("BATTLE_UI_CAPTURE")?.trim()?.takeIf { it.isNotEmpty() } ?: return
@@ -56,8 +73,10 @@ object BattleUiCaptureHarness {
             if (!jbro.cobblemon.ui.extended.ui.shared.BattleUiThemes.select(it)) logger.warn("Unknown battle theme {}", it)
         }
         val guiScale = System.getenv("BATTLE_UI_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
-        val party = (System.getenv("BATTLE_UI_CAPTURE_PARTY") ?: "pikachu,charizard,gardevoir,lucario")
-            .split(',').map(String::trim).filter(String::isNotEmpty)
+        val gimmicks = System.getenv("BATTLE_UI_CAPTURE_GIMMICKS") == "1"
+        val party = if (gimmicks) GIMMICK_PARTY else
+            (System.getenv("BATTLE_UI_CAPTURE_PARTY") ?: "pikachu,charizard,gardevoir,lucario")
+                .split(',').map(String::trim).filter(String::isNotEmpty)
         val steps = ArrayDeque((System.getenv("BATTLE_UI_CAPTURE_STEPS") ?: DEFAULT_STEPS)
             .split(',').map(String::trim).filter(String::isNotEmpty))
 
@@ -69,9 +88,12 @@ object BattleUiCaptureHarness {
         var battleRequested = false
         var ticks = 0
         var waitTicks = 0
+        var pendingWindowSize: Pair<Int, Int>? = null
+        var windowResizeTicks = 0
         var settings: Screen? = null
         val captured = AtomicBoolean(true)
         var done = false
+        var gimmickButtonsLogged = false
         val trainerFormat = when (System.getenv("BATTLE_UI_CAPTURE_TRAINER")?.trim()) {
             null, "" -> null
             "single" -> BattleFormat.GEN_9_SINGLES
@@ -132,12 +154,37 @@ object BattleUiCaptureHarness {
                 val have = CobblemonClient.storage.party.count { it != null }
                 val name = player.gameProfile.name
                 server.execute {
-                    party.drop(have).forEach { species ->
-                        server.commands.performPrefixedCommand(server.createCommandSourceStack(), "givepokemonother $name $species level=50")
+                    val serverPlayer = checkNotNull(server.playerList.getPlayer(player.uuid))
+                    System.getenv("BATTLE_UI_CAPTURE_SETUP")?.split(';')?.map(String::trim)?.filter(String::isNotEmpty)
+                        ?.forEach { command ->
+                            val line = command.replace("{player}", name)
+                            logger.info("BATTLE UI CAPTURE: setup command {}", line)
+                            server.commands.performPrefixedCommand(server.createCommandSourceStack(), line)
+                        }
+                    if (gimmicks) {
+                        val serverParty = Cobblemon.storage.getParty(serverPlayer)
+                        serverParty.clearParty()
+                        party.forEach { properties ->
+                            check(serverParty.add(PokemonProperties.parse(properties).create())) {
+                                "Could not add capture Pokemon: $properties"
+                            }
+                        }
+                        server.commands.performPrefixedCommand(server.createCommandSourceStack(),
+                            "item replace entity $name weapon.offhand with mega_showdown:omni_ring")
+                        check(BuiltInRegistries.ITEM.getKey(serverPlayer.offhandItem.item).toString() ==
+                            "mega_showdown:omni_ring") {
+                            "Could not put mega_showdown:omni_ring in $name's off hand"
+                        }
+                        logger.info("BATTLE UI CAPTURE: prepared a four-move Lucario lead holding " +
+                            "mega_showdown:lucarionite and put mega_showdown:omni_ring in the player's off hand " +
+                            "for Mega Evolution and Terastallization")
+                    } else party.drop(have).forEach { species ->
+                        server.commands.performPrefixedCommand(server.createCommandSourceStack(),
+                            "givepokemonother $name $species level=50")
                     }
                     server.commands.performPrefixedCommand(server.createCommandSourceStack(), "healpokemon $name")
                 }
-                logger.info("Battle capture party had {} Pokemon; gave {}", have, party.drop(have))
+                if (!gimmicks) logger.info("Battle capture party had {} Pokemon; gave {}", have, party.drop(have))
                 partyRequested = true
                 return@EndTick
             }
@@ -220,9 +267,29 @@ object BattleUiCaptureHarness {
                 return@EndTick
             }
             if (!captured.get()) return@EndTick
+            pendingWindowSize?.let { (width, height) ->
+                if (client.window.width != width || client.window.height != height) {
+                    if (++windowResizeTicks > 100) {
+                        error("Window resize did not apply: wanted ${width}x$height, got " +
+                            "${client.window.width}x${client.window.height}")
+                    }
+                    return@EndTick
+                }
+                if (++windowResizeTicks < 3) return@EndTick
+                logger.info("BATTLE UI CAPTURE: window resize applied at {}x{} (GUI {}x{})", width, height,
+                    client.window.guiScaledWidth, client.window.guiScaledHeight)
+                pendingWindowSize = null
+                windowResizeTicks = 0
+            }
             if (waitTicks > 0) {
                 waitTicks -= 1
                 return@EndTick
+            }
+            val moveSelection = battleScreen?.getCurrentActionSelection() as? BattleMoveSelection
+            if (!gimmickButtonsLogged && moveSelection != null) {
+                logger.info("BATTLE UI CAPTURE: move selection has {} gimmick buttons",
+                    moveSelection.gimmickButtons.size)
+                gimmickButtonsLogged = true
             }
             if (steps.firstOrNull() == "ready") {
                 if (battleScreen == null) return@EndTick
@@ -245,6 +312,32 @@ object BattleUiCaptureHarness {
             when (verb) {
                 "ready" -> Unit
                 "wait" -> waitTicks = argument.toInt()
+                "window" -> {
+                    val dimensions = Regex("^(\\d+)x(\\d+)$").matchEntire(argument)
+                        ?: error("Invalid capture window size $argument")
+                    val width = dimensions.groupValues[1].toInt()
+                    val height = dimensions.groupValues[2].toInt()
+                    check(width >= 320 && height >= 240) { "Capture window is too small: $argument" }
+                    GLFW.glfwSetWindowSize(client.window.window, width, height)
+                    client.resizeDisplay()
+                    pendingWindowSize = width to height
+                    windowResizeTicks = 0
+                }
+                "scale" -> {
+                    val scale = argument.toInt()
+                    check(scale in 1..4) { "Capture GUI scale must be 1-4: $argument" }
+                    client.options.guiScale().set(scale)
+                    client.resizeDisplay()
+                    waitTicks = 3
+                }
+                "tooltipscale" -> {
+                    val scale = argument.toFloat()
+                    check(scale in PanelConfig.MIN_FONT_SCALE..PanelConfig.MAX_FONT_SCALE) {
+                        "Capture tooltip scale must be ${PanelConfig.MIN_FONT_SCALE}-${PanelConfig.MAX_FONT_SCALE}: $argument"
+                    }
+                    PanelConfig.setMoveTooltipFontScale(scale)
+                    waitTicks = 2
+                }
                 "cap" -> {
                     captured.set(false)
                     val file = "battle-$argument-${client.languageManager.selected}-" +
@@ -254,10 +347,7 @@ object BattleUiCaptureHarness {
                         captured.set(true)
                     }
                 }
-                "key" -> {
-                    val key = KEYS[argument] ?: error("Unknown capture key $argument")
-                    battle().keyPressed(key, 0, 0)
-                }
+                "key" -> press(client, KEYS[argument] ?: error("Unknown capture key $argument"))
                 "mouse" -> {
                     val (x, y) = argument.split(';', '/').map(String::toDouble)
                     val factor = client.window.guiScale
@@ -271,11 +361,7 @@ object BattleUiCaptureHarness {
                     else battle().changeActionSelection(BattleSwitchPokemonSelection(battle(), general.request))
                 }
                 "info" -> BattleInfoPanel.toggle()
-                "confirm" -> {
-                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey).value
-                    battle().keyPressed(key, 0, 0)
-                    BattleDialogue.releaseConfirm(key, 0)
-                }
+                "confirm" -> press(client, KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.selectActionKey).value)
                 "log" -> {
                     val key = KeyBindingHelper.getBoundKeyOf(CobblemonUiClient.toggleLogKey).value
                     BattleTranscriptOverlay.keyPressed(key, 0)
@@ -314,4 +400,14 @@ object BattleUiCaptureHarness {
         "space" to GLFW.GLFW_KEY_SPACE,
         "esc" to GLFW.GLFW_KEY_ESCAPE,
     )
+
+    /**
+     * A key pressed and let go as a player's would be: through the keyboard handler, so the battle mod's own key hooks
+     * (the confirm gate that tells a menu press from a held key) see it before the screen does.
+     */
+    private fun press(client: net.minecraft.client.Minecraft, key: Int) {
+        val scanCode = GLFW.glfwGetKeyScancode(key)
+        client.keyboardHandler.keyPress(client.window.window, key, scanCode, GLFW.GLFW_PRESS, 0)
+        client.keyboardHandler.keyPress(client.window.window, key, scanCode, GLFW.GLFW_RELEASE, 0)
+    }
 }

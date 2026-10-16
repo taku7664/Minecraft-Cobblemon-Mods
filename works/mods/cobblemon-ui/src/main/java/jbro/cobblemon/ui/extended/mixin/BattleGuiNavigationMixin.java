@@ -75,9 +75,15 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     @Unique
     private boolean cobblemonBattleUi$gimmickColumn;
 
-    /** The move focus left for the gimmick column, where Right brings it back. */
+    /**
+     * The move focus left for the gimmick column, where Right brings it back: by the move's id, since arming a gimmick
+     * swaps in its own tiles and those can come in another order; by position when that move is not there.
+     */
     @Unique
     private int cobblemonBattleUi$lastMoveIndex = -1;
+
+    @Unique
+    private String cobblemonBattleUi$lastMoveId;
 
     @Unique
     private boolean cobblemonBattleUi$mousePositionKnown;
@@ -375,6 +381,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             cobblemonBattleUi$gridIndex = -1;
             cobblemonBattleUi$gimmickColumn = false;
             cobblemonBattleUi$lastMoveIndex = -1;
+            cobblemonBattleUi$lastMoveId = null;
             KeyboardTileFocus.clear();
         }
 
@@ -402,6 +409,8 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                 }
                 List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size(), MoveTooltipRenderer.reservedWidth());
                 cobblemonBattleUi$lastMoveIndex = cobblemonBattleUi$gridIndex;
+                cobblemonBattleUi$lastMoveId = cobblemonBattleUi$gridIndex >= 0
+                        ? tiles.get(cobblemonBattleUi$gridIndex).getMove().getId() : null;
                 if (cobblemonBattleUi$gridIndex >= 0) {
                     UiRect moveBound = BattleScreenGeometry.moveTiles(width, height, tiles.size())
                             .get(cobblemonBattleUi$gridIndex);
@@ -416,7 +425,15 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                 UiRect gimmickBound = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size(), MoveTooltipRenderer.reservedWidth())
                         .get(cobblemonBattleUi$gridIndex);
                 // Back to the move it left; the nearest one when that move is gone or disabled now.
-                int moveIndex = GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$lastMoveIndex, tiles.size())
+                int sameMove = -1;
+                for (int index = 0; index < tiles.size(); index++) {
+                    if (enabledMoves.get(index) && tiles.get(index).getMove().getId().equals(cobblemonBattleUi$lastMoveId)) {
+                        sameMove = index;
+                        break;
+                    }
+                }
+                int moveIndex = sameMove >= 0 ? sameMove
+                        : GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$lastMoveIndex, tiles.size())
                         && enabledMoves.get(cobblemonBattleUi$lastMoveIndex)
                         ? cobblemonBattleUi$lastMoveIndex
                         : cobblemonBattleUi$nearestVertical(gimmickBound,
