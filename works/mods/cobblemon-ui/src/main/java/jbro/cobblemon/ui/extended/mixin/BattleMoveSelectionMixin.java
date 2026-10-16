@@ -21,8 +21,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 import java.util.UUID;
@@ -145,20 +145,50 @@ public class BattleMoveSelectionMixin {
         MoveTooltipRenderer.INSTANCE.handleInput();
     }
 
-    /** Redirects Cobblemon's own hit test to the replacement column; its toggle logic remains untouched. */
-    @Redirect(method = "mousePrimaryClicked", at = @At(value = "INVOKE",
-            target = "Lcom/cobblemon/mod/common/client/gui/battle/subscreen/BattleGimmickButton;isHovered(DD)Z"))
-    private boolean cobblemonBattleUi$gimmickTileHovered(
-            BattleGimmickButton button, double mouseX, double mouseY) {
+    @Unique
+    private boolean cobblemonBattleUi$forwardingGimmickClick;
+
+    /**
+     * A click on the gimmick column is passed on as a click on the middle of that gimmick's own (no longer drawn)
+     * button, so whichever click handling is in place toggles it: Cobblemon's, or Mega Showdown's, which overwrites
+     * this method and tests the buttons inside its own lambdas, where a redirect cannot reach. A click on the old
+     * buttons' spot does nothing now that nothing is drawn there.
+     */
+    @Inject(method = "mousePrimaryClicked", at = @At("HEAD"), cancellable = true)
+    private void cobblemonBattleUi$gimmickColumnClick(double mouseX, double mouseY, CallbackInfoReturnable<Boolean> cir) {
+        if (cobblemonBattleUi$forwardingGimmickClick) {
+            return;
+        }
         BattleMoveSelection selection = (BattleMoveSelection) (Object) this;
-        int index = selection.getGimmickButtons().indexOf(button);
-        if (index < 0) {
-            return false;
+        List<BattleGimmickButton> gimmicks = selection.getGimmickButtons();
+        if (gimmicks.isEmpty()) {
+            return;
         }
         Minecraft client = Minecraft.getInstance();
         List<UiRect> bounds = BattleScreenGeometry.gimmickTiles(
                 client.getWindow().getGuiScaledWidth(),
-                client.getWindow().getGuiScaledHeight(), selection.getGimmickButtons().size(), MoveTooltipRenderer.reservedWidth());
-        return bounds.get(index).contains(mouseX, mouseY);
+                client.getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth());
+        for (int index = 0; index < gimmicks.size(); index++) {
+            if (!bounds.get(index).contains(mouseX, mouseY)) {
+                continue;
+            }
+            BattleGimmickButton button = gimmicks.get(index);
+            cobblemonBattleUi$forwardingGimmickClick = true;
+            try {
+                // Its hit area is WIDTH x HEIGHT at SCALE from (x, y).
+                cir.setReturnValue(selection.mousePrimaryClicked(
+                        button.getX() + BattleGimmickButton.WIDTH * BattleGimmickButton.SCALE / 2.0,
+                        button.getY() + BattleGimmickButton.HEIGHT * BattleGimmickButton.SCALE / 2.0));
+            } finally {
+                cobblemonBattleUi$forwardingGimmickClick = false;
+            }
+            return;
+        }
+        for (BattleGimmickButton button : gimmicks) {
+            if (button.isHovered(mouseX, mouseY)) {
+                cir.setReturnValue(false);
+                return;
+            }
+        }
     }
 }

@@ -242,6 +242,15 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void gimmickClicksDoNotReachInsideMousePrimaryClickedWhichMegaShowdownOverwrites() throws Exception {
+        // Mega Showdown overwrites BattleMoveSelection.mousePrimaryClicked; a redirect into its body fails to apply and
+        // the client crashes at start (found 2026-10-16 in a dev client with Mega Showdown).
+        String moveMixin = read("src/main/java/jbro/cobblemon/ui/extended/mixin/BattleMoveSelectionMixin.java");
+        assertFalse(moveMixin.contains("@Redirect"));
+        assertTrue(moveMixin.contains("@Inject(method = \"mousePrimaryClicked\", at = @At(\"HEAD\"), cancellable = true)"));
+    }
+
+    @Test
     void keyboardMoveConfirmUsesNativeMouseSelectionRouteForMultiBattles() throws Exception {
         String navigation = read("src/main/java/jbro/cobblemon/ui/extended/mixin/BattleGuiNavigationMixin.java");
         assertTrue(navigation.contains("tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)"));
