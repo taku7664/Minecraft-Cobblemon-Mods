@@ -3,10 +3,10 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
-## [2026-10-16 22:00] 리뷰 지적 수정(R1)은 작업 트리에만 있음 (구현만, 검증 미완·커밋 안 함)
+## [2026-10-16 22:00] 리뷰 지적 수정과 G-951 b (`72e2ab0f`, 단위 확인, 모의전·실게임 미확인)
 
 - **내용:** Codex 리뷰 지적 5개(`ManagedDynamax` 순위의 다이맥스 불가 팀원·`Int.MAX_VALUE`, 네이티브 탐색 경로의 `LocalDynamaxGuard` 이중 계산, 상대 공격이 들어올 확률, `protectTurns` 시드 3개 평균)와 G-951 b(더블 가드를 상대 응수 예측의 표적 확률로 가중, 사용자 결정)를 Codex가 고쳤다.
-- **상태:** 사용자 지시로 중간에 멈췄다. `LocalNativeStatusValueTest`의 킹실드 시드 평균 테스트 1개가 실패한다. 구현이 아니라 "시드 3개에 맞음·빗나감이 둘 다 있어야 한다"는 테스트 전제가 틀렸다(명중 85%면 셋 다 맞을 수 있음). 모의전은 돌리지 않았다. T2(G-948 ③)·T3(G-951 c)는 시작하지 않았다.
+- **검증:** MCC 5클래스 32/32(`ManagedDynamaxTest`·`LocalDynamaxTest`·`LocalNativeStatusValueTest`·`LocalProtectReplyFilterTest`·`EngineContactProtectTest`), 리그 121/121. 킹실드 시드 평균 테스트는 전제를 고쳤다(시드 3개 평균 = 시드 1개씩 값의 평균). 상대 변화기는 최면술이 페로시아 기술 세트에 없어 엔진 세계가 안 만들어졌으므로 전기자석파로 바꿨다. 이 국면에서는 시드 3개가 모두 같은 값(−0.230)이어서, 다른 시드가 실제로 다른 결과를 내는지는 확인되지 않았다. 모의전은 돌리지 않았다. T2(G-948 ③)·T3(G-951 c)는 시작하지 않았다.
 - **T2 시작점(확인됨):** `PUBLIC_STATE_NOT_INITIAL`은 `NativeInitialBattleDefinitionCompiler.kt:143`. 중간 판 재구성 `NativeMidBattleStateRules.blocker`가 더블을 무조건 막고(18행), 되살리는 휘발 상태가 `confusion`뿐이라(34행) 다이맥스도 막는 것으로 보인다(추측).
 
 ## [2026-10-16 20:21] 더블 전체 팀 프리뷰의 상대 세계 생성 (`4a3f9bf8`, 구현·단위·모의 전투 확인, 실게임 미확인)
