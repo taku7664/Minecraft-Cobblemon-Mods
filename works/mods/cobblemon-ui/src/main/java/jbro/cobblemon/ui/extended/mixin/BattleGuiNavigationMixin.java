@@ -14,7 +14,6 @@ import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.BattleDialogue;
 import jbro.cobblemon.ui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.ui.extended.navigation.BattleCommandLayout;
-import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.navigation.ForfeitSelectionAccess;
 import jbro.cobblemon.ui.navigation.ActionSubmissionGate;
@@ -407,7 +406,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                         || !enabledMoves.get(cobblemonBattleUi$gridIndex)) {
                     cobblemonBattleUi$gridIndex = new BattleMenuNavigator(enabledMoves, -1).move(1);
                 }
-                List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size(), MoveTooltipRenderer.reservedWidth());
+                List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size());
                 cobblemonBattleUi$lastMoveIndex = cobblemonBattleUi$gridIndex;
                 cobblemonBattleUi$lastMoveId = cobblemonBattleUi$gridIndex >= 0
                         ? tiles.get(cobblemonBattleUi$gridIndex).getMove().getId() : null;
@@ -422,7 +421,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                 cobblemonBattleUi$gimmickColumn = true;
                 KeyboardTileFocus.set(gimmicks.get(cobblemonBattleUi$gridIndex));
             } else if (horizontal > 0 && cobblemonBattleUi$gimmickColumn) {
-                UiRect gimmickBound = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size(), MoveTooltipRenderer.reservedWidth())
+                UiRect gimmickBound = BattleScreenGeometry.gimmickTiles(width, height, gimmicks.size())
                         .get(cobblemonBattleUi$gridIndex);
                 // Back to the move it left; the nearest one when that move is gone or disabled now.
                 int sameMove = -1;
@@ -456,8 +455,9 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
 
         if (vertical != 0) {
             if (cobblemonBattleUi$gimmickColumn) {
+                // The buttons stack from the bottom up, so Up is the next one in Cobblemon's order.
                 cobblemonBattleUi$gridIndex = new BattleMenuNavigator(
-                        Collections.nCopies(gimmicks.size(), true), cobblemonBattleUi$gridIndex).move(vertical);
+                        Collections.nCopies(gimmicks.size(), true), cobblemonBattleUi$gridIndex).move(-vertical);
                 KeyboardTileFocus.set(gimmicks.get(cobblemonBattleUi$gridIndex));
             } else {
                 cobblemonBattleUi$gridIndex = new BattleMenuNavigator(
@@ -480,7 +480,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             KeyboardTileFocus.set(gimmick);
             UiRect bound = BattleScreenGeometry.gimmickTiles(
                     Minecraft.getInstance().getWindow().getGuiScaledWidth(),
-                    Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth()).get(cobblemonBattleUi$gridIndex);
+                    Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size()).get(cobblemonBattleUi$gridIndex);
             // The mouse path owns exclusivity, sound, toggle state and swapping moveTiles.
             if (jbro.cobblemon.ui.extended.BattleConfirmGate.consumeMenuPress()) {
                 selection.mousePrimaryClicked(bound.x() + 1.0, bound.y() + 1.0);

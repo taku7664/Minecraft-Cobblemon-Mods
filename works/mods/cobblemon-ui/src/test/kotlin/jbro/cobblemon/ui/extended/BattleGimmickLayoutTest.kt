@@ -11,51 +11,45 @@ import org.junit.jupiter.api.Test
 
 class BattleGimmickLayoutTest {
     @Test
-    fun `with tooltips off the named column stays centred beside the move grid at 427 by 240`() {
-        assertEquals(listOf(UiRect(189, 133, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 1, 0))
-        assertEquals(listOf(UiRect(189, 118, 90, 26), UiRect(189, 148, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 2, 0))
-        assertEquals(listOf(UiRect(189, 103, 90, 26), UiRect(189, 133, 90, 26), UiRect(189, 163, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 3, 0))
+    fun `round buttons stack from the move grid's bottom up at 427 by 240`() {
+        // 1280x720 at GUI scale 3: the moves end at y=216; the first button Cobblemon offers is the bottom one.
+        assertEquals(listOf(UiRect(242, 190, 26, 26)), BattleScreenGeometry.gimmickTiles(427, 240, 1))
+        assertEquals(listOf(UiRect(242, 190, 26, 26), UiRect(242, 160, 26, 26), UiRect(242, 130, 26, 26)),
+            BattleScreenGeometry.gimmickTiles(427, 240, 3))
+        val moves = BattleScreenGeometry.moveTiles(427, 240, 4)
+        assertEquals(moves.last().y() + moves.last().height(), BattleScreenGeometry.gimmickTiles(427, 240, 2).first().let { it.y() + it.height() })
     }
 
     @Test
-    fun `where the move tooltip would not fit beside named tiles the column turns icon-only`() {
-        // 1280x720 at GUI scale 3 and 1920x1080 at scale 4: the default tooltip does not fit left of named tiles.
-        assertEquals(listOf(UiRect(253, 118, 26, 26), UiRect(253, 148, 26, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 2, TOOLTIP))
-        BattleScreenGeometry.gimmickTiles(480, 270, 2, TOOLTIP).forEach {
-            assertEquals(306, it.x())
-            assertEquals(BattleScreenGeometry.GIMMICK_COMPACT_WIDTH, it.width())
-        }
-        // 1920x1080 at GUI scale 3: it does, so the tiles keep their names.
-        BattleScreenGeometry.gimmickTiles(640, 360, 2, TOOLTIP).forEach {
-            assertEquals(402, it.x())
-            assertEquals(BattleScreenGeometry.GIMMICK_WIDTH, it.width())
-        }
-        // Large tooltip text (twice the size) fits nowhere at 427; the column stays icon-only and draws over it.
-        BattleScreenGeometry.gimmickTiles(427, 240, 2, TOOLTIP * 2).forEach {
-            assertEquals(BattleScreenGeometry.GIMMICK_COMPACT_WIDTH, it.width())
-        }
-    }
-
-    @Test
-    fun `the move tooltip anchored left of the column clears it on the screen`() {
+    fun `the buttons stay clear of a focused move's slide and cursor arrow`() {
         for ((width, height) in listOf(427 to 240, 480 to 270, 640 to 360)) {
-            val column = BattleScreenGeometry.gimmickTiles(width, height, 3, TOOLTIP)
-            // As the renderer registers it: the move column from its tiles' focus-protruded left edge.
-            val moveLeft = BattleScreenGeometry.moveTiles(width, height, 4).first().x() - BattleScreenGeometry.FOCUS_PROTRUSION
-            val anchor = MoveTooltipAnchor.position(moveLeft, column.first().x(), 200, TOOLTIP, 150, width, height)
-            assertTrue(anchor.x() >= MoveTooltipAnchor.SCREEN_MARGIN, "tooltip off screen at $width")
-            assertTrue(anchor.x() + TOOLTIP <= column.first().x() - MoveTooltipAnchor.GIMMICK_CLEARANCE,
-                "tooltip over the gimmicks at $width")
+            val moveLeft = BattleScreenGeometry.moveTiles(width, height, 4).first().x()
+            BattleScreenGeometry.gimmickTiles(width, height, 3).forEach {
+                // The slide overshoots FOCUS_PROTRUSION a little; the arrow's tip is 3 px further left and it is 6 wide.
+                assertTrue(it.x() + it.width() <= moveLeft - BattleScreenGeometry.FOCUS_PROTRUSION - 10, "at $width")
+            }
+        }
+    }
+
+    @Test
+    fun `the move tooltip rises above the buttons`() {
+        for ((width, height) in listOf(427 to 240, 480 to 270, 640 to 360)) {
+            for (count in 1..2) {
+                val buttons = BattleScreenGeometry.gimmickTiles(width, height, count)
+                val moves = BattleScreenGeometry.moveTiles(width, height, 4)
+                // As the renderer registers them: the moves from their tiles' focus-protruded left edge.
+                val anchor = MoveTooltipAnchor.position(moves.first().x() - BattleScreenGeometry.FOCUS_PROTRUSION,
+                    buttons.last().y(), moves.last().y() + moves.last().height(), TOOLTIP, TOOLTIP_HEIGHT, width, height)
+                assertTrue(anchor.y() >= MoveTooltipAnchor.SCREEN_MARGIN, "tooltip off screen at $width with $count")
+                assertTrue(anchor.y() + TOOLTIP_HEIGHT <= buttons.last().y() - MoveTooltipAnchor.GIMMICK_CLEARANCE,
+                    "tooltip over the buttons at $width with $count")
+            }
         }
     }
 
     @Test
     fun `gimmick column remains inside a smaller screen`() {
-        val bounds = BattleScreenGeometry.gimmickTiles(320, 180, 3, TOOLTIP)
+        val bounds = BattleScreenGeometry.gimmickTiles(320, 180, 3)
 
         bounds.forEach {
             assertTrue(it.x() >= 0 && it.y() >= 0)
@@ -66,18 +60,13 @@ class BattleGimmickLayoutTest {
 
     @Test
     fun `gimmicks do not overlap moves or the back button at minimum supported layout`() {
-        for (tooltip in listOf(0, TOOLTIP)) {
-            val gimmicks = BattleScreenGeometry.gimmickTiles(427, 240, 3, tooltip)
-            val moves = BattleScreenGeometry.moveTiles(427, 240, 4)
-            val back = UiRect(9, 218, 29, 17)
+        val gimmicks = BattleScreenGeometry.gimmickTiles(427, 240, 3)
+        val moves = BattleScreenGeometry.moveTiles(427, 240, 4)
+        val back = UiRect(9, 218, 29, 17)
 
-            gimmicks.forEach { gimmick ->
-                moves.forEach { move ->
-                    assertFalse(overlaps(gimmick, move))
-                    assertTrue(gimmick.x() + gimmick.width() <= move.x() - BattleScreenGeometry.FOCUS_PROTRUSION)
-                }
-                assertFalse(overlaps(gimmick, back))
-            }
+        gimmicks.forEach { gimmick ->
+            moves.forEach { move -> assertFalse(overlaps(gimmick, move)) }
+            assertFalse(overlaps(gimmick, back))
         }
     }
 
@@ -123,6 +112,8 @@ class BattleGimmickLayoutTest {
     private companion object {
         /** The move tooltip's width at the default font scale: 210 at a text size rounded from 0.85 up to 1. */
         const val TOOLTIP = 247
+        /** A move tooltip with a two-line description and one effectiveness line. */
+        const val TOOLTIP_HEIGHT = 150
         // ABGR, as NativeImage holds pixels.
         const val FACE = 0xFF676767.toInt()
         const val LIGHT = 0xFFC6C6C6.toInt()

@@ -4,7 +4,7 @@ package jbro.cobblemon.ui.extended;
 public final class MoveTooltipAnchor {
     // TypeIcon starts 9 px left of the tile; reserve focus growth (1.06x) and a 4 px gap.
     public static final int VISUAL_CLEARANCE = 18;
-    /** The gap between a tooltip and the gimmick column left of the moves. */
+    /** The gap between a tooltip and the gimmick buttons under it. */
     public static final int GIMMICK_CLEARANCE = 2;
     /** The least distance a tooltip keeps from the screen's edges. */
     public static final int SCREEN_MARGIN = 4;
@@ -21,16 +21,18 @@ public final class MoveTooltipAnchor {
         return position(columnLeft, Integer.MAX_VALUE, columnBottom, tooltipWidth, tooltipHeight, screenWidth, screenHeight);
     }
 
-    /** As above, also left of a gimmick column starting at [gimmickLeft] (Integer.MAX_VALUE for none). */
+    /**
+     * As above, also above the gimmick buttons left of the moves, whose top is [gimmickTop] (Integer.MAX_VALUE for
+     * none): they sit at the grid's bottom, so the tooltip's bottom rises to clear them.
+     */
     public static Position position(
-            int columnLeft, int gimmickLeft, int columnBottom, int tooltipWidth, int tooltipHeight,
+            int columnLeft, int gimmickTop, int columnBottom, int tooltipWidth, int tooltipHeight,
             int screenWidth, int screenHeight
     ) {
-        int right = gimmickLeft == Integer.MAX_VALUE ? columnLeft - VISUAL_CLEARANCE
-                : Math.min(columnLeft - VISUAL_CLEARANCE, gimmickLeft - GIMMICK_CLEARANCE);
+        int bottom = gimmickTop == Integer.MAX_VALUE ? columnBottom : Math.min(columnBottom, gimmickTop - GIMMICK_CLEARANCE);
         return new Position(
-            ViewportClamp.clamp(right - tooltipWidth, SCREEN_MARGIN, screenWidth, tooltipWidth, SCREEN_MARGIN),
-            ViewportClamp.clamp(columnBottom - tooltipHeight, SCREEN_MARGIN, screenHeight, tooltipHeight, SCREEN_MARGIN)
+            ViewportClamp.clamp(columnLeft - VISUAL_CLEARANCE - tooltipWidth, SCREEN_MARGIN, screenWidth, tooltipWidth, SCREEN_MARGIN),
+            ViewportClamp.clamp(bottom - tooltipHeight, SCREEN_MARGIN, screenHeight, tooltipHeight, SCREEN_MARGIN)
         );
     }
 }

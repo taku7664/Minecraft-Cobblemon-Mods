@@ -214,7 +214,10 @@ object BattleControlRenderer {
         if (font.width(text) <= width) text
         else font.plainSubstrByWidth(text, (width - font.width("…")).coerceAtLeast(0)) + "…"
 
-    /** A large themed replacement for Cobblemon's 18x17 gimmick button. */
+    /**
+     * A round themed replacement for Cobblemon's 18x17 gimmick button, its symbol inside; its name shows on a plate
+     * left of it while it holds focus (the move tooltip is hidden then, so nothing else is there).
+     */
     @JvmStatic
     fun gimmick(context: GuiGraphics, owner: Any, button: BattleGimmickButton, textureId: String,
                  bounds: UiRect, focused: Boolean, opacity: Float) {
@@ -223,38 +226,28 @@ object BattleControlRenderer {
 
         val palette = BattleUiTheme.palette
         val emphasis = BattleFocusMotion.emphasis(button, focused)
-        val extension = protrusion(emphasis)
-        val left = bounds.x() - extension
-        val width = bounds.width() + extension
-        val pill = palette.controlShape == BattleControlShape.PILL
-        val radius = if (pill) bounds.height() / 2 else 8
-        val corners = BattleCornerCuts(radius, radius, radius, radius)
+        val left = bounds.x()
+        val top = bounds.y()
+        val size = bounds.width()
+        val round = BattleCornerCuts(size / 2, size / 2, size / 2, size / 2)
         val armed = button.toggled
         val accent = if (armed) palette.focus else BattleUiTheme.CYAN
         val base = if (armed) {
-            BattleSurface(palette.select, palette.selectBottom, accent, 1,
-                cornerCuts = corners, rounded = true)
-        } else BattleUiTheme.panel.copy(cornerCuts = corners, rounded = true)
+            BattleSurface(palette.select, palette.selectBottom, accent, 1, cornerCuts = round, rounded = true)
+        } else BattleUiTheme.panel.copy(cornerCuts = round, rounded = true)
 
-        drawDropShadow(context, left, bounds.y(), width, bounds.height(), corners, opacity)
-        if (palette.focusFill == null) {
-            drawFocusHalo(context, left, bounds.y(), width, bounds.height(), corners, accent, emphasis, opacity)
-        }
-        BattleSurfaceRenderer.draw(context, left, bounds.y(), width, bounds.height(),
-            focused(base, emphasis), opacity)
+        drawDropShadow(context, left, top, size, size, round, opacity)
+        if (palette.focusFill == null) drawFocusHalo(context, left, top, size, size, round, accent, emphasis, opacity)
+        BattleSurfaceRenderer.draw(context, left, top, size, size, focused(base, emphasis), opacity)
 
-        // Cobblemon draws its whole button at half scale; the symbol alone at 1:1 is twice that. Symbols differ in
-        // width, so each sits centred in a slot of one width and the names of stacked tiles start on one line.
-        // An icon-only tile (the column narrowed to leave the move tooltip room) centres its symbol and has no name.
-        val named = bounds.width() >= BattleScreenGeometry.GIMMICK_WIDTH
-        val iconSlot = if (named) left + 6 else left + (width - ICON_SLOT) / 2
+        // Cobblemon draws its whole button at half scale; the symbol alone at 1:1 is twice that.
         BattleGimmickIcons.drawable(spec.textureId)?.let { icon ->
             context.flush()
             try {
                 RenderSystem.enableBlend()
                 RenderSystem.defaultBlendFunc()
                 RenderSystem.setShaderColor(1f, 1f, 1f, opacity.coerceIn(0f, 1f))
-                context.blit(icon.texture, iconSlot + (ICON_SLOT - icon.width) / 2, bounds.y() + (bounds.height() - icon.height) / 2,
+                context.blit(icon.texture, left + (size - icon.width) / 2, top + (size - icon.height) / 2,
                     0f, 0f, icon.width, icon.height, icon.width, icon.height)
                 context.flush()
             } finally {
@@ -262,23 +255,19 @@ object BattleControlRenderer {
             }
         }
 
-        if (named) {
-            val font = Minecraft.getInstance().font
-            val labelX = iconSlot + ICON_SLOT + 5
-            val available = (bounds.x() + bounds.width() - 6 - labelX).coerceAtLeast(0)
-            val label = fit(font, Component.translatable(spec.labelKey).string, available)
-            val ink = when {
-                armed -> palette.selectInk
-                palette.focusFill != null -> BattleSurfaceRenderer.interpolate(palette.text, palette.focusText, emphasis)
-                else -> palette.text
-            }
-            UIUtils.drawText(context, label, labelX.toFloat(),
-                bounds.y() + (bounds.height() - font.lineHeight) / 2f,
-                BattleSurfaceRenderer.withOpacity(ink, opacity), 1f)
-        }
-
-        if (focused) drawCursor(context, Group(owner, "gimmick"), left,
-            bounds.y() + bounds.height() / 2f, accent, opacity)
+        if (!focused) return
+        drawCursor(context, Group(owner, "gimmick"), left, top + size / 2f, accent, opacity)
+        // The name, on a plate clear of the cursor arrow (its tip 3 px left of the button, 6 px wide, bobbing).
+        val font = Minecraft.getInstance().font
+        val name = Component.translatable(spec.labelKey).string
+        val plateWidth = font.width(name) + NAME_PADDING * 2
+        val plateRight = left - NAME_CURSOR_ROOM
+        val plateTop = top + (size - NAME_HEIGHT) / 2
+        val plate = BattleCornerCuts(NAME_HEIGHT / 2, NAME_HEIGHT / 2, NAME_HEIGHT / 2, NAME_HEIGHT / 2)
+        BattleSurfaceRenderer.draw(context, plateRight - plateWidth, plateTop, plateWidth, NAME_HEIGHT,
+            BattleUiTheme.panel.copy(cornerCuts = plate, rounded = true), opacity)
+        UIUtils.drawText(context, name, (plateRight - plateWidth + NAME_PADDING).toFloat(),
+            plateTop + (NAME_HEIGHT - font.lineHeight) / 2f + 1f, BattleSurfaceRenderer.withOpacity(palette.text, opacity), 1f)
     }
 
     /** How far a tile slides out at this emphasis, overshooting a little on the way; the hitbox has the full slide. */
@@ -370,7 +359,8 @@ object BattleControlRenderer {
         return (color and 0xFF000000.toInt()) or (red shl 16) or (green shl 8) or blue
     }
 
-    /** The width every gimmick symbol is centred in; the widest Cobblemon symbol is 21. */
-    private const val ICON_SLOT = 22
+    private const val NAME_HEIGHT = 14
+    private const val NAME_PADDING = 6
+    private const val NAME_CURSOR_ROOM = 13
     private val BACK_KEY = Any()
 }

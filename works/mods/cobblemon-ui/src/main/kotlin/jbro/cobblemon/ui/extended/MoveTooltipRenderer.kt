@@ -75,8 +75,8 @@ object MoveTooltipRenderer {
     )
 
     private val moveTileBounds = mutableListOf<MoveTileBounds>()
-    /** The left edge of the gimmick column beside the moves this frame, if there is one; the tooltip stays left of it. */
-    private var gimmickColumnLeft: Int? = null
+    /** The top of the gimmick buttons beside the moves this frame, if there are any; the tooltip stays above them. */
+    private var gimmickColumnTop: Int? = null
     private var hoveredMove: MoveTileBounds? = null
     private var activePokemonUuid: UUID? = null
     private var wasIncreaseFontKeyPressed = false
@@ -101,7 +101,7 @@ object MoveTooltipRenderer {
 
     fun clear() {
         moveTileBounds.clear()
-        gimmickColumnLeft = null
+        gimmickColumnTop = null
         hoveredMove = null
         mixinActiveLastFrame = true
     }
@@ -109,23 +109,19 @@ object MoveTooltipRenderer {
     /** Clears every hover target while the battle-info modal owns input. */
     fun suspendForModal() {
         moveTileBounds.clear()
-        gimmickColumnLeft = null
+        gimmickColumnTop = null
         hoveredMove = null
         activePokemonUuid = null
         mixinActiveLastFrame = false
     }
 
-    fun registerGimmickColumn(left: Int) {
-        gimmickColumnLeft = left
+    fun registerGimmickColumn(top: Int) {
+        gimmickColumnTop = top
     }
 
     private fun fontScale(): Float = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
 
     private fun tooltipWidth(fontScale: Float): Int = (TOOLTIP_BASE_WIDTH * fontScale / TOOLTIP_FONT_SCALE).toInt()
-
-    /** How wide a move tooltip is with the current settings; 0 when move tooltips are off. */
-    @JvmStatic
-    fun reservedWidth(): Int = if (PanelConfig.enableMoveTooltipsEffective) tooltipWidth(fontScale()) else 0
 
     @JvmOverloads
     fun registerMoveTile(
@@ -222,7 +218,7 @@ object MoveTooltipRenderer {
         val columnBottom = moveTileBounds.maxOfOrNull { (it.y + it.height).toInt() }
             ?: (move.y + move.height).toInt()
         val anchor = MoveTooltipAnchor.position(
-            columnLeft, gimmickColumnLeft ?: Int.MAX_VALUE, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
+            columnLeft, gimmickColumnTop ?: Int.MAX_VALUE, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
         )
         val px = anchor.x()
         val py = anchor.y()

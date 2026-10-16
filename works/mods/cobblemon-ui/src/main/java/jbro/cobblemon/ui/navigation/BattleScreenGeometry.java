@@ -2,7 +2,6 @@ package jbro.cobblemon.ui.navigation;
 
 import jbro.cobblemon.ui.extended.ui.shared.BattleTargetLayout;
 import jbro.cobblemon.ui.extended.ui.shared.BattleSwitchLayout;
-import jbro.cobblemon.ui.extended.MoveTooltipAnchor;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -10,12 +9,14 @@ import java.util.stream.IntStream;
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
-    public static final int GIMMICK_WIDTH = 90;
-    public static final int GIMMICK_HEIGHT = 26;
-    /** An icon-only gimmick tile, square. */
-    public static final int GIMMICK_COMPACT_WIDTH = GIMMICK_HEIGHT;
+    /** A round gimmick button's diameter. */
+    public static final int GIMMICK_SIZE = 26;
     public static final int GIMMICK_GAP = 4;
-    public static final int GIMMICK_MOVE_GAP = 8;
+    /**
+     * From a gimmick button to the moves: a focused move slides out by FOCUS_PROTRUSION (overshooting a little) and
+     * shows its cursor arrow, 6 wide, up to 3 px further left.
+     */
+    public static final int GIMMICK_MOVE_GAP = 19;
     public static final int FOCUS_PROTRUSION = 7;
     public static final int SWITCH_WIDTH = 105;
     public static final int SWITCH_HEIGHT = 20;
@@ -29,11 +30,11 @@ public final class BattleScreenGeometry {
     }
 
     /**
-     * A free-standing column centred on the full four-move grid and kept left of it. The move tooltip
-     * ([tooltipWidth] wide, 0 when tooltips are off) stands left of this column, so the tiles carry their names only
-     * when the tooltip still fits beside them; otherwise they are icon-only squares.
+     * Round gimmick buttons, one above another from the move grid's bottom up, left of the moves and clear of the
+     * cursor arrow a focused move shows at its left end. The move tooltip stands above them (see MoveTooltipAnchor).
+     * The first button Cobblemon offers is the bottom one.
      */
-    public static List<UiRect> gimmickTiles(int screenWidth, int screenHeight, int count, int tooltipWidth) {
+    public static List<UiRect> gimmickTiles(int screenWidth, int screenHeight, int count) {
         if (count < 0) {
             throw new IllegalArgumentException("Gimmick count must be non-negative");
         }
@@ -42,24 +43,12 @@ public final class BattleScreenGeometry {
         }
 
         List<UiRect> moveGrid = moveTiles(screenWidth, screenHeight, 4);
-        int moveLeft = moveGrid.getFirst().x();
-        int availableWidth = Math.max(0, moveLeft - GIMMICK_MOVE_GAP - FOCUS_PROTRUSION);
-        int fullLeft = moveLeft - GIMMICK_MOVE_GAP - GIMMICK_WIDTH;
-        boolean named = tooltipWidth <= 0
-                || fullLeft - MoveTooltipAnchor.GIMMICK_CLEARANCE - tooltipWidth >= MoveTooltipAnchor.SCREEN_MARGIN;
-        int width = Math.min(named ? GIMMICK_WIDTH : GIMMICK_COMPACT_WIDTH, availableWidth);
-        int x = Math.max(FOCUS_PROTRUSION, moveLeft - GIMMICK_MOVE_GAP - width);
-
-        int gridTop = moveGrid.getFirst().y();
+        int x = Math.max(FOCUS_PROTRUSION, moveGrid.getFirst().x() - GIMMICK_MOVE_GAP - GIMMICK_SIZE);
         UiRect lastMove = moveGrid.getLast();
-        int gridBottom = lastMove.y() + lastMove.height();
-        int totalHeight = count * GIMMICK_HEIGHT + (count - 1) * GIMMICK_GAP;
-        int centredY = (gridTop + gridBottom - totalHeight) / 2;
-        int y = Math.max(0, Math.min(Math.max(0, screenHeight - totalHeight), centredY));
-
+        int bottom = lastMove.y() + lastMove.height();
         return IntStream.range(0, count)
                 .mapToObj(index -> new UiRect(x,
-                        y + index * (GIMMICK_HEIGHT + GIMMICK_GAP), width, GIMMICK_HEIGHT))
+                        Math.max(0, bottom - GIMMICK_SIZE - index * (GIMMICK_SIZE + GIMMICK_GAP)), GIMMICK_SIZE, GIMMICK_SIZE))
                 .toList();
     }
 

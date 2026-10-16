@@ -80,9 +80,9 @@ public class BattleMoveSelectionMixin {
         List<BattleGimmickButton> gimmicks = selection.getGimmickButtons();
         List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(
                 Minecraft.getInstance().getWindow().getGuiScaledWidth(),
-                Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth());
+                Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size());
         if (!gimmickBounds.isEmpty()) {
-            MoveTooltipRenderer.INSTANCE.registerGimmickColumn(gimmickBounds.getFirst().x());
+            MoveTooltipRenderer.INSTANCE.registerGimmickColumn(gimmickBounds.getLast().y());
         }
         if (PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
             cobblemonBattleUi$moveTooltip(context, mouseX, mouseY);
@@ -167,7 +167,7 @@ public class BattleMoveSelectionMixin {
         Minecraft client = Minecraft.getInstance();
         List<UiRect> bounds = BattleScreenGeometry.gimmickTiles(
                 client.getWindow().getGuiScaledWidth(),
-                client.getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth());
+                client.getWindow().getGuiScaledHeight(), gimmicks.size());
         for (int index = 0; index < gimmicks.size(); index++) {
             if (!bounds.get(index).contains(mouseX, mouseY)) {
                 continue;
