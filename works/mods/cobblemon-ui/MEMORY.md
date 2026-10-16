@@ -1,5 +1,17 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-16 14:50] 기믹 버튼 실게임 캡처 검증과 그 과정에서 고친 것 (캡처·컴파일 확인, 빌드 배치 안 함)
+
+- **빡대리님 지시:** 캡처용 테스트 코드는 Codex가 쓰고, Claude가 실행해 캡처로 검증한다.
+- **실행:** 리그 모듈 `runClient -PdevAllAddons`(Mega Showdown·MCC·cobblemon-ui가 함께 뜸)에 `BattleUiCaptureHarness`를 쓴다. 스크립트는 F 복사본의 `F:/AI/builds/gimmick-cap-90749ffe/capture.ps1`(저장소 밖). 반드시 `pwsh`로 돌린다. Windows PowerShell 5는 BOM 없는 스크립트의 한글 경로를 깨뜨린다. 캡처 월드는 `mcc-hub-capture` 복사본, 리소스팩은 프로필에서 복사(갈무리 포함).
+- **하네스 추가:** `BATTLE_UI_CAPTURE_GIMMICKS=1`(메가스톤 루카리오 Lv10 리드 + Omni Ring), `BATTLE_UI_CAPTURE_SETUP`(전투 전 서버 명령, `{player}` 치환, 여기선 `mcc league progress set {player} all; mcc league cap sync {player}`), 단계 `window:WxH`/`scale:N`/`tooltipscale:N`. `key:`·`confirm`은 이제 `KeyboardHandler.keyPress`로 누르고 뗀다. 화면의 `keyPressed`를 직접 부르면 확인 키 게이트(`BattleConfirmGate`)를 건너뛰어 기믹이 켜지지 않는데도 캡처는 성공한 것처럼 보인다.
+- **캡처로 잡은 문제:**
+  1. Mega Showdown이 `BattleMoveSelection.mousePrimaryClicked`를 덮어써서, 그 안의 `isHovered`를 노린 `@Redirect`가 적용되지 못하고 클라이언트가 시작 단계에서 크래시했다. 단위 테스트에는 Mega Showdown이 없어 못 잡았다. 함수 앞 `@Inject`로 새 타일 클릭을 원래 버튼 가운데 클릭으로 바꿔 다시 부르게 고쳤다(`30887a0f`). 계약 테스트가 `@Redirect` 재도입을 막는다.
+  2. 기본 툴팁 폭은 210이 아니라 247이다(글자 배율 0.85를 정수로 올림). 툴팁과 기믹 열 사이는 2px, 큰 툴팁 배율에서는 기믹 열을 툴팁 위에 그린다(`7883c8c9`).
+- **캡처 결과(직접 확인):** 427×240(1280×720@3)·480×270(960×540@2)은 아이콘 타일, 640×360(1280×720@2)은 "메가진화" 이름 타일. 키보드 기술 포커스 때 툴팁이 기믹 열과 겹치지 않는다. ←로 기믹, 확인 키로 켜면 선택 색(노랑·연두)으로 바뀌고 기술로 돌아가도 유지, →는 떠나온 기술로 돌아간다. 툴팁 글자 2배에서는 툴팁이 화면을 덮고 기믹 타일은 그 위에 보인다(기술 칸이 덮이는 건 원래 동작).
+- **미확인:** 이 구성에서 기믹은 메가진화 1개만 나왔다(Codex 예상은 테라스탈까지 2개). 기믹 2개 이상의 세로 배치, 다이맥스(기술 칸이 바뀌는 기믹), 더블 배틀, 마우스 클릭으로 켜기는 캡처하지 않았다. 1920×1080 창은 이 PC의 커밋 메모리 부족으로 스크린샷 텍스처를 못 만들어, 같은 GUI 크기를 작은 창으로 찍었다.
+- **메모리:** 이 PC는 커밋 한도가 낮다(페이지 파일 5.9GB). 캡처는 Gradle `-Xmx1g`, 클라이언트 `-Xmx2g -XX:TieredStopAtLevel=1`로 겨우 돈다. 다른 Gradle 데몬이 떠 있으면 실패한다(이번엔 빡대리님 허락으로 오전 3시 데몬 하나를 껐다).
+
 ## [2026-10-16 13:30] 기술 선택 기믹 버튼을 기술 왼쪽 큰 타일로, 키보드 이동 포함 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
 
 - **빡대리님 지적:** 기믹 버튼(메가진화·다이맥스 등)이 Cobblemon 원래 자리(왼쪽 아래)에 18×17로 작게 나오고 키보드로 갈 수 없다. 기술 4개 왼쪽에 크게, 아이콘은 Cobblemon 것을 키워서 우리 UI에 맞게.
