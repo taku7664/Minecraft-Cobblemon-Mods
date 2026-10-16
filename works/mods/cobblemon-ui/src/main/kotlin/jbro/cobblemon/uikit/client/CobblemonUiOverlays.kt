@@ -74,6 +74,9 @@ class CobblemonUiDialogScreen(
     private var panel = UiRect(0, 0, 0, 0)
     private var previousTheme: UiThemeSnapshot? = null
 
+    /** What Escape does; by default the same as the cancel button. Set it when closing must not answer, as for an invite. */
+    var dismiss: (() -> Unit)? = null
+
     override fun init() {
         themeOverride?.let { theme ->
             if (previousTheme == null) previousTheme = CobblemonUiThemes.registry.snapshot()
@@ -136,7 +139,11 @@ class CobblemonUiDialogScreen(
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
-    override fun onClose() = closeAsCancel()
+    override fun onClose() {
+        val dismiss = dismiss ?: return closeAsCancel()
+        dismiss()
+        minecraft?.setScreen(parent)
+    }
 
     override fun removed() {
         val original = previousTheme

@@ -52,6 +52,10 @@
   "message.jbro_policy.release.changed": "파티가 변경되어 놓아주기를 취소했습니다.",
   "message.jbro_policy.release.failed": "포켓몬을 놓아주지 못했습니다.",
   "message.jbro_policy.release.done": "%s을(를) 놓아주었습니다.",
+  "message.jbro_policy.release.popup.title": "포켓몬 놓아주기",
+  "message.jbro_policy.release.popup.body": "파티 %s번 %s (Lv. %s)을(를) 놓아줄까요? 놓아준 포켓몬은 다시 돌아오지 않습니다.",
+  "message.jbro_policy.release.popup.confirm": "놓아주기",
+  "message.jbro_policy.release.popup.back": "그만두기",
 
 
   "message.jbro_policy.pokenav.failed": "포켓내비를 열지 못했습니다.",

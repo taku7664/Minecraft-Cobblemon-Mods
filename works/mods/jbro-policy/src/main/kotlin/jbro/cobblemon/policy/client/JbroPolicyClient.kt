@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.summary.Summary
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.pokemon.OpenSummaryPayload
+import jbro.cobblemon.policy.pokemon.ReleaseAskPayload
 import jbro.cobblemon.policy.menu.OpenLinkPayload
 import jbro.cobblemon.policy.menu.OpenPichuPayload
 import jbro.cobblemon.policy.pack.PackCheck
@@ -48,6 +49,10 @@ object JbroPolicyClient : ClientModInitializer {
                 context.source.client.tell { context.source.client.setScreen(PichuScreen()) }
                 1
             })
+        }
+        // Without Cobblemon UI the server falls back to the chat question, as it does for a client without this mod.
+        if (pichuAvailable) ClientPlayNetworking.registerGlobalReceiver(ReleaseAskPayload.TYPE) { payload, context ->
+            context.client().execute { ReleasePopup.show(payload) }
         }
         ClientPlayNetworking.registerGlobalReceiver(OpenLinkPayload.TYPE) { payload, context ->
             context.client().execute { Util.getPlatform().openUri(payload.url) }

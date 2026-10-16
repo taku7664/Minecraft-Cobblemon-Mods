@@ -52,6 +52,10 @@
   "message.jbro_policy.release.changed": "Your party changed, so the release was cancelled.",
   "message.jbro_policy.release.failed": "The Pokemon could not be released.",
   "message.jbro_policy.release.done": "You released %s.",
+  "message.jbro_policy.release.popup.title": "Release Pokémon",
+  "message.jbro_policy.release.popup.body": "Release %2$s (Lv. %3$s) in party slot %1$s? A released Pokémon does not come back.",
+  "message.jbro_policy.release.popup.confirm": "Release",
+  "message.jbro_policy.release.popup.back": "Keep",
 
 
   "message.jbro_policy.myroom.unavailable": "MyRoom is not available right now.",

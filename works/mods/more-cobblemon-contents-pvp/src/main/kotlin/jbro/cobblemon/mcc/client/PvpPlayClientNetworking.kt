@@ -83,6 +83,7 @@ internal object PvpPlayClientNetworking {
                         },
                 )
                 context.client().player?.displayClientMessage(message, false)
+                PvpInvitePopup.show(payload.roomId, payload.hostName)
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomListStatePayload.TYPE) { payload, context ->
