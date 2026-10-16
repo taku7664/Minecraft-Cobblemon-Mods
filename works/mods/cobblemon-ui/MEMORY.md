@@ -1,5 +1,15 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-16 10:40] 메시지 상자 공용 함수, 남은 DS 테마 화면을 콘텐츠 테마로 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 지적:** 테마를 바꿨는데 피츄 도우미(`/피츄`)가 따라오지 않았다. 원인은 두 가지다. 피츄는 `CobblemonUiSharedTheme.snapshot()`(DS 창)을 불렀고, 메시지 상자를 NPC 대화창 코드에서 복사해 직접 그렸다. 10-15 대화창 전환은 공용 함수가 아니라 화면별로 바꿨기 때문에 복사본이 빠졌다.
+- **구현:** `UiDialogueStyle.drawBox`(상자+양 끝 막대), `drawPlate`(이름표), `drawArrow`(넘김 화살표). 전투 메시지(`BattleDialogue`), 장면 대화 이름표(`SceneDialogue`), `NpcDialogueScreen`, `PichuScreen`, NPC 대화 초안 미리보기가 모두 이 함수로 그린다. 대화창 모양은 이 세 함수만 고친다. 화면에 상자 그리기 코드를 다시 복사하지 않는다.
+- `CobblemonUiThemedButton.theme`(기본 `snapshot`): 위젯 테마를 설치하지 않는 화면에서 콘텐츠 테마 버튼이 필요하면 `CobblemonUiSharedTheme::contentSnapshot`을 넣는다. 생성자 시그니처는 그대로다. 이 속성을 쓰는 jbro-policy·PvP JAR은 이 버전 이상의 cobblemon-ui와 같이 배포해야 한다.
+- **콘텐츠 테마로 옮긴 곳:** 피츄 버튼·상자, PvP 방 HUD의 측면 카드·버튼(창 외곽·제목 띠는 허브 크롬처럼 DS 유지), PvP 관전 종료 버튼.
+- **일부러 남긴 곳(결정 있음):** 허브 헤더·왼쪽 탭 줄(DS, 10-15 결정), PvP 선발 화면(`BattleUiTheme`, PvP MEMORY 지시), 전투 HUD·모달(전투 테마), 레터박스·VS·진입 연출. 허브 툴팁과 PvP 관전자 카드는 순정 툴팁 모양이라 그대로 뒀다.
+- **확인:** 커밋 `62ee783d`. Codex가 F 복사본에서 4개 모듈 컴파일과 `cobblemon-ui:unitTest` 282/282 통과(로그 `F:/AI/builds/theme-62ee783d/test.log`는 Claude가 직접 확인), Codex 리뷰 지적 없음. JAR 빌드·배치와 실게임 화면은 확인하지 않았다.
+- **발견:** Kotlin 컴파일 데몬은 F 경로 설정과 상관없이 `C:\Users\박주형\AppData\Local\kotlin\daemon`에 표시 파일을 쓴다. 빌드 명령에 `-Pkotlin.compiler.execution.strategy=in-process`를 붙인다.
+
 ## [2026-10-16 03:50] 다이맥스 툴팁의 기본 위력 표시 수정 (빌드·282개 단위 테스트 확인, 설치 대기)
 
 - 원인: 기술 타일의 표시용 Max Move 템플릿 위력(다수 10)을 그대로 읽고 원래 기술의 다이맥스 위력을 반영하지 않았다. `InBattleMove.id`는 원래 기술 ID를 유지하므로 이 ID의 MoveTemplate도 툴팁에 전달한다. UI 레이아웃·색·버튼은 변경하지 않는다.
