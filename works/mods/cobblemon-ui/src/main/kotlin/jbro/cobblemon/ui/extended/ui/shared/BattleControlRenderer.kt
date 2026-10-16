@@ -1,5 +1,6 @@
 package jbro.cobblemon.ui.extended.ui.shared
 
+import com.mojang.blaze3d.systems.RenderSystem
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.api.moves.MoveTemplate
 import com.cobblemon.mod.common.api.types.ElementalType
@@ -7,9 +8,11 @@ import com.cobblemon.mod.common.client.gui.TypeIcon
 import com.cobblemon.mod.common.client.gui.MoveCategoryIcon
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGimmickButton
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import jbro.cobblemon.ui.extended.UIUtils
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry
+import jbro.cobblemon.ui.navigation.UiRect
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
@@ -211,6 +214,69 @@ object BattleControlRenderer {
         if (font.width(text) <= width) text
         else font.plainSubstrByWidth(text, (width - font.width("…")).coerceAtLeast(0)) + "…"
 
+    /** A large themed replacement for Cobblemon's 18x17 gimmick button. */
+    @JvmStatic
+    fun gimmick(context: GuiGraphics, owner: Any, button: BattleGimmickButton, textureId: String,
+                 bounds: UiRect, focused: Boolean, opacity: Float) {
+        val spec = BattleGimmickIcons.spec(textureId) ?: return
+        if (bounds.width() <= 0 || bounds.height() <= 0 || opacity < .1f) return
+
+        val palette = BattleUiTheme.palette
+        val emphasis = BattleFocusMotion.emphasis(button, focused)
+        val extension = protrusion(emphasis)
+        val left = bounds.x() - extension
+        val width = bounds.width() + extension
+        val pill = palette.controlShape == BattleControlShape.PILL
+        val radius = if (pill) bounds.height() / 2 else 8
+        val corners = BattleCornerCuts(radius, radius, radius, radius)
+        val armed = button.toggled
+        val accent = if (armed) palette.focus else BattleUiTheme.CYAN
+        val base = if (armed) {
+            BattleSurface(palette.select, palette.selectBottom, accent, 1,
+                cornerCuts = corners, rounded = true)
+        } else BattleUiTheme.panel.copy(cornerCuts = corners, rounded = true)
+
+        drawDropShadow(context, left, bounds.y(), width, bounds.height(), corners, opacity)
+        if (palette.focusFill == null) {
+            drawFocusHalo(context, left, bounds.y(), width, bounds.height(), corners, accent, emphasis, opacity)
+        }
+        BattleSurfaceRenderer.draw(context, left, bounds.y(), width, bounds.height(),
+            focused(base, emphasis), opacity)
+
+        // Cobblemon draws its whole button at half scale; the symbol alone at 1:1 is twice that. Symbols differ in
+        // width, so each sits centred in a slot of one width and the names of stacked tiles start on one line.
+        val iconSlot = left + 6
+        BattleGimmickIcons.drawable(spec.textureId)?.let { icon ->
+            context.flush()
+            try {
+                RenderSystem.enableBlend()
+                RenderSystem.defaultBlendFunc()
+                RenderSystem.setShaderColor(1f, 1f, 1f, opacity.coerceIn(0f, 1f))
+                context.blit(icon.texture, iconSlot + (ICON_SLOT - icon.width) / 2, bounds.y() + (bounds.height() - icon.height) / 2,
+                    0f, 0f, icon.width, icon.height, icon.width, icon.height)
+                context.flush()
+            } finally {
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+            }
+        }
+
+        val font = Minecraft.getInstance().font
+        val labelX = iconSlot + ICON_SLOT + 5
+        val available = (bounds.x() + bounds.width() - 6 - labelX).coerceAtLeast(0)
+        val label = fit(font, Component.translatable(spec.labelKey).string, available)
+        val ink = when {
+            armed -> palette.selectInk
+            palette.focusFill != null -> BattleSurfaceRenderer.interpolate(palette.text, palette.focusText, emphasis)
+            else -> palette.text
+        }
+        UIUtils.drawText(context, label, labelX.toFloat(),
+            bounds.y() + (bounds.height() - font.lineHeight) / 2f,
+            BattleSurfaceRenderer.withOpacity(ink, opacity), 1f)
+
+        if (focused) drawCursor(context, Group(owner, "gimmick"), left,
+            bounds.y() + bounds.height() / 2f, accent, opacity)
+    }
+
     /** How far a tile slides out at this emphasis, overshooting a little on the way; the hitbox has the full slide. */
     @JvmStatic
     fun protrusion(emphasis: Float): Int =
@@ -300,5 +366,7 @@ object BattleControlRenderer {
         return (color and 0xFF000000.toInt()) or (red shl 16) or (green shl 8) or blue
     }
 
+    /** The width every gimmick symbol is centred in; the widest Cobblemon symbol is 21. */
+    private const val ICON_SLOT = 22
     private val BACK_KEY = Any()
 }

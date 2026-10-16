@@ -10,7 +10,6 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.client.render.drawScaledText
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.mojang.blaze3d.systems.RenderSystem
-import jbro.cobblemon.ui.extended.navigation.MoveTooltipMode
 import jbro.cobblemon.ui.extended.ui.shared.BattlePokemonTypes
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -81,13 +80,6 @@ object MoveTooltipRenderer {
     private var wasIncreaseFontKeyPressed = false
     private var wasDecreaseFontKeyPressed = false
     private var mixinActiveLastFrame = false
-    private val keyboardTooltipMode = MoveTooltipMode()
-
-    fun observeSelection(selection: Any) = keyboardTooltipMode.observe(selection)
-
-    fun setKeyboardTooltipMode(selection: Any, enabled: Boolean) =
-        keyboardTooltipMode.setEnabled(selection, enabled)
-
     fun setActivePokemonUuid(uuid: UUID?) {
         activePokemonUuid = uuid
     }
@@ -101,7 +93,6 @@ object MoveTooltipRenderer {
     fun resetIfStale() {
         if (!mixinActiveLastFrame) {
             hoveredMove = null
-            keyboardTooltipMode.clear()
         }
         mixinActiveLastFrame = false
     }
@@ -136,9 +127,12 @@ object MoveTooltipRenderer {
         }
     }
 
-    /** Selects the same registered tile used by keyboard navigation. */
+    /**
+     * Selects the same registered tile used by keyboard navigation: a move the keyboard is on always shows its
+     * tooltip (the setting turns tooltips off altogether), and none shows while focus is in the gimmick column.
+     */
     fun updateKeyboardFocusState(focusedIndex: Int) {
-        hoveredMove = if (keyboardTooltipMode.isEnabled) moveTileBounds.getOrNull(focusedIndex) else null
+        hoveredMove = moveTileBounds.getOrNull(focusedIndex)
     }
 
     // ═══════════════════════════════════════════════════════════════

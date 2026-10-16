@@ -10,14 +10,26 @@ object BattleConfirmGate {
     var pressedForMenu: Boolean = false
         private set
 
+    private var menuPressAvailable: Boolean = false
+
     /** The confirm key went down; [menuShown] tells whether the menu was there to take it. */
     @JvmStatic
     fun pressed(menuShown: Boolean) {
         pressedForMenu = menuShown
+        menuPressAvailable = menuShown
     }
 
     @JvmStatic
     fun released() {
         pressedForMenu = false
+        menuPressAvailable = false
+    }
+
+    /** Consumes the physical press once, so a held key's repeat events cannot toggle a menu control repeatedly. */
+    @JvmStatic
+    fun consumeMenuPress(): Boolean {
+        if (!pressedForMenu || !menuPressAvailable) return false
+        menuPressAvailable = false
+        return true
     }
 }

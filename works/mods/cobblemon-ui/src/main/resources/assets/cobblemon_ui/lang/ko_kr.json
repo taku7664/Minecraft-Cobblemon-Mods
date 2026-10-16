@@ -333,6 +333,11 @@
   "cobblemon_ui.config.uiPalette.factory_showroom": "팩토리 전시실",
   "cobblemon_ui.config.uiPalette.factory_night": "팩토리 야간",
   "cobblemon_ui.config.uiPalette.factory_terminal": "팩토리 터미널",
+  "cobblemon_ui.battle.gimmick.mega": "메가진화",
+  "cobblemon_ui.battle.gimmick.max": "다이맥스",
+  "cobblemon_ui.battle.gimmick.terastal": "테라스탈",
+  "cobblemon_ui.battle.gimmick.zmove": "Z기술",
+  "cobblemon_ui.battle.gimmick.ultra": "울트라버스트",
   "cobblemon_ui.config.enableBattleLogDamagePercentages": "피해·회복 퍼센트 표시",
   "cobblemon_ui.config.enableBattleLogDamagePercentages.tooltip": "전투 기록에 피해와 회복 비율을 추가로 표시합니다."
 }

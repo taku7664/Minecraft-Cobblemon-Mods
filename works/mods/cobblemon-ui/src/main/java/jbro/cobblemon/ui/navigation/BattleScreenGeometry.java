@@ -3,11 +3,16 @@ package jbro.cobblemon.ui.navigation;
 import jbro.cobblemon.ui.extended.ui.shared.BattleTargetLayout;
 import jbro.cobblemon.ui.extended.ui.shared.BattleSwitchLayout;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /** Shared visual and input bounds for the redesigned battle controls. */
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
+    public static final int GIMMICK_WIDTH = 90;
+    public static final int GIMMICK_HEIGHT = 26;
+    public static final int GIMMICK_GAP = 4;
+    public static final int GIMMICK_MOVE_GAP = 8;
     public static final int FOCUS_PROTRUSION = 7;
     public static final int SWITCH_WIDTH = 105;
     public static final int SWITCH_HEIGHT = 20;
@@ -18,6 +23,34 @@ public final class BattleScreenGeometry {
     public static List<UiRect> moveTiles(int screenWidth, int screenHeight, int count) {
         return BattleMenuLayout.vertical(screenWidth, screenHeight, MOVE_WIDTH, MOVE_HEIGHT, 4, 0,
                 moveBottomMargin(screenWidth), count);
+    }
+
+    /** A free-standing column centred on the full four-move grid and kept left of it. */
+    public static List<UiRect> gimmickTiles(int screenWidth, int screenHeight, int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("Gimmick count must be non-negative");
+        }
+        if (count == 0) {
+            return List.of();
+        }
+
+        List<UiRect> moveGrid = moveTiles(screenWidth, screenHeight, 4);
+        int moveLeft = moveGrid.getFirst().x();
+        int availableWidth = Math.max(0, moveLeft - GIMMICK_MOVE_GAP - FOCUS_PROTRUSION);
+        int width = Math.min(GIMMICK_WIDTH, availableWidth);
+        int x = Math.max(FOCUS_PROTRUSION, moveLeft - GIMMICK_MOVE_GAP - width);
+
+        int gridTop = moveGrid.getFirst().y();
+        UiRect lastMove = moveGrid.getLast();
+        int gridBottom = lastMove.y() + lastMove.height();
+        int totalHeight = count * GIMMICK_HEIGHT + (count - 1) * GIMMICK_GAP;
+        int centredY = (gridTop + gridBottom - totalHeight) / 2;
+        int y = Math.max(0, Math.min(Math.max(0, screenHeight - totalHeight), centredY));
+
+        return IntStream.range(0, count)
+                .mapToObj(index -> new UiRect(x,
+                        y + index * (GIMMICK_HEIGHT + GIMMICK_GAP), width, GIMMICK_HEIGHT))
+                .toList();
     }
 
     /** The vanilla hotbar is 182 wide and 22 tall at the bottom center; moves clear it when they would overlap. */

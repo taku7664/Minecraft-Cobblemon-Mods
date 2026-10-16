@@ -226,17 +226,19 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
-    void moveTooltipMouseHoverAndKeyboardModeUseSeparateVisibilityPaths() throws Exception {
+    void moveTooltipMouseHoverAndKeyboardFocusUseSeparateVisibilityPaths() throws Exception {
         String renderer = read("src/main/kotlin/jbro/cobblemon/ui/extended/MoveTooltipRenderer.kt");
         String moveMixin = read("src/main/java/jbro/cobblemon/ui/extended/mixin/BattleMoveSelectionMixin.java");
         String navigation = read("src/main/java/jbro/cobblemon/ui/extended/mixin/BattleGuiNavigationMixin.java");
 
         assertTrue(moveMixin.contains("if (KeyboardTileFocus.allowsMouseHover())"));
         assertTrue(renderer.contains("hoveredMove = moveTileBounds.find"));
-        assertTrue(renderer.contains("if (keyboardTooltipMode.isEnabled) moveTileBounds.getOrNull(focusedIndex) else null"));
+        // A move under keyboard focus always shows its tooltip; Left and Right move between gimmicks and moves.
+        assertTrue(renderer.contains("hoveredMove = moveTileBounds.getOrNull(focusedIndex)"));
+        assertFalse(renderer.contains("keyboardTooltipMode"));
         assertTrue(navigation.contains("GLFW.GLFW_KEY_LEFT"));
         assertTrue(navigation.contains("GLFW.GLFW_KEY_RIGHT"));
-        assertTrue(navigation.contains("MoveTooltipRenderer.INSTANCE.setKeyboardTooltipMode(selection, tooltipOn)"));
+        assertTrue(navigation.contains("cobblemonBattleUi$lastMoveIndex"));
     }
 
     @Test

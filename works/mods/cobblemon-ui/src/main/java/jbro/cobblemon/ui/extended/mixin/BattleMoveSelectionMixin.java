@@ -3,12 +3,14 @@ package jbro.cobblemon.ui.extended.mixin;
 import com.cobblemon.mod.common.client.battle.SingleActionRequest;
 import com.cobblemon.mod.common.api.moves.Moves;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGimmickButton;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection.MoveTile;
 import jbro.cobblemon.ui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.PanelConfig;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
+import jbro.cobblemon.ui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.ui.navigation.UiRect;
 import net.minecraft.client.Minecraft;
@@ -17,6 +19,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
@@ -56,7 +59,6 @@ public class BattleMoveSelectionMixin {
         }
 
         if (PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
-            MoveTooltipRenderer.INSTANCE.observeSelection(this);
             MoveTooltipRenderer.INSTANCE.clear();
         }
     }
@@ -70,6 +72,24 @@ public class BattleMoveSelectionMixin {
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
             MoveTooltipRenderer.INSTANCE.suspendForModal();
             return;
+        }
+
+        BattleMoveSelection selection = (BattleMoveSelection) (Object) this;
+        List<BattleGimmickButton> gimmicks = selection.getGimmickButtons();
+        List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(
+                Minecraft.getInstance().getWindow().getGuiScaledWidth(),
+                Minecraft.getInstance().getWindow().getGuiScaledHeight(),
+                gimmicks.size()
+        );
+        for (int index = 0; index < gimmicks.size(); index++) {
+            BattleGimmickButton button = gimmicks.get(index);
+            UiRect bound = gimmickBounds.get(index);
+            boolean emphasized = KeyboardTileFocus.allowsMouseHover()
+                    ? bound.contains(mouseX, mouseY)
+                    : KeyboardTileFocus.isFocused(button);
+            BattleControlRenderer.gimmick(context, selection, button,
+                    ((BattleGimmickButtonAccessor) button).cobblemonBattleUi$getTextureId(),
+                    bound, emphasized, selection.getOpacity());
         }
 
         if (!PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
@@ -112,5 +132,24 @@ public class BattleMoveSelectionMixin {
 
         // Handle font scaling input ([ ] keys)
         MoveTooltipRenderer.INSTANCE.handleInput();
+    }
+
+    /** Redirects Cobblemon's own hit test to the replacement column; its toggle logic remains untouched. */
+    @Redirect(method = "mousePrimaryClicked", at = @At(value = "INVOKE",
+            target = "Lcom/cobblemon/mod/common/client/gui/battle/subscreen/BattleGimmickButton;isHovered(DD)Z"))
+    private boolean cobblemonBattleUi$gimmickTileHovered(
+            BattleGimmickButton button, double mouseX, double mouseY) {
+        BattleMoveSelection selection = (BattleMoveSelection) (Object) this;
+        int index = selection.getGimmickButtons().indexOf(button);
+        if (index < 0) {
+            return false;
+        }
+        Minecraft client = Minecraft.getInstance();
+        List<UiRect> bounds = BattleScreenGeometry.gimmickTiles(
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(),
+                selection.getGimmickButtons().size()
+        );
+        return bounds.get(index).contains(mouseX, mouseY);
     }
 }

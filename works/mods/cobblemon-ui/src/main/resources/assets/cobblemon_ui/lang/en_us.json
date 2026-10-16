@@ -333,6 +333,11 @@
   "cobblemon_ui.config.uiPalette.factory_showroom": "Factory showroom",
   "cobblemon_ui.config.uiPalette.factory_night": "Factory night",
   "cobblemon_ui.config.uiPalette.factory_terminal": "Factory terminal",
+  "cobblemon_ui.battle.gimmick.mega": "Mega Evolution",
+  "cobblemon_ui.battle.gimmick.max": "Dynamax",
+  "cobblemon_ui.battle.gimmick.terastal": "Terastal",
+  "cobblemon_ui.battle.gimmick.zmove": "Z-Move",
+  "cobblemon_ui.battle.gimmick.ultra": "Ultra Burst",
   "cobblemon_ui.config.enableBattleLogDamagePercentages": "Damage and healing percentages",
   "cobblemon_ui.config.enableBattleLogDamagePercentages.tooltip": "Add damage and healing percentage lines to the battle history."
 }

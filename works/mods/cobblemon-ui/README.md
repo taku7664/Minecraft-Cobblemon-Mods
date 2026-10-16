@@ -6,7 +6,7 @@ Cobblemon UI replaces battle menus, health displays, information screens, and ba
 
 ## Features
 
-- Redesigned battle commands, move selection, switching, target selection, and forfeit confirmation.
+- Redesigned battle commands, move selection with full-size gimmick controls, switching, target selection, and forfeit confirmation.
 - Type icons on the battle HUD cards and in the battle information screen, following Terastallization and mid-battle type changes.
 - A battle information screen with team previews, weather, terrain, side effects, stat changes, and revealed Pokémon information.
 - Move tooltips with power, accuracy, PP, type effectiveness, and critical-hit information. Max Move power follows the original move, including Fighting/Poison conversion, move-specific overrides, and fixed-power Gigantamax moves.
