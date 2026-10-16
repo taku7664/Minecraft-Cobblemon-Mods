@@ -112,6 +112,26 @@ class LocalDynamaxTest {
     }
 
     @Test
+    fun `a Dynamax choice is calculated as its Max Move, damage and knockout included`() {
+        // Left uncalculated, a Dynamax choice scored its raw power while the same move without it scored its knockout.
+        val flamethrower = BattleActionCandidate("flamethrower:max", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "flamethrower", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+            moveDetails = BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 15,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT),
+            mechanic = BattleMechanicCandidate("dynamax", target = null, publicCost = null, transformedMoveId = "maxflare"))
+        val plain = BattleActionCandidate("flamethrower", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "flamethrower", targets = flamethrower.targets, moveDetails = flamethrower.moveDetails)
+        val context = BattleDecisionContext(UUID.randomUUID(), state(mon(BattleSide.ALLY), mon(BattleSide.OPPONENT)),
+            listOf(plain, flamethrower), Long.MAX_VALUE)
+        val facts = PublicBattleTacticalCalculator.calculate(context).candidates.associate { it.actionId to it.facts!! }
+        val max = requireNotNull(facts.getValue("flamethrower:max").standardDamageFractionRange)
+        val base = requireNotNull(facts.getValue("flamethrower").standardDamageFractionRange)
+        // Max Flare at 130 against Flamethrower at 90.
+        assertEquals(130.0 / 90.0, max.maximum / base.maximum, 0.05)
+        assertTrue(facts.getValue("flamethrower:max").standardKnockoutAssessment != null)
+    }
+
+    @Test
     fun `a Dynamax status move is ranked as Max Guard, not as the move it replaces`() {
         val guard = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 4, 10,
             BattleMoveTargetPattern.SELF, effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(
@@ -188,6 +208,43 @@ class LocalDynamaxTest {
         val barred = context.copy(exactOwnTeam = BattleExactOwnTeamView(listOf(build(active.battlePokemonId, true), build(bench.battlePokemonId, false))))
         assertTrue(LocalMechanicOptionValue.cost(dynamaxTackle(), context, boss) > 0.0)
         assertEquals(0.0, LocalMechanicOptionValue.cost(dynamaxTackle(), barred, boss), 1e-9)
+    }
+
+    @Test
+    fun `double Dynamax guard belongs to its actor slot and includes both opposing hits`() {
+        val allyZero = mon(BattleSide.ALLY).copyState(activeSlot = 0)
+        val allyOne = mon(BattleSide.ALLY).copyState(activeSlot = 1)
+        val foeZero = mon(BattleSide.OPPONENT).copyState(activeSlot = 0)
+        val foeOne = mon(BattleSide.OPPONENT).copyState(activeSlot = 1)
+        val details = dynamaxTackle().moveDetails!!
+        val pokemon = listOf(allyZero, allyOne, foeZero, foeOne)
+        val catalog = BattlePublicActionCatalogView(pokemon.map {
+            BattlePokemonActionCatalogView(it.battlePokemonId,
+                listOf(BattlePublicMoveOptionView("tackle", details, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)),
+                moveSetComplete = true)
+        })
+        val ordinary = BattleActionCandidate("slot-0", BattleActionKind.USE_MOVE, 0, 0, "tackle", moveDetails = details)
+        val dynamax = BattleActionCandidate("slot-1-max", BattleActionKind.USE_MOVE, 1, 0, "tackle",
+            mechanic = BattleMechanicCandidate("dynamax", null, null), moveDetails = details)
+        val joint = BattleActionCandidate("joint", BattleActionKind.COMPOSITE,
+            componentActionIds = listOf(ordinary.actionId, dynamax.actionId), componentActions = listOf(ordinary, dynamax))
+        val state = BattleStateView(
+            UUID.randomUUID(), BattleFormat.DOUBLE, 3, pokemon,
+            BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),
+            BattleSide.entries.associateWith { 2 }, emptyList(), emptyList(),
+        )
+        fun guard(current: BattleStateView): Double {
+            val context = BattleDecisionContext(UUID.randomUUID(), current, listOf(joint), Long.MAX_VALUE,
+                BattleTacticalMemoryView.empty(), publicActionCatalog = catalog)
+            return jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.adjustments(
+                listOf(joint), context, jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT,
+            ).getValue(joint.actionId)
+        }
+
+        val oneFoe = state.copyState(pokemon = pokemon.map {
+            if (it.battlePokemonId == foeOne.battlePokemonId) it.copyState(hpFraction = 0.0, fainted = true) else it
+        })
+        assertTrue(guard(state) > guard(oneFoe))
     }
 
     /** The active ally, a benched [benchSpecies] that loses to the faster foe unless Dynamaxed, and that foe. */

@@ -370,8 +370,11 @@ internal class LocalTacticalBrain(
             active.aceScores
         }
         // The rules' credits and debits for what the search does not see; both paths add them to the search's values.
+        // A Dynamax choice also earns what its doubled HP guards this turn (LocalDynamaxGuard; singles).
         val gimmickAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
-            else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
+            else (LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores).asSequence() +
+                jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.adjustments(difficultyContext.candidates, difficultyContext, tuning).asSequence())
+                .groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() } }
         // A stat raise is valued by whether its user still wins the one-on-one after it (yes or no), times the sweep bonus
         // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
         // A waiting opponent that turns into the raised Pokemon on entry takes the raise with it (LocalEntryCopyRisk).

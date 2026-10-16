@@ -26,6 +26,17 @@ internal object LocalDynamax {
     /** The share of a hit's HP fraction a Dynamaxed Pokemon takes: its maximum HP is doubled. */
     const val DAMAGE_SHARE = 0.5
 
+    /** Whether [mechanicId] is Dynamax (the request's `dynamax`, the move response's `max`). */
+    fun isMechanic(mechanicId: String?): Boolean = PublicIds.canonical(mechanicId ?: return false) in MECHANIC_IDS
+
+    /**
+     * [action] as the move its user actually uses: the Max Move when it Dynamaxes with it ([isMechanic]) or is
+     * Dynamaxed already, else itself. For calculating its damage; the candidate keeps its own id.
+     */
+    fun asUsed(action: BattleActionCandidate, user: BattlePokemonStateView): BattleActionCandidate =
+        if (!isMechanic(action.mechanic?.mechanicId)) asMaxMove(action, user)
+        else asMaxMove(action, start(user, isGMaxMove(action.mechanic?.transformedMoveId) || gigantamax(user)))
+
     fun active(pokemon: BattlePokemonStateView?): Boolean =
         pokemon?.knownVolatileEffectIds?.any { PublicIds.canonical(it) == VOLATILE } == true
 
@@ -115,6 +126,7 @@ internal object LocalDynamax {
         action.tags.firstOrNull { it.startsWith(BASE_MOVE_TAG) }?.removePrefix(BASE_MOVE_TAG) ?: action.moveId?.let(PublicIds::canonical)
 
     private const val BASE_MOVE_TAG = "maxmovebase:"
+    private val MECHANIC_IDS = setOf("dynamax", "max")
     private const val G_MAX_PLACEHOLDER_POWER = 10.0
     /** Kept on a Pokemon once its Gigantamax factor is known. */
     const val GIGANTAMAX = "gigantamax"

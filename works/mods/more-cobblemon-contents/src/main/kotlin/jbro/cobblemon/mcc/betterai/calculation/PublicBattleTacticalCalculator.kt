@@ -69,7 +69,7 @@ internal object PublicBattleTacticalCalculator {
         context: BattleDecisionContext,
         actingSide: BattleSide,
     ): List<Double>? {
-        val resolvedCandidate = resolveDynamicMove(candidate, context, actingSide)
+        val resolvedCandidate = asUsed(resolveDynamicMove(candidate, context, actingSide), context, actingSide)
         val details = resolvedCandidate.moveDetails ?: return null
         val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
         val targets = LocalPublicMoveTargets.resolve(resolvedCandidate, context, actingSide)
@@ -137,7 +137,7 @@ internal object PublicBattleTacticalCalculator {
         partner: BattlePokemonStateView,
         spreadMultiplier: Double,
     ): List<Double>? {
-        val resolvedCandidate = resolveDynamicMove(candidate, context, BattleSide.ALLY)
+        val resolvedCandidate = asUsed(resolveDynamicMove(candidate, context, BattleSide.ALLY), context, BattleSide.ALLY)
         val details = resolvedCandidate.moveDetails ?: return null
         val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, BattleSide.ALLY, slot) } ?: return null
         val projection = standardDamageProjection(
@@ -241,7 +241,18 @@ internal object PublicBattleTacticalCalculator {
         }
         if (candidate.facts != null) return candidate
         val resolvedCandidate = resolveDynamicMove(candidate, moveContext, actingSide)
-        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, moveContext, actingSide, observed))
+        return resolvedCandidate.copyWith(facts = facts(asUsed(resolvedCandidate, moveContext, actingSide), moveContext, actingSide, observed))
+    }
+
+    /**
+     * [candidate] as the move its user uses, for its damage: a Dynamax choice, or a Dynamaxed user's move, is its Max
+     * Move ([LocalDynamax.asUsed]). Calculated as the move it replaced, by that move's own rules (Body Press's Defence,
+     * Acrobatics' doubling), or not at all: a Dynamax choice was left without damage or knockout facts, so a Draco
+     * Meteor that knocked out scored 254 and its G-Max Depletion, the same knockout, 140 (G-948 ②).
+     */
+    private fun asUsed(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): BattleActionCandidate {
+        val actor = candidate.actorSlot?.let { active(context, actingSide, it) } ?: return candidate
+        return jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asUsed(candidate, actor)
     }
 
     private fun facts(
@@ -486,7 +497,8 @@ internal object PublicBattleTacticalCalculator {
         // because the ranking believes it.
         val mechanic = candidate.mechanic
         val mechanicStats = LocalMechanicFormResolution.transformedStats(candidate, actor)
-        if (mechanic != null &&
+        // Dynamax changes neither types nor stats (its doubled HP is the user's, not the move's): the user's own.
+        if (mechanic != null && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.isMechanic(mechanic.mechanicId) &&
             LocalMechanicFormResolution.transformedTypeIds(candidate, actor).isEmpty() &&
             mechanicStats == null
         ) {
