@@ -1,5 +1,12 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-16 16:00] 1cb6bc1c 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- 콘텐츠 테마 전환(피츄·PvP HUD·관전 버튼·대화 미리보기), 메시지 상자 공용 함수, PvP 초대·방출 확인 팝업, 원형 기믹 버튼이 들어간 `origin/main` `1cb6bc1c`를 `F:/AI/builds/deploy-1cb6bc1c`에서 빌드했다(EXIT 0, JAR 8개 `unzip -t` 정상, Kotlin in-process). 68e408b2 이후 커밋 13개는 모두 이 작업이다.
+- MCC·NPC에 내장된 cobblemon-ui가 단독 JAR과 같다(SHA-256 앞 12자리 5E882E27C0B9).
+- 개발 클라 8개(cobblemon-ui, NPC, MCC, 리그, 타워, 팩토리, PvP, jbro-policy), 개발 서버 7개(cobblemon-ui 제외)를 넣었고 SHA-256이 빌드본과 같다. 백업 `develop-product/deployment-backups/20261016-1cb6bc1c`(15개). 배포 때 게임·개발 서버는 꺼져 있었고 서버는 켜지지 않았다.
+- PPakemon 프로필·운영 서버·VPS에는 반영하지 않았다.
+
 ## [2026-10-16 15:30] 기믹 버튼을 원형으로, 맨 아래 기술 높이부터 위로 (캡처·컴파일·단위 테스트 확인, 빌드 배치 안 함)
 
 - **빡대리님 지시:** 기술 열 가운데부터가 아니라 아래에서 위로 쌓고, 원형 버튼으로.
