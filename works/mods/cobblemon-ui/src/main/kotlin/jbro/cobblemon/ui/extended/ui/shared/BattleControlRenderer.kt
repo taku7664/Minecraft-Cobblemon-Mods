@@ -245,7 +245,9 @@ object BattleControlRenderer {
 
         // Cobblemon draws its whole button at half scale; the symbol alone at 1:1 is twice that. Symbols differ in
         // width, so each sits centred in a slot of one width and the names of stacked tiles start on one line.
-        val iconSlot = left + 6
+        // An icon-only tile (the column narrowed to leave the move tooltip room) centres its symbol and has no name.
+        val named = bounds.width() >= BattleScreenGeometry.GIMMICK_WIDTH
+        val iconSlot = if (named) left + 6 else left + (width - ICON_SLOT) / 2
         BattleGimmickIcons.drawable(spec.textureId)?.let { icon ->
             context.flush()
             try {
@@ -260,18 +262,20 @@ object BattleControlRenderer {
             }
         }
 
-        val font = Minecraft.getInstance().font
-        val labelX = iconSlot + ICON_SLOT + 5
-        val available = (bounds.x() + bounds.width() - 6 - labelX).coerceAtLeast(0)
-        val label = fit(font, Component.translatable(spec.labelKey).string, available)
-        val ink = when {
-            armed -> palette.selectInk
-            palette.focusFill != null -> BattleSurfaceRenderer.interpolate(palette.text, palette.focusText, emphasis)
-            else -> palette.text
+        if (named) {
+            val font = Minecraft.getInstance().font
+            val labelX = iconSlot + ICON_SLOT + 5
+            val available = (bounds.x() + bounds.width() - 6 - labelX).coerceAtLeast(0)
+            val label = fit(font, Component.translatable(spec.labelKey).string, available)
+            val ink = when {
+                armed -> palette.selectInk
+                palette.focusFill != null -> BattleSurfaceRenderer.interpolate(palette.text, palette.focusText, emphasis)
+                else -> palette.text
+            }
+            UIUtils.drawText(context, label, labelX.toFloat(),
+                bounds.y() + (bounds.height() - font.lineHeight) / 2f,
+                BattleSurfaceRenderer.withOpacity(ink, opacity), 1f)
         }
-        UIUtils.drawText(context, label, labelX.toFloat(),
-            bounds.y() + (bounds.height() - font.lineHeight) / 2f,
-            BattleSurfaceRenderer.withOpacity(ink, opacity), 1f)
 
         if (focused) drawCursor(context, Group(owner, "gimmick"), left,
             bounds.y() + bounds.height() / 2f, accent, opacity)

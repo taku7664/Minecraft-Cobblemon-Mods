@@ -78,15 +78,16 @@ public class BattleMoveSelectionMixin {
         List<BattleGimmickButton> gimmicks = selection.getGimmickButtons();
         List<UiRect> gimmickBounds = BattleScreenGeometry.gimmickTiles(
                 Minecraft.getInstance().getWindow().getGuiScaledWidth(),
-                Minecraft.getInstance().getWindow().getGuiScaledHeight(),
-                gimmicks.size()
-        );
+                Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size(), MoveTooltipRenderer.reservedWidth());
         for (int index = 0; index < gimmicks.size(); index++) {
             BattleGimmickButton button = gimmicks.get(index);
             UiRect bound = gimmickBounds.get(index);
             boolean emphasized = KeyboardTileFocus.allowsMouseHover()
                     ? bound.contains(mouseX, mouseY)
                     : KeyboardTileFocus.isFocused(button);
+            if (index == 0) {
+                MoveTooltipRenderer.INSTANCE.registerGimmickColumn(bound.x());
+            }
             BattleControlRenderer.gimmick(context, selection, button,
                     ((BattleGimmickButtonAccessor) button).cobblemonBattleUi$getTextureId(),
                     bound, emphasized, selection.getOpacity());
@@ -147,9 +148,7 @@ public class BattleMoveSelectionMixin {
         Minecraft client = Minecraft.getInstance();
         List<UiRect> bounds = BattleScreenGeometry.gimmickTiles(
                 client.getWindow().getGuiScaledWidth(),
-                client.getWindow().getGuiScaledHeight(),
-                selection.getGimmickButtons().size()
-        );
+                client.getWindow().getGuiScaledHeight(), selection.getGimmickButtons().size(), MoveTooltipRenderer.reservedWidth());
         return bounds.get(index).contains(mouseX, mouseY);
     }
 }

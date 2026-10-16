@@ -75,6 +75,8 @@ object MoveTooltipRenderer {
     )
 
     private val moveTileBounds = mutableListOf<MoveTileBounds>()
+    /** The left edge of the gimmick column beside the moves this frame, if there is one; the tooltip stays left of it. */
+    private var gimmickColumnLeft: Int? = null
     private var hoveredMove: MoveTileBounds? = null
     private var activePokemonUuid: UUID? = null
     private var wasIncreaseFontKeyPressed = false
@@ -99,6 +101,7 @@ object MoveTooltipRenderer {
 
     fun clear() {
         moveTileBounds.clear()
+        gimmickColumnLeft = null
         hoveredMove = null
         mixinActiveLastFrame = true
     }
@@ -106,10 +109,23 @@ object MoveTooltipRenderer {
     /** Clears every hover target while the battle-info modal owns input. */
     fun suspendForModal() {
         moveTileBounds.clear()
+        gimmickColumnLeft = null
         hoveredMove = null
         activePokemonUuid = null
         mixinActiveLastFrame = false
     }
+
+    fun registerGimmickColumn(left: Int) {
+        gimmickColumnLeft = left
+    }
+
+    private fun fontScale(): Float = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
+
+    private fun tooltipWidth(fontScale: Float): Int = (TOOLTIP_BASE_WIDTH * fontScale / TOOLTIP_FONT_SCALE).toInt()
+
+    /** How wide a move tooltip is with the current settings; 0 when move tooltips are off. */
+    @JvmStatic
+    fun reservedWidth(): Int = if (PanelConfig.enableMoveTooltipsEffective) tooltipWidth(fontScale()) else 0
 
     @JvmOverloads
     fun registerMoveTile(
@@ -149,10 +165,10 @@ object MoveTooltipRenderer {
         val screenHeight = mc.window.guiScaledHeight
         val tr = mc.font
         // Whole text sizes only; the width keeps the designed proportion to the text.
-        val fontScale = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
+        val fontScale = fontScale()
         val lineH = (TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
 
-        val tooltipWidth = (TOOLTIP_BASE_WIDTH * fontScale / TOOLTIP_FONT_SCALE).toInt()
+        val tooltipWidth = tooltipWidth(fontScale)
         val contentWidth = tooltipWidth - UIUtils.FRAME_INSET * 2
 
         // ── Compute data ──
@@ -202,7 +218,8 @@ object MoveTooltipRenderer {
             UIUtils.CELL_GAP + headTotalH + pairedCellH + descTotalH + effectTotalH + UIUtils.FRAME_INSET
 
         // The tooltip stays beside the entire move column as focus/hover changes.
-        val columnLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
+        val moveLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
+        val columnLeft = gimmickColumnLeft?.let { minOf(it, moveLeft) } ?: moveLeft
         val columnBottom = moveTileBounds.maxOfOrNull { (it.y + it.height).toInt() }
             ?: (move.y + move.height).toInt()
         val anchor = MoveTooltipAnchor.position(

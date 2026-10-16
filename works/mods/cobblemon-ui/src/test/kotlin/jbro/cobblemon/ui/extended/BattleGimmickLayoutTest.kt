@@ -11,20 +11,42 @@ import org.junit.jupiter.api.Test
 
 class BattleGimmickLayoutTest {
     @Test
-    fun `one two and three gimmicks stay centred beside the move grid at 427 by 240`() {
+    fun `with tooltips off the named column stays centred beside the move grid at 427 by 240`() {
         assertEquals(listOf(UiRect(189, 133, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 1))
+            BattleScreenGeometry.gimmickTiles(427, 240, 1, 0))
         assertEquals(listOf(UiRect(189, 118, 90, 26), UiRect(189, 148, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 2))
+            BattleScreenGeometry.gimmickTiles(427, 240, 2, 0))
         assertEquals(listOf(UiRect(189, 103, 90, 26), UiRect(189, 133, 90, 26), UiRect(189, 163, 90, 26)),
-            BattleScreenGeometry.gimmickTiles(427, 240, 3))
+            BattleScreenGeometry.gimmickTiles(427, 240, 3, 0))
+    }
+
+    @Test
+    fun `where the move tooltip would not fit beside named tiles the column turns icon-only`() {
+        // 1280x720 at GUI scale 3: the default 210 wide tooltip does not fit left of 90 wide tiles.
+        assertEquals(listOf(UiRect(253, 118, 26, 26), UiRect(253, 148, 26, 26)),
+            BattleScreenGeometry.gimmickTiles(427, 240, 2, TOOLTIP))
+        // 1920x1080 at GUI scale 4: it does, so the tiles keep their names.
+        BattleScreenGeometry.gimmickTiles(480, 270, 2, TOOLTIP).forEach {
+            assertEquals(242, it.x())
+            assertEquals(BattleScreenGeometry.GIMMICK_WIDTH, it.width())
+        }
+    }
+
+    @Test
+    fun `the move tooltip anchored left of the column clears it on the screen`() {
+        for ((width, height) in listOf(427 to 240, 480 to 270, 640 to 360)) {
+            val column = BattleScreenGeometry.gimmickTiles(width, height, 3, TOOLTIP)
+            val anchor = MoveTooltipAnchor.position(column.first().x(), 200, TOOLTIP, 150, width, height)
+            assertTrue(anchor.x() >= MoveTooltipAnchor.SCREEN_MARGIN, "tooltip off screen at $width")
+            assertTrue(anchor.x() + TOOLTIP <= column.first().x() - BattleScreenGeometry.FOCUS_PROTRUSION,
+                "tooltip over the gimmicks at $width")
+        }
     }
 
     @Test
     fun `gimmick column remains inside a smaller screen`() {
-        val bounds = BattleScreenGeometry.gimmickTiles(320, 180, 3)
+        val bounds = BattleScreenGeometry.gimmickTiles(320, 180, 3, TOOLTIP)
 
-        assertEquals(listOf(UiRect(82, 43, 90, 26), UiRect(82, 73, 90, 26), UiRect(82, 103, 90, 26)), bounds)
         bounds.forEach {
             assertTrue(it.x() >= 0 && it.y() >= 0)
             assertTrue(it.x() + it.width() <= 320)
@@ -34,16 +56,18 @@ class BattleGimmickLayoutTest {
 
     @Test
     fun `gimmicks do not overlap moves or the back button at minimum supported layout`() {
-        val gimmicks = BattleScreenGeometry.gimmickTiles(427, 240, 3)
-        val moves = BattleScreenGeometry.moveTiles(427, 240, 4)
-        val back = UiRect(9, 218, 29, 17)
+        for (tooltip in listOf(0, TOOLTIP)) {
+            val gimmicks = BattleScreenGeometry.gimmickTiles(427, 240, 3, tooltip)
+            val moves = BattleScreenGeometry.moveTiles(427, 240, 4)
+            val back = UiRect(9, 218, 29, 17)
 
-        gimmicks.forEach { gimmick ->
-            moves.forEach { move ->
-                assertFalse(overlaps(gimmick, move))
-                assertTrue(gimmick.x() + gimmick.width() <= move.x() - BattleScreenGeometry.FOCUS_PROTRUSION)
+            gimmicks.forEach { gimmick ->
+                moves.forEach { move ->
+                    assertFalse(overlaps(gimmick, move))
+                    assertTrue(gimmick.x() + gimmick.width() <= move.x() - BattleScreenGeometry.FOCUS_PROTRUSION)
+                }
+                assertFalse(overlaps(gimmick, back))
             }
-            assertFalse(overlaps(gimmick, back))
         }
     }
 
@@ -87,6 +111,8 @@ class BattleGimmickLayoutTest {
     }
 
     private companion object {
+        /** The move tooltip's width at the default font scale. */
+        const val TOOLTIP = 210
         // ABGR, as NativeImage holds pixels.
         const val FACE = 0xFF676767.toInt()
         const val LIGHT = 0xFFC6C6C6.toInt()
