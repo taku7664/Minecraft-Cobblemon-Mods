@@ -6,16 +6,24 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue
+import jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout
 import jbro.cobblemon.mcc.betterai.search.NativeInformationSetSearch
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
@@ -130,6 +138,68 @@ class LocalNativeStatusValueTest {
         assertEquals(1, oneTurn.first)
         assertEquals(2, twoTurns.first)
         assertTrue(twoTurns.second > oneTurn.second, "the sleep must count: $oneTurn vs $twoTurns")
+    }
+
+    @Test
+    fun `a status move passing King's Shield is averaged over the same three seeded streams`() {
+        val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream(
+            "/betterai/snapshots/milotic-ferrothorn-switch-in.json.gz"))).use { it.readBytes().toString(Charsets.UTF_8) }
+            .let(AiTestDecisionSnapshot::fromJson).context
+        val ally = raw.state.pokemon.single { it.side == BattleSide.ALLY && it.activeSlot == 0 }
+        val foe = raw.state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == 0 }
+        val shieldDetails = BattleMoveCandidateView(
+            "steel", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 4, 10,
+            BattleMoveTargetPattern.SELF, effects = MOVES.getValue("kingsshield"),
+        )
+        val replyDetails = BattleMoveCandidateView(
+            "electric", BattleMoveDamageCategory.STATUS, 0.0, 90.0, 0, 20,
+            BattleMoveTargetPattern.SELECTED_OPPONENT, effects = MOVES.getValue("thunderwave"),
+        )
+        val shield = BattleActionCandidate(
+            "shield", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "kingsshield",
+            moveDetails = shieldDetails,
+        )
+        val entries = raw.publicActionCatalog.entries.map { entry -> when (entry.battlePokemonId) {
+            ally.battlePokemonId -> BattlePokemonActionCatalogView(entry.battlePokemonId,
+                listOf(BattlePublicMoveOptionView("kingsshield", shieldDetails, BattlePublicMoveKnowledge.EXACT_OWN)), true)
+            foe.battlePokemonId -> BattlePokemonActionCatalogView(entry.battlePokemonId,
+                listOf(BattlePublicMoveOptionView("thunderwave", replyDetails, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true)
+            else -> entry
+        } }
+        val catalog = BattlePublicActionCatalogView(
+            entries, raw.publicActionCatalog.originalEntries,
+            raw.publicActionCatalog.candidatePools.filterNot { it.battlePokemonId == foe.battlePokemonId },
+            raw.publicActionCatalog.opponentMoveInferences.filterNot { it.battlePokemonId == foe.battlePokemonId },
+        )
+        val context = raw.copy(
+            state = raw.state.copyState(pokemon = raw.state.pokemon.map {
+                if (it.battlePokemonId == foe.battlePokemonId) it.copyState(knownMoveIds = setOf("thunderwave")) else it
+            }),
+            candidates = listOf(shield),
+            deadlineEpochMillis = System.currentTimeMillis() + 60_000L,
+            publicActionCatalog = catalog,
+        )
+        val intent = jbro.cobblemon.mcc.betterai.matchup.OpponentIntent(foe.battlePokemonId, 0, listOf(
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(
+                jbro.cobblemon.mcc.betterai.matchup.IntentKind.STATUS,
+                "thunderwave", ally.battlePokemonId, null, 1.0, 1.0,
+            ),
+        ))
+        fun reading(seedCount: Int, seedStart: Int) = LocalEngineTurnReadout.protectTurns(
+            context, BattleTrainerTier.BOSS, listOf(shield), listOf(intent), LocalDecisionTuning.CURRENT,
+            seedCount, seedStart,
+        ).getValue(shield.actionId)
+        val singleElapsed = mutableListOf<Long>()
+        val singles = (0..2).map { seed ->
+            val started = System.nanoTime()
+            reading(1, seed).also { singleElapsed += (System.nanoTime() - started) / 1_000_000L }
+        }
+        val averagedStarted = System.nanoTime()
+        val averaged = reading(3, 0)
+        val averagedElapsed = (System.nanoTime() - averagedStarted) / 1_000_000L
+        println("PROTECT SEEDS singles=$singles single_ms=$singleElapsed averaged=$averaged averaged_ms=$averagedElapsed")
+
+        assertEquals(singles.average(), averaged, 1e-9)
     }
 
     private data class HazeReading(val status: String, val hazeValue: Double, val gap: Double, val selfHarm: Set<String>, val plies: Int)

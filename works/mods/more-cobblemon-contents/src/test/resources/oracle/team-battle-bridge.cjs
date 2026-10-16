@@ -280,7 +280,10 @@ function snapshot() {
             // As ManagedDynamax: set.canDynamax none keeps a member out, and a living member that may comes first by
             // set.dynamaxPriority (1 first, unmarked last) holds the Dynamax.
             const rank = pokemon => pokemon.set.dynamaxPriority ?? Infinity;
-            const mayAtAll = pokemon => pokemon.set.canDynamax !== 'none';
+            // The same public species/form rule as LocalDynamax.canDynamax and Cobblemon FormData.dynamaxBlocked:
+            // a species marked cannotDynamax and a Mega or Primal battle form cannot take or hold the turn.
+            const mayAtAll = pokemon => pokemon.set.canDynamax !== 'none' && !pokemon.species.cannotDynamax &&
+              !pokemon.species.isMega && !pokemon.species.isPrimal;
             const self = side.active[actorSlot];
             const mayDynamax = mayAtAll(self) && !side.pokemon.some(other =>
               other !== self && other.hp > 0 && mayAtAll(other) && rank(other) < rank(self));

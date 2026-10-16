@@ -190,8 +190,12 @@ internal object LocalEngineTurnReadout {
         protects: List<BattleActionCandidate>,
         intents: List<OpponentIntent>,
         tuning: LocalDecisionTuning,
+        /** Test seam for proving the production [SEEDS] average; production callers keep the defaults. */
+        seedCount: Int = SEEDS,
+        seedStart: Int = 0,
     ): Map<String, Double> {
         if (protects.isEmpty()) return emptyMap()
+        require(seedCount >= 1 && seedStart >= 0)
         val live = context.showdownState
         val plan = when {
             live != null -> planner.planLive(context, tier)
@@ -224,10 +228,17 @@ internal object LocalEngineTurnReadout {
                 for (protect in protects) {
                     val move = ally.firstOrNull { same(it, protect) } ?: continue
                     val turns = replies.map { reply ->
-                        val after = play(worker, root, move, reply, source.state).second
-                        LocalImmediateTurnScorer.score(source.state, after, source, cache, tuning).total -
-                            jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(after) +
-                            jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(source.state)
+                        var total = 0.0
+                        // As read's first turn: the same action/reply is drawn on independent, reproducible streams.
+                        // A status move that passes King's Shield must not be priced from one hit-or-miss coin flip.
+                        for (seed in seedStart until seedStart + seedCount) {
+                            val seededRoot = if (seed == 0) root else worker.reseed(root.snapshotJson, seed)
+                            val after = play(worker, seededRoot, move, reply, source.state).second
+                            total += LocalImmediateTurnScorer.score(source.state, after, source, cache, tuning).total -
+                                jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(after) +
+                                jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(source.state)
+                        }
+                        total / seedCount
                     }
                     values.merge(protect.actionId, world.probability * blend(turns, chances, expectation), Double::plus)
                     weights.merge(protect.actionId, world.probability, Double::plus)

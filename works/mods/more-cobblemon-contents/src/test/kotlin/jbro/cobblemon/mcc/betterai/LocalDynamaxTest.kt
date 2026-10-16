@@ -5,6 +5,10 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.matchup.IntentKind
+import jbro.cobblemon.mcc.betterai.matchup.IntentOption
+import jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard
+import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicPersistentMoveState
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -211,7 +215,97 @@ class LocalDynamaxTest {
     }
 
     @Test
+    fun `an explicit maximum Dynamax priority is ahead of an omitted priority in the reserve`() {
+        assertTrue(LocalMechanicOptionValue.comesNoLater(Int.MAX_VALUE, null))
+        assertFalse(LocalMechanicOptionValue.comesNoLater(null, Int.MAX_VALUE))
+        assertTrue(LocalMechanicOptionValue.comesNoLater(null, null))
+    }
+
+    @Test
     fun `double Dynamax guard belongs to its actor slot and includes both opposing hits`() {
+        val fixture = doubleGuardFixture()
+        val oneFoe = fixture.context.state.copyState(pokemon = fixture.context.state.pokemon.map {
+            if (it.battlePokemonId == fixture.foes[1].battlePokemonId) it.copyState(hpFraction = 0.0, fainted = true) else it
+        })
+
+        assertTrue(fixture.guard() > fixture.guard(fixture.context.copy(state = oneFoe)))
+    }
+
+    @Test
+    fun `double Dynamax guard follows predicted targets and uses a neutral fallback when targets are unavailable`() {
+        val fixture = doubleGuardFixture()
+        fun intents(target: BattlePokemonStateView) = fixture.foes.map { foe ->
+            OpponentIntent(foe.battlePokemonId, requireNotNull(foe.activeSlot), listOf(
+                IntentOption(IntentKind.ATTACK, "tackle", target.battlePokemonId, null, 1.0, 1.0),
+            ))
+        }
+
+        val partnerOnly = fixture.guard(intents = intents(fixture.partner))
+        val userOnly = fixture.guard(intents = intents(fixture.user))
+        val fallback = LocalDynamaxGuard.read(
+            listOf(fixture.joint), fixture.context,
+            jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT,
+            intents = null,
+        )
+
+        assertEquals(0.0, partnerOnly, 1e-9)
+        assertEquals(userOnly, fallback.adjustments.getValue(fixture.joint.actionId) * 2.0, 1e-6)
+        assertEquals(2, fallback.targetFallbacks)
+        assertEquals(2, fallback.targetAssessments)
+    }
+
+    @Test
+    fun `single targeting stays certain while a fast certain knockout removes the incoming hit`() {
+        fun singleGuard(speed: Int): Double {
+            val baseUser = mon(BattleSide.ALLY, speed = speed)
+            val user = baseUser.copyState(combatStats = requireNotNull(baseUser.combatStats).copy(
+                attack = BattleIntegerRange(700, 700),
+            ))
+            val baseFoe = mon(BattleSide.OPPONENT, speed = 100)
+            val foe = baseFoe.copyState(combatStats = requireNotNull(baseFoe.combatStats).copy(
+                maxHp = BattleIntegerRange(40, 40), defence = BattleIntegerRange(50, 50),
+            ))
+            val move = dynamaxTackle()
+            val details = requireNotNull(move.moveDetails)
+            val catalog = BattlePublicActionCatalogView(listOf(user, foe).map {
+                BattlePokemonActionCatalogView(it.battlePokemonId,
+                    listOf(BattlePublicMoveOptionView("tackle", details, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true)
+            })
+            val context = BattleDecisionContext(
+                UUID.randomUUID(), state(user, foe), listOf(move), Long.MAX_VALUE,
+                BattleTacticalMemoryView.empty(), publicActionCatalog = catalog,
+            )
+            val intent = OpponentIntent(foe.battlePokemonId, 0, listOf(
+                IntentOption(IntentKind.ATTACK, "tackle", user.battlePokemonId, null, 1.0, 1.0),
+            ))
+            val withoutIntent = LocalDynamaxGuard.adjustments(listOf(move), context,
+                jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT)[move.actionId] ?: 0.0
+            val withIntent = LocalDynamaxGuard.adjustments(listOf(move), context,
+                jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT, listOf(intent))[move.actionId] ?: 0.0
+            assertEquals(withoutIntent, withIntent, 1e-9, "singles has only one target")
+            return withIntent
+        }
+
+        val fast = singleGuard(200)
+        val slow = singleGuard(50)
+        assertTrue(fast < 1e-6, "fast=$fast")
+        assertTrue(slow > fast + 1e-3, "fast=$fast slow=$slow")
+    }
+
+    private data class DoubleGuardFixture(
+        val context: BattleDecisionContext,
+        val joint: BattleActionCandidate,
+        val user: BattlePokemonStateView,
+        val partner: BattlePokemonStateView,
+        val foes: List<BattlePokemonStateView>,
+    ) {
+        fun guard(context: BattleDecisionContext = this.context, intents: List<OpponentIntent>? = null): Double =
+            LocalDynamaxGuard.adjustments(
+                listOf(joint), context, jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT, intents,
+            )[joint.actionId] ?: 0.0
+    }
+
+    private fun doubleGuardFixture(): DoubleGuardFixture {
         val allyZero = mon(BattleSide.ALLY).copyState(activeSlot = 0)
         val allyOne = mon(BattleSide.ALLY).copyState(activeSlot = 1)
         val foeZero = mon(BattleSide.OPPONENT).copyState(activeSlot = 0)
@@ -233,18 +327,9 @@ class LocalDynamaxTest {
             BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),
             BattleSide.entries.associateWith { 2 }, emptyList(), emptyList(),
         )
-        fun guard(current: BattleStateView): Double {
-            val context = BattleDecisionContext(UUID.randomUUID(), current, listOf(joint), Long.MAX_VALUE,
-                BattleTacticalMemoryView.empty(), publicActionCatalog = catalog)
-            return jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.adjustments(
-                listOf(joint), context, jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT,
-            ).getValue(joint.actionId)
-        }
-
-        val oneFoe = state.copyState(pokemon = pokemon.map {
-            if (it.battlePokemonId == foeOne.battlePokemonId) it.copyState(hpFraction = 0.0, fainted = true) else it
-        })
-        assertTrue(guard(state) > guard(oneFoe))
+        val context = BattleDecisionContext(UUID.randomUUID(), state, listOf(joint), Long.MAX_VALUE,
+            BattleTacticalMemoryView.empty(), publicActionCatalog = catalog)
+        return DoubleGuardFixture(context, joint, allyOne, allyZero, listOf(foeZero, foeOne))
     }
 
     /** The active ally, a benched [benchSpecies] that loses to the faster foe unless Dynamaxed, and that foe. */

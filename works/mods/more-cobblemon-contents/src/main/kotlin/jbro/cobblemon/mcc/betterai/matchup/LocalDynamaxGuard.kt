@@ -8,9 +8,14 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.PublicIds
+import java.util.UUID
 
 /**
  * What Dynamaxing guards on the turn it starts: its doubled HP against the opposing Pokemon's best hit this turn, the
@@ -25,27 +30,56 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * for the knockout that Max Move threatened, walls included (Torkoal at -32, Ferrothorn at -36); 2026-10-16.
  */
 internal object LocalDynamaxGuard {
-    fun adjustments(candidates: List<BattleActionCandidate>, context: BattleDecisionContext, tuning: LocalDecisionTuning): Map<String, Double> {
+    data class Reading(
+        val adjustments: Map<String, Double>,
+        /** Unique opposing slots whose target probability used the neutral fallback. */
+        val targetFallbacks: Int = 0,
+        /** Unique opposing slots whose target probability was assessed. */
+        val targetAssessments: Int = 0,
+    )
+
+    fun adjustments(
+        candidates: List<BattleActionCandidate>,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        intents: List<OpponentIntent>? = null,
+    ): Map<String, Double> = read(candidates, context, tuning, intents).adjustments
+
+    fun read(
+        candidates: List<BattleActionCandidate>,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        intents: List<OpponentIntent>? = null,
+    ): Reading {
         val state = context.state
-        if (state.format !in setOf(BattleFormat.SINGLE, BattleFormat.DOUBLE)) return emptyMap()
+        if (state.format !in setOf(BattleFormat.SINGLE, BattleFormat.DOUBLE)) return Reading(emptyMap())
         val dynamaxing = candidates.mapNotNull { candidate ->
             parts(candidate).singleOrNull { LocalDynamax.isMechanic(it.mechanic?.mechanicId) }?.let { candidate to it }
         }
-        if (dynamaxing.isEmpty()) return emptyMap()
+        if (dynamaxing.isEmpty()) return Reading(emptyMap())
         val foes = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && alive(it) }
-        if (foes.isEmpty()) return emptyMap()
+        if (foes.isEmpty()) return Reading(emptyMap())
         val cache = LocalProjectedActionCalculationCache()
-        return dynamaxing.mapNotNull { (candidate, mechanic) ->
+        val targetingByUser = linkedMapOf<UUID, Targeting>()
+        val adjustments = dynamaxing.mapNotNull { (candidate, mechanic) ->
             val user = state.pokemon.firstOrNull {
                 it.side == BattleSide.ALLY && it.activeSlot == mechanic.actorSlot && alive(it)
             } ?: return@mapNotNull null
             if (LocalDynamax.active(user)) return@mapNotNull null
+            val targeting = targetingByUser.getOrPut(user.battlePokemonId) { targeting(context, user, foes, intents) }
+            val candidateContext = forCandidate(context, user, mechanic)
             val gigantamax = context.exactOwnTeam?.buildFor(user.battlePokemonId)?.gigantamax == true || LocalDynamax.gigantamax(user)
             val dynamaxed = LocalDynamax.start(user, gigantamax)
-            val plain = threat(context, state, user, foes, tuning, cache) ?: return@mapNotNull null
-            val guarded = threat(context, with(state, dynamaxed), dynamaxed, foes, tuning, cache) ?: return@mapNotNull null
+            val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache) ?: return@mapNotNull null
+            val guarded = threat(candidateContext, with(state, dynamaxed), dynamaxed, foes, targeting, tuning, cache)
+                ?: return@mapNotNull null
             (plain - guarded).takeIf { it > 0.0 }?.let { candidate.actionId to it }
         }.toMap()
+        return Reading(
+            adjustments,
+            targetFallbacks = targetingByUser.values.sumOf { it.fallbackOpponentIds.size },
+            targetAssessments = targetingByUser.size * foes.size,
+        )
     }
 
     /** The opposing active Pokemon's best hits on [user] this turn, with material counted once, in score units. */
@@ -54,18 +88,91 @@ internal object LocalDynamaxGuard {
         state: BattleStateView,
         user: BattlePokemonStateView,
         foes: List<BattlePokemonStateView>,
+        targeting: Targeting,
         tuning: LocalDecisionTuning,
         cache: LocalProjectedActionCalculationCache,
     ): Double? {
         val hits = foes.mapNotNull { foe ->
-            LocalMatchupScoreCalculator.pairMatchup(context.copy(state = state), user.battlePokemonId, foe.battlePokemonId,
-                MatchupSpeedField.CURRENT, cache)?.opponentMove
+            val pair = LocalMatchupScoreCalculator.pairMatchup(
+                context.copy(state = state), user.battlePokemonId, foe.battlePokemonId,
+                MatchupSpeedField.CURRENT, cache,
+            ) ?: return@mapNotNull null
+            val hit = pair.opponentMove ?: return@mapNotNull null
+            val acts = 1.0 - pair.subjectMovesFirstProbability * (pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0)
+            IncomingHit(hit, acts.coerceIn(0.0, 1.0), targeting.byOpponent.getValue(foe.battlePokemonId))
         }
         if (hits.isEmpty()) return null
         // Every hit is already halved for a Dynamaxed target, as every calculation reads one.
-        val taken = hits.sumOf { (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy }
-        val knockout = hits.maxOf { it.knockoutChanceWithin(1) }
+        val taken = hits.sumOf {
+            (it.move.minimumDamageFraction + it.move.maximumDamageFraction) / 2.0 * it.move.accuracy *
+                it.incomingProbability * it.targetProbability
+        }
+        val knockout = hits.maxOf {
+            it.move.knockoutChanceWithin(1) * it.incomingProbability * it.targetProbability
+        }
         return minOf(taken, user.hpFraction) * tuning.boardToScore + knockout * tuning.knockoutMaterialScore
+    }
+
+    /** Restrict the user's matchup to the base move behind this candidate, so its own KO chance gates the reply. */
+    private fun forCandidate(
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        candidate: BattleActionCandidate,
+    ): BattleDecisionContext {
+        val moveId = LocalDynamax.baseMoveId(candidate)?.let(PublicIds::canonical) ?: return context
+        val entry = context.publicActionCatalog.entries.singleOrNull { it.battlePokemonId == user.battlePokemonId } ?: return context
+        val selected = entry.moves.filter { PublicIds.canonical(it.moveId) == moveId }
+        if (selected.isEmpty()) return context
+        val entries = context.publicActionCatalog.entries.map {
+            if (it !== entry) it else BattlePokemonActionCatalogView(it.battlePokemonId, selected, moveSetComplete = true)
+        }
+        return context.copy(publicActionCatalog = BattlePublicActionCatalogView(
+            entries,
+            context.publicActionCatalog.originalEntries,
+            context.publicActionCatalog.candidatePools,
+            context.publicActionCatalog.opponentMoveInferences,
+        ))
+    }
+
+    /** Predicted chance each foe actually aims a damaging move at [user]. */
+    private fun targeting(
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        foes: List<BattlePokemonStateView>,
+        intents: List<OpponentIntent>?,
+    ): Targeting {
+        if (context.state.format == BattleFormat.SINGLE) {
+            return Targeting(foes.associate { it.battlePokemonId to 1.0 }, emptySet())
+        }
+        val alliedTargets = context.state.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && alive(it) }
+            .coerceAtLeast(1)
+        val fallback = 1.0 / alliedTargets
+        val fallbacks = linkedSetOf<UUID>()
+        val chances = foes.associate { foe ->
+            val intent = intents?.singleOrNull { it.pokemonId == foe.battlePokemonId }
+            var unresolved = intent == null || intent.options.isEmpty()
+            var chance = 0.0
+            intent?.options.orEmpty().filter { it.kind == IntentKind.ATTACK }.forEach { option ->
+                when {
+                    option.targetId == user.battlePokemonId -> chance += option.probability
+                    option.targetId != null -> Unit
+                    spread(context, foe.battlePokemonId, option.moveId) -> chance += option.probability
+                    else -> unresolved = true
+                }
+            }
+            foe.battlePokemonId to if (unresolved) {
+                fallbacks += foe.battlePokemonId
+                fallback
+            } else chance.coerceIn(0.0, 1.0)
+        }
+        return Targeting(chances, fallbacks)
+    }
+
+    private fun spread(context: BattleDecisionContext, pokemonId: UUID, moveId: String?): Boolean {
+        val canonical = moveId?.let(PublicIds::canonical) ?: return false
+        val pattern = context.publicActionCatalog.forPokemon(pokemonId)
+            .singleOrNull { PublicIds.canonical(it.moveId) == canonical }?.details?.targetPattern ?: return false
+        return pattern in SPREAD_TARGETS
     }
 
     private fun with(state: BattleStateView, pokemon: BattlePokemonStateView): BattleStateView =
@@ -75,4 +182,18 @@ internal object LocalDynamaxGuard {
         if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
 
     private fun alive(pokemon: BattlePokemonStateView) = !pokemon.fainted && pokemon.hpFraction > 0.0
+
+    private data class IncomingHit(
+        val move: MoveMatchupScore,
+        val incomingProbability: Double,
+        val targetProbability: Double,
+    )
+
+    private data class Targeting(val byOpponent: Map<UUID, Double>, val fallbackOpponentIds: Set<UUID>)
+
+    private val SPREAD_TARGETS = setOf(
+        BattleMoveTargetPattern.ALL_OPPONENTS,
+        BattleMoveTargetPattern.ALL_ADJACENT,
+        BattleMoveTargetPattern.ALL_ACTIVE,
+    )
 }

@@ -130,6 +130,13 @@ internal class AiTestDecisionTrace private constructor(
             battleId, turn, status, issues, elapsedSeconds())
     }
 
+    fun dynamaxGuardFallback(fallbacks: Int, assessments: Int) {
+        logger.info(
+            "[BetterAI Trace] battle={} turn={} phase=dynamax_guard target_fallbacks={} target_assessments={} elapsed_s={}",
+            battleId, turn, fallbacks, assessments, elapsedSeconds(),
+        )
+    }
+
     private fun elapsedSeconds(): String = number((System.nanoTime() - startedAtNanos) / 1_000_000_000.0)
 
     private fun number(value: Double): String = String.format(Locale.ROOT, "%.3f", value)

@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.api.battle
 
 import jbro.cobblemon.mcc.api.battle.ManagedDynamax.Mark
 import jbro.cobblemon.mcc.api.battle.ManagedDynamax.Permission
+import jbro.cobblemon.mcc.api.battle.ManagedDynamax.TurnMember
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -47,5 +48,23 @@ class ManagedDynamaxTest {
         // One kept out never holds it, and does not hold it from the others.
         assertFalse(ManagedDynamax.holdsTurn(Mark(Permission.NONE, 1), listOf(rest)))
         assertTrue(ManagedDynamax.holdsTurn(rest, listOf(Mark(Permission.NONE, 1))))
+    }
+
+    @Test
+    fun `an explicit maximum priority still comes before an omitted priority`() {
+        val explicit = Mark(priority = Int.MAX_VALUE)
+        val omitted = Mark()
+
+        assertTrue(ManagedDynamax.holdsTurn(explicit, listOf(omitted)))
+        assertFalse(ManagedDynamax.holdsTurn(omitted, listOf(explicit)))
+    }
+
+    @Test
+    fun `a species or form Cobblemon blocks from Dynamax does not hold the turn`() {
+        val blocked = TurnMember(Mark(Permission.NORMAL, 1), canDynamax = false)
+        val available = TurnMember(Mark(Permission.NORMAL, 2), canDynamax = true)
+
+        assertTrue(ManagedDynamax.holdsTurn(available, listOf(blocked)))
+        assertFalse(ManagedDynamax.holdsTurn(blocked, listOf(available)))
     }
 }

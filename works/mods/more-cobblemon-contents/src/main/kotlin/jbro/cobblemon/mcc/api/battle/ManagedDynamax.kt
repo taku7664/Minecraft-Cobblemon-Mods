@@ -33,6 +33,8 @@ object ManagedDynamax {
         val isEmpty: Boolean get() = permission == null && priority == null
     }
 
+    internal data class TurnMember(val mark: Mark, val canDynamax: Boolean = true)
+
     /** [line] without its Dynamax tokens, and the marks they gave. */
     fun split(line: String): Pair<String, Mark> {
         val tokens = line.trim().split(Regex("\\s+"))
@@ -72,16 +74,30 @@ object ManagedDynamax {
      * by [priority].
      */
     fun permits(pokemon: Pokemon?, livingTeam: List<Pokemon>): Boolean =
-        holdsTurn(Mark(permissionOf(pokemon), priority(pokemon)),
-            livingTeam.filter { it !== pokemon }.map { Mark(permissionOf(it), priority(it)) })
+        pokemon != null && holdsTurn(
+            TurnMember(Mark(permissionOf(pokemon), priority(pokemon)), canDynamax(pokemon)),
+            livingTeam.filter { it !== pokemon }.map {
+                TurnMember(Mark(permissionOf(it), priority(it)), canDynamax(it))
+            },
+        )
 
     /** Whether a member marked [own] may Dynamax now, its living teammates marked [livingOthers]. */
     internal fun holdsTurn(own: Mark, livingOthers: List<Mark>): Boolean =
-        own.permission != Permission.NONE && livingOthers.none { it.permission != Permission.NONE && rank(it) < rank(own) }
+        holdsTurn(TurnMember(own), livingOthers.map(::TurnMember))
+
+    internal fun holdsTurn(own: TurnMember, livingOthers: List<TurnMember>): Boolean =
+        own.canDynamax && own.mark.permission != Permission.NONE && livingOthers.none {
+            it.canDynamax && it.mark.permission != Permission.NONE && comesBefore(it.mark.priority, own.mark.priority)
+        }
 
     private fun permissionOf(pokemon: Pokemon?): Permission? = if (permits(pokemon)) null else Permission.NONE
 
-    private fun rank(mark: Mark): Int = mark.priority ?: Int.MAX_VALUE
+    /** Cobblemon's species/form rule, including species blocks and battle-only Mega or Primal forms. */
+    internal fun canDynamax(pokemon: Pokemon): Boolean = !pokemon.form.dynamaxBlocked
+
+    /** Every explicit priority, including [Int.MAX_VALUE], comes before an omitted priority. */
+    internal fun comesBefore(candidate: Int?, reference: Int?): Boolean =
+        candidate != null && (reference == null || candidate < reference)
 
     private const val OLD_TOKEN = "dynamax="
     private const val PERMISSION_TOKEN = "canDynamax="

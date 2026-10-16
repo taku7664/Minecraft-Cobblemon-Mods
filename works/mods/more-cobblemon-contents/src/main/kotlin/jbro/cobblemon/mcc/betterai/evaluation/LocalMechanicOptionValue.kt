@@ -82,7 +82,9 @@ internal object LocalMechanicOptionValue {
                 // One its trainer puts after the actor gets it only once the actor is gone (ManagedDynamax's order),
                 // so the actor spending it takes nothing from that one's turn.
                 val actorRank = dynamaxRank(actor, context)
-                val able = others.filter { dynamaxAllowed(it, context) && dynamaxRank(it, context) <= actorRank }
+                val able = others.filter {
+                    dynamaxAllowed(it, context) && comesNoLater(dynamaxRank(it, context), actorRank)
+                }
                 if (able.isEmpty()) 0.0 else {
                     val fits = dynamaxFits(context)
                     optionValue(able, context, DYNAMAX_SCALE) { fits[it.battlePokemonId] ?: 0.0 } *
@@ -161,8 +163,12 @@ internal object LocalMechanicOptionValue {
         LocalDynamax.canDynamax(pokemon) && context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxAllowed != false
 
     /** [pokemon]'s place in its trainer's Dynamax order; members without one come after every numbered one. */
-    private fun dynamaxRank(pokemon: BattlePokemonStateView, context: BattleDecisionContext): Int =
-        context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxPriority ?: Int.MAX_VALUE
+    private fun dynamaxRank(pokemon: BattlePokemonStateView, context: BattleDecisionContext): Int? =
+        context.exactOwnTeam?.buildFor(pokemon.battlePokemonId)?.dynamaxPriority
+
+    /** Explicit ranks come before an omitted rank; equal ranks share the turn and therefore share the reserve. */
+    internal fun comesNoLater(candidate: Int?, reference: Int?): Boolean =
+        candidate == null && reference == null || candidate != null && (reference == null || candidate <= reference)
 
     /** Every ally's standing as the ace ([LocalAceScore.matchup]); for the measurement trace. */
     internal fun dynamaxAce(context: BattleDecisionContext): Map<java.util.UUID, Double> =

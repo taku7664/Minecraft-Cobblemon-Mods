@@ -369,12 +369,35 @@ internal class LocalTacticalBrain(
             }
             active.aceScores
         }
-        // The rules' credits and debits for what the search does not see; both paths add them to the search's values.
-        // A Dynamax choice also earns what its doubled HP guards this turn (LocalDynamaxGuard; singles).
-        val gimmickAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
-            else (LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores).asSequence() +
-                jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.adjustments(difficultyContext.candidates, difficultyContext, tuning).asSequence())
-                .groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() } }
+        // The reserve prices the future use the search cannot see, on both paths. The legacy path additionally prices
+        // the doubled HP this turn; native Showdown already plays that HP and must not receive it twice.
+        val gimmickReserveAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
+            else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
+        val baseOpponentIntents by lazy {
+            if (!rulesApply) emptyList() else ruleScores?.let {
+                LocalOpponentIntentPredictor.predict(
+                    rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier,
+                )
+            }.orEmpty()
+        }
+        val dynamaxGuardReading by lazy {
+            if (!tuning.mechanicReserve) jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.Reading(emptyMap())
+            else jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.read(
+                difficultyContext.candidates, difficultyContext, tuning,
+                // Match protectTurnAdjustments: public matchup scores, scored switches, no invented status moves.
+                intents = if (difficultyContext.state.format != BattleFormat.DOUBLE) null else runCatching {
+                    LocalOpponentIntentPredictor.predict(
+                        difficultyContext,
+                        jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(difficultyContext),
+                        scoredSwitches = true,
+                    )
+                }.getOrNull(),
+            )
+        }
+        val gimmickAdjustments by lazy {
+            (gimmickReserveAdjustments.asSequence() + dynamaxGuardReading.adjustments.asSequence())
+                .groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() }
+        }
         // A stat raise is valued by whether its user still wins the one-on-one after it (yes or no), times the sweep bonus
         // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
         // A waiting opponent that turns into the raised Pokemon on entry takes the raise with it (LocalEntryCopyRisk).
@@ -445,7 +468,7 @@ internal class LocalTacticalBrain(
                     val id = rank.outcome.candidate.actionId
                     val extra = LocalTacticalScorer.simulationBlindAdjustment(
                         calculated[id] ?: rank.outcome.candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn,
-                    ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickAdjustments[id] ?: 0.0) +
+                    ) + (switchJudgement.adjustments[id] ?: 0.0) + (gimmickReserveAdjustments[id] ?: 0.0) +
                         (healRaceAdjustments[id] ?: 0.0) + (screenAdjustments[id] ?: 0.0) + (hazardEncoreAdjustments[id] ?: 0.0)
                     if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
                 })
@@ -597,10 +620,9 @@ internal class LocalTacticalBrain(
         // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
         val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
         // Read from the same table as the rules; the AI's threat weights play no part in it.
-        val opponentIntents = if (!rulesApply) emptyList()
-            else ruleScores?.let { LocalOpponentIntentPredictor.predict(rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier) }.orEmpty().let { intents ->
-                if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
-            }
+        val opponentIntents = baseOpponentIntents.let { intents ->
+            if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
+        }
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -714,6 +736,12 @@ internal class LocalTacticalBrain(
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
                 (perishTrapAdjustments[it] ?: 0.0)
+        }
+        if (dynamaxGuardReading.targetFallbacks > 0) {
+            decisionTrace?.dynamaxGuardFallback(
+                dynamaxGuardReading.targetFallbacks,
+                dynamaxGuardReading.targetAssessments,
+            )
         }
         val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
@@ -930,8 +958,7 @@ internal class LocalTacticalBrain(
     ): Map<String, Double> {
         val user = context.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
         if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) return emptyMap()
-        // Only a Protect sure to work: the engine draws one random stream, so a second one in a row came out failed
-        // whole (a knockout, -80) or not at all.
+        // Only a Protect sure to work: consecutive-use success itself is stateful, not an accuracy roll to average.
         val protects = context.candidates.filter {
             it.kind == BattleActionKind.USE_MOVE && it.mechanic == null &&
                 jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.isStallingProtection(it) &&
