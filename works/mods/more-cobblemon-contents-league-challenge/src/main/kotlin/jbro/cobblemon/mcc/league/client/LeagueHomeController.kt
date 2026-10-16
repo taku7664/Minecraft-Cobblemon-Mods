@@ -25,22 +25,23 @@ internal object LeagueHomeController {
     fun register() {
         LeagueClientSession.observe { view ->
             val client = Minecraft.getInstance()
-            state.accept(view)
+            val legacyError = view?.errorKey
+            state.accept(view?.copy(errorKey = null))
             if (view == null) {
                 dismiss()
                 if (showingLeague()) client.setScreen(null)
             } else {
                 if (view.openScreen) openRequest.request(view.nonce, tick)
-                if (view.runChallenge != null && !view.awaitingNext && view.errorKey == null) {
+                if (view.runChallenge != null && !view.awaitingNext && legacyError == null) {
                     if (showingLeague()) client.setScreen(null)
                 } else refresh()
+                legacyError?.let(LeagueErrorPopup::show)
             }
         }
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             tick++
             if (state.pending && tick >= pendingUntil) {
-                state.accept(state.view?.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.timeout"))
-                refresh()
+                fail("screen.more_cobblemon_contents_league_challenge.live.timeout")
             }
             val battleActive = CobblemonClient.battle != null
             if (battleActive && showingLeague()) client.setScreen(null)
@@ -61,7 +62,7 @@ internal object LeagueHomeController {
         pendingUntil = tick + 100
         val branch = state.finalChoiceId.takeIf { state.challenges.any { it.id == state.selectedId && it.finalStage } }
         if (!LeagueClientSession.send(action, state.selectedId.orEmpty(), finalChoiceId = branch)) {
-            state.accept(state.view?.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))
+            fail("screen.more_cobblemon_contents_league_challenge.live.disconnected")
         }
         refresh()
     }
@@ -73,7 +74,7 @@ internal object LeagueHomeController {
         if (!state.begin(LeagueAction.SELECT_LEAGUE)) return
         pendingUntil = tick + 100
         if (!LeagueClientSession.send(LeagueAction.SELECT_LEAGUE, leagueId = next.id))
-            state.accept(view.copy(errorKey = "screen.more_cobblemon_contents_league_challenge.live.disconnected"))
+            fail("screen.more_cobblemon_contents_league_challenge.live.disconnected")
         refresh()
     }
 
@@ -86,5 +87,11 @@ internal object LeagueHomeController {
 
     private fun refresh() {
         if (showingLeague()) MccHubScreen.current?.rebuild()
+    }
+
+    private fun fail(key: String) {
+        state.accept(state.view)
+        refresh()
+        LeagueErrorPopup.show(key)
     }
 }

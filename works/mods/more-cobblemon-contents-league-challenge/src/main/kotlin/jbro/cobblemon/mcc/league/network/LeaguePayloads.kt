@@ -56,6 +56,18 @@ data class LeagueRankPayload(val rank: String) : CustomPacketPayload {
     }
 }
 
+/** A request failure shown in the shared dialog UI; its own payload is also the server's popup capability check. */
+data class LeagueErrorPayload(val translationKey: String) : CustomPacketPayload {
+    override fun type() = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<LeagueErrorPayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "error_popup_v1"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, LeagueErrorPayload> = StreamCodec.of(
+            { buffer, payload -> buffer.writeUtf(payload.translationKey, 256) },
+            { buffer -> LeagueErrorPayload(buffer.readUtf(256)) },
+        )
+    }
+}
+
 data class LeagueIntentPayload(val nonce: UUID, val requestId: UUID, val revision: Long,
     val catalogRevision: Long, val action: LeagueAction, val challengeId: String = "",
     val leagueId: String = "", val finalChoiceId: String = "") : CustomPacketPayload {

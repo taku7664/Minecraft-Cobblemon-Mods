@@ -19,26 +19,19 @@ import net.minecraft.world.entity.Entity
  * The trainer a player sees across a managed battle: a Cobblemon NPC of MCC's `managed_trainer` class standing where
  * the virtual anchor would, in the content's skin, so Cobblemon's own send-out, recall, win and lose motions play on
  * it and the battle camera has someone to look at. One per player: a new battle sends the last one away first, so a
- * tower run never shows two. It cannot be pushed, hurt or challenged, stays a while after the battle for its closing
- * words, and is never kept: one found on load (after a crash) is removed.
+ * tower run never shows two. It cannot be pushed, hurt or challenged, stays until its closing words are acknowledged,
+ * and is never kept: one found on load (after a crash) is removed.
  */
 internal object Cobblemon173TrainerBody {
     val NPC_CLASS: ResourceLocation = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "managed_trainer")
     private const val TAG = "mcc_managed_trainer"
-    /** Long enough for the closing scene the client plays before it lets the battle close. */
-    private const val LINGER_TICKS = 300
-
-    private class Body(val npc: NPCEntity, var leaveAtTick: Int? = null)
+    private class Body(val npc: NPCEntity)
 
     private val bodies = HashMap<UUID, Body>()
 
     fun register() {
         ServerTickEvents.END_SERVER_TICK.register { server ->
-            val now = server.tickCount
-            bodies.entries.removeIf { (_, body) ->
-                val leave = body.leaveAtTick
-                (body.npc.isRemoved || leave != null && now >= leave).also { if (it) body.npc.discard() }
-            }
+            bodies.entries.removeIf { (_, body) -> body.npc.isRemoved }
         }
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             if (TAG in entity.tags && bodies.values.none { it.npc === entity }) entity.discard()
@@ -95,11 +88,11 @@ internal object Cobblemon173TrainerBody {
         npc.entityData.set(NPCEntity.BATTLE_IDS, npc.battleIds + battleId)
     }
 
-    /** The battle is over: the trainer stands down and leaves after its closing words. */
-    fun battleEnded(playerId: UUID, battleId: UUID, server: net.minecraft.server.MinecraftServer) {
+    /** The client finished the battle's closing words: the trainer stands down and leaves now. */
+    fun battleEnded(playerId: UUID, battleId: UUID) {
         val body = bodies[playerId] ?: return
         body.npc.entityData.set(NPCEntity.BATTLE_IDS, body.npc.battleIds - battleId)
-        body.leaveAtTick = server.tickCount + LINGER_TICKS
+        dismiss(playerId)
     }
 
     /** The trainer standing in [playerId]'s battle, if one is. */

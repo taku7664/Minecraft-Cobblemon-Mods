@@ -109,10 +109,9 @@ internal object WildTrader {
         if (!held.isEmpty && !player.inventory.add(held)) player.drop(held, false)
         party.add(received)
         WildNpcRoles.markDone(npc, player)
-        WildTrainers.leave(npc)
         Mod.LOGGER.info("{} traded {} for {} with a wild trader", player.gameProfile.name,
             given.species.resourceIdentifier, received.species.resourceIdentifier)
-        NpcTalks.open(player, WildTrainers.talk(npc, Component.translatable("$KEY.done", label(received))))
+        WildTrainers.leaveAfterTalk(player, npc, WildTrainers.talk(npc, Component.translatable("$KEY.done", label(received))))
     }
 
     /** Opens the player's PC while they stay by the trader, so they can bring the wanted Pokemon to slot 1. */

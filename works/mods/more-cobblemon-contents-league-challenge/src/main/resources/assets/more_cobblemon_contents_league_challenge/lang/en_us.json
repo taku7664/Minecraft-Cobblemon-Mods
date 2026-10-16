@@ -42,6 +42,8 @@
   "screen.more_cobblemon_contents_league_challenge.live.forfeit_body": "The current run ends. Earned badges and previous victories remain.",
   "screen.more_cobblemon_contents_league_challenge.live.timeout": "No response yet. Refresh or retry; no local progress was awarded.",
   "screen.more_cobblemon_contents_league_challenge.live.disconnected": "The League connection is unavailable.",
+  "screen.more_cobblemon_contents_league_challenge.error_popup.title": "League Request Error",
+  "screen.more_cobblemon_contents_league_challenge.error_popup.confirm": "OK",
   "message.more_cobblemon_contents_league_challenge.history_full": "League reward history is full. Contact the server administrator before starting another challenge.",
   "command.more_cobblemon_contents_league_challenge.imported": "Imported %s owned badges for %s. No BP or Champion title was granted.",
   "league.more_cobblemon_contents_league_challenge.sinnoh": "Sinnoh",

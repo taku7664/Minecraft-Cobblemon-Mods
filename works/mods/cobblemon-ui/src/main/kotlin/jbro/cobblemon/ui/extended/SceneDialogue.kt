@@ -17,13 +17,11 @@ import net.minecraft.network.chat.Component
 /**
  * A few lines someone says over the world, outside any battle screen: a trainer's words after a battle, drawn in the
  * battle message box with the speaker's name above it, floating over the cinematic letterbox ([CinematicLetterbox]). Lines are written out like battle narration; the confirm key
- * finishes a line and then moves on, and a finished line also moves on by itself so nobody is held up.
+ * finishes a line and then moves on. A line never advances by elapsed time: the speaker and its server-side lifecycle
+ * stay with the player until the player closes the last line.
  */
 object SceneDialogue {
     private const val CHARACTERS_PER_SECOND = 75.0
-    private const val DWELL_MILLIS = 1_600L
-    private const val DWELL_PER_CHARACTER_MILLIS = 35L
-    private const val DWELL_LIMIT_MILLIS = 6_000L
 
     private class Scene(val speaker: Component?, val lines: List<Component>, val onFinish: Runnable)
 
@@ -76,15 +74,12 @@ object SceneDialogue {
     @JvmStatic
     fun isActive(): Boolean = scene != null
 
-    /** How long [lines] take when nobody presses a key, so a camera held over them can be sized to match. */
+    /** Legacy typing-duration estimate kept for API compatibility; scenes themselves now wait for confirmation. */
     @JvmStatic
     fun expectedMillis(lines: List<Component>): Long = lines.sumOf { line ->
         val characters = line.string.length
-        (characters * 1000.0 / CHARACTERS_PER_SECOND).toLong() + dwell(characters)
+        (characters * 1000.0 / CHARACTERS_PER_SECOND).toLong()
     }
-
-    private fun dwell(characters: Int): Long =
-        (DWELL_MILLIS + characters * DWELL_PER_CHARACTER_MILLIS).coerceAtMost(DWELL_LIMIT_MILLIS)
 
     private fun startLine(next: Int) {
         index = next
@@ -103,7 +98,6 @@ object SceneDialogue {
         if (client.screen == null) {
             while (scene != null && CobblemonUiClient.selectActionKey.consumeClick()) confirm()
         }
-        if (scene === current && completeMillis != 0L && now - completeMillis >= dwell(line.length)) next()
     }
 
     /** The confirm key: finishes the line being written, as the battle message box does, or moves on from it. */

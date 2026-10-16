@@ -11,6 +11,7 @@ import jbro.cobblemon.npc.network.DialogueClosePayload
 import jbro.cobblemon.npc.network.DialogueLeavePayload
 import jbro.cobblemon.npc.network.DialogueShowPayload
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.commands.CommandResultCallback
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
@@ -32,6 +33,7 @@ object DialogueSessions {
         var choices: List<Int>,
         val npcEntityId: Int = DialogueShowPayload.NO_NPC,
         val talk: NpcTalk? = null,
+        val closed: ((ServerPlayer) -> Unit)? = null,
     )
 
     private val sessions = mutableMapOf<UUID, Session>()
@@ -45,7 +47,20 @@ object DialogueSessions {
         }
         ServerPlayNetworking.registerGlobalReceiver(DialogueLeavePayload.TYPE) { payload, context ->
             context.server().execute {
-                if (sessions[context.player().uuid]?.id == payload.session) sessions.remove(context.player().uuid)
+                sessions[context.player().uuid]?.takeIf { it.id == payload.session }?.let {
+                    close(context.player(), it, notifyClient = false)
+                }
+            }
+        }
+        ServerTickEvents.END_SERVER_TICK.register { server ->
+            sessions.toMap().forEach { (playerId, session) ->
+                if (session.closed == null) return@forEach
+                val player = server.playerList.getPlayer(playerId) ?: return@forEach
+                val npc = session.talk?.npc ?: return@forEach
+                val present = !npc.isRemoved && npc.isAlive
+                val sameLevel = npc.level() === player.level()
+                val distance = if (sameLevel) player.distanceToSqr(npc) else 0.0
+                if (NpcTalkCompletionPolicy.shouldClose(present, sameLevel, distance)) close(player, session)
             }
         }
     }
@@ -62,16 +77,20 @@ object DialogueSessions {
         val session = Session(newId(player), dialogue, speaker.ifBlank { dialogue.speaker.orEmpty() },
             skin.ifBlank { dialogue.skin.orEmpty() }, dialogue.start, emptyList(),
             npc?.takeIf { it.level() === player.level() }?.id ?: DialogueShowPayload.NO_NPC)
-        sessions[player.uuid] = session
+        replace(player, session)
         follow(player, session, walker(player, session).enter(node))
         return true
     }
 
     /** Shows [talk] to [player], replacing whatever talk they had open. */
     fun open(player: ServerPlayer, talk: NpcTalk) {
+        open(player, talk, null)
+    }
+
+    fun open(player: ServerPlayer, talk: NpcTalk, closed: ((ServerPlayer) -> Unit)?) {
         val session = Session(newId(player), null, "", talk.skin, "", talk.choices.indices.toList(),
-            talk.npc?.takeIf { it.level() === player.level() }?.id ?: DialogueShowPayload.NO_NPC, talk)
-        sessions[player.uuid] = session
+            talk.npc?.takeIf { it.level() === player.level() }?.id ?: DialogueShowPayload.NO_NPC, talk, closed)
+        replace(player, session)
         ServerPlayNetworking.send(player, DialogueShowPayload(session.id, talk.speaker, talk.skin, talk.lines,
             talk.choices.map { it.text }, session.npcEntityId))
     }
@@ -84,12 +103,12 @@ object DialogueSessions {
 
     /** Closes [player]'s dialogue box, if one is open. */
     fun end(player: ServerPlayer) {
-        val session = sessions.remove(player.uuid) ?: return
-        ServerPlayNetworking.send(player, DialogueClosePayload(session.id))
+        val session = sessions[player.uuid] ?: return
+        close(player, session)
     }
 
     fun forget(player: ServerPlayer) {
-        sessions.remove(player.uuid)
+        sessions[player.uuid]?.let { close(player, it, notifyClient = false) }
         answering.remove(player.uuid)
     }
 
@@ -130,8 +149,28 @@ object DialogueSessions {
                 answering.remove(player.uuid)
             }
         }
+        finishCallback(player, session)
         // The answer opened no further talk in this box: it closes.
         if (sessions[player.uuid]?.id != session.id) ServerPlayNetworking.send(player, DialogueClosePayload(session.id))
+    }
+
+    private fun replace(player: ServerPlayer, next: Session) {
+        sessions[player.uuid]?.let { previous -> close(player, previous, notifyClient = false) }
+        sessions[player.uuid] = next
+    }
+
+    private fun close(player: ServerPlayer, session: Session, notifyClient: Boolean = true) {
+        if (!sessions.remove(player.uuid, session)) return
+        if (notifyClient) ServerPlayNetworking.send(player, DialogueClosePayload(session.id))
+        finishCallback(player, session)
+    }
+
+    private fun finishCallback(player: ServerPlayer, session: Session) {
+        try {
+            session.closed?.invoke(player)
+        } catch (failure: RuntimeException) {
+            jbro.cobblemon.npc.CobblemonNpc.LOGGER.error("A talk completion failed for {}", player.gameProfile.name, failure)
+        }
     }
 
     /** Shows the next step first, then runs the commands, so a screen a command opens is not closed by the box. */
@@ -182,4 +221,11 @@ object DialogueSessions {
             return passed
         }
     })
+}
+
+internal object NpcTalkCompletionPolicy {
+    private const val MAX_DISTANCE_SQUARED = 32.0 * 32.0
+
+    fun shouldClose(npcPresent: Boolean, sameLevel: Boolean, distanceSquared: Double): Boolean =
+        !npcPresent || !sameLevel || distanceSquared > MAX_DISTANCE_SQUARED
 }

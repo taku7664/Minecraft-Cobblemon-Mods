@@ -59,11 +59,9 @@ object WildTrainers {
     private const val WILD_TRAINER_CONTENT = "${Mod.MOD_ID}:wild_trainer"
     private const val KEY = "message.${Mod.MOD_ID}.wild_trainer"
     private const val COOLDOWN_TICKS = 6_000L
-    // Long enough for the trainer's closing words, which the camera looks at, to be said before it leaves.
-    private const val DEFEATED_DESPAWN_TICKS = 300L
     /**
-     * Saved with a defeated trainer, so it still leaves when the server stops or its chunk unloads before
-     * [DEFEATED_DESPAWN_TICKS] are up: the next time it loads it goes on the next tick.
+     * Saved with a defeated or finished NPC before its closing words begin. If a restart loses the live completion
+     * callback, the tag still makes it leave the next time it loads.
      */
     private const val DEFEATED_TAG = "mcc_wild_trainer_defeated"
     private const val SCENE_LINE_VARIANTS = 3
@@ -91,7 +89,8 @@ object WildTrainers {
     private val fights = HashMap<UUID, Fight>()
     private val starting = HashSet<UUID>()
     private val cooldowns = HashMap<Pair<UUID, UUID>, Long>()
-    private val despawns = HashMap<UUID, Long>()
+    private val pendingDepartures = HashSet<UUID>()
+    private val despawns = HashSet<UUID>()
     /** Trainers named before their skin aspect arrived, to name again a little later. */
     private val renames = HashMap<UUID, Long>()
 
@@ -149,8 +148,15 @@ object WildTrainers {
         ServerEntityEvents.ENTITY_LOAD.register { entity, _ ->
             val npc = entity as? NPCEntity ?: return@register
             if (definitionOf(npc) == null) return@register
+            if (npc.uuid in despawns) {
+                if (!inLiveBattle(npc)) {
+                    despawns -= npc.uuid
+                    npc.discard()
+                }
+                return@register
+            }
             if (DEFEATED_TAG in npc.tags) {
-                despawns.putIfAbsent(npc.uuid, npc.level().server?.overworld()?.gameTime ?: 0L)
+                if (npc.uuid !in pendingDepartures) despawns += npc.uuid
                 return@register
             }
             // Cobblemon names the NPC after its class as soon as the class is set, so a custom name is always there
@@ -168,16 +174,17 @@ object WildTrainers {
                 }
             }
             if (despawns.isEmpty()) return@register
-            val now = server.overworld().gameTime
-            despawns.entries.filter { it.value <= now }.map { it.key }.forEach { id ->
-                despawns.remove(id)
+            despawns.toList().forEach { id ->
                 // One still in a battle waits for it to end; one not loaded keeps its tag and leaves the next time it loads.
                 val npc = server.allLevels.firstNotNullOfOrNull { it.getEntity(id) as? NPCEntity } ?: return@forEach
-                if (inLiveBattle(npc)) despawns[id] = now + DEFEATED_DESPAWN_TICKS else npc.discard()
+                if (WildNpcDeparturePolicy.shouldDiscard(marked = true, id in pendingDepartures, inLiveBattle(npc))) {
+                    despawns -= id
+                    npc.discard()
+                }
             }
         }
         ServerLifecycleEvents.SERVER_STOPPED.register {
-            fights.clear(); starting.clear(); cooldowns.clear(); despawns.clear(); renames.clear()
+            fights.clear(); starting.clear(); cooldowns.clear(); pendingDepartures.clear(); despawns.clear(); renames.clear()
         }
     }
 
@@ -316,17 +323,18 @@ object WildTrainers {
         cooldowns[player.uuid to fight.npcId] = now + COOLDOWN_TICKS
         cooldowns.entries.removeIf { it.value <= now }
         record(server, player.uuid, won)
-        if (npc != null) {
-            val line = Component.translatable("$KEY.scene.${if (won) "player_won" else "player_lost"}.${Random.nextInt(SCENE_LINE_VARIANTS)}")
-            BattleScenes.play(player, npc, opponent, listOf(line))
+        val line = npc?.let {
+            Component.translatable("$KEY.scene.${if (won) "player_won" else "player_lost"}.${Random.nextInt(SCENE_LINE_VARIANTS)}")
         }
         if (!won) {
             // A trainer already beaten by someone else still goes, after its words to this player.
-            if (npc != null && isLeaving(npc)) leave(npc)
+            if (npc != null && line != null) {
+                if (isLeaving(npc)) leaveAfterScene(player, npc, opponent, line) else BattleScenes.play(player, npc, opponent, listOf(line))
+            }
             BattleResultNotices.defeat(player, opponent)
             return
         }
-        if (npc != null) leave(npc) else despawns[fight.npcId] = now + DEFEATED_DESPAWN_TICKS
+        if (npc != null && line != null) leaveAfterScene(player, npc, opponent, line) else despawns += fight.npcId
         val bp = fight.definition.bp.random()
         val paid = if (bp <= 0) 0L else {
             val transaction = UUID.nameUUIDFromBytes("wild_trainer:${fight.npcId}:${player.uuid}:$now".toByteArray())
@@ -358,16 +366,46 @@ object WildTrainers {
     }
 
     /**
-     * Sends [npc] away once its business is done (a trainer beaten, a trade made): it goes after its closing words,
-     * and still goes if the server stops first, the next time it loads.
+     * Sends [npc] away now. Normal trainer and role completion uses [leaveAfterScene] or [leaveAfterTalk] so the
+     * player keeps the speaker until the closing words end.
      */
     internal fun leave(npc: NPCEntity) {
+        markLeaving(npc)
+        finishLeaving(npc.level().server ?: return, npc.uuid)
+    }
+
+    private fun leaveAfterScene(player: ServerPlayer, npc: NPCEntity, speaker: Component, line: Component) {
+        if (!markLeaving(npc)) return BattleScenes.play(player, npc, speaker, listOf(line))
+        val server = player.server
+        BattleScenes.playUntilFinished(player, npc, speaker, listOf(line), Runnable { finishLeaving(server, npc.uuid) })
+    }
+
+    /** Opens a role NPC's final [talk], keeping the NPC until that talk closes or loses its valid context. */
+    internal fun leaveAfterTalk(player: ServerPlayer, npc: NPCEntity, talk: NpcTalk) {
+        if (!markLeaving(npc)) return NpcTalks.open(player, talk)
+        val server = player.server
+        NpcTalks.open(player, talk) { finishLeaving(server, npc.uuid) }
+    }
+
+    private fun markLeaving(npc: NPCEntity): Boolean {
         npc.addTag(DEFEATED_TAG)
-        despawns[npc.uuid] = (npc.level().server?.overworld()?.gameTime ?: 0L) + DEFEATED_DESPAWN_TICKS
+        return pendingDepartures.add(npc.uuid)
+    }
+
+    private fun finishLeaving(server: MinecraftServer, npcId: UUID) {
+        pendingDepartures -= npcId
+        val npc = server.allLevels.firstNotNullOfOrNull { it.getEntity(npcId) as? NPCEntity }
+        if (npc == null || inLiveBattle(npc)) {
+            despawns += npcId
+        } else {
+            despawns -= npcId
+            npc.discard()
+        }
     }
 
     /** Whether [npc] has been sent away and is about to go. */
-    internal fun isLeaving(npc: NPCEntity): Boolean = DEFEATED_TAG in npc.tags || npc.uuid in despawns
+    internal fun isLeaving(npc: NPCEntity): Boolean =
+        DEFEATED_TAG in npc.tags || npc.uuid in pendingDepartures || npc.uuid in despawns
 
     /** [npc] says [key] in the dialogue box; for the other wild NPC roles. */
     internal fun sayLine(player: ServerPlayer, npc: NPCEntity, key: String) = say(player, npc, key)
@@ -422,4 +460,9 @@ object WildTrainers {
             }
         }
     }
+}
+
+internal object WildNpcDeparturePolicy {
+    fun shouldDiscard(marked: Boolean, waitingForDialogue: Boolean, inBattle: Boolean): Boolean =
+        marked && !waitingForDialogue && !inBattle
 }

@@ -47,6 +47,7 @@ object LeagueServer {
         BattleHubEntries.register(BattleHubEntry(CONTENT) { player, terminal -> openFromHub(player, terminal) })
         PayloadTypeRegistry.playS2C().register(LeagueStatePayload.TYPE, LeagueStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(LeagueRankPayload.TYPE, LeagueRankPayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(LeagueErrorPayload.TYPE, LeagueErrorPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(LeagueIntentPayload.TYPE, LeagueIntentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(LeagueIntentPayload.TYPE) { payload, context ->
             handle(context.player(), payload)
@@ -359,7 +360,7 @@ object LeagueServer {
     }
 
     private fun guarded(player: ServerPlayer, action: () -> Unit): Boolean = try { action(); true } catch (failure: RuntimeException) {
-        Mod.LOGGER.warn("League request rejected for {}: {}", player.uuid, failure.message)
+        Mod.LOGGER.warn("League request rejected for {}", player.uuid, failure)
         val reason = failure.message?.substringBefore(':')
         val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
             "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
@@ -367,12 +368,25 @@ object LeagueServer {
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"
-        player.sendSystemMessage(Component.translatable(key))
-        try { send(player, key) } catch (_: RuntimeException) { /* Broken storage stays locked. */ }
+        try { send(player) } catch (_: RuntimeException) { /* Broken storage stays locked. */ }
+        deliverError(player, key)
         false
     } catch (failure: LinkageError) {
         Mod.LOGGER.error("League dependency failure", failure)
-        player.sendSystemMessage(Component.translatable(ERROR_PREFIX + "integration_failed"))
+        deliverError(player, ERROR_PREFIX + "integration_failed")
         false
+    }
+
+    private fun deliverError(player: ServerPlayer, key: String) {
+        val popup = ServerPlayNetworking.canSend(player, LeagueErrorPayload.TYPE)
+        if (LeagueErrorDelivery.channel(popup) == LeagueErrorChannel.POPUP) {
+            try {
+                ServerPlayNetworking.send(player, LeagueErrorPayload(key))
+                return
+            } catch (failure: RuntimeException) {
+                Mod.LOGGER.warn("League error popup delivery failed for {}", player.uuid, failure)
+            }
+        }
+        player.sendSystemMessage(Component.translatable(key))
     }
 }

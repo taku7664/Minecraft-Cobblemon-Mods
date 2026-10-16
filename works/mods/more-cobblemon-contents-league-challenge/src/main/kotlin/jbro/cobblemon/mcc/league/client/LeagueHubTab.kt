@@ -242,8 +242,11 @@ internal class LeagueHubTab : MccHubTabContent {
                 else -> theme.colors.accentPrimary
             }
             line(g, leagueCopy("state." + s.status.lowercase(Locale.ROOT)), left, lineY, room, stateColor)
-            tooltip = Tooltip.create(Component.empty().append(Component.translatable(s.nameKey)).append("\n").append(leagueCopy("challenge_cap", s.battleCap))
-                .append("\n").append(leagueCopy("format." + s.format.lowercase(Locale.ROOT))))
+            if (LeagueTooltipTarget.hovered(x, y, width, height, mx, my)) {
+                Minecraft.getInstance().screen?.setTooltipForNextRenderPass(Component.empty().append(Component.translatable(s.nameKey))
+                    .append("\n").append(leagueCopy("challenge_cap", s.battleCap))
+                    .append("\n").append(leagueCopy("format." + s.format.lowercase(Locale.ROOT))))
+            }
             g.disableScissor()
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
@@ -287,7 +290,6 @@ internal class LeagueHubTab : MccHubTabContent {
         override fun renderWidget(g: GuiGraphics, mx: Int, my: Int, delta: Float) {
             val theme = CobblemonUiThemes.registry.snapshot(); val color = MccHubKit.panelText(theme)
             val notices = buildList<Component> {
-                view.errorKey?.let { add(Component.translatable(it)) }
                 if (!view.leagueUnlocked) add(leagueCopy("league_locked"))
                 if (view.pendingRewards) add(leagueCopy("rewards_pending"))
             }
@@ -318,10 +320,18 @@ internal class LeagueHubTab : MccHubTabContent {
                 g.fill(x + width - 2, thumb, x + width, thumb + 6, theme.colors.borderBright)
             }
             g.disableScissor()
-            tooltip = Tooltip.create((notices + rows).fold(Component.empty()) { text, row -> text.append(row).append("\n") })
+            if (LeagueTooltipTarget.hovered(x, y, width, height, mx, my)) {
+                Minecraft.getInstance().screen?.setTooltipForNextRenderPass(
+                    (notices + rows).fold(Component.empty()) { text, row -> text.append(row).append("\n") })
+            }
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
+}
+
+internal object LeagueTooltipTarget {
+    fun hovered(x: Int, y: Int, width: Int, height: Int, mouseX: Int, mouseY: Int): Boolean =
+        mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height
 }
 
 private val MECHANICS = listOf("mega" to BattleMechanicFlags.MEGA, "z_move" to BattleMechanicFlags.Z_MOVE,

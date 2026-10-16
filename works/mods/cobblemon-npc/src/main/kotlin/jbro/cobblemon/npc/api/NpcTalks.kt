@@ -34,6 +34,10 @@ object NpcTalks {
     /** Shows [talk] to [player], replacing whatever talk they had open. */
     fun open(player: ServerPlayer, talk: NpcTalk) = DialogueSessions.open(player, talk)
 
+    /** Shows [talk] and runs [closed] once it ends, is dismissed, is replaced, or loses its player/NPC context. */
+    fun open(player: ServerPlayer, talk: NpcTalk, closed: (ServerPlayer) -> Unit) =
+        DialogueSessions.open(player, talk, closed)
+
     /** Closes [player]'s dialogue box, if one is open. */
     fun close(player: ServerPlayer) = DialogueSessions.end(player)
 }

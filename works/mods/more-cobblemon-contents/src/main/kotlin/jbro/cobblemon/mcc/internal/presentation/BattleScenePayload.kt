@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.presentation
 
 import java.util.Optional
+import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -20,6 +21,7 @@ internal data class BattleScenePayload(
     val speaker: Component?,
     val lines: List<Component>,
     val interject: Boolean = false,
+    val completionId: UUID? = null,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<BattleScenePayload> = TYPE
 
@@ -30,17 +32,56 @@ internal data class BattleScenePayload(
             ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_scene"))
         private val SPEAKER = ByteBufCodecs.optional(ComponentSerialization.STREAM_CODEC)
         private val LINES = ComponentSerialization.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LINES))
-        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleScenePayload> = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, BattleScenePayload::focusEntityId,
-            SPEAKER, { Optional.ofNullable(it.speaker) },
-            LINES, BattleScenePayload::lines,
-            ByteBufCodecs.BOOL, BattleScenePayload::interject,
-        ) { focus, speaker, lines, interject -> BattleScenePayload(focus, speaker.orElse(null), lines, interject) }
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleScenePayload> = StreamCodec.of({ buffer, payload ->
+            buffer.writeVarInt(payload.focusEntityId)
+            SPEAKER.encode(buffer, Optional.ofNullable(payload.speaker))
+            LINES.encode(buffer, payload.lines)
+            buffer.writeBoolean(payload.interject)
+            buffer.writeBoolean(payload.completionId != null)
+            payload.completionId?.let(buffer::writeUUID)
+        }, { buffer ->
+            BattleScenePayload(
+                buffer.readVarInt(),
+                SPEAKER.decode(buffer).orElse(null),
+                LINES.decode(buffer),
+                buffer.readBoolean(),
+                if (buffer.readBoolean()) buffer.readUUID() else null,
+            )
+        })
+    }
+}
+
+internal data class BattleSceneFinishedPayload(val completionId: UUID) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<BattleSceneFinishedPayload> = TYPE
+
+    companion object {
+        val TYPE = CustomPacketPayload.Type<BattleSceneFinishedPayload>(
+            ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_scene_finished"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleSceneFinishedPayload> = StreamCodec.of(
+            { buffer, payload -> buffer.writeUUID(payload.completionId) },
+            { buffer -> BattleSceneFinishedPayload(buffer.readUUID()) },
+        )
+    }
+}
+
+internal data class BattleSceneCancelPayload(val completionId: UUID) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<BattleSceneCancelPayload> = TYPE
+
+    companion object {
+        val TYPE = CustomPacketPayload.Type<BattleSceneCancelPayload>(
+            ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "battle_scene_cancel"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleSceneCancelPayload> = StreamCodec.of(
+            { buffer, payload -> buffer.writeUUID(payload.completionId) },
+            { buffer -> BattleSceneCancelPayload(buffer.readUUID()) },
+        )
     }
 }
 
 internal object BattleSceneNetworking {
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(BattleScenePayload.TYPE, BattleScenePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(BattleSceneCancelPayload.TYPE, BattleSceneCancelPayload.CODEC)
+        PayloadTypeRegistry.playC2S().register(BattleSceneFinishedPayload.TYPE, BattleSceneFinishedPayload.CODEC)
+        BattleSceneCompletions.registerServer()
     }
 }

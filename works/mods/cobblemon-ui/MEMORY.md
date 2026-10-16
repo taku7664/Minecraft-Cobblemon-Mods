@@ -1,5 +1,10 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-16 21:52] 장면 대사 수동 종료 유지 (컴파일·단위 확인, 실게임 미확인)
+
+- `SceneDialogue`의 페이지 자동 진행과 마지막 페이지 시간 제한 종료를 없앴다. 장면 대사는 사용자의 확인 입력으로만 다음 페이지·종료로 진행하며, 기존 `expectedMillis` 공개 시그니처는 호환을 위해 유지하고 타이핑 예상 시간만 계산한다.
+- `SceneDialogueManualAdvanceTest` 1/1과 `compileKotlin`·`compileTestKotlin`이 성공했다. JAR 빌드·배치·클라이언트 실행·실화면 확인은 하지 않았고 커밋·푸시도 하지 않았다.
+
 ## [2026-10-16 16:00] 1cb6bc1c 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - 콘텐츠 테마 전환(피츄·PvP HUD·관전 버튼·대화 미리보기), 메시지 상자 공용 함수, PvP 초대·방출 확인 팝업, 원형 기믹 버튼이 들어간 `origin/main` `1cb6bc1c`를 `F:/AI/builds/deploy-1cb6bc1c`에서 빌드했다(EXIT 0, JAR 8개 `unzip -t` 정상, Kotlin in-process). 68e408b2 이후 커밋 13개는 모두 이 작업이다.

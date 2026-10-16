@@ -42,6 +42,8 @@
   "screen.more_cobblemon_contents_league_challenge.live.forfeit_body": "현재 연전만 종료합니다. 이미 획득한 뱃지와 승리 기록은 유지됩니다.",
   "screen.more_cobblemon_contents_league_challenge.live.timeout": "서버 응답이 없습니다. 새로고침하거나 재시도하세요. 진행도는 임의로 변경하지 않습니다.",
   "screen.more_cobblemon_contents_league_challenge.live.disconnected": "리그 서버 연결을 사용할 수 없습니다.",
+  "screen.more_cobblemon_contents_league_challenge.error_popup.title": "리그 요청 오류",
+  "screen.more_cobblemon_contents_league_challenge.error_popup.confirm": "확인",
   "message.more_cobblemon_contents_league_challenge.history_full": "리그 보상 기록이 가득 찼습니다. 새 도전 전에 서버 관리자에게 문의하세요.",
   "command.more_cobblemon_contents_league_challenge.imported": "%2$s의 소유 뱃지 %1$s개를 가져왔습니다. BP와 챔피언 칭호는 지급하지 않았습니다.",
   "league.more_cobblemon_contents_league_challenge.sinnoh": "신오",

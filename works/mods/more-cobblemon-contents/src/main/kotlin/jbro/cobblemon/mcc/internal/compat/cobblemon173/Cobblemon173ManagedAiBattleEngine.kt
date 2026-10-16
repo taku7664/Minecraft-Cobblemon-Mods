@@ -75,9 +75,17 @@ class Cobblemon173ManagedAiBattleEngine(
         prepared: Cobblemon173ManagedAiBattle,
         onBattleStarted: (PokemonBattle, UUID) -> Unit = { _, _ -> },
         onEnded: (Cobblemon173ManagedAiBattleEnd) -> Unit,
-    ): PveLaunchResult = startBattle(prepared, onBattleStarted, onEnded).also { result ->
-        // A battle that never started takes its visible trainer with it.
-        if (result !is PveLaunchResult.Started) Cobblemon173TrainerBody.dismiss(prepared.playerId)
+    ): PveLaunchResult = try {
+        startBattle(prepared, onBattleStarted, onEnded).also { result ->
+            // A battle that never started takes its visible trainer with it.
+            if (result !is PveLaunchResult.Started) Cobblemon173TrainerBody.dismiss(prepared.playerId)
+        }
+    } catch (failure: RuntimeException) {
+        Cobblemon173TrainerBody.dismiss(prepared.playerId)
+        throw failure
+    } catch (failure: LinkageError) {
+        Cobblemon173TrainerBody.dismiss(prepared.playerId)
+        throw failure
     }
 
     private fun startBattle(
@@ -332,8 +340,10 @@ class Cobblemon173ManagedAiBattleEngine(
             } else {
                 Cobblemon173TrainerBody.battleStarted(player.uuid, battle.battleId)
                 // A battle held for its versus intro opens later; the trainer speaks when it does.
-                jbro.cobblemon.mcc.internal.battle.BattleEntryHold.whenStarted(battle.battleId) { sceneDirector.battleStarted() }
-                sceneDirector.watch(battle, trainerActor.showdownId)
+                jbro.cobblemon.mcc.internal.battle.BattleEntryHold.whenStarted(battle.battleId) {
+                    sceneDirector.watch(battle, trainerActor.showdownId)
+                    sceneDirector.battleStarted()
+                }
                 onBattleStarted(battle, trainerActorId)
                 Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
@@ -361,8 +371,9 @@ class Cobblemon173ManagedAiBattleEngine(
                         },
                         { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
                         { BattleArenaHologramNetworking.hide(player, ended.battleId) },
-                        { Cobblemon173TrainerBody.battleEnded(player.uuid, ended.battleId, player.server) },
-                        { sceneDirector.ended(outcome) },
+                        { sceneDirector.ended(outcome) {
+                            Cobblemon173TrainerBody.battleEnded(player.uuid, ended.battleId)
+                        } },
                         {
                             trainerActor.closeBrains(
                                 BattleBrainCloseResult(

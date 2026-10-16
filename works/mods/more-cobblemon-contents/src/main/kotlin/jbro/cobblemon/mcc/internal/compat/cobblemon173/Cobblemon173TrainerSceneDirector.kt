@@ -66,27 +66,38 @@ internal class Cobblemon173TrainerSceneDirector(
         if (teamSize > 1 && team.count { it.health > 0 } == 1) play(Moment.LAST_POKEMON)
     }
 
-    fun ended(outcome: PveOutcome?) {
+    fun ended(outcome: PveOutcome?, finished: Runnable = Runnable {}) {
         stopWatching()
         when (outcome) {
-            PveOutcome.WIN -> play(Moment.PLAYER_WON)
-            PveOutcome.LOSS -> play(Moment.PLAYER_LOST)
-            null -> Unit
+            PveOutcome.WIN -> play(Moment.PLAYER_WON, finished)
+            PveOutcome.LOSS -> play(Moment.PLAYER_LOST, finished)
+            null -> finished.run()
         }
     }
 
-    private fun play(moment: Moment) {
+    private fun play(moment: Moment, finished: Runnable? = null) {
         val keys = scenes[moment]
-        if (keys.isEmpty()) return
-        synchronized(played) { if (!played.add(moment)) return }
+        if (keys.isEmpty()) return finished?.run() ?: Unit
+        synchronized(played) { if (!played.add(moment)) return finished?.run() ?: Unit }
         val server = player.server
         val midTurn = moment == Moment.DYNAMAX || moment == Moment.MEGA_EVOLUTION
         val send = Runnable {
-            val online = server.playerList.getPlayer(player.uuid) ?: return@Runnable
+            val online = server.playerList.getPlayer(player.uuid)
+            if (online == null) {
+                finished?.run()
+                return@Runnable
+            }
             val focus = Cobblemon173TrainerBody.of(player.uuid)
             val speaker = Component.translatable(trainerNameKey)
             val lines = keys.map { Component.translatable(it) }
-            if (midTurn) BattleScenes.interject(online, focus, speaker, lines) else BattleScenes.play(online, focus, speaker, lines)
+            when {
+                midTurn -> BattleScenes.interject(online, focus, speaker, lines)
+                finished != null && focus != null -> BattleScenes.playUntilFinished(online, focus, speaker, lines, finished)
+                else -> {
+                    BattleScenes.play(online, focus, speaker, lines)
+                    finished?.run()
+                }
+            }
         }
         if (server.isSameThread) send.run() else server.execute(send)
     }

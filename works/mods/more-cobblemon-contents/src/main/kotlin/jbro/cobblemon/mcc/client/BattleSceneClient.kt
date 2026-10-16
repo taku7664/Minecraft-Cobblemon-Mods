@@ -3,6 +3,8 @@ package jbro.cobblemon.mcc.client
 import jbro.cobblemon.battlecam.api.BattlecamScenes
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.presentation.BattleScenePayload
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneCancelPayload
+import jbro.cobblemon.mcc.internal.presentation.BattleSceneFinishedPayload
 import jbro.cobblemon.ui.extended.BattleDialogue
 import jbro.cobblemon.ui.extended.SceneDialogue
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -19,16 +21,12 @@ import net.minecraft.Util
 object BattleSceneClient {
     /** How long a battle's end waits for a closing scene that may follow it. */
     private const val SCENE_GRACE_MILLIS = 500L
-    /** A held end never waits longer than this, whatever the scene is doing. */
-    private const val HOLD_LIMIT_MILLIS = 90_000L
-    /** Battle narration still on screen goes first, unless the player leaves it unread this long. */
-    private const val NARRATION_WAIT_MILLIS = 8_000L
     /** The camera is let go when the lines end; this only bounds it if that never comes. */
     private const val CAMERA_LIMIT_MILLIS = 120_000L
 
     private var pending: BattleScenePayload? = null
-    private var pendingSince = 0L
     private var playing = false
+    private var playingCompletionId: java.util.UUID? = null
     private var heldEnd: Runnable? = null
     private var heldSince = 0L
     private var replaying = false
@@ -36,12 +34,19 @@ object BattleSceneClient {
     internal fun register() {
         ClientPlayNetworking.registerGlobalReceiver(BattleScenePayload.TYPE) { payload, context ->
             context.client().execute {
+                pending?.completionId?.let(::acknowledge)
                 pending = payload
-                pendingSince = Util.getMillis()
+            }
+        }
+        ClientPlayNetworking.registerGlobalReceiver(BattleSceneCancelPayload.TYPE) { payload, context ->
+            context.client().execute {
+                if (pending?.completionId == payload.completionId) pending = null
+                if (playingCompletionId == payload.completionId) SceneDialogue.stop()
             }
         }
         ClientTickEvents.END_CLIENT_TICK.register { _ -> tick() }
         MccClientSessionReset.onReset("battle scene") {
+            pending?.completionId?.let(::acknowledge)
             pending = null
             // A battle that teleports its players out (a PvP lounge) changes world inside the grace wait: dropping the
             // held end there left Cobblemon's client battle, and its music, running for good.
@@ -71,14 +76,12 @@ object BattleSceneClient {
 
     private fun tick() {
         val now = Util.getMillis()
-        if (heldEnd != null && (now - heldSince > HOLD_LIMIT_MILLIS ||
-                pending == null && !playing && now - heldSince > SCENE_GRACE_MILLIS)) {
-            if (playing) SceneDialogue.stop() // Its finish lets the end go.
+        if (heldEnd != null && pending == null && !playing && now - heldSince > SCENE_GRACE_MILLIS) {
             releaseEnd()
         }
         val scene = pending ?: return
-        // Words said mid-turn (a Dynamax) come in at once; the narration under them waits (BattleDialogue).
-        if (!scene.interject && BattleDialogue.hasPending() && now - pendingSince < NARRATION_WAIT_MILLIS) return
+        // Words said mid-turn (a Dynamax) come in at once; closing words wait until the player clears narration.
+        if (!scene.interject && BattleDialogue.hasPending()) return
         pending = null
         play(scene)
     }
@@ -86,13 +89,22 @@ object BattleSceneClient {
     private fun play(scene: BattleScenePayload) {
         var focused = false
         playing = true
+        playingCompletionId = scene.completionId
         SceneDialogue.play(scene.speaker, scene.lines) {
             if (focused) Battlecam.release()
             playing = false
+            playingCompletionId = null
+            scene.completionId?.let(::acknowledge)
             releaseEnd()
         }
         if (scene.focusEntityId != BattleScenePayload.NO_FOCUS && SceneDialogue.isActive()) {
             focused = Battlecam.focus(scene.focusEntityId, CAMERA_LIMIT_MILLIS)
+        }
+    }
+
+    private fun acknowledge(id: java.util.UUID) {
+        if (ClientPlayNetworking.canSend(BattleSceneFinishedPayload.TYPE)) {
+            ClientPlayNetworking.send(BattleSceneFinishedPayload(id))
         }
     }
 

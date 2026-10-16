@@ -26,16 +26,42 @@ object BattleScenes {
     fun interject(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>) =
         send(player, focus, speaker, lines, interject = true)
 
+    /**
+     * Plays closing words and runs [finished] only after the supporting client closes the last line. A client without
+     * scene support receives chat instead and completes immediately. Disconnecting, changing level, losing the focus
+     * entity or walking out of range also completes it, without advancing a dialogue on a timer.
+     */
+    fun playUntilFinished(player: ServerPlayer, focus: Entity, speaker: Component?, lines: List<Component>, finished: Runnable) {
+        require(lines.size in 1..MAX_LINES) { "A scene has 1 to $MAX_LINES lines" }
+        if (!ServerPlayNetworking.canSend(player, BattleScenePayload.TYPE)) {
+            chat(player, speaker, lines)
+            finished.run()
+            return
+        }
+        val completionId = jbro.cobblemon.mcc.internal.presentation.BattleSceneCompletions.await(player, focus, finished)
+        try {
+            val focusId = focus.takeIf { it.level() === player.level() && !it.isRemoved }?.id ?: BattleScenePayload.NO_FOCUS
+            ServerPlayNetworking.send(player, BattleScenePayload(focusId, speaker, lines, interject = false, completionId))
+        } catch (failure: RuntimeException) {
+            jbro.cobblemon.mcc.internal.presentation.BattleSceneCompletions.cancel(completionId)
+            throw failure
+        }
+    }
+
     private fun send(player: ServerPlayer, focus: Entity?, speaker: Component?, lines: List<Component>, interject: Boolean) {
         require(lines.size in 1..MAX_LINES) { "A scene has 1 to $MAX_LINES lines" }
         if (!ServerPlayNetworking.canSend(player, BattleScenePayload.TYPE)) {
-            lines.forEach { line ->
-                player.sendSystemMessage(speaker?.let { Component.literal("<").append(it).append("> ").append(line) } ?: line)
-            }
+            chat(player, speaker, lines)
             return
         }
         // The client only knows entities it is tracking in its own level.
         val focusId = focus?.takeIf { it.level() === player.level() && !it.isRemoved }?.id ?: BattleScenePayload.NO_FOCUS
         ServerPlayNetworking.send(player, BattleScenePayload(focusId, speaker, lines, interject))
+    }
+
+    private fun chat(player: ServerPlayer, speaker: Component?, lines: List<Component>) {
+        lines.forEach { line ->
+            player.sendSystemMessage(speaker?.let { Component.literal("<").append(it).append("> ").append(line) } ?: line)
+        }
     }
 }
