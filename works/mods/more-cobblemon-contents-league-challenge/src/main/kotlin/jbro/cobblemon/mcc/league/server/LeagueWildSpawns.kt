@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerPlayer
 /**
  * Scale only player-caused, unowned Cobblemon spawns; CLC's own scaling must be disabled. The level follows the
  * league's [jbro.cobblemon.mcc.league.system.WildLevelRule] below the lesser of the fixed regional level and
- * the causing player's cap. A species that is not met that low steps back down its evolution line
- * ([WildSpawnSpecies]), and the moves are learned again for the new level.
+ * the causing player's cap. A species that is not met that low steps back down its evolution line, and one whose
+ * evolution level the new level reaches evolves ([WildSpawnSpecies]); the moves are learned again for the new level.
  */
 object LeagueWildSpawns {
     /** The regional level, [player]'s cap and the band a new spawn there draws from. */

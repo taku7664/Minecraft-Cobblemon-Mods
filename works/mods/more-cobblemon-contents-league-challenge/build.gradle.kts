@@ -88,6 +88,10 @@ val unitTest by tasks.registering(JavaExec::class) {
         args("--scan-class-path=${it.absolutePath}")
     }
     args("--fail-if-no-tests", "--details=summary")
+    // Narrow a run to a few classes: ./gradlew :more-cobblemon-contents-league-challenge:unitTest -Ptests=WildSpawnStageTest
+    if (project.hasProperty("tests")) {
+        args("--include-classname=.*(${project.property("tests")}).*")
+    }
     // The hard League's data test reads Mega Showdown's items and which species each Mega Stone evolves.
     val megaShowdown = project.configurations.detachedConfiguration(
         project.dependencies.create("maven.modrinth:cobblemon-mega-showdown:${project.property("mega_showdown_version_id")}"),
