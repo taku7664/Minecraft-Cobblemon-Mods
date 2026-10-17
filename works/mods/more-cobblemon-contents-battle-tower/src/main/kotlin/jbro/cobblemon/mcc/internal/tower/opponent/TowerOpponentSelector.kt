@@ -177,8 +177,7 @@ internal class TowerOpponentSelector(
     /**
      * One random set of each group the challenger brought, of different species and held items. Species are drawn
      * first, so a species with several sets (Mewtwo's X and Y) comes up no more often than one with a single set.
-     */
-    /**
+     *
      * With [oneMegaStone] (a Mega battle) the draw keeps to one Mega Stone where the pool lets it: once a stone is
      * drawn, a species with another set comes first and gives that set. Matching the challenger's count comes before
      * the stone, so a group whose every set holds a stone still sends one.
@@ -193,7 +192,8 @@ internal class TowerOpponentSelector(
             val bySpecies = pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.groupBy(TowerPokemonSet::speciesId)
             var taken = 0
             val order = bySpecies.keys.toMutableList().also(::shuffleAny)
-            if (oneMegaStone) order.sortBy { species -> if (bySpecies.getValue(species).any { !it.heldItemId.isTowerMegaStone() }) 0 else 1 }
+            // Only once a stone is drawn; before that every species keeps its shuffled chance.
+            if (oneMegaStone && drawn.any { it.heldItemId.isTowerMegaStone() }) order.sortBy { species -> if (bySpecies.getValue(species).any { !it.heldItemId.isTowerMegaStone() }) 0 else 1 }
             for (species in order) {
                 if (taken == wanted) break
                 val free = bySpecies.getValue(species)

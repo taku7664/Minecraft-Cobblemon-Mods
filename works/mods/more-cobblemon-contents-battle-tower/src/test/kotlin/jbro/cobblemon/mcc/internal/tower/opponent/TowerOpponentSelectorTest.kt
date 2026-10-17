@@ -104,7 +104,7 @@ class TowerOpponentSelectorTest {
     @Test
     fun `a Mega trainer holds one Mega Stone and fills the other seats with battle items`() {
         // Stones come first in the pool, so a search without the rule would take three of them.
-        val stones = (1..4).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite", mechanic = MajorBattleMechanic.MEGA) }
+        val stones = (1..4).map { pokemonSet(it, heldItemId = "mega_showdown:stone${'a' + it}ite", mechanic = MajorBattleMechanic.MEGA) }
         val companions = (5..8).map { pokemonSet(it, mechanic = MajorBattleMechanic.TERA) }
         val sets = stones + companions
         listOf(TowerBattleFormat.SINGLE, TowerBattleFormat.DOUBLE).forEach { format ->
@@ -121,7 +121,7 @@ class TowerOpponentSelectorTest {
 
     @Test
     fun `a Mega pool of stone sets only, as in a data pack without companions, still fields a team`() {
-        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite", mechanic = MajorBattleMechanic.MEGA) }
+        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${'a' + it}ite", mechanic = MajorBattleMechanic.MEGA) }
         val profile = profile("stones", 1, TowerBattleFormat.DOUBLE, sets.map(TowerPokemonSet::setId))
         val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
 
@@ -134,7 +134,7 @@ class TowerOpponentSelectorTest {
     @Test
     fun `the team search reaches the one stone a team needs and never takes a second`() {
         val companions = (1..5).map { pokemonSet(it) }
-        val stones = (6..7).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite") }
+        val stones = (6..7).map { pokemonSet(it, heldItemId = "mega_showdown:stone${'a' + it}ite") }
 
         val team = TowerLegalTeamSearch.select(companions + stones, 4, 1..1)!!
 
@@ -145,7 +145,7 @@ class TowerOpponentSelectorTest {
 
     @Test
     fun `other mechanics keep every Mega Stone rule off`() {
-        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite") }
+        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${'a' + it}ite") }
         val profile = profile("tera", 1, TowerBattleFormat.SINGLE, sets.map(TowerPokemonSet::setId), MajorBattleMechanic.TERA)
         val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
 
