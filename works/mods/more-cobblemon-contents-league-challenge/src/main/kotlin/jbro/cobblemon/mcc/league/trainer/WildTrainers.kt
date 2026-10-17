@@ -37,6 +37,7 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.network.chat.Component
+import net.minecraft.tags.BlockTags
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -138,6 +139,10 @@ object WildTrainers {
             val position = event.spawnablePosition
             if (!spawnAllowed(position.world, position.position.x.toDouble(), position.position.y.toDouble(),
                     position.position.z.toDouble())) return@subscribe event.cancel()
+            // Grounded spawning counts a leaf canopy as ground, which left trainers standing on treetops. Whichever
+            // of the spawn block and the one below is the footing, leaves there send the trainer elsewhere.
+            if (listOf(position.position, position.position.below()).any { position.world.getBlockState(it).`is`(BlockTags.LEAVES) })
+                return@subscribe event.cancel()
             // A trader wants something the player who brought it has; with nothing to want it does not come.
             val accept = { candidate: NPCEntity ->
                 definitionOf(candidate)?.role != WildNpcRole.TRADE || WildTrader.prepare(candidate, event.cause.entity as? ServerPlayer)
