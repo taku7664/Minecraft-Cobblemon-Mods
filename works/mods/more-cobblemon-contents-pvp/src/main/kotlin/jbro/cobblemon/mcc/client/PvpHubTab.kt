@@ -472,7 +472,7 @@ internal class PvpHubTab : MccHubTabContent {
         val entries = if (inviting) {
             state.inviteCandidates.map { member ->
                 val invited = member.playerId in state.invitedIds
-                val invite = { controller.submit(PvpRoomIntent.Invite(UUID.randomUUID(), state.roomId, member.playerId)) }
+                val invite: () -> Unit = { controller.submit(PvpRoomIntent.Invite(UUID.randomUUID(), state.roomId, member.playerId)) }
                 MccHubKit.ListEntry(
                     Component.literal(member.name),
                     supporting = room(if (invited) "picker.status.invited" else "picker.status.free"),
