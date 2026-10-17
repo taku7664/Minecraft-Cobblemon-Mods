@@ -104,10 +104,13 @@ internal class TowerOpponentSelector(
         // A Mega trainer brings one Mega Stone and battle items on everyone else, failing that no stone. A pool with
         // stone sets only (a data pack without companions) still fields a team rather than no battle at all.
         val stoneRules = if (mechanic == MajorBattleMechanic.MEGA) listOf(1..1, 0..1, null) else listOf(null)
+        // The legendaries the challenger is answered with come before the stone rule: every rule is tried with them
+        // before any team goes without them.
         val team = stoneRules.firstNotNullOfOrNull { stones ->
             selectStyledTeamFrom(profile, freshPool, teamSize, legendaries, stones)
                 ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries, stones)
-                ?: selectStyledTeamFrom(profile, completePool, teamSize, megaStones = stones)
+        } ?: stoneRules.firstNotNullOfOrNull { stones ->
+            selectStyledTeamFrom(profile, completePool, teamSize, megaStones = stones)
         } ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
         return TowerOpponentSelectionResult.Selected(
             profile,
@@ -180,10 +183,14 @@ internal class TowerOpponentSelector(
             var taken = 0
             for (species in bySpecies.keys.toMutableList().also(::shuffleAny)) {
                 if (taken == wanted) break
-                val sets = bySpecies.getValue(species)
+                val free = bySpecies.getValue(species)
                     .filter { set -> set.heldItemId == null || drawn.none { it.heldItemId == set.heldItemId } }
-                    // In a Mega battle a second legendary with a stone could never use it.
-                    .filterNot { set -> oneMegaStone && set.heldItemId.isTowerMegaStone() && drawn.any { it.heldItemId.isTowerMegaStone() } }
+                // In a Mega battle a second legendary with a stone could never use it, and a legendary with another set
+                // leaves the one stone to a later group that may have nothing else.
+                val sets = if (!oneMegaStone) free else {
+                    val (stones, others) = free.partition { it.heldItemId.isTowerMegaStone() }
+                    others.ifEmpty { stones.takeIf { drawn.none { it.heldItemId.isTowerMegaStone() } }.orEmpty() }
+                }
                 if (sets.isEmpty()) continue
                 drawn += sets[random.nextInt(sets.size)]
                 taken++
