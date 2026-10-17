@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-18 07:40] 하드 리그 중복 금지와 야생 트레이너 스폰 위치 (단위 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 피드백:** 하드 난이도는 중복 포켓몬·중복 도구가 안 되게. 야생 트레이너가 자꾸 나무 위에 올라가 있다. 이어서 "나뭇잎뿐 아니라 이상한 곳(주변 두 칸이 허공이고 아래가 비정상적으로 높은)도 스폰 안 되게".
+- **하드 규칙:** 하드 도전 START에서 파티 종(`species.resourceIdentifier`, 폼 무시)과 지닌 도구(빈손 제외)가 겹치면 `duplicate_species`/`duplicate_item`으로 거절한다(`LeagueHardPartyRules`). 결승은 시작 파티로 끝까지 가므로 START 한 번만 본다. 오류 키는 `LeagueServer.guarded`의 `known`에 넣어야 `request_failed`로 뭉개지지 않는다.
+- **NPC 하드 팀(미결정):** 신오 하드는 테스트로 도구 중복이 막혀 있지만 가라르 하드 13팀은 도구가 겹친다(allister/cup_allister: leftovers·expert_belt, bea/cup_bea: sitrus_berry, cup_hop: chesto_berry, cup_nessa·cup_raihan·kabu·leon·nessa·piers·raihan: expert_belt, milo: leftovers). 대체 도구를 고르는 데이터 편집이라 이번에는 손대지 않았고 빡대리님 결정을 기다린다. 종 중복은 0건.
+- **스폰 위치:** Cobblemon 1.8.1 grounded 스폰의 `position`은 발판 블록이다(`baseBlock = getBlockState(position)`, Codex가 원문 대조). `WildTrainers` ENTITY_SPAWN에서 발판·그 아래가 `#minecraft:leaves`면 취소하고, `WildSpawnFooting`으로 주변 24칸(잎 제외 하이트맵) 중앙값보다 발이 3칸 이상 높거나 옆 8칸 중 2칸 이상이 발 높이~한 칸 아래까지 비어 있으면(벽·물 제외) 취소한다. 로드 안 된 칸은 건너뛴다. 기준값(3칸, 2칸)은 정한 값이라 실게임에서 너무 엄격하거나 느슨하면 조정한다.
+- **확인:** Codex가 `961807b8`에서 리그 `unitTest -Ptests=LeagueHardPartyRulesTest|WildSpawnFootingTest|LeagueEngineTest|LeagueTeamDataTest|WildTrainerDataTest|GalarContentTest` 46/46 통과(로그 Claude 확인). Codex 리뷰 R2·R3·R6 지적 없음. 빌드 배치·서버 기동·실제 스폰 관찰은 하지 않았다.
+
 ## [2026-10-18 04:30] 5781c780 개발 클라·서버 배포: 야생 진화 패치 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - 야생 스폰 레벨 진화 패치(`204d535b7`·`a2ab48694`)가 들어간 `origin/main` `5781c780`을 `F:/AI/builds/deploy-5781c780`에서 빌드했다(EXIT 0, JAR 8개 `unzip -t` 정상, Kotlin in-process, Gradle 2G). 1cb6bc1c 이후 다른 세션이 main에 올린 MCC·Better AI·UI·NPC·jbro-policy 커밋도 함께 들어갔다.
