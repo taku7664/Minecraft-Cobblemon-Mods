@@ -282,30 +282,41 @@ function snapshot() {
           if (move.disabled || move.pp === 0) return;
           // Recharge and Struggle can omit PP; they are still native legal requests.
           const metadata = moveInfo(move.id);
-          const target = move.target || metadata.target;
+          // Once Dynamaxed, the request keeps the base move but the choice targets as its current Max Move: a spread
+          // move's Max Move takes one target, and Showdown rejected the doubles choice without one (2026-10-18).
+          const currentMaxMove = !active.canDynamax && maxMoves?.[moveSlot] ? maxMoves[moveSlot] : null;
+          const target = currentMaxMove?.target || move.target || metadata.target;
           targetLocations(target, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
             const choice = { command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
               kind: 'move', slot: moveSlot, moveId: move.id, target,
               targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null };
             // Already Dynamaxed: the move is its Max Move, as the game reads it (currentMaxMove).
-            if (!active.canDynamax && maxMoves?.[moveSlot]) choice.maxMoveId = toId(maxMoves[moveSlot].move);
+            if (currentMaxMove) choice.maxMoveId = toId(currentMaxMove.move);
             choices.push(choice);
             // The game offers each gimmick with every move, as here.
             if (active.canMegaEvo) choices.push({ ...choice, command: `${choice.command} mega`, mechanic: 'mega' });
-            // As ManagedDynamax: set.canDynamax none keeps a member out, and a living member that may comes first by
-            // set.dynamaxPriority (1 first, unmarked last) holds the Dynamax.
-            const rank = pokemon => pokemon.set.dynamaxPriority ?? Infinity;
-            // The same public species/form rule as LocalDynamax.canDynamax and Cobblemon FormData.dynamaxBlocked:
-            // a species marked cannotDynamax and a Mega or Primal battle form cannot take or hold the turn.
-            const mayAtAll = pokemon => pokemon.set.canDynamax !== 'none' && !pokemon.species.cannotDynamax &&
-              !pokemon.species.isMega && !pokemon.species.isPrimal;
-            const self = side.active[actorSlot];
-            const mayDynamax = mayAtAll(self) && !side.pokemon.some(other =>
-              other !== self && other.hp > 0 && mayAtAll(other) && rank(other) < rank(self));
-            if (active.canDynamax && mayDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
-              choices.push({ ...choice, command: `${choice.command} dynamax`, mechanic: 'dynamax', maxMoveId: toId(maxMoves[moveSlot].move) });
-            }
           });
+          // As ManagedDynamax: set.canDynamax none keeps a member out, and a living member that may comes first by
+          // set.dynamaxPriority (1 first, unmarked last) holds the Dynamax.
+          const rank = pokemon => pokemon.set.dynamaxPriority ?? Infinity;
+          // The same public species/form rule as LocalDynamax.canDynamax and Cobblemon FormData.dynamaxBlocked:
+          // a species marked cannotDynamax and a Mega or Primal battle form cannot take or hold the turn.
+          const mayAtAll = pokemon => pokemon.set.canDynamax !== 'none' && !pokemon.species.cannotDynamax &&
+            !pokemon.species.isMega && !pokemon.species.isPrimal;
+          const self = side.active[actorSlot];
+          const mayDynamax = mayAtAll(self) && !side.pokemon.some(other =>
+            other !== self && other.hp > 0 && mayAtAll(other) && rank(other) < rank(self));
+          if (active.canDynamax && mayDynamax && maxMoves?.[moveSlot] && !maxMoves[moveSlot].disabled) {
+            // Dynamaxing turns the move into its Max Move this turn, so the choice takes the Max Move's targets.
+            const maxMove = maxMoves[moveSlot];
+            const maxTarget = maxMove.target || moveInfo(maxMove.move).target;
+            targetLocations(maxTarget, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
+              choices.push({ command: `move ${moveSlot + 1}${targetLocation} dynamax`, actorSlot,
+                kind: 'move', slot: moveSlot, moveId: move.id, target: maxTarget,
+                targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null,
+                mechanic: 'dynamax', maxMoveId: toId(maxMove.move) });
+            });
+          }
           moves[move.id] = metadata;
           if (maxMoves?.[moveSlot]) moves[toId(maxMoves[moveSlot].move)] = moveInfo(maxMoves[moveSlot].move);
         });
@@ -329,15 +340,23 @@ function snapshot() {
         else actions.push({ id: command, kind: 'composite', components });
       }
     } else {
+      // In doubles with fewer Pokemon left in the back than fainted slots, one slot switches in and the other passes;
+      // offering only switches left no legal pair (2026-10-18).
+      const forcedSlots = request.forceSwitch.flatMap((forced, actorSlot) => forced ? [actorSlot] : []);
+      const available = request.side.pokemon.filter(pokemon =>
+        !pokemon.active && !/(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition)).length;
+      const replacementCount = Math.min(forcedSlots.length, available);
       const choicesBySlot = request.forceSwitch.map((forced, actorSlot) => {
         if (!forced) return [{ command: 'pass', actorSlot, kind: 'pass' }];
-        return request.side.pokemon.flatMap((pokemon, slot) =>
+        const replacements = request.side.pokemon.flatMap((pokemon, slot) =>
           pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition) ? [] :
             [{ command: `switch ${slot + 1}`, actorSlot, kind: 'switch', slot }]);
+        return replacements.concat(replacementCount < forcedSlots.length ? [{ command: 'pass', actorSlot, kind: 'pass' }] : []);
       });
       for (const components of combine(choicesBySlot)) {
         const switchSlots = components.filter(component => component.kind === 'switch').map(component => component.slot);
         if (new Set(switchSlots).size !== switchSlots.length) continue;
+        if (switchSlots.length !== replacementCount) continue;
         const command = components.map(component => component.command).join(', ');
         if (battleFormat === 'SINGLE') actions.push({ ...components[0], id: command });
         else actions.push({ id: command, kind: 'composite', components });
