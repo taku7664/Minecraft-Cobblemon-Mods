@@ -303,14 +303,53 @@ internal class PvpHubTab : MccHubTabContent {
             Component.empty().append(room("title")).append(" · ").append(room("phase.${state.phase.name.lowercase()}")),
             room("spectators", state.spectators.size))
         host.add(SpectatorCount(layout.strip, room("spectators", state.spectators.size), state.spectators))
-        val (left, right, settings) = MccHubKit.columns(layout.body, 3, 3, 4)
+        val editable = isHost && lobby && idle
+        val rows = settingsRows(controller, editable)
+        val font = Minecraft.getInstance().font
+        val (left, right, settings) = PvpRoomSettingsFit.columns(layout.body,
+            rows.map { row -> PvpRoomSettingsFit.Row(font.width(row.title), row.options.map { font.width(it.label) }) })
         seat(host, left, PvpRoomSide.LEFT, state.leftPlayer, controller, me, lobby)
         seat(host, right, PvpRoomSide.RIGHT, state.rightPlayer, controller, me, lobby)
 
         val body = MccHubKit.card(host, settings, room("settings"))
-        val editable = isHost && lobby && idle
+        val feedback = roomFeedback(controller)
+        val settingsBottom = jbro.cobblemon.mcc.client.hub.MccHubChipRows.place(host, body, rows)
+        val parts = UiLayout.column(gap = MccHubKit.GAP) {
+            if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
+            weight("spectators")
+        }.solve(MccHubKit.below(body, settingsBottom + MccHubKit.GAP + 3))
+        feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
+        val spectators = parts["spectators"]
+        if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
+
+        val manageable = isHost && lobby && idle
+        MccHubKit.footer(host, layout.footer,
+            listOf(
+                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER,
+                    idle && PvpRoomNavigationContract.canLeave(lobby, state.spectators.any { it.playerId == me })) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
+                MccHubKit.Action(room("back_to_list")) {
+                    sendRoom(PvpRoomIntent.Refresh(UUID.randomUUID()))
+                    PvpHubClient.navigate(PvpHubClient.View.LIST)
+                },
+            ),
+            listOf(
+                MccHubKit.Action(room("invite_manage"), enabled = manageable) {
+                    // The cached list may be a moment old; the join handshake answers with who is online now.
+                    PvpPlayClientNetworking.openRoom(state.roomId)
+                    PvpHubClient.navigate(PvpHubClient.View.PICKER, invite = true)
+                },
+                MccHubKit.Action(room("start"), UiButtonVariant.PRIMARY,
+                    isHost && lobby && idle && state.leftPlayer != null && state.rightPlayer != null) {
+                    controller.submit(PvpRoomIntent.Start(UUID.randomUUID(), state.roomId))
+                },
+            ))
+    }
+
+    /** The room's settings as chip rows: visibility, format, the gimmicks allowed and the duplicate rules. */
+    private fun settingsRows(controller: PvpRoomScreenController, editable: Boolean): List<jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row> {
+        val state = controller.state
         val mechanics = state.settings.immutableEnabledMechanics
-        val rows = listOf(
+        return listOf(
             jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.visibility"),
                 PvpRoomVisibility.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
                 setOf(state.settings.visibility.name.lowercase()), editable) { id ->
@@ -331,37 +370,16 @@ internal class PvpHubTab : MccHubTabContent {
                 if (!next.add(mechanic)) next.remove(mechanic)
                 updateSettings(controller, state.settings.copy(enabledMechanics = next))
             },
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.clauses"),
+                listOf(CLAUSE_SPECIES, CLAUSE_ITEM).map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it, room("clause.$it")) },
+                buildSet {
+                    if (state.settings.speciesClause) add(CLAUSE_SPECIES)
+                    if (state.settings.itemClause) add(CLAUSE_ITEM)
+                }, editable, room("group.clauses.tooltip")) { id ->
+                updateSettings(controller, if (id == CLAUSE_SPECIES) state.settings.copy(speciesClause = !state.settings.speciesClause)
+                    else state.settings.copy(itemClause = !state.settings.itemClause))
+            },
         )
-        val feedback = roomFeedback(controller)
-        val settingsBottom = jbro.cobblemon.mcc.client.hub.MccHubChipRows.place(host, body, rows)
-        val parts = UiLayout.column(gap = MccHubKit.GAP) {
-            if (feedback != null) fixed(feedbackHeight(feedback, body.width), "feedback")
-            weight("spectators")
-        }.solve(MccHubKit.below(body, settingsBottom + MccHubKit.GAP + 3))
-        feedback?.let { MccHubKit.text(host, parts["feedback"], it) { theme -> theme.colors.accentDanger } }
-        val spectators = parts["spectators"]
-        if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
-
-        val members = (listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators).distinctBy(PvpRoomMemberView::playerId)
-        val manageable = isHost && lobby && idle && (state.inviteCandidates.isNotEmpty() || members.any { it.playerId != state.hostId })
-        MccHubKit.footer(host, layout.footer,
-            listOf(
-                MccHubKit.Action(room("leave"), UiButtonVariant.DANGER,
-                    idle && PvpRoomNavigationContract.canLeave(lobby, state.spectators.any { it.playerId == me })) { controller.submit(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId)) },
-                MccHubKit.Action(room("back_to_list")) {
-                    sendRoom(PvpRoomIntent.Refresh(UUID.randomUUID()))
-                    PvpHubClient.navigate(PvpHubClient.View.LIST)
-                },
-            ),
-            listOf(
-                MccHubKit.Action(room("invite_manage"), enabled = manageable) {
-                    PvpHubClient.navigate(PvpHubClient.View.PICKER, invite = state.inviteCandidates.isNotEmpty())
-                },
-                MccHubKit.Action(room("start"), UiButtonVariant.PRIMARY,
-                    isHost && lobby && idle && state.leftPlayer != null && state.rightPlayer != null) {
-                    controller.submit(PvpRoomIntent.Start(UUID.randomUUID(), state.roomId))
-                },
-            ))
     }
 
     /** A seat: whoever sits there as a full-body UI kit model, their name, and the control that claims or leaves it. */
@@ -415,36 +433,78 @@ internal class PvpHubTab : MccHubTabContent {
         host.add(button)
     }
 
+    /**
+     * Inviting players or handing the room over: one row per player with their face, a status line and the action
+     * at the row's end. Inviting keeps the picker open so several players can be asked in turn; an invited player
+     * stays marked until they come in or decline.
+     */
     private fun buildPicker(host: MccHubContentHost, layout: PvpHubLayout, controller: PvpRoomScreenController) {
         val state = controller.state
-        val members = (listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators)
-            .distinctBy(PvpRoomMemberView::playerId).filter { it.playerId != state.hostId }
         val inviting = PvpHubClient.inviting
+        val idle = !controller.isPending
         MccHubKit.strip(host, layout.strip, room("title"), room("spectators", state.spectators.size))
         host.add(SpectatorCount(layout.strip, room("spectators", state.spectators.size), state.spectators))
         val body = MccHubKit.card(host, layout.body, room(if (inviting) "picker.invite" else "picker.transfer"), MccHubKit.CardTone.FEATURE)
-        val listTop = MccHubKit.choices(host, MccHubKit.lineAbove(body, MccHubKit.CONTROL_HEIGHT).first, listOf(
-            MccHubKit.ChoiceRow(room("invite_manage"), listOf(
-                MccHubKit.Choice("invite", room("invite_manage")),
-                MccHubKit.Choice("transfer", room("transfer_manage")),
-            ), if (inviting) "invite" else "transfer", !controller.isPending) { id ->
-                PvpHubClient.navigate(PvpHubClient.View.PICKER, invite = id == "invite")
-            },
-        )) + MccHubKit.GAP + 3
-        val candidates = if (inviting) state.inviteCandidates else members
-        MccHubKit.pagedList(host, MccHubKit.below(body, listTop, min = 1), candidates.map { member ->
-            MccHubKit.ListEntry(Component.literal(member.name), enabled = !controller.isPending) {
-                val intent = if (inviting) PvpRoomIntent.Invite(UUID.randomUUID(), state.roomId, member.playerId)
-                    else PvpRoomIntent.TransferHost(UUID.randomUUID(), state.roomId, member.playerId)
-                controller.submit(intent)
-                PvpHubClient.navigate(PvpHubClient.View.ROOM)
+        val (hintLine, listArea) = MccHubKit.lineAbove(body)
+        // A refused request (the player just left, or joined another room) takes the hint's line.
+        val feedback = roomFeedback(controller)
+        if (feedback != null) {
+            MccHubKit.text(host, hintLine, MccHubKit.fitted(feedback, hintLine.width)) { theme -> theme.colors.accentDanger }
+        } else {
+            MccHubKit.text(host, hintLine, MccHubKit.fitted(room(if (inviting) "picker.invite.hint" else "picker.transfer.hint"), hintLine.width)) {
+                MccHubKit.panelDim(it)
             }
-        }, PvpHubClient.pickerPage, room("picker.empty")) { page ->
+        }
+        val connection = Minecraft.getInstance().connection
+        fun face(member: PvpRoomMemberView) = connection?.getPlayerInfo(member.playerId)?.profile
+            ?.let { CobblemonUiRenderContent.PlayerFace(it) }
+        val entries = if (inviting) {
+            state.inviteCandidates.map { member ->
+                val invited = member.playerId in state.invitedIds
+                val invite = { controller.submit(PvpRoomIntent.Invite(UUID.randomUUID(), state.roomId, member.playerId)) }
+                MccHubKit.ListEntry(
+                    Component.literal(member.name),
+                    supporting = room(if (invited) "picker.status.invited" else "picker.status.free"),
+                    enabled = idle && !invited,
+                    icon = face(member),
+                    actions = listOf(MccHubKit.RowAction(room(if (invited) "picker.action.invited" else "picker.action.invite"),
+                        enabled = idle && !invited, press = invite)),
+                    press = invite,
+                )
+            }
+        } else {
+            val members = (listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators)
+                .distinctBy(PvpRoomMemberView::playerId).filter { it.playerId != state.hostId }
+            members.map { member ->
+                val where = when (member.playerId) {
+                    state.leftPlayer?.playerId -> room("side.left")
+                    state.rightPlayer?.playerId -> room("side.right")
+                    else -> room("picker.status.spectating")
+                }
+                val transfer = {
+                    controller.submit(PvpRoomIntent.TransferHost(UUID.randomUUID(), state.roomId, member.playerId))
+                    PvpHubClient.navigate(PvpHubClient.View.ROOM)
+                }
+                MccHubKit.ListEntry(
+                    Component.literal(member.name),
+                    supporting = where,
+                    enabled = idle,
+                    icon = face(member),
+                    actions = listOf(MccHubKit.RowAction(room("picker.action.transfer"), enabled = idle, press = transfer)),
+                    press = transfer,
+                )
+            }
+        }
+        MccHubKit.pagedList(host, listArea, entries, PvpHubClient.pickerPage,
+            room(if (inviting) "picker.invite.empty" else "picker.transfer.empty")) { page ->
             PvpHubClient.pickerPage = page
             host.rebuild()
         }
         MccHubKit.footer(host, layout.footer,
-            listOf(MccHubKit.Action(Component.translatable("gui.back")) { PvpHubClient.navigate(PvpHubClient.View.ROOM) }), emptyList())
+            listOf(MccHubKit.Action(Component.translatable("gui.back")) { PvpHubClient.navigate(PvpHubClient.View.ROOM) }),
+            listOf(MccHubKit.Action(room(if (inviting) "transfer_manage" else "invite_manage"), enabled = idle) {
+                PvpHubClient.navigate(PvpHubClient.View.PICKER, invite = !inviting)
+            }))
     }
 
     /** The team preview runs in its own screen; the tab only offers the way back to it. */
@@ -549,6 +609,8 @@ internal class PvpHubTab : MccHubTabContent {
         /** [MccHubKit.strip]'s inset of its end text from the right edge. */
         const val STRIP_END_PADDING = 6
         const val MAX_LISTED_SPECTATORS = 20
+        const val CLAUSE_SPECIES = "species"
+        const val CLAUSE_ITEM = "item"
 
         fun remainingSeconds(state: PvpSelectionViewState): Long =
             ((state.selectionDeadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(0) + 999) / 1_000
