@@ -120,7 +120,7 @@ internal object TowerOpponentCatalogLoader {
                 }
                 requireNotEmpty(tiers, "$path.set_tiers", "set_tiers")
                 rejectDuplicateIds(tiers.map(Int::toString), "$path.set_tiers")
-                val companions = value.optionalArray(path, "companion_mechanic_ids").orEmpty().mapIndexed { index, element ->
+                val companions = (value.optionalArray(path, "companion_mechanic_ids") ?: JsonArray()).mapIndexed { index, element ->
                     val elementPath = "$path.companion_mechanic_ids[$index]"
                     val id = if (element.isJsonPrimitive && element.asJsonPrimitive.isString) element.asString
                         else reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, elementPath, "Expected a mechanic ID")

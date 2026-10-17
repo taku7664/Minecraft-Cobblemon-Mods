@@ -90,7 +90,9 @@ internal class TowerOpponentSelector(
             return TowerOpponentSelectionResult.Selected(profile, Collections.unmodifiableList(ArrayList(team)))
         }
         // The trainer answers the challenger's legendaries group for group; the rest of the team is regular.
-        val legendaries = if (legendaryClassAllowed) drawLegendaries(catalog.setsFor(profile), challengerLegendaries) else emptyList()
+        val legendaries = if (legendaryClassAllowed) {
+            drawLegendaries(catalog.setsFor(profile), challengerLegendaries, oneMegaStone = mechanic == MajorBattleMechanic.MEGA)
+        } else emptyList()
         val completePool = catalog.setsFor(profile).filter(::isNormal)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
         // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
@@ -176,15 +178,28 @@ internal class TowerOpponentSelector(
      * One random set of each group the challenger brought, of different species and held items. Species are drawn
      * first, so a species with several sets (Mewtwo's X and Y) comes up no more often than one with a single set.
      */
-    private fun drawLegendaries(pool: List<TowerPokemonSet>, count: TowerLegendaryCount): List<TowerPokemonSet> {
+    /**
+     * With [oneMegaStone] (a Mega battle) the draw keeps to one Mega Stone where the pool lets it: once a stone is
+     * drawn, a species with another set comes first and gives that set. Matching the challenger's count comes before
+     * the stone, so a group whose every set holds a stone still sends one.
+     */
+    private fun drawLegendaries(
+        pool: List<TowerPokemonSet>,
+        count: TowerLegendaryCount,
+        oneMegaStone: Boolean = false,
+    ): List<TowerPokemonSet> {
         val drawn = ArrayList<TowerPokemonSet>()
         listOf(TowerLegendaryGroup.LEGENDARY to count.legendary, TowerLegendaryGroup.OTHER to count.other).forEach { (group, wanted) ->
             val bySpecies = pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.groupBy(TowerPokemonSet::speciesId)
             var taken = 0
-            for (species in bySpecies.keys.toMutableList().also(::shuffleAny)) {
+            val order = bySpecies.keys.toMutableList().also(::shuffleAny)
+            if (oneMegaStone) order.sortBy { species -> if (bySpecies.getValue(species).any { !it.heldItemId.isTowerMegaStone() }) 0 else 1 }
+            for (species in order) {
                 if (taken == wanted) break
-                val sets = bySpecies.getValue(species)
+                val free = bySpecies.getValue(species)
                     .filter { set -> set.heldItemId == null || drawn.none { it.heldItemId == set.heldItemId } }
+                val stoneDrawn = drawn.any { it.heldItemId.isTowerMegaStone() }
+                val sets = if (oneMegaStone && stoneDrawn) free.filterNot { it.heldItemId.isTowerMegaStone() }.ifEmpty { free } else free
                 if (sets.isEmpty()) continue
                 drawn += sets[random.nextInt(sets.size)]
                 taken++
