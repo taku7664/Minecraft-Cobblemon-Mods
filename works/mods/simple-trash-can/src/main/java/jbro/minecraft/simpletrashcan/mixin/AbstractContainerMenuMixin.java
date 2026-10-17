@@ -50,8 +50,9 @@ abstract class AbstractContainerMenuMixin {
                 slot.setByPlayer(carried.split(1));
             }
             ci.cancel();
-        } else if (clickType == ClickType.SWAP) {
-            // A number key or the offhand key puts that inventory slot's item in.
+        } else if (clickType == ClickType.SWAP && (button >= 0 && button < 9 || button == 40)) {
+            // A number key or the offhand key puts that inventory slot's item in. The button range is vanilla's own
+            // check: the server must not index the inventory with whatever a client sends.
             Inventory inventory = player.getInventory();
             ItemStack held = inventory.getItem(button);
             if (held.isEmpty()) return;
