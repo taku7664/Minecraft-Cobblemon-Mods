@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.internal.ai
 
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -50,6 +51,23 @@ class BattleOpponentMoveExpectationScorerTest {
         ))
 
         assertTrue(score(drawback) < score(plain))
+    }
+
+    @Test
+    fun `a drop on the stat the move attacks with costs more than one on its defences`() {
+        fun physical(vararg drops: Pair<String, Int>) = move("fighting", category = BattleMoveDamageCategory.PHYSICAL, power = 120.0,
+            effects = listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, statStages = mapOf(*drops))))
+        val plain = score(move("fighting", category = BattleMoveDamageCategory.PHYSICAL, power = 120.0))
+        val closeCombat = score(physical("def" to -1, "spd" to -1))
+        val superpower = score(physical("atk" to -1, "def" to -1))
+        val draco = score(move("dragon", power = 120.0, effects = listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE,
+            BattleMoveEffectTarget.USER, statStages = mapOf("specialattack" to -2)))))
+
+        // Defences: 5% a stage. The attacking stat: its real multiplier over two uses (-1 keeps 5/6, -2 3/4).
+        assertEquals(plain * 0.90, closeCombat, 1e-6)
+        assertEquals(plain * (5.0 / 6.0 - 0.05), superpower, 1e-6)
+        assertEquals(score(move("dragon", power = 120.0)) * 0.75, draco, 1e-6)
+        assertTrue(closeCombat > superpower)
     }
 
     @Test

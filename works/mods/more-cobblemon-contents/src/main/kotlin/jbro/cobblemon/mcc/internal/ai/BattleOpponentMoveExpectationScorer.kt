@@ -24,7 +24,11 @@ internal object BattleOpponentMoveExpectationScorer {
         val baseDamage = move.power * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
-            effectValue(effect) * (effect.probability ?: 1.0) * hitProbability
+            val value = if (isOwnStatChange(effect)) ownRaiseValue(effect) else effectValue(effect)
+            value * (effect.probability ?: 1.0) * hitProbability
+        }
+        val ownDropCost = move.effects?.effects.orEmpty().filter(::isOwnStatChange).sumOf { effect ->
+            baseDamage * ownDropShare(effect, move.damageCategory) * (effect.probability ?: 1.0)
         }
         val tempoPenalty = move.effects?.effects.orEmpty().sumOf { effect ->
             when (effect.kind) {
@@ -34,7 +38,7 @@ internal object BattleOpponentMoveExpectationScorer {
                 else -> 0.0
             }
         }
-        return baseDamage + secondaryValue - tempoPenalty + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT
+        return baseDamage + secondaryValue - tempoPenalty - ownDropCost + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT
     }
 
     private fun categoryFit(
@@ -78,6 +82,39 @@ internal object BattleOpponentMoveExpectationScorer {
         else -> 0.0
     }
 
+    private fun isOwnStatChange(effect: BattleMoveEffectView): Boolean =
+        effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER
+
+    /** A raise on the user keeps the flat stage value; its drops are [ownDropShare]. */
+    private fun ownRaiseValue(effect: BattleMoveEffectView): Double =
+        effect.statStages.values.filter { it > 0 }.sum() * STAT_STAGE_VALUE
+
+    /**
+     * The share of the move's damage its user's own drops cost, for whether a set carries it (user decision,
+     * 2026-10-18). A flat 50 a stage read Close Combat at 120 - 100 = 20, below Hyper Voice and Snarl on a physical
+     * Arcanine, so the hypotheses left out the move that then knocked out a Duraludon switching in. The stat the move
+     * attacks with: at its real stage multiplier, averaged over two uses (Superpower's Attack -1 keeps 5/6, Draco
+     * Meteor's -2 3/4). Defense, Special Defense, Speed and the stat it does not attack with: [OTHER_DROP_SHARE] a
+     * stage, since what they cost depends on the Pokemon it faces, which this set-level score does not see.
+     */
+    private fun ownDropShare(effect: BattleMoveEffectView, category: BattleMoveDamageCategory): Double {
+        val attacking = when (category) {
+            BattleMoveDamageCategory.PHYSICAL -> ATTACK
+            BattleMoveDamageCategory.SPECIAL -> SPECIAL_ATTACK
+            BattleMoveDamageCategory.STATUS -> null
+        }
+        return effect.statStages.entries.filter { it.value < 0 }.sumOf { (stat, stages) ->
+            val dropped = -stages
+            if (statKey(stat) == attacking) 1.0 - (1.0 + 2.0 / (2.0 + dropped)) / 2.0 else dropped * OTHER_DROP_SHARE
+        }.coerceAtMost(1.0)
+    }
+
+    private fun statKey(stat: String): String = when (stat.lowercase().filter(Char::isLetterOrDigit)) {
+        "atk", "attack" -> ATTACK
+        "spa", "specialattack" -> SPECIAL_ATTACK
+        else -> stat.lowercase()
+    }
+
     private fun stageValue(effect: BattleMoveEffectView): Double {
         val signedStages = effect.statStages.values.sum()
         return when (effect.target) {
@@ -116,6 +153,10 @@ internal object BattleOpponentMoveExpectationScorer {
     private fun Double?.orZero(): Double = this ?: 0.0
     private fun Double?.orDefault(default: Double): Double = this ?: default
     private const val MINIMUM_CATEGORY_FIT = 0.65
+    /** Each stage of a user drop on a stat the move does not attack with. */
+    private const val OTHER_DROP_SHARE = 0.05
+    private const val ATTACK = "attack"
+    private const val SPECIAL_ATTACK = "specialattack"
     /** Two targets at the native 0.75 spread modifier. */
     private const val DOUBLES_ALL_OPPONENTS_VALUE = 1.5
     private const val PRIORITY_WEIGHT = 12.0
