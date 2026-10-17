@@ -91,7 +91,11 @@ internal class TowerOpponentSelector(
         }
         // The trainer answers the challenger's legendaries group for group; the rest of the team is regular.
         val legendaries = if (legendaryClassAllowed) {
-            drawLegendaries(catalog.setsFor(profile), challengerLegendaries, oneMegaStone = mechanic == MajorBattleMechanic.MEGA)
+            val pool = catalog.setsFor(profile)
+            // One stone among them when the pool allows it; the group count the challenger set comes first.
+            drawLegendaries(pool, challengerLegendaries, oneMegaStone = mechanic == MajorBattleMechanic.MEGA)
+                .takeIf { it.size == challengerLegendaries.total || mechanic != MajorBattleMechanic.MEGA }
+                ?: drawLegendaries(pool, challengerLegendaries)
         } else emptyList()
         val completePool = catalog.setsFor(profile).filter(::isNormal)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
