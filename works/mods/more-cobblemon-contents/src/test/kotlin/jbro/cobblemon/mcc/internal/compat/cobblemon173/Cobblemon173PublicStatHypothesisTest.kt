@@ -29,11 +29,15 @@ class Cobblemon173PublicStatHypothesisTest {
         val highest = BattlePublicStatRanges.fromBaseStats(100, 80, 100, 90, 80, 90, 100)
         assertEquals(BattleIntegerRange(270, 364), highest.maxHp)
         assertEquals(BattleIntegerRange(184, 328), highest.attack)
+        // Hard champions carry Lv101-105 Pokemon; Showdown's own clamp is 1..9999 and the formula is the same.
+        val champion = BattlePublicStatRanges.fromBaseStats(105, 80, 100, 90, 80, 90, 100)
+        assertEquals(BattleIntegerRange(283, 381), champion.maxHp)
+        assertEquals(BattleIntegerRange(193, 344), champion.attack)
     }
 
     @Test
     fun `public factory rejects unsupported levels and nonpositive species stats`() {
-        for (level in listOf(0, 101)) {
+        for (level in listOf(0, 10_000)) {
             assertThrows(IllegalArgumentException::class.java) {
                 BattlePublicStatRanges.fromBaseStats(level, 80, 100, 90, 80, 90, 100)
             }

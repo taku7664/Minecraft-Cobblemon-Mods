@@ -513,11 +513,14 @@ internal data class NativePokemonSet(
         require(name.isNotBlank() && species.isNotBlank() && ability.isNotBlank() && uuid.isNotBlank())
         require(moves.isNotEmpty() && moves.size <= 4 && moves.all(String::isNotBlank))
         require(teraType == null || teraType.isNotBlank())
-        require(level in 1..100)
+        // Showdown clamps a set's level to 1..9999 (sim/pokemon.ts) and the port does the same; hard trainers carry
+        // Lv101-105 teams, which a 1..100 check here shut out of every engine path (2026-10-18, battle 992dfe75).
+        require(level in 1..MAX_SHOWDOWN_LEVEL)
         UUID.fromString(uuid)
     }
 
     companion object {
+        const val MAX_SHOWDOWN_LEVEL = 9999
         private val STATS = listOf("hp", "atk", "def", "spa", "spd", "spe")
         private val ZERO_EVS: Map<String, Int> = Collections.unmodifiableMap(STATS.associateWith { 0 })
         private val PERFECT_IVS: Map<String, Int> = Collections.unmodifiableMap(STATS.associateWith { 31 })

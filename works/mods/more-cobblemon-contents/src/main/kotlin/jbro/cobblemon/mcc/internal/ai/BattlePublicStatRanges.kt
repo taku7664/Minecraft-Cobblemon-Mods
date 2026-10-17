@@ -19,7 +19,7 @@ object BattlePublicStatRanges {
         offensiveNature: Boolean = false,
     ): BattleCombatStatRangesView {
         val stats = setOf("hp", "atk", "def", "spa", "spd", "spe")
-        require(level in 1..100 && baseStats.keys == stats && baseStats.values.all { it > 0 })
+        require(level in 1..MAXIMUM_LEVEL && baseStats.keys == stats && baseStats.values.all { it > 0 })
         require(ivs.keys == stats && ivs.values.all { it in 0..31 })
         require(evs.keys == stats && evs.values.all { it in 0..252 } && evs.values.sum() <= 510)
         fun nonHp(id: String): BattleIntegerRange {
@@ -52,7 +52,7 @@ object BattlePublicStatRanges {
         specialDefence: Int,
         speed: Int,
     ): BattleCombatStatRangesView {
-        require(level in 1..100)
+        require(level in 1..MAXIMUM_LEVEL)
         require(listOf(hp, attack, defence, specialAttack, specialDefence, speed).all { it > 0 })
         return BattleCombatStatRangesView(
             maxHp = if (hp == SHEDINJA_BASE_HP) BattleIntegerRange(1, 1) else BattleIntegerRange(
@@ -80,6 +80,8 @@ object BattlePublicStatRanges {
     private fun nonHpStat(base: Int, level: Int, iv: Int, ev: Int): Int =
         ((2 * base + iv + ev / 4) * level) / 100 + 5
 
+    /** Showdown's own level clamp; trainers above 100 (hard champions' Lv101-105) are real battle levels. */
+    private const val MAXIMUM_LEVEL = 9999
     private const val MINIMUM_IV = 0
     private const val MAXIMUM_IV = 31
     private const val MINIMUM_EV = 0
