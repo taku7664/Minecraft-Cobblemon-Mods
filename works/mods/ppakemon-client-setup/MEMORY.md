@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-18 13:30] 포켓내비 Tab 키 규칙 추가 (구현·커밋, 빌드·테스트·배포 미실행)
+
+- **사용자 지시:** 셋업이 포켓내비 키를 지정하지 않는 것도 오류이니 지정하라, 키는 Tab 유지.
+- **구현:** `jbro_policy` 설치 시 `key_key.jbro_policy.pokenav`를 `key.keyboard.tab`으로 `ONCE` 적용(표식 `keybindings-jbro_policy-pokenav-v1`). Cobblemon UI 전투 정보도 Tab이지만 두 기능 모두 키 상태를 직접 읽어 같이 동작한다(jbro-policy MEMORY 2026-10-12). `revisedPresets…` 테스트의 적용 수를 6→7로 고치고 Tab 줄 검사를 추가했다.
+- **미확인:** 빌드·단위 테스트·JAR 배치·실행 확인 안 함.
+
 ## [2026-10-12 07:00] 1.1.0 플레이어 업데이트 안내: 옮길 파일
 
 - **배경:** Modrinth 앱에는 설치된 인스턴스를 `.mrpack` 파일로 업데이트하는 메뉴가 없다(설정의 Installation 탭은 Edit·Repair뿐, 앱 화면으로 직접 확인). 그래서 1.1.0 패치노트는 새 인스턴스 설치 후 예전 폴더에서 `options.txt`, `xaero/`, `ppakemon_client_setup/`을 옮기도록 안내했다.
