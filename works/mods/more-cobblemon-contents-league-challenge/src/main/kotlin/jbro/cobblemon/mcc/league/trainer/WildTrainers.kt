@@ -38,6 +38,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.network.chat.Component
 import net.minecraft.tags.BlockTags
+import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -139,10 +140,10 @@ object WildTrainers {
             val position = event.spawnablePosition
             if (!spawnAllowed(position.world, position.position.x.toDouble(), position.position.y.toDouble(),
                     position.position.z.toDouble())) return@subscribe event.cancel()
-            // Grounded spawning counts a leaf canopy as ground, which left trainers standing on treetops. Whichever
-            // of the spawn block and the one below is the footing, leaves there send the trainer elsewhere.
-            if (listOf(position.position, position.position.below()).any { position.world.getBlockState(it).`is`(BlockTags.LEAVES) })
-                return@subscribe event.cancel()
+            // Grounded spawning takes any solid block with air above as ground (the spawn position is that block),
+            // which left trainers on treetops, trunks and pillars. Leaves underfoot or an odd footing send them elsewhere.
+            if (listOf(position.position, position.position.below()).any { position.world.getBlockState(it).`is`(BlockTags.LEAVES) } ||
+                oddFooting(position.world, position.position)) return@subscribe event.cancel()
             // A trader wants something the player who brought it has; with nothing to want it does not come.
             val accept = { candidate: NPCEntity ->
                 definitionOf(candidate)?.role != WildNpcRole.TRADE || WildTrader.prepare(candidate, event.cause.entity as? ServerPlayer)
@@ -208,6 +209,35 @@ object WildTrainers {
             if (chunk.blockEntities.values.any { it.type in terminalTypes }) return false
         }
         return true
+    }
+
+    /**
+     * Whether the block [footing] a trainer would stand on is no place a person stands: well above the ground around
+     * it, or with open drops on two or more sides (see [WildSpawnFooting]).
+     */
+    private fun oddFooting(level: ServerLevel, footing: net.minecraft.core.BlockPos): Boolean {
+        val feetY = footing.y + 1
+        val ground = ArrayList<Int>(24)
+        for (dx in -2..2) for (dz in -2..2) {
+            if (dx == 0 && dz == 0) continue
+            // Reading an unloaded column would load its chunk mid-spawn; such a column is left out.
+            if (!level.isLoaded(footing.offset(dx, 0, dz))) continue
+            ground += level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, footing.x + dx, footing.z + dz)
+        }
+        var hollow = 0
+        for (dx in -1..1) for (dz in -1..1) {
+            if (dx == 0 && dz == 0) continue
+            val column = footing.offset(dx, 0, dz)
+            if (!level.isLoaded(column)) continue
+            // Something to stand on at the trainer's level or one step down, or a wall, or water, is not a drop.
+            val open = (0..2).all { down ->
+                val at = column.below(down - 1)
+                val state = level.getBlockState(at)
+                state.getCollisionShape(level, at).isEmpty && state.fluidState.isEmpty
+            }
+            if (open) hollow++
+        }
+        return jbro.cobblemon.mcc.league.system.WildSpawnFooting.rejection(feetY, ground, hollow) != null
     }
 
     /** Whether [dimension] is a world wild trainers roam, as opposed to a plaza, room or lounge. */
