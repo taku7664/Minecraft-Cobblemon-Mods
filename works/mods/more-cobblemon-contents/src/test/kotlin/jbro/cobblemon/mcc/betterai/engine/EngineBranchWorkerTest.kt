@@ -152,6 +152,27 @@ class EngineBranchWorkerTest {
     ))
 
     @Test
+    fun `engine and Showdown frames count down Dynamax turns alike`() {
+        Assumptions.assumeTrue(showdownRoot != null, "No dev server Showdown")
+        NativeShowdownBranchEngine.open(showdownRoot!!).use { showdown ->
+            EngineBranchWorker().use { engine ->
+                var s = showdown.createBattle(definition)
+                var e = engine.createBattle(definition)
+                val canDynamax = JsonParser.parseString(s.p1RequestJson).asJsonObject
+                    .getAsJsonArray("active")[0].asJsonObject.get("canDynamax")
+                Assumptions.assumeTrue(canDynamax != null && !(canDynamax.isJsonPrimitive && canDynamax.asJsonPrimitive.isBoolean && !canDynamax.asBoolean),
+                    "Format does not offer Dynamax")
+                for ((turn, p1) in listOf("move 4 dynamax", "move 4").withIndex()) {
+                    s = showdown.branch(s.snapshotJson, p1, "move 2")
+                    e = engine.branch(e.snapshotJson, p1, "move 2")
+                    assertEquals(comparable(s), comparable(e), "turn $turn differs")
+                    assertEquals(2 - turn, s.p1Active.single().volatileTurns["dynamax"], "Showdown turn $turn")
+                }
+            }
+        }
+    }
+
+    @Test
     fun `a snapshot extended as text is what parsing and reprinting would give`() {
         val engine = EngineBranchWorker()
         val root = engine.createBattle(definition)

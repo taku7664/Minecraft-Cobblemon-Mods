@@ -3,6 +3,14 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-18 08:00] 쇼다운 브리지 프레임에 다이맥스 남은 턴 추가(G-955, `4e657ef9`) (구현·단위 확인, 빌드·배치 미확인)
+
+- **계기:** `EngineBranchWorkerTest`의 쇼다운 대조 두 건(`engine frames match Showdown frames`, 공개 시작 상태판)이 `95038206`(다이맥스 판 재구성) 뒤로 계속 실패했다. 차이는 엔진 프레임에만 붙는 빈 `"volatileTurns":{}` 하나였다.
+- **어느 쪽을 고쳤나:** 브리지(`native-showdown/branch-engine.cjs`). 브리지 프레임은 Gson으로 읽는데, JSON에 없는 필드는 Kotlin 기본값이 아니라 null이 된다. 그래서 쇼다운 경로 프레임의 `volatileTurns`는 비-null 타입인데 실제로 null이었고, 다이맥스 중이면 `NativeBattleStateAdapter.volatileIds`에서 NPE가 날 자리였다(실제로 난 기록은 확인 안 함). 엔진 쪽 빈 맵을 빼는 방법은 테스트만 맞추고 이 null을 남긴다.
+- **값:** 엔진과 같은 식 `3 - effectState.turns`. 개발 서버 쇼다운 `data/conditions.js`의 `dynamax`도 `onStart`에서 `turns = 0`, `onResidual`에서 `turns++`로 엔진 포트와 같다(직접 확인).
+- **테스트:** `engine and Showdown frames count down Dynamax turns alike` 추가(한카리아스가 다이맥스한 두 턴을 브리지·엔진으로 대조, 브리지 남은 턴 2 → 1). Codex 실행 7클래스(`EngineBranchWorkerTest`·`EngineBranchWorkerSituationTest`·`NativeShowdownBranchEngineTest`·`NativeBattleRootValidatorTest`·`LiveBattleWorldTest`·`NativeInitialBattleDefinitionCompilerTest`·`ShowdownStateCaptureTest`) 76/76, 중단·건너뜀 0(Claude가 실행 로그 대조). Codex 리뷰 지적 없음. 이 실행은 G-954 병합 전 소스였고, 병합으로 들어온 변경은 레벨 상한뿐이라 다시 돌리지 않았다.
+- **남은 것:** 브리지는 `gigantamax`도 내보내지 않는다. 지금은 Gson 기본 false와 엔진 값이 같아 대조가 통과하지만, 거다이맥스 판에서는 갈릴 수 있다(확인 안 함).
+
 ## [2026-10-18 07:30] 레벨 101 이상 팀의 엔진 경로 복구(G-954) (구현·단위 확인, 빌드·배치·실게임 미확인)
 
 - **계기:** 운영 서버 첫 하드 챔피언 클리어(윤쑤 대 난천 하드, 전투 `992dfe75`, 03:27~03:31) 로그에 `[BetterAI] The engine could not ...`가 42번. 스택이 모두 `NativePokemonSet.<init>`의 `require(level in 1..100)`에서 끝났다. 하드 난천·단델 팀은 1.3.0(10-14)부터 Lv101~105라, 그 뒤 두 전투는 엔진 경로 없이 로컬 판단만으로 싸웠다.

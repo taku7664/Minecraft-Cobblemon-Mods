@@ -108,6 +108,16 @@ function validatePokemonOpeningState(battle, seed) {
   }
 }
 
+// Remaining turns of Dynamax, whose condition counts elapsed turns; matches EngineBranchWorker's frame.
+const DYNAMAX_DURATION = 3;
+
+function volatileTurns(pokemon) {
+  const turns = {};
+  const dynamax = pokemon.volatiles.dynamax;
+  if (dynamax) turns.dynamax = DYNAMAX_DURATION - (dynamax.turns || 0);
+  return turns;
+}
+
 function pokemonFrame(pokemon, activeSlot) {
   return {
     uuid: pokemon.uuid || '',
@@ -138,6 +148,7 @@ function pokemonFrame(pokemon, activeSlot) {
     stellarBoostedTypes: (pokemon.stellarBoostedTypes || []).slice(),
     boosts: pokemon.boosts,
     volatiles: Object.keys(pokemon.volatiles).sort(),
+    volatileTurns: volatileTurns(pokemon),
     moves: pokemon.moveSlots.map(slot => ({
       id: slot.id,
       pp: slot.pp,
