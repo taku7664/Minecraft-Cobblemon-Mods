@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-18 01:56] XS 6개 월드 데이터팩 운영 적용·재시작 없이 리로드 확인
+
+- **소스·산출물:** 소스 main `43a7b94a85c296b02d23fcc0b6ce0ebdb79f9b51`의 내장팩 `pack.mcmeta`와 두 XS 레시피로만 `jbro-policy-xs-candy-six.zip`(3파일)을 만들었다. JAR는 빌드/교체하지 않았다. 운영 저장소 main `94911adc20ef61a3dbb86aad426b8619a3103c4e`와 원격 main 일치 확인. ZIP은 Git LFS 대상이므로 커밋의 LFS pointer OID/size를 원본과 대조했고 실제 ZIP CRC·두 count 6·해시를 검증했다.
+- **VPS 적용:** `/reload`로 신규 팩이 자동 활성화됐다. 01:55:30(KST) `datapack list enabled`에서 32개 팩 중 `file/jbro-policy-xs-candy-six.zip`이 맨 마지막(가장 높은 우선순위)인 것을 확인했다. 두 레시피 파일 결과는 각 6개이며 리로드의 레시피 파싱/로딩 오류 없음. 상점 224품목도 다시 정상 로드됐다. pane PID는 전후 `141095`로 유지됐고 VPS 종료·재시작은 하지 않았다.
+- **로컬 배포:** 로컬 운영 저장소도 같은 운영 main을 fast-forward해 ZIP 해시 `758bc8407a86b1b7bbc2527cb8c3f9aaf7da3eaa3423e099e56eaddbeb0fd166` 일치, `git status --porcelain` 출력 없음까지 확인했다. 로컬 서버는 실행/리로드하지 않았다.
+- **검증 한계·유지:** 실제 냄비 제작 및 클라이언트 레시피 UI 확인, Gradle 단위 테스트, 새 JAR 빌드는 하지 않았다. 운영의 기존 JAR 내장팩 설명/리소스는 3개로 남지만 최우선 월드팩이 같은 레시피 ID를 6개로 덮어쓴다. 이 팩을 제거하면 기존 JAR 환경에서는 3개로 돌아가므로 새 JAR 적용 전 임의 제거하지 않는다. 기본 소스는 이미 6개이며 다음 정상 빌드에 반영된다. 다른 사탕 합성·분할 규칙과 Create 설치 조건은 그대로다.
+
 ## [2026-10-18 01:53] 경험사탕 XS 냄비 제작량 3→6개·재시작 없는 반영 준비
 
 - **사용자 요청·원인:** 냄비 경험사탕 XS 결과를 6개로 올리고 VPS 재시작 없이 가능한지 검토한다. 소스와 실제 VPS `jbro-policy-0.1.7.jar`의 legacy 내장팩 `no_stat_candy_l_xl` 모두 결과 `count: 3`인 것을 확인했다.
