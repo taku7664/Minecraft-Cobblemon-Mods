@@ -166,7 +166,7 @@ class PvpRoomPayloadsTest {
         val members = setOf(host.playerId)
         val online = listOf(host.playerId) + List(PVP_ROOM_MAX_INVITE_CANDIDATES + 30) { UUID(3, it.toLong()) }
 
-        val candidates = pvpInviteCandidates(online, members) { id -> PvpRoomMemberView(id, "P%04d".format(id.leastSignificantBits)) }
+        val candidates = pvpInviteCandidates(online, members, memberView = { id -> PvpRoomMemberView(id, "P%04d".format(id.leastSignificantBits)) })
 
         assertEquals(PVP_ROOM_MAX_INVITE_CANDIDATES, candidates.size)
         assertEquals("P0000", candidates.first().name)
