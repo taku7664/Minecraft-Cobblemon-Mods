@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
@@ -82,7 +83,7 @@ internal object NativeBattleStateAdapter {
                 trapped = false,
                 mustRecharge = "mustrecharge" in native.volatiles,
             ),
-            knownVolatileEffectIds = native.volatiles.mapTo(linkedSetOf(), ::nativeId),
+            knownVolatileEffectIds = volatileIds(native, source),
             knownBaseStabTypeIds = native.baseStabTypes.mapTo(linkedSetOf(), ::nativeId),
             knownTeraTypeId = native.terastallizedType.takeIf(String::isNotBlank)?.let(::nativeId),
             knownStellarBoostedTypeIds = native.stellarBoostedTypes.mapTo(linkedSetOf(), ::nativeId),
@@ -99,7 +100,7 @@ internal object NativeBattleStateAdapter {
             return BattleIntegerRange(value, value)
         }
         return BattleCombatStatRangesView(
-            maxHp = BattleIntegerRange(pokemon.maxHp, pokemon.maxHp),
+            maxHp = BattleIntegerRange(pokemon.baseMaxHp, pokemon.baseMaxHp),
             attack = stat("atk"),
             defence = stat("def"),
             specialAttack = stat("spa"),
@@ -140,6 +141,15 @@ internal object NativeBattleStateAdapter {
     }
 
     private fun nativeId(value: String): String = PublicIds.canonical(value)
+
+    private fun volatileIds(native: NativePokemonFrame, source: BattlePokemonStateView): Set<String> = buildSet {
+        native.volatiles.mapTo(this, ::nativeId)
+        if (LocalDynamax.VOLATILE in this) {
+            native.volatileTurns[LocalDynamax.VOLATILE]?.let { add(LocalDynamax.TURNS + it) }
+        }
+        if (native.gigantamax) add(LocalDynamax.GIGANTAMAX)
+        if (LocalDynamax.USED in source.knownVolatileEffectIds) add(LocalDynamax.USED)
+    }
 
     /**
      * Every search node adapts all twelve Pokemon; the same few IDs and UUIDs were parsed and spelled out again each

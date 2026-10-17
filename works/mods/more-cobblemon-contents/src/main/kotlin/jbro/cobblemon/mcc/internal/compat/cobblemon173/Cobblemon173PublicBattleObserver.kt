@@ -23,6 +23,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicBattleInferenceEngine
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesInferenceKnowledge
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBerryMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.LocalReactiveAbilityState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState
 
@@ -312,7 +313,10 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.Fainted -> {
                 val current = upsert(observation.pokemon.copy(hpFraction = 0.0, fainted = true))
                 pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds =
-                    current.knownVolatileEffectIds.filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) })
+                    current.knownVolatileEffectIds.filterTo(linkedSetOf()) {
+                        it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) ||
+                            it == LocalDynamax.USED || it == LocalDynamax.GIGANTAMAX
+                    })
                 if (current.side == BattleSide.OPPONENT) faintedOpponents += current.battlePokemonId
                 appendEvent(observation.turn, BattleObservedEventKind.FAINTED, current.battlePokemonId)
             }

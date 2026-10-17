@@ -437,6 +437,9 @@ internal data class NativeBattleSituation(
     /** The public turn about to be played. */
     val turn: Int,
     val pokemon: List<NativePokemonSituation>,
+    /** Public once-per-battle Dynamax usage, retained after the active effect ends or its user faints. */
+    val p1DynamaxUsed: Boolean = false,
+    val p2DynamaxUsed: Boolean = false,
     val weather: NativeEffectSituation? = null,
     val terrain: NativeEffectSituation? = null,
     val pseudoWeather: List<NativeEffectSituation> = emptyList(),
@@ -612,6 +615,8 @@ internal data class NativePokemonFrame(
     val species: String,
     val hp: Int,
     val maxHp: Int,
+    /** Showdown's ordinary maximum HP, which remains unchanged while Dynamax raises [maxHp]. */
+    val baseMaxHp: Int = maxHp,
     val status: String,
     val ability: String,
     val item: String,

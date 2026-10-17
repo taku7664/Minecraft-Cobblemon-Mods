@@ -22,11 +22,44 @@ import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonOpeningState
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSourceSetFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeTimedEffectFrame
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeBattleRootValidatorTest {
+    @Test
+    fun `rebuilt Dynamax roots preserve public markers remaining turns HP ratio and base combat stats`() {
+        BattleSide.entries.forEach { side ->
+            val plain = frame()
+            val id = if (side == BattleSide.ALLY) ALLY else OPPONENT
+            val dynamaxed = (plain.p1Team + plain.p2Team).single { it.uuid == id.toString() }.copy(
+                hp = 160,
+                maxHp = 200,
+                baseMaxHp = 100,
+                volatiles = listOf(LocalDynamax.VOLATILE),
+                volatileTurns = mapOf(LocalDynamax.VOLATILE to 2),
+                gigantamax = true,
+            )
+            val rebuilt = if (side == BattleSide.ALLY) plain.copy(
+                p1Active = listOf(dynamaxed), p1Team = listOf(dynamaxed),
+            ) else plain.copy(
+                p2Active = listOf(dynamaxed), p2Team = listOf(dynamaxed),
+            )
+
+            val public = state(dynamaxSide = side, dynamaxTurns = 2)
+            assertTrue(NativeBattleRootValidator.validate(definition(), rebuilt, public).isEmpty(), side.name)
+
+            assertEquals(
+                setOf(NativeBattleRootIssueCode.VOLATILE_MISMATCH),
+                NativeBattleRootValidator.validate(
+                    definition(), rebuilt, state(dynamaxSide = side, dynamaxTurns = 1),
+                ).mapTo(linkedSetOf()) { it.code },
+                side.name,
+            )
+        }
+    }
+
     @Test
     fun `matching native root preserves exact own and bounded opponent public facts`() {
         val issues = NativeBattleRootValidator.validate(definition(), frame(), state())
@@ -346,6 +379,8 @@ class NativeBattleRootValidatorTest {
         ownHp: Double = 1.0,
         opponentHp: Double = 1.0,
         opponentStats: BattleCombatStatRangesView? = rangedStats(),
+        dynamaxSide: BattleSide? = null,
+        dynamaxTurns: Int = 2,
     ) = BattleStateView(
         battleId = BATTLE,
         format = format,
@@ -358,7 +393,8 @@ class NativeBattleRootValidatorTest {
                 "synchronize",
                 "leftovers",
                 exactStats(),
-                ownHp,
+                if (dynamaxSide == BattleSide.ALLY) 0.8 else ownHp,
+                dynamaxVolatiles(dynamaxSide == BattleSide.ALLY, dynamaxTurns),
             ),
             publicPokemon(
                 OPPONENT,
@@ -367,7 +403,8 @@ class NativeBattleRootValidatorTest {
                 opponentAbility,
                 opponentItem,
                 opponentStats,
-                opponentHp,
+                if (dynamaxSide == BattleSide.OPPONENT) 0.8 else opponentHp,
+                dynamaxVolatiles(dynamaxSide == BattleSide.OPPONENT, dynamaxTurns),
             ),
         ),
         field = BattleFieldStateView(
@@ -394,6 +431,7 @@ class NativeBattleRootValidatorTest {
         item: String?,
         stats: BattleCombatStatRangesView?,
         hp: Double,
+        volatiles: Set<String> = emptySet(),
     ) = BattlePokemonStateView(
         id,
         side,
@@ -410,6 +448,15 @@ class NativeBattleRootValidatorTest {
         false,
         setOf("psychic"),
         stats,
+        emptyMap(),
+        jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView.empty(),
+        volatiles,
+    )
+
+    private fun dynamaxVolatiles(active: Boolean, turns: Int): Set<String> = if (!active) emptySet() else setOf(
+        LocalDynamax.VOLATILE,
+        LocalDynamax.TURNS + turns,
+        LocalDynamax.GIGANTAMAX,
     )
 
     private fun exactStats() = BattleCombatStatRangesView.exact(100, 100, 100, 100, 100, 100)

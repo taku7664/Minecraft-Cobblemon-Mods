@@ -70,7 +70,8 @@ internal object Cobblemon173PublicPersistentMoveState {
             "slowstart" -> cleared + (LocalReactiveAbilityState.SLOW_START_TURNS + "5")
             // The Gigantamax marker stays after it ends: the factor is the Pokemon's, and now public.
             jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE ->
-                cleared + (DYNAMAX_TURNS + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION) +
+                cleared + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.USED +
+                    (DYNAMAX_TURNS + jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION) +
                     setOfNotNull(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX.takeIf {
                         effectId == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START })
             else -> cleared

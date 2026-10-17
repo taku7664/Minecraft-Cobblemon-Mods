@@ -268,6 +268,8 @@ internal object NativeInitialBattleDefinitionCompiler {
         sets: Map<UUID, NativePokemonSet>,
     ): NativeBattleSituation = NativeBattleSituation(
         turn = state.turn,
+        p1DynamaxUsed = LocalDynamax.used(state, BattleSide.ALLY),
+        p2DynamaxUsed = LocalDynamax.used(state, BattleSide.OPPONENT),
         pokemon = state.pokemon.map { pokemon ->
             val id = pokemon.battlePokemonId
             val ally = pokemon.side == BattleSide.ALLY

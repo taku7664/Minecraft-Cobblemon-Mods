@@ -7,6 +7,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
@@ -39,6 +41,13 @@ internal object LocalDynamax {
 
     fun active(pokemon: BattlePokemonStateView?): Boolean =
         pokemon?.knownVolatileEffectIds?.any { PublicIds.canonical(it) == VOLATILE } == true
+
+    /** Whether a side has publicly spent Dynamax, including after it ended or its user fainted. */
+    fun used(state: BattleStateView, side: BattleSide): Boolean = state.pokemon.any { pokemon ->
+        pokemon.side == side && pokemon.knownVolatileEffectIds.any {
+            it == USED || it == GIGANTAMAX || PublicIds.canonical(it) == VOLATILE
+        }
+    }
 
     /** [DAMAGE_SHARE] while [pokemon] is Dynamaxed, otherwise 1. */
     fun damageShare(pokemon: BattlePokemonStateView?): Double = if (active(pokemon)) DAMAGE_SHARE else 1.0
@@ -130,6 +139,8 @@ internal object LocalDynamax {
     private const val G_MAX_PLACEHOLDER_POWER = 10.0
     /** Kept on a Pokemon once its Gigantamax factor is known. */
     const val GIGANTAMAX = "gigantamax"
+    /** Public bookkeeping retained on the Pokemon that spent its side's once-per-battle Dynamax. */
+    const val USED = "better_ai:dynamax_used"
     /** The observer's id for a `-start|...|Dynamax|Gmax` message. */
     const val GIGANTAMAX_START = "dynamax:gmax"
 }

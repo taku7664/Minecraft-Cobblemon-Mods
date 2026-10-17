@@ -119,6 +119,24 @@ class EngineBranchWorkerSituationTest {
     }
 
     @Test
+    fun `a side whose Dynamax ended receives no second Dynamax candidates`() {
+        val spent = definition.copy(situation = definition.situation!!.copy(
+            p1DynamaxUsed = true,
+            p2DynamaxUsed = true,
+        ))
+        val root = EngineBranchWorker().createBattle(spent)
+
+        BattleSide.entries.forEach { side ->
+            assertTrue(
+                NativeShowdownRequestActionFactory.actions(side, root).none {
+                    it.mechanic?.mechanicId?.lowercase() in setOf("dynamax", "max")
+                },
+                side.name,
+            )
+        }
+    }
+
+    @Test
     fun `a Mega Evolved Pokemon is rebuilt in its Mega forme and its side cannot Mega Evolve again`() {
         val worker = EngineBranchWorker()
         val stone = definition.copy(p1Team = definition.p1Team.map { if (it.uuid == uuid(1)) it.copy(item = "Garchompite") else it })

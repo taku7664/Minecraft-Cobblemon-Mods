@@ -318,6 +318,8 @@ internal class EngineBranchWorker(
     private fun install(battle: Battle, situation: NativeBattleSituation) {
         require(battle.requestState == "move") { "A mid-battle position needs both sides at a move request" }
         battle.turn = situation.turn
+        battle.sides[0].dynamaxUsed = situation.p1DynamaxUsed
+        battle.sides[1].dynamaxUsed = situation.p2DynamaxUsed
         val team = battle.sides.flatMap { it.pokemon }.associateBy { it.uuid }
         for (state in situation.pokemon) {
             val pokemon = requireNotNull(team[state.uuid]) { "Situation names unknown Pokemon ${state.uuid}" }
@@ -833,6 +835,7 @@ internal class EngineBranchWorker(
         species = p.species.id,
         hp = p.hp,
         maxHp = p.maxhp,
+        baseMaxHp = p.baseMaxhp,
         status = p.status,
         ability = p.ability,
         item = p.item,

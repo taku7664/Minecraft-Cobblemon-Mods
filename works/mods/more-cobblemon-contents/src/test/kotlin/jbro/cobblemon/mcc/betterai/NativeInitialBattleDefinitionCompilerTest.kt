@@ -233,6 +233,17 @@ class NativeInitialBattleDefinitionCompilerTest {
     }
 
     @Test
+    fun `ended public Dynamax marks the rebuilt side as spent`() {
+        val definition = requireNotNull(NativeInitialBattleDefinitionCompiler.compile(
+            state = state(allyVolatiles = setOf(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.USED)),
+            catalog = catalog(), identities = identities(), world = world(), seed = SEED, midBattle = true,
+        ).definition)
+
+        assertTrue(requireNotNull(definition.situation).p1DynamaxUsed)
+        assertTrue(!definition.situation!!.p2DynamaxUsed)
+    }
+
+    @Test
     fun `build source and revealed item must agree with public state`() {
         val badWorld = world(
             allyBuild = build(ALLY, NativeBuildKnowledge.PUBLIC_HYPOTHESIS, "lightningrod", "leftovers"),

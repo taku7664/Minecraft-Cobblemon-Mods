@@ -128,6 +128,7 @@ function pokemonFrame(pokemon, activeSlot) {
     species: pokemon.species.id,
     hp: pokemon.hp,
     maxHp: pokemon.maxhp,
+    baseMaxHp: pokemon.baseMaxhp,
     status: pokemon.status || '',
     ability: pokemon.ability || '',
     item: pokemon.item || '',
