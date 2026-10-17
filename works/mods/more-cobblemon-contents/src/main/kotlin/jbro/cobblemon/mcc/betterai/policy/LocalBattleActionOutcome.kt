@@ -278,9 +278,12 @@ internal object LocalBattleActionOutcomeEvaluator {
         val mechanicsUtilityAdjustment = (expectedDamage - baseExpectedDamage) * DAMAGE_UTILITY_SCALE -
             unprojectedPressureAlreadyScored -
             (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE -
-            if (projection.expectedSelfRecoilFraction != null && projection.expectedSelfRecoilFraction > 0.0 &&
-                projection.actorExpectedHpAfterSelfEffects == 0.0
-            ) SELF_KNOCKOUT_UTILITY else 0.0
+            SELF_KNOCKOUT_UTILITY * maxOf(
+                projection.expectedSelfFaintChance,
+                if (projection.expectedSelfRecoilFraction != null && projection.expectedSelfRecoilFraction > 0.0 &&
+                    projection.actorExpectedHpAfterSelfEffects == 0.0
+                ) 1.0 else 0.0,
+            )
         val publiclyInert = isPubliclyInert(candidate, context) ||
             projection.publiclyNullified ||
             isWastedPureRecovery(candidate, projection)

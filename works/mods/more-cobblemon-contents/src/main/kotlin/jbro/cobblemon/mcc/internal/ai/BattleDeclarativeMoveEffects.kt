@@ -112,7 +112,10 @@ object BattleDeclarativeMoveEffects {
             effects += effect(BattleMoveEffectKind.TERRAIN, BattleMoveEffectTarget.FIELD, valueId = it)
         }
         if (booleanLike(properties["selfdestruct"])) {
-            effects += effect(BattleMoveEffectKind.SELF_DESTRUCT, BattleMoveEffectTarget.USER)
+            // "always" (Explosion) faints the user whether or not the move lands; "ifHit" (Final Gambit, Memento) only
+            // when it does.
+            effects += effect(BattleMoveEffectKind.SELF_DESTRUCT, BattleMoveEffectTarget.USER,
+                valueId = stringValue(properties["selfdestruct"])?.let(PublicIds::canonical))
         }
 
         val flags = properties["flags"]?.takeIf { it.startsWith('{') }
@@ -626,7 +629,8 @@ object BattleDeclarativeMoveEffects {
     private val POKEMON_CALL = Regex("""^(\w+)\.(addVolatile|trySetStatus)\(\s*["'](\w+)["']""")
     /** `this.heal(holder.maxhp / n[, target, ...])`: the holder, the divisor, the target named. */
     private val HEAL = Regex("""^this\.heal\(\s*(\w+)\.maxhp\s*/\s*(\d+)\s*(?:,\s*(\w+))?""")
-    private val DIRECT_DAMAGE = Regex("""^this\.directDamage\(\s*(\w+)\.maxhp\s*(?:\*\s*(\d+)\s*/\s*(\d+)|/\s*(\d+))\s*(?:,\s*\w+\s*)*\)\s*;?""")
+    // Shed Tail rounds its cost up (`Math.ceil(target.maxhp / 2)`); the rounding is a point of HP and is read through.
+    private val DIRECT_DAMAGE = Regex("""^this\.directDamage\(\s*(?:Math\.(?:ceil|floor|round)\(\s*)?(\w+)\.maxhp\s*(?:\*\s*(\d+)\s*/\s*(\d+)|/\s*(\d+))\s*\)?\s*(?:,\s*\w+\s*)*\)\s*;?""")
 
     /**
      * Effects Showdown applies from a callback that are nonetheless fixed facts of the move, for the moves whose
@@ -651,6 +655,13 @@ object BattleDeclarativeMoveEffects {
         "takeheart" to listOf(
             BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0,
                 statStages = mapOf("spa" to 1, "spd" to 1)),
+        ),
+        // Chloroblast's half of maximum HP is no fact of its data: Showdown's battle-actions charges it by the move's
+        // id when it deals damage (named here, as there; user decision 2026-10-18 that no self-damaging move be left
+        // out). It is charged as recoil, so Rock Head stops it as well as Magic Guard.
+        "chloroblast" to listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, 1.0,
+                valueId = MAX_HP_DAMAGE_RECOIL, fractionRange = BattleFractionRange(0.5, 0.5)),
         ),
         // Heals that Showdown computes in onHit. The weather scaling and Strength Sap's amount depend on the board,
         // so they carry a marker and the calculator resolves the fraction per user (PublicBattleTacticalCalculator).
@@ -694,6 +705,12 @@ object BattleDeclarativeMoveEffects {
 
     /** Mind Blown and Steel Beam's half of maximum HP, which Magic Guard stops; an HP cost (Belly Drum) it does not. */
     const val MIND_BLOWN_RECOIL = "mind_blown_recoil"
+
+    /** Chloroblast's half of maximum HP, charged as recoil: Rock Head and Magic Guard stop it. */
+    const val MAX_HP_DAMAGE_RECOIL = "max_hp_damage_recoil"
+
+    /** A [BattleMoveEffectKind.SELF_DESTRUCT] that faints the user only when the move lands (Showdown `"ifHit"`). */
+    const val SELF_DESTRUCT_IF_HIT = "ifhit"
 
     private fun halfHeal(marker: String) = BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION,
         BattleMoveEffectTarget.USER, 1.0, valueId = marker, fractionRange = BattleFractionRange(0.5, 0.5))

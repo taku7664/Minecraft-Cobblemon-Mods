@@ -33,6 +33,8 @@ internal data class PublicActionOutcomeProjection(
     val components: List<PublicActionOutcomeProjection> = emptyList(),
     val drainOnHitFractionRange: BattleFractionRange? = null,
     val damageRecoilOnHitFractionRange: BattleFractionRange? = null,
+    /** The chance the action faints its own user outright (Explosion, Final Gambit); already in [expectedSelfRecoilFraction]. */
+    val expectedSelfFaintChance: Double = 0.0,
 )
 
 internal object PublicActionOutcomeProjector {
@@ -161,10 +163,23 @@ internal object PublicActionOutcomeProjector {
             val range = effect.fractionRange ?: return@sumOf 0.0
             (range.minimum + range.maximum) / 2.0 * (effect.probability ?: 1.0) * accuracy
         }
+        // A missed High Jump Kick costs half the user's maximum HP.
+        val crashRecoil = if (LocalRecoilImmunity.blocksCrashRecoil(actorAbility)) 0.0 else effects.count {
+            it.kind == BattleMoveEffectKind.CRASH_RECOIL && it.target == BattleMoveEffectTarget.USER
+        }.coerceAtMost(1) * CRASH_RECOIL_FRACTION * (1.0 - accuracy)
+        // Explosion faints its user whether or not it lands, Final Gambit and Memento only when they do. Left out, a
+        // move that cost the whole Pokemon was priced on the target alone and tied with an attack that knocked out
+        // just as well (Golem's Explosion and Earthquake at 281 each, a coin flip; 2026-10-18 user feedback).
+        val selfFaintChance = effects.filter {
+            it.kind == BattleMoveEffectKind.SELF_DESTRUCT && it.target == BattleMoveEffectTarget.USER
+        }.maxOfOrNull { (if (it.valueId == BattleDeclarativeMoveEffects.SELF_DESTRUCT_IF_HIT) accuracy else 1.0) * (it.probability ?: 1.0) } ?: 0.0
         val expectedHealing = actor?.let {
             (fixedHealing + drainHealing).coerceAtMost((1.0 - it.hpFraction).coerceAtLeast(0.0))
         }
-        val expectedRecoil = actor?.let { (damageRecoil + maxHpRecoil).coerceAtMost(it.hpFraction) }
+        val expectedRecoil = actor?.let {
+            val survivingLoss = (damageRecoil + maxHpRecoil + crashRecoil).coerceAtMost(it.hpFraction)
+            selfFaintChance * it.hpFraction + (1.0 - selfFaintChance) * survivingLoss
+        }
         return PublicActionOutcomeProjection(
             coverage = if (uncertainTransfer && facts?.calculationCoverage == BattleCalculationCoverage.EXACT)
                 BattleCalculationCoverage.PARTIAL else facts?.calculationCoverage ?: BattleCalculationCoverage.UNKNOWN,
@@ -184,6 +199,7 @@ internal object PublicActionOutcomeProjector {
             unknowns = facts?.unknowns.orEmpty() + if (uncertainTransfer) setOf(BattleCalculationUnknown.MOVE_EFFECTS) else emptySet(),
             drainOnHitFractionRange = transferBounds(BattleMoveEffectKind.DRAIN_FRACTION, (1.0 - (actor?.hpFraction ?: 0.0)).coerceAtLeast(0.0)),
             damageRecoilOnHitFractionRange = transferBounds(BattleMoveEffectKind.RECOIL_FRACTION, actor?.hpFraction ?: 1.0),
+            expectedSelfFaintChance = if (actor != null) selfFaintChance else 0.0,
         )
     }
 
@@ -216,6 +232,7 @@ internal object PublicActionOutcomeProjector {
             expectedDamageFraction = components.mapNotNull { it.expectedDamageFraction }.sum(),
             expectedSelfHealingFraction = components.mapNotNull { it.expectedSelfHealingFraction }.sum(),
             expectedSelfRecoilFraction = components.mapNotNull { it.expectedSelfRecoilFraction }.sum(),
+            expectedSelfFaintChance = components.maxOfOrNull { it.expectedSelfFaintChance } ?: 0.0,
             opponentActionOrderResolved = components.all { it.opponentActionOrderResolved },
             unknowns = components.flatMapTo(linkedSetOf()) { it.unknowns },
             components = components,
@@ -257,4 +274,6 @@ internal object PublicActionOutcomeProjector {
             it.side == targetSide && it.activeSlot != null && !it.fainted
         }
     }
+
+    private const val CRASH_RECOIL_FRACTION = 0.5
 }

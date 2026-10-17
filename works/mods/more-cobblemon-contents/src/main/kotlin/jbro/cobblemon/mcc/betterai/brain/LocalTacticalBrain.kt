@@ -71,6 +71,8 @@ import kotlin.math.roundToInt
 private const val WEAKER_CHOICE_MARGIN = 0.05
 private const val THREAT_TIME_LIMIT_NANOS = 300_000_000L
 private const val DOUBLES_PROTECT_PARTNERS = 2
+private val MEGA_MECHANIC_IDS = setOf("mega", "megaevolution")
+private const val MEGA_TIE_TOLERANCE = 1e-6
 /** Matchup scores for the choosing rules; an unfinished table rules nothing out. */
 private const val RULE_SCORES_TIME_LIMIT_NANOS = 1_000_000_000L
 private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
@@ -1048,9 +1050,19 @@ internal class LocalTacticalBrain(
             val other = rank.outcome.candidate
             other.kind == BattleActionKind.USE_MOVE && other.mechanic != null && other.actionId !in excluded &&
                 other.actorSlot == move.actorSlot && other.moveSlot == move.moveSlot && other.targets == move.targets &&
-                rank.comparisonValue > drawn.comparisonValue
+                (rank.comparisonValue > drawn.comparisonValue || isMega(other) && rank.comparisonValue >= drawn.comparisonValue - MEGA_TIE_TOLERANCE)
         }.maxByOrNull { it.comparisonValue }
     }
+
+    /**
+     * Mega Evolution costs nothing ([jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue]) and its stats
+     * stay for the battle, so a tie goes to it. A move capped at its knockout value scored the same with it as without
+     * (Tyranitar's Earthquake at 297 either way) and half the draws kept the Pokemon un-Evolved: Roark's Tyranitar set
+     * up and fell without Mega Evolving (user feedback and decision, 2026-10-18; G-706). A twin scored lower stays out;
+     * "equal" allows for rounding, as the two values summed in another order came out 5e-14 apart.
+     */
+    private fun isMega(candidate: BattleActionCandidate): Boolean =
+        candidate.mechanic?.mechanicId?.let(jbro.cobblemon.mcc.internal.ai.PublicIds::canonical) in MEGA_MECHANIC_IDS
 
     private fun decisionDiagnostics(
         calculatedContext: BattleDecisionContext,

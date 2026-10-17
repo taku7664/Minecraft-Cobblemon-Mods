@@ -7,6 +7,21 @@ const { Battle, extractChannelMessages } = require(path.join(process.argv[2], 's
 const { Dex } = require(path.join(process.argv[2], 'sim/dex.js'));
 const dex = Dex.mod('cobblemon');
 dex.includeData(); // getMovePool reads dex.gen before lazily loading species data.
+// The dev server's Showdown is Mega Showdown's patch, whose canMegaEvo reads a stone only as a map of species to forme
+// (`stone[species.name]`): a stone kept as one `megaEvolves`/`megaStone` pair (Showdown's own Tyranitarite, or one
+// given below in that shape) offered no Mega Evolution, so a trainer's Mega Tyranitar never appeared in a mock battle
+// (2026-10-18). Such a pair is read here as well.
+{
+  const { BattleActions } = require(path.join(process.argv[2], 'sim/battle-actions.js'));
+  const canMegaEvo = BattleActions.prototype.canMegaEvo;
+  BattleActions.prototype.canMegaEvo = function (pokemon) {
+    const forme = canMegaEvo.call(this, pokemon);
+    if (forme) return forme;
+    const item = pokemon.getItem();
+    return typeof item.megaStone === 'string' && item.megaEvolves === pokemon.baseSpecies.baseSpecies &&
+      !pokemon.volatiles['dynamax'] && !pokemon.terastallized ? item.megaStone : null;
+  };
+}
 // What Mega Showdown registers when the game starts (process.argv[4], unpacked by the harness): its held items and
 // abilities, and the battle forms its Mega Stones turn into, which Cobblemon sends Showdown as species
 // (receiveSpeciesData). A form is built from the Cobblemon form data only where the stone names a forme Showdown lacks.

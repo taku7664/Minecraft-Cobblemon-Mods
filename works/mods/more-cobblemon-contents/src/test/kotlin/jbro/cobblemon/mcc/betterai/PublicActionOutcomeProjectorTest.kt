@@ -193,6 +193,30 @@ class PublicActionOutcomeProjectorTest {
         assertEquals(0.50, skillLinkRange.maximum, 1e-9)
     }
 
+    @Test
+    fun `a move that faints or crashes its user charges the hp it costs`() {
+        fun selfCost(kind: BattleMoveEffectKind, valueId: String? = null, accuracy: Double = 1.0, hp: Double = 0.8, ability: String? = null) =
+            move(facts = damageFacts(0.30, accuracy), effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(BattleMoveEffectView(kind, BattleMoveEffectTarget.USER, 1.0, valueId = valueId)),
+                scriptedBehavior = false,
+            )).let { PublicActionOutcomeProjector.project(it, context(it, allyHp = hp, allyAbility = ability)) }
+
+        // Explosion: the user faints whether or not it lands.
+        val explosion = selfCost(BattleMoveEffectKind.SELF_DESTRUCT, "always", accuracy = 0.9)
+        assertEquals(1.0, explosion.expectedSelfFaintChance)
+        assertEquals(0.8, explosion.expectedSelfRecoilFraction!!, 1e-9)
+        assertEquals(0.0, explosion.actorExpectedHpAfterSelfEffects!!, 1e-9)
+        // Final Gambit, Memento: only when it lands.
+        val gambit = selfCost(BattleMoveEffectKind.SELF_DESTRUCT, BattleDeclarativeMoveEffects.SELF_DESTRUCT_IF_HIT, accuracy = 0.9)
+        assertEquals(0.9, gambit.expectedSelfFaintChance, 1e-9)
+        assertEquals(0.72, gambit.expectedSelfRecoilFraction!!, 1e-9)
+        // High Jump Kick: half of maximum HP on a miss, none under Magic Guard.
+        assertEquals(0.05, selfCost(BattleMoveEffectKind.CRASH_RECOIL, accuracy = 0.9).expectedSelfRecoilFraction!!, 1e-9)
+        assertEquals(0.0, selfCost(BattleMoveEffectKind.CRASH_RECOIL, accuracy = 0.9, ability = "magicguard").expectedSelfRecoilFraction!!, 1e-9)
+        assertEquals(0.0, selfCost(BattleMoveEffectKind.CRASH_RECOIL, accuracy = 0.9).expectedSelfFaintChance)
+    }
+
     private fun context(
         candidate: BattleActionCandidate,
         allyHp: Double = 1.0,

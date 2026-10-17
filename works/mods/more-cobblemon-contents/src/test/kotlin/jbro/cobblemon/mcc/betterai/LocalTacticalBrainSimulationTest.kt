@@ -567,8 +567,10 @@ class LocalTacticalBrainSimulationTest {
                 facts = damageFacts(0.9),
             )
 
+            // Both knock out. Dynamax and Tera keep their one use; Mega Evolution costs nothing and its stats stay, so the
+            // tie goes to it (user decision 2026-10-18, G-706).
             assertEquals(
-                "base",
+                if (mechanicId == "mega") "mega" else "base",
                 decide(listOf(base, wasteful), turn = 6, allyHp = 0.6, opponentHp = 0.45).actionId,
                 mechanicId,
             )
