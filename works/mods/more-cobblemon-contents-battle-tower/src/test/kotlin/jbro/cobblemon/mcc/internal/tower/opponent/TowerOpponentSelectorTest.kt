@@ -120,6 +120,30 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
+    fun `a Mega pool of stone sets only, as in a data pack without companions, still fields a team`() {
+        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite", mechanic = MajorBattleMechanic.MEGA) }
+        val profile = profile("stones", 1, TowerBattleFormat.DOUBLE, sets.map(TowerPokemonSet::setId))
+        val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+        val result = selector.select(TowerStreakStage.INTRODUCTORY, TowerBattleFormat.DOUBLE, TowerOpponentKind.REGULAR, MajorBattleMechanic.MEGA)
+
+        result as TowerOpponentSelectionResult.Selected
+        assertEquals(4, result.team.size)
+    }
+
+    @Test
+    fun `the team search reaches the one stone a team needs and never takes a second`() {
+        val companions = (1..5).map { pokemonSet(it) }
+        val stones = (6..7).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite") }
+
+        val team = TowerLegalTeamSearch.select(companions + stones, 4, 1..1)!!
+
+        assertEquals(1, team.count { it.heldItemId.isTowerMegaStone() })
+        assertEquals(null, TowerLegalTeamSearch.select(companions, 4, 1..1))
+        assertEquals(null, TowerLegalTeamSearch.select(stones + companions.take(1), 3, 0..1))
+    }
+
+    @Test
     fun `other mechanics keep every Mega Stone rule off`() {
         val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite") }
         val profile = profile("tera", 1, TowerBattleFormat.SINGLE, sets.map(TowerPokemonSet::setId), MajorBattleMechanic.TERA)
