@@ -68,6 +68,12 @@ class BattleOpponentMoveExpectationScorerTest {
         assertEquals(plain * (5.0 / 6.0 - 0.05), superpower, 1e-6)
         assertEquals(score(move("dragon", power = 120.0)) * 0.75, draco, 1e-6)
         assertTrue(closeCombat > superpower)
+        // A drop on the target is 10% of the damage a stage: a 60-power spread Speed drop stays below Close Combat.
+        val bulldoze = move("ground", category = BattleMoveDamageCategory.PHYSICAL, power = 60.0, target = BattleMoveTargetPattern.ALL_OPPONENTS,
+            effects = listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, statStages = mapOf("spe" to -1))))
+        assertEquals(60.0 * 1.5 * 1.1, BattleOpponentMoveExpectationScorer.score(pokemon(), bulldoze, BattleFormat.DOUBLE), 1e-6)
+        assertTrue(BattleOpponentMoveExpectationScorer.score(pokemon(), physical("def" to -1, "spd" to -1), BattleFormat.DOUBLE) >
+            BattleOpponentMoveExpectationScorer.score(pokemon(), bulldoze, BattleFormat.DOUBLE))
     }
 
     @Test
