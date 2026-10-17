@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-18 04:30] 5781c780 개발 클라·서버 배포: 야생 진화 패치 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- 야생 스폰 레벨 진화 패치(`204d535b7`·`a2ab48694`)가 들어간 `origin/main` `5781c780`을 `F:/AI/builds/deploy-5781c780`에서 빌드했다(EXIT 0, JAR 8개 `unzip -t` 정상, Kotlin in-process, Gradle 2G). 1cb6bc1c 이후 다른 세션이 main에 올린 MCC·Better AI·UI·NPC·jbro-policy 커밋도 함께 들어갔다.
+- MCC·NPC 내장 cobblemon-ui가 단독 JAR과 같다(6500AF184DC1). 리그 JAR에 `WildSpawnSpecies`·`WildSpawnStage` 클래스가 있다.
+- 개발 클라 8개, 개발 서버 7개를 넣었고 SHA-256이 빌드본과 같다. 백업 `develop-product/deployment-backups/20261018-5781c780`(15개). 개발 클라·서버는 꺼져 있었고 서버는 켜지 않았다. 그때 PPakemon 프로필 게임이 운영 서버에 접속 중이었지만 개발 클라와 다른 폴더라 건드리지 않았다.
+- 빌드 폴더는 배포 뒤 지웠다. 운영(VPS)·PPakemon·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-18 03:30] 야생 진화 패치 소급 보상: Yoon_SSU_에게 경험사탕 XL 25개 (VPS 지급 확인)
 
 - **빡대리님 결정:** 80레벨을 넘겨 올린 레벨만큼, 야생 진화 패치(`204d535b7`·`a2ab48694`, 레벨 조건 진화만)로 이득 보는 만큼 소급한다. 대상은 운영 서버 80레벨 이상 8마리 중 80을 넘긴 Yoon_SSU_의 6마리뿐이다(필요 경험치 합계 1,701,358).
