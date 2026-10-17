@@ -24,7 +24,11 @@ internal object BattleOpponentMoveExpectationScorer {
         val baseDamage = move.power * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
-            val value = if (isOwnStatChange(effect)) ownRaiseValue(effect) else effectValue(effect)
+            val value = when {
+                isOwnStatChange(effect) -> ownRaiseValue(effect)
+                isTargetStatChange(effect) -> baseDamage * targetDropShare(effect)
+                else -> effectValue(effect)
+            }
             value * (effect.probability ?: 1.0) * hitProbability
         }
         val ownDropCost = move.effects?.effects.orEmpty().filter(::isOwnStatChange).sumOf { effect ->
@@ -81,6 +85,17 @@ internal object BattleOpponentMoveExpectationScorer {
         BattleMoveEffectKind.SWITCH_USER -> PIVOT_VALUE
         else -> 0.0
     }
+
+    private fun isTargetStatChange(effect: BattleMoveEffectView): Boolean =
+        effect.kind == BattleMoveEffectKind.STAT_STAGE &&
+            (effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.TARGET_SIDE)
+
+    /**
+     * A drop on the target, [TARGET_STAGE_SHARE] of the move's damage a stage (a raise on it costs the same). A flat 50
+     * a stage put a 60-power Bulldoze and a 55-power Snarl above a physical Arcanine's Close Combat, and the hypotheses
+     * left that out (user decision, 2026-10-18; LocalMoveThreatScore's rate).
+     */
+    private fun targetDropShare(effect: BattleMoveEffectView): Double = -effect.statStages.values.sum() * TARGET_STAGE_SHARE
 
     private fun isOwnStatChange(effect: BattleMoveEffectView): Boolean =
         effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER
@@ -155,6 +170,8 @@ internal object BattleOpponentMoveExpectationScorer {
     private const val MINIMUM_CATEGORY_FIT = 0.65
     /** Each stage of a user drop on a stat the move does not attack with. */
     private const val OTHER_DROP_SHARE = 0.05
+    /** Each stage a damaging move drops on its target. */
+    private const val TARGET_STAGE_SHARE = 0.10
     private const val ATTACK = "attack"
     private const val SPECIAL_ATTACK = "specialattack"
     /** Two targets at the native 0.75 spread modifier. */
