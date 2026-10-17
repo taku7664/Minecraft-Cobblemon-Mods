@@ -25,8 +25,7 @@ internal object PvpInvitePopup {
         val dialog = CobblemonUiDialogScreen(parent,
             UiDialogSpec(
                 Component.translatable(KEY + "title"),
-                Component.translatable(KEY + "body", hostName).append("
-").append(rules(settings)),
+                Component.translatable(KEY + "body", hostName).append("\n").append(rules(settings)),
                 Component.translatable(KEY + "join"),
                 Component.translatable(KEY + "decline"),
                 UiOverlayTone.NEUTRAL,

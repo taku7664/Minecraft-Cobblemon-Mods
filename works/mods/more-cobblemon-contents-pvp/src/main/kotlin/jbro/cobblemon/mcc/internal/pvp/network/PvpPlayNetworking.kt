@@ -79,6 +79,8 @@ import jbro.cobblemon.mcc.internal.command.MccPendingResult
 
 internal object PvpPlayNetworking : PvpCommandBackend {
     private val onlinePlayers = HashMap<UUID, ServerPlayer>()
+    /** Each lobby's invite list as last sent, so a player's busy state changing anywhere reaches every host. */
+    private val lobbyInviteSignatures = HashMap<UUID, Int>()
     private val retryableMatches = HashSet<UUID>()
     private val pendingCompletions = PvpCompletionRetryQueue()
     private val rooms = PvpRoomService()
@@ -365,7 +367,23 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 { processPendingCompletions(server) },
                 { lounge.restoreAvailable(onlinePlayers::containsKey) },
                 loungeGateway::enforceSpectatorAnchors,
+                { if (server.tickCount % LOBBY_INVITE_REFRESH_TICKS == 0) refreshChangedLobbyInvites() },
             )
+        }
+    }
+
+    /**
+     * Resends each lobby whose invite list changed since it was last sent here: a candidate created, joined or left a
+     * room, or a challenge began or ended. A room seen for the first time is only recorded; its own push carried it.
+     */
+    private fun refreshChangedLobbyInvites() {
+        val lobbies = rooms.all().filter { it.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.LOBBY }
+        lobbyInviteSignatures.keys.retainAll(lobbies.mapTo(HashSet()) { it.roomId })
+        lobbies.forEach { room ->
+            val view = clientView(room)
+            val signature = (view.inviteCandidates.map(PvpRoomMemberView::playerId) to view.invitedIds).hashCode()
+            val previous = lobbyInviteSignatures.put(room.roomId, signature)
+            if (previous != null && previous != signature) pushRoomToMembers(room, null)
         }
     }
 
@@ -1398,6 +1416,9 @@ internal fun attemptUntrackedPvpSpectatorRecovery(
         true
     }
 }
+
+/** How often lobbies' invite lists are checked for players who became busy or free elsewhere: once a second. */
+private const val LOBBY_INVITE_REFRESH_TICKS = 20
 
 /**
  * Who a room's host can invite: online players outside the room and not [busy] in another room or match, by name,

@@ -16,15 +16,23 @@ internal object PvpRoomSettingsFit {
     /** One settings row as text widths: its title and each chip label. */
     class Row(val titleWidth: Int, val chipWidths: List<Int>)
 
-    /** The seats and settings columns of [body]: the first split whose settings card body holds [rows], else the last. */
-    fun columns(body: UiRect, rows: List<Row>): List<UiRect> {
-        var columns = MccHubKit.columns(body, *WEIGHTS.first())
-        for (weights in WEIGHTS) {
-            columns = MccHubKit.columns(body, *weights)
-            val settings = MccHubKit.cardBody(columns[2])
-            if (height(settings.width, rows) <= settings.height) return columns
+    /** A split of the room body, and whether the settings rows must use their short titles to fit it. */
+    class Fit(val columns: List<UiRect>, val shortTitles: Boolean)
+
+    /**
+     * The first split whose settings card body holds the rows: every split with the full titles first, then with
+     * [shortRows], whose titles are short enough to keep the chips beside them. With nothing fitting, the widest
+     * settings card with the short titles.
+     */
+    fun fit(body: UiRect, rows: List<Row>, shortRows: List<Row>): Fit {
+        for ((candidate, short) in listOf(rows to false, shortRows to true)) {
+            for (weights in WEIGHTS) {
+                val columns = MccHubKit.columns(body, *weights)
+                val settings = MccHubKit.cardBody(columns[2])
+                if (height(settings.width, candidate) <= settings.height) return Fit(columns, short)
+            }
         }
-        return columns
+        return Fit(MccHubKit.columns(body, *WEIGHTS.last()), true)
     }
 
     /** The height [MccHubChipRows.place] gives [rows] across [width], by the same rules. */

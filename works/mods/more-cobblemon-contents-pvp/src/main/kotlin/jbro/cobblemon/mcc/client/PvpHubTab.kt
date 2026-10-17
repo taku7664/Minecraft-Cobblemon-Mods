@@ -304,10 +304,14 @@ internal class PvpHubTab : MccHubTabContent {
             room("spectators", state.spectators.size))
         host.add(SpectatorCount(layout.strip, room("spectators", state.spectators.size), state.spectators))
         val editable = isHost && lobby && idle
-        val rows = settingsRows(controller, editable)
         val font = Minecraft.getInstance().font
-        val (left, right, settings) = PvpRoomSettingsFit.columns(layout.body,
-            rows.map { row -> PvpRoomSettingsFit.Row(font.width(row.title), row.options.map { font.width(it.label) }) })
+        fun widths(rows: List<jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row>) =
+            rows.map { row -> PvpRoomSettingsFit.Row(font.width(row.title), row.options.map { font.width(it.label) }) }
+        val fullRows = settingsRows(controller, editable, short = false)
+        val shortRows = settingsRows(controller, editable, short = true)
+        val fit = PvpRoomSettingsFit.fit(layout.body, widths(fullRows), widths(shortRows))
+        val rows = if (fit.shortTitles) shortRows else fullRows
+        val (left, right, settings) = fit.columns
         seat(host, left, PvpRoomSide.LEFT, state.leftPlayer, controller, me, lobby)
         seat(host, right, PvpRoomSide.RIGHT, state.rightPlayer, controller, me, lobby)
 
@@ -346,23 +350,30 @@ internal class PvpHubTab : MccHubTabContent {
     }
 
     /** The room's settings as chip rows: visibility, format, the gimmicks allowed and the duplicate rules. */
-    private fun settingsRows(controller: PvpRoomScreenController, editable: Boolean): List<jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row> {
+    private fun settingsRows(
+        controller: PvpRoomScreenController,
+        editable: Boolean,
+        short: Boolean,
+    ): List<jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row> {
         val state = controller.state
+        // A short title keeps the chips beside it on a small hub; the full title then shows on hover.
+        fun title(group: String) = room(if (short) "group.$group.short" else "group.$group")
+        fun hover(group: String) = if (short) room("group.$group") else null
         val mechanics = state.settings.immutableEnabledMechanics
         return listOf(
-            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.visibility"),
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(title("visibility"),
                 PvpRoomVisibility.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
-                setOf(state.settings.visibility.name.lowercase()), editable) { id ->
+                setOf(state.settings.visibility.name.lowercase()), editable, hover("visibility")) { id ->
                 val next = PvpRoomVisibility.entries.first { it.name.lowercase() == id }
                 if (next != state.settings.visibility) updateSettings(controller, state.settings.copy(visibility = next))
             },
-            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.format"),
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(title("format"),
                 PvpBattleFormat.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.recordId, room("format.${it.recordId}")) },
-                setOf(state.settings.format.recordId), editable) { id ->
+                setOf(state.settings.format.recordId), editable, hover("format")) { id ->
                 val next = PvpBattleFormat.entries.first { it.recordId == id }
                 if (next != state.settings.format) updateSettings(controller, state.settings.copy(format = next))
             },
-            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.mechanics"),
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(title("mechanics"),
                 PvpBattleMechanic.entries.map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it.id, room("mechanic.${it.id}")) },
                 mechanics.mapTo(HashSet()) { it.id }, editable, room("group.mechanics")) { id ->
                 val next = LinkedHashSet(mechanics)
@@ -370,7 +381,7 @@ internal class PvpHubTab : MccHubTabContent {
                 if (!next.add(mechanic)) next.remove(mechanic)
                 updateSettings(controller, state.settings.copy(enabledMechanics = next))
             },
-            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(room("group.clauses"),
+            jbro.cobblemon.mcc.client.hub.MccHubChipRows.Row(title("clauses"),
                 listOf(CLAUSE_SPECIES, CLAUSE_ITEM).map { jbro.cobblemon.mcc.client.hub.MccHubChipRows.Option(it, room("clause.$it")) },
                 buildSet {
                     if (state.settings.speciesClause) add(CLAUSE_SPECIES)
