@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.matchup.IntentKind
 import jbro.cobblemon.mcc.betterai.matchup.IntentOption
 import jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard
+import jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore
 import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicPersistentMoveState
@@ -66,7 +67,8 @@ class LocalDynamaxTest {
         val readableOnHitOnly = setOf("curse")
         val wronglyListed = BattleDeclarativeMoveEffects.CALLBACK_EFFECT_MOVES.filter { readable[it] == true && it !in readableOnHitOnly }
         assertTrue(wronglyListed.isEmpty(), "read as shapes, so off the table: $wronglyListed")
-        assertEquals(11, BattleDeclarativeMoveEffects.CALLBACK_EFFECT_MOVES.size, BattleDeclarativeMoveEffects.CALLBACK_EFFECT_MOVES.toString())
+        // Chloroblast is on it by name: Showdown applies its recoil by move id (G-952, user-approved).
+        assertEquals(12, BattleDeclarativeMoveEffects.CALLBACK_EFFECT_MOVES.size, BattleDeclarativeMoveEffects.CALLBACK_EFFECT_MOVES.toString())
     }
 
     @Test
@@ -85,11 +87,12 @@ class LocalDynamaxTest {
     @Test
     fun `Dynamax lasts three turns, the one it starts on included`() {
         val started = Cobblemon173PublicPersistentMoveState.afterVolatile(emptySet(), "dynamax", true, null, null)
-        assertEquals(setOf("dynamax", "dynamaxturns:3"), started)
-        assertEquals(setOf("dynamax", "dynamaxturns:2"), Cobblemon173PublicPersistentMoveState.advance(started, 1))
+        // The side's Dynamax stays spent after it ends.
+        assertEquals(setOf("dynamax", LocalDynamax.USED, "dynamaxturns:3"), started)
+        assertEquals(setOf("dynamax", LocalDynamax.USED, "dynamaxturns:2"), Cobblemon173PublicPersistentMoveState.advance(started, 1))
         assertFalse(LocalDynamax.active(mon(BattleSide.OPPONENT).copyState(
             knownVolatileEffectIds = Cobblemon173PublicPersistentMoveState.advance(started, 3))))
-        assertEquals(emptySet<String>(), Cobblemon173PublicPersistentMoveState.afterVolatile(started, "dynamax", false, null, null))
+        assertEquals(setOf(LocalDynamax.USED), Cobblemon173PublicPersistentMoveState.afterVolatile(started, "dynamax", false, null, null))
 
         // In projection, the turn-end step counts it down and ends it.
         var state = state(mon(BattleSide.ALLY), LocalDynamax.start(mon(BattleSide.OPPONENT)))
@@ -181,8 +184,8 @@ class LocalDynamaxTest {
     @Test
     fun `a public Gigantamax start is remembered past its end`() {
         val started = Cobblemon173PublicPersistentMoveState.afterVolatile(emptySet(), LocalDynamax.GIGANTAMAX_START, true, null, null)
-        assertEquals(setOf("dynamax", "dynamaxturns:3", "gigantamax"), started)
-        assertEquals(setOf("gigantamax"), Cobblemon173PublicPersistentMoveState.afterVolatile(started, "dynamax", false, null, null))
+        assertEquals(setOf("dynamax", LocalDynamax.USED, "dynamaxturns:3", "gigantamax"), started)
+        assertEquals(setOf("gigantamax", LocalDynamax.USED), Cobblemon173PublicPersistentMoveState.afterVolatile(started, "dynamax", false, null, null))
     }
 
     @Test
@@ -252,6 +255,24 @@ class LocalDynamaxTest {
         assertEquals(userOnly, fallback.adjustments.getValue(fixture.joint.actionId) * 2.0, 1e-6)
         assertEquals(2, fallback.targetFallbacks)
         assertEquals(2, fallback.targetAssessments)
+    }
+
+    @Test
+    fun `two hits that each leave the user standing knock it out together`() {
+        fun hit(low: Double, high: Double, accuracy: Double = 1.0, aim: Double = 1.0) = LocalDynamaxGuard.IncomingHit(
+            MoveMatchupScore(UUID.randomUUID(), "probe", UUID.randomUUID(), accuracy, low, high,
+                listOf(1.0, 1.0), listOf(0.0, (low + high) / 2.0), 2.0, 0.5),
+            incomingProbability = 1.0, targetProbability = aim,
+        )
+        // 54% HP: 40-50% and 30-36% never knock out alone, always together.
+        assertEquals(1.0, LocalDynamaxGuard.knockout(listOf(hit(0.40, 0.50), hit(0.30, 0.36)), 0.54), 1e-9)
+        // 20-30% twice: the sum is even-sided around 50%, so a 50% user falls about half the time.
+        assertEquals(0.5, LocalDynamaxGuard.knockout(listOf(hit(0.20, 0.30), hit(0.20, 0.30)), 0.50), 0.02)
+        // Only when both land and both aim at it: 90% accuracy and a 50% aim each.
+        assertEquals(0.9 * 0.5 * 0.9 * 0.5, LocalDynamaxGuard.knockout(
+            listOf(hit(0.40, 0.50, 0.9, 0.5), hit(0.30, 0.36, 0.9, 0.5)), 0.54), 1e-9)
+        // Too little together: nothing.
+        assertEquals(0.0, LocalDynamaxGuard.knockout(listOf(hit(0.10, 0.12), hit(0.10, 0.12)), 0.54), 1e-9)
     }
 
     @Test

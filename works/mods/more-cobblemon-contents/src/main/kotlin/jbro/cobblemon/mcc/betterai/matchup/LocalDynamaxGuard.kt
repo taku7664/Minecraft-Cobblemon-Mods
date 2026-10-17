@@ -20,8 +20,8 @@ import java.util.UUID
 /**
  * What Dynamaxing guards on the turn it starts: its doubled HP against the opposing Pokemon's best hit this turn, the
  * damage it halves and the knockout it stops, in score units. In doubles, both opposing active Pokemon contribute;
- * their expected damage is capped at the user's remaining HP once and their largest one-hit knockout chance is used,
- * so two threats do not award the same knockout twice.
+ * their expected damage is capped at the user's remaining HP once and the knockout is counted once, whether one hit
+ * does it or the two together ([knockout]).
  *
  * The ranking prices a move by what it does to the target, so a Dynamax choice and the same move without it came out
  * equal whenever both knocked out (a Lapras Freeze-Dry at 300 either way), and the draw kept the one that left it to a
@@ -107,10 +107,53 @@ internal object LocalDynamaxGuard {
             (it.move.minimumDamageFraction + it.move.maximumDamageFraction) / 2.0 * it.move.accuracy *
                 it.incomingProbability * it.targetProbability
         }
-        val knockout = hits.maxOf {
-            it.move.knockoutChanceWithin(1) * it.incomingProbability * it.targetProbability
+        return minOf(taken, user.hpFraction) * tuning.boardToScore + knockout(hits, user.hpFraction) * tuning.knockoutMaterialScore
+    }
+
+    /**
+     * The chance [hits] knock the user out this turn. Two hits that each leave it standing can still do it together;
+     * read one at a time, that knockout was never guarded (2026-10-18). Each hit lands with its aim, its turn and its accuracy;
+     * a landed roll is even across its damage range, and a hit that knocks out alone keeps its own chance (critical
+     * hits included). More than two hits fall back to the largest single knockout.
+     */
+    internal fun knockout(hits: List<IncomingHit>, hp: Double): Double {
+        fun alone(hit: IncomingHit) = hit.move.knockoutChanceWithin(1) * hit.incomingProbability * hit.targetProbability
+        if (hits.size != 2) return hits.maxOf(::alone)
+        val (first, second) = hits
+        fun lands(hit: IncomingHit) = (hit.incomingProbability * hit.targetProbability * hit.move.accuracy).coerceIn(0.0, 1.0)
+        fun knocksOutOnLanding(hit: IncomingHit) =
+            if (hit.move.accuracy <= 0.0) 0.0 else (hit.move.knockoutChanceWithin(1) / hit.move.accuracy).coerceIn(0.0, 1.0)
+        val a = lands(first)
+        val b = lands(second)
+        val bothStanding = minOf(
+            1.0 - knocksOutOnLanding(first),
+            1.0 - knocksOutOnLanding(second),
+            sumBelow(first.move, second.move, hp),
+        )
+        val survives = (1.0 - a) * (1.0 - b) +
+            a * (1.0 - b) * (1.0 - knocksOutOnLanding(first)) +
+            (1.0 - a) * b * (1.0 - knocksOutOnLanding(second)) +
+            a * b * bothStanding
+        return maxOf(1.0 - survives, hits.maxOf(::alone)).coerceIn(0.0, 1.0)
+    }
+
+    /** The chance two rolls, each even across its damage range, add up to less than [hp]. */
+    private fun sumBelow(first: MoveMatchupScore, second: MoveMatchupScore, hp: Double): Double {
+        fun below(move: MoveMatchupScore, limit: Double): Double {
+            val low = move.minimumDamageFraction
+            val high = move.maximumDamageFraction
+            return when {
+                limit <= low -> 0.0
+                limit > high -> 1.0
+                high <= low -> 0.0
+                else -> (limit - low) / (high - low)
+            }
         }
-        return minOf(taken, user.hpFraction) * tuning.boardToScore + knockout * tuning.knockoutMaterialScore
+        val width = first.maximumDamageFraction - first.minimumDamageFraction
+        if (width <= 0.0) return below(second, hp - first.minimumDamageFraction)
+        return (0 until SUM_STEPS).sumOf { step ->
+            below(second, hp - (first.minimumDamageFraction + width * (step + 0.5) / SUM_STEPS))
+        } / SUM_STEPS
     }
 
     /** Restrict the user's matchup to the base move behind this candidate, so its own KO chance gates the reply. */
@@ -183,13 +226,15 @@ internal object LocalDynamaxGuard {
 
     private fun alive(pokemon: BattlePokemonStateView) = !pokemon.fainted && pokemon.hpFraction > 0.0
 
-    private data class IncomingHit(
+    internal data class IncomingHit(
         val move: MoveMatchupScore,
         val incomingProbability: Double,
         val targetProbability: Double,
     )
 
     private data class Targeting(val byOpponent: Map<UUID, Double>, val fallbackOpponentIds: Set<UUID>)
+
+    private const val SUM_STEPS = 64
 
     private val SPREAD_TARGETS = setOf(
         BattleMoveTargetPattern.ALL_OPPONENTS,
