@@ -108,6 +108,14 @@
 
 ---
 
+## [2026-10-18 01:19] 원시회귀 구슬 2종 각 50BP 추가·VPS 리로드·로컬 배포 동기화
+
+- **사용자 명시 승인:** 주홍구슬(`mega_showdown:red_orb`)·쪽빛구슬(`mega_showdown:blue_orb`)을 각각 50BP로 추가하고 VPS 리로드, 로컬 배포 서버 동기화, Git 변경 내역 없는 상태까지 요구했다.
+- **운영 변경:** 실제 VPS 외부 `bp-shop.json`에 기믹 탭 2종만 추가해 162→164품목. 메가스톤 바로 아래 `sort_order` 811·812이며 기존 162개 레코드와 설정은 모두 보존했다. 설치된 Mega Showdown에서 아이템 리소스 존재를 확인했고 로더에서도 두 ID를 포함한 카탈로그 로드가 성공했다. 운영 main `4321ab4afd7da4c59c32c44f91684cbd62fd452a`와 원격 main 동기화 확인.
+- **리로드:** 01:18:58(KST) `Loaded BP shop catalog mcc_core with 164 entries` 로그와 두 구슬의 50BP를 확인했다. 상점 관련 경고 없음, 서버 pane PID는 전후 `141095`로 유지. VPS 종료·재시작 없이 `/reload`만 사용했다. 변경 전 파일은 서버 밖 기존 상점 백업 폴더에 보관했다.
+- **배포 서버 동기화:** 로컬 `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer`에서 원격과의 차이가 상점 파일 하나이고 Git 상태가 깨끗함을 먼저 확인한 후 fast-forward했다. 로컬 HEAD = 원격 main = 위 운영 커밋이며 작업 후 `git status --porcelain` 출력 없음. VPS·로컬 설정 SHA-256 `9c0a9a8283a1cecb8b7d842836f95d1fecd2e30dea48663a1500e59869ea5b05`로 동일. 로컬 백업은 `C:/Users/박주형/AppData/Local/MinecraftServerDeploy/shop-primal-orbs-20261018-011858`.
+- **범위:** 소스 기본 카탈로그·개발 서버·JAR는 변경하지 않았다. 빌드·로컬 서버 실행/종료/리로드·실게임 구매 검증은 하지 않았다.
+
 ## [2026-10-17 16:54] VPS 상점 설정을 로컬 배포 서버에 Git 변경 없이 동기화
 
 - **사용자 요청:** VPS에만 적용한 상점 변경을 deploy-server 쪽 로컬 배포 서버에도 동기화하되 Git 변경 내역이 남지 않도록 한다. `deploy-product/server/MinecraftPPakemonServer.lnk`가 `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer`를 가리키는 것을 확인했다.
