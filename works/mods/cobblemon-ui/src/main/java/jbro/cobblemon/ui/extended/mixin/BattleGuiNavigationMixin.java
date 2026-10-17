@@ -1,5 +1,8 @@
 package jbro.cobblemon.ui.extended.mixin;
 
+import com.cobblemon.mod.common.battles.MoveActionResponse;
+import com.cobblemon.mod.common.battles.ShowdownActionResponse;
+import com.cobblemon.mod.common.client.battle.SingleActionRequest;
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection;
@@ -16,6 +19,7 @@ import jbro.cobblemon.ui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.ui.extended.navigation.BattleCommandLayout;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.navigation.ForfeitSelectionAccess;
+import jbro.cobblemon.ui.extended.state.LastMoveMemory;
 import jbro.cobblemon.ui.navigation.ActionSubmissionGate;
 import jbro.cobblemon.ui.navigation.BattleMenuNavigator;
 import jbro.cobblemon.ui.navigation.FocusOwnership;
@@ -95,6 +99,16 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
 
     @Shadow
     public abstract BattleActionSelection getCurrentActionSelection();
+
+    /** Whichever way a move was chosen, by key or by click, it is the one that Pokemon's move menu opens on next turn. */
+    @Inject(method = "selectAction", at = @At("HEAD"))
+    private void cobblemonBattleUi$rememberChosenMove(SingleActionRequest request, ShowdownActionResponse response,
+            CallbackInfo ci) {
+        if (response instanceof MoveActionResponse move && request.getActivePokemon() != null
+                && request.getActivePokemon().getBattlePokemon() != null) {
+            LastMoveMemory.record(request.getActivePokemon().getBattlePokemon().getUuid(), move.getMoveName());
+        }
+    }
 
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true, remap = true)
     private void cobblemonBattleUi$blockCharactersBehindTranscript(char character, int modifiers,
@@ -377,11 +391,10 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
         if (cobblemonBattleUi$gridSelection != selection) {
             cobblemonBattleUi$gridSelection = selection;
-            cobblemonBattleUi$gridIndex = -1;
             cobblemonBattleUi$gimmickColumn = false;
             cobblemonBattleUi$lastMoveIndex = -1;
             cobblemonBattleUi$lastMoveId = null;
-            KeyboardTileFocus.clear();
+            cobblemonBattleUi$takeOpeningFocus(tiles);
         }
 
         List<Boolean> enabledMoves = tiles.stream()
@@ -498,6 +511,15 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         return true;
     }
 
+    /** A new menu starts from the tile it opened focused on (the move chosen last turn), or from none. */
+    @Unique
+    private void cobblemonBattleUi$takeOpeningFocus(List<?> tiles) {
+        cobblemonBattleUi$gridIndex = KeyboardTileFocus.focusedIndex(tiles);
+        if (cobblemonBattleUi$gridIndex < 0) {
+            KeyboardTileFocus.clear();
+        }
+    }
+
     @Unique
     private int cobblemonBattleUi$nearestVertical(
             UiRect origin,
@@ -535,8 +557,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
         if (cobblemonBattleUi$gridSelection != selection) {
             cobblemonBattleUi$gridSelection = selection;
-            cobblemonBattleUi$gridIndex = -1;
-            KeyboardTileFocus.clear();
+            cobblemonBattleUi$takeOpeningFocus(tiles);
         }
 
         int direction = switch (keyCode) {

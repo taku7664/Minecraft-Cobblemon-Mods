@@ -13,13 +13,13 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
-import net.minecraft.ChatFormatting
 import net.minecraft.Util
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
+import org.joml.Matrix4f
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -71,6 +71,10 @@ object BattleVersusIntro {
     var frozenAt: Long? = null
 
     val active: Boolean get() = run != null
+
+    /** The intro, or the white it ended in, is over the screen: the HUD under it steps aside. */
+    @JvmStatic
+    val covering: Boolean get() = run != null || whiteSince != 0L
 
     /**
      * Plays the intro for [tier] between [player] and [opponent] in [accent] (the opponent's colour, a Champion's
@@ -282,9 +286,8 @@ object BattleVersusIntro {
             // Slammed down once, then held still.
             val scale = h / 40f * (1.8f - .8f * easeIn(vsIn))
             // The screen shakes under it; the letters themselves stay put.
-            // Always opaque: the outline is the text drawn eight times, and see-through copies stack into stripes.
-            drawBig(context, Component.literal("VS").withStyle(ChatFormatting.BOLD), w / 2f - sx, h / 2f - sy, scale,
-                0xFFFFFFFF.toInt(), mix(current.accent, 0xFF000000.toInt(), .45f), 1f)
+            drawVersusLetters(context, w / 2f - sx, h / 2f - sy, scale,
+                0xFFFFFFFF.toInt(), mix(current.accent, 0xFF000000.toInt(), .45f))
         }
         pose.popPose()
 
@@ -398,18 +401,31 @@ object BattleVersusIntro {
     }
 
     /** [text] centred on ([cx], [cy]) at [scale], with a heavy outline in [outline]. */
-    private fun drawBig(context: GuiGraphics, text: Component, cx: Float, cy: Float, scale: Float, color: Int, outline: Int, opacity: Float) {
-        val font = Minecraft.getInstance().font
+    /**
+     * "VS" in its own blocky letters, leaning forward. A font scaled this far up breaks apart: its glyph edges are
+     * see-through and the eight outline copies stack them into stripes. Filled cells share their edges exactly, so the
+     * letters stay whole at any size and under the slant.
+     */
+    private fun drawVersusLetters(context: GuiGraphics, cx: Float, cy: Float, scale: Float, color: Int, outline: Int) {
         val pose = context.pose()
         pose.pushPose()
         pose.translate(cx, cy, 0f)
         pose.scale(scale, scale, 1f)
-        val x = -font.width(text) / 2
-        val y = -font.lineHeight / 2
-        val edge = alpha(outline, opacity)
-        for (dx in -1..1) for (dy in -1..1) if (dx != 0 || dy != 0) context.drawString(font, text, x + dx, y + dy, edge, false)
-        context.drawString(font, text, x, y, alpha(color, opacity), false)
+        // Italic: the top leans right of the bottom, about the letters' middle.
+        pose.last().pose().mul(Matrix4f().m10(-VS_SLANT))
+        val left = -VS_WIDTH / 2
+        val top = -VS_HEIGHT / 2
+        context.drawManaged {
+            // Shadow (the outline one cell down and right), outline, then the letters, each opaque so nothing stacks.
+            vsCells { x, y -> context.fill(left + x, top + y, left + x + 3, top + y + 3, mix(outline, 0xFF000000.toInt(), .5f)) }
+            vsCells { x, y -> context.fill(left + x - 1, top + y - 1, left + x + 2, top + y + 2, outline) }
+            vsCells { x, y -> context.fill(left + x, top + y, left + x + 1, top + y + 1, color) }
+        }
         pose.popPose()
+    }
+
+    private inline fun vsCells(cell: (Int, Int) -> Unit) {
+        for (y in VS_GLYPHS.indices) for (x in VS_GLYPHS[y].indices) if (VS_GLYPHS[y][x] == '#') cell(x, y)
     }
 
     private fun drawScaled(context: GuiGraphics, text: Component, x: Int, y: Int, scale: Float) {
@@ -449,6 +465,21 @@ object BattleVersusIntro {
     private fun mix(a: Int, b: Int, f: Float): Int = BattleSurfaceRenderer.interpolate(a or 0xFF000000.toInt(), b, f)
 
     private const val IMPACT = 820L
+    /** How far the VS letters lean: sideways cells per cell of height. */
+    private const val VS_SLANT = .25f
+    private val VS_GLYPHS = listOf(
+        "##...##..#####.",
+        "##...##.##...##",
+        "##...##.##.....",
+        "##...##.##.....",
+        ".##.##...#####.",
+        ".##.##.......##",
+        "..###........##",
+        "..###...##...##",
+        "...#.....#####.",
+    )
+    private val VS_WIDTH = VS_GLYPHS[0].length
+    private val VS_HEIGHT = VS_GLYPHS.size
     private const val EXIT = 260L
     /** How long the white waits for the battle before it fades anyway, and how long it takes to fade. */
     private const val WHITE_HOLD = 4_000L

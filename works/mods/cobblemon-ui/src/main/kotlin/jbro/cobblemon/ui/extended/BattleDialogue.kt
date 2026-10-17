@@ -50,8 +50,8 @@ object BattleDialogue {
     private var revealing: Any? = null
     private var revealNanos = 0L
     private var revealHeld = false
-    // Paced like a keyboard's own repeat: a pause long enough for a single tap, then a quick run.
-    private val hold = HoldRepeat(400_000_000L, 70_000_000L)
+    // A pause long enough for a single tap, then a quick run: twice a keyboard's own repeat.
+    private val hold = HoldRepeat(200_000_000L, 35_000_000L)
     private var completeNanos = 0L
     private const val NO_MOUSE_BUTTON = -1
     private var heldMouseButton = NO_MOUSE_BUTTON
