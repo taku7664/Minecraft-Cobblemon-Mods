@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleStateAdapter
@@ -12,11 +13,13 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorld
 import jbro.cobblemon.mcc.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
+import jbro.cobblemon.mcc.betterai.simulation.NativeRootActionMatcher
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownChoiceEncoder
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownRequestActionFactory
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
@@ -57,11 +60,23 @@ internal object LocalEngineTurnReadout {
         val plies: Int,
     )
 
+    data class DoublesProtectReading(
+        val values: Map<String, Double>,
+        val candidates: Int,
+        val maxReplies: Int,
+        val worlds: Int,
+        val branches: Int,
+        val elapsedMillis: Long,
+        val status: String,
+    )
+
     private const val WORLDS = 3
     private const val EPSILON = 1e-6
     /** The least chance an unnamed public reply gets (an inferred attack, an unseen switch-in). */
     private const val UNNAMED_REPLY = 0.02
     private const val SECOND_TURN_REPLIES = 3
+    private const val DOUBLES_REPLIES = 6
+    private const val DOUBLES_REPLY_COVERAGE = 0.85
     /** Random streams each first turn is drawn on. */
     private const val SEEDS = 3
     private val planner = NativeInitialProductWorldPlanner(worldLimit = { _, _ -> WORLDS })
@@ -248,6 +263,124 @@ internal object LocalEngineTurnReadout {
         } ?: emptyMap()
     }
 
+    /**
+     * A doubles Protect joint action, less the same joint action with only the protecting slot passing. The caller
+     * substitutes this value for LocalProtectCredit, so blocked attacks and contact retaliation are not counted twice.
+     * Missing values deliberately mean "keep the credit".
+     */
+    fun doublesProtectTurns(
+        context: BattleDecisionContext,
+        tier: BattleTrainerTier,
+        protects: List<BattleActionCandidate>,
+        intents: List<OpponentIntent>,
+        tuning: LocalDecisionTuning,
+        seedCount: Int = SEEDS,
+        seedStart: Int = 0,
+    ): DoublesProtectReading {
+        require(context.state.format == BattleFormat.DOUBLE)
+        require(seedCount >= 1 && seedStart >= 0)
+        val started = System.nanoTime()
+        fun result(
+            values: Map<String, Double> = emptyMap(),
+            worlds: Int = 0,
+            replies: Int = 0,
+            branches: Int = 0,
+            status: String,
+        ) = DoublesProtectReading(
+            values, protects.size, replies, worlds, branches,
+            java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started), status,
+        )
+        if (protects.isEmpty()) return result(status = "NO_CANDIDATES")
+        val live = context.showdownState
+        val plan = when {
+            live != null -> planner.planLive(context, tier)
+            context.state.turn in 0..1 && NativeOpeningStateRules.acceptsObservations(context.state) -> planner.plan(context, tier)
+            else -> planner.planMidBattle(context, tier)
+        }
+        if (plan.issues.isNotEmpty() || plan.worlds.isEmpty()) {
+            logger.error(
+                "[BetterAI] Doubles Protect readout could not plan the opponent's worlds: {}",
+                plan.issues.map { it.code.name + ":" + it.detailCode },
+            )
+            return result(status = "PLAN_FAILED")
+        }
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
+            (context.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L),
+        )
+        val knownOpponentMoves = knownOpponentMoveIdsBySlot(context)
+        return LocalEngineStopProbe.lease.withWorker(deadline) { worker ->
+            val totals = linkedMapOf<String, Double>()
+            val weights = linkedMapOf<String, Double>()
+            val completedWorlds = hashMapOf<String, Int>()
+            var maxReplies = 0
+            var branches = 0
+            var usedWorlds = 0
+            for (world in plan.worlds) {
+                val root = live?.let { worker.createLiveBattle(it, world.definition) } ?: worker.createBattle(world.definition)
+                val ally = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root, allowedMechanics = emptySet())
+                val mapping = NativeRootActionMatcher.match(BattleFormat.DOUBLE, protects, ally).productToNative
+                val picked = doublesReplies(
+                    publicReplies(
+                        NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root, allowedMechanics = emptySet()),
+                        knownOpponentMoves,
+                    ),
+                    intents,
+                    context.state,
+                )
+                if (mapping.isEmpty() || picked.isEmpty()) continue
+                usedWorlds++
+                maxReplies = maxOf(maxReplies, picked.size)
+                val source = world.publicContext
+                val cache = LocalProjectedActionCalculationCache()
+                for (protect in protects) {
+                    val action = mapping[protect.actionId] ?: continue
+                    val protecting = protect.componentActions.singleOrNull(::isProtectComponent) ?: continue
+                    val waiting = withPass(action, requireNotNull(protecting.actorSlot)) ?: continue
+                    val perReply = mutableListOf<Double>()
+                    var complete = true
+                    for ((reply, _) in picked) {
+                        var total = 0.0
+                        for (seed in seedStart until seedStart + seedCount) {
+                            val playedRoot = if (seed == 0) root else worker.reseed(root.snapshotJson, seed)
+                            val passedRoot = if (seed == 0) root else worker.reseed(root.snapshotJson, seed)
+                            val delta = runCatching {
+                                val played = play(worker, playedRoot, action, reply, source.state).second
+                                val passed = play(worker, passedRoot, waiting, reply, source.state).second
+                                turnScore(played, source, cache, tuning) - turnScore(passed, source, cache, tuning)
+                            }.getOrElse {
+                                complete = false
+                                logger.debug("[BetterAI] Doubles Protect pass comparison failed for {}", protect.actionId, it)
+                                0.0
+                            }
+                            if (!complete) break
+                            total += delta
+                            branches += 2
+                        }
+                        if (!complete) break
+                        perReply += total / seedCount
+                    }
+                    if (!complete || perReply.size != picked.size) continue
+                    val chances = picked.map { it.second }.normalize()
+                    totals.merge(
+                        protect.actionId,
+                        world.probability * blend(perReply, chances, tuning.statusReplyExpectation),
+                        Double::plus,
+                    )
+                    weights.merge(protect.actionId, world.probability, Double::plus)
+                    completedWorlds.merge(protect.actionId, 1, Int::plus)
+                }
+            }
+            val values = totals.mapNotNull { (id, total) ->
+                if (completedWorlds[id] != usedWorlds || usedWorlds != plan.worlds.size) null
+                else id to total / weights.getValue(id)
+            }.toMap()
+            result(
+                values, usedWorlds, maxReplies, branches,
+                if (values.isEmpty()) "NO_COMPLETE_VALUE" else "SUCCESS",
+            )
+        } ?: result(status = "WORKER_UNAVAILABLE")
+    }
+
     internal fun publicReplies(
         replies: List<BattleActionCandidate>,
         knownMoveIdsBySlot: Map<Int, Set<String>>?,
@@ -305,6 +438,78 @@ internal object LocalEngineTurnReadout {
 
     private fun parts(candidate: BattleActionCandidate): List<BattleActionCandidate> =
         if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
+
+    private fun doublesReplies(
+        replies: List<BattleActionCandidate>,
+        intents: List<OpponentIntent>,
+        state: BattleStateView,
+    ): List<Pair<BattleActionCandidate, Double>> {
+        if (replies.isEmpty()) return emptyList()
+        val bySlot = intents.associateBy(OpponentIntent::activeSlot)
+        val weighted = replies.map { reply ->
+            val probability = parts(reply).fold(1.0) { product, part ->
+                val intent = part.actorSlot?.let(bySlot::get)
+                product * (intent?.let { intentProbability(part, it, state) } ?: UNNAMED_REPLY)
+            }
+            reply to probability
+        }.sortedByDescending { it.second }
+        val normalized = weighted.map { it.first to it.second }.let { entries ->
+            val chances = entries.map { it.second }.normalize()
+            entries.indices.map { entries[it].first to chances[it] }
+        }
+        val selected = mutableListOf<Pair<BattleActionCandidate, Double>>()
+        var coverage = 0.0
+        for (entry in normalized) {
+            if (selected.size >= DOUBLES_REPLIES || coverage >= DOUBLES_REPLY_COVERAGE) break
+            selected += entry
+            coverage += entry.second
+        }
+        return selected
+    }
+
+    private fun intentProbability(
+        action: BattleActionCandidate,
+        intent: OpponentIntent,
+        state: BattleStateView,
+    ): Double {
+        val targetId = action.targets.singleOrNull()?.let { target ->
+            state.pokemon.firstOrNull { it.side == target.side && it.activeSlot == target.slot && !it.fainted }
+                ?.battlePokemonId
+        }
+        val matched = intent.options.filter { option ->
+            when (action.kind) {
+                BattleActionKind.SWITCH -> option.switchInId == action.switchPokemonId
+                BattleActionKind.USE_MOVE -> option.moveId?.let(PublicIds::canonical) == action.moveId?.let(PublicIds::canonical) &&
+                    (option.targetId == null || option.targetId == targetId)
+                BattleActionKind.WAIT -> true
+                else -> false
+            }
+        }.sumOf { it.probability }
+        return matched.takeIf { it > 0.0 } ?: UNNAMED_REPLY
+    }
+
+    private fun List<Double>.normalize(): List<Double> {
+        val total = sum()
+        return if (total <= 0.0) map { 1.0 / size } else map { it / total }
+    }
+
+    private fun isProtectComponent(action: BattleActionCandidate): Boolean =
+        action.kind == BattleActionKind.USE_MOVE && action.mechanic == null &&
+            LocalStallingProtectionRules.isStallingProtection(action)
+
+    private fun withPass(action: BattleActionCandidate, slot: Int): BattleActionCandidate? {
+        if (action.kind != BattleActionKind.COMPOSITE || action.componentActions.none { it.actorSlot == slot }) return null
+        val components = action.componentActions.map { component ->
+            if (component.actorSlot != slot) component
+            else BattleActionCandidate("native:protect-pass:$slot", BattleActionKind.WAIT, actorSlot = slot)
+        }
+        return BattleActionCandidate(
+            actionId = "native:protect-pass-joint:${action.actionId}",
+            kind = BattleActionKind.COMPOSITE,
+            componentActionIds = components.map(BattleActionCandidate::actionId),
+            componentActions = components,
+        )
+    }
 
     private data class Played(
         val world: NativeInitialProductWorld,
@@ -392,6 +597,15 @@ internal object LocalEngineTurnReadout {
             NativeShowdownChoiceEncoder.encode(theirs, BattleSide.OPPONENT, frame))
         return next to NativeBattleStateAdapter.adapt(next, template)
     }
+
+    private fun turnScore(
+        state: BattleStateView,
+        source: BattleDecisionContext,
+        cache: LocalProjectedActionCalculationCache,
+        tuning: LocalDecisionTuning,
+    ): Double = LocalImmediateTurnScorer.score(source.state, state, source, cache, tuning).total -
+        jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(state) +
+        jbro.cobblemon.mcc.betterai.evaluation.LocalTerminalOutcomeValue.evaluate(source.state)
 
     /**
      * The search's leaf without its finished-battle bonus: the Pokemon a finished battle took are already in the material.

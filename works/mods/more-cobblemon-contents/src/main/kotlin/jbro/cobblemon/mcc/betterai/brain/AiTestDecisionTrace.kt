@@ -137,6 +137,14 @@ internal class AiTestDecisionTrace private constructor(
         )
     }
 
+    fun doublesProtect(reading: jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.DoublesProtectReading) {
+        logger.info(
+            "[BetterAI Trace] battle={} turn={} phase=doubles_protect status={} candidates={} values={} maxReplies={} worlds={} branches={} protectElapsedMs={} elapsed_s={}",
+            battleId, turn, reading.status, reading.candidates, reading.values.size, reading.maxReplies,
+            reading.worlds, reading.branches, reading.elapsedMillis, elapsedSeconds(),
+        )
+    }
+
     private fun elapsedSeconds(): String = number((System.nanoTime() - startedAtNanos) / 1_000_000_000.0)
 
     private fun number(value: Double): String = String.format(Locale.ROOT, "%.3f", value)

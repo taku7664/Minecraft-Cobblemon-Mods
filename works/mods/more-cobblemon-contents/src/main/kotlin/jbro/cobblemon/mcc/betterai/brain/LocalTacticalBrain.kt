@@ -70,6 +70,7 @@ import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
 private const val THREAT_TIME_LIMIT_NANOS = 300_000_000L
+private const val DOUBLES_PROTECT_PARTNERS = 2
 /** Matchup scores for the choosing rules; an unfinished table rules nothing out. */
 private const val RULE_SCORES_TIME_LIMIT_NANOS = 1_000_000_000L
 private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
@@ -597,6 +598,9 @@ internal class LocalTacticalBrain(
             )
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
+        val doublesProtectReading = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.DOUBLE) null
+            else doublesProtectTurnAdjustments(baseRanked, difficultyContext, decidingProfile, tuning)
+        doublesProtectReading?.takeIf { it.candidates > 0 }?.let { decisionTrace?.doublesProtect(it) }
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
         val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null
             else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
@@ -687,10 +691,13 @@ internal class LocalTacticalBrain(
             }.orEmpty()
         }
         // A doubles Protect is credited for the hits the opponents are predicted to aim at its user.
-        val protectAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+        val protectCredits = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
                 difficultyContext.candidates, rulesContext, scores, opponentIntents, tuning)
         }.orEmpty()
+        // A complete engine value replaces the predicted-damage credit for that exact joint action. Missing values keep
+        // the credit, including doubles mid-battle reconstruction failures when no live Showdown capture is available.
+        val protectAdjustments = mergeDoublesProtectCredits(protectCredits, doublesProtectReading?.values.orEmpty())
         val setupAdjustments = setupScores.mapNotNull { (id, value) ->
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to tuning.setupSweepCredit * (value - it.comparisonValue) }
         }.toMap()
@@ -899,6 +906,11 @@ internal class LocalTacticalBrain(
                         if (it.plies > 0) add("native_status_plies_${it.plies}")
                         if (it.selfHarm.isNotEmpty()) add("native_status_self_harm_${it.selfHarm.size}")
                     }
+                    doublesProtectReading?.takeIf { it.candidates > 0 }?.let {
+                        add("doubles_protect_${it.status.lowercase(Locale.ROOT)}")
+                        add("doubles_protect_ms_${it.elapsedMillis}")
+                        add("doubles_protect_values_${it.values.size}")
+                    }
                     if (lookahead == null) add("searchless") else {
                         // Doubles searches one turn whatever the tier asks for.
                         add("lookahead_requested_${if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
@@ -944,6 +956,54 @@ internal class LocalTacticalBrain(
             },
         )
         return choice.leads
+    }
+
+    /** At most two top-ranked partner actions per protecting slot: four joint candidates in an ordinary double. */
+    private fun doublesProtectTurnAdjustments(
+        ranked: List<LocalBattleActionRank>,
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+    ): jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.DoublesProtectReading {
+        val bySlot = linkedMapOf<Int, MutableList<BattleActionCandidate>>()
+        for (rank in ranked) {
+            val candidate = rank.outcome.candidate
+            if (candidate.kind != BattleActionKind.COMPOSITE) continue
+            val protects = candidate.componentActions.filter { part ->
+                part.kind == BattleActionKind.USE_MOVE && part.mechanic == null &&
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.isStallingProtection(part) &&
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(
+                        context.state, BattleSide.ALLY, part.actorSlot,
+                    ) == 0
+            }
+            if (protects.size != 1) continue
+            val slot = protects.single().actorSlot ?: continue
+            val user = context.state.pokemon.firstOrNull {
+                it.side == BattleSide.ALLY && it.activeSlot == slot && !it.fainted
+            }
+            if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) continue
+            val selected = bySlot.getOrPut(slot) { mutableListOf() }
+            if (selected.size < DOUBLES_PROTECT_PARTNERS) selected += candidate
+        }
+        val candidates = bySlot.values.flatten().distinctBy(BattleActionCandidate::actionId)
+        if (candidates.isEmpty()) return jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.DoublesProtectReading(
+            emptyMap(), 0, 0, 0, 0, 0L, "NO_CANDIDATES",
+        )
+        return try {
+            val intents = LocalOpponentIntentPredictor.predict(
+                context,
+                jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context),
+                scoredSwitches = true,
+            )
+            jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.doublesProtectTurns(
+                context, profile.difficulty.tier, candidates, intents, tuning,
+            )
+        } catch (e: RuntimeException) {
+            logger.error("[BetterAI] Doubles Protect turns could not be played out; they keep LocalProtectCredit", e)
+            jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.DoublesProtectReading(
+                emptyMap(), candidates.size, 0, 0, 0, 0L, "FAILED",
+            )
+        }
     }
 
     /**
@@ -1185,3 +1245,8 @@ internal class LocalTacticalBrain(
         ),
     )
 }
+
+internal fun mergeDoublesProtectCredits(
+    credits: Map<String, Double>,
+    engineValues: Map<String, Double>,
+): Map<String, Double> = credits + engineValues
