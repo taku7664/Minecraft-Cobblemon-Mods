@@ -237,6 +237,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 },
                 { onlinePlayers[player.uuid] = player },
                 { rescueStrandedLoungePlayer(player) },
+                { pushLobbyRooms() },
             )
         }
         // Respawning replaces the ServerPlayer; keep the live one, or teleports and game mode changes hit the old body.
@@ -300,6 +301,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     }
                 },
                 { remaining = rooms.disconnect(playerId) },
+                // Every lobby's invite list drops the player who left, not only their own room's.
+                { pushLobbyRooms(except = remaining?.roomId) },
                 {
                     remaining?.let { updatedRoom ->
                         pushRoomToMembers(updatedRoom, null)
@@ -682,13 +685,18 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     pushAll = true,
                 )
             is PvpRoomIntent.Invite -> {
-                val result = rooms.invite(intent.roomId, player.uuid, intent.targetId)
+                val result = when {
+                    // The host's list can trail a logout or a match by a moment; check the target now.
+                    intent.targetId !in onlinePlayers -> PvpRoomMutation.Rejected(PvpRoomError.TARGET_OFFLINE)
+                    sessions.challengeFor(intent.targetId) != null -> PvpRoomMutation.Rejected(PvpRoomError.TARGET_BUSY)
+                    else -> rooms.invite(intent.roomId, player.uuid, intent.targetId)
+                }
                 if (result is PvpRoomMutation.Applied) {
                     onlinePlayers[intent.targetId]?.let { target ->
                         if (ServerPlayNetworking.canSend(target, PvpRoomInvitePayload.TYPE)) {
                             ServerPlayNetworking.send(
                                 target,
-                                PvpRoomInvitePayload(intent.roomId, player.scoreboardName),
+                                PvpRoomInvitePayload(intent.roomId, player.scoreboardName, result.room.settings),
                             )
                         } else {
                             target.sendSystemMessage(
@@ -704,9 +712,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             }
             is PvpRoomIntent.DeclineInvite -> {
                 when (val result = rooms.declineInvite(intent.roomId, player.uuid)) {
-                    is PvpRoomMutation.Applied -> player.sendSystemMessage(
-                        Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.room.invite.declined"),
-                    )
+                    is PvpRoomMutation.Applied -> {
+                        player.sendSystemMessage(
+                            Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.room.invite.declined"),
+                        )
+                        // The host's picker drops its "invited" mark.
+                        pushRoomToMembers(result.room, null)
+                    }
                     is PvpRoomMutation.Rejected -> rejectRoom(player, intent.requestId, result.error)
                 }
             }
@@ -785,8 +797,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
             return
         }
-        val leftTeam = Cobblemon173PvpTeamFactory.register(left, room.settings.format)
-        val rightTeam = Cobblemon173PvpTeamFactory.register(right, room.settings.format)
+        val leftTeam = Cobblemon173PvpTeamFactory.register(left, room.settings.format, room.settings.speciesClause, room.settings.itemClause)
+        val rightTeam = Cobblemon173PvpTeamFactory.register(right, room.settings.format, room.settings.speciesClause, room.settings.itemClause)
         if (leftTeam !is PvpTeamRegistrationResult.Accepted || rightTeam !is PvpTeamRegistrationResult.Accepted) {
             // Name the seat and the broken rule, so the players know whose party to fix.
             val (offender, rejected) = if (leftTeam is PvpTeamRegistrationResult.Rejected) {
@@ -873,6 +885,12 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
     private fun pushRoomToMembers(room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
         notifyOnlinePlayers(room.memberIds, "room update") { player -> sendRoom(player, room, requestId, reopen) }
+    }
+
+    /** Resends every lobby, whose invite lists name who is online and free, after someone joins or leaves the server. */
+    private fun pushLobbyRooms(except: UUID? = null) {
+        rooms.all().filter { it.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.LOBBY && it.roomId != except }
+            .forEach { pushRoomToMembers(it, null) }
     }
 
     private fun pushRoomToSpectators(room: PvpRoomView, requestId: UUID?) {
@@ -1064,7 +1082,10 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         leftPlayer = room.leftPlayerId?.let(::memberView),
         rightPlayer = room.rightPlayerId?.let(::memberView),
         spectators = room.spectatorIds.map(::memberView),
-        inviteCandidates = pvpInviteCandidates(onlinePlayers.keys, room.memberIds, ::memberView),
+        inviteCandidates = pvpInviteCandidates(onlinePlayers.keys, room.memberIds, ::memberView) { playerId ->
+            rooms.roomFor(playerId) != null || sessions.challengeFor(playerId) != null
+        },
+        invitedIds = room.invitedIds,
     )
 
     /**
@@ -1379,16 +1400,17 @@ internal fun attemptUntrackedPvpSpectatorRecovery(
 }
 
 /**
- * Who a room's host can invite: online players outside the room, by name, at most [PVP_ROOM_MAX_INVITE_CANDIDATES]
- * so the room packet stays inside what the client reads.
+ * Who a room's host can invite: online players outside the room and not [busy] in another room or match, by name,
+ * at most [PVP_ROOM_MAX_INVITE_CANDIDATES] so the room packet stays inside what the client reads.
  */
 internal fun pvpInviteCandidates(
     onlinePlayerIds: Iterable<UUID>,
     memberIds: Collection<UUID>,
     memberView: (UUID) -> PvpRoomMemberView,
+    busy: (UUID) -> Boolean = { false },
 ): List<PvpRoomMemberView> = onlinePlayerIds
     .asSequence()
-    .filter { it !in memberIds }
+    .filter { it !in memberIds && !busy(it) }
     .map(memberView)
     .sortedBy(PvpRoomMemberView::name)
     .take(PVP_ROOM_MAX_INVITE_CANDIDATES)

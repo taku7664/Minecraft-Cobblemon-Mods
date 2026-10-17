@@ -34,6 +34,8 @@ internal data class PvpRoomClientView(
     val rightPlayer: PvpRoomMemberView?,
     val spectators: List<PvpRoomMemberView>,
     val inviteCandidates: List<PvpRoomMemberView>,
+    /** Candidates already invited who have not come in; the picker marks them instead of offering a second invite. */
+    val invitedIds: Set<UUID> = emptySet(),
 )
 
 internal sealed interface PvpRoomIntent {
@@ -152,7 +154,8 @@ internal data class PvpRoomRejectedPayload(
     }
 }
 
-internal data class PvpRoomInvitePayload(val roomId: UUID, val hostName: String) : CustomPacketPayload {
+/** An invite with the room's rules, so the invited player sees what they would play before answering. */
+internal data class PvpRoomInvitePayload(val roomId: UUID, val hostName: String, val settings: PvpRoomSettings) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<PvpRoomInvitePayload> = TYPE
 
     companion object {
@@ -161,8 +164,9 @@ internal data class PvpRoomInvitePayload(val roomId: UUID, val hostName: String)
             { buffer, payload ->
                 buffer.writeUUID(payload.roomId)
                 buffer.writeRoomString(payload.hostName)
+                buffer.writeSettings(payload.settings)
             },
-            { buffer -> PvpRoomInvitePayload(buffer.readUUID(), buffer.readRoomString()) },
+            { buffer -> PvpRoomInvitePayload(buffer.readUUID(), buffer.readRoomString(), buffer.readSettings()) },
         )
     }
 }
@@ -209,6 +213,9 @@ private fun RegistryFriendlyByteBuf.writeRoom(room: PvpRoomClientView) {
     writeNullableMember(room.rightPlayer)
     writeMemberList(room.spectators, MAX_MEMBERS, "spectator")
     writeMemberList(room.inviteCandidates, PVP_ROOM_MAX_INVITE_CANDIDATES, "invite candidate")
+    val invited = room.invitedIds.filter { id -> room.inviteCandidates.any { it.playerId == id } }
+    writeVarInt(invited.size)
+    invited.forEach(::writeUUID)
 }
 
 private fun RegistryFriendlyByteBuf.readRoom() = PvpRoomClientView(
@@ -220,6 +227,7 @@ private fun RegistryFriendlyByteBuf.readRoom() = PvpRoomClientView(
     rightPlayer = readNullableMember(),
     spectators = readMemberList(MAX_MEMBERS, "spectator"),
     inviteCandidates = readMemberList(PVP_ROOM_MAX_INVITE_CANDIDATES, "invite candidate"),
+    invitedIds = buildSet { repeat(readBoundedCount(PVP_ROOM_MAX_INVITE_CANDIDATES, "invited")) { add(readUUID()) } },
 )
 
 private fun RegistryFriendlyByteBuf.writeSettings(settings: PvpRoomSettings) {
@@ -227,6 +235,8 @@ private fun RegistryFriendlyByteBuf.writeSettings(settings: PvpRoomSettings) {
     writeRoomString(settings.format.recordId)
     writeVarInt(settings.immutableEnabledMechanics.size)
     settings.immutableEnabledMechanics.forEach { writeRoomString(it.id) }
+    writeBoolean(settings.speciesClause)
+    writeBoolean(settings.itemClause)
 }
 
 private fun RegistryFriendlyByteBuf.readSettings(): PvpRoomSettings {
@@ -240,7 +250,7 @@ private fun RegistryFriendlyByteBuf.readSettings(): PvpRoomSettings {
         mechanics += PvpBattleMechanic.entries.singleOrNull { it.id == mechanicId }
             ?: throw IllegalArgumentException("Unsupported PvP mechanic: $mechanicId")
     }
-    return PvpRoomSettings(visibility, format, mechanics)
+    return PvpRoomSettings(visibility, format, mechanics, speciesClause = readBoolean(), itemClause = readBoolean())
 }
 
 private fun RegistryFriendlyByteBuf.writeIntent(intent: PvpRoomIntent) {

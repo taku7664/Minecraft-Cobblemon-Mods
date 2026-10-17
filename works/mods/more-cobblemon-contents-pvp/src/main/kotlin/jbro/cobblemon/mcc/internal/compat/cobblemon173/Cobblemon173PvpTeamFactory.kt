@@ -10,10 +10,17 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerPlayer
 
 internal object Cobblemon173PvpTeamFactory {
-    fun register(player: ServerPlayer, format: PvpBattleFormat): PvpTeamRegistrationResult =
+    fun register(
+        player: ServerPlayer,
+        format: PvpBattleFormat,
+        speciesClause: Boolean = true,
+        itemClause: Boolean = true,
+    ): PvpTeamRegistrationResult =
         PvpTeamRules.register(
             Cobblemon.storage.getParty(player).toList().map(::registration),
             format,
+            speciesClause,
+            itemClause,
         )
 
     fun registration(pokemon: Pokemon): PvpPokemonRegistration {

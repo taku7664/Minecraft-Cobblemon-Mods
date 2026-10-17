@@ -35,6 +35,10 @@ internal data class PvpRoomSettings(
     val visibility: PvpRoomVisibility,
     val format: PvpBattleFormat,
     val enabledMechanics: Set<PvpBattleMechanic>,
+    /** No two registered Pokemon of one species (forms count as one). On by default, as it always was. */
+    val speciesClause: Boolean = true,
+    /** No two registered Pokemon holding the same item. On by default, as it always was. */
+    val itemClause: Boolean = true,
 ) {
     val immutableEnabledMechanics: Set<PvpBattleMechanic> =
         Collections.unmodifiableSet(LinkedHashSet(enabledMechanics))
@@ -48,6 +52,8 @@ internal data class PvpRoomView(
     val leftPlayerId: UUID?,
     val rightPlayerId: UUID?,
     val spectatorIds: List<UUID>,
+    /** Invited players who have not come in (members leave this list). */
+    val invitedIds: Set<UUID> = emptySet(),
 ) {
     val memberIds: Set<UUID>
         get() = buildSet {
@@ -74,6 +80,12 @@ internal enum class PvpRoomError {
     SEAT_OCCUPIED,
     SEATS_INCOMPLETE,
     INVALID_PHASE,
+    /** An invite to someone already in this room. */
+    TARGET_IN_ROOM,
+    /** An invite to someone in another room or match. */
+    TARGET_BUSY,
+    /** An invite to someone no longer online. */
+    TARGET_OFFLINE,
 }
 
 internal sealed interface PvpRoomMutation {
@@ -136,6 +148,9 @@ internal class PvpRoomService(
         val room = rooms[roomId] ?: return rejected(PvpRoomError.UNKNOWN_ROOM)
         if (room.hostId != actorId) return rejected(PvpRoomError.HOST_ONLY)
         if (room.phase == PvpRoomPhase.CLOSED) return rejected(PvpRoomError.INVALID_PHASE)
+        if (targetId in room.members) return rejected(PvpRoomError.TARGET_IN_ROOM)
+        // Someone in another room could not come in anyway; the join would only answer them that they are busy.
+        if (indexedRoomFor(targetId) != null) return rejected(PvpRoomError.TARGET_BUSY)
         room.invited += targetId
         return applied(room)
     }
@@ -329,6 +344,7 @@ internal class PvpRoomService(
             spectatorIds = Collections.unmodifiableList(
                 members.keys.filter { it != leftPlayerId && it != rightPlayerId },
             ),
+            invitedIds = Collections.unmodifiableSet(invited.filterTo(LinkedHashSet()) { it !in members }),
         )
     }
 }

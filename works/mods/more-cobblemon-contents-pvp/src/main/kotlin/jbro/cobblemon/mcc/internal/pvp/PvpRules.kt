@@ -111,17 +111,23 @@ internal sealed interface PvpTeamSelectionResult {
 }
 
 internal object PvpTeamRules {
-    fun register(candidates: List<PvpPokemonRegistration>, format: PvpBattleFormat): PvpTeamRegistrationResult {
+    /** [speciesClause] and [itemClause] are a room's duplicate rules; a challenge outside a room keeps both. */
+    fun register(
+        candidates: List<PvpPokemonRegistration>,
+        format: PvpBattleFormat,
+        speciesClause: Boolean = true,
+        itemClause: Boolean = true,
+    ): PvpTeamRegistrationResult {
         val issues = linkedSetOf<PvpTeamIssue>()
         if (candidates.size !in format.registrationRange) issues += PvpTeamIssue.WRONG_TEAM_SIZE
         if (candidates.map(PvpPokemonRegistration::pokemonId).distinct().size != candidates.size) {
             issues += PvpTeamIssue.DUPLICATE_POKEMON
         }
-        if (candidates.map(PvpPokemonRegistration::speciesId).distinct().size != candidates.size) {
+        if (speciesClause && candidates.map(PvpPokemonRegistration::speciesId).distinct().size != candidates.size) {
             issues += PvpTeamIssue.DUPLICATE_SPECIES
         }
         val heldItems = candidates.mapNotNull(PvpPokemonRegistration::heldItemId)
-        if (heldItems.distinct().size != heldItems.size) issues += PvpTeamIssue.DUPLICATE_HELD_ITEM
+        if (itemClause && heldItems.distinct().size != heldItems.size) issues += PvpTeamIssue.DUPLICATE_HELD_ITEM
         return if (issues.isEmpty()) {
             PvpTeamRegistrationResult.Accepted(PvpRegisteredTeam(format, candidates))
         } else {

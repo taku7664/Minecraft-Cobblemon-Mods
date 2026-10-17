@@ -21,6 +21,8 @@ class PvpRoomPayloadsTest {
     private val host = PvpRoomMemberView(UUID(0, 1), "Host")
     private val guest = PvpRoomMemberView(UUID(0, 2), "Guest")
     private val viewer = PvpRoomMemberView(UUID(0, 3), "Viewer")
+    private val inviteSettings = PvpRoomSettings(PvpRoomVisibility.PRIVATE, PvpBattleFormat.DOUBLE, setOf(PvpBattleMechanic.TERA),
+        speciesClause = false, itemClause = true)
 
     @Test
     fun `room list and room state round trip with active public spectator entry`() {
@@ -92,8 +94,8 @@ class PvpRoomPayloadsTest {
             roundTrip(PvpLoungeSpectatorStatePayload.CODEC, PvpLoungeSpectatorStatePayload(true)),
         )
         assertEquals(
-            PvpRoomInvitePayload(roomId, host.name),
-            roundTrip(PvpRoomInvitePayload.CODEC, PvpRoomInvitePayload(roomId, host.name)),
+            PvpRoomInvitePayload(roomId, host.name, inviteSettings),
+            roundTrip(PvpRoomInvitePayload.CODEC, PvpRoomInvitePayload(roomId, host.name, inviteSettings)),
         )
     }
 
@@ -136,6 +138,27 @@ class PvpRoomPayloadsTest {
         assertThrows<IllegalArgumentException> {
             PvpRoomStatePayload.CODEC.encode(RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY), PvpRoomStatePayload(null, room))
         }
+    }
+
+    @Test
+    fun `a lobby carries its duplicate rules and who is invited but not in yet`() {
+        val room = PvpRoomClientView(roomId, host.playerId, inviteSettings, PvpRoomPhase.LOBBY, host, null, emptyList(),
+            listOf(guest, viewer), invitedIds = setOf(guest.playerId))
+
+        val decoded = roundTrip(PvpRoomStatePayload.CODEC, PvpRoomStatePayload(requestId, room)).room
+
+        assertEquals(room, decoded)
+        assertEquals(false, decoded.settings.speciesClause)
+        assertEquals(true, decoded.settings.itemClause)
+    }
+
+    @Test
+    fun `invite candidates leave out players busy in another room or match`() {
+        val busy = UUID(4, 1)
+        val candidates = pvpInviteCandidates(listOf(host.playerId, guest.playerId, busy), setOf(host.playerId),
+            { id -> PvpRoomMemberView(id, id.toString()) }) { id -> id == busy }
+
+        assertEquals(listOf(guest.playerId), candidates.map(PvpRoomMemberView::playerId))
     }
 
     @Test
