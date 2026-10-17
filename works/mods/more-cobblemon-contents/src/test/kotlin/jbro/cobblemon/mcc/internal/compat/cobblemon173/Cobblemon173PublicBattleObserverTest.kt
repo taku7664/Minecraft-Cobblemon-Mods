@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.battles.ShowdownActionRequest
 import com.cobblemon.mod.common.battles.ShowdownPokemon
 import com.cobblemon.mod.common.battles.ShowdownSide
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
@@ -15,6 +16,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
@@ -27,6 +30,30 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
+    @Test
+    fun `Dynamax use and Gigantamax factor survive switching out and back in`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val actor = publicPokemon(BattleSide.OPPONENT, 0)
+        val replacement = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.VolatileChanged(
+            1, actor, LocalDynamax.GIGANTAMAX_START, true,
+        ))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, replacement))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, actor))
+
+        val board = observer.publicSnapshot()
+        val returned = board.pokemon.single { it.battlePokemonId == actor.battlePokemonId }
+        assertTrue(LocalDynamax.USED in returned.knownVolatileEffectIds)
+        assertTrue(LocalDynamax.GIGANTAMAX in returned.knownVolatileEffectIds)
+        val rebuilt = BattleStateView(
+            UUID.randomUUID(), BattleFormat.SINGLE, 3, board.pokemon, BattleFieldStateView.empty(),
+            BattleSide.entries.associateWith { side -> board.pokemon.count { it.side == side && !it.fainted } },
+            board.events, emptyList(),
+        )
+        assertTrue(LocalDynamax.used(rebuilt, BattleSide.OPPONENT))
+    }
+
     @Test
     fun `Perish Song public countdown replaces the previous number`() {
         val actor = publicPokemon(BattleSide.OPPONENT, 0)

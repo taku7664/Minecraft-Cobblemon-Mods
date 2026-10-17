@@ -98,7 +98,10 @@ internal class Cobblemon173PublicBattleObserver(
                     else -> emptySet()
                 }
                 val durable = pokemon[incoming.battlePokemonId]?.knownVolatileEffectIds.orEmpty()
-                    .filterTo(linkedSetOf()) { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }
+                    .filterTo(linkedSetOf()) {
+                        it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) ||
+                            it == LocalDynamax.USED || it == LocalDynamax.GIGANTAMAX
+                    }
                 val presented = upsert(incoming, refreshPublicIdentity = true)
                 pokemon[presented.battlePokemonId] = presented.copyView(
                     statStages = if (transferMove == "batonpass" && outgoing != null) outgoing.statStages else presented.statStages,
@@ -581,7 +584,9 @@ internal class Cobblemon173PublicBattleObserver(
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
                         knownVolatileEffectIds = current.knownVolatileEffectIds.filterTo(linkedSetOf()) {
-                            it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) },
+                            it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) ||
+                                it == LocalDynamax.USED || it == LocalDynamax.GIGANTAMAX
+                        },
                         knownTypeIds = restoredTypes ?: current.knownTypeIds,
                         knownBaseStabTypeIds = publicTypes.baseStabTypes(id) ?: restoredTypes
                             ?: current.knownBaseStabTypeIds,

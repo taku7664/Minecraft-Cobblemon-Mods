@@ -598,9 +598,6 @@ internal class LocalTacticalBrain(
             )
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
-        val doublesProtectReading = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.DOUBLE) null
-            else doublesProtectTurnAdjustments(baseRanked, difficultyContext, decidingProfile, tuning)
-        doublesProtectReading?.takeIf { it.candidates > 0 }?.let { decisionTrace?.doublesProtect(it) }
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
         val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null
             else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
@@ -627,6 +624,9 @@ internal class LocalTacticalBrain(
         val opponentIntents = baseOpponentIntents.let { intents ->
             if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
         }
+        val doublesProtectReading = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.DOUBLE) null
+            else doublesProtectTurnAdjustments(baseRanked, difficultyContext, decidingProfile, opponentIntents, tuning)
+        doublesProtectReading?.takeIf { it.candidates > 0 }?.let { decisionTrace?.doublesProtect(it) }
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -963,6 +963,7 @@ internal class LocalTacticalBrain(
         ranked: List<LocalBattleActionRank>,
         context: BattleDecisionContext,
         profile: BattleTrainerProfile,
+        intents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent>,
         tuning: LocalDecisionTuning,
     ): jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.DoublesProtectReading {
         val bySlot = linkedMapOf<Int, MutableList<BattleActionCandidate>>()
@@ -990,11 +991,6 @@ internal class LocalTacticalBrain(
             emptyMap(), 0, 0, 0, 0, 0L, "NO_CANDIDATES",
         )
         return try {
-            val intents = LocalOpponentIntentPredictor.predict(
-                context,
-                jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context),
-                scoredSwitches = true,
-            )
             jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.doublesProtectTurns(
                 context, profile.difficulty.tier, candidates, intents, tuning,
             )

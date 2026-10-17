@@ -291,6 +291,10 @@ internal object LocalEngineTurnReadout {
             java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started), status,
         )
         if (protects.isEmpty()) return result(status = "NO_CANDIDATES")
+        val remainingMillis = context.deadlineEpochMillis - System.currentTimeMillis()
+        if (remainingMillis <= 0L) return result(status = "DEADLINE_EXCEEDED")
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(remainingMillis)
+        fun expired(): Boolean = System.nanoTime() >= deadline
         val live = context.showdownState
         val plan = when {
             live != null -> planner.planLive(context, tier)
@@ -304,9 +308,7 @@ internal object LocalEngineTurnReadout {
             )
             return result(status = "PLAN_FAILED")
         }
-        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(
-            (context.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L),
-        )
+        if (expired()) return result(status = "DEADLINE_EXCEEDED")
         val knownOpponentMoves = knownOpponentMoveIdsBySlot(context)
         return LocalEngineStopProbe.lease.withWorker(deadline) { worker ->
             val totals = linkedMapOf<String, Double>()
@@ -315,7 +317,12 @@ internal object LocalEngineTurnReadout {
             var maxReplies = 0
             var branches = 0
             var usedWorlds = 0
+            var timedOut = false
             for (world in plan.worlds) {
+                if (expired()) {
+                    timedOut = true
+                    break
+                }
                 val root = live?.let { worker.createLiveBattle(it, world.definition) } ?: worker.createBattle(world.definition)
                 val ally = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root, allowedMechanics = emptySet())
                 val mapping = NativeRootActionMatcher.match(BattleFormat.DOUBLE, protects, ally).productToNative
@@ -333,19 +340,43 @@ internal object LocalEngineTurnReadout {
                 val source = world.publicContext
                 val cache = LocalProjectedActionCalculationCache()
                 for (protect in protects) {
+                    if (expired()) {
+                        timedOut = true
+                        break
+                    }
                     val action = mapping[protect.actionId] ?: continue
                     val protecting = protect.componentActions.singleOrNull(::isProtectComponent) ?: continue
                     val waiting = withPass(action, requireNotNull(protecting.actorSlot)) ?: continue
                     val perReply = mutableListOf<Double>()
                     var complete = true
                     for ((reply, _) in picked) {
+                        if (expired()) {
+                            complete = false
+                            timedOut = true
+                            break
+                        }
                         var total = 0.0
                         for (seed in seedStart until seedStart + seedCount) {
+                            if (expired()) {
+                                complete = false
+                                timedOut = true
+                                break
+                            }
                             val playedRoot = if (seed == 0) root else worker.reseed(root.snapshotJson, seed)
                             val passedRoot = if (seed == 0) root else worker.reseed(root.snapshotJson, seed)
                             val delta = runCatching {
                                 val played = play(worker, playedRoot, action, reply, source.state).second
+                                if (expired()) {
+                                    complete = false
+                                    timedOut = true
+                                    return@runCatching 0.0
+                                }
                                 val passed = play(worker, passedRoot, waiting, reply, source.state).second
+                                if (expired()) {
+                                    complete = false
+                                    timedOut = true
+                                    return@runCatching 0.0
+                                }
                                 turnScore(played, source, cache, tuning) - turnScore(passed, source, cache, tuning)
                             }.getOrElse {
                                 complete = false
@@ -372,11 +403,15 @@ internal object LocalEngineTurnReadout {
             }
             val values = totals.mapNotNull { (id, total) ->
                 if (completedWorlds[id] != usedWorlds || usedWorlds != plan.worlds.size) null
-                else id to total / weights.getValue(id)
+                else id to tuning.board(total / weights.getValue(id))
             }.toMap()
             result(
                 values, usedWorlds, maxReplies, branches,
-                if (values.isEmpty()) "NO_COMPLETE_VALUE" else "SUCCESS",
+                when {
+                    timedOut -> "DEADLINE_EXCEEDED"
+                    values.isEmpty() -> "NO_COMPLETE_VALUE"
+                    else -> "SUCCESS"
+                },
             )
         } ?: result(status = "WORKER_UNAVAILABLE")
     }

@@ -67,6 +67,41 @@ class LocalDoublesProtectTurnReadoutTest {
         assertEquals(credit, mergeDoublesProtectCredits(credit, result.values))
     }
 
+    @Test
+    fun `a doubles Protect engine value uses the same score units as singles`() {
+        val context = context(listOf("tackle", "swordsdance"))
+        val intents = intents(context, listOf("tackle", "swordsdance"), listOf(IntentKind.ATTACK, IntentKind.SETUP))
+        val boardTuning = LocalDecisionTuning.CURRENT.copy(boardToScore = 1.0)
+        val boardValue = LocalEngineTurnReadout.doublesProtectTurns(
+            context, BattleTrainerTier.BOSS, context.candidates, intents, boardTuning, seedCount = 1,
+        ).values.getValue(JOINT_ID)
+        val scoreValue = LocalEngineTurnReadout.doublesProtectTurns(
+            context, BattleTrainerTier.BOSS, context.candidates, intents, LocalDecisionTuning.CURRENT, seedCount = 1,
+        ).values.getValue(JOINT_ID)
+
+        assertEquals(LocalDecisionTuning.CURRENT.board(boardValue), scoreValue, 1.0e-9)
+    }
+
+    @Test
+    fun `an expired doubles readout emits no value and keeps Protect credit`() {
+        val context = context(listOf("tackle", "swordsdance")).copy(deadlineEpochMillis = System.currentTimeMillis() - 1L)
+        val result = LocalEngineTurnReadout.doublesProtectTurns(
+            context,
+            BattleTrainerTier.BOSS,
+            context.candidates,
+            intents(context, listOf("tackle", "swordsdance"), listOf(IntentKind.ATTACK, IntentKind.SETUP)),
+            LocalDecisionTuning.CURRENT,
+            seedCount = 1,
+        )
+        val credit = mapOf(JOINT_ID to 17.25)
+
+        assertEquals("DEADLINE_EXCEEDED", result.status)
+        assertTrue(result.values.isEmpty())
+        assertEquals(0, result.worlds)
+        assertEquals(0, result.branches)
+        assertEquals(credit, mergeDoublesProtectCredits(credit, result.values))
+    }
+
     private fun reading(moves: List<String>, kinds: List<IntentKind>): LocalEngineTurnReadout.DoublesProtectReading {
         val context = context(moves)
         return LocalEngineTurnReadout.doublesProtectTurns(
