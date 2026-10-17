@@ -200,7 +200,7 @@ internal object PublicBattleTacticalCalculator {
         // Damage set by the HP on the board: half the target's (Super Fang, Ruination, Nature's Madness), the gap
         // down to the user's (Endeavor), the user's own (Final Gambit). All public.
         when (PublicIds.canonical(candidate.moveId.orEmpty())) {
-            "superfang", "ruination", "naturesmadness" -> return listOf((targetHp / 2.0).coerceAtLeast(1.0 / maxHp.maximum))
+            in HALF_TARGET_HP_MOVES -> return listOf((targetHp / 2.0).coerceAtLeast(1.0 / maxHp.maximum))
             "endeavor" -> {
                 val actorHp = actor?.combatStats?.maxHp?.let { it.minimum * actor.hpFraction } ?: return null
                 val gap = (targetHp * maxHp.minimum - actorHp).coerceAtLeast(0.0)
@@ -670,6 +670,11 @@ internal object PublicBattleTacticalCalculator {
 
     /** Gen 9 reduces a spread move to 0.75x when it actually lands on more than one target. */
     private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
+
+    private val HALF_TARGET_HP_MOVES = setOf("superfang", "ruination", "naturesmadness")
+
+    /** Moves whose damage is set by the target's HP at the time they land, so two of them do not add up. */
+    val TARGET_HP_SET_MOVES: Set<String> = HALF_TARGET_HP_MOVES + "endeavor"
     private val HP_SET_DAMAGE_MOVES = setOf("superfang", "ruination", "naturesmadness", "endeavor", "finalgambit")
 
     private val DAMAGE_TARGET_PATTERNS = setOf(

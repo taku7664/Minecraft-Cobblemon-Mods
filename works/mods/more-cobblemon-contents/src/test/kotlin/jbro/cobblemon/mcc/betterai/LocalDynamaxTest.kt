@@ -259,8 +259,8 @@ class LocalDynamaxTest {
 
     @Test
     fun `two hits that each leave the user standing knock it out together`() {
-        fun hit(low: Double, high: Double, accuracy: Double = 1.0, aim: Double = 1.0) = LocalDynamaxGuard.IncomingHit(
-            MoveMatchupScore(UUID.randomUUID(), "probe", UUID.randomUUID(), accuracy, low, high,
+        fun hit(low: Double, high: Double, accuracy: Double = 1.0, aim: Double = 1.0, move: String = "probe") = LocalDynamaxGuard.IncomingHit(
+            MoveMatchupScore(UUID.randomUUID(), move, UUID.randomUUID(), accuracy, low, high,
                 listOf(1.0, 1.0), listOf(0.0, (low + high) / 2.0), 2.0, 0.5),
             incomingProbability = 1.0, targetProbability = aim,
         )
@@ -271,6 +271,8 @@ class LocalDynamaxTest {
         // Only when both land and both aim at it: 90% accuracy and a 50% aim each.
         assertEquals(0.9 * 0.5 * 0.9 * 0.5, LocalDynamaxGuard.knockout(
             listOf(hit(0.40, 0.50, 0.9, 0.5), hit(0.30, 0.36, 0.9, 0.5)), 0.54), 1e-9)
+        // Two Super Fangs on a full-HP user: half, then half of what is left. It stands.
+        assertEquals(0.0, LocalDynamaxGuard.knockout(listOf(hit(0.5, 0.5, move = "superfang"), hit(0.5, 0.5, move = "superfang")), 1.0), 1e-9)
         // Too little together: nothing.
         assertEquals(0.0, LocalDynamaxGuard.knockout(listOf(hit(0.10, 0.12), hit(0.10, 0.12)), 0.54), 1e-9)
     }

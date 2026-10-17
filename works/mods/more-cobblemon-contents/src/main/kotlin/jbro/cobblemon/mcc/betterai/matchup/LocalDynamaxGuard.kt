@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
@@ -123,6 +124,11 @@ internal object LocalDynamaxGuard {
         fun lands(hit: IncomingHit) = (hit.incomingProbability * hit.targetProbability * hit.move.accuracy).coerceIn(0.0, 1.0)
         fun knocksOutOnLanding(hit: IncomingHit) =
             if (hit.move.accuracy <= 0.0) 0.0 else (hit.move.knockoutChanceWithin(1) / hit.move.accuracy).coerceIn(0.0, 1.0)
+        // Super Fang and the like take a share of what is left, and Endeavor brings it down to its user's HP: what a
+        // second hit does depends on the first, so a pair holding one adds nothing to the singles here.
+        if (hits.any { PublicIds.canonical(it.move.moveId) in PublicBattleTacticalCalculator.TARGET_HP_SET_MOVES }) {
+            return hits.maxOf(::alone)
+        }
         val a = lands(first)
         val b = lands(second)
         val bothStanding = minOf(
