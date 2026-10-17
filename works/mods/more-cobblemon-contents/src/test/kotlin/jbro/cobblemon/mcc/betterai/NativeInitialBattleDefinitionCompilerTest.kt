@@ -28,9 +28,11 @@ import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentMoveSetHypothesis
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentMoveSlotHypothesis
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonBuildHypothesis
 import jbro.cobblemon.mcc.betterai.simulation.NativePublicPokemonIdentity
+import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeInitialBattleDefinitionCompilerTest {
@@ -202,6 +204,32 @@ class NativeInitialBattleDefinitionCompilerTest {
             setOf(NativeBattleDefinitionIssueCode.PUBLIC_STATE_NOT_INITIAL),
             result.issues.mapTo(linkedSetOf()) { it.code },
         )
+    }
+
+    @Test
+    fun `either public Dynamax active is rebuilt with doubled health and public turns`() {
+        fun compile(dynamaxedSide: BattleSide?) = requireNotNull(NativeInitialBattleDefinitionCompiler.compile(
+            state = state(
+                allyHp = 0.5,
+                allyVolatiles = if (dynamaxedSide == BattleSide.ALLY) setOf("dynamax", "dynamaxturns:2", "gigantamax") else emptySet(),
+                opponentVolatiles = if (dynamaxedSide == BattleSide.OPPONENT) setOf("dynamax", "dynamaxturns:2", "gigantamax") else emptySet(),
+            ),
+            catalog = catalog(), identities = identities(), world = world(), seed = SEED, midBattle = true,
+        ).definition)
+        val worker = EngineBranchWorker()
+        val ordinary = worker.createBattle(compile(null))
+
+        listOf(BattleSide.ALLY to ALLY.toString(), BattleSide.OPPONENT to OPPONENT.toString()).forEach { (side, id) ->
+            val root = worker.createBattle(compile(side))
+            val normal = (ordinary.p1Team + ordinary.p2Team).single { it.uuid == id }
+            val active = (root.p1Team + root.p2Team).single { it.uuid == id }
+            assertEquals(normal.maxHp * 2, active.maxHp)
+            if (side == BattleSide.ALLY) assertEquals(normal.hp * 2, active.hp)
+            else assertEquals(normal.hp.toDouble() / normal.maxHp, active.hp.toDouble() / active.maxHp, 0.01)
+            assertTrue("dynamax" in active.volatiles)
+            assertEquals(2, active.volatileTurns["dynamax"])
+            assertTrue(active.gigantamax)
+        }
     }
 
     @Test
@@ -414,6 +442,8 @@ class NativeInitialBattleDefinitionCompilerTest {
         opponentAbility: String? = null,
         opponentItem: String? = null,
         opponentKnownMoves: Set<String> = emptySet(),
+        allyVolatiles: Set<String> = emptySet(),
+        opponentVolatiles: Set<String> = emptySet(),
         events: List<BattleObservedEventView> = emptyList(),
     ) = BattleStateView(
         battleId = BATTLE,
@@ -430,6 +460,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 ability = "static",
                 item = null,
                 stats = BattleCombatStatRangesView.exact(110, 75, 60, 70, 70, 110),
+                volatiles = allyVolatiles,
             ),
             pokemon(
                 id = OPPONENT,
@@ -441,6 +472,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 item = opponentItem,
                 stats = null,
                 knownMoves = opponentKnownMoves,
+                volatiles = opponentVolatiles,
             ),
         ),
         field = BattleFieldStateView.empty(),
@@ -460,6 +492,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         item: String?,
         stats: BattleCombatStatRangesView?,
         knownMoves: Set<String> = emptySet(),
+        volatiles: Set<String> = emptySet(),
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -476,6 +509,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         fainted = false,
         knownTypeIds = emptySet(),
         combatStats = stats,
+        knownVolatileEffectIds = volatiles,
     )
 
     private fun catalog(

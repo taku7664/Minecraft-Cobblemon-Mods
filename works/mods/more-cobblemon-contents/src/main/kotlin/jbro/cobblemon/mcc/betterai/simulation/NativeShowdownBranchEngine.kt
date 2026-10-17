@@ -475,6 +475,8 @@ internal data class NativePokemonSituation(
     val forme: String? = null,
     /** Whether this active Pokemon is confused; how many turns are left is not public. */
     val confused: Boolean = false,
+    /** Public turns left in an active Dynamax; null when this Pokemon is not Dynamaxed. */
+    val dynamaxTurns: Int? = null,
     /** It shows its Mega forme: it evolves from its set's species, and its side has spent its Mega Evolution. */
     val megaEvolved: Boolean = false,
     /** Protections in a row that worked up to last turn: the next one succeeds one time in 3^n. */
@@ -484,6 +486,7 @@ internal data class NativePokemonSituation(
         UUID.fromString(uuid)
         require(hpFraction in 0.0..1.0)
         require(hp == null || hp >= 0)
+        require(dynamaxTurns == null || dynamaxTurns in 1..jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION)
     }
 }
 
@@ -500,6 +503,8 @@ internal data class NativePokemonSet(
     val level: Int = 50,
     val evs: Map<String, Int> = ZERO_EVS,
     val ivs: Map<String, Int> = PERFECT_IVS,
+    /** The publicly known Gigantamax factor, used by the engine's native Dynamax effect. */
+    val gigantamax: Boolean = false,
 ) {
     init {
         require(name.isNotBlank() && species.isNotBlank() && ability.isNotBlank() && uuid.isNotBlank())
@@ -613,6 +618,9 @@ internal data class NativePokemonFrame(
     val types: List<String>,
     val boosts: Map<String, Int>,
     val volatiles: List<String>,
+    /** Remaining public turns for rebuilt volatiles whose engine counter counts elapsed turns. */
+    val volatileTurns: Map<String, Int> = emptyMap(),
+    val gigantamax: Boolean = false,
     val moves: List<NativeMoveFrame>,
     val activeSlot: Int?,
     val level: Int = 50,

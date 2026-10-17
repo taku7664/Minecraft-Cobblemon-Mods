@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
@@ -21,7 +22,9 @@ internal object NativeMidBattleStateRules {
             val actives = state.pokemon.filter { it.side == side && it.activeSlot != null && !it.fainted }
             if (actives.size != 1 || actives.single().activeSlot != 0) return "ACTIVE_NOT_READY:${side.name}"
             val active = actives.single()
-            active.knownVolatileEffectIds.firstOrNull { !isBetterAiMarker(it) && PublicIds.canonical(it) !in REBUILT_VOLATILES }
+            active.knownVolatileEffectIds.firstOrNull {
+                !isBetterAiMarker(it) && !isDynamaxMarker(it) && PublicIds.canonical(it) !in REBUILT_VOLATILES
+            }
                 ?.let { return "VOLATILE:" + PublicIds.canonical(it) }
             val constraints = active.actionConstraints
             if (constraints.taunted || constraints.mustRecharge || constraints.encoreMoveId != null) {
@@ -31,5 +34,6 @@ internal object NativeMidBattleStateRules {
         return null
     }
 
-    private val REBUILT_VOLATILES = setOf("confusion")
+    private val REBUILT_VOLATILES = setOf("confusion", "dynamax")
+    private fun isDynamaxMarker(id: String): Boolean = id.startsWith(LocalDynamax.TURNS) || id == LocalDynamax.GIGANTAMAX
 }

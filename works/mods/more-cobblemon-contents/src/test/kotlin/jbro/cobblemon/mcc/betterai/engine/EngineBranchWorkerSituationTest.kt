@@ -89,6 +89,36 @@ class EngineBranchWorkerSituationTest {
     }
 
     @Test
+    fun `either public active is rebuilt with its Dynamax health turns and spent side`() {
+        val worker = EngineBranchWorker()
+        val ordinary = worker.createBattle(definition)
+        listOf(BattleSide.ALLY to uuid(1), BattleSide.OPPONENT to uuid(3)).forEach { (side, id) ->
+            val rebuilt = definition.copy(
+                p1Team = definition.p1Team.map { if (it.uuid == id) it.copy(gigantamax = true) else it },
+                p2Team = definition.p2Team.map { if (it.uuid == id) it.copy(gigantamax = true) else it },
+                situation = definition.situation!!.copy(pokemon = definition.situation!!.pokemon.map {
+                    if (it.uuid != id) it else it.copy(
+                        hp = it.hp?.times(2),
+                        dynamaxTurns = 2,
+                    )
+                }),
+            )
+            val root = worker.createBattle(rebuilt)
+            val normal = (ordinary.p1Team + ordinary.p2Team).single { it.uuid == id }
+            val active = (root.p1Team + root.p2Team).single { it.uuid == id }
+
+            assertEquals(normal.maxHp * 2, active.maxHp)
+            if (side == BattleSide.ALLY) assertEquals(normal.hp * 2, active.hp)
+            else assertEquals(NativeShowdownPublicHp.fraction(normal.hp, normal.maxHp),
+                NativeShowdownPublicHp.fraction(active.hp, active.maxHp))
+            assertTrue("dynamax" in active.volatiles)
+            assertEquals(2, active.volatileTurns["dynamax"])
+            assertTrue(active.gigantamax)
+            assertTrue(NativeShowdownRequestActionFactory.actions(side, root).none { it.mechanic != null })
+        }
+    }
+
+    @Test
     fun `a Mega Evolved Pokemon is rebuilt in its Mega forme and its side cannot Mega Evolve again`() {
         val worker = EngineBranchWorker()
         val stone = definition.copy(p1Team = definition.p1Team.map { if (it.uuid == uuid(1)) it.copy(item = "Garchompite") else it })

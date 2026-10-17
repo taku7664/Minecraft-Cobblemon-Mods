@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
@@ -236,6 +237,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                     level = level,
                     evs = build.evs,
                     ivs = build.ivs,
+                    gigantamax = LocalDynamax.gigantamax(pokemon),
                 )
             }
         }
@@ -275,11 +277,12 @@ internal object NativeInitialBattleDefinitionCompiler {
             val active = pokemon.activeSlot != null && !pokemon.fainted
             val choiceItem = normalizedNativeId(item ?: sets.getValue(id).item) in CHOICE_ITEMS
             val exactMaxHp = pokemon.combatStats?.maxHp?.takeIf { ally && it.minimum == it.maximum }?.minimum
+            val dynamaxed = active && LocalDynamax.active(pokemon)
             NativePokemonSituation(
                 uuid = id.toString(),
                 hp = when {
                     pokemon.fainted -> 0
-                    exactMaxHp != null -> Math.round(pokemon.hpFraction * exactMaxHp).toInt()
+                    exactMaxHp != null -> Math.round(pokemon.hpFraction * exactMaxHp * if (dynamaxed) 2 else 1).toInt()
                     else -> null
                 },
                 hpFraction = if (pokemon.fainted) 0.0 else pokemon.hpFraction,
@@ -299,6 +302,9 @@ internal object NativeInitialBattleDefinitionCompiler {
                 movedSinceSwitchIn = active && sinceSwitchIn.isNotEmpty(),
                 forme = NativeInBattleFormes.inBattleForme(pokemon.speciesId),
                 confused = active && pokemon.knownVolatileEffectIds.any { normalizedNativeId(it) == "confusion" },
+                dynamaxTurns = if (!dynamaxed) null else pokemon.knownVolatileEffectIds.firstNotNullOfOrNull { effect ->
+                    effect.takeIf { it.startsWith(LocalDynamax.TURNS) }?.removePrefix(LocalDynamax.TURNS)?.toIntOrNull()
+                } ?: LocalDynamax.DURATION,
                 megaEvolved = normalizedNativeId(pokemon.formId.orEmpty()).startsWith("mega"),
                 stallSuccesses = if (!active) 0 else
                     jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(state, pokemon.side, pokemon.activeSlot),

@@ -22,6 +22,7 @@ import jbro.cobblemon.mcc.betterai.engine.sim.Side
 import jbro.cobblemon.mcc.betterai.engine.sim.activeMove
 import jbro.cobblemon.mcc.betterai.engine.sim.fork
 import jbro.cobblemon.mcc.betterai.engine.sim.forkLogging
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 
 /**
  * The native search's branch worker, played on the Kotlin AI engine instead of Showdown in GraalJS.
@@ -333,6 +334,13 @@ internal class EngineBranchWorker(
                 pokemon.canMegaEvo?.let { mega -> pokemon.formeChange(mega, pokemon.getItem(), true) }
                 for (ally in pokemon.side.pokemon) ally.canMegaEvo = null
             }
+            state.dynamaxTurns?.let { remaining ->
+                pokemon.addVolatile(LocalDynamax.VOLATILE)
+                pokemon.volatiles.getValue(LocalDynamax.VOLATILE)["turns"] = LocalDynamax.DURATION - remaining
+                pokemon.side.dynamaxUsed = true
+                pokemon.side.allySide?.dynamaxUsed = true
+                pokemon.canTerastallize = null
+            }
             val hp = state.hp?.coerceAtMost(pokemon.maxhp) ?: publicHp(state.hpFraction, pokemon.maxhp)
             if (hp == 0) {
                 require(!pokemon.isActive) { "A fainted Pokemon cannot lead a rebuilt position" }
@@ -622,6 +630,7 @@ internal class EngineBranchWorker(
             evs = native.evs.toMutableMap(), ivs = native.ivs.toMutableMap(), moves = native.moves,
             // The bridge gives every move its base PP, without PP Ups, like Cobblemon's own movesInfo.
             movesInfo = moveData.map { intArrayOf(it.pp, it.pp) }, teraType = native.teraType, uuid = native.uuid,
+            gigantamax = native.gigantamax,
             currentHealth = opening?.hp, status = opening?.status?.takeIf { it.isNotEmpty() },
             statusDuration = if (opening != null) -1 else null,
         )
@@ -830,6 +839,10 @@ internal class EngineBranchWorker(
         types = p.getTypes(),
         boosts = LinkedHashMap(p.boosts),
         volatiles = p.volatiles.keys.sorted(),
+        volatileTurns = p.volatiles.mapNotNull { (id, state) ->
+            if (id == LocalDynamax.VOLATILE) id to (LocalDynamax.DURATION - state.int("turns")) else null
+        }.toMap(),
+        gigantamax = p.gigantamax,
         moves = p.moveSlots.map { NativeMoveFrame(it.id, it.pp, it.maxpp, Js.truthy(it.disabled)) },
         activeSlot = activeSlot,
         level = p.level,
@@ -1095,4 +1108,3 @@ internal class EngineBranchWorker(
 
 private const val STEPS_KEY = "\"steps\":["
 private const val EMPTY_STEPS_END = "\"steps\":[]}"
-
