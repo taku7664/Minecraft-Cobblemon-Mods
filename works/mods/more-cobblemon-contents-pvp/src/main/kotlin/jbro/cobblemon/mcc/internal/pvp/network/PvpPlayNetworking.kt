@@ -374,7 +374,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
     /**
      * Resends each lobby whose invite list changed since it was last sent here: a candidate created, joined or left a
-     * room, or a challenge began or ended. A room seen for the first time is only recorded; its own push carried it.
+     * room, or a challenge began or ended. A room seen for the first time is sent once too, since something may have
+     * changed between its own push and this check.
      */
     private fun refreshChangedLobbyInvites() {
         val lobbies = rooms.all().filter { it.phase == jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase.LOBBY }
@@ -383,7 +384,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             val view = clientView(room)
             val signature = (view.inviteCandidates.map(PvpRoomMemberView::playerId) to view.invitedIds).hashCode()
             val previous = lobbyInviteSignatures.put(room.roomId, signature)
-            if (previous != null && previous != signature) pushRoomToMembers(room, null)
+            if (previous != signature) pushRoomToMembers(room, null)
         }
     }
 
