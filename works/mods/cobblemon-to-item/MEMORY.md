@@ -1,5 +1,13 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-18 02:23] PC 교환 뒤 아이템 복원을 막던 UUID 캐시 오판 수정 (0.1.4, 단위 검증)
+
+- **원인 재현:** Cobblemon 1.8.1의 `SwapPCPartyPokemonHandler` 순서대로 실제 `PartyStore`·`PCStore`를 교환한 다음 PC에서 꺼낸 포켓몬을 파티에서 제거하면, PC 실제 슬롯에는 없지만 `pc[uuid]`에는 원래 개체가 남는다. VPS 설치본의 `PokemonStore`·교환 핸들러 클래스 해시는 확인한 의존 JAR과 동일했다. 신고 개체의 교환 이력 자체는 미확인이다.
+- **구현:** 우클릭·인벤토리 Shift 복원·사이드바 커서 교환의 중복 여부를 `StoredPokemonLookup`으로 실제 파티·PC 슬롯을 순회해 판정한다. 복원 성공 확인과 실패 시 원복 대상도 UUID 캐시 대신 이번에 삽입한 슬롯과 객체를 확인한다. 실제 같은 UUID가 있는 개체는 계속 차단하며, 일반 합성·복원은 UUID를 유지한다. 사용법·기존 한영 오류 문구·설정 항목은 그대로이고 README의 중복 확인 기준을 보완했다.
+- **검증:** 실제 Cobblemon 저장소로 캐시 잔존을 재현하는 회귀 검사, 인덱스에는 없지만 PC 슬롯에 있는 실제 중복 차단, 파티의 실제 중복 차단/동종 다른 UUID 허용을 추가했다. `:cobblemon-to-item:unitTest` 21/21 성공. Gradle 사용자 홈·프로젝트 캐시·모든 모듈 build 출력·JVM/TEMP/TMP·JavaExec 작업 폴더는 F 경로이며 검증 로그는 `F:/AI/builds/to-item-68c5/unit-test-verified.log`이다.
+- **실행 준비 기록:** 첫 전체 구성 빌드는 대상 외 모듈 리맵을 수행해 이 작업의 Gradle 프로세스만 취소했다. 대상 모듈 한정 구성에서 미평가 모듈 build 경로 검사가 중단시킨 뒤 `projectsLoaded`에서 모든 출력 경로를 F로 지정해 위 검증을 통과했다.
+- **범위·남은 작업:** 사용자 지시로 VPS는 별도 기록의 망키 아이템 UUID 수동 교체만 했고 모드·설정·서버 기동 상태는 바꾸지 않았다. 이 항목 시점에는 main 반영·배포 JAR 빌드·개발 클라이언트 교체가 남아 있다. 실제 게임 복원은 미확인이다.
+
 ## [2026-10-14 09:25] 툴팁 성별 수정 개발 서버·클라이언트 배포 (실게임 미확인)
 
 - **빌드:** main `25ddceac` 소스로 F 경로(`F:/AI/builds/cobblemon-mods-main`, init 스크립트로 build 출력 이동)에서 `:cobblemon-to-item:remapJar` 성공. `unitTest` 18/18 통과(`test` 태스크는 비활성이라 `unitTest`로 돌려야 한다). JAR CRC 정상, `savedGender` 포함 확인. 버전은 0.1.3 그대로.
