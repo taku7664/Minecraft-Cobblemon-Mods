@@ -90,28 +90,25 @@ internal class TowerOpponentSelector(
             return TowerOpponentSelectionResult.Selected(profile, Collections.unmodifiableList(ArrayList(team)))
         }
         // The trainer answers the challenger's legendaries group for group; the rest of the team is regular.
-        // The legendaries answering the challenger, drawn a few ways in a Mega battle (a stone wanted, a stone left to a
-        // later group, no preference) so each stone rule below can find a draw that fits it. Full counts come first.
-        val legendaryDraws = if (!legendaryClassAllowed) listOf(emptyList()) else {
-            val pool = catalog.setsFor(profile)
-            val preferences = if (mechanic == MajorBattleMechanic.MEGA) StonePreference.entries else listOf(StonePreference.NONE)
-            preferences.map { drawLegendaries(pool, challengerLegendaries, it) }.distinct()
-                .sortedByDescending { it.size == challengerLegendaries.total }
-        }
+        val legendaries = if (legendaryClassAllowed) drawLegendaries(catalog.setsFor(profile), challengerLegendaries) else emptyList()
         val completePool = catalog.setsFor(profile).filter(::isNormal)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
         // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
         // signature or style anchor, so fall back to the complete pool instead of reporting no legal team.
-        // A Mega trainer brings one Mega Stone and battle items on everyone else, failing that no stone. A pool with
-        // stone sets only (a data pack without companions) still fields a team rather than no battle at all.
-        val stoneRules = if (mechanic == MajorBattleMechanic.MEGA) listOf(1..1, 0..1, null) else listOf(null)
+        // A Mega trainer brings one Mega Stone and battle items on everyone else, failing that no stone. Legendaries
+        // answering the challenger always come, and the rest of the team adds no stone to the ones they hold. A pool
+        // with stone sets only (a data pack without companions) still fields a team rather than no battle at all.
+        val legendaryStones = legendaries.count { it.heldItemId.isTowerMegaStone() }
+        val stoneRules = when {
+            mechanic != MajorBattleMechanic.MEGA -> listOf(null)
+            legendaryStones > 0 -> listOf(legendaryStones..legendaryStones, null)
+            else -> listOf(1..1, 0..1, null)
+        }
         // The legendaries the challenger is answered with come before the stone rule: every rule is tried with them
         // before any team goes without them.
         val team = stoneRules.firstNotNullOfOrNull { stones ->
-            legendaryDraws.firstNotNullOfOrNull { legendaries ->
-                selectStyledTeamFrom(profile, freshPool, teamSize, legendaries, stones)
-                    ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries, stones)
-            }
+            selectStyledTeamFrom(profile, freshPool, teamSize, legendaries, stones)
+                ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries, stones)
         } ?: stoneRules.firstNotNullOfOrNull { stones ->
             selectStyledTeamFrom(profile, completePool, teamSize, megaStones = stones)
         } ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
@@ -179,30 +176,15 @@ internal class TowerOpponentSelector(
      * One random set of each group the challenger brought, of different species and held items. Species are drawn
      * first, so a species with several sets (Mewtwo's X and Y) comes up no more often than one with a single set.
      */
-    /** How a Mega battle's legendary draw treats Mega Stone sets: never more than one, and here which way it leans. */
-    private enum class StonePreference { NONE, WANT_ONE, AVOID }
-
-    private fun drawLegendaries(
-        pool: List<TowerPokemonSet>,
-        count: TowerLegendaryCount,
-        preference: StonePreference = StonePreference.NONE,
-    ): List<TowerPokemonSet> {
+    private fun drawLegendaries(pool: List<TowerPokemonSet>, count: TowerLegendaryCount): List<TowerPokemonSet> {
         val drawn = ArrayList<TowerPokemonSet>()
         listOf(TowerLegendaryGroup.LEGENDARY to count.legendary, TowerLegendaryGroup.OTHER to count.other).forEach { (group, wanted) ->
             val bySpecies = pool.filter { TowerLegendaryClassPolicy.group(it.speciesId) == group }.groupBy(TowerPokemonSet::speciesId)
             var taken = 0
             for (species in bySpecies.keys.toMutableList().also(::shuffleAny)) {
                 if (taken == wanted) break
-                val free = bySpecies.getValue(species)
+                val sets = bySpecies.getValue(species)
                     .filter { set -> set.heldItemId == null || drawn.none { it.heldItemId == set.heldItemId } }
-                // A second legendary with a stone could never use it.
-                val (stones, others) = free.partition { it.heldItemId.isTowerMegaStone() }
-                val stoneFree = drawn.none { it.heldItemId.isTowerMegaStone() }
-                val sets = when (preference) {
-                    StonePreference.NONE -> free
-                    StonePreference.WANT_ONE -> stones.takeIf { stoneFree && it.isNotEmpty() } ?: others
-                    StonePreference.AVOID -> others.ifEmpty { stones.takeIf { stoneFree }.orEmpty() }
-                }
                 if (sets.isEmpty()) continue
                 drawn += sets[random.nextInt(sets.size)]
                 taken++
