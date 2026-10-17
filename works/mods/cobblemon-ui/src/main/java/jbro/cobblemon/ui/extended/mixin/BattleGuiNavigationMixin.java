@@ -1,5 +1,8 @@
 package jbro.cobblemon.ui.extended.mixin;
 
+import com.cobblemon.mod.common.battles.MoveActionResponse;
+import com.cobblemon.mod.common.battles.ShowdownActionResponse;
+import com.cobblemon.mod.common.client.battle.SingleActionRequest;
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection;
@@ -16,6 +19,7 @@ import jbro.cobblemon.ui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.ui.extended.navigation.BattleCommandLayout;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.ui.extended.navigation.ForfeitSelectionAccess;
+import jbro.cobblemon.ui.extended.state.LastMoveMemory;
 import jbro.cobblemon.ui.navigation.ActionSubmissionGate;
 import jbro.cobblemon.ui.navigation.BattleMenuNavigator;
 import jbro.cobblemon.ui.navigation.FocusOwnership;
@@ -95,6 +99,20 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
 
     @Shadow
     public abstract BattleActionSelection getCurrentActionSelection();
+
+    /** Whichever way a move was chosen, by key or by click, it is the one that Pokemon's move menu opens on next turn. */
+    @Inject(method = "selectAction", at = @At("HEAD"))
+    private void cobblemonBattleUi$rememberChosenMove(SingleActionRequest request, ShowdownActionResponse response,
+            CallbackInfo ci) {
+        // Cobblemon ignores a choice with no battle or once this request has its answer; so does the memory.
+        if (com.cobblemon.mod.common.client.CobblemonClient.INSTANCE.getBattle() == null || request.getResponse() != null) {
+            return;
+        }
+        if (response instanceof MoveActionResponse move && request.getActivePokemon() != null
+                && request.getActivePokemon().getBattlePokemon() != null) {
+            LastMoveMemory.record(request.getActivePokemon().getBattlePokemon().getUuid(), move.getMoveName());
+        }
+    }
 
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true, remap = true)
     private void cobblemonBattleUi$blockCharactersBehindTranscript(char character, int modifiers,
@@ -212,10 +230,11 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         if (navigationKey) {
             KeyboardTileFocus.useKeyboard();
         }
-        // A confirm key held down since before the menu appeared (advancing the last line) repeats into it: the menu
-        // waits for it to be let go and pressed again.
+        // A confirm key held down since before the menu appeared (advancing the last line) repeats into it, and so
+        // does one held on after choosing in the menu before (Fight, then the move menu opens): each physical press
+        // chooses once, and a menu waits for the key to be let go and pressed again.
         if (CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)
-                && !jbro.cobblemon.ui.extended.BattleConfirmGate.getPressedForMenu()) {
+                && !jbro.cobblemon.ui.extended.BattleConfirmGate.consumeMenuPress()) {
             return true;
         }
 
@@ -377,11 +396,10 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
         if (cobblemonBattleUi$gridSelection != selection) {
             cobblemonBattleUi$gridSelection = selection;
-            cobblemonBattleUi$gridIndex = -1;
             cobblemonBattleUi$gimmickColumn = false;
             cobblemonBattleUi$lastMoveIndex = -1;
             cobblemonBattleUi$lastMoveId = null;
-            KeyboardTileFocus.clear();
+            cobblemonBattleUi$takeOpeningFocus(tiles);
         }
 
         List<Boolean> enabledMoves = tiles.stream()
@@ -482,9 +500,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                     Minecraft.getInstance().getWindow().getGuiScaledWidth(),
                     Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size()).get(cobblemonBattleUi$gridIndex);
             // The mouse path owns exclusivity, sound, toggle state and swapping moveTiles.
-            if (jbro.cobblemon.ui.extended.BattleConfirmGate.consumeMenuPress()) {
-                selection.mousePrimaryClicked(bound.x() + 1.0, bound.y() + 1.0);
-            }
+            selection.mousePrimaryClicked(bound.x() + 1.0, bound.y() + 1.0);
             return true;
         }
         if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
@@ -496,6 +512,15 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0);
         }
         return true;
+    }
+
+    /** A new menu starts from the tile it opened focused on (the move chosen last turn), or from none. */
+    @Unique
+    private void cobblemonBattleUi$takeOpeningFocus(List<?> tiles) {
+        cobblemonBattleUi$gridIndex = KeyboardTileFocus.focusedIndex(tiles);
+        if (cobblemonBattleUi$gridIndex < 0) {
+            KeyboardTileFocus.clear();
+        }
     }
 
     @Unique
@@ -535,8 +560,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
         if (cobblemonBattleUi$gridSelection != selection) {
             cobblemonBattleUi$gridSelection = selection;
-            cobblemonBattleUi$gridIndex = -1;
-            KeyboardTileFocus.clear();
+            cobblemonBattleUi$takeOpeningFocus(tiles);
         }
 
         int direction = switch (keyCode) {

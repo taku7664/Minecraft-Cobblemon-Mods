@@ -1,6 +1,7 @@
 package jbro.cobblemon.ui.extended.mixin;
 
 import com.cobblemon.mod.common.client.battle.SingleActionRequest;
+import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.api.moves.Moves;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleActionSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGimmickButton;
@@ -11,6 +12,7 @@ import jbro.cobblemon.ui.extended.BattleInfoPanel;
 import jbro.cobblemon.ui.extended.PanelConfig;
 import jbro.cobblemon.ui.extended.UIUtils;
 import jbro.cobblemon.ui.extended.navigation.KeyboardTileFocus;
+import jbro.cobblemon.ui.extended.state.LastMoveMemory;
 import jbro.cobblemon.ui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.ui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.ui.navigation.UiRect;
@@ -35,6 +37,20 @@ import java.util.UUID;
 public class BattleMoveSelectionMixin {
     @Shadow
     public List<MoveTile> moveTiles;
+
+    /** The menu opens on the move this Pokemon chose last turn, as the handheld games do. */
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void cobblemonBattleUi$focusLastMove(BattleGUI battleGUI, SingleActionRequest request, CallbackInfo ci) {
+        if (request.getActivePokemon() == null || request.getActivePokemon().getBattlePokemon() == null) {
+            return;
+        }
+        int index = LastMoveMemory.indexFor(request.getActivePokemon().getBattlePokemon().getUuid(),
+                moveTiles.stream().map(tile -> tile.getMove().getId()).toList(),
+                i -> moveTiles.get(i).getSelectable());
+        if (index >= 0) {
+            KeyboardTileFocus.set(moveTiles.get(index));
+        }
+    }
 
     /**
      * Clear move tile tracking at the start of each render frame.

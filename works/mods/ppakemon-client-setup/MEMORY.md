@@ -5,6 +5,19 @@
 
 ---
 
+## [2026-10-18 14:10] 포켓내비 Tab 규칙 빌드·개발 배치 (빌드·테스트·개발 배치 확인, 실행 미검증)
+
+- **빌드:** origin/main `c26033812`을 `git archive`로 `F:/AI/builds/pokenav-snack-1018/src`에 풀어 `:jbro-policy:build :ppakemon-client-setup:build` 종료 코드 0(쓰기 경로 F 확인, 다른 세션의 MCC Gradle과 출력 폴더 분리). 테스트: client-setup 92개 통과, jbro-policy 111개 중 110개 통과·실패 0·중단 1. 중단은 `real wiki questions…`가 `../../../server-wiki`를 init 스크립트가 바꾼 작업 폴더 기준으로 못 찾아 `assumeTrue`로 빠진 것으로, 이 변경과 무관하나 이번에는 돌지 않았다.
+- **JAR:** `jbro-policy-0.1.7.jar` `70c530065794215f668e1b3522791dd74ac10aab2eeb203cf837cb82877c4360`, `ppakemon-client-setup-0.1.21.jar` `2abf621ab300c9fb926df03f6930680bd4e600ca3a41924a2e994f2fec6d740a`, 둘 다 `jar --validate` 통과. 버전 번호는 올리지 않았다.
+- **배치:** 게임·개발 서버 꺼짐(25565/25566 미수신) 확인 후 `develop-product/server`(jbro-policy), `develop-product/client`·PPakemon 프로필(둘 다) 교체, 해시 일치. 이전 JAR은 `develop-product/deployment-backups/20261018-pokenav-snack/`. 서버는 켜지 않았다. 운영·VPS·deploy-product는 바꾸지 않았다(스낵 수정은 서버 JAR이라 VPS에 반영해야 플레이어에게 효과가 난다).
+- **미확인:** 실게임에서 스낵을 보고 Tab을 눌러 스낵 목록이 뜨는지, 셋업이 Tab을 적는지.
+
+## [2026-10-18 13:30] 포켓내비 Tab 키 규칙 추가 (구현·커밋, 빌드·테스트·배포 미실행)
+
+- **사용자 지시:** 셋업이 포켓내비 키를 지정하지 않는 것도 오류이니 지정하라, 키는 Tab 유지.
+- **구현:** `jbro_policy` 설치 시 `key_key.jbro_policy.pokenav`를 `key.keyboard.tab`으로 `ONCE` 적용(표식 `keybindings-jbro_policy-pokenav-v1`). Cobblemon UI 전투 정보도 Tab이지만 두 기능 모두 키 상태를 직접 읽어 같이 동작한다(jbro-policy MEMORY 2026-10-12). `revisedPresets…` 테스트의 적용 수를 6→7로 고치고 Tab 줄 검사를 추가했다.
+- **미확인:** 빌드·단위 테스트·JAR 배치·실행 확인 안 함.
+
 ## [2026-10-12 07:00] 1.1.0 플레이어 업데이트 안내: 옮길 파일
 
 - **배경:** Modrinth 앱에는 설치된 인스턴스를 `.mrpack` 파일로 업데이트하는 메뉴가 없다(설정의 Installation 탭은 Edit·Repair뿐, 앱 화면으로 직접 확인). 그래서 1.1.0 패치노트는 새 인스턴스 설치 후 예전 폴더에서 `options.txt`, `xaero/`, `ppakemon_client_setup/`을 옮기도록 안내했다.

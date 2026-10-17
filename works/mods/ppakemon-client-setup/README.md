@@ -51,6 +51,7 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 | Cobblemon UI | `key_key.cobblemon_ui.decrease_font` | = |
 | Cobblemon UI | `key_key.cobblemon_ui.increase_font` | - |
 | Cobblemon | `key_key.cobblemon.ridingfreelook` | 미지정 |
+| 빡켓몬 정책 | `key_key.jbro_policy.pokenav` (포켓내비 열기·닫기) | Tab |
 | Iris | `key_iris.keybind.reload` (셰이더 새로고침) | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_1` | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_2` | 미지정 |

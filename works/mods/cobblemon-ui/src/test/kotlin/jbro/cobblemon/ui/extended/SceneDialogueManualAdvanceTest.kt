@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test
 
 class SceneDialogueManualAdvanceTest {
     @Test fun `scene dialogue advances only through confirmation`() {
+        // A checkout with core.autocrlf has CRLF line ends.
         val source = Files.readString(Path.of("src/main/kotlin/jbro/cobblemon/ui/extended/SceneDialogue.kt"))
+            .replace("\r\n", "\n")
         assertFalse(source.contains("DWELL_MILLIS"))
         assertFalse(source.contains("now - completeMillis"))
         assertTrue(source.contains("private fun confirm()"))

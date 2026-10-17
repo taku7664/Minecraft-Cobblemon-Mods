@@ -6,6 +6,11 @@
   "description": "Adds a trash slot beside the survival inventory. The item stays there until another one replaces it, and is gone after leaving the game.",
   "authors": ["jbro"],
   "license": "MIT",
+  "icon": "assets/simple_trash_can/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/simple-trash-can",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  },
   "environment": "*",
   "entrypoints": {
     "client": ["jbro.minecraft.simpletrashcan.client.SimpleTrashCanClient"],

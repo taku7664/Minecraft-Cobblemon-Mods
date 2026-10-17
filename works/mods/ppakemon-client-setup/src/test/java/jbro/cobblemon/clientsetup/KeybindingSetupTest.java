@@ -114,7 +114,7 @@ final class KeybindingSetupTest {
             + "key_keybind.sophisticatedbackpacks.toggle_upgrade_2:key.keyboard.x\n");
         Set<String> mods = Set.of("jbro_policy", "catchrate-display", "cobblemon_ui", "cobblemon",
             "more_cobblemon_contents_pvp", "zoomify", "sophisticatedbackpacks");
-        assertEquals(6, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
+        assertEquals(7, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
         String updated = Files.readString(optionsFile());
         assertTrue(updated.startsWith(untouched));
         // jbro-policy no longer has a waypoint key, so a leftover line is left alone.
@@ -128,6 +128,7 @@ final class KeybindingSetupTest {
         assertTrue(updated.contains("key_key.cobblemon_ui.increase_font:key.keyboard.minus\n"));
         assertTrue(updated.contains("key_key.more_cobblemon_contents.pvp.room_hud.open:key.keyboard.j\n"));
         assertTrue(updated.contains("key_zoomify.key.zoom:key.keyboard.left.alt\n"));
+        assertTrue(updated.contains("key_key.jbro_policy.pokenav:key.keyboard.tab\n"));
         Files.writeString(optionsFile(), untouched);
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), mods));
         assertEquals(untouched, Files.readString(optionsFile()));

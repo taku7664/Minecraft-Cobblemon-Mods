@@ -25,7 +25,8 @@ public class KeyboardBattleNavigationMixin {
         if (action == GLFW.GLFW_PRESS && confirm) {
             // Remember whether this press was made for the menu, before the screen sees it.
             boolean menuShown = Minecraft.getInstance().screen instanceof BattleGUI gui
-                    && gui.getCurrentActionSelection() != null && !BattleDialogue.INSTANCE.hasPending();
+                    && gui.getCurrentActionSelection() != null && !BattleDialogue.INSTANCE.hasPending()
+                    && !jbro.cobblemon.ui.extended.SceneDialogue.isActive();
             jbro.cobblemon.ui.extended.BattleConfirmGate.pressed(menuShown);
         }
         if (action == GLFW.GLFW_RELEASE && confirm) {

@@ -68,6 +68,8 @@ object SceneDialogue {
         val ending = scene ?: return
         scene = null
         CinematicLetterbox.hide(LETTERBOX_OWNER)
+        // The key held to skip the lines is not for the battle menu they ended over: it waits for a new press.
+        BattleConfirmGate.released()
         ending.onFinish.run()
     }
 

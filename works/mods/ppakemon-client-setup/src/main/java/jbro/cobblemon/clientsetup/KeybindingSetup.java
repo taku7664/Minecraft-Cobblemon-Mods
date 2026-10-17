@@ -36,6 +36,8 @@ public final class KeybindingSetup {
         new Rule("cobblemon_ui", List.of("key_key.cobblemon_ui.increase_font"),
             "keybindings-cobblemon_ui-increase-font-v1", "key.keyboard.minus"),
         new Rule("cobblemon", List.of("key_key.cobblemon.ridingfreelook")),
+        new Rule("jbro_policy", List.of("key_key.jbro_policy.pokenav"),
+            "keybindings-jbro_policy-pokenav-v1", "key.keyboard.tab"),
         // Iris binds shader reload to R, which collides with Cobblemon's send-out key.
         new Rule("iris", List.of("key_iris.keybind.reload")),
         new Rule("sophisticatedbackpacks", List.of("key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
