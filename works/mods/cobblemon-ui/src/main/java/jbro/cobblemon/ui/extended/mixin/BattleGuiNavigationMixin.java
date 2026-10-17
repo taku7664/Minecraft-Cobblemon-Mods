@@ -104,6 +104,10 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     @Inject(method = "selectAction", at = @At("HEAD"))
     private void cobblemonBattleUi$rememberChosenMove(SingleActionRequest request, ShowdownActionResponse response,
             CallbackInfo ci) {
+        // Cobblemon ignores a choice with no battle or once this request has its answer; so does the memory.
+        if (com.cobblemon.mod.common.client.CobblemonClient.INSTANCE.getBattle() == null || request.getResponse() != null) {
+            return;
+        }
         if (response instanceof MoveActionResponse move && request.getActivePokemon() != null
                 && request.getActivePokemon().getBattlePokemon() != null) {
             LastMoveMemory.record(request.getActivePokemon().getBattlePokemon().getUuid(), move.getMoveName());
@@ -226,10 +230,11 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         if (navigationKey) {
             KeyboardTileFocus.useKeyboard();
         }
-        // A confirm key held down since before the menu appeared (advancing the last line) repeats into it: the menu
-        // waits for it to be let go and pressed again.
+        // A confirm key held down since before the menu appeared (advancing the last line) repeats into it, and so
+        // does one held on after choosing in the menu before (Fight, then the move menu opens): each physical press
+        // chooses once, and a menu waits for the key to be let go and pressed again.
         if (CobblemonUiClient.INSTANCE.getSelectActionKey().matches(keyCode, scanCode)
-                && !jbro.cobblemon.ui.extended.BattleConfirmGate.getPressedForMenu()) {
+                && !jbro.cobblemon.ui.extended.BattleConfirmGate.consumeMenuPress()) {
             return true;
         }
 
@@ -495,9 +500,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                     Minecraft.getInstance().getWindow().getGuiScaledWidth(),
                     Minecraft.getInstance().getWindow().getGuiScaledHeight(), gimmicks.size()).get(cobblemonBattleUi$gridIndex);
             // The mouse path owns exclusivity, sound, toggle state and swapping moveTiles.
-            if (jbro.cobblemon.ui.extended.BattleConfirmGate.consumeMenuPress()) {
-                selection.mousePrimaryClicked(bound.x() + 1.0, bound.y() + 1.0);
-            }
+            selection.mousePrimaryClicked(bound.x() + 1.0, bound.y() + 1.0);
             return true;
         }
         if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
