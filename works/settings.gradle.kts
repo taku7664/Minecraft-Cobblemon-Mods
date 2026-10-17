@@ -27,7 +27,8 @@ include(
     "more-cobblemon-contents-pvp",
     "more-cobblemon-contents-battle-factory",
     "more-cobblemon-contents-league-challenge",
-    "pokefusion"
+    "pokefusion",
+    "simple-trash-can"
 )
 
 // The mods live under mods/; their project names stay the folder names.

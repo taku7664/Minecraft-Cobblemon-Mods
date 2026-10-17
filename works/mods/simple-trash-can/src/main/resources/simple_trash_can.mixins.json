@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jbro.minecraft.simpletrashcan.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AbstractContainerMenuMixin",
+    "InventoryMenuMixin",
+    "PlayerMixin",
+    "ServerPlayerMixin"
+  ],
+  "client": [
+    "CreativeModeInventoryScreenMixin",
+    "InventoryScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

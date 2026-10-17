@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "simple_trash_can",
+  "version": "${version}",
+  "name": "Simple Trash Can",
+  "description": "Adds a trash slot beside the survival inventory. The item stays there until another one replaces it, and is gone after leaving the game.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "client": ["jbro.minecraft.simpletrashcan.client.SimpleTrashCanClient"],
+    "emi": ["jbro.minecraft.simpletrashcan.compat.SimpleTrashCanEmiPlugin"]
+  },
+  "mixins": [
+    "simple_trash_can.mixins.json"
+  ],
+  "accessWidener": "simple_trash_can.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  },
+  "suggests": {
+    "emi": "*"
+  }
+}
