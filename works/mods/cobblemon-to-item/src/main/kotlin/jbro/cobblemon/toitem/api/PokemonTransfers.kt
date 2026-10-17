@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.toitem.CobblemonToItem
 import jbro.cobblemon.toitem.config.ToItemConfig
 import jbro.cobblemon.toitem.server.MoveTransaction
+import jbro.cobblemon.toitem.server.StoredPokemonLookup
 import jbro.cobblemon.toitem.server.TransferRules
 import net.minecraft.ChatFormatting
 import net.minecraft.core.registries.BuiltInRegistries
@@ -120,7 +121,7 @@ object PokemonTransfers {
                 val incoming = Pokemon.loadFromNBT(player.registryAccess(), tag)
                 if (incoming.uuid != expectedId) return@guarded reject(player, "invalid_item")
                 val pc = Cobblemon.storage.getPC(player)
-                if (party.get(incoming.uuid) != null || pc.get(incoming.uuid) != null) return@guarded reject(player, "duplicate")
+                if (StoredPokemonLookup.contains(incoming.uuid, party, pc)) return@guarded reject(player, "duplicate")
                 val replacement = PokemonItemData.create(previous, player.registryAccess())
                 val replacementData = PokemonItemData.pokemonTag(replacement) ?: return@guarded reject(player, "invalid_item")
                 check(Pokemon.loadFromNBT(player.registryAccess(), replacementData).uuid == previous.uuid)
@@ -176,7 +177,7 @@ object PokemonTransfers {
             if (pokemon.uuid != tag.getUUID("UUID")) return@guarded reject(player, "invalid_item")
             val party = Cobblemon.storage.getParty(player)
             val pc = Cobblemon.storage.getPC(player)
-            if (party.get(pokemon.uuid) != null || pc.get(pokemon.uuid) != null) return@guarded reject(player, "duplicate")
+            if (StoredPokemonLookup.contains(pokemon.uuid, party, pc)) return@guarded reject(player, "duplicate")
             val slot = TransferRules.restoreSlot(requestedSlot, (0 until party.size()).map { party.get(it) != null })
             if (slot == null && (!allowPc || requestedSlot != null)) return@guarded reject(player, "party_full")
             val pcPosition = if (slot == null) pc.getFirstAvailablePosition() ?: return@guarded reject(player, "pc_full") else null
@@ -186,11 +187,11 @@ object PokemonTransfers {
                 remove = { consume(); true },
                 deliver = {
                     if (slot != null) party.set(PartyPosition(slot), pokemon) else pc.set(pcPosition!!, pokemon)
-                    (if (slot != null) party.get(pokemon.uuid) else pc.get(pokemon.uuid)) === pokemon
+                    (if (slot != null) party.get(slot) else pc.get(pcPosition!!)) === pokemon
                 },
                 rollback = {
-                    if (party.get(pokemon.uuid) === pokemon) party.remove(pokemon)
-                    if (pc.get(pokemon.uuid) === pokemon) pc.remove(pokemon)
+                    if (slot != null && party.get(slot) === pokemon) party.remove(pokemon)
+                    if (pcPosition != null && pc.get(pcPosition) === pokemon) pc.remove(pokemon)
                     restoreSource()
                 },
             )
