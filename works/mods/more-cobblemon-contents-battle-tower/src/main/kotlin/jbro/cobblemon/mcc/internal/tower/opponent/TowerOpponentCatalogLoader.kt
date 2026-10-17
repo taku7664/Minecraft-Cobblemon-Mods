@@ -120,7 +120,16 @@ internal object TowerOpponentCatalogLoader {
                 }
                 requireNotEmpty(tiers, "$path.set_tiers", "set_tiers")
                 rejectDuplicateIds(tiers.map(Int::toString), "$path.set_tiers")
-                TowerPoolDefinition(value.requiredStableId(path, "pool_id"), mechanic, tiers.toSet())
+                val companions = value.optionalArray(path, "companion_mechanic_ids").orEmpty().mapIndexed { index, element ->
+                    val elementPath = "$path.companion_mechanic_ids[$index]"
+                    val id = if (element.isJsonPrimitive && element.asJsonPrimitive.isString) element.asString
+                        else reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, elementPath, "Expected a mechanic ID")
+                    parseMechanic(id, elementPath).also { companion ->
+                        if (companion == mechanic) reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, elementPath, "A companion mechanic must differ from the pool mechanic")
+                    }
+                }
+                rejectDuplicateIds(companions.map(MajorBattleMechanic::name), "$path.companion_mechanic_ids")
+                TowerPoolDefinition(value.requiredStableId(path, "pool_id"), mechanic, tiers.toSet(), companions.toSet())
             }
         }
         val encounters = encounterFragments.flatMap { (resourceId, reader) ->
@@ -183,7 +192,12 @@ internal object TowerOpponentCatalogLoader {
             if (pool.mechanic != encounter.mechanic) {
                 reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$.encounters.${encounter.encounterId}.pool_id", "Encounter and pool mechanics must match")
             }
-            val setIds = sets.filter { set -> set.setTier in pool.setTiers && set.mechanic == pool.mechanic }.map(TowerPokemonSet::setId)
+            // Companions are same-tier sets of other mechanics that fill the seats beside a Mega Stone holder; a
+            // companion holding a stone of its own would be one more stone the team cannot use.
+            val setIds = sets.filter { set ->
+                set.setTier in pool.setTiers && (set.mechanic == pool.mechanic ||
+                    set.mechanic in pool.companionMechanics && !set.heldItemId.isTowerMegaStone())
+            }.map(TowerPokemonSet::setId)
             if (setIds.size < MINIMUM_PROFILE_POOL_SIZE) {
                 reject(TowerOpponentCatalogIssueCode.INSUFFICIENT_POOL, "$.pools.${pool.poolId}", "Pool must resolve at least $MINIMUM_PROFILE_POOL_SIZE sets")
             }
@@ -517,7 +531,8 @@ internal object TowerOpponentCatalogLoader {
             }
             if (schemaVersion >= 3) {
                 profileSets.forEach { indexedSet ->
-                    validateMechanicProperties(requireNotNull(profile.mechanic), indexedSet)
+                    // A companion set keeps the shape of its own mechanic.
+                    validateMechanicProperties(indexedSet.value.mechanic ?: requireNotNull(profile.mechanic), indexedSet)
                 }
             }
             if (!TowerLegalTeamSearch.exists(profileSets.map(IndexedValue<TowerPokemonSet>::value), profile.format.selectionSize)) {
@@ -814,7 +829,7 @@ private fun trainerSkin(value: JsonObject, path: String): TrainerResourceSkin? {
         reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.skin", "Invalid trainer skin: $skin")
     }
 }
-private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers")
+private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers", "companion_mechanic_ids")
 private val ENCOUNTER_FIELDS = setOf(
     "encounter_id", "trainer_ids", "stage_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
 )
@@ -859,6 +874,7 @@ private data class TowerPoolDefinition(
     val poolId: String,
     val mechanic: MajorBattleMechanic,
     val setTiers: Set<Int>,
+    val companionMechanics: Set<MajorBattleMechanic> = emptySet(),
 )
 private data class TowerEncounterDefinition(
     val encounterId: String,

@@ -6,6 +6,9 @@
       "mechanic_id": "mega",
       "set_tiers": [
         2
+      ],
+      "companion_mechanic_ids": [
+        "tera"
       ]
     }
   ]

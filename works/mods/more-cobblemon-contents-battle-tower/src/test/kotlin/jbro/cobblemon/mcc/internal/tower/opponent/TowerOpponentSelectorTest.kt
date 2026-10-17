@@ -102,6 +102,36 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
+    fun `a Mega trainer holds one Mega Stone and fills the other seats with battle items`() {
+        // Stones come first in the pool, so a search without the rule would take three of them.
+        val stones = (1..4).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite", mechanic = MajorBattleMechanic.MEGA) }
+        val companions = (5..8).map { pokemonSet(it, mechanic = MajorBattleMechanic.TERA) }
+        val sets = stones + companions
+        listOf(TowerBattleFormat.SINGLE, TowerBattleFormat.DOUBLE).forEach { format ->
+            val profile = profile("mega", 1, format, sets.map(TowerPokemonSet::setId))
+            val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+            val result = selector.select(TowerStreakStage.INTRODUCTORY, format, TowerOpponentKind.REGULAR, MajorBattleMechanic.MEGA)
+
+            result as TowerOpponentSelectionResult.Selected
+            assertEquals(format.selectionSize, result.team.size)
+            assertEquals(1, result.team.count { it.heldItemId.isTowerMegaStone() }, result.team.map(TowerPokemonSet::setId).toString())
+        }
+    }
+
+    @Test
+    fun `other mechanics keep every Mega Stone rule off`() {
+        val sets = (1..6).map { pokemonSet(it, heldItemId = "mega_showdown:stone${it}ite") }
+        val profile = profile("tera", 1, TowerBattleFormat.SINGLE, sets.map(TowerPokemonSet::setId), MajorBattleMechanic.TERA)
+        val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+        val result = selector.select(TowerStreakStage.INTRODUCTORY, TowerBattleFormat.SINGLE, TowerOpponentKind.REGULAR, MajorBattleMechanic.TERA)
+
+        result as TowerOpponentSelectionResult.Selected
+        assertEquals(3, result.team.size)
+    }
+
+    @Test
     fun `reports missing profile without borrowing another format opponent kind or mechanic`() {
         val profile = profile(
             "single",

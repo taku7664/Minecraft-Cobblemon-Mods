@@ -172,7 +172,11 @@ class TowerOpponentCatalogResourceTest {
             val restricted = sets.filter { TowerLegendaryClassPolicy.group(it.speciesId) == TowerLegendaryGroup.LEGENDARY }
             assertTrue(restricted.map(TowerPokemonSet::speciesId).distinct().size >= 10, "${profile.profileId} restricted: ${restricted.map { it.speciesId }.distinct()}")
             assertTrue(sets.mapNotNull(TowerPokemonSet::heldItemId).distinct().size >= 6, profile.profileId)
-            sets.forEach { set -> assertMechanicShape(profile.mechanic!!, set) }
+            // Companion sets (a Mega pool's Tera sets) keep their own mechanic's shape.
+            sets.forEach { set -> assertMechanicShape(set.mechanic ?: profile.mechanic!!, set) }
+            if (profile.mechanic == MajorBattleMechanic.MEGA) {
+                assertTrue(sets.any { it.mechanic != MajorBattleMechanic.MEGA }, "${profile.profileId} has no companions beside its Mega Stones")
+            }
         }
 
         val lowSets = uniqueSets.filter { it.setTier == 1 }
@@ -305,6 +309,32 @@ class TowerOpponentCatalogResourceTest {
             }
         }
         assertEquals(true, catalog.allSets().single { it.setId == "champion_blue_dynamax_blastoise_1" }.gmaxFactor)
+    }
+
+    @Test
+    fun `a Mega trainer who is not a Champion brings one Mega Stone and battle items on the rest`() {
+        val catalog = bundledCatalog()
+        val stone = Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")
+        TowerStreakStage.entries.forEach { stage ->
+            TowerBattleFormat.entries.forEach { format ->
+                TowerOpponentKind.entries.forEach { kind ->
+                    val profiles = catalog.profilesFor(stage, format, kind, MajorBattleMechanic.MEGA).filterNot { it.fixedRoster }
+                    profiles.forEach { profile ->
+                        repeat(4) { seed ->
+                            val result = TowerOpponentSelector(catalog, SeededRandom(seed.toLong())).select(stage, format, kind,
+                                MajorBattleMechanic.MEGA, excludedProfileIds = profiles.map { it.profileId }.toSet() - profile.profileId,
+                                championBoss = false)
+                                as TowerOpponentSelectionResult.Selected
+                            val team = result.team
+                            assertEquals(format.selectionSize, team.size)
+                            assertEquals(team.size, team.map { it.speciesId }.distinct().size)
+                            assertEquals(team.size, team.mapNotNull { it.heldItemId }.distinct().size, "item clause $team")
+                            assertEquals(1, team.count { it.heldItemId?.matches(stone) == true }, "${profile.profileId} ${team.map { it.setId }}")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Test

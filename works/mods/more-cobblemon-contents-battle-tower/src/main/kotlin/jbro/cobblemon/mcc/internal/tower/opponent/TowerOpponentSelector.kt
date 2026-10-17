@@ -95,10 +95,14 @@ internal class TowerOpponentSelector(
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
         // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
         // signature or style anchor, so fall back to the complete pool instead of reporting no legal team.
-        val team = selectStyledTeamFrom(profile, freshPool, teamSize, legendaries)
-            ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries)
-            ?: selectStyledTeamFrom(profile, completePool, teamSize)
-            ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
+        // A Mega trainer brings one Mega Stone and battle items on everyone else; a team with no stone is the
+        // last resort, never one with a second stone that could not be used.
+        val stoneRules = if (mechanic == MajorBattleMechanic.MEGA) listOf(1..1, 0..1) else listOf(null)
+        val team = stoneRules.firstNotNullOfOrNull { stones ->
+            selectStyledTeamFrom(profile, freshPool, teamSize, legendaries, stones)
+                ?: selectStyledTeamFrom(profile, completePool, teamSize, legendaries, stones)
+                ?: selectStyledTeamFrom(profile, completePool, teamSize, megaStones = stones)
+        } ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
         return TowerOpponentSelectionResult.Selected(
             profile,
             Collections.unmodifiableList(ArrayList(team)),
@@ -134,7 +138,7 @@ internal class TowerOpponentSelector(
             val required = (listOfNotNull(ace) + chosenLines.map(TowerLegendLine::speciesId)).toMutableList()
             val megaHolder = if (mechanic == MajorBattleMechanic.MEGA) {
                 // With every seat spoken for, the stone goes to a member already on the team.
-                val candidates = members.values.flatten().filter { it.heldItemId.isMegaStone() }
+                val candidates = members.values.flatten().filter { it.heldItemId.isTowerMegaStone() }
                     .filter { required.size < teamSize || it.speciesId in required }
                 candidates.takeIf { it.isNotEmpty() }?.toMutableList()?.also(::consider)?.first()
             } else null
@@ -145,7 +149,7 @@ internal class TowerOpponentSelector(
             val team = species.map { id ->
                 if (megaHolder != null && id == megaHolder.speciesId) return@map megaHolder
                 val sets = (members[id] ?: roster.filter { it.speciesId == id })
-                    .filter { mechanic != MajorBattleMechanic.MEGA || !it.heldItemId.isMegaStone() }
+                    .filter { mechanic != MajorBattleMechanic.MEGA || !it.heldItemId.isTowerMegaStone() }
                     .ifEmpty { return@repeat }
                 sets[random.nextInt(sets.size)]
             }
@@ -154,8 +158,6 @@ internal class TowerOpponentSelector(
         }
         return null
     }
-
-    private fun String?.isMegaStone(): Boolean = this != null && MEGA_STONE.matches(this)
 
     private fun <T> shuffleAny(values: MutableList<T>) {
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
@@ -187,11 +189,12 @@ internal class TowerOpponentSelector(
         pool: List<TowerPokemonSet>,
         teamSize: Int,
         forced: List<TowerPokemonSet> = emptyList(),
+        megaStones: IntRange? = null,
     ): List<TowerPokemonSet>? {
         if (pool.size + forced.size < teamSize) return null
         val consideredPool = pool.toMutableList()
         consider(consideredPool)
-        return selectStyledTeam(profile, consideredPool, teamSize, forced)
+        return selectStyledTeam(profile, consideredPool, teamSize, forced, megaStones)
     }
 
     private fun isNormal(set: TowerPokemonSet): Boolean =
@@ -202,6 +205,7 @@ internal class TowerOpponentSelector(
         pool: List<TowerPokemonSet>,
         teamSize: Int,
         forced: List<TowerPokemonSet> = emptyList(),
+        megaStones: IntRange? = null,
     ): List<TowerPokemonSet>? {
         val speciesAnchors = if (profile.signatureSpeciesIds.isEmpty()) {
             listOf<TowerPokemonSet?>(null)
@@ -218,7 +222,7 @@ internal class TowerOpponentSelector(
                 val anchors = forced + listOfNotNull(speciesAnchor, styleAnchor).distinctBy(TowerPokemonSet::setId)
                 val anchorIds = anchors.map(TowerPokemonSet::setId).toSet()
                 val ordered = anchors + pool.filterNot { it.setId in anchorIds }
-                val team = TowerLegalTeamSearch.select(ordered, teamSize) ?: return@forEach
+                val team = TowerLegalTeamSearch.select(ordered, teamSize, megaStones) ?: return@forEach
                 if (!team.containsAll(forced)) return@forEach
                 val hasSignatureSpecies = profile.signatureSpeciesIds.isEmpty() ||
                     team.any { it.speciesId in profile.signatureSpeciesIds }
@@ -274,6 +278,4 @@ internal class TowerOpponentSelector(
     }
 }
 
-/** Mega Stones end in -ite (Garchompite, Charizardite X, Lucarionite Z); a Griseous Core is no Mega Stone. */
-private val MEGA_STONE = Regex("^mega_showdown:[a-z_]+ite(_[xyz])?$")
 private const val ROSTER_ATTEMPTS = 32
