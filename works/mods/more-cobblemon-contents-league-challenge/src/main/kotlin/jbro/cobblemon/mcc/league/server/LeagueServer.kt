@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.*
 import net.minecraft.core.BlockPos
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.TickTask
@@ -170,6 +171,9 @@ object LeagueServer {
                     LeagueWorldRules.requireCanChallenge(catalog, LeagueProgressQueries.states(player.server, player.uuid))
                     val current = storage.read(catalog.id, player.uuid)
                     LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
+                    // The finals keep the party they started with, so one check at the start covers the whole run.
+                    if (intent.action == LeagueAction.START && catalog.isHard(intent.challengeId))
+                        LeagueHardPartyRules.violation(hardPartyMembers(player))?.let { error(it) }
                     val next = if (intent.action == LeagueAction.START) engine.begin(current, intent.challengeId,
                         ManagedPveBattles.snapshotParty(player, 100), intent.finalChoiceId.takeIf { it.isNotEmpty() }) else engine.next(current)
                     commit(player.server, catalog.id, player.uuid, next)
@@ -179,6 +183,12 @@ object LeagueServer {
             send(player)
         }
     }
+
+    private fun hardPartyMembers(player: ServerPlayer): List<LeagueHardPartyRules.Member> =
+        com.cobblemon.mod.common.Cobblemon.storage.getParty(player).toList().map { pokemon ->
+            LeagueHardPartyRules.Member(pokemon.species.resourceIdentifier.toString(),
+                pokemon.heldItem().takeUnless { it.isEmpty }?.let { BuiltInRegistries.ITEM.getKey(it.item).toString() })
+        }
 
     /** News for a player's first normal or hard Champion title; repeated wins and retried callbacks stay quiet. */
     private fun announceChampion(server: MinecraftServer, playerId: UUID, catalog: LeagueCatalog, opponentKey: String,
@@ -364,7 +374,7 @@ object LeagueServer {
         val reason = failure.message?.substringBefore(':')
         val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
             "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
-            "opponent_level_unsupported", "league_locked", "invalid_branch",
+            "opponent_level_unsupported", "league_locked", "invalid_branch", "duplicate_species", "duplicate_item",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"
