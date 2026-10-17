@@ -99,6 +99,12 @@
 
 ---
 
+## [2026-10-17 16:54] VPS 상점 설정을 로컬 배포 서버에 Git 변경 없이 동기화
+
+- **사용자 요청:** VPS에만 적용한 상점 변경을 deploy-server 쪽 로컬 배포 서버에도 동기화하되 Git 변경 내역이 남지 않도록 한다. `deploy-product/server/MinecraftPPakemonServer.lnk`가 `C:/Users/박주형/Documents/GitHub/MinecraftPPakemonServer`를 가리키는 것을 확인했다.
+- **반영:** 로컬 운영 main이 깨끗하고 원격과의 차이가 `config/more-cobblemon-contents/bp-shop.json` 하나뿐임을 확인한 후 기존 VPS 커밋을 fast-forward로 받았다. 로컬 HEAD = 원격 main = `b6d74a25a2ef41f25ac2f5d2c391b514112edcbd`. 새 운영 커밋은 만들지 않았다. 변경 전 파일은 서버 밖 `%LOCALAPPDATA%/MinecraftServerDeploy/shop-sync-20261017-165329/`에 백업했다.
+- **검증·범위:** 로컬 상점 162품목, 전체 JSON이 VPS 승인 설정과 일치하며 원본 파일 SHA-256도 `ec824bb2ad18db1773987002d37fa253fa4358d1e5c30f1a33dcf7f626919ac2`로 같다. 작업 후 로컬 운영 저장소 `git status --porcelain` 출력 없음. 개발 서버·소스 기본 카탈로그·JAR는 변경하지 않았으며 서버 실행/종료/리로드·실게임 구매는 하지 않았다.
+
 ## [2026-10-17 16:27] VPS 악의·물의족자 가격 각 50BP
 
 - **사용자 승인:** 족자 2종만 각 50BP로 올린다. 활성 `bp-shop.json`의 `cobblemon:scroll_of_darkness`, `cobblemon:scroll_of_waters` `price_bp`를 25→50으로 변경했다. 총 162품목과 나머지 레코드·정렬·설정을 보존했고 원시회귀 구슬은 추가하지 않았다.
