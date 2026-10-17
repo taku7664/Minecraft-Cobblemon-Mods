@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-18 13:30] 포켓내비 단축키·명령이 바라본 포케스낵 기준으로 열림 (구현·커밋, 빌드·테스트·배포·실게임 미실행)
+
+- **사용자 제보:** 포케스낵을 바라보고 포켓내비 단축키를 누르면 아이템처럼 스낵 기준 스폰 목록이 떠야 하는데 일반 목록이 뜬다.
+- **원인(Cobblenav 2.4.1 바이트코드):** `Pokenav.use`는 서버에서 Cobblemon `ServerPlayer.raycast(blockInteractionRange, ClipContext.Fluid.NONE)`로 시선 블록을 찾고, 블록 엔티티가 `PokeSnackBlockEntity`일 때만 그 좌표를 `OpenPokenavPacket`의 두 번째 인자(`fixedAreaPoint`)로 넘긴다. 우리 `PokenavCommand`는 늘 `null`을 넘겼다. 아이템의 다른 분기는 없고 OS 값(Lite, 위치만 켬)은 이미 같았다.
+- **구현:** `PokenavCommand.snackInSight`가 같은 레이캐스트로 스낵 좌표를 넘긴다. Tab 단축키는 `/pokenav`를 보내므로 같이 고쳐진다. `field_1348`이 `NONE`인 것은 Loom 매핑으로 확인했다.
+- **미확인:** "빌드는 지시할 때만" 규칙으로 컴파일·테스트·JAR 배치를 하지 않았다. 실게임에서 스낵 목록이 뜨는지 확인하지 않았다. 서버 쪽 변경이라 개발·운영·VPS 서버 JAR 교체가 있어야 효과가 난다.
+- **같이 받은 질문(야생 반격):** Cobblemon 1.8.1에는 반격 전역 컨픽이 없다. `behaviours/pokemon/auto/pokemon_non_party.json`이 종 데이터 `behaviour.combat.willDefendSelf`가 켜졌거나 알파인 야생에 `cobblemon:retaliates`를 붙이고, 실제 공격은 `fightsMelee`가 켜져야 한다(`pokemon_combat.json`). 구현된 종 888개 중 `willDefendSelf`만 458, 둘 다 2, `fightsMelee`만 1, 둘 다 없음 427. 사용자 지시대로 작업하지 않고 보고만 했다.
+
 ## [2026-10-18 01:56] XS 6개 월드 데이터팩 운영 적용·재시작 없이 리로드 확인
 
 - **소스·산출물:** 소스 main `43a7b94a85c296b02d23fcc0b6ce0ebdb79f9b51`의 내장팩 `pack.mcmeta`와 두 XS 레시피로만 `jbro-policy-xs-candy-six.zip`(3파일)을 만들었다. JAR는 빌드/교체하지 않았다. 운영 저장소 main `94911adc20ef61a3dbb86aad426b8619a3103c4e`와 원격 main 일치 확인. ZIP은 Git LFS 대상이므로 커밋의 LFS pointer OID/size를 원본과 대조했고 실제 ZIP CRC·두 count 6·해시를 검증했다.
