@@ -24,12 +24,12 @@ class PolicyDataTest {
     }
 
     @Test
-    fun `experience candy crafting is unlocked and XS cooking yields three`() {
+    fun `experience candy crafting is unlocked and XS cooking yields six`() {
         for (path in listOf("campfire_pot/exp_candy_xs", "mod_compatibility/create/campfire_pot/exp_candy_xs_create")) {
             val recipe = json("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/$path.json")
             assertEquals("cobblemon:cooking_pot_shapeless", recipe.get("type").asString)
             assertEquals("cobblemon:exp_candy_xs", recipe.getAsJsonObject("result").get("id").asString)
-            assertEquals(3, recipe.getAsJsonObject("result").get("count").asInt)
+            assertEquals(6, recipe.getAsJsonObject("result").get("count").asInt)
             if (path.startsWith("campfire_pot/")) assertFalse(recipe.has("fabric:load_conditions"))
             else assertEquals("fabric:all_mods_loaded", recipe.getAsJsonArray("fabric:load_conditions").single().asJsonObject.get("condition").asString)
         }
