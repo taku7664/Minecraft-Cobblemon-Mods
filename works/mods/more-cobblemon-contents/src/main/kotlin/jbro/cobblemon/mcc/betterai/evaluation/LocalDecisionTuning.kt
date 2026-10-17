@@ -191,7 +191,9 @@ internal data class LocalDecisionTuning(
     /**
      * The matchup exchange plays a repeated attack's turns out through the turn projector (status, items, abilities,
      * flinches) instead of repeating its first roll, and counts sleep, freeze and poison (Codex 9838243d). Costly; off
-     * until a duel measures it.
+     * until a duel measures it. Switched on 2026-10-18 it took a decision from about 0.2 s to 1.2 s in singles and 12 s
+     * in doubles, and the matchup table missed its time limit often enough that the rules read it in fewer decisions
+     * (singles 71% to 54%, doubles 49% to 40%): back off.
      */
     val evolvingMatchups: Boolean = false,
     /**

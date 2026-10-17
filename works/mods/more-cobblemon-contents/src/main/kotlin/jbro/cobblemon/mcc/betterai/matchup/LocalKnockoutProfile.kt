@@ -34,6 +34,18 @@ internal class LocalKnockoutProfile private constructor(
             return LocalKnockoutProfile(survival, damage, expected)
         }
 
+        /**
+         * A move its user can use only once, as it faints doing so (Explosion; Final Gambit when it lands): the first use
+         * as [of] reads it, nothing after. Repeating its roll made an Explosion that leaves the target standing read as
+         * two uses to a knockout, the opponent's best hit at every Pokemon in front of an Explosion user (2026-10-18).
+         */
+        fun once(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
+            val first = of(rolls, accuracy, targetHp, 1)
+            val survival = List(maximumUses + 1) { first.survival[minOf(it, 1)] }
+            val damage = List(maximumUses + 1) { first.damageWhileStanding[minOf(it, 1)] }
+            return LocalKnockoutProfile(survival, damage, if (survival[1] <= 0.0) 1.0 else Double.POSITIVE_INFINITY)
+        }
+
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
             val hit = accuracy.coerceIn(0.0, 1.0)
             val meanRoll = if (rolls.isEmpty()) 0.0 else rolls.average()

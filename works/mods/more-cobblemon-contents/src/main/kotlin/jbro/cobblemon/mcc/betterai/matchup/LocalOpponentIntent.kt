@@ -75,10 +75,18 @@ internal object LocalOpponentIntentPredictor {
         // doubles fit on its 35 switches did no better (0.035 cross-validated).
         val scored = scoredSwitches && (state.format == BattleFormat.SINGLE || scoredInDoubles)
         val features = if (scored) switchFeatures(context, scores, tier) else emptyMap()
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
         return state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }.map { user ->
+            // What its own stat changes give us, once per move: they do not depend on whom it aims at.
+            val stageCosts = HashMap<String, Double>()
+            fun stageCost(option: BattlePublicMoveOptionView): Double = stageCosts.getOrPut(PublicIds.canonical(option.moveId)) {
+                val hit = (option.details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
+                DAMAGE_WEIGHT * hit * jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.selfChangeBoard(
+                    user, option.details.effects?.effects.orEmpty(), context, cache)
+            }
             val moves = context.publicActionCatalog.forPokemon(user.battlePokemonId)
                 .distinctBy { PublicIds.canonical(it.moveId) }
-                .flatMap { move(it, user, allies, bench, state, scores) }
+                .flatMap { move(it, user, allies, bench, state, scores, ::stageCost) }
             val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
                 // Whether it switches, from the fitted model; where to, by the incoming Pokemon's matchups.
@@ -212,8 +220,9 @@ internal object LocalOpponentIntentPredictor {
         bench: List<BattlePokemonStateView>,
         state: BattleStateView,
         scores: MatchupScores,
+        stageCost: (BattlePublicMoveOptionView) -> Double,
     ): List<IntentOption> {
-        val options = valued(option, user, allies, state, scores)
+        val options = valued(option, user, allies, state, scores, stageCost)
         // A pivot also brings in the best Pokemon behind it, without a switch turn of its own.
         val pivots = option.details.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.SWITCH_USER }
         if (!pivots) return options
@@ -227,6 +236,7 @@ internal object LocalOpponentIntentPredictor {
         allies: List<BattlePokemonStateView>,
         state: BattleStateView,
         scores: MatchupScores,
+        stageCost: (BattlePublicMoveOptionView) -> Double,
     ): List<IntentOption> {
         val moveId = PublicIds.canonical(option.moveId)
         val details = option.details
@@ -249,17 +259,20 @@ internal object LocalOpponentIntentPredictor {
             return listOf(option(IntentKind.PROTECT, value))
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
-            val values = allies.mapNotNull { ally ->
-                scores.moves(user.battlePokemonId, ally.battlePokemonId).firstOrNull { it.moveId == moveId }?.let { ally to attackValue(it, ally) }
+            val hits = allies.mapNotNull { ally ->
+                scores.moves(user.battlePokemonId, ally.battlePokemonId).firstOrNull { it.moveId == moveId }?.let { ally to it }
             }
-            if (values.isEmpty()) return emptyList()
+            if (hits.isEmpty()) return emptyList()
             // Knock Off is worth the item it takes as well.
             fun itemBonus(ally: BattlePokemonStateView) = if (moveId == KNOCK_OFF && ally.canonicalKnownHeldItemId != null) KNOCK_OFF_ITEM else 0.0
+            // What the move costs its user, on the scale of what it does to us: its own HP and knockout, its stats.
+            val stages = stageCost(option)
             return if (details.targetPattern in SPREAD) {
-                listOf(option(IntentKind.ATTACK, values.sumOf { it.second }))
+                listOf(option(IntentKind.ATTACK, hits.sumOf { (ally, hit) -> attackValue(hit, ally) } - selfCost(user, hits, details, state) - stages))
             } else {
-                values.map { (ally, value) ->
-                    option(IntentKind.ATTACK, value + itemBonus(ally) - targetShare(values.size), ally.battlePokemonId)
+                hits.map { (ally, hit) ->
+                    option(IntentKind.ATTACK, attackValue(hit, ally) + itemBonus(ally) - targetShare(hits.size) -
+                        selfCost(user, listOf(ally to hit), details, state) - stages, ally.battlePokemonId)
                 }
             }
         }
@@ -290,6 +303,47 @@ internal object LocalOpponentIntentPredictor {
             return allies.map { ally -> option(IntentKind.STATUS, if (ally.statusId == null) SLEEP_VALUE * accuracy else FAILS, ally.battlePokemonId) }
         }
         return listOf(option(IntentKind.STATUS, UNSCORED))
+    }
+
+    /**
+     * What an attack costs its [user] in HP, on [attackValue]'s scale: a knockout of itself (Explosion always, Final
+     * Gambit when it lands) as one of ours, recoil and a missed High Jump Kick as the share of its own HP. Priced on the
+     * damage alone, an opposing Torkoal was read to Explode at every Pokemon in front of it (2026-10-18).
+     */
+    private fun selfCost(
+        user: BattlePokemonStateView,
+        hits: List<Pair<BattlePokemonStateView, MoveMatchupScore>>,
+        details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView,
+        state: BattleStateView,
+    ): Double {
+        val effects = details.effects?.effects.orEmpty().filter { it.target == BattleMoveEffectTarget.USER }
+        if (effects.isEmpty()) return 0.0
+        val accuracy = hits.maxOf { it.second.accuracy }
+        val faint = effects.filter { it.kind == BattleMoveEffectKind.SELF_DESTRUCT }.maxOfOrNull {
+            (if (it.valueId == jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects.SELF_DESTRUCT_IF_HIT) accuracy else 1.0) *
+                (it.probability ?: 1.0)
+        } ?: 0.0
+        val ability = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(state, user)
+        val recoil = if (jbro.cobblemon.mcc.betterai.mechanics.LocalRecoilImmunity.blocksDamageRecoil(ability)) 0.0 else
+            effects.filter { it.kind == BattleMoveEffectKind.RECOIL_FRACTION && it.fractionRange != null }.sumOf { effect ->
+                val range = requireNotNull(effect.fractionRange)
+                hits.sumOf { (ally, hit) ->
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalDamageHpTransfer.fraction(
+                        hit.accuracy * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0,
+                        (range.minimum + range.maximum) / 2.0, user, ally, roundActualHit = false)
+                } * (effect.probability ?: 1.0)
+            }
+        val maxHp = effects.filter {
+            it.kind == BattleMoveEffectKind.MAX_HP_RECOIL &&
+                !jbro.cobblemon.mcc.betterai.mechanics.LocalRecoilImmunity.blocksMaxHpRecoil(it, ability) ||
+                it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
+        }.sumOf { effect -> effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 }?.times((effect.probability ?: 1.0) * accuracy) ?: 0.0 }
+        val crash = if (jbro.cobblemon.mcc.betterai.mechanics.LocalRecoilImmunity.blocksCrashRecoil(ability)) 0.0 else
+            effects.count { it.kind == BattleMoveEffectKind.CRASH_RECOIL }.coerceAtMost(1) * CRASH_RECOIL_FRACTION * (1.0 - accuracy)
+        val loss = recoil + maxHp + crash
+        val hp = user.hpFraction.coerceAtLeast(MINIMUM_HP)
+        val surviving = DAMAGE_WEIGHT * (loss / hp).coerceAtMost(1.0) + if (loss >= hp) KNOCKOUT_WEIGHT else 0.0
+        return faint * (KNOCKOUT_WEIGHT + DAMAGE_WEIGHT) + (1.0 - faint) * surviving
     }
 
     private fun attackValue(score: MoveMatchupScore, target: BattlePokemonStateView): Double =
@@ -383,6 +437,8 @@ internal object LocalOpponentIntentPredictor {
     private const val UNSCORED = 0.15
     private const val FAILS = -1.0
     private const val MINIMUM_HP = 0.01
+    /** A missed High Jump Kick costs half the user's maximum HP. */
+    private const val CRASH_RECOIL_FRACTION = 0.5
     private const val FAKE_OUT = "fakeout"
     private const val TRICK_ROOM = "trickroom"
     private val SPREAD = setOf(BattleMoveTargetPattern.ALL_OPPONENTS, BattleMoveTargetPattern.ALL_ADJACENT, BattleMoveTargetPattern.ALL_ACTIVE)

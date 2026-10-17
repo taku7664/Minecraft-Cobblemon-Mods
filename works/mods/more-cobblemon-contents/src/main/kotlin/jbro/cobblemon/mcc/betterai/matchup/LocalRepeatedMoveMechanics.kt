@@ -147,6 +147,9 @@ internal object LocalRepeatedMoveMechanics {
         "roughskin", "ironbarbs", "aftermath", "cursedbody", "disguise", "sturdy", "flamebody", "static", "poisonpoint",
         "effectspore", "cutecharm", "gooey", "tanglinghair", "poisontouch", "toxicchain", "watercompaction", "angershell",
         "steamengine", "thermalexchange", "rattled", "baddreams")
+    // A move that costs its user HP or the Pokemon itself plays out too: Explosion is used once, its user then down, and a
+    // Steel Beam or a missed High Jump Kick wears the user towards the same (2026-10-18).
     private val EVOLVING_EFFECTS = setOf(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectKind.STATUS, BattleMoveEffectKind.VOLATILE_STATUS,
-        BattleMoveEffectKind.RECOIL_FRACTION, BattleMoveEffectKind.DRAIN_FRACTION, BattleMoveEffectKind.CHARGE_TURN, BattleMoveEffectKind.RECHARGE_TURN)
+        BattleMoveEffectKind.RECOIL_FRACTION, BattleMoveEffectKind.DRAIN_FRACTION, BattleMoveEffectKind.CHARGE_TURN, BattleMoveEffectKind.RECHARGE_TURN,
+        BattleMoveEffectKind.SELF_DESTRUCT, BattleMoveEffectKind.CRASH_RECOIL, BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectKind.STRUGGLE_RECOIL)
 }

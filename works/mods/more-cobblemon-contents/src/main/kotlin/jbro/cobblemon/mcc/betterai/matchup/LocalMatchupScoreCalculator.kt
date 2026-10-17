@@ -384,6 +384,7 @@ internal object LocalMatchupScoreCalculator {
                 // hands a Dynamax move over as the base move with the Max Move's details), and every reader matches by it.
                 val moveId = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(original) ?: PublicIds.canonical(candidate.moveId ?: action.actionId)
                 val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
+                    ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES) else null
                 ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile), original)
             }
             .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
@@ -391,9 +392,26 @@ internal object LocalMatchupScoreCalculator {
     }
 
 
+    // Of two moves knocking out as fast, the one that does not cost its user HP or the Pokemon itself.
     private val BEST_FIRST = compareBy<ScoredMove> { it.score.expectedHitsToKnockout }
+        .thenBy { selfCostRank(it.action) }
         .thenByDescending { it.score.accuracy }
         .thenBy { it.score.moveId }
+
+    private fun selfCostRank(action: BattleActionCandidate): Int {
+        val effects = action.moveDetails?.effects?.effects.orEmpty().filter { it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER }
+        return when {
+            effects.any { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.SELF_DESTRUCT } -> SELF_KNOCKOUT_RANK
+            effects.any { it.kind in SELF_HP_COSTS } -> 1
+            else -> 0
+        }
+    }
+
+    private const val SELF_KNOCKOUT_RANK = 2
+
+    private val SELF_HP_COSTS = setOf(jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.RECOIL_FRACTION,
+        jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.MAX_HP_RECOIL, jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.CRASH_RECOIL,
+        jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STRUGGLE_RECOIL)
 
     internal fun moveScore(
         userId: UUID,

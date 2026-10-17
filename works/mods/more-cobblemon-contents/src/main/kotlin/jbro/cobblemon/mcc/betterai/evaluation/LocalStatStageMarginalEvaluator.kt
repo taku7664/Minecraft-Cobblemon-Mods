@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
@@ -392,6 +393,37 @@ internal object LocalStatStageMarginalEvaluator {
     }
 
     /** [changes] added to the stages of [targetIds], stat names canonicalized and clamped to +-6. */
+    /**
+     * What the stat changes [effects] make to [user] itself are worth to this side, in board units: positive when they
+     * help us, as an opposing Close Combat lowering its own defences or Draco Meteor its Special Attack does. Read the
+     * way our own moves' changes are ([candidateScore]): by the pressure they change in the position in front of it, an
+     * opposing attacking stat whose attacks are hidden by the attacks it is expected to carry. For the opponent-intent
+     * prediction, which priced an attack by the damage it does alone (2026-10-18).
+     */
+    fun selfChangeBoard(
+        user: BattlePokemonStateView,
+        effects: List<BattleMoveEffectView>,
+        context: BattleDecisionContext,
+        calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    ): Double {
+        val own = effects.filter {
+            it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER && it.statStages.isNotEmpty()
+        }
+        if (own.isEmpty()) return 0.0
+        var state = context.state
+        var score = 0.0
+        own.forEach { effect ->
+            val holder = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId } ?: return@forEach
+            val applied = applyStages(state, setOf(user.battlePokemonId),
+                LocalStatStageChange.reshape(state, holder, user.battlePokemonId, effect.statStages))
+            val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
+            score += scoreWithUnknownFallback(state, applied, context, calculationCache, tuning) * probability
+            if (probability >= CERTAIN_PROBABILITY) state = applied
+        }
+        return score / SCORE_PER_BOARD_POINT
+    }
+
     internal fun applyStages(
         state: BattleStateView,
         targetIds: Set<UUID>,
