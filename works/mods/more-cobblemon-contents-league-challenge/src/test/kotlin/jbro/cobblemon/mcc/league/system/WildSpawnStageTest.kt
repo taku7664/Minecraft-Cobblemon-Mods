@@ -38,6 +38,8 @@ class WildSpawnStageTest {
     @Test
     fun `an evolution without a level condition never happens`() {
         assertEquals(emptyList<String>(), WildSpawnStage.next(80, listOf(branch("raichu", null), branch("gengar", null))))
+        // Galarian Yamask's Runerigus branch carries minLevel 0 beside its damage taken condition.
+        assertEquals(emptyList<String>(), WildSpawnStage.next(80, listOf(branch("runerigus", 0, unmet = true))))
     }
 
     @Test
