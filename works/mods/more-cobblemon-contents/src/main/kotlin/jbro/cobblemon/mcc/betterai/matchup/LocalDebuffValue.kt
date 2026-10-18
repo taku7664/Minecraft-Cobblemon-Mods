@@ -61,14 +61,18 @@ internal object LocalDebuffValue {
         // A status the exchange does not play (sleep, freeze, poison) reads as no change, which is not what it is worth:
         // Sleep Powder on a Swampert came to 0 and lost its ranking value to a resisted Sludge Bomb (2026-10-12). No
         // reading; the move keeps the value the ranking gave it.
-        val accuracy = move.moveDetails?.accuracy?.takeIf { it > 0.0 }?.let { (it / 100.0).coerceAtMost(1.0) } ?: 1.0
+        // The accuracy every other reader takes: stages, No Guard, a Poison type's sure Toxic.
+        val accuracy = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy.probability(move, context, BattleSide.ALLY).coerceIn(0.0, 1.0)
         // Poison and Toxic: the exchange that plays each turn's residual out (evolving matchups), for the target's pairs
         // with this team only, before and after; an immune target or one already statused gains nothing (user decision
         // 2026-10-19: Toxic is a debuff).
-        if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) in POISONING) {
+        val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
+            .flatMap { it.statStages.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, changes) -> changes.sum() }
+        // A poison with no drop beside it (Toxic, Poison Powder); one with drops (Toxic Thread) is read below with them.
+        if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) in POISONING && drops.isEmpty()) {
             val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
-            val evolving = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().copy(evolvingMatchups = true)
+            val evolving = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().copy(evolvingMatchups = true, matchupRecovery = recovery)
             fun mean(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(evolving) {
                 val subject = board.pokemon.first { it.battlePokemonId == target.battlePokemonId }
                 team.mapNotNull { allyId ->
@@ -85,9 +89,7 @@ internal object LocalDebuffValue {
             })) ?: return null
             return Reading(plain, poisoned, accuracy)
         }
-        if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
-        val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
-            .flatMap { it.statStages.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, changes) -> changes.sum() }
+        if (status != null && drops.isEmpty() && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         val statused = state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId == target.battlePokemonId && status != null && it.statusId == null) it.copyState(statusId = status) else it
