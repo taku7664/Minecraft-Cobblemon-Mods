@@ -231,13 +231,13 @@ internal class LocalTacticalBrain(
                 .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
                 .firstOrNull { it !== difficultyContext } ?: return@lazy null
             val table = pairTable(board)
-            // A Mega board whose Mega reads no attack at all where the base form has some cannot be played (its form's data
+            // A Mega board whose Mega reads no damaging attack at all where the base form has some cannot be played (its form's data
             // missing): the base board stands. Read anyway, the Pokemon "had nothing to hit with" and switched out of sure
             // knockouts (Z-A Megas in the league run without their species data, 2026-10-19).
             fun attacks(scores: jbro.cobblemon.mcc.betterai.matchup.MatchupScores?, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Boolean {
                 val ally = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted } ?: return false
                 return state.pokemon.any { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
-                    scores?.moves(ally.battlePokemonId, it.battlePokemonId)?.isNotEmpty() == true }
+                    scores?.moves(ally.battlePokemonId, it.battlePokemonId)?.any { move -> move.maximumDamageFraction > 0.0 } == true }
             }
             if (!attacks(table, board.state) && attacks(baseRuleScores, difficultyContext.state)) {
                 logger.warn("[BetterAI] The Mega board reads no attack for the Pokemon in front; the rules read the base board")
