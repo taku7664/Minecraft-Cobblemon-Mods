@@ -39,6 +39,27 @@ class PublicSwitchEntryHazardCalculatorTest {
             else emptyList()
         })
         assertEquals(0.24, requireNotNull(jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator.hpLoss(field, BattleSide.ALLY, pokemon)), 1e-9)
+        // A range: the least share over every maximum HP in it. 100 to 148 at 0.5 of two halves (Stealth Rock on a double
+        // weakness and three layers of Spikes) is 50 of 100, but 50 of 102 for a Pokemon at 102, the least.
+        val ranged = BattlePokemonStateView(
+            UUID.randomUUID(), BattleSide.ALLY, null, "probe", null, 51, 0.5, null,
+            emptyMap(), emptySet(), null, null, false, setOf("fire", "flying"),
+            BattleCombatStatRangesView(BattleIntegerRange(100, 148), hundred, hundred, hundred, hundred, hundred,
+                BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE),
+        )
+        val heavy = BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { side ->
+            if (side == BattleSide.ALLY) listOf(BattleTimedEffectView("stealthrock", null)) else emptyList()
+        })
+        val share = requireNotNull(jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator.hpLoss(heavy, BattleSide.ALLY, ranged))
+        assertEquals((100..148).minOf { kotlin.math.floor(it * 0.5).coerceAtLeast(1.0) / it }, share, 1e-9)
+        // A hit under 1 HP is 1: Shedinja, at 1 maximum HP, falls to Stealth Rock.
+        val one = BattleIntegerRange(1, 1)
+        val shedinja = BattlePokemonStateView(
+            UUID.randomUUID(), BattleSide.ALLY, null, "shedinja", null, 50, 1.0, null,
+            emptyMap(), emptySet(), null, null, false, setOf("bug", "ghost"),
+            BattleCombatStatRangesView(one, hundred, hundred, hundred, hundred, hundred, BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE),
+        )
+        assertEquals(1.0, requireNotNull(jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator.hpLoss(heavy, BattleSide.ALLY, shedinja)), 1e-9)
     }
 
     @Test

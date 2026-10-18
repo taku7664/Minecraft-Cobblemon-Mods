@@ -46,28 +46,24 @@ internal object PublicSwitchEntryHazardCalculator {
         if (hazards.isEmpty()) return 0.0
         if (activeItem == HEAVY_DUTY_BOOTS || ability == MAGIC_GUARD) return 0.0
 
-        // Each hazard's damage is its own whole number of HP, rounded down (Showdown truncates each), so two hazards can
-        // leave 1 HP where their fractions add up to the whole bar. With the maximum HP only a range, its least: the one
-        // that rounds down most, so a Pokemon on the boundary is not read as fainting on entry (Codex review of fe443485).
-        val maxHp = pokemon.combatStats?.maxHp?.minimum?.takeIf { it > 0 }
-        fun whole(fraction: Double): Double = if (maxHp == null) fraction else kotlin.math.floor(maxHp * fraction + 1e-9) / maxHp
-        var loss = 0.0
+        val fractions = ArrayList<Double>()
+        fun hazard(fraction: Double) { fractions += fraction }
         hazards.forEach { hazard ->
             when (canonical(hazard.effectId)) {
                 STEALTH_ROCK -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    loss += whole(STEALTH_ROCK_FRACTION *
+                    hazard(STEALTH_ROCK_FRACTION *
                         StandardTypeEffectiveness.multiplier("rock", pokemon.knownTypeIds))
                 }
                 G_MAX_STEELSURGE -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    loss += whole(STEALTH_ROCK_FRACTION *
+                    hazard(STEALTH_ROCK_FRACTION *
                         StandardTypeEffectiveness.multiplier("steel", pokemon.knownTypeIds))
                 }
                 SPIKES -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
                     if (grounded) {
-                        loss += whole(when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
+                        hazard(when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
                             1 -> 1.0 / 8.0
                             2 -> 1.0 / 6.0
                             else -> 1.0 / 4.0
@@ -76,7 +72,23 @@ internal object PublicSwitchEntryHazardCalculator {
                 }
             }
         }
-        return loss.coerceIn(0.0, 1.0)
+        return wholeHp(fractions, pokemon.combatStats?.maxHp).coerceIn(0.0, 1.0)
+    }
+
+    /**
+     * The hazards' damage as Showdown deals it: each its own whole number of HP, rounded down and at least 1 (so two can
+     * leave 1 HP where their fractions add up to the whole bar, and Shedinja falls to Stealth Rock). With the maximum HP
+     * only a range, the least share of it over every value in the range, so a Pokemon on the boundary is not read as
+     * fainting on entry (Codex reviews of fe443485 and cfe75d8e).
+     */
+    private fun wholeHp(fractions: List<Double>, range: jbro.cobblemon.mcc.internal.ai.BattleIntegerRange?): Double {
+        val fractional = fractions.sum()
+        if (fractions.isEmpty() || range == null || range.minimum <= 0) return fractional
+        return (range.minimum..maxOf(range.minimum, range.maximum)).minOf { maxHp ->
+            fractions.sumOf { fraction ->
+                if (fraction <= 0.0) 0.0 else kotlin.math.floor(maxHp * fraction + 1e-9).coerceAtLeast(1.0)
+            } / maxHp
+        }
     }
 
     private fun isGrounded(pokemon: BattlePokemonStateView, item: String?, ability: String?): Boolean =
