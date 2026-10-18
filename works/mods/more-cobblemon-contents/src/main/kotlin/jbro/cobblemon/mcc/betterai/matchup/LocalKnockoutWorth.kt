@@ -34,7 +34,20 @@ import java.util.UUID
  */
 internal object LocalKnockoutWorth {
     /** Each living Pokemon's worth in the units of [flat], the value of one average Pokemon of its side. */
-    fun worths(state: BattleStateView, scores: MatchupScores, flat: Double): Map<UUID, Double> {
+    fun worths(state: BattleStateView, scores: MatchupScores, flat: Double): Map<UUID, Double> = read(state, scores, flat).worths
+
+    data class Reading(
+        /** Each living Pokemon's worth, in the units of the flat value asked for. */
+        val worths: Map<UUID, Double>,
+        /**
+         * What knocking each one out this turn stops, in board units: its best hit at the other side's Pokemon in front,
+         * landed or not as it would without being knocked out first (no acting chance, no cost to itself). A 1% Golem
+         * the attacker outspeeds is worth little to keep, but left standing it Explodes on whatever is in front.
+         */
+        val denials: Map<UUID, Double>,
+    )
+
+    fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
         val fight = living.mapNotNull { pokemon ->
             val values = living.filter { it.side != pokemon.side }.mapNotNull { other ->
@@ -43,7 +56,7 @@ internal object LocalKnockoutWorth {
             }
             if (values.isEmpty()) null else pokemon.battlePokemonId to values.map { (it + 1.0) / 2.0 }.average()
         }.toMap()
-        if (fight.isEmpty()) return emptyMap()
+        if (fight.isEmpty()) return Reading(emptyMap(), emptyMap())
         val sides = fight.keys.associateWith { id -> living.first { it.battlePokemonId == id }.side }
         // Each side's values scaled to a mean of one Pokemon; a side whose values are all zero keeps one each.
         fun perSide(raw: Map<UUID, Double>): Map<UUID, Double> = raw.entries.groupBy { sides.getValue(it.key) }.values.flatMap { entries ->
@@ -64,10 +77,22 @@ internal object LocalKnockoutWorth {
                 best
             }.average()
         }
+        val denials = fight.keys.associateWith { id ->
+            val pokemon = living.first { it.battlePokemonId == id }
+            val inFront = living.filter { it.side != pokemon.side && it.activeSlot != null }
+            inFront.map { target ->
+                scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
+                    move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
+                        move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
+                } ?: 0.0
+            }.averageOrZero()
+        }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
-        return perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })
-            .mapValues { (_, value) -> flat * value }
+        return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })
+            .mapValues { (_, value) -> flat * value }, denials)
     }
+
+    private fun List<Double>.averageOrZero() = if (isEmpty()) 0.0 else average()
 
     /**
      * The chance [subject] gets [move] off against [other]: it moves first, or it survives [other]'s first hit. Who

@@ -442,9 +442,10 @@ internal class LocalTacticalBrain(
         }.orEmpty() }
         // Each Pokemon's worth from the matchup table, for the tiers that read it: the native search, the ranking and the
         // rules price material and knockouts with it on this thread (LocalPokemonWorth).
-        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(if (!rulesApply) null else baseRuleScores?.let {
-            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.worths(difficultyContext.state, it, tuning.livingPokemonValue)
-        })
+        val worthReading = if (!rulesApply) null else baseRuleScores?.let {
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(difficultyContext.state, it, tuning.livingPokemonValue)
+        }
+        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(worthReading?.worths, worthReading?.denials)
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
         // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
         val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(

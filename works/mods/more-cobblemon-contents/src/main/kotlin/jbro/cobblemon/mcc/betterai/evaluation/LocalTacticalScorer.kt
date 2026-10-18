@@ -182,11 +182,12 @@ internal object LocalTacticalScorer {
                 ?: return@mapNotNull null
             // The existing credit already resolves damage modifiers, accuracy and initiative.
             // Only full credit is certain here; partial credits need a joint probability model.
-            if (knockoutUtility(action, tuning, context) != knockoutScoreAt(target, context, tuning)) return@mapNotNull null
-            target
+            val value = knockoutScoreAt(target, context, tuning, action)
+            if (knockoutUtility(action, tuning, context) != value) return@mapNotNull null
+            target to value
         }
-        return fullCredits.groupingBy { it }.eachCount().entries.sumOf { (target, count) ->
-            (count - 1).coerceAtLeast(0) * knockoutScoreAt(target, context, tuning)
+        return fullCredits.groupBy({ it.first }, { it.second }).values.sumOf { values ->
+            values.drop(1).sum()
         }
     }
 
@@ -207,8 +208,8 @@ internal object LocalTacticalScorer {
                 // The credit is the target's worth times the chance; the chance alone is what overlaps.
                 // A target worth nothing (it wins no exchange and lands nothing) has no credit to overlap.
                 if (primary?.side == BattleSide.OPPONENT) {
-                    val worth = knockoutScoreAt(primary, context, tuning)
-                    add(primary to if (worth <= 0.0) 0.0 else knockoutUtility(action, tuning, context) / worth)
+                    val worth = knockoutScoreAt(primary, context, tuning, action)
+                    add(Triple(primary, if (worth <= 0.0) 0.0 else knockoutUtility(action, tuning, context) / worth, worth))
                 }
                 spread.drop(1).filter { it.side == BattleSide.OPPONENT }.forEach { extra ->
                     val probability = when (extra.standardKnockoutAssessment) {
@@ -217,21 +218,28 @@ internal object LocalTacticalScorer {
                             ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
                         else -> 0.0
                     }
-                    add(jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(extra.side, extra.slot) to probability * accuracy)
+                    val slot = jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(extra.side, extra.slot)
+                    add(Triple(slot, probability * accuracy, knockoutScoreAt(slot, context, tuning, action)))
                 }
             }
         }
-        return credits.groupBy({ it.first }, { it.second.coerceIn(0.0, 1.0) }).entries.sumOf { (target, probabilities) ->
+        return credits.groupBy { it.first }.values.sumOf { group ->
+            val probabilities = group.map { it.second.coerceIn(0.0, 1.0) }
             val union = 1.0 - probabilities.fold(1.0) { survival, probability -> survival * (1.0 - probability) }
-            (probabilities.sum() - union).coerceAtLeast(0.0) * knockoutScoreAt(target, context, tuning)
+            // Each credit is priced at its own value (the hit it stops depends on its order); the overlap at their mean.
+            (probabilities.sum() - union).coerceAtLeast(0.0) * group.map { it.third }.average()
         }
     }
 
-    /** A knockout of whoever stands in [slot], at its worth (LocalPokemonWorth). */
-    private fun knockoutScoreAt(slot: jbro.cobblemon.mcc.internal.ai.BattleTargetSlot, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double =
-        LocalPokemonWorth.knockoutScore(context.state.pokemon.firstOrNull {
-            it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
-        }?.battlePokemonId, tuning)
+    /** A knockout of whoever stands in [slot] by [action], at its worth and the hit it stops (LocalPokemonWorth). */
+    private fun knockoutScoreAt(
+        slot: jbro.cobblemon.mcc.internal.ai.BattleTargetSlot,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        action: BattleActionCandidate,
+    ): Double = LocalPokemonWorth.knockoutScore(context.state.pokemon.firstOrNull {
+        it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
+    }?.battlePokemonId, tuning, action.facts?.actsFirstProbability ?: LocalTacticalSituationalEvaluator.UNKNOWN_ORDER)
 
     /**
      * The half of a move's score that is a statement about the candidate rather than about value.
