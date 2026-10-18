@@ -1,5 +1,12 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-10-18 13:50] `6bc4fd51` 개발 서버·클라 배포: MCC 애드온 피드백 수정 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- `origin/main` `6bc4fd51`을 워크트리 `.claude/worktrees/mcc-addon-feedback`에서 `remapJar`로 빌드했다(EXIT 0, Kotlin in-process, 빌드 출력 `F:/AI/builds/mcc-addon-feedback`). 세 모듈을 한 번에 `assemble`하면 2G 힙에서 GC 과부하로 데몬이 멈춰, 모듈별 `remapJar`로 나눴다. `unzip -t`와 JDK 21 `jar --validate`를 통과했다.
+- 개발 서버·클라이언트에 타워·리그·PvP 3개만 넣었고 빌드본과 SHA-256이 같다(타워 184A3F18…). 백업 `develop-product/deployment-backups/20261018-1348-6bc4fd51-mcc-addons`. 개발 서버와 게임은 꺼져 있었고 서버는 켜지 않았다.
+- MCC 본체·UI·NPC는 넣지 않았다. 설치된 본체 이후 main의 본체 변경은 Better AI 내부와 배틀 UI(`extended`)뿐이라 애드온이 쓰는 API는 같다. 개발 서버 본체(05:13, `74bd86b0`)와 개발 클라 본체(03:51)는 원래부터 다르다(다른 세션 배치).
+- PPakemon 프로필·운영(VPS)·deploy-product에는 넣지 않았다. PvP 방 패킷 형식이 바뀌어 운영 서버와 같이 바꿔야 한다. 실게임은 확인하지 않았다.
+
 ## [2026-10-18 07:40] 일반 메가 트레이너는 메가스톤 1개 (단위 확인, 빌드 배치·실게임 미확인)
 
 - **빡대리님 피드백:** 트레이너가 메가스톤 세트 3마리를 들고 와서 한 마리가 메가진화하면 나머지는 쓸모가 없다. 원인은 일반·보스 메가 풀이 같은 티어의 `mechanic_id: mega` 세트뿐이고, 그중 일반 세트는 전부 스톤을 든다는 것(티어마다 73세트 중 60세트가 스톤, 나머지 13세트는 일반 경로에서 빠지는 제한급 전설). 챔피언 고정 로스터만 스톤 1개 규칙이 있었다.
