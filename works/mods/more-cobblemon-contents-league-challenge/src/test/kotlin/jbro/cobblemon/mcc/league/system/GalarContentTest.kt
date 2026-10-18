@@ -106,8 +106,18 @@ class GalarContentTest {
         }
     }
 
-    @Test fun `locked region and another regional run cannot be bypassed by a direct request`() {
+    @Test fun `Galar ships inactive, so no request reaches it and it earns no cap until released`() {
         val c = catalog()
+        assertFalse(c.active)
+        val unlocked = mapOf("$ns:sinnoh" to LeagueProgress(champion = true), c.id to LeagueProgress(cleared = c.gyms.toSet()))
+        assertEquals("catalog_unavailable", assertThrows(IllegalStateException::class.java) { LeagueWorldRules.requireCanChallenge(c, unlocked) }.message)
+        assertEquals(16, LeagueWorldRules.earnedCap(listOf(c), unlocked))
+        assertTrue(LeagueWorldRules.earnedCap(listOf(c.copy(active = true)), unlocked) > 16)
+    }
+
+    @Test fun `locked region and another regional run cannot be bypassed by a direct request`() {
+        // The rules once Galar is released.
+        val c = catalog().copy(active = true)
         assertEquals("league_locked", assertThrows(IllegalStateException::class.java) { LeagueWorldRules.requireCanChallenge(c, emptyMap()) }.message)
         val unlocked = mapOf("$ns:sinnoh" to LeagueProgress(champion = true))
         assertDoesNotThrow { LeagueWorldRules.requireCanChallenge(c, unlocked) }

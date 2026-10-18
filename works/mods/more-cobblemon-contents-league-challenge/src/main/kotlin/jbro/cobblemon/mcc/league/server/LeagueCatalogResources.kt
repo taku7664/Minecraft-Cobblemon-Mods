@@ -14,6 +14,8 @@ object LeagueCatalogResources : SimpleSynchronousResourceReloadListener {
     val current: LeagueCatalog? get() = loaded?.primary
     val catalogs: Map<String, LeagueCatalog> get() = loaded?.catalogs.orEmpty()
     fun find(id: String): LeagueCatalog? = catalogs[id]
+    /** A league players may see and choose; an inactive one stays for operators only. */
+    fun findActive(id: String): LeagueCatalog? = catalogs[id]?.takeIf { it.active }
     @Volatile var revision: Long = 0
         private set
     /** Why the last reload was rejected, or null when it was accepted; the previous catalog stays in use. */
@@ -43,6 +45,7 @@ object LeagueCatalogResources : SimpleSynchronousResourceReloadListener {
                 }.toMap()
             }
             val next = LeagueCatalogParser.parse(input, "${Mod.MOD_ID}:active")
+            require(next.active) { "The primary League must be active" }
             val all = input.getValue("leagues").keys.map { LeagueCatalogParser.parse(input, it) }
             require(all.map { it.id }.distinct().size == all.size) { "Duplicate league progress ID" }
             val byId = all.associateBy { it.id }

@@ -33,7 +33,7 @@ object LeagueDashboard {
             val rows = ArrayList<MccDashboardRow>()
             // One line per region, the primary first: its normal league, the hard league under it, or what opens it.
             val states = LeagueProgressQueries.states(context.server, context.playerId)
-            val regions = (listOf(catalog) + LeagueCatalogResources.catalogs.values.filter { it.id != catalog.id })
+            val regions = (listOf(catalog) + LeagueCatalogResources.catalogs.values.filter { it.id != catalog.id && it.active })
                 .sortedBy { region -> generateSequence(region.unlockLeague) { LeagueCatalogResources.find(it)?.unlockLeague }.count() }
             regions.forEach { region ->
                 val progress = states[region.id] ?: LeagueSavedData.get(context.server).read(region.id, context.playerId)
