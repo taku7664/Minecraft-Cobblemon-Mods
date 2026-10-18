@@ -19,13 +19,20 @@ internal object EngineRuntimeDex {
     private var cached: Pair<String, EngineDex>? = null
 
     /**
+     * Outside the game only (no Cobblemon registry): species JSON in Showdown's form to overlay the same way. Tests read
+     * Mega Showdown's species additions here so a Z-A Mega exists as it does in the game; the game never sets it.
+     */
+    @Volatile
+    internal var outsideGameSpecies: (() -> List<String>?)? = null
+
+    /**
      * The dex with the current Cobblemon species and the runtime abilities ([RuntimeAbilityScripts]), and a digest of
      * that data ("bundled" when there is none).
      */
     fun current(): Pair<String, EngineDex> {
         val abilityDigest = RuntimeAbilityScripts.refresh()
         val abilities = RuntimeAbilityScripts.current()
-        val data = cobblemonSpecies()
+        val data = cobblemonSpecies() ?: outsideGameSpecies?.invoke()
         if (data == null && abilities.isEmpty()) return "bundled" to EngineDex.bundled()
         val digest = (data?.let(::digest) ?: "bundled") + if (abilities.isEmpty()) "" else "+abilities=$abilityDigest"
         cached?.takeIf { it.first == digest }?.let { return it }

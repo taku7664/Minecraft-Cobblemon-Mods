@@ -99,12 +99,14 @@ internal object LocalMechanicActivationProjector {
             knownAbilityId = form.abilityId,
             knownHeldItemId = actor.knownHeldItemId,
             fainted = actor.fainted,
-            knownTypeIds = form.knownTypeIds,
+            // A form handed over without its types (a Mega the data source does not know) keeps the user's: read with
+            // none, its attacks had no same-type bonus to compute and every damage projection came out empty (2026-10-19).
+            knownTypeIds = form.knownTypeIds.ifEmpty { actor.knownTypeIds },
             combatStats = form.combatStats,
             knownFormStates = actor.knownFormStates,
             actionConstraints = actor.actionConstraints,
             knownVolatileEffectIds = actor.knownVolatileEffectIds,
-            knownBaseStabTypeIds = form.knownTypeIds,
+            knownBaseStabTypeIds = form.knownTypeIds.ifEmpty { actor.knownBaseStabTypeIds },
             knownTeraTypeId = actor.knownTeraTypeId,
             knownStellarBoostedTypeIds = actor.knownStellarBoostedTypeIds,
             knownBaseAbilityId = form.abilityId,
