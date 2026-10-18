@@ -104,10 +104,13 @@ internal object LocalStatusMoveValue {
             hazards + (score - now.score)
         }
         if (gains.isEmpty()) return null
+        // The target's best hit as it lands on the user this turn: from the move table, not the exchange's, which thins
+        // it for the user's flinching attack or reads it as never knocking out a user that heals it off.
+        val hit = scores.moves(target.battlePokemonId, user.battlePokemonId).maxByOrNull { it.score }
         // Moving last at -6, the target's hit lands first: a knockout there and the move never comes.
-        val acts = 1.0 - (now.opponentMove?.knockoutChanceWithin(1) ?: 0.0)
+        val acts = 1.0 - (hit?.knockoutChanceWithin(1) ?: 0.0)
         // Moving last at -6 gives the target its hit first where the user would otherwise have struck first.
-        val firstHit = now.subjectMovesFirstProbability * (now.opponentMove?.let(::expectedHit) ?: 0.0)
+        val firstHit = now.subjectMovesFirstProbability * (hit?.let(::expectedHit) ?: 0.0)
         return (accuracy * acts * (gains.average() - toxicCountLost(context, target, now)) - firstHit) * tuning.boardToScore
     }
 
