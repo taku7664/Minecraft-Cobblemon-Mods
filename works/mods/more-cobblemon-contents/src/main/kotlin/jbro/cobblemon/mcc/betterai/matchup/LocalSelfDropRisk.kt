@@ -224,10 +224,12 @@ internal object LocalSelfDropRisk {
         val hits = foes.mapNotNull { foe ->
             val hit = threats(board, before, userId, foe, cache).maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
             val first = LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, hit.action) ?: 0.5
-            // Moving after the attack, it hits the lowered user, unless the attack knocked it out.
-            val lowered = if (first >= 0.5) threats(board, after, userId, foe, cache).firstOrNull { it.score.moveId == hit.score.moveId }?.score else null
-            val fells = if (foe in targeted) scores.moves(userId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }
-                ?.knockoutChanceWithin(1) ?: 0.0 else 0.0
+            // Moving after the attack, it hits the lowered user with its best counter there, unless the attack knocked it out.
+            val lowered = if (first >= 0.5) threats(board, after, userId, foe, cache).maxByOrNull { it.score.knockoutChanceWithin(1) }?.score else null
+            // Given the attack landed (this board is the drop's, so it did): the knockout table counts the miss too.
+            val accuracy = LocalPublicAccuracy.probability(move, board, BattleSide.ALLY).coerceIn(0.0, 1.0)
+            val fells = if (foe in targeted && accuracy > 0.0) scores.moves(userId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }
+                ?.knockoutChanceWithin(1)?.let { (it / accuracy).coerceIn(0.0, 1.0) } ?: 0.0 else 0.0
             val incoming = LocalKnockoutWorth.actsThisTurn(foe) * ((1.0 - first) + first * (1.0 - fells))
             // A spread hit lands on the user whatever it aims at; a single one at one of this side's Pokemon in front.
             val aim = if (hit.action.moveDetails?.targetPattern in SPREAD) 1.0 else 1.0 / allies
