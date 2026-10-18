@@ -33,16 +33,18 @@ internal object LocalPublicStatusImmunity {
         val fromOther = source != null && source.battlePokemonId != target.battlePokemonId
         if (fieldBlocks(state, target, status, sourceAbility, source, fromOther, byMove)) return true
         if (ability in ALL_STATUS_IMMUNITIES) return true
-        if (fromOther && flowerVeiled(state, target)) return true
+        // A move that ignores abilities (Mold Breaker, Mycelium Might) ignores every one but its user's: the target's and
+        // its partner's veils alike, as Showdown skips any ability holder other than the attacker.
+        if (fromOther && !ignoreTargetAbility && flowerVeiled(state, target)) return true
         if (ability == LEAF_GUARD && LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER &&
             LocalPublicItemState.activeItemId(state, target) != UTILITY_UMBRELLA) return true
         return when (status) {
             // Corrosion poisons Steel and Poison types alike.
             in POISON -> sourceAbility != CORROSION && ("poison" in types || "steel" in types) ||
-                ability == "immunity" || ability == "pastelveil" || allyAbility(state, target, "pastelveil")
+                ability == "immunity" || ability == "pastelveil" || !ignoreTargetAbility && allyAbility(state, target, "pastelveil")
             in BURN -> "fire" in types || ability == "waterveil" || ability == "waterbubble" || ability == "thermalexchange"
             in PARALYSIS -> "electric" in types || ability == "limber"
-            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil") || allyAbility(state, target, "sweetveil")
+            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil") || !ignoreTargetAbility && allyAbility(state, target, "sweetveil")
             in FREEZE -> "ice" in types || ability == "magmaarmor" ||
                 LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER
             else -> false
