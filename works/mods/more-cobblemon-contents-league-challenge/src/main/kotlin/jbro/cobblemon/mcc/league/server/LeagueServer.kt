@@ -228,12 +228,15 @@ object LeagueServer {
                 playerLevelCap = run.battleCap ?: LeagueEngine(catalog).battleCap(challenge.id)) { outcome ->
                 val storage = LeagueSavedData.get(player.server)
                 val latest = storage.read(catalog.id, player.uuid)
-                val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
+                // A league switched off while this battle ran takes no result from it; the run just ends.
+                val active = LeagueCatalogResources.findActive(catalog.id) != null
+                val completed = if (!active) LeagueEngine(catalog).cancel(latest)
+                    else LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
                 commit(player.server, catalog.id, player.uuid, completed)
                 announceChampion(player.server, player.uuid, catalog, challenge.nameKey, latest, completed)
                 player.server.playerList.getPlayer(player.uuid)?.let { online ->
                     // Only the first callback for this battle changes the progress; retries stay quiet.
-                    if (completed != latest && outcome != ManagedPveBattles.Outcome.CANCELLED) {
+                    if (active && completed != latest && outcome != ManagedPveBattles.Outcome.CANCELLED) {
                         val opponent = Component.translatable(challenge.nameKey)
                         if (outcome == ManagedPveBattles.Outcome.WIN) {
                             val known = latest.rewards.map { it.token }.toSet()
