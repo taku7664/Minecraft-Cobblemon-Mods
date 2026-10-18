@@ -206,6 +206,9 @@ internal object EmbeddedTeamBattle {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
                                 add("input", input); addProperty("actionId", decision.actionId)
                                 addProperty("decisionMillis", (decidedAt - decisionStarted) / 1_000_000)
+                                // Each Pokemon's worth the decision priced material and knockouts with (LocalPokemonWorth).
+                                add("worth", JsonObject().apply { jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.last.forEach { (id, value) ->
+                                    addProperty(context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.let { "${it.side}:${it.speciesId}" } ?: id.toString(), value) } })
                                 add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))

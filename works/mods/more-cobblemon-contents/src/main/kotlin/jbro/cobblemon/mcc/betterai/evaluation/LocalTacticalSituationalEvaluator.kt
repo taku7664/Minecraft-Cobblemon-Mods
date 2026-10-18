@@ -101,7 +101,14 @@ internal object LocalTacticalSituationalEvaluator {
         // measurement says otherwise.
         val order = facts?.actsFirstProbability
         val initiative = if (order == null) 1.0 else 1.0 - tuning.firstStrikeWeight * (1.0 - order)
-        return tuning.knockoutMaterialScore * probability * landing * initiative
+        // The Pokemon that falls (LocalPokemonWorth): the declared target, or the one in front.
+        val target = context?.let { position ->
+            val slot = facts?.spreadTargets?.firstOrNull()?.let { it.side to it.slot }
+                ?: candidate.targets.firstOrNull()?.let { it.side to it.slot }
+            position.state.pokemon.firstOrNull { !it.fainted && it.activeSlot != null &&
+                if (slot != null) it.side == slot.first && it.activeSlot == slot.second else it.side == BattleSide.OPPONENT }
+        }
+        return LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning) * probability * landing * initiative
     }
 
     /**
@@ -183,7 +190,8 @@ internal object LocalTacticalSituationalEvaluator {
                     ?: 0.0
                 else -> 0.0
             }
-            damage + tuning.knockoutMaterialScore * knockoutProbability * accuracy
+            val hit = context.state.pokemon.firstOrNull { it.side == extra.side && it.activeSlot == extra.slot && !it.fainted }
+            damage + LocalPokemonWorth.knockoutScore(hit?.battlePokemonId, tuning) * knockoutProbability * accuracy
         }
     }
 
@@ -462,7 +470,11 @@ internal object LocalTacticalSituationalEvaluator {
         (currentHp - (candidate.facts?.switchEntryHpLossFraction ?: 0.0)).coerceAtLeast(0.0)
 
     fun entryKnockoutPenalty(candidate: BattleActionCandidate, currentHp: Double): Double =
-        if (currentHp > 0.0 && postEntryHp(candidate, currentHp) <= 0.0) ENTRY_KNOCKOUT_PENALTY else 0.0
+        if (currentHp > 0.0 && postEntryHp(candidate, currentHp) <= 0.0) {
+            // The Pokemon lost on entry at its worth; the flat penalty is two board units.
+            candidate.switchPokemonId?.let(LocalPokemonWorth::of)?.let { ENTRY_KNOCKOUT_PENALTY * it / LocalDecisionTuning.CURRENT.livingPokemonValue }
+                ?: ENTRY_KNOCKOUT_PENALTY
+        } else 0.0
 
     fun compositeCoordinationAdjustment(
         candidate: BattleActionCandidate,

@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth
 import jbro.cobblemon.mcc.betterai.matchup.MatchupScores
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
+import jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore
 import jbro.cobblemon.mcc.betterai.matchup.PokemonMatchupScore
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,7 +13,7 @@ import java.util.UUID
 
 class LocalKnockoutWorthTest {
     @Test
-    fun `a Pokemon is worth its exchanges against the other side, the board's mean held at the flat value`() {
+    fun `a Pokemon is worth its exchanges against the other side, each side's mean held at one Pokemon`() {
         val ace = mon(BattleSide.ALLY, 0)
         val spent = mon(BattleSide.ALLY, null)
         val foeA = mon(BattleSide.OPPONENT, 0)
@@ -22,20 +23,40 @@ class LocalKnockoutWorthTest {
             pair(ace, foeA, 1.0), pair(ace, foeB, 0.6),
             pair(spent, foeA, -1.0), pair(spent, foeB, -1.0),
         )
-        val state = BattleStateView(
-            UUID.randomUUID(), BattleFormat.SINGLE, 5, listOf(ace, spent, foeA, foeB),
-            BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),
-            BattleSide.entries.associateWith { 2 }, emptyList(), emptyList(),
-        )
-        val worth = LocalKnockoutWorth.worths(state, MatchupScores(emptyMap(), table, complete = true), 200.0)
+        val worth = LocalKnockoutWorth.worths(state(ace, spent, foeA, foeB), MatchupScores(emptyMap(), table, complete = true), 200.0)
 
-        assertEquals(200.0, worth.values.average(), 1e-9)
+        assertEquals(200.0, listOf(ace, spent).map { worth.getValue(it.battlePokemonId) }.average(), 1e-9)
+        assertEquals(200.0, listOf(foeA, foeB).map { worth.getValue(it.battlePokemonId) }.average(), 1e-9)
         assertEquals(0.0, worth.getValue(spent.battlePokemonId), 1e-9)
-        assertTrue(worth.getValue(ace.battlePokemonId) > worth.getValue(foeA.battlePokemonId))
-        // foeA: (1 - 1) / 2 against the ace, (1 + 1) / 2 against the spent one.
-        val mean = listOf(0.9, 0.0, 0.5, 0.6).average()
-        assertEquals(200.0 * 0.5 / mean, worth.getValue(foeA.battlePokemonId), 1e-9)
+        // foeA: (1 - 1) / 2 against the ace, (1 + 1) / 2 against the spent one; foeB: 0.2 and 1.
+        assertEquals(200.0 * 0.5 / 0.55, worth.getValue(foeA.battlePokemonId), 1e-9)
     }
+
+    @Test
+    fun `a Pokemon that loses every exchange is still worth the hit it lands before it falls`() {
+        val ace = mon(BattleSide.ALLY, 0)
+        val spent = mon(BattleSide.ALLY, null)
+        val foeA = mon(BattleSide.OPPONENT, 0)
+        val foeB = mon(BattleSide.OPPONENT, null)
+        val table = mapOf(
+            pair(ace, foeA, 1.0), pair(ace, foeB, 0.6),
+            pair(spent, foeA, -1.0), pair(spent, foeB, -1.0),
+        )
+        // The spent Pokemon still takes half of foeA's bar with one hit: half a board unit against foeA, none against foeB.
+        val hit = MoveMatchupScore(spent.battlePokemonId, "probe", foeA.battlePokemonId, 1.0, 0.5, 0.5,
+            listOf(1.0, 1.0, 0.0), listOf(0.0, 0.5, 0.0), 2.0, 0.5)
+        val worth = LocalKnockoutWorth.worths(state(ace, spent, foeA, foeB),
+            MatchupScores(mapOf((spent.battlePokemonId to foeA.battlePokemonId) to listOf(hit)), table, complete = true), 2.0)
+
+        // Board units: the ace 2 x 2 = 4 on the fight, the spent one 0 + 0.25; scaled to a mean of 2.
+        assertEquals(2.0 * 0.25 / ((4.0 + 0.25) / 2.0), worth.getValue(spent.battlePokemonId), 1e-9)
+    }
+
+    private fun state(vararg pokemon: BattlePokemonStateView) = BattleStateView(
+        UUID.randomUUID(), BattleFormat.SINGLE, 5, pokemon.toList(),
+        BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),
+        BattleSide.entries.associateWith { 2 }, emptyList(), emptyList(),
+    )
 
     private fun pair(ally: BattlePokemonStateView, foe: BattlePokemonStateView, score: Double) =
         Triple(ally.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.CURRENT) to

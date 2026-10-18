@@ -159,7 +159,9 @@ internal class LocalTacticalBrain(
     override fun decide(
         session: BattleBrainSession,
         context: BattleDecisionContext,
-    ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) { decideWithTuning(session, context) }
+    ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) {
+        try { decideWithTuning(session, context) } finally { jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.clear() }
+    }
 
     private fun decideWithTuning(
         session: BattleBrainSession,
@@ -599,6 +601,11 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
+        // Each Pokemon's worth from the matchup table, for the tiers that read it; the ranking and the rules price material
+        // and knockouts with it (LocalPokemonWorth).
+        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(if (!rulesApply) null else baseRuleScores?.let {
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.worths(difficultyContext.state, it, tuning.livingPokemonValue)
+        })
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
         val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null

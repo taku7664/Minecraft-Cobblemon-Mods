@@ -918,7 +918,7 @@ internal object LocalTacticalScorer {
         if (!rolls.isNullOrEmpty()) {
             val lost = rolls.map { minOf(it, target.hpFraction) }.average()
             val knockoutChance = rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
-            return (lost * tuning.boardToScore + knockoutChance * tuning.knockoutMaterialScore) *
+            return (lost * tuning.boardToScore + knockoutChance * LocalPokemonWorth.knockoutScore(target.battlePokemonId, tuning)) *
                 (1.0 - doomedDiscount(target))
         }
         return spread * if (tuning.legacyRawPowerFallback) {
