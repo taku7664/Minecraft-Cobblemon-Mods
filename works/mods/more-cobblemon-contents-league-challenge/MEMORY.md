@@ -1,5 +1,13 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-18 14:30] 지방 `active` 항목, 가라르 미공개 배포 (단위 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 결정:** 지방 JSON에 해금과 별개인 `active`를 둔다. 꺼진 지방은 탭이 보이지 않는다. 배포는 하되 가라르는 아직 미공개라 `galar.json`을 `active: false`로 배포한다.
+- **동작:** `LeagueCatalog.active`(기본 true). 꺼진 지방은 `LeagueViews` 탭 목록·대시보드에서 빠지고, `findActive`로만 찾는 선택(SELECT_LEAGUE)·요청 처리와 `requireCanChallenge`가 `catalog_unavailable`로 거절하며, `earnedCap`에서 빠진다. 신오 챔피언 해금 안내의 `unlock.galar` 줄은 신오를 앞 지방으로 둔 활성 지방이 있을 때만 나온다. 기본 지방(`active.json`)을 끄면 로드를 거절하고 이전 카탈로그를 쓴다.
+- **도중에 끈 경우(R17 지적):** `/reload`로 지방을 끄면 세션은 기본 지방으로 바뀌고, 그 지방에 남은 런은 reconcile에서 취소한다(다른 지방 도전을 `run_active`로 막지 않게). 진행 중인 그 배틀은 끝내지 않는다. `ManagedPveBattles.cancel`이 플레이어 단위라 타워·팩토리 배틀까지 끝내기 때문이고, 그 배틀 결과는 런이 없어 반영되지 않는다.
+- **유지:** 꺼진 지방의 데이터·진행도와 관리자 명령(`/league` 하위)은 그대로라 운영자는 계속 볼 수 있다. 가라르를 공개할 때는 `galar.json`의 `active`를 `true`로 바꾸고 `/reload`.
+- **확인:** Codex가 `91ef2756`에서 `-Ptests=GalarContentTest|LeagueCatalogParserTest|LeagueEngineTest|LeagueTeamDataTest|LeagueRegressionPolicyTest|LeagueHardPartyRulesTest|WildTrainerDataTest` 58/58 통과(로그 Claude 확인). 도중에 끈 경우의 수정은 그 뒤 커밋이라 별도 확인이 필요하다. 실제 탭 숨김은 게임에서 보지 않았다.
+
 ## [2026-10-18 13:50] `6bc4fd51` 개발 서버·클라 배포: MCC 애드온 피드백 수정 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - `origin/main` `6bc4fd51`을 워크트리 `.claude/worktrees/mcc-addon-feedback`에서 `remapJar`로 빌드했다(EXIT 0, Kotlin in-process, 빌드 출력 `F:/AI/builds/mcc-addon-feedback`). 세 모듈을 한 번에 `assemble`하면 2G 힙에서 GC 과부하로 데몬이 멈춰, 모듈별 `remapJar`로 나눴다. `unzip -t`와 JDK 21 `jar --validate`를 통과했다.

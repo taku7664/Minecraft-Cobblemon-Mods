@@ -119,7 +119,8 @@ object LeagueServer {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         // A run keeps its League; otherwise the region the player last looked at, until the server restarts.
-        session.leagueId = LeagueProgressQueries.states(player.server, player.uuid).entries.firstOrNull { it.value.run != null }?.key
+        session.leagueId = LeagueProgressQueries.states(player.server, player.uuid).entries
+            .firstOrNull { it.value.run != null && LeagueCatalogResources.findActive(it.key) != null }?.key
             ?: lastLeague[player.uuid]?.takeIf { LeagueCatalogResources.findActive(it) != null }
             ?: LeagueCatalogResources.current?.id
         sessions[player.uuid] = session
@@ -144,7 +145,7 @@ object LeagueServer {
                 send(player)
                 return@guarded
             }
-            val catalog = requireNotNull(session.leagueId?.let(LeagueCatalogResources::find)) { "catalog_unavailable" }
+            val catalog = requireNotNull(session.leagueId?.let(LeagueCatalogResources::findActive)) { "catalog_unavailable" }
             if (intent.action != LeagueAction.SELECT_LEAGUE) check(intent.leagueId == catalog.id) { "stale_revision" }
             val storage = LeagueSavedData.get(player.server)
             val state = storage.read(catalog.id, player.uuid)
@@ -280,6 +281,13 @@ object LeagueServer {
         syncRank(player, rank(primary, storage.read(primary.id, player.uuid)).name)
         LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
         for (catalog in LeagueCatalogResources.catalogs.values) reconcileRewards(player, catalog)
+        // A league switched off mid-run (a reload with active false) ends that run rather than keep showing an
+        // unreleased region and blocking every other league's challenge. A battle of it still going finishes with no
+        // run to count toward; the shared battle API cancels by player, which would also end another content's battle.
+        for (catalog in LeagueCatalogResources.catalogs.values.filter { !it.active }) {
+            val state = storage.read(catalog.id, player.uuid)
+            if (state.run != null) commit(player.server, catalog.id, player.uuid, LeagueEngine(catalog).cancel(state))
+        }
     }
 
     private fun reconcileRewards(player: ServerPlayer, catalog: LeagueCatalog) {
@@ -362,7 +370,9 @@ object LeagueServer {
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
         val session = sessions[player.uuid] ?: return
-        val catalog = session.leagueId?.let(LeagueCatalogResources::find) ?: LeagueCatalogResources.current ?: return
+        // A session left on a league switched off since shows the primary League instead.
+        val catalog = session.leagueId?.let(LeagueCatalogResources::findActive) ?: LeagueCatalogResources.current ?: return
+        session.leagueId = catalog.id
         val view = LeagueViews.build(player, session.nonce, catalog, errorKey,
             openScreen && runCatching { validate(player, session) }.isSuccess)
         if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE))
