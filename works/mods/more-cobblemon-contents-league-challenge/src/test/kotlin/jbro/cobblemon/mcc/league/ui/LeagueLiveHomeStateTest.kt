@@ -11,21 +11,19 @@ class LeagueLiveHomeStateTest {
             LeagueChallengeView("test:g2", "second", "AVAILABLE", 30),
             LeagueChallengeView("test:g3", "third", "LOCKED", 40)), null, false, false)
 
-    /** A route whose gyms are beaten and whose finals are open: their trainers replace the route. */
+    /** A route whose gyms are beaten and whose finals are open but not started. */
     private fun finalsNext() = view().copy(challenges = listOf(LeagueChallengeView("test:g1", "first", "CLEARED", 20, stage = 1),
         LeagueChallengeView("test:f1", "league", "AVAILABLE", 80, stage = 2, finalStage = true)),
         finalists = listOf(LeagueChallengeView("test:f1", "aaron", "AVAILABLE", 80, stage = 1, finalStage = true),
             LeagueChallengeView("test:f2", "cynthia", "LOCKED", 80, stage = 2, finalStage = true)))
 
-    @Test fun `open finals show their trainers and start from the first`() {
+    @Test fun `open finals not yet started stay one route entry that starts the run`() {
         val state = LeagueLiveHomeState()
         state.accept(finalsNext())
-        assertTrue(state.finalsView)
-        assertEquals(listOf("test:f1", "test:f2"), state.challenges.map { it.id })
+        assertFalse(state.finalsView)
+        assertEquals(listOf("test:g1", "test:f1"), state.challenges.map { it.id })
         assertEquals("test:f1", state.selectedId)
         assertTrue(state.canStart)
-        state.select("test:f2")
-        assertFalse(state.canStart)
     }
 
     @Test fun `a run on the finals keeps their trainers shown and a won route goes back to the gyms`() {

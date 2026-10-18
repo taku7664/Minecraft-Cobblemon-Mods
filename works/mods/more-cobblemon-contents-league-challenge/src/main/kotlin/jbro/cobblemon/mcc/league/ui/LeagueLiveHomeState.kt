@@ -22,12 +22,11 @@ class LeagueLiveHomeState {
     val route: List<LeagueChallengeView> get() = view?.let { if (hard) it.hardChallenges else it.challenges }.orEmpty()
 
     /**
-     * Whether the finals' trainers replace the route: while the finals run on the shown route, and while they are
-     * next on it, open and not yet won.
+     * Whether the finals' trainers replace the route: only while a finals run on the shown route is under way, its
+     * party locked. Open finals not yet started stay one entry on the route.
      */
     val finalsView: Boolean get() = view?.let { current ->
-        if (current.runChallenge != null) current.runEntry?.finalStage == true && current.runHard == hard
-        else route.any { it.finalStage && it.status == "AVAILABLE" }
+        current.runChallenge != null && current.runEntry?.finalStage == true && current.runHard == hard
     } == true
 
     /** What the page lists and selects from: the finals' trainers in the finals view, the route otherwise. */
