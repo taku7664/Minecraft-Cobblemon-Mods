@@ -16,15 +16,28 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * at all and aims at the user (a spread hit lands whatever it aims at; a single one at one of this side's Pokemon in
  * front), two hits together counted ([LocalDynamaxGuard.knockout]).
  *
+ * A foe that may still Dynamax this turn is read with its Max Move too ([LocalFoeDynamaxThreat]).
+ *
  * A status move's whole worth is in being used: hazards (261), a screen (225), Glare (162) and Trick Room (61) were
  * chosen by Pokemon a faster foe knocked out first (league run, 2026-10-19).
  */
 internal object LocalActingChance {
-    fun of(candidate: BattleActionCandidate, context: BattleDecisionContext, @Suppress("UNUSED_PARAMETER") scores: MatchupScores): Double {
+    /**
+     * [context] is the board before any mechanic (the Mega rules board would Mega Evolve a candidate that does not);
+     * [candidate] the whole turn, a doubles pair included, so every mechanic in it comes first; [actorSlot] the user read.
+     */
+    fun of(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        @Suppress("UNUSED_PARAMETER") scores: MatchupScores,
+        actorSlot: Int? = candidate.actorSlot,
+    ): Double {
         val board = context.copy(state = LocalMechanicActivationProjector.beforeMoves(context.state, BattleSide.ALLY, candidate))
         val state = board.state
+        val part = if (candidate.kind == jbro.cobblemon.mcc.internal.ai.BattleActionKind.COMPOSITE)
+            candidate.componentActions.firstOrNull { it.actorSlot == actorSlot } ?: return 1.0 else candidate
         val user = state.pokemon.firstOrNull {
-            it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
+            it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return 1.0
         val allies = state.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             .coerceAtLeast(1)
@@ -32,9 +45,12 @@ internal object LocalActingChance {
         val hits = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             .mapNotNull { foe ->
                 val faced = LocalMatchupPosition.face(board, user, foe, cache) ?: return@mapNotNull null
-                val hit = LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
-                    .maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
-                val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, candidate, BattleSide.OPPONENT, hit.action) ?: 0.5
+                val plain = LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
+                    .maxByOrNull { it.score.knockoutChanceWithin(1) }
+                // A foe that may still Dynamax hits with its Max Move where that knocks out more ([LocalFoeDynamaxThreat]).
+                val max = LocalFoeDynamaxThreat.bestHit(context, board, user, foe, cache)
+                val hit = listOfNotNull(plain, max).maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
+                val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, part, BattleSide.OPPONENT, hit.action) ?: 0.5
                 val pattern = hit.action.moveDetails?.targetPattern
                 val aim = if (pattern == BattleMoveTargetPattern.ALL_OPPONENTS || pattern == BattleMoveTargetPattern.ALL_ADJACENT) 1.0 else 1.0 / allies
                 LocalDynamaxGuard.IncomingHit(hit.score, LocalKnockoutWorth.actsThisTurn(foe) * (1.0 - first), aim)

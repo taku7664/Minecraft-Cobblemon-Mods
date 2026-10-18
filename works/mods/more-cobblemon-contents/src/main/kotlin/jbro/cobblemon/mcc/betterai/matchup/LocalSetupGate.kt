@@ -165,7 +165,15 @@ internal object LocalSetupGate {
             // A foe that will not act this turn (recharging, asleep, frozen) lands its setup-turn hit only when it does.
             val hit = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = true, hpCost = cost) ?: return null
             val free = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false, hpCost = cost) ?: return null
-            actingChance(foe) * hit + (1.0 - actingChance(foe)) * free
+            // A foe that may still Dynamax knocks the raised user out with its Max Move where its plain moves would
+            // not; moving first only buys the raise it never uses. Moving second, [LocalActingChance] already took it.
+            val dynamaxFall = LocalFoeDynamaxThreat.bestHit(context, context, user, foe, cache)?.let { max ->
+                val plain = scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0
+                val first = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(
+                    context.state, BattleSide.ALLY, candidate, BattleSide.OPPONENT, max.action) ?: 0.5
+                (max.score.knockoutChanceWithin(1) - plain).coerceAtLeast(0.0) * first
+            } ?: 0.0
+            actingChance(foe) * hit * (1.0 - dynamaxFall) + (1.0 - actingChance(foe)) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         val won = if (win >= WIN_PASS) 1.0 else 0.0
