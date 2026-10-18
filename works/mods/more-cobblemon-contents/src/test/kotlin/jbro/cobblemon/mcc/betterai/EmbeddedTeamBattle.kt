@@ -112,7 +112,8 @@ internal object EmbeddedTeamBattle {
         val memories = openContexts.mapValues { (_, context) -> BattleTacticalMemoryLedger(context) }
         val inferenceMoveDetails = brains.keys.associateWith { linkedMapOf<String, BattleMoveCandidateView>() }
         val inferenceLedgers = brains.keys.associateWith { side ->
-            BattleOpponentMoveInferenceLedger { moveId -> inferenceMoveDetails.getValue(side)[canonical(moveId)] }
+            BattleOpponentMoveInferenceLedger(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove) { moveId ->
+                inferenceMoveDetails.getValue(side)[canonical(moveId)] }
         }
         var final: JsonObject? = null
         val counts = mutableMapOf("p1" to 0, "p2" to 0)
