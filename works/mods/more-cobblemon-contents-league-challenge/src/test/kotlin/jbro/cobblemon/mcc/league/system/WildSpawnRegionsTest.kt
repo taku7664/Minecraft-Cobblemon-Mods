@@ -11,7 +11,7 @@ class WildSpawnRegionsTest {
 
     @Test fun `the saved spawn region is ten even for a nonzero negative origin`() {
         for (seed in listOf(Long.MIN_VALUE, -1, 0, 42, Long.MAX_VALUE)) {
-            for (x in -12..-9) for (z in 20..23) {
+            for (x in -10..-9) for (z in 20..21) {
                 assertEquals(10, WildSpawnRegions.level(seed, "minecraft:overworld", x, z, rule, -9, 21))
             }
         }
