@@ -92,7 +92,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val primarySession = AtomicReference<BattleBrainSession?>()
     private val localSession = AtomicReference<BattleBrainSession?>()
     private val opponentMoveInference = BattleOpponentMoveInferenceLedger(
-        Cobblemon173ActionCandidateAdapter::publicMoveDetails,
+        isMaxMove = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove,
+        moveDetails = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
     )
     private val tacticalMemory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         BattleTacticalMemoryLedger(openContext())

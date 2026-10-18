@@ -196,7 +196,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
     @Test
     fun `ledger rebuilds slots when the same battle pokemon changes form`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
-        val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
+        val ledger = BattleOpponentMoveInferenceLedger(moveDetails = MOVES::get)
         val normal = state(revealed = setOf("moonblast"), formId = "normal")
         val first = ledger.update(normal, catalog(normal), BattleTrainerTier.STANDARD, actual).single()
         val changed = state(formId = "sunny")
@@ -210,7 +210,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
     @Test
     fun `ledger rebuilds non confirmed slots when the same battle pokemon changes public types`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
-        val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
+        val ledger = BattleOpponentMoveInferenceLedger(moveDetails = MOVES::get)
         val initial = state(revealed = setOf("thunderwave"))
         val before = ledger.update(initial, catalog(initial), BattleTrainerTier.STANDARD, actual).single()
         val changed = state(revealed = setOf("thunderwave"), types = setOf("rock"))
@@ -262,7 +262,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
     @Test
     fun `ledger keeps the original slots while a pokemon is temporarily transformed`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
-        val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
+        val ledger = BattleOpponentMoveInferenceLedger(moveDetails = MOVES::get)
         val original = state()
         val before = ledger.update(original, catalog(original), BattleTrainerTier.STANDARD, actual).single()
         val transformed = state(
@@ -301,6 +301,35 @@ class BattleOpponentMoveInferenceNormalizerTest {
 
         assertEquals(BattleOpponentMoveGroup.PURE_SETUP,
             BattleOpponentMoveInferenceNormalizer.group(state().pokemon.single(), shellSmash))
+    }
+
+    @Test
+    fun `a revealed Max Move stands for an attack of its type, never for itself`() {
+        // The dex keeps a Max Move at a placeholder power of 10: scored as itself, a 4x Max Overgrowth read 13%.
+        val moves = LinkedHashMap(MOVES).apply { put("maxrockfall", move("rock", BattleMoveDamageCategory.SPECIAL, 10.0)) }
+        fun catalogWith(state: BattleStateView) = BattlePublicActionCatalogView(
+            entries = listOf(BattlePokemonActionCatalogView(OPPONENT_ID, state.pokemon.single().knownMoveIds.map { id ->
+                BattlePublicMoveOptionView(id, requireNotNull(moves[id]), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+            })),
+            candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "flutter-mane", "normal", moves.keys,
+                "fixture:learnset", moves)),
+        )
+        val isMax = { id: String -> id.startsWith("max") }
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "shadowball", "calmmind", "thunderwave"))
+        val shown = state(revealed = setOf("moonblast", "maxrockfall"))
+        val initial = BattleOpponentMoveInferenceNormalizer.normalize(shown, catalogWith(shown), BattleTrainerTier.STANDARD,
+            actual, moveDetails = moves::get, isMaxMove = isMax).single()
+        assertFalse(initial.slots.any { it.moveId == "maxrockfall" })
+        assertTrue(initial.slots.any { it.moveId == "powergem" }, "the strongest Rock attack it can learn")
+
+        // Shown on a later turn, after the slots were set: the same.
+        val ledger = BattleOpponentMoveInferenceLedger(isMax, moves::get)
+        val first = state(revealed = setOf("moonblast"))
+        ledger.update(first, catalogWith(first), BattleTrainerTier.STANDARD, actual)
+        val updated = ledger.update(shown, catalogWith(shown), BattleTrainerTier.STANDARD, actual).single()
+        assertFalse(updated.slots.any { it.moveId == "maxrockfall" })
+        assertTrue(updated.slots.any { it.moveId == "powergem" })
+        assertEquals(4, updated.slots.size)
     }
 
     private fun normalize(

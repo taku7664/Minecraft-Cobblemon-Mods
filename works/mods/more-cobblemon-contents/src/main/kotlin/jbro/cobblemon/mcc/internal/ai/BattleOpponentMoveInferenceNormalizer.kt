@@ -20,17 +20,27 @@ internal object BattleOpponentMoveInferenceNormalizer {
         moveDetails: (String) -> BattleMoveCandidateView?,
         /** The board's reading of an attack's own stat changes ([BattleOwnStageValue]); null keeps the set-level values. */
         ownStages: BattleOwnStageValue? = null,
+        /** Whether a move id is a Max or G-Max Move (the dex's `isMax`), which this layer cannot read itself. */
+        isMaxMove: (String) -> Boolean = { false },
     ): List<BattleOpponentMoveInferenceView> {
         val policy = BattleOpponentMoveInferencePolicies.forTier(tier)
         val outer = boardStages.get()
+        val outerMax = maxMoves.get()
         boardStages.set(ownStages)
+        maxMoves.set(isMaxMove)
         try {
             return normalizeOnBoard(state, catalog, policy, actualMoveIds, previous, rebuildSlotPreferences,
                 ignoredRevealPokemonIds, moveDetails)
         } finally {
             boardStages.set(outer)
+            maxMoves.set(outerMax)
         }
     }
+
+    /** The Max Move test for the inference running on this thread. */
+    private val maxMoves = ThreadLocal<((String) -> Boolean)?>()
+
+    private fun isMax(moveId: String?): Boolean = moveId != null && maxMoves.get()?.invoke(canonical(moveId)) == true
 
     /** The board reading for the inference running on this thread (one normalize call at a time per thread). */
     private val boardStages = ThreadLocal<BattleOwnStageValue?>()
@@ -64,7 +74,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 } else if (pokemon.battlePokemonId in ignoredRevealPokemonIds) {
                     prior
                 } else {
-                    updateReveals(pokemon, catalog, prior, moveDetails)
+                    updateReveals(pokemon, catalog, state.format, prior, moveDetails)
                 }
             }
             .toList()
@@ -110,6 +120,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 pool.formId == pokemon.formId
         }?.moveDetails.orEmpty()
             .filterKeys { id -> !slots.containsMove(id) }
+        addRevealedMaxTypes(slots, pokemon, format, learnset, revealedMaxTypes(pokemon, catalog, moveDetails))
 
         if (policy.preserveActualAttackStatusCounts) {
             fillPreservingActualShape(slots, pokemon, format, resolvedActual, learnset, policy)
@@ -215,6 +226,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun updateReveals(
         pokemon: BattlePokemonStateView,
         catalog: BattlePublicActionCatalogView,
+        format: BattleFormat,
         prior: BattleOpponentMoveInferenceView,
         moveDetails: (String) -> BattleMoveCandidateView?,
     ): BattleOpponentMoveInferenceView {
@@ -223,7 +235,13 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 catalog.candidatePools.singleOrNull { it.battlePokemonId == pokemon.battlePokemonId }
                     ?.moveDetails?.get(id) ?: moveDetails(id)
             }
-            if (refreshed == null) previous else previous.copy(details = refreshed)
+            when {
+                // A Max Move kept from before is no move of the set: its slot is open again (its type is read below).
+                isMax(previous.moveId) -> BattleOpponentMoveSlotView(previous.slot, null, BattleOpponentMoveGroup.OTHER,
+                    BattleOpponentMoveKnowledge.GUESS, BattleOpponentMoveSource.GROUP_GUESS)
+                refreshed == null -> previous
+                else -> previous.copy(details = refreshed)
+            }
         }.toMutableList()
         revealedMoves(pokemon, catalog, moveDetails).forEach { (moveId, details) ->
             val moveGroup = group(pokemon, details, moveId)
@@ -257,6 +275,22 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 if (replacement == slots.size) slots += confirmed else slots[replacement] = confirmed
             }
         }
+        // A revealed Max Move's type stands for an attack of that type: the strongest of the learnset, in an open slot or
+        // one only expected.
+        val learnset = learnset(pokemon, catalog).filterKeys { id -> !slots.containsMove(id) }
+        uncoveredMaxTypes(slots, pokemon, revealedMaxTypes(pokemon, catalog, moveDetails)).forEach { type ->
+            val (id, details) = strongestOfType(learnset, pokemon, format, type) ?: return@forEach
+            if (slots.containsMove(id)) return@forEach
+            val open = slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS }.takeIf { it >= 0 }
+                ?: slots.indices.firstOrNull { slots[it].knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
+                    !soleStab(slots, it, id, details, pokemon) }
+                ?: if (slots.size < MAX_MOVE_SLOTS) slots.size else null
+            if (open != null) {
+                val expected = concrete(slots.getOrNull(open)?.slot ?: open, id, details, group(pokemon, details, id),
+                    BattleOpponentMoveKnowledge.EXPECTED, BattleOpponentMoveSource.LEARNSET_EXPECTATION)
+                if (open == slots.size) slots += expected else slots[open] = expected
+            }
+        }
         return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
     }
 
@@ -265,6 +299,9 @@ internal object BattleOpponentMoveInferenceNormalizer {
         catalog: BattlePublicActionCatalogView,
         moveDetails: (String) -> BattleMoveCandidateView?,
     ): List<Pair<String, BattleMoveCandidateView>> = pokemon.knownMoveIds.asSequence()
+        // A Max Move is what a Dynamaxed Pokemon turns its move into; scored as itself it kept the dex's placeholder power
+        // of 10, and a Dynamaxed Amoonguss's Max Overgrowth read 13% on a Rhyperior four times weak to it (2026-10-19).
+        .filterNot(::isMax)
         .mapNotNull { id ->
             (catalog.forPokemon(pokemon.battlePokemonId).singleOrNull { sameMove(it.moveId, id) }?.details
                 ?: moveDetails(id))?.let { id to it }
@@ -272,6 +309,56 @@ internal object BattleOpponentMoveInferenceNormalizer {
         .sortedBy { canonical(it.first) }
         .take(MAX_MOVE_SLOTS)
         .toList()
+
+    /** The types of the Max Moves [pokemon] has shown, a Max Guard aside. */
+    private fun revealedMaxTypes(
+        pokemon: BattlePokemonStateView,
+        catalog: BattlePublicActionCatalogView,
+        moveDetails: (String) -> BattleMoveCandidateView?,
+    ): Set<String> = pokemon.knownMoveIds.asSequence().filter(::isMax).mapNotNull { id ->
+        (catalog.forPokemon(pokemon.battlePokemonId).singleOrNull { sameMove(it.moveId, id) }?.details ?: moveDetails(id))
+            ?.takeIf { it.damageCategory != BattleMoveDamageCategory.STATUS }?.let { canonical(it.typeId) }
+    }.toSet()
+
+    private fun uncoveredMaxTypes(slots: List<BattleOpponentMoveSlotView>, pokemon: BattlePokemonStateView, types: Set<String>): List<String> {
+        val covered = slots.filter { it.group.isAttack() }.mapNotNullTo(hashSetOf()) { slot ->
+            slot.details?.let { canonical(BattleMoveSetExpectation.typeId(slot.moveId, it, pokemon)) }
+        }
+        return types.filter { it !in covered }.sorted()
+    }
+
+    private fun strongestOfType(
+        learnset: Map<String, BattleMoveCandidateView>,
+        pokemon: BattlePokemonStateView,
+        format: BattleFormat,
+        type: String,
+    ): Pair<String, BattleMoveCandidateView>? = learnset.entries.asSequence()
+        .map { it.key to it.value }
+        .filter { (id, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS && !isMax(id) &&
+            BattleMoveSetExpectation.factor(id, details) > 0.0 &&
+            canonical(BattleMoveSetExpectation.typeId(id, details, pokemon)) == type }
+        .sortedWith(moveComparator(pokemon, format))
+        .firstOrNull()
+
+    /** An attack of each type a revealed Max Move shows that no slot carries yet, the strongest of the learnset. */
+    private fun addRevealedMaxTypes(
+        slots: MutableList<BattleOpponentMoveSlotView>,
+        pokemon: BattlePokemonStateView,
+        format: BattleFormat,
+        learnset: Map<String, BattleMoveCandidateView>,
+        types: Set<String>,
+    ) {
+        uncoveredMaxTypes(slots, pokemon, types).forEach { type ->
+            val (id, details) = strongestOfType(learnset, pokemon, format, type) ?: return@forEach
+            addConcrete(slots, id, details, group(pokemon, details, id), BattleOpponentMoveKnowledge.EXPECTED,
+                BattleOpponentMoveSource.LEARNSET_EXPECTATION)
+        }
+    }
+
+    private fun learnset(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView): Map<String, BattleMoveCandidateView> =
+        catalog.candidatePools.singleOrNull { pool ->
+            pool.battlePokemonId == pokemon.battlePokemonId && pool.speciesId == pokemon.speciesId && pool.formId == pokemon.formId
+        }?.moveDetails.orEmpty()
 
     /**
      * A STAB attack for every type [pokemon] attacks with that no slot carries yet, the strongest of each type first:
@@ -494,6 +581,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
 
 /** Per-battle persistence; deterministic slots survive until new public evidence changes them. */
 class BattleOpponentMoveInferenceLedger(
+    /** Whether a move id is a Max or G-Max Move; its reveal stands for an attack of its type. */
+    private val isMaxMove: (String) -> Boolean = { false },
     private val moveDetails: (String) -> BattleMoveCandidateView?,
 ) {
     private var byPokemon: Map<UUID, BattleOpponentMoveInferenceView> = emptyMap()
@@ -530,6 +619,7 @@ class BattleOpponentMoveInferenceLedger(
             ignoredRevealPokemonIds = ignoredRevealPokemonIds,
             moveDetails = moveDetails,
             ownStages = ownStages,
+            isMaxMove = isMaxMove,
         )
         byPokemon = updated.associateBy { it.battlePokemonId }
         identities = currentIdentities.filterKeys(byPokemon::containsKey)
