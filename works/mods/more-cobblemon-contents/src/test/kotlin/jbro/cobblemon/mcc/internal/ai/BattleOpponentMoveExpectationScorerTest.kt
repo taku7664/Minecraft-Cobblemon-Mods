@@ -77,6 +77,38 @@ class BattleOpponentMoveExpectationScorerTest {
     }
 
     @Test
+    fun `an attack a set cannot count on scores nothing and a delayed one half`() {
+        val plain = move("fighting", category = BattleMoveDamageCategory.PHYSICAL, power = 150.0)
+        assertEquals(0.0, BattleOpponentMoveExpectationScorer.score(pokemon(), plain, BattleFormat.SINGLE, "focuspunch"), 1e-9)
+        val terrain = move("steel", category = BattleMoveDamageCategory.PHYSICAL, power = 130.0, requirements = listOf(
+            BattleMoveRequirementView(BattleMoveRequirementKind.TERRAIN_PRESENT)))
+        assertEquals(0.0, score(terrain), 1e-9)
+        val delayed = move("psychic", power = 120.0, flags = listOf("futuremove"))
+        assertEquals(score(move("psychic", power = 120.0)) / 2.0, score(delayed), 1e-9)
+        // Blizzard's weather only raises its accuracy: no cut.
+        val weather = move("ice", power = 110.0, requirements = listOf(BattleMoveRequirementView(BattleMoveRequirementKind.WEATHER_ANY_OF, setOf("snow"))))
+        assertEquals(score(move("ice", power = 110.0)), score(weather), 1e-9)
+    }
+
+    @Test
+    fun `a multi-hit attack counts its average hits`() {
+        val twice = move("flying", category = BattleMoveDamageCategory.PHYSICAL, power = 40.0, effects = listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.MULTI_HIT, BattleMoveEffectTarget.SELECTED_TARGET, amountRange = BattleIntegerRange(2, 2))))
+        assertEquals(score(move("flying", category = BattleMoveDamageCategory.PHYSICAL, power = 80.0)), score(twice), 1e-9)
+    }
+
+    @Test
+    fun `Tera Blast is STAB in a publicly Terastallized user's Tera type`() {
+        val terastallized = BattlePokemonStateView(
+            java.util.UUID.randomUUID(), BattleSide.OPPONENT, 0, "probe", null, 50, 1.0, null,
+            emptyMap<String, Int>(), emptySet<String>(), null, null, false, setOf("fire"), knownVolatileEffectIds = emptySet(), knownBaseStabTypeIds = setOf("fairy"), knownTeraTypeId = "fire",
+        )
+        val blast = move("normal", power = 80.0)
+        assertEquals(1.5 * BattleOpponentMoveExpectationScorer.score(terastallized, blast, BattleFormat.SINGLE),
+            BattleOpponentMoveExpectationScorer.score(terastallized, blast, BattleFormat.SINGLE, "terablast"), 1e-6)
+    }
+
+    @Test
     fun `public attack ranges prefer the matching damage category`() {
         val physical = move("normal", category = BattleMoveDamageCategory.PHYSICAL, power = 100.0)
         val special = move("normal", category = BattleMoveDamageCategory.SPECIAL, power = 100.0)
@@ -106,6 +138,8 @@ class BattleOpponentMoveExpectationScorerTest {
         power: Double,
         target: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
         effects: List<BattleMoveEffectView> = emptyList(),
+        requirements: List<BattleMoveRequirementView> = emptyList(),
+        flags: List<String> = emptyList(),
     ) = BattleMoveCandidateView(
         type,
         category,
@@ -114,9 +148,9 @@ class BattleOpponentMoveExpectationScorerTest {
         0,
         16,
         target,
-        effects.takeIf(List<*>::isNotEmpty)?.let {
-            BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, it, scriptedBehavior = false)
-        },
+        if (effects.isEmpty() && requirements.isEmpty() && flags.isEmpty()) null else
+            BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, effects, scriptedBehavior = false,
+                requirements = requirements, mechanicFlags = flags.toSet()),
     )
 
     private fun pokemon() = BattlePokemonStateView(

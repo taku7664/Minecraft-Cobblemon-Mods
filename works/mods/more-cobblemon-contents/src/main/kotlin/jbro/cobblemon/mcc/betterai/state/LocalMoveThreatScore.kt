@@ -22,7 +22,7 @@ internal object LocalMoveThreatScore {
     fun of(moveId: String, details: BattleMoveCandidateView): Double =
         // Keyed by what the score reads as well as the id, so a move whose data an addon changed is scored afresh.
         scores.getOrPut("${PublicIds.canonical(moveId)}|${details.typeId}|${details.damageCategory}|${details.power}|${details.accuracy}") {
-            compute(details)
+            compute(moveId, details)
         }
 
     /**
@@ -32,8 +32,12 @@ internal object LocalMoveThreatScore {
     fun typeThreat(typeId: String, team: List<Set<String>>): Double =
         team.sumOf { types -> StandardTypeEffectiveness.multiplier(typeId, types) }
 
-    private fun compute(details: BattleMoveCandidateView): Double {
+    private fun compute(moveId: String, details: BattleMoveCandidateView): Double {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS || details.power <= 0.0) return 0.0
+        // The same conditions the move inference reads (BattleMoveSetExpectation): an attack that fails unless its
+        // condition holds is never assumed, a delayed, first-turn or reply-only one counts half.
+        val conditional = jbro.cobblemon.mcc.internal.ai.BattleMoveSetExpectation.factor(moveId, details)
+        if (conditional <= 0.0) return 0.0
         val accuracy = (details.accuracy / 100.0).takeIf { it > 0.0 }?.coerceAtMost(1.0) ?: 1.0
         val effects = details.effects?.effects.orEmpty()
         var power = details.power
@@ -57,15 +61,10 @@ internal object LocalMoveThreatScore {
                 BattleMoveEffectKind.CRASH_RECOIL -> factor -= CRASH * (1.0 - accuracy)
                 BattleMoveEffectKind.CHARGE_TURN, BattleMoveEffectKind.RECHARGE_TURN -> factor *= LOST_TURN
                 BattleMoveEffectKind.SELF_DESTRUCT -> factor *= SELF_KNOCKOUT
-                // Fake Out and First Impression work only on the user's first turn in.
-                BattleMoveEffectKind.FIRST_ACTIVE_TURN_ONLY -> factor *= CONDITIONAL
                 else -> Unit
             }
         }
-        // A move that works only under a condition (Steel Roller's terrain, Sucker Punch's attacking target) fails or
-        // is held back the rest of the time.
-        if (details.effects?.requirements.orEmpty().isNotEmpty()) factor *= CONDITIONAL
-        return power * accuracy * factor.coerceAtLeast(MINIMUM_FACTOR)
+        return power * accuracy * factor.coerceAtLeast(MINIMUM_FACTOR) * conditional
     }
 
     /** A burn, paralysis, poison, sleep or freeze on the target, per unit of chance. */
@@ -90,7 +89,5 @@ internal object LocalMoveThreatScore {
     private const val MAX_HP_RECOIL = 2.0
     /** Per share of misses, for a move that hurts its user when it misses (High Jump Kick). */
     private const val CRASH = 0.5
-    /** A move that works only on the first turn in or under a condition. */
-    private const val CONDITIONAL = 0.5
     private const val MINIMUM_FACTOR = 0.1
 }

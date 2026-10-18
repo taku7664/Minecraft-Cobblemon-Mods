@@ -144,6 +144,17 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `a tier reading the hidden set assumes a STAB attack for each STAB type the set carries`() {
+        // ADVANCED reads one STAB move; the set's other STAB type still gets its strongest learnable attack first.
+        val both = normalize(BattleTrainerTier.ADVANCED, mapOf(OPPONENT_ID to setOf("moonblast", "shadowball", "calmmind", "thunderwave")))
+        assertEquals(setOf("fairy", "ghost"), both.slots.filter { it.group == BattleOpponentMoveGroup.STAB_ATTACK }
+            .mapNotNullTo(linkedSetOf()) { it.details?.typeId })
+        // A set with Fairy STAB alone: no Ghost STAB is assumed.
+        val one = normalize(BattleTrainerTier.ADVANCED, mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "mysticalfire", "calmmind")))
+        assertFalse(one.slots.any { it.details?.typeId == "ghost" })
+    }
+
+    @Test
     fun `initial public reveals still count toward the actual attack status shape`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val revealedState = state(setOf("moonblast"))
@@ -158,8 +169,9 @@ class BattleOpponentMoveInferenceNormalizerTest {
 
         assertEquals(2, result.slots.count { it.group.isAttackForTest() })
         assertEquals(2, result.slots.count { !it.group.isAttackForTest() })
-        // Every STAB type comes before a sub-weapon: Ghost's Shadow Ball takes the attack slot Power Gem had.
-        assertTrue(result.slots.any { it.moveId == "shadowball" })
+        // The actual set carries Fairy STAB only, so ADVANCED assumes no Ghost STAB: Power Gem keeps its slot.
+        assertTrue(result.slots.any { it.moveId == "powergem" })
+        assertFalse(result.slots.any { it.moveId == "shadowball" })
     }
 
     @Test

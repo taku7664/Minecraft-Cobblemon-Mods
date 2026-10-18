@@ -157,8 +157,12 @@ internal object BattleOpponentMoveInferenceNormalizer {
         learnset: Map<String, BattleMoveCandidateView>,
         policy: BattleOpponentMoveInferencePolicy,
     ) {
-        // Every type it attacks with has its STAB attack before anything else (user rule 2026-10-18).
-        addMissingStab(slots, pokemon, format, learnset)
+        // Every STAB type the actual set carries has its STAB attack before anything else (user rule 2026-10-18).
+        val actualStabTypes = actual.filter { (id, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS &&
+            canonical(BattleMoveSetExpectation.typeId(id, details, pokemon)) in
+                (pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)).map(::canonical) }
+            .mapTo(hashSetOf()) { (id, details) -> canonical(BattleMoveSetExpectation.typeId(id, details, pokemon)) }
+        addMissingStab(slots, pokemon, format, learnset, actualStabTypes)
         val actualAttackCount = actual.count { (_, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS }
         val actualStatusCount = actual.count { (_, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS }
         val currentAttackCount = slots.count { it.group.isAttack() }
@@ -255,12 +259,23 @@ internal object BattleOpponentMoveInferenceNormalizer {
         pokemon: BattlePokemonStateView,
         format: BattleFormat,
         learnset: Map<String, BattleMoveCandidateView>,
+        /**
+         * For a tier that reads the hidden set, the STAB types the actual set carries: an ADVANCED or BOSS trainer that
+         * knows the set has one STAB type assumes no other (user rule 2026-10-18). Null: every type.
+         */
+        actualStabTypes: Set<String>? = null,
     ) {
-        val covered = slots.filter { it.group.isAttack() }.mapNotNullTo(hashSetOf()) { it.details?.typeId?.let(::canonical) }
+        fun type(id: String?, details: BattleMoveCandidateView) = canonical(BattleMoveSetExpectation.typeId(id, details, pokemon))
+        val covered = slots.filter { it.group.isAttack() }.mapNotNullTo(hashSetOf()) { slot -> slot.details?.let { type(slot.moveId, it) } }
         val types = (pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)).map(::canonical).distinct()
-        ranked(learnset, pokemon, format, BattleOpponentMoveGroup.STAB_ATTACK)
-            .filter { (id, details) -> canonical(details.typeId) in types && canonical(details.typeId) !in covered && !slots.containsMove(id) }
-            .distinctBy { (_, details) -> canonical(details.typeId) }
+            .filter { actualStabTypes == null || it in actualStabTypes }
+        learnset.entries.asSequence()
+            .map { it.key to it.value }
+            .filter { (id, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS &&
+                BattleMoveSetExpectation.factor(id, details) > 0.0 }
+            .sortedWith(moveComparator(pokemon, format))
+            .filter { (id, details) -> type(id, details) in types && type(id, details) !in covered && !slots.containsMove(id) }
+            .distinctBy { (id, details) -> type(id, details) }
             .forEach { (id, details) ->
                 addConcrete(slots, id, details, BattleOpponentMoveGroup.STAB_ATTACK, BattleOpponentMoveKnowledge.EXPECTED,
                     BattleOpponentMoveSource.LEARNSET_EXPECTATION)
@@ -304,6 +319,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         wanted: BattleOpponentMoveGroup,
     ): List<Pair<String, BattleMoveCandidateView>> = moves.entries.asSequence()
         .filter { (_, details) -> group(pokemon, details) == wanted }
+        // An attack a set cannot count on (Focus Punch, Steel Roller) is never assumed (BattleMoveSetExpectation).
+        .filter { (id, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS || BattleMoveSetExpectation.factor(id, details) > 0.0 }
         .map { it.key to it.value }
         .sortedWith(moveComparator(pokemon, format))
         .toList()
@@ -312,7 +329,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         pokemon: BattlePokemonStateView,
         format: BattleFormat,
     ) = compareByDescending<Pair<String, BattleMoveCandidateView>> {
-        BattleOpponentMoveExpectationScorer.score(pokemon, it.second, format)
+        BattleOpponentMoveExpectationScorer.score(pokemon, it.second, format, it.first)
     }.thenBy { canonical(it.first) }
 
     internal fun group(

@@ -287,6 +287,9 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         val pool = requireNotNull(preview.moveCandidatePool)
         return pool.moveDetails.entries
             .filter { (moveId, details) -> moveId in pool.moveIds && details.currentPp > 0 }
+            // Never assume an attack that fails unless its condition holds (Focus Punch, Steel Roller).
+            .filter { (moveId, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS ||
+                jbro.cobblemon.mcc.internal.ai.BattleMoveSetExpectation.factor(moveId, details) > 0.0 }
             .sortedWith(
                 compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, details) ->
                     LocalMoveThreatScore.of(moveId, details) * spreadValue(details, format)

@@ -11,17 +11,25 @@ internal object BattleOpponentMoveExpectationScorer {
         pokemon: BattlePokemonStateView,
         move: BattleMoveCandidateView,
         format: BattleFormat,
+        /** The move's id, for what only its id says (Focus Punch, Tera Blast); see [BattleMoveSetExpectation]. */
+        moveId: String? = null,
     ): Double {
         if (move.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
+        val conditional = BattleMoveSetExpectation.factor(moveId, move)
+        if (conditional <= 0.0) return 0.0
 
         val hitProbability = (move.accuracy / 100.0).coerceIn(0.0, 1.0)
         val sameTypeBonus = BattlePublicStabRules.conservativeMultiplier(
             pokemon.knownBaseStabTypeIds,
             pokemon.knownTeraTypeId,
             pokemon.knownStellarBoostedTypeIds,
-            move.typeId,
+            BattleMoveSetExpectation.typeId(moveId, move, pokemon),
         ) ?: 1.0
-        val baseDamage = move.power * hitProbability * sameTypeBonus *
+        // A multi-hit attack (Dual Wingbeat, Rock Blast) at its average hits, as LocalMoveThreatScore reads it: at one hit,
+        // a Roark Aerodactyl that carried Dual Wingbeat read as carrying Sky Attack (2026-10-18).
+        val hits = move.effects?.effects.orEmpty().firstOrNull { it.kind == BattleMoveEffectKind.MULTI_HIT }
+            ?.amountRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 1.0
+        val baseDamage = move.power * hits * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
             val value = when {
@@ -42,7 +50,7 @@ internal object BattleOpponentMoveExpectationScorer {
                 else -> 0.0
             }
         }
-        return baseDamage + secondaryValue - tempoPenalty - ownDropCost + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT
+        return (baseDamage + secondaryValue - tempoPenalty - ownDropCost + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT) * conditional
     }
 
     private fun categoryFit(
