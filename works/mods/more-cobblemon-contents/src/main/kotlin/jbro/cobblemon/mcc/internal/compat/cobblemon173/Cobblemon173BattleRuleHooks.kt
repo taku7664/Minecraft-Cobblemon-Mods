@@ -115,6 +115,13 @@ object Cobblemon173BattleRuleHooks {
 
     fun contentId(battleId: UUID): String? = registry.contentId(battleId)
 
+    /**
+     * Whether the battle's rules allow Dynamax at all (the snapshot taken at the start, not what an actor has left: the AI
+     * spending its own Dynamax does not take the opponent's away); null for a battle these rules do not manage.
+     */
+    fun dynamaxAllowed(battleId: UUID): Boolean? =
+        registry.allowedMechanics(battleId)?.contains(jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic.DYNAMAX)
+
     fun mechanicPolicy(battleId: UUID, actorId: UUID): Cobblemon173MechanicPolicy? =
         registry.availableMechanics(battleId, actorId)?.let { mechanics ->
             Cobblemon173MechanicPolicy(mechanics.fold(0) { flags, mechanic -> flags or mechanic.flag })

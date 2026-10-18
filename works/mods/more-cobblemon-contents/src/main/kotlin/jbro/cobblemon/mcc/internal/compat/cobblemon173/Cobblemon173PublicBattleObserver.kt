@@ -1169,7 +1169,11 @@ internal object Cobblemon173BattleStateAssembler {
                 BattleSide.OPPONENT to publicSnapshot.remainingOpponentPokemon,
             ),
             observedEvents = publicSnapshot.events,
-            inferences = PublicBattleInferenceEngine.infer(pokemon, inferenceKnowledge, publicSnapshot.events) +
+            // A transformed Pokemon has the copied one's ability, not its own species': no species candidates for it
+            // (a Ditto copying a Rotom-Wash read as Limber or Imposter, never Levitate).
+            inferences = PublicBattleInferenceEngine.infer(
+                pokemon.filterNot { it.battlePokemonId in publicSnapshot.transformedPokemon }, inferenceKnowledge) +
+                PublicBattleInferenceEngine.infer(pokemon, { _, _ -> null }, publicSnapshot.events) +
                 teraInferences,
         )
     }

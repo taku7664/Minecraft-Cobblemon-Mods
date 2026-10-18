@@ -224,8 +224,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 ).copy(
                     opponentTeamPreview = opponentTeamPreview,
                     exactOwnTeam = exactOwnTeam,
-                ).withDynamaxInBattle(jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.contains(
-                    mechanicPolicy().availableFlags, jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.DYNAMAX))
+                ).withDynamaxInBattle(Cobblemon173BattleRuleHooks.dynamaxAllowed(battle.battleId))
                 // The primary Brain retains the public-only context. Only the local fallback receives
                 // the already-normalized tier budget; the full live moveset never enters either context.
                 val localContext = if (localBrain == null) {

@@ -320,7 +320,8 @@ internal object EmbeddedTeamInput {
                         ?.firstOrNull { form -> it.species + id(form["formId"].asString) == next }
                         ?.get("ability")?.asString?.takeIf(String::isNotEmpty)
                         ?.let { ability -> it.ability = id(ability); it.abilityEnded = false }
-                    it.species = next; it.types = baseTypes(it.species); it.added = null
+                    // A form change sets the base types beneath a Tera type (Showdown's formeChange); the Tera type stays shown.
+                    it.species = next; if (it.tera != null) it.preTeraTypes = baseTypes(it.species); it.types = types(it); it.added = null
                 }
                 "-transform" -> current?.let {
                     if (it.originalMoves == null) it.originalMoves = it.moves.toSet()
