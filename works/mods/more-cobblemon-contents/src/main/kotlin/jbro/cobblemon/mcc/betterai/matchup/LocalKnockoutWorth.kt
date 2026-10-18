@@ -22,7 +22,11 @@ import java.util.UUID
  * - its fight, `W`: the mean of `(score + 1) / 2` over its one-on-ones ([PokemonMatchupScore.score], current HP and
  *   stages) against every living Pokemon of the other side;
  * - its next action, `A`: its best single hit at whoever it faces next (the other side's Pokemon in front when it is in
- *   front, any of the other side's living when it waits), the HP it takes plus the knockout at that Pokemon's `W`.
+ *   front, any of the other side's living when it waits), the HP it takes plus the knockout at that Pokemon's `W`,
+ *   times the chance it gets to use it: it moves first, or it survives the other's first hit. A hit that faints its
+ *   user (Explosion) costs the user's own `W`. Without the chance a Lucario the boosted Mega Tyranitar knocks out first
+ *   read as about to knock the Mega out with High Jump Kick (A 4.44, V 2.60 of a side mean of 2); without the cost a
+ *   benched Golem's Explosion read as a free knockout (2026-10-18).
  *
  * On the fight alone a 1% Probopass, losing every exchange, was worth nothing to knock out, and a Swampert set up
  * Stealth Rock in front of it; normalised over both sides at once, the one opposing Pokemon seen so far came out at
@@ -52,15 +56,30 @@ internal object LocalKnockoutWorth {
             val others = living.filter { it.side != pokemon.side }
             val faced = if (pokemon.activeSlot != null) others.filter { it.activeSlot != null }.ifEmpty { others } else others
             faced.map { target ->
-                scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
+                val best = scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
                     move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
-                        move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
-                } ?: 0.0
+                        move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON -
+                        (if (move.selfKnockout) w.getValue(id) * ONE_POKEMON else 0.0)
+                }?.coerceAtLeast(0.0) ?: 0.0
+                best * actingChance(scores, pokemon, target)
             }.average()
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })
             .mapValues { (_, value) -> flat * value }
+    }
+
+    /**
+     * The chance [subject] gets its next action off against [other]: it moves first, or it survives [other]'s first hit.
+     * Read from the pair table, keyed by the ally.
+     */
+    private fun actingChance(scores: MatchupScores, subject: BattlePokemonStateView, other: BattlePokemonStateView): Double {
+        val ally = subject.side == BattleSide.ALLY
+        val pair = (if (ally) scores.pokemon(subject.battlePokemonId, other.battlePokemonId)
+            else scores.pokemon(other.battlePokemonId, subject.battlePokemonId)) ?: return 1.0
+        val first = if (ally) pair.subjectMovesFirstProbability else 1.0 - pair.subjectMovesFirstProbability
+        val knockedOut = (if (ally) pair.opponentMove else pair.subjectMove)?.knockoutChanceWithin(1) ?: 0.0
+        return (first + (1.0 - first) * (1.0 - knockedOut)).coerceIn(0.0, 1.0)
     }
 
     fun adjustments(

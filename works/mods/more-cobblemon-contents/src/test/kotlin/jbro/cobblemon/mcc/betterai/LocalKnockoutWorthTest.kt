@@ -52,6 +52,26 @@ class LocalKnockoutWorthTest {
         assertEquals(2.0 * 0.25 / ((4.0 + 0.25) / 2.0), worth.getValue(spent.battlePokemonId), 1e-9)
     }
 
+    @Test
+    fun `a hit the Pokemon never gets to use is worth nothing`() {
+        // A Lucario the faster boosted Mega Tyranitar knocks out first: its High Jump Kick would knock the Mega out, but
+        // never lands, so it is worth no more than an idle teammate that loses the same way.
+        val mega = mon(BattleSide.ALLY, 0)
+        val lucario = mon(BattleSide.OPPONENT, 0)
+        val idle = mon(BattleSide.OPPONENT, null)
+        val earthquake = MoveMatchupScore(mega.battlePokemonId, "earthquake", lucario.battlePokemonId, 1.0, 1.0, 1.0,
+            listOf(1.0, 0.0, 0.0), listOf(0.0, 0.0, 0.0), 1.0, 1.0)
+        val kick = MoveMatchupScore(lucario.battlePokemonId, "highjumpkick", mega.battlePokemonId, 0.9, 1.0, 1.0,
+            listOf(1.0, 0.1, 0.01), listOf(0.0, 0.0, 0.0), 1.1, 0.9)
+        // The Mega moves first and knocks the Lucario out (first 1.0, earthquake ko 1.0); the idle one loses the same way.
+        fun pair(foe: BattlePokemonStateView, foeMove: MoveMatchupScore?) = Triple(mega.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.CURRENT) to
+            PokemonMatchupScore(mega.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.CURRENT, earthquake, foeMove, 1.0, 1.0, 1.0, 0.0, 1.0)
+        val worth = LocalKnockoutWorth.worths(state(mega, lucario, idle), MatchupScores(mapOf(
+            (lucario.battlePokemonId to mega.battlePokemonId) to listOf(kick),
+        ), mapOf(pair(lucario, kick), pair(idle, null)), complete = true), 2.0)
+        assertEquals(worth.getValue(idle.battlePokemonId), worth.getValue(lucario.battlePokemonId), 1e-9)
+    }
+
     private fun state(vararg pokemon: BattlePokemonStateView) = BattleStateView(
         UUID.randomUUID(), BattleFormat.SINGLE, 5, pokemon.toList(),
         BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { emptyList() }),

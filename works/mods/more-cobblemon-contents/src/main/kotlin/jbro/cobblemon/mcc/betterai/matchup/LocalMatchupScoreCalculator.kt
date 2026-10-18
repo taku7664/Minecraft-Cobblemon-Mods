@@ -388,7 +388,8 @@ internal object LocalMatchupScoreCalculator {
                     else ownStageRolls(position, action, user, rolls, side, cache)?.let {
                         LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES)
                     }
-                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile), original)
+                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile)
+                    .copy(selfKnockout = selfCostRank(original) == SELF_KNOCKOUT_RANK), original)
             }
             .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
             .sortedWith(BEST_FIRST)
