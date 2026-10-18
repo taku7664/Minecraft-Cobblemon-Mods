@@ -62,9 +62,18 @@ internal object LocalDynamax {
             VOLATILE + "$TURNS$DURATION" + if (gigantamax) setOf(GIGANTAMAX) else emptySet())
 
     /** Whether [moveId] is a Max or G-Max Move (Showdown's `isMax`, `true` or the species). */
-    fun isMaxMove(moveId: String?): Boolean {
-        val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return false
-        return dex.move(PublicIds.canonical(moveId ?: return false))?.data("isMax").let { it == true || it is String }
+    fun isMaxMove(moveId: String?): Boolean = PublicIds.canonical(moveId ?: return false) in maxMoveIds
+
+    /**
+     * Every Max and G-Max Move id, read once from the bundled dex: the runtime dex only overlays species and abilities,
+     * and reading it hashes every Cobblemon species, too costly for a test the matchup table runs on every move.
+     */
+    private val maxMoveIds: Set<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        runCatching {
+            jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().allMoves
+                .filter { it.data("isMax").let { flag -> flag == true || flag is String } }
+                .mapTo(hashSetOf()) { PublicIds.canonical(it.id) }
+        }.getOrDefault(emptySet())
     }
 
     /** Whether [moveId] is a G-Max Move: Showdown names the species on it (`isMax: "Charizard"`), a Max Move has `true`. */
