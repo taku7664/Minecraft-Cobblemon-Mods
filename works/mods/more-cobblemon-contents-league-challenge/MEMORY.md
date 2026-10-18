@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-19 02:10] 결승 상대 목록은 결승 도전 중에만 (단위·리뷰·개발 배포 확인, 실게임 미확인)
+
+- **빡대리님 지적:** 충호전을 시작한 적도 없는데 경로가 결승 상대 목록으로 나왔다. 사천왕전(가라르 포함)은 도전 중에만 이렇게 나와야 하고, 도전 중이란 충호전을 시작해 파티가 바뀌지 않는 상태다.
+- **수정(`b1a1a6d4`):** `LeagueLiveHomeState.finalsView`가 "결승이 열림(AVAILABLE)"만으로도 켜지던 조건을 지우고, 결승 런이 있을 때만 켠다. 런은 START 때 파티를 직렬화해 고정하므로(`LeagueEngine` `LeagueRun.party`, 전투는 `LeagueServer`에서 그 파티로) 런 존재 = 파티 고정이다. 시작 전에는 경로 끝 결승 칸 하나로 보이고 그 칸으로 시작한다. README 문구도 고쳤다.
+- **확인:** Codex가 `b1a1a6d4`에서 `-Ptests=LeagueLiveHomeStateTest|LeagueHomePresentationTest|LeagueHubLayoutTest` 12/12 통과와 리그 `remapJar` 성공(로그 Claude 확인). Codex 리뷰 지적 없음.
+- **개발 배포:** 같은 빌드본을 개발 서버·클라에 넣었고 SHA-256이 같다. 백업 `develop-product/deployment-backups/20261019-b1a1a6d4-league`. 게임·서버는 꺼져 있었고 켜지 않았다. 운영(VPS)·PPakemon·deploy-product에는 넣지 않았다.
+
 ## [2026-10-18 16:00] 고렙 지역 간격 절반, 최고 구역 75~85 (단위·리뷰·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 지적:** 구역을 32×32로 줄인 의도는 고렙 지역을 더 빨리 찾게 하는 것이었는데, 15:30 변경은 `transition_regions`를 32로 늘려 간격을 그대로 뒀다. 최고 레벨은 85로.
