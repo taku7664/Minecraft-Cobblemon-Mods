@@ -6,10 +6,10 @@ import kotlin.math.floor
 data class WildLevelRule(
     val belowCap: Int = 10,
     val spread: Int = 5,
-    val regionChunks: Int = 4,
+    val regionChunks: Int = 2,
     val regionMin: Int = 10,
-    val regionMax: Int = 83,
-    val transitionRegions: Int = 16,
+    val regionMax: Int = 85,
+    val transitionRegions: Int = 32,
 ) {
     init {
         require(belowCap in 3..99) { "below_cap must be between 3 and 99" }

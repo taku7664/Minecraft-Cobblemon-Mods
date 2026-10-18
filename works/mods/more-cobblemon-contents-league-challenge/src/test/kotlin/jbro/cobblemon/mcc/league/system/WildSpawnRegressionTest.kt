@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 class WildSpawnRegressionTest {
     @Test fun `a single area has only an eleven level spawn band`() {
         val rule = WildLevelRule()
-        val levels = (0 until 1000).map { WildSpawnLevel.roll(100, rule, 83, it / 1000.0) }
+        val levels = (0 until 1000).map { WildSpawnLevel.roll(100, rule, 85, it / 1000.0) }
         assertTrue(levels.max() - levels.min() <= 10, "area spawns ${levels.min()}..${levels.max()}")
     }
 
