@@ -736,11 +736,24 @@ internal class LocalTacticalBrain(
         // A Pokemon on its last Perish Song count faints this turn unless it leaves (LocalPerishCount).
         val perishAdjustments = if (!rulesApply) emptyMap() else
             jbro.cobblemon.mcc.betterai.matchup.LocalPerishCount.adjustments(difficultyContext.candidates, rulesContext, tuning)
+        // A knockout is worth the Pokemon that falls, either side, against the board's mean (LocalKnockoutWorth).
+        val knockoutWorthAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.adjustments(
+                difficultyContext.candidates, difficultyContext, rulesContext.state, scores, tuning)
+        }.orEmpty()
+        // An attack that lowers its user's stats risks the drop against whoever faces it next (LocalSelfDropRisk).
+        val selfDropAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalSelfDropRisk.adjustments(
+                difficultyContext.candidates, difficultyContext, rulesContext, scores, baseOpponentIntents, tuning,
+            ).mapValues { it.value.adjustment }
+        }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
+            knockoutWorthAdjustments.keys + selfDropAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
+                (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
@@ -847,7 +860,8 @@ internal class LocalTacticalBrain(
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
-                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments).filterValues { it.isNotEmpty() },
+                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments,
+                    "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
