@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-18 16:00] 고렙 지역 간격 절반, 최고 구역 75~85 (단위·리뷰·개발 배포 확인, 실게임 미확인)
+
+- **빡대리님 지적:** 구역을 32×32로 줄인 의도는 고렙 지역을 더 빨리 찾게 하는 것이었는데, 15:30 변경은 `transition_regions`를 32로 늘려 간격을 그대로 뒀다. 최고 레벨은 85로.
+- **설정(`f7aef4c8`):** `transition_regions` 32 → 16(앵커 간격 1,024 → 512블록, 최고 지역 보장 권역 2,048 → 1,024블록), `region_max` 85 → 90(캡이 충분한 최고 구역 75~85). 이웃 구역 차이 최대 5. 앵커 간격이 바뀌어 기존 월드의 구역 배치도 새로 섞인다(시작 구역 10은 그대로).
+- **확인:** Codex가 `f7aef4c8`에서 야생 레벨 테스트 24/24 통과와 리그 `remapJar` 성공(로그 Claude 확인). Codex 리뷰 지적 없음.
+- **개발 배포:** 같은 빌드본을 개발 서버·클라에 넣었고 SHA-256이 같다. 백업 `develop-product/deployment-backups/20261018-f7aef4c8-league`. 게임·서버는 꺼져 있었고 켜지 않았다. 운영(VPS)·PPakemon·deploy-product에는 넣지 않았다.
+
 ## [2026-10-18 15:00] `b18d8f4e` 개발 서버·클라 배포: 지방 `active`, 가라르 미공개 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - `active` 수정(`91ef2756`·`7b0e0359`·`5ebcda7b`)과 다른 세션의 야생 구역 변경이 합쳐진 `origin/main` `b18d8f4e`를 워크트리에서 `remapJar`로 빌드했다(EXIT 0, `unzip -t`·`jar --validate` 통과, `galar.json` `active: false`·`active.json` `true` 포함). Codex가 같은 커밋에서 `-Ptests=…|WildSpawn` 75/75 통과(로그 Claude 확인). R17·R18 지적 반영, R19 지적 없음.
