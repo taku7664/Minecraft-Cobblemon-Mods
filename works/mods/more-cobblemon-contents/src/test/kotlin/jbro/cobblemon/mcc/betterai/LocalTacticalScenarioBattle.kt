@@ -629,7 +629,8 @@ internal object LocalTacticalScenarioBattle {
             templates.values.flatMap { it.moves }.associate { PublicIds.canonical(it.id) to LocalTacticalSimulationMoveLibrary.details(it) }
         }
         private val inferenceLedgers = BattleSide.entries.associateWith {
-            BattleOpponentMoveInferenceLedger { moveId -> inferenceMoveDetails[PublicIds.canonical(moveId)] }
+            BattleOpponentMoveInferenceLedger(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove) { moveId ->
+                inferenceMoveDetails[PublicIds.canonical(moveId)] }
         }
 
         /**

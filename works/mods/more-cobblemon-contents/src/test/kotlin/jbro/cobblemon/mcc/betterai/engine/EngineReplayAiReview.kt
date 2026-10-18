@@ -109,7 +109,8 @@ internal object EngineReplayAiReview {
         val memories = opens.mapValues { (_, open) -> BattleTacticalMemoryLedger(open) }
         val moveDetails = brains.keys.associateWith { linkedMapOf<String, BattleMoveCandidateView>() }
         val inference = brains.keys.associateWith { side ->
-            BattleOpponentMoveInferenceLedger { id -> moveDetails.getValue(side)[canonical(id)] }
+            BattleOpponentMoveInferenceLedger(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove) { id ->
+                moveDetails.getValue(side)[canonical(id)] }
         }
         val rows = ArrayList<Row>()
         var publicLog: List<String> = emptyList()

@@ -129,7 +129,7 @@ internal object LocalTurnCostScoreCalculator {
         val forReplaced = pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId)
         val chosen = forReplaced.firstOrNull { it.moveId == predictedMoveId }
         val even = if (chosen == null) emptySet()
-            else forReplaced.filter { it.score >= chosen.score - EVEN_CHOICE && it.priority == chosen.priority &&
+            else forReplaced.filter { kotlin.math.abs(it.score - chosen.score) <= EVEN_CHOICE && it.priority == chosen.priority &&
                 it.selfKnockoutChance <= chosen.selfKnockoutChance + EVEN_CHOICE }.mapTo(hashSetOf()) { it.moveId }
         val choices = againstIncoming.map { it.score }.filter { it.moveId in even }.ifEmpty { listOfNotNull(predicted) }
         val state = position.state

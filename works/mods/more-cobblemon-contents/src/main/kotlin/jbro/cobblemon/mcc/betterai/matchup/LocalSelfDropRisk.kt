@@ -112,7 +112,7 @@ internal object LocalSelfDropRisk {
                 LocalStatStageChange.reshape(after, holder, user.battlePokemonId, effect.statStages))
             val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
             risk += probability * foes.map { foe ->
-                slotRisk(board, after, changed, user.battlePokemonId, foe, foe in targeted, moveId, accuracy, bench, scores, intents, cache)
+                slotRisk(board, after, changed, user.battlePokemonId, foe, foe in targeted, move, moveId, accuracy, bench, scores, intents, cache)
             }.average()
             if (probability >= CERTAIN_PROBABILITY) after = changed
         }
@@ -131,6 +131,7 @@ internal object LocalSelfDropRisk {
         userId: UUID,
         foe: BattlePokemonStateView,
         targeted: Boolean,
+        move: BattleActionCandidate,
         moveId: String,
         accuracy: Double,
         bench: List<BattlePokemonStateView>,
@@ -172,40 +173,36 @@ internal object LocalSelfDropRisk {
             val next = if (knockout > 0.0) replacement(receiver) else null
             val afterKnockout = if (next == null) 0.0 else knockout * lost(next)
             if (receiver != foe) return@sumOf chance * ((1.0 - knockout) * lost(receiver) + afterKnockout)
-            // The foe standing in front hits this turn: before the attack, or after it unless the attack knocked it out.
-            // Its likeliest knockout from the move table (the exchange's is thinned for flinches and heals), at the chance
-            // it moves at all; after the attack, on the lowered stats.
+            // The foe standing in front hits this turn: before the attack, or after it on the lowered stats unless the attack
+            // knocked it out. It uses the move likeliest to knock the user out, each move with its own order against the
+            // attack (priority, Speed, Quick Claw and the like) and its own knockouts before and after the drop, read from
+            // the move table (the exchange's is thinned for flinches and heals), at the chance the foe moves at all.
             val foeActs = LocalKnockoutWorth.actsThisTurn(foe)
-            val hit = scores.moves(foe.battlePokemonId, userId).maxByOrNull { it.knockoutChanceWithin(1) }
-            val falls = foeActs * (hit?.knockoutChanceWithin(1) ?: 0.0)
-            val fallsLowered = foeActs * (fallsAfterDrop(board, after, userId, foe, cache) ?: (hit?.knockoutChanceWithin(1) ?: 0.0))
-            val own = scores.moves(userId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }
-            // At the same priority, the two Pokemon's Speed decides, not the order of their best exchange.
-            val bySpeed = before.pokemon.firstOrNull { it.battlePokemonId == userId }
-                ?.let { LocalPublicTurnOrder.speedOrderProbability(before, it, foe) } ?: 0.5
-            val first = when {
-                own == null || hit == null -> bySpeed
-                own.priority > hit.priority -> 1.0
-                own.priority < hit.priority -> 0.0
-                else -> bySpeed
-            }
-            chance * (first * (afterKnockout + (1.0 - knockout) * (1.0 - fallsLowered) * lost(receiver)) +
-                (1.0 - first) * (1.0 - falls) * (afterKnockout + (1.0 - knockout) * lost(receiver)))
+            val beforeHits = threats(board, before, userId, foe, cache)
+            val afterHits = threats(board, after, userId, foe, cache).associateBy { it.score.moveId }
+            class Threat(val first: Double, val fallsBefore: Double, val fallsAfter: Double)
+            val threat = beforeHits.map { hit ->
+                val lowered = afterHits[hit.score.moveId]?.score ?: hit.score
+                Threat(LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, hit.action) ?: 0.5,
+                    foeActs * hit.score.knockoutChanceWithin(1), foeActs * lowered.knockoutChanceWithin(1))
+            }.maxByOrNull { it.first * (1.0 - knockout) * it.fallsAfter + (1.0 - it.first) * it.fallsBefore }
+                ?: Threat(0.5, 0.0, 0.0)
+            chance * (threat.first * (afterKnockout + (1.0 - knockout) * (1.0 - threat.fallsAfter) * lost(receiver)) +
+                (1.0 - threat.first) * (1.0 - threat.fallsBefore) * (afterKnockout + (1.0 - knockout) * lost(receiver)))
         }
     }
 
-    /** [foe]'s likeliest knockout of the user on [after], the user's stats lowered; null when the board cannot be read. */
-    private fun fallsAfterDrop(
+    /** [foe]'s attacks on the user on [state] (before or after the drop), each with its action. */
+    private fun threats(
         board: BattleDecisionContext,
-        after: BattleStateView,
+        state: BattleStateView,
         userId: UUID,
         foe: BattlePokemonStateView,
         cache: LocalProjectedActionCalculationCache,
-    ): Double? {
-        val user = after.pokemon.firstOrNull { it.battlePokemonId == userId } ?: return null
-        val faced = LocalMatchupPosition.face(board.copy(state = after), user, foe, cache) ?: return null
+    ): List<LocalMatchupScoreCalculator.ScoredMove> {
+        val user = state.pokemon.firstOrNull { it.battlePokemonId == userId } ?: return emptyList()
+        val faced = LocalMatchupPosition.face(board.copy(state = state), user, foe, cache) ?: return emptyList()
         return LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, userId, cache)
-            .maxOfOrNull { it.score.knockoutChanceWithin(1) }
     }
 
     private fun targets(move: BattleActionCandidate, foes: List<BattlePokemonStateView>): Set<BattlePokemonStateView> {
