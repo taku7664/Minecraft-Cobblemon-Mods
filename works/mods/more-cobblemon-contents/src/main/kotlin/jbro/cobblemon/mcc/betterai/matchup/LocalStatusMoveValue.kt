@@ -118,19 +118,25 @@ internal object LocalStatusMoveValue {
             jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory.slotActions(board, BattleSide.OPPONENT, context.publicActionCatalog)
                 .any { it.kind == BattleActionKind.SWITCH && it.actorSlot == target.activeSlot }
         fun held(inFront: Double, rest: List<Double>, free: Boolean) = if (!free) inFront else minOf(inFront, rest.minOrNull() ?: inFront)
-        val before = held(now.score, bench.mapNotNull(::score), canLeave(state))
+        val before = held(now.score, bench.mapNotNull(::score), canLeave(state) ||
+            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(state, target) == SHED_SHELL)
         val gains = bench.mapNotNull { coming ->
             val score = score(coming) ?: return@mapNotNull null
             val hazards = minOf(PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0, coming.hpFraction)
-            val dragged = reset.copyState(pokemon = reset.pokemon.map {
-                when (it.battlePokemonId) {
-                    target.battlePokemonId -> it.copyState(activeSlot = null)
-                    coming.battlePokemonId -> it.copyState(activeSlot = target.activeSlot)
-                    else -> it
-                }
-            })
-            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack,
-                canLeave(dragged)) - before
+            val rest = bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack
+            // Knocked out by the hazards as it comes in: its HP is the gain, and the opponent sends whichever of the rest is
+            // worst for the user in its place.
+            if ((PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0) >= coming.hpFraction) {
+                return@mapNotNull hazards + (rest.minOrNull() ?: score) - before
+            }
+            // Its board as the switch makes it (its entry ability, a Trace copying Shadow Tag included); Shed Shell frees it.
+            val dragged = jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector.project(reset, BattleSide.OPPONENT,
+                BattleActionCandidate("drag:${coming.battlePokemonId}", BattleActionKind.SWITCH, actorSlot = target.activeSlot ?: 0,
+                    switchPokemonId = coming.battlePokemonId))
+            val dragging = dragged.pokemon.firstOrNull { it.battlePokemonId == coming.battlePokemonId }
+            val free = canLeave(dragged) || dragging != null &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(dragged, dragging) == SHED_SHELL
+            hazards + held(score, rest, free) - before
         }
         if (gains.isEmpty()) return null
         // The target's hits as they land on the user this turn: from the move table, not the exchange's, which thins them
@@ -277,6 +283,7 @@ internal object LocalStatusMoveValue {
     private const val TAUNT = "taunt"
     private const val INGRAIN = "ingrain"
     private const val SUBSTITUTE = "substitute"
+    private const val SHED_SHELL = "shedshell"
     /** No damage from poison: Magic Guard takes none, Poison Heal heals instead. */
     private val POISON_DAMAGE_IGNORED = setOf("magicguard", "poisonheal")
     private const val MENTAL_HERB = "mentalherb"
