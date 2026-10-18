@@ -18,7 +18,11 @@
     "PokeSnackLegendFilterMixin",
     "PokemonEntitySummaryMixin",
     "ServerGamePacketListenerChatRankMixin",
-    "SpawnPokemonHiddenAbilityMixin"
+    "SpawnPokemonHiddenAbilityMixin",
+    "WildRetaliationAngerMixin",
+    "WildRetaliationDamageMixin",
+    "WildRetaliationFightMixin",
+    "WildRetaliationTargetMixin"
   ],
   "injectors": {
     "defaultRequire": 1

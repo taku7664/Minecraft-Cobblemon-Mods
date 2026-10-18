@@ -13,6 +13,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeProductWorldSearchAggregator
 import jbro.cobblemon.mcc.betterai.simulation.EngineBranchWorker
 import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceLedger
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryLedger
 import java.nio.file.Files
@@ -137,11 +138,16 @@ internal object EmbeddedTeamBattle {
                                 memory.view(state.turn)
                             }
                             registerMoveDetails(baseContext.publicActionCatalog, inferenceMoveDetails.getValue(side))
+                            // As the game does: an attack's own stat changes read on this board, the trainer's own team exact.
+                            val stageBoard = EmbeddedTeamInput.nativeInputs(input)?.let { (preview, own) ->
+                                baseContext.copy(opponentTeamPreview = preview, exactOwnTeam = own)
+                            } ?: baseContext
                             val inferences = inferenceLedgers.getValue(side).update(
                                 baseContext.state,
                                 baseContext.publicActionCatalog,
                                 profiles.getValue(side).difficulty.tier,
                                 actualOpponentMoves(pair, side, baseContext.state),
+                                ownStages = LocalOwnStageValue(stageBoard, profiles.getValue(side).difficulty.tier),
                             )
                             val context = BattleDecisionContext(
                                 baseContext.requestId,

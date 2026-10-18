@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-18 15:00] 평화로움에서도 야생 포켓몬이 반격 (구현·커밋, 빌드·테스트·배포·실게임 미실행)
+
+- **사용자 제보·결정:** 실제로 해 보면 야생이 반격하지 않는다. 원인은 서버 난이도 `difficulty=peaceful`(개발 서버, 로컬 운영, VPS 모두 직접 확인, VPS는 SSH 읽기만). 평화로움은 유지하고 야생 공격만 들어가게 하라(사용자가 2안 선택).
+- **막던 곳 네 군데(바이트코드 확인):** Cobblemon 1.8.1 `AttackAngryAtTask`의 `create$lambda$0$0$0`(평화로움이면 공격 대상 안 정함), `SwitchToFightTaskConfig`의 `createTask$lambda$0$0$0`(평화로움이면 fight 활동 안 감), 바닐라 `LivingEntity.canAttack`(평화로움이면 플레이어 대상 거부, `StopAttackingIfTargetInvalid`가 `Mob.canAttack`을 불러 대상을 지움), `Player.hurt`(난이도 보정 피해를 평화로움에서 0으로). Cobblemon `PokemonEntity.doHurtTarget`은 바닐라로 넘겨 `mobAttack` 피해를 쓴다.
+- **구현:** `WildRetaliation.difficultyFor`가 야생 `PokemonEntity`(`pokemon.isWild()`)에게만 평화로움을 쉬움으로 보이게 하고, 믹스인 4개(`WildRetaliationAnger/Fight/Target/DamageMixin`)가 위 네 곳에 붙는다. 피해 쪽은 `scalesWithDifficulty`를 false로 바꿔 보정 없는 원래 공격력이 들어간다(쉬움 보정도 안 받음). 다른 몹·소유 포켓몬·평화로움의 나머지(적대 몹 없음, 배고픔 등)는 그대로다.
+- **주의:** Cobblemon 쪽 두 믹스인은 Kotlin 람다 이름을 대상으로 한다. Cobblemon을 올리면 이름이 바뀌어 `defaultRequire 1`로 서버 시작이 실패할 수 있으니 그때 다시 맞춘다.
+- **미확인:** 사용자 지시("빌드는 대기")로 컴파일·테스트·JAR 배치를 하지 않았다. 믹스인이 붙는지(특히 `remap=false` + `@At(remap=true)` 조합), 실게임에서 야생이 때리는지, 반격하는 종이 몇이나 되는지 모두 미확인. 서버 JAR이라 VPS 반영이 있어야 효과가 난다.
+- **정정:** 같은 날 앞서 "JSON에 없는 `fightsMelee`는 꺼짐"으로 세어 거의 반격하지 않는다고 했다가, 기본값이 true임을 확인해 "대부분 반격한다"로 정정했었다. 그 판단은 데이터만 본 것이었고, 실제로는 평화로움이 전부 막고 있었다.
+
+
 ## [2026-10-18 14:10] 포켓내비 스낵 수정 빌드·개발 배치 (빌드·테스트·개발 배치 확인, 실게임 미검증)
 
 - **빌드:** origin/main `c26033812`을 `git archive`로 `F:/AI/builds/pokenav-snack-1018/src`에 풀어 `:jbro-policy:build :ppakemon-client-setup:build` 종료 코드 0(쓰기 경로 F 확인, 다른 세션의 MCC Gradle과 출력 폴더 분리). 테스트: client-setup 92개 통과, jbro-policy 111개 중 110개 통과·실패 0·중단 1. 중단은 `real wiki questions…`가 `../../../server-wiki`를 init 스크립트가 바꾼 작업 폴더 기준으로 못 찾아 `assumeTrue`로 빠진 것으로, 이 변경과 무관하나 이번에는 돌지 않았다.
@@ -18,7 +28,7 @@
 - **원인(Cobblenav 2.4.1 바이트코드):** `Pokenav.use`는 서버에서 Cobblemon `ServerPlayer.raycast(blockInteractionRange, ClipContext.Fluid.NONE)`로 시선 블록을 찾고, 블록 엔티티가 `PokeSnackBlockEntity`일 때만 그 좌표를 `OpenPokenavPacket`의 두 번째 인자(`fixedAreaPoint`)로 넘긴다. 우리 `PokenavCommand`는 늘 `null`을 넘겼다. 아이템의 다른 분기는 없고 OS 값(Lite, 위치만 켬)은 이미 같았다.
 - **구현:** `PokenavCommand.snackInSight`가 같은 레이캐스트로 스낵 좌표를 넘긴다. Tab 단축키는 `/pokenav`를 보내므로 같이 고쳐진다. `field_1348`이 `NONE`인 것은 Loom 매핑으로 확인했다.
 - **미확인:** "빌드는 지시할 때만" 규칙으로 컴파일·테스트·JAR 배치를 하지 않았다. 실게임에서 스낵 목록이 뜨는지 확인하지 않았다. 서버 쪽 변경이라 개발·운영·VPS 서버 JAR 교체가 있어야 효과가 난다.
-- **같이 받은 질문(야생 반격):** Cobblemon 1.8.1에는 반격 전역 컨픽이 없다. `behaviours/pokemon/auto/pokemon_non_party.json`이 종 데이터 `behaviour.combat.willDefendSelf`가 켜졌거나 알파인 야생에 `cobblemon:retaliates`를 붙이고, 실제 공격은 `fightsMelee`가 켜져야 한다(`pokemon_combat.json`). 구현된 종 888개 중 `willDefendSelf`만 458, 둘 다 2, `fightsMelee`만 1, 둘 다 없음 427. 사용자 지시대로 작업하지 않고 보고만 했다.
+- **같이 받은 질문(야생 반격):** Cobblemon 1.8.1에는 반격 전역 컨픽이 없고 기본으로 켜져 있다. `behaviours/pokemon/auto/pokemon_non_party.json`이 종 데이터 `behaviour.combat.willDefendSelf`가 켜졌거나 알파인 야생에 `cobblemon:retaliates`를, `pokemon_combat.json`이 `fightsMelee`인 개체에 근접 공격을 붙인다. **`CombatBehaviour` 기본값은 `fightsMelee=true`, `willFlee=true`, `willDefendSelf=false`**(바이트코드 확인)라 JSON에 없는 값은 이 기본값이다. 구현된 888종 중 `willDefendSelf` 460종과 모든 알파가 반격하고, 나머지는 도망간다. 처음에 JSON에 없는 `fightsMelee`를 꺼짐으로 세어 "거의 반격하지 않는다"고 잘못 보고했다가 사용자 지적으로 정정했다. 우리 모드·개발 서버 데이터팩에 이 값을 바꾸는 파일은 없다. 실게임 미확인.
 
 ## [2026-10-18 01:56] XS 6개 월드 데이터팩 운영 적용·재시작 없이 리로드 확인
 
