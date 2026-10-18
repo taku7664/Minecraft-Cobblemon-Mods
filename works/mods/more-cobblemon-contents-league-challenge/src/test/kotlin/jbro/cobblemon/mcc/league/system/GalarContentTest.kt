@@ -71,16 +71,20 @@ class GalarContentTest {
 
     @Test fun `hard teams use six trained members with role based evs and no assault vest status move`() {
         val c = catalog()
+        // Assault Vest holders, whose four moves are all attacks.
+        val vestSets = setOf("fakeout,drainpunch,knockoff,icepunch", "dracometeor,muddywater,flamethrower,thunderbolt")
         c.challenges.filterKeys { it.endsWith("_hard") }.values.forEach { ch ->
             assertEquals(6, ch.team.size)
+            // Item Clause, as the hard League asks of the challenger: no two members hold the same item.
+            val items = ch.team.map { fields(it).getValue("held_item") }
+            assertEquals(items.distinct(), items, "${ch.id} holds an item twice")
             assertEquals(if ("/cup_" in ch.id || ch.id.endsWith("/leon_hard")) 5 else 4, ch.skill)
             ch.team.forEach { line ->
                 val f = fields(line)
                 assertTrue(f.filterKeys { it.endsWith("_iv") }.values.all { it == "31" })
                 assertEquals(508, f.filterKeys { it.endsWith("_ev") }.values.sumOf(String::toInt))
                 assertNotNull(f["held_item"])
-                if (f["held_item"] == "cobblemon:assault_vest")
-                    assertEquals("fakeout,drainpunch,knockoff,icepunch", f["moves"])
+                if (f["held_item"] == "cobblemon:assault_vest") assertTrue(f["moves"] in vestSets, "${ch.id} ${f["moves"]}")
             }
         }
         val pex = fields(c.challenges.getValue("$ns:galar/nessa_hard").team[2])

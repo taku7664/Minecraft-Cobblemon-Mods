@@ -139,6 +139,25 @@ HARD_SUPPORT = {
 }
 
 
+# Held items for one trainer's member, where the slot order above would hand two members the same item. The hard
+# League keeps Item Clause like the challenger: no two members of a team hold the same item. Keyed by trainer,
+# since the same species keeps its slot item on another trainer's team. Custom balancing decisions (2026-10-18).
+HARD_ITEMS = {
+    ("allister", "chandelure"): "choice_specs", ("allister", "polteageist"): "white_herb",
+    ("cup_allister", "chandelure"): "choice_specs", ("cup_allister", "polteageist"): "white_herb",
+    # Machamp is the team's Gigantamax ace: no Choice item works while Dynamaxed, a Weakness Policy does.
+    ("bea", "machamp"): "weakness_policy", ("cup_bea", "machamp"): "weakness_policy",
+    ("cup_hop", "dubwool"): "rocky_helmet",
+    ("nessa", "barraskewda"): "choice_band", ("cup_nessa", "barraskewda"): "choice_band",
+    ("cup_raihan", "goodra"): "assault_vest",
+    ("raihan", "flygon"): "choice_scarf",
+    ("kabu", "chandelure"): "choice_specs",
+    ("leon", "inteleon"): "choice_specs",
+    ("milo", "rillaboom"): "choice_band",
+    ("piers", "bisharp"): "black_glasses",
+}
+
+
 def write(kind: str, name: str, obj: dict) -> None:
     path = DATA / kind / (name + ".json")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,7 +177,8 @@ def main() -> None:
             moves = {m[1]: m[2] for m in re.finditer(r"^  (\w+): \{(.*?)(?=^  \w+: \{|\Z)", raw, re.M | re.S)}
     adjustments = []
 
-    def member(token: str, level: int, hard: bool, index: int, ace: bool, original: tuple | None = None, gmax: bool = True) -> str:
+    def member(token: str, level: int, hard: bool, index: int, ace: bool, original: tuple | None = None, gmax: bool = True,
+               trainer: str = "") -> str:
         name, _, form = token.partition("@")
         form = {"galarian": "galar"}.get(form, form)
         base = species[name]
@@ -221,12 +241,19 @@ def main() -> None:
                 held = "flame_orb"
             if name == "grimmsnarl":
                 held = "light_clay"
+            held = HARD_ITEMS.get((trainer, name), held)
             props.append("held_item=cobblemon:"+held)
         for stat in ("hp", "attack", "defence", "special_attack", "special_defence", "speed"):
             props.append(f"{stat}_iv={iv}")
             ev = support[2].get(stat, 0) if support else 252 if hard and stat in {"speed", "attack" if physical else "special_attack"} else 4 if hard and stat == "hp" else 0
             props.append(f"{stat}_ev={ev}")
         return " ".join(props)
+
+    def team(name: str, members: list[str]) -> dict:
+        if name.endswith("_hard"):
+            held = [p for m in members for p in m.split() if p.startswith("held_item=")]
+            assert len(held) == len(set(held)), (name, held)
+        return {"schema_version": 1, "pokemon": members}
 
     normal_ids = []
     hard_ids = []
@@ -237,8 +264,8 @@ def main() -> None:
             stage = [1, 2, 3, 4, 4, 5, 6, 6, 7, 8][index]
             low = [79, 79, 80, 80, 81, 81, 82, 83][stage-1]
             team_levels = [low, low+1, low+1, low+1, low+1, low+2] if hard else levels
-            write("teams", name, {"schema_version": 1, "pokemon": [member(t, lv, hard, i, i == len(tokens)-1,
-                None if hard else NORMAL_GYMS[id_][i], gmax=hard or id_ != "nessa") for i, (t, lv) in enumerate(zip(tokens, team_levels, strict=True))]})
+            write("teams", name, team(name, [member(t, lv, hard, i, i == len(tokens)-1,
+                None if hard else NORMAL_GYMS[id_][i], gmax=hard or id_ != "nessa", trainer=id_) for i, (t, lv) in enumerate(zip(tokens, team_levels, strict=True))]))
             write("challenges", name, {"schema_version": 1, "trainer": NS+":"+name, "reward": NS+":"+name,
                 **({"badge": "pokebadges:"+type_+"_galar_badge"} if not hard else {}), "mechanic": "DYNAMAX",
                 "format": "DOUBLE" if id_ == "raihan" else "SINGLE", "battle_cap": 80 if hard else cap, "type": type_})
@@ -253,7 +280,7 @@ def main() -> None:
             name = "galar/"+id_+("_hard" if hard else "")
             tokens = (hard_team if hard else normal).split()
             team_levels = ([101, 102, 103, 102, 104, 105] if id_ == "leon" else [94, 95, 95, 96, 96, 97]) if hard else levels
-            write("teams", name, {"schema_version": 1, "pokemon": [member(t, lv, hard, i, i == len(tokens)-1) for i, (t, lv) in enumerate(zip(tokens, team_levels, strict=True))]})
+            write("teams", name, team(name, [member(t, lv, hard, i, i == len(tokens)-1, trainer=id_) for i, (t, lv) in enumerate(zip(tokens, team_levels, strict=True))]))
             write("challenges", name, {"schema_version": 1, "trainer": NS+":"+name, "reward": NS+":"+name,
                 "mechanic": "DYNAMAX", "format": "SINGLE", "battle_cap": 100 if hard else 67, "type": type_})
             write("rewards", name, {"schema_version": 1, "unlock_cap": 100 if hard else 80,

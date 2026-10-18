@@ -41,7 +41,7 @@
 | 엘풍 | 79 | prankster / timid / focus_sash | HP 252, 방어 4, 스피드 252 | tailwind, moonblast, encore, taunt |
 | 나무킹 | 80 | overgrow / timid / expert_belt | HP 4, 특공 252, 스피드 252 | leafstorm, dragonpulse, focusblast, substitute |
 | 너트령 | 80 | ironbarbs / relaxed / rocky_helmet | HP 252, 방어 88, 특방 168 | leechseed, powerwhip, gyroball, protect |
-| 고릴타 | 80 | grassysurge / jolly / leftovers | HP 4, 공격 252, 스피드 252 | grassyglide, woodhammer, knockoff, uturn |
+| 고릴타 | 80 | grassysurge / jolly / choice_band | HP 4, 공격 252, 스피드 252 | grassyglide, woodhammer, knockoff, uturn |
 | 단지래플 | 80 | ripen / bold / leftovers | HP 252, 방어 252, 특방 4 | appleacid, dragonpulse, recover, leechseed |
 | 백솜모카 | 81 | regenerator / bold / sitrus_berry | HP 252, 방어 252, 특방 4 | gigadrain, pollenpuff, synthesis, cottonguard |
 
@@ -50,7 +50,7 @@
 | 포켓몬 | 레벨 | 특성 / 성격 / 도구 | 노력치 | 기술 |
 |---|---|---|---|---|
 | 패리퍼 | 79 | drizzle / timid / focus_sash | HP 4, 특공 252, 스피드 252 | hurricane, hydropump, tailwind, icebeam |
-| 꼬치조 | 80 | swiftswim / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | liquidation, closecombat, psychicfangs, flipturn |
+| 꼬치조 | 80 | swiftswim / jolly / choice_band | HP 4, 공격 252, 스피드 252 | liquidation, closecombat, psychicfangs, flipturn |
 | 더시마사리 | 80 | regenerator / bold / black_sludge | HP 252, 방어 252, 특방 4 | scald, recover, haze, toxicspikes |
 | 두빅굴 | 80 | swiftswim / jolly / leftovers | HP 4, 공격 252, 스피드 252 | hydropump, earthpower, sludgewave, grassknot |
 | 킹드라 | 80 | swiftswim / timid / expert_belt | HP 4, 특공 252, 스피드 252 | hydropump, dracometeor, hurricane, flipturn |
@@ -64,7 +64,7 @@
 | 나인테일 | 81 | drought / timid / expert_belt | HP 4, 특공 252, 스피드 252 | flamethrower, solarbeam, willowisp, nastyplot |
 | 윈디 | 81 | intimidate / jolly / life_orb | HP 4, 공격 252, 스피드 252 | flareblitz, extremespeed, closecombat, wildcharge |
 | 염뉴트 | 81 | corrosion / timid / leftovers | HP 4, 특공 252, 스피드 252 | flamethrower, sludgewave, nastyplot, toxic |
-| 샹델라 | 81 | flashfire / timid / expert_belt | HP 4, 특공 252, 스피드 252 | shadowball, flamethrower, energyball, psychic |
+| 샹델라 | 81 | flashfire / timid / choice_specs | HP 4, 특공 252, 스피드 252 | shadowball, flamethrower, energyball, psychic |
 | 다태우지네 | 82 | flashfire / jolly / sitrus_berry | HP 4, 공격 252, 스피드 252 | firelash, leechlife, powerwhip, coil |
 
 ### 채두
@@ -76,7 +76,7 @@
 | 창파나이트 | 81 | steadfast / jolly / life_orb | HP 4, 공격 252, 스피드 252 | closecombat, bravebird, leafblade, knockoff |
 | 루차불 | 81 | unburden / jolly / power_herb | HP 4, 공격 252, 스피드 252 | skyattack, acrobatics, closecombat, swordsdance |
 | 노보청 | 81 | guts / jolly / flame_orb | HP 4, 공격 252, 스피드 252 | drainpunch, machpunch, facade, knockoff |
-| 괴력몬 | 82 | noguard / jolly / sitrus_berry | HP 4, 공격 252, 스피드 252 | dynamicpunch, stoneedge, knockoff, bulletpunch |
+| 괴력몬 | 82 | noguard / jolly / weakness_policy | HP 4, 공격 252, 스피드 252 | dynamicpunch, stoneedge, knockoff, bulletpunch |
 
 ### 어니언
 
@@ -85,8 +85,8 @@
 | 야느와르몽 | 80 | pressure / impish / leftovers | HP 252, 공격 4, 방어 252 | poltergeist, shadowsneak, icepunch, willowisp |
 | 따라큐 | 81 | disguise / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | playrough, shadowclaw, shadowsneak, swordsdance |
 | 산호르곤 | 81 | perishbody / timid / life_orb | HP 4, 특공 252, 스피드 252 | shadowball, earthpower, icebeam, strengthsap |
-| 샹델라 | 81 | flashfire / timid / leftovers | HP 4, 특공 252, 스피드 252 | shadowball, flamethrower, energyball, psychic |
-| 포트데스 | 81 | weakarmor / timid / expert_belt | HP 4, 특공 252, 스피드 252 | shellsmash, shadowball, storedpower, gigadrain |
+| 샹델라 | 81 | flashfire / timid / choice_specs | HP 4, 특공 252, 스피드 252 | shadowball, flamethrower, energyball, psychic |
+| 포트데스 | 81 | weakarmor / timid / white_herb | HP 4, 특공 252, 스피드 252 | shellsmash, shadowball, storedpower, gigadrain |
 | 팬텀 | 82 | cursedbody / timid / sitrus_berry | HP 4, 특공 252, 스피드 252 | shadowball, sludgebomb, focusblast, thunderbolt |
 
 ### 포플러
@@ -130,7 +130,7 @@
 | 칼라마네로 | 83 | contrary / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | superpower, knockoff, psychocut, rockslide |
 | 스컹탱크 | 83 | stench / jolly / life_orb | HP 4, 공격 252, 스피드 252 | poisonjab, suckerpunch, fireblast, crunch |
 | 악비아르 | 83 | intimidate / jolly / leftovers | HP 4, 공격 252, 스피드 252 | earthquake, knockoff, closecombat, stoneedge |
-| 절각참 | 83 | defiant / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | ironhead, knockoff, suckerpunch, swordsdance |
+| 절각참 | 83 | defiant / jolly / black_glasses | HP 4, 공격 252, 스피드 252 | ironhead, knockoff, suckerpunch, swordsdance |
 | 가로막구리 | 84 | guts / jolly / flame_orb | HP 4, 공격 252, 스피드 252 | facade, knockoff, closecombat, obstruct |
 
 ### 금랑
@@ -138,7 +138,7 @@
 | 포켓몬 | 레벨 | 특성 / 성격 / 도구 | 노력치 | 기술 |
 |---|---|---|---|---|
 | 기가이어스 | 83 | sandstream / brave / smooth_rock | HP 252, 공격 252, 특방 4 | rockslide, stealthrock, earthquake, explosion |
-| 플라이곤 | 84 | levitate / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | earthquake, dragonclaw, rockslide, uturn |
+| 플라이곤 | 84 | levitate / jolly / choice_scarf | HP 4, 공격 252, 스피드 252 | earthquake, dragonclaw, rockslide, uturn |
 | 사다이사 | 84 | sandspit / jolly / life_orb | HP 4, 공격 252, 스피드 252 | coil, earthquake, stoneedge, glare |
 | 마기라스 | 84 | sandstream / jolly / leftovers | HP 4, 공격 252, 스피드 252 | rockslide, crunch, icepunch, lowkick |
 | 몰드류 | 84 | sandrush / jolly / expert_belt | HP 4, 공격 252, 스피드 252 | earthquake, ironhead, rockslide, swordsdance |
