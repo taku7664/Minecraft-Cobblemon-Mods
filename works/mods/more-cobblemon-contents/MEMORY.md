@@ -3,6 +3,12 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-19 08:55] `786a4e75` MCC 개발 서버·클라이언트 배치 (빌드·배치 확인, 서버 기동·실게임 미확인)
+
+- **빌드:** `origin/main`과 같은 `main` `786a4e75`(아래 08:50 항목 전부 포함)으로 `:more-cobblemon-contents:remapJar` 성공, `unzip -t` 통과, `LocalFoeDynamaxThreat` 포함 확인.
+- **배치:** `develop-product/server/mods`·`develop-product/client/mods`의 `more-cobblemon-contents-0.1.0.jar` 교체, SHA-256 앞자리 `bd5f71a4e2f7064b` 빌드본과 셋 다 일치. 이전 JAR(`5075f22d…`)은 `develop-product/deployment-backups/2026-10-19-mcc-0852/`.
+- **범위:** 애드온 JAR은 그대로(`BattleDecisionContext.dynamaxInBattle` 추가는 다른 모드가 쓰지 않음을 확인). 서버·게임은 꺼져 있었고(자바는 Gradle 데몬뿐) 켜지 않았다.
+
 ## [2026-10-19 08:50] 리뷰 지적 전부 반영, 상대 다이맥스(변화기만), 측정 하네스 특성 후보, 확정 킬 앞 랭크업 C안 (구현·단위·모의 전투 확인, 빌드·배치·실게임 미확인)
 
 - **리뷰(사용자 지시 "다 고쳐"):** `f7bca99d`~`c95b27c6` 8건 리뷰 지적 11개, 이후 수정 커밋 리뷰 지적 8개·3개를 모두 코드와 대조해 맞는 것을 고쳤다(`f8f965c1`·`110238da`·`1843af84`·`b2c1d479`). 마지막 리뷰 지적 없음.
