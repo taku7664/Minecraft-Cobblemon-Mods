@@ -25,8 +25,10 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * - Forced switch. Return: the target's raises gone, a Pokemon from its bench dragged in through this side's hazards,
  *   likely into a better exchange for the user. Risk: it moves last, so the target's hit lands first and may knock the
  *   user out before it moves; a badly poisoned target comes back with its Toxic count reset.
- *   `accuracy x (1 - P(the target's hit knocks the user out)) x (mean(bench b){ entry hazards(b) + score(user vs b)
- *    - score(user vs target) } - Toxic count lost) x 100 - P(the user moves first otherwise) x the target's expected hit x 100`
+ *   `accuracy x (1 - P(the target's hit knocks the user out)) x (mean(bench b){ entry hazards(b) + held(b, rest)
+ *    - held(target, bench) } - Toxic count lost) x 100 - P(the user moves first otherwise) x the target's expected hit x 100`
+ *   held(x, rest) = min(score(user vs x), score(user vs each of rest)): the opponent switches again to whatever is worst
+ *   for the user, before the move as after it.
  *   Toxic count lost: the count c it has built, c/16 more each turn it would have stayed (the user's hits to knock it
  *   out), up to its HP.
  * - Taunt. Return: three turns without the target's status moves. Risk: nothing if it only attacks or switches.
@@ -98,10 +100,16 @@ internal object LocalStatusMoveValue {
         val bench = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot == null && alive(it) }
         if (bench.isEmpty()) return 0.0
         val now = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
+        fun score(pokemon: BattlePokemonStateView) = scores.pokemon(user.battlePokemonId, pokemon.battlePokemonId)?.score
+        // The opponent can switch again, before the move and after it: in front stays whichever of the one there and the
+        // rest of its Pokemon is worst for the user (the target, forced out, is among the rest). Read without it, a
+        // Whirlwind was paid for a bad matchup the opponent would leave on its own anyway.
+        fun held(inFront: Double, rest: List<BattlePokemonStateView>) = minOf(inFront, rest.mapNotNull(::score).minOrNull() ?: inFront)
+        val before = held(now.score, bench)
         val gains = bench.mapNotNull { coming ->
-            val score = scores.pokemon(user.battlePokemonId, coming.battlePokemonId)?.score ?: return@mapNotNull null
+            val score = score(coming) ?: return@mapNotNull null
             val hazards = minOf(PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0, coming.hpFraction)
-            hazards + (score - now.score)
+            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId } + target) - before
         }
         if (gains.isEmpty()) return null
         // The target's hits as they land on the user this turn: from the move table, not the exchange's, which thins them
