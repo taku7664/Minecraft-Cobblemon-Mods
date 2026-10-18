@@ -208,7 +208,10 @@ internal object NativeInitialBattleDefinitionCompiler {
                 }
                 if (itemConflict) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT, id)
                 if (pokemon.side == BattleSide.OPPONENT && build.opponentMoveSet != null) {
-                    val publicMoves = pokemon.knownMoveIds.mapTo(linkedSetOf(), ::normalizedNativeId)
+                    // A Max Move it used is one of its moves Dynamaxed, not a move of its set (a Duraludon's Max
+                    // Steelspike conflicted with every world and stopped the doubles readouts, 2026-10-18).
+                    val publicMoves = pokemon.knownMoveIds.filterNot(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove)
+                        .mapTo(linkedSetOf(), ::normalizedNativeId)
                     val worldMoves = build.opponentMoveSet.nativeMoveIds.toSet()
                     if (!worldMoves.containsAll(publicMoves)) {
                         issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_MOVE_CONFLICT, id)
@@ -347,7 +350,7 @@ internal object NativeInitialBattleDefinitionCompiler {
             // A fainted ally drops out of the request, so the catalog no longer lists its moves; it never acts again,
             // and its own known moves keep its set whole. Without this a single fainted ally stopped every rebuild.
             ?: pokemon.takeIf { it.fainted && catalog.forPokemon(it.battlePokemonId).isEmpty() }?.knownMoveIds
-                ?.map(::normalizedNativeId)?.filter(String::isNotBlank)?.distinct()?.takeIf { it.size in 1..4 }
+                ?.filterNot(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::isMaxMove)?.map(::normalizedNativeId)?.filter(String::isNotBlank)?.distinct()?.takeIf { it.size in 1..4 }
             .orEmpty()
         BattleSide.OPPONENT -> build?.opponentMoveSet?.nativeMoveIds.orEmpty()
     }

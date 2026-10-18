@@ -61,6 +61,12 @@ internal object LocalDynamax {
         else pokemon.copyState(knownVolatileEffectIds = pokemon.knownVolatileEffectIds.filterNot { it.startsWith(TURNS) }.toSet() +
             VOLATILE + "$TURNS$DURATION" + if (gigantamax) setOf(GIGANTAMAX) else emptySet())
 
+    /** Whether [moveId] is a Max or G-Max Move (Showdown's `isMax`, `true` or the species). */
+    fun isMaxMove(moveId: String?): Boolean {
+        val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return false
+        return dex.move(PublicIds.canonical(moveId ?: return false))?.data("isMax").let { it == true || it is String }
+    }
+
     /** Whether [moveId] is a G-Max Move: Showdown names the species on it (`isMax: "Charizard"`), a Max Move has `true`. */
     fun isGMaxMove(moveId: String?): Boolean {
         val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return false
