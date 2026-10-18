@@ -46,7 +46,9 @@ internal object LocalMoveThreatScore {
             val chance = effect.probability ?: 1.0
             val onTarget = effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.TARGET_SIDE
             when (effect.kind) {
-                BattleMoveEffectKind.MULTI_HIT -> effect.amountRange?.let { hits -> power *= (hits.minimum + hits.maximum) / 2.0 }
+                BattleMoveEffectKind.MULTI_HIT -> effect.amountRange?.let { hits ->
+                    power *= jbro.cobblemon.mcc.internal.ai.BattleMoveSetExpectation.averageHits(hits)
+                }
                 BattleMoveEffectKind.STATUS -> if (onTarget) factor += chance * STATUS
                 BattleMoveEffectKind.VOLATILE_STATUS -> if (onTarget) factor += chance * VOLATILE
                 BattleMoveEffectKind.STAT_STAGE -> effect.statStages.values.forEach { stages ->
@@ -57,7 +59,8 @@ internal object LocalMoveThreatScore {
                 BattleMoveEffectKind.DRAIN_FRACTION -> factor += DRAIN * (effect.fractionRange?.maximum ?: 0.5)
                 BattleMoveEffectKind.RECOIL_FRACTION -> factor -= RECOIL * (effect.fractionRange?.maximum ?: 0.33)
                 BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectKind.SWITCH_TARGET -> factor += PIVOT
-                BattleMoveEffectKind.MAX_HP_RECOIL -> factor -= RECOIL * (effect.fractionRange?.maximum ?: 0.5) * MAX_HP_RECOIL
+                // The share of maximum HP spent is that share of the move's value, as the move inference reads it.
+                BattleMoveEffectKind.MAX_HP_RECOIL -> factor -= effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.5
                 BattleMoveEffectKind.CRASH_RECOIL -> factor -= CRASH * (1.0 - accuracy)
                 BattleMoveEffectKind.CHARGE_TURN, BattleMoveEffectKind.RECHARGE_TURN -> factor *= LOST_TURN
                 BattleMoveEffectKind.SELF_DESTRUCT -> factor *= SELF_KNOCKOUT
@@ -85,8 +88,6 @@ internal object LocalMoveThreatScore {
     private const val LOST_TURN = 0.5
     /** A move that knocks its user out (Explosion, Self-Destruct): rarely the attack a set is built around. */
     private const val SELF_KNOCKOUT = 0.25
-    /** A share of the user's maximum HP lost (Steel Beam, Mind Blown) costs this much more than the same share of damage. */
-    private const val MAX_HP_RECOIL = 2.0
     /** Per share of misses, for a move that hurts its user when it misses (High Jump Kick). */
     private const val CRASH = 0.5
     private const val MINIMUM_FACTOR = 0.1

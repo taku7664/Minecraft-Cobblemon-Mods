@@ -91,6 +91,20 @@ class BattleOpponentMoveExpectationScorerTest {
     }
 
     @Test
+    fun `own stat changes take the board's reading in place of the set-level values`() {
+        val scaleShot = move("dragon", category = BattleMoveDamageCategory.PHYSICAL, power = 25.0, effects = listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, statStages = mapOf("speed" to 1, "defence" to -1))))
+        val plain = move("dragon", category = BattleMoveDamageCategory.PHYSICAL, power = 25.0)
+        fun board(change: Double?) = BattleOwnStageValue { _, _, _ -> change }
+        // The Speed turns exchanges: a quarter of its damage more.
+        assertEquals(score(plain) * 1.25, BattleOpponentMoveExpectationScorer.score(pokemon(), scaleShot, BattleFormat.SINGLE, "scaleshot", board(0.25)), 1e-9)
+        // It turns nothing: no more than the plain hit.
+        assertEquals(score(plain), BattleOpponentMoveExpectationScorer.score(pokemon(), scaleShot, BattleFormat.SINGLE, "scaleshot", board(0.0)), 1e-9)
+        // No board reading: the set-level values.
+        assertEquals(score(scaleShot), BattleOpponentMoveExpectationScorer.score(pokemon(), scaleShot, BattleFormat.SINGLE, "scaleshot", board(null)), 1e-9)
+    }
+
+    @Test
     fun `a multi-hit attack counts its average hits`() {
         val twice = move("flying", category = BattleMoveDamageCategory.PHYSICAL, power = 40.0, effects = listOf(
             BattleMoveEffectView(BattleMoveEffectKind.MULTI_HIT, BattleMoveEffectTarget.SELECTED_TARGET, amountRange = BattleIntegerRange(2, 2))))

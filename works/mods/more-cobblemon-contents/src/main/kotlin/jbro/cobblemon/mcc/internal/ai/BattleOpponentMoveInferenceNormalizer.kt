@@ -18,8 +18,33 @@ internal object BattleOpponentMoveInferenceNormalizer {
         rebuildSlotPreferences: Map<UUID, BattleOpponentMoveInferenceView> = emptyMap(),
         ignoredRevealPokemonIds: Set<UUID> = emptySet(),
         moveDetails: (String) -> BattleMoveCandidateView?,
+        /** The board's reading of an attack's own stat changes ([BattleOwnStageValue]); null keeps the set-level values. */
+        ownStages: BattleOwnStageValue? = null,
     ): List<BattleOpponentMoveInferenceView> {
         val policy = BattleOpponentMoveInferencePolicies.forTier(tier)
+        val outer = boardStages.get()
+        boardStages.set(ownStages)
+        try {
+            return normalizeOnBoard(state, catalog, policy, actualMoveIds, previous, rebuildSlotPreferences,
+                ignoredRevealPokemonIds, moveDetails)
+        } finally {
+            boardStages.set(outer)
+        }
+    }
+
+    /** The board reading for the inference running on this thread (one normalize call at a time per thread). */
+    private val boardStages = ThreadLocal<BattleOwnStageValue?>()
+
+    private fun normalizeOnBoard(
+        state: BattleStateView,
+        catalog: BattlePublicActionCatalogView,
+        policy: BattleOpponentMoveInferencePolicy,
+        actualMoveIds: Map<UUID, Set<String>>,
+        previous: Map<UUID, BattleOpponentMoveInferenceView>,
+        rebuildSlotPreferences: Map<UUID, BattleOpponentMoveInferenceView>,
+        ignoredRevealPokemonIds: Set<UUID>,
+        moveDetails: (String) -> BattleMoveCandidateView?,
+    ): List<BattleOpponentMoveInferenceView> {
         return state.pokemon.asSequence()
             .filter { it.side == BattleSide.OPPONENT && !it.fainted }
             .sortedBy { it.battlePokemonId.toString() }
@@ -58,7 +83,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         val slots = mutableListOf<BattleOpponentMoveSlotView>()
         val revealed = if (includePublicReveals) revealedMoves(pokemon, catalog, moveDetails) else emptyList()
         revealed.forEach { (moveId, details) ->
-            addConcrete(slots, moveId, details, group(pokemon, details), BattleOpponentMoveKnowledge.CONFIRMED,
+            addConcrete(slots, moveId, details, group(pokemon, details, moveId), BattleOpponentMoveKnowledge.CONFIRMED,
                 BattleOpponentMoveSource.PUBLIC_REVEAL)
         }
 
@@ -201,7 +226,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
             if (refreshed == null) previous else previous.copy(details = refreshed)
         }.toMutableList()
         revealedMoves(pokemon, catalog, moveDetails).forEach { (moveId, details) ->
-            val moveGroup = group(pokemon, details)
+            val moveGroup = group(pokemon, details, moveId)
             val category = BattleStatusMoveCategories.classify(moveId, details)
             val exact = slots.indexOfFirst { sameMove(it.moveId, moveId) }
             val replacement = when {
@@ -296,9 +321,9 @@ internal object BattleOpponentMoveInferenceNormalizer {
         format: BattleFormat,
         limit: Int,
     ): List<Pair<String, BattleMoveCandidateView>> = actual.asSequence()
-        .filter { (_, details) -> group(pokemon, details) == BattleOpponentMoveGroup.STAB_ATTACK }
+        .filter { (id, details) -> group(pokemon, details, id) == BattleOpponentMoveGroup.STAB_ATTACK }
         .sortedWith(moveComparator(pokemon, format))
-        .distinctBy { (_, details) -> canonical(details.typeId) }
+        .distinctBy { (id, details) -> canonical(BattleMoveSetExpectation.typeId(id, details, pokemon)) }
         .take(limit)
         .toList()
 
@@ -318,7 +343,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         format: BattleFormat,
         wanted: BattleOpponentMoveGroup,
     ): List<Pair<String, BattleMoveCandidateView>> = moves.entries.asSequence()
-        .filter { (_, details) -> group(pokemon, details) == wanted }
+        .filter { (id, details) -> group(pokemon, details, id) == wanted }
         // An attack a set cannot count on (Focus Punch, Steel Roller) is never assumed (BattleMoveSetExpectation).
         .filter { (id, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS || BattleMoveSetExpectation.factor(id, details) > 0.0 }
         .map { it.key to it.value }
@@ -329,16 +354,19 @@ internal object BattleOpponentMoveInferenceNormalizer {
         pokemon: BattlePokemonStateView,
         format: BattleFormat,
     ) = compareByDescending<Pair<String, BattleMoveCandidateView>> {
-        BattleOpponentMoveExpectationScorer.score(pokemon, it.second, format, it.first)
+        BattleOpponentMoveExpectationScorer.score(pokemon, it.second, format, it.first, boardStages.get())
     }.thenBy { canonical(it.first) }
 
     internal fun group(
         pokemon: BattlePokemonStateView,
         details: BattleMoveCandidateView,
+        /** Its id, so a publicly Terastallized user's Tera Blast reads as its Tera type. */
+        moveId: String? = null,
     ): BattleOpponentMoveGroup = when {
         details.damageCategory != BattleMoveDamageCategory.STATUS -> {
             val offensiveTypes = pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)
-            if (offensiveTypes.any { canonical(it) == canonical(details.typeId) }) {
+            val typeId = BattleMoveSetExpectation.typeId(moveId, details, pokemon)
+            if (offensiveTypes.any { canonical(it) == canonical(typeId) }) {
                 BattleOpponentMoveGroup.STAB_ATTACK
             } else {
                 BattleOpponentMoveGroup.COVERAGE_ATTACK
@@ -469,6 +497,7 @@ class BattleOpponentMoveInferenceLedger(
         tier: BattleTrainerTier,
         actualMoveIds: Map<UUID, Set<String>>,
         ignoredRevealPokemonIds: Set<UUID> = emptySet(),
+        ownStages: BattleOwnStageValue? = null,
     ): List<BattleOpponentMoveInferenceView> {
         val currentIdentities = state.pokemon.asSequence()
             .filter { it.side == BattleSide.OPPONENT && !it.fainted }
@@ -491,6 +520,7 @@ class BattleOpponentMoveInferenceLedger(
             rebuildSlotPreferences = rebuildSlotPreferences,
             ignoredRevealPokemonIds = ignoredRevealPokemonIds,
             moveDetails = moveDetails,
+            ownStages = ownStages,
         )
         byPokemon = updated.associateBy { it.battlePokemonId }
         identities = currentIdentities.filterKeys(byPokemon::containsKey)

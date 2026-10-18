@@ -13,6 +13,8 @@ internal object BattleOpponentMoveExpectationScorer {
         format: BattleFormat,
         /** The move's id, for what only its id says (Focus Punch, Tera Blast); see [BattleMoveSetExpectation]. */
         moveId: String? = null,
+        /** The board's reading of the move's own stat changes; without it, the set-level values below. */
+        ownStages: BattleOwnStageValue? = null,
     ): Double {
         if (move.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
         val conditional = BattleMoveSetExpectation.factor(moveId, move)
@@ -28,19 +30,30 @@ internal object BattleOpponentMoveExpectationScorer {
         // A multi-hit attack (Dual Wingbeat, Rock Blast) at its average hits, as LocalMoveThreatScore reads it: at one hit,
         // a Roark Aerodactyl that carried Dual Wingbeat read as carrying Sky Attack (2026-10-18).
         val hits = move.effects?.effects.orEmpty().firstOrNull { it.kind == BattleMoveEffectKind.MULTI_HIT }
-            ?.amountRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 1.0
+            ?.amountRange?.let(BattleMoveSetExpectation::averageHits) ?: 1.0
         val baseDamage = move.power * hits * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
+        // Its own stat changes as the board reads them: the share of its damage it gains or loses against the Pokemon it
+        // will face. The flat 50 a raised stage read Scale Shot's Speed the same whether or not it turned any exchange.
+        val board = if (moveId != null && move.effects?.effects.orEmpty().any(::isOwnStatChange)) {
+            ownStages?.worthChange(pokemon, moveId, move)
+        } else null
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
             val value = when {
-                isOwnStatChange(effect) -> ownRaiseValue(effect)
+                isOwnStatChange(effect) -> if (board != null) 0.0 else ownRaiseValue(effect)
                 isTargetStatChange(effect) -> baseDamage * targetDropShare(effect)
                 else -> effectValue(effect)
             }
             value * (effect.probability ?: 1.0) * hitProbability
         }
-        val ownDropCost = move.effects?.effects.orEmpty().filter(::isOwnStatChange).sumOf { effect ->
+        val ownDropCost = if (board != null) -baseDamage * board else move.effects?.effects.orEmpty().filter(::isOwnStatChange).sumOf { effect ->
             baseDamage * ownDropShare(effect, move.damageCategory) * (effect.probability ?: 1.0)
+        }
+        // A share of the user's maximum HP spent (Steel Beam, Mind Blown, Chloroblast) costs that share of the move's
+        // value: a flat 30 read Steel Beam (140) over Flash Cannon on a Duraludon that carried Flash Cannon (user
+        // decision 2026-10-18).
+        val maxHpCost = move.effects?.effects.orEmpty().filter { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL }.sumOf { effect ->
+            baseDamage * (effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: DEFAULT_MAX_HP_RECOIL) * (effect.probability ?: 1.0)
         }
         val tempoPenalty = move.effects?.effects.orEmpty().sumOf { effect ->
             when (effect.kind) {
@@ -50,7 +63,7 @@ internal object BattleOpponentMoveExpectationScorer {
                 else -> 0.0
             }
         }
-        return (baseDamage + secondaryValue - tempoPenalty - ownDropCost + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT) * conditional
+        return (baseDamage + secondaryValue - tempoPenalty - ownDropCost - maxHpCost + move.priority.coerceAtLeast(0) * PRIORITY_WEIGHT) * conditional
     }
 
     private fun categoryFit(
@@ -86,7 +99,6 @@ internal object BattleOpponentMoveExpectationScorer {
             effect.fractionRange?.midpoint().orZero() * DRAIN_FRACTION_VALUE
         BattleMoveEffectKind.RECOIL_FRACTION,
         BattleMoveEffectKind.CRASH_RECOIL,
-        BattleMoveEffectKind.MAX_HP_RECOIL,
         BattleMoveEffectKind.STRUGGLE_RECOIL,
         -> -effect.fractionRange?.midpoint().orDefault(DEFAULT_RECOIL_FRACTION) * RECOIL_FRACTION_VALUE
         BattleMoveEffectKind.SWITCH_TARGET -> directionalValue(effect.target, FORCED_SWITCH_VALUE)
@@ -192,6 +204,7 @@ internal object BattleOpponentMoveExpectationScorer {
     private const val DRAIN_FRACTION_VALUE = 25.0
     private const val RECOIL_FRACTION_VALUE = 60.0
     private const val DEFAULT_RECOIL_FRACTION = 1.0 / 3.0
+    private const val DEFAULT_MAX_HP_RECOIL = 0.5
     private const val FORCED_SWITCH_VALUE = 15.0
     private const val PIVOT_VALUE = 8.0
     private const val CHARGE_PENALTY = 0.50

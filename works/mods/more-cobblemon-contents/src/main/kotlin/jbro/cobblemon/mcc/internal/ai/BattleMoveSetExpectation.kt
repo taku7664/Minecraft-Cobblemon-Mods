@@ -35,6 +35,15 @@ internal object BattleMoveSetExpectation {
         return if (tera != null && moveId != null && PublicIds.canonical(moveId) == TERA_BLAST) tera else move.typeId
     }
 
+    /**
+     * The expected hits of a multi-hit attack: Showdown draws 2-5 hits as 2, 3, 4, 5 at 7:7:3:3 (3.1 on average,
+     * `BattleActions.hitStepMoveHitLoop`), any other range evenly.
+     */
+    fun averageHits(range: BattleIntegerRange): Double =
+        if (range.minimum == 2 && range.maximum == 5) TWO_TO_FIVE_HITS else (range.minimum + range.maximum) / 2.0
+
+    private const val TWO_TO_FIVE_HITS = (2 * 7 + 3 * 7 + 4 * 3 + 5 * 3) / 20.0
+
     private val FAILS_OTHERWISE = setOf(
         BattleMoveRequirementKind.TERRAIN_PRESENT,
         BattleMoveRequirementKind.TARGET_STATUS_ANY_OF,

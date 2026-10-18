@@ -237,6 +237,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 trainerProfile.difficulty.tier,
                                 actualOpponentMoveIds(),
                                 observationAdapter.transformedPokemon(),
+                                // An attack's own stat changes read on this board (user decision 2026-10-18).
+                                jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(context, trainerProfile.difficulty.tier),
                             ),
                         ),
                         localOpponentStatSpreads = if (trainerProfile.difficulty.tier in setOf(
