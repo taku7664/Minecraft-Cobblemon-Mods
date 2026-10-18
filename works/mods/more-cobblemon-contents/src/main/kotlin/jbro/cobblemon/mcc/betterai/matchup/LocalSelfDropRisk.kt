@@ -112,11 +112,12 @@ internal object LocalSelfDropRisk {
                 LocalStatStageChange.reshape(after, holder, user.battlePokemonId, effect.statStages))
             val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
             risk += probability * foes.map { foe ->
-                // Doubles: whether the user stands through the turn, the foes' hits read together on the lowered board
-                // (leaving out the hit of a foe that switches instead).
-                val standing: ((UUID?) -> Double)? = if (foes.size < 2) null else { excluded ->
-                    standingThroughTurn(board, after, changed, user.battlePokemonId, foes.filter { it.battlePokemonId != excluded },
-                        move, moveId, targeted, scores, cache)
+                // Doubles: whether the user stands through the turn, the foes' hits read together on the lowered board.
+                // A foe known to stay (the slot's own branch) always hits; one that switches instead (its switch branch)
+                // does not; the other at the chance it stays (the predicted switches).
+                val standing: ((UUID?, UUID?) -> Double)? = if (foes.size < 2) null else { staying, switching ->
+                    standingThroughTurn(board, after, changed, user.battlePokemonId, foes.filter { it.battlePokemonId != switching },
+                        move, moveId, targeted, scores, cache) { id -> if (id == staying) 1.0 else stayChance(intents, id) }
                 }
                 slotRisk(board, after, changed, user.battlePokemonId, foe, foe in targeted, move, moveId, accuracy, bench, scores, intents, cache, standing)
             }.average()
@@ -144,8 +145,8 @@ internal object LocalSelfDropRisk {
         scores: MatchupScores,
         intents: List<OpponentIntent>,
         cache: LocalProjectedActionCalculationCache,
-        /** Doubles: the user's chance to stand through the turn, all foes together but the one excluded; null in singles. */
-        standing: ((UUID?) -> Double)? = null,
+        /** Doubles: the user's chance to stand through the turn, given the foe that stays and the one that switches; null in singles. */
+        standing: ((UUID?, UUID?) -> Double)? = null,
     ): Double {
         val beforeScores = HashMap<UUID, Double?>()
         val afterScores = HashMap<UUID, Double?>()
@@ -180,9 +181,9 @@ internal object LocalSelfDropRisk {
             val knockout = knockout(receiver)
             val next = if (knockout > 0.0) replacement(receiver) else null
             val afterKnockout = if (next == null) 0.0 else knockout * lost(next)
-            if (receiver != foe) return@sumOf chance * (standing?.invoke(foe.battlePokemonId) ?: 1.0) *
+            if (receiver != foe) return@sumOf chance * (standing?.invoke(null, foe.battlePokemonId) ?: 1.0) *
                 ((1.0 - knockout) * lost(receiver) + afterKnockout)
-            if (standing != null) return@sumOf chance * standing(null) * ((1.0 - knockout) * lost(receiver) + afterKnockout)
+            if (standing != null) return@sumOf chance * standing(foe.battlePokemonId, null) * ((1.0 - knockout) * lost(receiver) + afterKnockout)
             // The foe standing in front hits this turn: before the attack, or after it on the lowered stats unless the attack
             // knocked it out. It uses the move likeliest to knock the user out, each move with its own order against the
             // attack (priority, Speed, Quick Claw and the like) and its own knockouts before and after the drop, read from
@@ -203,9 +204,12 @@ internal object LocalSelfDropRisk {
     }
 
     /**
-     * The chance [user] is still standing at the end of the turn, [foes]' likeliest knockouts read together: each at the
-     * chance it moves and aims at the user (one in as many of this side's Pokemon in front), two hits that each leave it
-     * standing counted together ([LocalDynamaxGuard.knockout]).
+     * The chance [userId]'s Pokemon is still standing at the end of the turn, [foes]' hits read together. Each foe uses the
+     * move likeliest to knock it out, with its own order against the attack: before it, on the user as it is; after it,
+     * on the lowered user unless the attack knocked that foe out (given it landed, at its accuracy against that foe);
+     * at the chance the foe moves and stays ([stays]). Every combination of the foes' hits is played (two hits that each
+     * leave it standing together, [LocalDynamaxGuard.knockout]), each hit aimed at the user by its pattern (a spread hit
+     * lands on it whatever it aims at, a single one at one of this side's Pokemon in front).
      */
     private fun standingThroughTurn(
         board: BattleDecisionContext,
@@ -218,31 +222,47 @@ internal object LocalSelfDropRisk {
         targeted: Set<BattlePokemonStateView>,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
+        stays: (UUID) -> Double,
     ): Double {
         val user = before.pokemon.firstOrNull { it.battlePokemonId == userId } ?: return 1.0
         val allies = before.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }.coerceAtLeast(1)
-        val hits = foes.mapNotNull { foe ->
-            val beforeHit = threats(board, before, userId, foe, cache).maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
-            val beforeFirst = LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, beforeHit.action) ?: 0.5
-            // Moving after the attack, it hits the lowered user with its best counter there, unless the attack knocked it
-            // out; that counter's own order and aim are read with it.
-            val hit = if (beforeFirst >= 0.5) threats(board, after, userId, foe, cache).maxByOrNull { it.score.knockoutChanceWithin(1) } ?: beforeHit
-                else beforeHit
-            val first = if (hit === beforeHit) beforeFirst
-                else LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, hit.action) ?: 0.5
-            val lowered = if (hit === beforeHit) null else hit.score
-            // Given the attack landed on this foe (this board is the drop's, so it did): the knockout table counts the miss
-            // at the accuracy against this foe.
+        class Branches(val beforeHit: MoveMatchupScore, val beforeChance: Double, val afterHit: MoveMatchupScore, val afterChance: Double, val aim: Double)
+        val branches = foes.mapNotNull { foe ->
             val own = scores.moves(userId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }
             val fells = if (foe in targeted && own != null && own.accuracy > 0.0) (own.knockoutChanceWithin(1) / own.accuracy).coerceIn(0.0, 1.0) else 0.0
-            val incoming = LocalKnockoutWorth.actsThisTurn(foe) * ((1.0 - first) + first * (1.0 - fells))
-            // A spread hit lands on the user whatever it aims at; a single one at one of this side's Pokemon in front.
+            val lowered = threats(board, after, userId, foe, cache).associateBy { it.score.moveId }
+            val pick = threats(board, before, userId, foe, cache).map { hit ->
+                val first = LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, hit.action) ?: 0.5
+                Triple(hit, first, lowered[hit.score.moveId]?.score ?: hit.score)
+            }.maxByOrNull { (hit, first, afterScore) ->
+                first * (1.0 - fells) * afterScore.knockoutChanceWithin(1) + (1.0 - first) * hit.score.knockoutChanceWithin(1)
+            } ?: return@mapNotNull null
+            val (hit, first, afterScore) = pick
+            val moves = LocalKnockoutWorth.actsThisTurn(foe) * stays(foe.battlePokemonId).coerceIn(0.0, 1.0)
             val aim = if (hit.action.moveDetails?.targetPattern in SPREAD) 1.0 else 1.0 / allies
-            LocalDynamaxGuard.IncomingHit(lowered ?: hit.score, incoming, aim)
+            Branches(hit.score, moves * (1.0 - first), afterScore, moves * first * (1.0 - fells), aim)
         }
-        if (hits.isEmpty()) return 1.0
-        return 1.0 - LocalDynamaxGuard.knockout(hits, user.hpFraction).coerceIn(0.0, 1.0)
+        if (branches.isEmpty()) return 1.0
+        // Every combination of each foe's hit before the attack, after it, or none.
+        fun play(index: Int, chance: Double, hits: List<LocalDynamaxGuard.IncomingHit>): Double {
+            if (chance <= 0.0) return 0.0
+            if (index == branches.size) {
+                val fall = if (hits.isEmpty()) 0.0 else LocalDynamaxGuard.knockout(hits, user.hpFraction).coerceIn(0.0, 1.0)
+                return chance * (1.0 - fall)
+            }
+            val b = branches[index]
+            val none = (1.0 - b.beforeChance - b.afterChance).coerceAtLeast(0.0)
+            return play(index + 1, chance * b.beforeChance, hits + LocalDynamaxGuard.IncomingHit(b.beforeHit, 1.0, b.aim)) +
+                play(index + 1, chance * b.afterChance, hits + LocalDynamaxGuard.IncomingHit(b.afterHit, 1.0, b.aim)) +
+                play(index + 1, chance * none, hits)
+        }
+        return play(0, 1.0, emptyList()).coerceIn(0.0, 1.0)
     }
+
+    /** The chance [foeId] stays in this turn: one minus its predicted switches. */
+    private fun stayChance(intents: List<OpponentIntent>, foeId: UUID): Double =
+        (1.0 - intents.firstOrNull { it.pokemonId == foeId }?.options.orEmpty()
+            .filter { it.kind == IntentKind.SWITCH }.sumOf { it.probability }).coerceIn(0.0, 1.0)
 
     /** [foe]'s attacks on the user on [state] (before or after the drop), each with its action. */
     private fun threats(
