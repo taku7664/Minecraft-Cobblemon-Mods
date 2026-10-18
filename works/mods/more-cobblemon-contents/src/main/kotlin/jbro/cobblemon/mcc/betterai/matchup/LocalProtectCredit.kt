@@ -44,56 +44,94 @@ internal object LocalProtectCredit {
             jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.fieldTurns(context, tuning, cache, shouldContinue)
         }
         val out = linkedMapOf<String, Double>()
-        val bySlot = HashMap<Int, Double>()
+        val foes = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+        val dynamax = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
+        // A turn off each opposing Dynamax: the field's, once for the joint action however many slots Protect.
+        val foeDynamaxTurns by lazy {
+            foes.filter(dynamax::active).sumOf { foe ->
+                state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }.map { user ->
+                    jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.dynamaxTurn(context, user, foe, foe, cache)
+                }.average().takeIf { !it.isNaN() } ?: 0.0
+            }
+        }
+        val bySlot = HashMap<Pair<Int, Boolean>, SlotReading>()
         for (candidate in candidates) {
             val parts = if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
-            val credit = parts.filter { part ->
+            val protects = parts.filter { part ->
                 part.kind == BattleActionKind.USE_MOVE && part.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.PROTECT_USER }
-            }.sumOf { part ->
-                val slot = part.actorSlot ?: return@sumOf 0.0
-                bySlot.getOrPut(slot) {
-                    val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == slot && !it.fainted && it.hpFraction > 0.0 }
-                        ?: return@getOrPut 0.0
-                    val maxGuard = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)
-                    var standing = 1.0
-                    var taken = 0.0
-                    for (intent in intents) {
-                        val foe = state.pokemon.firstOrNull { it.battlePokemonId == intent.pokemonId } ?: continue
-                        val acts = LocalKnockoutWorth.actsThisTurn(foe)
-                        // A Max Move breaks through a plain Protect for a quarter of its damage.
-                        val through = if (!maxGuard && jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(foe)) MAX_MOVE_THROUGH else 0.0
-                        var knockout = 0.0
-                        for (option in intent.options) {
-                            if (option.kind != IntentKind.ATTACK || option.moveId == null) continue
-                            // Aimed at the user, or a spread move that hits it.
-                            if (option.targetId != null && option.targetId != user.battlePokemonId) continue
-                            val hit = scores.moves(intent.pokemonId, user.battlePokemonId).firstOrNull { it.moveId == option.moveId } ?: continue
-                            val damage = hit.accuracy * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0
-                            // Its knockout is turned away unless the quarter that gets through still finishes the user.
-                            val stillFinishes = through > 0.0 && hit.minimumDamageFraction * through >= user.hpFraction
-                            if (!stillFinishes) knockout += option.probability * hit.knockoutChanceWithin(1)
-                            taken += acts * option.probability * damage * (1.0 - through)
-                        }
-                        standing *= 1.0 - (acts * knockout).coerceIn(0.0, 1.0)
-                    }
-                    val success = LocalStallingProtectionRules.nextSuccessProbability(
-                        LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot))
-                    val threat = 1.0 - standing
-                    // A turn off the Dynamax of each Pokemon in front, the user's own included.
-                    val foes = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
-                    val dynamaxTurns = foes.sumOf { foe ->
-                        listOf(user, foe).filter(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax::active).sumOf { dynamaxed ->
-                            jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.dynamaxTurn(context, user, foe, dynamaxed, cache) /
-                                (if (dynamaxed === user) foes.size else 1)
-                        }
-                    }
-                    success * (threat * jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore(user.battlePokemonId, tuning) +
-                        tuning.board(minOf(user.hpFraction, taken) + fieldTurns + dynamaxTurns))
-                }
             }
-            if (credit > 0.0) out[candidate.actionId] = credit
+            if (protects.isEmpty()) continue
+            val readings = protects.mapNotNull { part ->
+                val slot = part.actorSlot ?: return@mapNotNull null
+                val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == slot && !it.fainted && it.hpFraction > 0.0 }
+                    ?: return@mapNotNull null
+                // Max Guard: already Dynamaxed, or Dynamaxing with this very move.
+                val maxGuard = dynamax.active(user) || dynamax.isMechanic(part.mechanic?.mechanicId)
+                bySlot.getOrPut(slot to maxGuard) { slotReading(context, scores, intents, tuning, user, slot, maxGuard, foes, cache) }
+            }
+            if (readings.isEmpty()) continue
+            val shared = readings.maxOf { it.success } * tuning.board(fieldTurns + foeDynamaxTurns)
+            // Negative too: a Protect that wastes the side's own Tailwind or Dynamax turns costs that.
+            out[candidate.actionId] = readings.sumOf { it.value } + shared
         }
         return out
+    }
+
+    private class SlotReading(val value: Double, val success: Double)
+
+    /** One protecting slot: the hits it turns away and its own Dynamax turn, at the chance it works. */
+    private fun slotReading(
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        intents: List<OpponentIntent>,
+        tuning: LocalDecisionTuning,
+        user: jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView,
+        slot: Int,
+        maxGuard: Boolean,
+        foes: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView>,
+        cache: jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache,
+    ): SlotReading {
+        val state = context.state
+        val hp = user.hpFraction
+        var standing = 1.0
+        var full = 0.0
+        var through = 0.0
+        for (intent in intents) {
+            val foe = state.pokemon.firstOrNull { it.battlePokemonId == intent.pokemonId } ?: continue
+            val acts = LocalKnockoutWorth.actsThisTurn(foe)
+            // A Max Move breaks through a plain Protect for a quarter of its damage.
+            val share = if (!maxGuard && jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(foe)) MAX_MOVE_THROUGH else 0.0
+            var knockout = 0.0
+            for (option in intent.options) {
+                if (option.kind != IntentKind.ATTACK || option.moveId == null) continue
+                // Aimed at the user, or a spread move that hits it.
+                if (option.targetId != null && option.targetId != user.battlePokemonId) continue
+                val hit = scores.moves(intent.pokemonId, user.battlePokemonId).firstOrNull { it.moveId == option.moveId } ?: continue
+                val damage = hit.accuracy * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0
+                // Its knockout is turned away except where the quarter that gets through still finishes the user: the
+                // share of its rolls (read evenly between the least and the greatest) whose quarter reaches the HP left.
+                val finishes = if (share <= 0.0) 0.0 else {
+                    val low = hit.minimumDamageFraction * share
+                    val high = hit.maximumDamageFraction * share
+                    if (high < hp) 0.0 else if (low >= hp || high <= low) 1.0 else (high - hp) / (high - low)
+                }
+                knockout += option.probability * hit.knockoutChanceWithin(1) * (1.0 - finishes)
+                full += acts * option.probability * damage
+                through += acts * option.probability * damage * share
+            }
+            standing *= 1.0 - (acts * knockout).coerceIn(0.0, 1.0)
+        }
+        val success = LocalStallingProtectionRules.nextSuccessProbability(
+            LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot))
+        // The HP kept: what the hits would leave less what the quarters that get through leave.
+        val kept = minOf(hp, full) - minOf(hp, through)
+        // A turn off the user's own Dynamax, read against each Pokemon in front.
+        val ownDynamax = if (!jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) 0.0 else foes.map { foe ->
+            jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.dynamaxTurn(context, user, foe, user, cache)
+        }.average().takeIf { !it.isNaN() } ?: 0.0
+        val value = success * ((1.0 - standing) * jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore(user.battlePokemonId, tuning) +
+            tuning.board(kept + ownDynamax))
+        return SlotReading(value, success)
     }
 
     private const val MAX_MOVE_THROUGH = 0.25
