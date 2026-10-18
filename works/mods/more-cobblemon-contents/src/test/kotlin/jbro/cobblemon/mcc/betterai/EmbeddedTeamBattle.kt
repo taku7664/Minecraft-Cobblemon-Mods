@@ -248,6 +248,11 @@ internal object EmbeddedTeamBattle {
                                     add("weights", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxWeights(context)))
                                     add("ace", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxAce(context)))
                                     add("share", named(jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.dynamaxFits(context)))
+                                    // The gimmick rule's two parts: the doubled HP guarding this turn, the reserve for later.
+                                    add("guard", com.google.gson.Gson().toJsonTree(jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.read(
+                                        context.candidates, context, tunings.getValue(side)).adjustments))
+                                    add("reserve", com.google.gson.Gson().toJsonTree(jbro.cobblemon.mcc.betterai.matchup.LocalGimmickReserve.adjustments(
+                                        context.candidates, context, jbro.cobblemon.mcc.betterai.matchup.LocalAceScore.calculate(context))))
                                 })
                                 // What this side assumes of the foe in front (stats) and each move's damage both ways,
                                 // read on the same assumed board the brain uses. Only on request (BETTERAI_MATCHUP_VIEW):
@@ -276,6 +281,7 @@ internal object EmbeddedTeamBattle {
                                             scores?.switchIn(b.battlePokemonId, foe.battlePokemonId, ally.battlePokemonId)?.let { s ->
                                                 addProperty(b.speciesId, "score=${"%.2f".format(s.score)} survival=${"%.2f".format(s.predictedSurvival)}") }
                                             scores?.pokemon(b.battlePokemonId, foe.battlePokemonId)?.let { addProperty("${b.speciesId}:free", it.score) }
+                                            addProperty("${b.speciesId}:theirs", moves(foe.battlePokemonId, b.battlePokemonId).toString())
                                         } })
                                         add("preserves", JsonObject().apply { scores?.preserves?.forEach { (id, v) ->
                                             addProperty(assumed.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId ?: id.toString(), v.score) } })
