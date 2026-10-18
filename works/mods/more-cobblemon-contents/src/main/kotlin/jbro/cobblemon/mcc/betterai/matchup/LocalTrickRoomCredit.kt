@@ -72,6 +72,15 @@ internal object LocalTrickRoomCredit {
         return changes.average() * tuning.knockoutMaterialScore * ROOM_EXCHANGES
     }
 
+    /**
+     * The chance [candidate]'s user gets the room up this turn: at -7 every hit on the field lands first, and one that
+     * knocks it out leaves the room down. Each foe's likeliest knockout, at the chance it moves and aims at the user (one
+     * in as many of this side's Pokemon in front), two hits together counted ([LocalDynamaxGuard.knockout]). A Bronzong
+     * at 6% in front of a Skarmory's Brave Bird took the room's 61 and fell before it moved (2026-10-19).
+     */
+    fun landing(candidate: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double =
+        LocalActingChance.of(candidate, context, scores)
+
     /** +1 when the ally is surely slower (the room hands it the first move), -1 when surely faster, 0 otherwise. */
     private fun order(mine: BattleIntegerRange?, theirs: BattleIntegerRange?): Double = when {
         mine == null || theirs == null -> 0.0

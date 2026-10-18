@@ -727,7 +727,11 @@ internal class LocalTacticalBrain(
         val trickRoomAdjustments = if (!rulesApply) emptyMap() else searchedRanked.mapNotNull { rank ->
             val candidate = rank.outcome.candidate
             if (rank.outcome.publiclyInert || !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
-            else trickRoomValue?.let { candidate.actionId to (it - rank.comparisonValue) }
+            // The room's worth at the chance its user gets it up before a hit knocks it out (it moves last, at -7).
+            else trickRoomValue?.let { value ->
+                val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, rulesContext, it) } ?: 1.0
+                candidate.actionId to (value * landing - rank.comparisonValue)
+            }
         }.toMap()
         // Perish Song is worth whoever cannot leave the field before the count ends (LocalPerishTrapCredit). A song with
         // Mega Evolution reads the Mega board (a Mega Gengar's Shadow Tag), one without it the board as it is.
@@ -771,13 +775,29 @@ internal class LocalTacticalBrain(
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
                 (perishTrapAdjustments[it] ?: 0.0)
         }
+        // A status move is worth its value only if its user gets it off: a foe moving first may knock it out (LocalActingChance).
+        // Its value after the rules is scaled by that chance; Protect (+4, its own reading) and Trick Room (scaled above) aside.
+        val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            searchedRanked.mapNotNull { rank ->
+                val candidate = rank.outcome.candidate
+                if (candidate.kind != BattleActionKind.USE_MOVE || candidate.moveDetails?.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS ||
+                    candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.PROTECT_USER } ||
+                    jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) return@mapNotNull null
+                val total = rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)
+                if (total <= 0.0) return@mapNotNull null
+                val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, rulesContext, scores)
+                if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * total
+            }.toMap()
+        }.orEmpty()
         if (dynamaxGuardReading.targetFallbacks > 0) {
             decisionTrace?.dynamaxGuardFallback(
                 dynamaxGuardReading.targetFallbacks,
                 dynamaxGuardReading.targetAssessments,
             )
         }
-        val ruleAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
+        val ruleAdjusted = (ruleAdjustments.keys + actingAdjustments.keys).associateWith {
+            (ruleAdjustments[it] ?: 0.0) + (actingAdjustments[it] ?: 0.0)
+        }.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
                 adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
             })
@@ -872,7 +892,7 @@ internal class LocalTacticalBrain(
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
-                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments,
+                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments,
                     "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments,
                     "statusMove" to statusMoveAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
