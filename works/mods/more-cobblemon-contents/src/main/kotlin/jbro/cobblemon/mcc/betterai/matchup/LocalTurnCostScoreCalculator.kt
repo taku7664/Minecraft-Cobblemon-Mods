@@ -122,27 +122,41 @@ internal object LocalTurnCostScoreCalculator {
         val againstIncoming = LocalMatchupScoreCalculator.moveMatchups(position, opponent.battlePokemonId, incoming.battlePokemonId, cache)
         val predicted = againstIncoming.firstOrNull { it.score.moveId == predictedMoveId }?.score
         val worst = againstIncoming.firstOrNull()?.score
-        val survival = predicted?.survivalByUses?.getOrNull(1) ?: 1.0
-        val taken = predicted?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
+        // Moves that do the same to [replaced] are an even choice for the opponent: the one listed first stands for none
+        // of them. Against a Hippowdon at 7%, every move knocks out, and a guessed Body Slam stood for a Dynamaxed
+        // Amoonguss whose revealed Max Overgrowth does four times to the Rhyperior coming in (2026-10-19).
+        val forReplaced = pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId)
+        val bestForReplaced = forReplaced.maxOfOrNull { it.score }
+        val even = if (bestForReplaced == null) emptySet()
+            else forReplaced.filter { it.score >= bestForReplaced - EVEN_CHOICE }.mapTo(hashSetOf()) { it.moveId }
+        val choices = againstIncoming.map { it.score }.filter { it.moveId in even }.ifEmpty { listOfNotNull(predicted) }
         val state = position.state
         val placed = state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
-        val hpAfterEntry = (placed.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP)
-        val worn = state.copyState(pokemon = state.pokemon.map {
-            if (it.battlePokemonId != incoming.battlePokemonId) it else it.copyState(hpFraction = hpAfterEntry)
-        })
-        val afterEntry = LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
-            opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+        // Each choice played out on its own: the hit, then the exchange from the HP it leaves.
+        class Entry(val survival: Double, val hpAfterEntry: Double, val afterEntry: PokemonMatchupScore?, val score: Double)
+        fun entry(hit: MoveMatchupScore?): Entry {
+            val survival = hit?.survivalByUses?.getOrNull(1) ?: 1.0
+            val taken = hit?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
+            val hpAfterEntry = (placed.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP)
+            val worn = state.copyState(pokemon = state.pokemon.map {
+                if (it.battlePokemonId != incoming.battlePokemonId) it else it.copyState(hpFraction = hpAfterEntry)
+            })
+            val afterEntry = LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
+                opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+            return Entry(survival, hpAfterEntry, afterEntry, survival * (afterEntry?.score ?: 0.0) - (1.0 - survival))
+        }
+        val entries = choices.ifEmpty { listOf(null) }.map(::entry)
         return SwitchInScore(
             incomingId = incoming.battlePokemonId,
             opponentId = opponent.battlePokemonId,
             replacedId = replaced.battlePokemonId,
             predictedMoveId = predicted?.moveId,
-            predictedSurvival = survival,
-            hpAfterEntry = hpAfterEntry,
+            predictedSurvival = entries.map { it.survival }.average(),
+            hpAfterEntry = entries.map { it.hpAfterEntry }.average(),
             worstMoveId = worst?.moveId,
             worstSurvival = worst?.survivalByUses?.getOrNull(1) ?: 1.0,
-            afterEntry = afterEntry,
-            score = (survival * (afterEntry?.score ?: 0.0) - (1.0 - survival)).coerceIn(-1.0, 1.0),
+            afterEntry = (entries.firstOrNull { choices.size == 1 } ?: entries.minByOrNull { it.score })?.afterEntry,
+            score = entries.map { it.score }.average().coerceIn(-1.0, 1.0),
         )
     }
 
@@ -218,5 +232,7 @@ internal object LocalTurnCostScoreCalculator {
         if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups) EVOLVED_STATUSES else PLAYED_OUT_STATUSES
     private val EVOLVED_STATUSES = setOf("brn", "par", "slp", "frz", "psn", "tox")
     private const val MINIMUM_STANDING_HP = 0.01
+    /** Score gap under which two of the opponent's moves count as the same choice against the Pokemon in front. */
+    private const val EVEN_CHOICE = 1e-9
     private const val SOLE_ANSWER = 0.5
 }
