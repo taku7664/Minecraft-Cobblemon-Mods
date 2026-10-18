@@ -1,5 +1,11 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-18 14:00] 기술 커서·핫바·VS·Z 누름 수정 개발 클라·서버 배치 (빌드·해시 확인, 실게임 미확인)
+
+- `main` `7e8cffd7`(cobblemon-ui 소스가 `origin/main`과 같음을 확인)에서 `:cobblemon-ui:build -x test -x unitTest`를 `F:/AI/builds/ui-deploy-7e8cffd7b`로 빌드했다(EXIT 0, `unzip -t` 정상, Kotlin in-process). SHA-256 앞자리 70511964826369a7. 기존 배치본과 파일 목록 차이는 `LastMoveMemory` 두 클래스뿐이다.
+- 개발 클라 `cobblemon-ui-0.2.0.jar`를 바꾸고, 개발 클라·서버의 MCC·cobblemon-npc가 품은 `META-INF/jars/cobblemon-ui-0.2.0.jar`도 같은 JAR로 바꿔 끼웠다(MCC 작업 트리에 다른 세션 미커밋 변경이 있어 재빌드하지 않음). 다섯 곳 모두 해시가 빌드본과 같고, 바깥 JAR의 나머지 항목(이름·CRC)은 그대로다. 백업 `develop-product/deployment-backups/20261018-ui-feedback`(5개). 배치 때 게임·개발 서버는 꺼져 있었고 켜지 않았다.
+- 실행·실게임 확인은 빡대리님이 직접 한다. PPakemon 프로필·운영 서버·VPS·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-18 07:10] 기술 커서 기억, 연출 중 핫바 숨김, VS 기울임 복구, Z 누름 틈 막기, 대화 스킵 2배 (컴파일·단위 테스트, 실게임 미확인)
 
 - **빡대리님 피드백:** (1) 전 턴에 쓴 기술 칸을 기억 (2) 관장 연출 때 하단 핫바 아이템·수량이 보임 (3) VS 화면이 여전히 깨지고 기울임도 사라짐, 깨짐을 못 고치면 기울임이라도 (4) 대화에서 Z를 누른 채 넘기다 끝나면 전투 메뉴가 Z를 받아 넘어가던 문제가 고쳐졌는지 (5) 대화 스킵 2배.
