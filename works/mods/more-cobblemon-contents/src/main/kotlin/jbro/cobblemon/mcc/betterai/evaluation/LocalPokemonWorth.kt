@@ -24,7 +24,7 @@ internal object LocalPokemonWorth {
     /**
      * A knockout of [id] by [attack]: its worth, and the hit it no longer gets to use this turn when [attack] lands
      * before it ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Reading.denials]). Who moves first is read
-     * from the two moves' priorities, by Speed when they tie, and from [fallbackFirst] when Speed cannot be read.
+     * from the two moves' priorities; at a tie, from [fallbackFirst] at priority 0, by Speed otherwise.
      * Without the hit a Scald that finished a 1% Probopass read as worth less than Protect (2026-10-18).
      */
     fun knockoutScore(
@@ -46,9 +46,12 @@ internal object LocalPokemonWorth {
                     it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
                 }
                 val foe = state.pokemon.firstOrNull { it.battlePokemonId == id }
-                (if (actor != null && foe != null) {
+                val speed = if (actor != null && foe != null) {
                     jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.speedOrderProbability(state, actor, foe)
-                } else null) ?: fallbackFirst ?: UNKNOWN_ORDER
+                } else null
+                // [fallbackFirst] is the attack's order against a priority-0 reply, Quick Claw, Custap and the observed
+                // order included: kept when both are at 0, which is what it was read for (Codex review of c62d644b).
+                (if (mine == 0) fallbackFirst ?: speed else speed ?: fallbackFirst) ?: UNKNOWN_ORDER
             }
         }
         return worth + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
