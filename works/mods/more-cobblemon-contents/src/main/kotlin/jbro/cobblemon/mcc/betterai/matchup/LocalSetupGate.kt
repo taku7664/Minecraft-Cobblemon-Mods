@@ -65,6 +65,11 @@ internal object LocalSetupGate {
      * A status move that only raises its user's stats. An attack with a self-boost (Flame Charge,
      * Trailblaze) is an attack first; the gate is not about it.
      */
+    /** A Ghost's Curse: half its HP to curse the target, no raise (the move's other half is for every other type). */
+    private fun ghostCurse(candidate: BattleActionCandidate, user: BattlePokemonStateView): Boolean =
+        user.knownTypeIds.any { PublicIds.canonical(it) == "ghost" } &&
+            candidate.moveDetails?.effects?.effects.orEmpty().any { it.valueId == jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects.GHOST_CURSE }
+
     private fun isSetupMove(candidate: BattleActionCandidate): Boolean {
         if (candidate.kind != BattleActionKind.USE_MOVE) return false
         val details = candidate.moveDetails ?: return false
@@ -92,6 +97,7 @@ internal object LocalSetupGate {
         val user = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
+        if (ghostCurse(candidate, user)) return null
         // Whether it still wins after boosting is [score]'s; here only what stops the boost once it is up. The stoppers
         // are read against the user as the sweeper, so without a sweep reading there is nothing to read them against.
         val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(true, emptyList())
@@ -144,6 +150,7 @@ internal object LocalSetupGate {
         val user = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
+        if (ghostCurse(candidate, user)) return null
         val moveId = PublicIds.canonical(candidate.moveId ?: return null)
         val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
         // A raise its user's ability turns into drops (Contrary Bulk Up, a Mega Staraptor's included) raises nothing:
