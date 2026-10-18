@@ -78,9 +78,14 @@ object BattleStatusMoveCategories {
      */
     @JvmStatic
     fun isPureSelfSetup(details: BattleMoveCandidateView): Boolean {
-        // Curse declares a Ghost's half as well (half its HP to curse the target); for anyone else it is a raise. Left in,
-        // a Snorlax's Curse was never read as a setup move and took 43-75 on a turn it was knocked out (2026-10-19).
-        val effects = details.effects?.effects.orEmpty().filterNot { it.valueId == BattleDeclarativeMoveEffects.GHOST_CURSE }
+        // Curse declares a Ghost's half as well (half its HP, the curse put on the target); for anyone else it is a raise.
+        // Left in, a Snorlax's Curse was never read as a setup move and took 43-75 on a turn it was knocked out (2026-10-19).
+        // A Ghost's Curse is ruled out where its user is known (LocalSetupGate).
+        val effects = details.effects?.effects.orEmpty().filterNot {
+            it.valueId == BattleDeclarativeMoveEffects.GHOST_CURSE ||
+                it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
+                canonical(it.valueId.orEmpty()) == CURSE
+        }
         return effects.isNotEmpty() && effects.all { effect ->
             effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER &&
                 effect.statStages.isNotEmpty() || isHpCost(effect)
@@ -99,6 +104,8 @@ object BattleStatusMoveCategories {
 
     private fun canonical(value: String): String =
         PublicIds.canonical(value)
+
+    private const val CURSE = "curse"
 
     /** Healing computed in Showdown callbacks, so it has no declarative `heal` fraction. */
     private val CALLBACK_RECOVERY = setOf(
