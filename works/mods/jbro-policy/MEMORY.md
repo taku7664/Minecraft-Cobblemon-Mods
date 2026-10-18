@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-10-19 02:40] 1.4.0 릴리스 준비 — 개발·PPakemon·로컬 운영·deploy-product 반영 (VPS·모드팩·실접속 미완)
+
+- **사용자 결정:** 1.4.0(앞 두 자리 변경으로 1.3.x 팩 접속 차단). `PACK_VERSION` 1.4.0, jbro-policy 0.1.7 → 0.1.8(`ad60ec63`). 다른 모듈 버전은 1.3.0 때처럼 올리지 않았다.
+- **빌드:** `ad60ec63`을 `F:/AI/build/release-1.4.0`에서 18개 assemble(스킬 기본 17개 + 새 모듈 simple-trash-can) 성공, 모든 JAR `jar --validate` 통과, `:jbro-policy:unitTest` 실패 0. better-battle-presentation은 1.3.0 이후 소스 변경이 없어 빌드하지 않았다.
+- **배치:** 개발 서버·클라이언트 14개 교체(백업 `develop-product/deployment-backups/20261019-022623-release`). PPakemon 16개 변경(휴지통·to-item 0.1.4·custom-species 0.1.1 추가, 옛 버전 삭제), 재계획 0건·빌드본 18개 해시 일치. 로컬 운영 서버 12개 변경, 운영 저장소 `c36efa7` 푸시. VPS가 먼저 올린 `16ace84`(0.1.7 IV 사탕 차단)는 0.1.8에 포함돼 리베이스 때 0.1.7을 지웠다.
+- **XS 사탕 월드팩:** 운영의 `world/datapacks/jbro-policy-xs-candy-six.zip`을 지웠다. 0.1.8 내장 팩 `no_stat_candy_l_xl`에 XS 6개 조합(일반·Create)이 들어 있음을 JAR에서 확인했다. VPS에 반영할 때도 같은 삭제가 따라간다.
+- **deploy-product:** `sync-release.ps1` 불일치 0, 서버 49(운영 49)·클라이언트 18. VERSION.txt 두 곳에 1.4.0 블록. 가라르는 `active:false`로 들어가 노트에서 뺐다.
+- **미완·미확인:** VPS는 준비 시점에 켜져 있어 반영하지 않았다(종료 동의 필요). 모드팩(.mrpack)·드라이브 업로드·실접속(1.4.0 통과, 1.3.x 거절)·실게임은 아직이다.
+
 ## [2026-10-19 01:34] VPS 정책 JAR 교체·01:30 재기동 완료 (실게임 반격 미검증)
 
 - **승인·실행:** 사용자가 새 시각 01:30 KST를 명시했다. 그 시각 정상 저장·종료를 확인하고 `mods/jbro-policy-0.1.7.jar` 한 파일을 원자 교체했다(교체 0.037초). 01:31:01 `Done (4.295s)`·새 Java PID 177951·25565 외부 TCP 및 Minecraft 1.21.1 상태 응답을 확인했다. 기존 프로세스 PID 141095는 정상 종료됐고 강제 종료·호스트 재부팅은 하지 않았다.
