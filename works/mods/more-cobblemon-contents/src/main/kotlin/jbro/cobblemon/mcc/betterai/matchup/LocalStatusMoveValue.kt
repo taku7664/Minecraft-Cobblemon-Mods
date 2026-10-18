@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.matchup
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -101,15 +102,24 @@ internal object LocalStatusMoveValue {
         if (bench.isEmpty()) return 0.0
         val now = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
         fun score(pokemon: BattlePokemonStateView) = scores.pokemon(user.battlePokemonId, pokemon.battlePokemonId)?.score
-        // The opponent can switch again, before the move and after it: in front stays whichever of the one there and the
-        // rest of its Pokemon is worst for the user (the target, forced out, is among the rest). Read without it, a
-        // Whirlwind was paid for a bad matchup the opponent would leave on its own anyway.
-        fun held(inFront: Double, rest: List<BattlePokemonStateView>) = minOf(inFront, rest.mapNotNull(::score).minOrNull() ?: inFront)
-        val before = held(now.score, bench)
+        // The target forced out comes back without its stat stages, as any switch leaves them.
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val reset = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == target.battlePokemonId) it.copyState(statStages = emptyMap()) else it })
+        val returning = reset.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+        val targetBack = LocalMatchupPosition.face(context.copy(state = reset), user, returning, cache)
+            ?.let { LocalMatchupScoreCalculator.pairMatchup(it, user.battlePokemonId, target.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.score }
+            ?: now.score
+        // The opponent can switch again, before the move and after it, unless it is held in (a trap, Shadow Tag): in front
+        // stays whichever of the one there and the rest of its Pokemon is worst for the user (the target, forced out, is
+        // among the rest). Read without it, a Whirlwind was paid for a bad matchup the opponent would leave on its own anyway.
+        val canLeave = jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory.slotActions(state, BattleSide.OPPONENT, context.publicActionCatalog)
+            .any { it.kind == BattleActionKind.SWITCH && it.actorSlot == target.activeSlot }
+        fun held(inFront: Double, rest: List<Double>) = if (!canLeave) inFront else minOf(inFront, rest.minOrNull() ?: inFront)
+        val before = held(now.score, bench.mapNotNull(::score))
         val gains = bench.mapNotNull { coming ->
             val score = score(coming) ?: return@mapNotNull null
             val hazards = minOf(PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0, coming.hpFraction)
-            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId } + target) - before
+            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack) - before
         }
         if (gains.isEmpty()) return null
         // The target's hits as they land on the user this turn: from the move table, not the exchange's, which thins them
