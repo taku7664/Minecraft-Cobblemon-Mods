@@ -240,7 +240,9 @@ internal class LocalTacticalBrain(
             if (mega != null && !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicSpeciesData.formKnown(mega)) {
                 logger.warn("[BetterAI] The Mega form {} is not in the dex; the rules read the base board", mega.formId)
                 null
-            } else board to table
+            // A Mega table cut short by the time limit reads no Mega board either: the base board and its table stand
+            // together, never the Mega's state beside the base form's scores.
+            } else table?.let { board to it }
         }
         val rulesContext: BattleDecisionContext by lazy { megaRules?.first ?: difficultyContext }
         val ruleScores by lazy { megaRules?.second ?: baseRuleScores }
@@ -741,7 +743,7 @@ internal class LocalTacticalBrain(
             if (rank.outcome.publiclyInert || !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
             // The room's worth at the chance its user gets it up before a hit knocks it out (it moves last, at -7).
             else trickRoomValue?.let { value ->
-                val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, rulesContext, it) } ?: 1.0
+                val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0
                 candidate.actionId to (value * landing - rank.comparisonValue)
             }
         }.toMap()
@@ -764,7 +766,7 @@ internal class LocalTacticalBrain(
         val stayCredits = perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id ->
             val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@mapNotNull null
             trickRoomValue?.let { value ->
-                id to value * (ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, rulesContext, it) } ?: 1.0)
+                id to value * (ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0)
             }
         }
         // A Pokemon on its last Perish Song count faints this turn unless it leaves (LocalPerishCount).
@@ -799,24 +801,33 @@ internal class LocalTacticalBrain(
             part.kind == BattleActionKind.USE_MOVE && part.moveDetails?.damageCategory == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS &&
                 part.moveDetails?.effects?.effects.orEmpty().none { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.PROTECT_USER } &&
                 !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(part)
+        val partCreditCache = java.util.concurrent.ConcurrentHashMap<String, Double>()
+        fun partCredits(part: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate, scores: jbro.cobblemon.mcc.betterai.matchup.MatchupScores): Double =
+            partCreditCache.getOrPut("${part.actorSlot}:${part.actionId}") {
+                val alone = listOf(part)
+                (jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(alone, rulesContext, scores)[part.actionId] ?: 0.0) +
+                    (jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(alone, rulesContext, scores)[part.actionId] ?: 0.0) +
+                    (jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(alone, rulesContext, scores, tuning)[part.actionId] ?: 0.0)
+            }
         val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             searchedRanked.mapNotNull { rank ->
                 val candidate = rank.outcome.candidate
                 if (candidate.kind == BattleActionKind.COMPOSITE) {
                     // A doubles turn: the status rules' credit (screens, hazards, heals, debuffs, raises) is the status
                     // part's, and counts at the chance its user gets it off; the partner's attack keeps its value.
-                    val parts = candidate.componentActions.filter(::actingStatus)
-                    if (parts.isEmpty()) return@mapNotNull null
-                    val credit = listOf(screenAdjustments, hazardEncoreAdjustments, healRaceAdjustments, debuffAdjustments,
-                        statusMoveAdjustments, setupAdjustments).sumOf { it[candidate.actionId] ?: 0.0 }
-                    if (credit <= 0.0) return@mapNotNull null
-                    val acts = parts.fold(1.0) { all, part -> all * jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(part, rulesContext, scores) }
-                    return@mapNotNull if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * credit
+                    // Each status part's own credit (the doubles status rules add theirs part by part) at its own user's
+                    // chance, read on the whole turn's board (a partner's Mega weather comes before any move).
+                    val change = candidate.componentActions.filter(::actingStatus).sumOf { part ->
+                        val credit = partCredits(part, scores)
+                        if (credit <= 0.0) 0.0
+                        else (jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot) - 1.0) * credit
+                    }
+                    return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
                 }
                 if (!actingStatus(candidate)) return@mapNotNull null
                 val total = rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)
                 if (total <= 0.0) return@mapNotNull null
-                val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, rulesContext, scores)
+                val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
                 if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * total
             }.toMap()
         }.orEmpty()

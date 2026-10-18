@@ -84,6 +84,13 @@ internal object LocalMechanicActivationProjector {
     private fun megaEvolve(actor: BattlePokemonStateView, action: BattleActionCandidate): BattlePokemonStateView? {
         val form = LocalMechanicFormResolution.transformedForm(action, actor) ?: return null
         if (canonical(actor.formId) == canonical(form.formId)) return null
+        // A form handed over without its types (a Mega the data source does not know) takes the dex form's (a Z-A Mega
+        // that changes type: Garchomp-Mega-Z is Dragon alone); only a form the dex lacks too keeps the user's, as read
+        // with none its attacks had no same-type bonus to compute and every damage projection came out empty (2026-10-19).
+        val types = form.knownTypeIds.ifEmpty {
+            LocalPublicSpeciesData.formEntry(actor, form.formId)?.types
+                ?.filter { it != "???" }?.mapTo(linkedSetOf()) { it.lowercase() }.orEmpty().ifEmpty { actor.knownTypeIds }
+        }
         return BattlePokemonStateView(
             battlePokemonId = actor.battlePokemonId,
             side = actor.side,
@@ -99,14 +106,12 @@ internal object LocalMechanicActivationProjector {
             knownAbilityId = form.abilityId,
             knownHeldItemId = actor.knownHeldItemId,
             fainted = actor.fainted,
-            // A form handed over without its types (a Mega the data source does not know) keeps the user's: read with
-            // none, its attacks had no same-type bonus to compute and every damage projection came out empty (2026-10-19).
-            knownTypeIds = form.knownTypeIds.ifEmpty { actor.knownTypeIds },
+            knownTypeIds = types,
             combatStats = form.combatStats,
             knownFormStates = actor.knownFormStates,
             actionConstraints = actor.actionConstraints,
             knownVolatileEffectIds = actor.knownVolatileEffectIds,
-            knownBaseStabTypeIds = form.knownTypeIds.ifEmpty { actor.knownBaseStabTypeIds },
+            knownBaseStabTypeIds = types,
             knownTeraTypeId = actor.knownTeraTypeId,
             knownStellarBoostedTypeIds = actor.knownStellarBoostedTypeIds,
             knownBaseAbilityId = form.abilityId,

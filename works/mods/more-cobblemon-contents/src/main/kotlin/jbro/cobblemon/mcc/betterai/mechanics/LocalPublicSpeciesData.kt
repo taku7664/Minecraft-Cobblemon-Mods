@@ -26,6 +26,14 @@ internal object LocalPublicSpeciesData {
         return dex.species(PublicIds.canonical(pokemon.speciesId.substringAfter(':')) + form) != null
     }
 
+    /** [pokemon]'s species in [formId], only when the dex has that form's own entry. */
+    fun formEntry(pokemon: BattlePokemonStateView, formId: String?): Species? {
+        val dex = runCatching { EngineRuntimeDex.current().second }.getOrNull() ?: return null
+        val form = formId?.let(PublicIds::canonical).orEmpty()
+        val base = PublicIds.canonical(pokemon.speciesId.substringAfter(':'))
+        return if (form.isEmpty() || form == "normal") dex.species(base) else dex.species(base + form)
+    }
+
     fun weightKg(pokemon: BattlePokemonStateView): Double? =
         species(pokemon)?.weighthg?.takeIf { it > 0 }?.let { it / 10.0 }
 

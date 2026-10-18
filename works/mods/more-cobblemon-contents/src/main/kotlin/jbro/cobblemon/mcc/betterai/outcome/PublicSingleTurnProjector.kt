@@ -1812,6 +1812,8 @@ internal object PublicSingleTurnProjector {
         val target = initial.pokemon.firstOrNull { it.battlePokemonId == targetId }
         val ignoresAbility = actor != null && target != null &&
             LocalPublicAbilityMechanics.ignoresTargetAbility(action, actor, target, initial)
+        // Whoever's shield: a partner's Flower Veil is ignored unless its own holder's Ability Shield keeps it.
+        val abilityIgnoringMove = actor != null && LocalPublicAbilityMechanics.ignoresTargetAbility(action, actor, null, initial)
         val bypassesDecoy = actor != null && bypassesSubstitute(action, actor, initial)
         val shielded = targetId?.takeIf { it != actorId }?.let { id -> initial.pokemon.firstOrNull { it.battlePokemonId == id } }
             ?.let { target ->
@@ -1842,7 +1844,8 @@ internal object PublicSingleTurnProjector {
             branches = branches.flatMap { branch ->
                 val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide, branch.state,
                     bypassesDecoy, ignoresAbility)
-                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy, ignoresAbility, hpCostPaid)
+                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide, bypassesDecoy, ignoresAbility, hpCostPaid,
+                    abilityIgnoringMove)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
                         branch.copy(
@@ -1958,6 +1961,7 @@ internal object PublicSingleTurnProjector {
         ignoresAbility: Boolean = false,
         /** The move's own HP cost was already charged: a Substitute takes it as the decoy's HP without charging it again. */
         hpCostPaid: Boolean = false,
+        abilityIgnoringMove: Boolean = ignoresAbility,
     ): BattleStateView {
         if (effect.kind in FIELD_EFFECT_KINDS) {
             return LocalFieldEffectProjector.apply(state, executedSide, effect, actorId)
@@ -2029,7 +2033,8 @@ internal object PublicSingleTurnProjector {
             }
             // Contrary, Simple, Clear Body, Mirror Armor, Defiant, Mist and a White Herb all apply here.
             BattleMoveEffectKind.STAT_STAGE -> return LocalStatStageChange.apply(state, affectedId, actorId, effect.statStages,
-                ignoreTargetAbility = ignoresAbility && affectedId != actorId, bypassesSubstitute = bypassesDecoy)
+                ignoreTargetAbility = ignoresAbility && affectedId != actorId, bypassesSubstitute = bypassesDecoy,
+                abilityIgnoringMove = abilityIgnoringMove && affectedId != actorId)
             else -> return state
         }
         return state.copyState(

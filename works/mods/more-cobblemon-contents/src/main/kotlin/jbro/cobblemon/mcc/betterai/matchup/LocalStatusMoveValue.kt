@@ -120,23 +120,37 @@ internal object LocalStatusMoveValue {
         fun held(inFront: Double, rest: List<Double>, free: Boolean) = if (!free) inFront else minOf(inFront, rest.minOrNull() ?: inFront)
         val before = held(now.score, bench.mapNotNull(::score), canLeave(state) ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(state, target) == SHED_SHELL)
+        // A Pokemon dragged or sent in as the switch makes it: a Healing Wish waiting on the slot first, then the hazards'
+        // HP, its entry ability (a Trace copying Shadow Tag included).
+        fun enter(board: jbro.cobblemon.mcc.internal.ai.BattleStateView, coming: BattlePokemonStateView) =
+            jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector.project(board, BattleSide.OPPONENT,
+                BattleActionCandidate("drag:${coming.battlePokemonId}", BattleActionKind.SWITCH, actorSlot = target.activeSlot ?: 0,
+                    switchPokemonId = coming.battlePokemonId,
+                    facts = jbro.cobblemon.mcc.internal.ai.BattleCandidateFactsView(
+                        switchEntryHpLossFraction = PublicSwitchEntryHazardCalculator.hpLoss(board, BattleSide.OPPONENT, coming) ?: 0.0)))
+        fun standing(board: jbro.cobblemon.mcc.internal.ai.BattleStateView, id: java.util.UUID) =
+            board.pokemon.firstOrNull { it.battlePokemonId == id }?.takeIf { !it.fainted && it.hpFraction > 0.0 }
+        fun worth(pokemon: BattlePokemonStateView) = if (pokemon.battlePokemonId == target.battlePokemonId) targetBack else score(pokemon)
+        // One the hazards knock out on entry: the opponent sends whichever of the rest is worst for the user, through the
+        // same hazards, until one stands (the HP each loses on the way in is the user's gain).
+        fun replaced(board: jbro.cobblemon.mcc.internal.ai.BattleStateView, fallen: Double): Double =
+            board.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot == null && alive(it) }.mapNotNull { next ->
+                val worth = worth(next) ?: return@mapNotNull null
+                val entered = enter(board, next)
+                val after = standing(entered, next.battlePokemonId)
+                next.hpFraction - (after?.hpFraction ?: 0.0) + if (after != null) worth else replaced(entered, worth)
+            }.minOrNull() ?: fallen
         val gains = bench.mapNotNull { coming ->
             val score = score(coming) ?: return@mapNotNull null
-            val hazards = minOf(PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0, coming.hpFraction)
+            val dragged = enter(reset, coming)
+            val dragging = standing(dragged, coming.battlePokemonId)
+            val lost = coming.hpFraction - (dragging?.hpFraction ?: 0.0)
+            if (dragging == null) return@mapNotNull lost + replaced(dragged, score) - before
             val rest = bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack
-            // Knocked out by the hazards as it comes in: its HP is the gain, and the opponent sends whichever of the rest is
-            // worst for the user in its place.
-            if ((PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0) >= coming.hpFraction) {
-                return@mapNotNull hazards + (rest.minOrNull() ?: score) - before
-            }
-            // Its board as the switch makes it (its entry ability, a Trace copying Shadow Tag included); Shed Shell frees it.
-            val dragged = jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector.project(reset, BattleSide.OPPONENT,
-                BattleActionCandidate("drag:${coming.battlePokemonId}", BattleActionKind.SWITCH, actorSlot = target.activeSlot ?: 0,
-                    switchPokemonId = coming.battlePokemonId))
-            val dragging = dragged.pokemon.firstOrNull { it.battlePokemonId == coming.battlePokemonId }
-            val free = canLeave(dragged) || dragging != null &&
+            // Shed Shell frees it.
+            val free = canLeave(dragged) ||
                 jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(dragged, dragging) == SHED_SHELL
-            hazards + held(score, rest, free) - before
+            lost + held(score, rest, free) - before
         }
         if (gains.isEmpty()) return null
         // The target's hits as they land on the user this turn: from the move table, not the exchange's, which thins them

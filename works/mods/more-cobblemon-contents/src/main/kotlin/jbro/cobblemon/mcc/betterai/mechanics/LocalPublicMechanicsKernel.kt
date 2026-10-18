@@ -325,7 +325,8 @@ internal object LocalPublicMechanicsKernel {
         }
         // The same immunity rules the search applies, the field and a Substitute included.
         val nullified = targetStatuses.all { effect ->
-            LocalPublicStatusImmunity.blocked(context.state, target, effect.valueId, user, ignoresAbility) ||
+            LocalPublicStatusImmunity.blocked(context.state, target, effect.valueId, user, ignoresAbility,
+                abilityIgnoringMove = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, user, null, context.state)) ||
                 canonical(requireNotNull(effect.valueId)) in PARALYSIS_STATUSES && moveId == "thunderwave" && GROUND in types
         }
         return LocalPublicMoveProjection(

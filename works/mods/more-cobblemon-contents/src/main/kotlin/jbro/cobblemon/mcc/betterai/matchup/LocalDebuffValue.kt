@@ -73,7 +73,8 @@ internal object LocalDebuffValue {
         // ability (Mold Breaker) lands it past an ability's immunity.
         val lands = status != null && target.statusId == null &&
             !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
-                ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state))
+                ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state),
+                abilityIgnoringMove = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, null, state))
         // Poison and Toxic, with or without drops beside them (Toxic Thread): the exchange that plays each turn's residual
         // out (evolving matchups), for the target's pairs with this team only, before and after (user decision
         // 2026-10-19: Toxic is a debuff). Anything else: the pair table, as the ranking reads it.
@@ -107,7 +108,8 @@ internal object LocalDebuffValue {
             val board = if (ability == null) dropped else dropped.copyState(pokemon = dropped.pokemon.map {
                 if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownAbilityId = target.knownAbilityId) else it
             })
-            exchangeOn(board)
+            // A Lum or Pecha Berry cures the poison as it lands, before any residual (and Unburden starts then).
+            exchangeOn(jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusBerry.afterUpdate(board))
         }.takeIf { it.size == abilities.size }?.average() ?: return null
         return Reading(plain, after, accuracy)
     }

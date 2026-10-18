@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.ai
 
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
@@ -22,6 +23,11 @@ internal object BattleOpponentMoveInferenceNormalizer {
         ownStages: BattleOwnStageValue? = null,
         /** Whether a move id is a Max or G-Max Move (the dex's `isMax`), which this layer cannot read itself. */
         isMaxMove: (String) -> Boolean = { false },
+        /**
+         * The types of an opposing Pokemon behind an Illusion, as its own form has them; read only by a tier that reads
+         * the hidden set. Its shown types are the disguise's, and a hidden Hisuian Zoroark's Curse read as a raise.
+         */
+        actualTypeIds: Map<UUID, Set<String>> = emptyMap(),
     ): List<BattleOpponentMoveInferenceView> {
         val policy = BattleOpponentMoveInferencePolicies.forTier(tier)
         val outer = boardStages.get()
@@ -29,7 +35,12 @@ internal object BattleOpponentMoveInferenceNormalizer {
         boardStages.set(ownStages)
         maxMoves.set(isMaxMove)
         try {
-            return normalizeOnBoard(state, catalog, policy, actualMoveIds, previous, rebuildSlotPreferences,
+            val typed = if (!policy.readsHiddenSet || actualTypeIds.isEmpty()) state else state.copyState(
+                pokemon = state.pokemon.map { pokemon ->
+                    actualTypeIds[pokemon.battlePokemonId]?.takeIf { pokemon.side == BattleSide.OPPONENT }
+                        ?.let { pokemon.copyState(knownTypeIds = it) } ?: pokemon
+                })
+            return normalizeOnBoard(typed, catalog, policy, actualMoveIds, previous, rebuildSlotPreferences,
                 ignoredRevealPokemonIds, moveDetails)
         } finally {
             boardStages.set(outer)
@@ -599,6 +610,8 @@ class BattleOpponentMoveInferenceLedger(
         actualMoveIds: Map<UUID, Set<String>>,
         ignoredRevealPokemonIds: Set<UUID> = emptySet(),
         ownStages: BattleOwnStageValue? = null,
+        /** [BattleOpponentMoveInferenceNormalizer.normalize]'s. */
+        actualTypeIds: Map<UUID, Set<String>> = emptyMap(),
     ): List<BattleOpponentMoveInferenceView> {
         val currentIdentities = state.pokemon.asSequence()
             .filter { it.side == BattleSide.OPPONENT && !it.fainted }
@@ -623,6 +636,7 @@ class BattleOpponentMoveInferenceLedger(
             moveDetails = moveDetails,
             ownStages = ownStages,
             isMaxMove = isMaxMove,
+            actualTypeIds = actualTypeIds,
         )
         byPokemon = updated.associateBy { it.battlePokemonId }
         identities = currentIdentities.filterKeys(byPokemon::containsKey)

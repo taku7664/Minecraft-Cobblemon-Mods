@@ -34,19 +34,22 @@ internal object MegaShowdownTestSpecies {
                         ?: return@flatMap emptySequence()
                     addition.getAsJsonArray("forms")?.asSequence().orEmpty().map { it.asJsonObject }
                         .filter { form -> form.get("name")?.asString?.startsWith("Mega") == true }
-                        .map { form -> showdown(base.name, base.num, form).toString() }
+                        .map { form -> showdown(base.name, base.num, base.types, form).toString() }
                 }.toList()
         }.takeIf { it.isNotEmpty() }
     }
 
-    private fun showdown(baseName: String, num: Int, form: JsonObject): JsonObject = JsonObject().apply {
+    private fun showdown(baseName: String, num: Int, baseTypes: List<String>, form: JsonObject): JsonObject = JsonObject().apply {
         val forme = form.get("name").asString
         addProperty("num", num)
         addProperty("name", "$baseName-$forme")
         addProperty("baseSpecies", baseName)
         addProperty("forme", forme)
+        // A form without types keeps its species' (27 of the jar's 38 Megas); one that names its primary type has only the
+        // types it names (Garchomp-Mega-Z: Dragon alone).
+        val named = listOfNotNull(form.get("primaryType")?.asString, form.get("secondaryType")?.asString)
         add("types", JsonArray().apply {
-            listOfNotNull(form.get("primaryType")?.asString, form.get("secondaryType")?.asString).forEach { add(it.replaceFirstChar(Char::uppercase)) }
+            if (named.isEmpty()) baseTypes.forEach(::add) else named.forEach { add(it.replaceFirstChar(Char::uppercase)) }
         })
         val stats = form.getAsJsonObject("baseStats")
         add("baseStats", JsonObject().apply {

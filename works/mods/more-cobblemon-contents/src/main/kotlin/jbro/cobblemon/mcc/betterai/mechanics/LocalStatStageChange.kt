@@ -23,8 +23,13 @@ internal object LocalStatStageChange {
         bypassesSubstitute: Boolean = false,
         /** Entry ability batches run item updates after all adjacent boost attempts. */
         updateItems: Boolean = true,
+        /**
+         * Whether the move ignores abilities at all, whoever's shield ([ignoreTargetAbility] is the target's reading): a
+         * partner's Flower Veil is ignored unless its own holder's Ability Shield keeps it.
+         */
+        abilityIgnoringMove: Boolean = ignoreTargetAbility,
     ): BattleStateView = applyBoost(state, targetId, sourceId, stages, ignoreTargetAbility, updateItems,
-        mirrorReflection = false, bypassesSubstitute = bypassesSubstitute)
+        mirrorReflection = false, bypassesSubstitute = bypassesSubstitute, abilityIgnoringMove = abilityIgnoringMove)
 
     private fun applyBoost(
         state: BattleStateView,
@@ -37,6 +42,7 @@ internal object LocalStatStageChange {
         bypassesSubstitute: Boolean = false,
         /** Opportunist's own copy: Showdown does not let a foe's Opportunist copy it back. */
         opportunistCopy: Boolean = false,
+        abilityIgnoringMove: Boolean = ignoreTargetAbility,
     ): BattleStateView {
         if (stages.isEmpty()) return state
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId } ?: return state
@@ -58,7 +64,11 @@ internal object LocalStatStageChange {
         if (fromOther && change.values.any { it < 0 }) {
             val drops = change.filterValues { it < 0 }
             val stopped = ability in DROP_STOPPING_ABILITIES ||
-                !ignoreTargetAbility && LocalPublicStatusImmunity.flowerVeiled(state, target) ||
+                LocalPublicStatusImmunity.flowerVeiled(state, target) { holder ->
+                    if (holder.battlePokemonId == target.battlePokemonId) ignoreTargetAbility
+                    else abilityIgnoringMove && !(PublicIds.canonical(holder.knownHeldItemId.orEmpty()) == "abilityshield" &&
+                        !LocalPublicFieldMechanics.magicRoomActive(state))
+                } ||
                 !bypassesSubstitute && !mirrorReflection && target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
                 LocalPublicItemState.activeItemId(state, target) == CLEAR_AMULET ||
                 source != null && source.side != target.side && mistActive(state, target)

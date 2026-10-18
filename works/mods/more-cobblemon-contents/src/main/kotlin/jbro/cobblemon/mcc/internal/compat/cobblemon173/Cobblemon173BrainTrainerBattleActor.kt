@@ -247,6 +247,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 // decision 2026-10-18).
                                 jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(
                                     context.copy(localOpponentStatSpreads = opponentSpreads), trainerProfile.difficulty.tier),
+                                actualIllusionTypeIds(),
                             ),
                         ),
                         localOpponentStatSpreads = opponentSpreads,
@@ -559,6 +560,14 @@ internal class Cobblemon173BrainTrainerBattleActor(
     }
 
     /** Read once at the normalization boundary; callers receive only the tier-approved slots. */
+    /** An opposing Pokemon behind an Illusion: its own form's types (the hidden set's tiers read them). */
+    private fun actualIllusionTypeIds(): Map<UUID, Set<String>> =
+        compatibilityCallOrNull { battle.getActor(opponentActorId) }?.activePokemon.orEmpty().mapNotNull { active ->
+            val pokemon = active.battlePokemon ?: return@mapNotNull null
+            if (active.illusion == null) return@mapNotNull null
+            pokemon.uuid to pokemon.effectedPokemon.form.types.mapTo(linkedSetOf()) { it.name }
+        }.toMap()
+
     private fun actualOpponentMoveIds(): Map<UUID, Set<String>> =
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
             pokemon.uuid to pokemon.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name }

@@ -26,7 +26,9 @@ internal object EmbeddedTeamInput {
         val volatileEffects: MutableSet<String> = linkedSetOf(), var originalMoves: Set<String>? = null,
         var gastroAcid: Boolean = false, var abilityEnded: Boolean = false,
         /** The Tera type once it terastallized; it lasts through switches. */
-        var tera: String? = null)
+        var tera: String? = null,
+        /** Transformed: its types are the copied Pokemon's, never its own species' (until it leaves). */
+        var transformed: Boolean = false)
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -160,7 +162,7 @@ internal object EmbeddedTeamInput {
                             it.originalMoves?.let { moves -> it.moves.clear(); it.moves.addAll(moves) }
                             it.originalMoves = null
                         }
-                        it.active = false; it.stages.clear(); it.added = null; it.types = types(it); it.volatileEffects.clear()
+                        it.active = false; it.stages.clear(); it.added = null; it.transformed = false; it.types = types(it); it.volatileEffects.clear()
                     }
                     val details = p[3].split(',').map(String::trim)
                     val species = id(details[0])
@@ -310,9 +312,12 @@ internal object EmbeddedTeamInput {
                 }
                 "-transform" -> current?.let {
                     if (it.originalMoves == null) it.originalMoves = it.moves.toSet()
-                    val copied = p.getOrNull(3)?.let(::identity)?.let(seen::get)?.moves.orEmpty().toSet()
+                    val source = p.getOrNull(3)?.let(::identity)?.let(seen::get)
+                    val copied = source?.moves.orEmpty().toSet()
                     it.moves.clear(); it.moves.addAll(copied)
-                    it.types = emptySet(); it.added = null
+                    // Transform copies the target's types (and an added type with them).
+                    it.types = source?.let { from -> from.types + listOfNotNull(from.added) }.orEmpty(); it.added = null
+                    it.transformed = true
                 }
                 "-terastallize" -> current?.let { it.tera = id(p[3]); it.types = types(it); it.added = null }
                 "-weather" -> {
@@ -385,7 +390,7 @@ internal object EmbeddedTeamInput {
                 if (pokemon.active) activeSlot(pokemon.ident) else null,
                 pokemon.species, null, pokemon.level, pokemon.hp, pokemon.status, pokemon.stages, pokemon.moves,
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
-                if (pokemon.types.isEmpty()) megaTypes(pokemon.species, "") else pokemon.types + listOfNotNull(pokemon.added),
+                if (pokemon.types.isEmpty() && !pokemon.transformed) megaTypes(pokemon.species, "") else pokemon.types + listOfNotNull(pokemon.added),
                 knownTeraTypeId = pokemon.tera,
                 knownBaseStabTypeIds = baseTypes(pokemon.species),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,

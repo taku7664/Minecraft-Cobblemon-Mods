@@ -75,7 +75,8 @@ internal object LocalTurnCostScoreCalculator {
                     return@mapNotNull null
                 }
                 val applied = applyEffects(worn, effects, user.battlePokemonId, target,
-                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, target, state)) ?: return@mapNotNull null
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, target, state),
+                    LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, null, state)) ?: return@mapNotNull null
                 // A move that cannot land does no more than a miss.
                 val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
                 val landed = if (nullified) worn else applied
@@ -195,6 +196,8 @@ internal object LocalTurnCostScoreCalculator {
         userId: UUID,
         target: BattlePokemonStateView,
         ignoresTargetAbility: Boolean,
+        /** The move ignores abilities at all, whoever's shield (a partner's veil). */
+        abilityIgnoringMove: Boolean = ignoresTargetAbility,
     ): BattleStateView? {
         var next = state
         var applied = false
@@ -216,7 +219,8 @@ internal object LocalTurnCostScoreCalculator {
                     (effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.USER) -> {
                     val subject = if (effect.target == BattleMoveEffectTarget.USER) userId else target.battlePokemonId
                     next = LocalStatStageChange.apply(next, subject, userId, effect.statStages,
-                        ignoreTargetAbility = ignoresTargetAbility && effect.target == BattleMoveEffectTarget.SELECTED_TARGET)
+                        ignoreTargetAbility = ignoresTargetAbility && effect.target == BattleMoveEffectTarget.SELECTED_TARGET,
+                        abilityIgnoringMove = abilityIgnoringMove && effect.target == BattleMoveEffectTarget.SELECTED_TARGET)
                     applied = true
                 }
             }

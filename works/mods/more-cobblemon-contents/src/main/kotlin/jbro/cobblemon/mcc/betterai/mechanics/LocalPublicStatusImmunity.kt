@@ -16,6 +16,11 @@ internal object LocalPublicStatusImmunity {
         /** Who inflicts it. Null is an unknown inflicter: field protection still applies. */
         source: BattlePokemonStateView? = null,
         ignoreTargetAbility: Boolean = false,
+        /**
+         * Whether the move ignores abilities at all (Mold Breaker), whoever's shield: [ignoreTargetAbility] is the target's
+         * reading, an Ability Shield on the target included, and a partner's veil is ignored by its own holder's shield.
+         */
+        abilityIgnoringMove: Boolean = ignoreTargetAbility,
         /** False for a status that does not come from a move (Flame Body, an orb). A Substitute and Infiltrator are move rules. */
         byMove: Boolean = true,
     ): Boolean {
@@ -34,17 +39,22 @@ internal object LocalPublicStatusImmunity {
         if (fieldBlocks(state, target, status, sourceAbility, source, fromOther, byMove)) return true
         if (ability in ALL_STATUS_IMMUNITIES) return true
         // A move that ignores abilities (Mold Breaker, Mycelium Might) ignores every one but its user's: the target's and
-        // its partner's veils alike, as Showdown skips any ability holder other than the attacker.
-        if (fromOther && !ignoreTargetAbility && flowerVeiled(state, target)) return true
+        // its partner's veils alike, as Showdown skips any ability holder other than the attacker, unless that holder's
+        // own Ability Shield keeps it (Showdown's suppressingAbility, per holder).
+        fun ignored(holder: BattlePokemonStateView) =
+            if (holder.battlePokemonId == target.battlePokemonId) ignoreTargetAbility
+            else abilityIgnoringMove && !(PublicIds.canonical(holder.knownHeldItemId.orEmpty()) == ABILITY_SHIELD &&
+                !LocalPublicFieldMechanics.magicRoomActive(state))
+        if (fromOther && flowerVeiled(state, target, ::ignored)) return true
         if (ability == LEAF_GUARD && LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER &&
             LocalPublicItemState.activeItemId(state, target) != UTILITY_UMBRELLA) return true
         return when (status) {
             // Corrosion poisons Steel and Poison types alike.
             in POISON -> sourceAbility != CORROSION && ("poison" in types || "steel" in types) ||
-                ability == "immunity" || ability == "pastelveil" || !ignoreTargetAbility && allyAbility(state, target, "pastelveil")
+                ability == "immunity" || ability == "pastelveil" || allyAbility(state, target, "pastelveil", ::ignored)
             in BURN -> "fire" in types || ability == "waterveil" || ability == "waterbubble" || ability == "thermalexchange"
             in PARALYSIS -> "electric" in types || ability == "limber"
-            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil") || !ignoreTargetAbility && allyAbility(state, target, "sweetveil")
+            in SLEEP -> ability in setOf("insomnia", "vitalspirit", "sweetveil") || allyAbility(state, target, "sweetveil", ::ignored)
             in FREEZE -> "ice" in types || ability == "magmaarmor" ||
                 LocalPublicFieldMechanics.effectiveWeatherId(state) in SUN_WEATHER
             else -> false
@@ -52,16 +62,26 @@ internal object LocalPublicStatusImmunity {
     }
 
     /** A Grass type beside (or holding) Flower Veil. */
-    fun flowerVeiled(state: BattleStateView, target: BattlePokemonStateView): Boolean =
+    fun flowerVeiled(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        /** A holder whose Flower Veil the move ignores. */
+        ignored: (BattlePokemonStateView) -> Boolean = { false },
+    ): Boolean =
         target.knownTypeIds.any { canonical(it) == "grass" } && state.pokemon.any {
             it.side == target.side && it.activeSlot != null && !it.fainted &&
-                LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowerveil"
+                LocalPublicAbilityState.effectiveKnownAbility(state, it) == "flowerveil" && !ignored(it)
         }
 
     /** Pastel Veil and Sweet Veil also guard the holder's partner. */
-    private fun allyAbility(state: BattleStateView, target: BattlePokemonStateView, ability: String): Boolean = state.pokemon.any {
+    private fun allyAbility(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        ability: String,
+        ignored: (BattlePokemonStateView) -> Boolean,
+    ): Boolean = state.pokemon.any {
         it.battlePokemonId != target.battlePokemonId && it.side == target.side && it.activeSlot != null &&
-            !it.fainted && it.hpFraction > 0.0 && LocalPublicAbilityState.effectiveKnownAbility(state, it) == ability
+            !it.fainted && it.hpFraction > 0.0 && LocalPublicAbilityState.effectiveKnownAbility(state, it) == ability && !ignored(it)
     }
 
     /** Safeguard, Misty Terrain (any status) and Electric Terrain (sleep) for a grounded target, and a Substitute. */
@@ -107,4 +127,5 @@ internal object LocalPublicStatusImmunity {
     private const val ELECTRIC_TERRAIN = "electricterrain"
     private const val UTILITY_UMBRELLA = "utilityumbrella"
     private val SEMI_INVULNERABLE = setOf("fly", "bounce", "dig", "dive", "phantomforce", "shadowforce", "skydrop")
+    private const val ABILITY_SHIELD = "abilityshield"
 }
