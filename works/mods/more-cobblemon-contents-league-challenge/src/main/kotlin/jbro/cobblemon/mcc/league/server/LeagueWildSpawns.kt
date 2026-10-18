@@ -33,9 +33,8 @@ object LeagueWildSpawns {
                 LeagueIntegrations.syncCap(player, LeagueProgressQueries.earnedCap(player.server, player.uuid))
                 val pokemon = event.entity.pokemon
                 val spawnLevel = WildSpawnLevel.roll(reading.cap, catalog.wildLevel, reading.regionLevel, player.level().random.nextDouble())
-                // Set first: an evolution branch may compare the stats at the new level.
-                pokemon.level = spawnLevel
                 WildSpawnSpecies.fit(pokemon, spawnLevel)
+                pokemon.level = spawnLevel
                 // Cobblemon picked the moves for the level it rolled; a level the League moved needs its own.
                 pokemon.initializeMoveset()
             } catch (failure: RuntimeException) {

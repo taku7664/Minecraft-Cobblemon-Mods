@@ -30,11 +30,10 @@ object WildSpawnStage {
 
     /**
      * The evolutions a wild spawn of [level] takes one step along: those its level condition allows and the Pokemon
-     * itself does not rule out, keeping only the ones whose other conditions hold too when there are any. A level
-     * condition of 1 or below sets no level at all (Galarian Yamask's needs damage taken), so it counts as none.
+     * itself does not rule out, keeping only the ones whose other conditions hold too when there are any.
      */
     fun <T> next(level: Int, branches: List<Branch<T>>): List<T> {
-        val reached = branches.filter { it.minLevel != null && it.minLevel > 1 && level in it.minLevel..it.maxLevel && !it.blocked }
+        val reached = branches.filter { it.minLevel != null && level in it.minLevel..it.maxLevel && !it.blocked }
         val met = reached.filterNot { it.unmet }
         return (met.ifEmpty { reached }).map { it.evolution }
     }
