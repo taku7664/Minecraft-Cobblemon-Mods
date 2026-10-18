@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 /**
- * What an opponent's move does to a Swords Dance, played out in the engine. A recorded Boss position (Garchomp in
+ * What an opponent's move does to a Swords Dance, read from the move's data (no turn played out, 2026-10-19). A recorded Boss position (Garchomp in
  * front of Tapu Koko, which knows Wild Charge and is expected to know Brave Bird), rebuilt from the public board with
  * Garchomp's HP set, and one move given to Tapu Koko as revealed. No move is named in the code under test.
  */
@@ -48,39 +48,37 @@ class LocalEngineStopProbeTest {
     fun `a forced switch stops the setup whatever the duel`() {
         val (tools, failures) = probe("roar", hp = 1.0)
         assertEquals(StopToolKind.FORCES_SWITCH, tools.single { it.moveId == "roar" }.kind)
-        assertEquals(1.0, tools.single { it.moveId == "roar" }.value, 1e-9)
         assertTrue(failures.any { it.endsWith(":forces_switch") }, failures.toString())
     }
 
     @Test
-    fun `Destiny Bond on the turn the boosted sweeper attacks stops it`() {
+    fun `Destiny Bond up before the boosted sweeper's knockout stops it`() {
         val (tools, failures) = probe("destinybond", hp = 1.0)
         assertEquals(StopToolKind.DESTINY_BOND, tools.single { it.moveId == "destinybond" }.kind)
         assertTrue(failures.any { it.endsWith(":destiny_bond") }, failures.toString())
     }
 
     @Test
-    fun `Taunt is read as a block and does not stop a sweeper that wins anyway`() {
+    fun `Taunt does not stop a sweeper already boosted`() {
         val (tools, failures) = probe("taunt", hp = 1.0)
-        val taunt = tools.single { it.moveId == "taunt" }
-        assertEquals(StopToolKind.TAUNT, taunt.kind)
-        assertEquals(0.0, taunt.value, 1e-9)
+        assertFalse(tools.any { it.moveId == "taunt" })
         assertFalse(failures.any { it.startsWith("stopper:") }, failures.toString())
     }
 
     @Test
-    fun `Encore stops a sweeper it can lock while it is weakened, not one at full health`() {
-        assertEquals(0.0, probe("encore", hp = 1.0).first.single { it.moveId == "encore" }.value, 1e-9)
-        assertTrue(probe("encore", hp = 0.5).first.single { it.moveId == "encore" }.value > 0.5)
+    fun `Encore locks the sweeper and stops it whenever it is known`() {
+        val (tools, failures) = probe("encore", hp = 1.0)
+        assertEquals(StopToolKind.ENCORE, tools.single { it.moveId == "encore" }.kind)
+        assertTrue(failures.any { it.endsWith(":encore") }, failures.toString())
     }
 
     @Test
-    fun `Thunder Wave on a Ground type and Haze from the faster side stop nothing`() {
-        assertEquals(0.0, probe("thunderwave", hp = 1.0).first.single { it.moveId == "thunderwave" }.value, 1e-9)
-        assertEquals(0.0, probe("haze", hp = 1.0).first.single { it.moveId == "haze" }.value, 1e-9)
+    fun `Thunder Wave on a Ground type and Haze stop nothing`() {
+        assertFalse(probe("thunderwave", hp = 1.0).first.any { it.moveId == "thunderwave" })
+        assertFalse(probe("haze", hp = 1.0).second.any { it.startsWith("stopper:") })
     }
 
-    /** The probe's tools for Tapu Koko against Garchomp's Swords Dance, and the setup gate's failures. */
+    /** The stop tools read from Tapu Koko's moves against Garchomp's Swords Dance, and the setup gate's failures. */
     private fun probe(extra: String, hp: Double): Pair<List<StopTool>, List<String>> {
         val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/garchomp-mega-earthquake-drawn-plain.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }.let(AiTestDecisionSnapshot::fromJson).context
@@ -127,7 +125,10 @@ class LocalEngineStopProbeTest {
         val sweeper = context.state.pokemon.first { it.side == BattleSide.ALLY && it.activeSlot == 0 }
         val foe = context.state.pokemon.first { it.side == BattleSide.OPPONENT && it.activeSlot == 0 }
         val setup = context.candidates.first { it.moveId == "swordsdance" && it.mechanic == null }
-        val tools = LocalEngineStopProbe.tools(context, tier, sweeper, foe, LocalEngineStopProbe.Opening.Move(setup), scores)
+        val tools = scores.sweeps[sweeper.battlePokemonId]?.let { sweep ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalStopScoreCalculator.score(context, foe, sweep, sweeper, scores,
+                jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())?.tools
+        }.orEmpty()
         val failures = LocalSetupGate.evaluate(setup, context, scores, tier = tier)?.failures.orEmpty()
         println("STOP PROBE $extra hp=$hp ${tools.map { "${it.moveId}:${it.kind}:${it.value}" }} $failures")
         return tools to failures

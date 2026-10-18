@@ -313,17 +313,15 @@ internal object EmbeddedTeamBattle {
                                                 addProperty("natural", it.naturalSweep); addProperty("boosted", it.boostedSweep)
                                                 it.windowSweep?.let { w -> addProperty("window", w) }
                                                 addProperty("setupMoveId", it.setupMoveId)
-                                                // Every stopping tool the gate reads per opponent on the field: declared, and played out in the engine.
+                                                // Every stopping tool the gate reads per opponent on the field, from the moves' data.
                                                 if (user != null) add("stopTools", JsonObject().apply {
                                                     context.state.pokemon.filter { foe -> foe.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && foe.activeSlot != null && !foe.fainted }.forEach { foe ->
                                                         val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
                                                         val declared = jbro.cobblemon.mcc.betterai.matchup.LocalStopScoreCalculator.score(context, foe, it, user, scores, cache)
-                                                        val played = jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.tools(context, profiles.getValue(side).difficulty.tier, user, foe,
-                                                            jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Opening.Move(setup), scores)
                                                         val slots = context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty()
                                                             .joinToString(",") { slot -> "${slot.moveId}:${slot.knowledge}" }
                                                         addProperty(foe.speciesId, "declared=${declared?.tools?.map { t -> "${t.kind}:${t.moveId}:${"%.2f".format(t.value)}" }} " +
-                                                            "oneTime=${declared?.oneTimeSurvival} played=${played.map { t -> "${t.kind}:${t.moveId}:${"%.2f".format(t.value)}" }} " +
+                                                            "oneTime=${declared?.oneTimeSurvival} " +
                                                             "known=${foe.knownMoveIds} inferred=[$slots]")
                                                     }
                                                 })

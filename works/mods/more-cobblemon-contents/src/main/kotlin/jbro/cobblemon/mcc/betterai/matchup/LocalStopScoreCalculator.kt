@@ -71,15 +71,32 @@ internal object LocalStopScoreCalculator {
             val accuracy = (details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
             val effects = details.effects?.effects.orEmpty()
             val status = details.damageCategory == BattleMoveDamageCategory.STATUS
-            // Only what the move's data declares. Moves whose effect lives in a script (Haze, Encore, Taunt, Trick Room,
-            // Perish Song, Destiny Bond, Unaware's ability) are played out in the engine where they decide anything:
-            // LocalEngineStopProbe, from the setup gate and the switch prediction.
+            val action = BattleActionCandidate("$moveId:stop", BattleActionKind.USE_MOVE,
+                actorSlot = boostedSubject.activeSlot, moveSlot = 0, moveId = moveId, moveDetails = details,
+                targets = listOf(BattleTargetSlot(boostedSweeper.side, boostedSweeper.activeSlot ?: 0)))
+            // A move that cannot land on the sweeper (Thunder Wave on a Ground type) stops nothing.
+            val nullified = LocalPublicMechanicsKernel.projectMove(action, boosted.copy(candidates = listOf(action)), subject.side).publiclyNullified
+            fun inflicts(statusId: String) = !nullified && effects.any { it.certainStatus(statusId) } &&
+                !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(boosted.state, boostedSweeper, statusId, boostedSubject)
+            // What the move's data declares; nothing is played out (user decision 2026-10-19: no event-branch search).
+            // A reset (Haze), Perish Song's count and Taunt never stop a sweeper already boosted (LocalSetupGate.NEVER_STOPS),
+            // so the script-only ones among them are not read.
             when {
                 effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET } ->
                     tools += StopTool(StopToolKind.FORCES_SWITCH, moveId, actsBeforeKnockout * FORCED_SWITCH_VALUE)
-                status && sweeperStatusFree && effects.any { it.certainStatus(BURN) } -> tools += StopTool(StopToolKind.BURN, moveId,
+                // Encore: every move but one locked, priced as a forced switch is.
+                !nullified && effects.any { it.volatile(BattleMoveEffectTarget.SELECTED_TARGET, ENCORE) } ->
+                    tools += StopTool(StopToolKind.ENCORE, moveId, actsBeforeKnockout * accuracy * FORCED_SWITCH_VALUE)
+                // Trick Room: the exchange with the speed order flipped.
+                effects.any { it.kind == BattleMoveEffectKind.FIELD_CONDITION && it.valueId?.let(PublicIds::canonical) == TRICK_ROOM } ->
+                    tools += StopTool(StopToolKind.TRICK_ROOM, moveId, actsBeforeKnockout * win(field = MatchupSpeedField.TRICK_ROOM_TOGGLED))
+                // Destiny Bond: up before the sweeper's knockout, the sweeper goes down with it.
+                effects.any { it.volatile(BattleMoveEffectTarget.USER, DESTINY_BOND) } ->
+                    tools += StopTool(StopToolKind.DESTINY_BOND, moveId,
+                        actsBeforeKnockout * (againstBoosted.opponentMove?.knockoutChanceWithin(1) ?: 0.0))
+                status && sweeperStatusFree && inflicts(BURN) -> tools += StopTool(StopToolKind.BURN, moveId,
                     actsBeforeKnockout * accuracy * win(withSweeper { it.copyState(statusId = BURN) }))
-                status && sweeperStatusFree && effects.any { it.certainStatus(PARALYSIS) } -> tools += StopTool(StopToolKind.PARALYSIS, moveId,
+                status && sweeperStatusFree && inflicts(PARALYSIS) -> tools += StopTool(StopToolKind.PARALYSIS, moveId,
                     actsBeforeKnockout * accuracy * win(withSweeper { it.copyState(statusId = PARALYSIS) }))
             }
             val drops = effects.filter { it.certainTargetDrop() }
@@ -87,16 +104,22 @@ internal object LocalStopScoreCalculator {
                 val stages = drops.fold(mutableMapOf<String, Int>()) { all, effect ->
                     effect.statStages.forEach { (stat, delta) -> all.merge(stat, delta, Int::plus) }; all
                 }
-                val action = BattleActionCandidate("$moveId:stop", BattleActionKind.USE_MOVE,
-                    actorSlot = boostedSubject.activeSlot, moveSlot = 0, moveId = moveId, moveDetails = details,
-                    targets = listOf(BattleTargetSlot(boostedSweeper.side, boostedSweeper.activeSlot ?: 0)))
-                val read = boosted.copy(candidates = listOf(action))
-                val dropped = if (LocalPublicMechanicsKernel.projectMove(action, read, subject.side).publiclyNullified) boosted.state
+                val dropped = if (nullified) boosted.state
                     else LocalStatStageChange.apply(boosted.state, sweeperId, subjectId, stages,
                         ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(action,
                             boostedSubject, boostedSweeper, boosted.state))
                 tools += StopTool(StopToolKind.STAT_DROP, moveId, actsBeforeKnockout * accuracy * win(dropped))
             }
+        }
+        // Unaware: the sweeper's attack and defence stages stop counting, its Speed still does. At the share of the
+        // abilities still possible for it when the ability is not known. **Hardcoded**: the ability is found by its id.
+        val unaware = LocalPublicAbilityState.effectiveKnownAbility(boosted.state, boostedSubject)?.let { if (PublicIds.canonical(it) == UNAWARE) 1.0 else 0.0 }
+            ?: jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(boosted.state, boostedSubject)
+                .takeIf { it.isNotEmpty() }?.let { possible -> possible.count { PublicIds.canonical(it) == UNAWARE }.toDouble() / possible.size }
+            ?: 0.0
+        if (unaware > 0.0) {
+            val ignored = withSweeper { pokemon -> pokemon.copyState(statStages = pokemon.statStages.filterKeys { PublicIds.canonical(it) in SPEED_STAT }) }
+            tools += StopTool(StopToolKind.IGNORES_BOOSTS, null, unaware * win(ignored))
         }
         LocalMatchupScoreCalculator.moveMatchups(boosted, subjectId, sweeperId, cache)
             .filter { (it.action.moveDetails?.priority ?: 0) > 0 }
@@ -143,6 +166,9 @@ internal object LocalStopScoreCalculator {
         kind == BattleMoveEffectKind.STATUS && target == BattleMoveEffectTarget.SELECTED_TARGET && certain() &&
             valueId?.let(PublicIds::canonical) == status
 
+    private fun BattleMoveEffectView.volatile(target: BattleMoveEffectTarget, id: String): Boolean =
+        kind == BattleMoveEffectKind.VOLATILE_STATUS && this.target == target && valueId?.let(PublicIds::canonical) == id
+
     private fun BattleMoveEffectView.certainTargetDrop(): Boolean =
         kind == BattleMoveEffectKind.STAT_STAGE && target == BattleMoveEffectTarget.SELECTED_TARGET && certain() &&
             statStages.values.any { it < 0 }
@@ -155,4 +181,9 @@ internal object LocalStopScoreCalculator {
     private const val BUSTED = "busted"
     private const val MULTISCALE = "multiscale"
     private const val FORCED_SWITCH_VALUE = 0.8
+    private const val ENCORE = "encore"
+    private const val TRICK_ROOM = "trickroom"
+    private const val DESTINY_BOND = "destinybond"
+    private const val UNAWARE = "unaware"
+    private val SPEED_STAT = setOf("speed", "spe")
 }

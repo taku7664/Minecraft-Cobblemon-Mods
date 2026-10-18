@@ -203,13 +203,8 @@ internal object LocalOpponentIntentPredictor {
         allies.maxOfOrNull { ally ->
             val boost = ally.statStages.values.filter { it > 0 }.sum()
             if (boost <= 0) return@maxOfOrNull 0.0
-            val declared = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score ?: 0.0
-            // What its moves do once in, played out in the engine against the boosted ally (singles).
-            val played = if (tier == null || context.state.format != BattleFormat.SINGLE) 0.0 else
-                jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.tools(context, tier, ally, incoming,
-                    jbro.cobblemon.mcc.betterai.search.LocalEngineStopProbe.Opening.SwitchIn(incoming.battlePokemonId), scores)
-                    .maxOfOrNull { it.value } ?: 0.0
-            val stopper = maxOf(declared, played)
+            // What its moves do once in, read from their data (LocalStopScoreCalculator).
+            val stopper = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score ?: 0.0
             stopper * minOf(1.0, boost / FULL_BOOST)
         } ?: 0.0
 
