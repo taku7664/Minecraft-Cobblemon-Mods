@@ -1,5 +1,12 @@
 # simple-trash-can 작업 기록
 
+## [2026-10-18 07:15] 삭제 서버 로그 추가·개발 재배치 (실게임 미확인)
+
+- **사용자 결정:** 아이템이 실제로 지워질 때만 서버 `latest.log`에 남긴다. 올리기만 한 건 꺼낼 수 있어서 남기지 않는다. 형식은 `[SimpleTrashCan] <플레이어> deleted <개수>x <아이템 ID> (<이유>)`, 이유는 `replaced`·`disconnect`·`death`이며 따로 파일을 만들지 않는다.
+- **구현:** `TrashLog`가 기록한다. 교체는 `AbstractContainerMenuMixin`의 PICKUP·SWAP 교체 분기에서 남기는데, 클릭이 양쪽에서 돌기 때문에 `ServerPlayer`일 때만 남긴다. 접속 종료는 새 main 엔트리포인트에서 Fabric `ServerPlayConnectionEvents.DISCONNECT`로, 죽음은 `restoreFrom`의 keepInventory 아닌 분기에서 남긴다. 커밋 `fb2ee90e0`, main 푸시 후 origin/main 0/0.
+- **검증:** 빌드 성공, `jar --validate`·`unzip -t` 통과. Codex 읽기 전용 리뷰(`3f7512520`·`fb2ee90e0`)에서 지적 없음. 세 경우가 각각 한 번씩만 기록되는지, 클라이언트 쪽 로그가 없는지를 봤다. 배치본 `develop-product/{client,server}/mods/simple-trash-can-1.0.0.jar` SHA-256은 `f914c3bac80decbe2c0bb666155bc0f47797f7bc68ff223542177604bbad4496`로 빌드본과 같다. 배치 전 게임·서버 정지 확인.
+- **미확인:** 실제 로그 줄 출력은 서버를 켜지 않아 보지 못했다. 서버를 끌 때 접속 중이던 플레이어도 DISCONNECT 이벤트로 기록되는지 확인하지 않았다.
+
 ## [2026-10-18 06:55] 새 모드 1.0.0 구현·개발 배치 (실게임 미확인)
 
 - **사용자 결정:** 모드 이름 `simple-trash-can`(기존 모드에 넣지 않고 새로 추가). 위치는 서바이벌 인벤토리 오른쪽 바깥, 메인 인벤토리 마지막 줄 높이, 슬롯 위 "휴지통" 글자와 빈 슬롯 휴지통 아이콘. 올린 아이템은 다른 아이템이 올라올 때 지운다. 인벤토리를 닫아도 남기고, 저장하지 않으므로 재접속·튕김에는 사라진다. 죽으면 지우되 `keepInventory`면 남긴다. Shift+클릭으로는 넣지 못하고 꺼내기만 된다. 아이콘은 직접 그린 16×16. 나중 배포용으로 모드 아이콘(128×128)과 README도 요청받아 넣었다.
