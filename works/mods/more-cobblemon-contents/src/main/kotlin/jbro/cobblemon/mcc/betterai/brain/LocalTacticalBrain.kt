@@ -160,6 +160,8 @@ internal class LocalTacticalBrain(
         session: BattleBrainSession,
         context: BattleDecisionContext,
     ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) {
+        // No worth until this decision reads one, so a decision that returns early leaves none behind for the trace.
+        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(null)
         try { decideWithTuning(session, context) } finally { jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.clear() }
     }
 
@@ -438,6 +440,11 @@ internal class LocalTacticalBrain(
         val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, rulesContext, scores, tuning)
         }.orEmpty() }
+        // Each Pokemon's worth from the matchup table, for the tiers that read it: the native search, the ranking and the
+        // rules price material and knockouts with it on this thread (LocalPokemonWorth).
+        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(if (!rulesApply) null else baseRuleScores?.let {
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.worths(difficultyContext.state, it, tuning.livingPokemonValue)
+        })
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
         // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
         val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(
@@ -601,11 +608,6 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        // Each Pokemon's worth from the matchup table, for the tiers that read it; the ranking and the rules price material
-        // and knockouts with it (LocalPokemonWorth).
-        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(if (!rulesApply) null else baseRuleScores?.let {
-            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.worths(difficultyContext.state, it, tuning.livingPokemonValue)
-        })
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
         val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null

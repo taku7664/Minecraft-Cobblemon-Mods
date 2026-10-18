@@ -182,11 +182,11 @@ internal object LocalTacticalScorer {
                 ?: return@mapNotNull null
             // The existing credit already resolves damage modifiers, accuracy and initiative.
             // Only full credit is certain here; partial credits need a joint probability model.
-            if (knockoutUtility(action, tuning, context) != tuning.knockoutMaterialScore) return@mapNotNull null
+            if (knockoutUtility(action, tuning, context) != knockoutScoreAt(target, context, tuning)) return@mapNotNull null
             target
         }
-        return fullCredits.groupingBy { it }.eachCount().values.sumOf { count ->
-            (count - 1).coerceAtLeast(0) * tuning.knockoutMaterialScore
+        return fullCredits.groupingBy { it }.eachCount().entries.sumOf { (target, count) ->
+            (count - 1).coerceAtLeast(0) * knockoutScoreAt(target, context, tuning)
         }
     }
 
@@ -204,7 +204,8 @@ internal object LocalTacticalScorer {
                     ?.let { jbro.cobblemon.mcc.internal.ai.BattleTargetSlot(it.side, requireNotNull(it.activeSlot)) }
             val accuracy = LocalPublicAccuracy.probability(action, context, BattleSide.ALLY)
             buildList {
-                if (primary?.side == BattleSide.OPPONENT) add(primary to (knockoutUtility(action, tuning, context) / tuning.knockoutMaterialScore))
+                // The credit is the target's worth times the chance; the chance alone is what overlaps.
+                if (primary?.side == BattleSide.OPPONENT) add(primary to (knockoutUtility(action, tuning, context) / knockoutScoreAt(primary, context, tuning)))
                 spread.drop(1).filter { it.side == BattleSide.OPPONENT }.forEach { extra ->
                     val probability = when (extra.standardKnockoutAssessment) {
                         jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment.GUARANTEED -> 1.0
@@ -216,11 +217,17 @@ internal object LocalTacticalScorer {
                 }
             }
         }
-        return credits.groupBy({ it.first }, { it.second.coerceIn(0.0, 1.0) }).values.sumOf { probabilities ->
+        return credits.groupBy({ it.first }, { it.second.coerceIn(0.0, 1.0) }).entries.sumOf { (target, probabilities) ->
             val union = 1.0 - probabilities.fold(1.0) { survival, probability -> survival * (1.0 - probability) }
-            (probabilities.sum() - union).coerceAtLeast(0.0) * tuning.knockoutMaterialScore
+            (probabilities.sum() - union).coerceAtLeast(0.0) * knockoutScoreAt(target, context, tuning)
         }
     }
+
+    /** A knockout of whoever stands in [slot], at its worth (LocalPokemonWorth). */
+    private fun knockoutScoreAt(slot: jbro.cobblemon.mcc.internal.ai.BattleTargetSlot, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double =
+        LocalPokemonWorth.knockoutScore(context.state.pokemon.firstOrNull {
+            it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
+        }?.battlePokemonId, tuning)
 
     /**
      * The half of a move's score that is a statement about the candidate rather than about value.
@@ -792,7 +799,7 @@ internal object LocalTacticalScorer {
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         val hits = LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state)
         val total = minOf(lost * hits, actor.hpFraction)
-        val knockout = if (lost * hits >= actor.hpFraction) tuning.knockoutMaterialScore else 0.0
+        val knockout = if (lost * hits >= actor.hpFraction) LocalPokemonWorth.knockoutScore(actor.battlePokemonId, tuning) else 0.0
         return (total * tuning.boardToScore + knockout) * accuracy
     }
 
