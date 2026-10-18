@@ -203,8 +203,13 @@ internal object LocalOpponentIntentPredictor {
         allies.maxOfOrNull { ally ->
             val boost = ally.statStages.values.filter { it > 0 }.sum()
             if (boost <= 0) return@maxOfOrNull 0.0
-            // What its moves do once in, read from their data (LocalStopScoreCalculator).
-            val stopper = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score ?: 0.0
+            // What its moves do once in, read from their data (LocalStopScoreCalculator), against this ally as the sweeper
+            // even when the table read the side's best sweeper.
+            val stopper = scores.stops[incoming.battlePokemonId]?.takeIf { it.sweeperId == ally.battlePokemonId }?.score
+                ?: scores.sweeps[ally.battlePokemonId]?.let { sweep ->
+                    LocalStopScoreCalculator.score(context, incoming, sweep, ally, scores,
+                        jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())?.score
+                } ?: 0.0
             stopper * minOf(1.0, boost / FULL_BOOST)
         } ?: 0.0
 

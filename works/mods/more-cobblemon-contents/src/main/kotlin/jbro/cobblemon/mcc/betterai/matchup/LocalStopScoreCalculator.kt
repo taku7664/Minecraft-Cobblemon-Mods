@@ -111,15 +111,25 @@ internal object LocalStopScoreCalculator {
                 tools += StopTool(StopToolKind.STAT_DROP, moveId, actsBeforeKnockout * accuracy * win(dropped))
             }
         }
-        // Unaware: the sweeper's attack and defence stages stop counting, its Speed still does. At the share of the
-        // abilities still possible for it when the ability is not known. **Hardcoded**: the ability is found by its id.
-        val unaware = LocalPublicAbilityState.effectiveKnownAbility(boosted.state, boostedSubject)?.let { if (PublicIds.canonical(it) == UNAWARE) 1.0 else 0.0 }
-            ?: jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(boosted.state, boostedSubject)
+        // Unaware: the sweeper's attack and defence stages stop counting, its Speed still does. **Hardcoded**: the ability
+        // is found by its id. A known ability decides (suppressed, Gastro Acid or Neutralizing Gas, it is none); an unknown
+        // one counts at its share of the abilities still possible, and only as a likely stopper (STOPPER_PASS), since the
+        // gate takes this kind as a stop outright. A sweeper whose attack ignores the target's ability (Mold Breaker) is
+        // not stopped by it.
+        val unaware = when {
+            boostedSubject.knownAbilityId != null ->
+                if (LocalPublicAbilityState.effectiveKnownAbility(boosted.state, boostedSubject)?.let(PublicIds::canonical) == UNAWARE) 1.0 else 0.0
+            else -> jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(boosted.state, boostedSubject)
                 .takeIf { it.isNotEmpty() }?.let { possible -> possible.count { PublicIds.canonical(it) == UNAWARE }.toDouble() / possible.size }
-            ?: 0.0
-        if (unaware > 0.0) {
+                ?: 0.0
+        }
+        val sweeperAttack = LocalMatchupScoreCalculator.moveMatchups(boosted, sweeperId, subjectId, cache).firstOrNull()?.action
+        val breaksIt = sweeperAttack != null &&
+            LocalPublicAbilityMechanics.ignoresTargetAbility(sweeperAttack, boostedSweeper, boostedSubject, boosted.state)
+        if (unaware > 0.0 && !breaksIt) {
             val ignored = withSweeper { pokemon -> pokemon.copyState(statStages = pokemon.statStages.filterKeys { PublicIds.canonical(it) in SPEED_STAT }) }
-            tools += StopTool(StopToolKind.IGNORES_BOOSTS, null, unaware * win(ignored))
+            val value = unaware * win(ignored)
+            if (unaware >= 1.0 || value >= LocalSetupGate.STOPPER_PASS) tools += StopTool(StopToolKind.IGNORES_BOOSTS, null, value)
         }
         LocalMatchupScoreCalculator.moveMatchups(boosted, subjectId, sweeperId, cache)
             .filter { (it.action.moveDetails?.priority ?: 0) > 0 }
