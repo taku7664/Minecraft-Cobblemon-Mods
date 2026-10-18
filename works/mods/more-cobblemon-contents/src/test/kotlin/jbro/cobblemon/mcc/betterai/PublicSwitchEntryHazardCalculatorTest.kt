@@ -25,6 +25,23 @@ class PublicSwitchEntryHazardCalculatorTest {
     }
 
     @Test
+    fun `each hazard takes its own whole hit points`() {
+        // 100 maximum HP: Stealth Rock and one layer of Spikes take 12 each (an eighth, rounded down), not 25 together,
+        // so a Pokemon at 25% survives on 1 HP (Codex review of fe443485).
+        val hundred = BattleIntegerRange(100, 100)
+        val pokemon = BattlePokemonStateView(
+            UUID.randomUUID(), BattleSide.ALLY, null, "probe", null, 50, 0.25, null,
+            emptyMap(), emptySet(), null, null, false, setOf("normal"),
+            BattleCombatStatRangesView(hundred, hundred, hundred, hundred, hundred, hundred, BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE),
+        )
+        val field = BattleFieldStateView(null, null, emptyList(), emptyList(), BattleSide.entries.associateWith { side ->
+            if (side == BattleSide.ALLY) listOf(BattleTimedEffectView("stealthrock", null), BattleTimedEffectView("spikes", null, stacks = 1))
+            else emptyList()
+        })
+        assertEquals(0.24, requireNotNull(jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator.hpLoss(field, BattleSide.ALLY, pokemon)), 1e-9)
+    }
+
+    @Test
     fun `grounded target takes layered spikes while boots prevent public hazard damage`() {
         val benchId = UUID.fromString("00000000-0000-0000-0000-000000000402")
         val hazards = listOf(BattleTimedEffectView("spikes", null, stacks = 3))

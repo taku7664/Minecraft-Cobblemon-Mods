@@ -89,8 +89,9 @@ class LocalMatchupScoreTest {
     fun `a bench Pokemon is scored as it would enter, hazards included`() {
         val context = context(allySpeed = 150, foeSpeed = 100, rocksOnAllySide = true)
         val benched = LocalMatchupScoreCalculator.calculate(context).pokemon(BENCH, FOE)!!
-        // Stealth Rock takes an eighth of a neutral Pokemon's HP on entry, and that is what it keeps on a win.
-        assertEquals(0.875, benched.subjectRemainingHpOnWin, 1e-6)
+        // Stealth Rock takes an eighth of a neutral Pokemon's HP on entry, rounded down to whole HP (18 of 150), and that
+        // is what it keeps on a win.
+        assertEquals(1.0 - 18.0 / 150.0, benched.subjectRemainingHpOnWin, 1e-6)
     }
 
     @Test

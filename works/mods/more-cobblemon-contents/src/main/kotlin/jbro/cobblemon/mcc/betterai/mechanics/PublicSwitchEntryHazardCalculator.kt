@@ -46,27 +46,32 @@ internal object PublicSwitchEntryHazardCalculator {
         if (hazards.isEmpty()) return 0.0
         if (activeItem == HEAVY_DUTY_BOOTS || ability == MAGIC_GUARD) return 0.0
 
+        // Each hazard's damage is its own whole number of HP, rounded down (Showdown truncates each), so two hazards can
+        // leave 1 HP where their fractions add up to the whole bar. With the maximum HP only a range, its least: the one
+        // that rounds down most, so a Pokemon on the boundary is not read as fainting on entry (Codex review of fe443485).
+        val maxHp = pokemon.combatStats?.maxHp?.minimum?.takeIf { it > 0 }
+        fun whole(fraction: Double): Double = if (maxHp == null) fraction else kotlin.math.floor(maxHp * fraction + 1e-9) / maxHp
         var loss = 0.0
         hazards.forEach { hazard ->
             when (canonical(hazard.effectId)) {
                 STEALTH_ROCK -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    loss += STEALTH_ROCK_FRACTION *
-                        StandardTypeEffectiveness.multiplier("rock", pokemon.knownTypeIds)
+                    loss += whole(STEALTH_ROCK_FRACTION *
+                        StandardTypeEffectiveness.multiplier("rock", pokemon.knownTypeIds))
                 }
                 G_MAX_STEELSURGE -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    loss += STEALTH_ROCK_FRACTION *
-                        StandardTypeEffectiveness.multiplier("steel", pokemon.knownTypeIds)
+                    loss += whole(STEALTH_ROCK_FRACTION *
+                        StandardTypeEffectiveness.multiplier("steel", pokemon.knownTypeIds))
                 }
                 SPIKES -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
                     if (grounded) {
-                        loss += when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
+                        loss += whole(when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
                             1 -> 1.0 / 8.0
                             2 -> 1.0 / 6.0
                             else -> 1.0 / 4.0
-                        }
+                        })
                     }
                 }
             }
