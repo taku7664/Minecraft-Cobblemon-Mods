@@ -43,7 +43,8 @@ object LeagueCatalogParser {
         return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
             wildLevel(league), hardGyms, hardFinals, gymStages, hardGymStages, finalChoices, hardFinalChoices,
             league.optionalString("unlock_league"), league.optionalString("player_mechanic") ?: "MEGA",
-            league.get("lock_mechanics_until_champion")?.asBoolean ?: true)
+            league.get("lock_mechanics_until_champion")?.asBoolean ?: true,
+            league.get("active")?.asBoolean ?: true)
     }
 }
 

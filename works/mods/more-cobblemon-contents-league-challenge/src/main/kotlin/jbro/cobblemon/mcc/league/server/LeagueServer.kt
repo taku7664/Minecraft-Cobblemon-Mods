@@ -120,7 +120,7 @@ object LeagueServer {
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         // A run keeps its League; otherwise the region the player last looked at, until the server restarts.
         session.leagueId = LeagueProgressQueries.states(player.server, player.uuid).entries.firstOrNull { it.value.run != null }?.key
-            ?: lastLeague[player.uuid]?.takeIf { LeagueCatalogResources.find(it) != null }
+            ?: lastLeague[player.uuid]?.takeIf { LeagueCatalogResources.findActive(it) != null }
             ?: LeagueCatalogResources.current?.id
         sessions[player.uuid] = session
         // Send before reconciling, so an integration setup error can still be displayed.
@@ -158,7 +158,7 @@ object LeagueServer {
                 LeagueAction.REFRESH -> reconcile(player)
                 LeagueAction.SELECT_LEAGUE -> {
                     check(LeagueProgressQueries.states(player.server, player.uuid).values.none { it.run != null }) { "run_active" }
-                    session.leagueId = requireNotNull(LeagueCatalogResources.find(intent.leagueId)) { "catalog_unavailable" }.id
+                    session.leagueId = requireNotNull(LeagueCatalogResources.findActive(intent.leagueId)) { "catalog_unavailable" }.id
                     lastLeague[player.uuid] = intent.leagueId
                 }
                 LeagueAction.CANCEL -> {

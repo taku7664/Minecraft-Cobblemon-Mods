@@ -22,7 +22,11 @@ internal object LeagueViews {
         fun flags(mechanic: String): Int = BattleMechanicFlags.fromMajor(mechanic.takeUnless { it == "NONE" }?.let(MajorBattleMechanic::valueOf))
         /** What becoming this route's Champion opens. */
         fun championUnlocks(hard: Boolean): List<String> = if (hard) emptyList() else
-            listOf(LIVE + "unlock.hard") + if (catalog.id == primary.id) listOf(LIVE + "unlock.galar", LIVE + "unlock.gimmicks") else emptyList()
+            listOf(LIVE + "unlock.hard") + if (catalog.id == primary.id) {
+                // The next region is named only once it is released.
+                val next = LeagueCatalogResources.catalogs.values.any { it.active && it.unlockLeague == catalog.id }
+                listOfNotNull((LIVE + "unlock.galar").takeIf { next }, LIVE + "unlock.gimmicks")
+            } else emptyList()
         fun entry(id: String, hard: Boolean, stage: Int, branch: Int, run: LeagueRun? = null): LeagueChallengeView {
             val challenge = run?.encounters?.firstOrNull() ?: catalog.challenges.getValue(id)
             val stages = catalog.gymStages(hard)
@@ -96,7 +100,7 @@ internal object LeagueViews {
             states.values.any { p -> p.rewards.any { !it.badgeDone || !it.bpDone } }, error, open,
             state.run?.let { it.encounters[it.index].nameKey }, engine.hardUnlocked(state), state.hardChampion,
             route(true), hard, catalog.id,
-            LeagueCatalogResources.catalogs.values.map { LeagueRegionView(it.id, it.nameKey, LeagueWorldRules.unlocked(it, states)) },
+            LeagueCatalogResources.catalogs.values.filter { it.active }.map { LeagueRegionView(it.id, it.nameKey, LeagueWorldRules.unlocked(it, states)) },
             unlocked, branches(false), branches(true), runEntry, finalists(false), finalists(true))
     }
 }

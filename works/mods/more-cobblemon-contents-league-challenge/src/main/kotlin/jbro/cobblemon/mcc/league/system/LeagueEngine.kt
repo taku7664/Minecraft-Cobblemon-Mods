@@ -41,6 +41,11 @@ data class LeagueCatalog(
     val unlockLeague: String? = null,
     val playerMechanic: String = "MEGA",
     val lockMechanicsUntilChampion: Boolean = true,
+    /**
+     * Whether players see this league at all, apart from whether it is unlocked: an inactive league (one not yet
+     * released) has no tab, takes no challenge and earns no cap. Its data and progress stay for operators.
+     */
+    val active: Boolean = true,
 ) {
     val hasHard: Boolean get() = hardGyms.isNotEmpty()
 
