@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test
 
 class NativeOpponentPreviewMoveCatalogMaterializerTest {
     @Test
-    fun `boss preview move marginals form a normalized bounded zero one two stab posterior`() {
+    fun `every preview world carries a STAB attack for each of the Pokemon's types`() {
+        // User rule 2026-10-18: no world leaves a STAB type out, so the Boss no longer weighs 0, 1 or 2 STAB shapes.
         val result = NativeOpponentPreviewMoveCatalogMaterializer.materialize(
             roster = roster(),
             preview = preview(),
@@ -30,31 +31,10 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         )
 
         assertTrue(result.issues.isEmpty())
-        assertEquals(16, result.worlds.size)
+        assertEquals(1, result.worlds.size)
         assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
-        val massByShape = result.worlds.groupBy { world ->
-            requireNotNull(world.catalog.inferredMovesForPokemon(BENCH_A)).slots.count {
-                it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
-                    it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
-            }
-        }.mapValues { (_, worlds) -> worlds.sumOf { it.probability } }
-        assertEquals(setOf(0, 1, 2), massByShape.keys)
-        assertEquals(0.25, massByShape.getValue(0), 1e-9)
-        assertEquals(0.50, massByShape.getValue(1), 1e-9)
-        assertEquals(0.25, massByShape.getValue(2), 1e-9)
-        val oneStabVariants = result.worlds.map { world ->
-            requireNotNull(world.catalog.inferredMovesForPokemon(BENCH_A)).slots
-                .filter {
-                    it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
-                        it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
-                }
-                .mapNotNull { it.moveId }
-                .toSet()
-        }.filter { it.size == 1 }.toSet()
-        assertEquals(
-            setOf(setOf("moonblast"), setOf("shadowball")),
-            oneStabVariants,
-        )
+        assertEquals(setOf("moonblast", "shadowball"), requireNotNull(result.worlds.single().catalog.inferredMovesForPokemon(BENCH_A))
+            .slots.filter { it.group == BattleOpponentMoveGroup.STAB_ATTACK }.mapNotNullTo(linkedSetOf()) { it.moveId })
     }
 
     @Test
@@ -95,7 +75,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         )
         assertNull(catalog.inferredMovesForPokemon(UNSELECTED))
         val bench = requireNotNull(catalog.inferredMovesForPokemon(BENCH_A))
-        assertEquals(1, bench.slots.count {
+        assertEquals(2, bench.slots.count {
             it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
                 it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
         })
@@ -106,7 +86,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         // No status slot is assumed at all (2026-10-12): status moves are never guessed.
         assertEquals(0, bench.slots.count { it.group == BattleOpponentMoveGroup.STATUS_OTHER })
         assertEquals(
-            listOf("moonblast", "powergem"),
+            listOf("moonblast", "shadowball", "powergem"),
             NativeMoveHypothesisCompiler.compile(
                 roster.state.pokemon.single { it.battlePokemonId == BENCH_A },
                 catalog,

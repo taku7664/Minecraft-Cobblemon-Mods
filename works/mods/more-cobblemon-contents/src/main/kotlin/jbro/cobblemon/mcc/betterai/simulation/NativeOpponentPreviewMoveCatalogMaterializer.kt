@@ -385,12 +385,14 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     }
 
     private fun policy(tier: BattleTrainerTier): PublicPreviewPolicy = when (tier) {
-        BattleTrainerTier.INTRODUCTORY -> PublicPreviewPolicy(1, 0, 0, false)
-        // Coverage: the strongest two or three non-STAB attacks (2026-10-12). No status slot is guessed by name, so
-        // the attacks take the slots it held.
-        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(1, 3, 0, false)
-        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(1, 3, 0, true)
-        BattleTrainerTier.BOSS -> PublicPreviewPolicy(2, 2, 0, true)
+        // Every type the Pokemon attacks with has its STAB attack in every world, ahead of the coverage (user rule
+        // 2026-10-18: "추론은 무조건 자속기는 다 넣어야해"). One STAB slot, and worlds that left STAB out, read an
+        // ADVANCED Lucario without its Fighting STAB. Coverage takes what is left: the strongest two or three non-STAB
+        // attacks (2026-10-12); no status slot is guessed by name.
+        BattleTrainerTier.INTRODUCTORY -> PublicPreviewPolicy(ALL_STAB_TYPES, 0, 0, false)
+        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(ALL_STAB_TYPES, 3, 0, false)
+        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(ALL_STAB_TYPES, 3, 0, false)
+        BattleTrainerTier.BOSS -> PublicPreviewPolicy(ALL_STAB_TYPES, 2, 0, false)
     }
 
     private fun teamWorldCap(tier: BattleTrainerTier, pokemonCount: Int): Int = when (tier) {
@@ -454,6 +456,8 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     )
 
     private const val MAX_MOVE_SLOTS = 4
+    /** A STAB attack for each of the Pokemon's types, which never exceed the four slots. */
+    private const val ALL_STAB_TYPES = MAX_MOVE_SLOTS
     private const val PRESENCE_RATE = 0.5
     private const val MOVE_POLICY_ID = "public-move-shape-prior-v1"
     private val INFERENCE_ORDER = compareByDescending<WeightedInference> { it.weight }.thenBy { it.id }
