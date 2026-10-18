@@ -1221,6 +1221,17 @@ class LocalLookaheadEvaluationTest {
     }
 
     @Test
+    fun `a priority status move gains nothing from a target at critical HP`() {
+        // Protect's +4 is no finishing blow: scored as one, it outranked a Scald that knocked out a 1% Probopass.
+        val protect = move("protect", category = BattleMoveDamageCategory.STATUS, power = 0.0, priority = 4,
+            targetPattern = BattleMoveTargetPattern.SELF)
+        fun score(opponentHp: Double) = state(opponentHp = opponentHp).let { initial ->
+            LocalTacticalScorer.scoreBreakdown(protect, context(initial, listOf(protect))).total
+        }
+        assertEquals(score(1.0), score(0.05), 1e-9)
+    }
+
+    @Test
     fun `known prankster gives a status move one extra priority`() {
         val initial = state(allySpeed = 80, opponentSpeed = 120, allyAbility = "cobblemon:prankster")
         val statusMove = move(

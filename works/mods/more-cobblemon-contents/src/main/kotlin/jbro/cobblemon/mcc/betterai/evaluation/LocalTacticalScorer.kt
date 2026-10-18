@@ -338,10 +338,13 @@ internal object LocalTacticalScorer {
         } else {
             1.0
         }
+        // Striking first at a target or from a user at critical HP is worth more only for an attack: Protect's +4 read as
+        // finishing the target, and a Vaporeon Protected (100) rather than Scald a 1% Probopass (2026-10-18).
+        val attacks = candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
         val priorityBonus = when {
             effectivePriority <= 0 -> effectivePriority * 2.0
-            priorityTargetHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 25.0
-            priorityUserHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 8.0
+            attacks && priorityTargetHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 25.0
+            attacks && priorityUserHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 8.0
             else -> effectivePriority * 2.0
         } * prioritySuccessProbability
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
