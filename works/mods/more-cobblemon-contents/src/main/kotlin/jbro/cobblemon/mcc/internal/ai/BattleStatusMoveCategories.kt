@@ -92,6 +92,11 @@ object BattleStatusMoveCategories {
         } && effects.any { effect -> effect.statStages.values.any { it > 0 } }
     }
 
+    /** [isPureSelfSetup] for a known [user]: a Ghost's Curse costs half its HP to curse the target and raises nothing. */
+    fun isPureSelfSetup(details: BattleMoveCandidateView, user: BattlePokemonStateView?): Boolean =
+        isPureSelfSetup(details) && !(user != null && user.knownTypeIds.any { canonical(it) == "ghost" } &&
+            details.effects?.effects.orEmpty().any { it.valueId == BattleDeclarativeMoveEffects.GHOST_CURSE })
+
     /** The share of its maximum HP a setup move costs its user (Belly Drum's half); zero for most. */
     @JvmStatic
     fun setupHpCost(details: BattleMoveCandidateView): Double =

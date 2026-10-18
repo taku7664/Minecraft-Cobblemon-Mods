@@ -280,7 +280,7 @@ internal object LocalMatchupScoreCalculator {
                 .filter { it.group == BattleOpponentMoveGroup.PURE_SETUP && it.knowledge != BattleOpponentMoveKnowledge.GUESS }
                 .mapNotNull { slot -> slot.moveId?.let { id -> slot.details?.let { id to it } } }
         return (known + inferred)
-            .filter { (_, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS && BattleStatusMoveCategories.isPureSelfSetup(details) }
+            .filter { (_, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS && BattleStatusMoveCategories.isPureSelfSetup(details, subject) }
             .associate { (moveId, details) ->
                 PublicIds.canonical(moveId) to details.effects!!.effects.fold(mutableMapOf<String, Int>()) { stages, effect ->
                     effect.statStages.forEach { (stat, delta) -> stages.merge(stat, delta, Int::plus) }

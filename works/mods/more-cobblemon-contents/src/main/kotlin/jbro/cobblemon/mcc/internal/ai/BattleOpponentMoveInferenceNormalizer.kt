@@ -468,7 +468,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 BattleOpponentMoveGroup.COVERAGE_ATTACK
             }
         }
-        isPureSetup(details) -> BattleOpponentMoveGroup.PURE_SETUP
+        BattleStatusMoveCategories.isPureSelfSetup(details, pokemon) -> BattleOpponentMoveGroup.PURE_SETUP
         details.damageCategory == BattleMoveDamageCategory.STATUS -> BattleOpponentMoveGroup.STATUS_OTHER
         else -> BattleOpponentMoveGroup.OTHER
     }
