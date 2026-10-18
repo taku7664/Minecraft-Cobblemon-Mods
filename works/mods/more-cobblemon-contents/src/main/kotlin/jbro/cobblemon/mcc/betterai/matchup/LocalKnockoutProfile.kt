@@ -46,6 +46,53 @@ internal class LocalKnockoutProfile private constructor(
             return LocalKnockoutProfile(survival, damage, if (survival[1] <= 0.0) 1.0 else Double.POSITIVE_INFINITY)
         }
 
+        /**
+         * A move whose damage changes with each landed use, as its own stat changes pile up (Draco Meteor's -2 Special
+         * Attack, Power-Up Punch's +1 Attack): [rollsByHits] at index `k` are its rolls once it has landed `k` times, the
+         * last list for every landing after. A miss changes nothing, so the table also tracks how many have landed.
+         * Repeating the first roll read the third Draco Meteor as hard as the first (2026-10-18).
+         */
+        fun byHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
+            if (rollsByHits.size <= 1) return of(rollsByHits.firstOrNull().orEmpty(), accuracy, targetHp, maximumUses)
+            val hit = accuracy.coerceIn(0.0, 1.0)
+            val last = rollsByHits.last()
+            val meanRoll = if (last.isEmpty()) 0.0 else last.average()
+            if (targetHp <= 0.0 || hit <= 0.0 || rollsByHits.first().isEmpty() || rollsByHits.first().average() <= 0.0) {
+                return of(rollsByHits.first(), accuracy, targetHp, maximumUses)
+            }
+            val steps = rollsByHits.map { rolls -> rolls.map { floor(it / targetHp * GRID).toInt().coerceIn(0, GRID) } }
+            // standing[k][taken]: still up, having taken that much from k landed uses.
+            var standing = Array(maximumUses + 1) { DoubleArray(GRID) }.also { it[0][0] = 1.0 }
+            val survival = ArrayList<Double>(maximumUses + 1).apply { add(1.0) }
+            val damage = ArrayList<Double>(maximumUses + 1).apply { add(0.0) }
+            repeat(maximumUses) {
+                val next = Array(maximumUses + 1) { DoubleArray(GRID) }
+                for (landed in 0 until maximumUses) {
+                    val rolls = steps[minOf(landed, steps.lastIndex)]
+                    val perRoll = if (rolls.isEmpty()) 0.0 else hit / rolls.size
+                    for (taken in 0 until GRID) {
+                        val mass = standing[landed][taken]
+                        if (mass == 0.0) continue
+                        next[landed][taken] += mass * (1.0 - hit)
+                        for (step in rolls) {
+                            val reached = taken + step
+                            if (reached < GRID) next[landed + 1][reached] += mass * perRoll
+                        }
+                    }
+                }
+                standing = next
+                var alive = 0.0
+                var taken = 0.0
+                for (row in standing) for (cell in row.indices) {
+                    alive += row[cell]
+                    taken += cell * row[cell]
+                }
+                survival += alive.coerceIn(0.0, 1.0)
+                damage += if (alive <= 0.0) 0.0 else taken / alive / GRID * targetHp
+            }
+            return fromProjected(survival, damage, targetHp, meanRoll, hit, canContinue = true)
+        }
+
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
             val hit = accuracy.coerceIn(0.0, 1.0)
             val meanRoll = if (rolls.isEmpty()) 0.0 else rolls.average()

@@ -137,6 +137,8 @@ internal object EmbeddedTeamBattle {
                                 memory.observe(state)
                                 memory.view(state.turn)
                             }
+                            // Inference and decision together, as the game spends them on one request.
+                            val decisionStarted = System.nanoTime()
                             registerMoveDetails(baseContext.publicActionCatalog, inferenceMoveDetails.getValue(side))
                             // As the game does: an attack's own stat changes read on this board, the trainer's own team exact.
                             val stageBoard = EmbeddedTeamInput.nativeInputs(input)?.let { (preview, own) ->
@@ -193,6 +195,7 @@ internal object EmbeddedTeamBattle {
                             stages.remove(side)
                             val decision = brains.getValue(side).decide(sessions.getValue(side), context)
                                 .toCompletableFuture().get(25, TimeUnit.SECONDS)
+                            val decidedAt = System.nanoTime()
                             check(decision.requestId == context.requestId && context.candidates.any { it.actionId == decision.actionId })
                             val selected = context.candidates.single { it.actionId == decision.actionId }
                             memory.accept(context.state, selected, decision.advice)
@@ -202,6 +205,7 @@ internal object EmbeddedTeamBattle {
                             trace.append(JsonObject().apply {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
                                 add("input", input); addProperty("actionId", decision.actionId)
+                                addProperty("decisionMillis", (decidedAt - decisionStarted) / 1_000_000)
                                 add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))

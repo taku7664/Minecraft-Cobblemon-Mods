@@ -384,13 +384,57 @@ internal object LocalMatchupScoreCalculator {
                 // hands a Dynamax move over as the base move with the Max Move's details), and every reader matches by it.
                 val moveId = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(original) ?: PublicIds.canonical(candidate.moveId ?: action.actionId)
                 val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
-                    ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES) else null
+                    ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES)
+                    else ownStageRolls(position, action, user, rolls, side, cache)?.let {
+                        LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES)
+                    }
                 ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile), original)
             }
             .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
             .sortedWith(BEST_FIRST)
     }
 
+
+    /**
+     * The rolls of an attack that surely changes its user's own stats, once it has landed each number of times: the
+     * stages pile up and are read by the damage calculator, up to the first landing that changes nothing (the stage at
+     * its limit, or a stat the attack does not use, as Close Combat's defences). Null when the first landing changes
+     * nothing. The user's other changes are not read here: a lowered Defence makes the other side's hits no harder in
+     * this table, nor does a raised Speed change who moves first.
+     */
+    private fun ownStageRolls(
+        position: BattleDecisionContext,
+        action: BattleActionCandidate,
+        user: BattlePokemonStateView,
+        first: List<Double>,
+        side: BattleSide,
+        cache: LocalProjectedActionCalculationCache,
+    ): List<List<Double>>? {
+        val changes = action.moveDetails?.effects?.effects.orEmpty().filter {
+            it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER && it.statStages.isNotEmpty() &&
+                (it.probability ?: 1.0) >= CERTAIN
+        }
+        if (changes.isEmpty() || first.all { it <= 0.0 }) return null
+        val byHits = arrayListOf(first)
+        var state = position.state
+        for (landed in 1 until MAXIMUM_USES) {
+            changes.forEach { effect ->
+                val holder = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId } ?: return null
+                state = jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.applyStages(state, setOf(user.battlePokemonId),
+                    LocalStatStageChange.reshape(state, holder, user.battlePokemonId, effect.statStages))
+            }
+            val calculated = cache.getOrCalculate(state, side, action, position.publicActionCatalog) {
+                PublicBattleTacticalCalculator.calculate(position.copy(state = state, candidates = listOf(action)), side)
+            }
+            val candidate = calculated.candidates.singleOrNull() ?: break
+            val rolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side) ?: break
+            if (rolls == byHits.last()) break
+            byHits += rolls
+        }
+        return byHits.takeIf { it.size > 1 }
+    }
+
+    private const val CERTAIN = 0.999_999
 
     // Of two moves knocking out as fast, the one that does not cost its user HP or the Pokemon itself.
     private val BEST_FIRST = compareBy<ScoredMove> { it.score.expectedHitsToKnockout }

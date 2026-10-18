@@ -37,6 +37,21 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `an attack weakened by its own landings reads each landing at its stage`() {
+        // Draco Meteor-like: 0.4 of the bar, then 0.2, then 0.1 for every later landing. Repeating the first roll knocks
+        // out on the third use; the weakened one does not until the sixth.
+        val repeated = LocalKnockoutProfile.of(List(16) { 0.4 }, 1.0, 1.0, 6)
+        val weakened = LocalKnockoutProfile.byHits(listOf(List(16) { 0.4 }, List(16) { 0.2 }, List(16) { 0.1 }), 1.0, 1.0, 6)
+        assertEquals(0.0, repeated.survival[3], 1e-9)
+        assertEquals(1.0, weakened.survival[5], 1e-9)
+        assertEquals(0.7, weakened.damageWhileStanding[3], 1e-6)
+        assertTrue(weakened.expectedUses > repeated.expectedUses)
+        // A miss lowers nothing: at half accuracy, standing after two uses with 0.6 taken means both landed (1/4).
+        val missing = LocalKnockoutProfile.byHits(listOf(List(16) { 0.4 }, List(16) { 0.2 }), 0.5, 1.0, 6)
+        assertEquals(0.25 * 0.6 + 0.5 * 0.4, missing.damageWhileStanding[2], 1e-6)
+    }
+
+    @Test
     fun `a roll one point short of the remaining HP is not a knockout`() {
         val profile = LocalKnockoutProfile.of(List(15) { 0.4999 } + 0.5, 1.0, 0.5, 6)
         assertEquals(1.0 / 16, 1.0 - profile.survival[1], 1e-9)
