@@ -88,18 +88,29 @@ internal class LocalKnockoutProfile private constructor(
                 survival += alive.coerceIn(0.0, 1.0)
                 damage += if (alive <= 0.0) 0.0 else taken / alive / GRID * targetHp
             }
-            // Uses beyond the window: each standing case at the average hit of the stage it has reached, so a case that
-            // missed every time still hits as hard as the first.
-            var tail = 0.0
-            for (landed in standing.indices) {
-                val rolls = rollsByHits[minOf(landed, rollsByHits.lastIndex)]
-                val meanHit = (if (rolls.isEmpty()) 0.0 else rolls.average()) * hit
-                for (cell in 0 until GRID) {
-                    val mass = standing[landed][cell]
-                    if (mass == 0.0) continue
-                    if (meanHit <= 0.0) return LocalKnockoutProfile(survival, damage, Double.POSITIVE_INFINITY)
-                    tail += mass * (targetHp - cell.toDouble() / GRID * targetHp).coerceAtLeast(0.0) / meanHit
+            // Uses beyond the window: each standing case goes on from the stage it has reached, one landing (1 / accuracy
+            // uses) at a time at that stage's average hit, so a case that missed every time still hits as hard as the
+            // first and weakens after it lands.
+            val means = rollsByHits.map { if (it.isEmpty()) 0.0 else it.average() }
+            fun usesLeft(landed: Int, left: Double): Double {
+                var stage = landed
+                var remaining = left
+                var uses = 0.0
+                while (remaining > 0.0) {
+                    val mean = means[minOf(stage, means.lastIndex)]
+                    if (mean <= 0.0) return Double.POSITIVE_INFINITY
+                    if (remaining <= mean) return uses + remaining / (mean * hit)
+                    uses += 1.0 / hit
+                    remaining -= mean
+                    stage++
                 }
+                return uses
+            }
+            var tail = 0.0
+            for (landed in standing.indices) for (cell in 0 until GRID) {
+                val mass = standing[landed][cell]
+                if (mass == 0.0) continue
+                tail += mass * usesLeft(landed, (targetHp - cell.toDouble() / GRID * targetHp).coerceAtLeast(0.0))
             }
             return LocalKnockoutProfile(survival, damage, (0 until maximumUses).sumOf { survival[it] } + tail)
         }
