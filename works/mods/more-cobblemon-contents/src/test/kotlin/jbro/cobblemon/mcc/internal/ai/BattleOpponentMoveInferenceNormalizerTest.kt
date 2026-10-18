@@ -43,12 +43,14 @@ class BattleOpponentMoveInferenceNormalizerTest {
     fun `the four policy stages expose only their configured evidence`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
 
+        // Every tier expects a STAB attack for each of the Pokemon's types (user rule 2026-10-18).
         val introductory = normalize(BattleTrainerTier.INTRODUCTORY, actual)
-        assertEquals(1, introductory.slots.count { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED })
-        assertEquals(BattleOpponentMoveGroup.STAB_ATTACK, introductory.slots.first().group)
+        assertEquals(2, introductory.slots.count { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED })
+        assertEquals(setOf("moonblast", "shadowball"), introductory.slots.filter { it.group == BattleOpponentMoveGroup.STAB_ATTACK }
+            .mapTo(linkedSetOf()) { it.moveId })
 
         val standard = normalize(BattleTrainerTier.STANDARD, actual)
-        assertEquals(1, standard.slots.count { it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+        assertEquals(2, standard.slots.count { it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
             it.knowledge == BattleOpponentMoveKnowledge.EXPECTED })
         assertEquals(1, standard.slots.count { it.group == BattleOpponentMoveGroup.COVERAGE_ATTACK &&
             it.knowledge == BattleOpponentMoveKnowledge.EXPECTED })
@@ -91,13 +93,16 @@ class BattleOpponentMoveInferenceNormalizerTest {
     @Test
     fun `a revealed status move replaces the guess of its own category`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "calmmind", "thunderwave", "protect"))
-        val initial = normalize(BattleTrainerTier.BOSS, actual)
+        // Fairy alone: a second STAB type would take one of the two status slots this test reads.
+        val fairy = state(types = setOf("fairy"))
+        val initial = BattleOpponentMoveInferenceNormalizer.normalize(fairy, catalog(fairy), BattleTrainerTier.BOSS, actual,
+            moveDetails = MOVES::get).single()
         assertEquals(
             setOf(BattleStatusMoveCategory.STATUS_INFLICTION, BattleStatusMoveCategory.PROTECTION),
             initial.slots.mapNotNull { it.statusCategory }.toSet(),
         )
         val protectionSlot = initial.slots.single { it.statusCategory == BattleStatusMoveCategory.PROTECTION }.slot
-        val revealedState = state(setOf("protect"))
+        val revealedState = state(setOf("protect"), types = setOf("fairy"))
 
         val updated = BattleOpponentMoveInferenceNormalizer.normalize(
             revealedState, catalog(revealedState), BattleTrainerTier.BOSS, actual,
@@ -118,7 +123,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val initial = normalize(BattleTrainerTier.STANDARD, actual)
         val expectedMove = initial.slots.single { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
-            it.group == BattleOpponentMoveGroup.STAB_ATTACK }.moveId!!
+            it.group == BattleOpponentMoveGroup.STAB_ATTACK && it.moveId == "moonblast" }.moveId!!
         val revealedState = state(setOf(expectedMove, "thunderwave"))
         val updated = BattleOpponentMoveInferenceNormalizer.normalize(
             revealedState,
@@ -153,7 +158,8 @@ class BattleOpponentMoveInferenceNormalizerTest {
 
         assertEquals(2, result.slots.count { it.group.isAttackForTest() })
         assertEquals(2, result.slots.count { !it.group.isAttackForTest() })
-        assertTrue(result.slots.any { it.moveId == "powergem" })
+        // Every STAB type comes before a sub-weapon: Ghost's Shadow Ball takes the attack slot Power Gem had.
+        assertTrue(result.slots.any { it.moveId == "shadowball" })
     }
 
     @Test

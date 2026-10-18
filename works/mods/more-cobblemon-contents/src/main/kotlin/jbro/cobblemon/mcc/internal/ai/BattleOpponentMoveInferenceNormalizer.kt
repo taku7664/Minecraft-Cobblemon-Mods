@@ -143,8 +143,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         learnset: Map<String, BattleMoveCandidateView>,
         policy: BattleOpponentMoveInferencePolicy,
     ) {
-        addExpected(slots, ranked(learnset, pokemon, format, BattleOpponentMoveGroup.STAB_ATTACK),
-            BattleOpponentMoveGroup.STAB_ATTACK, policy.expectedStabSlots)
+        addMissingStab(slots, pokemon, format, learnset)
         addExpected(slots, ranked(learnset, pokemon, format, BattleOpponentMoveGroup.COVERAGE_ATTACK),
             BattleOpponentMoveGroup.COVERAGE_ATTACK, policy.expectedCoverageSlots)
         fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, policy.guessedStatusSlots)
@@ -158,6 +157,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         learnset: Map<String, BattleMoveCandidateView>,
         policy: BattleOpponentMoveInferencePolicy,
     ) {
+        // Every type it attacks with has its STAB attack before anything else (user rule 2026-10-18).
+        addMissingStab(slots, pokemon, format, learnset)
         val actualAttackCount = actual.count { (_, details) -> details.damageCategory != BattleMoveDamageCategory.STATUS }
         val actualStatusCount = actual.count { (_, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS }
         val currentAttackCount = slots.count { it.group.isAttack() }
@@ -210,11 +211,13 @@ internal object BattleOpponentMoveInferenceNormalizer {
                     }.takeIf { it >= 0 }
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup }
                     .takeIf { it >= 0 }
-                    ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED && it.group == moveGroup }
+                    ?: slots.indices.firstOrNull { slots[it].knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
+                        slots[it].group == moveGroup && !soleStab(slots, it, details.typeId) }
+                    ?: slots.indices.firstOrNull { slots[it].knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
+                        !soleStab(slots, it, details.typeId) }
+                    ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS }
                         .takeIf { it >= 0 }
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED }
-                        .takeIf { it >= 0 }
-                    ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS }
                         .takeIf { it >= 0 }
                     ?: if (slots.size < MAX_MOVE_SLOTS) slots.size else null
             }
@@ -240,6 +243,37 @@ internal object BattleOpponentMoveInferenceNormalizer {
         .sortedBy { canonical(it.first) }
         .take(MAX_MOVE_SLOTS)
         .toList()
+
+    /**
+     * A STAB attack for every type [pokemon] attacks with that no slot carries yet, the strongest of each type first:
+     * always inferred, ahead of sub-weapons and guessed status slots. With one STAB slot, an ADVANCED Lucario read its
+     * Flash Cannon and filled the rest with Extreme Speed and Trailblaze, so a Mega Tyranitar (4x weak to Fighting)
+     * read as beating it (2026-10-18, user rule: "추론은 무조건 자속기는 다 넣어야해").
+     */
+    private fun addMissingStab(
+        slots: MutableList<BattleOpponentMoveSlotView>,
+        pokemon: BattlePokemonStateView,
+        format: BattleFormat,
+        learnset: Map<String, BattleMoveCandidateView>,
+    ) {
+        val covered = slots.filter { it.group.isAttack() }.mapNotNullTo(hashSetOf()) { it.details?.typeId?.let(::canonical) }
+        val types = (pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)).map(::canonical).distinct()
+        ranked(learnset, pokemon, format, BattleOpponentMoveGroup.STAB_ATTACK)
+            .filter { (id, details) -> canonical(details.typeId) in types && canonical(details.typeId) !in covered && !slots.containsMove(id) }
+            .distinctBy { (_, details) -> canonical(details.typeId) }
+            .forEach { (id, details) ->
+                addConcrete(slots, id, details, BattleOpponentMoveGroup.STAB_ATTACK, BattleOpponentMoveKnowledge.EXPECTED,
+                    BattleOpponentMoveSource.LEARNSET_EXPECTATION)
+            }
+    }
+
+    /** An expected STAB slot that is the only one of its type: a reveal of another type does not take it. */
+    private fun soleStab(slots: List<BattleOpponentMoveSlotView>, index: Int, revealedTypeId: String?): Boolean {
+        val slot = slots[index]
+        val type = slot.details?.typeId?.let(::canonical) ?: return false
+        if (slot.group != BattleOpponentMoveGroup.STAB_ATTACK || revealedTypeId?.let(::canonical) == type) return false
+        return slots.indices.none { it != index && slots[it].group.isAttack() && slots[it].details?.typeId?.let(::canonical) == type }
+    }
 
     private fun selectHiddenStab(
         actual: List<Pair<String, BattleMoveCandidateView>>,
