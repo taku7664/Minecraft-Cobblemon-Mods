@@ -182,7 +182,28 @@ internal object LocalSetupGate {
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         val won = if (win >= WIN_PASS) 1.0 else 0.0
-        return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)))
+        return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)) *
+            sureKnockoutCost(user, facing, scores))
+    }
+
+    /**
+     * With an attack that knocks a foe in front out this turn ([WIN_PASS] or more), the raise is paid for with the hit
+     * taken while it goes up: its value at the share of HP left, 1 - the foe's largest expected hit / the user's HP. A
+     * Lucario at 97% chose Swords Dance (273.9) over a sure Close Combat (141.8) on a Bronzong and took an Earthquake for
+     * 62% (league run, 2026-10-19; user decision, option C). A foe that hits for little (a 13% Strange Steam) leaves the
+     * raise nearly whole; one that will not act this turn costs nothing. 1 without a sure knockout.
+     */
+    private fun sureKnockoutCost(user: BattlePokemonStateView, facing: List<BattlePokemonStateView>, scores: MatchupScores): Double {
+        val sure = facing.any { foe ->
+            scores.moves(user.battlePokemonId, foe.battlePokemonId).any { it.knockoutChanceWithin(1) >= WIN_PASS }
+        }
+        if (!sure || user.hpFraction <= 0.0) return 1.0
+        val taken = facing.maxOf { foe ->
+            actingChance(foe) * (scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull {
+                (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy
+            } ?: 0.0)
+        }
+        return (1.0 - taken / user.hpFraction).coerceIn(0.0, 1.0)
     }
 
     /**
