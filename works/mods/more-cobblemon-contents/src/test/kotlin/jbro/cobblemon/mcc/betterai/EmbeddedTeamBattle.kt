@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import jbro.cobblemon.mcc.betterai.policy.forPlanOwner
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
@@ -300,7 +301,17 @@ internal object EmbeddedTeamBattle {
                                 // Why each offered stat raise passed or failed the gate (empty array: passed).
                                 val setups = context.candidates.filter { jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(it) }
                                 if (setups.isNotEmpty()) {
-                                    val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context)
+                                    // The board the brain reads: the opponent's stats as this tier assumes them. Read on the bare
+                                    // public board, a Bronzong's Earthquake came to 73-87% where the brain had 57-67%. An ability the
+                                    // brain's own replay has revealed may still be missing here (a Weezing's Levitate), so this
+                                    // diagnostic can differ from the brain's value; the ranking stages are the brain's.
+                                    val gateBoard = jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator.calculate(
+                                        jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption.applyToPublicState(
+                                            context, profiles.getValue(side).difficulty.tier), observedBoard = true)
+                                        .forPlanOwner(jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.LOCAL_BRAIN)
+                                    val context = gateBoard
+                                    val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context,
+                                        recovery = tunings.getValue(side).matchupRecovery)
                                     add("setupGate", JsonObject().apply { setups.forEach { setup ->
                                         val verdict = jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.evaluate(setup, context, scores,
                                             tier = profiles.getValue(side).difficulty.tier)
@@ -330,6 +341,13 @@ internal object EmbeddedTeamBattle {
                                                 jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.score(setup, context, scores, tunings.getValue(side).knockoutMaterialScore)?.let { r ->
                                                     addProperty("winAfterSetup", r.win); addProperty("sweepBonus", r.bonus); addProperty("setupValue", r.value)
                                                 }
+                                                // The foes' hits on the user as the gate's own table has them (the setup-turn cost reads these).
+                                                if (user != null) add("gateTheirs", com.google.gson.JsonArray().apply {
+                                                    context.state.pokemon.filter { foe -> foe.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && foe.activeSlot != null && !foe.fainted }.forEach { foe ->
+                                                        scores.moves(foe.battlePokemonId, user.battlePokemonId).forEach { m ->
+                                                            add("${m.moveId} dmg=${"%.2f".format(m.minimumDamageFraction)}-${"%.2f".format(m.maximumDamageFraction)} acc=${"%.2f".format(m.accuracy)}") }
+                                                    }
+                                                })
                                                 // Why a boosted reading came out empty: per foe, surviving one setup turn and whether the pair could be set up.
                                                 if (it.setupMoveId == null && user != null) addProperty("nullDiag", context.state.pokemon
                                                     .filter { foe -> foe.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && !foe.fainted && foe.hpFraction > 0.0 }
