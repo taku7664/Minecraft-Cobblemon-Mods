@@ -57,7 +57,8 @@ internal object LocalMoveThreatScore {
                     factor += chance * kotlin.math.abs(stages) * (if (helps) STAGE else -STAGE_COST)
                 }
                 BattleMoveEffectKind.DRAIN_FRACTION -> factor += DRAIN * (effect.fractionRange?.maximum ?: 0.5)
-                BattleMoveEffectKind.RECOIL_FRACTION -> factor -= RECOIL * (effect.fractionRange?.maximum ?: 0.33)
+                // The user's own HP spent is that share of the move's value, as the move inference reads it.
+                BattleMoveEffectKind.RECOIL_FRACTION -> factor -= effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.33
                 BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectKind.SWITCH_TARGET -> factor += PIVOT
                 // The share of maximum HP spent is that share of the move's value, as the move inference reads it.
                 BattleMoveEffectKind.MAX_HP_RECOIL -> factor -= effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.5
@@ -80,8 +81,6 @@ internal object LocalMoveThreatScore {
     private const val STAGE_COST = 0.05
     /** Per share of the damage healed back. */
     private const val DRAIN = 0.3
-    /** Per share of the damage taken back. */
-    private const val RECOIL = 0.3
     /** A move that switches the user out or the target away. */
     private const val PIVOT = 0.1
     /** A move that costs another turn (Solar Beam's charge, Hyper Beam's recharge). */

@@ -49,11 +49,20 @@ internal object BattleOpponentMoveExpectationScorer {
         val ownDropCost = if (board != null) -baseDamage * board else move.effects?.effects.orEmpty().filter(::isOwnStatChange).sumOf { effect ->
             baseDamage * ownDropShare(effect, move.damageCategory) * (effect.probability ?: 1.0)
         }
-        // A share of the user's maximum HP spent (Steel Beam, Mind Blown, Chloroblast) costs that share of the move's
-        // value: a flat 30 read Steel Beam (140) over Flash Cannon on a Duraludon that carried Flash Cannon (user
-        // decision 2026-10-18).
-        val maxHpCost = move.effects?.effects.orEmpty().filter { it.kind == BattleMoveEffectKind.MAX_HP_RECOIL }.sumOf { effect ->
-            baseDamage * (effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: DEFAULT_MAX_HP_RECOIL) * (effect.probability ?: 1.0)
+        // The user's own HP a move spends costs that share of its value, every kind alike: a share of the damage dealt
+        // (Double-Edge, Brave Bird), of its maximum HP (Steel Beam, Mind Blown, Chloroblast, Struggle), or half of it on a
+        // miss (High Jump Kick). Flat amounts (Steel Beam -30, Double-Edge -20) read both over Flash Cannon and Body Slam
+        // (user decision 2026-10-18).
+        val maxHpCost = move.effects?.effects.orEmpty().sumOf { effect ->
+            val share = effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 }
+            val chance = effect.probability ?: 1.0
+            when (effect.kind) {
+                BattleMoveEffectKind.RECOIL_FRACTION -> baseDamage * (share ?: DEFAULT_RECOIL_FRACTION) * chance
+                BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectKind.STRUGGLE_RECOIL ->
+                    baseDamage * (share ?: DEFAULT_MAX_HP_RECOIL) * chance
+                BattleMoveEffectKind.CRASH_RECOIL -> baseDamage * (1.0 - hitProbability) * CRASH_SHARE
+                else -> 0.0
+            }
         }
         val tempoPenalty = move.effects?.effects.orEmpty().sumOf { effect ->
             when (effect.kind) {
@@ -97,10 +106,6 @@ internal object BattleOpponentMoveExpectationScorer {
             recoveryValue(effect.target, effect.fractionRange?.midpoint().orZero() * HEAL_FRACTION_VALUE)
         BattleMoveEffectKind.DRAIN_FRACTION ->
             effect.fractionRange?.midpoint().orZero() * DRAIN_FRACTION_VALUE
-        BattleMoveEffectKind.RECOIL_FRACTION,
-        BattleMoveEffectKind.CRASH_RECOIL,
-        BattleMoveEffectKind.STRUGGLE_RECOIL,
-        -> -effect.fractionRange?.midpoint().orDefault(DEFAULT_RECOIL_FRACTION) * RECOIL_FRACTION_VALUE
         BattleMoveEffectKind.SWITCH_TARGET -> directionalValue(effect.target, FORCED_SWITCH_VALUE)
         BattleMoveEffectKind.SWITCH_USER -> PIVOT_VALUE
         else -> 0.0
@@ -202,7 +207,8 @@ internal object BattleOpponentMoveExpectationScorer {
     private const val VOLATILE_VALUE = 20.0
     private const val HEAL_FRACTION_VALUE = 40.0
     private const val DRAIN_FRACTION_VALUE = 25.0
-    private const val RECOIL_FRACTION_VALUE = 60.0
+    /** High Jump Kick and its kind cost half the user's maximum HP on a miss. */
+    private const val CRASH_SHARE = 0.5
     private const val DEFAULT_RECOIL_FRACTION = 1.0 / 3.0
     private const val DEFAULT_MAX_HP_RECOIL = 0.5
     private const val FORCED_SWITCH_VALUE = 15.0

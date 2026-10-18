@@ -105,6 +105,19 @@ class BattleOpponentMoveExpectationScorerTest {
     }
 
     @Test
+    fun `the user's own HP spent costs that share of the move's value`() {
+        // Double-Edge: a third of the damage back is a third of its value.
+        val doubleEdge = move("normal", category = BattleMoveDamageCategory.PHYSICAL, power = 120.0, effects = listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.RECOIL_FRACTION, BattleMoveEffectTarget.USER,
+                fractionRange = BattleFractionRange(1.0 / 3.0, 1.0 / 3.0))))
+        assertEquals(score(move("normal", category = BattleMoveDamageCategory.PHYSICAL, power = 80.0)), score(doubleEdge), 1e-9)
+        // Steel Beam: half its maximum HP is half its value.
+        val steelBeam = move("normal", power = 140.0, effects = listOf(
+            BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, fractionRange = BattleFractionRange(0.5, 0.5))))
+        assertEquals(score(move("normal", power = 70.0)), score(steelBeam), 1e-9)
+    }
+
+    @Test
     fun `a multi-hit attack counts its average hits`() {
         val twice = move("flying", category = BattleMoveDamageCategory.PHYSICAL, power = 40.0, effects = listOf(
             BattleMoveEffectView(BattleMoveEffectKind.MULTI_HIT, BattleMoveEffectTarget.SELECTED_TARGET, amountRange = BattleIntegerRange(2, 2))))
