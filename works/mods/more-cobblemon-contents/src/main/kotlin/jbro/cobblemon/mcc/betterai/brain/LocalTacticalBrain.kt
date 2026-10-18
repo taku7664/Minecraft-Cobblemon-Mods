@@ -762,7 +762,13 @@ internal class LocalTacticalBrain(
         }.toMap()
         // What the rules found worth playing among the status moves: the quick decider does not read staying for one as
         // staying for nothing.
-        val stayCredits = perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id -> trickRoomValue?.let { id to it } }
+        // The room's stay credit at the chance it goes up, as its ranking value is (a room its user falls before is no reason to stay).
+        val stayCredits = perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id ->
+            val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@mapNotNull null
+            trickRoomValue?.let { value ->
+                id to value * (ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, rulesContext, it) } ?: 1.0)
+            }
+        }
         // A Pokemon on its last Perish Song count faints this turn unless it leaves (LocalPerishCount).
         val perishAdjustments = if (!rulesApply) emptyMap() else
             jbro.cobblemon.mcc.betterai.matchup.LocalPerishCount.adjustments(difficultyContext.candidates, rulesContext, tuning)
