@@ -515,6 +515,21 @@ internal object LocalMatchupScoreCalculator {
         val state = position.state
         val subject = state.pokemon.firstOrNull { it.battlePokemonId == subjectId && it.activeSlot != null } ?: return null
         val opponent = state.pokemon.firstOrNull { it.battlePokemonId == opponentId && it.activeSlot != null } ?: return null
+        // One that faints coming in (a Steelix at 12% onto Stealth Rock and Spikes) never fights: the exchange is decided
+        // on entry. Read as an exchange, the fainted one had no attacks and the pair came out a loss for the Ferrothorn it
+        // could not even reach (2026-10-18).
+        val subjectDown = subject.fainted || subject.hpFraction <= 0.0
+        val opponentDown = opponent.fainted || opponent.hpFraction <= 0.0
+        if (subjectDown || opponentDown) {
+            val decided = when {
+                subjectDown && opponentDown -> 0.5
+                opponentDown -> 1.0
+                else -> 0.0
+            }
+            return PokemonMatchupScore(subjectId, opponentId, speedField, subjectMove?.score, opponentMove?.score, 0.5, decided,
+                subject.hpFraction, opponent.hpFraction,
+                (decided * (0.5 + 0.5 * subject.hpFraction) - (1.0 - decided) * (0.5 + 0.5 * opponent.hpFraction)).coerceIn(-1.0, 1.0))
+        }
         val first = if (subjectMove != null && opponentMove != null) {
             LocalPublicTurnOrder.actsFirstProbability(state, subject.side, subjectMove.action, opponent.side, opponentMove.action)
         } else null
