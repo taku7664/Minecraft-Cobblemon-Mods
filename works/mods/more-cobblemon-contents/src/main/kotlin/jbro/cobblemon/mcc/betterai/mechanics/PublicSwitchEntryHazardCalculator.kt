@@ -47,23 +47,23 @@ internal object PublicSwitchEntryHazardCalculator {
         if (activeItem == HEAVY_DUTY_BOOTS || ability == MAGIC_GUARD) return 0.0
 
         val fractions = ArrayList<Double>()
-        fun hazard(fraction: Double) { fractions += fraction }
+        fun take(fraction: Double) { fractions += fraction }
         hazards.forEach { hazard ->
             when (canonical(hazard.effectId)) {
                 STEALTH_ROCK -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    hazard(STEALTH_ROCK_FRACTION *
+                    take(STEALTH_ROCK_FRACTION *
                         StandardTypeEffectiveness.multiplier("rock", pokemon.knownTypeIds))
                 }
                 G_MAX_STEELSURGE -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    hazard(STEALTH_ROCK_FRACTION *
+                    take(STEALTH_ROCK_FRACTION *
                         StandardTypeEffectiveness.multiplier("steel", pokemon.knownTypeIds))
                 }
                 SPIKES -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
                     if (grounded) {
-                        hazard(when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
+                        take(when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
                             1 -> 1.0 / 8.0
                             2 -> 1.0 / 6.0
                             else -> 1.0 / 4.0
