@@ -23,9 +23,12 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * put on the target, a weather set. The ranking value of such a move becomes this one.
  *
  * - Forced switch. Return: the target's raises gone, a Pokemon from its bench dragged in through this side's hazards,
- *   likely into a better exchange for the user. Risk: it moves last, so the target's hit lands first.
- *   `accuracy x mean(bench b){ entry hazards(b) + score(user vs b) - score(user vs target) } x 100
- *    - P(the user moves first otherwise) x the target's expected hit x 100`
+ *   likely into a better exchange for the user. Risk: it moves last, so the target's hit lands first and may knock the
+ *   user out before it moves; a badly poisoned target comes back with its Toxic count reset.
+ *   `accuracy x (1 - P(the target's hit knocks the user out)) x (mean(bench b){ entry hazards(b) + score(user vs b)
+ *    - score(user vs target) } - Toxic count lost) x 100 - P(the user moves first otherwise) x the target's expected hit x 100`
+ *   Toxic count lost: the count c it has built, c/16 more each turn it would have stayed (the user's hits to knock it
+ *   out), up to its HP.
  * - Taunt. Return: three turns without the target's status moves. Risk: nothing if it only attacks or switches.
  *   `accuracy x sum(revealed status move m) P(m this turn) x denial(m) x turns`; turns are the two after this one and
  *   this one when Taunt goes first. denial: a raise, the user's worth times the win the raise adds the target; a
@@ -101,9 +104,23 @@ internal object LocalStatusMoveValue {
             hazards + (score - now.score)
         }
         if (gains.isEmpty()) return null
+        // Moving last at -6, the target's hit lands first: a knockout there and the move never comes.
+        val acts = 1.0 - (now.opponentMove?.knockoutChanceWithin(1) ?: 0.0)
         // Moving last at -6 gives the target its hit first where the user would otherwise have struck first.
         val firstHit = now.subjectMovesFirstProbability * (now.opponentMove?.let(::expectedHit) ?: 0.0)
-        return (accuracy * gains.average() - firstHit) * tuning.boardToScore
+        return (accuracy * acts * (gains.average() - toxicCountLost(context, target, now)) - firstHit) * tuning.boardToScore
+    }
+
+    /**
+     * The Toxic damage a badly poisoned target no longer takes once forced out: its count restarts when it comes back,
+     * c/16 less each turn it would have stayed in front of the user (the user's hits to knock it out), up to its HP.
+     */
+    private fun toxicCountLost(context: BattleDecisionContext, target: BattlePokemonStateView, now: PokemonMatchupScore): Double {
+        val count = jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter.seed(context.state)[target.battlePokemonId] ?: return 0.0
+        if (ability(context, target) in POISON_DAMAGE_IGNORED) return 0.0
+        val turns = now.subjectMove?.expectedHitsToKnockout?.takeIf { it.isFinite() }
+            ?: (jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter.MAXIMUM_BAD_POISON_TURN - count).toDouble()
+        return minOf(target.hpFraction, count / 16.0 * turns.coerceAtLeast(1.0))
     }
 
     private fun taunt(
@@ -225,6 +242,8 @@ internal object LocalStatusMoveValue {
     private const val TAUNT = "taunt"
     private const val INGRAIN = "ingrain"
     private const val SUBSTITUTE = "substitute"
+    /** No damage from poison: Magic Guard takes none, Poison Heal heals instead. */
+    private val POISON_DAMAGE_IGNORED = setOf("magicguard", "poisonheal")
     private const val MENTAL_HERB = "mentalherb"
     private val TAUNT_BLOCKING_ABILITIES = setOf("oblivious", "aromaveil")
     private val WEATHER_CANCELLING = setOf("cloudnine", "airlock")
