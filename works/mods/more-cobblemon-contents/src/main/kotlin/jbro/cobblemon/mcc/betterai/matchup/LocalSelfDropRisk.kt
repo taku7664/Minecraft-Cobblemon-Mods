@@ -27,6 +27,13 @@ import java.util.UUID
  * alone, a Draco Meteor that knocks Rampardos out 90% of the time paid 35 for a drop that only mattered against
  * Rampardos (2026-10-18).
  *
+ * The drop only costs anything if the user is still standing next turn: the foe's hit before or after the attack may
+ * knock it out first. With the user moving first (priority, then speed) and the attack knocking the foe out with k, and
+ * the foe's hit knocking the user out with f:
+ * `first x (k x lost(replacement) + (1 - k)(1 - f) x lost(foe)) + (1 - first)(1 - f) x (k x lost(replacement) + (1 - k) x lost(foe))`
+ * A Pokemon switching in does not hit this turn. A Sceptile at 26% in front of a faster Alakazam paid 169 for a Leaf
+ * Storm drop it would never live to feel (2026-10-19).
+ *
  * The ranking already holds the drop as [LocalStatStageMarginalEvaluator.selfChangeBoard] priced it (the attack
  * pressure against the Pokemon in front); the adjustment swaps that value for this one. Read from the move data; no
  * move is named. No search: the drop is certain, so the board after it is one board.
@@ -160,7 +167,22 @@ internal object LocalSelfDropRisk {
         return receivers.sumOf { (receiver, chance) ->
             val knockout = knockout(receiver)
             val next = if (knockout > 0.0) replacement(receiver) else null
-            chance * ((1.0 - knockout) * lost(receiver) + if (next == null) 0.0 else knockout * lost(next))
+            val afterKnockout = if (next == null) 0.0 else knockout * lost(next)
+            if (receiver != foe) return@sumOf chance * ((1.0 - knockout) * lost(receiver) + afterKnockout)
+            // The foe standing in front hits this turn: before the attack, or after it unless the attack knocked it out.
+            val pair = scores.pokemon(userId, foe.battlePokemonId)
+            // The foe's best hit from the move table: the exchange's is thinned for flinches and heals.
+            val hit = scores.moves(foe.battlePokemonId, userId).maxByOrNull { it.score }
+            val falls = hit?.knockoutChanceWithin(1) ?: 0.0
+            val own = scores.moves(userId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }
+            val first = when {
+                own == null || hit == null -> pair?.subjectMovesFirstProbability ?: 0.5
+                own.priority > hit.priority -> 1.0
+                own.priority < hit.priority -> 0.0
+                else -> pair?.subjectMovesFirstProbability ?: 0.5
+            }
+            chance * (first * (afterKnockout + (1.0 - knockout) * (1.0 - falls) * lost(receiver)) +
+                (1.0 - first) * (1.0 - falls) * (afterKnockout + (1.0 - knockout) * lost(receiver)))
         }
     }
 
