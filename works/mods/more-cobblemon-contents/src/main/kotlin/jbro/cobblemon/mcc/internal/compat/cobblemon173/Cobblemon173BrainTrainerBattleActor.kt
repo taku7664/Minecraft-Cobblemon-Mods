@@ -224,7 +224,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 ).copy(
                     opponentTeamPreview = opponentTeamPreview,
                     exactOwnTeam = exactOwnTeam,
-                )
+                ).withDynamaxInBattle(jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.contains(
+                    mechanicPolicy().availableFlags, jbro.cobblemon.mcc.api.rules.BattleMechanicFlags.DYNAMAX))
                 // The primary Brain retains the public-only context. Only the local fallback receives
                 // the already-normalized tier budget; the full live moveset never enters either context.
                 val localContext = if (localBrain == null) {
@@ -247,7 +248,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 // decision 2026-10-18).
                                 jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(
                                     context.copy(localOpponentStatSpreads = opponentSpreads), trainerProfile.difficulty.tier),
-                                actualIllusionTypeIds(),
+                                actualIllusionTypeIds(state),
                             ),
                         ),
                         localOpponentStatSpreads = opponentSpreads,
@@ -560,11 +561,17 @@ internal class Cobblemon173BrainTrainerBattleActor(
     }
 
     /** Read once at the normalization boundary; callers receive only the tier-approved slots. */
-    /** An opposing Pokemon behind an Illusion: its own form's types (the hidden set's tiers read them). */
-    private fun actualIllusionTypeIds(): Map<UUID, Set<String>> =
+    /**
+     * An opposing Pokemon behind an Illusion: its own form's types (the hidden set's tiers read them), only while its shown
+     * types are still the disguise's form types. A public type change (Soak, Terastallization) is its current typing, kept.
+     */
+    private fun actualIllusionTypeIds(state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Map<UUID, Set<String>> =
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.activePokemon.orEmpty().mapNotNull { active ->
             val pokemon = active.battlePokemon ?: return@mapNotNull null
-            if (active.illusion == null) return@mapNotNull null
+            val disguise = active.illusion ?: return@mapNotNull null
+            val shown = state.pokemon.firstOrNull { it.battlePokemonId == pokemon.uuid } ?: return@mapNotNull null
+            val disguiseTypes = disguise.effectedPokemon.form.types.mapTo(hashSetOf()) { it.name.lowercase() }
+            if (shown.knownTeraTypeId != null || shown.knownTypeIds.mapTo(hashSetOf()) { it.lowercase() } != disguiseTypes) return@mapNotNull null
             pokemon.uuid to pokemon.effectedPokemon.form.types.mapTo(linkedSetOf()) { it.name }
         }.toMap()
 

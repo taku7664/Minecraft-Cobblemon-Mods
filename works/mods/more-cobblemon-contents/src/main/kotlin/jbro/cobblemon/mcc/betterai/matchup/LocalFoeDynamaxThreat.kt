@@ -16,14 +16,17 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * Read for status moves only (user decision 2026-10-19): their worth is in being used and surviving to use the raise.
  * Fed to every threat reading, the Max Move once made every lead Dynamax on turn 1 (2026-10-16, [LocalDynamaxGuard]).
  *
- * The battle has Dynamax when this side may (one of its candidates Dynamaxes) or either side already did; the foe's
- * side has not spent it; the foe is not Dynamaxed already and can (not a Mega, not a species barred from it). Whether
- * its trainer holds a Dynamax Band is not public, so a battle that lets this side Dynamax is read as letting the foe.
+ * The battle has Dynamax by its rules ([BattleDecisionContext.dynamaxInBattle], which the game passes); without them,
+ * when this side may (one of its candidates Dynamaxes) or either side already did. The foe's side has not spent it; the
+ * foe is not Dynamaxed already, not Terastallized, and can (not a Mega, not a species barred from it).
  */
 internal object LocalFoeDynamaxThreat {
     fun possible(context: BattleDecisionContext, foe: BattlePokemonStateView): Boolean {
         val state = context.state
-        if (LocalDynamax.used(state, foe.side) || LocalDynamax.active(foe) || !LocalDynamax.canDynamax(foe)) return false
+        // Showdown's getDynamaxRequest: a Terastallized Pokemon cannot Dynamax.
+        if (LocalDynamax.used(state, foe.side) || LocalDynamax.active(foe) || !LocalDynamax.canDynamax(foe) ||
+            foe.knownTeraTypeId != null) return false
+        context.dynamaxInBattle?.let { return it }
         val own = if (foe.side == BattleSide.OPPONENT) BattleSide.ALLY else BattleSide.OPPONENT
         return LocalDynamax.used(state, own) || context.candidates.any { candidate ->
             val parts = if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)

@@ -1169,6 +1169,12 @@ class BattleDecisionContext private constructor(
      * with its own hypotheses. Null where the battle could not be read or the tier does not search natively.
      */
     val showdownState: String? = null,
+    /**
+     * Whether this battle lets either side Dynamax (its rules, not a member's turn in its trainer's order); null where
+     * the battle's rules were not read. A managed trainer's bench ace holding the Dynamax leaves the one in front without
+     * the option while the player still has it.
+     */
+    val dynamaxInBattle: Boolean? = null,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
     val localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> =
@@ -1215,6 +1221,7 @@ class BattleDecisionContext private constructor(
         localOpponentStatSpreads,
         Unit,
         showdownState,
+        dynamaxInBattle,
     )
 
     /** The same decision with [showdownState] attached; [copy] keeps it. */
@@ -1230,6 +1237,23 @@ class BattleDecisionContext private constructor(
         localOpponentStatSpreads,
         Unit,
         showdownState,
+        dynamaxInBattle,
+    )
+
+    /** The same decision with [dynamaxInBattle] attached; [copy] keeps it. */
+    fun withDynamaxInBattle(dynamaxInBattle: Boolean?): BattleDecisionContext = BattleDecisionContext(
+        requestId,
+        state,
+        candidates,
+        deadlineEpochMillis,
+        memory,
+        publicActionCatalog,
+        opponentTeamPreview,
+        exactOwnTeam,
+        localOpponentStatSpreads,
+        Unit,
+        showdownState,
+        dynamaxInBattle,
     )
 
     /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */

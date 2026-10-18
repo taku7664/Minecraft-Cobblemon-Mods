@@ -42,20 +42,29 @@ internal object LocalActingChance {
         val allies = state.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             .coerceAtLeast(1)
         val cache = LocalProjectedActionCalculationCache()
-        val hits = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        fun incoming(foe: jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView, hit: LocalMatchupScoreCalculator.ScoredMove): LocalDynamaxGuard.IncomingHit {
+            val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, part, BattleSide.OPPONENT, hit.action) ?: 0.5
+            val pattern = hit.action.moveDetails?.targetPattern
+            val aim = if (pattern == BattleMoveTargetPattern.ALL_OPPONENTS || pattern == BattleMoveTargetPattern.ALL_ADJACENT) 1.0 else 1.0 / allies
+            return LocalDynamaxGuard.IncomingHit(hit.score, LocalKnockoutWorth.actsThisTurn(foe) * (1.0 - first), aim)
+        }
+        // Each foe's likeliest knockout, and with its Max Move where it may still Dynamax and that knocks out more
+        // ([LocalFoeDynamaxThreat]).
+        val reads = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             .mapNotNull { foe ->
                 val faced = LocalMatchupPosition.face(board, user, foe, cache) ?: return@mapNotNull null
                 val plain = LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
-                    .maxByOrNull { it.score.knockoutChanceWithin(1) }
-                // A foe that may still Dynamax hits with its Max Move where that knocks out more ([LocalFoeDynamaxThreat]).
+                    .maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
                 val max = LocalFoeDynamaxThreat.bestHit(context, board, user, foe, cache)
-                val hit = listOfNotNull(plain, max).maxByOrNull { it.score.knockoutChanceWithin(1) } ?: return@mapNotNull null
-                val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, part, BattleSide.OPPONENT, hit.action) ?: 0.5
-                val pattern = hit.action.moveDetails?.targetPattern
-                val aim = if (pattern == BattleMoveTargetPattern.ALL_OPPONENTS || pattern == BattleMoveTargetPattern.ALL_ADJACENT) 1.0 else 1.0 / allies
-                LocalDynamaxGuard.IncomingHit(hit.score, LocalKnockoutWorth.actsThisTurn(foe) * (1.0 - first), aim)
+                    ?.takeIf { it.score.knockoutChanceWithin(1) > plain.score.knockoutChanceWithin(1) }
+                incoming(foe, plain) to max?.let { incoming(foe, it) }
             }
-        if (hits.isEmpty()) return 1.0
-        return 1.0 - LocalDynamaxGuard.knockout(hits, user.hpFraction).coerceIn(0.0, 1.0)
+        if (reads.isEmpty()) return 1.0
+        // A side Dynamaxes one Pokemon at most: every foe's plain hit, or one of them Dynamaxed, the worst of those.
+        val plainHits = reads.map { it.first }
+        val worst = (listOf(plainHits) + reads.indices.mapNotNull { index ->
+            reads[index].second?.let { max -> plainHits.toMutableList().also { it[index] = max } }
+        }).maxOf { LocalDynamaxGuard.knockout(it, user.hpFraction) }
+        return 1.0 - worst.coerceIn(0.0, 1.0)
     }
 }
