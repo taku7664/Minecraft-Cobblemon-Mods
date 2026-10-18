@@ -63,40 +63,34 @@ internal object LocalDebuffValue {
         // reading; the move keeps the value the ranking gave it.
         // The accuracy every other reader takes: stages, No Guard, a Poison type's sure Toxic.
         val accuracy = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy.probability(move, context, BattleSide.ALLY).coerceIn(0.0, 1.0)
-        // Poison and Toxic: the exchange that plays each turn's residual out (evolving matchups), for the target's pairs
-        // with this team only, before and after; an immune target or one already statused gains nothing (user decision
-        // 2026-10-19: Toxic is a debuff).
         val drops = effects.filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
             .flatMap { it.statStages.entries }.groupBy({ it.key }, { it.value }).mapValues { (_, changes) -> changes.sum() }
-        // A poison with no drop beside it (Toxic, Poison Powder); one with drops (Toxic Thread) is read below with them.
-        if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) in POISONING && drops.isEmpty()) {
-            val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-            val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache().also { it.matchupRecovery = recovery }
-            val evolving = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().copy(evolvingMatchups = true, matchupRecovery = recovery)
-            fun mean(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(evolving) {
-                val subject = board.pokemon.first { it.battlePokemonId == target.battlePokemonId }
-                team.mapNotNull { allyId ->
-                    val ally = board.pokemon.firstOrNull { it.battlePokemonId == allyId } ?: return@mapNotNull null
-                    val faced = LocalMatchupPosition.face(context.copy(state = board), subject, ally, cache) ?: return@mapNotNull null
-                    LocalMatchupScoreCalculator.pairMatchup(faced, target.battlePokemonId, allyId, MatchupSpeedField.CURRENT, cache)?.score
-                }.takeIf { it.isNotEmpty() }?.average()
-            }
-            val plain = mean(state) ?: return null
-            if (target.statusId != null ||
-                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
-                    ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state)))
-                return Reading(plain, plain, accuracy)
-            val poisoned = mean(state.copyState(pokemon = state.pokemon.map {
-                if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = status) else it
-            })) ?: return null
-            return Reading(plain, poisoned, accuracy)
-        }
-        if (status != null && drops.isEmpty() && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
+        val poison = status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) in POISONING
+        if (status != null && !poison && drops.isEmpty() &&
+            jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-        // A status the target is immune to (a Steel type's poison) is not put on it.
+        // A status the target is immune to (a Steel type's poison) is not put on it; a move that ignores the target's
+        // ability (Mold Breaker) lands it past an ability's immunity.
         val lands = status != null && target.statusId == null &&
             !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
                 ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state))
+        // Poison and Toxic, with or without drops beside them (Toxic Thread): the exchange that plays each turn's residual
+        // out (evolving matchups), for the target's pairs with this team only, before and after (user decision
+        // 2026-10-19: Toxic is a debuff). Anything else: the pair table, as the ranking reads it.
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache().also { it.matchupRecovery = recovery }
+        val evolving = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().copy(evolvingMatchups = true, matchupRecovery = recovery)
+        fun poisonPairs(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(evolving) {
+            val subject = board.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+            team.mapNotNull { allyId ->
+                val ally = board.pokemon.firstOrNull { it.battlePokemonId == allyId } ?: return@mapNotNull null
+                val faced = LocalMatchupPosition.face(context.copy(state = board), subject, ally, cache) ?: return@mapNotNull null
+                LocalMatchupScoreCalculator.pairMatchup(faced, target.battlePokemonId, allyId, MatchupSpeedField.CURRENT, cache)?.score
+            }.takeIf { it.isNotEmpty() }?.average()
+        }
+        fun exchangeOn(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = if (poison) poisonPairs(board)
+            else LocalMatchupScoreCalculator.calculate(context.copy(state = board), recovery = recovery).takeIf { it.complete }?.let(::exchange)
+        val plain = if (poison) poisonPairs(state) ?: return null else before
+        if (poison && !lands && drops.isEmpty()) return Reading(plain, plain, accuracy)
         val statused = state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId == target.battlePokemonId && lands) it.copyState(statusId = status) else it
         })
@@ -113,9 +107,9 @@ internal object LocalDebuffValue {
             val board = if (ability == null) dropped else dropped.copyState(pokemon = dropped.pokemon.map {
                 if (it.battlePokemonId == target.battlePokemonId) it.copyState(knownAbilityId = target.knownAbilityId) else it
             })
-            LocalMatchupScoreCalculator.calculate(context.copy(state = board), recovery = recovery).takeIf { it.complete }?.let(::exchange)
+            exchangeOn(board)
         }.takeIf { it.size == abilities.size }?.average() ?: return null
-        return Reading(before, after, accuracy)
+        return Reading(plain, after, accuracy)
     }
 
     private val POISONING = setOf("psn", "tox")
