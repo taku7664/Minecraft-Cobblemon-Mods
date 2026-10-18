@@ -16,19 +16,24 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 internal object NativeMidBattleStateRules {
     /** Why [state] cannot be rebuilt, or null when it can. */
     fun blocker(state: BattleStateView): String? {
-        if (state.format != BattleFormat.SINGLE) return "DOUBLES"
         if (state.turn < 1) return "TURN"
+        // One slot in singles, two in doubles, each filled while the side has a Pokemon left to fill it.
+        val slots = if (state.format == BattleFormat.SINGLE) 1 else 2
         BattleSide.entries.forEach { side ->
             val actives = state.pokemon.filter { it.side == side && it.activeSlot != null && !it.fainted }
-            if (actives.size != 1 || actives.single().activeSlot != 0) return "ACTIVE_NOT_READY:${side.name}"
-            val active = actives.single()
-            active.knownVolatileEffectIds.firstOrNull {
-                !isBetterAiMarker(it) && !isDynamaxMarker(it) && PublicIds.canonical(it) !in REBUILT_VOLATILES
-            }
-                ?.let { return "VOLATILE:" + PublicIds.canonical(it) }
-            val constraints = active.actionConstraints
-            if (constraints.taunted || constraints.mustRecharge || constraints.encoreMoveId != null) {
-                return "MOVE_LOCK:${side.name}"
+            // Unseen ones count: an empty slot with a Pokemon still to come is a replacement not yet made.
+            val living = state.remainingPokemonBySide.getValue(side)
+            if (actives.size != minOf(slots, living) || actives.any { it.activeSlot !in 0 until slots } ||
+                actives.map { it.activeSlot }.distinct().size != actives.size) return "ACTIVE_NOT_READY:${side.name}"
+            actives.forEach { active ->
+                active.knownVolatileEffectIds.firstOrNull {
+                    !isBetterAiMarker(it) && !isDynamaxMarker(it) && PublicIds.canonical(it) !in REBUILT_VOLATILES
+                }
+                    ?.let { return "VOLATILE:" + PublicIds.canonical(it) }
+                val constraints = active.actionConstraints
+                if (constraints.taunted || constraints.mustRecharge || constraints.encoreMoveId != null) {
+                    return "MOVE_LOCK:${side.name}"
+                }
             }
         }
         return null

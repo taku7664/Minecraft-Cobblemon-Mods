@@ -38,6 +38,28 @@ class NativeMidBattleStateRulesTest {
         }
     }
 
+    @Test
+    fun `a doubles board is rebuilt with both slots filled, and waits on an empty slot still to be filled`() {
+        fun doubles(opponentActives: Int, opponentLeft: Int) = state(dynamaxedSide = BattleSide.OPPONENT).let { single ->
+            val pokemon = BattleSide.entries.flatMap { side ->
+                val actives = if (side == BattleSide.OPPONENT) opponentActives else 2
+                (0 until actives).map { slot ->
+                    single.pokemon.first { it.side == side }.let { base -> BattlePokemonStateView(
+                        UUID.nameUUIDFromBytes("${side.name}$slot".toByteArray()), side, slot, base.speciesId, null, 50, 0.75,
+                        null, emptyMap(), emptySet(), null, null, false, knownVolatileEffectIds = base.knownVolatileEffectIds) }
+                }
+            }
+            BattleStateView(single.battleId, BattleFormat.DOUBLE, 3, pokemon, single.field,
+                mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to opponentLeft), emptyList(), emptyList())
+        }
+        // Two Dynamax-marked actives a side: rebuilt (it refused every doubles board, 801 times in nine games).
+        assertEquals(null, NativeMidBattleStateRules.blocker(doubles(2, 2)))
+        // The last one standing fills one slot alone.
+        assertEquals(null, NativeMidBattleStateRules.blocker(doubles(1, 1)))
+        // One active with two left: a replacement is still to come.
+        assertEquals("ACTIVE_NOT_READY:OPPONENT", NativeMidBattleStateRules.blocker(doubles(1, 2)))
+    }
+
     private fun state(
         dynamaxedSide: BattleSide?,
         spentOnFaintedSide: BattleSide? = null,
