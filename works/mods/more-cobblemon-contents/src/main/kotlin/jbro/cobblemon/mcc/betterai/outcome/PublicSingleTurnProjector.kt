@@ -2900,7 +2900,7 @@ internal object PublicSingleTurnProjector {
     private const val RECOIL_REFUND = 0.5
     private const val CERTAIN_PROBABILITY = 0.999_999
     private const val MAX_CHANCE_BRANCHES_PER_MOVE = 64
-    private val FORCED_SWITCH_IMMUNITIES = setOf("suctioncups", "guarddog")
+    internal val FORCED_SWITCH_IMMUNITIES = setOf("suctioncups", "guarddog")
     private const val FULL_PARALYSIS_PROBABILITY = 0.25
     private const val FREEZE_THAW_PROBABILITY = 0.20
     private const val SLEEP_WAKE_PROBABILITY = 1.0 / 3.0

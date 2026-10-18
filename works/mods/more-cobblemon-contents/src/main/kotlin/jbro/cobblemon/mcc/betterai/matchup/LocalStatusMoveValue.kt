@@ -34,8 +34,9 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * - Weather. Return and risk alike: the exchanges it changes on both sides.
  *   `mean(ally a x opponent o){ (score with - score without)(a vs o) x min(1, turns / exchange length) } x 100`
  *
- * Exceptions: a Dynamaxed target cannot be forced out nor Taunted; Suction Cups and Ingrain hold it in; Oblivious
- * ignores Taunt; Cloud Nine and Air Lock cancel weather. Status moves the target has not shown are not counted (no
+ * Exceptions: a Dynamaxed target cannot be forced out nor Taunted; Suction Cups, Guard Dog and Ingrain hold it in;
+ * Oblivious, Aroma Veil, a Substitute and a Mental Herb stop Taunt; a move that sets weather and does more (Chilly
+ * Reception) is not a weather move here; Cloud Nine and Air Lock cancel weather. Status moves the target has not shown are not counted (no
  * guessed status moves), nor status moves other than raises, Protect, hazards and heals. Unseen bench Pokemon are not read.
  */
 internal object LocalStatusMoveValue {
@@ -52,7 +53,8 @@ internal object LocalStatusMoveValue {
             effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET && it.target == BattleMoveEffectTarget.SELECTED_TARGET } -> Kind.FORCED_SWITCH
             effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
                 PublicIds.canonical(it.valueId.orEmpty()) == TAUNT } -> Kind.TAUNT
-            effects.any { it.kind == BattleMoveEffectKind.WEATHER && it.valueId != null } -> Kind.WEATHER
+            // A move that only sets the weather: Chilly Reception's switch is worth more than the snow it brings.
+            effects.isNotEmpty() && effects.all { it.kind == BattleMoveEffectKind.WEATHER && it.valueId != null } -> Kind.WEATHER
             else -> null
         }
     }
@@ -67,7 +69,8 @@ internal object LocalStatusMoveValue {
         val kind = kind(move) ?: return null
         val state = context.state
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == move.actorSlot && alive(it) } ?: return null
-        val accuracy = move.moveDetails?.accuracy?.takeIf { it > 0.0 }?.let { (it / 100.0).coerceAtMost(1.0) } ?: 1.0
+        // Accuracy and evasion stages, No Guard, Compound Eyes and the like, as every other reader takes them.
+        val accuracy = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy.probability(move, context, BattleSide.ALLY).coerceIn(0.0, 1.0)
         val value = when (kind) {
             Kind.FORCED_SWITCH -> forcedSwitch(move, context, scores, user, accuracy, tuning)
             Kind.TAUNT -> taunt(move, context, scores, intents, user, accuracy, tuning)
@@ -86,7 +89,8 @@ internal object LocalStatusMoveValue {
     ): Double? {
         val state = context.state
         val target = target(move, context) ?: return null
-        if (LocalDynamax.active(target) || ability(target) == SUCTION_CUPS ||
+        if (LocalDynamax.active(target) ||
+            ability(context, target) in jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector.FORCED_SWITCH_IMMUNITIES ||
             target.knownVolatileEffectIds.any { PublicIds.canonical(it) == INGRAIN }) return 0.0
         val bench = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot == null && alive(it) }
         if (bench.isEmpty()) return 0.0
@@ -112,7 +116,10 @@ internal object LocalStatusMoveValue {
         tuning: LocalDecisionTuning,
     ): Double? {
         val target = target(move, context) ?: return null
-        if (LocalDynamax.active(target) || ability(target) == OBLIVIOUS) return 0.0
+        // Taunt fails or is shaken off: Dynamax, Oblivious or Aroma Veil, a Substitute, a Mental Herb.
+        if (LocalDynamax.active(target) || ability(context, target) in TAUNT_BLOCKING_ABILITIES ||
+            target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
+            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(context.state, target) == MENTAL_HERB) return 0.0
         val pair = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
         val revealed = target.knownMoveIds.map(PublicIds::canonical).toSet()
         val intent = intents.firstOrNull { it.pokemonId == target.battlePokemonId } ?: return 0.0
@@ -123,8 +130,12 @@ internal object LocalStatusMoveValue {
             option.kind in DENIED && option.moveId != null && PublicIds.canonical(option.moveId) in revealed
         }.sumOf { option ->
             val moveId = PublicIds.canonical(requireNotNull(option.moveId))
-            // This turn counts only when Taunt goes first (Protect's priority always beats it).
-            val turns = LATER_TURNS + if (option.kind == IntentKind.PROTECT) 0.0 else pair.subjectMovesFirstProbability
+            // This turn counts only when Taunt goes first, read from the two moves themselves (Prankster, Protect's +4).
+            val deniedMove = statusAction(target, option.moveId, context)
+            val first = deniedMove?.let {
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(context.state, BattleSide.ALLY, move, BattleSide.OPPONENT, it)
+            } ?: pair.subjectMovesFirstProbability
+            val turns = LATER_TURNS + first
             val denial = when (option.kind) {
                 IntentKind.SETUP -> {
                     val stages = setups[moveId] ?: return@sumOf 0.0
@@ -135,7 +146,7 @@ internal object LocalStatusMoveValue {
                 IntentKind.PROTECT -> (pair.subjectMove?.let(::expectedHit) ?: 0.0) * tuning.boardToScore
                 // A hazard it would lay on this side: the layer's worth as the hazard rule reads one, mirrored.
                 else -> hazardOnThisSide(target, option.moveId, context, scores)
-                    ?: (healShare(target, option.moveId, context) * tuning.boardToScore)
+                    ?: (healShare(target, deniedMove, context) * tuning.boardToScore)
             }
             option.probability * denial * turns
         }
@@ -147,11 +158,13 @@ internal object LocalStatusMoveValue {
         val id = move.moveDetails?.effects?.effects.orEmpty().firstNotNullOfOrNull { effect ->
             effect.valueId?.takeIf { effect.kind == BattleMoveEffectKind.WEATHER }
         }?.let(PublicIds::canonical) ?: return null
-        if (state.pokemon.any { it.activeSlot != null && alive(it) && ability(it) in WEATHER_CANCELLING }) return 0.0
+        if (state.pokemon.any { it.activeSlot != null && alive(it) && ability(context, it) in WEATHER_CANCELLING }) return 0.0
         val field = state.field
         val board = state.derive(field = BattleFieldStateView(BattleTimedEffectView(id, WEATHER_TURNS), field.terrain,
             field.roomEffects, field.globalEffects, field.sideConditions))
-        val with = LocalMatchupScoreCalculator.calculate(context.copy(state = board)).takeIf { it.complete } ?: return null
+        // Within the decision's time, as the rules' own table is; an unfinished table gives no reading.
+        val with = LocalMatchupScoreCalculator.calculate(context.copy(state = board),
+            shouldContinue = { System.currentTimeMillis() < context.deadlineEpochMillis }).takeIf { it.complete } ?: return null
         val allies = state.pokemon.filter { it.side == BattleSide.ALLY && alive(it) }
         val opponents = state.pokemon.filter { it.side == BattleSide.OPPONENT && alive(it) }
         val changes = allies.flatMap { ally ->
@@ -167,23 +180,30 @@ internal object LocalStatusMoveValue {
         return changes.takeIf { it.isNotEmpty() }?.average()?.times(BOARD_TO_SCORE)
     }
 
-    /** The worth of the hazard layer [moveId] would lay on this side, or null when it lays none. */
-    private fun hazardOnThisSide(target: BattlePokemonStateView, moveId: String?, context: BattleDecisionContext, scores: MatchupScores): Double? {
+    /** [target]'s revealed status move [moveId] as an action, or null when it has not shown it. */
+    private fun statusAction(target: BattlePokemonStateView, moveId: String?, context: BattleDecisionContext): BattleActionCandidate? {
         val details = context.publicActionCatalog.forPokemon(target.battlePokemonId)
             .firstOrNull { PublicIds.canonical(it.moveId) == PublicIds.canonical(moveId.orEmpty()) }?.details ?: return null
-        val move = BattleActionCandidate(actionId = "taunt:denied", kind = BattleActionKind.USE_MOVE,
+        return BattleActionCandidate(actionId = "taunt:denied", kind = BattleActionKind.USE_MOVE,
             actorSlot = target.activeSlot ?: 0, moveSlot = 0, moveId = moveId, moveDetails = details)
+    }
+
+    /** The worth of the hazard layer [moveId] would lay on this side, or null when it lays none. */
+    private fun hazardOnThisSide(target: BattlePokemonStateView, moveId: String?, context: BattleDecisionContext, scores: MatchupScores): Double? {
+        val move = statusAction(target, moveId, context) ?: return null
         val id = LocalHazardEncoreCredit.hazardId(move) ?: return null
         return LocalHazardEncoreCredit.layerValue(id, context, scores, BattleSide.ALLY) ?: 0.0
     }
 
-    /** The share of maximum HP a heal of its user restores, up to what it has lost. */
-    private fun healShare(target: BattlePokemonStateView, moveId: String?, context: BattleDecisionContext): Double {
-        val details = context.publicActionCatalog.forPokemon(target.battlePokemonId)
-            .firstOrNull { PublicIds.canonical(it.moveId) == PublicIds.canonical(moveId.orEmpty()) }?.details ?: return 0.0
-        val heal = details.effects?.effects.orEmpty().filter {
-            it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
-        }.sumOf { effect -> effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0 }
+    /**
+     * The share of maximum HP a heal of its user restores, up to what it has lost, as the calculator resolves it: the
+     * weather's share for Synthesis, the target's Attack for Strength Sap.
+     */
+    private fun healShare(target: BattlePokemonStateView, move: BattleActionCandidate?, context: BattleDecisionContext): Double {
+        move ?: return 0.0
+        val calculated = jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator.calculate(
+            context.copy(candidates = listOf(move)), BattleSide.OPPONENT)
+        val heal = calculated.candidates.singleOrNull()?.facts?.selfHealingFractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
         return minOf(heal, 1.0 - target.hpFraction)
     }
 
@@ -197,14 +217,16 @@ internal object LocalStatusMoveValue {
     private fun expectedHit(move: MoveMatchupScore): Double =
         move.accuracy * (move.minimumDamageFraction + move.maximumDamageFraction) / 2.0
 
-    private fun ability(pokemon: BattlePokemonStateView): String? = pokemon.knownAbilityId?.let(PublicIds::canonical)
+    private fun ability(context: BattleDecisionContext, pokemon: BattlePokemonStateView): String? =
+        jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, pokemon)?.let(PublicIds::canonical)
 
     private fun alive(pokemon: BattlePokemonStateView) = !pokemon.fainted && pokemon.hpFraction > 0.0
 
     private const val TAUNT = "taunt"
     private const val INGRAIN = "ingrain"
-    private const val SUCTION_CUPS = "suctioncups"
-    private const val OBLIVIOUS = "oblivious"
+    private const val SUBSTITUTE = "substitute"
+    private const val MENTAL_HERB = "mentalherb"
+    private val TAUNT_BLOCKING_ABILITIES = setOf("oblivious", "aromaveil")
     private val WEATHER_CANCELLING = setOf("cloudnine", "airlock")
     private val DENIED = setOf(IntentKind.SETUP, IntentKind.PROTECT, IntentKind.STATUS)
     /** Taunt lasts three turns: the two after this one, and this one when it goes first. */
