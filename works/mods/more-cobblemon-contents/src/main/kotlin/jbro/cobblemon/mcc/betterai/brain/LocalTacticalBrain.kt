@@ -224,14 +224,28 @@ internal class LocalTacticalBrain(
         // The board the rules read staying on (singles): the Pokemon in front Mega Evolved when one of its moves can
         // Mega Evolve it this turn, since staying and attacking does. On the base form's table a lead Garchomp that can
         // Mega Evolve read as losing to a Hippowdon it beats as a Mega, and the switching rules took it out (2026-10-12).
-        val rulesContext: BattleDecisionContext by lazy {
-            if (difficultyContext.state.format != BattleFormat.SINGLE) difficultyContext
-            else difficultyContext.candidates.asSequence().filter { it.kind == BattleActionKind.USE_MOVE }
-                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
-                .firstOrNull { it !== difficultyContext } ?: difficultyContext
-        }
         val baseRuleScores by lazy { pairTable(difficultyContext) }
-        val ruleScores by lazy { if (rulesContext === difficultyContext) baseRuleScores else pairTable(rulesContext) }
+        val megaRules: Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores?>? by lazy {
+            if (difficultyContext.state.format != BattleFormat.SINGLE) return@lazy null
+            val board = difficultyContext.candidates.asSequence().filter { it.kind == BattleActionKind.USE_MOVE }
+                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
+                .firstOrNull { it !== difficultyContext } ?: return@lazy null
+            val table = pairTable(board)
+            // A Mega board whose Mega reads no attack at all where the base form has some cannot be played (its form's data
+            // missing): the base board stands. Read anyway, the Pokemon "had nothing to hit with" and switched out of sure
+            // knockouts (Z-A Megas in the league run without their species data, 2026-10-19).
+            fun attacks(scores: jbro.cobblemon.mcc.betterai.matchup.MatchupScores?, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Boolean {
+                val ally = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted } ?: return false
+                return state.pokemon.any { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
+                    scores?.moves(ally.battlePokemonId, it.battlePokemonId)?.isNotEmpty() == true }
+            }
+            if (!attacks(table, board.state) && attacks(baseRuleScores, difficultyContext.state)) {
+                logger.warn("[BetterAI] The Mega board reads no attack for the Pokemon in front; the rules read the base board")
+                null
+            } else board to table
+        }
+        val rulesContext: BattleDecisionContext by lazy { megaRules?.first ?: difficultyContext }
+        val ruleScores by lazy { megaRules?.second ?: baseRuleScores }
         // A stat raise is judged on the board it is used on: the Mega's with a Mega Evolution, the base form's without.
         // On the base form's a Mega Garchomp's Swords Dance read as a 19% win against a Hippowdon it beats outright.
         val megaSetupViews = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>>>()
