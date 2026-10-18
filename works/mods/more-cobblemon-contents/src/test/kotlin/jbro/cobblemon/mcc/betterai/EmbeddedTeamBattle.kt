@@ -140,7 +140,11 @@ internal object EmbeddedTeamBattle {
                             registerMoveDetails(baseContext.publicActionCatalog, inferenceMoveDetails.getValue(side))
                             // As the game does: an attack's own stat changes read on this board, the trainer's own team exact.
                             val stageBoard = EmbeddedTeamInput.nativeInputs(input)?.let { (preview, own) ->
-                                baseContext.copy(opponentTeamPreview = preview, exactOwnTeam = own)
+                                baseContext.copy(opponentTeamPreview = preview, exactOwnTeam = own,
+                                    localOpponentStatSpreads = if (profiles.getValue(side).difficulty.tier in setOf(
+                                            BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS)) {
+                                        opponentSpreads(pair, if (side == "p1") "p2" else "p1", preview)
+                                    } else emptyMap())
                             } ?: baseContext
                             val inferences = inferenceLedgers.getValue(side).update(
                                 baseContext.state,
