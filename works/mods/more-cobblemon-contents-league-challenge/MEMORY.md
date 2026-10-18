@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-18 15:00] `b18d8f4e` 개발 서버·클라 배포: 지방 `active`, 가라르 미공개 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- `active` 수정(`91ef2756`·`7b0e0359`·`5ebcda7b`)과 다른 세션의 야생 구역 변경이 합쳐진 `origin/main` `b18d8f4e`를 워크트리에서 `remapJar`로 빌드했다(EXIT 0, `unzip -t`·`jar --validate` 통과, `galar.json` `active: false`·`active.json` `true` 포함). Codex가 같은 커밋에서 `-Ptests=…|WildSpawn` 75/75 통과(로그 Claude 확인). R17·R18 지적 반영, R19 지적 없음.
+- 개발 서버·클라 리그 JAR을 교체했고 빌드본과 SHA-256이 같다(12C1FBA0…). 백업 `develop-product/deployment-backups/20261018-1457-b18d8f4e-league-active`(교체 전은 다른 세션의 `4ba03724` 배포본). 서버와 게임은 꺼져 있었고 켜지 않았다.
+- **Gradle 공유 캐시 주의:** 다른 곳에서 데몬이 강제 종료되며 `F:/AI/caches/gradle/caches/fabric-loom/.4faf380a….lock`이 `disowned`로 남아, 빌드마다 Loom 캐시를 다시 만들려다 다른 세션 데몬이 연 `mappings.jar`에서 실패했다(T9~T11). 주인 없는 그 표식 파일만 지우자 정상으로 돌아왔다. 다른 프로세스 PID가 적힌 잠금은 건드리지 않았다.
+- PPakemon·운영(VPS)·deploy-product에는 넣지 않았다.
+
 ## [2026-10-18 15:30] 야생 진화 패치 되돌림, 최고 구역 70~80·구역 32×32 (단위·리뷰·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 결정:** 개발 클라 싱글플레이로 해 보니 진화 패치가 비현실적이고, 무리도 우두머리만 진화체고 나머지는 미진화체였던 게 보기 좋았다며 원래대로 돌리라고 했다. 대신 고렙존 고점을 80으로, 구역을 64×64에서 32×32로.
