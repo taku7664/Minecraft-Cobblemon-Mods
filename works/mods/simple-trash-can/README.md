@@ -25,6 +25,20 @@
 | 죽음 | 사라집니다. 바닥에 떨어지지 않습니다 |
 | 죽음, 게임룰 `keepInventory` 켜짐 | 남아 있습니다 |
 
+## 서버 로그
+
+아이템이 실제로 지워질 때마다 서버 로그(`logs/latest.log`)에 한 줄씩 남깁니다. 휴지통에 올리기만 한 아이템은 다시 꺼낼 수 있어서 남기지 않습니다.
+
+```text
+[SimpleTrashCan] PPAK_JU deleted 32x minecraft:cobblestone (replaced)
+```
+
+| 괄호 안 | 지워진 이유 |
+|---|---|
+| `replaced` | 다른 아이템을 올려서 교체됨 |
+| `disconnect` | 휴지통에 남긴 채 접속을 끊음 |
+| `death` | `keepInventory` 없이 죽음 |
+
 ## 넣고 꺼내는 법
 
 | 조작 | 동작 |
@@ -54,7 +68,7 @@
 
 ## English
 
-Adds one trash slot to the right of the survival inventory, level with the last inventory row. An item placed there is not deleted right away: it stays until you put a different item in (the same item stacks), so a mistake can be taken back. The slot is never saved, so leaving the game or a crash empties it; on death it is deleted, not dropped, unless `keepInventory` is on. Shift-click never moves items into it, and it is hidden in the creative inventory tab.
+Adds one trash slot to the right of the survival inventory, level with the last inventory row. An item placed there is not deleted right away: it stays until you put a different item in (the same item stacks), so a mistake can be taken back. The slot is never saved, so leaving the game or a crash empties it; on death it is deleted, not dropped, unless `keepInventory` is on. Shift-click never moves items into it, and it is hidden in the creative inventory tab. Every actual deletion is written to the server log with the player, item, count and reason (`replaced`, `disconnect`, `death`).
 
 Requires Fabric API on Minecraft 1.21.1. Install it on both the client and the server.
 

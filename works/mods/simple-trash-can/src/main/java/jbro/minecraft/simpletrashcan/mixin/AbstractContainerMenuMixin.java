@@ -1,7 +1,9 @@
 package jbro.minecraft.simpletrashcan.mixin;
 
+import jbro.minecraft.simpletrashcan.TrashLog;
 import jbro.minecraft.simpletrashcan.TrashSlot;
 import net.minecraft.core.NonNullList;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -11,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -43,6 +46,7 @@ abstract class AbstractContainerMenuMixin {
             ItemStack carried = getCarried();
             // Same item: vanilla stacks it; empty cursor: vanilla picks the trash item up.
             if (carried.isEmpty() || ItemStack.isSameItemSameComponents(carried, old)) return;
+            simpleTrashCan$logReplaced(player, old);
             if (button == 0) {
                 slot.setByPlayer(carried);
                 setCarried(ItemStack.EMPTY);
@@ -64,10 +68,17 @@ abstract class AbstractContainerMenuMixin {
                     slot.setChanged();
                 }
             } else {
+                simpleTrashCan$logReplaced(player, old);
                 slot.setByPlayer(held);
                 inventory.setItem(button, ItemStack.EMPTY);
             }
             ci.cancel();
         }
+    }
+
+    // The click runs on both sides; only the server's copy is the real deletion.
+    @Unique
+    private static void simpleTrashCan$logReplaced(Player player, ItemStack old) {
+        if (player instanceof ServerPlayer serverPlayer) TrashLog.deleted(serverPlayer, old, TrashLog.Reason.REPLACED);
     }
 }
