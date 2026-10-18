@@ -241,9 +241,9 @@ internal object BattleOpponentMoveInferenceNormalizer {
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup }
                     .takeIf { it >= 0 }
                     ?: slots.indices.firstOrNull { slots[it].knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
-                        slots[it].group == moveGroup && !soleStab(slots, it, details.typeId) }
+                        slots[it].group == moveGroup && !soleStab(slots, it, moveId, details, pokemon) }
                     ?: slots.indices.firstOrNull { slots[it].knowledge == BattleOpponentMoveKnowledge.EXPECTED &&
-                        !soleStab(slots, it, details.typeId) }
+                        !soleStab(slots, it, moveId, details, pokemon) }
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS }
                         .takeIf { it >= 0 }
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED }
@@ -308,11 +308,20 @@ internal object BattleOpponentMoveInferenceNormalizer {
     }
 
     /** An expected STAB slot that is the only one of its type: a reveal of another type does not take it. */
-    private fun soleStab(slots: List<BattleOpponentMoveSlotView>, index: Int, revealedTypeId: String?): Boolean {
+    private fun soleStab(
+        slots: List<BattleOpponentMoveSlotView>,
+        index: Int,
+        revealedId: String,
+        revealed: BattleMoveCandidateView,
+        pokemon: BattlePokemonStateView,
+    ): Boolean {
+        // Types as the user attacks with them: a Terastallized user's Tera Blast is its Tera type.
+        fun type(slot: BattleOpponentMoveSlotView) = slot.details?.let { canonical(BattleMoveSetExpectation.typeId(slot.moveId, it, pokemon)) }
         val slot = slots[index]
-        val type = slot.details?.typeId?.let(::canonical) ?: return false
-        if (slot.group != BattleOpponentMoveGroup.STAB_ATTACK || revealedTypeId?.let(::canonical) == type) return false
-        return slots.indices.none { it != index && slots[it].group.isAttack() && slots[it].details?.typeId?.let(::canonical) == type }
+        val type = type(slot) ?: return false
+        if (slot.group != BattleOpponentMoveGroup.STAB_ATTACK ||
+            canonical(BattleMoveSetExpectation.typeId(revealedId, revealed, pokemon)) == type) return false
+        return slots.indices.none { it != index && slots[it].group.isAttack() && type(slots[it]) == type }
     }
 
     private fun selectHiddenStab(

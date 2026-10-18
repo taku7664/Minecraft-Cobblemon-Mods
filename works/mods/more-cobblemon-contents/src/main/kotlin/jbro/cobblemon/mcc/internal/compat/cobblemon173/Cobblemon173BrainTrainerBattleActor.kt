@@ -229,6 +229,11 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 val localContext = if (localBrain == null) {
                     context
                 } else {
+                    val opponentSpreads = if (trainerProfile.difficulty.tier in setOf(
+                            BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS,
+                        )) {
+                        actualOpponentStatSpreadsByPreviewSlot()
+                    } else emptyMap()
                     context.copy(
                         publicActionCatalog = publicCatalog.withOpponentMoveInferences(
                             opponentMoveInference.update(
@@ -237,15 +242,13 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 trainerProfile.difficulty.tier,
                                 actualOpponentMoveIds(),
                                 observationAdapter.transformedPokemon(),
-                                // An attack's own stat changes read on this board (user decision 2026-10-18).
-                                jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(context, trainerProfile.difficulty.tier),
+                                // An attack's own stat changes read on this board, with the stats the brain reads (user
+                                // decision 2026-10-18).
+                                jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(
+                                    context.copy(localOpponentStatSpreads = opponentSpreads), trainerProfile.difficulty.tier),
                             ),
                         ),
-                        localOpponentStatSpreads = if (trainerProfile.difficulty.tier in setOf(
-                                BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS,
-                            )) {
-                            actualOpponentStatSpreadsByPreviewSlot()
-                        } else emptyMap(),
+                        localOpponentStatSpreads = opponentSpreads,
                     ).withShowdownState(liveShowdownState())
                 }
                 val decision = fallbackChain.decide(
