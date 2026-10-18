@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.UUID
 
 /**
@@ -44,8 +45,11 @@ internal object LocalKnockoutWorth {
          * landed or not as it would without being knocked out first (no acting chance, no cost to itself). A 1% Golem
          * the attacker outspeeds is worth little to keep, but left standing it Explodes on whatever is in front.
          */
-        val denials: Map<UUID, Double>,
+        val denials: Map<UUID, Denial>,
     )
+
+    /** A hit knocking its user out this turn stops: its value in board units and the priority it would come at. */
+    data class Denial(val value: Double, val priority: Int)
 
     fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
@@ -80,12 +84,14 @@ internal object LocalKnockoutWorth {
         val denials = fight.keys.associateWith { id ->
             val pokemon = living.first { it.battlePokemonId == id }
             val inFront = living.filter { it.side != pokemon.side && it.activeSlot != null }
-            inFront.map { target ->
-                scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
-                    move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
+            // Its best hit at each Pokemon in front, at the chance it acts this turn at all (asleep, frozen, paralysed).
+            val hits = inFront.mapNotNull { target ->
+                scores.moves(id, target.battlePokemonId).map { move ->
+                    move to move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
                         move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
-                } ?: 0.0
-            }.averageOrZero()
+                }.maxByOrNull { it.second }
+            }
+            Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon), hits.maxByOrNull { it.second }?.first?.priority ?: 0)
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })
@@ -93,6 +99,13 @@ internal object LocalKnockoutWorth {
     }
 
     private fun List<Double>.averageOrZero() = if (isEmpty()) 0.0 else average()
+
+    /** The chance [pokemon] acts this turn at all: not recharging, awake, thawed, not fully paralysed. */
+    private fun actsThisTurn(pokemon: BattlePokemonStateView): Double =
+        LocalSetupGate.actingChance(pokemon) *
+            if (PublicIds.canonical(pokemon.statusId.orEmpty()) in PARALYSED) LocalMatchupScoreCalculator.PARALYSIS_ACTS else 1.0
+
+    private val PARALYSED = setOf("par", "paralysis")
 
     /**
      * The chance [subject] gets [move] off against [other]: it moves first, or it survives [other]'s first hit. Who

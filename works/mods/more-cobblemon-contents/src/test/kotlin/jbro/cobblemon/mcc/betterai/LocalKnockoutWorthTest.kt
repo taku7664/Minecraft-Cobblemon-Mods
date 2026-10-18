@@ -76,8 +76,8 @@ class LocalKnockoutWorthTest {
         val reading = LocalKnockoutWorth.read(state(mega, lucario, idle), MatchupScores(mapOf(
             (lucario.battlePokemonId to mega.battlePokemonId) to listOf(kick),
         ), mapOf(pair(lucario, kick), pair(idle, null)), complete = true), 2.0)
-        assertEquals(0.9 + 0.9 * 2.0, reading.denials.getValue(lucario.battlePokemonId), 1e-9)
-        assertEquals(0.0, reading.denials.getValue(idle.battlePokemonId), 1e-9)
+        assertEquals(0.9 + 0.9 * 2.0, reading.denials.getValue(lucario.battlePokemonId).value, 1e-9)
+        assertEquals(0.0, reading.denials.getValue(idle.battlePokemonId).value, 1e-9)
     }
 
     private fun state(vararg pokemon: BattlePokemonStateView) = BattleStateView(

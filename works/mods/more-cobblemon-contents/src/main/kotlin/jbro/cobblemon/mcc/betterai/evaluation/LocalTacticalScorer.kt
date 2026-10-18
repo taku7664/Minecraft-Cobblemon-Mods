@@ -226,8 +226,9 @@ internal object LocalTacticalScorer {
         return credits.groupBy { it.first }.values.sumOf { group ->
             val probabilities = group.map { it.second.coerceIn(0.0, 1.0) }
             val union = 1.0 - probabilities.fold(1.0) { survival, probability -> survival * (1.0 - probability) }
-            // Each credit is priced at its own value (the hit it stops depends on its order); the overlap at their mean.
-            (probabilities.sum() - union).coerceAtLeast(0.0) * group.map { it.third }.average()
+            // Each credit is priced at its own value (the hit it stops depends on its order); the overlap at the least,
+            // so the knockout that lands first keeps the hit it stops (Codex review of 61ebfcd7).
+            (probabilities.sum() - union).coerceAtLeast(0.0) * group.minOf { it.third }
         }
     }
 
@@ -239,7 +240,7 @@ internal object LocalTacticalScorer {
         action: BattleActionCandidate,
     ): Double = LocalPokemonWorth.knockoutScore(context.state.pokemon.firstOrNull {
         it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
-    }?.battlePokemonId, tuning, action.facts?.actsFirstProbability ?: LocalTacticalSituationalEvaluator.UNKNOWN_ORDER)
+    }?.battlePokemonId, tuning, action, context.state, action.facts?.actsFirstProbability)
 
     /**
      * The half of a move's score that is a statement about the candidate rather than about value.

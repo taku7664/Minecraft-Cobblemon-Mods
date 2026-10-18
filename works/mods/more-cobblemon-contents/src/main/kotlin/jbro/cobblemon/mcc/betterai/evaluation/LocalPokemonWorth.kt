@@ -12,7 +12,7 @@ import java.util.UUID
  */
 internal object LocalPokemonWorth {
     private val active = ThreadLocal<Map<UUID, Double>?>()
-    private val denials = ThreadLocal<Map<UUID, Double>?>()
+    private val denials = ThreadLocal<Map<UUID, jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial>?>()
 
     /** The worths read for the last decision on any thread, for the measurement harness. */
     @Volatile
@@ -21,22 +21,46 @@ internal object LocalPokemonWorth {
 
     fun of(id: UUID): Double? = active.get()?.get(id)
 
-    /** What knocking [id] out this turn stops, in board units ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Reading.denials]). */
-    fun denial(id: UUID): Double = denials.get()?.get(id) ?: 0.0
-
     /**
-     * A knockout of [id] by an attack that moves first with [first]'s chance: its worth, and the hit it no longer gets
-     * to use this turn when the attack lands before it. Without the hit a Scald that finished a 1% Probopass read as
-     * worth less than Protect (2026-10-18).
+     * A knockout of [id] by [attack]: its worth, and the hit it no longer gets to use this turn when [attack] lands
+     * before it ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Reading.denials]). Who moves first is read
+     * from the two moves' priorities, by Speed when they tie, and from [fallbackFirst] when Speed cannot be read.
+     * Without the hit a Scald that finished a 1% Probopass read as worth less than Protect (2026-10-18).
      */
-    fun knockoutScore(id: UUID?, tuning: LocalDecisionTuning, first: Double): Double =
-        knockoutScore(id, tuning) + (id?.let(::denial) ?: 0.0) * first.coerceIn(0.0, 1.0) * tuning.boardToScore
+    fun knockoutScore(
+        id: UUID?,
+        tuning: LocalDecisionTuning,
+        attack: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate,
+        state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
+        fallbackFirst: Double?,
+    ): Double {
+        val worth = knockoutScore(id, tuning)
+        val denial = id?.let { denials.get()?.get(it) } ?: return worth
+        val mine = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.effectivePriority(
+            state, jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY, attack)
+        val first = when {
+            mine > denial.priority -> 1.0
+            mine < denial.priority -> 0.0
+            else -> {
+                val actor = state.pokemon.firstOrNull {
+                    it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
+                }
+                val foe = state.pokemon.firstOrNull { it.battlePokemonId == id }
+                (if (actor != null && foe != null) {
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.speedOrderProbability(state, actor, foe)
+                } else null) ?: fallbackFirst ?: UNKNOWN_ORDER
+            }
+        }
+        return worth + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
+    }
+
+    private const val UNKNOWN_ORDER = 0.5
 
     /** A knockout of [id] in score units: its worth, or the flat knockout value without one. */
     fun knockoutScore(id: UUID?, tuning: LocalDecisionTuning): Double =
         id?.let(::of)?.let { it * tuning.boardToScore } ?: tuning.knockoutMaterialScore
 
-    fun set(worths: Map<UUID, Double>?, denials: Map<UUID, Double>? = null) {
+    fun set(worths: Map<UUID, Double>?, denials: Map<UUID, jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial>? = null) {
         active.set(worths)
         this.denials.set(denials)
         last = worths.orEmpty()

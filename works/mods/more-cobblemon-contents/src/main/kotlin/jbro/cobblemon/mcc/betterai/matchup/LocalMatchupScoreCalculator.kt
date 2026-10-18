@@ -736,7 +736,7 @@ internal object LocalMatchupScoreCalculator {
     internal const val MAXIMUM_USES = 6
     private const val PARALYSIS = "par"
     /** The share of turns a paralysed Pokemon acts (Showdown: fully paralysed one turn in four). */
-    private const val PARALYSIS_ACTS = 0.75
+    internal const val PARALYSIS_ACTS = 0.75
     private const val MAXIMUM_SETUP_USES = 2
     /**
      * Moves that fail when their user is hit before it moves. An exchange has both sides attacking every

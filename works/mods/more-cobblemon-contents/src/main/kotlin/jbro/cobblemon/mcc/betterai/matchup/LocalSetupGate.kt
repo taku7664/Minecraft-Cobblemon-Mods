@@ -214,7 +214,7 @@ internal object LocalSetupGate {
      * about half the time, a frozen one thaws one time in five. The window a sleeping or frozen opponent opens is
      * the classic moment to set up.
      */
-    private fun actingChance(opponent: BattlePokemonStateView): Double {
+    internal fun actingChance(opponent: BattlePokemonStateView): Double {
         if (RECHARGE in opponent.canonicalKnownVolatileEffectIds) return 0.0
         return when (opponent.statusId?.let(PublicIds::canonical)) {
             "slp", "sleep", "asleep" -> SLEEPING_ACTS

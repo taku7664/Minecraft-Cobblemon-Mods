@@ -108,7 +108,8 @@ internal object LocalTacticalSituationalEvaluator {
             position.state.pokemon.firstOrNull { !it.fainted && it.activeSlot != null &&
                 if (slot != null) it.side == slot.first && it.activeSlot == slot.second else it.side == BattleSide.OPPONENT }
         }
-        return LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning, order ?: UNKNOWN_ORDER) * probability * landing * initiative
+        return (context?.let { LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning, candidate, it.state, order) }
+            ?: LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning)) * probability * landing * initiative
     }
 
     /**
@@ -191,7 +192,7 @@ internal object LocalTacticalSituationalEvaluator {
                 else -> 0.0
             }
             val hit = context.state.pokemon.firstOrNull { it.side == extra.side && it.activeSlot == extra.slot && !it.fainted }
-            damage + LocalPokemonWorth.knockoutScore(hit?.battlePokemonId, tuning, candidate.facts?.actsFirstProbability ?: UNKNOWN_ORDER) *
+            damage + LocalPokemonWorth.knockoutScore(hit?.battlePokemonId, tuning, candidate, context.state, candidate.facts?.actsFirstProbability) *
                 knockoutProbability * accuracy
         }
     }
@@ -686,8 +687,6 @@ internal object LocalTacticalSituationalEvaluator {
     private const val GUARANTEED_KNOCKOUT_BONUS = 50.0
     private const val POSSIBLE_KNOCKOUT_BONUS = 35.0
     private const val ENTRY_KNOCKOUT_PENALTY = 200.0
-    /** Who moves first when the facts do not say. */
-    internal const val UNKNOWN_ORDER = 0.5
     private const val SECURE_FOCUS_KNOCKOUT_BONUS = 25.0
     private const val REDUNDANT_FOCUS_PENALTY = 30.0
     private enum class RequirementState { SATISFIED, UNSATISFIED, UNKNOWN }
