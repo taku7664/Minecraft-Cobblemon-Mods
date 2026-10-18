@@ -388,8 +388,16 @@ internal object LocalMatchupScoreCalculator {
                     else ownStageRolls(position, action, user, rolls, side, cache)?.let {
                         LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES)
                     }
-                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile)
-                    .copy(selfKnockout = selfCostRank(original) == SELF_KNOCKOUT_RANK), original)
+                // Its own knockout as the outcome projector reads it: Final Gambit's only when it lands.
+                val selfKnockout = original.moveDetails?.effects?.effects.orEmpty().filter {
+                    it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER && it.kind == BattleMoveEffectKind.SELF_DESTRUCT
+                }.maxOfOrNull {
+                    (if (it.valueId == jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects.SELF_DESTRUCT_IF_HIT) accuracy else 1.0) * (it.probability ?: 1.0)
+                } ?: 0.0
+                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile).copy(
+                    selfKnockoutChance = selfKnockout,
+                    priority = LocalPublicTurnOrder.effectivePriority(state, side, action),
+                ), original)
             }
             .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
             .sortedWith(BEST_FIRST)

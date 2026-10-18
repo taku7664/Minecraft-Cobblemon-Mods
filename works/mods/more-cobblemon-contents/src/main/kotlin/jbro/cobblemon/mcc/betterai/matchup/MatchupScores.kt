@@ -47,8 +47,10 @@ internal data class MoveMatchupScore(
     val damageWhileStandingByUses: List<Double>,
     val expectedHitsToKnockout: Double,
     val score: Double,
-    /** Whether its user faints using it (Explosion, Final Gambit). */
-    val selfKnockout: Boolean = false,
+    /** The chance its user faints using it: Explosion's certain, Final Gambit's when it lands. */
+    val selfKnockoutChance: Double = 0.0,
+    /** Its priority as used, abilities and field included. */
+    val priority: Int = 0,
 ) {
     fun knockoutChanceWithin(uses: Int): Double = 1.0 - survivalByUses[uses.coerceIn(0, survivalByUses.lastIndex)]
 }

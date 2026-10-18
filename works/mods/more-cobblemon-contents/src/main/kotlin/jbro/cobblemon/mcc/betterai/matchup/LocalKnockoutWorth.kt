@@ -57,11 +57,11 @@ internal object LocalKnockoutWorth {
             val faced = if (pokemon.activeSlot != null) others.filter { it.activeSlot != null }.ifEmpty { others } else others
             faced.map { target ->
                 val best = scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
-                    move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
+                    (move.accuracy * minOf((move.minimumDamageFraction + move.maximumDamageFraction) / 2.0, target.hpFraction) +
                         move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON -
-                        (if (move.selfKnockout) w.getValue(id) * ONE_POKEMON else 0.0)
+                        move.selfKnockoutChance * w.getValue(id) * ONE_POKEMON) * actingChance(state, scores, pokemon, target, move)
                 }?.coerceAtLeast(0.0) ?: 0.0
-                best * actingChance(scores, pokemon, target)
+                best
             }.average()
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
@@ -70,16 +70,28 @@ internal object LocalKnockoutWorth {
     }
 
     /**
-     * The chance [subject] gets its next action off against [other]: it moves first, or it survives [other]'s first hit.
-     * Read from the pair table, keyed by the ally.
+     * The chance [subject] gets [move] off against [other]: it moves first, or it survives [other]'s first hit. Who
+     * moves first is read from [move]'s priority against the hit [other] uses in their exchange, by Speed when they
+     * tie: the exchange's own order is for the move it picked, and a slow Pokemon's priority move is not its exchange
+     * move (Codex review of 5ee63ad6).
      */
-    private fun actingChance(scores: MatchupScores, subject: BattlePokemonStateView, other: BattlePokemonStateView): Double {
+    private fun actingChance(
+        state: BattleStateView,
+        scores: MatchupScores,
+        subject: BattlePokemonStateView,
+        other: BattlePokemonStateView,
+        move: MoveMatchupScore,
+    ): Double {
         val ally = subject.side == BattleSide.ALLY
         val pair = (if (ally) scores.pokemon(subject.battlePokemonId, other.battlePokemonId)
             else scores.pokemon(other.battlePokemonId, subject.battlePokemonId)) ?: return 1.0
-        val first = if (ally) pair.subjectMovesFirstProbability else 1.0 - pair.subjectMovesFirstProbability
-        val knockedOut = (if (ally) pair.opponentMove else pair.subjectMove)?.knockoutChanceWithin(1) ?: 0.0
-        return (first + (1.0 - first) * (1.0 - knockedOut)).coerceIn(0.0, 1.0)
+        val reply = (if (ally) pair.opponentMove else pair.subjectMove) ?: return 1.0
+        val first = when {
+            move.priority > reply.priority -> 1.0
+            move.priority < reply.priority -> 0.0
+            else -> jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.speedOrderProbability(state, subject, other) ?: 0.5
+        }
+        return (first + (1.0 - first) * (1.0 - reply.knockoutChanceWithin(1))).coerceIn(0.0, 1.0)
     }
 
     fun adjustments(

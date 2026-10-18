@@ -59,8 +59,9 @@ class LocalKnockoutWorthTest {
         val mega = mon(BattleSide.ALLY, 0)
         val lucario = mon(BattleSide.OPPONENT, 0)
         val idle = mon(BattleSide.OPPONENT, null)
+        // The Mega's hit goes first (its priority stands in for the boosted Speed these stat-less Pokemon cannot show).
         val earthquake = MoveMatchupScore(mega.battlePokemonId, "earthquake", lucario.battlePokemonId, 1.0, 1.0, 1.0,
-            listOf(1.0, 0.0, 0.0), listOf(0.0, 0.0, 0.0), 1.0, 1.0)
+            listOf(1.0, 0.0, 0.0), listOf(0.0, 0.0, 0.0), 1.0, 1.0, priority = 1)
         val kick = MoveMatchupScore(lucario.battlePokemonId, "highjumpkick", mega.battlePokemonId, 0.9, 1.0, 1.0,
             listOf(1.0, 0.1, 0.01), listOf(0.0, 0.0, 0.0), 1.1, 0.9)
         // The Mega moves first and knocks the Lucario out (first 1.0, earthquake ko 1.0); the idle one loses the same way.
