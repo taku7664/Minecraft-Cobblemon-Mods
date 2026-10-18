@@ -18,7 +18,7 @@
 - **원인(Cobblenav 2.4.1 바이트코드):** `Pokenav.use`는 서버에서 Cobblemon `ServerPlayer.raycast(blockInteractionRange, ClipContext.Fluid.NONE)`로 시선 블록을 찾고, 블록 엔티티가 `PokeSnackBlockEntity`일 때만 그 좌표를 `OpenPokenavPacket`의 두 번째 인자(`fixedAreaPoint`)로 넘긴다. 우리 `PokenavCommand`는 늘 `null`을 넘겼다. 아이템의 다른 분기는 없고 OS 값(Lite, 위치만 켬)은 이미 같았다.
 - **구현:** `PokenavCommand.snackInSight`가 같은 레이캐스트로 스낵 좌표를 넘긴다. Tab 단축키는 `/pokenav`를 보내므로 같이 고쳐진다. `field_1348`이 `NONE`인 것은 Loom 매핑으로 확인했다.
 - **미확인:** "빌드는 지시할 때만" 규칙으로 컴파일·테스트·JAR 배치를 하지 않았다. 실게임에서 스낵 목록이 뜨는지 확인하지 않았다. 서버 쪽 변경이라 개발·운영·VPS 서버 JAR 교체가 있어야 효과가 난다.
-- **같이 받은 질문(야생 반격):** Cobblemon 1.8.1에는 반격 전역 컨픽이 없다. `behaviours/pokemon/auto/pokemon_non_party.json`이 종 데이터 `behaviour.combat.willDefendSelf`가 켜졌거나 알파인 야생에 `cobblemon:retaliates`를 붙이고, 실제 공격은 `fightsMelee`가 켜져야 한다(`pokemon_combat.json`). 구현된 종 888개 중 `willDefendSelf`만 458, 둘 다 2, `fightsMelee`만 1, 둘 다 없음 427. 사용자 지시대로 작업하지 않고 보고만 했다.
+- **같이 받은 질문(야생 반격):** Cobblemon 1.8.1에는 반격 전역 컨픽이 없고 기본으로 켜져 있다. `behaviours/pokemon/auto/pokemon_non_party.json`이 종 데이터 `behaviour.combat.willDefendSelf`가 켜졌거나 알파인 야생에 `cobblemon:retaliates`를, `pokemon_combat.json`이 `fightsMelee`인 개체에 근접 공격을 붙인다. **`CombatBehaviour` 기본값은 `fightsMelee=true`, `willFlee=true`, `willDefendSelf=false`**(바이트코드 확인)라 JSON에 없는 값은 이 기본값이다. 구현된 888종 중 `willDefendSelf` 460종과 모든 알파가 반격하고, 나머지는 도망간다. 처음에 JSON에 없는 `fightsMelee`를 꺼짐으로 세어 "거의 반격하지 않는다"고 잘못 보고했다가 사용자 지적으로 정정했다. 우리 모드·개발 서버 데이터팩에 이 값을 바꾸는 파일은 없다. 실게임 미확인.
 
 ## [2026-10-18 01:56] XS 6개 월드 데이터팩 운영 적용·재시작 없이 리로드 확인
 
