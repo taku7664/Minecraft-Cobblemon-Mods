@@ -9,8 +9,8 @@
     "spread": 5,
     "region_chunks": 2,
     "region_min": 10,
-    "region_max": 85,
-    "transition_regions": 32
+    "region_max": 90,
+    "transition_regions": 16
   },
   "gyms": [
     "more_cobblemon_contents_league_challenge:roark",

@@ -27,20 +27,20 @@ class WildSpawnRegionsTest {
     @Test fun `neighbouring regions change by no more than five throughout the field`() {
         for (seed in listOf(-1234L, 0L, 42L, Long.MAX_VALUE)) for (x in -65..65) for (z in -65..65) {
             val here = level(seed, x, z)
-            assertTrue(here in 10..85)
+            assertTrue(here in 10..90)
             assertTrue(abs(here - level(seed, x + 1, z)) <= 5, "$x,$z along x")
             assertTrue(abs(here - level(seed, x, z + 1)) <= 5, "$x,$z along z")
         }
     }
 
-    @Test fun `every sixty four region tile has a guaranteed eighty five area including the spawn tile`() {
+    @Test fun `every thirty two region tile has a guaranteed ninety area including the spawn tile`() {
         for (seed in listOf(Long.MIN_VALUE, -99, 0, 1, 42, Long.MAX_VALUE)) {
             for (dimension in listOf("minecraft:overworld", "minecraft:the_nether")) {
                 for (tileX in -4..4) for (tileZ in -4..4) {
                     val anchors = (0..1).flatMap { dx -> (0..1).map { dz ->
                         level(seed, (tileX * 2 + dx) * rule.transitionRegions, (tileZ * 2 + dz) * rule.transitionRegions, dimension)
                     } }
-                    assertEquals(85, anchors.max(), "seed $seed dim $dimension tile $tileX,$tileZ")
+                    assertEquals(90, anchors.max(), "seed $seed dim $dimension tile $tileX,$tileZ")
                 }
             }
         }
