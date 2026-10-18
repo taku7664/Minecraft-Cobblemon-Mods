@@ -55,7 +55,18 @@ internal object EmbeddedTeamBattle {
         /** Choices played instead of the brain's, by turn then side ("move 1", "switch 2"); forced switches stay the brain's. */
         scripted: Map<Int, Map<String, String>> = emptyMap(),
         /** Trainer persona per side; an `ai_test:` one saves each decision as a replayable snapshot, as in the game. */
-        trainerPersonaIds: Map<String, String> = emptyMap()): JsonObject {
+        trainerPersonaIds: Map<String, String> = emptyMap(),
+        /**
+         * A recorded game (its decisions.jsonl.gz) to follow: each side still decides, but the recorded action is played,
+         * so every position is the recorded one and the two decisions can be compared on it (trace "ownActionId").
+         */
+        followed: Path? = null): JsonObject {
+        val recorded = followed?.let { file ->
+            java.util.zip.GZIPInputStream(Files.newInputStream(file)).bufferedReader().readLines()
+                .map { JsonParser.parseString(it).asJsonObject }
+                .groupBy({ it["side"].asString }, { it["turn"].asInt to it["actionId"].asString })
+                .mapValues { ArrayDeque(it.value) }
+        }
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
@@ -197,14 +208,22 @@ internal object EmbeddedTeamBattle {
                                 .toCompletableFuture().get(25, TimeUnit.SECONDS)
                             val decidedAt = System.nanoTime()
                             check(decision.requestId == context.requestId && context.candidates.any { it.actionId == decision.actionId })
-                            val selected = context.candidates.single { it.actionId == decision.actionId }
-                            memory.accept(context.state, selected, decision.advice)
+                            val played = recorded?.let { bySide ->
+                                val (turn, actionId) = bySide[side]?.removeFirstOrNull()
+                                    ?: error("The followed game has no more $side decisions on turn ${frame["turn"]}")
+                                check(turn == frame["turn"].asInt) { "The game left the followed one: $side on turn ${frame["turn"]}, recorded $turn" }
+                                context.candidates.singleOrNull { it.actionId == actionId }
+                                    ?: error("Followed $side '$actionId' not offered on turn $turn: ${context.candidates.map { it.actionId }}")
+                            }
+                            val selected = played ?: context.candidates.single { it.actionId == decision.actionId }
+                            memory.accept(context.state, selected, decision.advice.takeIf { selected.actionId == decision.actionId })
                             if (input.getAsJsonObject("request").has("forceSwitch")) forced++
                             counts[side] = counts.getValue(side) + 1
-                            choices.addProperty(side, decision.actionId)
+                            choices.addProperty(side, selected.actionId)
                             trace.append(JsonObject().apply {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
-                                add("input", input); addProperty("actionId", decision.actionId)
+                                add("input", input); addProperty("actionId", selected.actionId)
+                                if (played != null) addProperty("ownActionId", decision.actionId)
                                 addProperty("decisionMillis", (decidedAt - decisionStarted) / 1_000_000)
                                 // Each Pokemon's worth the decision priced material and knockouts with (LocalPokemonWorth).
                                 add("worth", JsonObject().apply { jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.last.forEach { (id, value) ->
@@ -251,6 +270,15 @@ internal object EmbeddedTeamBattle {
                                             addProperty("win", duel.winProbability); addProperty("duelScore", duel.score)
                                             addProperty("firstMove", duel.subjectMovesFirstProbability)
                                         }
+                                        // Each Pokemon behind: walking in on the foe's hit (switch-in) and after a knockout (free).
+                                        add("switchIns", JsonObject().apply { assumed.state.pokemon.filter {
+                                            it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }.forEach { b ->
+                                            scores?.switchIn(b.battlePokemonId, foe.battlePokemonId, ally.battlePokemonId)?.let { s ->
+                                                addProperty(b.speciesId, "score=${"%.2f".format(s.score)} survival=${"%.2f".format(s.predictedSurvival)}") }
+                                            scores?.pokemon(b.battlePokemonId, foe.battlePokemonId)?.let { addProperty("${b.speciesId}:free", it.score) }
+                                        } })
+                                        add("preserves", JsonObject().apply { scores?.preserves?.forEach { (id, v) ->
+                                            addProperty(assumed.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId ?: id.toString(), v.score) } })
                                     }
                                 })
                                 // The board as this side sees it: both actives' HP, status, stages.
