@@ -244,7 +244,7 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 아래 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
 
 - **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 코라이돈·미라이돈과 전설 패러독스 6종은 `cobblemon-dimensions`의 고대·미래 차원에만 나옵니다. 울트라비스트와 전설이 아닌 패러독스는 빠져 있고(나오면 `RareSpawnNotice`가 서버에 알림), Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
-- **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 제작과 분할을 허용합니다. 모닥불 냄비에서 스컬크 1개와 벌집 조각 1개로 경험사탕 XS 6개를 만듭니다. Create가 설치된 경우 경험치 조각과 벌집 조각을 쓰는 XS 레시피도 6개를 만듭니다. S·M·L·XL 합성, 조합대 분할, 개체값 사탕은 Cobblemon 기본 레시피를 사용합니다. 기존 월드의 팩 활성화 설정을 유지하기 위해 팩 ID는 보존했습니다.
+- **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 제작과 분할을 허용합니다. 모닥불 냄비에서 스컬크 1개와 벌집 조각 1개로 경험사탕 XS 6개를 만듭니다. Create가 설치된 경우 경험치 조각과 벌집 조각을 쓰는 XS 레시피도 6개를 만듭니다. 경험사탕 S·M·L·XL 합성과 조합대 분할은 Cobblemon 기본 레시피를 사용합니다. 개체값 사탕 6종(체력·공격·방어·특수공격·특수방어·스피드)은 경험사탕 L·XL을 재료로 쓰는 냄비 조합법 12개를 모두 차단합니다. 상점 구매 등 다른 획득 경로와 이미 보유한 사탕의 사용은 유지합니다. 기존 월드의 팩 활성화 설정을 유지하기 위해 팩 ID는 보존했습니다.
   - 실행 중인 서버에 JAR 교체 없이 적용하려면 이 팩의 `pack.mcmeta`와 `data/`를 월드 데이터팩 `world/datapacks/jbro-policy-xs-candy-six.zip`으로 배치하고 `/reload`로 인식시킵니다. 자동 활성화되지 않으면 `/datapack enable "file/jbro-policy-xs-candy-six.zip" last`로 활성화합니다. 같은 레시피 ID를 가장 높은 우선순위에서 덮어쓰므로 서버 재시작 없이 반영됩니다. 활성화 후 내용만 갱신할 때는 `/reload`를 사용합니다.
 
 ## 설정

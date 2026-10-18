@@ -38,8 +38,15 @@ class PolicyDataTest {
         for (path in recipes) {
             assertEquals(null, javaClass.getResource("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/$path.json"))
         }
+    }
+
+    @Test
+    fun `every IV candy recipe is disabled without blocking experience candy crafting`() {
         for (stat in listOf("courage", "health", "mighty", "quick", "smart", "tough")) for (size in listOf("l", "xl")) {
-            assertEquals(null, javaClass.getResource("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/campfire_pot/${stat}_candy_$size.json"))
+            val recipe = json("/resourcepacks/no_stat_candy_l_xl/data/cobblemon/recipe/campfire_pot/${stat}_candy_$size.json")
+            val condition = recipe.getAsJsonArray("fabric:load_conditions").single().asJsonObject
+            assertEquals("fabric:not", condition.get("condition").asString)
+            assertEquals("fabric:true", condition.getAsJsonObject("value").get("condition").asString)
         }
     }
 
