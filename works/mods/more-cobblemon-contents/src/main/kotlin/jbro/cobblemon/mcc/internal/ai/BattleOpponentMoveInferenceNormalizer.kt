@@ -94,7 +94,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         val revealed = if (includePublicReveals) revealedMoves(pokemon, catalog, moveDetails) else emptyList()
         revealed.forEach { (moveId, details) ->
             addConcrete(slots, moveId, details, group(pokemon, details, moveId), BattleOpponentMoveKnowledge.CONFIRMED,
-                BattleOpponentMoveSource.PUBLIC_REVEAL)
+                BattleOpponentMoveSource.PUBLIC_REVEAL, pokemon)
         }
 
         val resolvedActual = if (policy.readsHiddenSet) {
@@ -205,7 +205,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         val currentStatusCount = slots.count { !it.group.isAttack() }
         val statusGuesses = (actualStatusCount - currentStatusCount).coerceAtLeast(0)
         if (policy.readsHiddenStatusCategories) {
-            fillCategorizedStatusGuesses(slots, actual, statusGuesses)
+            fillCategorizedStatusGuesses(slots, actual, statusGuesses, pokemon)
         } else {
             fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, statusGuesses)
         }
@@ -245,7 +245,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         }.toMutableList()
         revealedMoves(pokemon, catalog, moveDetails).forEach { (moveId, details) ->
             val moveGroup = group(pokemon, details, moveId)
-            val category = BattleStatusMoveCategories.classify(moveId, details)
+            val category = BattleStatusMoveCategories.classify(moveId, details, pokemon)
             val exact = slots.indexOfFirst { sameMove(it.moveId, moveId) }
             val replacement = when {
                 exact >= 0 -> exact
@@ -271,7 +271,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
             if (replacement != null) {
                 val slotNumber = slots.getOrNull(replacement)?.slot ?: replacement
                 val confirmed = concrete(slotNumber, moveId, details, moveGroup,
-                    BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.PUBLIC_REVEAL)
+                    BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.PUBLIC_REVEAL, pokemon)
                 if (replacement == slots.size) slots += confirmed else slots[replacement] = confirmed
             }
         }
@@ -512,6 +512,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         slots: MutableList<BattleOpponentMoveSlotView>,
         actual: List<Pair<String, BattleMoveCandidateView>>,
         count: Int,
+        user: BattlePokemonStateView,
     ) {
         val before = slots.size
         actual.asSequence()
@@ -519,7 +520,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
             .sortedBy { canonical(it.first) }
             .take(minOf(count, MAX_MOVE_SLOTS - slots.size))
             .forEach { (id, details) ->
-                val category = BattleStatusMoveCategories.classify(id, details)
+                val category = BattleStatusMoveCategories.classify(id, details, user)
                 slots += BattleOpponentMoveSlotView(
                     slot = slots.size,
                     moveId = null,
@@ -540,6 +541,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         forcedGroup: BattleOpponentMoveGroup?,
         knowledge: BattleOpponentMoveKnowledge,
         source: BattleOpponentMoveSource,
+        user: BattlePokemonStateView? = null,
     ) {
         if (slots.size >= MAX_MOVE_SLOTS || slots.containsMove(moveId)) return
         val inferredGroup = forcedGroup ?: if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
@@ -547,7 +549,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         } else {
             BattleOpponentMoveGroup.COVERAGE_ATTACK
         }
-        slots += concrete(slots.size, moveId, details, inferredGroup, knowledge, source)
+        slots += concrete(slots.size, moveId, details, inferredGroup, knowledge, source, user)
     }
 
     private fun concrete(
@@ -557,10 +559,11 @@ internal object BattleOpponentMoveInferenceNormalizer {
         group: BattleOpponentMoveGroup,
         knowledge: BattleOpponentMoveKnowledge,
         source: BattleOpponentMoveSource,
+        user: BattlePokemonStateView? = null,
     ) = BattleOpponentMoveSlotView(
         slot, moveId, group, knowledge, source, details,
         statusCategory = if (group == BattleOpponentMoveGroup.STATUS_OTHER) {
-            BattleStatusMoveCategories.classify(moveId, details)
+            BattleStatusMoveCategories.classify(moveId, details, user)
         } else {
             null
         },

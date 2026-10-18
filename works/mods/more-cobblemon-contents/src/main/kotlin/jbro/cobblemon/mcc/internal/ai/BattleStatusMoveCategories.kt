@@ -34,9 +34,12 @@ object BattleStatusMoveCategories {
      * callback, and so never reaches the declarative facts, are listed by ID.
      */
     @JvmStatic
-    fun classify(moveId: String, details: BattleMoveCandidateView): BattleStatusMoveCategory? {
+    fun classify(moveId: String, details: BattleMoveCandidateView): BattleStatusMoveCategory? = classify(moveId, details, null)
+
+    /** [classify] for a known [user]: a Ghost's Curse is no raise but a status put on the target. */
+    fun classify(moveId: String, details: BattleMoveCandidateView, user: BattlePokemonStateView?): BattleStatusMoveCategory? {
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) return null
-        if (isPureSelfSetup(details)) return null
+        if (isPureSelfSetup(details, user)) return null
         val id = canonical(moveId)
         val effects = details.effects?.effects.orEmpty()
         fun has(kind: BattleMoveEffectKind, vararg targets: BattleMoveEffectTarget) =

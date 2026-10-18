@@ -332,6 +332,28 @@ class BattleOpponentMoveInferenceNormalizerTest {
         assertEquals(4, updated.slots.size)
     }
 
+    @Test
+    fun `a hidden Curse is a raise for anyone but a Ghost`() {
+        val curse = BattleMoveCandidateView("ghost", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 10,
+            effects = requireNotNull(BattleShowdownMoveEffects.resolve("curse")))
+        val moves = LinkedHashMap(MOVES).apply { put("curse", curse) }
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "shadowball", "curse", "thunderwave"))
+        fun read(types: Set<String>): BattleOpponentMoveInferenceView {
+            val state = state(types = types)
+            val catalog = BattlePublicActionCatalogView(
+                entries = listOf(BattlePokemonActionCatalogView(OPPONENT_ID, emptyList())),
+                candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "flutter-mane", "normal", moves.keys,
+                    "fixture:learnset", moves)),
+            )
+            return BattleOpponentMoveInferenceNormalizer.normalize(state, catalog, BattleTrainerTier.BOSS, actual,
+                moveDetails = moves::get).single()
+        }
+        assertFalse(read(setOf("ghost", "fairy")).slots.any { it.group == BattleOpponentMoveGroup.PURE_SETUP },
+            "a Ghost's Curse curses the target")
+        assertTrue(read(setOf("normal", "fairy")).slots.any { it.group == BattleOpponentMoveGroup.PURE_SETUP },
+            "anyone else's Curse raises Attack and Defense")
+    }
+
     private fun normalize(
         tier: BattleTrainerTier,
         actual: Map<UUID, Set<String>>,
