@@ -231,16 +231,14 @@ internal class LocalTacticalBrain(
                 .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
                 .firstOrNull { it !== difficultyContext } ?: return@lazy null
             val table = pairTable(board)
-            // A Mega board whose Mega reads no damaging attack at all where the base form has some cannot be played (its form's data
-            // missing): the base board stands. Read anyway, the Pokemon "had nothing to hit with" and switched out of sure
-            // knockouts (Z-A Megas in the league run without their species data, 2026-10-19).
-            fun attacks(scores: jbro.cobblemon.mcc.betterai.matchup.MatchupScores?, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Boolean {
-                val ally = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted } ?: return false
-                return state.pokemon.any { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
-                    scores?.moves(ally.battlePokemonId, it.battlePokemonId)?.any { move -> move.maximumDamageFraction > 0.0 } == true }
-            }
-            if (!attacks(table, board.state) && attacks(baseRuleScores, difficultyContext.state)) {
-                logger.warn("[BetterAI] The Mega board reads no attack for the Pokemon in front; the rules read the base board")
+            // A Mega board whose form's data is missing cannot be played: the base board stands. Read anyway, its moves read
+            // nothing, the Pokemon "had nothing to hit with" and switched out of sure knockouts (Z-A Megas in the league run
+            // without their species data, 2026-10-19).
+            // The Mega's form must be in the dex; a Mega that legitimately does nothing to the foe in front (a Scrappy
+            // Kangaskhan's Normal moves on a Ghost once it is Mega) keeps its board.
+            val mega = board.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
+            if (mega != null && !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicSpeciesData.formKnown(mega)) {
+                logger.warn("[BetterAI] The Mega form {} is not in the dex; the rules read the base board", mega.formId)
                 null
             } else board to table
         }
@@ -797,12 +795,25 @@ internal class LocalTacticalBrain(
         }
         // A status move is worth its value only if its user gets it off: a foe moving first may knock it out (LocalActingChance).
         // Its value after the rules is scaled by that chance; Protect (+4, its own reading) and Trick Room (scaled above) aside.
+        fun actingStatus(part: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate) =
+            part.kind == BattleActionKind.USE_MOVE && part.moveDetails?.damageCategory == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS &&
+                part.moveDetails?.effects?.effects.orEmpty().none { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.PROTECT_USER } &&
+                !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(part)
         val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             searchedRanked.mapNotNull { rank ->
                 val candidate = rank.outcome.candidate
-                if (candidate.kind != BattleActionKind.USE_MOVE || candidate.moveDetails?.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS ||
-                    candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.PROTECT_USER } ||
-                    jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) return@mapNotNull null
+                if (candidate.kind == BattleActionKind.COMPOSITE) {
+                    // A doubles turn: the status rules' credit (screens, hazards, heals, debuffs, raises) is the status
+                    // part's, and counts at the chance its user gets it off; the partner's attack keeps its value.
+                    val parts = candidate.componentActions.filter(::actingStatus)
+                    if (parts.isEmpty()) return@mapNotNull null
+                    val credit = listOf(screenAdjustments, hazardEncoreAdjustments, healRaceAdjustments, debuffAdjustments,
+                        statusMoveAdjustments, setupAdjustments).sumOf { it[candidate.actionId] ?: 0.0 }
+                    if (credit <= 0.0) return@mapNotNull null
+                    val acts = parts.fold(1.0) { all, part -> all * jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(part, rulesContext, scores) }
+                    return@mapNotNull if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * credit
+                }
+                if (!actingStatus(candidate)) return@mapNotNull null
                 val total = rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)
                 if (total <= 0.0) return@mapNotNull null
                 val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, rulesContext, scores)
