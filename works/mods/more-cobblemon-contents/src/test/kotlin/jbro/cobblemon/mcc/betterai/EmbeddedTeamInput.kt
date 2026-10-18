@@ -28,7 +28,9 @@ internal object EmbeddedTeamInput {
         /** The Tera type once it terastallized; it lasts through switches. */
         var tera: String? = null,
         /** Transformed: its types are the copied Pokemon's, never its own species' (until it leaves). */
-        var transformed: Boolean = false)
+        var transformed: Boolean = false,
+        /** Its types before it terastallized (Transform copies these, Showdown's getTypes(true, true)). */
+        var preTeraTypes: Set<String>? = null)
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -124,7 +126,7 @@ internal object EmbeddedTeamInput {
                 }, preparing = metadata?.get("charge")?.asBoolean == true && "[still]" in p) else 0
             pp.observe(element.asString, pressureLoss, ::maximumPp)
             fun event(eventKind: BattleObservedEventKind, value: String? = null) {
-                events += BattleObservedEventView(index.toLong() * 2, eventTurn, eventKind,
+                events += BattleObservedEventView(index.toLong() * 4, eventTurn, eventKind,
                     actorPokemonId = current?.let { uuid(it.ident) }, publicValueId = value,
                     // The game's observer records the actor's active slot; the native session matches by it.
                     actorSlot = if (nativeInputs && current != null) activeSlot(actor) else null)
@@ -163,6 +165,8 @@ internal object EmbeddedTeamInput {
                             it.originalMoves = null
                         }
                         it.active = false; it.stages.clear(); it.added = null; it.transformed = false; it.types = types(it); it.volatileEffects.clear()
+                        // Out of battle its type changes end; a Terastallized one still holds its species' types beneath.
+                        it.preTeraTypes = it.tera?.let { _ -> baseTypes(it.species) }
                     }
                     val details = p[3].split(',').map(String::trim)
                     val species = id(details[0])
@@ -170,10 +174,11 @@ internal object EmbeddedTeamInput {
                     val entry = Seen(actor, species, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                         hp.first, hp.second, types = baseTypes(species))
                     current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item
-                        entry.originalMoves = it.originalMoves; entry.tera = it.tera; entry.types = types(entry) }
+                        entry.originalMoves = it.originalMoves; entry.tera = it.tera; entry.types = types(entry)
+                        entry.preTeraTypes = entry.tera?.let { _ -> baseTypes(entry.species) } }
                     entry.volatileEffects += inherited
                     seen[key] = entry
-                    events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor),
+                    events += BattleObservedEventView(index.toLong() * 4, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor),
                         actorSlot = if (nativeInputs) activeSlot(actor) else null)
                 }
                 "-damage", "-heal" -> {
@@ -189,7 +194,7 @@ internal object EmbeddedTeamInput {
                             kind == "-damage" && sourceId == null && delta != null && delta < 0.0 &&
                                 it.turn == eventTurn && target in it.targets
                         }
-                        events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.HP_CHANGED,
+                        events += BattleObservedEventView(index.toLong() * 4, eventTurn, BattleObservedEventKind.HP_CHANGED,
                             target, hpFractionDelta = delta, precedingActionSequence = link?.sequence,
                             precedingActionActorPokemonId = link?.actor, precedingActionMoveId = link?.moveId,
                             publicSourceEffectId = sourceId)
@@ -207,14 +212,14 @@ internal object EmbeddedTeamInput {
                             // Like the game's observer: an effect source never brings back an item already gone.
                             source.startsWith("item: ") -> {
                                 if (owner.item != "") owner.item = resource
-                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                                events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
                                     BattleObservedEventKind.HELD_ITEM_REVEALED, uuid(owner.ident), publicValueId = resource,
                                     actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
                             }
                             source.startsWith("ability: ") -> {
                                 owner.ability = resource
                                 // After the line's HP change, as the game's observer orders them.
-                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                                events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
                                     BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
                                     actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
                             }
@@ -231,10 +236,17 @@ internal object EmbeddedTeamInput {
                         it.ability = id(abilitySource); event(BattleObservedEventKind.ABILITY_REVEALED, id(abilitySource))
                         return@let
                     }
+                    // The game's observer records the action's order first, with the move's base priority (the order
+                    // evidence reads it), one step before the line's own events.
+                    events += BattleObservedEventView(index.toLong() * 4 - 1, eventTurn, BattleObservedEventKind.ACTION_ORDER,
+                        uuid(it.ident), publicValueId = id(p[3]),
+                        baseMovePriority = ruleMoves.getAsJsonObject(id(p[3]))?.get("priority")?.asInt
+                            ?: jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().move(id(p[3]))?.priority,
+                        actorSlot = if (nativeInputs) activeSlot(actor) else null)
                     it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3]))
                     val targets = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
-                    actionWindow = ActionWindow(eventTurn, index.toLong() * 2, uuid(it.ident), id(p[3]), targets)
+                    actionWindow = ActionWindow(eventTurn, index.toLong() * 4 - 1, uuid(it.ident), id(p[3]), targets)
                 }
                 // As the game's observer records them: without the event, Toxic's counter ran from the last switch-in
                 // (six where the game had three) and a Protect read the opponent as poisoned out.
@@ -249,7 +261,7 @@ internal object EmbeddedTeamInput {
                         p.drop(4).singleOrNull { tag -> tag.startsWith("[of] ") }?.let { tag -> seen[identity(tag.removePrefix("[of] "))] }
                             ?.takeIf { source -> source !== it }?.let { source ->
                                 source.ability = id(p[3])
-                                events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                                events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
                                     BattleObservedEventKind.ABILITY_REVEALED, uuid(source.ident), publicValueId = id(p[3]),
                                     actorSlot = if (nativeInputs && source.active) activeSlot(source.ident) else null)
                             }
@@ -316,10 +328,10 @@ internal object EmbeddedTeamInput {
                     val copied = source?.moves.orEmpty().toSet()
                     it.moves.clear(); it.moves.addAll(copied)
                     // Transform copies the target's types (and an added type with them).
-                    it.types = source?.let { from -> from.types + listOfNotNull(from.added) }.orEmpty(); it.added = null
+                    it.types = source?.let { from -> (from.preTeraTypes ?: from.types) + listOfNotNull(from.added) }.orEmpty(); it.added = null
                     it.transformed = true
                 }
-                "-terastallize" -> current?.let { it.tera = id(p[3]); it.types = types(it); it.added = null }
+                "-terastallize" -> current?.let { it.preTeraTypes = it.types; it.tera = id(p[3]); it.types = types(it); it.added = null }
                 "-weather" -> {
                     val next = id(actor).takeUnless { it == "none" }
                     if ("[upkeep]" !in p) started["weather"] = maxOf(eventTurn, 1)
@@ -332,7 +344,7 @@ internal object EmbeddedTeamInput {
                     started["side:${side(actor)}:$name"] = maxOf(eventTurn, 1) }
                 "-sideend" -> sideEffects.getValue(side(actor)).remove(id(p[3]))
             }
-            EmbeddedPublicMoveOutcomes.read(element.asString, eventTurn, index.toLong() * 2 + 1) { ident ->
+            EmbeddedPublicMoveOutcomes.read(element.asString, eventTurn, index.toLong() * 4 + 1) { ident ->
                 seen[identity(ident)]?.let { uuid(it.ident) }
             }?.let { outcome ->
                 if (!EmbeddedPublicMoveOutcomes.duplicatesMiss(events.lastOrNull(), outcome)) events += outcome
@@ -340,11 +352,11 @@ internal object EmbeddedTeamInput {
             // The game's observer reveals an item named as any line's source, not only an HP change's (handled above).
             val itemSource = p.drop(3).singleOrNull { it.startsWith("[from] item: ") }?.removePrefix("[from] item: ")
                 ?.let(::id)?.takeIf(String::isNotEmpty)
-            if (itemSource != null && kind !in setOf("-damage", "-heal") && events.lastOrNull()?.sequence != index.toLong() * 2 + 1) {
+            if (itemSource != null && kind !in setOf("-damage", "-heal") && events.lastOrNull()?.sequence != index.toLong() * 4 + 1) {
                 val ownerTag = p.drop(3).singleOrNull { it.startsWith("[of] ") }?.removePrefix("[of] ")
                 seen[identity(ownerTag ?: actor)]?.let { owner ->
                     if (owner.item != "") owner.item = itemSource
-                    events += BattleObservedEventView(index.toLong() * 2 + 1, eventTurn,
+                    events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
                         BattleObservedEventKind.HELD_ITEM_REVEALED, uuid(owner.ident), publicValueId = itemSource,
                         actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
                 }
@@ -531,6 +543,7 @@ internal object EmbeddedTeamInput {
         val observed = if (nativeInputs) gameNumbered(events).takeLast(128) else events.takeLast(64)
         // The game's observer hands over the species' possible abilities (a Rotom-Wash's lone Levitate) and the order
         // evidence; without them an unrevealed Levitate took Earthquake for a knockout (league run, 2026-10-19).
+        val transformedIds = seen.values.filter { it.transformed }.mapTo(hashSetOf()) { uuid(it.ident) }
         val abilities = PublicSpeciesInferenceKnowledge { speciesId, formId ->
             pokemon.firstOrNull { it.speciesId == speciesId && it.formId == formId }
                 ?.let(jbro.cobblemon.mcc.betterai.mechanics.LocalPublicSpeciesData::species)
@@ -542,7 +555,9 @@ internal object EmbeddedTeamInput {
             mapOf(BattleSide.ALLY to allies.count { !it.fainted }, BattleSide.OPPONENT to
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
             observedEvents = observed,
-            inferences = PublicBattleInferenceEngine.infer(pokemon, abilities, observed))
+            // A transformed Pokemon has the copied one's ability, not its own species' (until it leaves): no candidates.
+            inferences = PublicBattleInferenceEngine.infer(pokemon.filterNot { it.battlePokemonId in transformedIds }, abilities) +
+                PublicBattleInferenceEngine.infer(pokemon, { _, _ -> null }, observed))
         return BattleDecisionContext(UUID.nameUUIDFromBytes("$battleId:$ownSide:$requestNumber".toByteArray()), state,
             candidates, System.currentTimeMillis() + 20000, memory = memory(state), publicActionCatalog = catalog)
     }
