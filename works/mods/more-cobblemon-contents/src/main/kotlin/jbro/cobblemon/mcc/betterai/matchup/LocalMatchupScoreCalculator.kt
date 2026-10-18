@@ -355,6 +355,9 @@ internal object LocalMatchupScoreCalculator {
             .asSequence()
             .filter { it.kind == BattleActionKind.USE_MOVE && it.actorSlot == user.activeSlot }
             .filter { it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS }
+            // A revealed Max Move is what a Dynamaxed Pokemon turned one of its moves into, at the dex's placeholder power
+            // of 10: the move it came from is read in its place (the inference keeps an attack of its type).
+            .filterNot { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.isMaxMove(it.moveId) }
             // A Dynamaxed user's attacks are its Max Moves.
             .map { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(it, user) }
             .mapNotNull { original ->
