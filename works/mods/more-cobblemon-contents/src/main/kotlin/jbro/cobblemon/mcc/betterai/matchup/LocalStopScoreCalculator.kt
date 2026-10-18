@@ -119,11 +119,16 @@ internal object LocalStopScoreCalculator {
         val unaware = when {
             boostedSubject.knownAbilityId != null ->
                 if (LocalPublicAbilityState.effectiveKnownAbility(boosted.state, boostedSubject)?.let(PublicIds::canonical) == UNAWARE) 1.0 else 0.0
+            // Unknown but suppressed (Gastro Acid, a Neutralizing Gas): no ability works, Unaware among them.
+            !LocalPublicAbilityState.isActive(boosted.state, boostedSubject, UNAWARE) -> 0.0
             else -> jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(boosted.state, boostedSubject)
                 .takeIf { it.isNotEmpty() }?.let { possible -> possible.count { PublicIds.canonical(it) == UNAWARE }.toDouble() / possible.size }
                 ?: 0.0
         }
-        val sweeperAttack = LocalMatchupScoreCalculator.moveMatchups(boosted, sweeperId, subjectId, cache).firstOrNull()?.action
+        // The attack the sweeper uses in the exchange, read for whether it ignores the target's ability.
+        val sweeperAttack = againstBoosted.opponentMove?.moveId?.let { id ->
+            LocalMatchupScoreCalculator.moveMatchups(boosted, sweeperId, subjectId, cache).firstOrNull { it.score.moveId == id }?.action
+        }
         val breaksIt = sweeperAttack != null &&
             LocalPublicAbilityMechanics.ignoresTargetAbility(sweeperAttack, boostedSweeper, boostedSubject, boosted.state)
         if (unaware > 0.0 && !breaksIt) {
