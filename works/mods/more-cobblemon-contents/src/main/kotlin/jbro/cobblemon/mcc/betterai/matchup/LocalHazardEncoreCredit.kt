@@ -68,6 +68,13 @@ internal object LocalHazardEncoreCredit {
     }
 
     /** The hazard this move lays on the opponent's side: declared by its data, else set in a callback (named). */
+    /** The hazard [move] lays on its target's side, or null. */
+    internal fun hazardId(move: BattleActionCandidate): String? = hazardOf(move)
+
+    /** A layer of [id] on [side], valued as [hazard] values one on the opponent's (Taunt reads the opponent's on this side). */
+    internal fun layerValue(id: String, context: BattleDecisionContext, scores: MatchupScores, side: BattleSide): Double? =
+        hazard(id, context, scores, side)
+
     private fun hazardOf(move: BattleActionCandidate): String? {
         move.moveDetails?.effects?.effects.orEmpty().firstNotNullOfOrNull { effect ->
             effect.valueId?.let(PublicIds::canonical)?.takeIf {
@@ -84,17 +91,17 @@ internal object LocalHazardEncoreCredit {
      * ([PublicSwitchEntryHazardCalculator]); Toxic Spikes the status it leaves; Sticky Web a flat share. Nothing when only
      * the Pokemon in front is left (it cannot switch) or the layer would not stack. A revealed hazard remover halves it.
      */
-    private fun hazard(id: String, context: BattleDecisionContext, scores: MatchupScores): Double? {
+    private fun hazard(id: String, context: BattleDecisionContext, scores: MatchupScores, side: BattleSide = BattleSide.OPPONENT): Double? {
         val state = context.state
-        val current = state.field.sideConditions.getValue(BattleSide.OPPONENT)
+        val current = state.field.sideConditions.getValue(side)
         val stacks = current.firstOrNull { PublicIds.canonical(it.effectId) == id }?.stacks ?: 0
         if (stacks >= (MAX_LAYERS[id] ?: 1)) return null
-        val remaining = state.remainingPokemonBySide.getValue(BattleSide.OPPONENT)
-        val active = state.pokemon.count { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        val remaining = state.remainingPokemonBySide.getValue(side)
+        val active = state.pokemon.count { it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         // No one left to come in: the move fails outright (LocalSideConditionFutility) and earns nothing here.
         if (remaining - active <= 0) return 0.0
         val withLayer = BattleFieldStateView(state.field.weather, state.field.terrain, state.field.roomEffects, state.field.globalEffects,
-            state.field.sideConditions + (BattleSide.OPPONENT to (current.filter { PublicIds.canonical(it.effectId) != id } +
+            state.field.sideConditions + (side to (current.filter { PublicIds.canonical(it.effectId) != id } +
                 BattleTimedEffectView(id, null, stacks = stacks + 1))))
         fun entry(pokemon: BattlePokemonStateView): Double = when (id) {
             TOXIC_SPIKES -> if (!grounded(pokemon) || pokemon.statusId != null ||
@@ -102,12 +109,12 @@ internal object LocalHazardEncoreCredit {
                 else if (stacks + 1 >= 2) BADLY_POISONED_VALUE - (if (stacks >= 1) POISONED_VALUE else 0.0) else POISONED_VALUE
             STICKY_WEB -> if (grounded(pokemon)) STICKY_WEB_VALUE else 0.0
             else -> {
-                val before = PublicSwitchEntryHazardCalculator.hpLoss(state.field, BattleSide.OPPONENT, pokemon) ?: 0.0
-                val after = PublicSwitchEntryHazardCalculator.hpLoss(withLayer, BattleSide.OPPONENT, pokemon) ?: NEUTRAL_ENTRY
+                val before = PublicSwitchEntryHazardCalculator.hpLoss(state.field, side, pokemon) ?: 0.0
+                val after = PublicSwitchEntryHazardCalculator.hpLoss(withLayer, side, pokemon) ?: NEUTRAL_ENTRY
                 (after - before).coerceAtLeast(0.0)
             }
         }
-        val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        val seen = state.pokemon.filter { it.side == side && !it.fainted && it.hpFraction > 0.0 }
         val threats = seen.associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
         val meanThreat = threats.values.takeIf { it.isNotEmpty() }?.average() ?: UNSEEN_THREAT
         // Each opponent left: its entry, weighted up by how well it sweeps this side. Their mean is the layer's worth per
@@ -116,12 +123,12 @@ internal object LocalHazardEncoreCredit {
         // The rest of the team, not seen yet: the preview's unseen Pokemon on average, else a neutral entry.
         val unseen = (remaining - seen.size).coerceAtLeast(0)
         if (unseen > 0) {
-            val seenSpecies = state.pokemon.filter { it.side == BattleSide.OPPONENT }.map { PublicIds.canonical(it.speciesId) }.toSet()
-            val previewEntries = context.opponentTeamPreview?.pokemon.orEmpty()
+            val seenSpecies = state.pokemon.filter { it.side == side }.map { PublicIds.canonical(it.speciesId) }.toSet()
+            val previewEntries = (if (side == BattleSide.OPPONENT) context.opponentTeamPreview?.pokemon.orEmpty() else emptyList())
                 .filter { PublicIds.canonical(it.speciesId) !in seenSpecies && it.knownTypeIds.isNotEmpty() }
                 .map { slot ->
                     entry(BattlePokemonStateView(UUID.nameUUIDFromBytes("preview:${slot.previewSlotId}".toByteArray()),
-                        BattleSide.OPPONENT, null, slot.speciesId, slot.formId, slot.level, 1.0, null, emptyMap(), emptySet(),
+                        side, null, slot.speciesId, slot.formId, slot.level, 1.0, null, emptyMap(), emptySet(),
                         null, null, false, slot.knownTypeIds))
                 }
             val perUnseen = previewEntries.takeIf { it.isNotEmpty() }?.average() ?: NEUTRAL_ENTRY

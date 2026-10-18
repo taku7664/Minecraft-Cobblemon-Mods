@@ -610,8 +610,9 @@ internal class LocalTacticalBrain(
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         // Every tier: a generic value is a guess at any level, and a lower tier is meant to play weaker, not senselessly.
-        val statusPricing = if (!searchless || !nativeStatus || difficultyContext.state.format != BattleFormat.SINGLE) null
-            else jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.adjustments(baseRanked, difficultyContext, decidingProfile, tuning)
+        // No status move is played out in the engine any more (user decision 2026-10-19): the ones it priced take a
+        // formula below (LocalStatusMoveValue).
+        val statusPricing: jbro.cobblemon.mcc.betterai.search.LocalNativeStatusValue.Result? = null
         // Where the rules run, the moves they price (hazards, Encore, debuffs) take the rules' value, not the engine's
         // two-turn reading; below that tier the engine's reading is all they have.
         val nativeStatusAdjustments = statusPricing?.adjustments.orEmpty().let { engine ->
@@ -704,6 +705,16 @@ internal class LocalTacticalBrain(
         val setupAdjustments = setupScores.mapNotNull { (id, value) ->
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to tuning.setupSweepCredit * (value - it.comparisonValue) }
         }.toMap()
+        // A forced switch, Taunt or weather takes its formula's value (LocalStatusMoveValue; singles, where the engine
+        // priced them before).
+        val statusMoveAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else ruleScores?.let { scores ->
+            searchedRanked.mapNotNull { rank ->
+                val candidate = rank.outcome.candidate
+                if (rank.outcome.publiclyInert) return@mapNotNull null
+                jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveValue.read(candidate, rulesContext, scores, opponentIntents, tuning)
+                    ?.let { candidate.actionId to (it.value - rank.comparisonValue) }
+            }.toMap()
+        }.orEmpty()
         // A debuff's ranking value becomes what it takes off, in knockout units (the setup score's scale).
         val debuffAdjustments = debuffReadings.mapNotNull { (id, reading) ->
             // A debuff that fails publicly (the target already has a status) keeps its failing rank.
@@ -749,12 +760,12 @@ internal class LocalTacticalBrain(
             ).mapValues { it.value.adjustment }
         }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
-            knockoutWorthAdjustments.keys + selfDropAdjustments.keys +
+            knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) +
+                (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
@@ -862,7 +873,8 @@ internal class LocalTacticalBrain(
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
                     "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments,
-                    "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments).filterValues { it.isNotEmpty() },
+                    "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments,
+                    "statusMove" to statusMoveAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
