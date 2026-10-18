@@ -205,7 +205,11 @@ internal object LocalTacticalScorer {
             val accuracy = LocalPublicAccuracy.probability(action, context, BattleSide.ALLY)
             buildList {
                 // The credit is the target's worth times the chance; the chance alone is what overlaps.
-                if (primary?.side == BattleSide.OPPONENT) add(primary to (knockoutUtility(action, tuning, context) / knockoutScoreAt(primary, context, tuning)))
+                // A target worth nothing (it wins no exchange and lands nothing) has no credit to overlap.
+                if (primary?.side == BattleSide.OPPONENT) {
+                    val worth = knockoutScoreAt(primary, context, tuning)
+                    add(primary to if (worth <= 0.0) 0.0 else knockoutUtility(action, tuning, context) / worth)
+                }
                 spread.drop(1).filter { it.side == BattleSide.OPPONENT }.forEach { extra ->
                     val probability = when (extra.standardKnockoutAssessment) {
                         jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment.GUARANTEED -> 1.0
