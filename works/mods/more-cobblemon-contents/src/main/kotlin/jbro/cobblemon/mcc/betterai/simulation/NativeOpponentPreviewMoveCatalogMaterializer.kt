@@ -292,6 +292,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                 jbro.cobblemon.mcc.internal.ai.BattleMoveSetExpectation.factor(moveId, details) > 0.0 }
             .sortedWith(
                 compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, details) ->
+                    // No ability: a team preview shows none, so no recoil exemption is public yet.
                     LocalMoveThreatScore.of(moveId, details) * spreadValue(details, format)
                 }.thenByDescending { (_, details) -> LocalMoveThreatScore.typeThreat(canonical(details.typeId), team) }
                     .thenByDescending { (_, details) -> attackScore(details, format) }

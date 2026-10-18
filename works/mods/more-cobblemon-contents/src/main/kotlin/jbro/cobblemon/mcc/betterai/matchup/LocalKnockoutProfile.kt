@@ -55,8 +55,6 @@ internal class LocalKnockoutProfile private constructor(
         fun byHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
             if (rollsByHits.size <= 1) return of(rollsByHits.firstOrNull().orEmpty(), accuracy, targetHp, maximumUses)
             val hit = accuracy.coerceIn(0.0, 1.0)
-            val last = rollsByHits.last()
-            val meanRoll = if (last.isEmpty()) 0.0 else last.average()
             if (targetHp <= 0.0 || hit <= 0.0 || rollsByHits.first().isEmpty() || rollsByHits.first().average() <= 0.0) {
                 return of(rollsByHits.first(), accuracy, targetHp, maximumUses)
             }
@@ -90,7 +88,20 @@ internal class LocalKnockoutProfile private constructor(
                 survival += alive.coerceIn(0.0, 1.0)
                 damage += if (alive <= 0.0) 0.0 else taken / alive / GRID * targetHp
             }
-            return fromProjected(survival, damage, targetHp, meanRoll, hit, canContinue = true)
+            // Uses beyond the window: each standing case at the average hit of the stage it has reached, so a case that
+            // missed every time still hits as hard as the first.
+            var tail = 0.0
+            for (landed in standing.indices) {
+                val rolls = rollsByHits[minOf(landed, rollsByHits.lastIndex)]
+                val meanHit = (if (rolls.isEmpty()) 0.0 else rolls.average()) * hit
+                for (cell in 0 until GRID) {
+                    val mass = standing[landed][cell]
+                    if (mass == 0.0) continue
+                    if (meanHit <= 0.0) return LocalKnockoutProfile(survival, damage, Double.POSITIVE_INFINITY)
+                    tail += mass * (targetHp - cell.toDouble() / GRID * targetHp).coerceAtLeast(0.0) / meanHit
+                }
+            }
+            return LocalKnockoutProfile(survival, damage, (0 until maximumUses).sumOf { survival[it] } + tail)
         }
 
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {

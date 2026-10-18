@@ -398,9 +398,10 @@ internal object LocalMatchupScoreCalculator {
     /**
      * The rolls of an attack that surely changes its user's own stats, once it has landed each number of times: the
      * stages pile up and are read by the damage calculator, up to the first landing that changes nothing (the stage at
-     * its limit, or a stat the attack does not use, as Close Combat's defences). Null when the first landing changes
-     * nothing. The user's other changes are not read here: a lowered Defence makes the other side's hits no harder in
-     * this table, nor does a raised Speed change who moves first.
+     * its limit, or a stat the attack does not use, as Close Combat's defences), unless that landing spent an item (a
+     * White Herb restoring the drop once). Null when no landing changes the damage, and for a Max Move, whose Dynamax
+     * ends within three turns. The user's other changes are not read here: a lowered Defence makes the other side's hits
+     * no harder in this table, nor does a raised Speed change who moves first.
      */
     private fun ownStageRolls(
         position: BattleDecisionContext,
@@ -415,23 +416,25 @@ internal object LocalMatchupScoreCalculator {
                 (it.probability ?: 1.0) >= CERTAIN
         }
         if (changes.isEmpty() || first.all { it <= 0.0 }) return null
+        if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(action) != action.moveId?.let(PublicIds::canonical)) return null
         val byHits = arrayListOf(first)
         var state = position.state
         for (landed in 1 until MAXIMUM_USES) {
+            val itemBefore = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId }?.knownHeldItemId
+            // The whole transition: Contrary, Simple, and a White Herb undoing the drop once.
             changes.forEach { effect ->
-                val holder = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId } ?: return null
-                state = jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.applyStages(state, setOf(user.battlePokemonId),
-                    LocalStatStageChange.reshape(state, holder, user.battlePokemonId, effect.statStages))
+                state = LocalStatStageChange.apply(state, user.battlePokemonId, user.battlePokemonId, effect.statStages)
             }
+            val itemSpent = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId }?.knownHeldItemId != itemBefore
             val calculated = cache.getOrCalculate(state, side, action, position.publicActionCatalog) {
                 PublicBattleTacticalCalculator.calculate(position.copy(state = state, candidates = listOf(action)), side)
             }
             val candidate = calculated.candidates.singleOrNull() ?: break
             val rolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side) ?: break
-            if (rolls == byHits.last()) break
+            if (rolls == byHits.last() && !itemSpent) break
             byHits += rolls
         }
-        return byHits.takeIf { it.size > 1 }
+        return byHits.takeIf { it.distinct().size > 1 }
     }
 
     private const val CERTAIN = 0.999_999

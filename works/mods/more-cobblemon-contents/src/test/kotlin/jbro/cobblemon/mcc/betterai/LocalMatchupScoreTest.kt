@@ -49,6 +49,10 @@ class LocalMatchupScoreTest {
         // A miss lowers nothing: at half accuracy, standing after two uses with 0.6 taken means both landed (1/4).
         val missing = LocalKnockoutProfile.byHits(listOf(List(16) { 0.4 }, List(16) { 0.2 }), 0.5, 1.0, 6)
         assertEquals(0.25 * 0.6 + 0.5 * 0.4, missing.damageWhileStanding[2], 1e-6)
+        // Past the window each case goes on at its own stage: after one use, the miss still hits for 0.5 (a full bar at
+        // 0.25 a use, 4 uses), the landing for 0.25 (half a bar at 0.125 a use, 4 uses): 1 + 0.5 * 4 + 0.5 * 4.
+        val tail = LocalKnockoutProfile.byHits(listOf(List(16) { 0.5 }, List(16) { 0.25 }), 0.5, 1.0, 1)
+        assertEquals(5.0, tail.expectedUses, 1e-6)
     }
 
     @Test
