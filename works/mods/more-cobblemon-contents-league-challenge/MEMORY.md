@@ -1,11 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-18 15:30] 야생 진화 패치 되돌림, 최고 구역 70~80·구역 32×32 (단위·리뷰 확인, 빌드 배치·실게임 미확인)
+## [2026-10-18 15:30] 야생 진화 패치 되돌림, 최고 구역 70~80·구역 32×32 (단위·리뷰·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 결정:** 개발 클라 싱글플레이로 해 보니 진화 패치가 비현실적이고, 무리도 우두머리만 진화체고 나머지는 미진화체였던 게 보기 좋았다며 원래대로 돌리라고 했다. 대신 고렙존 고점을 80으로, 구역을 64×64에서 32×32로.
 - **되돌림:** `204d535b7`·`a2ab48694`를 revert했다(`b6fb79a3`·`41c1d4bd`). 스폰은 다시 낮은 레벨이면 이전 단계로 내리기만 한다. `build.gradle.kts`의 `-Ptests` 필터와 MEMORY 기록은 남겼다. Yoon_SSU_ 소급 보상(XL 25개)은 이 패치 기준이었지만 회수하지 않았다(빡대리님 판단 몫).
 - **설정(`4d20eb1d`):** `region_max` 83 → 85(캡이 충분한 최고 구역 70~80), `region_chunks` 4 → 2(32×32블록), `transition_regions` 16 → 32. 앵커 간격 1,024블록과 최고 지역 보장 권역 2,048블록은 그대로라 지형 배치 규모는 같고 구역 단위만 잘아졌다. 이웃 구역 차이는 최대 약 2.3. 코드 기본값·`active.json`·문구·README·V2 문서를 같이 바꿨다.
 - **확인:** Codex가 `56c364ff`에서 `unitTest -Ptests=WildSpawnLevelTest|WildSpawnRegionsTest|WildSpawnRegressionTest|LeagueCatalogParserTest|WildSpawnStageTest` 24/24 통과(로그 Claude 확인). 첫 실행의 원점 구역 테스트 실패는 4청크 구역을 가정한 범위 탓이라 2×2로 고쳤다(`56c364ff`). Codex 리뷰 지적 없음. PowerShell에서 `gradlew.bat`에 `|` 필터는 cmd가 파이프로 깨므로 `ORG_GRADLE_PROJECT_tests` 환경 변수로 넘기고, `-Pkotlin...` 인수는 따옴표로 감싼다.
+- **개발 배포:** `origin/main` `4ba03724`로 리그 `remapJar` 빌드(EXIT 0, `unzip -t` 정상, JAR 안 `active.json`이 새 값). 개발 서버·클라에 리그 JAR만 넣었고 SHA-256 앞자리 `3b540081a6fa7e98`로 빌드본과 같다. 백업 `develop-product/deployment-backups/20261018-4ba03724-league`. 게임과 서버는 꺼져 있었고 켜지 않았다. 빌드 폴더는 지웠다. 운영(VPS)·PPakemon·deploy-product에는 넣지 않았다.
 
 ## [2026-10-18 13:50] `6bc4fd51` 개발 서버·클라 배포: MCC 애드온 피드백 수정 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
