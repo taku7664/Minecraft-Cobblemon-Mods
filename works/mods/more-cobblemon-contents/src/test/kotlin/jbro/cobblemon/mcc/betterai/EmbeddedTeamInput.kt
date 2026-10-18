@@ -523,11 +523,21 @@ internal object EmbeddedTeamInput {
             fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map { field(it, FieldEffectScope.GLOBAL) },
             sideEffects.mapValues { (side, values) -> values.map { (name, stacks) ->
                 timed(name, "side:$side:$name", Cobblemon173PublicEffectDurationKnowledge.side(name), stacks) } })
+        val observed = if (nativeInputs) gameNumbered(events).takeLast(128) else events.takeLast(64)
+        // The game's observer hands over the species' possible abilities (a Rotom-Wash's lone Levitate) and the order
+        // evidence; without them an unrevealed Levitate took Earthquake for a knockout (league run, 2026-10-19).
+        val abilities = PublicSpeciesInferenceKnowledge { speciesId, formId ->
+            pokemon.firstOrNull { it.speciesId == speciesId && it.formId == formId }
+                ?.let(jbro.cobblemon.mcc.betterai.mechanics.LocalPublicSpeciesData::species)
+                ?.abilities?.mapNotNull { (slot, name) -> PublicIds.canonical(name).takeIf(String::isNotEmpty)?.let {
+                    PublicAbilityPossibility(it, if (slot == "H") BattleAbilityAvailability.HIDDEN else BattleAbilityAvailability.REGULAR)
+                } }?.distinct()
+        }
         val state = BattleStateView(battleId, format, turn, pokemon, field,
             mapOf(BattleSide.ALLY to allies.count { !it.fainted }, BattleSide.OPPONENT to
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
-            observedEvents = if (nativeInputs) gameNumbered(events).takeLast(128) else events.takeLast(64),
-            inferences = emptyList())
+            observedEvents = observed,
+            inferences = PublicBattleInferenceEngine.infer(pokemon, abilities, observed))
         return BattleDecisionContext(UUID.nameUUIDFromBytes("$battleId:$ownSide:$requestNumber".toByteArray()), state,
             candidates, System.currentTimeMillis() + 20000, memory = memory(state), publicActionCatalog = catalog)
     }
