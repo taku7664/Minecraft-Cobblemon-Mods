@@ -243,20 +243,11 @@ internal object LocalDirectHitMechanics {
     private const val SUBSTITUTE = "substitute"
 }
 
-/**
- * Showdown's recoil exemptions: Rock Head and Magic Guard stop recoil from damage dealt and Chloroblast's half of
- * maximum HP, Magic Guard alone stops Mind Blown and Steel Beam's, and nothing stops Struggle's or an HP cost like
- * Belly Drum's.
- */
+/** [BattleRecoilImmunity], where the set-level attack scores read it too. */
 internal object LocalRecoilImmunity {
-    fun blocksDamageRecoil(ability: String?): Boolean = ability == "rockhead" || ability == "magicguard"
+    fun blocksDamageRecoil(ability: String?): Boolean = BattleRecoilImmunity.blocksDamageRecoil(ability)
 
-    fun blocksMaxHpRecoil(effect: BattleMoveEffectView, ability: String?): Boolean = when (effect.valueId) {
-        BattleDeclarativeMoveEffects.MIND_BLOWN_RECOIL -> ability == "magicguard"
-        BattleDeclarativeMoveEffects.MAX_HP_DAMAGE_RECOIL -> blocksDamageRecoil(ability)
-        else -> false
-    }
+    fun blocksMaxHpRecoil(effect: BattleMoveEffectView, ability: String?): Boolean = BattleRecoilImmunity.blocksMaxHpRecoil(effect, ability)
 
-    /** Magic Guard also stops the half of maximum HP a missed High Jump Kick costs. */
-    fun blocksCrashRecoil(ability: String?): Boolean = ability == "magicguard"
+    fun blocksCrashRecoil(ability: String?): Boolean = BattleRecoilImmunity.blocksCrashRecoil(ability)
 }

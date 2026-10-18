@@ -65,7 +65,7 @@ internal object LocalOpponentMoveHypotheses {
         return options(pokemon, catalog, history).entries
             .filter { (_, details) -> details.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
             .sortedWith(compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (move, details) ->
-                LocalMoveThreatScore.of(move, details)
+                LocalMoveThreatScore.of(move, details, pokemon.knownAbilityId)
             }.thenBy { canonical(it.key) })
             .associateTo(linkedMapOf()) { (move, details) -> move to InferredOption(details, BattleOpponentMoveKnowledge.EXPECTED) }
     }

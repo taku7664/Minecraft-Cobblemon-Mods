@@ -102,7 +102,7 @@ internal object LocalSelfDropRisk {
                 LocalStatStageChange.reshape(after, holder, user.battlePokemonId, effect.statStages))
             val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
             risk += probability * foes.map { foe ->
-                slotRisk(board, after, changed, user.battlePokemonId, foe, foe in targeted, moveId, bench, scores, intents, cache)
+                slotRisk(board, after, changed, user.battlePokemonId, foe, foe in targeted, moveId, accuracy, bench, scores, intents, cache)
             }.average()
             if (probability >= CERTAIN_PROBABILITY) after = changed
         }
@@ -122,6 +122,7 @@ internal object LocalSelfDropRisk {
         foe: BattlePokemonStateView,
         targeted: Boolean,
         moveId: String,
+        accuracy: Double,
         bench: List<BattlePokemonStateView>,
         scores: MatchupScores,
         intents: List<OpponentIntent>,
@@ -140,10 +141,15 @@ internal object LocalSelfDropRisk {
             val now = score(after, afterScores, facer) ?: return 0.0
             return was - now
         }
-        // After a knockout the opponent sends in its best answer to the weakened user.
-        val replacement by lazy { bench.minByOrNull { score(after, afterScores, it) ?: Double.MAX_VALUE } }
-        fun knockout(receiver: BattlePokemonStateView) = if (!targeted) 0.0
-            else scores.moves(userId, receiver.battlePokemonId).firstOrNull { it.moveId == moveId }?.knockoutChanceWithin(1) ?: 0.0
+        // After a knockout the opponent sends in its best answer to the weakened user, from the bench without the
+        // Pokemon that just fell.
+        fun replacement(fallen: BattlePokemonStateView) = bench.filter { it.battlePokemonId != fallen.battlePokemonId }
+            .minByOrNull { score(after, afterScores, it) ?: Double.MAX_VALUE }
+        // The drop happens only when the attack lands, and the risk is weighed by that chance once (in [read]): the
+        // knockout here is the chance given a hit. The table's chance counts the miss too, which squared the accuracy.
+        fun knockout(receiver: BattlePokemonStateView) = if (!targeted || accuracy <= 0.0) 0.0
+            else ((scores.moves(userId, receiver.battlePokemonId).firstOrNull { it.moveId == moveId }?.knockoutChanceWithin(1) ?: 0.0) / accuracy)
+                .coerceIn(0.0, 1.0)
         val switches = intents.firstOrNull { it.pokemonId == foe.battlePokemonId }?.options.orEmpty()
             .filter { it.kind == IntentKind.SWITCH && it.switchInId != null }
             .groupBy { it.switchInId!! }.mapValues { (_, options) -> options.sumOf { it.probability } }
@@ -153,7 +159,7 @@ internal object LocalSelfDropRisk {
         }
         return receivers.sumOf { (receiver, chance) ->
             val knockout = knockout(receiver)
-            val next = replacement
+            val next = if (knockout > 0.0) replacement(receiver) else null
             chance * ((1.0 - knockout) * lost(receiver) + if (next == null) 0.0 else knockout * lost(next))
         }
     }

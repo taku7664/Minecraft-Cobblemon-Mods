@@ -53,7 +53,9 @@ internal object BattleOpponentMoveExpectationScorer {
         // (Double-Edge, Brave Bird), of its maximum HP (Steel Beam, Mind Blown, Chloroblast, Struggle), or half of it on a
         // miss (High Jump Kick). Flat amounts (Steel Beam -30, Double-Edge -20) read both over Flash Cannon and Body Slam
         // (user decision 2026-10-18).
-        val maxHpCost = move.effects?.effects.orEmpty().sumOf { effect ->
+        // A publicly known Rock Head or Magic Guard spends none (BattleRecoilImmunity).
+        val ability = pokemon.knownAbilityId?.let(PublicIds::canonical)
+        val maxHpCost = move.effects?.effects.orEmpty().filterNot { BattleRecoilImmunity.blocks(it, ability) }.sumOf { effect ->
             val share = effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 }
             val chance = effect.probability ?: 1.0
             when (effect.kind) {

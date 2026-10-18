@@ -18,12 +18,19 @@ import java.util.concurrent.ConcurrentHashMap
 internal object LocalMoveThreatScore {
     private val scores = ConcurrentHashMap<String, Double>()
 
-    /** Zero for a status move, or one without a fixed power (Seismic Toss and the like). */
-    fun of(moveId: String, details: BattleMoveCandidateView): Double =
+    /**
+     * Zero for a status move, or one without a fixed power (Seismic Toss and the like). [ability], when its user's is
+     * publicly known: a Rock Head or Magic Guard spends no recoil.
+     */
+    fun of(moveId: String, details: BattleMoveCandidateView, ability: String? = null): Double {
+        val immune = details.effects?.effects.orEmpty().filter {
+            jbro.cobblemon.mcc.internal.ai.BattleRecoilImmunity.blocks(it, ability?.let(PublicIds::canonical))
+        }.map { it.kind }.toSet()
         // Keyed by what the score reads as well as the id, so a move whose data an addon changed is scored afresh.
-        scores.getOrPut("${PublicIds.canonical(moveId)}|${details.typeId}|${details.damageCategory}|${details.power}|${details.accuracy}") {
-            compute(moveId, details)
+        return scores.getOrPut("${PublicIds.canonical(moveId)}|${details.typeId}|${details.damageCategory}|${details.power}|${details.accuracy}|$immune") {
+            compute(moveId, details, immune)
         }
+    }
 
     /**
      * How threatening an attack of [typeId] is to [team]: the sum of its type effectiveness against each living
@@ -32,7 +39,7 @@ internal object LocalMoveThreatScore {
     fun typeThreat(typeId: String, team: List<Set<String>>): Double =
         team.sumOf { types -> StandardTypeEffectiveness.multiplier(typeId, types) }
 
-    private fun compute(moveId: String, details: BattleMoveCandidateView): Double {
+    private fun compute(moveId: String, details: BattleMoveCandidateView, immune: Set<BattleMoveEffectKind>): Double {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS || details.power <= 0.0) return 0.0
         // The same conditions the move inference reads (BattleMoveSetExpectation): an attack that fails unless its
         // condition holds is never assumed, a delayed, first-turn or reply-only one counts half.
@@ -43,6 +50,7 @@ internal object LocalMoveThreatScore {
         var power = details.power
         var factor = 1.0
         for (effect in effects) {
+            if (effect.kind in immune) continue
             val chance = effect.probability ?: 1.0
             val onTarget = effect.target == BattleMoveEffectTarget.SELECTED_TARGET || effect.target == BattleMoveEffectTarget.TARGET_SIDE
             when (effect.kind) {

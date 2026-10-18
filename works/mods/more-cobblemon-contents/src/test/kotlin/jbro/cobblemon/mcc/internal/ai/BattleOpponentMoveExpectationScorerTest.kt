@@ -115,6 +115,15 @@ class BattleOpponentMoveExpectationScorerTest {
         val steelBeam = move("normal", power = 140.0, effects = listOf(
             BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL, BattleMoveEffectTarget.USER, fractionRange = BattleFractionRange(0.5, 0.5))))
         assertEquals(score(move("normal", power = 70.0)), score(steelBeam), 1e-9)
+        // A publicly known Rock Head takes no recoil from damage dealt: Double-Edge keeps its whole value. Magic Guard
+        // alone stops Steel Beam's.
+        fun with(ability: String) = BattlePokemonStateView(
+            UUID.randomUUID(), BattleSide.OPPONENT, 0, "probe", null, 50, 1.0, null,
+            emptyMap(), emptySet(), ability, null, false, setOf("fairy"),
+        )
+        val full = score(move("normal", category = BattleMoveDamageCategory.PHYSICAL, power = 120.0))
+        assertEquals(full, BattleOpponentMoveExpectationScorer.score(with("Rock Head"), doubleEdge, BattleFormat.SINGLE), 1e-9)
+        assertEquals(score(steelBeam), BattleOpponentMoveExpectationScorer.score(with("rockhead"), steelBeam, BattleFormat.SINGLE), 1e-9)
     }
 
     @Test

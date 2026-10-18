@@ -148,7 +148,7 @@ internal object PublicFutureActionFactory {
         ordered.asSequence().filter { it.isInferredMove() }
             .distinctBy { canonicalId(requireNotNull(it.moveId)) }
             .sortedWith(compareByDescending<BattleActionCandidate> {
-                it.moveDetails?.let { details -> LocalMoveThreatScore.of(requireNotNull(it.moveId), details) } ?: 0.0
+                it.moveDetails?.let { details -> LocalMoveThreatScore.of(requireNotNull(it.moveId), details, actor.knownAbilityId) } ?: 0.0
             }.thenByDescending { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId))
             .forEach { action ->

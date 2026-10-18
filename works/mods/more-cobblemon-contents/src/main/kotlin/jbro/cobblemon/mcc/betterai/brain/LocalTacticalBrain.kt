@@ -744,7 +744,7 @@ internal class LocalTacticalBrain(
         // An attack that lowers its user's stats risks the drop against whoever faces it next (LocalSelfDropRisk).
         val selfDropAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalSelfDropRisk.adjustments(
-                difficultyContext.candidates, difficultyContext, rulesContext, scores, baseOpponentIntents, tuning,
+                difficultyContext.candidates, difficultyContext, rulesContext, scores, opponentIntents, tuning,
             ).mapValues { it.value.adjustment }
         }.orEmpty()
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
