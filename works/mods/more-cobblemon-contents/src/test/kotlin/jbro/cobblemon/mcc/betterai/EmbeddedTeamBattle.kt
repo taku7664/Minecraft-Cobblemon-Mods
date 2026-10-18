@@ -61,6 +61,8 @@ internal object EmbeddedTeamBattle {
          * so every position is the recorded one and the two decisions can be compared on it (trace "ownActionId").
          */
         followed: Path? = null): JsonObject {
+        // The engine dex as the game has it: Mega Showdown's species additions (Z-A Megas) overlaid.
+        MegaShowdownTestSpecies.install()
         val recorded = followed?.let { file ->
             java.util.zip.GZIPInputStream(Files.newInputStream(file)).bufferedReader().readLines()
                 .map { JsonParser.parseString(it).asJsonObject }

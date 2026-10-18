@@ -48,6 +48,15 @@ internal object EmbeddedTeamInput {
         return 0
     }
     private fun id(text: String) = text.substringAfter(": ").lowercase().filter(Char::isLetterOrDigit)
+
+    /**
+     * A Mega form's types from the engine dex when the referee's Showdown does not know the form (Z-A Megas: Mega
+     * Showdown's species additions are overlaid there, [MegaShowdownTestSpecies]); the game reads them from Cobblemon.
+     */
+    private fun megaTypes(species: String, formId: String): Set<String> = runCatching {
+        jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex.current().second.species(id(species) + id(formId))?.types
+            ?.map { it.lowercase() }?.toSet()
+    }.getOrNull().orEmpty()
     private fun condition(value: String): Pair<Double, String?> {
         val parts = value.split(' ')
         val hp = parts[0].split('/')
@@ -355,13 +364,13 @@ internal object EmbeddedTeamInput {
                 pokemon.getAsJsonArray("moves").map { id(it.asString) }.toSet(),
                 privateMap("ownAbilities", ident)?.asString?.takeIf { it.isNotEmpty() },
                 privateMap("ownItems", ident)?.asString?.takeIf { it.isNotEmpty() }, hp.first == 0.0,
-                privateMap("ownTypes", ident)?.asJsonArray?.map { it.asString }?.toSet().orEmpty(),
+                privateMap("ownTypes", ident)?.asJsonArray?.map { it.asString }?.toSet().orEmpty().ifEmpty { megaTypes(details[0], "") },
                 combatStats = if (maxHp > 0) BattleCombatStatRangesView.exact(maxHp, stats["atk"].asInt,
                     stats["def"].asInt, stats["spa"].asInt, stats["spd"].asInt, stats["spe"].asInt) else null,
                 knownFormStates = privateMap("ownMegaForms", ident)?.asJsonObject?.let { form ->
                     val mega = form.getAsJsonObject("stats")
                     mapOf(form["formId"].asString to BattlePokemonFormStateView(form["formId"].asString,
-                        form.getAsJsonArray("types").map { it.asString }.toSet(),
+                        form.getAsJsonArray("types").map { it.asString }.toSet().ifEmpty { megaTypes(details[0], form["formId"].asString) },
                         BattleCombatStatRangesView.exact(mega["hp"].asInt, mega["atk"].asInt, mega["def"].asInt,
                             mega["spa"].asInt, mega["spd"].asInt, mega["spe"].asInt),
                         form["ability"]?.asString?.takeIf { it.isNotEmpty() }))
@@ -376,7 +385,7 @@ internal object EmbeddedTeamInput {
                 if (pokemon.active) activeSlot(pokemon.ident) else null,
                 pokemon.species, null, pokemon.level, pokemon.hp, pokemon.status, pokemon.stages, pokemon.moves,
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
-                if (pokemon.types.isEmpty()) emptySet() else pokemon.types + listOfNotNull(pokemon.added),
+                if (pokemon.types.isEmpty()) megaTypes(pokemon.species, "") else pokemon.types + listOfNotNull(pokemon.added),
                 knownTeraTypeId = pokemon.tera,
                 knownBaseStabTypeIds = baseTypes(pokemon.species),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
@@ -385,7 +394,7 @@ internal object EmbeddedTeamInput {
                     ?.map { it.asJsonObject }?.associate { form ->
                         val base = form.getAsJsonObject("baseStats")
                         form["formId"].asString to BattlePokemonFormStateView(form["formId"].asString,
-                            form.getAsJsonArray("types").map { it.asString }.toSet(),
+                            form.getAsJsonArray("types").map { it.asString }.toSet().ifEmpty { megaTypes(pokemon.species, form["formId"].asString) },
                             BattlePublicStatRanges.fromBaseStats(pokemon.level, base["hp"].asInt, base["atk"].asInt,
                                 base["def"].asInt, base["spa"].asInt, base["spd"].asInt, base["spe"].asInt),
                             form["ability"]?.asString?.takeIf { it.isNotEmpty() })
