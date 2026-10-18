@@ -83,7 +83,9 @@ internal object LocalDebuffValue {
             }
             val plain = mean(state) ?: return null
             if (target.statusId != null ||
-                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user)) return Reading(plain, plain, accuracy)
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
+                    ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state)))
+                return Reading(plain, plain, accuracy)
             val poisoned = mean(state.copyState(pokemon = state.pokemon.map {
                 if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = status) else it
             })) ?: return null
@@ -93,7 +95,8 @@ internal object LocalDebuffValue {
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         // A status the target is immune to (a Steel type's poison) is not put on it.
         val lands = status != null && target.statusId == null &&
-            !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user)
+            !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
+                ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state))
         val statused = state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId == target.battlePokemonId && lands) it.copyState(statusId = status) else it
         })
