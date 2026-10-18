@@ -309,10 +309,16 @@ internal object EmbeddedTeamBattle {
                                         jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption.applyToPublicState(
                                             context, profiles.getValue(side).difficulty.tier), observedBoard = true)
                                         .forPlanOwner(jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.LOCAL_BRAIN)
-                                    val context = gateBoard
-                                    val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context,
+                                    val gateScores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(gateBoard,
                                         recovery = tunings.getValue(side).matchupRecovery)
                                     add("setupGate", JsonObject().apply { setups.forEach { setup ->
+                                        // Each raise on the board it is used on, as the brain's setupView: a Mega Evolution with it
+                                        // reads the Mega's board and table.
+                                        val context = jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(
+                                            gateBoard, jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY, setup)
+                                        val scores = if (context === gateBoard) gateScores
+                                            else jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context,
+                                                recovery = tunings.getValue(side).matchupRecovery)
                                         val verdict = jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.evaluate(setup, context, scores,
                                             tier = profiles.getValue(side).difficulty.tier)
                                         val user = context.state.pokemon.firstOrNull {
