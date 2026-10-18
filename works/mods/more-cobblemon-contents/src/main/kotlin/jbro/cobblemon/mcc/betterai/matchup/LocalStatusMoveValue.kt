@@ -112,14 +112,25 @@ internal object LocalStatusMoveValue {
         // The opponent can switch again, before the move and after it, unless it is held in (a trap, Shadow Tag): in front
         // stays whichever of the one there and the rest of its Pokemon is worst for the user (the target, forced out, is
         // among the rest). Read without it, a Whirlwind was paid for a bad matchup the opponent would leave on its own anyway.
-        val canLeave = jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory.slotActions(state, BattleSide.OPPONENT, context.publicActionCatalog)
-            .any { it.kind == BattleActionKind.SWITCH && it.actorSlot == target.activeSlot }
-        fun held(inFront: Double, rest: List<Double>) = if (!canLeave) inFront else minOf(inFront, rest.minOrNull() ?: inFront)
-        val before = held(now.score, bench.mapNotNull(::score))
+        // Read on each one's own board: a trap on the target (Mean Look, a binding move) ends with the switch, and a trapping
+        // ability holds the one dragged in by its own type and item.
+        fun canLeave(board: jbro.cobblemon.mcc.internal.ai.BattleStateView) =
+            jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory.slotActions(board, BattleSide.OPPONENT, context.publicActionCatalog)
+                .any { it.kind == BattleActionKind.SWITCH && it.actorSlot == target.activeSlot }
+        fun held(inFront: Double, rest: List<Double>, free: Boolean) = if (!free) inFront else minOf(inFront, rest.minOrNull() ?: inFront)
+        val before = held(now.score, bench.mapNotNull(::score), canLeave(state))
         val gains = bench.mapNotNull { coming ->
             val score = score(coming) ?: return@mapNotNull null
             val hazards = minOf(PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.OPPONENT, coming) ?: 0.0, coming.hpFraction)
-            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack) - before
+            val dragged = reset.copyState(pokemon = reset.pokemon.map {
+                when (it.battlePokemonId) {
+                    target.battlePokemonId -> it.copyState(activeSlot = null)
+                    coming.battlePokemonId -> it.copyState(activeSlot = target.activeSlot)
+                    else -> it
+                }
+            })
+            hazards + held(score, bench.filter { it.battlePokemonId != coming.battlePokemonId }.mapNotNull(::score) + targetBack,
+                canLeave(dragged)) - before
         }
         if (gains.isEmpty()) return null
         // The target's hits as they land on the user this turn: from the move table, not the exchange's, which thins them
