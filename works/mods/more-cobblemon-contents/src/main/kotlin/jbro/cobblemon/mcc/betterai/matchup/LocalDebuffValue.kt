@@ -71,7 +71,7 @@ internal object LocalDebuffValue {
         // A poison with no drop beside it (Toxic, Poison Powder); one with drops (Toxic Thread) is read below with them.
         if (status != null && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) in POISONING && drops.isEmpty()) {
             val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-            val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+            val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache().also { it.matchupRecovery = recovery }
             val evolving = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().copy(evolvingMatchups = true, matchupRecovery = recovery)
             fun mean(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(evolving) {
                 val subject = board.pokemon.first { it.battlePokemonId == target.battlePokemonId }
@@ -91,8 +91,11 @@ internal object LocalDebuffValue {
         }
         if (status != null && drops.isEmpty() && jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(status) !in LocalTurnCostScoreCalculator.playedOutStatuses()) return null
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        // A status the target is immune to (a Steel type's poison) is not put on it.
+        val lands = status != null && target.statusId == null &&
+            !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user)
         val statused = state.copyState(pokemon = state.pokemon.map {
-            if (it.battlePokemonId == target.battlePokemonId && status != null && it.statusId == null) it.copyState(statusId = status) else it
+            if (it.battlePokemonId == target.battlePokemonId && lands) it.copyState(statusId = status) else it
         })
         // The drops resolve as Showdown's boost does (LocalStatStageChange: Contrary, Clear Body, Mirror Armor, Defiant,
         // Competitive...), once per ability the target may have, all alike; the ability is only lent for that.
