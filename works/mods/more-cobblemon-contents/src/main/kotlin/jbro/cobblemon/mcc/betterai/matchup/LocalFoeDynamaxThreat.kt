@@ -44,12 +44,20 @@ internal object LocalFoeDynamaxThreat {
         user: BattlePokemonStateView,
         foe: BattlePokemonStateView,
         cache: LocalProjectedActionCalculationCache,
-    ): LocalMatchupScoreCalculator.ScoredMove? {
-        if (!possible(context, foe)) return null
+    ): LocalMatchupScoreCalculator.ScoredMove? = hits(context, board, user, foe, cache).maxByOrNull { it.score.knockoutChanceWithin(1) }
+
+    /** Every Max Move [foe] may hit [user] with this turn ([bestHit]'s reading); empty when it may not Dynamax. */
+    fun hits(
+        context: BattleDecisionContext,
+        board: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        foe: BattlePokemonStateView,
+        cache: LocalProjectedActionCalculationCache,
+    ): List<LocalMatchupScoreCalculator.ScoredMove> {
+        if (!possible(context, foe)) return emptyList()
         val dynamaxed = LocalDynamax.start(foe)
         val state = board.state.copyState(pokemon = board.state.pokemon.map { if (it.battlePokemonId == foe.battlePokemonId) dynamaxed else it })
-        val faced = LocalMatchupPosition.face(board.copy(state = state), user, dynamaxed, cache) ?: return null
+        val faced = LocalMatchupPosition.face(board.copy(state = state), user, dynamaxed, cache) ?: return emptyList()
         return LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
-            .maxByOrNull { it.score.knockoutChanceWithin(1) }
     }
 }

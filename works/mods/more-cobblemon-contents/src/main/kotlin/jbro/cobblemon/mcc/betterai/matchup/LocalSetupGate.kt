@@ -210,7 +210,7 @@ internal object LocalSetupGate {
         val taken = facing.maxOf { foe ->
             LocalKnockoutWorth.actsThisTurn(foe) * maxOf(
                 scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull(::expected) ?: 0.0,
-                LocalFoeDynamaxThreat.bestHit(context, context, user, foe, cache)?.score?.let(::expected) ?: 0.0,
+                LocalFoeDynamaxThreat.hits(context, context, user, foe, cache).maxOfOrNull { expected(it.score) } ?: 0.0,
             )
         }
         return (1.0 - taken / user.hpFraction).coerceIn(0.0, 1.0)
