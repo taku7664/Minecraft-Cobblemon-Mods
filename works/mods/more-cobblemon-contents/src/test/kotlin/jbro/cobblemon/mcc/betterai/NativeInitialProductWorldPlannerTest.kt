@@ -71,7 +71,7 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
-    fun `boss product worlds retain zero one and two stab shapes for one dual type preview`(
+    fun `boss product worlds carry both stab types of a dual type preview`(
         @TempDir directory: Path,
     ) {
         val preview = dualTypePreview()
@@ -84,10 +84,8 @@ class NativeInitialProductWorldPlannerTest {
         val flutterSets = result.worlds.map { world ->
             world.definition.p2Team.single { it.species == "fluttermane" }.moves.toSet()
         }
-        assertEquals(setOf(0, 1, 2), flutterSets.map { moves -> moves.count(stabMoves::contains) }.toSet())
-        assertTrue(flutterSets.any { moves -> moves.none(stabMoves::contains) })
-        assertTrue(flutterSets.any { moves -> moves.count(stabMoves::contains) == 1 })
-        assertTrue(flutterSets.any { moves -> stabMoves.all(moves::contains) })
+        // Every world carries a STAB attack for each type (user rule 2026-10-18, G-956): no world without one.
+        assertEquals(setOf(2), flutterSets.map { moves -> moves.count(stabMoves::contains) }.toSet())
 
         val representativeByShape = result.worlds.groupBy { world ->
             world.definition.p2Team.single { it.species == "fluttermane" }
@@ -112,9 +110,7 @@ class NativeInitialProductWorldPlannerTest {
                     .moves.count(stabMoves::contains)
             }
             .toSet()
-        assertEquals(setOf(1), stabShapes(BattleTrainerTier.INTRODUCTORY))
-        assertEquals(setOf(1), stabShapes(BattleTrainerTier.STANDARD))
-        assertEquals(setOf(0, 1), stabShapes(BattleTrainerTier.ADVANCED))
+        BattleTrainerTier.entries.forEach { tier -> assertEquals(setOf(2), stabShapes(tier), tier.name) }
     }
 
     @Test
