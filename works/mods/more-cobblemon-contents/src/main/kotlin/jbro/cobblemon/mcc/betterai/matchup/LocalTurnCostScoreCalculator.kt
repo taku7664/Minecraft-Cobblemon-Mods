@@ -125,10 +125,12 @@ internal object LocalTurnCostScoreCalculator {
         // Moves that do the same to [replaced] are an even choice for the opponent: the one listed first stands for none
         // of them. Against a Hippowdon at 7%, every move knocks out, and a guessed Body Slam stood for a Dynamaxed
         // Amoonguss whose revealed Max Overgrowth does four times to the Rhyperior coming in (2026-10-19).
+        // Even means as good in every way the exchange picks by: the same score, the same priority, no more self-knockout.
         val forReplaced = pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId)
-        val bestForReplaced = forReplaced.maxOfOrNull { it.score }
-        val even = if (bestForReplaced == null) emptySet()
-            else forReplaced.filter { it.score >= bestForReplaced - EVEN_CHOICE }.mapTo(hashSetOf()) { it.moveId }
+        val chosen = forReplaced.firstOrNull { it.moveId == predictedMoveId }
+        val even = if (chosen == null) emptySet()
+            else forReplaced.filter { it.score >= chosen.score - EVEN_CHOICE && it.priority == chosen.priority &&
+                it.selfKnockoutChance <= chosen.selfKnockoutChance + EVEN_CHOICE }.mapTo(hashSetOf()) { it.moveId }
         val choices = againstIncoming.map { it.score }.filter { it.moveId in even }.ifEmpty { listOfNotNull(predicted) }
         val state = position.state
         val placed = state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
