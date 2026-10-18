@@ -101,7 +101,7 @@ internal object LocalKnockoutWorth {
     private fun List<Double>.averageOrZero() = if (isEmpty()) 0.0 else average()
 
     /** The chance [pokemon] acts this turn at all: not recharging, awake, thawed, not fully paralysed. */
-    private fun actsThisTurn(pokemon: BattlePokemonStateView): Double =
+    internal fun actsThisTurn(pokemon: BattlePokemonStateView): Double =
         LocalSetupGate.actingChance(pokemon) *
             if (PublicIds.canonical(pokemon.statusId.orEmpty()) in PARALYSED) LocalMatchupScoreCalculator.PARALYSIS_ACTS else 1.0
 

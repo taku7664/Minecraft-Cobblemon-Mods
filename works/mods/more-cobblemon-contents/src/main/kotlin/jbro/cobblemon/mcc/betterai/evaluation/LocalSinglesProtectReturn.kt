@@ -35,10 +35,8 @@ import java.util.UUID
  *
  * Null outside singles or without both Pokemon in front; the caller weighs it by the chance the Protect works.
  *
- * The turn's end is played here with the opponent waiting. Where the engine runs, the brain plays it against the
- * opponent's likely replies instead ([jbro.cobblemon.mcc.betterai.search.LocalEngineTurnReadout.protectTurns]) and
- * moves this value by the difference ([turnEnd]): a contact move into Spiky Shield or Baneful Bunker, or the opponent
- * raising its stats while the user hides, is part of what the turn brought.
+ * The turn's end is played here with the opponent waiting. No turn is played in the engine against the opponent's
+ * replies (user decision 2026-10-19: no event-branch search).
  */
 internal object LocalSinglesProtectReturn {
     fun value(candidate: BattleActionCandidate, context: BattleDecisionContext, tuning: LocalDecisionTuning): Double? {
@@ -49,23 +47,50 @@ internal object LocalSinglesProtectReturn {
         val cache = LocalProjectedActionCalculationCache()
         val shouldContinue = { System.currentTimeMillis() < context.deadlineEpochMillis }
         val (turn, projections) = turnEnd(candidate, context, tuning, cache) ?: return null
-        val fieldTurns = -timedEffects(state.field).sumOf { (effect, without) ->
-            val left = remaining(effect)?.takeIf { it >= 2.0 } ?: return@sumOf 0.0
-            LocalImmediateTurnScorer.score(state.derive(field = without), state, context, cache, tuning, shouldContinue).total / left
-        }
+        val fieldTurns = fieldTurns(context, tuning, cache, shouldContinue)
         // After this turn's actions, so a Dynamax that starts on it (a Dynamax Max Guard) is counted from its first turn.
         val acted = projections.first().stateBeforeResidual
         val dynamaxTurns = listOf(user, foe).sumOf { pokemon ->
             val dynamaxed = acted.pokemon.firstOrNull { it.battlePokemonId == pokemon.battlePokemonId }?.takeIf(LocalDynamax::active)
                 ?: return@sumOf 0.0
-            val with = exchange(context, user, foe, pokemon.battlePokemonId, dynamaxed.knownVolatileEffectIds, cache) ?: return@sumOf 0.0
-            val without = exchange(context, user, foe, pokemon.battlePokemonId, dynamaxed.knownVolatileEffectIds.filterNot {
-                it == LocalDynamax.VOLATILE || it.startsWith(LocalDynamax.TURNS)
-            }.toSet(), cache) ?: return@sumOf 0.0
-            // The user's own Dynamax lost a turn costs what it adds; the opponent's gives back what it takes.
-            -(with - without)
+            dynamaxTurn(context, user, foe, dynamaxed, cache)
         }
         return turn + fieldTurns + dynamaxTurns
+    }
+
+    /**
+     * A turn off each timed field effect still running after it (screens, Tailwind, weather...), in board units: its
+     * worth to whichever side it serves, over the turns it had left. Singles and doubles alike.
+     */
+    internal fun fieldTurns(
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+        cache: LocalProjectedActionCalculationCache,
+        shouldContinue: () -> Boolean,
+    ): Double {
+        val state = context.state
+        return -timedEffects(state.field).sumOf { (effect, without) ->
+            val left = remaining(effect)?.takeIf { it >= 2.0 } ?: return@sumOf 0.0
+            LocalImmediateTurnScorer.score(state.derive(field = without), state, context, cache, tuning, shouldContinue).total / left
+        }
+    }
+
+    /**
+     * A turn off [dynamaxed]'s Dynamax in the exchange of [user] and [foe], in board units: the user's own Dynamax lost
+     * a turn costs what it adds, the opponent's gives back what it takes.
+     */
+    internal fun dynamaxTurn(
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        foe: BattlePokemonStateView,
+        dynamaxed: BattlePokemonStateView,
+        cache: LocalProjectedActionCalculationCache,
+    ): Double {
+        val with = exchange(context, user, foe, dynamaxed.battlePokemonId, dynamaxed.knownVolatileEffectIds, cache) ?: return 0.0
+        val without = exchange(context, user, foe, dynamaxed.battlePokemonId, dynamaxed.knownVolatileEffectIds.filterNot {
+            it == LocalDynamax.VOLATILE || it.startsWith(LocalDynamax.TURNS)
+        }.toSet(), cache) ?: return 0.0
+        return -(with - without)
     }
 
     /**
