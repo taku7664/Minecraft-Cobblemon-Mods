@@ -3,6 +3,12 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-20 00:05] 2026-10-19 Better AI 수정분 개발 서버·클라이언트 배포 (빌드·JAR 배치 확인, 서버 기동·실게임 미확인)
+
+- `main` `a3871f045`에서 MCC 다섯 JAR(`remapJar`)을 빌드했다. 기본 힙 2G로는 리그·PvP가 `Java heap space`로 실패해, `--max-workers=1`과 `-Xmx5G`로 다시 빌드해 성공했다.
+- 다섯 JAR 모두 `unzip -t` 통과, `fabric.mod.json` 진입점 클래스 누락 0, 본체에 `harmsPartner` 포함을 확인했다. `develop-product/server/mods`와 `develop-product/client/mods`에 복사한 뒤 SHA-256이 빌드본과 같다(본체 `c162ce8c35f1c64b`).
+- 기존 JAR 백업은 `develop-product/deployment-backups/20261020-000446-mcc-betterai-doubles`. 서버와 게임은 꺼진 상태였고 켜지 않았다. 운영(PPakemon·deploy-product·VPS)에는 반영하지 않았다.
+
 ## [2026-10-19 23:59] 더블에서 한 슬롯만 실패하는 수, 상태이상 면역, 다이맥스 상대 앵콜, 같은 편에게 쓰는 해로운 변화기 (구현·단위·측정 확인, 빌드·배치·실게임 미확인)
 
 - **원인(가장 큼):** 복합 행동은 모든 슬롯이 공개 실패일 때만 `TIER_PUBLICLY_BAD`(−500)를 받았다(`LocalBattleActionOutcome.composite`의 `components.all`). 한 슬롯만 실패하면 그 슬롯의 −100(`expiredFirstActiveTurnPenalty` 등)만 빠지고 KO 점수는 남아, 라이츄가 2% 윈디에게 첫 턴 지난 속이다를 3턴 연속(907점) 썼다. 이제 실패한 슬롯마다 −500.
