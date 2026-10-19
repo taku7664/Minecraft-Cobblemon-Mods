@@ -128,10 +128,13 @@ internal object LocalDynamax {
         val base = dex.move(PublicIds.canonical(baseMoveId)) ?: return null
         val max = dex.move(PublicIds.canonical(maxMoveId)) ?: return null
         val effects = BattleShowdownMoveEffects.resolve(max.id) ?: return null
-        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return details.copy(power = 0.0, accuracy = 100.0, effects = effects)
+        // A Max Move has its own priority, not its base move's: Max Guard +4, every attack 0. Read with the base move's,
+        // a Max Geyser from Aqua Jet went first in the projection and outranked one from Wave Crash (league run,
+        // 2026-10-19), and a Max Guard from a status move moved at that move's priority.
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return details.copy(power = 0.0, accuracy = 100.0, effects = effects, priority = max.priority)
         val power = Js.num(max.data("basePower") ?: 0).takeIf { it > G_MAX_PLACEHOLDER_POWER && max.data("isMax") is String }
             ?: (base.data("maxMove") as? Map<*, *>)?.get("basePower")?.let { Js.num(it) }?.takeIf { it > 0.0 } ?: return null
-        return details.copy(power = power, accuracy = 100.0, effects = effects)
+        return details.copy(power = power, accuracy = 100.0, effects = effects, priority = max.priority)
     }
 
     /**
