@@ -656,9 +656,8 @@ internal object PublicSingleTurnProjector {
                 forcedMoveIdsByPokemon, history, maxChanceBranchesPerMove, chanceEffectMode, calculationCache, shouldContinue,
                 availabilityChecked = true, pendingDamagingMovePokemonIds = pendingDamagingMovePokemonIds,
             )
-            // How many turns are left asleep is not public state, so a sleeper wakes one attempt in three: two turns
-            // asleep on average, Rest's exact two and the middle of a sleep move's one to three. It never woke
-            // before, so a Rest or a Spore took its Pokemon out for good.
+            // A sleeper wakes at its counter's chance (below), one attempt in three where the record cannot tell. It never
+            // woke before, so a Rest or a Spore took its Pokemon out for good.
             val asleep = when {
                 action.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.USABLE_WHILE_ASLEEP } ->
                     listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
@@ -682,8 +681,13 @@ internal object PublicSingleTurnProjector {
                     if (pokemon.battlePokemonId == actorBeforeTransition.battlePokemonId) pokemon.copyState(statusId = null) else pokemon
                 },
             )
-            return asleep.map { it.copy(probability = it.probability * (1.0 - SLEEP_WAKE_PROBABILITY)) } +
-                attempt(woken, action).map { it.copy(probability = it.probability * SLEEP_WAKE_PROBABILITY) }
+            // Its counter read from the record where the sleep was seen starting (LocalSleepClock): a Mega Gyarados three
+            // turns into a Yawn sleep wakes for sure, and read at a third a Heatran stayed in front of its Earthquake
+            // (hand-played Flint, 2026-10-20). A third where the record does not reach.
+            val wake = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.remaining(state, actorBeforeTransition)
+                ?.filter { it.first == 0 }?.sumOf { it.second } ?: SLEEP_WAKE_PROBABILITY
+            return asleep.map { it.copy(probability = it.probability * (1.0 - wake)) }.filter { it.probability > 0.0 } +
+                attempt(woken, action).map { it.copy(probability = it.probability * wake) }.filter { it.probability > 0.0 }
         }
         if (!availabilityChecked && publicStatus in FREEZE_IDS) {
             // Scald, Flare Blitz, Sacred Fire and the other defrost moves thaw their user before it moves.
