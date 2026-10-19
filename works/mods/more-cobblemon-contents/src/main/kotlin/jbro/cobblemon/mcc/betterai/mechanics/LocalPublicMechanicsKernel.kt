@@ -106,6 +106,22 @@ internal object LocalPublicMechanicsKernel {
         actingSide: BattleSide = BattleSide.ALLY,
     ): LocalPublicMoveProjection {
         val details = candidate.moveDetails ?: return LocalPublicMoveProjection.neutral()
+        // A move on the opposing side that Magic Bounce sends back (Stealth Rock, Spikes: side-wide and reflectable):
+        // any opponent in play with it reflects it, so both of a doubles side count. Read off one resolved target, which
+        // doubles never has, a Ferrothorn laid Stealth Rock three turns running into a Hatterene's shown Magic Bounce
+        // (hand-played Milo doubles, 2026-10-20).
+        if (details.targetPattern == BattleMoveTargetPattern.SIDE &&
+            details.effects?.mechanicFlags.orEmpty().any { canonical(it) == REFLECTABLE_FLAG }
+        ) {
+            val user = context.state.pokemon.firstOrNull { it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted }
+            context.state.pokemon.firstOrNull { foe ->
+                foe.side != actingSide && foe.activeSlot != null && !foe.fainted && foe.hpFraction > 0.0 &&
+                    publicAbility(foe, context) == MAGIC_BOUNCE &&
+                    !LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, user, foe, context.state)
+            }?.let { bouncer ->
+                return LocalPublicMoveProjection(knownDamageMultiplier = 0.0, targetHpFraction = bouncer.hpFraction, publiclyNullified = true)
+            }
+        }
         val target = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()
             ?: return LocalPublicMoveProjection.neutral()
         val actor = context.state.pokemon.firstOrNull {
