@@ -567,8 +567,8 @@ internal object LocalMatchupScoreCalculator {
                     it.score.accuracy * userFirst * acts(user) } ?: 0.0
             val subjectActs = acts(subject) * (1.0 - flinches(opponentMove, opponent, subject, 1.0 - subjectFirst))
             val opponentActs = acts(opponent) * (1.0 - flinches(subjectMove, subject, opponent, subjectFirst))
-            mine = mine?.let { thinned(it, subjectActs) }?.let { asleep(it, subject, state) }
-            theirs = theirs?.let { thinned(it, opponentActs) }?.let { asleep(it, opponent, state) }
+            mine = mine?.let { thinned(it, subjectActs) }?.let { asleep(it, subject, state) }?.let { residual(it, opponent, state) }
+            theirs = theirs?.let { thinned(it, opponentActs) }?.let { asleep(it, opponent, state) }?.let { residual(it, subject, state) }
         }
         // Which side cannot get through the other's healing, and how often the healer still attacks.
         var subjectWalled = false
@@ -706,6 +706,44 @@ internal object LocalMatchupScoreCalculator {
      * those turns used where Sleep Talk calls it. Read as awake, a Dondozo two turns into Rest was taken to attack each
      * turn (hand-played Bea, 2026-10-20).
      */
+    /**
+     * [score]'s hits on [target] with its status's end-of-turn damage added ([jbro.cobblemon.mcc.betterai.mechanics.LocalResidual]):
+     * after `n` uses the target has also lost the residual of `n` turns, read as that many more uses at the hit's average
+     * landing (fewer, for a heal), and a residual that alone empties the bar knocks it out. The evolving exchange plays
+     * this out itself. Without it a badly poisoned Gardevoir read its Calm Minds as if the poison took nothing and set up
+     * twice in front of the Toxapex that poisoned it (hand-played mega concept, 2026-10-20).
+     */
+    private fun residual(score: MoveMatchupScore, target: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): MoveMatchupScore {
+        val survival = score.survivalByUses
+        val schedule = jbro.cobblemon.mcc.betterai.mechanics.LocalResidual.schedule(state, target, survival.size) ?: return score
+        val hp = target.hpFraction
+        if (hp <= 0.0 || survival.size < 2) return score
+        val lost = DoubleArray(survival.size).also { for (n in 1 until it.size) it[n] = it[n - 1] + schedule[n - 1] }
+        val hit = score.accuracy * (score.minimumDamageFraction + score.maximumDamageFraction) / 2.0
+        fun survivalAt(uses: Double): Double {
+            if (uses <= 0.0) return 1.0
+            val low = kotlin.math.floor(uses).toInt()
+            if (low >= survival.lastIndex) return survival.last()
+            val part = uses - low
+            return survival[low] * (1.0 - part) + survival[low + 1] * part
+        }
+        val standing = survival.indices.map { n ->
+            when {
+                n == 0 -> 1.0
+                lost[n] >= hp -> 0.0
+                hit <= 0.0 -> survival[n]
+                else -> survivalAt(n + lost[n] / hit).coerceIn(0.0, 1.0)
+            }
+        }
+        val expected = if (hit <= 0.0) score.expectedHitsToKnockout else {
+            val turns = score.expectedHitsToKnockout.coerceAtMost(survival.lastIndex.toDouble())
+            val low = kotlin.math.floor(turns).toInt()
+            val at = lost[low] + (lost.getOrElse(low + 1) { lost[low] } - lost[low]) * (turns - low)
+            (score.expectedHitsToKnockout - at / hit).coerceAtLeast(0.0)
+        }
+        return score.copy(survivalByUses = standing, expectedHitsToKnockout = expected)
+    }
+
     private fun asleep(score: MoveMatchupScore, user: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): MoveMatchupScore {
         val left = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.remaining(state, user) ?: return score
         val awake = 1.0 - if (jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.talks(user)) jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.SLEEP_TALK_SHARE else 0.0

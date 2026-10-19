@@ -394,7 +394,8 @@ class LocalMatchupScoreTest {
         assertTrue(physical.partnerGain > 0.0) { physical.toString() }
         assertFalse(physicalWasted)
         val (special, specialWasted) = judged(BattleMoveDamageCategory.SPECIAL)
-        assertEquals(0.0, special.partnerGain, 1e-9)
+        // On a special attacker only the burn's end-of-turn sixteenth is left of it (2026-10-20): far under the physical case.
+        assertTrue(special.partnerGain < physical.partnerGain / 2.0) { "$special vs $physical" }
         assertTrue(specialWasted) { special.toString() }
     }
 

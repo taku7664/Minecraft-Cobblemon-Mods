@@ -58,4 +58,17 @@ class ShowdownCodeReadingsTest {
         assertNull(BattleShowdownHeldEffects.firstHitShield("stancechange"))
         assertNull(BattleShowdownHeldEffects.firstHitShield("multiscale"))
     }
+
+    @Test
+    fun `condition and ability code give the end-of-turn damage of poison, Toxic and burn, Magic Guard and Poison Heal`() {
+        assertEquals(BattleShowdownHeldEffects.StatusResidual(0.125, false), BattleShowdownHeldEffects.statusResidual("psn"))
+        assertEquals(BattleShowdownHeldEffects.StatusResidual(0.0625, true), BattleShowdownHeldEffects.statusResidual("tox"))
+        assertEquals(BattleShowdownHeldEffects.StatusResidual(0.0625, false), BattleShowdownHeldEffects.statusResidual("brn"))
+        assertNull(BattleShowdownHeldEffects.statusResidual("par"))
+        assertTrue(BattleShowdownHeldEffects.blocksIndirectDamage("magicguard"))
+        assertFalse(BattleShowdownHeldEffects.blocksIndirectDamage("poisonheal"))
+        assertEquals(0.125, BattleShowdownHeldEffects.statusHealShare("poisonheal", "tox"))
+        assertNull(BattleShowdownHeldEffects.statusHealShare("poisonheal", "brn"))
+        assertNull(BattleShowdownHeldEffects.statusHealShare("magicguard", "psn"))
+    }
 }

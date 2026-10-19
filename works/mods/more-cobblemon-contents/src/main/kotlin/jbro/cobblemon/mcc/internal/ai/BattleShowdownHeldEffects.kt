@@ -15,6 +15,10 @@ object BattleShowdownHeldEffects {
     /** An ability that takes the first hit's damage away and changes form (`busted`), at a share of maximum HP. */
     data class FirstHitShield(val brokenForm: String, val chip: Double)
 
+    /** A status condition's end-of-turn damage as a share of maximum HP; growing each turn (Toxic's stage) or flat. */
+    data class StatusResidual(val share: Double, val grows: Boolean)
+
+    private val conditions: Map<String, Map<String, String>> by lazy(LazyThreadSafetyMode.PUBLICATION) { load(CONDITIONS_FILE, CONDITIONS_MARKER) }
     private val items: Map<String, Map<String, String>> by lazy(LazyThreadSafetyMode.PUBLICATION) { load(ITEMS_FILE, ITEMS_MARKER) }
     private val abilities: Map<String, Map<String, String>> by lazy(LazyThreadSafetyMode.PUBLICATION) { load(ABILITIES_FILE, ABILITIES_MARKER) }
 
@@ -55,6 +59,26 @@ object BattleShowdownHeldEffects {
         return FirstHitShield(broken, chip)
     }
 
+    /** What a status condition takes at each end of turn (`data/conditions.js` onResidual), or null when it takes nothing. */
+    fun statusResidual(statusId: String?): StatusResidual? {
+        val body = statusId?.let { conditions[canonical(it)] }?.get("onResidual") ?: return null
+        if (!body.contains("this.damage(")) return null
+        val share = MAX_HP_SHARE.find(body)?.groupValues?.get(1)?.toDoubleOrNull()?.let { 1.0 / it } ?: return null
+        return StatusResidual(share, body.contains("stage++"))
+    }
+
+    /** The ability takes no damage but from moves (Magic Guard): its onDamage refuses every other effect. */
+    fun blocksIndirectDamage(abilityId: String?): Boolean =
+        abilityId?.let { abilities[canonical(it)] }?.get("onDamage")?.let { MOVE_ONLY_DAMAGE.containsMatchIn(it) && it.contains("return false") } == true
+
+    /** The share of maximum HP the ability heals in place of [statusId]'s damage (Poison Heal: an eighth for poison), or null. */
+    fun statusHealShare(abilityId: String?, statusId: String?): Double? {
+        val status = statusId?.let(::canonical) ?: return null
+        val body = abilityId?.let { abilities[canonical(it)] }?.get("onDamage") ?: return null
+        if (!Regex("""effect\.id\s*===\s*["']$status["']""").containsMatchIn(body) || !body.contains("this.heal(")) return null
+        return MAX_HP_SHARE.find(body)?.groupValues?.get(1)?.toDoubleOrNull()?.let { 1.0 / it }
+    }
+
     private fun load(file: String, marker: String): Map<String, Map<String, String>> = try {
         BattleShowdownMoveEffects.showdownSource(file)?.let { BattleDeclarativeMoveEffects.entries(it, marker) }.orEmpty()
     } catch (_: RuntimeException) {
@@ -75,6 +99,9 @@ object BattleShowdownHeldEffects {
     private val FORME_NAME = Regex("""["']([A-Z][A-Za-z0-9]*-[A-Za-z0-9-]+)["']""")
     private val ZERO_RETURN = Regex("""return\s+0\s*;""")
     private val MAX_HP_SHARE = Regex("""(?i)maxhp\s*/\s*(\d+)""")
+    private val MOVE_ONLY_DAMAGE = Regex("""effect\.effectType\s*!==\s*["']Move["']""")
+    private const val CONDITIONS_FILE = "data/conditions.js"
+    private const val CONDITIONS_MARKER = "const Conditions ="
     private const val ITEMS_FILE = "data/items.js"
     private const val ITEMS_MARKER = "const Items ="
     private const val ABILITIES_FILE = "data/abilities.js"
