@@ -12,6 +12,8 @@
 - **로컬 운영:** `16ace84` 파일로 되돌린 커밋 `1f5a1d4` 푸시(`c36efa7`·`6693101` 되돌림, XS 사탕 월드팩 복구). 트리 차이 0.
 - **deploy-product:** 서버 48 = 운영 48, 클라이언트 17 = PPakemon, 불일치 0. VERSION.txt 두 곳은 1.4.0 블록을 빼서(`d3397c21e`) `f74aadb1d` 이전과 같다. 블록은 `build/patchnotes-1.4.0/VERSION-1.4.0-block.txt`에 보관.
 - **남은 차이:** VPS는 0.1.7에서 믹스인 설정만 바꾼 핫픽스 JAR(`ff78b374…`)로 돌고 있어, 로컬 운영·deploy-product·PPakemon의 0.1.7(`495d8c…`)과 다르다. VPS에서 파일을 받는 것은 이번 세션 권한에서 막혔다. 로컬 운영을 그대로 VPS에 올리면 반격이 다시 켜진다.
+- **22:24 튕김과 조치:** 사용자가 되돌린 PPakemon으로 VPS에 들어가 피츄 버튼을 누르자 `NoClassDefFoundError: jbro/cobblemon/uikit/client/UiDialogueStyle`(PichuScreen.kt:70)로 튕겼다. 01:56에 패쳐 밖에서 넣은 `495d8c…`는 최신 main 빌드라 10-16 이후 `UiDialogueStyle`을 쓰는데, PPakemon `cobblemon-ui`(`f4955d73…`)는 1.3.0 것이라 그 클래스가 없다. 10-14 패치 기록의 1.3.0 릴리스 0.1.7(`be55de29…`, 팩 1.3.0)로 PPakemon과 `deploy-product/client`를 바꿨다. `495d8c…`는 `F:/AI/build/release-1.4.0/ppakemon-jbro-policy-0.1.7-495d8c.jar`로 보관. PPakemon의 10-14 패치 파일은 이제 모두 일치하고, 모든 모드에서 `cobblemon-ui`에 없는 uikit 참조 0건. 서버 0.1.7(`495d8c…`/VPS `ff78b374…`)과 클라이언트 0.1.7(`be55…`) 사이 새 패킷 호환은 실접속으로 확인하지 않았다.
+- **교훈:** 클라이언트 프로필에는 같은 이름·버전이라도 다른 main에서 빌드한 JAR를 넣지 않는다. 서버 핫픽스는 서버에만 넣는다.
 - **보관:** `Downloads/PPakemon 1.4.0.mrpack`과 `F:/AI/build/release-1.4.0`은 핫픽스 전 0.1.8(반격 켜짐)이라 배포할 때 다시 만들어야 한다.
 
 ## [2026-10-19 11:00] 야생 반격 끄기, VPS 0.1.7 핫픽스·재시작, 로컬 0.1.8 교체
