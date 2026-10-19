@@ -54,7 +54,8 @@ internal object LocalPokemonWorth {
                 (if (mine == 0) fallbackFirst ?: speed else speed ?: fallbackFirst) ?: UNKNOWN_ORDER
             }
         }
-        return worth + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
+        // Its worth counts at how much falling now matters (Denial.urgency); what it would do this turn stays whole.
+        return worth * denial.urgency + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 
     private const val UNKNOWN_ORDER = 0.5
@@ -68,6 +69,9 @@ internal object LocalPokemonWorth {
         this.denials.set(denials)
         last = worths.orEmpty()
     }
+
+    /** How much knocking [id] out now rather than later matters ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial.urgency]); 1 unread. */
+    fun urgency(id: UUID?): Double = id?.let { denials.get()?.get(it)?.urgency } ?: 1.0
 
     fun clear() {
         active.remove()

@@ -108,8 +108,19 @@ internal object LocalTacticalSituationalEvaluator {
             position.state.pokemon.firstOrNull { !it.fainted && it.activeSlot != null &&
                 if (slot != null) it.side == slot.first && it.activeSlot == slot.second else it.side == BattleSide.OPPONENT }
         }
+        // An intact Disguise takes the first hit whole: no knockout from a single hit (a multi-hit move goes on after it).
+        // Read as one, Excadrill's Iron Head at a fresh Mimikyu led every doubles pairing it was in (dev server, 2026-10-20).
+        if (target != null && context != null && disguiseTakesHit(candidate, target, context)) return 0.0
         return (context?.let { LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning, candidate, it.state, order) }
             ?: LocalPokemonWorth.knockoutScore(target?.battlePokemonId, tuning)) * probability * landing * initiative
+    }
+
+    /** Whether [target]'s Disguise is still up and takes [candidate]'s single hit. */
+    fun disguiseTakesHit(candidate: BattleActionCandidate, target: jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+        if (candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.MULTI_HIT }) return false
+        if (!jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.intact(context.state, target)) return false
+        val actor = context.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted }
+        return !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, context.state)
     }
 
     /**

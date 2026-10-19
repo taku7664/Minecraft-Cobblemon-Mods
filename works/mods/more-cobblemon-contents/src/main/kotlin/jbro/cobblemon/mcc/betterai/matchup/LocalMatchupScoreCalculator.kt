@@ -397,7 +397,13 @@ internal object LocalMatchupScoreCalculator {
                 }.maxOfOrNull {
                     (if (it.valueId == jbro.cobblemon.mcc.internal.ai.BattleDeclarativeMoveEffects.SELF_DESTRUCT_IF_HIT) accuracy else 1.0) * (it.probability ?: 1.0)
                 } ?: 0.0
-                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, profile).copy(
+                // An intact Disguise takes the first hit for an eighth of the HP (not through an ability-ignoring move).
+                val disguised = jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.intact(state, target) &&
+                    target.hpFraction > DISGUISE_CHIP &&
+                    !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(original, user, target, state)
+                val finalProfile = if (!disguised) profile
+                    else (profile ?: LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, MAXIMUM_USES)).behindDisguise(DISGUISE_CHIP)
+                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, finalProfile).copy(
                     selfKnockoutChance = selfKnockout,
                     priority = LocalPublicTurnOrder.effectivePriority(state, side, action),
                 ), original)
@@ -758,4 +764,6 @@ internal object LocalMatchupScoreCalculator {
     private const val ROLLS = 16
     private const val TRICK_ROOM = "trickroom"
     private const val TRICK_ROOM_TURNS = 5
+
+    private const val DISGUISE_CHIP = jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.CHIP
 }

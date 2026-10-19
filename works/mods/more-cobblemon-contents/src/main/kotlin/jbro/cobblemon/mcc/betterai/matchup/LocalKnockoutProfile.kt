@@ -21,6 +21,17 @@ internal class LocalKnockoutProfile private constructor(
     /** Expected uses to a knockout; infinite when the move cannot deal damage. */
     val expectedUses: Double,
 ) {
+    /**
+     * The same move into an intact Disguise: the first use only breaks it for an eighth of the target's HP, so every
+     * knockout comes one use later. Read without it, a Bisharp's Iron Head was a sure knockout into a fresh Mimikyu and
+     * it died without its Sucker Punch (dev server, 2026-10-20).
+     */
+    fun behindDisguise(chip: Double): LocalKnockoutProfile = LocalKnockoutProfile(
+        listOf(1.0) + survival.dropLast(1),
+        listOf(chip) + damageWhileStanding.dropLast(1).map { it + chip },
+        expectedUses + 1.0,
+    )
+
     companion object {
         const val MAXIMUM_CELLS = 1000
         private const val GRID = MAXIMUM_CELLS

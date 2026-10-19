@@ -32,7 +32,7 @@ internal object BattleOpponentMoveExpectationScorer {
         val hits = move.effects?.effects.orEmpty().firstOrNull { it.kind == BattleMoveEffectKind.MULTI_HIT }
             ?.amountRange?.let(BattleMoveSetExpectation::averageHits) ?: 1.0
         val baseDamage = move.power * hits * hitProbability * sameTypeBonus *
-            categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
+            categoryFit(pokemon, move) * spreadValue(move.targetPattern, format)
         // Its own stat changes as the board reads them: the share of its damage it gains or loses against the Pokemon it
         // will face. The flat 50 a raised stage read Scale Shot's Speed the same whether or not it turned any exchange.
         val board = if (moveId != null && move.effects?.effects.orEmpty().any(::isOwnStatChange)) {
@@ -79,12 +79,27 @@ internal object BattleOpponentMoveExpectationScorer {
 
     private fun categoryFit(
         pokemon: BattlePokemonStateView,
-        category: BattleMoveDamageCategory,
+        move: BattleMoveCandidateView,
     ): Double {
+        val category = move.damageCategory
         val stats = pokemon.combatStats ?: return 1.0
         val attack = stats.attack.midpoint()
         val specialAttack = stats.specialAttack.midpoint()
-        val strongest = maxOf(attack, specialAttack).coerceAtLeast(1.0)
+        // A move that hits with another of its user's stats (Body Press with Defence) is read at that stat. Read at
+        // Attack, a Corviknight's Body Press fell behind Body Slam and Double-Edge, and a Kingambit set up Swords Dance
+        // into it and fell to one (2026-10-20).
+        val override = move.effects?.mechanicFlags.orEmpty().firstOrNull { it.startsWith(OVERRIDE_OFFENSIVE_STAT) }
+            ?.removePrefix(OVERRIDE_OFFENSIVE_STAT)?.let { stat ->
+                when (stat) {
+                    "defence" -> stats.defence.midpoint()
+                    "special_defence" -> stats.specialDefence.midpoint()
+                    "attack" -> attack
+                    "special_attack" -> specialAttack
+                    else -> null
+                }
+            }
+        val strongest = maxOf(attack, specialAttack, override ?: 0.0).coerceAtLeast(1.0)
+        if (override != null) return (override / strongest).coerceIn(MINIMUM_CATEGORY_FIT, 1.0) * (override / maxOf(attack, specialAttack).coerceAtLeast(1.0)).coerceAtLeast(1.0)
         val selected = when (category) {
             BattleMoveDamageCategory.PHYSICAL -> attack
             BattleMoveDamageCategory.SPECIAL -> specialAttack
@@ -92,6 +107,8 @@ internal object BattleOpponentMoveExpectationScorer {
         }
         return (selected / strongest).coerceIn(MINIMUM_CATEGORY_FIT, 1.0)
     }
+
+    private const val OVERRIDE_OFFENSIVE_STAT = "override_offensive_stat:"
 
     private fun spreadValue(pattern: BattleMoveTargetPattern, format: BattleFormat): Double =
         if (format == BattleFormat.DOUBLE && pattern == BattleMoveTargetPattern.ALL_OPPONENTS) {

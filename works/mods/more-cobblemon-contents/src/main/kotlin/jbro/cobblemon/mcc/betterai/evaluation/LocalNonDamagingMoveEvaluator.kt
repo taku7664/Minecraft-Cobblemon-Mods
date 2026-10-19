@@ -56,7 +56,9 @@ internal object LocalNonDamagingMoveEvaluator {
             val effectiveHealing = minOf(averageHealing, missingHp)
             // Each heal in a row that still ended its turn lower makes the next one cost more.
             val losingLoop = actor?.let { LocalRecoveryLoop.failedStreak(it.battlePokemonId, context) } ?: 0
-            effectiveHealing * 100.0 - losingLoop * tuning.recoveryLoopPenalty
+            // The HP kept is worth what the Pokemon is (LocalPokemonWorth, a side's mean one): a +4 Defence wall's Roost is
+            // worth more than a spent lead's. Read as HP alone it could never pass a knockout's price (2026-10-20).
+            effectiveHealing * 100.0 * (actor?.let { LocalPokemonWorth.of(it.battlePokemonId) } ?: 1.0) - losingLoop * tuning.recoveryLoopPenalty
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()

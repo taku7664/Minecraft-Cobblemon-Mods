@@ -784,13 +784,28 @@ internal class LocalTacticalBrain(
                 difficultyContext.candidates, difficultyContext, rulesContext, scores, opponentIntents, tuning,
             ).mapValues { it.value.adjustment }
         }.orEmpty()
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
+        // A move that needs the target to attack (Sucker Punch) loses what it is worth at the chance the target does not
+        // (LocalPendingAttackChance): its value read as if it always lands kept a Bisharp Sucker Punching a Swords
+        // Dancing Aegislash three turns running (dev server, 2026-10-20).
+        val pendingAttackAdjustments = if (!rulesApply) emptyMap() else searchedRanked.mapNotNull { rank ->
+            val outcome = rank.outcome
+            val parts = if (outcome.candidate.kind == BattleActionKind.COMPOSITE) outcome.componentOutcomes else listOf(outcome)
+            val loss = parts.sumOf { part ->
+                val candidate = part.candidate
+                if (part.publiclyInert || !jbro.cobblemon.mcc.betterai.matchup.LocalPendingAttackChance.requiresPendingAttack(candidate)) return@sumOf 0.0
+                val target = jbro.cobblemon.mcc.betterai.matchup.LocalPendingAttackChance.target(candidate, difficultyContext) ?: return@sumOf 0.0
+                val attacks = jbro.cobblemon.mcc.betterai.matchup.LocalPendingAttackChance.attacks(target, difficultyContext, opponentIntents)
+                (1.0 - attacks) * (if (parts.size == 1) rank.comparisonValue else part.tacticalUtility).coerceAtLeast(0.0)
+            }
+            if (loss > 0.0) outcome.candidate.actionId to -loss else null
+        }.toMap()
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
             knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
+                (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
@@ -870,7 +885,7 @@ internal class LocalTacticalBrain(
         fun quickVerdict(choice: LocalBattleActionRank, from: List<LocalBattleActionRank>, allow: (String) -> Boolean) = ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalQuickDecider.decide(
                 from, choice, rulesContext, scores, profile.difficulty.tier, quickExcluded, seed, predictionAdjustments,
-                expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow, ::setupView, stayCredits,
+                expectedSwitches, debuffReadings.mapValues { it.value.gain }, allow, ::setupView, stayCredits, opponentIntents,
             )
         }
         // At the tiers with the rules its preferences are points before the draw, each candidate read as the one chosen:
@@ -931,7 +946,7 @@ internal class LocalTacticalBrain(
                 nativeStatus = nativeStatusAdjustments,
                 nativeStatusStatus = statusPricing?.status,
                 rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
-                    "prediction" to predictionAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
+                    "prediction" to predictionAdjustments, "pendingAttack" to pendingAttackAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,

@@ -63,6 +63,8 @@ internal object LocalSwitchRules {
         val adjustments = linkedMapOf<String, Double>()
         val sacrifices = linkedSetOf<String>()
         // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
+        // Each Pokemon's worth, the knockout price's (LocalKnockoutWorth): what a sacrifice gives away.
+        val worths by lazy { LocalKnockoutWorth.worths(state, scores, 1.0) }
         val retreatCredits = HashMap<java.util.UUID, Double>()
         fun retreats(pokemon: BattlePokemonStateView): Double = retreatCredits.getOrPut(pokemon.battlePokemonId) {
             if (LocalSetupGate.retreatReasons(pokemon, context, scores, tier = tier).isEmpty()) 0.0
@@ -92,7 +94,7 @@ internal object LocalSwitchRules {
                     replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
                 adjustment += verdict.adjustment
@@ -119,6 +121,7 @@ internal object LocalSwitchRules {
         opponents: List<BattlePokemonStateView>,
         scores: MatchupScores,
         retreats: (BattlePokemonStateView) -> Double,
+        worths: Map<java.util.UUID, Double> = emptyMap(),
     ): Verdict? {
         val entries = opponents.mapNotNull { scores.switchIn(incoming.battlePokemonId, it.battlePokemonId, replaced.battlePokemonId) }
         if (entries.isEmpty()) return null
@@ -131,7 +134,13 @@ internal object LocalSwitchRules {
         val retreat = retreats(replaced)
         val keepIncoming = scores.preserves[incoming.battlePokemonId]?.score ?: 0.0
         val leavingDoomed = stays.any { it.winProbability < 0.5 && (it.opponentMove?.knockoutChanceWithin(1) ?: 0.0) >= DOOMED }
-        val sacrifice = leavingDoomed && keepLeaving >= WORTH_KEEPING && keepIncoming <= WORTHLESS
+        // The one taking the hit must be worth less than the one it saves. Read as its share of the team's coverage, a
+        // full-HP Dragapult others could stand in for counted as worthless and was thrown in front of a Dynamaxed
+        // Aegislash to save a doomed 44% Rillaboom (dev server, 2026-10-20).
+        val incomingWorth = worths[incoming.battlePokemonId]
+        val leavingWorth = worths[replaced.battlePokemonId]
+        val cheaper = if (incomingWorth != null && leavingWorth != null) incomingWorth < leavingWorth else keepIncoming <= WORTHLESS
+        val sacrifice = leavingDoomed && keepLeaving >= WORTH_KEEPING && cheaper
         var adjustment = 0.0
         if (sacrifice) adjustment += keepLeaving * SACRIFICE_SCALE
         val gain = switchValue - stayValue

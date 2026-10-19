@@ -49,7 +49,19 @@ internal object LocalKnockoutWorth {
     )
 
     /** A hit knocking its user out this turn stops: its value in board units and the priority it would come at. */
-    data class Denial(val value: Double, val priority: Int)
+    data class Denial(
+        val value: Double,
+        val priority: Int,
+        /**
+         * How much it matters that it falls now rather than later: the chance its best hit knocks out one in front this
+         * turn (it acts), at least [MINIMUM_URGENCY]. A Pokemon that cannot hurt the one in front is knocked out as well
+         * next turn: its whole worth credited to a knockout now, a +4 Defence Corviknight at 23% took Brave Bird
+         * (its recoil left 15%, then the next foe knocked it out) over Roost (dev server, 2026-10-20).
+         */
+        val urgency: Double = 1.0,
+    )
+
+    const val MINIMUM_URGENCY = 0.25
 
     fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
@@ -91,7 +103,11 @@ internal object LocalKnockoutWorth {
                         move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
                 }.maxByOrNull { it.second }
             }
-            Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon), hits.maxByOrNull { it.second }?.first?.priority ?: 0)
+            val threat = inFront.maxOfOrNull { target ->
+                scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0
+            } ?: 0.0
+            Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
+                (threat * actsThisTurn(pokemon)).coerceIn(MINIMUM_URGENCY, 1.0))
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })

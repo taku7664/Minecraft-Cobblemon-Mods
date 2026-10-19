@@ -61,7 +61,12 @@ internal object EmbeddedTeamBattle {
          * A recorded game (its decisions.jsonl.gz) to follow: each side still decides, but the recorded action is played,
          * so every position is the recorded one and the two decisions can be compared on it (trace "ownActionId").
          */
-        followed: Path? = null): JsonObject {
+        followed: Path? = null,
+        /**
+         * A side played by hand: called with the side, its decision context and the raw request, it returns the action id
+         * to play (forced switches included), or null to leave that request to the brain.
+         */
+        manual: ((String, BattleDecisionContext, JsonObject) -> String?)? = null): JsonObject {
         // The engine dex as the game has it: Mega Showdown's species additions (Z-A Megas) overlaid.
         MegaShowdownTestSpecies.install()
         val recorded = followed?.let { file ->
@@ -198,6 +203,14 @@ internal object EmbeddedTeamBattle {
                             }.filter { it.kind == BattleActionKind.USE_MOVE }
                                 .associate { it.actionId to it.moveDetails?.effects }
                             effectAnnotatedCandidates += effects.values.count { it != null }
+                            manual?.invoke(side, context, input)?.let { handPicked ->
+                                val chosen = context.candidates.singleOrNull { it.actionId == handPicked }
+                                    ?: error("Hand-picked $side '$handPicked' not offered on turn ${frame["turn"]}: ${context.candidates.map { it.actionId }}")
+                                memory.accept(context.state, chosen, null)
+                                choices.addProperty(side, handPicked)
+                                trace.flush()
+                                return@forEach
+                            }
                             val script = scripted[frame["turn"].asInt]?.get(side)
                                 ?.takeUnless { input.getAsJsonObject("request").has("forceSwitch") }
                             if (script != null) {

@@ -61,6 +61,8 @@ internal object LocalQuickDecider {
          * order this team's way): staying to play one is not staying for nothing.
          */
         stayCredits: Map<String, Double> = emptyMap(),
+        /** The opponent's predicted actions: a move that needs the target to attack (Sucker Punch) lands at that chance. */
+        opponentIntents: List<OpponentIntent> = emptyList(),
     ): Verdict? {
         fun pick(rank: LocalBattleActionRank, reason: String): Verdict? = if (allow(reason)) Verdict(rank, reason) else null
         val state = context.state
@@ -83,12 +85,22 @@ internal object LocalQuickDecider {
         // it is the choice as often as a stay is expected and points before the draw otherwise: no threshold for a
         // small change in the prediction to cross (2026-10-13, user decision). The roll is the decision's seed, so every
         // call within one decision reads it the same.
+        // A knockout that can wait is not forced when this one is low and can heal: the foe cannot knock it out
+        // (LocalPokemonWorth.urgency at its floor), so the ranking weighs the heal (at this Pokemon's worth) against the
+        // knockout (at that urgency). A +4 Defence Corviknight at 23% Brave Birded a Mimikyu it would beat anyway, fell to
+        // 15% on the recoil and lost to the next foe (dev server, 2026-10-20). A healthy one still takes it (2026-10-13).
+        val canWaitToHeal = self.hpFraction <= HEAL_WAIT_HP &&
+            jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.urgency(foe.battlePokemonId) <= LocalKnockoutWorth.MINIMUM_URGENCY &&
+            moves.any { rank -> part(rank).moveDetails?.effects?.effects.orEmpty().any {
+                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER } }
         val switchShare = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0).coerceIn(0.0, 1.0)
         val switchExpected = switchShare > 0.0 && Random(seed xor 0x6B0C_2F5A_91D3_47E1L).nextDouble() < switchShare
         attacks.firstOrNull { (rank, score) ->
             val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
                 else stay.subjectMovesFirstProbability
-            score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
+            // Sucker Punch knocks out only if the foe attacks: a Swords Dance in front of it is a turn lost.
+            val lands = if (LocalPendingAttackChance.requiresPendingAttack(part(rank))) LocalPendingAttackChance.attacks(foe, context, opponentIntents) else 1.0
+            !canWaitToHeal && lands * score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
         }?.let { (rank, _) -> pick(rank, if (switchExpected) KNOCKOUT_IF_STAYS else "knockout") }?.let { return it }
 
         // 2. A reason to leave.
@@ -491,4 +503,5 @@ internal object LocalQuickDecider {
     /** A stat raise whose user wins the one-on-one after it less often than this gives the turn away. */
     const val SETUP_WIN = 0.5
     const val FINISH_CHANCE = 0.3
+    private const val HEAL_WAIT_HP = 0.5
 }
