@@ -18,7 +18,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * before it.
  *
  * ```
- * value = success x ( (1 - prod over foes (1 - acts x knockout aimed at the user)) x worth(user)
+ * falls  = 1 - prod over foes (1 - acts x knockout aimed at the user)
+ * value = success x ( falls x (1 - falls x (1 - next success)) x worth(user)
  *                     + HP the hits aimed at it take x acts x blocked share
  *                     + timed field turns + the Dynamax turns of the Pokemon in front )
  * ```
@@ -121,15 +122,20 @@ internal object LocalProtectCredit {
             }
             standing *= 1.0 - (acts * knockout).coerceIn(0.0, 1.0)
         }
-        val success = LocalStallingProtectionRules.nextSuccessProbability(
-            LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot))
+        val streak = LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot)
+        val success = LocalStallingProtectionRules.nextSuccessProbability(streak)
+        // The knockout turned away is only put off while the same hits wait next turn, when the next Protect works at
+        // a third of this one's chance: it counts as saved for the share it does not fall then. Counted whole, a
+        // full-HP Raichu Protected twice running at 1/3 for 108 against a Thunderbolt at 137 and fell (2026-10-19).
+        val fallsNextTurn = (1.0 - standing) * (1.0 - LocalStallingProtectionRules.nextSuccessProbability(streak + 1))
+        val saved = (1.0 - standing) * (1.0 - fallsNextTurn)
         // The HP kept: what the hits would leave less what the quarters that get through leave.
         val kept = minOf(hp, full) - minOf(hp, through)
         // A turn off the user's own Dynamax, read against each Pokemon in front.
         val ownDynamax = if (!jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) 0.0 else foes.map { foe ->
             jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.dynamaxTurn(context, user, foe, user, cache)
         }.average().takeIf { !it.isNaN() } ?: 0.0
-        val value = success * ((1.0 - standing) * jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore(user.battlePokemonId, tuning) +
+        val value = success * (saved * jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore(user.battlePokemonId, tuning) +
             tuning.board(kept + ownDynamax))
         return SlotReading(value, success)
     }

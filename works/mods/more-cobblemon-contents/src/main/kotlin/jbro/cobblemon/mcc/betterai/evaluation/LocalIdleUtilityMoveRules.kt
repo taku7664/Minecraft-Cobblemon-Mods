@@ -35,7 +35,7 @@ internal object LocalIdleUtilityMoveRules {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
         val actor = actor(candidate, context) ?: return false
         if (failsForInsufficientHp(candidate, context)) return true
-        return failsFor(moveId, candidate.mechanic != null, actor, opposingActive(context, actor.side).firstOrNull(), context)
+        return failsFor(moveId, candidate.mechanic != null, actor, target(candidate, context, actor), context)
     }
 
     /**
@@ -71,7 +71,7 @@ internal object LocalIdleUtilityMoveRules {
     fun isIdle(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
         val actor = actor(candidate, context) ?: return false
-        val target = opposingActive(context, actor.side).firstOrNull()
+        val target = target(candidate, context, actor)
         if (failsForInsufficientHp(candidate, context)) return true
         return when (moveId) {
             in HAZARD_REMOVAL -> noEntryHazardsAnywhere(context)
@@ -154,6 +154,20 @@ internal object LocalIdleUtilityMoveRules {
         context.state.pokemon.filter {
             it.side == opposing(side) && it.activeSlot != null && !it.fainted
         }
+
+    /**
+     * The Pokemon the move is aimed at: the candidate's one chosen target (a doubles move may be aimed at either foe or at
+     * the partner), else in singles the one opponent in front. Null for a move with no single target in doubles (spread,
+     * self). Read as the first opponent in front, a Leech Seed into the partner was checked against a foe, and the rules
+     * were off in doubles: Ferrothorn seeded a Grass foe and its own Grass partner twelve times in a game (2026-10-19).
+     */
+    private fun target(candidate: BattleActionCandidate, context: BattleDecisionContext, actor: BattlePokemonStateView): BattlePokemonStateView? {
+        candidate.targets.singleOrNull()?.let { slot ->
+            return context.state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
+        }
+        if (candidate.targets.isNotEmpty() || context.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) return null
+        return opposingActive(context, actor.side).firstOrNull()
+    }
 
     private fun opposing(side: BattleSide): BattleSide =
         if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY

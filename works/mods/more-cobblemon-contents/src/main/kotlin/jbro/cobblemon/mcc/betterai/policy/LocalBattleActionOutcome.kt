@@ -430,8 +430,8 @@ internal object LocalBattleActionOutcomeEvaluator {
             // A move that fails outright now (a failing Rest, Leech Seed into a seeded target, Heat Crash into a Dynamaxed
             // one): read only by the status evaluator before, a failing Leech Seed kept the generic status value and was
             // chosen turn after turn (league run, 2026-10-19). Only outright failures: a Rapid Spin with no hazards still
-            // hits. Singles only: the rules read the one opponent in front, and in doubles a move may be aimed at the other.
-            context.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE && LocalIdleUtilityMoveRules.fails(candidate, context) ||
+            // hits. In doubles each rule reads the move's own chosen target (a Leech Seed into the Grass partner fails too).
+            LocalIdleUtilityMoveRules.fails(candidate, context) ||
             jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(candidate, context) ||
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0 ||

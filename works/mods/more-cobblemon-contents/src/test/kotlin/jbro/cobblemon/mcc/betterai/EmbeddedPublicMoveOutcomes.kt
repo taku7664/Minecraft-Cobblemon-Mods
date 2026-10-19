@@ -42,7 +42,10 @@ internal object EmbeddedPublicMoveOutcomes {
                 target = pokemon(2); effect = "substitute"; BattleMoveOutcomeKind.SUBSTITUTE_DAMAGED
             }
             "-singleturn" -> {
-                if (id(3) != "protect") return null
+                // As the game's observer (Cobblemon173ShowdownObservationAdapter.STALL_COUNTER_EFFECT_IDS): Max Guard
+                // too, which shows as its own name. Read as Protect only, a Dynamaxed Pokemon's Max Guard never counted
+                // toward the next one's 1/3, and the mock battles Max Guarded twice running (12 of 17 failed, 2026-10-19).
+                if (id(3) !in STALL_COUNTER_EFFECT_IDS) return null
                 target = pokemon(2); effect = "protect"; BattleMoveOutcomeKind.PROTECTION_STARTED
             }
             else -> return null
@@ -60,4 +63,6 @@ internal object EmbeddedPublicMoveOutcomes {
             previous.targetPokemonIds == next.targetPokemonIds && before.publicEffectId == after.publicEffectId &&
             before.hitCount == after.hitCount && (before.moveId == after.moveId || after.moveId == null)
     }
+
+    private val STALL_COUNTER_EFFECT_IDS = setOf("protect", "endure", "maxguard", "quickguard", "wideguard")
 }
