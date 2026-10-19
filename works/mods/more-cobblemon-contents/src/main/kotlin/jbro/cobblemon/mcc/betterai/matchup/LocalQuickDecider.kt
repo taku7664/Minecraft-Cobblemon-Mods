@@ -70,6 +70,10 @@ internal object LocalQuickDecider {
             ?: return null
         val self = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             ?: return replacement(ranked, excluded, scores, foe)?.takeIf { allow(it.reason) }
+        // A switch asked with no move to choose (after this one's own U-turn or Volt Switch) is no leaving to judge: the
+        // ranking picks who comes in. Read as nothing to hit with, a Volt Switch's replacement skipped the survival check
+        // and sent Golem over the ranking's Steelix (hand-played Roark, 2026-10-20).
+        if (ranked.none { part(it).kind == BattleActionKind.USE_MOVE }) return null
         val open = ranked.filter { it.outcome.candidate.actionId !in excluded }
         val moves = open.filter { part(it).kind == BattleActionKind.USE_MOVE }
         val switches = open.filter { part(it).kind == BattleActionKind.SWITCH && part(it).switchPokemonId != null }

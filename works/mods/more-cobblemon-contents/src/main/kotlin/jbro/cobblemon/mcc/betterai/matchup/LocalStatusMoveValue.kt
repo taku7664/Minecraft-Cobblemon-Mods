@@ -227,6 +227,7 @@ internal object LocalStatusMoveValue {
                 IntentKind.PROTECT -> (pair.subjectMove?.let(::expectedHit) ?: 0.0) * tuning.boardToScore
                 // A hazard it would lay on this side: the layer's worth as the hazard rule reads one, mirrored.
                 else -> hazardOnThisSide(target, option.moveId, context, scores)
+                    ?: phazedEntryLoss(user, deniedMove, context)?.let { it * tuning.boardToScore }
                     ?: (healShare(target, deniedMove, context) * tuning.boardToScore)
             }
             option.probability * denial * turns
@@ -348,6 +349,24 @@ internal object LocalStatusMoveValue {
         val move = statusAction(target, moveId, context) ?: return null
         val id = LocalHazardEncoreCredit.hazardId(move) ?: return null
         return LocalHazardEncoreCredit.layerValue(id, context, scores, BattleSide.ALLY) ?: 0.0
+    }
+
+    /**
+     * A move that forces the user out (Whirlwind, Roar), as the denied move: the HP the Pokemon dragged in (any of the
+     * rest, evenly) loses to the hazards on this side. Null when it forces no switch; 0 when the user cannot be forced
+     * out or none is left to drag in. Read as no heal, a Hippowdon's shown Whirlwind into three layers of Spikes left
+     * Aerodactyl's Taunt at 0 (hand-played Roark, 2026-10-20). The user's own stat stages lost are not read.
+     */
+    private fun phazedEntryLoss(user: BattlePokemonStateView, move: BattleActionCandidate?, context: BattleDecisionContext): Double? {
+        val effects = move?.moveDetails?.effects?.effects.orEmpty()
+        if (effects.none { it.kind == BattleMoveEffectKind.SWITCH_TARGET && it.target == BattleMoveEffectTarget.SELECTED_TARGET }) return null
+        val state = context.state
+        if (LocalDynamax.active(user) ||
+            ability(context, user) in jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector.FORCED_SWITCH_IMMUNITIES ||
+            user.knownVolatileEffectIds.any { PublicIds.canonical(it) == INGRAIN }) return 0.0
+        val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && alive(it) }
+        if (bench.isEmpty()) return 0.0
+        return bench.map { minOf(it.hpFraction, PublicSwitchEntryHazardCalculator.hpLoss(state, BattleSide.ALLY, it) ?: 0.0) }.average()
     }
 
     /**
