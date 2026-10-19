@@ -30,7 +30,8 @@ internal object LocalSideConditionFutility {
         // running (league run, 2026-10-19).
         val own = effects.filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION && it.target == BattleMoveEffectTarget.USER_SIDE }
         if (own.isNotEmpty() && own.size == effects.size) {
-            val present = state.field.sideConditions[BattleSide.ALLY].orEmpty()
+            // One whose last turn has run out is gone.
+            val present = state.field.sideConditions[BattleSide.ALLY].orEmpty().filter { it.remainingTurns == null || it.remainingTurns > 0 }
             return own.all { condition ->
                 val id = condition.valueId?.let(PublicIds::canonical) ?: return@all false
                 val stacks = present.firstOrNull { PublicIds.canonical(it.effectId) == id }?.let { it.stacks ?: 1 } ?: 0

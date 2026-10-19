@@ -26,6 +26,34 @@ import jbro.cobblemon.mcc.betterai.mechanics.copyState
  * Everything here is checked against public state only. Nothing consults a hidden set.
  */
 internal object LocalIdleUtilityMoveRules {
+    /**
+     * Whether this move fails outright now: Showdown rejects it and nothing of it happens (no damage, no other effect).
+     * The ranking reads this one as publicly inert; [isIdle] is wider, for moves with nothing left worth pricing (a
+     * Rapid Spin with no hazards still hits, a Trick with no item may still take one, and those must keep their value).
+     */
+    fun fails(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
+        val moveId = candidate.moveId?.let(::canonical) ?: return false
+        val actor = actor(candidate, context) ?: return false
+        val target = opposingActive(context, actor.side).firstOrNull()
+        if (failsForInsufficientHp(candidate, context)) return true
+        return when (moveId) {
+            in SLEEP_DEPENDENT -> !isAsleep(actor)
+            // Roar and Whirlwind fail with nobody to bring in; Dragon Tail and Circle Throw still hit.
+            in PHAZING_STATUS -> (context.state.remainingPokemonBySide[opposing(actor.side)] ?: 0) <= 1
+            LEECH_SEED -> target != null && (target.knownTypeIds.any { canonical(it) == "grass" } ||
+                target.knownVolatileEffectIds.any { canonical(it) == LEECH_SEED })
+            POLTERGEIST -> target?.knownHeldItemId?.isBlank() == true
+            in DYNAMAX_FAILING_ATTACKS -> candidate.mechanic == null && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(actor) &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)
+            TAUNT -> target?.actionConstraints?.taunted == true
+            ENCORE -> target?.actionConstraints?.encoreMoveId != null
+            YAWN -> target?.statusId != null
+            REST -> restFails(candidate, context, actor)
+            in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
+            else -> false
+        }
+    }
+
     /** Whether this move, played now, cannot change the public state at all. */
     fun isIdle(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
@@ -55,16 +83,19 @@ internal object LocalIdleUtilityMoveRules {
             // Misty Terrain, Sweet Veil); its other status is no bar. **Hard-coded** like the rest of this table: Rest by id.
             // A mechanic with it (Terastallization) may change the user's typing first, and with it whether it is grounded:
             // that candidate is left to the turn's projection, which applies the mechanic before the move.
-            REST -> candidate.mechanic == null && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
-                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
-                    ?.let(::canonical) in SLEEPLESS ||
-                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state,
-                    actor.copyState(statusId = null), "slp", actor, byMove = false))
+            REST -> restFails(candidate, context, actor)
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
                 LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
         }
     }
+
+    private fun restFails(candidate: BattleActionCandidate, context: BattleDecisionContext, actor: BattlePokemonStateView): Boolean =
+        candidate.mechanic == null && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
+            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
+                ?.let(::canonical) in SLEEPLESS ||
+            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state,
+                actor.copyState(statusId = null), "slp", actor, byMove = false))
 
     /** Current public HP requirement only; does not remove legal actions or generalize other idle rules. */
     fun failsForInsufficientHp(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
@@ -135,7 +166,9 @@ internal object LocalIdleUtilityMoveRules {
     private const val SUBSTITUTE_HP_COST = 0.25
     private const val HALF_HEALTH_COST = 0.5
 
-    private val HAZARD_REMOVAL = setOf("defog", "rapidspin", "mortalspin", "tidyup", "courtchange")
+    // Tidy Up is not here: it raises Attack and Speed with no hazard to clear, and read as idle it lost its raise.
+    private val HAZARD_REMOVAL = setOf("defog", "rapidspin", "mortalspin", "courtchange")
+    private val PHAZING_STATUS = setOf("roar", "whirlwind")
     private val STAT_STAGE_RESET = setOf("haze", "clearsmog", "topsyturvy", "spectralthief")
     private val SLEEP_DEPENDENT = setOf("sleeptalk", "snore")
     private val PARTY_STATUS_CURES = setOf("healbell", "aromatherapy")
