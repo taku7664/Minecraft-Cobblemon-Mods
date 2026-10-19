@@ -140,7 +140,7 @@ internal object LocalDamageAbilityModifiers {
         // Cherrim's Flower Gift raises its side's Special Defence by half in sun.
         if (special && weather in SUN && flowerGift(state, target.side)) multiplier /= 1.5
         // Glaive Rush leaves its user taking double damage until it moves again.
-        if (target.knownVolatileEffectIds.any { canonical(it) == "glaiverush" }) multiplier *= 2.0
+        if (LocalGlaiveRush.vulnerable(state, target)) multiplier *= 2.0
         // Delta Stream takes away a Flying type's weaknesses.
         if (weather == "deltastream" && "flying" in types &&
             canonical(details.typeId) in setOf("electric", "ice", "rock")) multiplier *= 0.5

@@ -49,7 +49,7 @@ internal object LocalPublicAccuracy {
         }
 
         // A Glaive Rush user is hit by everything until it moves again.
-        if (target?.knownVolatileEffectIds?.any { canonical(it) == "glaiverush" } == true) return 1.0
+        if (LocalGlaiveRush.vulnerable(state, target)) return 1.0
         // A Poison type's Toxic never misses.
         if (moveId == "toxic" && actor.knownTypeIds.any { canonical(it) == "poison" }) return 1.0
         if (actorAbility == COMPOUND_EYES) base *= COMPOUND_EYES_MODIFIER
