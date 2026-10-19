@@ -36,15 +36,16 @@ class LocalQuickDeciderTest {
     }
 
     @Test
-    fun `a switch-in that also hits the opponent hard comes before one that only walls it`() {
-        // Burned Milotic in front of Ferrothorn: every Pokemon behind it reads as not losing, Roserade by a hair the
-        // most. Roserade has nothing that hurts Ferrothorn; Lucario's Close Combat does. The draw keeps an 11% Scald and
-        // an 8% Ice Beam, and its seed follows the board (an ability ruled out by the engine changes it), so this reads
-        // the likeliest choice rather than one draw.
+    fun `a one-on-one already won is kept rather than handed to a faster finisher`() {
+        // Burned Milotic in front of a 78% burned Ferrothorn wins its one-on-one (exchange 0.75, win ~100%, knockout in
+        // four turns); Lucario's Close Combat would finish it in one (0.93). With no reason to leave, a switch must clear
+        // the margin (0.9 here, a switch last turn): the gain is 0.18 plus 0.15 for three turns sooner. This expected
+        // Lucario while the switch's offensive pressure counted damage past Ferrothorn's HP (85 points; 55 capped,
+        // 2026-10-19). The draw's seed follows the board, so this reads the likeliest choice rather than one draw.
         val (context, decision) = decide("milotic-ferrothorn-switch-in")
         val stages = requireNotNull(lastStages)
         val likeliest = stages.quick ?: stages.drawProbabilities.maxBy { it.value }.key
-        assertTrue(label(context, likeliest) in setOf("lucario", "giratina"),
+        assertTrue(label(context, likeliest) in setOf("scald", "icebeam"),
             "${label(context, likeliest)} ${stages.drawProbabilities} ${decision.tags}")
     }
 

@@ -135,7 +135,16 @@ internal object LocalQuickDecider {
             rank to entry.score + OFFENSE * (entry.afterEntry?.subjectMove?.score ?: 0.0)
         }.sortedByDescending { it.second }
         val best = viable.firstOrNull()
-        fun gain(rank: LocalBattleActionRank) = entry(rank)!!.score - stay.score
+        // A switch-in that knocks the foe out sooner earns a little over the exchange score, which reads a won one-on-one
+        // the same however long it takes: a burned Milotic winning in four turns against a Lucario winning in one
+        // (gain 0.18, 2026-10-19). Small on purpose, it tips only a switch already near the margin.
+        fun knockoutTurns(move: MoveMatchupScore?) = move?.let { m -> (1..KNOCKOUT_TURNS_READ).firstOrNull { m.knockoutChanceWithin(it) >= 0.5 } }
+        fun sooner(rank: LocalBattleActionRank): Double {
+            val switched = knockoutTurns(entry(rank)?.afterEntry?.subjectMove) ?: return 0.0
+            val staying = knockoutTurns(stay.subjectMove) ?: (KNOCKOUT_TURNS_READ + 1)
+            return (FASTER_KNOCKOUT_PER_TURN * (staying - switched)).coerceIn(0.0, FASTER_KNOCKOUT_MAX)
+        }
+        fun gain(rank: LocalBattleActionRank) = entry(rank)!!.score - stay.score + sooner(rank)
         // One the team can spare, knocked out this turn anyway, stays and hits when the hit on entry would cost the
         // next one much: its fall brings that one in without the hit. A healthy one, or one with a switch-in that
         // takes the hit well, is not given away.
@@ -429,6 +438,11 @@ internal object LocalQuickDecider {
     const val RECENT_SWITCH = 0.2
     /** A switch with no reason must gain this much to stand. */
     const val CLEAR_GAIN = 0.7
+
+    /** Turns read for how soon a Pokemon knocks the foe out, and the switch gain each turn sooner earns, up to its cap. */
+    private const val KNOCKOUT_TURNS_READ = 6
+    private const val FASTER_KNOCKOUT_PER_TURN = 0.05
+    private const val FASTER_KNOCKOUT_MAX = 0.2
     /** An attack under this share of the best attack's score gives way to it. */
     const val WEAK_ATTACK = 0.6
     /** HP at which a heal is a blunder at any tier. */
