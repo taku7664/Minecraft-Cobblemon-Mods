@@ -81,7 +81,16 @@ internal object LocalDynamaxGuard {
             val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache, acting) ?: return@mapNotNull null
             val guarded = threat(candidateContext, guardedState, dynamaxed, foes, targeting, tuning, cache, acting)
                 ?: return@mapNotNull null
-            (plain - guarded).takeIf { it > 0.0 }?.let { candidate.actionId to it }
+            // The HP kept is kept; the knockout stopped is only put off unless the doubled HP turns the one-on-one. Read whole, a 42% Araquanid that could not hurt a +2 Dondozo Dynamaxed to live two
+            // turns longer (+216, hand-played Aaron), as had a 46% Luxray (hand-played Volkner; both 2026-10-20).
+            val turns = foes.mapNotNull { foe ->
+                val before = LocalMatchupScoreCalculator.pairMatchup(candidateContext.copy(state = state), user.battlePokemonId,
+                    foe.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
+                val after = LocalMatchupScoreCalculator.pairMatchup(candidateContext.copy(state = guardedState), user.battlePokemonId,
+                    foe.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
+                (after - before).coerceIn(0.0, 1.0)
+            }.takeIf { it.isNotEmpty() }?.average() ?: 1.0
+            ((plain.damage - guarded.damage) + (plain.knockout - guarded.knockout) * turns).takeIf { it > 0.0 }?.let { candidate.actionId to it }
         }.toMap()
         return Reading(
             adjustments,
@@ -130,7 +139,7 @@ internal object LocalDynamaxGuard {
         cache: LocalProjectedActionCalculationCache,
         /** Each foe's chance to act ([acting]), the same on both boards so only the hits' size differs. */
         acting: Map<UUID, Double>,
-    ): Double? {
+    ): Threat? {
         val hits = foes.mapNotNull { foe ->
             val pair = LocalMatchupScoreCalculator.pairMatchup(
                 context.copy(state = state), user.battlePokemonId, foe.battlePokemonId,
@@ -146,8 +155,11 @@ internal object LocalDynamaxGuard {
             (it.move.minimumDamageFraction + it.move.maximumDamageFraction) / 2.0 * it.move.accuracy *
                 it.incomingProbability * it.targetProbability
         }
-        return minOf(taken, user.hpFraction) * tuning.boardToScore + knockout(hits, user.hpFraction) * tuning.knockoutMaterialScore
+        return Threat(minOf(taken, user.hpFraction) * tuning.boardToScore, knockout(hits, user.hpFraction) * tuning.knockoutMaterialScore)
     }
+
+    /** A turn's incoming hits in score units: the HP they take, and the knockout. */
+    private class Threat(val damage: Double, val knockout: Double)
 
     /**
      * The chance [hits] knock the user out this turn. Two hits that each leave it standing can still do it together;
