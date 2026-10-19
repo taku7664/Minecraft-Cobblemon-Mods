@@ -77,7 +77,7 @@ internal object LocalDynamaxGuard {
             // larger the guard (a Mamoswine Dynamaxed Ice Shard, +232, over Icicle Crash, +72; league run, 2026-10-19).
             // Only the doubled HP is guarded.
             val guardedState = with(state, dynamaxed)
-            val acting = acting(candidateContext, guardedState, dynamaxed, foes, cache)
+            val acting = acting(candidateContext, guardedState, dynamaxed, foes, cache) { foe -> aims(mechanic, foe, state) }
             val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache, acting) ?: return@mapNotNull null
             val guarded = threat(candidateContext, guardedState, dynamaxed, foes, targeting, tuning, cache, acting)
                 ?: return@mapNotNull null
@@ -97,12 +97,27 @@ internal object LocalDynamaxGuard {
         user: BattlePokemonStateView,
         foes: List<BattlePokemonStateView>,
         cache: LocalProjectedActionCalculationCache,
+        /** Whether the candidate's move reaches this foe: a foe it does not aim at acts whatever the move does. */
+        aimed: (BattlePokemonStateView) -> Boolean,
     ): Map<UUID, Double> = foes.mapNotNull { foe ->
+        if (!aimed(foe)) return@mapNotNull foe.battlePokemonId to 1.0
         val pair = LocalMatchupScoreCalculator.pairMatchup(
             context.copy(state = state), user.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.CURRENT, cache,
         ) ?: return@mapNotNull null
         foe.battlePokemonId to (1.0 - pair.subjectMovesFirstProbability * (pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0)).coerceIn(0.0, 1.0)
     }.toMap()
+
+    /**
+     * Whether [part]'s move reaches [foe]: always in singles, and for a spread move; in doubles a single-target move only the
+     * foe in the slot it names. A doubles Max Move read as knocking out both foes left neither acting (9da7b44f review).
+     * A move without a named target is read as reaching every foe, as before.
+     */
+    private fun aims(part: BattleActionCandidate, foe: BattlePokemonStateView, state: BattleStateView): Boolean {
+        if (state.format != BattleFormat.DOUBLE) return true
+        if (part.moveDetails?.targetPattern in SPREAD_TARGETS) return true
+        val target = part.targets.singleOrNull() ?: return true
+        return target.side == foe.side && target.slot == foe.activeSlot
+    }
 
     /** The opposing active Pokemon's best hits on [user] this turn, with material counted once, in score units. */
     private fun threat(
