@@ -262,7 +262,9 @@ internal class LocalTacticalBrain(
                 ).takeIf { it.complete }.let { table -> java.util.Optional.ofNullable(table?.let { mega to it }) }
             }.orElse(null)
         }
+        // Keyed by slot and action: in doubles both slots offer "move 1 1", and one slot's verdict stood for the other's move.
         val setupGateVerdicts = java.util.concurrent.ConcurrentHashMap<String, LocalSetupGate.Verdict>()
+        val statusTriageMemo = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
         val rulesApply = profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS
@@ -292,14 +294,14 @@ internal class LocalTacticalBrain(
             val scores = ruleScores ?: return plainExclusions
             return plainExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
-                    setupGateVerdicts.getOrPut(part.actionId) {
+                    setupGateVerdicts.getOrPut("${part.actorSlot}:${part.actionId}") {
                         setupView(part)?.let { (view, table) -> LocalSetupGate.evaluate(part, view, table, tier = profile.difficulty.tier) }
                             ?: LocalSetupGate.Verdict(true, emptyList())
                     }
                 }
                 when {
                     gated -> candidate.actionId to LocalSetupGate.REASON
-                    LocalStatusMoveTriage.wasted(candidate, rulesContext, scores) -> candidate.actionId to LocalStatusMoveTriage.REASON
+                    LocalStatusMoveTriage.wasted(candidate, rulesContext, scores, statusTriageMemo) -> candidate.actionId to LocalStatusMoveTriage.REASON
                     else -> null
                 }
             }.toMap()
@@ -409,7 +411,8 @@ internal class LocalTacticalBrain(
                 intents = if (difficultyContext.state.format != BattleFormat.DOUBLE) null else runCatching {
                     LocalOpponentIntentPredictor.predict(
                         difficultyContext,
-                        jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(difficultyContext),
+                        // The decision's own table when it has one, not a second one worked out the same way.
+                        baseRuleScores ?: jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(difficultyContext),
                         scoredSwitches = true,
                     )
                 }.getOrNull(),
@@ -957,7 +960,7 @@ internal class LocalTacticalBrain(
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
                 ruleExclusions = ruleExclusions(ranked.map { it.outcome.candidate }).mapValues { (id, reason) ->
-                    setupGateVerdicts[id]?.failures?.takeIf { it.isNotEmpty() }?.let { "$reason$it" } ?: reason
+                    setupGateVerdicts.entries.firstOrNull { it.key.substringAfter(':') == id }?.value?.failures?.takeIf { it.isNotEmpty() }?.let { "$reason$it" } ?: reason
                 },
                 drawProbabilities = selection.probabilitiesByActionId,
                 drawExclusions = selection.exclusionsByActionId,

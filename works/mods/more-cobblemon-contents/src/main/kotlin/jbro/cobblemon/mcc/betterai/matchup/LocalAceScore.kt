@@ -20,7 +20,7 @@ internal object LocalAceScore {
         val fresh = context.state.copyState(pokemon = context.state.pokemon.map {
             it.copyState(hpFraction = 1.0, statusId = null, statStages = emptyMap(), fainted = false)
         })
-        val scores = LocalMatchupScoreCalculator.calculate(context.copy(state = fresh))
+        val scores = freshScores(context, fresh)
         return fresh.pokemon.filter { it.side == BattleSide.ALLY }
             .associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
     }
@@ -37,7 +37,7 @@ internal object LocalAceScore {
         })
         val foes = fresh.pokemon.filter { it.side == BattleSide.OPPONENT }
         if (foes.isEmpty()) return emptyMap()
-        val scores = LocalMatchupScoreCalculator.calculate(context.copy(state = fresh))
+        val scores = freshScores(context, fresh)
         val total = foes.sumOf { weights[it.battlePokemonId] ?: 1.0 }
         return fresh.pokemon.filter { it.side == BattleSide.ALLY }.associate { ally ->
             ally.battlePokemonId to foes.sumOf { foe ->
@@ -45,6 +45,27 @@ internal object LocalAceScore {
             } / total
         }
     }
+
+    /**
+     * The fresh board's table, kept for the boards seen last: it changes only with what is known of the Pokemon (species,
+     * form, moves, ability, item), not with HP or stages. Each Dynamax reading worked it out again, several times a
+     * decision in a Galar battle (profiled 2026-10-20).
+     */
+    private fun freshScores(context: BattleDecisionContext, fresh: jbro.cobblemon.mcc.internal.ai.BattleStateView): MatchupScores {
+        val key = fresh.format.name + "|" + fresh.pokemon.joinToString(";") {
+            "${it.battlePokemonId}/${it.side}/${it.speciesId}/${it.formId}/${it.knownMoveIds.sorted()}/${it.knownAbilityId}/${it.knownHeldItemId}/${it.knownTypeIds}"
+        } + "|" + context.publicActionCatalog.hashCode()
+        synchronized(freshTables) { freshTables[key]?.let { return it } }
+        val scores = LocalMatchupScoreCalculator.calculate(context.copy(state = fresh))
+        if (scores.complete) synchronized(freshTables) {
+            freshTables[key] = scores
+            while (freshTables.size > FRESH_TABLES_KEPT) freshTables.remove(freshTables.keys.first())
+        }
+        return scores
+    }
+
+    private val freshTables = LinkedHashMap<String, MatchupScores>()
+    private const val FRESH_TABLES_KEPT = 8
 }
 
 /**
@@ -111,4 +132,5 @@ internal object LocalGimmickReserve {
     private const val MEGA = "mega"
     private const val DYNAMAX = "dynamax"
     private const val EVIOLITE = "eviolite"
+
 }

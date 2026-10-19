@@ -30,8 +30,16 @@ internal object LocalStatusMoveTriage {
     const val LASTING_PASS = 0.2
     const val REASON = "status_wasted"
 
-    fun wasted(candidate: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Boolean =
-        parts(candidate).any { wastedMove(it, context, scores) }
+    /**
+     * [memo] keeps each slot's verdict for the decision: a doubles turn repeats one slot's move in every pairing, and
+     * each repeat replayed the bench's matchups after the status (28% of a doubles decision, profiled 2026-10-20).
+     */
+    fun wasted(candidate: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores,
+        memo: MutableMap<String, Boolean>? = null): Boolean =
+        parts(candidate).any { part ->
+            if (memo == null) wastedMove(part, context, scores)
+            else memo.getOrPut("${part.actorSlot}:${part.actionId}:${part.targets}") { wastedMove(part, context, scores) }
+        }
 
     private fun wastedMove(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Boolean {
         if (!judgeableMove(move, context)) return false

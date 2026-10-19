@@ -123,7 +123,8 @@ internal object LocalProtectCredit {
             standing *= 1.0 - (acts * knockout).coerceIn(0.0, 1.0)
         }
         val streak = LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot)
-        val success = LocalStallingProtectionRules.nextSuccessProbability(streak)
+        // At the chance the user acts at all: a sleeping Tyranitar's Protect took 87 (hand-played Raihan, 2026-10-20).
+        val success = LocalStallingProtectionRules.nextSuccessProbability(streak) * LocalKnockoutWorth.actsThisTurn(user)
         // The knockout turned away is only put off while the same hits wait next turn, when the next Protect works at
         // a third of this one's chance: it counts as saved for the share it does not fall then. Counted whole, a
         // full-HP Raichu Protected twice running at 1/3 for 108 against a Thunderbolt at 137 and fell (2026-10-19).

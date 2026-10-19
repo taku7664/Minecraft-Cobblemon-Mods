@@ -151,8 +151,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                 exclusions.remove(fallback.single().outcome.candidate.actionId)
             }
         }
+        // A doubles turn is a pair of choices: its candidates are every pairing of the two slots' actions, so a share of
+        // their count let the draw reach some forty pairings at Advanced, a quarter of draws picking one a quarter worse
+        // than the best (hand-played Raihan, 2026-10-20). The share is taken of one slot's choices, the square root of
+        // the pairings, as a singles turn takes it of its own.
+        val composite = viable.first().outcome.candidate.kind == jbro.cobblemon.mcc.internal.ai.BattleActionKind.COMPOSITE
+        val choices = if (composite) kotlin.math.ceil(kotlin.math.sqrt(viable.size.toDouble())).toInt().coerceAtLeast(1) else viable.size
         val countShortlist = viable.take(
-            shortlistSize(viable.size, context.tuning, context.decisionShortlistWidth),
+            shortlistSize(choices, context.tuning, context.decisionShortlistWidth),
         )
         viable.drop(countShortlist.size).forEach { exclusions[it.outcome.candidate.actionId] = "shortlist_count" }
         val bestScore = countShortlist.first().comparisonValue
