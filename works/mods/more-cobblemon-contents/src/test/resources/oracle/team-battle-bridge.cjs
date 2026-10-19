@@ -290,7 +290,19 @@ function snapshot() {
           // target before it reads the lock: a target on it is rejected ("You can't choose a target"). The game sends none
           // (Cobblemon reads the missing target as self); a doubles Phantom Force ended five league games (2026-10-19).
           const requestTarget = currentMaxMove?.target || move.target || 'self';
-          targetLocations(requestTarget, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
+          // The game's friendly-target policy (BattleProductAllyTargetPolicy, Cobblemon173ActionCandidateAdapter): an
+          // attack aimed at foes never offers the partner (Pollen Puff, and Beat Up on a Justified partner, excepted),
+          // and a status move aimed at one Pokemon may take the partner. Without it the bridge offered Air Slash into
+          // the partner the game never offers, and the AI knocked its own partner out (25 doubles games, 2026-10-19).
+          const partnerSlot = actorSlot === 0 ? 1 : 0;
+          const partner = side.active[partnerSlot];
+          const mayTargetPartner = !currentMaxMove && (metadata.category === 'status' || metadata.id === 'pollenpuff' ||
+            (metadata.id === 'beatup' && toId(partner?.ability) === 'justified'));
+          let locations = targetLocations(requestTarget, actorSlot, opposingSlots, alliedSlots)
+            .filter(location => mayTargetPartner || !(location.trim() && Number(location.trim()) < 0));
+          if (mayTargetPartner && requestTarget === 'normal' && battleFormat !== 'SINGLE' &&
+            alliedSlots.includes(partnerSlot)) locations = [...locations, ` ${-(partnerSlot + 1)}`];
+          locations.forEach(targetLocation => {
             const choice = { command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
               kind: 'move', slot: moveSlot, moveId: move.id, target,
               targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null };

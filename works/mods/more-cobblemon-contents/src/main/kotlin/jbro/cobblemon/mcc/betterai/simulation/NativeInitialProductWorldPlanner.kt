@@ -26,6 +26,8 @@ internal enum class NativeInitialProductWorldPlanIssueCode {
     INITIAL_WORLD_ASSEMBLY_FAILED,
     WORLD_PRIOR_INVALID,
     BATTLE_DEFINITION_COMPILATION_FAILED,
+    /** A rebuilt board would lead with a fainted Pokemon left in its slot (no replacement), which the engine cannot start. */
+    FAINTED_ACTIVE_SLOT,
 }
 
 internal data class NativeInitialProductWorldPlanIssue(
@@ -106,6 +108,13 @@ internal class NativeInitialProductWorldPlanner(
         val exactOwnTeam = context.exactOwnTeam ?: return failure(
             NativeInitialProductWorldPlanIssueCode.EXACT_OWN_TEAM_MISSING,
         )
+        // A slot whose Pokemon fainted with nobody left to replace it (doubles), or the turn of a knockout before the
+        // replacement: the rebuilt battle starts with the public actives as leads, and the engine refuses a fainted
+        // lead. Every reader of a plan takes no world as "not read". Built anyway, the silent-entry check threw on every
+        // decision while the slot stayed empty (5 of 87 doubles games, 2026-10-19). A live root rebuilds nothing.
+        if (!live && context.state.pokemon.any { it.activeSlot != null && (it.fainted || it.hpFraction <= 0.0) }) {
+            return failure(NativeInitialProductWorldPlanIssueCode.FAINTED_ACTIVE_SLOT)
+        }
         val identities = publicIdentityResolver(context, preview, exactOwnTeam)
         if (identities.issues.isNotEmpty()) return NativeInitialProductWorldPlan(emptyList(), identities.issues)
 

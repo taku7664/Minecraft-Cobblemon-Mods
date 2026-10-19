@@ -462,28 +462,18 @@ internal object EmbeddedTeamInput {
         ): List<BattleTargetSlot> = when {
             targetLoc != null && targetLoc > 0 -> listOf(BattleTargetSlot(BattleSide.OPPONENT, targetLoc - 1))
             targetLoc != null && targetLoc < 0 -> listOf(BattleTargetSlot(BattleSide.ALLY, -targetLoc - 1))
-            details.targetPattern == BattleMoveTargetPattern.SELF ->
-                listOf(BattleTargetSlot(BattleSide.ALLY, actorSlot))
-            details.targetPattern == BattleMoveTargetPattern.ALL_ACTIVE ->
-                (allies.filter { it.activeSlot != null && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
-                } + opponents.filter { it.activeSlot != null && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
-                })
-            details.targetPattern == BattleMoveTargetPattern.ALL_ADJACENT ->
-                (allies.filter { it.activeSlot != null && it.activeSlot != actorSlot && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
-                } + opponents.filter { it.activeSlot != null && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
-                })
-            details.targetPattern == BattleMoveTargetPattern.ALL_OPPONENTS ->
-                opponents.filter { it.activeSlot != null && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
-                }
-            details.targetPattern == BattleMoveTargetPattern.ALL_ALLIES ->
-                allies.filter { it.activeSlot != null && !it.fainted }.map {
-                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
-                }
+            // As the game builds them (Cobblemon173ActionCandidateAdapter): Cobblemon's target list is null for a move that
+            // picks no target (self, spread, random, a side), so the game's candidate names none. Named here, a spread
+            // move read its first listed Pokemon - the partner - as its target and lost the 0.75 spread reduction
+            // (LocalPublicMoveTargets.spreadMultiplier), and a Garchomp's Earthquake into its full-HP Lucario partner
+            // ranked first (doubles league, 2026-10-19).
+            details.targetPattern == BattleMoveTargetPattern.SELF ||
+                details.targetPattern == BattleMoveTargetPattern.ALL_ACTIVE ||
+                details.targetPattern == BattleMoveTargetPattern.ALL_ADJACENT ||
+                details.targetPattern == BattleMoveTargetPattern.ALL_OPPONENTS ||
+                details.targetPattern == BattleMoveTargetPattern.ALL_ALLIES ||
+                details.targetPattern == BattleMoveTargetPattern.RANDOM_OPPONENT ||
+                details.targetPattern == BattleMoveTargetPattern.SCRIPTED -> emptyList()
             details.targetPattern == BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF ->
                 listOf(BattleTargetSlot(BattleSide.ALLY, actorSlot))
             details.targetPattern == BattleMoveTargetPattern.SIDE ||
