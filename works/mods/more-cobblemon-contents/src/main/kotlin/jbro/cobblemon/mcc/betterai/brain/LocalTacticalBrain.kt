@@ -767,7 +767,11 @@ internal class LocalTacticalBrain(
         // What the rules found worth playing among the status moves: the quick decider does not read staying for one as
         // staying for nothing.
         // The room's stay credit at the chance it goes up, as its ranking value is (a room its user falls before is no reason to stay).
-        val stayCredits = perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id ->
+        // Any status move a rule credits is something to stay for: a Stealth Rock the hazard rule read at 214 was passed
+        // over as "nothing to hit with" and its Hippowdon switched out (hand-played Bertha, 2026-10-20).
+        val creditedStatus = (hazardEncoreAdjustments.entries + screenAdjustments.entries + statusMoveAdjustments.entries +
+            debuffAdjustments.entries).filter { it.value > 0.0 }.groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() }
+        val stayCredits = creditedStatus + perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id ->
             val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@mapNotNull null
             trickRoomValue?.let { value ->
                 id to value * (ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0)
