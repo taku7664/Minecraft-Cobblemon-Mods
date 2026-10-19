@@ -3,6 +3,15 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-19 23:40] 관리 전투 임시 파티가 TM 해금·도감 등록을 일으키던 문제 (단위·개발 배포 확인, 실게임 미확인)
+
+- **빡대리님 신고:** 배틀팩토리 대여 포켓몬으로도 TM이 해금된다.
+- **원인(코블몬 1.8.1 바이트코드 대조):** `Cobblemon173ManagedPlayerBattleRoster`/`Participants`가 플레이어 측 전투 복사본을 그 플레이어 소유의 임시 `PlayerPartyStore`에 `set`한다. `PokemonStore.set`이 `storeCoordinates`를 바꾸면 `Pokemon` 초기화 구독이 저장소의 `observingPlayers`마다 `POKEMON_GAINED`를 즉시 낸다. `PokedexHandler.onPokemonGained`가 도감 등록과 `TMMoveManager.syncTMsFromPokemon`(현재 기술 + 이전 단계 레벨업 기술)을 처리해 대여 포켓몬 기술의 TM이 해금됐다. 타워·PvP 복사본도 같은 길이다.
+- **수정(`86bf6141` 이전 커밋, `Cobblemon173ManagedBattlePartyStore`):** 임시 파티는 `set` 하는 동안 `getObservingPlayers()`가 빈 목록을 돌려준다. 획득 이벤트와 클라이언트 파티 패킷이 같이 빠지는데, 클라이언트는 이 임시 파티를 모르므로 원래도 `setPartyPokemon`에서 오류 로그만 남기고 버렸다. 관리 전투는 경험치를 막으므로(`shouldSuppressExperience`) 레벨업으로 해금되는 길도 없다.
+- **확인:** Codex가 `Cobblemon173ManagedPlayerBattleRosterTest` 3/3 통과(로그 Claude 확인, 첫 실행 실패는 내 init 스크립트가 JavaExec 작업 폴더를 `run/`으로 바꿔 상대 경로 테스트가 파일을 못 찾은 탓). MCC `remapJar` 성공, 내장 cobblemon-ui가 설치된 단독 JAR과 같다.
+- **개발 배포:** MCC JAR을 개발 서버·클라에 넣었고 SHA-256이 빌드본과 같다. 백업 `develop-product/deployment-backups/20261019-86bf6141-mcc`. 게임·서버는 꺼져 있었고 켜지 않았다. 운영(VPS)·PPakemon·deploy-product에는 넣지 않았다.
+- **남은 것:** 이미 잘못 해금된 TM과 도감 기록은 되돌리지 않았다. 실제 팩토리 전투에서 해금이 안 되는지는 아직 보지 않았다.
+
 ## [2026-10-19 23:20] 더블 전용 팀 리그(45판)와 더블 실패 판정·방어 점수·하네스 다이맥스월 (구현·단위·측정 확인, 빌드·배치·실게임 미확인)
 
 - **측정 세트:** 체육관 팀 없이 더블 전용 10팀(쾌청·비·트릭룸·모래·다이맥스 2·메가·멸망의노래·싸라기눈·끌어모으기) 리그전 45판. 생성 스크립트는 세션 scratchpad `league/make_vgc_teams.py`, 헛수 스캐너 `wasted.py`, 연속 방어 `consec.py`.
