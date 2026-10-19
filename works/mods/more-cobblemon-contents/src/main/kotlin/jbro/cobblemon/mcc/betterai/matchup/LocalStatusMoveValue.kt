@@ -4,6 +4,8 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -46,7 +48,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  * guessed status moves), nor status moves other than raises, Protect, hazards and heals. Unseen bench Pokemon are not read.
  */
 internal object LocalStatusMoveValue {
-    enum class Kind { FORCED_SWITCH, TAUNT, WEATHER }
+    enum class Kind { FORCED_SWITCH, TAUNT, WEATHER, YAWN }
 
     data class Reading(val kind: Kind, val value: Double)
 
@@ -59,6 +61,8 @@ internal object LocalStatusMoveValue {
             effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET && it.target == BattleMoveEffectTarget.SELECTED_TARGET } -> Kind.FORCED_SWITCH
             effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
                 PublicIds.canonical(it.valueId.orEmpty()) == TAUNT } -> Kind.TAUNT
+            effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
+                PublicIds.canonical(it.valueId.orEmpty()) == YAWN } -> Kind.YAWN
             // A move that only sets the weather: Chilly Reception's switch is worth more than the snow it brings.
             effects.isNotEmpty() && effects.all { it.kind == BattleMoveEffectKind.WEATHER && it.valueId != null } -> Kind.WEATHER
             else -> null
@@ -81,6 +85,7 @@ internal object LocalStatusMoveValue {
             Kind.FORCED_SWITCH -> forcedSwitch(move, context, scores, user, accuracy, tuning)
             Kind.TAUNT -> taunt(move, context, scores, intents, user, accuracy, tuning)
             Kind.WEATHER -> weather(move, context, scores)
+            Kind.YAWN -> yawn(move, context, scores, user, accuracy, tuning)
         } ?: return null
         return Reading(kind, value)
     }
@@ -229,6 +234,80 @@ internal object LocalStatusMoveValue {
         return accuracy * denied
     }
 
+    /**
+     * Yawn. Return: at the end of next turn the target falls asleep unless it leaves, so the opponent picks the lesser
+     * loss of the two, as it would pick its Pokemon in front ([forcedSwitch]'s `held`). Risk: the turn, the target's hit
+     * landing first as any other status move's.
+     * ```
+     * stays   = the user's matchup against the target asleep (LocalSleepClock: one to three turns from a fresh sleep)
+     * leaves  = the user's matchup against the worst for it of the rest (the target's stat stages go with it)
+     * before  = the worst for the user of staying and leaving now
+     * threat  = the target's mean win against every Pokemon on this side, x their number x a Pokemon's worth: now, asleep,
+     *           and back without its stat stages; the opponent keeps the larger of the last two
+     * value   = accuracy x P(the user moves at all) x (min(stays, leaves) - before + threat now - threat after) x 100
+     * ```
+     * Nothing on a target that is asleep or statused already, drowsy, Dynamaxed or kept from sleep (Insomnia, Electric
+     * or Misty Terrain, Safeguard). Read as any status move (20), a Torkoal's Yawn lost to Stealth Rock in front of a
+     * Mega Gyarados setting up with Dragon Dance (hand-played Flint, 2026-10-20).
+     */
+    private fun yawn(
+        move: BattleActionCandidate,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        user: BattlePokemonStateView,
+        accuracy: Double,
+        tuning: LocalDecisionTuning,
+    ): Double? {
+        val state = context.state
+        val target = target(move, context) ?: return null
+        if (LocalDynamax.active(target) || target.statusId != null ||
+            target.knownVolatileEffectIds.any { PublicIds.canonical(it) == YAWN || PublicIds.canonical(it) == SUBSTITUTE } ||
+            jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, SLEEP, user)) return 0.0
+        val now = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
+        val bench = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot == null && alive(it) }
+        fun score(pokemon: BattlePokemonStateView) = scores.pokemon(user.battlePokemonId, pokemon.battlePokemonId)?.score
+        val rest = bench.mapNotNull(::score)
+        val before = minOf(now.score, rest.minOrNull() ?: now.score)
+        // The target asleep from a sleep just seen starting, so the table delays its hits by the turns it sleeps.
+        val fell = BattleObservedEventView(
+            sequence = (state.observedEvents.maxOfOrNull { it.sequence } ?: 0L) + 1L, turn = state.turn,
+            kind = BattleObservedEventKind.STATUS_CHANGED, actorPokemonId = target.battlePokemonId, publicValueId = SLEEP,
+        )
+        val asleepState = jbro.cobblemon.mcc.internal.ai.BattleStateView(state.battleId, state.format, state.turn,
+            state.pokemon.map { if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = SLEEP) else it },
+            state.field, state.remainingPokemonBySide, state.observedEvents + fell, state.inferences)
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val asleepContext = context.copy(state = asleepState)
+        val sleeper = asleepState.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+        val stays = LocalMatchupPosition.face(asleepContext, user, sleeper, cache)
+            ?.let { LocalMatchupScoreCalculator.pairMatchup(it, user.battlePokemonId, target.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.score }
+            ?: return null
+        // It can leave for one not yet seen too: that one's matchup is unknown, read as the target's own.
+        val unseen = (state.remainingPokemonBySide[BattleSide.OPPONENT] ?: 0) -
+            state.pokemon.count { it.side == BattleSide.OPPONENT && alive(it) } > 0
+        val leaves = listOfNotNull(rest.minOrNull(), if (unseen) now.score else null).minOrNull()
+        val after = if (leaves == null) stays else minOf(stays, leaves)
+        // What the target threatens on this whole side: a boosted sweeper's turn of Dragon Dance is a threat to every
+        // Pokemon here, not to the one in front alone.
+        val side = state.pokemon.filter { it.side == BattleSide.ALLY && alive(it) }
+        val reset = state.copyState(pokemon = state.pokemon.map { if (it.battlePokemonId == target.battlePokemonId) it.copyState(statStages = emptyMap()) else it })
+        fun threat(board: BattleDecisionContext): Double? = side.mapNotNull { ally ->
+            val foe = board.state.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+            val mine = board.state.pokemon.first { it.battlePokemonId == ally.battlePokemonId }
+            LocalMatchupPosition.face(board, mine, foe, cache)
+                ?.let { LocalMatchupScoreCalculator.pairMatchup(it, ally.battlePokemonId, target.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.lossProbability }
+        }.takeIf { it.isNotEmpty() }?.average()
+        val threatNow = threat(context)
+        val threatAfter = listOfNotNull(threat(asleepContext), if (leaves == null) null else threat(context.copy(state = reset))).maxOrNull()
+        val sideGain = if (threatNow == null || threatAfter == null) 0.0
+            else (threatNow - threatAfter).coerceAtLeast(0.0) * side.size * tuning.livingPokemonValue
+        // Its hit first: a knockout there and Yawn never comes.
+        val hits = scores.moves(target.battlePokemonId, user.battlePokemonId)
+        val acts = 1.0 - (1.0 - now.subjectMovesFirstProbability) * LocalKnockoutWorth.actsThisTurn(target, state) *
+            (hits.maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0)
+        return accuracy * acts * (after - before + sideGain) * tuning.boardToScore
+    }
+
     private fun weather(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double? {
         val state = context.state
         val id = move.moveDetails?.effects?.effects.orEmpty().firstNotNullOfOrNull { effect ->
@@ -299,6 +378,8 @@ internal object LocalStatusMoveValue {
     private fun alive(pokemon: BattlePokemonStateView) = !pokemon.fainted && pokemon.hpFraction > 0.0
 
     private const val TAUNT = "taunt"
+    private const val YAWN = "yawn"
+    private const val SLEEP = "slp"
     private const val INGRAIN = "ingrain"
     private const val SUBSTITUTE = "substitute"
     private const val SHED_SHELL = "shedshell"
