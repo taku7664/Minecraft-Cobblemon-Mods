@@ -178,8 +178,10 @@ internal object LocalQuickDecider {
         fun gain(rank: LocalBattleActionRank) = entry(rank)!!.score - stay.score + sooner(rank)
         // One the team can spare, knocked out this turn anyway, stays and hits when the hit on entry would cost the
         // next one much: its fall brings that one in without the hit. A healthy one, or one with a switch-in that
-        // takes the hit well, is not given away.
-        val sacking = reason == "loses_one_on_one" && keep <= LocalSwitchRules.WORTHLESS && attacks.isNotEmpty() &&
+        // takes the hit well, is not given away. One that cannot act (frozen, asleep) is given away the same: switched
+        // out, a frozen 9% Dynamax Venusaur brought Lilligant into a super-effective Ice Beam that took its Focus Sash
+        // (hand-played sun concept, 2026-10-20).
+        val sacking = reason in SACKABLE && keep <= LocalSwitchRules.WORTHLESS && attacks.isNotEmpty() &&
             theirKnockout >= LocalSwitchRules.DOOMED && (best == null || best.first.let { rank ->
                 val free = scores.pokemon(requireNotNull(part(rank).switchPokemonId), foe.battlePokemonId)?.score ?: return@let false
                 free - entry(rank)!!.score >= LocalSwitchRules.FREE_ENTRY_MARGIN
@@ -442,6 +444,7 @@ internal object LocalQuickDecider {
     }
 
     /** How sure a faster foe's knockout must be for a heal to come too late. */
+    private val SACKABLE = setOf("loses_one_on_one", "cannot_act")
     private const val FAINTS_FIRST = 0.9
 
     /**
