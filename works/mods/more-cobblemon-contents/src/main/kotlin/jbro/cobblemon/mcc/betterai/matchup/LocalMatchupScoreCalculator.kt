@@ -545,12 +545,13 @@ internal object LocalMatchupScoreCalculator {
         if (!jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups) {
             fun acts(pokemon: BattlePokemonStateView) =
                 if (PublicIds.canonical(pokemon.statusId.orEmpty()) == PARALYSIS) PARALYSIS_ACTS else 1.0
-            // A flinch that works on its user's first turn out only (Fake Out) takes one turn, not every turn of the
-            // exchange: read as every turn, a Liepard at 1/249 HP whose Fake Out could no longer work "won" against a
-            // Pelipper that knocks it out with any move (league run, 2026-10-19). That one free turn is LocalFreeTurnCredit's.
+            // A flinch declared on every hit works under a condition (Fake Out on its user's first turn out, Upper Hand only
+            // into a priority move) and takes one turn at most, not every turn of the exchange: read as every turn, a Liepard
+            // at 1/249 HP whose Fake Out could no longer work "won" against a Pelipper that knocks it out with any move
+            // (league run, 2026-10-19). That one free turn is LocalFreeTurnCredit's. A chance flinch (Air Slash) stays.
             fun flinches(move: ScoredMove?, user: BattlePokemonStateView, target: BattlePokemonStateView, userFirst: Double) =
-                move?.takeUnless { candidate -> candidate.action.moveDetails?.effects?.effects.orEmpty()
-                    .any { it.kind == BattleMoveEffectKind.FIRST_ACTIVE_TURN_ONLY } }
+                move?.takeUnless { candidate -> jbro.cobblemon.mcc.betterai.evaluation.LocalRootFlinchValue.declaredEveryHit(candidate.action) ||
+                    candidate.action.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.FIRST_ACTIVE_TURN_ONLY } }
                     ?.let { jbro.cobblemon.mcc.betterai.evaluation.LocalRootFlinchValue.chance(it.action, user, target, state) *
                     it.score.accuracy * userFirst * acts(user) } ?: 0.0
             val subjectActs = acts(subject) * (1.0 - flinches(opponentMove, opponent, subject, 1.0 - subjectFirst))

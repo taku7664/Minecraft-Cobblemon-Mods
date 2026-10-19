@@ -80,6 +80,13 @@ internal object LocalRootFlinchValue {
     fun certain(candidate: BattleActionCandidate): Boolean = (declared(candidate) ?: 0.0) >= 1.0 &&
         candidate.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.FIRST_ACTIVE_TURN_ONLY }
 
+    /**
+     * Whether [candidate]'s data declares a flinch on every hit. Every such attack works under a condition its data may not
+     * state (Fake Out on its user's first turn out, Upper Hand only into a priority move), so it can never hold a target
+     * turn after turn.
+     */
+    fun declaredEveryHit(candidate: BattleActionCandidate): Boolean = (declared(candidate) ?: 0.0) >= 1.0
+
     private fun declared(candidate: BattleActionCandidate): Double? {
         val details = candidate.moveDetails ?: return null
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return null
