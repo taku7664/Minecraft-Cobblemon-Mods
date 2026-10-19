@@ -143,11 +143,6 @@ internal data class LocalDecisionTuning(
      */
     val predictedSwitchShare: Double = 1.0,
     /**
-     * Opposing switch chances come from switches counted in play (LocalSwitchRates: this battle, then every battle the
-     * AI has read), the fitted switch model only as the start. Off, the fitted model alone.
-     */
-    val countedSwitchRates: Boolean = true,
-    /**
      * The matchup exchange reads self-heals (LocalMatchupScoreCalculator.pokemonMatchup): an attack that does less
      * than one heal never knocks the healer out, and the healer attacks less often. Off, both sides only attack.
      * Off: in singles duels it measured +0.012 over five seeds, and it made a healer's switch-in read as a wall the

@@ -65,15 +65,11 @@ internal object LocalOpponentIntentPredictor {
         scoredInDoubles: Boolean = false,
         /** The deciding tier, which plays a switch-in's moves out in the engine; null reads their declared effects only. */
         tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null,
-        /** This battle's counted switch rates ([LocalSwitchRates]); null keeps the fitted model alone. */
-        rates: LocalSwitchRates? = null,
     ): List<OpponentIntent> {
         val state = context.state
         val allies = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }
         if (allies.isEmpty()) return emptyList()
         val bench = seenBench(state)
-        // Every opposing Pokemon that may switch is counted, a seen bench or not: the rate is how often it leaves.
-        rates?.remember(state, threatened(context, scores))
         // The switch model was fitted on singles. In doubles, 894 slot positions with a seen bench (3.9% switches):
         // the one softmax predicted 32% (Brier 0.29, the base rate alone 0.038), the singles weights 7% (0.034); a
         // doubles fit on its 35 switches did no better (0.035 cross-validated).
@@ -93,9 +89,8 @@ internal object LocalOpponentIntentPredictor {
                 .flatMap { move(it, user, allies, bench, state, scores, ::stageCost) }
             val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
-                // Whether it switches, from the counted rates (the fitted model only to start); where to, by the
-                // incoming Pokemon's matchups.
-                val chance = features[user.battlePokemonId]?.let { switchChance(it, rates) } ?: 0.0
+                // Whether it switches, from the fitted model; where to, by the incoming Pokemon's matchups.
+                val chance = features[user.battlePokemonId]?.let(::switchChance) ?: 0.0
                 softmax(moves).map { it.copy(probability = it.probability * (1.0 - chance)) } +
                     softmax(switches).map { it.copy(probability = it.probability * chance) }
             }
@@ -115,17 +110,6 @@ internal object LocalOpponentIntentPredictor {
             SWITCH_ATTACK * features.bestAttack + SWITCH_HP * features.hp + SWITCH_PRESERVE * features.preserve +
             SWITCH_BENCH * features.bench
         return 1.0 / (1.0 + exp(-z))
-    }
-
-    /** [features]' switch chance from [rates] when given, read by its threat, the fitted model as their start. */
-    fun switchChance(features: SwitchFeatures, rates: LocalSwitchRates?): Double =
-        rates?.chance(features.threatened, switchChance(features)) ?: switchChance(features)
-
-    /** For each opposing active Pokemon, the chance an ally knocks it out before it moves this turn. */
-    fun threatened(context: BattleDecisionContext, scores: MatchupScores): Map<UUID, Double> {
-        val allies = context.state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && standing(it) }
-        return context.state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }
-            .associate { it.battlePokemonId to knockedOutBeforeActing(it, allies, scores) }
     }
 
     /** What the switch model reads for one opposing active Pokemon, from its trainer's side. */

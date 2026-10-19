@@ -192,7 +192,6 @@ internal class LocalTacticalBrain(
             calculatedContext
         }
         active?.repeats?.observe(difficultyContext.state)
-        active?.switchRates?.observe(difficultyContext.state)
         // Assessed before ranking, not after, because the risk budget it resolves belongs in the
         // scoring rather than only in the draw at the end.
         //
@@ -394,12 +393,10 @@ internal class LocalTacticalBrain(
         // the doubled HP this turn; native Showdown already plays that HP and must not receive it twice.
         val gimmickReserveAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
             else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
-        // Counted switch rates replace the fitted switch model once there is play to count (LocalSwitchRates).
-        val switchRates = active?.switchRates?.takeIf { tuning.countedSwitchRates }
         val baseOpponentIntents by lazy {
             if (!rulesApply) emptyList() else ruleScores?.let {
                 LocalOpponentIntentPredictor.predict(
-                    rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier, switchRates,
+                    rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier,
                 )
             }.orEmpty()
         }
@@ -413,7 +410,6 @@ internal class LocalTacticalBrain(
                         difficultyContext,
                         jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(difficultyContext),
                         scoredSwitches = true,
-                        rates = switchRates,
                     )
                 }.getOrNull(),
             )
@@ -452,7 +448,7 @@ internal class LocalTacticalBrain(
             }.orEmpty() }
         // Stealth Rock, Spikes and Encore earn what comes after the engine's two turns (LocalHazardEncoreCredit).
         val hazardEncoreAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
-            jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, rulesContext, scores, switchRates)
+            jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(difficultyContext.candidates, rulesContext, scores)
         }.orEmpty() }
         val healRaceAdjustments by lazy { if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(difficultyContext.candidates, rulesContext, scores, tuning)
@@ -810,7 +806,7 @@ internal class LocalTacticalBrain(
             partCreditCache.getOrPut("${part.actorSlot}:${part.actionId}") {
                 val alone = listOf(part)
                 (jbro.cobblemon.mcc.betterai.matchup.LocalScreenCredit.adjustments(alone, rulesContext, scores)[part.actionId] ?: 0.0) +
-                    (jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(alone, rulesContext, scores, switchRates)[part.actionId] ?: 0.0) +
+                    (jbro.cobblemon.mcc.betterai.matchup.LocalHazardEncoreCredit.adjustments(alone, rulesContext, scores)[part.actionId] ?: 0.0) +
                     (jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(alone, rulesContext, scores, tuning)[part.actionId] ?: 0.0)
             }
         val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
@@ -952,9 +948,6 @@ internal class LocalTacticalBrain(
                 drawn = drawn.outcome.candidate.actionId,
                 quickBonus = quickBonus,
                 quick = quick?.rank?.outcome?.candidate?.actionId,
-                opponentSwitchChances = opponentIntents.associate { intent ->
-                    intent.pokemonId.toString() to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH }.sumOf { it.probability }
-                },
                 quickReason = quick?.reason,
                 selected = selected.outcome.candidate.actionId,
             ))
@@ -1141,8 +1134,6 @@ internal class LocalTacticalBrain(
         @Volatile var aceOpponentIds: Set<UUID> = emptySet()
         /** What the opponent did in each matchup so far; see [LocalOpponentRepeats]. */
         val repeats = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentRepeats()
-        /** How often this trainer's Pokemon switched, by threat; see [jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRates]. */
-        val switchRates = jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRates()
         /** Each opposing Pokemon's entries already read for silent abilities, by its latest switch event. */
         val checkedEntries: MutableSet<Pair<UUID, Long>> = java.util.concurrent.ConcurrentHashMap.newKeySet()
         /** The abilities each opposing Pokemon's silent entries and played turns ruled out ([withSilentEntries]). */

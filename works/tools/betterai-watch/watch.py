@@ -18,6 +18,8 @@ for path in sorted(glob.glob(os.path.join(sys.argv[1],'*','decisions.jsonl.gz'))
         if len(p)>1 and p[1]=='turn': t=int(p[2])
         elif len(p)>3 and p[1]=='move' and '[from]' not in l: acted[t].setdefault(p[2][:2],('move',canon(p[3])))
         elif len(p)>3 and p[1]=='switch': acted[t].setdefault(p[2][:2],('switch',canon(p[3].split(',')[0])))
+        # Knocked out before it acted: the switch after it is a replacement, not a choice; the turn shows no choice.
+        elif len(p)>2 and p[1]=='faint': acted[t].setdefault(p[2][:2],None)
     for r in rows:
         mv=r.get('matchupView') or {}; intent=mv.get('intent')
         if intent is None or ',' in r['actionId']: continue
