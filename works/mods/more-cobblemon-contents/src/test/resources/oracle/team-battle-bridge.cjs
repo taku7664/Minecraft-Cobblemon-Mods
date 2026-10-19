@@ -286,7 +286,11 @@ function snapshot() {
           // move's Max Move takes one target, and Showdown rejected the doubles choice without one (2026-10-18).
           const currentMaxMove = !active.canDynamax && maxMoves?.[moveSlot] ? maxMoves[moveSlot] : null;
           const target = currentMaxMove?.target || move.target || metadata.target;
-          targetLocations(target, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
+          // A locked move (a charge turn's second half, Outrage) comes without a target, and Showdown checks the request's
+          // target before it reads the lock: a target on it is rejected ("You can't choose a target"). The game sends none
+          // (Cobblemon reads the missing target as self); a doubles Phantom Force ended five league games (2026-10-19).
+          const requestTarget = currentMaxMove?.target || move.target || 'self';
+          targetLocations(requestTarget, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
             const choice = { command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
               kind: 'move', slot: moveSlot, moveId: move.id, target,
               targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null };
