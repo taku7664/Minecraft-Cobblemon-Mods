@@ -46,7 +46,7 @@ internal object LocalActingChance {
             val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, part, BattleSide.OPPONENT, hit.action) ?: 0.5
             val pattern = hit.action.moveDetails?.targetPattern
             val aim = if (pattern == BattleMoveTargetPattern.ALL_OPPONENTS || pattern == BattleMoveTargetPattern.ALL_ADJACENT) 1.0 else 1.0 / allies
-            return LocalDynamaxGuard.IncomingHit(hit.score, LocalKnockoutWorth.actsThisTurn(foe) * (1.0 - first), aim)
+            return LocalDynamaxGuard.IncomingHit(hit.score, LocalKnockoutWorth.actsThisTurn(foe, state) * (1.0 - first), aim)
         }
         // Each foe's likeliest knockout, and with its Max Move where it may still Dynamax and that knocks out more
         // ([LocalFoeDynamaxThreat]).

@@ -158,7 +158,7 @@ internal object LocalStatusMoveValue {
         // threat is the likeliest knockout and the most damage, not the fastest knockout over the exchange (a 30% OHKO
         // move beside a sure 2HKO). A paralysed or sleeping target may not move at all.
         val hits = scores.moves(target.battlePokemonId, user.battlePokemonId)
-        val targetActs = LocalKnockoutWorth.actsThisTurn(target)
+        val targetActs = LocalKnockoutWorth.actsThisTurn(target, context.state)
         // Moving last at -6, the target's hit lands first: a knockout there and the move never comes.
         val acts = 1.0 - targetActs * (hits.maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0)
         // Moving last at -6 gives the target its hit first where the user would otherwise have struck first.

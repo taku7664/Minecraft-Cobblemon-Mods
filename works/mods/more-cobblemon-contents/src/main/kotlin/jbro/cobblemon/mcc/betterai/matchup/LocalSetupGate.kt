@@ -178,7 +178,7 @@ internal object LocalSetupGate {
                 val ratio = if (plain >= 1.0) 0.0 else ((1.0 - falls) / (1.0 - plain)).coerceIn(0.0, 1.0)
                 1.0 - first + first * ratio
             } ?: 1.0
-            actingChance(foe) * hit * dynamaxSurvival + (1.0 - actingChance(foe)) * free
+            actingChance(foe, context.state) * hit * dynamaxSurvival + (1.0 - actingChance(foe, context.state)) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         val won = if (win >= WIN_PASS) 1.0 else 0.0
@@ -208,7 +208,7 @@ internal object LocalSetupGate {
         fun expected(move: MoveMatchupScore) = (move.minimumDamageFraction + move.maximumDamageFraction) / 2.0 * move.accuracy
         // The foe's hit at the chance it acts at all (paralysis included), its Max Move where it may still Dynamax.
         val taken = facing.maxOf { foe ->
-            LocalKnockoutWorth.actsThisTurn(foe) * maxOf(
+            LocalKnockoutWorth.actsThisTurn(foe, context.state) * maxOf(
                 scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull(::expected) ?: 0.0,
                 LocalFoeDynamaxThreat.hits(context, context, user, foe, cache).maxOfOrNull { expected(it.score) } ?: 0.0,
             )
@@ -264,8 +264,10 @@ internal object LocalSetupGate {
      * about half the time, a frozen one thaws one time in five. The window a sleeping or frozen opponent opens is
      * the classic moment to set up.
      */
-    internal fun actingChance(opponent: BattlePokemonStateView): Double {
+    internal fun actingChance(opponent: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView? = null): Double {
         if (RECHARGE in opponent.canonicalKnownVolatileEffectIds) return 0.0
+        // A sleep whose start was seen: its counter and Sleep Talk (LocalSleepClock); the flat half otherwise.
+        state?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.acts(it, opponent) }?.let { return it }
         return when (opponent.statusId?.let(PublicIds::canonical)) {
             "slp", "sleep", "asleep" -> SLEEPING_ACTS
             "frz", "freeze", "frozen" -> FROZEN_ACTS

@@ -188,7 +188,7 @@ internal object LocalSelfDropRisk {
             // knocked it out. It uses the move likeliest to knock the user out, each move with its own order against the
             // attack (priority, Speed, Quick Claw and the like) and its own knockouts before and after the drop, read from
             // the move table (the exchange's is thinned for flinches and heals), at the chance the foe moves at all.
-            val foeActs = LocalKnockoutWorth.actsThisTurn(foe)
+            val foeActs = LocalKnockoutWorth.actsThisTurn(foe, board.state)
             val beforeHits = threats(board, before, userId, foe, cache)
             val afterHits = threats(board, after, userId, foe, cache).associateBy { it.score.moveId }
             class Threat(val first: Double, val fallsBefore: Double, val fallsAfter: Double)
@@ -238,7 +238,7 @@ internal object LocalSelfDropRisk {
                 first * (1.0 - fells) * afterScore.knockoutChanceWithin(1) + (1.0 - first) * hit.score.knockoutChanceWithin(1)
             } ?: return@mapNotNull null
             val (hit, first, afterScore) = pick
-            val moves = LocalKnockoutWorth.actsThisTurn(foe) * stays(foe.battlePokemonId).coerceIn(0.0, 1.0)
+            val moves = LocalKnockoutWorth.actsThisTurn(foe, board.state) * stays(foe.battlePokemonId).coerceIn(0.0, 1.0)
             val aim = if (hit.action.moveDetails?.targetPattern in SPREAD) 1.0 else 1.0 / allies
             Branches(hit.score, moves * (1.0 - first), afterScore, moves * first * (1.0 - fells), aim)
         }

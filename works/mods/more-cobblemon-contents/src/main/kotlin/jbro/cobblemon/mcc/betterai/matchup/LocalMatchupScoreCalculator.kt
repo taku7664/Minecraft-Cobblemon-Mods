@@ -562,8 +562,8 @@ internal object LocalMatchupScoreCalculator {
                     it.score.accuracy * userFirst * acts(user) } ?: 0.0
             val subjectActs = acts(subject) * (1.0 - flinches(opponentMove, opponent, subject, 1.0 - subjectFirst))
             val opponentActs = acts(opponent) * (1.0 - flinches(subjectMove, subject, opponent, subjectFirst))
-            mine = mine?.let { thinned(it, subjectActs) }
-            theirs = theirs?.let { thinned(it, opponentActs) }
+            mine = mine?.let { thinned(it, subjectActs) }?.let { asleep(it, subject, state) }
+            theirs = theirs?.let { thinned(it, opponentActs) }?.let { asleep(it, opponent, state) }
         }
         // Which side cannot get through the other's healing, and how often the healer still attacks.
         var subjectWalled = false
@@ -693,6 +693,38 @@ internal object LocalMatchupScoreCalculator {
             damageWhileStandingByUses = stretch(score.damageWhileStandingByUses),
             expectedHitsToKnockout = if (rate <= 0.0) Double.POSITIVE_INFINITY else score.expectedHitsToKnockout / rate,
             score = score.score * rate,
+        )
+    }
+
+    /**
+     * [score] from a user still asleep: its uses start after the turns it sleeps through (LocalSleepClock), a third of
+     * those turns used where Sleep Talk calls it. Read as awake, a Dondozo two turns into Rest was taken to attack each
+     * turn (hand-played Bea, 2026-10-20).
+     */
+    private fun asleep(score: MoveMatchupScore, user: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): MoveMatchupScore {
+        val left = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.remaining(state, user) ?: return score
+        val awake = 1.0 - if (jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.talks(user)) jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.SLEEP_TALK_SHARE else 0.0
+        // Each delay split between the whole turns either side of it.
+        val shifts = left.flatMap { (turns, chance) ->
+            val delay = turns * awake
+            val whole = kotlin.math.floor(delay).toInt()
+            val part = delay - whole
+            listOf(whole to chance * (1.0 - part), whole + 1 to chance * part)
+        }.filter { it.second > 0.0 }
+        if (shifts.all { it.first == 0 }) return score
+        val survival = score.survivalByUses
+        val damage = score.damageWhileStandingByUses
+        val standing = survival.indices.map { n -> shifts.sumOf { (s, p) -> p * survival[(n - s).coerceAtLeast(0)] } }
+        val dealt = survival.indices.map { n ->
+            if (standing[n] <= 0.0) damage.getOrElse(n) { 0.0 }
+            else shifts.sumOf { (s, p) -> val k = (n - s).coerceAtLeast(0); p * survival[k] * damage.getOrElse(k) { 0.0 } } / standing[n]
+        }
+        val now = shifts.filter { it.first == 0 }.sumOf { it.second }
+        return score.copy(
+            survivalByUses = standing,
+            damageWhileStandingByUses = dealt,
+            expectedHitsToKnockout = score.expectedHitsToKnockout + shifts.sumOf { (s, p) -> s * p },
+            score = score.score * now,
         )
     }
 

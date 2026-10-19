@@ -99,7 +99,7 @@ internal object LocalProtectCredit {
         var through = 0.0
         for (intent in intents) {
             val foe = state.pokemon.firstOrNull { it.battlePokemonId == intent.pokemonId } ?: continue
-            val acts = LocalKnockoutWorth.actsThisTurn(foe)
+            val acts = LocalKnockoutWorth.actsThisTurn(foe, state)
             // A Max Move breaks through a plain Protect for a quarter of its damage.
             val share = if (!maxGuard && jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(foe)) MAX_MOVE_THROUGH else 0.0
             var knockout = 0.0
@@ -124,7 +124,7 @@ internal object LocalProtectCredit {
         }
         val streak = LocalStallingProtectionRules.consecutiveSuccessfulUses(state, BattleSide.ALLY, slot)
         // At the chance the user acts at all: a sleeping Tyranitar's Protect took 87 (hand-played Raihan, 2026-10-20).
-        val success = LocalStallingProtectionRules.nextSuccessProbability(streak) * LocalKnockoutWorth.actsThisTurn(user)
+        val success = LocalStallingProtectionRules.nextSuccessProbability(streak) * LocalKnockoutWorth.actsThisTurn(user, state)
         // The knockout turned away is only put off while the same hits wait next turn, when the next Protect works at
         // a third of this one's chance: it counts as saved for the share it does not fall then. Counted whole, a
         // full-HP Raichu Protected twice running at 1/3 for 108 against a Thunderbolt at 137 and fell (2026-10-19).

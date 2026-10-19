@@ -122,8 +122,8 @@ internal object LocalKnockoutWorth {
                     !(before?.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
                         before.actorPokemonId == id && (before.hpFractionDelta ?: 0.0) < 0.0)
             }
-            val threatNow = (threat * actsThisTurn(pokemon)).coerceIn(0.0, 1.0)
-            Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
+            val threatNow = (threat * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0)
+            Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon, state), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
                 if (heals) 1.0 else threatNow.coerceAtLeast(MINIMUM_URGENCY), threatNow)
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
@@ -134,8 +134,8 @@ internal object LocalKnockoutWorth {
     private fun List<Double>.averageOrZero() = if (isEmpty()) 0.0 else average()
 
     /** The chance [pokemon] acts this turn at all: not recharging, awake, thawed, not fully paralysed. */
-    internal fun actsThisTurn(pokemon: BattlePokemonStateView): Double =
-        LocalSetupGate.actingChance(pokemon) *
+    internal fun actsThisTurn(pokemon: BattlePokemonStateView, state: BattleStateView? = null): Double =
+        LocalSetupGate.actingChance(pokemon, state) *
             if (PublicIds.canonical(pokemon.statusId.orEmpty()) in PARALYSED) LocalMatchupScoreCalculator.PARALYSIS_ACTS else 1.0
 
     private val PARALYSED = setOf("par", "paralysis")
