@@ -89,25 +89,25 @@ internal class LocalOpponentRepeats {
         return opponents.associate { it.battlePokemonId to ("$board|${it.battlePokemonId}" to requireNotNull(it.activeSlot)) }
     }
 
-    /** What [pokemonId], in [slot] at the start of [turn], chose that turn; null when it chose nothing public. */
-    private fun actionOn(state: BattleStateView, turn: Int, pokemonId: UUID, slot: Int): String? {
-        val events = state.observedEvents.filter { it.turn == turn }.sortedBy { it.sequence }
-        events.firstOrNull { it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId == pokemonId }?.let { move ->
-            return move.publicValueId?.let { "move:${PublicIds.canonical(it)}" }
-        }
-        if (events.any { it.kind == BattleObservedEventKind.FAINTED && it.actorPokemonId == pokemonId }) return null
-        val opponents = state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
-        return events.firstOrNull {
-            it.kind == BattleObservedEventKind.SWITCHED && it.actorSlot == slot && it.actorPokemonId != pokemonId &&
-                it.actorPokemonId in opponents
-        }?.let { "$SWITCH${it.actorPokemonId}" }
-    }
-
     private fun label(option: IntentOption): String =
         option.moveId?.let { "move:${PublicIds.canonical(it)}" } ?: "switch:${option.switchInId}"
 
     companion object {
         const val MAXIMUM_SHARE = 0.8
-        private const val SWITCH = "switch:"
+        const val SWITCH = "switch:"
+
+        /** What [pokemonId], in [slot] at the start of [turn], chose that turn; null when it chose nothing public. */
+        fun actionOn(state: BattleStateView, turn: Int, pokemonId: UUID, slot: Int): String? {
+            val events = state.observedEvents.filter { it.turn == turn }.sortedBy { it.sequence }
+            events.firstOrNull { it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId == pokemonId }?.let { move ->
+                return move.publicValueId?.let { "move:${PublicIds.canonical(it)}" }
+            }
+            if (events.any { it.kind == BattleObservedEventKind.FAINTED && it.actorPokemonId == pokemonId }) return null
+            val opponents = state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
+            return events.firstOrNull {
+                it.kind == BattleObservedEventKind.SWITCHED && it.actorSlot == slot && it.actorPokemonId != pokemonId &&
+                    it.actorPokemonId in opponents
+            }?.let { "$SWITCH${it.actorPokemonId}" }
+        }
     }
 }

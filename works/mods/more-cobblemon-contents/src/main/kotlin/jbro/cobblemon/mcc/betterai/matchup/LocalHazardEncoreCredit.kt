@@ -40,6 +40,8 @@ internal object LocalHazardEncoreCredit {
         candidates: List<BattleActionCandidate>,
         context: BattleDecisionContext,
         scores: MatchupScores,
+        /** This battle's counted switch rates; null reads the fitted switch model. */
+        rates: LocalSwitchRates? = null,
     ): Map<String, Double> {
         val out = linkedMapOf<String, Double>()
         for (candidate in candidates) {
@@ -59,7 +61,7 @@ internal object LocalHazardEncoreCredit {
                     // anyway, a reflected Stealth Rock kept +62.7 (2026-10-13).
                     hazard != null && LocalPublicMechanicsKernel.projectMove(part, context).publiclyNullified -> Unit
                     hazard != null -> hazard(hazard, context, scores)?.let { change += it - held }
-                    part.moveId?.let(PublicIds::canonical) == ENCORE -> change += encore(part, context, scores) - held
+                    part.moveId?.let(PublicIds::canonical) == ENCORE -> change += encore(part, context, scores, rates) - held
                 }
             }
             if (change != 0.0) out[candidate.actionId] = change
@@ -154,7 +156,7 @@ internal object LocalHazardEncoreCredit {
      * this side's best expected hit on it each locked turn. A stat raise counts only when those hits knock it out within
      * the lock ([lockedRaise]). Locking an attack, or a target with no move to lock into, is avoided outright.
      */
-    private fun encore(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double {
+    private fun encore(move: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores, rates: LocalSwitchRates?): Double {
         val state = context.state
         val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == move.actorSlot && !it.fainted }
             ?: return AVOIDED
@@ -178,7 +180,7 @@ internal object LocalHazardEncoreCredit {
         val first = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, move.actorSlot, move, opponentPriority = 0)
             ?: return AVOIDED
         if (first < 0.5) return AVOIDED
-        if (attack) return lockedAttack(lastMove, details, target, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
+        if (attack) return lockedAttack(lastMove, details, target, context, scores, rates)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         if (raise.values.any { it > 0 }) {
             return lockedRaise(user, target, raise, context, scores)?.let { first * it * BOARD_TO_SCORE } ?: AVOIDED
         }
@@ -235,7 +237,7 @@ internal object LocalHazardEncoreCredit {
      * An attack locked in is worth the turns this side gets while it lands on whoever takes it least: the Pokemon in
      * front or one behind it (2026-10-13, decided with the user). The least share of HP that Pokemon loses to three
      * locked hits; under [LIGHT_LOCK] the lock is worth what it keeps, over the locked turns, unless the target simply
-     * switches out of it (the fitted switch model, [LocalOpponentIntentPredictor.switchChance]). As one HP bar per
+     * switches out of it (the counted switch rates, [LocalOpponentIntentPredictor.switchChance]). As one HP bar per
      * turn, or null when every Pokemon takes it too hard.
      */
     private fun lockedAttack(
@@ -244,6 +246,7 @@ internal object LocalHazardEncoreCredit {
         target: BattlePokemonStateView,
         context: BattleDecisionContext,
         scores: MatchupScores,
+        rates: LocalSwitchRates?,
     ): Double? {
         val taken = context.state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }.mapNotNull { ally ->
             scores.moves(target.battlePokemonId, ally.battlePokemonId).firstOrNull { PublicIds.canonical(it.moveId) == lockedMoveId }?.let { hit ->
@@ -257,7 +260,7 @@ internal object LocalHazardEncoreCredit {
         }.minOrNull() ?: return null
         if (taken >= LIGHT_LOCK) return null
         val leaves = LocalOpponentIntentPredictor.switchFeatures(context, scores)[target.battlePokemonId]
-            ?.let(LocalOpponentIntentPredictor::switchChance) ?: 0.0
+            ?.let { LocalOpponentIntentPredictor.switchChance(it, rates) } ?: 0.0
         return (1.0 - taken) * ENCORE_TURNS * (1.0 - leaves)
     }
 

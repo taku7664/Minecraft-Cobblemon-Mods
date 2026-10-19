@@ -34,4 +34,6 @@ internal data class LocalDecisionStages(
     val quick: String?,
     val quickReason: String?,
     val selected: String,
+    /** Each opposing active Pokemon's switch chance as the rules read it (counted rates, then the repeat record). */
+    val opponentSwitchChances: Map<String, Double> = emptyMap(),
 )

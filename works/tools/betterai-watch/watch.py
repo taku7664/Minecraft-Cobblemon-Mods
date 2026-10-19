@@ -29,7 +29,9 @@ for path in sorted(glob.glob(os.path.join(sys.argv[1],'*','decisions.jsonl.gz'))
         tend={x['response']:x['estimatedRate'] for x in (r.get('memory') or {}).get('tendencies',[]) if x['situation']=='GENERAL'}
         recs.append(dict(intent=intent,did=did,model=(mv.get('switchModel') or {}).get('chance'),
             sit=('we first' if (mv.get('firstMove') or 0)>=0.5 else 'we slower')+(' + our sure KO' if ko>=0.9 else ''),
-            tend=tend.get('SWITCH'), benchSeen=mv.get('switchModel') is not None,
+            tend=tend.get('SWITCH'),
+            # The chance the rules actually used (counted rates after the repeat record); singles has one foe in front.
+            used=next(iter(((r.get('stages') or {}).get('opponentSwitchChances') or {}).values()),None), benchSeen=mv.get('switchModel') is not None,
             moveOpts=any(o['kind']!='SWITCH' for o in intent)))
 allr=recs
 noBench=[x for x in allr if not x['benchSeen']]
@@ -58,6 +60,8 @@ print(f'  move not among the predicted options: {unpred/n:.1%}   max moves (not 
 ys=[1.0 if x['did'][0]=='switch' else 0.0 for x in recs]; base=sum(ys)/n
 ps=[sum(o['p'] for o in x['intent'] if o['kind']=='SWITCH') for x in recs]
 print(f'\n[2] switch: actual {base:.1%}; Brier intent {brier(ps,ys):.4f}, always-the-base-rate {brier([base]*n,ys):.4f}')
+ur=[(x['used'],y) for x,y in zip(recs,ys) if x['used'] is not None]
+if ur: print(f'  used by the rules (counted rates): n={len(ur)} Brier {brier([a for a,_ in ur],[b for _,b in ur]):.4f}, base {brier([base]*len(ur),[b for _,b in ur]):.4f}, mean {sum(a for a,_ in ur)/len(ur):.1%}')
 tr=[(x['tend'],y) for x,y in zip(recs,ys) if x['tend'] is not None]
 if tr: print(f'  in-battle tendency (response model): n={len(tr)} Brier {brier([a for a,_ in tr],[b for _,b in tr]):.4f}, base {brier([base]*len(tr),[b for _,b in tr]):.4f}, mean {sum(a for a,_ in tr)/len(tr):.1%}')
 print('  by predicted chance:')
@@ -66,8 +70,10 @@ for lo,hi in [(0,.05),(.05,.1),(.1,.2),(.2,.3),(.3,.5),(.5,1.01)]:
     if s: print(f'    {lo:.0%}-{min(hi,1):.0%}: n={len(s):4} actual {sum(s)/len(s):.0%}')
 print('  by situation (predicted / actual):')
 by=collections.defaultdict(list)
-for x,p,y in zip(recs,ps,ys): by[x['sit']].append((p,y))
-for k,v in sorted(by.items()): print(f'    {k:24} n={len(v):4} predicted {sum(a for a,_ in v)/len(v):5.1%} actual {sum(b for _,b in v)/len(v):5.1%}')
+for x,p,y in zip(recs,ps,ys): by[x['sit']].append((p,y,x['used']))
+for k,v in sorted(by.items()):
+    used=[u for _,_,u in v if u is not None]
+    print(f'    {k:24} n={len(v):4} model {sum(a for a,_,_ in v)/len(v):5.1%} used {sum(used)/len(used) if used else float("nan"):5.1%} actual {sum(b for _,b,_ in v)/len(v):5.1%}')
 # 3. Which Pokemon comes in.
 sw=[x for x in recs if x['did'][0]=='switch']
 hit=[]; uni=[]; top=0; unseen=0
