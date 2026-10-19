@@ -849,7 +849,7 @@ internal object LocalTacticalScorer {
      * view of what the partner does, so Earthquake beside a partner's Protect was billed as if the partner
      * stood in it, and beside a partner switching out it billed the Pokemon leaving instead of the one coming in.
      */
-    private fun partnerActionCollateralRefund(
+    internal fun partnerActionCollateralRefund(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         tuning: LocalDecisionTuning,
@@ -972,7 +972,11 @@ internal object LocalTacticalScorer {
         context: BattleDecisionContext,
         tuning: LocalDecisionTuning,
     ): Double {
-        if (!LocalPublicPositionFacts.isPublicKnockoutThreat(ally, context, tuning)) return 0.0
+        if (!LocalPublicPositionFacts.isRevealedKnockoutThreat(ally, context)) return 0.0
+        // In doubles the knockout aimed at this partner may as well go to the other Pokemon: half at most, as the
+        // threat was already only half certain when the partner acts second.
+        val shared = context.state.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 } > 1
+        if (shared) return DOOMED_ALLY_PARTIAL_DISCOUNT
         val actsFirst = LocalPublicTurnOrder.actsFirstProbability(
             state = context.state,
             actorSide = BattleSide.ALLY,

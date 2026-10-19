@@ -379,7 +379,10 @@ internal object LocalBattleActionOutcomeEvaluator {
         val items = jbro.cobblemon.mcc.betterai.evaluation.LocalRootItemEffectEvaluator.compositeCorrection(candidate, context, tuning)
         val coordinatedUtility = components.sumOf(LocalBattleActionOutcome::tacticalUtility) + items.total +
             LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
-            LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning)
+            LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning) +
+            // Earthquake beside a partner's Protect or switch: each part charged the partner standing in it. The refund
+            // lived only in LocalTacticalScorer.score's composite branch, which the ranking never runs (2026-10-19).
+            LocalTacticalScorer.partnerActionCollateralRefund(candidate, context, tuning)
         return LocalBattleActionOutcome(
             candidate = candidate,
             tacticalUtility = coordinatedUtility,

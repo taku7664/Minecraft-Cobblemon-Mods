@@ -3,6 +3,15 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-19 23:00] 더블 광역기 아군 피해의 "어차피 쓰러질 편" 할인과 같은 편 방어 환급 (구현·단위·더블 87판 확인, 빌드·배치·실게임 미확인)
+
+- **원인 1(할인):** `LocalTacticalScorer.doomedAllyDiscount`가 공개 기술이 없으면 타입 상성만으로 "확정 기절 위협"을 판정했고(`isPublicKnockoutThreat`의 대체 경로), 더블에서도 상대가 그 편을 노린다고 보고 할인 1.0을 줬다. 1턴 체력 100% 마임맨, 코터스 분연 앞의 로즈레이드(지진 기절 87.5%)의 아군 피해가 0점이 됐다. 이제 공개 기술 피해만 보고(`LocalPublicPositionFacts.isRevealedKnockoutThreat`), 더블에서는 절반까지만 할인한다.
+- **원인 2(환급):** 같은 편이 방어·교체할 때 광역기 아군 피해를 돌려주는 `partnerActionCollateralRefund`가 `LocalTacticalScorer.score`의 복합 행동 분기에만 있었고, 실제 순위는 `LocalBattleActionOutcome.composite`가 계산해 들어가지 않았다. 이제 실제 순위에도 더한다.
+- **결과(더블 87판, `dbl5` → `dbl6`):** 광역기로 같은 편 기절 11 → 4(남은 4건 중 3건은 같은 편 체력 14% 이하). 광역기 + 같은 편 방어 같은 턴 8 → 12, 방어 사용 86 → 103. 승자가 바뀐 판 12/87.
+- **남은 것:** 볼트전 2턴(한카리아스 90% 지진, 같은 편 루카리오 100% 기절, 상대 기절 없음). 우리 광역기가 위협하는 상대를 먼저 쓰러뜨리면 "어차피 쓰러질 편"이 아니게 되는 경우는 아직 반영하지 않았다.
+- **원래 있던 테스트 실패 2건(이번 변경과 무관, 변경을 빼고도 실패):** `LocalTacticalBrainSimulationTest` "ally side condition expiring this turn may be refreshed"(tailwind 기대, chip 선택), `LocalQuickDeciderTest` "a switch-in that also hits the opponent hard comes before one that only walls it". 원인 미조사.
+- **확인:** 관련 단위 14개 클래스, 실패는 위 2건뿐.
+
 ## [2026-10-19 22:10] 더블 측정 하네스를 게임과 맞춤, 쓰러진 칸 판 재구성 오류 (구현·단위·더블 87판 확인, 빌드·배치·실게임 미확인)
 
 - **놓친 이유:** 리그 감사(`audit.py`)가 쉼표가 들어간 행동, 즉 더블 결정을 모두 건너뛰었고, 87판 중 84판이 싱글이었다. 87개 대진을 더블로 바꾼 측정(`scratchpad/league/teams-doubles.json`)과 같은 편 피해 집계(`ffire.py`·`spreadko.py`)를 새로 만들었다.

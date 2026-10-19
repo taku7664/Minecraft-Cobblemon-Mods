@@ -103,6 +103,16 @@ internal object LocalPublicPositionFacts {
         }
     }
 
+    /**
+     * Whether the opponent's revealed attacks alone reach [defender]'s remaining HP. Unlike [isPublicKnockoutThreat] it
+     * never falls back to the type-exposure estimate, which reads a knockout from types alone: a full-HP Mr. Mime on
+     * turn one, nothing revealed, read as doomed and its partner's Earthquake charged nothing for it (doubles, 2026-10-19).
+     */
+    fun isRevealedKnockoutThreat(defender: BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+        if (defender.activeSlot == null) return false
+        return revealedMoveDamageExposure(context.state, context, defender)?.let { it >= defender.hpFraction } == true
+    }
+
     fun isOverwhelmingPublicThreat(
         defender: BattlePokemonStateView,
         context: BattleDecisionContext,
