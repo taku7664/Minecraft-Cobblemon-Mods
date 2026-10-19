@@ -53,6 +53,13 @@ internal object EmbeddedTeamInput {
     }
     private fun id(text: String) = text.substringAfter(": ").lowercase().filter(Char::isLetterOrDigit)
 
+    /** The game observer's tracked volatiles (`Cobblemon173ShowdownObservationAdapter.TRACKED_VOLATILES`), Dynamax and Perish
+     *  Song aside, which this input reads on their own. */
+    private val OBSERVED_VOLATILES = setOf(
+        "leechseed", "confusion", "yawn", "curse", "saltcure", "focusenergy", "disable", "torment", "healblock", "attract",
+        "magnetrise", "aquaring", "ingrain", "dragoncheer", "throatchop", "slowstart", "charge", "flashfire", "laserfocus",
+        "destinybond", "endure")
+
     /**
      * A Mega form's types from the engine dex when the referee's Showdown does not know the form (Z-A Megas: Mega
      * Showdown's species additions are overlaid there, [MegaShowdownTestSpecies]); the game reads them from Cobblemon.
@@ -132,23 +139,6 @@ internal object EmbeddedTeamInput {
                     actorSlot = if (nativeInputs && current != null) activeSlot(actor) else null)
             }
             if (kind in setOf("turn", "upkeep", "switch", "drag")) actionWindow = null
-            // As the game's observer reads every line's `[from] ability:` (revealOptionalSource): an immunity, a block, an
-            // activation reveals its holder's ability (`|-immune|Bronzong|[from] ability: Levitate`), the `[of]` Pokemon's
-            // when named. Without it a revealed Levitate took Earthquake again (league run, 2026-10-19). The lines read
-            // below keep their own handling; Trace is recorded where it copies.
-            if (kind !in setOf("-damage", "-heal", "move", "-ability", "switch", "drag", "replace")) {
-                p.drop(3).firstOrNull { it.startsWith("[from] ability: ") }?.removePrefix("[from] ability: ")
-                    ?.let(::id)?.takeIf { it.isNotEmpty() && it != "trace" }?.let { resource ->
-                        val ofTags = p.drop(3).filter { it.startsWith("[of] ") }
-                        val owner = if (ofTags.size == 1) seen[identity(ofTags.single().removePrefix("[of] "))] else current
-                        if (owner != null && owner.ability != resource) {
-                            owner.ability = resource
-                            events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
-                                BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
-                                actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
-                        }
-                    }
-            }
             when (kind) {
                 "turn" -> {
                     eventTurn = actor.toInt()
@@ -306,6 +296,9 @@ internal object EmbeddedTeamInput {
                     }
                     if (id(p[3]) == "gastroacid") it.gastroAcid = true
                     if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
+                    // The volatiles the game's observer records as they start and end (its TRACKED_VOLATILES): without them a
+                    // seeded target took Leech Seed again (league run, 2026-10-19).
+                    if (id(p[3]) in OBSERVED_VOLATILES) it.volatileEffects += id(p[3])
                     // A Perish Song count, as the game's observer keeps it: the family and perishsong:<count>.
                     Regex("perish([0-3])").matchEntire(id(p[3]))?.let { count ->
                         it.volatileEffects.removeAll { effect -> effect.startsWith("perishsong:") }
@@ -323,6 +316,7 @@ internal object EmbeddedTeamInput {
                     if (id(p[3]) == "neutralizinggas") current?.abilityEnded = true
                     if (p[3] == "typeadd") current?.added = null
                     if (id(p[3]) == "substitute") current?.volatileEffects?.remove("substitute")
+                    if (id(p[3]) in OBSERVED_VOLATILES) current?.volatileEffects?.remove(id(p[3]))
                     if (id(p[3]) == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE) current?.let {
                         val next = jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicPersistentMoveState.afterVolatile(
                             it.volatileEffects.toSet(), jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE, false, null, null)
@@ -355,7 +349,11 @@ internal object EmbeddedTeamInput {
                     if ("[upkeep]" !in p) started["weather"] = maxOf(eventTurn, 1)
                     weather = next
                 }
-                "-fieldstart" -> { fields += id(actor); started["field:${id(actor)}"] = maxOf(eventTurn, 1) }
+                // A new terrain replaces the one up, without an -fieldend line for it (Showdown's setTerrain): left in, a
+                // Psychic Terrain from turn 3 stood for the Electric Terrain of turn 12, and a Rest that fails there was read
+                // as a heal (league run, 2026-10-19).
+                "-fieldstart" -> { if (id(actor).endsWith("terrain")) fields.removeAll { it.endsWith("terrain") }
+                    fields += id(actor); started["field:${id(actor)}"] = maxOf(eventTurn, 1) }
                 "-fieldend" -> fields -= id(actor)
                 "-sidestart" -> { val effects = sideEffects.getValue(side(actor)); val name = id(p[3])
                     effects[name] = ((effects[name] ?: 0) + 1).coerceAtMost(if (name == "spikes") 3 else if (name == "toxicspikes") 2 else 1)
@@ -378,6 +376,24 @@ internal object EmbeddedTeamInput {
                         BattleObservedEventKind.HELD_ITEM_REVEALED, uuid(owner.ident), publicValueId = itemSource,
                         actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
                 }
+            }
+            // As the game's observer reads every line's `[from] ability:` (revealOptionalSource), after the line's own
+            // events: an immunity, a block, an activation reveals its holder's ability (`|-immune|Bronzong|[from] ability:
+            // Levitate`), the `[of]` Pokemon's when named, every time, an ability already known included. Without it a
+            // revealed Levitate took Earthquake again (league run, 2026-10-19). Lines read above keep their own handling;
+            // Trace is recorded where it copies.
+            if (kind !in setOf("-damage", "-heal", "move", "-ability", "switch", "drag", "replace")) {
+                p.drop(3).firstOrNull { it.startsWith("[from] ability: ") }?.removePrefix("[from] ability: ")
+                    ?.let(::id)?.takeIf { it.isNotEmpty() && it != "trace" }?.let { resource ->
+                        val ofTags = p.drop(3).filter { it.startsWith("[of] ") }
+                        val owner = if (ofTags.size == 1) seen[identity(ofTags.single().removePrefix("[of] "))] else current
+                        if (owner != null) {
+                            owner.ability = resource
+                            events += BattleObservedEventView(index.toLong() * 4 + 2, eventTurn,
+                                BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
+                                actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
+                        }
+                    }
             }
         }
         val request = input.getAsJsonObject("request")
