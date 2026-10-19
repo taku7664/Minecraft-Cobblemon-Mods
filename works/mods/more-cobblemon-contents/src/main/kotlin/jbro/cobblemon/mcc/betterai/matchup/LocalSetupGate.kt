@@ -14,6 +14,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 
 /**
  * A stat-raising status move: what it is worth ([score]) and what rules it out ([evaluate]).
@@ -183,7 +184,50 @@ internal object LocalSetupGate {
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         val won = if (win >= WIN_PASS) 1.0 else 0.0
         return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)) *
-            sureKnockoutCost(context, user, facing, scores, cache))
+            sureKnockoutCost(context, user, facing, scores, cache) * resetHolds(context, user, facing, stages, scores, cache))
+    }
+
+    /**
+     * The chance the raise is still there when it is used: a foe in front with a stage reset it has shown, or this tier
+     * read from its set (Haze, Clear Smog: [BattleMoveEffectKind.CLEARS_STAT_STAGES]), clears it on its next turn unless
+     * the raised user knocks it out first.
+     * ```
+     * holds = prod over such foes ( f x (1 - acts) + (1 - f) x (1 - acts x (1 - knockout x first)) )
+     * ```
+     * f is the chance the raise goes before the foe moves this turn (it answers it at once), knockout and first the raised
+     * user's next hit on it and the chance that lands before the foe moves next turn, acts the foe's chance to move at all. Read as a trade of turns (the reset's own turn spent), a Kingambit Swords Danced twice
+     * into a Toxapex that had shown Haze, was burned by its Scald in between and never used a boost (hand-played Piers,
+     * 2026-10-20).
+     */
+    private fun resetHolds(
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        facing: List<BattlePokemonStateView>,
+        stages: Map<String, Int>,
+        scores: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+    ): Double = facing.fold(1.0) { holds, foe ->
+        if (!resets(foe, context)) return@fold holds
+        val position = LocalMatchupPosition.face(context, user, foe, cache) ?: return@fold holds
+        val raised = position.copy(state = LocalMatchupScoreCalculator.setupState(position.state, user.battlePokemonId, stages, 1))
+        val pair = LocalMatchupScoreCalculator.pairMatchup(raised, user.battlePokemonId, foe.battlePokemonId,
+            MatchupSpeedField.CURRENT, cache) ?: return@fold holds
+        val knockout = pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0
+        val acts = LocalKnockoutWorth.actsThisTurn(foe, context.state)
+        // Raised first, the foe answers on this very turn; raised last, the raised hit comes first next turn only.
+        val raisedFirst = scores.pokemon(user.battlePokemonId, foe.battlePokemonId)?.subjectMovesFirstProbability ?: 0.5
+        val keeps = raisedFirst * (1.0 - acts) + (1.0 - raisedFirst) * (1.0 - acts * (1.0 - knockout * pair.subjectMovesFirstProbability))
+        holds * keeps.coerceIn(0.0, 1.0)
+    }
+
+    /** Whether [foe] holds a stage reset this side knows of: shown, or read from its set by this tier (no guess). */
+    private fun resets(foe: BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+        fun clears(details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView?) =
+            details?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.CLEARS_STAT_STAGES }
+        val shown = context.publicActionCatalog.forPokemon(foe.battlePokemonId).any { clears(it.details) }
+        return shown || context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty().any {
+            it.source == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource.DIFFICULTY_SET_READ && clears(it.details)
+        }
     }
 
     /**

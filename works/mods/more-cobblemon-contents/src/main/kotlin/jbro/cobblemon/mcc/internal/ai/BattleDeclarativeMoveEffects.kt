@@ -174,6 +174,11 @@ object BattleDeclarativeMoveEffects {
         addBooleanEffect(effects, properties, "ignoreAbility", BattleMoveEffectKind.IGNORE_ABILITY)
         addBooleanEffect(effects, properties, "ignoreDefensive", BattleMoveEffectKind.IGNORE_DEFENSIVE_STAGES)
         addBooleanEffect(effects, properties, "ignoreEvasion", BattleMoveEffectKind.IGNORE_EVASION_STAGES)
+        // Read from the callback, which is all the data holds of it: Haze clears every Pokemon in play, Clear Smog its target.
+        if (CLEAR_BOOSTS_PATTERN.containsMatchIn(rawObject)) {
+            effects += effect(BattleMoveEffectKind.CLEARS_STAT_STAGES,
+                if (ALL_ACTIVE_PATTERN.containsMatchIn(rawObject)) BattleMoveEffectTarget.FIELD else BattleMoveEffectTarget.SELECTED_TARGET)
+        }
         if (properties["ignoreImmunity"] != null && properties["ignoreImmunity"]?.trim() != "false") {
             effects += effect(BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY, BattleMoveEffectTarget.SELECTED_TARGET)
         }
@@ -371,6 +376,8 @@ object BattleDeclarativeMoveEffects {
     private val OTHER_MOVES_USED_PATTERN = Regex("""moveSlot\.used""")
     private val STOCKPILE_PATTERN = Regex("""return\s+!!source\.volatiles\[[\"']stockpile[\"']]""")
     private val TARGET_LAST_MOVE_PATTERN = Regex("""target\.lastMove""")
+    private val CLEAR_BOOSTS_PATTERN = Regex("""\.clearBoosts\(\)""")
+    private val ALL_ACTIVE_PATTERN = Regex("""for\s*\(\s*const\s+\w+\s+of\s+this\.getAllActive\(\)""")
     private val TARGET_PENDING_PRIORITY_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?\.priority\s*<=""")
 
     /** The accepted value of a pending-attack requirement that the attack must also have priority. */

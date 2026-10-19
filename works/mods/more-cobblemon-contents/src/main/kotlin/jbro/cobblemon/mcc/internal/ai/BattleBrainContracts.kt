@@ -838,6 +838,8 @@ enum class BattleMoveEffectKind {
     IGNORE_EVASION_STAGES,
     IGNORE_TYPE_IMMUNITY,
     CHARGE_SKIP_WEATHER,
+    /** Every stat stage of its target cleared (Clear Smog), or of every Pokemon in play (Haze, Freezy Frost). */
+    CLEARS_STAT_STAGES,
 }
 
 enum class BattleMoveEffectTarget { USER, SELECTED_TARGET, USER_SIDE, TARGET_SIDE, FIELD }
