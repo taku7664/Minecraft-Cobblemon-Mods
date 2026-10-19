@@ -193,7 +193,11 @@ internal object LocalStatusMoveValue {
             target.knownVolatileEffectIds.any { PublicIds.canonical(it) == SUBSTITUTE } ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(context.state, target) == MENTAL_HERB) return 0.0
         val pair = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
-        val revealed = target.knownMoveIds.map(PublicIds::canonical).toSet()
+        // Shown, or read from the real set by this tier (not a guess).
+        val revealed = target.knownMoveIds.map(PublicIds::canonical).toSet() +
+            context.publicActionCatalog.inferredMovesForPokemon(target.battlePokemonId)?.slots.orEmpty()
+                .filter { it.source == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource.DIFFICULTY_SET_READ }
+                .mapNotNull { it.moveId?.let(PublicIds::canonical) }
         val intent = intents.firstOrNull { it.pokemonId == target.battlePokemonId } ?: return 0.0
         val cache = LocalProjectedActionCalculationCache()
         val setups by lazy { LocalMatchupScoreCalculator.setupMoves(context, target) }

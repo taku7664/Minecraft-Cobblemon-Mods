@@ -376,7 +376,10 @@ internal object LocalOpponentIntentPredictor {
      * The attacks this tier believes [user] holds but has not shown (the same slots the pair table scores its hits by),
      * up to four moves with the [known] ones. Read alone, a Bronzong that had shown only Trick Room was read to use it
      * at 100% with the room up and its value at -1.2: nothing else was on offer (league runs, 2026-10-19). Status slots
-     * stay unread (no guessed status moves), and so does a guess; an Encore or a recharge leaves the shown moves alone.
+     * stay unread (no guessed status moves), and so does a guess, except a status move this tier read from the real set
+     * (Boss's setup slot, `DIFFICULTY_SET_READ`): not a guess. Left out, a Dondozo whose Curse Boss had read was not
+     * expected to use it and Taunt was worth nothing (hand-played Bea, 2026-10-20). An Encore or a recharge leaves the
+     * shown moves alone.
      */
     private fun inferredAttacks(
         user: BattlePokemonStateView,
@@ -390,7 +393,8 @@ internal object LocalOpponentIntentPredictor {
             .filter { it.knowledge != jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge.GUESS }
             .mapNotNull { slot ->
                 val id = slot.moveId ?: return@mapNotNull null
-                val details = slot.details?.takeIf { it.damageCategory != BattleMoveDamageCategory.STATUS } ?: return@mapNotNull null
+                val read = slot.source == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource.DIFFICULTY_SET_READ
+                val details = slot.details?.takeIf { read || it.damageCategory != BattleMoveDamageCategory.STATUS } ?: return@mapNotNull null
                 if (PublicIds.canonical(id) in shown) null
                 else BattlePublicMoveOptionView(id, details, jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
             }

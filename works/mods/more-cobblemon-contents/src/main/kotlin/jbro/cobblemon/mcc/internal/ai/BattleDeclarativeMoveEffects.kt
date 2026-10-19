@@ -375,7 +375,10 @@ object BattleDeclarativeMoveEffects {
 
     /** The accepted value of a pending-attack requirement that the attack must also have priority. */
     const val PENDING_PRIORITY = "priority"
-    private val TARGET_PENDING_ATTACK_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?category\s*===\s*[\"']Status[\"']""")
+    // Within one onTry/onTryHit body (Sucker Punch, Thunderclap, Upper Hand, Me First): read across the whole object,
+    // Taunt's duration check (`queue.willMove(target)`) and its later status-move block (`category === "Status"`)
+    // made it a move that needs the target to attack, and the pending-attack rule took 10 off it (2026-10-20).
+    private val TARGET_PENDING_ATTACK_PATTERN = Regex("""onTry(?:Hit)?\([^)]*\)\s*\{[^}]*queue\.willMove\(target\)[^}]*category\s*===\s*[\"']Status[\"']""")
     private val USER_SPECIES_PATTERN = Regex("""if\s*\(\s*source\.species\.(?:baseSpecies|name)\s*===\s*[\"']([^\"']+)[\"'](?:\s*\|\|[^)]*)?\s*\)\s*\{?\s*return\s*;""")
     // Only a failure check: a screen's damage modifier also reads activePerHalf (a doubles screen cuts less), and
     // that reading once made Reflect, Light Screen and Aurora Veil fail in every singles battle.
