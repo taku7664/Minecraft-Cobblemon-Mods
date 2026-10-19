@@ -244,8 +244,12 @@ internal object LocalQuickDecider {
             // Not while it can be finished: low, or already in knockout range.
             val finishing = foe.hpFraction <= FINISH_HP || attacks.any { it.second.knockoutChanceWithin(1) >= FINISH_CHANCE }
             if (!finishing) freeTurn(moves, self, foe, state, scores, expectedSwitches, theirKnockout)?.takeIf { allow(it.reason) }?.let { return it }
-            // A status move that turns the exchange (a burn on a physical attacker, paralysis on a faster one).
-            moves.mapNotNull { rank -> statusScore(rank)?.let { rank to it } }.maxByOrNull { it.second.score }
+            // A status move that turns the exchange (a burn on a physical attacker, paralysis on a faster one). A raise
+            // of the user's own stats is LocalSetupGate's (the step above for a chosen one), which reads what can clear
+            // it: credited here on the exchange alone, a burned Gyarados Dragon Danced twice in front of a Toxapex whose
+            // Haze it had seen (hand-played dynamax concept, 2026-10-20).
+            moves.filterNot { LocalSetupGate.raisesOwnStats(part(it)) }
+                .mapNotNull { rank -> statusScore(rank)?.let { rank to it } }.maxByOrNull { it.second.score }
                 ?.takeIf { it.second.score >= STATUS_GAIN }?.let { pick(it.first, "status_better") }?.let { return it }
             val top = damage(strongest)!!.score
             // An attack the ranking chose for the Pokemon it expects to come in is not weak: it was aimed past this one.
