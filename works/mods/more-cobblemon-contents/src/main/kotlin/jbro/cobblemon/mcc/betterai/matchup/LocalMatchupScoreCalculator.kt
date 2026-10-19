@@ -361,8 +361,12 @@ internal object LocalMatchupScoreCalculator {
             // A Dynamaxed user's attacks are its Max Moves.
             .map { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(it, user) }
             .mapNotNull { original ->
-                fun calculate(action: BattleActionCandidate) = cache.getOrCalculate(state, side, action, position.publicActionCatalog) {
-                    PublicBattleTacticalCalculator.calculate(position.copy(state = state, candidates = listOf(action)), side)
+                // Its own form change before it hits (Stance Change: Blade for an attack), as the turn projection reads it.
+                fun calculate(action: BattleActionCandidate): BattleDecisionContext {
+                    val acting = jbro.cobblemon.mcc.betterai.mechanics.LocalStanceChangeStateProjector.beforeMove(state, side, action)
+                    return cache.getOrCalculate(acting, side, action, position.publicActionCatalog) {
+                        PublicBattleTacticalCalculator.calculate(position.copy(state = acting, candidates = listOf(action)), side)
+                    }
                 }
                 var action = original
                 var calculated = calculate(action)
