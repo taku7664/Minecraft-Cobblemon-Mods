@@ -661,12 +661,12 @@ internal object PublicSingleTurnProjector {
             val asleep = when {
                 action.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.USABLE_WHILE_ASLEEP } ->
                     listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
-                canonicalId(action.moveId) == SLEEP_TALK -> {
+                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(action.moveId) -> {
                     // Sleep Talk uses one of the sleeper's other moves at random; a move with a charging turn it skips.
                     val called = PublicFutureActionFactory.primitiveActionsForPokemon(
                         state, side, actorBeforeTransition.battlePokemonId, sourceContext.publicActionCatalog, history,
                     ).filter { candidate ->
-                        candidate.kind == BattleActionKind.USE_MOVE && canonicalId(candidate.moveId) != SLEEP_TALK &&
+                        candidate.kind == BattleActionKind.USE_MOVE && !jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(candidate.moveId) &&
                             candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.CHARGE_TURN }
                     }.distinctBy { canonicalId(it.moveId) }
                     if (called.isEmpty()) listOf(WeightedState(state, 1.0, protectedPokemonIds = protectedPokemonIds))
@@ -848,7 +848,8 @@ internal object PublicSingleTurnProjector {
         if (canonicalId(moveId) == ALLY_SWITCH) {
             return allySwitchOutcomes(projectedFormState, side, actor, moveId, history)
         }
-        if (canonicalId(moveId) == REST) {
+        // A move that puts its user to sleep on a set counter and heals it whole (Rest), read from its code.
+        if (jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.userSleepTurns(moveId) != null) {
             return listOf(
                 WeightedState(
                     state = restedState(projectedFormState, actor),
@@ -1825,7 +1826,7 @@ internal object PublicSingleTurnProjector {
         val bypassesDecoy = actor != null && bypassesSubstitute(action, actor, initial)
         val shielded = targetId?.takeIf { it != actorId }?.let { id -> initial.pokemon.firstOrNull { it.battlePokemonId == id } }
             ?.let { target ->
-                LocalPublicItemState.activeItemId(initial, target) == "covertcloak" ||
+                jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.shieldsSecondaries(LocalPublicItemState.activeItemId(initial, target)) ||
                     !ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(initial, target) == "shielddust"
             } == true
         val projectable = effects.filter { effect ->
@@ -1948,7 +1949,7 @@ internal object PublicSingleTurnProjector {
             "flinch" -> RecursiveControlEffectKind.FLINCH.takeUnless {
                 val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
                 target != null && (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES ||
-                    LocalPublicItemState.activeItemId(state, target) == "covertcloak" ||
+                    jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.shieldsSecondaries(LocalPublicItemState.activeItemId(state, target)) ||
                     // A Dynamaxed Pokemon cannot flinch.
                     jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target))
             } ?: return null
@@ -2919,8 +2920,6 @@ internal object PublicSingleTurnProjector {
     private const val FULL_PARALYSIS_PROBABILITY = 0.25
     private const val FREEZE_THAW_PROBABILITY = 0.20
     private const val SLEEP_WAKE_PROBABILITY = 1.0 / 3.0
-    private const val REST = "rest"
-    private const val SLEEP_TALK = "sleeptalk"
     private val SLEEPLESS_ABILITIES = setOf("insomnia", "vitalspirit", "comatose", "purifyingsalt")
     private const val FUTURE_MOVE_DELAY_TURNS = 2
     private const val AFTER_YOU = "afteryou"

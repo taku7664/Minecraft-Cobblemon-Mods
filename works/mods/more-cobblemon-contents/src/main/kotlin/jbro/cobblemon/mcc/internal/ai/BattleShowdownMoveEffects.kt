@@ -10,7 +10,7 @@ import java.util.zip.ZipInputStream
 object BattleShowdownMoveEffects {
     private val effectsByMoveId: Map<String, BattleMoveEffectsView> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         try {
-            showdownMovesSource()?.let(BattleDeclarativeMoveEffects::parse).orEmpty()
+            showdownSource(MOVES_ENTRY)?.let(BattleDeclarativeMoveEffects::parse).orEmpty()
         } catch (_: RuntimeException) {
             emptyMap()
         } catch (_: LinkageError) {
@@ -20,13 +20,24 @@ object BattleShowdownMoveEffects {
 
     fun resolve(moveId: String): BattleMoveEffectsView? = effectsByMoveId[canonicalMoveId(moveId)]
 
-    private fun showdownMovesSource(): String? {
+    /** The mechanic flags read from the move's code ([BattleDeclarativeMoveEffects]); empty for an unknown move. */
+    fun flags(moveId: String?): Set<String> = moveId?.let(::resolve)?.mechanicFlags.orEmpty()
+
+    /** The moves whose code shows [flag], in the bundle's order. */
+    fun idsWithFlag(flag: String): List<String> = effectsByMoveId.filterValues { flag in it.mechanicFlags }.keys.toList()
+
+    /** What follows [prefix] in every move flag that starts with it (`delayed_sleep:` gives `yawn`). */
+    fun flagValues(prefix: String): Set<String> =
+        effectsByMoveId.values.flatMap { it.mechanicFlags }.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }.toSet()
+
+    /** One file of the Showdown bundle Cobblemon ships (`data/items.js`), or null when it cannot be read. */
+    internal fun showdownSource(file: String): String? {
         val resource = BattleShowdownMoveEffects::class.java.classLoader.getResourceAsStream(SHOWDOWN_ZIP_RESOURCE) ?: return null
         resource.use { input ->
             ZipInputStream(input).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: return null
-                    if (!entry.isDirectory && entry.name == MOVES_ENTRY) return zip.readBytes().toString(StandardCharsets.UTF_8)
+                    if (!entry.isDirectory && entry.name == file) return zip.readBytes().toString(StandardCharsets.UTF_8)
                 }
             }
         }

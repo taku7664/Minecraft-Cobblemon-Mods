@@ -42,10 +42,11 @@ internal object LocalSleepClock {
             event.kind == BattleObservedEventKind.STATUS_CHANGED && event.actorPokemonId == pokemon.battlePokemonId &&
                 PublicIds.canonical(event.publicValueId.orEmpty()) in SLEEP
         } ?: return null
-        val rest = events.any { event ->
+        // Put to sleep by its own move that sets the counter (Rest: 3, read from the move's code).
+        val ownCounter = events.lastOrNull { event ->
             event.kind == BattleObservedEventKind.MOVE_USED && event.actorPokemonId == pokemon.battlePokemonId &&
-                event.turn == fell.turn && event.sequence < fell.sequence && PublicIds.canonical(event.publicValueId.orEmpty()) == REST
-        }
+                event.turn == fell.turn && event.sequence < fell.sequence
+        }?.let { LocalMoveCode.userSleepTurns(it.publicValueId) }
         // Each later turn it used a move (Sleep Talk) or was stopped by its sleep is one attempt.
         val attempts = events.filter { event ->
             event.sequence > fell.sequence && event.turn > fell.turn && (
@@ -54,18 +55,15 @@ internal object LocalSleepClock {
                     (event.actorPokemonId == pokemon.battlePokemonId || pokemon.battlePokemonId in event.targetPokemonIds))
         }.map { it.turn }.distinct().size
         // A counter of c wakes it on attempt c: (c - 1 - attempts) sleeping turns are left.
-        val counters = if (rest) listOf(REST_COUNTER) else COUNTERS
+        val counters = ownCounter?.let(::listOf) ?: COUNTERS
         val possible = counters.filter { it > attempts }.ifEmpty { listOf(attempts + 1) }
         return possible.map { (it - 1 - attempts).coerceAtLeast(0) to 1.0 / possible.size }
     }
 
     /** Sleep Talk seen: it calls one of the other three moves each turn it sleeps. */
-    fun talks(pokemon: BattlePokemonStateView): Boolean = pokemon.knownMoveIds.any { PublicIds.canonical(it) == SLEEP_TALK }
+    fun talks(pokemon: BattlePokemonStateView): Boolean = pokemon.knownMoveIds.any(LocalMoveCode::callsOwnMoveAsleep)
 
     private val SLEEP = setOf("slp", "sleep", "asleep")
-    private const val REST = "rest"
-    private const val SLEEP_TALK = "sleeptalk"
-    private const val REST_COUNTER = 3
     private val COUNTERS = listOf(2, 3, 4)
     const val SLEEP_TALK_SHARE = 1.0 / 3.0
 }

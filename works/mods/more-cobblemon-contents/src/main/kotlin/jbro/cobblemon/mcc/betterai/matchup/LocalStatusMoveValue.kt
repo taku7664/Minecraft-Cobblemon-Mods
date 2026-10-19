@@ -61,8 +61,8 @@ internal object LocalStatusMoveValue {
             effects.any { it.kind == BattleMoveEffectKind.SWITCH_TARGET && it.target == BattleMoveEffectTarget.SELECTED_TARGET } -> Kind.FORCED_SWITCH
             effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
                 PublicIds.canonical(it.valueId.orEmpty()) == TAUNT } -> Kind.TAUNT
-            effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
-                PublicIds.canonical(it.valueId.orEmpty()) == YAWN } -> Kind.YAWN
+            // A volatile on the target that ends in sleep, read from the move's code (Yawn).
+            jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.delayedSleepVolatile(move.moveId) != null -> Kind.YAWN
             // A move that only sets the weather: Chilly Reception's switch is worth more than the snow it brings.
             effects.isNotEmpty() && effects.all { it.kind == BattleMoveEffectKind.WEATHER && it.valueId != null } -> Kind.WEATHER
             else -> null
@@ -262,7 +262,8 @@ internal object LocalStatusMoveValue {
         val state = context.state
         val target = target(move, context) ?: return null
         if (LocalDynamax.active(target) || target.statusId != null ||
-            target.knownVolatileEffectIds.any { PublicIds.canonical(it) == YAWN || PublicIds.canonical(it) == SUBSTITUTE } ||
+            target.knownVolatileEffectIds.any { PublicIds.canonical(it) in jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.delayedSleepVolatiles ||
+                PublicIds.canonical(it) == SUBSTITUTE } ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, SLEEP, user)) return 0.0
         val now = scores.pokemon(user.battlePokemonId, target.battlePokemonId) ?: return null
         val bench = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot == null && alive(it) }
@@ -397,7 +398,6 @@ internal object LocalStatusMoveValue {
     private fun alive(pokemon: BattlePokemonStateView) = !pokemon.fainted && pokemon.hpFraction > 0.0
 
     private const val TAUNT = "taunt"
-    private const val YAWN = "yawn"
     private const val SLEEP = "slp"
     private const val INGRAIN = "ingrain"
     private const val SUBSTITUTE = "substitute"

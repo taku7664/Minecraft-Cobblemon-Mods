@@ -280,7 +280,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                 else pokemon.knownHeldItemId?.let(::normalizedNativeId)
             val sinceSwitchIn = movesSinceSwitchIn(state, id)
             val active = pokemon.activeSlot != null && !pokemon.fainted
-            val choiceItem = normalizedNativeId(item ?: sets.getValue(id).item) in CHOICE_ITEMS
+            val choiceItem = jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.isChoice(normalizedNativeId(item ?: sets.getValue(id).item))
             val exactMaxHp = pokemon.combatStats?.maxHp?.takeIf { ally && it.minimum == it.maximum }?.minimum
             val dynamaxed = active && LocalDynamax.active(pokemon)
             NativePokemonSituation(
@@ -388,7 +388,6 @@ internal object NativeInitialBattleDefinitionCompiler {
     }
 
     private const val UNKNOWN_SPECIES_ID = "unknown"
-    private val CHOICE_ITEMS = setOf("choiceband", "choicespecs", "choicescarf")
     private val STAGE_IDS = mapOf(
         "attack" to "atk", "atk" to "atk", "defence" to "def", "defense" to "def", "def" to "def",
         "specialattack" to "spa", "spa" to "spa", "specialdefence" to "spd", "specialdefense" to "spd",

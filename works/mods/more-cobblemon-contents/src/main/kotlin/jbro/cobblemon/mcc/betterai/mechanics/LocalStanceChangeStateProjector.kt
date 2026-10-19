@@ -13,18 +13,20 @@ internal object LocalStanceChangeStateProjector {
         val actor = state.pokemon.singleOrNull {
             it.side == side && it.activeSlot == action.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return state
-        // Read from the Pokemon's own forms, not its name: the game names it `showdown:aegislash`, which the plain id
-        // check never matched, so a Shield-form Aegislash's attacks were scored on its Shield Attack (dev server,
-        // 2026-10-20). Its only ability is Stance Change, so an unrevealed ability reads as it.
-        val ability = canonical(actor.knownAbilityId)
-        if (ability.isNotEmpty() && ability != "stancechange") return state
-        if (actor.knownFormStates.values.none { canonical(it.formId).contains("blade") }) return state
-        val wantsShield = canonical(action.moveId) == "kingsshield"
-        val wantsBlade = action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
-        if (!wantsShield && !wantsBlade) return state
+        // Read from the Pokemon's own forms and the ability's code, naming neither (2026-10-20): the game names it
+        // `showdown:aegislash`, which a plain id check never matched, so a Shield-form Aegislash's attacks were scored on
+        // its Shield Attack (dev server, 2026-10-20). An unrevealed ability reads as its only possible one.
+        val ability = actor.knownAbilityId?.takeIf { it.isNotBlank() }
+            ?: jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(state, actor).singleOrNull()
+        val forms = jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.stanceForms(ability) ?: return state
+        if (forms.attackForm.isEmpty()) return state
+        fun attackForm(formId: String?) = canonical(formId).contains(forms.attackForm)
+        if (actor.knownFormStates.values.none { attackForm(it.formId) }) return state
+        val wantsStatusForm = forms.statusFormMove != null && canonical(action.moveId) == forms.statusFormMove
+        val wantsAttackForm = action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
+        if (!wantsStatusForm && !wantsAttackForm) return state
         val form = actor.knownFormStates.values.firstOrNull { known ->
-            val blade = canonical(known.formId).contains("blade")
-            if (wantsShield) !blade else blade
+            if (wantsStatusForm) !attackForm(known.formId) else attackForm(known.formId)
         } ?: return state
         if (canonical(actor.formId) == canonical(form.formId)) return state
 

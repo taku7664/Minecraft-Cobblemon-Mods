@@ -258,7 +258,9 @@ internal object LocalOpponentIntentPredictor {
         // A Dynamaxed Pokemon's status move is Max Guard. Read as the move itself, a Dynamaxed foe's Stealth Rock or
         // Swords Dance was predicted (4.1 over 25 turns) while it could only guard, and a failing one dropped the guard.
         if (details.damageCategory == BattleMoveDamageCategory.STATUS && jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) {
-            return listOf(IntentOption(IntentKind.PROTECT, MAX_GUARD, null, null, protectValue(user, allies, state, scores), 0.0))
+            // Its id read from the move code (the Max Move that stalls), not named.
+            return listOf(IntentOption(IntentKind.PROTECT, jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.maxProtectMoveId ?: moveId,
+                null, null, protectValue(user, allies, state, scores), 0.0))
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             val hits = allies.mapNotNull { ally ->
@@ -580,7 +582,6 @@ internal object LocalOpponentIntentPredictor {
     private const val FAILS = -1.0
     private const val MAX_STAGE = 6
     private const val MAX_MOVES = 4
-    private const val MAX_GUARD = "maxguard"
     /** The exchanges a Trick Room's turns hold (it lasts the turn it goes up and four more), as LocalTrickRoomCredit reads it. */
     private const val ROOM_EXCHANGES = 2.0
     private const val MINIMUM_HP = 0.01

@@ -23,6 +23,21 @@ object BattleDeclarativeMoveEffects {
         }.toMap(linkedMapOf())
     }
 
+    /**
+     * The top-level properties of each entry of a Showdown data object (`const Items = {`), by canonical id: what
+     * [BattleShowdownHeldEffects] reads items and abilities from, as moves are read here.
+     */
+    internal fun entries(source: String, marker: String): Map<String, Map<String, String>> {
+        val at = source.indexOf(marker)
+        if (at < 0) return emptyMap()
+        val objectStart = source.indexOf('{', at + marker.length)
+        if (objectStart < 0) return emptyMap()
+        val objectEnd = matchingDelimiter(source, objectStart, '{', '}') ?: return emptyMap()
+        return objectProperties(source.substring(objectStart + 1, objectEnd)).mapNotNull { (id, raw) ->
+            raw.takeIf { it.startsWith('{') }?.let { canonicalMoveId(id) to objectProperties(trimContainer(it, '{', '}')) }
+        }.toMap(linkedMapOf())
+    }
+
     private fun parseMove(rawObject: String, moveId: String): BattleMoveEffectsView {
         val properties = objectProperties(trimContainer(rawObject, '{', '}'))
         val effects = arrayListOf<BattleMoveEffectView>()
@@ -210,6 +225,27 @@ object BattleDeclarativeMoveEffects {
                 }
                 if (callbackAssigns(properties, "category")) add("dynamic_damage_category")
                 if (properties["damageCallback"] != null) add("dynamic_damage_value")
+                // Read from the callbacks, so no move is named (2026-10-20). A field move that still tries each Pokemon
+                // in play (Perish Song, Flower Shield, Teatime), as an ability that stops moves at the Pokemon reads it.
+                if (properties["onHitField"]?.let(TRY_HIT_EACH_PATTERN::containsMatchIn) == true) add(TRIES_EACH_POKEMON_FLAG)
+                // The sleep counter it sets on its user (Rest: 3 attempts).
+                if (moveTarget == "self" && USER_SLEEP_SET_PATTERN.containsMatchIn(rawObject)) {
+                    SLEEP_TIME_PATTERN.find(rawObject)?.let { add("$SLEEP_TURNS_FLAG${it.groupValues[1]}") }
+                }
+                // It uses one of its user's other moves (Sleep Talk).
+                if (properties["onHit"]?.let { it.contains("moveSlots") && it.contains("useMove(") } == true) add(CALLS_OWN_MOVE_FLAG)
+                // A volatile on its target that puts it to sleep as it ends (Yawn), named as the game names it.
+                stringValue(properties["volatileStatus"])?.let { volatile ->
+                    if (properties["condition"]?.let(DELAYED_SLEEP_PATTERN::containsMatchIn) == true) add("$DELAYED_SLEEP_FLAG${canonicalMoveId(volatile)}")
+                }
+                // A volatile on its user under which every hit on it lands and doubles (Glaive Rush), named likewise.
+                properties["self"]?.let { objectProperties(trimContainer(it, '{', '}'))["volatileStatus"] }?.let(::stringValue)?.let { volatile ->
+                    val condition = properties["condition"].orEmpty()
+                    if (condition.contains("onSourceModifyDamage") && condition.contains("onAccuracy")) add("$EXPOSES_USER_FLAG${canonicalMoveId(volatile)}")
+                }
+                if (properties["terrain"] != null) add(SETS_TERRAIN_FLAG)
+                // The Max Move a Dynamaxed Pokemon's status move turns into (Max Guard).
+                if (booleanLike(properties["isMax"]) && booleanLike(properties["stallingMove"])) add(MAX_PROTECT_FLAG)
             },
         )
     }
@@ -377,6 +413,10 @@ object BattleDeclarativeMoveEffects {
     private val STOCKPILE_PATTERN = Regex("""return\s+!!source\.volatiles\[[\"']stockpile[\"']]""")
     private val TARGET_LAST_MOVE_PATTERN = Regex("""target\.lastMove""")
     private val CLEAR_BOOSTS_PATTERN = Regex("""\.clearBoosts\(\)""")
+    private val TRY_HIT_EACH_PATTERN = Regex("""runEvent\(\s*["']TryHit["']\s*,\s*pokemon""")
+    private val USER_SLEEP_SET_PATTERN = Regex("""target\.setStatus\(\s*["']slp["']""")
+    private val SLEEP_TIME_PATTERN = Regex("""statusState\.time\s*=\s*(\d+)""")
+    private val DELAYED_SLEEP_PATTERN = Regex("""onEnd\([^)]*\)\s*\{[\s\S]*?trySetStatus\(\s*["']slp["']""")
     private val ALL_ACTIVE_PATTERN = Regex("""for\s*\(\s*const\s+\w+\s+of\s+this\.getAllActive\(\)""")
     private val TARGET_PENDING_PRIORITY_PATTERN = Regex("""queue\.willMove\(target\)[\s\S]*?\.priority\s*<=""")
 
@@ -927,6 +967,16 @@ object BattleDeclarativeMoveEffects {
     }
 
     private const val MOVES_MARKER = "const Moves ="
+    const val TRIES_EACH_POKEMON_FLAG = "tries_each_pokemon"
+    /** Followed by the counter, as `sleep_turns:3`. */
+    const val SLEEP_TURNS_FLAG = "sleep_turns:"
+    const val CALLS_OWN_MOVE_FLAG = "calls_own_move"
+    /** Followed by the volatile's id, as `delayed_sleep:yawn`. */
+    const val DELAYED_SLEEP_FLAG = "delayed_sleep:"
+    /** Followed by the volatile's id, as `exposes_user:glaiverush`. */
+    const val EXPOSES_USER_FLAG = "exposes_user:"
+    const val SETS_TERRAIN_FLAG = "sets_terrain"
+    const val MAX_PROTECT_FLAG = "max_protect"
     private const val STALLING_MOVE_FLAG = "stalling_move"
     private const val STALL_COUNTER_ADVANCE_FLAG = "stall_counter_advance"
     private val STALL_MOVE_CHECK_PATTERN = Regex("runEvent\\(\\s*['\"]StallMove['\"]")

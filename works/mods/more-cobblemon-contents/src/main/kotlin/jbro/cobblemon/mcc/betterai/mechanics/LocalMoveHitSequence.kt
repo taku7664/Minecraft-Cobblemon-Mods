@@ -104,7 +104,7 @@ internal object LocalMoveHitSequence {
         if (target.fainted || target.hpFraction <= 0.0 || LocalReactiveAbilityState.BOOSTED_THIS_TURN !in target.knownVolatileEffectIds) return state
         if (actor != null && LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "sheerforce") return state
         if (LocalPublicAbilityState.effectiveKnownAbility(state, target) == "shielddust" ||
-            LocalPublicItemState.activeItemId(state, target) == "covertcloak") return state
+            jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.shieldsSecondaries(LocalPublicItemState.activeItemId(state, target))) return state
         val updated = if (moveId == "alluringvoice") {
             if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "confusion" } ||
                 LocalPublicAbilityState.effectiveKnownAbility(state, target) == "owntempo" ||

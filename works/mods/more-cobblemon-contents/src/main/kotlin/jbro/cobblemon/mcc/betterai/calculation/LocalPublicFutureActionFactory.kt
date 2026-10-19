@@ -324,7 +324,7 @@ internal object PublicFutureActionFactory {
         // move. Without the lock the search let a Choice Scarf user change moves every turn.
         // The last move is kept only while its user stays in (and seeded from the battle's moves since entry).
         val choiceLockedMoveId = history.lastMoveByPokemon[active.battlePokemonId]?.takeIf {
-            item in CHOICE_ITEMS || LocalPublicAbilityState.effectiveKnownAbility(state, active) == "gorillatactics"
+            jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.isChoice(item) || LocalPublicAbilityState.effectiveKnownAbility(state, active) == "gorillatactics"
         }
         val assaultVest = item == "assaultvest"
         val volatiles = active.knownVolatileEffectIds.mapTo(hashSetOf()) { canonicalId(it) }
@@ -549,7 +549,6 @@ internal object PublicFutureActionFactory {
     private fun BattleActionCandidate.isInferredMove(): Boolean =
         "inferred_opponent_move" in tags || "hypothetical_public_move" in tags
 
-    private val CHOICE_ITEMS = setOf("choiceband", "choicespecs", "choicescarf")
     private const val STRUGGLE = "struggle"
     private val FIRST_ENTRY_ONLY_MOVES = setOf("fakeout", "firstimpression", "matblock")
     /** Attacker abilities that hit through a type or ability immunity. */

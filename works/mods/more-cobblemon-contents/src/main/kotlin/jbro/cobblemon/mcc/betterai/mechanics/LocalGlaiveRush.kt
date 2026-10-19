@@ -16,12 +16,11 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 internal object LocalGlaiveRush {
     fun vulnerable(state: BattleStateView?, pokemon: BattlePokemonStateView?): Boolean {
         pokemon ?: return false
-        if (pokemon.knownVolatileEffectIds.any { PublicIds.canonical(it) == GLAIVE_RUSH }) return true
+        // The volatile and the move that sets it, both read from the move's code (no move named, 2026-10-20).
+        val exposing = LocalMoveCode.exposingVolatiles
+        if (pokemon.knownVolatileEffectIds.any { PublicIds.canonical(it) in exposing }) return true
         val events = state?.observedEvents ?: return false
         val last = events.lastOrNull { it.actorPokemonId == pokemon.battlePokemonId &&
             (it.kind == BattleObservedEventKind.MOVE_USED || it.kind == BattleObservedEventKind.SWITCHED) } ?: return false
-        return last.kind == BattleObservedEventKind.MOVE_USED && PublicIds.canonical(last.publicValueId.orEmpty()) == GLAIVE_RUSH
-    }
-
-    private const val GLAIVE_RUSH = "glaiverush"
-}
+        return last.kind == BattleObservedEventKind.MOVE_USED && LocalMoveCode.exposingVolatile(last.publicValueId) != null
+    }}

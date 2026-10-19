@@ -170,7 +170,7 @@ internal object LocalStopScoreCalculator {
         }
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
         return when {
-            ability == DISGUISE && pokemon.formId?.let(PublicIds::canonical)?.contains(BUSTED) != true -> DISGUISE
+            jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.intact(state, pokemon) -> DISGUISE
             ability == MULTISCALE && pokemon.hpFraction >= 1.0 -> MULTISCALE
             else -> null
         }
@@ -194,7 +194,6 @@ internal object LocalStopScoreCalculator {
     private const val FOCUS_SASH = "focussash"
     private const val STURDY = "sturdy"
     private const val DISGUISE = "disguise"
-    private const val BUSTED = "busted"
     private const val MULTISCALE = "multiscale"
     private const val FORCED_SWITCH_VALUE = 0.8
     private const val ENCORE = "encore"

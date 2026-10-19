@@ -85,8 +85,10 @@ internal object LocalSwitchStateProjector {
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private fun BattlePokemonStateView.stanceResetForm(): BattlePokemonFormStateView? {
-        if (canonical(speciesId) != "aegislash" || canonical(knownAbilityId) != "stancechange") return null
-        return knownFormStates.values.firstOrNull { !canonical(it.formId).orEmpty().contains("blade") }
+        // Leaving the field returns it to the form for status moves, both forms read from the ability's code.
+        val attackForm = jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.stanceForms(knownAbilityId)?.attackForm
+            ?.takeIf { it.isNotEmpty() } ?: return null
+        return knownFormStates.values.firstOrNull { !canonical(it.formId).orEmpty().contains(attackForm) }
     }
 
     private fun BattlePokemonStateView.copyForSwitch(

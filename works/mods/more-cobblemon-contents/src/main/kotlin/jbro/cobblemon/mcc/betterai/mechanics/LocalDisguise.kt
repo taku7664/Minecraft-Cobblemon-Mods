@@ -11,14 +11,19 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  */
 internal object LocalDisguise {
     fun intact(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean {
-        if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)?.let(PublicIds::canonical) != DISGUISE) return false
-        if (listOfNotNull(pokemon.formId, pokemon.speciesId).any { PublicIds.canonical(it).contains(BUSTED) }) return false
+        // The ability and the form it breaks into, read from the ability's code (Disguise: busted; no ability named).
+        val broken = shield(state, pokemon)?.brokenForm ?: return false
+        if (listOfNotNull(pokemon.formId, pokemon.speciesId).any { PublicIds.canonical(it).contains(broken) }) return false
         return state.observedEvents.none { event ->
-            event.actorPokemonId == pokemon.battlePokemonId && event.publicSourceEffectId?.let(PublicIds::canonical)?.contains(BUSTED) == true
+            event.actorPokemonId == pokemon.battlePokemonId && event.publicSourceEffectId?.let(PublicIds::canonical)?.contains(broken) == true
         }
     }
 
+    /** The share of maximum HP the shield costs as it breaks (Disguise: an eighth), from the ability's code. */
+    fun chip(state: BattleStateView, pokemon: BattlePokemonStateView): Double = shield(state, pokemon)?.chip ?: CHIP
+
+    private fun shield(state: BattleStateView, pokemon: BattlePokemonStateView) =
+        jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.firstHitShield(LocalPublicAbilityState.effectiveKnownAbility(state, pokemon))
+
     const val CHIP = 0.125
-    private const val DISGUISE = "disguise"
-    private const val BUSTED = "busted"
 }

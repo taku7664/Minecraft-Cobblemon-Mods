@@ -78,14 +78,22 @@ internal object LocalKnownStatMechanics {
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
         item: String?,
-    ): Double = when (item) {
-        // Showdown drops a Choice item's boost while its holder is Dynamaxed (`if (pokemon.volatiles.dynamax) return`).
-        // Kept, a 46% Choice Band Luxray's Max Starfall read half again too strong and it Dynamaxed for it (hand-played
-        // Volkner, 2026-10-20).
-        "choiceband" -> if (category == BattleMoveDamageCategory.PHYSICAL && !LocalDynamax.active(actor)) 1.5 else 1.0
-        "choicespecs" -> if (category == BattleMoveDamageCategory.SPECIAL && !LocalDynamax.active(actor)) 1.5 else 1.0
-        "lightball" -> if (canonical(actor.speciesId) == "pikachu") 2.0 else 1.0
-        else -> 1.0
+    ): Double {
+        // A Choice item's boost and its stat read from the item's code; Showdown drops it while its holder is Dynamaxed
+        // (`if (pokemon.volatiles.dynamax) return`). Kept, a 46% Choice Band Luxray's Max Starfall read half again too
+        // strong and it Dynamaxed for it (hand-played Volkner, 2026-10-20).
+        jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.choiceBoost(item)?.let { boost ->
+            val stat = when (category) {
+                BattleMoveDamageCategory.PHYSICAL -> "atk"
+                BattleMoveDamageCategory.SPECIAL -> "spa"
+                else -> null
+            }
+            return if (boost.stat == stat && !(boost.offWhileDynamaxed && LocalDynamax.active(actor))) boost.multiplier else 1.0
+        }
+        return when (item) {
+            "lightball" -> if (canonical(actor.speciesId) == "pikachu") 2.0 else 1.0
+            else -> 1.0
+        }
     }
 
     fun defence(
@@ -138,9 +146,11 @@ internal object LocalKnownStatMechanics {
     ): BattleIntegerRange {
         val item = LocalPublicItemState.activeItemId(state, pokemon)
         val multiplier = when {
-            item == "choicescarf" -> if (LocalDynamax.active(pokemon)) 1.0 else 1.5
             item in HALF_SPEED_ITEMS -> 0.5
-            else -> 1.0
+            // A Choice item's Speed boost, read from its code like the attack ones.
+            else -> jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.choiceBoost(item)?.takeIf { it.stat == "spe" }?.let { boost ->
+                if (boost.offWhileDynamaxed && LocalDynamax.active(pokemon)) 1.0 else boost.multiplier
+            } ?: 1.0
         }
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
         val abilityMultiplier = when {

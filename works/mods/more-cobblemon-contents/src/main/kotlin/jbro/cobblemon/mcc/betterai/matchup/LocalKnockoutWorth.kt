@@ -118,7 +118,8 @@ internal object LocalKnockoutWorth {
                 val before = state.observedEvents.getOrNull(index - 1)
                 event.actorPokemonId == id && (event.hpFractionDelta ?: 0.0) > 0.0 &&
                     event.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
-                    event.publicSourceEffectId?.let(PublicIds::canonical)?.contains("terrain") != true &&
+                    // A terrain's heal, read from the move that sets it (no terrain named).
+                    event.publicSourceEffectId?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.setsTerrain(it.substringAfter(':')) } != true &&
                     !(before?.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
                         before.actorPokemonId == id && (before.hpFractionDelta ?: 0.0) < 0.0)
             }

@@ -65,7 +65,7 @@ internal object LocalRootFlinchValue {
         }
         val ignoresAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, state)
         if (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES) return 0.0
-        if (LocalPublicItemState.activeItemId(state, target) == "covertcloak") return 0.0
+        if (jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.shieldsSecondaries(LocalPublicItemState.activeItemId(state, target))) return 0.0
         if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" }) return 0.0
         // A Dynamaxed Pokemon cannot flinch (Showdown's dynamax condition refuses the volatile): Fake Out into one is its
         // damage alone. Read as a flinch, the AI Faked Out a Dynamaxed foe for a free turn it never got (dev server,
