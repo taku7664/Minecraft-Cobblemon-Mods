@@ -280,8 +280,17 @@ internal object LocalOpponentIntentPredictor {
         // A status move that publicly cannot work is not one it would pick: the predictor read Stealth Rock with Stealth
         // Rock up at 32% (used 0 of 44), a Cotton Guard at +6 Defence at 93-97%, Will-O-Wisp into a burned Pokemon.
         if (failsPublicly(moveId, details, user, allies, context)) return emptyList()
-        scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
-            return listOf(option(IntentKind.SETUP, setupValue(it.score, user, allies, scores) + SETUP_OFFSET))
+        scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let { sweep ->
+            // Priced as the AI prices its own raise (LocalSetupGate.score): a knockout when the raised user still wins the
+            // one-on-one in front, the raise turn's hits taken ([SweepScore.boostedByOpponent]), at [LocalSetupGate.WIN_PASS]
+            // or more, and nothing otherwise. The sweep score itself is the better of the plain and the raised win, so a
+            // Pokemon already winning read its raise high whether or not it did anything (23.4 predicted against 7 used).
+            val boosted = allies.map { sweep.boostedByOpponent[it.battlePokemonId] }
+            if (boosted.isNotEmpty() && boosted.all { it != null }) {
+                val won = if (boosted.minOf { requireNotNull(it) } >= LocalSetupGate.WIN_PASS) 1.0 else 0.0
+                return listOf(option(IntentKind.SETUP, KNOCKOUT_WEIGHT * won - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)))
+            }
+            return listOf(option(IntentKind.SETUP, setupValue(sweep.score, user, allies, scores) + SETUP_OFFSET))
         }
         if (effects.any { it.kind == BattleMoveEffectKind.STAT_STAGE } && effects.all { it.target != BattleMoveEffectTarget.SELECTED_TARGET }) {
             // A stat raise that makes no sweeper.
@@ -330,11 +339,14 @@ internal object LocalOpponentIntentPredictor {
         val lives = allies.fold(1.0) { standing, ally ->
             standing * (1.0 - (scores.moves(ally.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0))
         }
-        val knockout = allies.maxOfOrNull { ally ->
+        return lives * worth - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)
+    }
+
+    /** The best chance [user] knocks one of [allies] out this turn with an attack: what a raise in its place puts off. */
+    private fun knockoutNow(user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores): Double =
+        allies.maxOfOrNull { ally ->
             scores.moves(user.battlePokemonId, ally.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0
         } ?: 0.0
-        return lives * worth - KNOCKOUT_WEIGHT * knockout
-    }
 
     /**
      * The attacks this tier believes [user] holds but has not shown (the same slots the pair table scores its hits by),
