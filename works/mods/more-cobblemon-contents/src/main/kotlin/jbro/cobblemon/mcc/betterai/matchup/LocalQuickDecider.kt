@@ -181,7 +181,15 @@ internal object LocalQuickDecider {
                 free - entry(rank)!!.score >= LocalSwitchRules.FREE_ENTRY_MARGIN
             })
         if (!sacking && reason != null && best != null && (reason in UNCONDITIONAL || gain(best.first) >= margin)) {
-            pick(best.first, "switch_$reason")?.let { return it }
+            // An attack that switches its user out (U-turn, Volt Switch, Flip Turn) leaves too, hitting on the way: where
+            // the ranking puts one at or above the best switch, it is the way out. Given to the switch, a faster
+            // Pelipper's U-turn (ranked first) lost the draw to a hard switch into Barraskewda (hand-played Nessa,
+            // 2026-10-20).
+            val pivot = if (reason == "cannot_act") null else attacks.map { it.first }
+                .filter { rank -> part(rank).moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.SWITCH_USER } }
+                .minByOrNull { ranked.indexOf(it) }
+            val leave = pivot?.takeIf { ranked.indexOf(it) < ranked.indexOf(best.first) } ?: best.first
+            pick(leave, "switch_$reason")?.let { return it }
         }
         if (part(chosen).kind == BattleActionKind.SWITCH) {
             if (sacking) return bestAttack(attacks)?.let { pick(it, "sack") }

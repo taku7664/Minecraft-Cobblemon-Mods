@@ -101,6 +101,17 @@ class LocalQuickDeciderTest {
         assertTrue(decision.tags.any { it == "quick_knockout" || it == "quick_plus_knockout_if_stays" }, "${decision.tags}")
     }
 
+    @Test
+    fun `a reason to leave goes to a pivot the ranking put above the hard switch`() {
+        // Pelipper loses its one-on-one to Grimmsnarl and outspeeds it: its U-turn (ranked first) leaves and hits on the
+        // way. The verdict's points went to the hard switch into Barraskewda, which then won the draw (hand-played
+        // Nessa, 2026-10-20).
+        val (context, decision) = decide("pelipper-uturn-over-hard-switch")
+        val stages = requireNotNull(lastStages)
+        val credited = stages.quickBonus.filterValues { reasons -> reasons.any { it.startsWith("+switch_") } }.keys.map { label(context, it) }
+        assertEquals(listOf("uturn"), credited, "${stages.quickBonus} ${decision.tags}")
+    }
+
     private fun decide(name: String): Pair<BattleDecisionContext, BattleDecision> {
         val snapshot = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/$name.json.gz")))
             .use { it.readBytes().toString(Charsets.UTF_8) }

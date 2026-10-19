@@ -261,7 +261,12 @@ internal object LocalPublicMechanicsKernel {
         if (!ignoresAbility && target.side != actingSide &&
             details.damageCategory == BattleMoveDamageCategory.STATUS
         ) {
-            if (ability == GOOD_AS_GOLD) return true
+            // Good as Gold stops a move at the Pokemon (TryHit); a field or side move (Haze, Trick Room, Stealth Rock)
+            // runs on the field or side instead and is not stopped, except the field moves that still try each
+            // Pokemon (Perish Song). Read as stopped, Toxapex's Haze scored -480 in front of a +2 Gholdengo
+            // (hand-played Nessa, 2026-10-20).
+            if (ability == GOOD_AS_GOLD && (details.targetPattern !in FIELD_OR_SIDE_PATTERNS ||
+                    canonicalOrNull(candidate.moveId) in TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS)) return true
             if (ability == MAGIC_BOUNCE && flagged(REFLECTABLE_FLAG)) return true
         }
         if (target.side != actingSide && actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS &&
@@ -538,6 +543,7 @@ internal object LocalPublicMechanicsKernel {
         BattleMoveTargetPattern.ALL_OPPONENTS,
         BattleMoveTargetPattern.ALL_ADJACENT,
     )
+    private val FIELD_OR_SIDE_PATTERNS = setOf(BattleMoveTargetPattern.ALL_ACTIVE, BattleMoveTargetPattern.SIDE)
     private val TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS = setOf("perishsong", "flowershield", "rototiller")
     private val RAIN_WEATHER = setOf("rain", "raindance")
     private val SUN_WEATHER = setOf("sun", "sunnyday")

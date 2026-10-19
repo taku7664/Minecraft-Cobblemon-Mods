@@ -35,6 +35,8 @@ internal object LocalDebuffValue {
         // A pivot that weakens on its way out (Parting Shot) is a debuff too; its switch is LocalSwitchRules' credit.
         // Read as no debuff, its drops were worth nothing and only the switch was scored (2026-10-13).
         val effects = details.effects?.effects.orEmpty().filter { it.kind != BattleMoveEffectKind.SWITCH_USER }
+        // Haze: it takes off what the stages it clears were giving, the user's own with them.
+        if (effects.isNotEmpty() && effects.all { it.kind == BattleMoveEffectKind.CLEARS_STAT_STAGES }) return true
         return effects.isNotEmpty() && effects.all { effect ->
             effect.target == BattleMoveEffectTarget.SELECTED_TARGET && (
                 effect.kind == BattleMoveEffectKind.STATUS ||
@@ -90,6 +92,17 @@ internal object LocalDebuffValue {
         }
         fun exchangeOn(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = if (poison) poisonPairs(board)
             else LocalMatchupScoreCalculator.calculate(context.copy(state = board), recovery = recovery).takeIf { it.complete }?.let(::exchange)
+        // Haze resets every stage in play (its user's too), Clear Smog its target's: the board with them gone. Without a
+        // reading, Haze kept the 20 of any status move and Toxapex laid Toxic Spikes in front of a +2 Gholdengo
+        // (hand-played Nessa, 2026-10-20).
+        val resets = effects.filter { it.kind == BattleMoveEffectKind.CLEARS_STAT_STAGES }
+        if (resets.isNotEmpty()) {
+            val field = resets.any { it.target == BattleMoveEffectTarget.FIELD }
+            val cleared = state.copyState(pokemon = state.pokemon.map {
+                if (it.activeSlot != null && (field || it.battlePokemonId == target.battlePokemonId)) it.copyState(statStages = emptyMap()) else it
+            })
+            return Reading(before, exchangeOn(cleared) ?: return null, accuracy)
+        }
         val plain = if (poison) poisonPairs(state) ?: return null else before
         if (poison && !lands && drops.isEmpty()) return Reading(plain, plain, accuracy)
         val statused = state.copyState(pokemon = state.pokemon.map {

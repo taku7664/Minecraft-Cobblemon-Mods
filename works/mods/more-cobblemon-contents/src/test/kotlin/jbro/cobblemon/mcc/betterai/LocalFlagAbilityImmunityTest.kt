@@ -51,6 +51,19 @@ class LocalFlagAbilityImmunityTest {
     }
 
     @Test
+    fun `good as gold lets field and side moves through but still stops perish song`() {
+        // Showdown runs Haze and Stealth Rock on the field and side (TryHitField, TryHitSide), never the Pokemon's TryHit
+        // that Good as Gold answers; Perish Song tries each Pokemon in turn.
+        fun field(id: String, pattern: BattleMoveTargetPattern) =
+            move(id, "ice", emptySet(), BattleMoveDamageCategory.STATUS, target = null, pattern = pattern)
+        for (candidate in listOf(field("haze", BattleMoveTargetPattern.ALL_ACTIVE), field("stealthrock", BattleMoveTargetPattern.SIDE))) {
+            assertFalse(LocalPublicMechanicsKernel.projectMove(candidate, context("goodasgold", candidate)).publiclyNullified, candidate.moveId)
+        }
+        val perishSong = field("perishsong", BattleMoveTargetPattern.ALL_ACTIVE)
+        assertTrue(LocalPublicMechanicsKernel.projectMove(perishSong, context("goodasgold", perishSong)).publiclyNullified)
+    }
+
+    @Test
     fun `the native ranking drops a move the target is publicly immune to`() {
         // An introductory Roserade's native search ranked Sludge Bomb into Ferrothorn above Giga Drain.
         val sludgeBomb = move("sludgebomb", "poison", emptySet())
@@ -173,11 +186,11 @@ class LocalFlagAbilityImmunityTest {
         type: String,
         flags: Set<String>,
         category: BattleMoveDamageCategory = BattleMoveDamageCategory.SPECIAL,
-        target: BattleTargetSlot = BattleTargetSlot(BattleSide.OPPONENT, 0),
+        target: BattleTargetSlot? = BattleTargetSlot(BattleSide.OPPONENT, 0),
         pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
     ) = BattleActionCandidate(
         actionId = id, kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
-        moveId = id, targets = listOf(target),
+        moveId = id, targets = listOfNotNull(target),
         moveDetails = BattleMoveCandidateView(
             type, category, if (category == BattleMoveDamageCategory.STATUS) 0.0 else 90.0, 100.0, 0, 10,
             pattern,
