@@ -53,17 +53,46 @@ internal data class AiTestDecisionSnapshot(
             return gson.fromJson(json, AiTestDecisionSnapshot::class.java)
         }
 
-        /** Never throws: a failed write is logged and the decision proceeds unchanged. */
-        fun write(snapshot: AiTestDecisionSnapshot): Path? = try {
+        /**
+         * Whether every battle's decisions are kept, not only the AI test trainers': the server was started with the
+         * directory given explicitly ([DIRECTORY_PROPERTY]). The dev server's run.bat gives it; the production server does
+         * not, so its battles are never written. A league decision nobody could open afterwards could not be explained
+         * (a Drapion's Swords Dance, a Dubwool's Rest, 2026-10-20).
+         */
+        val recordsEveryBattle: Boolean
+            get() = !System.getProperty(DIRECTORY_PROPERTY).isNullOrBlank()
+
+        /**
+         * Never throws: a failed write is logged and the decision proceeds unchanged. [compressed] writes `.json.gz` (a
+         * decision is some 300 KB of JSON, a tenth of it compressed), and a new battle's folder prunes the oldest beyond
+         * [KEPT_BATTLES].
+         */
+        fun write(snapshot: AiTestDecisionSnapshot, compressed: Boolean = false): Path? = try {
             val root = directory() ?: return null
             val battleDirectory = root.resolve(snapshot.battleId.toString())
-            Files.createDirectories(battleDirectory)
+            if (!Files.isDirectory(battleDirectory)) {
+                Files.createDirectories(battleDirectory)
+                if (compressed) prune(root, battleDirectory)
+            }
             val name = "turn-%03d-%s.json".format(snapshot.turn, snapshot.context.requestId.toString().take(8))
-            battleDirectory.resolve(name).also { Files.writeString(it, toJson(snapshot)) }
+            if (compressed) battleDirectory.resolve("$name.gz").also { path ->
+                java.util.zip.GZIPOutputStream(Files.newOutputStream(path)).use { it.write(toJson(snapshot).toByteArray(Charsets.UTF_8)) }
+            } else battleDirectory.resolve(name).also { Files.writeString(it, toJson(snapshot)) }
         } catch (failure: Exception) {
             logger.warn("Better AI decision snapshot was not saved: {}", failure.javaClass.simpleName)
             null
         }
+
+        /** The battle folders beyond the newest [KEPT_BATTLES], [keep] aside, are deleted. */
+        private fun prune(root: Path, keep: Path) {
+            val battles = Files.list(root).use { stream -> stream.filter { Files.isDirectory(it) && it != keep }.toList() }
+                .sortedByDescending { Files.getLastModifiedTime(it).toMillis() }
+            battles.drop(KEPT_BATTLES - 1).forEach { old ->
+                Files.walk(old).use { stream -> stream.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
+            }
+        }
+
+        private const val KEPT_BATTLES = 50
 
         /** Set once by the mod initializer; unit tests leave it unset, so they never write files. */
         @Volatile

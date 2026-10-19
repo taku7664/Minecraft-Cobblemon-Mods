@@ -96,7 +96,7 @@ internal object LocalQuickDecider {
             // Nothing to hit with, and no status to land either: a status move on a foe that already has one is no use.
             // A move a rule credits is something to do: Perish Song in front of a trapped Chansey was read as nothing and
             // the Mega Gengar switched out (2026-10-13).
-            if (attacks.isEmpty() && (foe.statusId != null || moves.none { inflictsStatus(part(it)) }) &&
+            if (attacks.isEmpty() && moves.none { inflictsStatus(part(it), self, foe, state) } &&
                 moves.none { (stayCredits[it.outcome.candidate.actionId] ?: 0.0) > 0.0 }) add("no_damage")
             if (cannotAct(self)) add("cannot_act")
             if (stay.winProbability < LOSING) add("loses_one_on_one")
@@ -367,9 +367,18 @@ internal object LocalQuickDecider {
         return hazard && (context.state.remainingPokemonBySide[BattleSide.OPPONENT] ?: 6) <= 1
     }
 
-    private fun inflictsStatus(move: BattleActionCandidate): Boolean =
+    /**
+     * A status move that can still put a major status on [foe]: one aimed at it, which it can take. Read as any move
+     * declaring a status, Rest (its own user's sleep) counted as one, and a Dubwool with nothing to hit an Aegislash with
+     * stayed to Rest and Sleep Talk at 70% (dev server, 2026-10-20).
+     */
+    private fun inflictsStatus(move: BattleActionCandidate, self: BattlePokemonStateView, foe: BattlePokemonStateView,
+        state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Boolean =
         move.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
-            move.moveDetails.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.STATUS }
+            move.moveDetails.effects?.effects.orEmpty().any { effect ->
+                effect.kind == BattleMoveEffectKind.STATUS && effect.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET &&
+                    !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, foe, effect.valueId, self)
+            }
 
     private fun cannotAct(pokemon: BattlePokemonStateView): Boolean {
         val status = PublicIds.canonical(pokemon.statusId ?: return false)

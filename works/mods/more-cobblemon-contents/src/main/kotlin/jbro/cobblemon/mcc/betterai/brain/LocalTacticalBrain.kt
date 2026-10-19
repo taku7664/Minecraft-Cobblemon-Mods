@@ -354,7 +354,7 @@ internal class LocalTacticalBrain(
             .toList()
         val aiTestDecision = active?.trainerPersonaId
             ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
-        if (aiTestDecision) {
+        if (aiTestDecision || AiTestDecisionSnapshot.recordsEveryBattle) {
             AiTestDecisionSnapshot.write(AiTestDecisionSnapshot(
                 battleId = battleId,
                 turn = context.state.turn,
@@ -364,7 +364,8 @@ internal class LocalTacticalBrain(
                 nativeContinuation = active?.nativeProductState != null,
                 capturedAtEpochMillis = System.currentTimeMillis(),
                 context = context,
-            ))?.let { path -> logger.info("[BetterAI Trace] battle={} turn={} phase=snapshot path={}", battleId, context.state.turn, path) }
+            ), compressed = !aiTestDecision)?.takeIf { aiTestDecision }
+                ?.let { path -> logger.info("[BetterAI Trace] battle={} turn={} phase=snapshot path={}", battleId, context.state.turn, path) }
         }
         val decisionTrace = AiTestDecisionTrace.forTestPersona(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,

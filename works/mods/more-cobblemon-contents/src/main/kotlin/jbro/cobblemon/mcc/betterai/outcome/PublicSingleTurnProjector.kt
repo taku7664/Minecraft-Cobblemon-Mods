@@ -1944,7 +1944,9 @@ internal object PublicSingleTurnProjector {
             "flinch" -> RecursiveControlEffectKind.FLINCH.takeUnless {
                 val target = state?.pokemon?.firstOrNull { it.battlePokemonId == targetPokemonId }
                 target != null && (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES ||
-                    LocalPublicItemState.activeItemId(state, target) == "covertcloak")
+                    LocalPublicItemState.activeItemId(state, target) == "covertcloak" ||
+                    // A Dynamaxed Pokemon cannot flinch.
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target))
             } ?: return null
             else -> return null
         }

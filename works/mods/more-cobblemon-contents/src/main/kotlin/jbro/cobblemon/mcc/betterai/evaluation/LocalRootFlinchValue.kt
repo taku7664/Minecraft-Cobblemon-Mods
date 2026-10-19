@@ -45,7 +45,7 @@ internal object LocalRootFlinchValue {
     /**
      * The chance one landed hit of [candidate] flinches [target], when it hits before [target] moves: the move's declared
      * chance, doubled by Serene Grace and gone with Sheer Force, none through Inner Focus, Shield Dust, a Covert Cloak or
-     * a Substitute. Fake Out's certain flinch is a chance of one. Zero for a move that does not flinch.
+     * a Substitute or a Dynamax. Fake Out's certain flinch is a chance of one. Zero for a move that does not flinch.
      */
     fun chance(
         candidate: BattleActionCandidate,
@@ -63,6 +63,10 @@ internal object LocalRootFlinchValue {
         if (!ignoresAbility && LocalPublicAbilityState.effectiveKnownAbility(state, target) in FLINCH_IMMUNE_ABILITIES) return 0.0
         if (LocalPublicItemState.activeItemId(state, target) == "covertcloak") return 0.0
         if (target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" }) return 0.0
+        // A Dynamaxed Pokemon cannot flinch (Showdown's dynamax condition refuses the volatile): Fake Out into one is its
+        // damage alone. Read as a flinch, the AI Faked Out a Dynamaxed foe for a free turn it never got (dev server,
+        // 2026-10-20).
+        if (jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)) return 0.0
         // An unrevealed ability counts at the share of the possible ones that let the flinch through, all alike (as the
         // drops of G-915): a Mudsdale may be the Inner Focus one. Read as none, Fake Out was a certain flinch into it.
         if (!ignoresAbility && target.knownAbilityId == null) {
