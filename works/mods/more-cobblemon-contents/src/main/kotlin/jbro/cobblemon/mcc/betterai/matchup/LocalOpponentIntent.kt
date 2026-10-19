@@ -281,11 +281,11 @@ internal object LocalOpponentIntentPredictor {
         // Rock up at 32% (used 0 of 44), a Cotton Guard at +6 Defence at 93-97%, Will-O-Wisp into a burned Pokemon.
         if (failsPublicly(moveId, details, user, allies, context)) return emptyList()
         scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
-            return listOf(option(IntentKind.SETUP, it.score + SETUP_OFFSET))
+            return listOf(option(IntentKind.SETUP, setupValue(it.score, user, allies, scores) + SETUP_OFFSET))
         }
         if (effects.any { it.kind == BattleMoveEffectKind.STAT_STAGE } && effects.all { it.target != BattleMoveEffectTarget.SELECTED_TARGET }) {
             // A stat raise that makes no sweeper.
-            return listOf(option(IntentKind.SETUP, UNSCORED))
+            return listOf(option(IntentKind.SETUP, setupValue(UNSCORED, user, allies, scores)))
         }
         val scored = allies.mapNotNull { ally ->
             scores.statusMoves(user.battlePokemonId, ally.battlePokemonId).firstOrNull { it.moveId == moveId }?.let { ally to it.score }
@@ -318,6 +318,22 @@ internal object LocalOpponentIntentPredictor {
             return allies.map { ally -> option(IntentKind.STATUS, if (ally.statusId == null) SLEEP_VALUE * accuracy else FAILS, ally.battlePokemonId) }
         }
         return listOf(option(IntentKind.STATUS, UNSCORED))
+    }
+
+    /**
+     * A raise is worth [worth] only if [user] lives to use it: times the chance no ally's best hit knocks it out this turn
+     * (it spends the turn raising, so every ally's hit lands). And a raise in place of a knockout it holds on an ally now
+     * puts that knockout off, the knockout's share of an attack ([KNOCKOUT_WEIGHT]). With a sure knockout on the AI's Pokemon
+     * the predictor read a raise at 8.8 over 52 such turns and the trainers raised once (league runs, 2026-10-19).
+     */
+    private fun setupValue(worth: Double, user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores): Double {
+        val lives = allies.fold(1.0) { standing, ally ->
+            standing * (1.0 - (scores.moves(ally.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0))
+        }
+        val knockout = allies.maxOfOrNull { ally ->
+            scores.moves(user.battlePokemonId, ally.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0
+        } ?: 0.0
+        return lives * worth - KNOCKOUT_WEIGHT * knockout
     }
 
     /**
