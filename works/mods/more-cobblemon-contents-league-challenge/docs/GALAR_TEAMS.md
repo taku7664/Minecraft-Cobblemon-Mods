@@ -164,7 +164,7 @@
 | 드래펄트 | 90 | clearbody / timid / expert_belt | HP 4, 특공 252, 스피드 252 | dracometeor, shadowball, flamethrower, uturn |
 | 에이스번 | 92 | libero / jolly / heavy_duty_boots | HP 4, 공격 252, 스피드 252 | pyroball, highjumpkick, uturn, suckerpunch |
 | 자시안 | 95 | intrepidsword / jolly / rusted_sword | HP 4, 공격 252, 스피드 252 | swordsdance, ironhead, playrough, closecombat |
-| 고릴타 (다이맥스 에이스) | 95 | grassysurge / adamant / sitrus_berry | HP 4, 공격 252, 스피드 252 | grassyglide, woodhammer, knockoff, uturn |
+| 고릴타 (거다이맥스 에이스) | 95 | grassysurge / adamant / sitrus_berry | HP 4, 공격 252, 스피드 252 | grassyglide, woodhammer, knockoff, uturn |
 
 ### 비트 (컵)
 
@@ -184,7 +184,7 @@
 | 코터스 | 91 | drought / bold / heat_rock | HP 252, 방어 252, 특공 4 | stealthrock, eruption, solarbeam, yawn |
 | 미끄래곤 | 92 | sapsipper / modest / assault_vest | HP 252, 특공 252, 특방 4 | dracometeor, muddywater, flamethrower, thunderbolt |
 | 플라이곤 | 92 | levitate / jolly / choice_scarf | HP 4, 공격 252, 스피드 252 | earthquake, outrage, uturn, stoneedge |
-| 레지드래고 | 95 | dragonsmaw / modest / choice_specs | HP 4, 특공 252, 스피드 252 | dragonenergy, dracometeor, earthpower, firefang |
+| 레지드래고 | 95 | dragonsmaw / modest / choice_specs | HP 4, 특공 252, 스피드 252 | dragonenergy, dracometeor, earthpower, ancientpower |
 | 한카리아스 | 94 | roughskin / jolly / life_orb | HP 4, 공격 252, 스피드 252 | swordsdance, earthquake, scaleshot, stoneedge |
 | 두랄루돈 (거다이맥스 에이스) | 95 | stalwart / modest / sitrus_berry | HP 4, 특공 252, 스피드 252 | flashcannon, dracometeor, thunderbolt, darkpulse |
 
