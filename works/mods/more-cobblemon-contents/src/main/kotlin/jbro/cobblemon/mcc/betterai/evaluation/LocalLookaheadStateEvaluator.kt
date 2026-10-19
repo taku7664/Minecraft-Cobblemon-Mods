@@ -127,13 +127,16 @@ internal object LocalLookaheadStateEvaluator {
         source: BattleDecisionContext,
     ): Double? {
         if (candidate.kind != BattleActionKind.SWITCH || candidate.switchPokemonId == null) return null
-        val current = attackPressure(source.state, BattleSide.ALLY, source)
+        // Damage past the target's HP pressures nothing: read uncapped, a Rillaboom's 4x Grass hit on a Barbaracle came to
+        // 4.4 "HP" against Dragapult's 0.63, and the switch out of a won one-on-one scored 142 to Dragon Darts' 62 (league
+        // run, 2026-10-19). Both sides of the comparison are capped alike.
+        val current = attackPressure(source.state, BattleSide.ALLY, source, capDamageToRemainingHp = true)
         val switched = LocalSwitchStateProjector.project(source.state, BattleSide.ALLY, candidate)
         val incomingActive = switched.pokemon.any {
             it.battlePokemonId == candidate.switchPokemonId && it.activeSlot == candidate.actorSlot && !it.fainted
         }
         if (!incomingActive) return null
-        return attackPressure(switched, BattleSide.ALLY, source) - current
+        return attackPressure(switched, BattleSide.ALLY, source, capDamageToRemainingHp = true) - current
     }
 
     fun switchInitiativeImprovement(
