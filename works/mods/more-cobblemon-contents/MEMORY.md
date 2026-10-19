@@ -9,7 +9,10 @@
 - **원인 2(환급):** 같은 편이 방어·교체할 때 광역기 아군 피해를 돌려주는 `partnerActionCollateralRefund`가 `LocalTacticalScorer.score`의 복합 행동 분기에만 있었고, 실제 순위는 `LocalBattleActionOutcome.composite`가 계산해 들어가지 않았다. 이제 실제 순위에도 더한다.
 - **결과(더블 87판, `dbl5` → `dbl6`):** 광역기로 같은 편 기절 11 → 4(남은 4건 중 3건은 같은 편 체력 14% 이하). 광역기 + 같은 편 방어 같은 턴 8 → 12, 방어 사용 86 → 103. 승자가 바뀐 판 12/87.
 - **남은 것:** 볼트전 2턴(한카리아스 90% 지진, 같은 편 루카리오 100% 기절, 상대 기절 없음). 우리 광역기가 위협하는 상대를 먼저 쓰러뜨리면 "어차피 쓰러질 편"이 아니게 되는 경우는 아직 반영하지 않았다.
-- **원래 있던 테스트 실패 2건(이번 변경과 무관, 변경을 빼고도 실패):** `LocalTacticalBrainSimulationTest` "ally side condition expiring this turn may be refreshed"(tailwind 기대, chip 선택), `LocalQuickDeciderTest` "a switch-in that also hits the opponent hard comes before one that only walls it". 원인 미조사.
+- **원래 있던 테스트 실패 2건(이번 변경과 무관, 변경을 빼고도 실패):**
+  - `LocalTacticalBrainSimulationTest` 순풍 테스트: 테스트 기대가 Showdown과 반대였다. 순풍은 `onSideRestart`가 없어 남아 있는 동안 다시 쓰면 실패하고(`side.js` `addSideCondition`), 남은 턴 1이어도 그 턴 끝의 residual 전까지는 남아 있다. 테스트를 "다시 걸 수 없다"로 고쳤다(우리 진영 조건 실패 판정을 넣을 때 같이 고쳤어야 했다).
+  - `LocalQuickDeciderTest` 밀로틱-너트령 교체 테스트: 교체 공격 이득에 상대 남은 체력 상한(`capDamageToRemainingHp`)을 넣은 뒤부터 실패. 루카리오 교체는 85 → 55점으로 여전히 1위지만, 빠른 판단기가 "지는 대면이 아니니 교체할 이유 없음(`stay_no_reason`)"으로 교체 보너스를 걷어내 `regret_gap`으로 추첨에서 빠진다. 상한은 맞는 수정이고, 부풀려진 점수에 가려져 있던 빠른 판단기 판정이 드러난 것. 결정 대기.
+- **볼트전 2턴(같은 편 루카리오 기절):** 버그 아님. AI는 지진이 루카리오를 못 쓰러뜨린다고 계산(기절 0%)했고, 루카리오 다이월이 막지 못한 상태에서 급소로 쓰러졌다. 그 턴에 상대 둘을 잡았다.
 - **확인:** 관련 단위 14개 클래스, 실패는 위 2건뿐.
 
 ## [2026-10-19 22:10] 더블 측정 하네스를 게임과 맞춤, 쓰러진 칸 판 재구성 오류 (구현·단위·더블 87판 확인, 빌드·배치·실게임 미확인)

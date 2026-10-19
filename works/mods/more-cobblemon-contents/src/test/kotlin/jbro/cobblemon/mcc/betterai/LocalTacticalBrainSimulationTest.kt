@@ -1468,7 +1468,9 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `ally side condition expiring this turn may be refreshed`() {
+    fun `ally side condition still up on its last turn cannot be refreshed`() {
+        // Showdown's addSideCondition fails while the condition stands and it has no onSideRestart (Tailwind has none);
+        // the condition ends only in the residual after this turn's moves, so with one turn left it still stands.
         val tailwind = sideConditionMove(
             id = "tailwind",
             effectId = "tailwind",
@@ -1476,7 +1478,7 @@ class LocalTacticalBrainSimulationTest {
         )
 
         assertEquals(
-            "tailwind",
+            "chip",
             decide(
                 candidates = listOf(tailwind, move("chip", 40.0, facts = damageFacts(0.10))),
                 field = sideConditionField(BattleSide.ALLY, "tailwind", remainingTurns = 1),
