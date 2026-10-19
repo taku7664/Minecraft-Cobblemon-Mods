@@ -95,12 +95,27 @@ internal object LocalQuickDecider {
                 it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER } }
         val switchShare = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0).coerceIn(0.0, 1.0)
         val switchExpected = switchShare > 0.0 && Random(seed xor 0x6B0C_2F5A_91D3_47E1L).nextDouble() < switchShare
+        // Each of the foe's moves that knocks this one out first, by its own priority against the attack's: a higher one
+        // always, an equal one by Speed. Read from the exchange's move alone at Speed, a Dynamaxed Mimikyu went for Max
+        // Starfall into a 7% Kingambit's Sucker Punch and fell first, where Shadow Sneak (+1 like it, Mimikyu faster) was a
+        // sure knockout (hand-played Fantina, 2026-10-20).
+        val foeMoves = scores.moves(foe.battlePokemonId, self.battlePokemonId)
+        fun preempted(rank: LocalBattleActionRank): Double {
+            val ours = LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank))
+            val byExchange = (1.0 - stay.subjectMovesFirstProbability) * theirKnockout
+            return foeMoves.maxOfOrNull { move ->
+                val before = when {
+                    move.priority > ours -> 1.0
+                    move.priority < ours -> 0.0
+                    else -> 1.0 - stay.subjectMovesFirstProbability
+                }
+                move.knockoutChanceWithin(1) * before
+            }?.let { maxOf(it, if (ours > 0) 0.0 else byExchange) } ?: if (ours > 0) 0.0 else byExchange
+        }
         attacks.firstOrNull { (rank, score) ->
-            val first = if (LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank)) > 0) 1.0
-                else stay.subjectMovesFirstProbability
             // Sucker Punch knocks out only if the foe attacks: a Swords Dance in front of it is a turn lost.
             val lands = if (LocalPendingAttackChance.requiresPendingAttack(part(rank))) LocalPendingAttackChance.attacks(foe, context, opponentIntents) else 1.0
-            !canWaitToHeal && lands * score.knockoutChanceWithin(1) * (first + (1.0 - first) * (1.0 - theirKnockout)) >= KNOCKOUT
+            !canWaitToHeal && lands * score.knockoutChanceWithin(1) * (1.0 - preempted(rank) * LocalKnockoutWorth.actsThisTurn(foe, state)) >= KNOCKOUT
         }?.let { (rank, _) -> pick(rank, if (switchExpected) KNOCKOUT_IF_STAYS else "knockout") }?.let { return it }
 
         // 2. A reason to leave.
