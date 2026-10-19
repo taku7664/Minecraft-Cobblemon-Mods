@@ -84,8 +84,8 @@ internal object LocalOpponentIntentPredictor {
                 DAMAGE_WEIGHT * hit * jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.selfChangeBoard(
                     user, option.details.effects?.effects.orEmpty(), context, cache)
             }
-            val moves = context.publicActionCatalog.forPokemon(user.battlePokemonId)
-                .distinctBy { PublicIds.canonical(it.moveId) }
+            val known = context.publicActionCatalog.forPokemon(user.battlePokemonId).distinctBy { PublicIds.canonical(it.moveId) }
+            val moves = (known + inferredAttacks(user, known, context))
                 .flatMap { move(it, user, allies, bench, context, scores, ::stageCost) }
             val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
@@ -310,6 +310,32 @@ internal object LocalOpponentIntentPredictor {
     }
 
     /**
+     * The attacks this tier believes [user] holds but has not shown (the same slots the pair table scores its hits by),
+     * up to four moves with the [known] ones. Read alone, a Bronzong that had shown only Trick Room was read to use it
+     * at 100% with the room up and its value at -1.2: nothing else was on offer (league runs, 2026-10-19). Status slots
+     * stay unread (no guessed status moves), and so does a guess; an Encore or a recharge leaves the shown moves alone.
+     */
+    private fun inferredAttacks(
+        user: BattlePokemonStateView,
+        known: List<BattlePublicMoveOptionView>,
+        context: BattleDecisionContext,
+    ): List<BattlePublicMoveOptionView> {
+        val open = MAX_MOVES - known.size
+        if (open <= 0 || user.actionConstraints.encoreMoveId != null || user.actionConstraints.mustRecharge) return emptyList()
+        val shown = known.mapTo(hashSetOf()) { PublicIds.canonical(it.moveId) }
+        return context.publicActionCatalog.inferredMovesForPokemon(user.battlePokemonId)?.slots.orEmpty()
+            .filter { it.knowledge != jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge.GUESS }
+            .mapNotNull { slot ->
+                val id = slot.moveId ?: return@mapNotNull null
+                val details = slot.details?.takeIf { it.damageCategory != BattleMoveDamageCategory.STATUS } ?: return@mapNotNull null
+                if (PublicIds.canonical(id) in shown) null
+                else BattlePublicMoveOptionView(id, details, jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+            }
+            .distinctBy { PublicIds.canonical(it.moveId) }
+            .take(open)
+    }
+
+    /**
      * Whether [user]'s status move [moveId] does nothing now, from public state: the AI's own failure rules read from the
      * foe's side (the idle-move rules, a side condition already at its most layers), a stage reset with no stage up, a heal
      * of itself at full HP, a raise of only stats already at the cap, or a status for every ally that already has one or
@@ -486,6 +512,7 @@ internal object LocalOpponentIntentPredictor {
     private const val UNSCORED = 0.15
     private const val FAILS = -1.0
     private const val MAX_STAGE = 6
+    private const val MAX_MOVES = 4
     private const val MINIMUM_HP = 0.01
     /** A missed High Jump Kick costs half the user's maximum HP. */
     private const val CRASH_RECOIL_FRACTION = 0.5
