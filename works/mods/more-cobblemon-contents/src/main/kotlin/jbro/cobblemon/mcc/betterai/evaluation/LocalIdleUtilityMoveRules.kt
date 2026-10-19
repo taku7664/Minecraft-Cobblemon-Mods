@@ -35,7 +35,51 @@ internal object LocalIdleUtilityMoveRules {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
         val actor = actor(candidate, context) ?: return false
         if (failsForInsufficientHp(candidate, context)) return true
-        return failsFor(moveId, candidate.mechanic != null, actor, target(candidate, context, actor), context)
+        val target = target(candidate, context, actor)
+        return failsFor(moveId, candidate.mechanic != null, actor, target, context) || statusBlocked(candidate, context, actor, target)
+    }
+
+    /**
+     * A status move that only inflicts a major status, into a target that already has one or cannot take it (a Toxic into
+     * a Steel or Poison type, a Will-O-Wisp into a Fire type, a veil or terrain): Showdown fails it. Read by the move's
+     * declared effects, the same immunity the opponent prediction reads ([jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity]).
+     * Without it, a Steelix's Toxic into a Bronzong kept the generic status value (doubles league run, 2026-10-19).
+     */
+    private fun statusBlocked(candidate: BattleActionCandidate, context: BattleDecisionContext, actor: BattlePokemonStateView,
+        target: BattlePokemonStateView?): Boolean {
+        target ?: return false
+        if (candidate.mechanic != null || candidate.moveDetails?.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS) return false
+        val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        val status = effects.singleOrNull()?.takeIf {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STATUS &&
+                it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET
+        } ?: return false
+        return jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state, target, status.valueId, actor)
+    }
+
+    /**
+     * A move for an opposing Pokemon (Showdown's `normal` target, which may also be aimed at the partner) aimed at the
+     * user's own partner with nothing in it for the partner: a status move whose effects on its target are a status or a
+     * volatile condition (Toxic, Leech Seed, Encore, Taunt), with no raise or heal for it (Swagger, Flatter, Decorate
+     * stay). Moves made for a partner (Helping Hand) have their own target pattern. In doubles a Steelix Toxicked its own
+     * Skarmory and a Politoed Encored its own Floatzel, each scored as if aimed at a foe (league run, 2026-10-19).
+     */
+    fun harmsPartner(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
+        val details = candidate.moveDetails ?: return false
+        if (details.damageCategory != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS) return false
+        if (details.targetPattern != jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELECTED_OPPONENT &&
+            details.targetPattern != jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELECTED) return false
+        val slot = candidate.targets.singleOrNull() ?: return false
+        if (slot.side != BattleSide.ALLY || slot.slot == candidate.actorSlot) return false
+        val onTarget = details.effects?.effects.orEmpty().filter { it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET }
+        val harmful = onTarget.any {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STATUS || it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.VOLATILE_STATUS
+        }
+        val helpful = onTarget.any {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.HEAL_FRACTION ||
+                it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STAT_STAGE && it.statStages.values.any { stage -> stage > 0 }
+        }
+        return harmful && !helpful
     }
 
     /**
@@ -59,7 +103,9 @@ internal object LocalIdleUtilityMoveRules {
             in DYNAMAX_FAILING_ATTACKS -> !withMechanic && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(actor) &&
                 jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)
             TAUNT -> target?.actionConstraints?.taunted == true
-            ENCORE -> target?.actionConstraints?.encoreMoveId != null
+            // Encore also fails on a Dynamaxed target (Showdown's onTryHit): a Politoed Encored a Dynamaxed foe turn after
+            // turn (doubles league run, 2026-10-19).
+            ENCORE -> target?.actionConstraints?.encoreMoveId != null || jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)
             YAWN -> target?.statusId != null
             REST -> restFails(withMechanic, context, actor)
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
@@ -73,6 +119,9 @@ internal object LocalIdleUtilityMoveRules {
         val actor = actor(candidate, context) ?: return false
         val target = target(candidate, context, actor)
         if (failsForInsufficientHp(candidate, context)) return true
+        // Whatever fails outright, or harms the partner it is aimed at, is idle too: the rules that add to a move after
+        // the ranking (Encore's lock credit) read this, and credited an Encore into a Dynamaxed foe or the own partner.
+        if (fails(candidate, context) || harmsPartner(candidate, context)) return true
         return when (moveId) {
             in HAZARD_REMOVAL -> noEntryHazardsAnywhere(context)
             in STAT_STAGE_RESET -> nobodyActiveIsBoosted(context)

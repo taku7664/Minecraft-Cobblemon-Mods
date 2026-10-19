@@ -382,7 +382,13 @@ internal object LocalBattleActionOutcomeEvaluator {
             LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning) +
             // Earthquake beside a partner's Protect or switch: each part charged the partner standing in it. The refund
             // lived only in LocalTacticalScorer.score's composite branch, which the ranking never runs (2026-10-19).
-            LocalTacticalScorer.partnerActionCollateralRefund(candidate, context, tuning)
+            LocalTacticalScorer.partnerActionCollateralRefund(candidate, context, tuning) +
+            // A part that fails in public (a Fake Out after its first turn, a Tailwind already up) takes what it would
+            // alone, the inert tier's -500: the joint action fell to that tier only when every part failed, so one slot's
+            // dead move lost only its own -100 and kept its knockout credit (a Raichu Fake Out into a 2% Arcanine three
+            // turns running at 907, doubles league run, 2026-10-19).
+            (if (components.all(LocalBattleActionOutcome::publiclyInert)) 0.0
+            else components.count { it.publiclyInert } * LocalBattleActionPolicy.PUBLICLY_INERT_TIER_ADJUSTMENT)
         return LocalBattleActionOutcome(
             candidate = candidate,
             tacticalUtility = coordinatedUtility,
@@ -432,6 +438,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             // chosen turn after turn (league run, 2026-10-19). Only outright failures: a Rapid Spin with no hazards still
             // hits. In doubles each rule reads the move's own chosen target (a Leech Seed into the Grass partner fails too).
             LocalIdleUtilityMoveRules.fails(candidate, context) ||
+            LocalIdleUtilityMoveRules.harmsPartner(candidate, context) ||
             jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(candidate, context) ||
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0 ||
