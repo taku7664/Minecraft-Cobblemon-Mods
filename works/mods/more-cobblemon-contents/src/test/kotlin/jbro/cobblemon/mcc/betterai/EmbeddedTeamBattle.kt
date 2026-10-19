@@ -289,6 +289,29 @@ internal object EmbeddedTeamBattle {
                                         } })
                                         add("preserves", JsonObject().apply { scores?.preserves?.forEach { (id, v) ->
                                             addProperty(assumed.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId ?: id.toString(), v.score) } })
+                                        // The switch model's read of the foe in front: its chance and every input behind it.
+                                        scores?.let { s -> jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor.switchFeatures(assumed, s, tier)[foe.battlePokemonId] }?.let { f ->
+                                            add("switchModel", JsonObject().apply {
+                                                addProperty("chance", jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor.switchChance(f))
+                                                addProperty("threatened", f.threatened); addProperty("bestGain", f.bestGain)
+                                                addProperty("bestAttack", f.bestAttack); addProperty("hp", f.hp)
+                                                addProperty("preserve", f.preserve); addProperty("bench", f.bench)
+                                            })
+                                        }
+                                        // The full intent prediction for the foe in front (before the Boss's repeat record), each
+                                        // option by kind and move id or switch-in species, so the run can be scored against what it did.
+                                        scores?.let { s -> runCatching { jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor.predict(
+                                            assumed, s, scoredSwitches = true, tier = tier) }.getOrNull() }
+                                            ?.firstOrNull { it.pokemonId == foe.battlePokemonId }?.let { intent ->
+                                                add("intent", com.google.gson.JsonArray().apply { intent.options.forEach { o ->
+                                                    add(JsonObject().apply {
+                                                        addProperty("kind", o.kind.name)
+                                                        addProperty("move", o.moveId)
+                                                        addProperty("switchIn", o.switchInId?.let { id -> assumed.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId })
+                                                        addProperty("p", o.probability)
+                                                    })
+                                                } })
+                                            }
                                     }
                                 })
                                 // The board as this side sees it: both actives' HP, status, stages.
