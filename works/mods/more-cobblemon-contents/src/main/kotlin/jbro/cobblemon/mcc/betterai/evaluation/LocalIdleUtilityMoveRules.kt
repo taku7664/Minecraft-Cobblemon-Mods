@@ -34,8 +34,21 @@ internal object LocalIdleUtilityMoveRules {
     fun fails(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
         val actor = actor(candidate, context) ?: return false
-        val target = opposingActive(context, actor.side).firstOrNull()
         if (failsForInsufficientHp(candidate, context)) return true
+        return failsFor(moveId, candidate.mechanic != null, actor, opposingActive(context, actor.side).firstOrNull(), context)
+    }
+
+    /**
+     * [fails] for any [actor], either side: [moveId] used by [actor] on [target] without ([withMechanic] false) a mechanic
+     * first. The opponent intent predictor reads an opposing Pokemon's revealed moves through this, so a move that cannot
+     * work is not predicted (a Stealth Rock with Stealth Rock up was read at 32% and never used, league runs 2026-10-19).
+     */
+    fun failsFor(moveId: String, withMechanic: Boolean, actor: BattlePokemonStateView, target: BattlePokemonStateView?,
+        context: BattleDecisionContext): Boolean {
+        if (!withMechanic) when (moveId) {
+            SUBSTITUTE -> if (actor.hpFraction <= SUBSTITUTE_HP_COST) return true
+            in HALF_HEALTH_BOOSTS -> if (actor.hpFraction <= HALF_HEALTH_COST) return true
+        }
         return when (moveId) {
             in SLEEP_DEPENDENT -> !isAsleep(actor)
             // Roar and Whirlwind fail with nobody to bring in; Dragon Tail and Circle Throw still hit.
@@ -43,12 +56,12 @@ internal object LocalIdleUtilityMoveRules {
             LEECH_SEED -> target != null && (target.knownTypeIds.any { canonical(it) == "grass" } ||
                 target.knownVolatileEffectIds.any { canonical(it) == LEECH_SEED })
             POLTERGEIST -> target?.knownHeldItemId?.isBlank() == true
-            in DYNAMAX_FAILING_ATTACKS -> candidate.mechanic == null && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(actor) &&
+            in DYNAMAX_FAILING_ATTACKS -> !withMechanic && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(actor) &&
                 jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
-            REST -> restFails(candidate, context, actor)
+            REST -> restFails(withMechanic, context, actor)
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
             else -> false
         }
@@ -83,15 +96,15 @@ internal object LocalIdleUtilityMoveRules {
             // Misty Terrain, Sweet Veil); its other status is no bar. **Hard-coded** like the rest of this table: Rest by id.
             // A mechanic with it (Terastallization) may change the user's typing first, and with it whether it is grounded:
             // that candidate is left to the turn's projection, which applies the mechanic before the move.
-            REST -> restFails(candidate, context, actor)
+            REST -> restFails(candidate.mechanic != null, context, actor)
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
                 LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
         }
     }
 
-    private fun restFails(candidate: BattleActionCandidate, context: BattleDecisionContext, actor: BattlePokemonStateView): Boolean =
-        candidate.mechanic == null && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
+    private fun restFails(withMechanic: Boolean, context: BattleDecisionContext, actor: BattlePokemonStateView): Boolean =
+        !withMechanic && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
                 ?.let(::canonical) in SLEEPLESS ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state,

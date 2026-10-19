@@ -309,6 +309,7 @@ internal object EmbeddedTeamBattle {
                                                         addProperty("move", o.moveId)
                                                         addProperty("switchIn", o.switchInId?.let { id -> assumed.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId })
                                                         addProperty("p", o.probability)
+                                                        addProperty("value", o.value)
                                                     })
                                                 } })
                                             }

@@ -22,16 +22,22 @@ internal object LocalSideConditionFutility {
     fun futile(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
         if (candidate.kind != BattleActionKind.USE_MOVE) return false
         val details = candidate.moveDetails ?: return false
+        return futile(details, context.state, BattleSide.ALLY)
+    }
+
+    /** [futile] for a move [details] used from [userSide]'s side: the opponent intent predictor reads the foe's this way. */
+    fun futile(details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
+        userSide: BattleSide): Boolean {
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) return false
+        val targetSide = if (userSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
         val effects = details.effects?.effects.orEmpty()
-        val state = context.state
         // A condition on its own side (a screen, Tailwind, Safeguard) already up at its most layers fails too: read only on
         // the target's side, a Grimmsnarl's Reflect with Reflect up kept the generic status value and failed three turns
         // running (league run, 2026-10-19).
         val own = effects.filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION && it.target == BattleMoveEffectTarget.USER_SIDE }
         if (own.isNotEmpty() && own.size == effects.size) {
             // One whose last turn has run out is gone.
-            val present = state.field.sideConditions[BattleSide.ALLY].orEmpty().filter { it.remainingTurns == null || it.remainingTurns > 0 }
+            val present = state.field.sideConditions[userSide].orEmpty().filter { it.remainingTurns == null || it.remainingTurns > 0 }
             return own.all { condition ->
                 val id = condition.valueId?.let(PublicIds::canonical) ?: return@all false
                 val stacks = present.firstOrNull { PublicIds.canonical(it.effectId) == id }?.let { it.stacks ?: 1 } ?: 0
@@ -41,10 +47,10 @@ internal object LocalSideConditionFutility {
         val conditions = effects.filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION && it.target == BattleMoveEffectTarget.TARGET_SIDE }
         // Only a move whose whole effect is such conditions: anything else it does may still be worth the turn.
         if (conditions.isEmpty() || conditions.size != effects.size) return false
-        val remaining = state.remainingPokemonBySide[BattleSide.OPPONENT] ?: return false
-        val active = state.pokemon.count { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        val remaining = state.remainingPokemonBySide[targetSide] ?: return false
+        val active = state.pokemon.count { it.side == targetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         if (remaining - active <= 0) return true
-        val present = state.field.sideConditions[BattleSide.OPPONENT].orEmpty()
+        val present = state.field.sideConditions[targetSide].orEmpty()
         return conditions.all { condition ->
             val id = condition.valueId?.let(PublicIds::canonical) ?: return@all false
             val stacks = present.firstOrNull { PublicIds.canonical(it.effectId) == id }?.let { it.stacks ?: 1 } ?: 0

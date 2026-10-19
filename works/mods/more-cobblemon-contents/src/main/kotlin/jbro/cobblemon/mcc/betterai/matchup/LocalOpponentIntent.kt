@@ -86,7 +86,7 @@ internal object LocalOpponentIntentPredictor {
             }
             val moves = context.publicActionCatalog.forPokemon(user.battlePokemonId)
                 .distinctBy { PublicIds.canonical(it.moveId) }
-                .flatMap { move(it, user, allies, bench, state, scores, ::stageCost) }
+                .flatMap { move(it, user, allies, bench, context, scores, ::stageCost) }
             val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
                 // Whether it switches, from the fitted model; where to, by the incoming Pokemon's matchups.
@@ -218,11 +218,11 @@ internal object LocalOpponentIntentPredictor {
         user: BattlePokemonStateView,
         allies: List<BattlePokemonStateView>,
         bench: List<BattlePokemonStateView>,
-        state: BattleStateView,
+        context: BattleDecisionContext,
         scores: MatchupScores,
         stageCost: (BattlePublicMoveOptionView) -> Double,
     ): List<IntentOption> {
-        val options = valued(option, user, allies, state, scores, stageCost)
+        val options = valued(option, user, allies, context, scores, stageCost)
         // A pivot also brings in the best Pokemon behind it, without a switch turn of its own.
         val pivots = option.details.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.SWITCH_USER }
         if (!pivots) return options
@@ -234,10 +234,11 @@ internal object LocalOpponentIntentPredictor {
         option: BattlePublicMoveOptionView,
         user: BattlePokemonStateView,
         allies: List<BattlePokemonStateView>,
-        state: BattleStateView,
+        context: BattleDecisionContext,
         scores: MatchupScores,
         stageCost: (BattlePublicMoveOptionView) -> Double,
     ): List<IntentOption> {
+        val state = context.state
         val moveId = PublicIds.canonical(option.moveId)
         val details = option.details
         if (details.currentPp <= 0) return emptyList()
@@ -276,6 +277,9 @@ internal object LocalOpponentIntentPredictor {
                 }
             }
         }
+        // A status move that publicly cannot work is not one it would pick: the predictor read Stealth Rock with Stealth
+        // Rock up at 32% (used 0 of 44), a Cotton Guard at +6 Defence at 93-97%, Will-O-Wisp into a burned Pokemon.
+        if (failsPublicly(moveId, details, user, allies, context)) return emptyList()
         scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
             return listOf(option(IntentKind.SETUP, it.score + SETUP_OFFSET))
         }
@@ -303,6 +307,45 @@ internal object LocalOpponentIntentPredictor {
             return allies.map { ally -> option(IntentKind.STATUS, if (ally.statusId == null) SLEEP_VALUE * accuracy else FAILS, ally.battlePokemonId) }
         }
         return listOf(option(IntentKind.STATUS, UNSCORED))
+    }
+
+    /**
+     * Whether [user]'s status move [moveId] does nothing now, from public state: the AI's own failure rules read from the
+     * foe's side (the idle-move rules, a side condition already at its most layers), a raise of only stats already at
+     * the cap, or a status for every ally that already has one or is immune to it. Only what is sure fails.
+     */
+    private fun failsPublicly(
+        moveId: String,
+        details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView,
+        user: BattlePokemonStateView,
+        allies: List<BattlePokemonStateView>,
+        context: BattleDecisionContext,
+    ): Boolean {
+        val state = context.state
+        if (allies.isNotEmpty() && allies.all { jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules.failsFor(moveId, false, user, it, context) }) return true
+        if (jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(details, state, BattleSide.OPPONENT)) return true
+        val declared = details.effects ?: return false
+        // A move with its own script may do more than its declared effects (Curse on a Ghost).
+        if (declared.scriptedBehavior) return false
+        val effects = declared.effects
+        if (effects.isEmpty()) return false
+        if (effects.all { it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER }) {
+            fun stage(stat: String) = user.statStages.entries.firstOrNull {
+                jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.normalise(it.key) ==
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.normalise(stat)
+            }?.value ?: 0
+            return effects.all { effect -> effect.statStages.isNotEmpty() && effect.statStages.all { (stat, change) ->
+                (change > 0 && stage(stat) >= MAX_STAGE) || (change < 0 && stage(stat) <= -MAX_STAGE)
+            } }
+        }
+        if (effects.all { it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET && (it.probability ?: 1.0) >= 1.0 }) {
+            return allies.isNotEmpty() && allies.all { ally ->
+                effects.all { effect ->
+                    ally.statusId != null || jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, ally, effect.valueId, user)
+                }
+            }
+        }
+        return false
     }
 
     /**
@@ -436,6 +479,7 @@ internal object LocalOpponentIntentPredictor {
     private const val SLEEP_VALUE = 0.6
     private const val UNSCORED = 0.15
     private const val FAILS = -1.0
+    private const val MAX_STAGE = 6
     private const val MINIMUM_HP = 0.01
     /** A missed High Jump Kick costs half the user's maximum HP. */
     private const val CRASH_RECOIL_FRACTION = 0.5
