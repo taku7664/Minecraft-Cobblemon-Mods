@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /**
  * Utility moves that cannot accomplish anything in the position they are being considered from.
@@ -42,6 +43,13 @@ internal object LocalIdleUtilityMoveRules {
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
+            // Rest fails at full HP, asleep, with an ability that keeps it awake, or where it cannot fall asleep (Electric or
+            // Misty Terrain, Sweet Veil); its other status is no bar. **Hard-coded** like the rest of this table: Rest by id.
+            REST -> actor.hpFraction >= 1.0 || isAsleep(actor) ||
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
+                    ?.let(::canonical) in SLEEPLESS ||
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state,
+                    actor.copyState(statusId = null), "slp", actor, byMove = false)
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
                 LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
@@ -107,6 +115,8 @@ internal object LocalIdleUtilityMoveRules {
     private const val TAUNT = "taunt"
     private const val ENCORE = "encore"
     private const val YAWN = "yawn"
+    private const val REST = "rest"
+    private val SLEEPLESS = setOf("insomnia", "vitalspirit", "comatose", "purifyingsalt")
 
     /** Separate requirements: Substitute costs a quarter, Belly Drum/Fillet Away require over half HP. */
     private const val SUBSTITUTE_HP_COST = 0.25

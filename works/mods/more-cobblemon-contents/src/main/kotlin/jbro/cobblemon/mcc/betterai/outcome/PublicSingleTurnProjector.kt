@@ -1691,6 +1691,10 @@ internal object PublicSingleTurnProjector {
     private fun restedState(state: BattleStateView, actor: BattlePokemonStateView): BattleStateView {
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)?.let(::canonicalId)
         if (actor.hpFraction >= 1.0 || canonicalId(actor.statusId) in SLEEP_IDS || ability in SLEEPLESS_ABILITIES) return state
+        // It cannot fall asleep where nothing may (Electric or Misty Terrain under a grounded user, Sweet Veil beside it):
+        // Rest fails whole, the heal included. Its own other status is no bar, Rest replaces it. Read as a heal, a Snorlax
+        // and a Dubwool on Electric Terrain chose a failing Rest four turns running (league run, 2026-10-19).
+        if (jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, actor.copyState(statusId = null), "slp", actor, byMove = false)) return state
         return state.copyState(
             pokemon = state.pokemon.map { pokemon ->
                 if (pokemon.battlePokemonId == actor.battlePokemonId) pokemon.copyState(hpFraction = 1.0, statusId = "slp") else pokemon
