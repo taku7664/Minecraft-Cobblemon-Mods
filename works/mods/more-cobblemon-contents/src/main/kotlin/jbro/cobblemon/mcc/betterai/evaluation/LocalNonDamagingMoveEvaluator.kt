@@ -58,7 +58,10 @@ internal object LocalNonDamagingMoveEvaluator {
             val losingLoop = actor?.let { LocalRecoveryLoop.failedStreak(it.battlePokemonId, context) } ?: 0
             // The HP kept is worth what the Pokemon is (LocalPokemonWorth, a side's mean one): a +4 Defence wall's Roost is
             // worth more than a spent lead's. Read as HP alone it could never pass a knockout's price (2026-10-20).
-            effectiveHealing * 100.0 * (actor?.let { LocalPokemonWorth.of(it.battlePokemonId) } ?: 1.0) - losingLoop * tuning.recoveryLoopPenalty
+            // Weighted toward its worth as much as it is hurt: a healthy ace's heal is close to its HP alone (a 67% Milotic's
+            // Recover beat its Ice Beam four times into Gliscor at full worth, hand-played Cynthia, 2026-10-20).
+            val worth = actor?.let { LocalPokemonWorth.of(it.battlePokemonId) } ?: 1.0
+            effectiveHealing * 100.0 * (1.0 + (worth - 1.0) * missingHp) - losingLoop * tuning.recoveryLoopPenalty
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()

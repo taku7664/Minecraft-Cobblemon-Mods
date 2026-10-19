@@ -96,7 +96,14 @@ internal object LocalRootDecisionPolicy {
 
             val positiveStages = active.statStages.values.sumOf { it.coerceAtLeast(0) }
             val stayCanSurviveKnownResponse = credibleStays.any { it.first.worstResponseHpRetention > 0.0 }
-            if (preserveSetup && positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse) {
+            // Revealed moves alone missed a foe that had shown nothing yet: a +2 Mega Garchomp at 46% was kept in front of
+            // a faster Dragapult just in and fell to Dragon Darts, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
+            // The matchup table's reading of the foe (its inferred attacks) counts too: boosts that die this turn keep nothing.
+            val knockedOutNow = context.state.pokemon.any {
+                it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
+                    (jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.urgencyOrNull(it.battlePokemonId) ?: 0.0) > THREAT_KEEPS_NO_SETUP
+            }
+            if (preserveSetup && positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse && !knockedOutNow) {
                 vetoes += LocalSwitchVetoReason.PRESERVE_SETUP
             }
 
@@ -183,4 +190,5 @@ internal object LocalRootDecisionPolicy {
     private const val MATERIAL_TACTICAL_GAIN_SCORE = 20.0
     private const val SAFE_ENTRY_RETENTION = 0.50
     private const val HP_EPSILON = 1e-9
+    private const val THREAT_KEEPS_NO_SETUP = 0.5
 }

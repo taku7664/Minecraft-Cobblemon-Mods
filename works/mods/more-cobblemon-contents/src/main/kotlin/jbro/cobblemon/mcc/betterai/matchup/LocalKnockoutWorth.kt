@@ -54,11 +54,13 @@ internal object LocalKnockoutWorth {
         val priority: Int,
         /**
          * How much it matters that it falls now rather than later: the chance its best hit knocks out one in front this
-         * turn (it acts), at least [MINIMUM_URGENCY]. A Pokemon that cannot hurt the one in front is knocked out as well
+         * turn (it acts), at least [MINIMUM_URGENCY], and whole once it has healed itself. A Pokemon that cannot hurt the one in front is knocked out as well
          * next turn: its whole worth credited to a knockout now, a +4 Defence Corviknight at 23% took Brave Bird
          * (its recoil left 15%, then the next foe knocked it out) over Roost (dev server, 2026-10-20).
          */
         val urgency: Double = 1.0,
+        /** The chance its best hit knocks out one in front this turn, at its chance to act. */
+        val threat: Double = 0.0,
     )
 
     const val MINIMUM_URGENCY = 0.25
@@ -106,8 +108,23 @@ internal object LocalKnockoutWorth {
             val threat = inFront.maxOfOrNull { target ->
                 scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0
             } ?: 0.0
+            // One that has healed itself in this battle (an ability, an item, a draining or healing move) may not be in reach
+            // later: knocking it out now matters whole. Read on threat alone, a Milotic left a Poison Heal Gliscor it Ice
+            // Beamed four times over at a quarter of the knockout and Scalded instead (hand-played Cynthia, 2026-10-20).
+            // Its own heal only: a terrain heals every Pokemon on the field (Grassy Terrain read a Mimikyu as a self-healer).
+            // A rise straight after a hit to the same Pokemon is the HP bar settling on that hit (+0.7% after a Brave Bird
+            // read a Mimikyu as a self-healer and a 23% Corviknight took the knockout over Roost, 2026-10-20).
+            val heals = state.observedEvents.withIndex().any { (index, event) ->
+                val before = state.observedEvents.getOrNull(index - 1)
+                event.actorPokemonId == id && (event.hpFractionDelta ?: 0.0) > 0.0 &&
+                    event.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
+                    event.publicSourceEffectId?.let(PublicIds::canonical)?.contains("terrain") != true &&
+                    !(before?.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
+                        before.actorPokemonId == id && (before.hpFractionDelta ?: 0.0) < 0.0)
+            }
+            val threatNow = (threat * actsThisTurn(pokemon)).coerceIn(0.0, 1.0)
             Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
-                (threat * actsThisTurn(pokemon)).coerceIn(MINIMUM_URGENCY, 1.0))
+                if (heals) 1.0 else threatNow.coerceAtLeast(MINIMUM_URGENCY), threatNow)
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })

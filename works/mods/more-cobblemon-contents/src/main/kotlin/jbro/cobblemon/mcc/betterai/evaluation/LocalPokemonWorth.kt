@@ -54,8 +54,11 @@ internal object LocalPokemonWorth {
                 (if (mine == 0) fallbackFirst ?: speed else speed ?: fallbackFirst) ?: UNKNOWN_ORDER
             }
         }
-        // Its worth counts at how much falling now matters (Denial.urgency); what it would do this turn stays whole.
-        return worth * denial.urgency + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
+        // Its worth counts at how much falling now matters (Denial.urgency), and only if the attack lands before it knocks
+        // the attacker out: first, or second and still standing. Read as landing anyway, a +2 Mega Garchomp at 46% Earthquaked
+        // into a faster Dragapult that Dragon Darted it first, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
+        val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - denial.threat)
+        return worth * denial.urgency * lands + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 
     private const val UNKNOWN_ORDER = 0.5
@@ -71,7 +74,10 @@ internal object LocalPokemonWorth {
     }
 
     /** How much knocking [id] out now rather than later matters ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial.urgency]); 1 unread. */
-    fun urgency(id: UUID?): Double = id?.let { denials.get()?.get(it)?.urgency } ?: 1.0
+    fun urgency(id: UUID?): Double = urgencyOrNull(id) ?: 1.0
+
+    /** The same, null when the decision has no reading of [id]. */
+    fun urgencyOrNull(id: UUID?): Double? = id?.let { denials.get()?.get(it)?.urgency }
 
     fun clear() {
         active.remove()

@@ -81,14 +81,17 @@ internal object LocalMechanicOptionValue {
             DYNAMAX -> {
                 // One its trainer puts after the actor gets it only once the actor is gone (ManagedDynamax's order),
                 // so the actor spending it takes nothing from that one's turn.
+                // One put after the actor gets it too if the actor falls without using it: counted at the share of HP the
+                // actor has lost, the chance it is gone before its turn to use it. Left out, a 2% Aggron first in order
+                // spent the side's Dynamax on one Max Rockfall at no cost, Metagross behind it (hand-played Byron, 2026-10-20).
                 val actorRank = dynamaxRank(actor, context)
-                val able = others.filter {
-                    dynamaxAllowed(it, context) && comesNoLater(dynamaxRank(it, context), actorRank)
-                }
-                if (able.isEmpty()) 0.0 else {
+                val gone = (1.0 - actor.hpFraction).coerceIn(0.0, 1.0)
+                val able = others.filter { dynamaxAllowed(it, context) }
+                val weight = { other: BattlePokemonStateView -> if (comesNoLater(dynamaxRank(other, context), actorRank)) 1.0 else gone }
+                if (able.none { weight(it) > 0.0 }) 0.0 else {
                     val fits = dynamaxFits(context)
-                    optionValue(able, context, DYNAMAX_SCALE) { fits[it.battlePokemonId] ?: 0.0 } *
-                        carrierTilt(actor, able, profile, tierScale) { fits[it.battlePokemonId] ?: 0.0 }
+                    optionValue(able, context, DYNAMAX_SCALE) { (fits[it.battlePokemonId] ?: 0.0) * weight(it) } *
+                        carrierTilt(actor, able, profile, tierScale) { (fits[it.battlePokemonId] ?: 0.0) * weight(it) }
                 }
             }
             // A Z-Move and any other one-shot mechanic: a flat share per healthy ally left to use it.

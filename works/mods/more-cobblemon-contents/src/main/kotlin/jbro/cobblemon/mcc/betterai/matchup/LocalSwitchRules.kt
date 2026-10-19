@@ -97,7 +97,7 @@ internal object LocalSwitchRules {
                 val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
-                adjustment += verdict.adjustment
+                adjustment += verdict.adjustment - dynamaxLeft(replaced, opponents, context)
             }
             if (adjustment != 0.0) adjustments[candidate.actionId] = adjustment
         }
@@ -111,6 +111,26 @@ internal object LocalSwitchRules {
             }
         }
         return Judgement(exclusions, adjustments, sacrifices)
+    }
+
+    /**
+     * What switching a Dynamaxed Pokemon out gives up: the rest of its Dynamax (it ends on the switch, and the side has no
+     * other), what it adds to its exchange with the Pokemon in front (LocalSinglesProtectReturn.dynamaxTurn, its turns left).
+     * Unpriced, a Dynamaxed Giratina at 8% with two turns left was switched out, its Max Move first in line to knock the
+     * slower Mega Gyarados out (hand-played Cynthia, 2026-10-20).
+     */
+    private fun dynamaxLeft(pokemon: BattlePokemonStateView, opponents: List<BattlePokemonStateView>, context: BattleDecisionContext): Double {
+        if (!jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(pokemon)) return 0.0
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        // dynamaxTurn is what a turn of this Dynamax is worth to the side in front (negative when it helps this side), and
+        // leaving ends every turn still left (the marker counts this one too). Read the other way round, a Dynamaxed
+        // Giratina left on its second turn at no cost (hand-played Cynthia, 2026-10-20).
+        val perTurn = opponents.map { foe ->
+            -jbro.cobblemon.mcc.betterai.evaluation.LocalSinglesProtectReturn.dynamaxTurn(context, pokemon, foe, pokemon, cache)
+        }.average().takeIf { !it.isNaN() } ?: 0.0
+        val turns = pokemon.knownVolatileEffectIds.firstOrNull { it.startsWith(jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.TURNS) }
+            ?.substringAfter(':')?.toIntOrNull() ?: jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.DURATION
+        return jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.board((perTurn * turns).coerceAtLeast(0.0))
     }
 
     private class Verdict(val exclusion: String?, val adjustment: Double, val sacrifice: Boolean = false)
