@@ -3,6 +3,13 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-20 01:40] 판단 기록 켜기·끄기를 Better AI 설정 JSON으로 (구현·단위 확인, 빌드·배포 안 함)
+
+- 사용자 결정: 판단 기록 여부는 JSON의 true/false로 제어. `config/more-cobblemon-contents/openrouter.json`(Better AI 설정)의 `recordDecisions`(기본 false). 키가 없으면 false로 읽고, 기존 파일은 다시 쓰지 않는다(`HumanlikeExternalBrainTest`의 "schema one config loads ... without rewriting the file" 규칙).
+- `AiTestDecisionSnapshot.recordsEveryBattle`은 이제 설정값으로 정해지고, `-Dbetterai.decisionSnapshotDir`는 저장 위치만 바꾼다. AI 테스트 트레이너는 설정과 상관없이 늘 저장한다.
+- **적용 시 할 일:** 개발 서버 `openrouter.json`에 `"recordDecisions": true` 추가, 개발 서버 run.bat의 `-Dbetterai.decisionSnapshotDir=logs/betterai-decisions`는 빼도 된다(같은 위치). 지금 개발 서버는 이전 JAR(실행 옵션 방식)로 기록 중이다.
+- 단위: `HumanlikeExternalBrainTest`·`BetterAiModuleContractTest` 38개 중 37 통과. 실패 1건(`router receives the same explicit four stage difficulty contract as the local brain`, 입문 난이도 lookaheadPlies 1 기대)은 2026-10-09 `b99de0a69` "전 등급 2턴 탐색" 이후 갱신되지 않은 기존 실패다.
+
 ## [2026-10-20 01:10] 개발 서버 판단 기록, 잠자기를 상대 상태이상으로 센 교체 규칙, 다이맥스 대상 풀죽음 (구현·단위 확인, 측정 미완, 개발 서버 배포)
 
 - **개발 서버 판단 기록:** 리그 관장전은 판단 기록(`AiTestDecisionSnapshot`)이 AI 테스트 트레이너에서만 저장돼, 드래피온 칼춤·배우르 잠자기·날쌩마/입치트의 킬가르도 상대 치근거리기를 열어 볼 수 없었다. 이제 실행 옵션 `-Dbetterai.decisionSnapshotDir`가 명시되면 모든 배틀을 `logs/betterai-decisions/<battle>/turn-*.json.gz`로 저장하고 최근 50판만 남긴다. 개발 서버 `develop-product/server/run.bat`(git 미추적)에만 이 옵션을 넣었다. 운영 서버 run.bat에는 넣지 않는다. 재생 도구는 세션 scratchpad `replay/TempReplaySnapshotTest.kt`(SNAPSHOT=파일·폴더, TURNS=).

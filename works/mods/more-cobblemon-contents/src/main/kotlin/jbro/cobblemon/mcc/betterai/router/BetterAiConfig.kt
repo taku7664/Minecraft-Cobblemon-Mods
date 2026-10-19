@@ -35,6 +35,11 @@ internal data class BetterAiConfig(
     val maximumCallsPerBattle: Int = 8,
     val mindGamesEnabled: Boolean = true,
     val logDecisionSummary: Boolean = false,
+    /**
+     * Whether every Better AI battle's decisions are saved to `logs/betterai-decisions` (gzip, the newest 50 battles),
+     * not only the AI test trainers'. Off by default; the dev server turns it on to explain a decision afterwards.
+     */
+    val recordDecisions: Boolean = false,
     val promptVersion: String = "humanlike-v1",
     val requireStructuredOutput: Boolean = true,
     val decisionMode: BetterAiDecisionMode = BetterAiDecisionMode.QUALITY,
@@ -74,6 +79,7 @@ internal data class BetterAiConfig(
             "maximumCallsPerBattle=$maximumCallsPerBattle, " +
             "mindGamesEnabled=$mindGamesEnabled, " +
             "logDecisionSummary=$logDecisionSummary, " +
+            "recordDecisions=$recordDecisions, " +
             "promptVersion=$promptVersion, " +
             "requireStructuredOutput=$requireStructuredOutput, " +
             "decisionMode=$decisionMode, " +
@@ -87,10 +93,9 @@ internal object BetterAiConfigStore {
 
     fun loadOrCreate(path: Path): BetterAiConfig {
         if (!Files.exists(path)) writeNew(path, BetterAiConfig())
-        return Files.newBufferedReader(path, StandardCharsets.UTF_8).use { reader ->
-            val root = JsonParser.parseReader(reader).asJsonObject
-            decode(root)
-        }
+        val root = Files.newBufferedReader(path, StandardCharsets.UTF_8).use { reader -> JsonParser.parseReader(reader).asJsonObject }
+        // An existing file is never rewritten: a key it lacks (recordDecisions) reads as its default.
+        return decode(root)
     }
 
     private fun decode(root: JsonObject): BetterAiConfig {
@@ -122,6 +127,7 @@ internal object BetterAiConfigStore {
             maximumCallsPerBattle = root.int("maximumCallsPerBattle", defaults.maximumCallsPerBattle),
             mindGamesEnabled = root.boolean("mindGamesEnabled", defaults.mindGamesEnabled),
             logDecisionSummary = root.boolean("logDecisionSummary", defaults.logDecisionSummary),
+            recordDecisions = root.boolean("recordDecisions", defaults.recordDecisions),
             promptVersion = root.string("promptVersion", defaults.promptVersion),
             requireStructuredOutput = root.boolean("requireStructuredOutput", defaults.requireStructuredOutput),
             decisionMode = decisionMode,
@@ -131,11 +137,13 @@ internal object BetterAiConfigStore {
         )
     }
 
-    private fun writeNew(path: Path, config: BetterAiConfig) {
+    private fun writeNew(path: Path, config: BetterAiConfig) = writeJson(path, encode(config))
+
+    private fun writeJson(path: Path, json: JsonObject) {
         Files.createDirectories(requireNotNull(path.parent))
         val temporary = path.resolveSibling("${path.fileName}.${UUID.randomUUID()}.tmp")
         try {
-            Files.writeString(temporary, gson.toJson(encode(config)) + System.lineSeparator(), StandardCharsets.UTF_8)
+            Files.writeString(temporary, gson.toJson(json) + System.lineSeparator(), StandardCharsets.UTF_8)
             try {
                 Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE)
             } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
@@ -158,6 +166,7 @@ internal object BetterAiConfigStore {
         addProperty("maximumQueuedRequests", config.maximumQueuedRequests)
         addProperty("mindGamesEnabled", config.mindGamesEnabled)
         addProperty("logDecisionSummary", config.logDecisionSummary)
+        addProperty("recordDecisions", config.recordDecisions)
         addProperty("promptVersion", config.promptVersion)
         addProperty("requireStructuredOutput", config.requireStructuredOutput)
         addProperty("decisionMode", config.decisionMode.name)

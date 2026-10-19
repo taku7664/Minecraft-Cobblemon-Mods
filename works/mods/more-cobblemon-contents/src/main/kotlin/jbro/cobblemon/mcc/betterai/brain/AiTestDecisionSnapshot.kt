@@ -54,13 +54,12 @@ internal data class AiTestDecisionSnapshot(
         }
 
         /**
-         * Whether every battle's decisions are kept, not only the AI test trainers': the server was started with the
-         * directory given explicitly ([DIRECTORY_PROPERTY]). The dev server's run.bat gives it; the production server does
-         * not, so its battles are never written. A league decision nobody could open afterwards could not be explained
-         * (a Drapion's Swords Dance, a Dubwool's Rest, 2026-10-20).
+         * Whether every battle's decisions are kept, not only the AI test trainers': `recordDecisions` in the Better AI
+         * config (`config/more-cobblemon-contents/openrouter.json`), set by the mod initializer. A league decision
+         * nobody could open afterwards could not be explained (a Drapion's Swords Dance, a Dubwool's Rest, 2026-10-20).
          */
-        val recordsEveryBattle: Boolean
-            get() = !System.getProperty(DIRECTORY_PROPERTY).isNullOrBlank()
+        @Volatile
+        var recordsEveryBattle: Boolean = false
 
         /**
          * Never throws: a failed write is logged and the decision proceeds unchanged. [compressed] writes `.json.gz` (a
