@@ -62,6 +62,7 @@ internal object LocalSwitchRules {
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
         val sacrifices = linkedSetOf<String>()
+        val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
         // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
         // Each Pokemon's worth, the knockout price's (LocalKnockoutWorth): what a sacrifice gives away.
         val worths by lazy { LocalKnockoutWorth.worths(state, scores, 1.0) }
@@ -94,7 +95,7 @@ internal object LocalSwitchRules {
                     replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths, bench) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
                 adjustment += verdict.adjustment - dynamaxLeft(replaced, opponents, context)
@@ -142,6 +143,7 @@ internal object LocalSwitchRules {
         scores: MatchupScores,
         retreats: (BattlePokemonStateView) -> Double,
         worths: Map<java.util.UUID, Double> = emptyMap(),
+        bench: List<BattlePokemonStateView> = emptyList(),
     ): Verdict? {
         val entries = opponents.mapNotNull { scores.switchIn(incoming.battlePokemonId, it.battlePokemonId, replaced.battlePokemonId) }
         if (entries.isEmpty()) return null
@@ -163,7 +165,33 @@ internal object LocalSwitchRules {
         val sacrifice = leavingDoomed && keepLeaving >= WORTH_KEEPING && cheaper
         var adjustment = 0.0
         if (sacrifice) adjustment += keepLeaving * SACRIFICE_SCALE
-        val gain = switchValue - stayValue
+        // Staying, the Pokemon falls this turn at the chance it is knocked out, and then the best one behind it walks in
+        // free: that, not its lost matchup, is what the switch is weighed against. Read as the lost matchup alone, a 29%
+        // Torkoal in front of a Tyranitar was switched for an Arcanine that took a Stone Edge to 10% (hand-played Kabu,
+        // 2026-10-20), where losing the Torkoal let the same Arcanine in untouched.
+        val falls = 1.0 - stays.fold(1.0) { standing, stay -> standing * (1.0 - (stay.opponentMove?.knockoutChanceWithin(1) ?: 0.0)) }
+        val freeAfter = bench.mapNotNull { other ->
+            opponents.mapNotNull { scores.pokemon(other.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull()
+        }.maxOrNull()
+        val stayGoesOn = if (freeAfter == null) stayValue else (1.0 - falls) * stayValue + falls * maxOf(stayValue, freeAfter)
+        // What the switch keeps: the leaving Pokemon, at the chance it would fall, by its worth in board units (worths
+        // are read at one per Pokemon on average, a Pokemon is livingPokemonValue there; one unit is SCORE_SCALE points,
+        // as a matchup score). Without it a +2 Mega Garchomp at 46% in front of a faster Dragapult stayed for the
+        // free entry behind it, where a Togekiss walked in immune (hand-played Cynthia T6, replayed 2026-10-20). Left to
+        // the sacrifice credit when that applies.
+        // A fall before it acts loses it whole. One that moves first gets its hit in staying, and kept, it is worth the
+        // HP it walks back in with: a 17% Grimmsnarl, Sucker Punch first, was switched for a Liepard at half a chance to
+        // survive the entry (dev server Marnie), where a 58% Lucario that would Meteor Mash and then fall to a Gliscor's
+        // Earthquake was rightly kept for a Milotic (hand-played Cynthia T15; both replayed 2026-10-20). Less what the
+        // incoming Pokemon risks on the way in, by its worth.
+        val fallsFirst = 1.0 - stays.fold(1.0) { standing, stay ->
+            standing * (1.0 - (stay.opponentMove?.knockoutChanceWithin(1) ?: 0.0) * (1.0 - stay.subjectMovesFirstProbability))
+        }
+        val living = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.livingPokemonValue
+        val kept = if (freeAfter == null || sacrifice) 0.0 else
+            (fallsFirst + (falls - fallsFirst).coerceAtLeast(0.0) * replaced.hpFraction) * (leavingWorth ?: 0.0) * living -
+                (1.0 - survival) * (incomingWorth ?: 0.0) * living
+        val gain = switchValue - stayGoesOn + kept
         if (gain >= SWITCH_MARGIN) adjustment += gain * SCORE_SCALE
         if (retreat > 0.0 && survival >= SURVIVAL_PASS) adjustment += retreat * SCORE_SCALE
         if (keepLeaving <= WORTHLESS && keepIncoming >= WORTH_KEEPING) {

@@ -140,8 +140,9 @@ internal object LocalTacticalScorer {
             ?: tuning.neutralHitHpFraction
         val targetRisk = LocalPublicPositionFacts.defensiveExposure(target, context, candidate.actorSlot, tuning)
             ?: tuning.neutralHitHpFraction
-        val healthAdvantage = (LocalTacticalSituationalEvaluator.postEntryHp(candidate, target.hpFraction) - activeHp)
-            .coerceAtLeast(0.0)
+        // HP kept after this turn's hit, as in scoreSwitch.
+        val healthAdvantage = ((LocalTacticalSituationalEvaluator.postEntryHp(candidate, target.hpFraction) - targetRisk).coerceAtLeast(0.0) -
+            (activeHp - currentRisk).coerceAtLeast(0.0)).coerceAtLeast(0.0)
         return currentRisk - targetRisk > 0.0 || healthAdvantage >= MEANINGFUL_SWITCH_HEALTH_ADVANTAGE || activeHp <= CRITICAL_HP
     }
 
@@ -506,7 +507,12 @@ internal object LocalTacticalScorer {
         } ?: neutralExposure
         val riskImprovement = (currentRisk - targetRisk).coerceAtLeast(0.0)
         val riskWorsening = (targetRisk - currentRisk).coerceAtLeast(0.0)
-        val healthAdvantage = targetPostEntryHp?.let { (it - activeHp).coerceAtLeast(0.0) } ?: 0.0
+        // Each side's HP once this turn's hit lands (exposure is a share of full HP): the incoming Pokemon is healthier
+        // only by what it keeps. Read before the hit, an Arcanine walking into a Stone Edge (90%) to save a 29% Torkoal
+        // counted 71% healthier (hand-played Kabu, 2026-10-20).
+        val healthAdvantage = targetPostEntryHp?.let {
+            ((it - targetRisk).coerceAtLeast(0.0) - (activeHp - currentRisk).coerceAtLeast(0.0)).coerceAtLeast(0.0)
+        } ?: 0.0
         val hasPublicPositioningGain = target != null && (
             riskImprovement > 0.0 ||
                 healthAdvantage >= MEANINGFUL_SWITCH_HEALTH_ADVANTAGE ||
