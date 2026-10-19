@@ -24,10 +24,22 @@ internal object LocalSideConditionFutility {
         val details = candidate.moveDetails ?: return false
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) return false
         val effects = details.effects?.effects.orEmpty()
+        val state = context.state
+        // A condition on its own side (a screen, Tailwind, Safeguard) already up at its most layers fails too: read only on
+        // the target's side, a Grimmsnarl's Reflect with Reflect up kept the generic status value and failed three turns
+        // running (league run, 2026-10-19).
+        val own = effects.filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION && it.target == BattleMoveEffectTarget.USER_SIDE }
+        if (own.isNotEmpty() && own.size == effects.size) {
+            val present = state.field.sideConditions[BattleSide.ALLY].orEmpty()
+            return own.all { condition ->
+                val id = condition.valueId?.let(PublicIds::canonical) ?: return@all false
+                val stacks = present.firstOrNull { PublicIds.canonical(it.effectId) == id }?.let { it.stacks ?: 1 } ?: 0
+                stacks >= (condition.amountRange?.maximum ?: 1)
+            }
+        }
         val conditions = effects.filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION && it.target == BattleMoveEffectTarget.TARGET_SIDE }
         // Only a move whose whole effect is such conditions: anything else it does may still be worth the turn.
         if (conditions.isEmpty() || conditions.size != effects.size) return false
-        val state = context.state
         val remaining = state.remainingPokemonBySide[BattleSide.OPPONENT] ?: return false
         val active = state.pokemon.count { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         if (remaining - active <= 0) return true

@@ -39,17 +39,27 @@ internal object LocalIdleUtilityMoveRules {
             in PARTY_STATUS_CURES -> partyOf(context, actor.side).none { it.statusId != null }
             in ITEM_SWAPS -> actor.canonicalKnownHeldItemId == null
             in FORCED_ROTATIONS -> (context.state.remainingPokemonBySide[opposing(actor.side)] ?: 0) <= 1
-            LEECH_SEED -> target != null && target.knownTypeIds.any { canonical(it) == "grass" }
+            // A Grass type, or one already seeded (Ferrothorn's Leech Seed failed into a seeded Grimmsnarl, league run).
+            LEECH_SEED -> target != null && (target.knownTypeIds.any { canonical(it) == "grass" } ||
+                target.knownVolatileEffectIds.any { canonical(it) == LEECH_SEED })
+            // An item the target is known to have lost (blank): Poltergeist fails.
+            POLTERGEIST -> target?.knownHeldItemId?.isBlank() == true
+            // A weight-based attack fails on a Dynamaxed target (Showdown's onTryHit), unless its user's move is a Max Move
+            // itself. A Copperajah's Heat Crash into a Dynamaxed Eldegoss ranked first at 203 (league run, 2026-10-19).
+            in DYNAMAX_FAILING_ATTACKS -> candidate.mechanic == null && !jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(actor) &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(target)
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
             // Rest fails at full HP, asleep, with an ability that keeps it awake, or where it cannot fall asleep (Electric or
             // Misty Terrain, Sweet Veil); its other status is no bar. **Hard-coded** like the rest of this table: Rest by id.
-            REST -> actor.hpFraction >= 1.0 || isAsleep(actor) ||
+            // A mechanic with it (Terastallization) may change the user's typing first, and with it whether it is grounded:
+            // that candidate is left to the turn's projection, which applies the mechanic before the move.
+            REST -> candidate.mechanic == null && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
                 jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
                     ?.let(::canonical) in SLEEPLESS ||
                 jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(context.state,
-                    actor.copyState(statusId = null), "slp", actor, byMove = false)
+                    actor.copyState(statusId = null), "slp", actor, byMove = false))
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId) ||
                 LocalHazardSwitchAvailability.fraction(context.state, opposing(actor.side), context) == 0.0
             else -> false
@@ -116,6 +126,9 @@ internal object LocalIdleUtilityMoveRules {
     private const val ENCORE = "encore"
     private const val YAWN = "yawn"
     private const val REST = "rest"
+    private const val POLTERGEIST = "poltergeist"
+    /** **Hard-coded**: Showdown fails these on a Dynamaxed target in each move's own script; no data flag says so. */
+    private val DYNAMAX_FAILING_ATTACKS = setOf("heavyslam", "heatcrash", "lowkick", "grassknot")
     private val SLEEPLESS = setOf("insomnia", "vitalspirit", "comatose", "purifyingsalt")
 
     /** Separate requirements: Substitute costs a quarter, Belly Drum/Fillet Away require over half HP. */
