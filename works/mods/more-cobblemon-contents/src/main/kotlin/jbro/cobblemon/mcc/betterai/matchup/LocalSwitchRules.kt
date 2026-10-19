@@ -57,7 +57,13 @@ internal object LocalSwitchRules {
         val opponents = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
-        if (opponents.isEmpty()) return Judgement.NONE
+        // A replacement chosen while nothing stands in front (both sides lost their Pokemon at once) faces whatever comes
+        // in next: read against every opposing Pokemon still standing. Read against none, Raihan's three replacements all
+        // scored alike and one was drawn at random (hand-played doubles, 2026-10-20).
+        val faced = opponents.ifEmpty {
+            state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        }
+        if (faced.isEmpty()) return Judgement.NONE
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
@@ -86,7 +92,7 @@ internal object LocalSwitchRules {
                 val incoming = state.pokemon.firstOrNull { it.battlePokemonId == part.switchPokemonId } ?: continue
                 val replaced = active(state, part.actorSlot)
                 if (replaced == null) {
-                    replacementValues[part.actionId] = opponents.mapNotNull {
+                    replacementValues[part.actionId] = faced.mapNotNull {
                         scores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score
                     }.averageOrNull() ?: continue
                     continue
