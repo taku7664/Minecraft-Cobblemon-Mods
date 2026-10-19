@@ -132,6 +132,23 @@ internal object EmbeddedTeamInput {
                     actorSlot = if (nativeInputs && current != null) activeSlot(actor) else null)
             }
             if (kind in setOf("turn", "upkeep", "switch", "drag")) actionWindow = null
+            // As the game's observer reads every line's `[from] ability:` (revealOptionalSource): an immunity, a block, an
+            // activation reveals its holder's ability (`|-immune|Bronzong|[from] ability: Levitate`), the `[of]` Pokemon's
+            // when named. Without it a revealed Levitate took Earthquake again (league run, 2026-10-19). The lines read
+            // below keep their own handling; Trace is recorded where it copies.
+            if (kind !in setOf("-damage", "-heal", "move", "-ability", "switch", "drag", "replace")) {
+                p.drop(3).firstOrNull { it.startsWith("[from] ability: ") }?.removePrefix("[from] ability: ")
+                    ?.let(::id)?.takeIf { it.isNotEmpty() && it != "trace" }?.let { resource ->
+                        val ofTags = p.drop(3).filter { it.startsWith("[of] ") }
+                        val owner = if (ofTags.size == 1) seen[identity(ofTags.single().removePrefix("[of] "))] else current
+                        if (owner != null && owner.ability != resource) {
+                            owner.ability = resource
+                            events += BattleObservedEventView(index.toLong() * 4 + 1, eventTurn,
+                                BattleObservedEventKind.ABILITY_REVEALED, uuid(owner.ident), publicValueId = resource,
+                                actorSlot = if (nativeInputs && owner.active) activeSlot(owner.ident) else null)
+                        }
+                    }
+            }
             when (kind) {
                 "turn" -> {
                     eventTurn = actor.toInt()
