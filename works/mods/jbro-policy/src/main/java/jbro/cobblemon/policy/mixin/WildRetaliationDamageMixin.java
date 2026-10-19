@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * On Peaceful, Player.hurt turns difficulty-scaled damage into 0. A wild Pokemon's hit skips that scaling there, so it lands
- * at its full attack damage (see {@link WildRetaliation}).
+ * On Peaceful, Player.hurt turns difficulty-scaled damage into 0. A wild Pokemon's hit on the player who hurt it skips that
+ * scaling there, so it lands at its full attack damage (see {@link WildRetaliation}).
  */
 @Mixin(Player.class)
 abstract class WildRetaliationDamageMixin {
@@ -20,6 +20,7 @@ abstract class WildRetaliationDamageMixin {
     private boolean jbroPolicy$wildHitsLand(boolean scales, @Local(argsOnly = true) DamageSource source) {
         if (!scales) return false;
         Player self = (Player) (Object) this;
-        return self.level().getDifficulty() != Difficulty.PEACEFUL || !WildRetaliation.isWild(source.getEntity());
+        Difficulty difficulty = self.level().getDifficulty();
+        return WildRetaliation.difficultyFor(source.getEntity(), self, difficulty) == difficulty;
     }
 }
