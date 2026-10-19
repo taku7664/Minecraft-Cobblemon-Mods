@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-20 00:20] 개발 서버만 가라르 공개: 월드 데이터팩 덮어쓰기 (리로드·데이터팩 활성 확인, 탭 표시 미확인)
+
+- **빡대리님 지시:** 개발 서버는 가라르를 열어 둬야 한다. 바꾸고 리로드.
+- **방법:** 소스 `galar.json`은 운영 미공개라 `active: false` 그대로 두고, 개발 서버 월드에 `develop-product/server/world/datapacks/ppakemon-dev-galar/`(pack_format 48)를 넣었다. 설치된 리그 JAR(`d1fe4bfe`, `b1a1a6d4` 빌드)의 `galar.json`을 그대로 복사하고 `active`만 `true`로 바꿨다.
+- **주의:** 이 데이터팩은 `galar.json` 전체를 덮어쓴다. 리그 JAR의 `galar.json`이 바뀌는 개발 배포마다 새 JAR의 파일로 다시 복사하고 `active`만 `true`로 바꿔야 한다. 안 그러면 옛 가라르 데이터가 새 데이터를 가린다.
+- **리로드:** 켜져 있던 개발 서버(PID 62004, 빡대리님이 explorer로 실행) 콘솔에 `AttachConsole`+`WriteConsoleInput`으로 `reload`를 보냈다. 로그에 `Reloading!`·리그 카탈로그 로드가 찍혔고, `datapack list`에서 `file/ppakemon-dev-galar (world)`가 맨 뒤(가장 높은 우선순위)로 켜져 있다. 리그 탭에 가라르가 보이는지는 게임에서 보지 않았다.
+
 ## [2026-10-19 02:10] 결승 상대 목록은 결승 도전 중에만 (단위·리뷰·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 지적:** 충호전을 시작한 적도 없는데 경로가 결승 상대 목록으로 나왔다. 사천왕전(가라르 포함)은 도전 중에만 이렇게 나와야 하고, 도전 중이란 충호전을 시작해 파티가 바뀌지 않는 상태다.
