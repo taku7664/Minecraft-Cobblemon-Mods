@@ -439,6 +439,11 @@ internal object LocalBattleActionOutcomeEvaluator {
             // hits. In doubles each rule reads the move's own chosen target (a Leech Seed into the Grass partner fails too).
             LocalIdleUtilityMoveRules.fails(candidate, context) ||
             LocalIdleUtilityMoveRules.harmsPartner(candidate, context) ||
+            // A status move that changes nothing now (Haze with no stage held in front): nothing to weigh, where a hit that
+            // also spins away no hazards still hits. Read at 0, a doomed Milotic drew Haze against a Recover (hand-played
+            // Cynthia, 2026-10-20).
+            (candidate.moveDetails?.damageCategory == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS &&
+                LocalIdleUtilityMoveRules.isIdle(candidate, context)) ||
             jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(candidate, context) ||
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0 ||
