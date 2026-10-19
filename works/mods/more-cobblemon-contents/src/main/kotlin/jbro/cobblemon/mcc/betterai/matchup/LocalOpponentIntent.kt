@@ -87,6 +87,8 @@ internal object LocalOpponentIntentPredictor {
             val known = context.publicActionCatalog.forPokemon(user.battlePokemonId).distinctBy { PublicIds.canonical(it.moveId) }
             val moves = (known + inferredAttacks(user, known, context))
                 .flatMap { move(it, user, allies, bench, context, scores, ::stageCost) }
+                // A Dynamaxed Pokemon's status moves all read as the one Max Guard.
+                .distinctBy { Triple(it.kind, it.moveId, it.targetId) }
             val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
                 // Whether it switches, from the fitted model; where to, by the incoming Pokemon's matchups.
@@ -251,13 +253,12 @@ internal object LocalOpponentIntentPredictor {
             return allies.map { option(IntentKind.ATTACK, value - targetShare(allies.size), it.battlePokemonId) }
         }
         if (effects.any { it.kind == BattleMoveEffectKind.PROTECT_USER }) {
-            val best = allies.mapNotNull { scores.moves(it.battlePokemonId, user.battlePokemonId).firstOrNull() }
-            val alone = 1.0 - best.fold(1.0) { standing, score -> standing * (1.0 - score.knockoutChanceWithin(1)) }
-            // Both allies aiming at it: how far their expected hits together reach past its HP.
-            val together = best.sumOf { share(it, user) }
-            val threat = maxOf(alone, ((together - DOUBLE_TARGET_FROM) / (1.0 - DOUBLE_TARGET_FROM)).coerceIn(0.0, 1.0))
-            val value = if (protectedLastTurn(user, state)) FAILS else PROTECT_SCALE * threat + PROTECT_BASE
-            return listOf(option(IntentKind.PROTECT, value))
+            return listOf(option(IntentKind.PROTECT, protectValue(user, allies, state, scores)))
+        }
+        // A Dynamaxed Pokemon's status move is Max Guard. Read as the move itself, a Dynamaxed foe's Stealth Rock or
+        // Swords Dance was predicted (4.1 over 25 turns) while it could only guard, and a failing one dropped the guard.
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS && jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user)) {
+            return listOf(IntentOption(IntentKind.PROTECT, MAX_GUARD, null, null, protectValue(user, allies, state, scores), 0.0))
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             val hits = allies.mapNotNull { ally ->
@@ -290,11 +291,11 @@ internal object LocalOpponentIntentPredictor {
                 val won = if (boosted.minOf { requireNotNull(it) } >= LocalSetupGate.WIN_PASS) 1.0 else 0.0
                 return listOf(option(IntentKind.SETUP, KNOCKOUT_WEIGHT * won - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)))
             }
-            return listOf(option(IntentKind.SETUP, setupValue(sweep.score, user, allies, scores) + SETUP_OFFSET))
+            return listOf(option(IntentKind.SETUP, setupValue(sweep.score, user, allies, scores, context) + SETUP_OFFSET))
         }
         if (effects.any { it.kind == BattleMoveEffectKind.STAT_STAGE } && effects.all { it.target != BattleMoveEffectTarget.SELECTED_TARGET }) {
             // A stat raise that makes no sweeper.
-            return listOf(option(IntentKind.SETUP, setupValue(UNSCORED, user, allies, scores)))
+            return listOf(option(IntentKind.SETUP, setupValue(UNSCORED, user, allies, scores, context)))
         }
         val scored = allies.mapNotNull { ally ->
             scores.statusMoves(user.battlePokemonId, ally.battlePokemonId).firstOrNull { it.moveId == moveId }?.let { ally to it.score }
@@ -316,9 +317,7 @@ internal object LocalOpponentIntentPredictor {
             }
             if (pairs.isEmpty()) return listOf(option(IntentKind.STATUS, UNSCORED))
             // At -7 every hit lands first: the room goes up only if no ally's best hit knocks the user out on the way.
-            val lands = allies.fold(1.0) { standing, ally ->
-                standing * (1.0 - (scores.moves(ally.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0))
-            }
+            val lands = survivesTurn(user, allies, scores, context)
             return listOf(option(IntentKind.STATUS, lands * pairs.average() * KNOCKOUT_WEIGHT * ROOM_EXCHANGES))
         }
         val sleeps = effects.any { it.kind == BattleMoveEffectKind.STATUS && it.valueId?.let(PublicIds::canonical) == "slp" }
@@ -329,17 +328,42 @@ internal object LocalOpponentIntentPredictor {
         return listOf(option(IntentKind.STATUS, UNSCORED))
     }
 
+    /** A protecting move's value: the knockout it would dodge, alone or by both allies' hits together; it fails twice running. */
+    private fun protectValue(user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, state: BattleStateView, scores: MatchupScores): Double {
+        val best = allies.mapNotNull { scores.moves(it.battlePokemonId, user.battlePokemonId).firstOrNull() }
+        val alone = 1.0 - best.fold(1.0) { standing, score -> standing * (1.0 - score.knockoutChanceWithin(1)) }
+        // Both allies aiming at it: how far their expected hits together reach past its HP.
+        val together = best.sumOf { share(it, user) }
+        val threat = maxOf(alone, ((together - DOUBLE_TARGET_FROM) / (1.0 - DOUBLE_TARGET_FROM)).coerceIn(0.0, 1.0))
+        return if (protectedLastTurn(user, state)) FAILS else PROTECT_SCALE * threat + PROTECT_BASE
+    }
+
+    /**
+     * The chance no ally knocks [user] out this turn with its likeliest knockout, a single-target one aimed at [user] one
+     * time in as many opposing Pokemon as are in front, a spread one always (the aim LocalActingChance reads for the AI's
+     * own moves). Multiplied out over every ally at full aim, doubles read every hit as focused on the one user.
+     */
+    private fun survivesTurn(user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores,
+        context: BattleDecisionContext): Double {
+        val inFront = context.state.pokemon.count { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }.coerceAtLeast(1)
+        return allies.fold(1.0) { standing, ally ->
+            val best = scores.moves(ally.battlePokemonId, user.battlePokemonId).maxByOrNull { it.knockoutChanceWithin(1) } ?: return@fold standing
+            val pattern = context.publicActionCatalog.forPokemon(ally.battlePokemonId)
+                .firstOrNull { PublicIds.canonical(it.moveId) == best.moveId }?.details?.targetPattern
+            val aim = if (pattern in SPREAD) 1.0 else 1.0 / inFront
+            standing * (1.0 - best.knockoutChanceWithin(1) * aim)
+        }
+    }
+
     /**
      * A raise is worth [worth] only if [user] lives to use it: times the chance no ally's best hit knocks it out this turn
      * (it spends the turn raising, so every ally's hit lands). And a raise in place of a knockout it holds on an ally now
      * puts that knockout off, the knockout's share of an attack ([KNOCKOUT_WEIGHT]). With a sure knockout on the AI's Pokemon
      * the predictor read a raise at 8.8 over 52 such turns and the trainers raised once (league runs, 2026-10-19).
      */
-    private fun setupValue(worth: Double, user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores): Double {
-        val lives = allies.fold(1.0) { standing, ally ->
-            standing * (1.0 - (scores.moves(ally.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0))
-        }
-        return lives * worth - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)
+    private fun setupValue(worth: Double, user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores,
+        context: BattleDecisionContext): Double {
+        return survivesTurn(user, allies, scores, context) * worth - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)
     }
 
     /** The best chance [user] knocks one of [allies] out this turn with an attack: what a raise in its place puts off. */
@@ -552,6 +576,7 @@ internal object LocalOpponentIntentPredictor {
     private const val FAILS = -1.0
     private const val MAX_STAGE = 6
     private const val MAX_MOVES = 4
+    private const val MAX_GUARD = "maxguard"
     /** The exchanges a Trick Room's turns hold (it lasts the turn it goes up and four more), as LocalTrickRoomCredit reads it. */
     private const val ROOM_EXCHANGES = 2.0
     private const val MINIMUM_HP = 0.01
