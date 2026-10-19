@@ -79,8 +79,11 @@ internal object LocalKnownStatMechanics {
         actor: BattlePokemonStateView,
         item: String?,
     ): Double = when (item) {
-        "choiceband" -> if (category == BattleMoveDamageCategory.PHYSICAL) 1.5 else 1.0
-        "choicespecs" -> if (category == BattleMoveDamageCategory.SPECIAL) 1.5 else 1.0
+        // Showdown drops a Choice item's boost while its holder is Dynamaxed (`if (pokemon.volatiles.dynamax) return`).
+        // Kept, a 46% Choice Band Luxray's Max Starfall read half again too strong and it Dynamaxed for it (hand-played
+        // Volkner, 2026-10-20).
+        "choiceband" -> if (category == BattleMoveDamageCategory.PHYSICAL && !LocalDynamax.active(actor)) 1.5 else 1.0
+        "choicespecs" -> if (category == BattleMoveDamageCategory.SPECIAL && !LocalDynamax.active(actor)) 1.5 else 1.0
         "lightball" -> if (canonical(actor.speciesId) == "pikachu") 2.0 else 1.0
         else -> 1.0
     }
@@ -135,7 +138,7 @@ internal object LocalKnownStatMechanics {
     ): BattleIntegerRange {
         val item = LocalPublicItemState.activeItemId(state, pokemon)
         val multiplier = when {
-            item == "choicescarf" -> 1.5
+            item == "choicescarf" -> if (LocalDynamax.active(pokemon)) 1.0 else 1.5
             item in HALF_SPEED_ITEMS -> 0.5
             else -> 1.0
         }
