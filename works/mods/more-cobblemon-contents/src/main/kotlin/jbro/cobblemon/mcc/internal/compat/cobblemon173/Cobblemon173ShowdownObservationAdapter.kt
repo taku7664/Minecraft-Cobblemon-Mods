@@ -144,6 +144,12 @@ class Cobblemon173ShowdownObservationAdapter(
             }
         }
         when (message.id) {
+            // A form change that lasts while it stays in (Stance Change's Blade, Morpeko's Hangry): the form named after
+            // the species. Unread, an Aegislash kept the form it was first seen in for the whole battle (2026-10-20).
+            "-formechange" -> resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                val form = message.argumentAt(1)?.substringAfter('-', missingDelimiterValue = "") ?: return@let
+                observer.observeFormChange(pokemon.battlePokemonId, form)
+            }
             "-transform" -> resolvePokemon(activeBattle, message, 0)?.let {
                 observer.observeTransformation(it.battlePokemonId,
                     resolvePokemon(activeBattle, message, 1)?.battlePokemonId)

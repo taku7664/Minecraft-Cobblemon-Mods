@@ -647,6 +647,25 @@ internal class Cobblemon173PublicBattleObserver(
         )
     }
 
+    /**
+     * A temporary form change in front ([form] the name after the species, empty for its standard form): its stats and
+     * types from the forms this Pokemon is known to have. Nothing when that form is not among them.
+     */
+    @Synchronized
+    fun observeFormChange(battlePokemonId: UUID, form: String) {
+        val current = pokemon[battlePokemonId] ?: return
+        val wanted = PublicIds.canonical(form).ifEmpty { STANDARD_FORM }
+        val (key, state) = current.knownFormStates.entries.firstOrNull { PublicIds.canonical(it.key) == wanted } ?: return
+        val formId = key.takeUnless { PublicIds.canonical(it) == STANDARD_FORM }
+        if (current.formId == formId) return
+        pokemon[battlePokemonId] = current.copyView(
+            formId = formId,
+            knownTypeIds = if (current.knownTeraTypeId == null) state.knownTypeIds else current.knownTypeIds,
+            knownBaseStabTypeIds = state.knownTypeIds,
+            combatStats = state.combatStats,
+        )
+    }
+
     private fun knownOrUpsert(snapshot: Cobblemon173PublicPokemonSnapshot): BattlePokemonStateView =
         pokemon[snapshot.battlePokemonId] ?: upsert(snapshot)
 
@@ -753,6 +772,8 @@ internal class Cobblemon173PublicBattleObserver(
 
     private companion object {
         const val DEFAULT_MAXIMUM_RECENT_EVENTS = 128
+        /** Cobblemon's name for a species' standard form. */
+        const val STANDARD_FORM = "normal"
         val TRUANT_SPECIES = setOf("slakoth", "slaking")
         val STACKABLE_SIDE_CONDITIONS = mapOf("spikes" to 3, "toxicspikes" to 2)
     }

@@ -315,6 +315,28 @@ class Cobblemon173PublicBattleObserverTest {
     }
 
     @Test
+    fun `a temporary form change takes that form's stats and its standard form takes them back`() {
+        val shieldStats = BattleCombatStatRangesView.exact(100, 50, 150, 50, 150, 60)
+        val bladeStats = BattleCombatStatRangesView.exact(100, 150, 50, 150, 50, 60)
+        val actor = publicPokemon(BattleSide.OPPONENT, 0).copy(combatStats = shieldStats, knownFormStates = mapOf(
+            "Normal" to BattlePokemonFormStateView("Normal", setOf("steel", "ghost"), shieldStats, null),
+            "Blade" to BattlePokemonFormStateView("Blade", setOf("steel", "ghost"), bladeStats, null)))
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observeFormChange(actor.battlePokemonId, "Blade")
+        val blade = observer.publicSnapshot().pokemon.single()
+        assertEquals("Blade", blade.formId)
+        assertEquals(bladeStats, blade.combatStats)
+        observer.observeFormChange(actor.battlePokemonId, "")
+        val shield = observer.publicSnapshot().pokemon.single()
+        assertEquals(null, shield.formId)
+        assertEquals(shieldStats, shield.combatStats)
+        // A form it is not known to have changes nothing.
+        observer.observeFormChange(actor.battlePokemonId, "Zen")
+        assertEquals(shieldStats, observer.publicSnapshot().pokemon.single().combatStats)
+    }
+
+    @Test
     fun `a publicly visible Mega form replaces prior Trace without clearing active effects`() {
         val actor = publicPokemon(BattleSide.OPPONENT, 0)
         val observer = Cobblemon173PublicBattleObserver(1)
