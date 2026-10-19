@@ -103,6 +103,10 @@ internal object LocalIdleUtilityMoveRules {
         }
     }
 
+    /** A move that only resets stat stages (Haze's kind, by id) with nobody active holding a stage: it does nothing. */
+    fun resetsNothing(moveId: String, context: BattleDecisionContext): Boolean =
+        canonical(moveId) in STAT_STAGE_RESET && nobodyActiveIsBoosted(context)
+
     private fun restFails(withMechanic: Boolean, context: BattleDecisionContext, actor: BattlePokemonStateView): Boolean =
         !withMechanic && (actor.hpFraction >= 1.0 || isAsleep(actor) ||
             jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)

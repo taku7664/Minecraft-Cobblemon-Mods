@@ -311,8 +311,9 @@ internal object LocalOpponentIntentPredictor {
 
     /**
      * Whether [user]'s status move [moveId] does nothing now, from public state: the AI's own failure rules read from the
-     * foe's side (the idle-move rules, a side condition already at its most layers), a raise of only stats already at
-     * the cap, or a status for every ally that already has one or is immune to it. Only what is sure fails.
+     * foe's side (the idle-move rules, a side condition already at its most layers), a stage reset with no stage up, a heal
+     * of itself at full HP, a raise of only stats already at the cap, or a status for every ally that already has one or
+     * is immune to it. Only what is sure fails.
      */
     private fun failsPublicly(
         moveId: String,
@@ -324,11 +325,16 @@ internal object LocalOpponentIntentPredictor {
         val state = context.state
         if (allies.isNotEmpty() && allies.all { jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules.failsFor(moveId, false, user, it, context) }) return true
         if (jbro.cobblemon.mcc.betterai.evaluation.LocalSideConditionFutility.futile(details, state, BattleSide.OPPONENT)) return true
+        // Haze with no stage on the field to clear does nothing (offered 10 times, read at 3.8, never used).
+        if (jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules.resetsNothing(moveId, context)) return true
         val declared = details.effects ?: return false
-        // A move with its own script may do more than its declared effects (Curse on a Ghost).
-        if (declared.scriptedBehavior) return false
         val effects = declared.effects
         if (effects.isEmpty()) return false
+        // A heal of the user alone at full HP fails (Recover, Synthesis at 100%: offered 8 times at 90%+, read at 3.2, never
+        // used). A script only changes how much it heals (Synthesis by the weather), not that a full user cannot.
+        if (effects.all { it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER }) return user.hpFraction >= 1.0
+        // A move with its own script may do more than its declared effects (Curse on a Ghost).
+        if (declared.scriptedBehavior) return false
         if (effects.all { it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER }) {
             fun stage(stat: String) = user.statStages.entries.firstOrNull {
                 jbro.cobblemon.mcc.betterai.mechanics.LocalStatStageChange.normalise(it.key) ==
