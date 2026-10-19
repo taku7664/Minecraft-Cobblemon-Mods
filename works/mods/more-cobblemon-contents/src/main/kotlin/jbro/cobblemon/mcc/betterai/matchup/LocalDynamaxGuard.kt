@@ -71,8 +71,15 @@ internal object LocalDynamaxGuard {
             val candidateContext = forCandidate(context, user, mechanic)
             val gigantamax = context.exactOwnTeam?.buildFor(user.battlePokemonId)?.gigantamax == true || LocalDynamax.gigantamax(user)
             val dynamaxed = LocalDynamax.start(user, gigantamax)
-            val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache) ?: return@mapNotNull null
-            val guarded = threat(candidateContext, with(state, dynamaxed), dynamaxed, foes, targeting, tuning, cache)
+            // Whether each foe acts at all is the Dynamaxed candidate's: its Max Move knocking the foe out first is that
+            // candidate's own value, which its ranking already holds. Read from the plain move instead, a Dynamax move that
+            // knocked out where its plain move did not took the whole incoming hit as "guarded", so the weaker the move the
+            // larger the guard (a Mamoswine Dynamaxed Ice Shard, +232, over Icicle Crash, +72; league run, 2026-10-19).
+            // Only the doubled HP is guarded.
+            val guardedState = with(state, dynamaxed)
+            val acting = acting(candidateContext, guardedState, dynamaxed, foes, cache)
+            val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache, acting) ?: return@mapNotNull null
+            val guarded = threat(candidateContext, guardedState, dynamaxed, foes, targeting, tuning, cache, acting)
                 ?: return@mapNotNull null
             (plain - guarded).takeIf { it > 0.0 }?.let { candidate.actionId to it }
         }.toMap()
@@ -83,6 +90,20 @@ internal object LocalDynamaxGuard {
         )
     }
 
+    /** Per foe, the chance it acts this turn against the candidate on [state]: not knocked out first by its move. */
+    private fun acting(
+        context: BattleDecisionContext,
+        state: BattleStateView,
+        user: BattlePokemonStateView,
+        foes: List<BattlePokemonStateView>,
+        cache: LocalProjectedActionCalculationCache,
+    ): Map<UUID, Double> = foes.mapNotNull { foe ->
+        val pair = LocalMatchupScoreCalculator.pairMatchup(
+            context.copy(state = state), user.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.CURRENT, cache,
+        ) ?: return@mapNotNull null
+        foe.battlePokemonId to (1.0 - pair.subjectMovesFirstProbability * (pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0)).coerceIn(0.0, 1.0)
+    }.toMap()
+
     /** The opposing active Pokemon's best hits on [user] this turn, with material counted once, in score units. */
     private fun threat(
         context: BattleDecisionContext,
@@ -92,6 +113,8 @@ internal object LocalDynamaxGuard {
         targeting: Targeting,
         tuning: LocalDecisionTuning,
         cache: LocalProjectedActionCalculationCache,
+        /** Each foe's chance to act ([acting]), the same on both boards so only the hits' size differs. */
+        acting: Map<UUID, Double>,
     ): Double? {
         val hits = foes.mapNotNull { foe ->
             val pair = LocalMatchupScoreCalculator.pairMatchup(
@@ -99,8 +122,8 @@ internal object LocalDynamaxGuard {
                 MatchupSpeedField.CURRENT, cache,
             ) ?: return@mapNotNull null
             val hit = pair.opponentMove ?: return@mapNotNull null
-            val acts = 1.0 - pair.subjectMovesFirstProbability * (pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0)
-            IncomingHit(hit, acts.coerceIn(0.0, 1.0), targeting.byOpponent.getValue(foe.battlePokemonId))
+            val acts = acting[foe.battlePokemonId] ?: return@mapNotNull null
+            IncomingHit(hit, acts, targeting.byOpponent.getValue(foe.battlePokemonId))
         }
         if (hits.isEmpty()) return null
         // Every hit is already halved for a Dynamaxed target, as every calculation reads one.
