@@ -292,14 +292,25 @@ internal object LocalOpponentIntentPredictor {
         }
         if (scored.isNotEmpty()) return scored.map { (ally, value) -> option(IntentKind.STATUS, value, ally.battlePokemonId) }
         if (moveId == TRICK_ROOM) {
-            val pairs = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && standing(it) }.flatMap { mine ->
-                allies.mapNotNull { ally ->
+            // The win chance the toggled order gives its side, on the attacks' scale: a whole win is one knockout
+            // ([KNOCKOUT_WEIGHT]), over the exchanges the room's turns hold, as the AI prices its own room
+            // (LocalTrickRoomCredit). Read as the exchange score's change (-2..2) it outweighed every attack: a Bronzong
+            // was read to toggle at 100% (value 1.98) and never did (league runs, 2026-10-19).
+            // Every living pair, benches included: the room holds for turns, and its own trainer reads it across both
+            // teams. Read on the two in front, a Bronzong was read to toggle at 98% that its own AI priced at -63.
+            val pairs = state.pokemon.filter { it.side == BattleSide.OPPONENT && standing(it) }.flatMap { mine ->
+                state.pokemon.filter { it.side == BattleSide.ALLY && standing(it) }.mapNotNull { ally ->
                     val now = scores.pokemon(mine.battlePokemonId, ally.battlePokemonId) ?: return@mapNotNull null
                     val toggled = scores.pokemon(mine.battlePokemonId, ally.battlePokemonId, MatchupSpeedField.TRICK_ROOM_TOGGLED) ?: return@mapNotNull null
-                    toggled.score - now.score
+                    toggled.winProbability - now.winProbability
                 }
             }
-            return listOf(option(IntentKind.STATUS, if (pairs.isEmpty()) UNSCORED else pairs.average()))
+            if (pairs.isEmpty()) return listOf(option(IntentKind.STATUS, UNSCORED))
+            // At -7 every hit lands first: the room goes up only if no ally's best hit knocks the user out on the way.
+            val lands = allies.fold(1.0) { standing, ally ->
+                standing * (1.0 - (scores.moves(ally.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0))
+            }
+            return listOf(option(IntentKind.STATUS, lands * pairs.average() * KNOCKOUT_WEIGHT * ROOM_EXCHANGES))
         }
         val sleeps = effects.any { it.kind == BattleMoveEffectKind.STATUS && it.valueId?.let(PublicIds::canonical) == "slp" }
         if (sleeps) {
@@ -513,6 +524,8 @@ internal object LocalOpponentIntentPredictor {
     private const val FAILS = -1.0
     private const val MAX_STAGE = 6
     private const val MAX_MOVES = 4
+    /** The exchanges a Trick Room's turns hold (it lasts the turn it goes up and four more), as LocalTrickRoomCredit reads it. */
+    private const val ROOM_EXCHANGES = 2.0
     private const val MINIMUM_HP = 0.01
     /** A missed High Jump Kick costs half the user's maximum HP. */
     private const val CRASH_RECOIL_FRACTION = 0.5
