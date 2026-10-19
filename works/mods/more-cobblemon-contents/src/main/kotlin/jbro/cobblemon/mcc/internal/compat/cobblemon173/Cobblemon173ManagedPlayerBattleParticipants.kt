@@ -22,7 +22,7 @@ object Cobblemon173ManagedPlayerBattleParticipants {
     ): Cobblemon173ManagedPlayerBattleParticipant<PlayerPartyStore, PlayerBattleActor> = prepare(
         playerId = playerId,
         team = team,
-        createRoster = ::PlayerPartyStore,
+        createRoster = ::Cobblemon173ManagedBattlePartyStore,
         setMember = { roster, slot, battlePokemon -> roster.set(slot, battlePokemon.effectedPokemon) },
         createActor = ::PlayerBattleActor,
     )

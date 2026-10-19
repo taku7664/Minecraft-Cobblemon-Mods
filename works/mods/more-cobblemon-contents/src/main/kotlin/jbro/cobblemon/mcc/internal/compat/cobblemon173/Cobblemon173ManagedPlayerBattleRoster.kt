@@ -12,7 +12,7 @@ internal object Cobblemon173ManagedPlayerBattleRoster {
     fun attach(playerId: UUID, team: List<BattlePokemon>): PlayerPartyStore = attach(
         playerId = playerId,
         team = team,
-        createRoster = ::PlayerPartyStore,
+        createRoster = ::Cobblemon173ManagedBattlePartyStore,
         setMember = { roster, slot, battlePokemon ->
             roster.set(slot, battlePokemon.effectedPokemon)
         },

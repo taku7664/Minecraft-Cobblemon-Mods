@@ -1,7 +1,11 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173ManagedPlayerBattleRosterTest {
@@ -50,5 +54,16 @@ class Cobblemon173ManagedPlayerBattleRosterTest {
         assertEquals(listOf("roster", "slot-0-lead", "slot-1-second", "actor"), events)
         assertEquals("roster-$playerId", participant.roster)
         assertEquals("actor-$playerId-lead, second", participant.actor)
+    }
+
+    @Test
+    fun `every managed roster is the store that keeps battle copies from counting as gained`() {
+        // A plain PlayerPartyStore makes Cobblemon treat Factory rentals as the player's own: Pokedex and TM unlocks.
+        val dir = Path.of("src/main/kotlin/jbro/cobblemon/mcc/internal/compat/cobblemon173")
+        for (file in listOf("Cobblemon173ManagedPlayerBattleRoster.kt", "Cobblemon173ManagedPlayerBattleParticipants.kt")) {
+            val source = Files.readString(dir.resolve(file))
+            assertTrue("createRoster = ::Cobblemon173ManagedBattlePartyStore" in source, file)
+            assertFalse("::PlayerPartyStore" in source, file)
+        }
     }
 }
