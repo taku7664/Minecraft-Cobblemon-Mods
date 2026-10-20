@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-10-20 21:15] 145179925 개발 클라 배포 (빌드·해시 확인, 실게임은 빡대리님)
+
+- `main` `145179925`(= `origin/main`)로 맞춘 F 복사본(배틀캠·리그 소스가 커밋과 같음을 대조)에서 `:better-cobblemon-battlecam:build`, `:more-cobblemon-contents-league-challenge:build`(EXIT 0, `unzip -t` 정상). 배틀캠 JAR은 CLASSIC 40°·1.1배로 캡처한 빌드 그대로다(remapJar UP-TO-DATE). 안정화(`7ad41df95`)도 들어 있다.
+- 개발 클라 `better-cobblemon-battlecam-0.3.0.jar`(SHA-256 앞 16자리 e836c0c2fbe906ce)와 리그 JAR(b31a59fdbe2437a8, 하네스만 바뀜)을 넣었고 해시가 빌드본과 같다. 백업 `develop-product/deployment-backups/20261020-battlecam-classic`. 배치 때 게임은 꺼져 있었다. 개발 서버에는 배틀캠이 없고, 리그 서버 JAR은 하네스(클라 개발 전용)만 달라 바꾸지 않았다.
+- PPakemon 프로필·운영·VPS·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-20 21:05] 본가 시점 모드 CLASSIC (빌드·단위 테스트·개발 실행 캡처 확인, 구도는 빡대리님이 캡처 보며 정함)
 
 - **빡대리님 요청:** 본가처럼 앵글 하나로 고정해 내 포켓몬 뒤에서 보는 모드를 추가 모드로, 모드 설정에서도 고를 수 있게. 레퍼런스로 BDSP 행동 선택·기술 선택 화면을 직접 보내줬다(나는 처음에 글 자료만 검색했고 화면을 안 찾았다).
