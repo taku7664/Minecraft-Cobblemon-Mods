@@ -1,5 +1,12 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-20 18:05] 4bd69a7f 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- `main` `4bd69a7f`(= `origin/main`)로 맞춘 F 복사본(4개 모듈 소스가 커밋과 같음을 대조)에서 `:cobblemon-ui`·`:cobblemon-npc`·`:more-cobblemon-contents`·`:more-cobblemon-contents-league-challenge` `build -x test -x unitTest`. 첫 실행은 MCC `remapJar`가 원인 표시 없이 실패했고, 다시 돌리니 성공했다(원인 미확인). 마지막 한 번의 4개 모듈 빌드 EXIT 0, JAR 4개 `unzip -t` 정상.
+- NPC·MCC에 내장된 cobblemon-ui가 단독 JAR과 같다(SHA-256 앞 16자리 6c208bf81a3a0107).
+- 개발 클라 4개(cobblemon-ui, NPC, MCC, 리그), 개발 서버 3개(cobblemon-ui 제외)를 넣었고 해시가 빌드본과 같다. 백업 `develop-product/deployment-backups/20261020-transcript-dialogue`(7개). 배포 때 게임·개발 서버는 꺼져 있었고 켜지 않았다.
+- PPakemon 프로필·운영 서버·VPS·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-20 17:40] 전투 로그(Shift)에 트레이너 대사와 얼굴 (컴파일·단위 테스트·개발 실행 캡처 확인, 빌드 배치 안 함)
 
 - **빡대리님 요청:** 전투 로그에 트레이너 대사도 넣고 직접 화면으로 확인. 이어서 "초상화도 포켓몬처럼 나오는지" → 포켓몬 줄과 같은 배치로 얼굴을 넣었다. 3D 얼굴이 필수는 아니지만 보기 괜찮다고 해서 그대로 뒀다.
