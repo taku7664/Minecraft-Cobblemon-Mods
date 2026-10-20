@@ -1,5 +1,12 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-20 19:45] 7d80377c 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- `main` `7d80377c`(= `origin/main`, 그 사이 MCC Better AI 커밋 2개 포함)로 맞춘 F 복사본(5개 모듈 소스가 커밋과 같음을 대조)에서 cobblemon-ui·NPC·MCC·리그·jbro-policy `build -x test -x unitTest`. 처음엔 MCC·리그 `remapJar`가 동시에 돌다 "Failed to create service instance"로 실패했고(10-20 첫 배포 때와 같은 단계), `--max-workers=1`로 다시 돌려 EXIT 0을 받았다. JAR 5개 `unzip -t` 정상. 공용 출력 폴더의 Kotlin 증분 캐시에 다른 세션의 C 경로가 남아 있어 전체 다시 컴파일로 넘어갔다(결과에는 영향 없음).
+- NPC·MCC 내장 cobblemon-ui가 단독 JAR과 같다(SHA-256 앞 16자리 1a8ae7efa18bf9a8), `DialogueAdvance` 포함.
+- 개발 클라 5개(cobblemon-ui, NPC, MCC, 리그, jbro-policy), 개발 서버 4개(cobblemon-ui 제외)를 넣었고 해시가 빌드본과 같다. 백업 `develop-product/deployment-backups/20261020-dialogue-advance`(9개). 개발 서버 `openrouter.json` `recordDecisions: true` 확인. 배포 때 게임·개발 서버는 꺼져 있었고 켜지 않았다.
+- PPakemon 프로필·운영 서버·VPS·deploy-product에는 반영하지 않았다.
+
 ## [2026-10-20 19:20] 대화창 진행을 공용 부품 하나로, 글자 속도 80 통일 (컴파일·단위 테스트·장면 클릭 캡처 확인)
 
 - **빡대리님 지적:** NPC(트레이너) 대화는 왜 클릭으로 안 넘어가냐, 같은 대화창인데 왜 제각각이냐. 확인해 보니 10-16에 그리기(`UiDialogueStyle`)만 공용으로 묶고, 글자 내보내기·넘기기 입력은 화면마다 복사해 짜 두었다. 속도는 전투·장면 75, NPC·피츄 45. 좌클릭은 장면 대사만 안 됐고, 꾹 눌러 빨리 넘기기는 전투 메시지에만 있었다(10-18 "스킵 2배"도 전투만 바뀐 이유). → "제대로 나눠", "80으로 통일".
