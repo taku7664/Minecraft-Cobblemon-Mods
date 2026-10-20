@@ -476,11 +476,7 @@ internal class LocalTacticalBrain(
         // Each Pokemon's worth from the matchup table, for the tiers that read it: the native search, the ranking and the
         // rules price material and knockouts with it on this thread (LocalPokemonWorth).
         val worthReading = if (!rulesApply) null else baseRuleScores?.let {
-            // Each foe's predicted switch out: a knockout put off is lost when it leaves (the urgency's floor).
-            val leaves = readOpponentIntents.associate { intent ->
-                intent.pokemonId to intent.options.filter { option -> option.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH }.sumOf { option -> option.probability }
-            }
-            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(difficultyContext.state, it, tuning.livingPokemonValue, leaves)
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(difficultyContext.state, it, tuning.livingPokemonValue)
         }
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(worthReading?.worths, worthReading?.denials)
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
