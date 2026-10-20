@@ -77,6 +77,14 @@ internal object LocalKnockoutWorth {
         val fallsAnyway: Boolean = false,
     )
 
+    /**
+     * **하드코딩.** The floor of a knockout's urgency for a foe that neither threatens the one in front nor heals. No
+     * reading grounds it: its only measurable share, the chance the foe leaves before a later knockout (its predicted
+     * switch), was tried in its place (2caf6ac5c) and broke the user's decision of 2026-10-13 (a Lucario knocks a
+     * Furfrou out rather than Swords Dancing, switch predicted at 12.5%; LocalQuickDeciderTest); the rest of a knockout's
+     * worth now (a turn's tempo) has no data to price it. 0 never finishes a harmless foe, 1 reads it as urgent as one
+     * that knocks out. Kept at the value that decision's scene holds, until a grounded reading replaces it.
+     */
     const val MINIMUM_URGENCY = 0.25
 
     fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {

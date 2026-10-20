@@ -513,6 +513,12 @@ internal object LocalTacticalScorer {
         val healthAdvantage = targetPostEntryHp?.let {
             ((it - targetRisk).coerceAtLeast(0.0) - (activeHp - currentRisk).coerceAtLeast(0.0)).coerceAtLeast(0.0)
         } ?: 0.0
+        // Advanced and Boss price the leaving Pokemon's fall on the switch in LocalSwitchRules (the chance it falls first
+        // times its worth, `kept`): the flat bonus for a Pokemon at critical HP would count the same rescue twice. A 7%
+        // Overqwil that moved first and knocked its foe out read its switch at 92 over the Aqua Jet (self-play, 2026-10-21).
+        // The lower tiers have no such rule and keep it.
+        val criticalBonus = if (profile.difficulty.tier == jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.ADVANCED ||
+            profile.difficulty.tier == jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.BOSS) 0.0 else tuning.criticalSwitchBonus
         val hasPublicPositioningGain = target != null && (
             riskImprovement > 0.0 ||
                 healthAdvantage >= MEANINGFUL_SWITCH_HEALTH_ADVANTAGE ||
@@ -520,7 +526,7 @@ internal object LocalTacticalScorer {
             )
         val baseScore = if (target == null) {
             -tuning.switchTempoPenalty +
-                (if (activeHp <= CRITICAL_HP) tuning.criticalSwitchBonus else 0.0)
+                (if (activeHp <= CRITICAL_HP) criticalBonus else 0.0)
         } else {
             -tuning.switchTempoPenalty +
                 healthAdvantage * tuning.switchHealthAdvantageWeight +
@@ -535,7 +541,7 @@ internal object LocalTacticalScorer {
                         0.0
                     }
                     ) +
-                (if (activeHp <= CRITICAL_HP) tuning.criticalSwitchBonus else 0.0) -
+                (if (activeHp <= CRITICAL_HP) criticalBonus else 0.0) -
                 riskWorsening * tuning.switchExposureWorseningWeight -
                 targetRisk * tuning.residualExposureWeight
         }
