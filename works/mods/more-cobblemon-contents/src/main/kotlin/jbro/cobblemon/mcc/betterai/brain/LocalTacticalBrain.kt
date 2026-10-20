@@ -867,6 +867,23 @@ internal class LocalTacticalBrain(
                     (jbro.cobblemon.mcc.betterai.matchup.LocalHealRace.adjustments(alone, rulesContext, scores, tuning)[part.actionId] ?: 0.0)
             }
         val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            // A single move's value as the chance to act weighs it: an attack's hit (its knockout credit reads that chance
+            // already, LocalPokemonWorth.knockoutScore, and the mechanic's cost is paid either way), a status move's total
+            // with its rules' credit. Every such move gives up the best of them at its own chance not to act (below).
+            val singleActingValues = searchedRanked.mapNotNull { rank ->
+                val candidate = rank.outcome.candidate
+                when {
+                    candidate.kind == BattleActionKind.USE_MOVE &&
+                        candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS } -> {
+                        val cost = if (candidate.mechanic == null || !tuning.mechanicReserve) 0.0
+                            else jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(candidate, difficultyContext, decidingProfile)
+                        candidate.actionId to (rank.outcome.tacticalUtility + cost - rank.outcome.knockoutUtility.coerceAtLeast(0.0)).coerceAtLeast(0.0)
+                    }
+                    actingStatus(candidate) -> candidate.actionId to (rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)).coerceAtLeast(0.0)
+                    else -> null
+                }
+            }.toMap()
+            val singleActingBest = singleActingValues.values.maxOrNull() ?: 0.0
             searchedRanked.mapNotNull { rank ->
                 val candidate = rank.outcome.candidate
                 if (candidate.kind == BattleActionKind.COMPOSITE) {
@@ -909,23 +926,16 @@ internal class LocalTacticalBrain(
                     }
                     return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
                 }
-                // An attack's hit at the chance its user moves before the foe knocks it out; its knockout credit reads that
-                // already (LocalPokemonWorth.knockoutScore), and the mechanic's cost is paid either way. Read whole, a 26% Heatran
-                // a faster foe knocked out first ranked its Earth Power (77.6) over every switch (league run, 2026-10-19).
-                if (candidate.kind == BattleActionKind.USE_MOVE &&
-                    candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }) {
-                    val cost = if (candidate.mechanic == null || !tuning.mechanicReserve) 0.0
-                        else jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(candidate, difficultyContext, decidingProfile)
-                    val hit = (rank.outcome.tacticalUtility + cost - rank.outcome.knockoutUtility.coerceAtLeast(0.0)).coerceAtLeast(0.0)
-                    if (hit <= 0.0) return@mapNotNull null
-                    val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
-                    return@mapNotNull if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * hit
-                }
-                if (!actingStatus(candidate)) return@mapNotNull null
-                val total = rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)
-                if (total <= 0.0) return@mapNotNull null
+                // Singles: each move gives up the best move's value times its own chance not to act, (acts - 1) * best,
+                // instead of its own value times that chance. The best move still reads best * acts against a switch, a move
+                // that goes first (priority) keeps its edge, and moves with the same chance keep their order: scaled, a 55%
+                // Drapion's Poison Jab, Knock Off and Swords Dance all read 0 at a chance of 0 and the draw took Swords Dance
+                // (dev server, 2026-10-20). Read whole, a 26% Heatran a faster foe knocked out first ranked its Earth Power
+                // (77.6) over every switch (league run, 2026-10-19).
+                // A move worth nothing itself (a raise its gate closed) gives the same up, or it ties the best one at 0.
+                if (candidate.actionId !in singleActingValues || singleActingBest <= 0.0) return@mapNotNull null
                 val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
-                if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * total
+                if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * singleActingBest
             }.toMap()
         }.orEmpty()
         if (dynamaxGuardReading.targetFallbacks > 0) {
