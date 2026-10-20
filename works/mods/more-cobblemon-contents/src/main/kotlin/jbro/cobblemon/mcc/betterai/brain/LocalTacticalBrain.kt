@@ -1032,10 +1032,30 @@ internal class LocalTacticalBrain(
                     decisionTier = if (rank.decisionTier == LocalBattleActionPolicy.TIER_SECURE_KNOCKOUT && change < 0.0) LocalBattleActionPolicy.TIER_ORDINARY else rank.decisionTier)
             } ?: rank
         })
+        // Singles: a voluntary switch is worth what the exchange gains over staying (LocalSwitchRules, signed; the clear gains
+        // it credits itself), in the same score units as a move, plus what the battle so far and the trainer say of switching
+        // (LocalTacticalScorer.simulationBlindAdjustment: repeated switches, personality, plan, strategy). A move's own value
+        // (a knockout, the hit it stops) is the move's, never added to the switch: the ranking compares the two (user,
+        // 2026-10-21). The base's public-position terms (health and exposure weights, entry, knockout-threat and initiative
+        // bonuses) count the same exchange again by unfounded weights: a full-HP Barraskewda was switched for a Pelipper the
+        // Rillaboom in front beat (a win chance of 0 after entry) at 308 against its best move's 23 (self-play, 2026-10-21).
+        // Doubles keep the base for now.
+        val switchAnchorAdjustments: Map<String, Double> = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE ||
+            switchJudgement.voluntarySlots.isEmpty()) emptyMap() else run {
+            val bases = searchedRanked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+            difficultyContext.candidates.filter { it.kind == BattleActionKind.SWITCH && it.actionId in switchJudgement.voluntarySlots }.mapNotNull { candidate ->
+                val base = bases[candidate.actionId] ?: return@mapNotNull null
+                val switching = LocalTacticalScorer.simulationBlindAdjustment(candidate, difficultyContext, strategy, decidingProfile, tuning, oneTurn = false)
+                candidate.actionId to switching + (switchJudgement.uncreditedGains[candidate.actionId] ?: 0.0) - base
+            }.toMap()
+        }
+        val anchored = if (switchAnchorAdjustments.isEmpty()) ruleAdjusted else LocalBattleActionPolicy.sort(ruleAdjusted.map { rank ->
+            switchAnchorAdjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
+        })
         // Each kind of action's global weight (singles): a status move's value is shrunk toward worse by
         // statusMoveWeight, so it has to beat an attack by more before it is chosen.
-        val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) ruleAdjusted
-            else LocalActionKindWeights.apply(ruleAdjusted, tuning)
+        val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) anchored
+            else LocalActionKindWeights.apply(anchored, tuning)
         // A certain flinch that goes first frees the turn: it is worth its hit plus the best other action, still there
         // next turn (LocalFreeTurnCredit). Read after every other value, since it is priced against them.
         val freeTurnAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalFreeTurnCredit.adjustments(
@@ -1117,7 +1137,7 @@ internal class LocalTacticalBrain(
                 tiers = ranked.associate { it.outcome.candidate.actionId to it.decisionTier },
                 nativeStatus = nativeStatusAdjustments,
                 nativeStatusStatus = statusPricing?.status,
-                rules = mapOf("pendingPartner" to pendingPartnerAdjustments, "switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
+                rules = mapOf("pendingPartner" to pendingPartnerAdjustments, "switch" to switchJudgement.adjustments, "switchAnchor" to switchAnchorAdjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "pendingAttack" to pendingAttackAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,

@@ -520,11 +520,6 @@ internal object LocalTacticalScorer {
         val rulesTier = profile.difficulty.tier == jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.ADVANCED ||
             profile.difficulty.tier == jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.BOSS
         val criticalBonus = if (rulesTier) 0.0 else tuning.criticalSwitchBonus
-        // The same tiers read both sides' HP after this turn's hit in the exchange (LocalSwitchRules: the incoming
-        // Pokemon's matchup after entry against the one staying), so the health weight counts it twice. Self-play, boss
-        // against boss with one side's weight at 0: 371 wins to 326 over 700 games, 52 team pairs won from both sides
-        // to 30 (2026-10-21).
-        val healthWeight = if (rulesTier) 0.0 else tuning.switchHealthAdvantageWeight
         val hasPublicPositioningGain = target != null && (
             riskImprovement > 0.0 ||
                 healthAdvantage >= MEANINGFUL_SWITCH_HEALTH_ADVANTAGE ||
@@ -535,7 +530,6 @@ internal object LocalTacticalScorer {
                 (if (activeHp <= CRITICAL_HP) criticalBonus else 0.0)
         } else {
             -tuning.switchTempoPenalty +
-                healthAdvantage * healthWeight +
                 riskImprovement * tuning.switchExposureImprovementWeight +
                 (
                     if (active != null &&

@@ -37,6 +37,15 @@ internal object LocalKnockoutWorth {
     /** Each living Pokemon's worth in the units of [flat], the value of one average Pokemon of its side. */
     fun worths(state: BattleStateView, scores: MatchupScores, flat: Double): Map<UUID, Double> = read(state, scores, flat).worths
 
+    /**
+     * What each living Pokemon still does, in board units, before any per-side scaling: its fight's share of wins
+     * (current HP and stages) and its next hit at its chance to land it. A side that loses every exchange has little of it,
+     * however its worth shares the side's piece out: what a switch keeps by sparing it ([LocalSwitchRules]). Read as the
+     * shared worth, a Meganium, a Veluza and a Mabosstiff that all lost to a Regice switched into each other in turn, each
+     * spared one counted as a whole Pokemon kept (self-play, 2026-10-21).
+     */
+    fun standings(state: BattleStateView, scores: MatchupScores): Map<UUID, Double> = read(state, scores, 1.0).standings
+
     data class Reading(
         /** Each living Pokemon's worth, in the units of the flat value asked for. */
         val worths: Map<UUID, Double>,
@@ -46,6 +55,8 @@ internal object LocalKnockoutWorth {
          * the attacker outspeeds is worth little to keep, but left standing it Explodes on whatever is in front.
          */
         val denials: Map<UUID, Denial>,
+        /** Each living Pokemon's fight and next action in board units, unscaled ([standings]). */
+        val standings: Map<UUID, Double> = emptyMap(),
     )
 
     /** A hit knocking its user out this turn stops: its value in board units and the priority it would come at. */
@@ -179,7 +190,8 @@ internal object LocalKnockoutWorth {
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })
-            .mapValues { (_, value) -> flat * value }, denials)
+            .mapValues { (_, value) -> flat * value }, denials,
+            fight.keys.associateWith { (fight.getValue(it) * ONE_POKEMON) + action.getValue(it) })
     }
 
     private fun List<Double>.averageOrZero() = if (isEmpty()) 0.0 else average()

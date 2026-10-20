@@ -464,8 +464,6 @@ internal data class LocalDecisionTuning(
     // ---- switching ------------------------------------------------------------------------------
     /** Cost of spending a turn switching instead of acting. */
     val switchTempoPenalty: Double = 20.0,
-    /** Weight on the incoming Pokemon's HP advantage over the outgoing one. */
-    val switchHealthAdvantageWeight: Double = 40.0,
     /**
      * Weight on reduced incoming damage per turn.
      *
