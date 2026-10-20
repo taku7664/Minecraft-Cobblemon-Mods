@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.PublicIds
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import java.util.UUID
 
 /**
@@ -161,6 +162,22 @@ internal object LocalSelfDropRisk {
             val now = score(after, afterScores, facer) ?: return 0.0
             return was - now
         }
+        // The same, with the user at the HP a hit this turn leaves it: the drop is felt from there on. Read at the HP it
+        // had before the hit, a +3 Conkeldurr the faster Haxorus's Outrage would leave at a fifth paid 210 for a drop that
+        // a fifth of a Conkeldurr loses to anyway (self-play, 2026-10-21).
+        val hitScores = HashMap<Pair<Double, UUID>, Pair<Double?, Double?>>()
+        fun lostAt(facer: BattlePokemonStateView, hp: Double): Double {
+            val user = before.pokemon.firstOrNull { it.battlePokemonId == userId } ?: return 0.0
+            if (hp >= user.hpFraction) return lost(facer)
+            if (hp <= 0.0) return 0.0
+            fun hurt(state: BattleStateView) = state.derive(pokemon = state.pokemon.map {
+                if (it.battlePokemonId == userId) it.copyState(hpFraction = hp) else it
+            })
+            val (was, now) = hitScores.getOrPut(hp to facer.battlePokemonId) {
+                score(hurt(before), HashMap(), facer) to score(hurt(after), HashMap(), facer)
+            }
+            return (was ?: return 0.0) - (now ?: return 0.0)
+        }
         // After a knockout the opponent sends in its best answer to the weakened user, from the bench without the
         // Pokemon that just fell.
         fun replacement(fallen: BattlePokemonStateView) = bench.filter { it.battlePokemonId != fallen.battlePokemonId }
@@ -191,15 +208,21 @@ internal object LocalSelfDropRisk {
             val foeActs = LocalKnockoutWorth.actsThisTurn(foe, board.state)
             val beforeHits = threats(board, before, userId, foe, cache)
             val afterHits = threats(board, after, userId, foe, cache).associateBy { it.score.moveId }
-            class Threat(val first: Double, val fallsBefore: Double, val fallsAfter: Double)
+            fun taken(score: MoveMatchupScore) = score.accuracy * (score.minimumDamageFraction + score.maximumDamageFraction) / 2.0
+            class Threat(val first: Double, val fallsBefore: Double, val fallsAfter: Double, val takenBefore: Double, val takenAfter: Double)
             val threat = beforeHits.map { hit ->
                 val lowered = afterHits[hit.score.moveId]?.score ?: hit.score
                 Threat(LocalPublicTurnOrder.actsFirstProbability(before, BattleSide.ALLY, move, BattleSide.OPPONENT, hit.action) ?: 0.5,
-                    foeActs * hit.score.knockoutChanceWithin(1), foeActs * lowered.knockoutChanceWithin(1))
+                    foeActs * hit.score.knockoutChanceWithin(1), foeActs * lowered.knockoutChanceWithin(1),
+                    foeActs * taken(hit.score), foeActs * taken(lowered))
             }.maxByOrNull { it.first * (1.0 - knockout) * it.fallsAfter + (1.0 - it.first) * it.fallsBefore }
-                ?: Threat(0.5, 0.0, 0.0)
-            chance * (threat.first * (afterKnockout + (1.0 - knockout) * (1.0 - threat.fallsAfter) * lost(receiver)) +
-                (1.0 - threat.first) * (1.0 - threat.fallsBefore) * (afterKnockout + (1.0 - knockout) * lost(receiver)))
+                ?: Threat(0.5, 0.0, 0.0, 0.0, 0.0)
+            val hp = before.pokemon.firstOrNull { it.battlePokemonId == userId }?.hpFraction ?: 0.0
+            // Moving first, a knockout leaves the user whole and a foe left standing hits the lowered user; moving second,
+            // the foe's hit lands first either way.
+            val afterKnockoutHit = if (next == null) 0.0 else knockout * lostAt(next, hp - threat.takenBefore)
+            chance * (threat.first * (afterKnockout + (1.0 - knockout) * (1.0 - threat.fallsAfter) * lostAt(receiver, hp - threat.takenAfter)) +
+                (1.0 - threat.first) * (1.0 - threat.fallsBefore) * (afterKnockoutHit + (1.0 - knockout) * lostAt(receiver, hp - threat.takenBefore)))
         }
     }
 
