@@ -145,6 +145,10 @@ internal object LocalPublicPositionFacts {
         defender: BattlePokemonStateView,
     ): Double? = LocalLookaheadStateEvaluator.attackPressure(
         state, BattleSide.OPPONENT, context,
+        // The opponent's moves as the matchup table reads them: the revealed ones and the attacks expected of it (a set read,
+        // its learnset's coverage), no status move named. Read from the revealed ones alone, a Kingdra came in for a 4%
+        // Whimsicott at an exposure of 9% and took a known Dazzling Gleam for 81% (hand-played doubles, 2026-10-20).
+        includeMoveHypotheses = true,
         targetPokemonId = defender.battlePokemonId.takeIf { defender.side == BattleSide.ALLY },
     ).takeIf { it > 0.0 }
 
