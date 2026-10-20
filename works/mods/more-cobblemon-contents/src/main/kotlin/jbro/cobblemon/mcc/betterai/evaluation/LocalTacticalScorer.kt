@@ -824,7 +824,7 @@ internal object LocalTacticalScorer {
 
     private val CONTACT_SAFE_ABILITIES = setOf("magicguard", "longreach")
 
-    private fun publicAllyCollateral(
+    internal fun publicAllyCollateral(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,

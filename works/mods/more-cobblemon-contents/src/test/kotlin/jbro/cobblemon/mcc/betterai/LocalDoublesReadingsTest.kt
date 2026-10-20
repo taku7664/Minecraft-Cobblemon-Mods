@@ -57,6 +57,29 @@ class LocalDoublesReadingsTest {
     }
 
     @Test
+    fun `a mid-turn replacement pays the partner's spread move still to come`() {
+        // Flygon's U-turn asks for a replacement while Garchomp's Earthquake is still to come: Duraludon takes it (Steel),
+        // Dragonite does not (Flying).
+        val pair = load("raihan-earthquake-uturn-pair-doubles").context.candidates.first { it.actionId == "move 1, move 4 1" }
+        val snapshot = load("raihan-uturn-replacement-before-earthquake-doubles")
+        val context = snapshot.context.copy(deadlineEpochMillis = System.currentTimeMillis() + 60_000L)
+        var stages: LocalDecisionStages? = null
+        val brain = LocalTacticalBrain(nativeInitialDecision = { _, _, _, _, _, _ -> error("the native search must not run") },
+            searchless = true, stageTrace = { stages = it })
+        val session = brain.openSession(BattleBrainOpenContext(battleId = context.state.battleId, format = context.state.format,
+            trainerProfile = BattleTrainerProfile.boss()))
+        brain.recordPair(session, context.state.turn, pair)
+        brain.decide(session, context).toCompletableFuture().get()
+        val read = requireNotNull(stages)
+        fun into(species: String) = context.candidates.first { c -> parts(context, c.actionId).any { part ->
+            part.switchPokemonId?.let { id -> context.state.pokemon.first { it.battlePokemonId == id }.speciesId.endsWith(species) } == true } }.actionId
+        val pending = read.rules["pendingPartner"].orEmpty()
+        assertTrue((pending[into("duraludon")] ?: 0.0) < -50.0, "$pending")
+        assertEquals(0.0, pending[into("dragonite")] ?: 0.0, 1e-9)
+        assertTrue((read.refined[into("dragonite")] ?: 0.0) > (read.refined[into("duraludon")] ?: 0.0), "${read.refined}")
+    }
+
+    @Test
     fun `a Trick Room part takes the room's value in doubles`() {
         val (context, stages) = decide("trickroom-lead-doubles")
         val room = stages.rules["trickRoom"].orEmpty()

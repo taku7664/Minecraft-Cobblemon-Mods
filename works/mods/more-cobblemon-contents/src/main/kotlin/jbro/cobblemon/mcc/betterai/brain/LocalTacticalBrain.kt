@@ -823,12 +823,15 @@ internal class LocalTacticalBrain(
             }
             if (loss > 0.0) outcome.candidate.actionId to -loss else null
         }.toMap()
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
+        // A mid-turn replacement takes the partner's spread move still to come this turn (LocalPendingPartnerHit).
+        val pendingPartnerAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalPendingPartnerHit.adjustments(
+            difficultyContext.candidates, difficultyContext, active?.lastPair?.takeIf { it.first == difficultyContext.state.turn }?.second, tuning)
+        val ruleAdjustments = (pendingPartnerAdjustments.keys + switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
             knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
-            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
+            (pendingPartnerAdjustments[it] ?: 0.0) + (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
@@ -1037,7 +1040,7 @@ internal class LocalTacticalBrain(
                 tiers = ranked.associate { it.outcome.candidate.actionId to it.decisionTier },
                 nativeStatus = nativeStatusAdjustments,
                 nativeStatusStatus = statusPricing?.status,
-                rules = mapOf("switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
+                rules = mapOf("pendingPartner" to pendingPartnerAdjustments, "switch" to switchJudgement.adjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "pendingAttack" to pendingAttackAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
@@ -1062,6 +1065,8 @@ internal class LocalTacticalBrain(
         }
         decisionTrace?.resolved("legacy_lookahead", drawRanked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
+        selected.outcome.candidate.takeIf { pair -> pair.kind == BattleActionKind.COMPOSITE && pair.componentActions.any { it.kind == BattleActionKind.USE_MOVE } }
+            ?.let { active?.lastPair = difficultyContext.state.turn to it }
         // Worlds to replay this turn on at the next decision, one per ability the opposing Pokemon in front may have.
         val worldsStarted = System.nanoTime()
         if (searchless && active != null) active.abilityWorlds = try {
@@ -1252,6 +1257,13 @@ internal class LocalTacticalBrain(
         val departures = java.util.concurrent.ConcurrentHashMap<UUID, jbro.cobblemon.mcc.betterai.search.LocalAbilityPosterior.Departure>()
         /** Diagnostics for the decision's tags: what the last replay took and ruled out. */
         @Volatile var lastAbilityReplay: String? = null
+        /** The pair chosen last, with its turn: a replacement asked for mid-turn reads the partner's move still to come. */
+        @Volatile var lastPair: Pair<Int, BattleActionCandidate>? = null
+    }
+
+    /** Records [pair] as [session]'s choice on [turn], as a decision would (tests replay one turn's requests). */
+    internal fun recordPair(session: BattleBrainSession, turn: Int, pair: BattleActionCandidate) {
+        (session as? Session)?.lastPair = turn to pair
     }
 
     /**
