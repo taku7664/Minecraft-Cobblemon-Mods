@@ -67,6 +67,9 @@ object BattleShowdownHeldEffects {
         return StatusResidual(share, body.contains("stage++"))
     }
 
+    /** The ability keeps its holder in against a forced switch (Suction Cups, Guard Dog): it answers onDragOut. */
+    fun resistsForcedSwitch(abilityId: String?): Boolean = abilityId?.let { abilities[canonical(it)] }?.containsKey("onDragOut") == true
+
     /** The ability takes no damage but from moves (Magic Guard): its onDamage refuses every other effect. */
     fun blocksIndirectDamage(abilityId: String?): Boolean =
         abilityId?.let { abilities[canonical(it)] }?.get("onDamage")?.let { MOVE_ONLY_DAMAGE.containsMatchIn(it) && it.contains("return false") } == true

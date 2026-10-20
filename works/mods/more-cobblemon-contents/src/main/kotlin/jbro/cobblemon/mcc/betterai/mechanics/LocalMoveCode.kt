@@ -42,6 +42,11 @@ internal object LocalMoveCode {
         BattleShowdownMoveEffects.flagValues(BattleDeclarativeMoveEffects.EXPOSES_USER_FLAG)
     }
 
+    /** Every volatile any move puts on its user that keeps it in against a forced switch (Ingrain's). */
+    val anchoringVolatiles: Set<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        BattleShowdownMoveEffects.flagValues(BattleDeclarativeMoveEffects.ANCHORS_USER_FLAG)
+    }
+
     fun setsTerrain(moveId: String?): Boolean = BattleDeclarativeMoveEffects.SETS_TERRAIN_FLAG in flags(moveId)
 
     /** The Max Move a Dynamaxed Pokemon's status move turns into (Max Guard), or null when the bundle cannot be read. */

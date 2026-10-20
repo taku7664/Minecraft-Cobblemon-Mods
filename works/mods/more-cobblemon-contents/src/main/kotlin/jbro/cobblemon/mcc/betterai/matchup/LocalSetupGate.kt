@@ -207,7 +207,7 @@ internal object LocalSetupGate {
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
     ): Double = facing.fold(1.0) { holds, foe ->
-        if (!resets(foe, context)) return@fold holds
+        if (!resets(foe, user, context)) return@fold holds
         val position = LocalMatchupPosition.face(context, user, foe, cache) ?: return@fold holds
         val raised = position.copy(state = LocalMatchupScoreCalculator.setupState(position.state, user.battlePokemonId, stages, 1))
         val pair = LocalMatchupScoreCalculator.pairMatchup(raised, user.battlePokemonId, foe.battlePokemonId,
@@ -220,10 +220,23 @@ internal object LocalSetupGate {
         holds * keeps.coerceIn(0.0, 1.0)
     }
 
-    /** Whether [foe] holds a stage reset this side knows of: shown, or read from its set by this tier (no guess). */
-    private fun resets(foe: BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+    /**
+     * Whether [foe] holds a stage reset this side knows of: shown, or read from its set by this tier (no guess). A move
+     * that forces [user] out (Whirlwind, Roar) resets its stages as Haze does, unless it cannot be forced out (Dynamax,
+     * Suction Cups, Ingrain). Read for Haze alone, a Tyranitar's Dragon Dance kept +240 in front of a Skarmory that had
+     * Whirlwinded its partner out (hand-played hazards concept, 2026-10-20).
+     */
+    private fun resets(foe: BattlePokemonStateView, user: BattlePokemonStateView, context: BattleDecisionContext): Boolean {
+        // Held in, read from the ability's and the moves' code (onDragOut), no name listed.
+        val held = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(user) ||
+            jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.resistsForcedSwitch(
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(context.state, user)) ||
+            user.knownVolatileEffectIds.any { PublicIds.canonical(it) in jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.anchoringVolatiles }
         fun clears(details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView?) =
-            details?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.CLEARS_STAT_STAGES }
+            details?.effects?.effects.orEmpty().any { effect ->
+                effect.kind == BattleMoveEffectKind.CLEARS_STAT_STAGES ||
+                    !held && effect.kind == BattleMoveEffectKind.SWITCH_TARGET && effect.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET
+            }
         val shown = context.publicActionCatalog.forPokemon(foe.battlePokemonId).any { clears(it.details) }
         return shown || context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty().any {
             it.source == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource.DIFFICULTY_SET_READ && clears(it.details)

@@ -71,4 +71,12 @@ class ShowdownCodeReadingsTest {
         assertNull(BattleShowdownHeldEffects.statusHealShare("poisonheal", "brn"))
         assertNull(BattleShowdownHeldEffects.statusHealShare("magicguard", "psn"))
     }
+
+    @Test
+    fun `ability and move code give what keeps a Pokemon in against a forced switch`() {
+        assertTrue(BattleShowdownHeldEffects.resistsForcedSwitch("suctioncups"))
+        assertTrue(BattleShowdownHeldEffects.resistsForcedSwitch("guarddog"))
+        assertFalse(BattleShowdownHeldEffects.resistsForcedSwitch("intimidate"))
+        assertEquals(setOf("ingrain"), LocalMoveCode.anchoringVolatiles)
+    }
 }

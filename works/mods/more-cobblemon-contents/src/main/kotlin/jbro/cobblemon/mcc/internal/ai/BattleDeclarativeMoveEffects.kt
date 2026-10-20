@@ -243,6 +243,10 @@ object BattleDeclarativeMoveEffects {
                     val condition = properties["condition"].orEmpty()
                     if (condition.contains("onSourceModifyDamage") && condition.contains("onAccuracy")) add("$EXPOSES_USER_FLAG${canonicalMoveId(volatile)}")
                 }
+                // A volatile on its user that keeps it in against a forced switch (Ingrain), named as the game names it.
+                if (moveTarget == "self") stringValue(properties["volatileStatus"])?.let { volatile ->
+                    if (properties["condition"]?.contains("onDragOut") == true) add("$ANCHORS_USER_FLAG${canonicalMoveId(volatile)}")
+                }
                 if (properties["terrain"] != null) add(SETS_TERRAIN_FLAG)
                 // The Max Move a Dynamaxed Pokemon's status move turns into (Max Guard).
                 if (booleanLike(properties["isMax"]) && booleanLike(properties["stallingMove"])) add(MAX_PROTECT_FLAG)
@@ -976,6 +980,8 @@ object BattleDeclarativeMoveEffects {
     /** Followed by the volatile's id, as `exposes_user:glaiverush`. */
     const val EXPOSES_USER_FLAG = "exposes_user:"
     const val SETS_TERRAIN_FLAG = "sets_terrain"
+    /** Followed by the volatile's id, as `anchors_user:ingrain`. */
+    const val ANCHORS_USER_FLAG = "anchors_user:"
     const val MAX_PROTECT_FLAG = "max_protect"
     private const val STALLING_MOVE_FLAG = "stalling_move"
     private const val STALL_COUNTER_ADVANCE_FLAG = "stall_counter_advance"
