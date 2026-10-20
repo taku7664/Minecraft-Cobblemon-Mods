@@ -23,7 +23,15 @@ import net.minecraft.network.chat.Component
 object SceneDialogue {
     private const val CHARACTERS_PER_SECOND = 75.0
 
-    private class Scene(val speaker: Component?, val lines: List<Component>, val onFinish: Runnable)
+    private class Scene(
+        val speaker: Component?,
+        val lines: List<Component>,
+        val portrait: net.minecraft.world.entity.LivingEntity?,
+        val onFinish: Runnable
+    ) {
+        /** Whether a battle's history holds these lines already. */
+        var recorded = false
+    }
 
     private var scene: Scene? = null
     private var index = 0
@@ -50,14 +58,21 @@ object SceneDialogue {
     /** Says [lines] as [speaker] (no name plate when null), replacing anything being said; [onFinish] runs after. */
     @JvmStatic
     @JvmOverloads
-    fun play(speaker: Component?, lines: List<Component>, onFinish: Runnable = Runnable {}) {
+    fun play(speaker: Component?, lines: List<Component>, onFinish: Runnable = Runnable {}) =
+        play(speaker, lines, null, onFinish)
+
+    /** Like [play], with [portrait] (the one speaking) as the face beside the lines in the battle history. */
+    @JvmStatic
+    fun play(speaker: Component?, lines: List<Component>, portrait: net.minecraft.world.entity.LivingEntity?, onFinish: Runnable) {
         val shown = lines.filter { it.string.isNotBlank() }
         stop()
         if (shown.isEmpty()) {
             onFinish.run()
             return
         }
-        scene = Scene(speaker, shown, onFinish)
+        scene = Scene(speaker, shown, portrait, onFinish)
+        // Words said during a battle stay in its history (the Shift transcript).
+        record()
         CinematicLetterbox.show(LETTERBOX_OWNER)
         startLine(0)
     }
@@ -75,6 +90,20 @@ object SceneDialogue {
 
     @JvmStatic
     fun isActive(): Boolean = scene != null
+
+    /**
+     * A battle has just opened. A trainer's opening lines can start before it does (during the versus intro): the
+     * lines still on screen then go into the new battle's history.
+     */
+    @JvmStatic
+    fun battleOpened() = record()
+
+    private fun record() {
+        val current = scene ?: return
+        if (current.recorded) return
+        current.recorded = jbro.cobblemon.ui.extended.ui.transcript.TranscriptSources
+            .captureDialogue(current.speaker, current.lines, current.portrait)
+    }
 
     /** Legacy typing-duration estimate kept for API compatibility; scenes themselves now wait for confirmation. */
     @JvmStatic

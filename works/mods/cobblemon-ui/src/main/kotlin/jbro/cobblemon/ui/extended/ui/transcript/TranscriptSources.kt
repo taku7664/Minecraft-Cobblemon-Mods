@@ -50,6 +50,23 @@ object TranscriptSources {
         BattleLog.processMessages(messages) { message -> resolve(message, known.values.toList()) }
     }
 
+    /**
+     * Keeps a trainer's [lines] in the history while a battle is open; false when none is. The speaker sits on the
+     * player's side only when it names an actor there; anyone else (the opposing trainer, a narrator) is on the
+     * opposing side.
+     */
+    fun captureDialogue(speaker: Component?, lines: List<Component>, portrait: net.minecraft.world.entity.LivingEntity? = null): Boolean {
+        val battle = CobblemonClient.battle ?: return false
+        if (lines.isEmpty()) return false
+        val playerId = Minecraft.getInstance().player?.uuid
+        val left = if (battle.side1.actors.any { it.uuid == playerId }) battle.side1 else battle.side2
+        val name = speaker?.string
+        val own = name != null && left.actors.any { it.displayName.string == name }
+        BattleLog.addDialogue(BattleLog.Dialogue(speaker?.copy(), own, lines.map { it.copy() },
+            portrait?.let { java.lang.ref.WeakReference(it) }))
+        return true
+    }
+
     /** Never infer ownership from translated possessive grammar or "the opposing" text. */
     fun resolve(message: Component, candidates: List<TranscriptSpeaker>): TranscriptSpeaker? {
         val content = battleContent(message) ?: return null

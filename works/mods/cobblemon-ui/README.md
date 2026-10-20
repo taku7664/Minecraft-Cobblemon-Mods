@@ -10,7 +10,7 @@ Cobblemon UI replaces battle menus, health displays, information screens, and ba
 - Type icons on the battle HUD cards and in the battle information screen, following Terastallization and mid-battle type changes.
 - A battle information screen with team previews, weather, terrain, side effects, stat changes, and revealed Pokémon information.
 - Move tooltips with power, accuracy, PP, type effectiveness, and critical-hit information. Max Move power follows the original move, including Fighting/Poison conversion, move-specific overrides, and fixed-power Gigantamax moves.
-- Battle dialogue and a scrollable, turn-organized history with Pokémon portraits.
+- Battle dialogue and a scrollable, turn-organized history with Pokémon portraits. Lines trainers say during the battle appear there too, with the trainer's face.
 - Champions and Galar battle themes, optional battle entry effects, and shared window styles and color palettes.
 - English and Korean interface translations.
 

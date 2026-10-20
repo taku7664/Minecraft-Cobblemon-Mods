@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-20 17:40] 장면 하네스: 확인 키로 대사 넘기기, 전투 로그 캡처 (개발 실행 확인)
+
+- 10-16부터 장면 대사는 확인 키로만 넘어간다. 하네스는 시간 종료를 기다리다 첫 대사에서 시간 초과로 멈췄다. 이제 장면을 찍은 뒤(24틱) 8틱마다 `KeyboardHandler`로 Z를 누른다.
+- `MCC_SCENE_CAPTURE_TRANSCRIPT=1`: 마지막 포켓몬 대사가 끝나면 왼쪽 Shift로 전투 로그를 열어 `trainer-scene-3-transcript.png`, Home으로 맨 위 `trainer-scene-3-transcript-top.png`를 찍고 닫는다. 로그 `SCENE CHECK transcript ... dialogue entries=`에 기록된 대사가 찍힌다. 결과는 cobblemon-ui `MEMORY.md`.
+- 실행: F 소스 복사본에서 `--project-cache-dir`·`f-build-dirs.init.gradle`(공용 F 출력), 클라 `-Xmx2g`, `--args="--width 1280 --height 720 --quickPlaySingleplayer scene-capture"`. `downloadAssets`가 두 번 다운로드 실패로 멈췄다가 다시 돌리니 받아졌다(일시 오류로 봄, 원인 미확인).
+
 ## [2026-10-20 01:30] 가라르 하드 엔트리를 신오 하드 규격으로 재구성 (단위·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 결정:** 하드 가라르가 약하다. 신오 하드에 맞춰라. 에이스·고밸류는 유지하고 배우르·레파르다스 같은 약한 포켓몬은 뺀다. 컵 라인은 준전설 하나, 단델은 초전설 하나(무한다이노), 호브는 자시안. 기술 배치도 제대로. 이어서 하드 컵 호브 고릴타를 거다이맥스로.

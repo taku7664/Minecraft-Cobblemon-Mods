@@ -1,5 +1,14 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-20 17:40] 전투 로그(Shift)에 트레이너 대사와 얼굴 (컴파일·단위 테스트·개발 실행 캡처 확인, 빌드 배치 안 함)
+
+- **빡대리님 요청:** 전투 로그에 트레이너 대사도 넣고 직접 화면으로 확인. 이어서 "초상화도 포켓몬처럼 나오는지" → 포켓몬 줄과 같은 배치로 얼굴을 넣었다. 3D 얼굴이 필수는 아니지만 보기 괜찮다고 해서 그대로 뒀다.
+- **기록:** 전투 중 대사는 모두 `SceneDialogue.play()`를 지나므로 거기서 `TranscriptSources.captureDialogue`로 `BattleLog`에 넣는다(`Dialogue`: 화자·편·줄·얼굴 엔티티 약한 참조, 키 `cobblemon_ui.transcript.dialogue`). 전투가 없으면 기록하지 않는다. 시작 대사는 VS 연출 중 전투 객체가 생기기 전에 떠서 처음엔 빠졌다. `BattleInitializeHandlerMixin` TAIL에서 `SceneDialogue.battleOpened()`를 불러, 전투가 열리는 순간 화면에 떠 있던 대사를 그 전투의 "전투 시작"에 넣는다. 그 전에 이미 닫은 대사는 들어가지 않는다.
+- **편:** 화자 이름이 내 편 액터 이름과 같을 때만 왼쪽, 나머지(상대 트레이너, 화자 없음)는 오른쪽. 턴은 대사가 나온 시점의 현재 턴이다. 다이맥스·메가 끼어들기 대사는 그 턴 메시지보다 먼저 와서 이전 턴 끝에 붙을 수 있다(캡처로 확인 안 함).
+- **얼굴:** `SceneDialogue.play(speaker, lines, portrait, onFinish)` 오버로드를 추가했다(기존 시그니처 유지). MCC `BattleSceneClient`가 카메라 대상 엔티티(말하는 트레이너)를 넘긴다. `TranscriptPortraits.draw(entity…)`가 `InventoryScreen.renderEntityInInventory`로 모델을 머리 쪽으로 확대해 그린다(스킨·포즈 그대로, 가운데 쪽으로 25도). 눈높이 점을 칸 위 27%에 둔 값은 캡처에서 맞춘 것이다(52%에선 눈 아래가 잘렸다). 엔티티가 사라졌거나 그리기 실패면 포켓몬과 같은 "?".
+- **배포 주의:** 새 MCC는 새 `SceneDialogue` 오버로드를 부른다. MCC JAR은 cobblemon-ui를 품지만, 클라이언트의 단독 cobblemon-ui JAR도 같이 바꿔야 한다.
+- **확인:** F 복사본(`F:/AI/builds/cobblemon-mods-main/src`)에서 cobblemon-ui·MCC·리그 컴파일, `:cobblemon-ui:unitTest` 299/299(새 `TranscriptPolicyTest.trainerDialogueStandsAloneBetweenActions` 포함). 리그 `runClient -PdevAllAddons` 장면 하네스(`MCC_SCENE_CAPTURE_TRANSCRIPT=1`, 리그 `MEMORY.md`)로 신시아전을 돌려 Claude가 캡처를 직접 봤다: "전투 시작" 아래 시작 대사, 1턴 쓰러짐 뒤 마지막 포켓몬 대사(2줄)가 오른쪽 말풍선에 이름 "난천"과 얼굴로 나온다. 로그 판정 `dialogue entries=2`, 세 장면 모두 재생. 갈무리 글꼴·한국어 번들 적용, GUI 배율 2, Champions 테마만 봤다. Galar 테마, 내 편 대사, 긴 대사 줄바꿈, 다이맥스 끼어들기, PvP·야생 트레이너 대사는 보지 않았다. JAR 빌드·배치는 하지 않았다.
+
 ## [2026-10-18 14:00] 기술 커서·핫바·VS·Z 누름 수정 개발 클라·서버 배치 (빌드·해시 확인, 실게임 미확인)
 
 - `main` `7e8cffd7`(cobblemon-ui 소스가 `origin/main`과 같음을 확인)에서 `:cobblemon-ui:build -x test -x unitTest`를 `F:/AI/builds/ui-deploy-7e8cffd7b`로 빌드했다(EXIT 0, `unzip -t` 정상, Kotlin in-process). SHA-256 앞자리 70511964826369a7. 기존 배치본과 파일 목록 차이는 `LastMoveMemory` 두 클래스뿐이다.

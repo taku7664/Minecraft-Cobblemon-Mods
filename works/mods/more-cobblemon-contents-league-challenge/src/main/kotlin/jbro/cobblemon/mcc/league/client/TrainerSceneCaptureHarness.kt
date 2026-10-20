@@ -56,6 +56,11 @@ internal object TrainerSceneCaptureHarness {
     /** `MCC_SCENE_CAPTURE_MECHANIC=<MEGA|TERA|...>` allows that battle mechanic, as the League's challenge would. */
     private val MECHANIC = System.getenv("MCC_SCENE_CAPTURE_MECHANIC")?.trim()?.takeIf { it.isNotEmpty() }
         ?.let(jbro.cobblemon.mcc.api.rules.MajorBattleMechanic::valueOf)
+    /**
+     * `MCC_SCENE_CAPTURE_TRANSCRIPT=1` opens the battle history with its key once the last-Pokemon lines are over and
+     * captures it as `trainer-scene-3-transcript.png`, to see the trainer's words kept there.
+     */
+    private val TRANSCRIPT = System.getenv("MCC_SCENE_CAPTURE_TRANSCRIPT") == "1"
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -149,8 +154,37 @@ internal object TrainerSceneCaptureHarness {
                             logger.info("SCENE CHECK scene {} started (battle open: {})", scenes, CobblemonClient.battle != null)
                         }
                         if (ticks - sceneStart == 24) shot("3-scene-$scenes")
+                        // Scenes wait for the confirm key: after the shot, press it through the lines.
+                        if (ticks - sceneStart > 30 && (ticks - sceneStart) % 8 == 0) {
+                            val window = client.window.window
+                            client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_PRESS, 0)
+                            client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_RELEASE, 0)
+                        }
                     } else {
                         sceneTracked = false
+                        if (TRANSCRIPT && scenes == 2 && transcriptTick < 30 && client.screen is BattleGUI) {
+                            val window = client.window.window
+                            fun press(action: Int) = client.keyboardHandler.keyPress(window,
+                                org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT, 0, action, 0)
+                            when (transcriptTick++) {
+                                0 -> { press(org.lwjgl.glfw.GLFW.GLFW_PRESS); press(org.lwjgl.glfw.GLFW.GLFW_RELEASE) }
+                                12 -> {
+                                    val said = jbro.cobblemon.ui.extended.BattleLog.getEntries().mapNotNull { it.dialogue }
+                                    logger.info("SCENE CHECK transcript open={} dialogue entries={} {}",
+                                        jbro.cobblemon.ui.extended.ui.transcript.BattleTranscriptOverlay.isOpen, said.size,
+                                        said.map { "${it.speaker?.string}|left=${it.left}|${it.lines.joinToString(" / ") { l -> l.string }}" })
+                                    shot("3-transcript")
+                                }
+                                14 -> {
+                                    // From the top: the opening lines, said before the first turn.
+                                    client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_HOME, 0, org.lwjgl.glfw.GLFW.GLFW_PRESS, 0)
+                                    client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_HOME, 0, org.lwjgl.glfw.GLFW.GLFW_RELEASE, 0)
+                                }
+                                17 -> shot("3-transcript-top")
+                                20 -> { press(org.lwjgl.glfw.GLFW.GLFW_PRESS); press(org.lwjgl.glfw.GLFW.GLFW_RELEASE) }
+                            }
+                            return@EndTick
+                        }
                         pickMove(client, logger)
                         if (CobblemonClient.battle == null && scenes > 0) {
                             logger.info("SCENE CHECK scenes played: {} (expected 3)", scenes)
@@ -199,6 +233,7 @@ internal object TrainerSceneCaptureHarness {
     }
 
     private var captured = false
+    private var transcriptTick = 0
     private var versusLogged = false
 
     /**

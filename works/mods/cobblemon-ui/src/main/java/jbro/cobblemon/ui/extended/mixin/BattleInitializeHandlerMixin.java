@@ -28,6 +28,12 @@ import java.util.List;
 @Mixin(value = BattleInitializeHandler.class, remap = false)
 public class BattleInitializeHandlerMixin {
 
+    /** The battle now exists: words already on screen as it opens (a trainer's opening lines) belong to it. */
+    @Inject(method = "handle", at = @At("TAIL"))
+    private void onHandlePost(BattleInitializePacket packet, Minecraft client, CallbackInfo ci) {
+        jbro.cobblemon.ui.extended.SceneDialogue.battleOpened();
+    }
+
     @Inject(method = "handle", at = @At("HEAD"))
     private void onHandlePre(BattleInitializePacket packet, Minecraft client, CallbackInfo ci) {
         BattleDialogue.INSTANCE.clear();

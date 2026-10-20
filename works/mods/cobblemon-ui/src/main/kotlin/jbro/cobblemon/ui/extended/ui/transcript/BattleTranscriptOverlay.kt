@@ -34,7 +34,8 @@ object BattleTranscriptOverlay {
     private var viewportHeight = 0
 
     private data class Line(val text: FormattedCharSequence, val color: Int, val result: Boolean)
-    private data class Row(val turn: Int, val speaker: TranscriptSpeaker?, val lines: List<Line>, val height: Int, val separator: Boolean = false)
+    private data class Row(val turn: Int, val speaker: TranscriptSpeaker?, val lines: List<Line>, val height: Int,
+        val separator: Boolean = false, val dialogue: BattleLog.Dialogue? = null)
 
     fun clear() {
         isOpen = false
@@ -171,6 +172,33 @@ object BattleTranscriptOverlay {
                     BattleSurfaceRenderer.capsule(context, center + chipWidth / 2 + 6, lineY, x + width - 14 - center - chipWidth / 2 - 6, 2, BattleUiTheme.BORDER, .7f)
                     BattleSurfaceRenderer.capsule(context, center - chipWidth / 2, rowY - 3, chipWidth, lineHeight + 2, CHIP)
                     drawCentered(context, label, center, rowY, BattleUiTheme.MUTED, scale)
+                } else if (row.dialogue != null) {
+                    // A trainer's words: laid out like a Pokemon's row, its face from the trainer itself.
+                    val dialogue = row.dialogue
+                    val faceX = if (dialogue.left) x + 14 else x + width - 14 - avatar
+                    val boxX = if (dialogue.left) faceX + avatar + 8 else faceX - 8 - bubbleWidth
+                    val accent = if (dialogue.left) BattleUiTheme.CYAN else BattleUiTheme.TRANSCRIPT_OPPONENT
+                    val bubble = if (dialogue.left) BattleCornerCuts(2, 8, 8, 8) else BattleCornerCuts(8, 2, 8, 8)
+                    BattleSurfaceRenderer.draw(context, boxX, rowY, bubbleWidth, row.height - 10,
+                        (if (dialogue.left) BattleUiTheme.transcriptSelf else BattleUiTheme.transcriptOpponent).copy(cornerCuts = bubble))
+                    BattleSurfaceRenderer.draw(context, faceX - 1, rowY - 1, avatar + 2, avatar + 2,
+                        BattleSurface(accent, cornerCuts = BattleCornerCuts(8, 8, 8, 8)), .8f)
+                    BattleSurfaceRenderer.draw(context, faceX, rowY, avatar, avatar,
+                        BattleUiTheme.panel.copy(cornerCuts = BattleCornerCuts(7, 7, 7, 7), borderWidth = 0))
+                    val face = dialogue.portrait?.get()
+                    if (face == null || !TranscriptPortraits.draw(context, face, dialogue.left, faceX + 2, rowY + 2, avatar - 4)) {
+                        drawCentered(context, "?", faceX + avatar / 2, rowY + 9, BattleUiTheme.MUTED, scale)
+                    }
+                    var textY = rowY + 7
+                    dialogue.speaker?.let { speaker ->
+                        val name = mc.font.plainSubstrByWidth(speaker.string, ((bubbleWidth - 18) / scale).toInt())
+                        draw(context, name, boxX + 9, textY, accent, scale)
+                        textY += lineHeight + 2
+                    }
+                    row.lines.forEach { line ->
+                        draw(context, line.text, boxX + 9, textY, line.color, scale)
+                        textY += lineHeight
+                    }
                 } else if (row.speaker != null) {
                     val speaker = row.speaker
                     val faceX = if (speaker.left) x + 14 else x + width - 14 - avatar
@@ -228,6 +256,7 @@ object BattleTranscriptOverlay {
 
     private fun layout(entries: List<BattleLog.LogEntry>, bubbleWidth: Int, innerWidth: Int, scale: Float, lineHeight: Int): List<Row> {
         val mc = Minecraft.getInstance()
+        val avatar = 28
         val result = mutableListOf<Row>()
         var lastTurn = -1
         val groups = TranscriptPolicy.group(entries.map { TranscriptPolicy.Event(it.turn, it.translationKey, it.speaker, it) })
@@ -237,6 +266,16 @@ object BattleTranscriptOverlay {
                 lastTurn = group.turn()
             }
             if (group.kind() == TranscriptPolicy.Kind.TURN) continue
+            val dialogue = group.values().singleOrNull()?.dialogue
+            if (dialogue != null) {
+                val wrap = ((bubbleWidth - 18) / scale).toInt().coerceAtLeast(1)
+                val lines = dialogue.lines.flatMap { line -> mc.font.split(line, wrap).map { Line(it, BattleUiTheme.TEXT, false) } }
+                val nameHeight = if (dialogue.speaker != null) lineHeight + 2 else 0
+                // At least the portrait's height, as a Pokemon's row is.
+                val height = maxOf(24 + nameHeight + lineHeight * lines.size, avatar + 10)
+                result.add(Row(group.turn(), null, lines, height, dialogue = dialogue))
+                continue
+            }
             val speaker = group.speaker()
             val lines = group.values().flatMapIndexed { index, entry ->
                 val resultLine = speaker != null && index > 0

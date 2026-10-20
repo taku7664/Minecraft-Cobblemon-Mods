@@ -123,7 +123,10 @@ object BattleSceneClient {
         SceneDialogue.stop()
         val token = playback.begin(scene.completionId)
         var focused = false
-        SceneDialogue.play(scene.speaker, scene.lines, onFinish@{
+        // The one the camera looks at is the one speaking: its face goes beside the lines in the battle history.
+        val face = scene.focusEntityId.takeIf { it != BattleScenePayload.NO_FOCUS }
+            ?.let { net.minecraft.client.Minecraft.getInstance().level?.getEntity(it) as? net.minecraft.world.entity.LivingEntity }
+        SceneDialogue.play(scene.speaker, scene.lines, face, onFinish@{
             if (!playback.finish(token)) return@onFinish
             if (focused) Battlecam.release()
             scene.completionId?.let(::acknowledge)

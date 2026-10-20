@@ -44,6 +44,19 @@ class TranscriptPolicyTest {
         assertNull(groups.get(2).speaker());
     }
 
+    @Test void trainerDialogueStandsAloneBetweenActions() {
+        var groups = TranscriptPolicy.group(List.of(
+                event(1, "cobblemon.battle.used_move", "self"),
+                event(1, "cobblemon_ui.transcript.dialogue", null),
+                event(1, "cobblemon_ui.transcript.dialogue", null),
+                event(1, "cobblemon.battle.crit", null)));
+        assertEquals(4, groups.size());
+        assertEquals(1, groups.getFirst().values().size());
+        assertEquals(List.of("cobblemon_ui.transcript.dialogue"), groups.get(1).values());
+        assertNull(groups.get(1).speaker());
+        assertNull(groups.get(2).speaker());
+    }
+
     @Test void ambiguousMoveCannotLendAnInventedSpeaker() {
         var groups = TranscriptPolicy.group(List.of(
                 event(1, "cobblemon.battle.used_move", null),

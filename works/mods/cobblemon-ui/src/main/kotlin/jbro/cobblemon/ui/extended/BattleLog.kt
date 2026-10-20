@@ -36,7 +36,8 @@ object BattleLog {
         val message: Component,
         val translationKey: String?,
         val timestamp: Long = System.currentTimeMillis(),
-        val speaker: TranscriptSpeaker? = null
+        val speaker: TranscriptSpeaker? = null,
+        val dialogue: Dialogue? = null
     ) {
         // Cached wrapped lines (computed once per width/scale combination)
         @Volatile var cachedLines: List<String>? = null
@@ -65,6 +66,20 @@ object BattleLog {
             cachedLines = null
         }
     }
+
+    /**
+     * Lines someone said during the battle (a trainer's [SceneDialogue]), on [left] or the opposing side. [portrait] is
+     * the one who said them, while the world still holds it.
+     */
+    data class Dialogue(
+        val speaker: Component?,
+        val left: Boolean,
+        val lines: List<Component>,
+        val portrait: java.lang.ref.WeakReference<net.minecraft.world.entity.LivingEntity>? = null
+    )
+
+    /** Not a Cobblemon battle key: the history groups it on its own, never with a Pokemon's action. */
+    const val DIALOGUE_KEY = "cobblemon_ui.transcript.dialogue"
 
     // Thread-safe list for log entries
     private val entries = CopyOnWriteArrayList<LogEntry>()
@@ -252,6 +267,21 @@ object BattleLog {
             type = if (isHealing) EntryType.HEALING else EntryType.HP,
             message = Component.literal(text),
             translationKey = null
+        ))
+    }
+
+    /** Records [dialogue] in the current turn, where the battle's narration has reached when it is said. */
+    fun addDialogue(dialogue: Dialogue) {
+        if (dialogue.lines.isEmpty()) return
+        val text = Component.empty()
+        dialogue.speaker?.let { text.append(it).append(": ") }
+        dialogue.lines.forEachIndexed { index, line -> if (index > 0) text.append(" "); text.append(line) }
+        addEntry(LogEntry(
+            turn = currentTurn,
+            type = EntryType.OTHER,
+            message = text,
+            translationKey = DIALOGUE_KEY,
+            dialogue = dialogue
         ))
     }
 
