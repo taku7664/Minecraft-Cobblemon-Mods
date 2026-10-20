@@ -73,7 +73,12 @@ internal object LocalSwitchRules {
     }
 
     fun judge(candidates: List<BattleActionCandidate>, context: BattleDecisionContext, scores: MatchupScores,
-        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null): Judgement {
+        tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null,
+        /**
+         * Each opposing Pokemon's chance to switch out this turn, leaned to its record (LocalOpponentTendencies): a foe
+         * that leaves does not hit the incoming Pokemon. Empty, every foe attacks it.
+         */
+        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap()): Judgement {
         val state = context.state
         val opponents = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
@@ -127,7 +132,7 @@ internal object LocalSwitchRules {
                     replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths, bench) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths, bench, foeSwitchChances) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
                 adjustment += verdict.adjustment - dynamaxLeft(replaced, opponents, context)
@@ -176,12 +181,17 @@ internal object LocalSwitchRules {
         retreats: (BattlePokemonStateView) -> Double,
         worths: Map<java.util.UUID, Double> = emptyMap(),
         bench: List<BattlePokemonStateView> = emptyList(),
+        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
     ): Verdict? {
-        val entries = opponents.mapNotNull { scores.switchIn(incoming.battlePokemonId, it.battlePokemonId, replaced.battlePokemonId) }
+        val byFoe = opponents.mapNotNull { foe -> scores.switchIn(incoming.battlePokemonId, foe.battlePokemonId, replaced.battlePokemonId)?.let { foe to it } }
+        val entries = byFoe.map { it.second }
         if (entries.isEmpty()) return null
         val stays = opponents.mapNotNull { scores.pokemon(replaced.battlePokemonId, it.battlePokemonId) }
-        // One opponent focusing the slot is enough to knock the incoming Pokemon out.
-        val survival = entries.minOf { it.predictedSurvival }
+        // One opponent focusing the slot is enough to knock the incoming Pokemon out; one that switches out hits nothing.
+        val survival = byFoe.minOf { (foe, entry) ->
+            val hits = 1.0 - (foeSwitchChances[foe.battlePokemonId] ?: 0.0).coerceIn(0.0, 1.0)
+            1.0 - (1.0 - entry.predictedSurvival) * hits
+        }
         val switchValue = entries.map { it.score }.average()
         val stayValue = stays.map { it.score }.averageOrNull() ?: 0.0
         val keepLeaving = scores.preserves[replaced.battlePokemonId]?.score ?: 0.0

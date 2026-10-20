@@ -129,6 +129,16 @@ internal data class LocalDecisionTuning(
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
     /**
+     * Multipliers on the pull of the opponent's recorded move and switch rates on its switch chance
+     * (LocalOpponentTendencies), one per correction that reads it: the switch prediction (LocalSwitchPrediction), this
+     * side's voluntary switches (LocalSwitchRules: a foe that leaves does not hit the one coming in) and the setup turn
+     * (LocalSetupGate: a foe that leaves does not land the setup turn's hit). 1.0 is the pull as it is, 0 none (user,
+     * 2026-10-20: all 1.0). Every other rule keeps the plain intents.
+     */
+    val switchPredictionTendencyWeight: Double = 1.0,
+    val switchTendencyWeight: Double = 1.0,
+    val setupTendencyWeight: Double = 1.0,
+    /**
      * The opponent intent takes the chance of a switch from the fitted switch model
      * (LocalOpponentIntentPredictor.switchChance: the threat of falling before acting, the entry gain behind it, its
      * worth to its team, its best attack and HP) and spreads the rest over its moves. Off, moves and switches share

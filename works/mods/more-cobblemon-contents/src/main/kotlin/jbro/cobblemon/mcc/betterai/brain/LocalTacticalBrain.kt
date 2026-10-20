@@ -268,6 +268,29 @@ internal class LocalTacticalBrain(
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
         val rulesApply = profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS
+        val baseOpponentIntents by lazy {
+            if (!rulesApply) emptyList() else ruleScores?.let {
+                LocalOpponentIntentPredictor.predict(
+                    rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier,
+                )
+            }.orEmpty()
+        }
+        // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
+        val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
+        // Read from the same table as the rules; the AI's threat weights play no part in it.
+        val readOpponentIntents by lazy {
+            baseOpponentIntents.let { intents ->
+                if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
+            }
+        }
+        // The same intents with the switch chance leaned to the opponent's record (LocalOpponentTendencies), each with its
+        // correction's weight, for the switch prediction, this side's switches and the setup turn's hit only (user, 2026-10-20).
+        fun tended(weight: Double) = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentTendencies.apply(readOpponentIntents, difficultyContext, weight)
+        fun switchChances(intents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent>) = intents.associate { intent ->
+            intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH }.sumOf { it.probability }
+        }
+        val switchTendedChances by lazy { switchChances(tended(tuning.switchTendencyWeight)) }
+        val setupTendedChances by lazy { switchChances(tended(tuning.setupTendencyWeight)) }
         // Switches are on offer in almost every decision, so with the switching rules the table is built for most.
         val switchJudgement by lazy {
             val switching = difficultyContext.candidates.any { candidate ->
@@ -275,7 +298,7 @@ internal class LocalTacticalBrain(
                     .any { it.kind == BattleActionKind.SWITCH }
             }
             if (!rulesApply || !switching) LocalSwitchRules.Judgement.NONE
-            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, rulesContext, it, profile.difficulty.tier) }
+            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, rulesContext, it, profile.difficulty.tier, switchTendedChances) }
                 ?: LocalSwitchRules.Judgement.NONE
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
@@ -396,13 +419,6 @@ internal class LocalTacticalBrain(
         // the doubled HP this turn; native Showdown already plays that HP and must not receive it twice.
         val gimmickReserveAdjustments by lazy { if (!tuning.mechanicReserve) emptyMap()
             else LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores) }
-        val baseOpponentIntents by lazy {
-            if (!rulesApply) emptyList() else ruleScores?.let {
-                LocalOpponentIntentPredictor.predict(
-                    rulesContext, it, tuning.scoredSwitchIntent, tuning.doublesSwitchModel, profile.difficulty.tier,
-                )
-            }.orEmpty()
-        }
         val dynamaxGuardReading by lazy {
             if (!tuning.mechanicReserve) jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.Reading(emptyMap())
             else jbro.cobblemon.mcc.betterai.matchup.LocalDynamaxGuard.read(
@@ -434,7 +450,7 @@ internal class LocalTacticalBrain(
         val setupScores by lazy { if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
             difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
         else difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).mapNotNull { candidate ->
-            setupView(candidate)?.let { (view, table) -> LocalSetupGate.score(candidate, view, table, tuning.knockoutMaterialScore, copyRisk = copyRisk) }
+            setupView(candidate)?.let { (view, table) -> LocalSetupGate.score(candidate, view, table, tuning.knockoutMaterialScore, copyRisk = copyRisk, foeSwitchChances = setupTendedChances) }
                 ?.let { candidate.actionId to it.value }
         }.toMap() }
         // An attack a known heal undoes, and a heal the opponent's hit undoes, go nowhere.
@@ -644,12 +660,7 @@ internal class LocalTacticalBrain(
         }
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
-        // A Boss remembers what the opponent did the last times the same Pokemon faced each other, as a player would.
-        val readRepeats = tuning.readOpponentRepeats || profile.difficulty.tier == BattleTrainerTier.BOSS
-        // Read from the same table as the rules; the AI's threat weights play no part in it.
-        val opponentIntents = baseOpponentIntents.let { intents ->
-            if (readRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
-        }
+        val opponentIntents = readOpponentIntents
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -694,23 +705,26 @@ internal class LocalTacticalBrain(
         val searchedRanked = lookahead?.ranked ?: rootRanked
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
         // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
-        val expectedSwitches = when {
+        fun switchesOf(intents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent>): Map<java.util.UUID, Map<java.util.UUID, Double>> = when {
             !rulesApply -> emptyMap()
             // The predicted switches themselves, the repeats already folded in when they are read (singles, where
             // the switch model was fitted).
             tuning.predictedSwitchShare > 0.0 && (difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ||
                 tuning.doublesSwitchModel) ->
-                opponentIntents.associate { intent ->
+                intents.associate { intent ->
                     intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH && it.switchInId != null }
                         .groupBy { requireNotNull(it.switchInId) }.mapValues { (_, same) -> same.sumOf { it.probability } * tuning.predictedSwitchShare }
                 }.filterValues { it.isNotEmpty() }
             readRepeats && active != null -> active.repeats.expectedSwitches(difficultyContext.state)
             else -> emptyMap()
         }
-        val predictionAdjustments = if (expectedSwitches.isEmpty()) emptyMap() else {
+        val expectedSwitches = switchesOf(opponentIntents)
+        // The switch prediction reads the switches leaned to the opponent's record; every other reader keeps the plain ones.
+        val predictedSwitches = switchesOf(tended(tuning.switchPredictionTendencyWeight))
+        val predictionAdjustments = if (predictedSwitches.isEmpty()) emptyMap() else {
             ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalSwitchPrediction.adjustments(
-                    difficultyContext.candidates, rulesContext, scores, expectedSwitches, tuning)
+                    difficultyContext.candidates, rulesContext, scores, predictedSwitches, tuning)
             }.orEmpty()
         }
         // A doubles Protect is credited for the hits the opponents are predicted to aim at its user (LocalProtectCredit;

@@ -18,6 +18,35 @@ internal object LocalOpponentResponseModel {
     ): LocalOpponentResponseDistribution? {
         require(information.isFinite() && information in 0.0..1.0)
         if (actions.isEmpty()) return null
+        val rates = observedRates(memory, situations) ?: return null
+        val moveRate = rates.move
+        val switchRate = rates.switch
+        val selectedSituation = rates.situation
+
+        val weights = if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().doublesJointResponses) slotWeights(actions, moveRate, switchRate) ?: return null
+            else wholeWeights(actions, moveRate, switchRate) ?: return null
+
+        val evidence = rates.evidence
+        val separation = abs(moveRate - switchRate).coerceIn(0.0, 1.0)
+        val missPenalty = 1.0 / (1.0 + memory.predictionCalibration.consecutiveMisses * MISS_PENALTY_RATE)
+        val calibration = memory.predictionCalibration.brierSkillScoreAgainstAlwaysMove?.let { skill ->
+            ((skill + 1.0) / 2.0).coerceIn(MINIMUM_CALIBRATION_FACTOR, 1.0)
+        } ?: 1.0
+        val behaviorStability = (1.0 - memory.opponentResponseVolatility * MAXIMUM_SHIFT_DISCOUNT)
+            .coerceIn(MINIMUM_BEHAVIOR_STABILITY, 1.0)
+        val influence = (MAXIMUM_INFLUENCE * information * evidence * (0.5 + separation * 0.5) *
+            missPenalty * calibration * behaviorStability).coerceIn(0.0, MAXIMUM_INFLUENCE)
+        return LocalOpponentResponseDistribution(weights, influence, selectedSituation)
+    }
+
+    /** The opponent's recorded move and switch rates in one situation, and how much record backs them (0..1). */
+    data class ObservedRates(val move: Double, val switch: Double, val evidence: Double, val situation: BattleSituation)
+
+    /**
+     * The rates for the most specific of [situations] with enough record ([MINIMUM_SAMPLES] answers in it), a
+     * specific situation's leaned toward the general one by how little record it has.
+     */
+    fun observedRates(memory: BattleTacticalMemoryView, situations: Set<BattleSituation>): ObservedRates? {
         val pairs = SITUATION_PRIORITY.mapNotNull { situation ->
             tendencyPair(situation, memory)?.let { situation to it }
         }.toMap()
@@ -29,23 +58,12 @@ internal object LocalOpponentResponseModel {
         } else {
             selected.effectiveWeight / (selected.effectiveWeight + GENERAL_PRIOR_STRENGTH)
         }
-        val moveRate = blend(selected.move.estimatedRate, general?.move?.estimatedRate, reliability)
-        val switchRate = blend(selected.switch.estimatedRate, general?.switch?.estimatedRate, reliability)
-
-        val weights = if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().doublesJointResponses) slotWeights(actions, moveRate, switchRate) ?: return null
-            else wholeWeights(actions, moveRate, switchRate) ?: return null
-
-        val evidence = (selected.effectiveWeight / EVIDENCE_SATURATION_WEIGHT).coerceIn(0.0, 1.0)
-        val separation = abs(moveRate - switchRate).coerceIn(0.0, 1.0)
-        val missPenalty = 1.0 / (1.0 + memory.predictionCalibration.consecutiveMisses * MISS_PENALTY_RATE)
-        val calibration = memory.predictionCalibration.brierSkillScoreAgainstAlwaysMove?.let { skill ->
-            ((skill + 1.0) / 2.0).coerceIn(MINIMUM_CALIBRATION_FACTOR, 1.0)
-        } ?: 1.0
-        val behaviorStability = (1.0 - memory.opponentResponseVolatility * MAXIMUM_SHIFT_DISCOUNT)
-            .coerceIn(MINIMUM_BEHAVIOR_STABILITY, 1.0)
-        val influence = (MAXIMUM_INFLUENCE * information * evidence * (0.5 + separation * 0.5) *
-            missPenalty * calibration * behaviorStability).coerceIn(0.0, MAXIMUM_INFLUENCE)
-        return LocalOpponentResponseDistribution(weights, influence, selectedSituation)
+        return ObservedRates(
+            move = blend(selected.move.estimatedRate, general?.move?.estimatedRate, reliability),
+            switch = blend(selected.switch.estimatedRate, general?.switch?.estimatedRate, reliability),
+            evidence = (selected.effectiveWeight / EVIDENCE_SATURATION_WEIGHT).coerceIn(0.0, 1.0),
+            situation = selectedSituation,
+        )
     }
 
     /** Each whole response takes its category's rate, shared among the responses of that category. */

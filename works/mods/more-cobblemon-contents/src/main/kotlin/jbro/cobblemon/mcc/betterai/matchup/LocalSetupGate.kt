@@ -146,6 +146,11 @@ internal object LocalSetupGate {
          * It takes from the value, not from the win: the one-on-one is still won, the boost just changes hands.
          */
         copyRisk: Double = 0.0,
+        /**
+         * Each opposing Pokemon's chance to switch out this turn, leaned to its record (LocalOpponentTendencies): a foe
+         * that leaves does not land the setup turn's hit. Empty, every foe stays.
+         */
+        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
     ): Reading? {
         if (!isSetupMove(candidate)) return null
         val user = context.state.pokemon.firstOrNull {
@@ -179,7 +184,8 @@ internal object LocalSetupGate {
                 val ratio = if (plain >= 1.0) 0.0 else ((1.0 - falls) / (1.0 - plain)).coerceIn(0.0, 1.0)
                 1.0 - first + first * ratio
             } ?: 1.0
-            actingChance(foe, context.state) * hit * dynamaxSurvival + (1.0 - actingChance(foe, context.state)) * free
+            val acting = actingChance(foe, context.state) * (1.0 - (foeSwitchChances[foe.battlePokemonId] ?: 0.0).coerceIn(0.0, 1.0))
+            acting * hit * dynamaxSurvival + (1.0 - acting) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
         // A raise buys something only where it changes a fight, against any foe still to beat (in front, seen behind, or
