@@ -53,8 +53,8 @@ internal object LocalKnockoutWorth {
         val value: Double,
         val priority: Int,
         /**
-         * How much it matters that it falls now rather than later: the chance its best hit knocks out one in front this
-         * turn (it acts), at least [MINIMUM_URGENCY], and whole once it has healed itself. A Pokemon that cannot hurt the one in front is knocked out as well
+         * How much it matters that it falls now rather than later: the share of the HP left of the one in front its best
+         * hit takes (a knockout whole) or its knockout chance, whichever is more, at its chance to act, at least [MINIMUM_URGENCY], and whole once it has healed itself. A Pokemon that cannot hurt the one in front is knocked out as well
          * next turn: its whole worth credited to a knockout now, a +4 Defence Corviknight at 23% took Brave Bird
          * (its recoil left 15%, then the next foe knocked it out) over Roost (dev server, 2026-10-20).
          */
@@ -154,8 +154,18 @@ internal object LocalKnockoutWorth {
                         before.actorPokemonId == id && (before.hpFractionDelta ?: 0.0) < 0.0)
             }
             val threatNow = (threat * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0)
+            // What it would take off the one in front it hurts most, as a share of that one's HP left: a knockout is the whole
+            // of it, a heavy hit most of it. Its knockout chance alone read an Outrage for 71-85% as no hurry: a +3
+            // Conkeldurr's Close Combat that knocked the Haxorus out took a quarter of its worth and lost to Mach Punch
+            // (self-play, 2026-10-21).
+            val damageShare = inFront.maxOfOrNull { target ->
+                if (target.hpFraction <= 0.0) 0.0 else scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
+                    move.accuracy * minOf(1.0, (move.minimumDamageFraction + move.maximumDamageFraction) / 2.0 / target.hpFraction)
+                } ?: 0.0
+            } ?: 0.0
+            val urgency = maxOf(threatNow, (damageShare * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0))
             Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon, state), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
-                if (heals) 1.0 else threatNow.coerceAtLeast(MINIMUM_URGENCY), threatNow,
+                if (heals) 1.0 else urgency.coerceAtLeast(MINIMUM_URGENCY), threatNow,
                 threats.mapValues { (_, chance) -> (chance * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0) },
                 pokemon.activeSlot != null && ended.pokemon.firstOrNull { it.battlePokemonId == id }?.let { it.hpFraction <= 0.0 } == true)
         }
