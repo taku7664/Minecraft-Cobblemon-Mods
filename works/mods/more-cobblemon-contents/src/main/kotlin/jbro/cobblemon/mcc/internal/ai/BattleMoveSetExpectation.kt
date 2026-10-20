@@ -32,7 +32,15 @@ internal object BattleMoveSetExpectation {
      */
     fun typeId(moveId: String?, move: BattleMoveCandidateView, pokemon: BattlePokemonStateView): String {
         val tera = pokemon.knownTeraTypeId
-        return if (tera != null && moveId != null && PublicIds.canonical(moveId) == TERA_BLAST) tera else move.typeId
+        if (tera != null && moveId != null && PublicIds.canonical(moveId) == TERA_BLAST) return tera
+        // An attack the weather retypes (Weather Ball, read from its code) is its user's STAB where one of the types the
+        // weather gives it is the user's: a rain team's Pelipper carries it as its Water attack. Read as Normal, a Boss read
+        // only Hurricane from that set and filled the other attack slot with an Ice Beam guess (2026-10-20).
+        val weather = BattleShowdownMoveEffects.weatherTypes(moveId)
+        if (weather.isNotEmpty()) {
+            (pokemon.knownBaseStabTypeIds + listOfNotNull(tera)).firstOrNull { PublicIds.canonical(it) in weather }?.let { return it }
+        }
+        return move.typeId
     }
 
     /**

@@ -168,6 +168,29 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `boss reads Weather Ball as the STAB of the type the weather gives it`() {
+        // A rain Pelipper's set: Hurricane, Weather Ball, Tailwind, Protect. Weather Ball's data type is Normal; its code
+        // turns it Water in rain, so it is the set's Water attack (2026-10-20).
+        val moves = linkedMapOf(
+            "hurricane" to move("flying", BattleMoveDamageCategory.SPECIAL, 110.0),
+            "weatherball" to move("normal", BattleMoveDamageCategory.SPECIAL, 50.0),
+            "icebeam" to move("ice", BattleMoveDamageCategory.SPECIAL, 90.0),
+            "protect" to MOVES.getValue("protect"),
+        )
+        val state = state(speciesId = "pelipper", types = setOf("water", "flying"))
+        val catalog = BattlePublicActionCatalogView(
+            entries = listOf(BattlePokemonActionCatalogView(OPPONENT_ID, emptyList())),
+            candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "pelipper", "normal", moves.keys, "fixture:learnset", moves)),
+        )
+        val boss = BattleOpponentMoveInferenceNormalizer.normalize(state, catalog, BattleTrainerTier.BOSS,
+            mapOf(OPPONENT_ID to setOf("hurricane", "weatherball", "protect")), moveDetails = moves::get).single()
+        val read = boss.slots.filter { it.source == BattleOpponentMoveSource.DIFFICULTY_SET_READ }
+        assertEquals(setOf("hurricane", "weatherball"), read.mapTo(linkedSetOf()) { it.moveId })
+        assertTrue(read.all { it.group == BattleOpponentMoveGroup.STAB_ATTACK })
+        assertFalse(boss.slots.any { it.moveId == "icebeam" })
+    }
+
+    @Test
     fun `initial public reveals still count toward the actual attack status shape`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val revealedState = state(setOf("moonblast"))

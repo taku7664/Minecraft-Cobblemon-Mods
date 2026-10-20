@@ -30,6 +30,25 @@ object BattleShowdownMoveEffects {
     fun flagValues(prefix: String): Set<String> =
         effectsByMoveId.values.flatMap { it.mechanicFlags }.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }.toSet()
 
+    /**
+     * The types [moveId] turns into with the weather: an `onModifyType` that switches on `effectiveWeather` and sets
+     * `move.type` (Weather Ball). Empty for any other move.
+     */
+    fun weatherTypes(moveId: String?): Set<String> = moveId?.let { weatherTypesByMoveId[canonicalMoveId(it)] }.orEmpty()
+
+    private val weatherTypesByMoveId: Map<String, Set<String>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        try {
+            showdownSource(MOVES_ENTRY)?.let { BattleDeclarativeMoveEffects.entries(it, MOVES_MARKER) }.orEmpty().mapNotNull { (id, hooks) ->
+                val body = hooks["onModifyType"]?.takeIf { WEATHER_READ in it } ?: return@mapNotNull null
+                MOVE_TYPE.findAll(body).map { it.groupValues[1].lowercase() }.toSet().takeIf { it.isNotEmpty() }?.let { id to it }
+            }.toMap()
+        } catch (_: RuntimeException) {
+            emptyMap()
+        } catch (_: LinkageError) {
+            emptyMap()
+        }
+    }
+
     /** One file of the Showdown bundle Cobblemon ships (`data/items.js`), or null when it cannot be read. */
     internal fun showdownSource(file: String): String? {
         val resource = BattleShowdownMoveEffects::class.java.classLoader.getResourceAsStream(SHOWDOWN_ZIP_RESOURCE) ?: return null
@@ -47,4 +66,7 @@ object BattleShowdownMoveEffects {
 
     private const val SHOWDOWN_ZIP_RESOURCE = "data/cobblemon/showdown.zip"
     private const val MOVES_ENTRY = "data/moves.js"
+    private const val MOVES_MARKER = "const Moves ="
+    private const val WEATHER_READ = "effectiveWeather"
+    private val MOVE_TYPE = Regex("""move\.type\s*=\s*["']([A-Za-z]+)["']""")
 }
