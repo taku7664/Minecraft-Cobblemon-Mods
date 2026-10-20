@@ -54,14 +54,16 @@ internal object LocalPokemonWorth {
                 (if (mine == 0) fallbackFirst ?: speed else speed ?: fallbackFirst) ?: UNKNOWN_ORDER
             }
         }
-        // Its worth counts at how much falling now matters (Denial.urgency), and only if the attack lands before it knocks
-        // the attacker out: first, or second and still standing. Read as landing anyway, a +2 Mega Garchomp at 46% Earthquaked
+        // Its whole worth, the piece the other side loses (user, 2026-10-21: no urgency scales it; what waiting would gain is
+        // the waiting move's own value), and only if the attack lands before it knocks the attacker out: first, or second and
+        // still standing. Read as landing anyway, a +2 Mega Garchomp at 46% Earthquaked
         // into a faster Dragapult that Dragon Darted it first, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
         // Its threat to this attacker, not to the one beside it (LocalKnockoutWorth.Denial.threatOn).
         val threat = actor?.let { denial.threatOn[it.battlePokemonId] } ?: denial.threat
         val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - threat)
         // One that falls at the turn's end anyway is worth only the hit a knockout first stops (Denial.fallsAnyway).
-        val kept = if (denial.fallsAnyway) 0.0 else worth * denial.urgency * lands
+        val kept = if (denial.fallsAnyway) 0.0 else worth * lands
+        if (System.getenv("BETTERAI_DEBUG_VALUES") != null) println("KODBG target=$id worth=${"%.1f".format(worth)} first=${"%.3f".format(first)} threat=${"%.3f".format(threat)} lands=${"%.3f".format(lands)} fallsAnyway=${denial.fallsAnyway} denial=${"%.3f".format(denial.value)} total=${"%.1f".format(kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore)}")
         return kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 
@@ -77,11 +79,16 @@ internal object LocalPokemonWorth {
         last = worths.orEmpty()
     }
 
-    /** How much knocking [id] out now rather than later matters ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial.urgency]); 1 unread. */
-    fun urgency(id: UUID?): Double = urgencyOrNull(id) ?: 1.0
+    /**
+     * The chance [id]'s best hit knocks out [attacker] this turn ([jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial.threatOn]),
+     * or any one in front without [attacker]; 1 unread.
+     */
+    fun threatTo(id: UUID?, attacker: UUID? = null): Double = threatOrNull(id, attacker) ?: 1.0
 
     /** The same, null when the decision has no reading of [id]. */
-    fun urgencyOrNull(id: UUID?): Double? = id?.let { denials.get()?.get(it)?.urgency }
+    fun threatOrNull(id: UUID?, attacker: UUID? = null): Double? = id?.let { denials.get()?.get(it) }?.let { denial ->
+        attacker?.let { denial.threatOn[it] } ?: denial.threat
+    }
 
     fun clear() {
         active.remove()

@@ -1052,12 +1052,11 @@ class LocalTacticalBrainSimulationTest {
         // power as if it were a percentage - which is what made every unprojectable attack look like
         // the best move on the board.
         assertEquals("status", decide(candidates).actionId)
-        // At 90% HP a 50% recovery restores only the 10% that is missing, which the evaluator already
-        // caps it to. That leaves 0.10 of a bar healed against 25 base power - about 0.083 of a bar -
-        // so recovering really is the larger number here. The guard being tested is the cap, and the
-        // cap is doing its job; the winner is decided by arithmetic that is now on one scale.
+        // At 90% HP a 50% recovery restores only the 10% that is missing. Read as HP it was 0.10 of a bar against
+        // this attack's 0.083 and won; read as what it restores to the user's standing (LocalHealValue: its matchups at
+        // full HP against at 90%), it is next to nothing, and the attack is worth more (2026-10-21).
         assertEquals(
-            "recover",
+            "low_damage",
             decide(
                 listOf(recovery, move("low_damage", power = 25.0)),
                 allyHp = 0.90,

@@ -767,6 +767,14 @@ internal class LocalTacticalBrain(
                 if (asleep == 0 || lostPerTurn <= 0.0) null else rank.outcome.candidate.actionId to -asleep * lostPerTurn
             }.toMap()
         }
+        // A self-heal's ranking value becomes what it restores to the user's standing, in the same units as an attack
+        // (LocalHealValue). Its heal race's own-heal charge is that reading's to make, so it is left out for these moves.
+        val healValueAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else ruleScores?.let { scores ->
+            val values = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(searchedRanked.map { it.outcome.candidate }, rulesContext, scores)
+            // A heal with nothing to restore keeps its publicly-inert tier.
+            searchedRanked.mapNotNull { rank -> if (rank.outcome.publiclyInert) null
+                else values[rank.outcome.candidate.actionId]?.let { rank.outcome.candidate.actionId to it - rank.comparisonValue } }.toMap()
+        }.orEmpty()
         // A debuff's ranking value becomes what it takes off, in knockout units (the setup score's scale).
         // The chance this side knocks the foe in front out this turn: its best attack's knockout at the chance that attack
         // goes off before the foe knocks the user out (LocalActingChance). Singles, as the debuffs below.
@@ -882,12 +890,13 @@ internal class LocalTacticalBrain(
             difficultyContext.candidates, difficultyContext, active?.lastPair?.takeIf { it.first == difficultyContext.state.turn }?.second, tuning)
         val ruleAdjustments = (pendingPartnerAdjustments.keys + switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
             knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys + restAdjustments.keys +
-            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
+            setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + healValueAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (pendingPartnerAdjustments[it] ?: 0.0) + (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
                 (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) + (restAdjustments[it] ?: 0.0) +
-                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
+                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) +
+                (if (it in healValueAdjustments) healValueAdjustments.getValue(it) else healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
                 (perishTrapAdjustments[it] ?: 0.0)
@@ -1139,7 +1148,7 @@ internal class LocalTacticalBrain(
                 nativeStatusStatus = statusPricing?.status,
                 rules = mapOf("pendingPartner" to pendingPartnerAdjustments, "switch" to switchJudgement.adjustments, "switchAnchor" to switchAnchorAdjustments, "gimmick" to gimmickAdjustments,
                     "prediction" to predictionAdjustments, "pendingAttack" to pendingAttackAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
-                    "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
+                    "healRace" to healRaceAdjustments, "heal" to healValueAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
                     "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments, "asleep" to sleepAdjustments,

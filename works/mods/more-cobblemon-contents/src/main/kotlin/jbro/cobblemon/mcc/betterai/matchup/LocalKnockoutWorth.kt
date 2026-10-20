@@ -63,13 +63,6 @@ internal object LocalKnockoutWorth {
     data class Denial(
         val value: Double,
         val priority: Int,
-        /**
-         * How much it matters that it falls now rather than later: the share of the HP left of the one in front its best
-         * hit takes (a knockout whole) or its knockout chance, whichever is more, at its chance to act, at least [MINIMUM_URGENCY], and whole once it has healed itself. A Pokemon that cannot hurt the one in front is knocked out as well
-         * next turn: its whole worth credited to a knockout now, a +4 Defence Corviknight at 23% took Brave Bird
-         * (its recoil left 15%, then the next foe knocked it out) over Roost (dev server, 2026-10-20).
-         */
-        val urgency: Double = 1.0,
         /** The chance its best hit knocks out one in front this turn, at its chance to act. */
         val threat: Double = 0.0,
         /**
@@ -88,15 +81,6 @@ internal object LocalKnockoutWorth {
         val fallsAnyway: Boolean = false,
     )
 
-    /**
-     * **하드코딩.** The floor of a knockout's urgency for a foe that neither threatens the one in front nor heals. No
-     * reading grounds it: its only measurable share, the chance the foe leaves before a later knockout (its predicted
-     * switch), was tried in its place (2caf6ac5c) and broke the user's decision of 2026-10-13 (a Lucario knocks a
-     * Furfrou out rather than Swords Dancing, switch predicted at 12.5%; LocalQuickDeciderTest); the rest of a knockout's
-     * worth now (a turn's tempo) has no data to price it. 0 never finishes a harmless foe, 1 reads it as urgent as one
-     * that knocks out. Kept at the value that decision's scene holds, until a grounded reading replaces it.
-     */
-    const val MINIMUM_URGENCY = 0.25
 
     fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
@@ -153,38 +137,13 @@ internal object LocalKnockoutWorth {
             val threats = inFront.associate { target ->
                 target.battlePokemonId to (scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) * aim(it) } ?: 0.0)
             }
-            // Whether it knocks out one of them at all, its aim aside: the urgency of knocking it out now.
+            // Whether it knocks out one of them at all, its aim aside.
             val threat = inFront.maxOfOrNull { target ->
                 scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0
             } ?: 0.0
-            // One that has healed itself in this battle (an ability, an item, a draining or healing move) may not be in reach
-            // later: knocking it out now matters whole. Read on threat alone, a Milotic left a Poison Heal Gliscor it Ice
-            // Beamed four times over at a quarter of the knockout and Scalded instead (hand-played Cynthia, 2026-10-20).
-            // Its own heal only: a terrain heals every Pokemon on the field (Grassy Terrain read a Mimikyu as a self-healer).
-            // A rise straight after a hit to the same Pokemon is the HP bar settling on that hit (+0.7% after a Brave Bird
-            // read a Mimikyu as a self-healer and a 23% Corviknight took the knockout over Roost, 2026-10-20).
-            val heals = state.observedEvents.withIndex().any { (index, event) ->
-                val before = state.observedEvents.getOrNull(index - 1)
-                event.actorPokemonId == id && (event.hpFractionDelta ?: 0.0) > 0.0 &&
-                    event.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
-                    // A terrain's heal, read from the move that sets it (no terrain named).
-                    event.publicSourceEffectId?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.setsTerrain(it.substringAfter(':')) } != true &&
-                    !(before?.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.HP_CHANGED &&
-                        before.actorPokemonId == id && (before.hpFractionDelta ?: 0.0) < 0.0)
-            }
             val threatNow = (threat * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0)
-            // What it would take off the one in front it hurts most, as a share of that one's HP left: a knockout is the whole
-            // of it, a heavy hit most of it. Its knockout chance alone read an Outrage for 71-85% as no hurry: a +3
-            // Conkeldurr's Close Combat that knocked the Haxorus out took a quarter of its worth and lost to Mach Punch
-            // (self-play, 2026-10-21).
-            val damageShare = inFront.maxOfOrNull { target ->
-                if (target.hpFraction <= 0.0) 0.0 else scores.moves(id, target.battlePokemonId).maxOfOrNull { move ->
-                    move.accuracy * minOf(1.0, (move.minimumDamageFraction + move.maximumDamageFraction) / 2.0 / target.hpFraction)
-                } ?: 0.0
-            } ?: 0.0
-            val urgency = maxOf(threatNow, (damageShare * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0))
             Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon, state), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
-                if (heals) 1.0 else urgency.coerceAtLeast(MINIMUM_URGENCY), threatNow,
+                threatNow,
                 threats.mapValues { (_, chance) -> (chance * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0) },
                 pokemon.activeSlot != null && ended.pokemon.firstOrNull { it.battlePokemonId == id }?.let { it.hpFraction <= 0.0 } == true)
         }

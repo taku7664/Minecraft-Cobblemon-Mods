@@ -89,14 +89,11 @@ internal object LocalQuickDecider {
         // it is the choice as often as a stay is expected and points before the draw otherwise: no threshold for a
         // small change in the prediction to cross (2026-10-13, user decision). The roll is the decision's seed, so every
         // call within one decision reads it the same.
-        // A knockout that can wait is not forced when this one is low and can heal: the foe cannot knock it out
-        // (LocalPokemonWorth.urgency at its floor), so the ranking weighs the heal (at this Pokemon's worth) against the
-        // knockout (at that urgency). A +4 Defence Corviknight at 23% Brave Birded a Mimikyu it would beat anyway, fell to
-        // 15% on the recoil and lost to the next foe (dev server, 2026-10-20). A healthy one still takes it (2026-10-13).
-        val canWaitToHeal = self.hpFraction <= HEAL_WAIT_HP &&
-            jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.urgency(foe.battlePokemonId) <= LocalKnockoutWorth.MINIMUM_URGENCY &&
-            moves.any { rank -> part(rank).moveDetails?.effects?.effects.orEmpty().any {
-                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER } }
+        // A knockout is not forced over a heal the ranking put first: the heal's value is what it restores to this
+        // Pokemon's standing (LocalHealValue), the knockout's what it takes. A +4 Defence Corviknight at 23% Brave Birded a
+        // Mimikyu it would beat anyway, fell to 15% on the recoil and lost to the next foe (dev server, 2026-10-20).
+        val canWaitToHeal = moves.maxByOrNull { it.comparisonValue }?.let { top -> part(top).moveDetails?.effects?.effects.orEmpty().any {
+            it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER } } == true
         val switchShare = (expectedSwitches[foe.battlePokemonId]?.values?.sum() ?: 0.0).coerceIn(0.0, 1.0)
         val switchExpected = switchShare > 0.0 && Random(seed xor 0x6B0C_2F5A_91D3_47E1L).nextDouble() < switchShare
         // Each of the foe's moves that knocks this one out first, by its own priority against the attack's: a higher one
@@ -558,5 +555,4 @@ internal object LocalQuickDecider {
     /** A stat raise whose user wins the one-on-one after it less often than this gives the turn away. */
     const val SETUP_WIN = 0.5
     const val FINISH_CHANCE = 0.3
-    private const val HEAL_WAIT_HP = 0.5
 }
