@@ -857,10 +857,38 @@ internal class LocalTacticalBrain(
                     // part's, and counts at the chance its user gets it off; the partner's attack keeps its value.
                     // Each status part's own credit (the doubles status rules add theirs part by part) at its own user's
                     // chance, read on the whole turn's board (a partner's Mega weather comes before any move).
-                    val change = candidate.componentActions.filter(::actingStatus).sumOf { part ->
-                        val credit = partCredits(part, scores)
+                    // The part's own ranking value too, as the attacks below: scaled only by its rules' credit, a 47% Sandaconda
+                    // whose Earthquake counted at its chance to move set up Coil instead (doubles replay, 2026-10-20).
+                    val change = rank.outcome.componentOutcomes.filter { actingStatus(it.candidate) }.sumOf { outcome ->
+                        val part = outcome.candidate
+                        val credit = partCredits(part, scores) + outcome.tacticalUtility.coerceAtLeast(0.0)
                         if (credit <= 0.0) 0.0
                         else (jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot) - 1.0) * credit
+                    } + rank.outcome.componentOutcomes.sumOf { outcome ->
+                        // An attack part's value at the chance its user moves before a foe knocks it out: the hit's damage at
+                        // the chance against every foe, its knockout credit against the foes it does not aim at (its targets'
+                        // threat is read by that credit already, LocalPokemonWorth.knockoutScore). Unread, a 19% Kingdra
+                        // Dynamaxed for a Max Geyser on a Rhyperior and fell under Trick Room to the Hatterene beside it before
+                        // moving (hand-played doubles, 2026-10-20). The mechanic's cost (a Dynamax spent) is paid either way.
+                        val part = outcome.candidate
+                        if (part.kind != BattleActionKind.USE_MOVE ||
+                            part.moveDetails?.damageCategory.let { it == null || it == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }) return@sumOf 0.0
+                        val cost = if (part.mechanic == null || !tuning.mechanicReserve) 0.0
+                            else jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(part, difficultyContext, decidingProfile)
+                        val knockout = outcome.knockoutUtility.coerceAtLeast(0.0)
+                        val hit = (outcome.tacticalUtility + cost - knockout).coerceAtLeast(0.0)
+                        if (hit + knockout <= 0.0) return@sumOf 0.0
+                        val aimed = part.targets.filter { it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT }.mapNotNull { slot ->
+                            difficultyContext.state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }?.battlePokemonId
+                        }.toSet().ifEmpty {
+                            // A spread move aims at every foe in front.
+                            difficultyContext.state.pokemon.filter { it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+                                .mapTo(hashSetOf()) { it.battlePokemonId }
+                        }
+                        val every = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot)
+                        val others = if (knockout <= 0.0) 1.0
+                            else jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot, aimed)
+                        (every - 1.0) * hit + (others - 1.0) * knockout
                     }
                     return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
                 }

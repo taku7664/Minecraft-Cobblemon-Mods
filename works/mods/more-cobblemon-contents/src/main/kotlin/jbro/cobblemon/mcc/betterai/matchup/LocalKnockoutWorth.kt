@@ -121,10 +121,19 @@ internal object LocalKnockoutWorth {
                         move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
                 }.maxByOrNull { it.second }
             }
+            // A single hit aimed at one of the Pokemon in front, one time in as many as there are; a spread hit at each (the aim
+            // LocalActingChance reads). Read as always aimed at it, a +4 Kingambit at 26% was worth nothing to a Rhyperior's
+            // Earthquake while the Slowking beside it was as likely a target (doubles replay, 2026-10-20). Whole in singles.
+            fun aim(move: MoveMatchupScore) = if (inFront.size <= 1 ||
+                jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().move(PublicIds.canonical(move.moveId))?.target in SPREAD_TARGETS) 1.0
+                else 1.0 / inFront.size
             val threats = inFront.associate { target ->
-                target.battlePokemonId to (scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0)
+                target.battlePokemonId to (scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) * aim(it) } ?: 0.0)
             }
-            val threat = threats.values.maxOrNull() ?: 0.0
+            // Whether it knocks out one of them at all, its aim aside: the urgency of knocking it out now.
+            val threat = inFront.maxOfOrNull { target ->
+                scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0
+            } ?: 0.0
             // One that has healed itself in this battle (an ability, an item, a draining or healing move) may not be in reach
             // later: knocking it out now matters whole. Read on threat alone, a Milotic left a Poison Heal Gliscor it Ice
             // Beamed four times over at a quarter of the knockout and Scalded instead (hand-played Cynthia, 2026-10-20).
@@ -236,6 +245,7 @@ internal object LocalKnockoutWorth {
         BattleMoveEffectKind.CRASH_RECOIL, BattleMoveEffectKind.STRUGGLE_RECOIL,
     )
     private const val MINIMUM_MEAN = 1e-6
+    private val SPREAD_TARGETS = setOf("allAdjacent", "allAdjacentFoes")
     /** One Pokemon in board units, as [jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial] counts it. */
     private const val ONE_POKEMON = 2.0
 }

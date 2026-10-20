@@ -31,6 +31,16 @@ class LocalDoublesReadingsTest {
     }
 
     @Test
+    fun `an attack part counts at the chance its user moves before the other foe knocks it out`() {
+        // Under Trick Room the 19% Kingdra moves after the Hatterene beside its target, whose Dazzling Gleam knocks it out:
+        // its hits earn nothing, so spending the side's Dynamax on one is a loss.
+        val (context, stages) = decide("kingdra-doomed-keeps-dynamax-doubles")
+        val best = stages.refined.maxBy { it.value }.key
+        assertTrue(parts(context, best).none { it.mechanic != null }, "${label(context, best)} ${stages.refined.entries.sortedByDescending { it.value }.take(4)}")
+        assertTrue(stages.drawProbabilities.filterKeys { id -> parts(context, id).any { it.mechanic != null } }.values.sum() < 0.25, "${stages.drawProbabilities}")
+    }
+
+    @Test
     fun `a Trick Room part takes the room's value in doubles`() {
         val (context, stages) = decide("trickroom-lead-doubles")
         val room = stages.rules["trickRoom"].orEmpty()

@@ -31,6 +31,8 @@ internal object LocalActingChance {
         context: BattleDecisionContext,
         @Suppress("UNUSED_PARAMETER") scores: MatchupScores,
         actorSlot: Int? = candidate.actorSlot,
+        /** Foes left out: an attack's own target, whose threat its knockout credit already reads (LocalPokemonWorth.knockoutScore). */
+        ignoring: Set<java.util.UUID> = emptySet(),
     ): Double {
         val board = context.copy(state = LocalMechanicActivationProjector.beforeMoves(context.state, BattleSide.ALLY, candidate))
         val state = board.state
@@ -50,7 +52,8 @@ internal object LocalActingChance {
         }
         // Each foe's likeliest knockout, and with its Max Move where it may still Dynamax and that knocks out more
         // ([LocalFoeDynamaxThreat]).
-        val reads = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+        val reads = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                it.battlePokemonId !in ignoring }
             .mapNotNull { foe ->
                 val faced = LocalMatchupPosition.face(board, user, foe, cache) ?: return@mapNotNull null
                 val plain = LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
