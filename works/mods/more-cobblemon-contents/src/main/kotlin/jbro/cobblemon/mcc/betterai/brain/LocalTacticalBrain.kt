@@ -747,11 +747,51 @@ internal class LocalTacticalBrain(
                     ?.let { candidate.actionId to (it.value - rank.comparisonValue) }
             }.toMap()
         }.orEmpty()
+        // A heal that puts its user to sleep (Rest: its move code sets the sleep counter) gives up the turns it sleeps
+        // through: each worth the best other move on offer now. The hits taken asleep are taken awake too, so they cost
+        // nothing extra. With Sleep Talk the sleeper still acts, a random one of its other moves: it gives up only what that
+        // draw falls short of the best. Priced as a heal alone, a 74% Giratina Rested (30.2) in front of a 13% Zamazenta its
+        // Dragon Pulse knocked out for sure (self-play, 2026-10-21).
+        val restAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else {
+            val moves = searchedRanked.filter { it.outcome.candidate.kind == BattleActionKind.USE_MOVE && !it.outcome.publiclyInert }
+            fun sleeps(rank: jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank) =
+                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.userSleepTurns(rank.outcome.candidate.moveId)
+            val others = moves.filter { sleeps(it) == null && !jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(it.outcome.candidate.moveId) }
+            val best = others.maxOfOrNull { it.comparisonValue }?.coerceAtLeast(0.0) ?: 0.0
+            val talks = moves.any { jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(it.outcome.candidate.moveId) }
+            val drawn = others.map { it.comparisonValue.coerceAtLeast(0.0) }.average().takeIf { !it.isNaN() } ?: 0.0
+            val lostPerTurn = if (best <= 0.0) 0.0 else if (talks) best - drawn else best
+            moves.mapNotNull { rank ->
+                val counter = sleeps(rank) ?: return@mapNotNull null
+                val asleep = (counter - 1).coerceAtLeast(0)
+                if (asleep == 0 || lostPerTurn <= 0.0) null else rank.outcome.candidate.actionId to -asleep * lostPerTurn
+            }.toMap()
+        }
         // A debuff's ranking value becomes what it takes off, in knockout units (the setup score's scale).
+        // The chance this side knocks the foe in front out this turn: its best attack's knockout at the chance that attack
+        // goes off before the foe knocks the user out (LocalActingChance). Singles, as the debuffs below.
+        val knockoutNow by lazy {
+            ruleScores?.let { scores ->
+                val state = difficultyContext.state
+                val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+                val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+                if (user == null || foe == null) null else difficultyContext.candidates.filter { candidate ->
+                    candidate.kind == BattleActionKind.USE_MOVE &&
+                        candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
+                }.maxOfOrNull { candidate ->
+                    val moveId = jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(candidate.moveId.orEmpty())
+                    (scores.moves(user.battlePokemonId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }?.knockoutChanceWithin(1) ?: 0.0) *
+                        jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
+                }
+            } ?: 0.0
+        }
         val debuffAdjustments = debuffReadings.mapNotNull { (id, reading) ->
             // A debuff that fails publicly (the target already has a status) keeps its failing rank.
+            // It changes the fight only where the foe survives this turn: knocked out instead, there is no fight left to
+            // change. Read whole, a Togekiss paralysed a Dragapult it knocked out for sure with Dazzling Gleam (114 over 106),
+            // a Dragapult whose shown moves barely touched it (replayed 2026-10-20).
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.takeUnless { it.outcome.publiclyInert }?.let {
-                id to (reading.gain * tuning.knockoutMaterialScore - it.comparisonValue)
+                id to (reading.gain * tuning.knockoutMaterialScore * (1.0 - knockoutNow.coerceIn(0.0, 1.0)) - it.comparisonValue)
             }
         }.toMap()
         // Trick Room's value becomes how much turning the speed order over changes both teams' matchups (LocalTrickRoomCredit).
@@ -841,12 +881,12 @@ internal class LocalTacticalBrain(
         val pendingPartnerAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalPendingPartnerHit.adjustments(
             difficultyContext.candidates, difficultyContext, active?.lastPair?.takeIf { it.first == difficultyContext.state.turn }?.second, tuning)
         val ruleAdjustments = (pendingPartnerAdjustments.keys + switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
-            knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys +
+            knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys + restAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + screenAdjustments.keys +
             hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (pendingPartnerAdjustments[it] ?: 0.0) + (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
+                (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) + (restAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) + (healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
                 (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
@@ -1084,7 +1124,7 @@ internal class LocalTacticalBrain(
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
                     "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments, "asleep" to sleepAdjustments,
                     "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments,
-                    "statusMove" to statusMoveAdjustments).filterValues { it.isNotEmpty() },
+                    "statusMove" to statusMoveAdjustments, "rest" to restAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
