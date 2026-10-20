@@ -210,6 +210,20 @@ internal object LocalMatchupScoreCalculator {
     ): Double? {
         // A raise it cannot pay for fails: nothing is bought with it.
         if (hpCost > 0.0 && subject.hpFraction <= hpCost) return 0.0
+        return boostedExchange(context, subject, foe, stages, pairs, cache, setupTurn, hpCost)?.let { (survives, pair) -> survives * pair.winProbability }
+    }
+
+    /** [boostedWin]'s exchange itself, with the chance [subject] lives through the setup turn: its knockout's timing too. */
+    internal fun boostedExchange(
+        context: BattleDecisionContext,
+        subject: BattlePokemonStateView,
+        foe: BattlePokemonStateView,
+        stages: Map<String, Int>,
+        pairs: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+        setupTurn: Boolean,
+        hpCost: Double = 0.0,
+    ): Pair<Double, PokemonMatchupScore>? {
         val base = if (setupTurn) pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: return null else null
         val taken = base?.opponentMove?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
         val survives = survivesCost(subject, hpCost, 1, base?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0, taken)
@@ -219,9 +233,9 @@ internal object LocalMatchupScoreCalculator {
             if (it.battlePokemonId != subject.battlePokemonId) it
             else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
         })
-        val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
-            MatchupSpeedField.CURRENT, cache)?.winProbability ?: return null
-        return survives * win
+        val pair = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+            MatchupSpeedField.CURRENT, cache) ?: return null
+        return survives to pair
     }
 
     private class Boost(

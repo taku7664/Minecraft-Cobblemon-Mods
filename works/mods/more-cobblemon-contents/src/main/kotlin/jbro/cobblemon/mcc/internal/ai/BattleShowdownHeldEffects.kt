@@ -84,6 +84,10 @@ object BattleShowdownHeldEffects {
         return abilityId?.let { abilities[canonical(it)] }?.keys.orEmpty().any { hook.matches(it) }
     }
 
+    /** The ability locks its holder into its first move as a Choice item does (Gorilla Tactics): its code keeps a `choiceLock`. */
+    fun locksChoice(abilityId: String?): Boolean =
+        abilityId?.let { abilities[canonical(it)] }?.values.orEmpty().any { CHOICE_LOCK in it }
+
     /** The ability keeps its holder in against a forced switch (Suction Cups, Guard Dog): it answers onDragOut. */
     fun resistsForcedSwitch(abilityId: String?): Boolean = abilityId?.let { abilities[canonical(it)] }?.containsKey("onDragOut") == true
 
@@ -125,6 +129,7 @@ object BattleShowdownHeldEffects {
     private val DEFENDER_DAMAGE_HOOK = Regex(
         "onSource(BasePower|Modify(Atk|SpA|Damage))|on(Ally)?(Modify(Def|SpD)|TryHit|Immunity|Effectiveness|CriticalHit|Damage)|" +
             "onAny(BasePower|Modify(Atk|SpA|Def|SpD|Boost|Damage))")
+    private const val CHOICE_LOCK = "abilityState.choiceLock"
     private val ORDER_HOOKS = setOf("onModifyPriority", "onFractionalPriority")
     private const val CONDITIONS_FILE = "data/conditions.js"
     private const val CONDITIONS_MARKER = "const Conditions ="

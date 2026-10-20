@@ -182,7 +182,29 @@ internal object LocalSetupGate {
             actingChance(foe, context.state) * hit * dynamaxSurvival + (1.0 - actingChance(foe, context.state)) * free
         }
         val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
-        val won = if (win >= WIN_PASS) 1.0 else 0.0
+        // A raise buys something only where it changes a fight, against any foe still to beat (in front, seen behind, or
+        // in the preview and not yet seen): a loss turned into a win, a knockout in fewer uses, more of the foe's hits
+        // survived, or the first move instead of the second. Whatever the stat raised, each read from the exchange with
+        // and without it. Read as a win alone, a Scizor that beat what stood in front kept raising: three Swords Dances to
+        // +6 before it attacked (dev server, 2026-10-20).
+        fun turns(move: MoveMatchupScore?) = move?.let { m -> (1..LocalMatchupScoreCalculator.MAXIMUM_USES).firstOrNull { m.knockoutChanceWithin(it) >= 0.5 } }
+            ?: (LocalMatchupScoreCalculator.MAXIMUM_USES + 1)
+        fun changes(board: BattleDecisionContext, foe: BattlePokemonStateView): Boolean {
+            val now = LocalMatchupScoreCalculator.boostedExchange(board, user, foe, emptyMap(), scores, cache, setupTurn = false)?.second ?: return true
+            val raised = LocalMatchupScoreCalculator.boostedExchange(board, user, foe, stages, scores, cache, setupTurn = false, hpCost = cost)
+                ?.second ?: return true
+            // Not yet winning the one in front: whether the raise wins it is the score's own question below.
+            if (now.winProbability < WIN_PASS) return raised.winProbability >= WIN_PASS || facing.any { it.battlePokemonId == foe.battlePokemonId }
+            return turns(raised.subjectMove) < turns(now.subjectMove) ||
+                turns(raised.opponentMove) > turns(now.opponentMove) ||
+                now.subjectMovesFirstProbability < 0.5 && raised.subjectMovesFirstProbability >= 0.5
+        }
+        val behind = context.state.pokemon.filter { foe ->
+            foe.side == BattleSide.OPPONENT && foe.activeSlot == null && !foe.fainted && foe.hpFraction > 0.0
+        }
+        val buys = facing.any { changes(context, it) } || behind.any { changes(context, it) } ||
+            LocalSwitchRules.previewFoes(context)?.let { (board, foes) -> foes.any { changes(context.copy(state = board), it) } } == true
+        val won = if (win >= WIN_PASS && buys) 1.0 else 0.0
         return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)) *
             sureKnockoutCost(context, user, facing, scores, cache) * resetHolds(context, user, facing, stages, scores, cache))
     }

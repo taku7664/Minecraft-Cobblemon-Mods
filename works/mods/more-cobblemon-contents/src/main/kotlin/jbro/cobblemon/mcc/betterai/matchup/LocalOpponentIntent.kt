@@ -85,14 +85,19 @@ internal object LocalOpponentIntentPredictor {
                     user, option.details.effects?.effects.orEmpty(), context, cache)
             }
             val known = context.publicActionCatalog.forPokemon(user.battlePokemonId).distinctBy { PublicIds.canonical(it.moveId) }
-            val moves = (known + inferredAttacks(user, known, context))
+            val offered = known + inferredAttacks(user, known, context)
+            // Held to one move (Outrage, Encore, a shown Choice item), it uses that one; a lock onto a move the list does
+            // not hold is no evidence about the others, as the search's own actions read it.
+            val lock = lockedMove(user, state)
+            val usable = lock?.let { held -> offered.filter { PublicIds.canonical(it.moveId) == held.moveId }.ifEmpty { null } } ?: offered
+            val moves = usable
                 .flatMap { move(it, user, allies, bench, context, scores, ::stageCost) }
                 // A Dynamaxed Pokemon's status moves all read as the one Max Guard.
                 .distinctBy { Triple(it.kind, it.moveId, it.targetId) }
-            val switches = bench.mapNotNull { switchOption(user, it, allies, scores) }
+            val switches = if (lock?.canSwitch == false) emptyList() else bench.mapNotNull { switchOption(user, it, allies, scores) }
             val options = if (!scored) softmax(moves + switches) else {
                 // Whether it switches, from the fitted model; where to, by the incoming Pokemon's matchups.
-                val chance = features[user.battlePokemonId]?.let(::switchChance) ?: 0.0
+                val chance = if (switches.isEmpty()) 0.0 else features[user.battlePokemonId]?.let(::switchChance) ?: 0.0
                 softmax(moves).map { it.copy(probability = it.probability * (1.0 - chance)) } +
                     softmax(switches).map { it.copy(probability = it.probability * chance) }
             }
@@ -533,6 +538,30 @@ internal object LocalOpponentIntentPredictor {
         val weights = options.map { exp((it.value - top) / TEMPERATURE) }
         val total = weights.sum()
         return options.zip(weights) { option, weight -> option.copy(probability = weight / total) }.sortedByDescending { it.probability }
+    }
+
+    private class MoveLock(val moveId: String, val canSwitch: Boolean)
+
+    /**
+     * The move [user] is held to this turn, as the search's own actions read it: a rampage (Outrage, Thrash; the
+     * observation adapter clears it once fatigue confuses the user) with no way out, an Encore, or a shown Choice item or
+     * Gorilla Tactics on the move used since it came in. Read free, an Outrage-locked Dragonite was expected to switch or
+     * pick another move (dev server, 2026-10-20).
+     */
+    private fun lockedMove(user: BattlePokemonStateView, state: BattleStateView): MoveLock? {
+        jbro.cobblemon.mcc.betterai.mechanics.LocalPersistentMoveState.rampageMoveId(user)?.let { return MoveLock(PublicIds.canonical(it), canSwitch = false) }
+        user.actionConstraints.encoreMoveId?.let { return MoveLock(PublicIds.canonical(it), canSwitch = true) }
+        val item = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicItemState.activeItemId(state, user)
+        // Read from the item's and the ability's code (`isChoice`, a `choiceLock`), no name listed.
+        val choice = jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.isChoice(item) ||
+            jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.locksChoice(
+                jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState.effectiveKnownAbility(state, user))
+        if (!choice) return null
+        val entered = state.observedEvents.lastOrNull { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED &&
+            it.actorPokemonId == user.battlePokemonId }?.sequence ?: Long.MIN_VALUE
+        val last = state.observedEvents.lastOrNull { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.MOVE_USED &&
+            it.actorPokemonId == user.battlePokemonId && it.sequence > entered }?.publicValueId ?: return null
+        return MoveLock(PublicIds.canonical(last), canSwitch = true)
     }
 
     /** Whether [pokemon] has not moved since it last came in. */

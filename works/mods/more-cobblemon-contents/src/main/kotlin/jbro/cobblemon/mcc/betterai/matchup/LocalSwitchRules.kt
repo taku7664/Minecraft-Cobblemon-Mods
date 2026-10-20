@@ -52,7 +52,7 @@ internal object LocalSwitchRules {
     }
 
     /** The preview's opposing Pokemon not seen yet, as hypothetical bench Pokemon on a copy of the board, or null without any. */
-    private fun previewFoes(context: BattleDecisionContext): Pair<jbro.cobblemon.mcc.internal.ai.BattleStateView, List<BattlePokemonStateView>>? {
+    internal fun previewFoes(context: BattleDecisionContext): Pair<jbro.cobblemon.mcc.internal.ai.BattleStateView, List<BattlePokemonStateView>>? {
         val preview = context.opponentTeamPreview ?: return null
         val state = context.state
         val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT }

@@ -205,6 +205,34 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `a raise that changes no fight left is worth nothing, however well its user already does`() {
+        // Faster and knocking out in one hit, with no foe behind: another raise changes nothing, so the attack goes first.
+        // Read as a win alone, a Scizor kept Swords Dancing to +6 (dev server, 2026-10-20).
+        val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 300.0, foePower = 65.0, allySetup = mapOf("atk" to 2))
+        val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
+        assertTrue(reading.win >= LocalSetupGate.WIN_PASS) { reading.toString() }
+        assertEquals(0.0, reading.value, 1e-9)
+    }
+
+    @Test
+    fun `an opponent locked into Outrage is expected to use it and cannot switch`() {
+        val outrage = BattlePublicMoveOptionView("outrage", BattleMoveCandidateView(typeId = "dragon",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 120.0, accuracy = 100.0, priority = 0, currentPp = 8),
+            BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        fun intent(volatiles: Set<String>) = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 300.0,
+            foeExtra = listOf(outrage), secondFoe = true).let { built ->
+            val board = built.copy(state = built.state.copyState(pokemon = built.state.pokemon.map {
+                if (it.battlePokemonId == FOE) it.copyState(knownVolatileEffectIds = volatiles) else it }))
+            LocalOpponentIntentPredictor.predict(board, LocalMatchupScoreCalculator.calculate(board), scoredSwitches = true).single()
+        }
+        val free = intent(emptySet()).byAction()
+        assertTrue((free["move:probe"] ?: 0.0) > 0.0) { free.toString() }
+        val locked = intent(setOf("rampagepublic:outrage:1")).byAction()
+        assertEquals(1.0, locked["move:outrage"] ?: 0.0, 1e-9) { locked.toString() }
+        assertTrue(locked.keys.none { it.startsWith("switch:") }) { locked.toString() }
+    }
+
+    @Test
     fun `haze trades a turn for the boost and does not stop the setup`() {
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
             allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("haze", BattleMoveTargetPattern.ALL_ACTIVE)))
