@@ -368,7 +368,17 @@ internal object LocalBattleActionOutcomeEvaluator {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
     ): LocalBattleActionOutcome {
-        val components = candidate.componentActions.map { evaluate(it, context, strategy, profile, tuning) }
+        val components = candidate.componentActions.mapIndexed { index, part ->
+            // A partner's move that changes the weather before this one (a Max Rockfall's sand before a Solar Beam) is read on
+            // that weather: read on the board's, a Torkoal's Solar Beam kept the sun its partner's Max Rockfall replaced, and
+            // charged (hand-played sun concept, doubles, 2026-10-20).
+            partnerWeather(candidate, index, context)?.let { weather ->
+                runCatching {
+                    val board = weatherBoard(context, weather)
+                    evaluate(jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator.recalculate(part, board), board, strategy, profile, tuning)
+                }.getOrNull()
+            } ?: evaluate(part, context, strategy, profile, tuning)
+        }
         val secureTargets = candidate.componentActions.zip(components)
             .filter { (_, outcome) -> outcome.secureStandardKnockouts > 0 }
             .flatMap { (action, _) -> action.targets.filter { it.side == BattleSide.OPPONENT } }
@@ -408,6 +418,44 @@ internal object LocalBattleActionOutcomeEvaluator {
             itemUtility = components.sumOf(LocalBattleActionOutcome::itemUtility) + items.itemUtility,
         )
     }
+
+    /**
+     * The weather another part of [candidate] sets before its part [index] moves (more likely than not), when it is not the
+     * board's: read from the setting move's declared weather (a Max Move's included), no move named.
+     */
+    private fun partnerWeather(candidate: BattleActionCandidate, index: Int, context: BattleDecisionContext): String? {
+        val part = candidate.componentActions[index]
+        if (part.kind != BattleActionKind.USE_MOVE) return null
+        val state = context.state
+        val current = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics.effectiveWeatherId(state)
+        return candidate.componentActions.withIndex().filter { it.index != index && it.value.kind == BattleActionKind.USE_MOVE }.firstNotNullOfOrNull { (_, setter) ->
+            // A Dynamax attack is its Max Move, whose effects (its weather) are not the base move's.
+            val moving = if (!jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.isMechanic(setter.mechanic?.mechanicId)) setter else {
+                val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == setter.actorSlot && !it.fainted }
+                    ?: return@firstNotNullOfOrNull null
+                val gigantamax = context.exactOwnTeam?.buildFor(user.battlePokemonId)?.gigantamax == true ||
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.gigantamax(user)
+                jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(setter, jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.start(user, gigantamax))
+            }
+            val weather = moving.moveDetails?.effects?.effects.orEmpty()
+                .firstOrNull { it.kind == BattleMoveEffectKind.WEATHER }?.valueId?.let(jbro.cobblemon.mcc.internal.ai.PublicIds::canonical)
+                ?: return@firstNotNullOfOrNull null
+            if (weather == current) return@firstNotNullOfOrNull null
+            val first = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, setter, BattleSide.ALLY, part)
+                ?: return@firstNotNullOfOrNull null
+            weather.takeIf { first > 0.5 }
+        }
+    }
+
+    /** The board with [weather] up in place of the one it has. */
+    private fun weatherBoard(context: BattleDecisionContext, weather: String): BattleDecisionContext {
+        val field = context.state.field
+        return context.copy(state = context.state.derive(field = jbro.cobblemon.mcc.internal.ai.BattleFieldStateView(
+            jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView(weather, WEATHER_TURNS), field.terrain, field.roomEffects, field.globalEffects,
+            field.sideConditions)))
+    }
+
+    private const val WEATHER_TURNS = 5
 
     private fun empty(candidate: BattleActionCandidate, tacticalUtility: Double) = LocalBattleActionOutcome(
         candidate = candidate,

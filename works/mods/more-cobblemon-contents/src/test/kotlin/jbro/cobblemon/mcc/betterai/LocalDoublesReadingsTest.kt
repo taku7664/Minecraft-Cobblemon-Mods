@@ -41,6 +41,22 @@ class LocalDoublesReadingsTest {
     }
 
     @Test
+    fun `a part is read on the weather its faster partner's move sets first`() {
+        // Garchomp's Max Rockfall (sand) comes before Torkoal's Solar Beam: the beam charges and is halved, not fired in sun.
+        val snapshot = load("torkoal-solarbeam-under-partner-max-rockfall-doubles")
+        val context = jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator.calculate(snapshot.context, observedBoard = true)
+        fun total(id: String) = jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcomeEvaluator.evaluate(
+            context.candidates.first { it.actionId == id }, context, null, BattleTrainerProfile.boss())
+        val beamWithRockfall = total("move 3 2, move 3 1 dynamax")
+        val beamWithEdge = total("move 3 2, move 3 1")
+        val beamAlone = jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcomeEvaluator.evaluate(
+            beamWithEdge.componentOutcomes[0].candidate, context, null, BattleTrainerProfile.boss())
+        assertTrue(beamWithRockfall.componentOutcomes[0].tacticalUtility < beamAlone.tacticalUtility - 10.0,
+            "${beamWithRockfall.componentOutcomes[0].tacticalUtility} vs ${beamAlone.tacticalUtility}")
+        assertEquals(beamAlone.tacticalUtility, beamWithEdge.componentOutcomes[0].tacticalUtility, 1e-9)
+    }
+
+    @Test
     fun `a Trick Room part takes the room's value in doubles`() {
         val (context, stages) = decide("trickroom-lead-doubles")
         val room = stages.rules["trickRoom"].orEmpty()

@@ -50,6 +50,13 @@ internal object PublicBattleTacticalCalculator {
         )
     }
 
+    /** [candidate]'s facts worked out again on [context]'s board, the ones it carries dropped (a board whose weather changed). */
+    fun recalculate(candidate: BattleActionCandidate, context: BattleDecisionContext, observedBoard: Boolean = true): BattleActionCandidate {
+        fun bare(action: BattleActionCandidate): BattleActionCandidate =
+            action.copyWith(componentActions = action.componentActions.map(::bare), facts = null)
+        return calculateCandidate(bare(candidate), context, BattleSide.ALLY, context.state.takeIf { observedBoard })
+    }
+
     /**
      * Returns sixteen mechanically possible Showdown damage rolls without assigning probability to
      * hidden stat hypotheses. Own attacks use the public lower-damage hypothesis; opponent attacks
