@@ -121,6 +121,12 @@ internal object LocalQuickDecider {
                 ?.let { maxOf(it, byExchange) } ?: byExchange
         }
         attacks.firstOrNull { (rank, score) ->
+            // A knockout that faints its own user (Explosion's kind, from the move data) is no free one: the ranking prices
+            // the user it costs, and decides. Taken here, a full-HP Golem Exploded on a 22% Donphan whose Earthquake it
+            // survived, where its own Earthquake ranked first (self-play, 2026-10-21).
+            if (part(rank).moveDetails?.effects?.effects.orEmpty().any {
+                    it.kind == BattleMoveEffectKind.SELF_DESTRUCT && it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER
+                }) return@firstOrNull false
             // Sucker Punch knocks out only if the foe attacks: a Swords Dance in front of it is a turn lost.
             val lands = if (LocalPendingAttackChance.requiresPendingAttack(part(rank))) LocalPendingAttackChance.attacks(foe, context, opponentIntents) else 1.0
             // At the chance its own move runs: a sleeper's only as it wakes (LocalSleepClock.moveRuns).
