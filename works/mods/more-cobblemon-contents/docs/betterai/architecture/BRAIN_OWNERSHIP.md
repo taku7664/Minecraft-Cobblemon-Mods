@@ -18,7 +18,7 @@
 - Router가 반환한 합법 `actionId`는 로컬 점수, 추천, 계획 또는 신뢰도 때문에 교체되어서는 안 된다(MUST NOT).
 - API 키가 없거나 외부 Brain이 비활성인 배틀은 Better AI 로컬 Brain이 판단해야 한다(MUST).
 - 외부 실패·시간 초과·잘못된 `actionId`는 해당 응답을 실패로 처리하고 외부 폴백 조정기가 같은 공개 컨텍스트로 준비한 Better AI 로컬 Brain 결과를 사용해야 한다(MUST).
-- 빠른 폴백을 위해 Router와 Local 판단 계산을 동시에 시작할 수 있다(MAY). Router가 성공하면 Local 결과는 행동·조언·기억 어느 곳에도 반영해서는 안 된다(MUST NOT). 예외: 2026-10-20부터 Local 평가는 §8의 프롬프트 블록으로만 Router에 전달된다.
+- 빠른 폴백을 위해 Router와 Local 판단 계산을 동시에 시작할 수 있다(MAY). Router가 성공하면 Local 결과는 행동·조언·기억 어느 곳에도 반영해서는 안 된다(MUST NOT).
 - 전체 폴백 순서는 `OpenRouter Brain → Better AI 로컬 Brain → 본체 Cobblemon 기준선 → 비상 안전 행동`이어야 한다(MUST).
 
 ## 2. 계산 자료의 책임
@@ -71,16 +71,3 @@
 - 로컬 점수 상위 후보만 Router에 전달하는 방식은 Router의 선택 공간에 로컬 판단이 개입하므로 폐기한다.
 - 계산 자료에 `expectedUtility`, `localRank`, `recommendedAction`을 넣는 방식은 사실 공급과 판단을 섞으므로 폐기한다.
 - 2026-08-18 이후 이 제품 계열에서 결정 지점 호출 정책과 `maximumCallsPerBattle` 실행 제한은 다시 구현하지 않는다. 다시 검토하려면 이 문서를 명시적으로 `Obsoletes`하는 후속 결정이 필요하다.
-
-## 8. 2026-10-20 후속 결정: Router에 로컬 평가와 상대 성향을 넘긴다
-
-빡대리님 결정(2026-10-20): Router 프롬프트에 로컬 Brain의 평가와 로컬의 상대 행동 예측을 넣고, 가중치는 우선 둘 다 1.0으로 둔다. §1의 "Local 결과를 반영하지 않는다"와 Router 시스템 지시문의 "로컬 효용·순위·추천은 제공하지 않는다" 문구를 이 범위에서 대체한다.
-
-- Router Brain은 합법 행동이 둘 이상인 판단마다 같은 컨텍스트로 로컬 Brain(`searchless`)을 먼저 돌리고, 그 결과를 두 블록으로 프롬프트에 붙인다.
-  - `localBrain`: 로컬이 고를 행동(`selected`), 후보별 최종 값·뽑기 확률·제외 사유·규칙 보정·빠른 판정.
-  - `opponentTendency`: 로컬이 예측한 상대 활성 포켓몬별 기술·교체 확률, `patternResponseShiftEvidence`, `opponentResponseVolatility`.
-- 두 블록은 계산기 사실(`candidates[].facts`)과 섞지 않는다. §2·§6·§7의 "계산 자료에 효용·순위·추천을 넣지 않는다"는 그대로 유지한다.
-- 각 블록에는 `weight`가 붙는다. 서버 `openrouter.json`의 `localBrainWeight`, `opponentTendencyWeight`(기본 1.0, 범위 0~10)에서 읽는다. 1.0은 계산 사실만큼 반영하라는 뜻이고, 0이면 그 블록을 빼며 둘 다 0이면 로컬을 돌리지 않는다.
-- 최종 행동은 계속 Router가 고른다. Router의 합법 `actionId`를 로컬 결과로 교체하지 않는다(§1 유지).
-- Router가 고른 행동은 Router 쪽 로컬 세션에 기록한다(`LocalTacticalBrain.recordPlayed`). 다음 판단의 특성 재생(`LocalAbilityPosterior`)과 더블 파트너 기술 판독이 로컬 자신의 선택이 아니라 실제로 나간 행동을 읽게 하려는 것이다.
-- 로컬이 실패하면 블록 없이 기존 프롬프트로 보낸다. 블록이 붙은 요청의 `promptVersion`은 `brain-choice-v25-local`이다.

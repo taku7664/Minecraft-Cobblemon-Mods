@@ -40,12 +40,6 @@ internal data class BetterAiConfig(
      * not only the AI test trainers'. Off by default; the dev server turns it on to explain a decision afterwards.
      */
     val recordDecisions: Boolean = false,
-    /**
-     * How strongly the external model leans on the local brain's own evaluation of the decision and on the local reading
-     * of the opponent, next to the mechanical facts (1.0 as much as the facts, 0 leaves the block out of the prompt).
-     */
-    val localBrainWeight: Double = 1.0,
-    val opponentTendencyWeight: Double = 1.0,
     val promptVersion: String = "humanlike-v1",
     val requireStructuredOutput: Boolean = true,
     val decisionMode: BetterAiDecisionMode = BetterAiDecisionMode.QUALITY,
@@ -64,8 +58,6 @@ internal data class BetterAiConfig(
         require(maximumConcurrentRequests in 1..16)
         require(maximumQueuedRequests in 0..256)
         require(maximumCallsPerBattle in 1..32)
-        require(localBrainWeight.isFinite() && localBrainWeight in 0.0..10.0)
-        require(opponentTendencyWeight.isFinite() && opponentTendencyWeight in 0.0..10.0)
         require(promptVersion == "humanlike-v1")
         require(appName.isNotBlank() && appName.length <= 80)
         require(appUrl.isBlank() || appUrl.startsWith("https://"))
@@ -88,8 +80,6 @@ internal data class BetterAiConfig(
             "mindGamesEnabled=$mindGamesEnabled, " +
             "logDecisionSummary=$logDecisionSummary, " +
             "recordDecisions=$recordDecisions, " +
-            "localBrainWeight=$localBrainWeight, " +
-            "opponentTendencyWeight=$opponentTendencyWeight, " +
             "promptVersion=$promptVersion, " +
             "requireStructuredOutput=$requireStructuredOutput, " +
             "decisionMode=$decisionMode, " +
@@ -138,8 +128,6 @@ internal object BetterAiConfigStore {
             mindGamesEnabled = root.boolean("mindGamesEnabled", defaults.mindGamesEnabled),
             logDecisionSummary = root.boolean("logDecisionSummary", defaults.logDecisionSummary),
             recordDecisions = root.boolean("recordDecisions", defaults.recordDecisions),
-            localBrainWeight = root.double("localBrainWeight", defaults.localBrainWeight),
-            opponentTendencyWeight = root.double("opponentTendencyWeight", defaults.opponentTendencyWeight),
             promptVersion = root.string("promptVersion", defaults.promptVersion),
             requireStructuredOutput = root.boolean("requireStructuredOutput", defaults.requireStructuredOutput),
             decisionMode = decisionMode,
@@ -179,8 +167,6 @@ internal object BetterAiConfigStore {
         addProperty("mindGamesEnabled", config.mindGamesEnabled)
         addProperty("logDecisionSummary", config.logDecisionSummary)
         addProperty("recordDecisions", config.recordDecisions)
-        addProperty("localBrainWeight", config.localBrainWeight)
-        addProperty("opponentTendencyWeight", config.opponentTendencyWeight)
         addProperty("promptVersion", config.promptVersion)
         addProperty("requireStructuredOutput", config.requireStructuredOutput)
         addProperty("decisionMode", config.decisionMode.name)
@@ -200,9 +186,6 @@ internal object BetterAiConfigStore {
 
     private fun JsonObject.long(name: String, default: Long): Long =
         get(name)?.takeUnless { it.isJsonNull }?.asLong ?: default
-
-    private fun JsonObject.double(name: String, default: Double): Double =
-        get(name)?.takeUnless { it.isJsonNull }?.asDouble ?: default
 
     private fun decodeRouterPolicy(root: JsonObject): RouterPolicyConfig {
         val defaultMode = enumValueOf<RouterActivationMode>(root.string("defaultMode", "LOCAL_ONLY"))

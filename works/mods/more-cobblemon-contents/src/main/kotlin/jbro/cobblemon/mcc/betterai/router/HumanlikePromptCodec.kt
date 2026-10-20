@@ -10,19 +10,6 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchIncomingThreatCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchTypeFactsCalculator
 import jbro.cobblemon.mcc.betterai.outcome.PublicActionOutcomeProjector
-import jbro.cobblemon.mcc.betterai.brain.LocalDecisionStages
-
-/**
- * The local brain's own evaluation of the same decision ([stages]), handed to the external model next to the facts.
- * A weight of 0 leaves its block out of the prompt.
- */
-internal class LocalBrainSignals(
-    val stages: LocalDecisionStages,
-    val localBrainWeight: Double,
-    val opponentTendencyWeight: Double,
-) {
-    val any: Boolean get() = localBrainWeight > 0.0 || opponentTendencyWeight > 0.0
-}
 
 internal object HumanlikePromptCodec {
     private val gson = Gson()
@@ -32,9 +19,7 @@ internal object HumanlikePromptCodec {
         open: BattleBrainOpenContext,
         context: BattleDecisionContext,
         modelCapabilities: OpenRouterModelCapabilities? = null,
-        localSignals: LocalBrainSignals? = null,
     ): String {
-        val signals = localSignals?.takeIf { it.any }
         val reasoningRequested = modelCapabilities?.supportsReasoning == true
         val root = JsonObject().apply {
             addProperty("model", config.model)
@@ -51,10 +36,9 @@ internal object HumanlikePromptCodec {
             }
             add("messages", JsonArray().apply {
                 val summaryDoctrine = if (config.logDecisionSummary) DECISION_SUMMARY_DOCTRINE else ""
-                val mixedDoctrine = if (signals == null) MIXED_STRATEGY_DOCTRINE else LOCAL_SIGNALS_MIXED_STRATEGY_DOCTRINE + LOCAL_SIGNALS_DOCTRINE
-                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + TRANSFORM_PP_DOCTRINE + mixedDoctrine +
+                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + TRANSFORM_PP_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
                     difficultyDoctrine(open.trainerProfile.difficulty.tier) + summaryDoctrine))
-                add(message("user", digestJson(open, context, signals)))
+                add(message("user", digestJson(open, context)))
             })
             add("provider", JsonObject().apply {
                 addProperty("require_parameters", config.requireStructuredOutput || reasoningRequested)
@@ -66,8 +50,8 @@ internal object HumanlikePromptCodec {
         return gson.toJson(root)
     }
 
-    private fun digestJson(open: BattleBrainOpenContext, context: BattleDecisionContext, signals: LocalBrainSignals?): String {
-        val tree = gson.toJsonTree(digest(open, context, signals)).asJsonObject
+    private fun digestJson(open: BattleBrainOpenContext, context: BattleDecisionContext): String {
+        val tree = gson.toJsonTree(digest(open, context)).asJsonObject
         val board = tree.getAsJsonArray("board")
         context.state.pokemon.forEachIndexed { index, pokemon ->
             board[index].asJsonObject.add(
@@ -186,12 +170,12 @@ internal object HumanlikePromptCodec {
         } ?: BattleMindGameIntent.NONE
     }
 
-    private fun digest(open: BattleBrainOpenContext, context: BattleDecisionContext, signals: LocalBrainSignals?): Map<String, Any?> {
+    private fun digest(open: BattleBrainOpenContext, context: BattleDecisionContext): Map<String, Any?> {
         val aliases = pokemonAliases(context.state)
         val strategy = open.strategy
         val hasJointCandidates = context.candidates.any { it.kind == BattleActionKind.COMPOSITE }
         val root = linkedMapOf<String, Any?>(
-            "promptVersion" to if (signals == null) EFFECTIVE_PROMPT_VERSION else LOCAL_SIGNALS_PROMPT_VERSION,
+            "promptVersion" to EFFECTIVE_PROMPT_VERSION,
             "turn" to context.state.turn,
             "format" to open.format.name,
             "knowledgePolicy" to open.knowledgePolicy.name,
@@ -281,63 +265,8 @@ internal object HumanlikePromptCodec {
                 .distinctBy { candidate -> candidate.actionId }
                 .map { candidate -> candidateDigest(candidate, aliases, context) }
         }
-        signals?.takeIf { it.localBrainWeight > 0.0 }?.let { root["localBrain"] = localBrainDigest(it, context) }
-        signals?.takeIf { it.opponentTendencyWeight > 0.0 }?.let { root["opponentTendency"] = opponentTendencyDigest(it, aliases, context) }
         return root
     }
-
-    /** The local brain's values for this decision, best first, for the candidates the prompt lists. */
-    private fun localBrainDigest(signals: LocalBrainSignals, context: BattleDecisionContext): Map<String, Any?> {
-        val stages = signals.stages
-        val listed = context.candidates.mapTo(HashSet()) { it.actionId }
-        return linkedMapOf(
-            "weight" to signals.localBrainWeight,
-            "selected" to stages.selected.takeIf { it in listed },
-            "quickVerdict" to stages.quickReason,
-            "actions" to stages.refined.entries
-                .filter { it.key in listed }
-                .sortedByDescending { it.value }
-                .map { (actionId, value) ->
-                    linkedMapOf(
-                        "actionId" to actionId,
-                        "value" to rounded(value),
-                        "drawProbability" to stages.drawProbabilities[actionId]?.let(::rounded),
-                        "excludedBecause" to (stages.ruleExclusions[actionId] ?: stages.drawExclusions[actionId]),
-                        "ruleAdjustments" to stages.rules.entries
-                            .mapNotNull { (rule, adjustments) -> adjustments[actionId]?.takeIf { it != 0.0 }?.let { rule to rounded(it) } }
-                            .toMap(),
-                        "quickVerdicts" to stages.quickBonus[actionId].orEmpty(),
-                    )
-                },
-        )
-    }
-
-    /** What the local brain expects each opposing active Pokemon to do, and how the opponent has adapted so far. */
-    private fun opponentTendencyDigest(
-        signals: LocalBrainSignals,
-        aliases: Map<java.util.UUID, String>,
-        context: BattleDecisionContext,
-    ): Map<String, Any?> = linkedMapOf(
-        "weight" to signals.opponentTendencyWeight,
-        "expectedActions" to signals.stages.opponentIntents.map { intent ->
-            linkedMapOf(
-                "pokemon" to aliases[intent.pokemonId],
-                "options" to intent.options.map { option ->
-                    linkedMapOf(
-                        "kind" to option.kind.name,
-                        "moveId" to option.moveId,
-                        "target" to option.targetId?.let(aliases::get),
-                        "switchTo" to option.switchInId?.let(aliases::get),
-                        "probability" to rounded(option.probability),
-                    )
-                },
-            )
-        },
-        "patternResponseShiftEvidence" to context.memory.patternResponseShiftEvidence,
-        "opponentResponseVolatility" to context.memory.opponentResponseVolatility,
-    )
-
-    private fun rounded(value: Double): Double = Math.round(value * 1000.0) / 1000.0
 
     private fun catalogEntryDigest(entry: BattlePokemonActionCatalogView, aliases: Map<java.util.UUID, String>) =
         linkedMapOf(
@@ -544,27 +473,10 @@ internal object HumanlikePromptCodec {
     private const val CALIBRATION_SAMPLE_FLOOR = 4
     private const val MINIMUM_CALIBRATED_HIT_RATE = 0.55
     private const val EFFECTIVE_PROMPT_VERSION = "brain-choice-v24"
-    private const val LOCAL_SIGNALS_PROMPT_VERSION = "brain-choice-v25-local"
     private const val VOLATILE_DOCTRINE = """ `knownVolatileEffectIds` lists publicly observed currently active Pokemon effects, initially Substitute only. An empty list does not establish complete volatile knowledge. Substitute HP is unknown; no exact durability is supplied. Current presence does not imply it will persist until the selected action: an earlier opposing hit may break it and allow same-turn recreation. Ordinary switching clears Substitute; an explicitly observed Baton Pass or Shed Tail can transfer it."""
     private const val RECENT_EVENT_TURNS = 3
     private const val ACTION_CONSTRAINT_DOCTRINE = """ Each board Pokemon's `actionConstraints` is a current public fact: `taunted` removes status moves, `encoreMoveId` locks the move, `trapped` removes voluntary switches, and `mustRecharge` forces the recharge turn."""
     private const val MIXED_STRATEGY_DOCTRINE = """ Independently rank the legal actions, keep your own top 40% (at least two when two useful alternatives exist), and make the final choice within that set with probability weighted toward your own higher-valued actions. This mixed strategy never permits a publicly nullified action, and the server never supplies local utility, rank, weight, or a recommended action. Repetition alone is not proof that the opponent read a pattern: infer a possible read yourself only from `patternExposureCount`, recent public events, situation-specific tendencies, and prediction calibration. Preserve only the `activePlan` authored by this Router across turns; another Brain's plan, utility, rank, weight, recommendation, and derived psychological scores are never supplied. Abandon a plan through its public abort conditions and never let plan persistence justify repeated recovery, protection, walls, or setup without fresh net progress. Adjust variance to the public match position: when behind, credible high-variance lines may gain value; when ahead, favor minimum-regret lines. Position-based risk never permits an illegal, immune, publicly nullified, entry-fainting, or otherwise dominated action. `lookaheadPlies` counts complete turns, where one turn contains your action and an opponent response. Enumerate only moves listed in `publicFutureActions`; opponent entries contain publicly revealed moves only, so never invent a hidden move to fill a branch. `publicOutcomeProjection` is an event-free, public-information-only partial projection: damage is capped at the target's remaining HP and declared self healing or recoil is reflected, but unresolved opponent action order and mechanics remain in `unknowns`; it does not by itself claim that the opponent stayed in or that the complete turn was simulated. In future turns, subtract PP after every executed move; a successful RECHARGE_TURN forces the user's next action, SWITCH_USER requires an immediate legal replacement that receives later actions that turn, and taunt, encore, or trapping must constrain later legal actions for their public duration. For Stance Change, use `knownFormStates` instead of swapping current stats or inventing alternate-form stats. A switch is valuable only when its net public gain in survival, offensive pressure, or speed control exceeds entry damage, lost immediate action tempo, and repeat-switch cost; a healthy proactive switch is allowed when this net gain is material. When two lines reach the same public advantage, prefer realizing the gain earlier, and require fresh net progress before switching again."""
-    private val LOCAL_SIGNALS_MIXED_STRATEGY_DOCTRINE = MIXED_STRATEGY_DOCTRINE
-        .replaceOnce(
-            " This mixed strategy never permits a publicly nullified action, and the server never supplies local utility, rank, weight, or a recommended action.",
-            " This mixed strategy never permits a publicly nullified action.",
-        )
-        .replaceOnce(
-            " Preserve only the `activePlan` authored by this Router across turns; another Brain's plan, utility, rank, weight, recommendation, and derived psychological scores are never supplied.",
-            " Preserve only the `activePlan` authored by this Router across turns; another Brain's plan is never supplied.",
-        )
-
-    private fun String.replaceOnce(old: String, new: String): String {
-        require(indexOf(old) >= 0 && indexOf(old) == lastIndexOf(old)) { "Doctrine text to replace not found once: $old" }
-        return replace(old, new)
-    }
-
-    private const val LOCAL_SIGNALS_DOCTRINE = """ `localBrain` is the local tactical AI's own evaluation of this same decision: `selected` is the action it would play, and `actions` lists each candidate best first with its final `value` (higher is better, comparable only within this decision), the `drawProbability` its weighted draw gave it, `excludedBecause` when its rules ruled the action out, the `ruleAdjustments` its rules added, and its quick verdicts (`+reason` for, `-reason` against). `opponentTendency.expectedActions` is the local AI's predicted chance of each move or switch of every opposing active Pokemon, read from public information and this battle's history; `patternResponseShiftEvidence` (0..1) is the evidence that the opponent changed its response after seeing a repeated pattern, and `opponentResponseVolatility` (0..1) how much its responses have varied. Each of the two blocks carries a `weight`: how strongly to let it shape your choice relative to the supplied mechanical facts, where 1.0 means as strongly as the facts. Both blocks are evaluations, not facts: an authoritative fact (legality, immunity, hpFraction, a publicly nullified action) always wins over them."""
     private const val SYSTEM_DOCTRINE = """You are the sole decision-making brain of one trainer NPC. Choose exactly one actionId from candidates on every decision. In doubles, candidates are joint actions whose componentActionIds reference the full mechanical descriptions in atomicActions. The server computed legality and supplied mechanical facts only; those facts are not recommendations or rankings. Difficulty changes planning depth, never factual accuracy. Every `hpFraction` is a ratio from 0.0 (fainted) through 1.0 (full health), never a raw HP count. For field effects, `remainingTurns` is an exact public count while `remainingTurnsRange.minimum..maximum` is an inclusive public uncertainty range caused by a possibly unrevealed duration extender; if both are absent, duration is unknown or indefinite. Never collapse a range to one invented value. Board hpFraction, known types, and supplied type-chart multipliers are authoritative public facts at every difficulty. Never select a damaging move with an authoritative typeChartMultiplier of 0 when a legal candidate has a non-nullified effect. For a switch candidate, read switchTargetPublicFacts directly instead of reconstructing its hpFraction or defensive typing from memory. Its `incomingRevealedMoveThreats` lists worst first what each publicly revealed opponent move would do to that switch target, as the same Showdown base projection the move candidates carry; an empty list means no opposing move has been revealed yet, which is not the same as the switch being safe. Compare equal multipliers as equal; do not claim that one switch target is safer when its supplied multiplier is equal to or greater than the alternative. Null or UNKNOWN means the mechanic was not resolved, so never invent a precise result. `move.effects.effects` contains declarative effects, `move.effects.requirements` contains statically extracted use conditions, and `move.effects.mechanicFlags` preserves the engine's declared move flags. A requirement is a mechanical gate, not a recommendation; if the public board proves it false, expect the move to fail, while a condition that depends on hidden or simultaneous information remains uncertain. `stallingProtection.nextSuccessProbability` is the exact public success chance for this Protect-family attempt; all stalling protection moves share one consecutive-success chain, and a failed attempt resets it. `TARGET_PENDING_DAMAGING_MOVE` succeeds only while the target still has a selected damaging move waiting to execute; a status move, switch, or already completed move makes it fail. `DECLARATIVE_PARTIAL` means the lists are intentionally incomplete: an absent effect or requirement does not mean impossible. `scriptedBehavior=true` means callbacks exist beyond the listed facts. Each `move.effects.effects[].probability` is conditional on the move reaching that effect; it is not a final hit, immunity, or success probability. `facts.statusEffectProbability` combines only base accuracy and that declared chance, and is absent when the target is publicly immune to the status; other modifiers remain unknown. Inferences are hypotheses, not hidden facts: `POSSIBLE` means only that public rules allow the candidate, and no unstated probability or preference may be assumed. For ability inferences, `abilityAvailability=REGULAR|HIDDEN` is the public species ability classification, not a probability. Consider the strategic downside of every supplied possible immunity, absorption, redirection, or retaliation ability when comparing actions, while never assuming which unrevealed ability is actually present. Use probabilityRange only when supplied and read basis as its public provenance. `observed_action_order` reports only which public actions appeared first when their moves had the same base priority; it is not proof of raw Speed because ties and dynamic ordering modifiers may exist. `precedingAction` only identifies the still-open public action window for a source-less HP loss on an explicit target; it does not prove damage causation. A `MOVE_OUTCOME` records only fields explicitly declared by the public battle message; a public outcome signal does not identify an unstated cause or hidden modifier, and sequence adjacency is not causation. `SUBSTITUTE_DAMAGED` means a public substitute absorbed damage; it does not mean the real Pokemon lost HP and it provides no damage amount or attacker. `PROTECTION_STARTED` means the public Protect effect began; it does not guarantee a later block. `standardDamage*` fields are a non-critical Gen 9 base-formula projection over fair public stat ranges; they exclude every input named in `unknowns`, including dynamic ability, item, field, status, mechanic, and move-specific modifiers. They are bounds for judgment, not the actual future outcome. Distinguish base accuracy and type-chart multipliers from fully resolved hit or knockout odds. `facts.spreadTargets` is empty for an ordinary single-target move; when it is present the move strikes every listed slot on the same turn, its first entry is the same target the top-level `standardDamage*` fields describe, and each entry already includes the Gen 9 spread reduction. Judge such a move by every entry together, and never read the top-level damage fields as a total across targets. Repeated non-damaging actions require net public progress: do not repeat recovery when public HP loss since its previous use erased that healing, keep boosting only while the added stage improves a credible line, and do not stack a second screen by habit when existing protection plus viable pressure is available. Hidden opponent moves, items, abilities, stats, EVs, and bench details are absent unless explicitly revealed or listed as an inference. Use the trainer personality, complete strategy brief, public board, history, tendencies, prior prediction results, and active plan to make the strategic judgment yourself. Continue, replace, or clear a plan as the current board warrants. Predict the opponent only when evidence supports it; samples below 3 are weak and UNKNOWN is valid. In doubles, predictionActorSlot must identify the specific opponent active slot being predicted. Return schema fields only and no prose."""
     private const val DECISION_SUMMARY_DOCTRINE = """ Set decisionSummary to one concise sentence explaining only the decisive public battle facts behind the selected action. Do not expose hidden chain-of-thought, private reasoning, or undisclosed information."""
     private const val RESPONSE_SCHEMA = """{
