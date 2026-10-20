@@ -79,7 +79,11 @@ internal object LocalKnockoutWorth {
 
     const val MINIMUM_URGENCY = 0.25
 
-    fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
+    /**
+     * [leaves]: each opposing Pokemon's predicted chance to switch out this turn (LocalOpponentIntentPredictor), the floor
+     * of its urgency: a knockout put off is lost when it leaves. Without a prediction, [MINIMUM_URGENCY].
+     */
+    fun read(state: BattleStateView, scores: MatchupScores, flat: Double, leaves: Map<UUID, Double> = emptyMap()): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
         val fight = living.mapNotNull { pokemon ->
             val values = living.filter { it.side != pokemon.side }.mapNotNull { other ->
@@ -165,7 +169,7 @@ internal object LocalKnockoutWorth {
             } ?: 0.0
             val urgency = maxOf(threatNow, (damageShare * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0))
             Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon, state), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
-                if (heals) 1.0 else urgency.coerceAtLeast(MINIMUM_URGENCY), threatNow,
+                if (heals) 1.0 else urgency.coerceAtLeast(leaves[id]?.coerceIn(0.0, 1.0) ?: MINIMUM_URGENCY), threatNow,
                 threats.mapValues { (_, chance) -> (chance * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0) },
                 pokemon.activeSlot != null && ended.pokemon.firstOrNull { it.battlePokemonId == id }?.let { it.hpFraction <= 0.0 } == true)
         }
