@@ -124,10 +124,10 @@ internal object PublicFutureActionFactory {
         // A move the public state already rules out has no value this turn or later, so no search
         // turn spends budget on it; a slot left with nothing keeps its original list.
         val viable = actions.filterNot { publiclyFails(state, side, actor, it) }.ifEmpty { actions }
-        val ordered = viable.sortedWith(
-            compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
-                .thenBy(BattleActionCandidate::actionId),
-        )
+        // Each priority worked out once, not at every comparison of the sort (the same order: the key is pure).
+        val ordered = viable.map { it to primitivePriority(state, side, actor, it) }.sortedWith(
+            compareByDescending<Pair<BattleActionCandidate, Double>> { it.second }.thenBy { it.first.actionId },
+        ).map { it.first }
         // Generated candidates have passed known PP/entry constraints, not all success conditions.
         // Group only by declared requirements: missing metadata is not proof of unconditional success.
         val priorityCandidates = ordered.asSequence().filter {

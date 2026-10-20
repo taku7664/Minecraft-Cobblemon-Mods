@@ -17,6 +17,8 @@ internal object LocalPublicAbilityState {
     }
 
     private fun activeCanonical(state: BattleStateView, pokemon: BattlePokemonStateView, ability: String): Boolean {
+        // The usual board: nothing suppresses anyone, so every rule below answers yes.
+        if (!hasGastroAcid(pokemon) && neutralizingGasHolders[state].isEmpty()) return true
         if (ability in CANNOT_SUPPRESS) return true
         // Called at every search node for every ability check, so no sets are built here.
         if (hasGastroAcid(pokemon)) return false

@@ -126,7 +126,24 @@ internal class LocalKnockoutProfile private constructor(
             return LocalKnockoutProfile(survival, damage, (0 until maximumUses).sumOf { survival[it] } + tail)
         }
 
+        /**
+         * The same rolls, accuracy and HP give the same profile, and the exchange tables ask for the same ones over and over
+         * (every board a decision projects): kept, a bounded few thousand, cleared when full. The profile is never changed.
+         */
+        private data class Key(val rolls: List<Double>, val accuracy: Double, val targetHp: Double, val maximumUses: Int)
+        private val known = java.util.concurrent.ConcurrentHashMap<Key, LocalKnockoutProfile>()
+        private const val KNOWN_LIMIT = 4096
+
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
+            val key = Key(rolls.toList(), accuracy, targetHp, maximumUses)
+            known[key]?.let { return it }
+            return computed(rolls, accuracy, targetHp, maximumUses).also {
+                if (known.size >= KNOWN_LIMIT) known.clear()
+                known[key] = it
+            }
+        }
+
+        private fun computed(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
             val hit = accuracy.coerceIn(0.0, 1.0)
             val meanRoll = if (rolls.isEmpty()) 0.0 else rolls.average()
             if (targetHp <= 0.0) {
@@ -140,9 +157,12 @@ internal class LocalKnockoutProfile private constructor(
             var standing = DoubleArray(GRID).also { it[0] = 1.0 }
             val survival = ArrayList<Double>(maximumUses + 1).apply { add(1.0) }
             val damage = ArrayList<Double>(maximumUses + 1).apply { add(0.0) }
+            // Cells past `top` hold nothing: the loops stop there, the sums in the same order (a zero cell adds nothing).
+            val longest = steps.max()
+            var top = 0
             repeat(maximumUses) {
                 val next = DoubleArray(GRID)
-                for (taken in 0 until GRID) {
+                for (taken in 0..top) {
                     val mass = standing[taken]
                     if (mass == 0.0) continue
                     next[taken] += mass * (1.0 - hit)
@@ -152,10 +172,15 @@ internal class LocalKnockoutProfile private constructor(
                     }
                 }
                 standing = next
-                val alive = standing.sum()
+                top = minOf(top + longest, GRID - 1)
+                var alive = 0.0
+                for (cell in 0..top) alive += standing[cell]
                 survival += alive.coerceIn(0.0, 1.0)
-                damage += if (alive <= 0.0) 0.0 else
-                    standing.indices.sumOf { it * standing[it] } / alive / GRID * targetHp
+                damage += if (alive <= 0.0) 0.0 else {
+                    var taken = 0.0
+                    for (cell in 0..top) taken += cell * standing[cell]
+                    taken / alive / GRID * targetHp
+                }
             }
             // Uses beyond the window: what is left of the bar at the average landed damage per use.
             val left = survival.last()

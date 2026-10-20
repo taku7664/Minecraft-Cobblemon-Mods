@@ -207,6 +207,9 @@ internal object LocalPublicTurnOrder {
      * a revealed Quick Claw or Quick Draw). Null when it showed nothing past its public range's reach.
      */
     private fun observedSpeedFloor(state: BattleStateView, pokemon: BattlePokemonStateView): Int? {
+        // Most Pokemon showed no order this turn or last: nothing to read, before any scan of the record.
+        val recent = recentOrders(state)
+        if (recent.none { it.actorPokemonId == pokemon.battlePokemonId }) return null
         if (LocalPublicFieldMechanics.trickRoomActive(state)) return null
         // Read from the ability's and item's code (a priority or fractional-priority hook), no name listed.
         if (jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.reordersTurn(
@@ -214,8 +217,7 @@ internal object LocalPublicTurnOrder {
         val events = state.observedEvents
         val entered = events.lastOrNull { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == pokemon.battlePokemonId }?.sequence
             ?: Long.MIN_VALUE
-        val orders = events.filter { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.ACTION_ORDER && it.sequence > entered &&
-            it.turn >= state.turn - 1 && it.baseMovePriority != null }
+        val orders = recent.filter { it.sequence > entered }
         // Its attacks only: an unrevealed ability may move a status move up a bracket (Prankster).
         fun attacks(moveId: String?) = moveId?.let { jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().move(canonical(it)) }
             ?.category.let { it != null && it != "Status" }
@@ -359,6 +361,20 @@ internal object LocalPublicTurnOrder {
     private val ALWAYS_LAST_ITEMS = setOf("laggingtail", "fullincense")
     private val FORCED_GROUNDED_VOLATILES = setOf("ingrain", "smackdown", "thousandarrows")
     private val SPEED_ALIASES = setOf("speed", "spe")
+    /**
+     * The board's same-priority order records of this turn and the last, in the record's order. Kept by the record and
+     * turn, not the state: every board projected from one shares its record.
+     */
+    private class RecentOrders(val events: List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView>, val turn: Int,
+        val orders: List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView>)
+    @Volatile private var recentOrders: RecentOrders? = null
+    private fun recentOrders(state: BattleStateView): List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView> {
+        recentOrders?.let { if (it.events === state.observedEvents && it.turn == state.turn) return it.orders }
+        val orders = state.observedEvents.filter {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.ACTION_ORDER && it.turn >= state.turn - 1 && it.baseMovePriority != null }
+        recentOrders = RecentOrders(state.observedEvents, state.turn, orders)
+        return orders
+    }
     private const val TRICK_ROOM = "trickroom"
     private const val TRICK_ROOM_TURNS = 5
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")

@@ -67,6 +67,14 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+    ): List<Double>? = Memo.rolls.get(Memo.Key(candidate, context, actingSide, null)) {
+        rollsWorkedOut(candidate, context, actingSide)
+    }
+
+    private fun rollsWorkedOut(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
     ): List<Double>? {
         val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
         val base = conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide)
@@ -299,6 +307,46 @@ internal object PublicBattleTacticalCalculator {
         }
 
     private fun calculateCandidate(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+        observed: BattleStateView?,
+    ): BattleActionCandidate = if (candidate.facts != null && candidate.kind != BattleActionKind.COMPOSITE) candidate
+        else Memo.facts.get(Memo.Key(candidate, context, actingSide, observed)) { candidateWorkedOut(candidate, context, actingSide, observed) }!!
+
+    /**
+     * What a decision asks for again and again: the same candidate on the same board for the same side (each rule, the
+     * exchange table, the lookahead read one move's rolls and facts in turn). The inputs are immutable, so the same
+     * objects - compared by identity, with the decision's tuning - give the same answer; kept a bounded few thousand,
+     * cleared when full (2026-10-20 profile: a third of both were repeats).
+     */
+    private object Memo {
+        class Key(val candidate: BattleActionCandidate, val context: BattleDecisionContext, val side: BattleSide, val observed: BattleStateView?) {
+            val tuning: Any = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current()
+            private val hash = ((System.identityHashCode(candidate) * 31 + System.identityHashCode(context)) * 31 +
+                side.ordinal) * 31 + System.identityHashCode(observed)
+            override fun hashCode(): Int = hash
+            override fun equals(other: Any?): Boolean = other is Key && other.candidate === candidate && other.context === context &&
+                other.side == side && other.observed === observed && other.tuning === tuning
+        }
+
+        class Table<T : Any> {
+            private val known = java.util.concurrent.ConcurrentHashMap<Key, java.util.Optional<T>>()
+            fun get(key: Key, compute: () -> T?): T? {
+                known[key]?.let { return it.orElse(null) }
+                val value = compute()
+                if (known.size >= LIMIT) known.clear()
+                known[key] = java.util.Optional.ofNullable(value)
+                return value
+            }
+        }
+
+        val rolls = Table<List<Double>>()
+        val facts = Table<BattleActionCandidate>()
+        private const val LIMIT = 2048
+    }
+
+    private fun candidateWorkedOut(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
