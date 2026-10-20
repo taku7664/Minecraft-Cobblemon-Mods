@@ -101,7 +101,7 @@ internal object LocalRootDecisionPolicy {
             // The matchup table's reading of the foe (its inferred attacks) counts too: boosts that die this turn keep nothing.
             val knockedOutNow = context.state.pokemon.any {
                 it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
-                    (jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.urgencyOrNull(it.battlePokemonId) ?: 0.0) > THREAT_KEEPS_NO_SETUP
+                    (jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.threatOrNull(it.battlePokemonId, active.battlePokemonId) ?: 0.0) > THREAT_KEEPS_NO_SETUP
             }
             if (preserveSetup && positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse && !knockedOutNow) {
                 vetoes += LocalSwitchVetoReason.PRESERVE_SETUP

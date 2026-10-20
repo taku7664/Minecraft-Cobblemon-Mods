@@ -40,10 +40,10 @@ internal object LocalRootFlinchValue {
         val movesFirst = facts.actsFirstProbability ?: return 0.0
         val survives = 1.0 - (facts.standardDamageRollKoProbabilityRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0)
         // The turn it takes only puts the target's move off unless that move would knock the user out now
-        // (LocalPokemonWorth.urgency): a slower Scrafty's Fake Out at 70.6 beat its Ice Punch, four times into Garchomp, for
+        // (LocalPokemonWorth.threatTo, its chance to knock this user out this turn): a slower Scrafty's Fake Out at 70.6 beat its Ice Punch, four times into Garchomp, for
         // a hit Garchomp landed the next turn anyway (2026-10-20).
         return accuracy * movesFirst * chance * survives.coerceIn(0.0, 1.0) * deniedTurn(context, actor, target, tuning) * HP_TO_SCORE *
-            LocalPokemonWorth.urgency(target.battlePokemonId)
+            LocalPokemonWorth.threatTo(target.battlePokemonId, actor.battlePokemonId)
     }
 
     /**
