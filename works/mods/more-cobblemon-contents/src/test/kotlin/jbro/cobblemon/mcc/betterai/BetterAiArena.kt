@@ -10,9 +10,10 @@ import java.util.concurrent.TimeUnit
  * Self-play arena for `works/tools/betterai-arena`: PAIRS team pairs from the preset sets (SEED picks them), each played
  * boss against boss as in the game (searchless, quick decider on, the opposing team preview and Boss's exact spreads
  * handed over), THREADS battles at once. Every battle keeps its folder (decisions.jsonl, result.json) under OUT; one
- * `ARENA {...}` line per battle goes to stdout for the arena's server.
+ * `ARENA {...}` line per battle goes to stdout for `arena.py`, which writes the run summary and the viewer.
  *
- * Run with java alone: `java -cp <test runtime classpath> jbro.cobblemon.mcc.betterai.BetterAiArenaKt OUT PAIRS SEED THREADS SHOWDOWN`.
+ * Run with java alone: `java -cp <mod JAR>;<arena runner JAR + lib> jbro.cobblemon.mcc.betterai.BetterAiArenaKt OUT PAIRS SEED THREADS SHOWDOWN`
+ * (`works/tools/betterai-arena/run-arena.bat` does it).
  */
 fun main(args: Array<String>) {
     val out = Path.of(args[0])

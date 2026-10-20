@@ -3,6 +3,18 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-21 07:20] 자가 대전 아레나 도구 (`works/tools/betterai-arena`) (구현·6판 실행·Artifact 게시 확인)
+
+- **무엇:** `run-arena.bat N`이 고른 모드 JAR로 보스 대 보스 N판을 돌리고, 기록 파일과 휴대폰용 뷰어를 만든다. 사용법과 파일 목록은 그 폴더의 `README.md`.
+- **실제 JAR로 돈다:** 클래스패스는 `모드 JAR; betterai-arena-runner.jar; lib(kotlin-stdlib, gson-2, slf4j-api); Battle Factory 애드온 JAR; Cobblemon JAR` 순서다. 실행부 JAR은 `:more-cobblemon-contents:arenaRunner`가 테스트 출력만 묶어 만들고, AI 본체 클래스(`LocalTacticalBrain` 등)는 들어 있지 않음을 확인했다. 리맵된 개발 서버 JAR(`38aa371660f9…`)이 게임 밖에서 그대로 로드되어 돌았다.
+- **필요한 것만 확인한 근거:** slf4j-api가 없으면 `EngineRuntimeDex`에서 `NoClassDefFoundError`가 난다. 렌탈 세트는 애드온 JAR, `data/cobblemon/showdown.zip`은 Cobblemon JAR에서 읽힌다.
+- **기록:** `F:/AI/betterai-arena/runs/<시각>/`에 `run.json`(JAR SHA-256, 시드, 스레드, 판별 승자·턴), 판마다 `decisions.jsonl`·`result.json`·`referee-input.json`. 자동으로 지우지 않는다. 엔진 작업 사본 `engine/`(실행당 41MB)만 끝나고 지운다.
+- **확인:** 6판 3스레드 19초, p1 2 : p2 4 (`runs/20261021-071257`, 실행 하나 19MB). 뷰어는 로컬에서 휴대폰 폭으로 판 화면까지 열어 봤다. Artifact https://claude.ai/artifact/RR13L7EUx4cKCfKz9mA9zJ 에 올렸고 데이터 파일 게시를 확인했지만, claude.ai 로그인이 없어 그 페이지에서 판 데이터를 불러오는 것은 직접 보지 못했다.
+- **주의:**
+  - 첫 컴파일이 도중에 죽으면서 공용 Loom 캐시 잠금이 남았고, 다음 실행이 공용 캐시(`F:/AI/caches/gradle/caches/fabric-loom`)를 다시 만들다 Minecraft 리맵에 한 번 실패했다. 재시도로 복구했다. 다른 세션 빌드가 그 사이 같은 오류를 봤다면 이 때문이다.
+  - 이 PC의 파이썬은 `http.server`가 깨져 있다(`html.entities` 없음). 로컬 미리보기는 node로 띄웠다.
+  - JAR 빌드 커밋은 JAR 안에 없다. `--commit`을 안 주면 `jarCommit`은 비고, `repoHead`는 실행 시점 저장소 HEAD일 뿐이다.
+
 ## [2026-10-21 23:30] 회복 값을 실제 가치 변화로 계산, KO 점수의 급함·0.25 바닥 제거 (구현·단위·고정 장면 확인, JAR 미생성)
 
 - **회복(`LocalHealValue`, 싱글 상급·보스):** 회복 점수 = (회복한 체력으로 다시 계산한 실제 가치 − 지금 실제 가치) × 100 + (지금 KO될 확률 − 회복 후 KO될 확률) × 회복을 먼저 쓸 확률 × 회복 후 실제 가치 × 100.
