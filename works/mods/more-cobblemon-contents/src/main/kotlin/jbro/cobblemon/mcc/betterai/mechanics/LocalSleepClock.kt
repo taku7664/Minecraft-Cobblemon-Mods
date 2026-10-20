@@ -60,10 +60,31 @@ internal object LocalSleepClock {
         return possible.map { (it - 1 - attempts).coerceAtLeast(0) to 1.0 / possible.size }
     }
 
+    /**
+     * The chance [pokemon] wakes on this turn's attempt: from its counter where the record shows the sleep starting, a
+     * third where it does not; null when it is not asleep.
+     */
+    fun wakeChance(state: BattleStateView, pokemon: BattlePokemonStateView): Double? {
+        if (PublicIds.canonical(pokemon.statusId.orEmpty()) !in SLEEP) return null
+        return remaining(state, pokemon)?.filter { it.first == 0 }?.sumOf { it.second } ?: UNSEEN_WAKE
+    }
+
+    /**
+     * The chance [move] runs for [pokemon] this turn: a sleeper's move only as it wakes, one usable asleep (Sleep Talk,
+     * Snore) only while it sleeps on; 1 when it is not asleep.
+     */
+    fun moveRuns(state: BattleStateView, pokemon: BattlePokemonStateView, move: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): Double {
+        val wake = wakeChance(state, pokemon) ?: return 1.0
+        val usableAsleep = move.moveDetails?.effects?.effects.orEmpty()
+            .any { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.USABLE_WHILE_ASLEEP }
+        return if (usableAsleep) 1.0 - wake else wake
+    }
+
     /** Sleep Talk seen: it calls one of the other three moves each turn it sleeps. */
     fun talks(pokemon: BattlePokemonStateView): Boolean = pokemon.knownMoveIds.any(LocalMoveCode::callsOwnMoveAsleep)
 
     private val SLEEP = setOf("slp", "sleep", "asleep")
     private val COUNTERS = listOf(2, 3, 4)
     const val SLEEP_TALK_SHARE = 1.0 / 3.0
+    private const val UNSEEN_WAKE = 1.0 / 3.0
 }

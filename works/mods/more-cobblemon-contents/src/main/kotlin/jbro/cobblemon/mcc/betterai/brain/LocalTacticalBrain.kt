@@ -860,13 +860,53 @@ internal class LocalTacticalBrain(
                 dynamaxGuardReading.targetAssessments,
             )
         }
-        val ruleAdjusted = (ruleAdjustments.keys + actingAdjustments.keys).associateWith {
+        val rulesOnly = (ruleAdjustments.keys + actingAdjustments.keys).associateWith {
             (ruleAdjustments[it] ?: 0.0) + (actingAdjustments[it] ?: 0.0)
         }.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(searchedRanked.map { rank ->
                 adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
             })
         } ?: searchedRanked
+        // A sleeping Pokemon's move runs only as it wakes, one usable asleep (Sleep Talk) only while it sleeps on
+        // (LocalSleepClock.moveRuns): each one's value after the rules counts at that chance, and Sleep Talk at the
+        // average of the moves it may call. Scored as if awake, a Dondozo two turns from waking chose Wave Crash and Curse
+        // it could not use (hand-played stall concept, 2026-10-20). Singles.
+        val sleepAdjustments: Map<String, Double> = run {
+            val board = difficultyContext.state
+            if (!rulesApply || board.format != BattleFormat.SINGLE) return@run emptyMap()
+            val sleeper = board.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+                ?: return@run emptyMap()
+            val wake = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.wakeChance(board, sleeper) ?: return@run emptyMap()
+            val moves = rulesOnly.filter { it.outcome.candidate.kind == BattleActionKind.USE_MOVE }
+            fun effects(rank: jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank) = rank.outcome.candidate.moveDetails?.effects?.effects.orEmpty()
+            fun usableAsleep(rank: jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank) =
+                effects(rank).any { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.USABLE_WHILE_ASLEEP }
+            // What Sleep Talk calls: one of the other moves, evenly, as used without a mechanic; not one usable asleep, nor
+            // one with a charging turn. A move that fails (Rest while asleep) counts as nothing.
+            val called = moves.filter { rank ->
+                rank.outcome.candidate.mechanic == null && !usableAsleep(rank) &&
+                    effects(rank).none { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.CHARGE_TURN }
+            }.map { it.comparisonValue.coerceAtLeast(0.0) }
+            val talkValue = (1.0 - wake) * (if (called.isEmpty()) 0.0 else called.average())
+            moves.mapNotNull { rank ->
+                val candidate = rank.outcome.candidate
+                val total = rank.comparisonValue
+                val runs = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.moveRuns(board, sleeper, candidate)
+                when {
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(candidate.moveId) && rank.decisionTier > LocalBattleActionPolicy.TIER_PUBLICLY_BAD ->
+                        candidate.actionId to (talkValue - total)
+                    total > 0.0 && runs < 1.0 -> candidate.actionId to (runs - 1.0) * total
+                    else -> null
+                }
+            }.toMap()
+        }
+        // A knockout it may not get off is no sure one: its tier comes down with its value.
+        val ruleAdjusted = if (sleepAdjustments.isEmpty()) rulesOnly else LocalBattleActionPolicy.sort(rulesOnly.map { rank ->
+            sleepAdjustments[rank.outcome.candidate.actionId]?.let { change ->
+                rank.copy(comparisonValue = rank.comparisonValue + change,
+                    decisionTier = if (rank.decisionTier == LocalBattleActionPolicy.TIER_SECURE_KNOCKOUT && change < 0.0) LocalBattleActionPolicy.TIER_ORDINARY else rank.decisionTier)
+            } ?: rank
+        })
         // Each kind of action's global weight (singles): a status move's value is shrunk toward worse by
         // statusMoveWeight, so it has to beat an attack by more before it is chosen.
         val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) ruleAdjusted
@@ -957,7 +997,7 @@ internal class LocalTacticalBrain(
                     "healRace" to healRaceAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
                     "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
-                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments,
+                    "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments, "asleep" to sleepAdjustments,
                     "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments,
                     "statusMove" to statusMoveAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),

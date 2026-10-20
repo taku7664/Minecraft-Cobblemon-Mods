@@ -119,7 +119,9 @@ internal object LocalQuickDecider {
         attacks.firstOrNull { (rank, score) ->
             // Sucker Punch knocks out only if the foe attacks: a Swords Dance in front of it is a turn lost.
             val lands = if (LocalPendingAttackChance.requiresPendingAttack(part(rank))) LocalPendingAttackChance.attacks(foe, context, opponentIntents) else 1.0
-            !canWaitToHeal && lands * score.knockoutChanceWithin(1) * (1.0 - preempted(rank) * LocalKnockoutWorth.actsThisTurn(foe, state)) >= KNOCKOUT
+            // At the chance its own move runs: a sleeper's only as it wakes (LocalSleepClock.moveRuns).
+            val runs = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.moveRuns(state, self, part(rank))
+            !canWaitToHeal && lands * runs * score.knockoutChanceWithin(1) * (1.0 - preempted(rank) * LocalKnockoutWorth.actsThisTurn(foe, state)) >= KNOCKOUT
         }?.let { (rank, _) -> pick(rank, if (switchExpected) KNOCKOUT_IF_STAYS else "knockout") }?.let { return it }
 
         // 2. A reason to leave.
@@ -129,7 +131,7 @@ internal object LocalQuickDecider {
             // the Mega Gengar switched out (2026-10-13).
             if (attacks.isEmpty() && moves.none { inflictsStatus(part(it), self, foe, state) } &&
                 moves.none { (stayCredits[it.outcome.candidate.actionId] ?: 0.0) > 0.0 }) add("no_damage")
-            if (cannotAct(self)) add("cannot_act")
+            if (cannotAct(self, state)) add("cannot_act")
             if (stay.winProbability < LOSING) add("loses_one_on_one")
             if (attackStage(self) <= -2) add("attack_dropped")
             // A count kept as `perishsong:<count>` reads as its family, not as the bare count canonical would leave.
@@ -425,9 +427,16 @@ internal object LocalQuickDecider {
                     !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, foe, effect.valueId, self)
             }
 
-    private fun cannotAct(pokemon: BattlePokemonStateView): Boolean {
+    /**
+     * Frozen, or asleep and unlikely to wake on this attempt (LocalSleepClock). Read on the status alone, a Dondozo whose
+     * Rest ended that very turn switched out (hand-played stall concept, 2026-10-20).
+     */
+    private fun cannotAct(pokemon: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Boolean {
         val status = PublicIds.canonical(pokemon.statusId ?: return false)
-        return "frz" in status || "frozen" in status || "slp" in status || "sleep" in status
+        if ("frz" in status || "frozen" in status) return true
+        val wake = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.wakeChance(state, pokemon) ?: return false
+        // One with Sleep Talk acts while it sleeps.
+        return wake < 0.5 && !jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.talks(pokemon)
     }
 
     private fun attackStage(pokemon: BattlePokemonStateView): Int {

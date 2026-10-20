@@ -214,8 +214,8 @@ internal object LocalBattleActionPolicy {
     private const val TIER_FORFEIT = 0
     internal const val TIER_PUBLICLY_BAD = 1
     private const val TIER_TEMPO_LOSS = 2
-    private const val TIER_ORDINARY = 3
-    private const val TIER_SECURE_KNOCKOUT = 4
+    internal const val TIER_ORDINARY = 3
+    internal const val TIER_SECURE_KNOCKOUT = 4
     internal const val SECURE_KNOCKOUT_BONUS = 250.0
     private const val TEMPO_LOSS_TIER_ADJUSTMENT = -250.0
     internal const val PUBLICLY_INERT_TIER_ADJUSTMENT = -500.0
