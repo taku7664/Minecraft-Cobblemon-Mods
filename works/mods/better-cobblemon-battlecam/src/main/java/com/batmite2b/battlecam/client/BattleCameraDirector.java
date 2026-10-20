@@ -243,7 +243,7 @@ public final class BattleCameraDirector {
             }
         }
         CameraPose pose = this.computeGimmickPose(scene.kind(), gimmickFocus, scene.progress(now), scene.postCryProgress(now));
-        pose = scene.kind() == GimmickKind.MEGA ? this.adjustFrontalCinematicPoseForObstructions(client, pose, gimmickFocus.face()) : this.adjustCinematicPoseForObstructions(client, pose, gimmickFocus.face());
+        pose = scene.kind() == GimmickKind.MEGA ? this.adjustFrontalCinematicPoseForObstructions(client, pose, gimmickFocus.face(), scene) : this.adjustCinematicPoseForObstructions(client, pose, gimmickFocus.face(), scene);
         BattleCamClient.STATE.setCinematicFocus(pose.pos(), gimmickFocus.face(), scene.entityUuid(), scene.kind() == GimmickKind.MEGA);
         BattlecamSeeThrough.look(gimmickFocus.face(), gimmickFocus.body());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
@@ -267,7 +267,7 @@ public final class BattleCameraDirector {
             case BattleActionKind.FAINT -> this.computeFaintActionPose(focus, targets, scene.progress(now));
             case BattleActionKind.SWITCH -> this.computeSwitchActionPose(focus, targets, scene.progress(now));
         };
-        pose = this.adjustCinematicPoseForObstructions(client, pose, focus);
+        pose = this.adjustCinematicPoseForObstructions(client, pose, focus, scene);
         boolean hideDynamaxPokemon = scene.kind() == BattleActionKind.MOVE || scene.kind() == BattleActionKind.DAMAGE || scene.kind() == BattleActionKind.FAINT || scene.kind() == BattleActionKind.SWITCH;
         BattleCamClient.STATE.setCinematicFocus(pose.pos(), focus, scene.entityUuids(), false, hideDynamaxPokemon);
         BattlecamSeeThrough.look(focus, focus);
@@ -327,7 +327,7 @@ public final class BattleCameraDirector {
         // A wall in the way moves the camera up or closer on the same line, never round to the side, so the speaker
         // keeps facing it.
         CameraPose pose = this.adjustFrontalCinematicPoseForObstructions(client,
-            this.buildPose(cameraPos, lookAt, (float)fov), lookAt);
+            this.buildPose(cameraPos, lookAt, (float)fov), lookAt, scene);
         state.setCinematicFocus(pose.pos(), lookAt, entity.getUUID());
         BattlecamSeeThrough.look(face, entity.getBoundingBox().getCenter());
         rig.setDesired(pose.pos(), pose.yaw(), pose.pitch(), pose.fov(), cut);
@@ -351,68 +351,134 @@ public final class BattleCameraDirector {
         return new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw)).normalize();
     }
 
-    private CameraPose adjustCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus) {
-        if (client.level == null || this.hasClearSight(client, pose.pos(), focus)) {
+    /** How long the planned spot must stay clear before a camera that stepped aside goes back to it. */
+    private static final long AVOID_RETURN_MS = 600L;
+    private static final double[] AROUND_ANGLES = new double[]{35.0, -35.0, 70.0, -70.0, 110.0, -110.0, 155.0, -155.0};
+    private static final double[] AROUND_HEIGHTS = new double[]{0.0, 1.2, -0.6, 2.0};
+    private static final double[] CLOSER_SCALES = new double[]{0.82, 0.68, 0.54, 0.42, 0.32};
+    private static final double[] FRONTAL_HEIGHTS = new double[]{0.45, 0.9, 1.35, -0.35};
+    private static final double[] FRONTAL_SCALES = new double[]{0.9, 0.78, 0.66, 0.54, 1.12};
+
+    /**
+     * The spot a scene's camera stepped to when its planned spot lost sight of the focus, as a turn round the focus, a
+     * rise and a pull in, applied to the planned spot each frame. Kept for the scene ([avoidOwner]) so a sight line
+     * grazing a block edge does not flip the camera between the two spots frame by frame; dropped once the planned spot
+     * has been clear for [AVOID_RETURN_MS], or searched again when the kept spot itself is blocked.
+     */
+    private Object avoidOwner = null;
+    private boolean avoiding = false;
+    private double avoidAngle = 0.0;
+    private double avoidHeight = 0.0;
+    private double avoidScale = 1.0;
+    private long plannedClearSinceMs = -1L;
+
+    private static Vec3 avoidSpot(Vec3 focus, Vec3 offset, double angle, double height, double scale) {
+        return focus.add(BattleCameraDirector.rotateY(offset, angle).scale(scale)).add(0.0, height, 0.0);
+    }
+
+    private CameraPose adjustCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus, Object owner) {
+        return this.adjustForObstructions(client, pose, focus, owner, false);
+    }
+
+    private CameraPose adjustFrontalCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus, Object owner) {
+        return this.adjustForObstructions(client, pose, focus, owner, true);
+    }
+
+    /**
+     * Keeps [focus] in sight. Around: the closest clear spot turned round the focus (at a few heights), else one pulled in on
+     * the line. Frontal: the same line only, risen or pulled in, so the subject keeps facing the camera.
+     */
+    private CameraPose adjustForObstructions(Minecraft client, CameraPose pose, Vec3 focus, Object owner, boolean frontal) {
+        if (client.level == null) {
             return pose;
+        }
+        if (owner != this.avoidOwner) {
+            this.avoidOwner = owner;
+            this.avoiding = false;
+            this.plannedClearSinceMs = -1L;
         }
         Vec3 offset = pose.pos().subtract(focus);
         Vec3 flatOffset = new Vec3(offset.x, 0.0, offset.z);
-        if (flatOffset.lengthSqr() < 1.0E-4) {
+        if ((frontal ? offset : flatOffset).lengthSqr() < 1.0E-4) {
             return pose;
         }
-        double[] angles = new double[]{35.0, -35.0, 70.0, -70.0, 110.0, -110.0, 155.0, -155.0};
-        double[] heightOffsets = new double[]{0.0, 1.2, -0.6, 2.0};
-        Vec3 best = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (double heightOffset : heightOffsets) {
-            double[] dArray = angles;
-            int n = dArray.length;
-            for (int i = 0; i < n; ++i) {
-                double distance;
-                double angle = dArray[i];
-                Vec3 candidate = focus.add(BattleCameraDirector.rotateY(offset, angle)).add(0.0, heightOffset, 0.0);
-                if (!this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus) || !((distance = candidate.distanceToSqr(pose.pos())) < bestDistance)) continue;
-                best = candidate;
-                bestDistance = distance;
+        boolean plannedClear = this.hasClearSight(client, pose.pos(), focus);
+        if (!this.avoiding) {
+            if (plannedClear) {
+                return pose;
+            }
+        } else {
+            long now = System.currentTimeMillis();
+            if (!plannedClear) {
+                this.plannedClearSinceMs = -1L;
+            } else if (this.plannedClearSinceMs < 0L) {
+                this.plannedClearSinceMs = now;
+            }
+            if (plannedClear && now - this.plannedClearSinceMs >= AVOID_RETURN_MS) {
+                this.avoiding = false;
+                return pose;
+            }
+            Vec3 kept = BattleCameraDirector.avoidSpot(focus, offset, this.avoidAngle, this.avoidHeight, this.avoidScale);
+            if (this.isCameraSpotUsable(client, kept) && this.hasClearSight(client, kept, focus)) {
+                return this.buildPose(kept, focus, pose.fov());
+            }
+            // The kept spot is blocked as well: the planned one, when clear, else a new search.
+            if (plannedClear) {
+                this.avoiding = false;
+                return pose;
             }
         }
-        if (best == null) {
-            double[] scales;
-            Vec3 direction = offset.normalize();
-            double distance = offset.length();
-            for (double scale : scales = new double[]{0.82, 0.68, 0.54, 0.42, 0.32}) {
-                Vec3 candidate = focus.add(direction.scale(distance * scale));
-                if (!this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus)) continue;
-                best = candidate;
-                break;
-            }
-        }
-        if (best == null) {
+        if (!(frontal ? this.searchFrontal(client, focus, offset) : this.searchAround(client, pose, focus, offset))) {
+            this.avoiding = false;
             return pose;
         }
-        return this.buildPose(best, focus, pose.fov());
+        this.avoiding = true;
+        this.plannedClearSinceMs = -1L;
+        return this.buildPose(BattleCameraDirector.avoidSpot(focus, offset, this.avoidAngle, this.avoidHeight, this.avoidScale),
+            focus, pose.fov());
     }
 
-    private CameraPose adjustFrontalCinematicPoseForObstructions(Minecraft client, CameraPose pose, Vec3 focus) {
-        if (client.level == null || this.hasClearSight(client, pose.pos(), focus)) {
-            return pose;
-        }
-        Vec3 offset = pose.pos().subtract(focus);
-        if (offset.lengthSqr() < 1.0E-4) {
-            return pose;
-        }
-        double distance = offset.length();
-        Vec3 direction = offset.normalize();
-        double[] heightOffsets = new double[]{0.45, 0.9, 1.35, -0.35};
-        double[] scales = new double[]{0.9, 0.78, 0.66, 0.54, 1.12};
-        for (double heightOffset : heightOffsets) {
-            for (double scale : scales) {
-                Vec3 candidate = focus.add(direction.scale(distance * scale)).add(0.0, heightOffset, 0.0);
-                if (!this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus)) continue;
-                return this.buildPose(candidate, focus, pose.fov());
+    private boolean searchAround(Minecraft client, CameraPose pose, Vec3 focus, Vec3 offset) {
+        boolean found = false;
+        double bestDistance = Double.MAX_VALUE;
+        for (double height : AROUND_HEIGHTS) {
+            for (double angle : AROUND_ANGLES) {
+                Vec3 candidate = BattleCameraDirector.avoidSpot(focus, offset, angle, height, 1.0);
+                double distance = candidate.distanceToSqr(pose.pos());
+                if (distance >= bestDistance || !this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus)) continue;
+                found = true;
+                bestDistance = distance;
+                this.avoidAngle = angle;
+                this.avoidHeight = height;
+                this.avoidScale = 1.0;
             }
         }
-        return pose;
+        if (found) {
+            return true;
+        }
+        for (double scale : CLOSER_SCALES) {
+            Vec3 candidate = BattleCameraDirector.avoidSpot(focus, offset, 0.0, 0.0, scale);
+            if (!this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus)) continue;
+            this.avoidAngle = 0.0;
+            this.avoidHeight = 0.0;
+            this.avoidScale = scale;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean searchFrontal(Minecraft client, Vec3 focus, Vec3 offset) {
+        for (double height : FRONTAL_HEIGHTS) {
+            for (double scale : FRONTAL_SCALES) {
+                Vec3 candidate = BattleCameraDirector.avoidSpot(focus, offset, 0.0, height, scale);
+                if (!this.isCameraSpotUsable(client, candidate) || !this.hasClearSight(client, candidate, focus)) continue;
+                this.avoidAngle = 0.0;
+                this.avoidHeight = height;
+                this.avoidScale = scale;
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Vec3 rotateY(Vec3 vector, double degrees) {
@@ -603,6 +669,8 @@ public final class BattleCameraDirector {
         Vec3 side = t.perp();
         Vec3 forward = t.forward();
         float eased = BattleCameraDirector.easeInOut(progress);
+        // Looking straight down, which way is up on screen: set by the shot, never by a hair of offset.
+        Vec3 topHeading = null;
         float fov = switch (shotId) {
             case "duel_wide" -> {
                 double distance = BattleCameraDirector.lerp(7.8, 6.0, eased);
@@ -635,6 +703,7 @@ public final class BattleCameraDirector {
                 double drift = Math.sin((double)eased * Math.PI) * 1.0;
                 cameraPos = center.add(side.scale(drift)).add(0.0, height, 0.01);
                 lookAt = center.add(0.0, 0.12, 0.0);
+                topHeading = side.scale(-1.0);
                 yield (float)BattleCameraDirector.lerp(72.0, 66.0, eased);
             }
             case "establish_wide" -> {
@@ -651,7 +720,7 @@ public final class BattleCameraDirector {
                 yield 68.0f;
             }
         };
-        return this.buildPose(cameraPos, lookAt, fov);
+        return topHeading != null ? this.buildTopDownPose(cameraPos, lookAt, fov, topHeading) : this.buildPose(cameraPos, lookAt, fov);
     }
 
     private CameraPose computeSingleRemainingPose(String shotId, BattleTargetResolver.Targets t, float progress) {
@@ -704,6 +773,8 @@ public final class BattleCameraDirector {
         Vec3 side = t.perp();
         Vec3 forward = t.forward();
         float eased = BattleCameraDirector.easeInOut(progress);
+        // Looking straight down, which way is up on screen: set by the shot, never by a hair of offset.
+        Vec3 topHeading = null;
         float fov = switch (shotId) {
             case "left_angle" -> {
                 cameraPos = left.add(side.scale(6.6)).add(forward.scale(-2.4 + Math.sin((double)eased * Math.PI) * 1.0)).add(0.0, 3.2, 0.0);
@@ -718,6 +789,7 @@ public final class BattleCameraDirector {
             case "top_down" -> {
                 cameraPos = center.add(side.scale(Math.sin((double)eased * Math.PI) * 1.6)).add(0.0, 13.0, 0.01);
                 lookAt = center.add(0.0, 0.75, 0.0);
+                topHeading = side.scale(-1.0);
                 yield (float)BattleCameraDirector.lerp(84.0, 76.0, eased);
             }
             case "duel_wide" -> {
@@ -736,7 +808,7 @@ public final class BattleCameraDirector {
                 yield 80.0f;
             }
         };
-        return this.buildPose(cameraPos, lookAt, fov);
+        return topHeading != null ? this.buildTopDownPose(cameraPos, lookAt, fov, topHeading) : this.buildPose(cameraPos, lookAt, fov);
     }
 
     private CameraPose computeDoublePose(String shotId, BattleTargetResolver.Targets t, float progress, BattleFlags flags) {
@@ -751,6 +823,8 @@ public final class BattleCameraDirector {
         Vec3 side = t.perp();
         Vec3 forward = t.forward();
         float eased = BattleCameraDirector.easeInOut(progress);
+        // Looking straight down, which way is up on screen: set by the shot, never by a hair of offset.
+        Vec3 topHeading = null;
         float fov = switch (shotId) {
             case "doubles_diagonal" -> {
                 double distance = BattleCameraDirector.lerp(10.0, 8.0, eased);
@@ -783,6 +857,7 @@ public final class BattleCameraDirector {
                 double drift = Math.sin((double)eased * Math.PI) * 1.4;
                 cameraPos = center.add(side.scale(drift)).add(0.0, height, 0.01);
                 lookAt = center.add(0.0, 0.14, 0.0);
+                topHeading = side.scale(-1.0);
                 yield (float)BattleCameraDirector.lerp(74.0, 68.0, eased);
             }
             case "doubles_establish" -> {
@@ -799,7 +874,7 @@ public final class BattleCameraDirector {
                 yield 70.0f;
             }
         };
-        return this.buildPose(cameraPos, lookAt, fov);
+        return topHeading != null ? this.buildTopDownPose(cameraPos, lookAt, fov, topHeading) : this.buildPose(cameraPos, lookAt, fov);
     }
 
     private CameraPose computeDoubleDynamaxPose(String shotId, BattleTargetResolver.Targets t, float progress) {
@@ -811,6 +886,8 @@ public final class BattleCameraDirector {
         Vec3 side = t.perp();
         Vec3 forward = t.forward();
         float eased = BattleCameraDirector.easeInOut(progress);
+        // Looking straight down, which way is up on screen: set by the shot, never by a hair of offset.
+        Vec3 topHeading = null;
         float fov = switch (shotId) {
             case "doubles_team_a" -> {
                 cameraPos = teamA.add(side.scale(8.0)).add(forward.scale(-4.2 + Math.sin((double)eased * Math.PI) * 1.0)).add(0.0, 4.0, 0.0);
@@ -825,6 +902,7 @@ public final class BattleCameraDirector {
             case "doubles_top" -> {
                 cameraPos = center.add(side.scale(Math.sin((double)eased * Math.PI) * 1.8)).add(0.0, 15.0, 0.01);
                 lookAt = center.add(0.0, 0.75, 0.0);
+                topHeading = side.scale(-1.0);
                 yield (float)BattleCameraDirector.lerp(88.0, 78.0, eased);
             }
             case "doubles_diagonal" -> {
@@ -843,7 +921,7 @@ public final class BattleCameraDirector {
                 yield 82.0f;
             }
         };
-        return this.buildPose(cameraPos, lookAt, fov);
+        return topHeading != null ? this.buildTopDownPose(cameraPos, lookAt, fov, topHeading) : this.buildPose(cameraPos, lookAt, fov);
     }
 
     private BattleFlags resolveBattleFlags(Minecraft client, String battleId) {
@@ -945,6 +1023,19 @@ public final class BattleCameraDirector {
 
     private static Vec3 cameraAroundFace(GimmickFocus focus, double frontDistance, double sideOffset, double heightOffset) {
         return focus.face().add(focus.front().scale(frontDistance)).add(focus.side().scale(sideOffset)).add(0.0, heightOffset, 0.0);
+    }
+
+    /**
+     * A shot from straight above. Its heading (up on screen) came from the camera's tiny sideways offset, which shrinks to
+     * nothing at a drift's start and end and swung the picture round there; it is now the way the shot looks in its
+     * middle, held for the whole shot.
+     */
+    private CameraPose buildTopDownPose(Vec3 cameraPos, Vec3 lookAt, float fov, Vec3 heading) {
+        if (heading.x * heading.x + heading.z * heading.z < 1.0E-6) {
+            return this.buildPose(cameraPos, lookAt, fov);
+        }
+        return new CameraPose(cameraPos, BattleCameraDirector.lookYaw(Vec3.ZERO, heading),
+            BattleCameraDirector.lookPitch(cameraPos, lookAt), fov);
     }
 
     private CameraPose buildPose(Vec3 cameraPos, Vec3 lookAt, float fov) {
