@@ -219,7 +219,11 @@ internal object TrainerSceneCaptureHarness {
                     logger.info("SCENE CHECK trainers standing during the second battle: {} (expected 1)", bodies.get())
                     next(8)
                 }
-                8 -> if (since(20)) client.stop()
+                // The camera has settled on the second battle's own view by now.
+                8 -> if (since(20)) {
+                    shot("6-settled")
+                    client.stop()
+                }
             }
         })
     }

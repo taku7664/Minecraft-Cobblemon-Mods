@@ -18,6 +18,7 @@ public final class BattlecamModePolicy {
             case OFF -> BattleCamState.Mode.OFF;
             case AUTO -> BattleCamState.Mode.AUTO;
             case MANUAL -> BattleCamState.Mode.MANUAL;
+            case CLASSIC -> BattleCamState.Mode.CLASSIC;
         };
     }
 

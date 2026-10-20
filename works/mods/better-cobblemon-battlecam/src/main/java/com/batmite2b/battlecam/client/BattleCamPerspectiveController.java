@@ -24,7 +24,9 @@ public final class BattleCamPerspectiveController {
         if (ownBattleActive) {
             CameraType desired;
             // A scene may look at the player, whose body only draws outside first person.
-            CameraType perspective = desired = scene || state.showOwnBody ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON;
+            // The classic view never shows the player, as the main games' battles do not.
+            boolean body = state.showOwnBody && state.mode != BattleCamState.Mode.CLASSIC;
+            CameraType perspective = desired = scene || body ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON;
             if (!forced) {
                 savedPerspective = client.options.getCameraType();
                 forced = true;

@@ -194,7 +194,8 @@ public final class BattleCamState {
     }
 
     public boolean shouldHideOwnBody() {
-        return this.context == BattleViewContext.OWN_BATTLE && !this.isSceneActive() && this.shouldOverrideCamera() && !this.showOwnBody;
+        return this.context == BattleViewContext.OWN_BATTLE && !this.isSceneActive() && this.shouldOverrideCamera()
+            && (!this.showOwnBody || this.mode == Mode.CLASSIC);
     }
 
     /**
@@ -236,7 +237,8 @@ public final class BattleCamState {
             default -> throw new MatchException(null, null);
             case 0 -> Mode.AUTO;
             case 1 -> Mode.MANUAL;
-            case 2 -> Mode.OFF;
+            case 2 -> Mode.CLASSIC;
+            case 3 -> Mode.OFF;
         };
     }
 
@@ -494,7 +496,9 @@ public final class BattleCamState {
     public static enum Mode {
         OFF,
         AUTO,
-        MANUAL;
+        MANUAL,
+        /** The main games' view: one fixed angle from behind the player's own Pokemon, facing the opponent. */
+        CLASSIC;
 
     }
 }

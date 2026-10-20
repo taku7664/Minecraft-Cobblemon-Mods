@@ -26,6 +26,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Position;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
@@ -123,6 +124,16 @@ public final class BattleCameraDirector {
             BattleCamClient.STATE.clearCinematicFocus();
             cutThisPose = true;
         }
+        if (state.mode == BattleCamState.Mode.CLASSIC) {
+            // One fixed view: moves, hits, faints and switches cut to nothing, and their queue is let go of.
+            while (state.pollActionEvent() != null) {
+            }
+            if (this.activeActionScene != null) {
+                this.activeActionScene = null;
+                BattleCamClient.STATE.clearCinematicFocus();
+                cutThisPose = true;
+            }
+        }
         BattleActionEvent battleActionEvent = actionEvent = this.activeActionScene != null && this.activeActionScene.kind() == BattleActionKind.DAMAGE ? state.pollDamageEventGroup() : state.pollActionEvent();
         if (this.activeActionScene != null && this.activeActionScene.canExtend(actionEvent)) {
             this.activeActionScene.extend(actionEvent, now);
@@ -165,6 +176,12 @@ public final class BattleCameraDirector {
             this.index = 0;
             this.shotStartMs = now;
             cutThisPose = true;
+        }
+        if (state.mode == BattleCamState.Mode.CLASSIC) {
+            CameraPose classic = this.computeClassicPose(client, targets, this.resolveBattleFlags(client, state.activeBattleId).hasDynamax());
+            BattlecamSeeThrough.look(targets.doubles() ? targets.teamACenter() : targets.left(), targets.doubles() ? targets.teamBCenter() : targets.right());
+            rig.setDesired(classic.pos(), classic.yaw(), classic.pitch(), classic.fov(), cutThisPose);
+            return;
         }
         if (state.mode == BattleCamState.Mode.AUTO && now - this.shotStartMs >= 8500L) {
             this.nextShot();
@@ -639,6 +656,112 @@ public final class BattleCameraDirector {
         float fov = (float)BattleCameraDirector.lerp(56.0, 61.0, zoomOut);
         Vec3 cameraPos = BattleCameraDirector.cameraAroundFace(focus, frontalDistance, 0.0, height);
         return this.buildPose(cameraPos, focus.face(), fov);
+    }
+
+    /** Whose spot [adjustForObstructions] keeps for the classic view: the view itself, for as long as it lasts. */
+    private static final Object CLASSIC_VIEW = new Object();
+
+    /** The classic view's lens. */
+    public static final float CLASSIC_FOV = 40.0f;
+    /** How far the classic camera is swung round the battle's middle, counterclockwise seen from above (to the side). */
+    public static final double CLASSIC_ORBIT_DEGREES = 40.0;
+    /** How much farther from the battle's middle it stands after the swing, and how much higher. */
+    public static final double CLASSIC_PULL_BACK = 1.1;
+    public static final double CLASSIC_RAISE = 1.2;
+
+    /**
+     * The main games' battle view, held still, from behind the player's own Pokemon (by owner; the side nearer the
+     * player when the player owns none, as when spectating).
+     */
+    private CameraPose computeClassicPose(Minecraft client, BattleTargetResolver.Targets t, boolean dynamax) {
+        Vec3 a = t.doubles() ? t.teamACenter() : t.left();
+        Vec3 b = t.doubles() ? t.teamBCenter() : t.right();
+        Vec3 mine;
+        Vec3 foe;
+        double height;
+        List<Entity> own = this.ownBattlers(client);
+        if (!own.isEmpty()) {
+            Vec3 sum = Vec3.ZERO;
+            double tallest = 0.0;
+            for (Entity entity : own) {
+                sum = sum.add(entity.position().add(0.0, entity.getBbHeight() * 0.5, 0.0));
+                tallest = Math.max(tallest, entity.getBbHeight());
+            }
+            mine = sum.scale(1.0 / own.size());
+            height = tallest;
+            foe = t.singleRemaining() ? null : (mine.distanceToSqr(a) <= mine.distanceToSqr(b) ? b : a);
+        } else {
+            boolean aMine = client.player == null || client.player.distanceToSqr(a) <= client.player.distanceToSqr(b);
+            mine = aMine ? a : b;
+            foe = t.singleRemaining() ? null : (aMine ? b : a);
+            height = 1.0;
+        }
+        if (foe == null) {
+            // Only one side is left in sight: the view keeps its line from the player.
+            Vec3 from = client.player != null ? client.player.position() : mine.subtract(t.forward());
+            Vec3 flat = new Vec3(mine.x - from.x, 0.0, mine.z - from.z);
+            Vec3 dir = flat.lengthSqr() > 1.0E-4 ? flat.normalize() : new Vec3(1.0, 0.0, 0.0);
+            foe = mine.add(dir.scale(5.0));
+        }
+        CameraPose pose = BattleCameraDirector.classicPose(mine, foe, t.doubles(), dynamax ? height * 2.0 : height);
+        // A wall in the way raises the camera or brings it in on the same line, aiming where the view aims.
+        Vec3 aim = BattleCameraDirector.classicAim(mine, foe);
+        return this.adjustFrontalCinematicPoseForObstructions(client, pose, aim, CLASSIC_VIEW);
+    }
+
+    /** Where the classic view looks: most of the way to the opponent, at its height. */
+    public static Vec3 classicAim(Vec3 mine, Vec3 foe) {
+        Vec3 aim = mine.add(foe.subtract(mine).scale(0.7));
+        return new Vec3(aim.x, foe.y + 0.15, aim.z);
+    }
+
+    /**
+     * The classic view from the middle of the player's Pokemon [mine] ([height] blocks tall) towards the opponent [foe].
+     * First just behind it, over its head and stepped to its right; then swung [CLASSIC_ORBIT_DEGREES] round the
+     * battle's middle towards the player's right (counterclockwise seen from above) and pulled back, so the player's
+     * Pokemon shows its back at the left and the opponent stands clear of it to the right.
+     */
+    public static CameraPose classicPose(Vec3 mine, Vec3 foe, boolean doubles, double height) {
+        Vec3 flat = new Vec3(foe.x - mine.x, 0.0, foe.z - mine.z);
+        double field = flat.length();
+        Vec3 toFoe = field > 1.0E-3 ? flat.scale(1.0 / field) : new Vec3(1.0, 0.0, 0.0);
+        // The player's right as they face the opponent.
+        Vec3 right = new Vec3(-toFoe.z, 0.0, toFoe.x);
+        double tall = Math.max(0.4, height);
+        double back = Math.max(field, tall * 2.8) + (doubles ? 1.0 : 0.0);
+        double aside = back * 0.5;
+        double rise = tall * 0.5 + 0.35 + (doubles ? 0.3 : 0.0);
+        Vec3 middle = mine.add(foe).scale(0.5);
+        Vec3 start = mine.subtract(toFoe.scale(back)).add(right.scale(aside));
+        Vec3 offset = new Vec3(start.x - middle.x, 0.0, start.z - middle.z);
+        // The camera's bearing from the middle, measured from the line to the opponent towards the player's right.
+        double bearing = Math.atan2(offset.dot(right), offset.dot(toFoe)) - Math.toRadians(CLASSIC_ORBIT_DEGREES);
+        double reach = offset.length() * CLASSIC_PULL_BACK;
+        Vec3 swung = toFoe.scale(Math.cos(bearing) * reach).add(right.scale(Math.sin(bearing) * reach));
+        Vec3 cameraPos = new Vec3(middle.x + swung.x, mine.y + rise * CLASSIC_RAISE, middle.z + swung.z);
+        Vec3 lookAt = BattleCameraDirector.classicAim(mine, foe);
+        return new CameraPose(cameraPos, BattleCameraDirector.lookYaw(cameraPos, lookAt),
+            BattleCameraDirector.lookPitch(cameraPos, lookAt), CLASSIC_FOV);
+    }
+
+    /** The unit vector a camera with [yaw] and [pitch] (degrees, Minecraft's) looks along. */
+    public static Vec3 lookVector(float yaw, float pitch) {
+        double y = Math.toRadians(yaw);
+        double p = Math.toRadians(pitch);
+        return new Vec3(-Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p));
+    }
+
+    /** The player's own Pokemon in this battle, by owner. */
+    private List<Entity> ownBattlers(Minecraft client) {
+        if (client.level == null || client.player == null) {
+            return List.of();
+        }
+        UUID player = client.player.getUUID();
+        AABB box = client.player.getBoundingBox().inflate(64.0, 24.0, 64.0);
+        return client.level.getEntities((Entity)null, box, entity -> entity != null && !entity.isRemoved()
+            && entity.getClass().getName().equals("com.cobblemon.mod.common.entity.pokemon.PokemonEntity")
+            && ReflectionUtil.entityMatchesBattle(entity, this.activeBattleId)
+            && entity instanceof OwnableEntity ownable && player.equals(ownable.getOwnerUUID()));
     }
 
     private CameraPose computeTrainerDuelPose(TrainerTargetResolver.Targets t) {
