@@ -198,7 +198,11 @@ internal object LocalPublicTurnOrder {
         // Its public range could not have moved it first: something unseen (a Choice Scarf, a weather-speed ability) does,
         // worth at least the order seen and at most a doubling. Read on the public range, a Zapdos still read itself faster
         // than an Excadrill that had just moved before the Electivire beside it (sand concept, 2026-10-20).
-        return if (floor <= public.second) public else floor to maxOf(floor, public.second * 2)
+        // Within its public range the order narrows the range from below: at least the speed of the one it moved before (a
+        // tie may go either way, so not one more). Left at the whole range, an Overqwil that had just moved before a 140
+        // Dugtrio read 81-150 and the Dugtrio as faster, its Earthquake a sure knockout it never got to use (self-play, 2026-10-21).
+        if (floor <= public.second) return maxOf(public.first, floor - 1) to public.second
+        return floor to maxOf(floor, public.second * 2)
     }
 
     /**
