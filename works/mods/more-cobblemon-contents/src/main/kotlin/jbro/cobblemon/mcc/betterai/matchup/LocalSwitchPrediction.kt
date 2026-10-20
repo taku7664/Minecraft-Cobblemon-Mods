@@ -63,11 +63,17 @@ internal object LocalSwitchPrediction {
         return out
     }
 
-    /** An attack's value as the root prices it: the expected HP taken (capped at what is left) and the knockout. */
+    /**
+     * An attack's value as the root prices it: the expected HP taken (capped at what is left) and the knockout at the
+     * target's worth ([jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore], the flat material when
+     * unread). At the flat material, the knockout of a 7% Toxapex the root priced at its worth (0.07) was taken back at
+     * full: a sure Sucker Punch fell to -37 under a Swords Dance (replayed 2026-10-20).
+     */
     private fun value(scores: MatchupScores, userId: UUID, moveId: String, targetId: UUID, tuning: LocalDecisionTuning): Double? {
         val score = scores.moves(userId, targetId).firstOrNull { it.moveId == moveId } ?: return null
         val taken = score.accuracy * (score.minimumDamageFraction + score.maximumDamageFraction) / 2.0
-        return tuning.board(taken) + tuning.knockoutMaterialScore * score.knockoutChanceWithin(1)
+        return tuning.board(taken) +
+            jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.knockoutScore(targetId, tuning) * score.knockoutChanceWithin(1)
     }
 
     const val REASON = "switch_prediction"
