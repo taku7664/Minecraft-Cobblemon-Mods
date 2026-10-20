@@ -2,7 +2,8 @@ package jbro.cobblemon.mcc.betterai.brain
 
 /**
  * Every candidate's value at each step of a searchless decision, keyed by action id, for diagnosing why an action
- * was or was not chosen. Handed to [LocalTacticalBrain]'s stage trace; the game never sets one.
+ * was or was not chosen. Handed to [LocalTacticalBrain]'s stage trace: the replay tools read it, and the router hands
+ * it to the external model as the local brain's own evaluation ([OpenRouterTacticalBrain]).
  */
 internal data class LocalDecisionStages(
     val turn: Int,
@@ -34,4 +35,6 @@ internal data class LocalDecisionStages(
     val quick: String?,
     val quickReason: String?,
     val selected: String,
+    /** What the opposing active Pokemon were expected to do, as the rules read it (repeats applied at Boss). */
+    val opponentIntents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent> = emptyList(),
 )

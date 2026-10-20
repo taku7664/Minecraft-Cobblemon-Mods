@@ -1389,6 +1389,75 @@ class HumanlikeExternalBrainTest {
         assertTrue(transportFuture.isCancelled)
     }
 
+    @Test
+    fun `router prompt carries the local brain's evaluation and opponent reading with their weights`() {
+        var sent: String? = null
+        val brain = OpenRouterTacticalBrain(
+            BetterAiConfig(enabled = true, apiKey = "test", model = "test/model"),
+            OpenRouterTransport { request, _ ->
+                sent = request
+                CompletableFuture.completedFuture(keepResponse("status"))
+            },
+        )
+
+        assertEquals("status", brain.decide(brain.openSession(open), context(turn = 1)).toCompletableFuture().join().actionId)
+        val request = requireNotNull(sent)
+        val root = JsonParser.parseString(request).asJsonObject
+        val messages = root.getAsJsonArray("messages")
+        val digest = JsonParser.parseString(messages[1].asJsonObject["content"].asString).asJsonObject
+        assertEquals("brain-choice-v25-local", digest["promptVersion"].asString)
+        val local = digest.getAsJsonObject("localBrain")
+        assertEquals(1.0, local["weight"].asDouble)
+        assertEquals(setOf("move", "status"), local.getAsJsonArray("actions").map { it.asJsonObject["actionId"].asString }.toSet())
+        assertTrue(local["selected"].asString in setOf("move", "status"))
+        val tendency = digest.getAsJsonObject("opponentTendency")
+        assertEquals(1.0, tendency["weight"].asDouble)
+        assertTrue(tendency.has("expectedActions"))
+        assertTrue(tendency.has("patternResponseShiftEvidence"))
+        val system = messages[0].asJsonObject["content"].asString
+        assertTrue(system.contains("`localBrain` is the local tactical AI's own evaluation"))
+        assertFalse(system.contains("never supplies local utility"))
+        assertFalse(request.contains(allyId.toString()))
+        assertFalse(request.contains(opponentId.toString()))
+    }
+
+    @Test
+    fun `zero weights leave the local blocks and the local run out`() {
+        var sent: String? = null
+        val brain = OpenRouterTacticalBrain(
+            BetterAiConfig(enabled = true, apiKey = "test", model = "test/model", localBrainWeight = 0.0, opponentTendencyWeight = 0.0),
+            OpenRouterTransport { request, _ ->
+                sent = request
+                CompletableFuture.completedFuture(keepResponse("status"))
+            },
+        )
+
+        brain.decide(brain.openSession(open), context(turn = 1)).toCompletableFuture().join()
+        val request = requireNotNull(sent)
+        assertFalse(request.contains("localBrain"))
+        assertFalse(request.contains("opponentTendency"))
+        assertTrue(request.contains("never supplies local utility"))
+        assertTrue(request.contains("brain-choice-v24"))
+    }
+
+    @Test
+    fun `prompt weights load from the config file and default to one`() {
+        val directory = Files.createTempDirectory("better-ai-weights")
+        val path = directory.resolve("openrouter.json")
+        val created = BetterAiConfigStore.loadOrCreate(path)
+        assertEquals(1.0, created.localBrainWeight)
+        assertEquals(1.0, created.opponentTendencyWeight)
+        assertTrue(Files.readString(path).contains("\"localBrainWeight\": 1.0"))
+
+        Files.writeString(path, Files.readString(path)
+            .replace("\"localBrainWeight\": 1.0", "\"localBrainWeight\": 0.5")
+            .replace("\"opponentTendencyWeight\": 1.0", "\"opponentTendencyWeight\": 2.0"))
+        val edited = BetterAiConfigStore.loadOrCreate(path)
+        assertEquals(0.5, edited.localBrainWeight)
+        assertEquals(2.0, edited.opponentTendencyWeight)
+        assertThrows(IllegalArgumentException::class.java) { BetterAiConfig(localBrainWeight = -1.0) }
+    }
+
     private fun context(turn: Int, boardChange: Boolean = false): BattleDecisionContext = BattleDecisionContext(
         requestId = UUID.randomUUID(),
         state = BattleStateView(

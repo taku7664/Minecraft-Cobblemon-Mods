@@ -1074,6 +1074,7 @@ internal class LocalTacticalBrain(
                 quick = quick?.rank?.outcome?.candidate?.actionId,
                 quickReason = quick?.reason,
                 selected = selected.outcome.candidate.actionId,
+                opponentIntents = opponentIntents,
             ))
         }
         decisionTrace?.resolved("legacy_lookahead", drawRanked, selection)
@@ -1322,6 +1323,18 @@ internal class LocalTacticalBrain(
     /** Records [pair] as [session]'s choice on [turn], as a decision would (tests replay one turn's requests). */
     internal fun recordPair(session: BattleBrainSession, turn: Int, pair: BattleActionCandidate) {
         (session as? Session)?.lastPair = turn to pair
+    }
+
+    /**
+     * Another brain (the router) played [played] on [turn] where this one only advised: the next decision's replay of the
+     * turn ([LocalAbilityPosterior]) and the doubles partner's pending move read the action played, not this one's pick.
+     */
+    internal fun recordPlayed(session: BattleBrainSession, turn: Int, played: BattleActionCandidate) {
+        val active = session as? Session ?: return
+        active.abilityWorlds = active.abilityWorlds?.copy(taken = played)
+        active.lastPair = if (played.kind == BattleActionKind.COMPOSITE && played.componentActions.any { it.kind == BattleActionKind.USE_MOVE }) {
+            turn to played
+        } else active.lastPair?.takeIf { it.first != turn }
     }
 
     /**

@@ -3,6 +3,17 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-21 02:30] OpenRouter에 로컬 평가와 상대 성향을 넘긴다 (구현·단위 확인, 빌드·배포·실호출 미진행)
+
+- **사용자 결정:** Router 프롬프트에 로컬 판단과 상대 성향을 넣고 가중치는 우선 1.0. `BRAIN_OWNERSHIP.md` §8에 기록(§1의 "Local 결과 미반영"을 이 범위에서 대체).
+- **무엇을:** `OpenRouterTacticalBrain`이 판단마다 같은 컨텍스트로 `LocalTacticalBrain(searchless)`을 먼저 돌려 단계 값(`LocalDecisionStages`, 새 필드 `opponentIntents`)을 받는다. 프롬프트에 `localBrain`(선택, 후보별 최종 값·뽑기 확률·제외 사유·규칙 보정·빠른 판정)과 `opponentTendency`(상대 기술·교체 확률, `patternResponseShiftEvidence`, `opponentResponseVolatility`) 블록을 붙이고, 지시문의 "로컬 효용·순위·추천을 주지 않는다" 두 문장을 블록 설명으로 바꾼다. `promptVersion` `brain-choice-v25-local`.
+- **가중치:** `openrouter.json`의 `localBrainWeight`, `opponentTendencyWeight`(기본 1.0, 0~10). 0이면 그 블록 제외, 둘 다 0이면 로컬을 안 돌림. 개발 서버 설정에 두 키를 1.0으로 넣음.
+- **같이 고친 것:** 로컬 세션은 자기 선택이 나갔다고 보고 다음 턴 특성 재생(`LocalAbilityPosterior`)과 더블 파트너 판독을 한다. Router가 고른 행동을 `LocalTacticalBrain.recordPlayed`로 알려 준다.
+- **주의:** 대체 경로(`BattleDecisionFallbackChain`)가 Router와 로컬 제공자를 동시에 돌리므로, Router 배틀에서는 로컬 판단이 한 턴에 두 번 돈다(CPU 두 배, 같은 판단 기록 파일을 덮어씀). Router의 최종 선택은 그대로 Router 몫.
+- **확인:** `unitTest` 5클래스 57개 중 56 통과(새 테스트 3개 포함). 실패 1개 `router receives the same explicit four stage difficulty contract`는 10-09 `b99de0a69`(전 등급 2턴 탐색) 이후 원래 실패하던 것. 입문·일반 난이도 지시문이 아직 "한 턴만 비교"라고 해서 프롬프트의 `lookaheadPlies=2`와 어긋남(미수정, 사용자 확인 필요).
+- **미확인:** 실제 OpenRouter 호출(키·모델 미설정), 빌드·배포, 실게임.
+- **테스트 실행 주의:** 이 모듈은 `tasks.test`가 꺼져 있다. `:more-cobblemon-contents:unitTest "-Ptests=A|B"`로 돌리고, 클래스 구분은 쉼표가 아니라 `|`.
+
 ## [2026-10-21 01:30] 랭크업 반복과 역린 고정 (구현·단위·기록 재생 확인, 개발 배포)
 
 - **사용자 지적(개발 서버 실게임):** 핫삼 칼춤 3번(+6), 대도각참 칼춤 2연속, 역린 고정을 모름. 판단 기록이 꺼져 있어 점수는 못 봄(아래 기록 설정 참고).

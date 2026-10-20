@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.betterai.outcome.PublicMechanicalActionGate
 import jbro.cobblemon.mcc.betterai.policy.forPlanOwner
 import jbro.cobblemon.mcc.betterai.router.BetterAiConfig
 import jbro.cobblemon.mcc.betterai.router.HumanlikePromptCodec
+import jbro.cobblemon.mcc.betterai.router.LocalBrainSignals
 import jbro.cobblemon.mcc.betterai.router.OpenRouterDecisionSummaryDiagnostics
 import jbro.cobblemon.mcc.betterai.router.OpenRouterDecisionSummaryRecord
 import jbro.cobblemon.mcc.betterai.router.OpenRouterDecisionSummarySink
@@ -100,10 +101,42 @@ internal class OpenRouterTacticalBrain(
     private val decisionSummarySink: OpenRouterDecisionSummarySink = OpenRouterDecisionSummarySink.NONE,
     private val decisionSummaryExecutor: Executor = ForkJoinPool.commonPool(),
 ) : BattleBrain {
+    /** The stages of the local decision running on this thread, caught by the local brain's stage trace. */
+    private val localStages = ThreadLocal<LocalDecisionStages?>()
+
+    /**
+     * The local brain, played first on every decision so the model sees its evaluation ([LocalBrainSignals]); null when
+     * both weights are 0. It keeps its own session, as it would deciding alone, and records its decisions the same way.
+     */
+    private val local: LocalTacticalBrain? = if (config.localBrainWeight > 0.0 || config.opponentTendencyWeight > 0.0) {
+        LocalTacticalBrain(searchless = true, stageTrace = { localStages.set(it) })
+    } else null
+
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession = Session(
         sessionId = UUID.randomUUID(),
         openContext = context,
+        localSession = local?.let { brain ->
+            runCatching { brain.openSession(context) }
+                .onFailure { logger.warn("[MCC Better AI] Local brain session for the router could not open: {}", it.javaClass.name) }
+                .getOrNull()
+        },
     )
+
+    /** The local brain's evaluation of [context]; null when it is off or fails, and the model then decides without it. */
+    private fun localSignals(session: Session, context: BattleDecisionContext): LocalBrainSignals? {
+        val brain = local ?: return null
+        val localSession = session.localSession ?: return null
+        localStages.remove()
+        return try {
+            brain.decide(localSession, context).toCompletableFuture().getNow(null)
+            localStages.get()?.let { LocalBrainSignals(it, config.localBrainWeight, config.opponentTendencyWeight) }
+        } catch (exception: Exception) {
+            logger.warn("[MCC Better AI] Local brain evaluation for the router failed: {}", exception.javaClass.name)
+            null
+        } finally {
+            localStages.remove()
+        }
+    }
 
     override fun decide(session: BattleBrainSession, context: BattleDecisionContext): CompletionStage<BattleDecision> {
         val active = session as? Session ?: return CompletableFuture.failedFuture(IllegalArgumentException("Unknown session"))
@@ -120,6 +153,7 @@ internal class OpenRouterTacticalBrain(
                 ),
             )
         }
+        val signals = localSignals(active, context)
         val remaining = (calculatedContext.deadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(1L)
         val configured = if (config.softTimeoutMillis > 0) config.softTimeoutMillis else config.timeoutMillis
         val timeout = minOf(remaining, configured, config.timeoutMillis)
@@ -130,6 +164,7 @@ internal class OpenRouterTacticalBrain(
                     active.openContext,
                     calculatedContext,
                     modelCapabilities(),
+                    signals,
                 ),
                 timeout,
             ).toCompletableFuture()
@@ -147,6 +182,12 @@ internal class OpenRouterTacticalBrain(
                         )
                     }.fold(
                         onSuccess = { decision ->
+                            // Whether or not its stages reached the prompt, the local brain read its own pick as played.
+                            active.localSession?.let { localSession ->
+                                calculatedContext.candidates.firstOrNull { it.actionId == decision.actionId }?.let { played ->
+                                    runCatching { local?.recordPlayed(localSession, calculatedContext.state.turn, played) }
+                                }
+                            }
                             decisionFuture.complete(decision)
                             if (config.logDecisionSummary) {
                                 publishDecisionSummary(active, calculatedContext, decision, content)
@@ -165,7 +206,10 @@ internal class OpenRouterTacticalBrain(
         }
     }
 
-    override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) = Unit
+    override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) {
+        val localSession = (session as? Session)?.localSession ?: return
+        runCatching { local?.closeSession(localSession, result) }
+    }
 
     private fun publishDecisionSummary(
         session: Session,
@@ -220,6 +264,7 @@ internal class OpenRouterTacticalBrain(
     private data class Session(
         override val sessionId: UUID,
         val openContext: BattleBrainOpenContext,
+        val localSession: BattleBrainSession? = null,
     ) : BattleBrainSession
 
     private companion object {
