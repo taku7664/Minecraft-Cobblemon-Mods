@@ -61,6 +61,20 @@ internal object LocalKnockoutWorth {
         val urgency: Double = 1.0,
         /** The chance its best hit knocks out one in front this turn, at its chance to act. */
         val threat: Double = 0.0,
+        /**
+         * The same chance against each one in front, by id: whether an attack on it lands before it knocks that attacker
+         * out is about the attacker alone. In doubles, read off the best target, a 26% +2 Kingambit that would knock out the
+         * Slowking beside a Rhyperior read as stopping the Rhyperior's Earthquake too, and its knockout as worth nothing,
+         * three turns running while it set up (hand-played doubles, 2026-10-20).
+         */
+        val threatOn: Map<UUID, Double> = emptyMap(),
+        /**
+         * It falls at this turn's end without a hit (sand, a status, a curse: [jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector]):
+         * a knockout now takes nothing it would keep, only the hit it would land first. Read as a living Pokemon, a 2%
+         * Hatterene under Trick Room (it moves first) and sand drew a Dynamaxed Duraludon's attacks from the 40% Dusclops
+         * beside it (doubles replay, 2026-10-20).
+         */
+        val fallsAnyway: Boolean = false,
     )
 
     const val MINIMUM_URGENCY = 0.25
@@ -95,6 +109,8 @@ internal object LocalKnockoutWorth {
                 best
             }.average()
         }
+        val ended = jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector.project(state,
+            jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter.seed(state).mapValues { (_, done) -> done + 1 })
         val denials = fight.keys.associateWith { id ->
             val pokemon = living.first { it.battlePokemonId == id }
             val inFront = living.filter { it.side != pokemon.side && it.activeSlot != null }
@@ -105,9 +121,10 @@ internal object LocalKnockoutWorth {
                         move.knockoutChanceWithin(1) * (w[target.battlePokemonId] ?: 1.0) * ONE_POKEMON
                 }.maxByOrNull { it.second }
             }
-            val threat = inFront.maxOfOrNull { target ->
-                scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0
-            } ?: 0.0
+            val threats = inFront.associate { target ->
+                target.battlePokemonId to (scores.moves(id, target.battlePokemonId).maxOfOrNull { it.accuracy * it.knockoutChanceWithin(1) } ?: 0.0)
+            }
+            val threat = threats.values.maxOrNull() ?: 0.0
             // One that has healed itself in this battle (an ability, an item, a draining or healing move) may not be in reach
             // later: knocking it out now matters whole. Read on threat alone, a Milotic left a Poison Heal Gliscor it Ice
             // Beamed four times over at a quarter of the knockout and Scalded instead (hand-played Cynthia, 2026-10-20).
@@ -125,7 +142,9 @@ internal object LocalKnockoutWorth {
             }
             val threatNow = (threat * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0)
             Denial(hits.map { it.second }.averageOrZero() * actsThisTurn(pokemon, state), hits.maxByOrNull { it.second }?.first?.priority ?: 0,
-                if (heals) 1.0 else threatNow.coerceAtLeast(MINIMUM_URGENCY), threatNow)
+                if (heals) 1.0 else threatNow.coerceAtLeast(MINIMUM_URGENCY), threatNow,
+                threats.mapValues { (_, chance) -> (chance * actsThisTurn(pokemon, state)).coerceIn(0.0, 1.0) },
+                pokemon.activeSlot != null && ended.pokemon.firstOrNull { it.battlePokemonId == id }?.let { it.hpFraction <= 0.0 } == true)
         }
         // Fight and next action in board units (an HP bar is one, a Pokemon two), then scaled per side again.
         return Reading(perSide(fight.keys.associateWith { (w.getValue(it) * ONE_POKEMON) + action.getValue(it) })

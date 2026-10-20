@@ -744,7 +744,23 @@ internal class LocalTacticalBrain(
         val trickRoomValue by lazy { ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.value(rulesContext, it, tuning) } }
         val trickRoomAdjustments = if (!rulesApply) emptyMap() else searchedRanked.mapNotNull { rank ->
             val candidate = rank.outcome.candidate
-            if (rank.outcome.publiclyInert || !jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
+            if (rank.outcome.publiclyInert) return@mapNotNull null
+            if (candidate.kind == BattleActionKind.COMPOSITE) {
+                // In doubles the room is one slot's part: that part's value becomes the room's, the partner's stays. Read only
+                // for a lone move, a Trick Room team's Dusknoir and Bronzong leading in front of a Garchomp kept the generic 6
+                // for the room and set it up once in a game (hand-played doubles, 2026-10-20). Both slots toggling it leave the
+                // room as it was: neither part is worth anything.
+                val rooms = rank.outcome.componentOutcomes.filter {
+                    !it.publiclyInert && jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(it.candidate)
+                }
+                if (rooms.isEmpty()) return@mapNotNull null
+                val value = trickRoomValue ?: return@mapNotNull null
+                val worth = if (rooms.size > 1) 0.0 else value * (ruleScores?.let {
+                    jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(rooms.single().candidate, difficultyContext, it)
+                } ?: 1.0)
+                return@mapNotNull candidate.actionId to (worth - rooms.sumOf { it.tacticalUtility })
+            }
+            if (!jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
             // The room's worth at the chance its user gets it up before a hit knocks it out (it moves last, at -7).
             else trickRoomValue?.let { value ->
                 val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0
@@ -772,7 +788,8 @@ internal class LocalTacticalBrain(
         val creditedStatus = (hazardEncoreAdjustments.entries + screenAdjustments.entries + statusMoveAdjustments.entries +
             debuffAdjustments.entries).filter { it.value > 0.0 }.groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() }
         val stayCredits = creditedStatus + perishTrapValues + trickRoomAdjustments.keys.mapNotNull { id ->
-            val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id } ?: return@mapNotNull null
+            val candidate = difficultyContext.candidates.firstOrNull { it.actionId == id && it.kind != BattleActionKind.COMPOSITE }
+                ?: return@mapNotNull null
             trickRoomValue?.let { value ->
                 id to value * (ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0)
             }

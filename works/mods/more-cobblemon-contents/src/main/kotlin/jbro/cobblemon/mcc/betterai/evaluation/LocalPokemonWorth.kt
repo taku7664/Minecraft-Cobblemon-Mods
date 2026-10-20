@@ -38,13 +38,13 @@ internal object LocalPokemonWorth {
         val denial = id?.let { denials.get()?.get(it) } ?: return worth
         val mine = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.effectivePriority(
             state, jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY, attack)
+        val actor = state.pokemon.firstOrNull {
+            it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
+        }
         val first = when {
             mine > denial.priority -> 1.0
             mine < denial.priority -> 0.0
             else -> {
-                val actor = state.pokemon.firstOrNull {
-                    it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
-                }
                 val foe = state.pokemon.firstOrNull { it.battlePokemonId == id }
                 val speed = if (actor != null && foe != null) {
                     jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.speedOrderProbability(state, actor, foe)
@@ -57,8 +57,12 @@ internal object LocalPokemonWorth {
         // Its worth counts at how much falling now matters (Denial.urgency), and only if the attack lands before it knocks
         // the attacker out: first, or second and still standing. Read as landing anyway, a +2 Mega Garchomp at 46% Earthquaked
         // into a faster Dragapult that Dragon Darted it first, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
-        val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - denial.threat)
-        return worth * denial.urgency * lands + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
+        // Its threat to this attacker, not to the one beside it (LocalKnockoutWorth.Denial.threatOn).
+        val threat = actor?.let { denial.threatOn[it.battlePokemonId] } ?: denial.threat
+        val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - threat)
+        // One that falls at the turn's end anyway is worth only the hit a knockout first stops (Denial.fallsAnyway).
+        val kept = if (denial.fallsAnyway) 0.0 else worth * denial.urgency * lands
+        return kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 
     private const val UNKNOWN_ORDER = 0.5

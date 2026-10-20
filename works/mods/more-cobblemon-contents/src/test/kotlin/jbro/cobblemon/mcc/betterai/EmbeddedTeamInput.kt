@@ -105,6 +105,11 @@ internal object EmbeddedTeamInput {
         val events = mutableListOf<BattleObservedEventView>()
         val sideEffects = BattleSide.entries.associateWith { linkedMapOf<String, Int>() }
         val fields = linkedSetOf<String>()
+        // A delayed hit waiting on a slot (Future Sight), as the game's observer keeps it: the slot, its source and the
+        // turn it was cast, from the move line's target and the user's `-start|move: ...` line.
+        class PendingSlot(val source: UUID, val moveId: String, val turn: Int)
+        val pendingSlots = linkedMapOf<Pair<BattleSide, Int>, PendingSlot>()
+        var lastMoveTarget: String? = null
         var weather: String? = null
         // The turn each timed effect started, as the Cobblemon observer counts it, so the state carries the
         // same remaining-turn ranges production does.
@@ -251,6 +256,7 @@ internal object EmbeddedTeamInput {
                             ?: jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().move(id(p[3]))?.priority,
                         actorSlot = if (nativeInputs) activeSlot(actor) else null)
                     it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3]))
+                    lastMoveTarget = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
                     val targets = p.getOrNull(4)?.takeIf { target -> target.startsWith("p") }
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
                     actionWindow = ActionWindow(eventTurn, index.toLong() * 4 - 1, uuid(it.ident), id(p[3]), targets)
@@ -287,6 +293,12 @@ internal object EmbeddedTeamInput {
                 "-clearboost" -> current?.stages?.clear()
                 "-clearallboost" -> seen.values.forEach { it.stages.clear() }
                 "-start" -> current?.let {
+                    if (p[3].startsWith("move: ") && jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects.resolve(id(p[3]))?.effects.orEmpty()
+                            .any { effect -> effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.SLOT_CONDITION &&
+                                effect.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET }) {
+                        lastMoveTarget?.let { target -> activeSlot(target)?.let { slot ->
+                            pendingSlots.putIfAbsent(side(target) to slot, PendingSlot(uuid(it.ident), id(p[3]), eventTurn)) } }
+                    }
                     if (id(p[3]) == jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE) {
                         val effect = if (id(p.getOrNull(4).orEmpty()) == "gmax") jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.GIGANTAMAX_START
                             else jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.VOLATILE
@@ -312,6 +324,8 @@ internal object EmbeddedTeamInput {
                     }
                 }
                 "-end" -> {
+                    if (p[3].startsWith("move: ")) activeSlot(actor)?.let { slot ->
+                        if (pendingSlots[side(actor) to slot]?.moveId == id(p[3])) pendingSlots.remove(side(actor) to slot) }
                     if (id(p[3]) == "gastroacid") current?.gastroAcid = false
                     if (id(p[3]) == "neutralizinggas") current?.abilityEnded = true
                     if (p[3] == "typeadd") current?.added = null
@@ -563,7 +577,11 @@ internal object EmbeddedTeamInput {
             fields.filter { it.endsWith("room") }.map { field(it, FieldEffectScope.ROOM) },
             fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map { field(it, FieldEffectScope.GLOBAL) },
             sideEffects.mapValues { (side, values) -> values.map { (name, stacks) ->
-                timed(name, "side:$side:$name", Cobblemon173PublicEffectDurationKnowledge.side(name), stacks) } })
+                timed(name, "side:$side:$name", Cobblemon173PublicEffectDurationKnowledge.side(name), stacks) } +
+                pendingSlots.filterKeys { it.first == side }.map { (key, pending) ->
+                    BattleTimedEffectView("${pending.moveId}slot${key.second}", (3 - (turn - pending.turn).coerceAtLeast(0)).coerceAtLeast(1),
+                        sourcePokemonId = pending.source, targetSlot = key.second, sourceMoveId = pending.moveId)
+                } })
         val observed = if (nativeInputs) gameNumbered(events).takeLast(128) else events.takeLast(64)
         // The game's observer hands over the species' possible abilities (a Rotom-Wash's lone Levitate) and the order
         // evidence; without them an unrevealed Levitate took Earthquake for a knockout (league run, 2026-10-19).

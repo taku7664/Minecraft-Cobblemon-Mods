@@ -36,7 +36,35 @@ internal object LocalIdleUtilityMoveRules {
         val actor = actor(candidate, context) ?: return false
         if (failsForInsufficientHp(candidate, context)) return true
         val target = target(candidate, context, actor)
-        return failsFor(moveId, candidate.mechanic != null, actor, target, context) || statusBlocked(candidate, context, actor, target)
+        return failsFor(moveId, candidate.mechanic != null, actor, target, context) || statusBlocked(candidate, context, actor, target) ||
+            slotTaken(candidate, context, actor, target)
+    }
+
+    /**
+     * A move that leaves a condition on a slot (Future Sight's delayed hit on its target's, Wish on its user's) fails while
+     * that slot already holds the same condition (Showdown's addSlotCondition). Read from the move's declared slot condition
+     * and the pending one's source move, no move named: a Slowking Future Sighted twice more into the slot its first was
+     * still waiting on, each scored as a fresh hit (hand-played doubles, 2026-10-20).
+     */
+    private fun slotTaken(candidate: BattleActionCandidate, context: BattleDecisionContext, actor: BattlePokemonStateView,
+        target: BattlePokemonStateView?): Boolean {
+        if (candidate.mechanic != null) return false
+        val condition = candidate.moveDetails?.effects?.effects.orEmpty()
+            .firstOrNull { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.SLOT_CONDITION } ?: return false
+        val id = condition.valueId?.let(::canonical) ?: return false
+        val holder = when (condition.target) {
+            jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER -> actor
+            jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET -> target
+            else -> null
+        } ?: return false
+        val slot = holder.activeSlot ?: return false
+        return context.state.field.sideConditions[holder.side].orEmpty().any { pending ->
+            pending.targetSlot == slot && pending.sourceMoveId?.let { source ->
+                jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects.resolve(source)?.effects.orEmpty().any {
+                    it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.SLOT_CONDITION && it.valueId?.let(::canonical) == id
+                }
+            } == true
+        }
     }
 
     /**
