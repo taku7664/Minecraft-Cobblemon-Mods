@@ -359,13 +359,17 @@ function snapshot() {
       // In doubles with fewer Pokemon left in the back than fainted slots, one slot switches in and the other passes;
       // offering only switches left no legal pair (2026-10-18).
       const forcedSlots = request.forceSwitch.flatMap((forced, actorSlot) => forced ? [actorSlot] : []);
-      const available = request.side.pokemon.filter(pokemon =>
-        !pokemon.active && !/(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition)).length;
+      // Revival Blessing asks for a fainted Pokemon to bring back, not a replacement: offered the healthy bench, the
+      // choice was rejected and the battle ended (self-play, 2026-10-21).
+      const reviving = request.side.pokemon.some(pokemon => pokemon.reviving);
+      const fainted = pokemon => /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition);
+      const pickable = pokemon => !pokemon.active && (reviving ? fainted(pokemon) : !fainted(pokemon));
+      const available = request.side.pokemon.filter(pickable).length;
       const replacementCount = Math.min(forcedSlots.length, available);
       const choicesBySlot = request.forceSwitch.map((forced, actorSlot) => {
         if (!forced) return [{ command: 'pass', actorSlot, kind: 'pass' }];
         const replacements = request.side.pokemon.flatMap((pokemon, slot) =>
-          pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition) ? [] :
+          !pickable(pokemon) ? [] :
             [{ command: `switch ${slot + 1}`, actorSlot, kind: 'switch', slot }]);
         return replacements.concat(replacementCount < forcedSlots.length ? [{ command: 'pass', actorSlot, kind: 'pass' }] : []);
       });

@@ -60,6 +60,15 @@ class NativeRequestLegalityRegressionTest {
     }
 
     @Test
+    fun `revival replacement is read from a request naming the reviving Pokemon by its ident`() {
+        val active = listOf(pokemon(1, 0))
+        val request = """{"forceSwitch":[true],"side":{"pokemon":[{"ident":"p1: ${id(1)}","details":"Rabsca, L50","reviving":true}]}}"""
+        val frame = frame(request, active, active + listOf(pokemon(3, null), pokemon(4, null, hp = 0)))
+        assertEquals(setOf("switch 3"), choices(frame))
+        assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, frame).all { "revival_blessing" in it.tags })
+    }
+
+    @Test
     fun `locked move in a later original move slot uses the single request slot`() {
         val actor = pokemon(1, 0, moves = listOf("tackle", "outrage"))
         val frame = frame("""{"active":[{"moves":[{"id":"outrage","target":"normal"}],"trapped":true}]}""",

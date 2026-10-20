@@ -323,10 +323,14 @@ internal object NativeShowdownRequestActionFactory {
         return parsed.asJsonObject
     }
 
+    // The reviving Pokemon by its uuid, or by its ident ("p2: <uuid>"), which is all a Showdown request names it by:
+    // matched by uuid and details alone, a Rabsca's Revival Blessing read as an ordinary forced switch and offered the
+    // healthy Arcanine behind it, which Showdown rejected (self-play, 2026-10-21).
     private fun isReviving(request: JsonObject, uuid: String): Boolean =
         request.getAsJsonObject("side")?.getAsJsonArray("pokemon")?.any { element ->
             val pokemon = element.asJsonObject
             pokemon.boolean("reviving") && (pokemon.get("uuid")?.asString == uuid ||
+                pokemon.get("ident")?.asString?.substringAfter(':')?.trim() == uuid ||
                 pokemon.get("details")?.asString?.split(',')?.any { it.trim() == uuid } == true)
         } == true
 
