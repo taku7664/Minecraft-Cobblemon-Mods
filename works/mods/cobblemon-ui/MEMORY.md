@@ -1,5 +1,17 @@
 # cobblemon-ui 작업 기록
 
+## [2026-10-20 19:20] 대화창 진행을 공용 부품 하나로, 글자 속도 80 통일 (컴파일·단위 테스트·장면 클릭 캡처 확인)
+
+- **빡대리님 지적:** NPC(트레이너) 대화는 왜 클릭으로 안 넘어가냐, 같은 대화창인데 왜 제각각이냐. 확인해 보니 10-16에 그리기(`UiDialogueStyle`)만 공용으로 묶고, 글자 내보내기·넘기기 입력은 화면마다 복사해 짜 두었다. 속도는 전투·장면 75, NPC·피츄 45. 좌클릭은 장면 대사만 안 됐고, 꾹 눌러 빨리 넘기기는 전투 메시지에만 있었다(10-18 "스킵 2배"도 전투만 바뀐 이유). → "제대로 나눠", "80으로 통일".
+- **구현:** `DialogueAdvance`(cobblemon-ui `jbro.cobblemon.ui.extended`)가 글자 내보내기(`CHARACTERS_PER_SECOND = 80.0`)와 입력을 맡는다. 확인 키·좌클릭: 쓰는 중이면 줄을 다 보여주고, 다 쓴 줄이면 넘긴다. 꾹 누르면 200ms 뒤 35ms마다 한 단계씩 진행하고, OS 키 반복은 무시한다(누름 하나는 뗄 때까지 한 번). 각 대화창은 지금 줄 길이(`length`, 없으면 null)와 넘기기(`advance`)만 넘겨준다.
+  - 전투 메시지 `BattleDialogue`: 큐 래치(`pressConfirm`/`repeatConfirm`/`releaseConfirm`)는 `advance`·`released` 콜백으로 그대로 둔다. 대사를 끝낸 Z가 다음 메뉴로 새지 않는 동작이 그대로 남는다.
+  - 장면 대사 `SceneDialogue`: 화면 위에서는 Fabric `allowKeyPress`/`afterKeyRelease`/`allowMouseClick`을 쓴다. 장면이 떠 있는 동안 좌클릭은 뒤의 전투 메뉴로 가지 않는다. 화면이 없을 때(월드 위)는 `START_CLIENT_TICK`에서 확인 키와 공격 클릭을 게임보다 먼저 가져가고, 공격 키를 눌리지 않은 상태로 둬서 대사 중에 휘두르거나 캐지 않게 했다.
+  - NPC 대화 `NpcDialogueScreen`(cobblemon-npc): 선택지 처리는 그대로 두고, 줄 넘기기·속도만 공용으로 옮겼다. 꾹 누르면 마지막 줄 뒤 대화 끝내기까지 이어진다(전투 메시지와 같은 규칙).
+  - 피츄 `PichuScreen`(jbro-policy): 넘기기가 없는 버튼 화면이라 속도만 `DialogueAdvance.charactersSince`를 쓴다.
+- **다시 복사하지 말 것:** 새 대화창은 `DialogueAdvance`를 쓴다. `DialogueAdvanceTest`가 네 파일에 자기 속도 상수(`CHARACTERS_PER_SECOND`)나 `HoldRepeat(`가 다시 생기면 실패한다.
+- **배포 주의:** NPC·jbro-policy JAR은 `DialogueAdvance`가 있는 cobblemon-ui(MCC 내장본 포함)와 같이 배포해야 한다.
+- **확인:** F 복사본에서 cobblemon-ui·NPC·jbro-policy·MCC·리그 컴파일, `:cobblemon-ui:unitTest` 303/303. 장면 하네스 `MCC_SCENE_CAPTURE_CLICK=1`(게임 `MouseHandler.onPress`로 좌클릭)에서 세 장면이 모두 좌클릭으로 넘어가 끝났다(`scenes played: 3`). 전투 메시지(하네스가 비움)·NPC 대화·꾹 누르기·월드 위 장면 클릭은 화면으로 보지 않았다.
+
 ## [2026-10-20 18:05] 4bd69a7f 개발 클라·서버 배포 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - `main` `4bd69a7f`(= `origin/main`)로 맞춘 F 복사본(4개 모듈 소스가 커밋과 같음을 대조)에서 `:cobblemon-ui`·`:cobblemon-npc`·`:more-cobblemon-contents`·`:more-cobblemon-contents-league-challenge` `build -x test -x unitTest`. 첫 실행은 MCC `remapJar`가 원인 표시 없이 실패했고, 다시 돌리니 성공했다(원인 미확인). 마지막 한 번의 4개 모듈 빌드 EXIT 0, JAR 4개 `unzip -t` 정상.

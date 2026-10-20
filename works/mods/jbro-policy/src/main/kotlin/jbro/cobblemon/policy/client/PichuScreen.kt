@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.summary.widgets.ModelWidget
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import jbro.cobblemon.policy.menu.RequestLinkPayload
+import jbro.cobblemon.ui.extended.DialogueAdvance
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
@@ -166,7 +167,7 @@ class PichuScreen : Screen(Component.literal("피츄")) {
 
         val textLeft = box.x + PADDING
         val wrapped = font.splitter.splitLines(shown, box.right - PADDING - 12 - textLeft, Style.EMPTY).map { it.string }
-        var budget = ((System.nanoTime() - revealStart) / 1e9 * CHARACTERS_PER_SECOND).toInt()
+        var budget = DialogueAdvance.charactersSince(revealStart)
         wrapped.take(MAX_LINES).forEachIndexed { index, line ->
             if (budget <= 0) return@forEachIndexed
             val part = if (budget >= line.length) line else line.substring(0, budget)
@@ -195,7 +196,6 @@ class PichuScreen : Screen(Component.literal("피츄")) {
         private const val PADDING = 14
         private const val LINE_HEIGHT = 12
         private const val MAX_LINES = 4
-        private const val CHARACTERS_PER_SECOND = 45.0
         private const val IDLE_MILLIS = 7_000L
     }
 }

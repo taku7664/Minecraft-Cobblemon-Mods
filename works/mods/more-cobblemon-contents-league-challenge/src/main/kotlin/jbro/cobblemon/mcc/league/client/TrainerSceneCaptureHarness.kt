@@ -61,6 +61,8 @@ internal object TrainerSceneCaptureHarness {
      * captures it as `trainer-scene-3-transcript.png`, to see the trainer's words kept there.
      */
     private val TRANSCRIPT = System.getenv("MCC_SCENE_CAPTURE_TRANSCRIPT") == "1"
+    /** `MCC_SCENE_CAPTURE_CLICK=1` moves the scenes on with left clicks instead of the confirm key. */
+    private val CLICK = System.getenv("MCC_SCENE_CAPTURE_CLICK") == "1"
     private val SKIN = TrainerResourceSkin("rctmod:textures/trainers/single/champion_cynthia_03a5.png")
     private const val CYNTHIA = "trainer.more_cobblemon_contents_league_challenge.cynthia.scene"
     // The bundled Cynthia lines, the way the league catalog hands them over.
@@ -157,8 +159,17 @@ internal object TrainerSceneCaptureHarness {
                         // Scenes wait for the confirm key: after the shot, press it through the lines.
                         if (ticks - sceneStart > 30 && (ticks - sceneStart) % 8 == 0) {
                             val window = client.window.window
-                            client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_PRESS, 0)
-                            client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_RELEASE, 0)
+                            if (CLICK) {
+                                // `MCC_SCENE_CAPTURE_CLICK=1`: a left click through the game's own mouse handler.
+                                val onPress = net.minecraft.client.MouseHandler::class.java.getDeclaredMethod("onPress",
+                                    Long::class.javaPrimitiveType, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
+                                    Int::class.javaPrimitiveType).apply { isAccessible = true }
+                                onPress.invoke(client.mouseHandler, window, org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT, org.lwjgl.glfw.GLFW.GLFW_PRESS, 0)
+                                onPress.invoke(client.mouseHandler, window, org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT, org.lwjgl.glfw.GLFW.GLFW_RELEASE, 0)
+                            } else {
+                                client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_PRESS, 0)
+                                client.keyboardHandler.keyPress(window, org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_RELEASE, 0)
+                            }
                         }
                     } else {
                         sceneTracked = false

@@ -1,6 +1,5 @@
 package jbro.cobblemon.ui.extended
 
-import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
@@ -10,6 +9,10 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
+import com.mojang.blaze3d.platform.InputConstants
+import org.lwjgl.glfw.GLFW
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
@@ -21,8 +24,6 @@ import net.minecraft.network.chat.Component
  * stay with the player until the player closes the last line.
  */
 object SceneDialogue {
-    private const val CHARACTERS_PER_SECOND = 75.0
-
     private class Scene(
         val speaker: Component?,
         val lines: List<Component>,
@@ -35,22 +36,26 @@ object SceneDialogue {
 
     private var scene: Scene? = null
     private var index = 0
-    private var lineStartMillis = 0L
-    private var completeMillis = 0L
+    // Typing and the confirm key/click/hold, as every message box has them.
+    private val advance = DialogueAdvance(
+        length = { scene?.lines?.getOrNull(index)?.string?.length },
+        advance = { next() },
+    )
 
     internal fun register() {
-        ClientTickEvents.END_CLIENT_TICK.register { client -> tick(client) }
+        // Before the game reads its keys: over the world, the confirm key and a left click are the scene's.
+        ClientTickEvents.START_CLIENT_TICK.register { client -> takeWorldInput(client) }
         // Over the world from the HUD, and over any open screen (a battle held open for its last words) after it.
         HudRenderCallback.EVENT.register { context, _ -> if (Minecraft.getInstance().screen == null) render(context) }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             ScreenEvents.afterRender(screen).register { _, context, _, _, _ -> render(context) }
             ScreenKeyboardEvents.allowKeyPress(screen).register { _, key, scancode, _ ->
-                if (scene == null || !CobblemonUiClient.selectActionKey.matches(key, scancode)) {
-                    true
-                } else {
-                    confirm()
-                    false
-                }
+                scene == null || !advance.keyPressed(key, scancode)
+            }
+            ScreenKeyboardEvents.afterKeyRelease(screen).register { _, key, scancode, _ -> advance.keyReleased(key, scancode) }
+            // A click while a scene speaks is the scene's, never the battle menu's behind it.
+            ScreenMouseEvents.allowMouseClick(screen).register { _, _, _, button ->
+                scene == null || !advance.mouseClicked(button) && button != GLFW.GLFW_MOUSE_BUTTON_LEFT
             }
         }
     }
@@ -70,6 +75,7 @@ object SceneDialogue {
             onFinish.run()
             return
         }
+        advance.releaseIfUp()
         scene = Scene(speaker, shown, portrait, onFinish)
         // Words said during a battle stay in its history (the Shift transcript).
         record()
@@ -107,48 +113,34 @@ object SceneDialogue {
 
     /** Legacy typing-duration estimate kept for API compatibility; scenes themselves now wait for confirmation. */
     @JvmStatic
-    fun expectedMillis(lines: List<Component>): Long = lines.sumOf { line ->
-        val characters = line.string.length
-        (characters * 1000.0 / CHARACTERS_PER_SECOND).toLong()
-    }
+    fun expectedMillis(lines: List<Component>): Long = lines.sumOf { line -> DialogueAdvance.millisFor(line.string.length) }
 
     private fun startLine(next: Int) {
         index = next
-        lineStartMillis = System.currentTimeMillis()
-        completeMillis = 0L
+        advance.restart()
     }
 
-    private fun shownCharacters(now: Long): Int = ((now - lineStartMillis) / 1000.0 * CHARACTERS_PER_SECOND).toInt()
-
-    private fun tick(client: Minecraft) {
-        val current = scene ?: return
-        val line = current.lines[index].string
-        val now = System.currentTimeMillis()
-        if (completeMillis == 0L && shownCharacters(now) >= line.length) completeMillis = now
-        // In a screen the key arrives through the screen's key events instead.
-        if (client.screen == null) {
-            while (scene != null && CobblemonUiClient.selectActionKey.consumeClick()) confirm()
+    /**
+     * With no screen open, a scene takes the confirm key and the attack click (a left click) before the game reads
+     * them, so the player neither swings nor mines while someone is speaking.
+     */
+    private fun takeWorldInput(client: Minecraft) {
+        if (scene == null) {
+            advance.releaseIfUp()
+            return
         }
-    }
-
-    /** The confirm key: finishes the line being written, as the battle message box does, or moves on from it. */
-    private fun confirm() {
-        val current = scene ?: return
-        val now = System.currentTimeMillis()
-        if (completeMillis == 0L) {
-            val line = current.lines[index].string
-            lineStartMillis = now - (line.length * 1000.0 / CHARACTERS_PER_SECOND).toLong() - 1
-            completeMillis = now
-            BattleUiSounds.click()
-        } else {
-            next()
+        if (client.screen != null) return
+        while (scene != null && CobblemonUiClient.selectActionKey.consumeClick()) advance.press(DialogueAdvance.KEYBOARD)
+        val attack = KeyBindingHelper.getBoundKeyOf(client.options.keyAttack)
+        while (client.options.keyAttack.consumeClick()) {
+            if (scene != null && attack.type == InputConstants.Type.MOUSE) advance.press(attack.value)
         }
+        client.options.keyAttack.setDown(false)
     }
 
     private fun next() {
         val current = scene ?: return
         if (index + 1 < current.lines.size) {
-            BattleUiSounds.click()
             startLine(index + 1)
         } else {
             stop()
@@ -159,11 +151,13 @@ object SceneDialogue {
         val current = scene ?: return
         val client = Minecraft.getInstance()
         if (client.options.hideGui) return
+        advance.tick()
+        val now = scene ?: return
         // The battle message box, floating over the letterbox's bars.
         context.pose().pushPose()
         context.pose().translate(0f, 0f, CinematicLetterbox.OVER_BARS_Z)
-        val box = BattleDialogue.renderMessage(context, current.lines[index], shownCharacters(System.currentTimeMillis()))
-        current.speaker?.let { speaker ->
+        val box = BattleDialogue.renderMessage(context, now.lines[index], advance.shown())
+        now.speaker?.let { speaker ->
             // The speaker's name on a tab over the box's left edge.
             val font = client.font
             val theme = UiDialogueStyle.theme()

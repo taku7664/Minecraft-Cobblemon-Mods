@@ -7,6 +7,7 @@ import jbro.cobblemon.npc.network.DialogueShowPayload
 import jbro.cobblemon.ui.extended.CinematicLetterbox
 import jbro.cobblemon.ui.extended.CinematicScreen
 import jbro.cobblemon.ui.extended.CobblemonUiClient
+import jbro.cobblemon.ui.extended.DialogueAdvance
 import jbro.cobblemon.ui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.uikit.CobblemonUiSharedTheme
 import jbro.cobblemon.uikit.CobblemonUiThemes
@@ -43,8 +44,12 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     private var lines = show.lines.map(Component::getString)
     private var choices = show.choices.map(Component::getString)
     private var page = 0
-    private var revealStart = System.nanoTime()
     private var waiting = false
+    // Typing and the confirm key/click/hold, as every message box has them; nothing to move on from while waiting.
+    private val advance = DialogueAdvance(
+        length = { if (waiting) null else lines.getOrElse(page) { "" }.length },
+        advance = { moveOn() },
+    )
     private var choicesShown = false
     private var cursor = 0
     private var closedByServer = false
@@ -59,7 +64,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         choices = next.choices.map(Component::getString)
         page = 0
         waiting = false
-        revealStart = System.nanoTime()
+        advance.restart()
         choicesShown = false
         cursor = 0
     }
@@ -100,6 +105,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        advance.tick()
         // A talk plays as a scene: the letterbox first, the dialogue box floating over it.
         CinematicLetterbox.renderBars(graphics, 0f)
         drawBox(graphics, partialTick)
@@ -118,7 +124,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
             choiceAt(mouseX, mouseY)?.let(::choose)
             return true
         }
-        advance()
+        advance.mouseClicked(button)
         return true
     }
 
@@ -136,22 +142,23 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
         }
         // The same confirm key the battle narration uses, set under the controls' Cobblemon Dialog UI.
         if (CobblemonUiClient.selectActionKey.matches(keyCode, scanCode)) {
-            advance()
+            advance.keyPressed(keyCode, scanCode)
             return true
         }
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    private fun advance() {
+    override fun keyReleased(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        advance.keyReleased(keyCode, scanCode)
+        return super.keyReleased(keyCode, scanCode, modifiers)
+    }
+
+    /** The written-out line is left behind: the next page, or the end of the talk when no answers follow. */
+    private fun moveOn() {
         if (waiting) return
-        if (!revealed()) {
-            revealStart = 0L
-            return
-        }
-        click()
         if (!lastPage()) {
             page++
-            revealStart = System.nanoTime()
+            advance.restart()
             return
         }
         if (choices.isNotEmpty()) return
@@ -278,8 +285,7 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
 
     private fun lastPage() = page >= lines.size - 1
 
-    private fun revealedCharacters(): Int =
-        if (revealStart == 0L) Int.MAX_VALUE else ((System.nanoTime() - revealStart) / 1e9 * CHARACTERS_PER_SECOND).toInt()
+    private fun revealedCharacters(): Int = advance.shown()
 
     private fun revealed() = revealedCharacters() >= lines.getOrElse(page) { "" }.length
 
@@ -290,7 +296,6 @@ class NpcDialogueScreen(private var show: DialogueShowPayload) : Screen(show.spe
 
     companion object {
         private const val LETTERBOX_OWNER = "npc_dialogue"
-        private const val CHARACTERS_PER_SECOND = 45.0
         private const val BOX_HEIGHT = 66
         private const val PADDING = 14
         private const val FACE = 12
