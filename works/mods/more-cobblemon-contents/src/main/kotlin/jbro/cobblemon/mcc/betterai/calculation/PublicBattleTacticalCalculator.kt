@@ -25,6 +25,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.ShowdownStandardDamageProjection
 import jbro.cobblemon.mcc.betterai.mechanics.ShowdownStandardDamageProjectionResult
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /**
  * Produces only mechanics facts derivable from the fair decision context.
@@ -68,7 +69,69 @@ internal object PublicBattleTacticalCalculator {
         actingSide: BattleSide,
     ): List<Double>? {
         val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
-        return conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide)
+        val base = conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide)
+        val boards = abilityBoards(asUsed(resolveDynamicMove(candidate, moveContext, actingSide), moveContext, actingSide),
+            moveContext, actingSide) ?: return base
+        base ?: return null
+        val each = boards.lent.map { conservativeDamageRollFractionsAfterActivation(candidate, it, actingSide) ?: return base } +
+            List(boards.unchanged) { base }
+        if (each.all { it == each.first() }) return each.first()
+        // The rolls of every board pooled, cut back to as many evenly spaced ones as one board gives.
+        val pooled = each.flatten().sorted()
+        val size = each.maxOf { it.size }
+        return List(size) { i -> pooled[((i + 0.5) * pooled.size / size).toInt().coerceAtMost(pooled.lastIndex)] }
+    }
+
+    /**
+     * The boards a move's damage is read on when the opposing Pokemon it turns on - the target of one's own move, the
+     * user of theirs - has not shown its ability and may have more than one: one board per ability it may have, lent for
+     * the calculation only, each as likely as the others (user decision 2026-10-20, no usage weights). Null otherwise.
+     * Read without them, a full-HP Dragonite's possible Multiscale was never counted and a Dynamax Cannon read as a sure
+     * knockout (64~76% in play), and a Scizor's possible Technician never boosted its Bullet Punch (53~62% read, a
+     * knockout in play) (hand-played Leon and screens concept, 2026-10-20).
+     */
+    /** Boards with an ability lent that touches damage, and how many more possible abilities leave the plain board's reading. */
+    private class AbilityBoards(val lent: List<BattleDecisionContext>, val unchanged: Int)
+
+    private fun abilityBoards(candidate: BattleActionCandidate, context: BattleDecisionContext, actingSide: BattleSide): AbilityBoards? {
+        val details = candidate.moveDetails ?: return null
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return null
+        val hidden = (if (actingSide == BattleSide.OPPONENT) candidate.actorSlot?.let { active(context, actingSide, it) }
+            else LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull())
+            ?.takeIf { it.side == BattleSide.OPPONENT && it.knownAbilityId == null } ?: return null
+        val possible = jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(context.state, hidden)
+        if (possible.size < 2) return null
+        // An ability with no hand in damage reads as the plain board does: only the others are lent and worked out.
+        val attacker = actingSide == BattleSide.OPPONENT
+        val touching = possible.filter {
+            jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.touchesDamage(it, asAttacker = attacker) ||
+                !attacker && LocalPublicMechanicsKernel.typeImmunityAbility(it)
+        }
+        if (touching.isEmpty()) return null
+        return AbilityBoards(touching.map { ability ->
+            context.copy(state = context.state.copyState(pokemon = context.state.pokemon.map {
+                if (it.battlePokemonId == hidden.battlePokemonId) it.copyState(knownAbilityId = ability) else it
+            }))
+        }, possible.size - touching.size)
+    }
+
+    /**
+     * [base]'s damage reading spread over the [boards]' readings, each as likely: the range from the lowest to the
+     * highest, the knockout chance their average, and a sure (or impossible) knockout only when every board says so.
+     */
+    private fun mixedDamage(base: BattleCandidateFactsView, boards: List<BattleCandidateFactsView>): BattleCandidateFactsView {
+        if (base.standardDamageModel == null || boards.any { it.standardDamageModel == null }) return base
+        val ranges = boards.map { it.standardDamageFractionRange!! }
+        val chances = boards.map { it.standardDamageRollKoProbabilityRange!! }
+        val range = BattleDamageFractionRange(ranges.minOf { it.minimum }, ranges.maxOf { it.maximum })
+        val chance = BattleFractionRange(chances.map { it.minimum }.average(), chances.map { it.maximum }.average())
+        val assessment = boards.map { it.standardKnockoutAssessment }.distinct().singleOrNull() ?: BattleKnockoutAssessment.POSSIBLE
+        // The first spread entry is the same target the primary fields describe.
+        val spread = base.spreadTargets.mapIndexed { index, entry ->
+            if (index != 0) entry else BattleSpreadTargetFactsView(entry.side, entry.slot, entry.typeChartMultiplier, range, chance, assessment)
+        }
+        return base.copy(standardDamageFractionRange = range, standardDamageRollKoProbabilityRange = chance,
+            standardKnockoutAssessment = assessment, spreadTargets = spread)
     }
 
     private fun conservativeDamageRollFractionsAfterActivation(
@@ -248,7 +311,11 @@ internal object PublicBattleTacticalCalculator {
         }
         if (candidate.facts != null) return candidate
         val resolvedCandidate = resolveDynamicMove(candidate, moveContext, actingSide)
-        return resolvedCandidate.copyWith(facts = facts(asUsed(resolvedCandidate, moveContext, actingSide), moveContext, actingSide, observed))
+        val used = asUsed(resolvedCandidate, moveContext, actingSide)
+        val base = facts(used, moveContext, actingSide, observed)
+        val mixed = abilityBoards(used, moveContext, actingSide)
+            ?.let { boards -> mixedDamage(base, boards.lent.map { facts(used, it, actingSide, observed) } + List(boards.unchanged) { base }) } ?: base
+        return resolvedCandidate.copyWith(facts = mixed)
     }
 
     /**

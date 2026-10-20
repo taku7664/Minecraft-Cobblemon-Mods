@@ -64,10 +64,10 @@ internal object LocalPublicPositionFacts {
         val typeFallback = worstMultiplier?.let {
             if (tuning.legacyMixedExposureUnits) it else it * tuning.neutralHitHpFraction
         }
-        val hasRevealedOpponentMove = context.state.pokemon.asSequence()
-            .filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
-            .any { context.publicActionCatalog.forPokemon(it.battlePokemonId).isNotEmpty() }
-        if (!hasRevealedOpponentMove) return typeFallback
+        // No move revealed yet is no reason to skip the read: the attacks expected of the foe (a set read, its learnset's
+        // coverage) are read below, and the type chart only where none is. Gated on revealed moves, a Lucario came in for a
+        // 10% Garchomp in front of a Corviknight just sent out, its Brave Bird read from the set, at the type chart's 25%,
+        // and took it for 64% (hand-played mega concept, 2026-10-20).
         val state = if (defender.side == BattleSide.ALLY && defender.activeSlot == null) {
             val activeSlot = replacingSlot ?: context.state.pokemon.singleOrNull {
                 it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted

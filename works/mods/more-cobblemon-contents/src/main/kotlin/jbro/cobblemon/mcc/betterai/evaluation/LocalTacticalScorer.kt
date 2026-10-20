@@ -883,6 +883,21 @@ internal object LocalTacticalScorer {
                         publicAllyCollateral(attack, context, tuning, listOf(partner)) -
                             publicAllyCollateral(attack, context, tuning, listOf(incoming))
                     }
+                    // A pivot (U-turn, Volt Switch) that moves first leaves the slot to a replacement, which takes the hit
+                    // instead: the one behind it the hit hurts least, as the mid-turn replacement picks it
+                    // (LocalPendingPartnerHit). Billed to the Pokemon leaving, a Flygon's U-turn beside a Garchomp's
+                    // Earthquake read as free, Flygon floating (hand-played Raihan, doubles, 2026-10-20).
+                    partnerAction.kind == BattleActionKind.USE_MOVE &&
+                        partnerAction.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.SWITCH_USER && it.target == BattleMoveEffectTarget.USER } -> {
+                        val bench = context.state.pokemon.filter {
+                            it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
+                        }
+                        if (bench.isEmpty()) return@sumOf 0.0
+                        val first = LocalPublicTurnOrder.actsFirstProbability(context.state, BattleSide.ALLY, partnerAction, BattleSide.ALLY, attack)
+                            ?: return@sumOf 0.0
+                        val replacement = bench.minOf { publicAllyCollateral(attack, context, tuning, listOf(it)) }
+                        first * (publicAllyCollateral(attack, context, tuning, listOf(partner)) - replacement)
+                    }
                     else -> 0.0
                 }
             }

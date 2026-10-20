@@ -358,6 +358,34 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `an opponent that moved before a faster ally reads at least that fast`() {
+        // Its public range (100) could not have beaten 150 to the move: something unseen (a Scarf, a weather speed ability)
+        // stands behind the order seen last turn.
+        fun order(foeFirst: Boolean) = listOf(FOE, ALLY).let { if (foeFirst) it else it.reversed() }.mapIndexed { i, id ->
+            BattleObservedEventView(i + 1L, 1, BattleObservedEventKind.ACTION_ORDER, id, publicValueId = "tackle", baseMovePriority = 0)
+        }
+        fun first(events: List<BattleObservedEventView>) = LocalMatchupScoreCalculator.calculate(context(allySpeed = 150, foeSpeed = 100,
+            events = events, turn = 2)).pokemon(ALLY, FOE)!!.subjectMovesFirstProbability
+        assertEquals(1.0, first(emptyList()), 1e-9)
+        assertEquals(1.0, first(order(foeFirst = false)), 1e-9)
+        assertEquals(0.0, first(order(foeFirst = true)), 1e-9)
+        // Seen within Trick Room's five turns, the order may be the room's.
+        val room = BattleObservedEventView(0, 1, BattleObservedEventKind.MOVE_USED, FOE, publicValueId = "trickroom")
+        assertEquals(1.0, first(listOf(room) + order(foeFirst = true)), 1e-9)
+    }
+
+    @Test
+    fun `a badly poisoned Pokemon the other cannot hurt still falls to the poison`() {
+        // Neither attack does damage: a stand-off the faster foe takes, until it is badly poisoned and the poison alone
+        // empties its bar.
+        fun win(status: String?) = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120,
+            allyPower = 0.0, foePower = 0.0, foeStatus = status)).pokemon(ALLY, FOE)!!.winProbability
+        val even = win(null)
+        val poisoned = win("tox")
+        assertTrue(poisoned > even + 0.3) { "$even $poisoned" }
+    }
+
+    @Test
     fun `a status move that only spends the turn is ruled out, in singles only`() {
         val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,

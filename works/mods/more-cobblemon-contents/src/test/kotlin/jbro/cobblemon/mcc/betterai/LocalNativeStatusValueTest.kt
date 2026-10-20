@@ -58,23 +58,29 @@ class LocalNativeStatusValueTest {
         difficulty = BattleDifficultyProfiles.BOSS)
 
     @Test
-    fun `Haze that only wipes this side's boosts ranks far under an attack, and wiping a big boost is worth more`() {
-        // Only Milotic boosted: Haze takes its stages and gives nothing, whatever Ferrothorn does. It goes under the
-        // level of a move that fails publicly, so it never wins a position where everything else is bad too.
-        val selfBoosted = haze { mon(it, BattleSide.ALLY) { p -> p.copyState(statStages = mapOf("spa" to 2, "spd" to 2)) } }
-        // Ferrothorn is burned here, so even +6 Attack does not knock Milotic out: Haze is worth more than with no
-        // boost, not necessarily more than Ice Beam.
-        val plain = haze { it }
-        val foeBoosted = haze { mon(it, BattleSide.OPPONENT) { p -> p.copyState(statStages = mapOf("attack" to 6)) } }
-        println("NATIVE STATUS haze: self boosted $selfBoosted plain $plain foe +6 $foeBoosted")
-        assertEquals("priced", selfBoosted.status)
-        // Not held as self-harm here: with every legal ability weighed alike (no usage, 2026-10-12) one of the
-        // opponent's switch-ins raises its own stats on entry, and Haze would wipe those too. It still ranks far
-        // under Ice Beam and under the same Haze without the boost it throws away.
-        assertTrue(selfBoosted.gap < -40.0, selfBoosted.toString())
-        assertTrue(selfBoosted.hazeValue < plain.hazeValue, "$selfBoosted vs $plain")
-        assertTrue("haze" !in foeBoosted.selfHarm, foeBoosted.toString())
-        assertTrue(foeBoosted.gap > plain.gap + 10.0, "Haze on a +6 opponent against none: $foeBoosted vs $plain")
+    fun `Haze that only wipes this side's boosts is a loss, and wiping a big boost is worth more`() {
+        // Haze is priced by what it takes off the exchanges (LocalDebuffValue, 2026-10-20); the engine's status reading this
+        // test once ran is no longer part of a decision (user decision 2026-10-19). Only Milotic boosted: Haze takes its
+        // stages and gives nothing. Ferrothorn at +6: Haze takes what the boost was giving it.
+        fun gain(twist: (BattleDecisionContext) -> BattleDecisionContext): Double {
+            val raw = java.util.zip.GZIPInputStream(requireNotNull(javaClass.getResourceAsStream("/betterai/snapshots/milotic-ferrothorn-switch-in.json.gz")))
+                .use { it.readBytes().toString(Charsets.UTF_8) }.let(AiTestDecisionSnapshot::fromJson).context
+            val context = PublicBattleTacticalCalculator.calculate(
+                LocalOpponentStatAssumption.applyToPublicState(twist(raw), BattleTrainerTier.BOSS), observedBoard = true)
+            // The snapshot predates the move data's reset effect; the move's effects as the game reads them now.
+            val saved = context.candidates.first { it.moveId == "haze" && it.mechanic == null }
+            val haze = BattleActionCandidate(saved.actionId, saved.kind, saved.actorSlot, saved.moveSlot, "haze", saved.targets,
+                moveDetails = requireNotNull(saved.moveDetails).copy(effects = MOVES.getValue("haze")), facts = saved.facts)
+            val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context)
+            return requireNotNull(jbro.cobblemon.mcc.betterai.matchup.LocalDebuffValue.read(haze, context, scores)).gain
+        }
+        val selfBoosted = gain { mon(it, BattleSide.ALLY) { p -> p.copyState(statStages = mapOf("spa" to 2, "spd" to 2)) } }
+        val plain = gain { it }
+        val foeBoosted = gain { mon(it, BattleSide.OPPONENT) { p -> p.copyState(statStages = mapOf("attack" to 6)) } }
+        println("HAZE gain: self boosted $selfBoosted plain $plain foe +6 $foeBoosted")
+        assertTrue(selfBoosted < 0.0, "$selfBoosted")
+        assertEquals(0.0, plain, 1e-9)
+        assertTrue(foeBoosted > plain, "$foeBoosted vs $plain")
     }
 
     @Test

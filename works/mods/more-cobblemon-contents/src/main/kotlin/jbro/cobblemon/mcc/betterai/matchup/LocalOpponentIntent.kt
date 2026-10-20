@@ -337,7 +337,25 @@ internal object LocalOpponentIntentPredictor {
         // Both allies aiming at it: how far their expected hits together reach past its HP.
         val together = best.sumOf { share(it, user) }
         val threat = maxOf(alone, ((together - DOUBLE_TARGET_FROM) / (1.0 - DOUBLE_TARGET_FROM)).coerceIn(0.0, 1.0))
-        return if (protectedLastTurn(user, state)) FAILS else PROTECT_SCALE * threat + PROTECT_BASE
+        return if (protectedLastTurn(user, state)) FAILS else PROTECT_SCALE * threat + (if (waitingPays(allies, state)) PROTECT_BASE else 0.0)
+    }
+
+    /**
+     * Whether a turn spent protecting earns its user anything beyond the hit it dodges: in doubles the partner's turn; in
+     * singles only a clock running against the AI's side (its Dynamax, the damage its status or Leech Seed takes at the
+     * turn's end, a screen, Tailwind or room with turns to run out). Read on a flat base, a Dynamaxed +2 Scizor on its last
+     * Dynamax turn was expected to Max Guard 65% of the time, guarding nothing (hand-played screens concept, 2026-10-20).
+     */
+    private fun waitingPays(allies: List<BattlePokemonStateView>, state: BattleStateView): Boolean {
+        if (state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) return true
+        if (allies.any { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.active(it) }) return true
+        // The turn's end takes from it (weather, a status, an item): the projector the knockout reading uses.
+        val ended = jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector.project(state,
+            jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter.seed(state).mapValues { (_, done) -> done + 1 })
+        if (allies.any { ally -> (ended.pokemon.firstOrNull { it.battlePokemonId == ally.battlePokemonId }?.hpFraction ?: ally.hpFraction) < ally.hpFraction ||
+                ally.knownVolatileEffectIds.any { PublicIds.canonical(it.substringBefore(':')) in LocalQuickDecider.DRAINING } }) return true
+        if (state.field.roomEffects.isNotEmpty()) return true
+        return state.field.sideConditions[BattleSide.ALLY].orEmpty().any { it.remainingTurns != null || it.remainingTurnsRange != null }
     }
 
     /**

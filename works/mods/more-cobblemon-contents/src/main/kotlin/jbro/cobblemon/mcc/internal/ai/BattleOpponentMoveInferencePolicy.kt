@@ -15,6 +15,13 @@ internal data class BattleOpponentMoveInferencePolicy(
     val preserveActualAttackStatusCounts: Boolean,
     /** Reads which [BattleStatusMoveCategory] each hidden status move has, never its name. */
     val readsHiddenStatusCategories: Boolean = false,
+    /**
+     * Beyond [confirmedHiddenStabSlots]' one move per type, also reads every hidden same-type attack with positive
+     * priority (user decision, 2026-10-20). Read one per type, Leon's Mr. Rime kept only Icicle Spear and its unseen Ice
+     * Shard knocked out an Eternatus going for the knockout first; Melissa's Kingambit kept only Kowtow Cleave and its Sucker
+     * Punch did the same to a dynamaxed Mimikyu (hand-played, 2026-10-20).
+     */
+    val readsHiddenPriorityStab: Boolean = false,
 ) {
     val readsHiddenSet: Boolean
         get() = confirmedHiddenStabSlots > 0 || confirmedHiddenSetupSlots > 0 ||
@@ -75,6 +82,7 @@ internal object BattleOpponentMoveInferencePolicies {
             guessedStatusSlots = 0,
             preserveActualAttackStatusCounts = true,
             readsHiddenStatusCategories = true,
+            readsHiddenPriorityStab = true,
         ),
     )
 

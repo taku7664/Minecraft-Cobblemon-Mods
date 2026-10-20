@@ -523,6 +523,9 @@ internal object LocalPublicMechanicsKernel {
     private fun canonical(value: String): String =
         PublicIds.canonical(value)
 
+    /** [abilityId] is one this kernel reads as a type immunity (Levitate has no damage hook of its own). */
+    fun typeImmunityAbility(abilityId: String): Boolean = TYPE_IMMUNITY_ABILITIES.values.any { canonical(abilityId) in it }
+
     private val TYPE_IMMUNITY_ABILITIES = mapOf(
         GROUND to setOf("levitate", "eartheater"),
         FIRE to setOf("flashfire", "wellbakedbody"),

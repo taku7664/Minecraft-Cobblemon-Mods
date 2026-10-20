@@ -550,6 +550,9 @@ internal object LocalMatchupScoreCalculator {
         val subjectFirst = (first ?: LocalPublicTurnOrder.speedOrderProbability(state, subject, opponent) ?: 0.5).coerceIn(0.0, 1.0)
         var mine = LocalFlinchAvailability.profile(position, opponentMove, subjectMove, 1.0 - subjectFirst)
         var theirs = LocalFlinchAvailability.profile(position, subjectMove, opponentMove, subjectFirst)
+        // A side the other cannot hurt still loses its status's end-of-turn damage, which has no attack's uses to ride on.
+        var subjectDecay: Decay? = null
+        var opponentDecay: Decay? = null
         // The turns each side gets its attack off: a paralysed Pokemon three in four, and a hit landed first that can
         // flinch takes the other's turn at its chance. The evolving exchange plays these turns out itself. Without them a
         // paralysed Kyogre facing a Serene Grace Air Slash read as untouched, and Thunder Wave on it came to 4 (2026-10-12).
@@ -569,6 +572,8 @@ internal object LocalMatchupScoreCalculator {
             val opponentActs = acts(opponent) * (1.0 - flinches(subjectMove, subject, opponent, subjectFirst))
             mine = mine?.let { thinned(it, subjectActs) }?.let { asleep(it, subject, state) }?.let { residual(it, opponent, state) }
             theirs = theirs?.let { thinned(it, opponentActs) }?.let { asleep(it, opponent, state) }?.let { residual(it, subject, state) }
+            if (theirs == null) subjectDecay = decay(subject, state)
+            if (mine == null) opponentDecay = decay(opponent, state)
         }
         // Which side cannot get through the other's healing, and how often the healer still attacks.
         var subjectWalled = false
@@ -607,20 +612,38 @@ internal object LocalMatchupScoreCalculator {
         for (n in 1..MAXIMUM_USES + 1) {
             val subjectKnocksOutAt = knockoutAt(mine, n)
             if (subjectKnocksOutAt > 0.0) {
-                // Moving first it has taken n - 1 attacks, moving second n.
-                val asFirst = subjectFirst * standing(theirs, n - 1)
-                val asSecond = (1.0 - subjectFirst) * standing(theirs, n)
+                // Moving first it has taken n - 1 attacks, moving second n; either way n - 1 turns' end-of-turn damage.
+                val lasted = Decay.alive(subjectDecay, n - 1)
+                val asFirst = subjectFirst * standing(theirs, n - 1) * lasted
+                val asSecond = (1.0 - subjectFirst) * standing(theirs, n) * lasted
+                val worn = Decay.taken(subjectDecay, n - 1)
                 win += subjectKnocksOutAt * (asFirst + asSecond)
-                winHp += subjectKnocksOutAt * (asFirst * (subject.hpFraction - taken(theirs, n - 1)) +
-                    asSecond * (subject.hpFraction - taken(theirs, n)))
+                winHp += subjectKnocksOutAt * (asFirst * (subject.hpFraction - taken(theirs, n - 1) - worn) +
+                    asSecond * (subject.hpFraction - taken(theirs, n) - worn))
             }
             val opponentKnocksOutAt = knockoutAt(theirs, n)
             if (opponentKnocksOutAt > 0.0) {
-                val asFirst = (1.0 - subjectFirst) * standing(mine, n - 1)
-                val asSecond = subjectFirst * standing(mine, n)
+                val lasted = Decay.alive(opponentDecay, n - 1)
+                val asFirst = (1.0 - subjectFirst) * standing(mine, n - 1) * lasted
+                val asSecond = subjectFirst * standing(mine, n) * lasted
+                val worn = Decay.taken(opponentDecay, n - 1)
                 loss += opponentKnocksOutAt * (asFirst + asSecond)
-                lossHp += opponentKnocksOutAt * (asFirst * (opponent.hpFraction - taken(mine, n - 1)) +
-                    asSecond * (opponent.hpFraction - taken(mine, n)))
+                lossHp += opponentKnocksOutAt * (asFirst * (opponent.hpFraction - taken(mine, n - 1) - worn) +
+                    asSecond * (opponent.hpFraction - taken(mine, n) - worn))
+            }
+            // Falling to the end of turn n, after both have moved: the other wins if it is still standing then, and the two
+            // falling on the same turn split it.
+            val subjectFalls = Decay.falls(subjectDecay, n)
+            if (subjectFalls > 0.0) {
+                val other = standing(mine, n) * (Decay.alive(opponentDecay, n) + 0.5 * Decay.falls(opponentDecay, n))
+                loss += subjectFalls * other
+                lossHp += subjectFalls * other * (opponent.hpFraction - taken(mine, n) - Decay.taken(opponentDecay, n))
+            }
+            val opponentFalls = Decay.falls(opponentDecay, n)
+            if (opponentFalls > 0.0) {
+                val other = standing(theirs, n) * (Decay.alive(subjectDecay, n) + 0.5 * Decay.falls(subjectDecay, n))
+                win += opponentFalls * other
+                winHp += opponentFalls * other * (subject.hpFraction - taken(theirs, n) - Decay.taken(subjectDecay, n))
             }
         }
         // Neither landing a knockout in the window is a stand-off: split it by who acts first. Against healing it
@@ -796,6 +819,30 @@ internal object LocalMatchupScoreCalculator {
             expectedHitsToKnockout = if (acts <= 0.0) Double.POSITIVE_INFINITY else score.expectedHitsToKnockout / acts,
             score = score.score * acts,
         )
+    }
+
+    /**
+     * End-of-turn damage on its own ([jbro.cobblemon.mcc.betterai.mechanics.LocalResidual]), for a side facing no attack:
+     * [alive] after `n` turns and the HP [taken] by then. Without it a badly poisoned Pokemon the other could not hurt read
+     * the exchange as a stand-off however soon the poison emptied its bar (open gap, 2026-10-20).
+     */
+    private class Decay(private val alive: DoubleArray, private val taken: DoubleArray) {
+        companion object {
+            fun alive(decay: Decay?, n: Int): Double = decay?.let { it.alive[n.coerceIn(0, it.alive.lastIndex)] } ?: 1.0
+            fun taken(decay: Decay?, n: Int): Double = decay?.let { it.taken[n.coerceIn(0, it.taken.lastIndex)] } ?: 0.0
+            /** Falling to the end of turn [n] exactly; nothing past the window. */
+            fun falls(decay: Decay?, n: Int): Double =
+                if (decay == null || n > decay.alive.lastIndex) 0.0 else (decay.alive[n - 1] - decay.alive[n]).coerceAtLeast(0.0)
+        }
+    }
+
+    private fun decay(target: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): Decay? {
+        val hp = target.hpFraction
+        if (hp <= 0.0) return null
+        val schedule = jbro.cobblemon.mcc.betterai.mechanics.LocalResidual.schedule(state, target, MAXIMUM_USES) ?: return null
+        val lost = DoubleArray(MAXIMUM_USES + 1).also { for (n in 1 until it.size) it[n] = it[n - 1] + schedule[n - 1] }
+        if (lost.none { it >= hp }) return null
+        return Decay(DoubleArray(lost.size) { n -> if (lost[n] >= hp) 0.0 else 1.0 }, DoubleArray(lost.size) { n -> lost[n].coerceIn(0.0, hp) })
     }
 
     /** The chance [score]'s knockout lands exactly on use [n]; the last index takes everything later. */

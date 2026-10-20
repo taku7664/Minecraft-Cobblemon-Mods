@@ -114,7 +114,12 @@ internal object BattleOpponentMoveInferenceNormalizer {
             emptyList()
         }
         val unrevealedActual = resolvedActual.filterNot { (id, _) -> slots.containsMove(id) }
-        selectHiddenStab(unrevealedActual, pokemon, format, policy.confirmedHiddenStabSlots)
+        val hiddenStab = selectHiddenStab(unrevealedActual, pokemon, format, policy.confirmedHiddenStabSlots)
+        val hiddenPriorityStab = if (!policy.readsHiddenPriorityStab) emptyList() else unrevealedActual.filter { (id, details) ->
+            details.priority > 0 && group(pokemon, details, id) == BattleOpponentMoveGroup.STAB_ATTACK &&
+                hiddenStab.none { it.first == id }
+        }.sortedBy { canonical(it.first) }
+        (hiddenStab + hiddenPriorityStab)
             .forEach { (id, details) ->
             addConcrete(slots, id, details, BattleOpponentMoveGroup.STAB_ATTACK,
                 BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.DIFFICULTY_SET_READ)

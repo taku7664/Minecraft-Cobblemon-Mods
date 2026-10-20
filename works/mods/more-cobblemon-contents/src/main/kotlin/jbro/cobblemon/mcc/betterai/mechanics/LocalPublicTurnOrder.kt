@@ -192,6 +192,54 @@ internal object LocalPublicTurnOrder {
     }
 
     fun effectiveSpeed(state: BattleStateView, pokemon: BattlePokemonStateView): Pair<Int, Int>? {
+        val public = publicEffectiveSpeed(state, pokemon) ?: return null
+        if (pokemon.side != BattleSide.OPPONENT) return public
+        val floor = observedSpeedFloor(state, pokemon) ?: return public
+        // Its public range could not have moved it first: something unseen (a Choice Scarf, a weather-speed ability) does,
+        // worth at least the order seen and at most a doubling. Read on the public range, a Zapdos still read itself faster
+        // than an Excadrill that had just moved before the Electivire beside it (sand concept, 2026-10-20).
+        return if (floor <= public.second) public else floor to maxOf(floor, public.second * 2)
+    }
+
+    /**
+     * The speed an opposing Pokemon showed since it came in: one more than the fastest of this side's Pokemon it moved
+     * before at the same base priority, this turn or last, with nothing that reorders moves within a priority (Trick Room,
+     * a revealed Quick Claw or Quick Draw). Null when it showed nothing past its public range's reach.
+     */
+    private fun observedSpeedFloor(state: BattleStateView, pokemon: BattlePokemonStateView): Int? {
+        if (LocalPublicFieldMechanics.trickRoomActive(state)) return null
+        // Read from the ability's and item's code (a priority or fractional-priority hook), no name listed.
+        if (jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.reordersTurn(
+                LocalPublicAbilityState.effectiveKnownAbility(state, pokemon), pokemon.knownHeldItemId)) return null
+        val events = state.observedEvents
+        val entered = events.lastOrNull { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == pokemon.battlePokemonId }?.sequence
+            ?: Long.MIN_VALUE
+        val orders = events.filter { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.ACTION_ORDER && it.sequence > entered &&
+            it.turn >= state.turn - 1 && it.baseMovePriority != null }
+        // Its attacks only: an unrevealed ability may move a status move up a bracket (Prankster).
+        fun attacks(moveId: String?) = moveId?.let { jbro.cobblemon.mcc.betterai.engine.dex.EngineDex.bundled().move(canonical(it)) }
+            ?.category.let { it != null && it != "Status" }
+        // Read at today's speeds, so only where nothing that moves a speed has changed since: no field change (weather,
+        // Tailwind, a room), no status change for either, and neither at a speed stage now.
+        fun stage(p: BattlePokemonStateView) = p.statStages.entries.firstOrNull { canonical(it.key) in SPEED_ALIASES }?.value ?: 0
+        // Trick Room leaves no field event behind it: an order seen within its five turns may be the room's.
+        fun roomFree(turn: Int) = events.none { it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.MOVE_USED &&
+            it.turn in (turn - TRICK_ROOM_TURNS)..turn && it.publicValueId?.let(::canonical) == TRICK_ROOM }
+        fun unchangedSince(sequence: Long, ally: BattlePokemonStateView) = stage(ally) == 0 && stage(pokemon) == 0 && events.none {
+            it.sequence > sequence && (it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.FIELD_EFFECT_CHANGED ||
+                it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.STATUS_CHANGED &&
+                it.actorPokemonId in setOf(ally.battlePokemonId, pokemon.battlePokemonId))
+        }
+        return orders.filter { it.actorPokemonId == pokemon.battlePokemonId && attacks(it.publicValueId) && roomFree(it.turn) }.mapNotNull { own ->
+            orders.filter { other -> other.turn == own.turn && other.sequence > own.sequence && other.baseMovePriority == own.baseMovePriority }
+                .mapNotNull { other -> state.pokemon.firstOrNull { it.battlePokemonId == other.actorPokemonId && it.side == BattleSide.ALLY } }
+                .filter { ally -> unchangedSince(own.sequence, ally) }
+                .mapNotNull { ally -> publicEffectiveSpeed(state, ally)?.first }
+                .maxOrNull()?.plus(1)
+        }.maxOrNull()
+    }
+
+    private fun publicEffectiveSpeed(state: BattleStateView, pokemon: BattlePokemonStateView): Pair<Int, Int>? {
         val speed = pokemon.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, pokemon, state) } ?: return null
         val stage = pokemon.statStages.entries
             .firstOrNull { canonical(it.key) in SPEED_ALIASES }?.value?.coerceIn(-6, 6) ?: 0
@@ -311,6 +359,8 @@ internal object LocalPublicTurnOrder {
     private val ALWAYS_LAST_ITEMS = setOf("laggingtail", "fullincense")
     private val FORCED_GROUNDED_VOLATILES = setOf("ingrain", "smackdown", "thousandarrows")
     private val SPEED_ALIASES = setOf("speed", "spe")
+    private const val TRICK_ROOM = "trickroom"
+    private const val TRICK_ROOM_TURNS = 5
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val RAIN_WEATHERS = setOf("raindance", "rain", "primordialsea", "heavyrain")
     private val SUN_WEATHERS = setOf("sunnyday", "sun", "desolateland", "harshsunshine")

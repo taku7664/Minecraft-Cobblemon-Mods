@@ -483,6 +483,33 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
+    fun `an unrevealed ability is read as an even mix of the abilities it may have`() {
+        // User decision 2026-10-20: a full-HP Dragonite that may have Multiscale is neither sure to halve the hit nor sure
+        // not to. Inner Focus has no hand in damage and reads as the plain board.
+        fun mayHave(vararg abilities: String) = context(setOf("normal"), true).let { built ->
+            val s = built.state
+            val foe = s.pokemon.single { it.side == BattleSide.OPPONENT }.battlePokemonId
+            built.copy(state = BattleStateView(s.battleId, s.format, s.turn, s.pokemon, s.field, s.remainingPokemonBySide, s.observedEvents,
+                abilities.map { BattleInferenceView(foe, "ability", it, BattleInferenceConfidence.POSSIBLE) }))
+        }
+        // The rolls the exchange reads (the facts' range leaves ability multipliers to them).
+        fun rolls(context: BattleDecisionContext) = requireNotNull(PublicBattleTacticalCalculator.conservativeDamageRollFractions(
+            context.candidates.single(), context, BattleSide.ALLY))
+        val plain = rolls(context(setOf("normal"), true))
+        val halved = rolls(context(setOf("normal"), true, opponentAbility = "multiscale"))
+        val mixed = rolls(mayHave("multiscale", "innerfocus"))
+        assertTrue(halved.max() < plain.max() * 0.6, "$halved $plain")
+        assertEquals(plain.size, mixed.size)
+        // Evenly spaced picks of the pooled rolls: the lowest among the halved ones, the highest among the plain ones.
+        assertTrue(mixed.min() in halved.min()..halved.max(), "$mixed $halved")
+        assertTrue(mixed.max() in plain.min()..plain.max(), "$mixed $plain")
+        // Half the rolls from each board.
+        assertEquals(plain.size / 2, mixed.count { it <= halved.max() + 1e-9 })
+        // Neither may touch damage: nothing to mix.
+        assertEquals(plain, rolls(mayHave("innerfocus", "pressure")))
+    }
+
+    @Test
     fun `attacker unaware ignores the targets defensive stage`() {
         val neutral = damage(context(
             setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,

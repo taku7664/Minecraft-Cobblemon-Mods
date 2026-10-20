@@ -140,9 +140,17 @@ internal object LocalHazardEncoreCredit {
                 foe.knownMoveIds.any { PublicIds.canonical(it) in HAZARD_REMOVAL }
         }
         // Times the opponents that can still come in: none left, nothing (2026-10-12).
-        val total = value * LAYER_SCALE * (remaining - 1)
+        // A boosted Pokemon in front sweeping this side does not switch out into the layer, and the turn spent laying it is
+        // one more it sweeps: the layer pays at the chance the sweep does not go on (its sweep score on this side). Read as
+        // always paying, Toxic Spikes (107) outranked Haze (63) in front of a +2 sweeper and was drawn 87% (2026-10-20).
+        val pressing = state.pokemon.filter { it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+            it.statStages.any { (stat, stage) -> stage > 0 && PublicIds.canonical(stat) in OFFENSIVE_STATS } }
+            .maxOfOrNull { scores.sweeps[it.battlePokemonId]?.score ?: 0.0 }?.coerceIn(0.0, 1.0) ?: 0.0
+        val total = value * LAYER_SCALE * (remaining - 1) * (1.0 - pressing)
         return if (removerShown) total * REMOVER_DISCOUNT else total
     }
+
+    private val OFFENSIVE_STATS = setOf("attack", "atk", "specialattack", "spa", "speed", "spe")
 
     private fun grounded(pokemon: BattlePokemonStateView): Boolean =
         pokemon.knownTypeIds.none { PublicIds.canonical(it) == "flying" } &&

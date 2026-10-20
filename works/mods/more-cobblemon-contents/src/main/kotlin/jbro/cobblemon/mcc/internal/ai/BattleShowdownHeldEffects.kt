@@ -67,6 +67,23 @@ object BattleShowdownHeldEffects {
         return StatusResidual(share, body.contains("stage++"))
     }
 
+    /** The ability or item moves its holder out of its priority's speed order (Prankster, Quick Draw, Quick Claw, Lagging Tail). */
+    fun reordersTurn(abilityId: String?, itemId: String?): Boolean =
+        (abilityId?.let { abilities[canonical(it)] }?.keys.orEmpty() + itemId?.let { items[canonical(it)] }?.keys.orEmpty())
+            .any { it in ORDER_HOOKS }
+
+    /**
+     * The ability's code answers a step of a move's damage (its power, the attack or defence stat, the finished damage,
+     * STAB, the type or the move itself, stat stages read, effectiveness, immunity, a critical hit): read from the hook
+     * names, no ability listed, on the side it holds: its own hooks for the user's, the `Source` ones and the defending
+     * stats, immunities and hits for the target's, the `Any` ones for both. Without the code loaded every ability may.
+     */
+    fun touchesDamage(abilityId: String?, asAttacker: Boolean): Boolean {
+        if (abilities.isEmpty()) return true
+        val hook = if (asAttacker) ATTACKER_DAMAGE_HOOK else DEFENDER_DAMAGE_HOOK
+        return abilityId?.let { abilities[canonical(it)] }?.keys.orEmpty().any { hook.matches(it) }
+    }
+
     /** The ability keeps its holder in against a forced switch (Suction Cups, Guard Dog): it answers onDragOut. */
     fun resistsForcedSwitch(abilityId: String?): Boolean = abilityId?.let { abilities[canonical(it)] }?.containsKey("onDragOut") == true
 
@@ -103,6 +120,12 @@ object BattleShowdownHeldEffects {
     private val ZERO_RETURN = Regex("""return\s+0\s*;""")
     private val MAX_HP_SHARE = Regex("""(?i)maxhp\s*/\s*(\d+)""")
     private val MOVE_ONLY_DAMAGE = Regex("""effect\.effectType\s*!==\s*["']Move["']""")
+    private val ATTACKER_DAMAGE_HOOK = Regex(
+        "on(Ally)?(BasePower|Modify(Atk|SpA|Damage|STAB|Type|Move|CritRatio))|onAny(BasePower|Modify(Atk|SpA|Def|SpD|Boost|Damage))")
+    private val DEFENDER_DAMAGE_HOOK = Regex(
+        "onSource(BasePower|Modify(Atk|SpA|Damage))|on(Ally)?(Modify(Def|SpD)|TryHit|Immunity|Effectiveness|CriticalHit|Damage)|" +
+            "onAny(BasePower|Modify(Atk|SpA|Def|SpD|Boost|Damage))")
+    private val ORDER_HOOKS = setOf("onModifyPriority", "onFractionalPriority")
     private const val CONDITIONS_FILE = "data/conditions.js"
     private const val CONDITIONS_MARKER = "const Conditions ="
     private const val ITEMS_FILE = "data/items.js"

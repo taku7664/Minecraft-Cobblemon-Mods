@@ -155,6 +155,19 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `boss also reads a hidden same-type priority attack beside the top one of its type`() {
+        // User decision 2026-10-20: one per type kept Shadow Ball and hid Shadow Sneak, the move that strikes first.
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "shadowball", "shadowsneak", "calmmind"))
+        val boss = normalize(BattleTrainerTier.BOSS, actual)
+        assertEquals(setOf("moonblast", "shadowball", "shadowsneak", "calmmind"), boss.slots.filter {
+            it.source == BattleOpponentMoveSource.DIFFICULTY_SET_READ
+        }.mapTo(linkedSetOf()) { it.moveId })
+        // Advanced reads one STAB move only, priority or not.
+        val advanced = normalize(BattleTrainerTier.ADVANCED, actual)
+        assertFalse(advanced.slots.any { it.source == BattleOpponentMoveSource.DIFFICULTY_SET_READ && it.moveId == "shadowsneak" })
+    }
+
+    @Test
     fun `initial public reveals still count toward the actual attack status shape`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val revealedState = state(setOf("moonblast"))
@@ -428,6 +441,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
             "shadowball" to move("ghost", BattleMoveDamageCategory.SPECIAL, 80.0),
             "powergem" to move("rock", BattleMoveDamageCategory.SPECIAL, 80.0),
             "mysticalfire" to move("fire", BattleMoveDamageCategory.SPECIAL, 75.0),
+            "shadowsneak" to BattleMoveCandidateView("ghost", BattleMoveDamageCategory.PHYSICAL, 40.0, 100.0, 1, 30),
             "calmmind" to setup(),
             "thunderwave" to effect("electric", BattleMoveEffectView(
                 BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, 1.0, valueId = "par")),

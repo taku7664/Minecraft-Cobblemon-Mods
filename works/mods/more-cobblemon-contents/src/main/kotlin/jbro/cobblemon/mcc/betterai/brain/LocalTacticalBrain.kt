@@ -895,6 +895,18 @@ internal class LocalTacticalBrain(
                     }
                     return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
                 }
+                // An attack's hit at the chance its user moves before the foe knocks it out; its knockout credit reads that
+                // already (LocalPokemonWorth.knockoutScore), and the mechanic's cost is paid either way. Read whole, a 26% Heatran
+                // a faster foe knocked out first ranked its Earth Power (77.6) over every switch (league run, 2026-10-19).
+                if (candidate.kind == BattleActionKind.USE_MOVE &&
+                    candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }) {
+                    val cost = if (candidate.mechanic == null || !tuning.mechanicReserve) 0.0
+                        else jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(candidate, difficultyContext, decidingProfile)
+                    val hit = (rank.outcome.tacticalUtility + cost - rank.outcome.knockoutUtility.coerceAtLeast(0.0)).coerceAtLeast(0.0)
+                    if (hit <= 0.0) return@mapNotNull null
+                    val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
+                    return@mapNotNull if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * hit
+                }
                 if (!actingStatus(candidate)) return@mapNotNull null
                 val total = rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)
                 if (total <= 0.0) return@mapNotNull null
@@ -921,7 +933,8 @@ internal class LocalTacticalBrain(
         // it could not use (hand-played stall concept, 2026-10-20). Singles.
         val sleepAdjustments: Map<String, Double> = run {
             val board = difficultyContext.state
-            if (!rulesApply || board.format != BattleFormat.SINGLE) return@run emptyMap()
+            if (!rulesApply) return@run emptyMap()
+            if (board.format != BattleFormat.SINGLE) return@run doublesSleepAdjustments(rulesOnly, board)
             val sleeper = board.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
                 ?: return@run emptyMap()
             val wake = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.wakeChance(board, sleeper) ?: return@run emptyMap()
@@ -1259,6 +1272,51 @@ internal class LocalTacticalBrain(
         @Volatile var lastAbilityReplay: String? = null
         /** The pair chosen last, with its turn: a replacement asked for mid-turn reads the partner's move still to come. */
         @Volatile var lastPair: Pair<Int, BattleActionCandidate>? = null
+    }
+
+    /**
+     * The singles sleep reading part by part for a doubles pair: each sleeping slot's move counts at the chance it runs
+     * ([jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.moveRuns]), Sleep Talk at the chance it stays asleep times the
+     * mean of the moves it may call (that slot's parts, used without a mechanic, none usable asleep or charging). The partner's
+     * part keeps its value. Read whole, a pair with a sleeping Snorlax's Curse ranked as if Snorlax were awake.
+     */
+    private fun doublesSleepAdjustments(
+        ranked: List<jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank>,
+        board: jbro.cobblemon.mcc.internal.ai.BattleStateView,
+    ): Map<String, Double> {
+        val clock = jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock
+        val sleepers = board.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+            .mapNotNull { pokemon -> clock.wakeChance(board, pokemon)?.let { pokemon to it } }
+        if (sleepers.isEmpty()) return emptyMap()
+        fun effects(part: BattleActionCandidate) = part.moveDetails?.effects?.effects.orEmpty()
+        val talk = sleepers.associate { (pokemon, wake) ->
+            // Each of its moves once, at its part's own value.
+            val values = linkedMapOf<String, Double>()
+            ranked.forEach { rank -> rank.outcome.componentOutcomes.forEach { outcome ->
+                val part = outcome.candidate
+                if (part.actorSlot == pokemon.activeSlot && part.kind == BattleActionKind.USE_MOVE && part.mechanic == null &&
+                    effects(part).none { it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.USABLE_WHILE_ASLEEP ||
+                        it.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.CHARGE_TURN }) {
+                    values.putIfAbsent(part.actionId, outcome.tacticalUtility.coerceAtLeast(0.0))
+                }
+            } }
+            pokemon.activeSlot to (1.0 - wake) * (if (values.isEmpty()) 0.0 else values.values.average())
+        }
+        return ranked.mapNotNull { rank ->
+            if (rank.outcome.candidate.kind != BattleActionKind.COMPOSITE || rank.decisionTier <= LocalBattleActionPolicy.TIER_PUBLICLY_BAD) return@mapNotNull null
+            val change = rank.outcome.componentOutcomes.sumOf { outcome ->
+                val part = outcome.candidate
+                val sleeper = sleepers.firstOrNull { it.first.activeSlot == part.actorSlot }?.first ?: return@sumOf 0.0
+                if (part.kind != BattleActionKind.USE_MOVE) return@sumOf 0.0
+                val value = outcome.tacticalUtility
+                when {
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(part.moveId) -> (talk[part.actorSlot] ?: 0.0) - value
+                    value > 0.0 -> (clock.moveRuns(board, sleeper, part) - 1.0) * value
+                    else -> 0.0
+                }
+            }
+            if (change == 0.0) null else rank.outcome.candidate.actionId to change
+        }.toMap()
     }
 
     /** Records [pair] as [session]'s choice on [turn], as a decision would (tests replay one turn's requests). */

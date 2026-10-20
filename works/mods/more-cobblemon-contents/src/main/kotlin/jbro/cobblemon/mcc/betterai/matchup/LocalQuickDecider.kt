@@ -104,17 +104,21 @@ internal object LocalQuickDecider {
         // Starfall into a 7% Kingambit's Sucker Punch and fell first, where Shadow Sneak (+1 like it, Mimikyu faster) was a
         // sure knockout (hand-played Fantina, 2026-10-20).
         val foeMoves = scores.moves(foe.battlePokemonId, self.battlePokemonId)
+        // At one priority the two Speeds decide, Trick Room included. Not the exchange's order: that is the order of this
+        // one's best move, which may be a priority one. Read from it, a 27% Mega Metagross under Trick Room took its Bullet
+        // Punch's order for Meteor Mash's and was forced into it, and Reuniclus's Shadow Ball knocked it out first
+        // (hand-played Byron, followed again 2026-10-20).
+        val speedFirst = LocalPublicTurnOrder.speedOrderProbability(state, self, foe) ?: stay.subjectMovesFirstProbability
+        fun foeFirst(foePriority: Int, ours: Int) = when {
+            foePriority > ours -> 1.0
+            foePriority < ours -> 0.0
+            else -> 1.0 - speedFirst
+        }
         fun preempted(rank: LocalBattleActionRank): Double {
             val ours = LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, part(rank))
-            val byExchange = (1.0 - stay.subjectMovesFirstProbability) * theirKnockout
-            return foeMoves.maxOfOrNull { move ->
-                val before = when {
-                    move.priority > ours -> 1.0
-                    move.priority < ours -> 0.0
-                    else -> 1.0 - stay.subjectMovesFirstProbability
-                }
-                move.knockoutChanceWithin(1) * before
-            }?.let { maxOf(it, if (ours > 0) 0.0 else byExchange) } ?: if (ours > 0) 0.0 else byExchange
+            val byExchange = foeFirst(stay.opponentMove?.priority ?: 0, ours) * theirKnockout
+            return foeMoves.maxOfOrNull { move -> move.knockoutChanceWithin(1) * foeFirst(move.priority, ours) }
+                ?.let { maxOf(it, byExchange) } ?: byExchange
         }
         attacks.firstOrNull { (rank, score) ->
             // Sucker Punch knocks out only if the foe attacks: a Swords Dance in front of it is a turn lost.
@@ -223,13 +227,15 @@ internal object LocalQuickDecider {
         val hitCapped = theirs != null && theirs.maximumDamageFraction >= self.hpFraction - 1e-6
         // A faster foe whose hit all but surely knocks it out lands before any heal: a Gholdengo at 18% chose Recover
         // in front of a faster Landorus that had shown Earth Power (league mock battle, 2026-10-13).
-        val faintsFirst = theirs != null && stay.subjectMovesFirstProbability < 0.5 &&
+        // A heal moves at its own priority (none), not the exchange move's.
+        val healFirst = 1.0 - foeFirst(theirs?.priority ?: 0, 0)
+        val faintsFirst = theirs != null && healFirst < 0.5 &&
             theirs.knockoutChanceWithin(1) * theirs.accuracy >= FAINTS_FIRST
         fun futile(heal: Double) = faintsFirst || (hitCapped && self.hpFraction >= heal) || (!hitCapped && theirHit >= heal * FUTILE_HEAL)
         val chosenHeal = healShare(chosenMove)
         if (chosenHeal > 0.0) {
             // The Emerald AI heals under half HP, or two thirds when it moves first, and not into a hit that undoes it.
-            val healBelow = if (stay.subjectMovesFirstProbability >= 0.5) HEAL_BELOW_FIRST else HEAL_BELOW
+            val healBelow = if (healFirst >= 0.5) HEAL_BELOW_FIRST else HEAL_BELOW
             if (self.hpFraction >= healBelow) pick(strongest, "early_heal")?.let { return it }
             if (futile(chosenHeal)) return pick(strongest, "futile_heal")
             return null
@@ -482,7 +488,7 @@ internal object LocalQuickDecider {
 
     /** Reasons no roll lets pass and no margin holds back: staying does nothing at all. */
     private val UNCONDITIONAL = setOf("no_damage", "cannot_act")
-    private val DRAINING = setOf("leechseed", "curse", "perish1", "perish2", "perish3", "perishsong", "yawn")
+    internal val DRAINING = setOf("leechseed", "curse", "perish1", "perish2", "perish3", "perishsong", "yawn")
     private val MEGA_IDS = setOf("mega", "megaevolution")
     /** Hazards one use of which is all there is. */
     private val NON_STACKING = setOf("stealthrock", "stickyweb")

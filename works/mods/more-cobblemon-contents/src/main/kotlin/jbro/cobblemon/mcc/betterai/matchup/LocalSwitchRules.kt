@@ -51,6 +51,27 @@ internal object LocalSwitchRules {
         }
     }
 
+    /** The preview's opposing Pokemon not seen yet, as hypothetical bench Pokemon on a copy of the board, or null without any. */
+    private fun previewFoes(context: BattleDecisionContext): Pair<jbro.cobblemon.mcc.internal.ai.BattleStateView, List<BattlePokemonStateView>>? {
+        val preview = context.opponentTeamPreview ?: return null
+        val state = context.state
+        val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT }
+        if (preview.selectionSize - seen.size <= 0) return null
+        val unseen = preview.pokemon.filter { slot -> seen.none { jbro.cobblemon.mcc.betterai.simulation.NativeInBattleFormes.samePublicIdentity(it, slot) } }
+        if (unseen.isEmpty()) return null
+        val taken = state.pokemon.mapTo(hashSetOf()) { it.battlePokemonId }
+        val foes = unseen.map { slot ->
+            var id = java.util.UUID(1, Long.MIN_VALUE + slot.previewSlotId)
+            while (id in taken) id = java.util.UUID(id.mostSignificantBits + 1, id.leastSignificantBits)
+            taken += id
+            BattlePokemonStateView(id, BattleSide.OPPONENT, null, slot.speciesId, slot.formId, slot.level,
+                1.0, null, emptyMap(), emptySet(), null, null, false, slot.knownTypeIds, slot.combatStats,
+                knownVolatileEffectIds = emptySet())
+        }
+        // derive, not copyState: the remaining counts already hold the Pokemon not seen.
+        return state.derive(pokemon = state.pokemon + foes) to foes
+    }
+
     fun judge(candidates: List<BattleActionCandidate>, context: BattleDecisionContext, scores: MatchupScores,
         tier: jbro.cobblemon.mcc.internal.ai.BattleTrainerTier? = null): Judgement {
         val state = context.state
@@ -60,9 +81,14 @@ internal object LocalSwitchRules {
         // A replacement chosen while nothing stands in front (both sides lost their Pokemon at once) faces whatever comes
         // in next: read against every opposing Pokemon still standing. Read against none, Raihan's three replacements all
         // scored alike and one was drawn at random (hand-played doubles, 2026-10-20).
-        val faced = opponents.ifEmpty {
+        val revealed = opponents.ifEmpty {
             state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
         }
+        // None of them seen yet: the team preview's Pokemon still to come, as hypothetical opponents at full HP (species,
+        // form, types and public stats only, nothing hidden filled in), on a table worked out with them.
+        val (faced, replacementScores) = if (revealed.isNotEmpty()) revealed to scores else previewFoes(context)?.let { (board, foes) ->
+            foes to LocalMatchupScoreCalculator.calculate(context.copy(state = board))
+        } ?: return Judgement.NONE
         if (faced.isEmpty()) return Judgement.NONE
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
@@ -93,7 +119,7 @@ internal object LocalSwitchRules {
                 val replaced = active(state, part.actorSlot)
                 if (replaced == null) {
                     replacementValues[part.actionId] = faced.mapNotNull {
-                        scores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score
+                        replacementScores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score
                     }.averageOrNull() ?: continue
                     continue
                 }

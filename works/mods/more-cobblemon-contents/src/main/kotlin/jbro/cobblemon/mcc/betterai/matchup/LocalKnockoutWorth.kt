@@ -90,12 +90,16 @@ internal object LocalKnockoutWorth {
         }.toMap()
         if (fight.isEmpty()) return Reading(emptyMap(), emptyMap())
         val sides = fight.keys.associateWith { id -> living.first { it.battlePokemonId == id }.side }
-        // Each side's values scaled to a mean of one Pokemon; a side whose values are all zero keeps one each.
-        fun perSide(raw: Map<UUID, Double>): Map<UUID, Double> = raw.entries.groupBy { sides.getValue(it.key) }.values.flatMap { entries ->
+        // Each side's values scaled to a mean of one Pokemon; a side whose values are all zero keeps one each. [floor] lifts
+        // a side whose mean falls under it by the gap before dividing: where every one left loses, the small differences
+        // between losing exchanges are not a ratio of worth. Divided as they were, a 17% Grimmsnarl barely less hopeless
+        // than the rest was worth 4.72 Pokemon (hand-played Minun hard, 2026-10-20).
+        fun perSide(raw: Map<UUID, Double>, floor: Double = 0.0): Map<UUID, Double> = raw.entries.groupBy { sides.getValue(it.key) }.values.flatMap { entries ->
             val mean = entries.map { it.value }.average()
-            entries.map { (id, value) -> id to if (mean < MINIMUM_MEAN) 1.0 else value / mean }
+            val lift = (floor - mean).coerceAtLeast(0.0)
+            entries.map { (id, value) -> id to if (mean + lift < MINIMUM_MEAN) 1.0 else (value + lift) / (mean + lift) }
         }.toMap()
-        val w = perSide(fight)
+        val w = perSide(fight, FIGHT_FLOOR)
         val action = fight.keys.associateWith { id ->
             val pokemon = living.first { it.battlePokemonId == id }
             val others = living.filter { it.side != pokemon.side }
@@ -245,6 +249,8 @@ internal object LocalKnockoutWorth {
         BattleMoveEffectKind.CRASH_RECOIL, BattleMoveEffectKind.STRUGGLE_RECOIL,
     )
     private const val MINIMUM_MEAN = 1e-6
+    /** A side's mean exchange value (0..1, a win chance's scale) under which its worths stop reading as ratios. */
+    private const val FIGHT_FLOOR = 0.25
     private val SPREAD_TARGETS = setOf("allAdjacent", "allAdjacentFoes")
     /** One Pokemon in board units, as [jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial] counts it. */
     private const val ONE_POKEMON = 2.0
