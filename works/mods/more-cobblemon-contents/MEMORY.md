@@ -3,6 +3,11 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-21 12:10] 밤샘 수정 3차 개발 배포 (빌드·JAR 배치 확인, 기동·실게임 미확인)
+
+- `main` 43b233d21로 MCC와 애드온 4개 `remapJar` 빌드 성공, JAR 무결성·엔트리포인트 검사 통과. `develop-product/{server,client}/mods`에 5개씩 배치, SHA-256 빌드본과 일치(`more-cobblemon-contents-0.1.0.jar` `f0761bb6e2cccf66…`). 백업 `develop-product/deployment-backups/20261021-1200-betterai-night3`. `recordDecisions: true`.
+- 서버·클라이언트는 꺼진 상태 그대로. 실게임 검증은 서버 기동 동의가 필요해 하지 않음.
+
 ## [2026-10-21 12:00] 상급·보스에서 교체 기본 점수의 위기 보너스(60) 이중 계산 제거, 급함 최솟값은 하드코딩으로 명시 (구현·재생·단위 확인)
 
 - **교체 기본 점수:** `LocalTacticalScorer.scoreSwitch`의 `criticalSwitchBonus`(체력 20% 이하면 +60, 근거 없음)는 상급·보스에서 교체 규칙(`LocalSwitchRules.voluntary`의 `kept` = 먼저 쓰러질 확률 × 가치)이 같은 구조를 근거 있게 셈 → 이 두 난이도에선 0. 교체 규칙이 없는 하위 난이도는 유지. 재생(네 판 모음 약 3600장면) 선택 변화 68개, 교체 → 공격 23개는 체력 5~16% 포켓몬이 남아서 공격(선공기·유턴 포함), 살릴 가치가 있으면 `kept`가 여전히 교체를 고름. 손해 장면 없음. 단위 10클래스 153/153.
