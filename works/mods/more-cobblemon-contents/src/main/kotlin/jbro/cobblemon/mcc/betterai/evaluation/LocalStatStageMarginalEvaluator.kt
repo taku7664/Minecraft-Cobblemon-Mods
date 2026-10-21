@@ -57,9 +57,9 @@ internal object LocalStatStageMarginalEvaluator {
 
         val beforePressure = positionAttackPressure(before, source, calculationCache, tuning, shouldContinue)
         val afterPressure = positionAttackPressure(after, source, calculationCache, tuning, shouldContinue)
-        val beforeSpeed = speedPositionValue(before, tuning)
-        val afterSpeed = speedPositionValue(after, tuning)
-        val speedDelta = if (beforeSpeed != null && afterSpeed != null) afterSpeed - beforeSpeed else 0.0
+        val beforeSpeed = speedPositionValue(before, source, calculationCache)
+        val afterSpeed = speedPositionValue(after, source, calculationCache)
+        val speedDelta = orderDelta(beforeSpeed, afterSpeed)
         return LocalStatStageMarginalValue(
             pressureBoardDelta = afterPressure - beforePressure,
             speedBoardDelta = speedDelta,
@@ -124,7 +124,25 @@ internal object LocalStatStageMarginalEvaluator {
             score += resolvedScore * probability
             if (probability >= CERTAIN_PROBABILITY) state = applied
         }
-        return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) else null
+        // A damaging move's stages count where its target is still there to face after the hit: at the chance its roll
+        // leaves the target standing, and not at all where it does no damage (an immunity stops its effects). Read on the
+        // board before the hit, a Max Strike into an immune Gengar took 200 for its Speed drop and a Max Airstream that
+        // knocked a Lilligant out took 193 for the next turn's order against it (self-play, 2026-10-21).
+        val damaging = candidate.moveDetails?.damageCategory.let { it != null && it != BattleMoveDamageCategory.STATUS }
+        val standing = if (!damaging) 1.0 else run {
+            val range = candidate.facts?.standardDamageFractionRange ?: return@run 1.0
+            if (range.maximum <= 0.0) return@run 0.0
+            val target = candidate.targets.firstOrNull()?.let { slot ->
+                context.state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
+            } ?: return@run 1.0
+            val hp = target.hpFraction
+            when {
+                range.maximum < hp -> 1.0
+                range.minimum >= hp -> 0.0
+                else -> ((hp - range.minimum) / (range.maximum - range.minimum)).coerceIn(0.0, 1.0)
+            }
+        }
+        return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) * standing else null
     }
 
     /**
@@ -158,7 +176,8 @@ internal object LocalStatStageMarginalEvaluator {
     ): Double {
         val changes = stageChanges(before, after)
         if (changes.isEmpty()) return 0.0
-        val speedResolved = speedPositionValue(before, tuning) != null && speedPositionValue(after, tuning) != null
+        val speedResolved = speedPositionValue(before, source, calculationCache) != null &&
+            speedPositionValue(after, source, calculationCache) != null
         val (resolved, unresolved) = changes.partition { change ->
             publicInputsResolve(change, before, source) || change.stat == SPEED && speedResolved
         }
@@ -248,11 +267,13 @@ internal object LocalStatStageMarginalEvaluator {
     fun speedTransitionBoardDelta(
         before: BattleStateView,
         after: BattleStateView,
-        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        @Suppress("UNUSED_PARAMETER") tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        /** The board the hits are read on; without it the order is worth nothing it can be shown to change. */
+        source: BattleDecisionContext? = null,
+        calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
     ): Double {
-        val beforeSpeed = speedPositionValue(before, tuning)
-        val afterSpeed = speedPositionValue(after, tuning)
-        return if (beforeSpeed != null && afterSpeed != null) afterSpeed - beforeSpeed else 0.0
+        source ?: return 0.0
+        return orderDelta(speedPositionValue(before, source, calculationCache), speedPositionValue(after, source, calculationCache))
     }
 
     private fun positionAttackPressure(
@@ -279,17 +300,53 @@ internal object LocalStatStageMarginalEvaluator {
         capDamageToRemainingHp = true,
     )
 
-    private fun speedPositionValue(state: BattleStateView, tuning: LocalDecisionTuning): Double? {
+    /** One pair's order: the chance the ally moves first, and what the order decides between them (in HP bars). */
+    private class Order(val first: Double, val stakes: Double)
+
+    /**
+     * What a change of order is worth, in HP bars, over each pair of active Pokemon (their average): the change in the
+     * chance of moving first times what the order decides on the board before it,
+     * ```
+     * (first after - first before) x (our knockout x their hit + their knockout x our hit)
+     * ```
+     * the hit moving first stops and the hit moving second loses, each its expected damage (the middle of its roll, its
+     * accuracy) up to the HP it can take (user, 2026-10-21). An order that decides no knockout is worth nothing, and a
+     * change that leaves the order as it was is worth nothing whatever else it changes (a Defence drop's larger hits are
+     * the pressure's). It used to be a flat (2 x first - 1) x 0.25 of a bar, half a bar for any change of order: a
+     * Torkoal's Rapid Spin took 50 for its Speed raise and outranked a super-effective Lava Plume that did three times the
+     * damage, neither side knocking the other out (self-play, 2026-10-21).
+     */
+    private fun orderDelta(before: Map<Pair<UUID, UUID>, Order>?, after: Map<Pair<UUID, UUID>, Order>?): Double {
+        if (before == null || after == null || before.isEmpty()) return 0.0
+        return before.entries.map { (pair, order) ->
+            ((after[pair]?.first ?: order.first) - order.first) * order.stakes
+        }.average()
+    }
+
+    /** Each active pair's [Order] on [state]; null when the order cannot be read from public Speed. */
+    private fun speedPositionValue(
+        state: BattleStateView,
+        source: BattleDecisionContext,
+        cache: LocalProjectedActionCalculationCache,
+    ): Map<Pair<UUID, UUID>, Order>? {
         val allies = active(state, BattleSide.ALLY)
         val opponents = active(state, BattleSide.OPPONENT)
         if (allies.isEmpty() || opponents.isEmpty()) return null
-        val probabilities = allies.flatMap { ally ->
+        val board = source.copy(state = state)
+        fun hit(move: jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore?, hp: Double) =
+            move?.let { minOf(hp, (it.minimumDamageFraction + it.maximumDamageFraction) / 2.0 * it.accuracy) } ?: 0.0
+        return allies.flatMap { ally ->
             opponents.map { opponent ->
                 LocalPublicTurnOrder.speedOrderProbability(state, ally, opponent) ?: return null
+                val key = ally.battlePokemonId to opponent.battlePokemonId
+                val pair = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.pairMatchup(board, ally.battlePokemonId,
+                    opponent.battlePokemonId, jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField.CURRENT, cache)
+                    ?: return@map key to Order(0.5, 0.0)
+                key to Order(pair.subjectMovesFirstProbability,
+                    (pair.subjectMove?.knockoutChanceWithin(1) ?: 0.0) * hit(pair.opponentMove, ally.hpFraction) +
+                        (pair.opponentMove?.knockoutChanceWithin(1) ?: 0.0) * hit(pair.subjectMove, opponent.hpFraction))
             }
-        }
-        val allyFirstProbability = probabilities.average()
-        return (allyFirstProbability * 2.0 - 1.0) * tuning.leafSpeedControlValue
+        }.toMap()
     }
 
     private fun publicInputsResolve(

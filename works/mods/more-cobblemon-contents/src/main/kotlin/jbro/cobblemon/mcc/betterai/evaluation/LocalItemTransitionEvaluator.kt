@@ -31,7 +31,7 @@ internal object LocalItemTransitionEvaluator {
             LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.ALLY, context, cache, tuning = tuning, capDamageToRemainingHp = true) -
                 LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.OPPONENT, context, cache, tuning = tuning, capDamageToRemainingHp = true)
         val pressureValue = pressure(afterPressure) - pressure(beforePressure)
-        val speedValue = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(beforePressure, afterPressure, tuning)
+        val speedValue = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(beforePressure, afterPressure, tuning, context, cache)
         // White Herb's restored stages belong to this item, unlike the retained root price of a
         // Choice item. A pure-status lookahead must not also withdraw them as ordinary setup.
         val stagePressure = LocalStatStageMarginalEvaluator.transitionValue(beforePressure, afterPressure,

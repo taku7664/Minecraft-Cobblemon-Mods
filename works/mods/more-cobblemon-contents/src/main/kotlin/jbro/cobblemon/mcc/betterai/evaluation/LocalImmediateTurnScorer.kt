@@ -54,7 +54,7 @@ internal object LocalImmediateTurnScorer {
         } ?: 0.0
         val beforeStatus = positionStatus(before)
         val afterStatus = positionStatus(after)
-        val speedControlDelta = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(before, after, tuning)
+        val speedControlDelta = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(before, after, tuning, source, calculationCache)
         val beforeField = positionField(before, source)
         val afterField = positionField(after, source)
         return LocalImmediateTurnScore(
