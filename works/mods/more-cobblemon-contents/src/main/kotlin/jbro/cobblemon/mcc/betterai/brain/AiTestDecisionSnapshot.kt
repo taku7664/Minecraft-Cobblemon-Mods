@@ -82,6 +82,26 @@ internal data class AiTestDecisionSnapshot(
             null
         }
 
+        /**
+         * The decision's stages ([LocalDecisionStages], inner values included) beside its snapshot, as
+         * `turn-NNN-<request>.stages.json(.gz)`. Never throws, as [write].
+         */
+        fun writeStages(battleId: UUID, turn: Int, requestId: UUID, stages: LocalDecisionStages, compressed: Boolean = false): Path? = try {
+            val root = directory()
+            if (root == null) null else {
+                val battleDirectory = root.resolve(battleId.toString())
+                Files.createDirectories(battleDirectory)
+                val name = "turn-%03d-%s.stages.json".format(turn, requestId.toString().take(8))
+                val json = gson.toJson(stages)
+                if (compressed) battleDirectory.resolve("$name.gz").also { path ->
+                    java.util.zip.GZIPOutputStream(Files.newOutputStream(path)).use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                } else battleDirectory.resolve(name).also { Files.writeString(it, json) }
+            }
+        } catch (failure: Exception) {
+            logger.warn("Better AI decision stages were not saved: {}", failure.javaClass.simpleName)
+            null
+        }
+
         /** The battle folders beyond the newest [KEPT_BATTLES], [keep] aside, are deleted. */
         private fun prune(root: Path, keep: Path) {
             val battles = Files.list(root).use { stream -> stream.filter { Files.isDirectory(it) && it != keep }.toList() }

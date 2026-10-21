@@ -63,7 +63,7 @@ internal object LocalPokemonWorth {
         val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - threat)
         // One that falls at the turn's end anyway is worth only the hit a knockout first stops (Denial.fallsAnyway).
         val kept = if (denial.fallsAnyway) 0.0 else worth * lands
-        if (System.getenv("BETTERAI_DEBUG_VALUES") != null) println("KODBG target=$id worth=${"%.1f".format(worth)} first=${"%.3f".format(first)} threat=${"%.3f".format(threat)} lands=${"%.3f".format(lands)} fallsAnyway=${denial.fallsAnyway} denial=${"%.3f".format(denial.value)} total=${"%.1f".format(kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore)}")
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("knockout:${attack.actionId}>$id", mapOf("worth" to worth, "first" to first, "threat" to threat, "lands" to lands, "fallsAnyway" to jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.flag(denial.fallsAnyway), "denial" to denial.value, "total" to kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore))
         return kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 

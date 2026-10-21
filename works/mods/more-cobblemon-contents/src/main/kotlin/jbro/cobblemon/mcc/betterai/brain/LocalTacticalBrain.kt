@@ -161,7 +161,11 @@ internal class LocalTacticalBrain(
     ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) {
         // No worth until this decision reads one, so a decision that returns early leaves none behind for the trace.
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(null)
-        try { decideWithTuning(session, context) } finally { jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.clear() }
+        LocalDecisionInternals.begin()
+        try { decideWithTuning(session, context) } finally {
+            jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.clear()
+            LocalDecisionInternals.clear()
+        }
     }
 
     private fun decideWithTuning(
@@ -479,6 +483,18 @@ internal class LocalTacticalBrain(
             jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(difficultyContext.state, it, tuning.livingPokemonValue)
         }
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(worthReading?.worths, worthReading?.denials)
+        worthReading?.let { reading ->
+            difficultyContext.state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }.forEach { pokemon ->
+                val id = pokemon.battlePokemonId
+                val denial = reading.denials[id]
+                LocalDecisionInternals.record("pokemon:${pokemon.side}:${pokemon.speciesId.substringAfter(':')}:${id.toString().take(8)}", buildMap {
+                    put("hp", pokemon.hpFraction)
+                    reading.worths[id]?.let { put("worth", it) }
+                    reading.standings[id]?.let { put("standing", it) }
+                    denial?.let { put("threat", it.threat); put("denial", it.value); put("fallsAnyway", LocalDecisionInternals.flag(it.fallsAnyway)) }
+                })
+            }
+        }
         // The rules steer the native search too: what they rule out is not searched, and the ace, the
         // AI's answer to the opponent's sweeper and the opponent's answer to the AI's weigh more.
         val nativeRules = if (!rulesApply) NativeRulePriorities.NONE else NativeRulePriorities(
@@ -1138,9 +1154,12 @@ internal class LocalTacticalBrain(
         val twin = mechanicTwin(ranked.firstOrNull { it.outcome.candidate.actionId == drawn.outcome.candidate.actionId } ?: drawn,
             ranked, ruleExclusions(ranked.map { it.outcome.candidate }).keys)
         val selected = twin ?: drawn
-        stageTrace?.let { sink ->
+        // Built for a test's stage trace, and for the decision record when every battle's decisions are kept (written next
+        // to the decision's snapshot, inner values included).
+        val recordStages = AiTestDecisionSnapshot.recordsEveryBattle || aiTestDecision
+        if (stageTrace != null || recordStages) {
             fun values(list: List<LocalBattleActionRank>) = list.associate { it.outcome.candidate.actionId to it.comparisonValue }
-            sink(LocalDecisionStages(
+            val stages = LocalDecisionStages(
                 turn = difficultyContext.state.turn,
                 base = values(baseRanked),
                 tiers = ranked.associate { it.outcome.candidate.actionId to it.decisionTier },
@@ -1167,7 +1186,10 @@ internal class LocalTacticalBrain(
                 quick = quick?.rank?.outcome?.candidate?.actionId,
                 quickReason = quick?.reason,
                 selected = selected.outcome.candidate.actionId,
-            ))
+                internals = LocalDecisionInternals.take(),
+            )
+            stageTrace?.invoke(stages)
+            if (recordStages) AiTestDecisionSnapshot.writeStages(battleId, context.state.turn, context.requestId, stages, compressed = !aiTestDecision)
         }
         decisionTrace?.resolved("legacy_lookahead", drawRanked, selection)
         retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }

@@ -34,4 +34,6 @@ internal data class LocalDecisionStages(
     val quick: String?,
     val quickReason: String?,
     val selected: String,
+    /** The inner values the decision computed, by reading ([LocalDecisionInternals]): worths, knockout prices, heal values. */
+    val internals: Map<String, Map<String, Double>> = emptyMap(),
 )

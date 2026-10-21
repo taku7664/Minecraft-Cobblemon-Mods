@@ -58,7 +58,7 @@ internal object LocalHealValue {
             val knockoutHealed = pairHealed?.opponentMove?.knockoutChanceWithin(1) ?: 0.0
             val healsFirst = LocalPublicTurnOrder.actsFirstProbability(state, BattleSide.ALLY, heal.actorSlot, heal,
                 pairNow?.opponentMove?.priority ?: 0) ?: 0.5
-            if (System.getenv("BETTERAI_DEBUG_VALUES") != null) println("HEALDBG ${heal.moveId} hp=${"%.3f".format(user.hpFraction)} healed=${"%.3f".format(healedHp)} standNow=${"%.3f".format(standingNow)} standHealed=${"%.3f".format(standingHealed)} koNow=${"%.3f".format(knockoutNow)} koHealed=${"%.3f".format(knockoutHealed)} healsFirst=${"%.3f".format(healsFirst)} foeMove=${pairNow?.opponentMove?.moveId}")
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("heal:${heal.actionId}", mapOf("hp" to user.hpFraction, "healedHp" to healedHp, "standingNow" to standingNow, "standingHealed" to standingHealed, "knockoutNow" to knockoutNow, "knockoutHealed" to knockoutHealed, "healsFirst" to healsFirst))
             heal.actionId to ((standingHealed - standingNow) * BOARD_TO_SCORE +
                 (knockoutNow - knockoutHealed).coerceAtLeast(0.0) * healsFirst * standingHealed * BOARD_TO_SCORE)
         }.toMap()
